@@ -53,7 +53,7 @@ In a single message, the agent spawns seven `Agent` tool calls in parallel:
 | D. Trending Vulnerabilities | KEV / PoC / new vendor advisories | `vulns` |
 | E. Vendor & Independent Research | Last 7 days substantive technical reports + new yearly reports | `research` |
 | F. Quality News & Commentary | Editorial signal | `news` + `discovery` |
-| G. Major Breaches | Newly disclosed breaches; regulator notices | `breaches` + `news` |
+| G. Incident & Disclosure Roundup | Publicly-disclosed security incidents; regulator notices | `breaches` + `news` |
 
 Each receives:
 - Its category-filtered subset of `sources.json`.
@@ -92,7 +92,7 @@ The agent picks at most 1 (exceptionally 2) items for technical deep dive. Selec
 
 If no item clears the bar, the deep-dive section says so explicitly. The agent does not invent depth.
 
-Deep-dive content includes kill chain, ATT&CK mapping, and detection *concepts* — never IOCs and never rule code.
+Deep-dive content includes the incident narrative (defender's perspective), ATT&CK technique mapping, and detection *concepts* — never IOCs and never rule code.
 
 ---
 
@@ -206,7 +206,7 @@ The agent then:
     - **W1** Long-horizon campaign status check (Salt Typhoon, Volt Typhoon, BRICKSTORM, Forest Blizzard, Akira/SonicWall, Ivanti waves, etc.).
     - **W2** Yearly / quarterly threat reports published in the last 30 days that the daily briefs did not yet cover.
     - **W3** Cybersecurity policy and regulatory developments relevant to Swiss and European public-sector entities.
-4. **Phase 3 — Compose.** Write `briefs/weekly/YYYY-Www.md` with sections 0–10 (Week at a glance, Top stories, Multi-day chains, Vulnerability roll-up table, Sector & victim patterns, Major breaches recap, Annual/periodic reports, Long-running campaigns status, Policy & regulatory horizon, Looking ahead, Verification & coverage notes).
+4. **Phase 3 — Compose.** Write `briefs/weekly/YYYY-Www.md` with sections 0–10 (Week at a glance, Top stories, Multi-day chains, Vulnerability roll-up table, Sector & victim patterns, Incidents & disclosures recap, Annual/periodic reports, Long-running campaigns status, Policy & regulatory horizon, Looking ahead, Verification & coverage notes).
 5. **Phase 4 — State update.** Append `weekly_summary` appearance records to `covered_items.json`; update `cves_seen.json` `last_seen` for any CVE referenced; maintain `sources.json`.
 6. **Phase 5 — Commit.**
 

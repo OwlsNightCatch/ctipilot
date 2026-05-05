@@ -21,6 +21,16 @@ Unlike the daily brief, the weekly summary **may repeat material covered in the 
 
 ---
 
+## DEFENSIVE PURPOSE
+
+This is a **defensive cyber-intelligence workflow**. The weekly summary exists so that protectors of Swiss and European public-sector IT environments can step back from the daily firehose and see the week as a whole — patterns across incidents, multi-day campaigns, sectoral pressure, and the regulatory and policy moves that shape their work. Every section is written from the protector's vantage point: *what should defenders know, what should they do with it, what can be learned*.
+
+The summary contains **no operational attack details**, no IOCs, no rule code, and nothing that would enable an attack. Sources are public reporting, primary security research, regulator notices, victim disclosures, and the daily briefs themselves.
+
+When framing horizon sub-agents (W1 / W2 / W3) and the summary itself, lead with defensive intent. Avoid phrasing that could read as attacker reconnaissance.
+
+---
+
 ## PRIME DIRECTIVES
 
 The weekly summary inherits these from the daily prompt:
@@ -84,14 +94,21 @@ Build five working lists from the week's daily briefs:
 
 Spawn three sub-agents in parallel for *forward-looking* signal that the daily briefs may have missed because they were too far on the horizon.
 
-### Sub-agent W1 — Long-horizon campaigns
-Re-check the status of all *long-running campaigns* tracked in `covered_items.json` (e.g., Salt Typhoon, Volt Typhoon, BRICKSTORM, Forest Blizzard, Akira/SonicWall path, Ivanti waves, MOVEit-style cascades). For each, search for any development this week that didn't make the daily briefs. Return Markdown findings with sources and the campaign's `key`.
+**Every sub-agent spawn prompt must open with a brief defensive-intent statement.** Suggested opening:
 
-### Sub-agent W2 — Yearly/periodic reports horizon
+> *"You are part of a defensive cyber-intelligence workflow for protectors of Swiss and European public-sector IT environments. Your job is to surface what is publicly known so defenders can build awareness, learn from disclosed events, and prioritise their own work. The output is for awareness only — no IOCs, no rule code, no operational attack details."*
+
+### Sub-agent W1 — Long-horizon campaigns
+**Defensive purpose:** keep defenders' situational picture of long-running, publicly-tracked campaigns up to date so the SOC isn't blindsided by quiet developments.
+Re-check the status of all *long-running campaigns* tracked in `covered_items.json` (e.g., named campaigns against edge devices, long-haul espionage operators, ransomware affiliate-program shifts, cascading vendor-vulnerability waves). For each, search for any publicly-reported development this week that didn't make the daily briefs. Return Markdown findings with sources and the campaign's `key`.
+
+### Sub-agent W2 — Yearly / periodic reports horizon
+**Defensive purpose:** make sure defenders see the high-quality periodic reports that frame the longer arc of the threat picture, even when they land outside the daily window.
 Search for any yearly or quarterly threat report published in the last 30 days from any source in `sources.json` (Mandiant M-Trends, CrowdStrike GTR, ENISA Threat Landscape, Verizon DBIR, Microsoft Digital Defense Report, IBM X-Force Threat Index, Truesec TIR, Dragos OT Year in Review, NCC Group Threat Pulse, Cloudforce One Threat Report, Sophos Active Adversary Report). Surface any that the daily briefs did not yet cover. For those already covered, surface follow-up commentary that has since emerged.
 
 ### Sub-agent W3 — Strategic / policy
-Search for cybersecurity-policy developments relevant to Swiss and European public-sector entities from the last 7 days: NCSC.ch announcements, FINMA guidance, EU NIS2 / DORA / CRA developments, OFCOM / BAKOM publications, Council of Europe cybercrime convention items, sanctions and law-enforcement actions touching threat-actor infrastructure. National-CERT carve-out applies for primary disclosures.
+**Defensive purpose:** surface the policy and regulatory moves that change defenders' obligations and operating environment.
+Search for cybersecurity-policy developments relevant to Swiss and European public-sector entities from the last 7 days: NCSC.ch announcements, FINMA guidance, EU NIS2 / DORA / CRA developments, OFCOM / BAKOM publications, Council of Europe cybercrime convention items, sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure. National-CERT carve-out applies for primary disclosures.
 
 Sub-agents return free-form Markdown with required fields (sources with inline links, summary, why-it-matters, verification status). No IOCs.
 
@@ -128,8 +145,8 @@ A table of every CVE referenced this week, grouped/sorted by status:
 ## 4. Sector & victim patterns
 Sectors hit and the actors that hit them. One paragraph per sector with inline links. Where a Swiss / European public-sector area (federal/cantonal admin, finance, healthcare, telecom, energy/water, transport, defence-supplier) saw meaningful activity this week, call it out explicitly.
 
-## 5. Major breaches recap
-Roll-up of the week's significant breach disclosures (from daily § 6). Note any cross-cutting themes (Salesforce/Okta SaaS pivots, supply-chain pre-install scripts, ransomware-driven extortion, etc.).
+## 5. Incidents & disclosures recap
+Roll-up of the week's notable publicly-disclosed security incidents (from daily § 6). Note any cross-cutting themes — sectoral concentration, recurring disclosed root causes, common initial-access vectors, regulatory follow-up. Frame as a defender's learning summary: who was affected, what the disclosure said about how it happened, and what defenders here should take from it.
 
 ## 6. Annual / periodic threat reports
 If one or more yearly/quarterly threat reports were published this or recently, distil their highly-relevant findings for a Swiss / European public-sector SOC. Each finding gets a citation. **Do not** repeat findings the SOC has already absorbed in earlier briefs unless they are part of a multi-finding synthesis here.

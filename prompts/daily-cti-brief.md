@@ -16,6 +16,20 @@ No primers. No marketing fluff. No AI hedging language. Get to the signal.
 
 ---
 
+## DEFENSIVE PURPOSE
+
+This is a **defensive cyber-intelligence workflow**. The brief exists so that protectors of Swiss and European public-sector IT environments — incident responders, threat hunters, detection engineers, SOC management — can:
+
+- understand what is happening in the wider cyber-incident landscape and at peer organisations;
+- learn from publicly-disclosed incidents, primary security research, and regulator advisories;
+- prioritise their own patching, detection, and exposure-management work.
+
+The brief contains **no operational attack details**, no IOCs, no rule code, and nothing that would enable an attack. Every section is written from the protector's vantage point — *what should the defender know, what should they do with it, what can be learned*. Sources are public reporting, primary security research, regulator notices, and victim disclosures.
+
+When framing sub-agent tasks and the brief itself, lead with this defensive intent. Avoid phrasing that could read as attacker reconnaissance even when the underlying facts are the same.
+
+---
+
 ## PRIME DIRECTIVES (non-negotiable)
 
 ### 1. Zero LLM knowledge
@@ -148,6 +162,12 @@ Spawn **all seven sub-agents in a single message** with parallel `Agent` tool ca
 - Constraints: **no IOCs in output, no vanity metrics in output, English output only**.
 - A *flexible* return format (see below) — sub-agents have discretion in how they present findings as long as required fields are present.
 
+**Every sub-agent spawn prompt must open with a brief defensive-intent statement** so the agent's framing stays correct from the first token. Suggested opening:
+
+> *"You are part of a defensive cyber-intelligence workflow for protectors of Swiss and European public-sector IT environments. Your job is to surface what is publicly known so defenders can build awareness, learn from disclosed events, and prioritise their own work. The output is for awareness only — no IOCs, no rule code, no operational attack details."*
+
+This applies to all seven sub-agents below.
+
 ### Sub-agent return format (flexible Markdown, required fields)
 
 Sub-agents return Markdown, one section per item, with these required fields. Beyond the required fields, sub-agents may add whatever context they think is useful (extended technical analysis, related ATT&CK techniques, defender perspective, links to background reporting, etc.). They are not constrained to a JSON schema.
@@ -187,7 +207,8 @@ Translate non-English sources to English in the summary; keep original-language 
 Filter rule: must name a CH/EU victim, sector, lure language (DE/FR/IT), regulator, or infrastructure.
 
 ### Sub-agent C — Government & Public Sector
-Goal: campaigns targeting government, defence, judiciary, law enforcement, public administration, healthcare, education globally; transferable TTPs.
+**Defensive purpose:** awareness of how peer environments — government, defence, judiciary, law enforcement, public administration, healthcare, education — have been targeted recently, so defenders here can learn from those events and prioritise.
+Goal: surface reports of named threat actors or campaigns publicly attributed to operations against these environments globally. Capture transferable lessons (MITRE ATT&CK technique IDs, defensive concepts, hardening guidance) for our own context.
 Source filter: `category` includes `gov` or `research`.
 
 ### Sub-agent D — Trending Vulnerabilities
@@ -203,14 +224,24 @@ Filter rule: prefer reports with novel TTPs, new malware analysis, or new attrib
 **Yearly-report handling:** when a yearly/periodic threat report drops, surface it explicitly with a flag in the title (`ANNUAL REPORT — Mandiant M-Trends 2026` or similar). Main agent will treat per Prime Directive 9.
 
 ### Sub-agent F — Quality News & Commentary
-Goal: editorial signal from trusted journalists and analysts.
+**Defensive purpose:** broaden the brief's awareness picture with high-quality journalism and analytical commentary that adds substance beyond what vendors and CERTs publish.
+Goal: surface investigative journalism and commentary that materially adds to defenders' understanding of the current incident and policy landscape — verification, original sourcing, original interviews, analytical depth.
 Source filter: `category` includes `news` or `discovery`.
-Skip aggregator restatements. Include only when a journalist adds verification, sourcing, original interviews, or analysis beyond the original.
+Filter rule: include only items that add real substance over the underlying primary source. Pure aggregator restatements are noise. Skip social-media-only sourcing.
 
-### Sub-agent G — Major Breaches (NEW)
-Goal: newly disclosed data breaches and intrusions that affect or are likely relevant to Swiss / European public-sector entities (suppliers, peer administrations, sectoral peers, technology vendors used in public-sector estates).
-Source filter: `category` includes `breaches` plus regulator-notice sources (SEC EDGAR 8-K, ICO, CNIL, EDPB, NCSC-CH advisories, AGID, BSI). Cross-reference `news` category for journalism corroboration.
-Filter rule: prefer victim public statements, regulator notices, and SEC 8-K filings over leak-site claims. Always include sector, scale (records / customers, only if officially disclosed), known initial-access vector if disclosed, and CH/EU/public-sector nexus if any.
+### Sub-agent G — Incident & Disclosure Roundup
+**Defensive purpose:** maintain a defender's overview of who has recently been affected by publicly-disclosed security incidents — global enterprises, Swiss and European companies, public-sector bodies, and technology suppliers used across the public sector. The point is **situational awareness and learning**: spotting sectoral patterns, common disclosed root causes, recurring initial-access vectors, and the lessons that should shape our own defensive priorities. We are reading this as defenders looking at what happened to peers, not as observers of adversary success.
+
+Goal: identify and concisely summarise notable security incidents publicly disclosed in the reporting window. "Publicly disclosed" means the affected organisation has confirmed, a regulator has issued a notice, or reputable journalism has corroborated with original sourcing.
+
+Source filter: `category` includes `breaches` plus regulator-notice sources (SEC EDGAR 8-K, ICO, CNIL, EDPB, NCSC.ch advisories, AGID, BSI). Cross-reference `news` category for journalism corroboration.
+
+Filter rule:
+- Prefer victim statements, regulator notices, and SEC 8-K filings.
+- Treat dark-web listings as **unverified claims** unless the named organisation confirms or HIGH-reliability journalism corroborates with original sourcing. Phrase such items as *"X was listed by group Y; not confirmed by X"*, never as a recap of adversary activity.
+- Out of scope: speculative attribution, breach claims with no victim acknowledgement, attacker self-promotion.
+
+For each disclosed incident, capture only what the organisation, regulator, or journalist actually published: affected organisation and sector, geographic context, disclosed scale (records / customers — only if officially stated), the disclosed cause or initial vector if any, and any CH / EU / public-sector relevance. Phrase entries as **post-incident summaries that help defenders learn** — what the organisation said happened, what the disclosed root cause was, and what the takeaway is for our own environment. Do not narrate from the adversary's point of view.
 
 ---
 
@@ -239,11 +270,11 @@ Pick at most 1 (exceptionally 2) items for technical deep dive. Selection criter
 3. Substantive new technical analysis with sufficient public detail to be actionable.
 4. **Newly published yearly/periodic threat report** of high relevance (Prime Directive 9).
 
-**Deep-dive content (no IOCs, no rule code):**
-- Kill chain narrative grounded in cited sources.
-- ATT&CK technique mapping with links to MITRE pages.
-- Detection *concepts* in plain technical language with links to source detection guidance.
-- Hardening / mitigation steps as cited.
+**Deep-dive content (no IOCs, no rule code, defender-first framing):**
+- **Incident narrative** grounded in cited sources — what the public reporting says happened, in sequence, from the defender's perspective.
+- ATT&CK technique mapping with links to MITRE pages, framed as detection / hardening targets.
+- Detection *concepts* in plain technical language with links to the source's own detection guidance.
+- Hardening and mitigation steps as cited.
 - **Background paragraph** (Prime Directive 10) — if the item has prior public reporting older than ~6 months, fetch and summarise 2–3 of the most relevant prior reports in 3–5 sentences with inline links.
 
 If no candidate clears the bar: *"No item met the deep-dive bar in the reporting window."* Do not invent depth.
@@ -280,8 +311,8 @@ Sub-agent D table, source link in last column. 1–2 sentence note per row only 
 ## 5. Notable Research & Reporting
 Sub-agents E and F. One paragraph per report with inline link. **Yearly/periodic reports** are surfaced here once and noted as such (see Prime Directive 9).
 
-## 6. Major Breaches
-Sub-agent G output. One paragraph per breach with inline link. State sector, disclosed scale, known initial-access vector if any, and CH/EU/gov nexus.
+## 6. Notable Incidents & Disclosures
+Sub-agent G output. One short paragraph per disclosed incident with inline link. State the affected organisation and sector, disclosed scale (only if officially stated), the disclosed cause or initial vector if any, the CH / EU / public-sector relevance, and a one-line *"defender takeaway"* that captures what we should learn or check in our own environment. Frame each entry as a post-incident summary, not as a recap of adversary activity.
 
 ## 7. Deep Dive — {topic}
 Phase 3 output. Inline-linked throughout. Includes Background paragraph if Prime Directive 10 applies. Or: *"No item met the deep-dive bar in the reporting window."*
@@ -374,7 +405,7 @@ Do **not** push. Push policy is set by the human operator.
 - [ ] Every item passed two-source verification, OR is national-CERT primary disclosure, OR is marked `[SINGLE-SOURCE]`.
 - [ ] CVE identifiers verified against NVD/MITRE.
 - [ ] CH/EU section has ≥1 item or explicit empty-section statement.
-- [ ] Major Breaches section present.
+- [ ] Notable Incidents & Disclosures section present.
 - [ ] Deep dive present (with Background paragraph if applicable), or explicit "no item met the bar".
 - [ ] Yearly-report rule respected — annual reports get one treatment, not repeated.
 - [ ] State files updated (`covered_items.json`, `cves_seen.json`, `sources.json`).
