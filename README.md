@@ -54,7 +54,7 @@ A scheduled Claude Code routine fires once per day. It is given exactly one inst
 The agent walks through:
 
 1. **Phase 0 — Preflight**: load source list, last 7 days of briefs, state files.
-2. **Phase 1 — Parallel research**: spawn **seven** sub-agents in parallel — Active & Breaking, CH/EU, Government & Public Sector, Trending Vulnerabilities, Vendor & Independent Research, Quality News, **Incident & Disclosure Roundup**. No token cap on sub-agents. Sub-agents return flexible Markdown with required fields. Each spawn prompt opens with a defensive-intent statement.
+2. **Phase 1 — Parallel research**: spawn **four** sub-agents in parallel with cleanly partitioned source categories — (1) Active Threats & Trending Vulnerabilities, (2) Switzerland, Europe & Public Sector, (3) Research & Investigative Reporting, (4) Incidents & Disclosures. No token cap. Sub-agents return flexible Markdown with required fields. Each spawn prompt opens with a defensive-intent statement.
 3. **Phase 2 — Verification**: re-fetch primaries, enforce two-source / national-CERT rule, drop already-covered items, surface contradictions.
 4. **Phase 3 — Deep-dive selection**: at most 1–2 items.
 5. **Phase 4 — Compose**: write `briefs/YYYY-MM-DD.md` with sections 0–9.

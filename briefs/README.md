@@ -7,28 +7,27 @@ One Markdown file per day, named `YYYY-MM-DD.md`. Each brief is the canonical op
 ```
 # CTI Daily Brief — YYYY-MM-DD
 
-**Audience:** SOC Tier 2/3, IR, Threat Hunting · **Classification:** TLP:CLEAR
+> AI-generated content notice + Generated-by metadata line
 
 ## 0. TL;DR
-## 1. Active & Breaking
-## 2. Switzerland & Europe Focus
-## 3. Government & Public Sector Threat Activity
-## 4. Trending Vulnerabilities
-## 5. Notable Research & Reporting
-## 6. Deep Dive — {topic}
-## 7. Updates to Prior Coverage
-## 8. Verification Notes
+## 1. Active Threats & Trending Vulnerabilities
+## 2. Switzerland, Europe & Public Sector
+## 3. Notable Incidents & Disclosures
+## 4. Research & Investigative Reporting
+## 5. Deep Dive — {topic}
+## 6. Updates to Prior Coverage
+## 7. Verification Notes
 ```
 
-The full structure and per-section conventions are defined in [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md), Phase 4.
+The full structure and per-section conventions are defined in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md), Phase 4.
 
 ## Rules
 
 - **Inline links only.** Every claim is followed by `([Publisher, YYYY-MM-DD](URL))` immediately. There is no bibliography section.
 - **No IOCs.** No file hashes, no IP addresses, no attacker domains/URLs, no detection rule code.
 - **No vanity metrics.** No dwell time, breakout time, %-YoY counts, "X new adversaries tracked", "$Y billion in damage".
-- **Empty-section discipline.** Sections with no qualifying items state so explicitly (`*No qualifying CH/EU-specific items in the reporting window.*`).
-- **Updates only when material.** Items from the last 5 briefs do not reappear unless under § 7 with a delta and the original date.
+- **Empty-section discipline.** Sections with no qualifying items state so explicitly (`*No qualifying CH/EU or public-sector items in the reporting window.*`).
+- **Updates only when material.** Items from the last 7 briefs do not reappear unless under § 6 with a delta and the original date.
 - **Source dates** appear inside the link text (`[Publisher, 2026-05-04](...)`), so a reader can judge recency without clicking.
 
 ## AI-generated content

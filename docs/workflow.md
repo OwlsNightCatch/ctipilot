@@ -41,26 +41,24 @@ If any read fails, the agent surfaces the error and stops; it does not silently 
 
 ---
 
-## 3. Phase 1 — Parallel research (seven sub-agents)
+## 3. Phase 1 — Parallel research (four sub-agents)
 
-In a single message, the agent spawns seven `Agent` tool calls in parallel:
+In a single message, the agent spawns four `Agent` tool calls in parallel. The four-agent design (down from seven in earlier versions) trims per-run LLM load to avoid stream-timeout / rate-limit pressure while keeping the same coverage. Source categories are partitioned cleanly so no two sub-agents touch the same source for the same purpose.
 
-| Sub-agent | Scope | Source filter |
+| Sub-agent | Scope | Source categories |
 |---|---|---|
-| A. Active & Breaking | Last 24–72 h ITW exploitation, emergency advisories | `active-breaking` |
-| B. Switzerland & Europe | CH/EU nexus only | `ch-eu` |
-| C. Government & Public Sector | Gov-targeting / state-linked, transferable TTPs | `gov` + `research` |
-| D. Trending Vulnerabilities | KEV / PoC / new vendor advisories | `vulns` |
-| E. Vendor & Independent Research | Last 7 days substantive technical reports + new yearly reports | `research` |
-| F. Quality News & Commentary | Editorial signal | `news` + `discovery` |
-| G. Incident & Disclosure Roundup | Publicly-disclosed security incidents; regulator notices | `breaches` + `news` |
+| 1. Active Threats & Trending Vulnerabilities | ITW exploitation, emergency advisories, KEV/PoC/CVE table | `active-breaking`, `vulns` |
+| 2. Switzerland, Europe & Public Sector | CH/EU nexus + global public-sector targeting | `ch-eu`, `gov` |
+| 3. Research & Investigative Reporting | Vendor research, journalism, annual reports | `research`, `news`, `discovery` |
+| 4. Incidents & Disclosures | Publicly-disclosed incidents, regulator notices | `breaches` (+ `news` for corroboration) |
 
 Each receives:
 - Its category-filtered subset of `sources.json`.
 - The deduplication context from Phase 0.
 - Today's date and the recency window.
 - Constraints: **no IOCs, no vanity metrics, English output**.
-- A *flexible* return format — Markdown with required fields (sources, summary, CH/EU nexus, gov nexus, CVEs, actors, verification status, novelty). Sub-agents may add extended context. **No token cap.**
+- A *flexible* return format — Markdown with required fields (sources, summary, CH/EU nexus, public-sector nexus, sector, CVEs, actors, verification status, confidence, novelty). Sub-agents may add extended context. **No token cap.**
+- A spawn-prompt opening that leads with defensive intent.
 
 Sub-agents that find nothing return an empty list with a one-line note.
 
@@ -202,10 +200,9 @@ The agent then:
 
 1. **Phase 0 — Preflight.** Compute current ISO week. Read every daily brief in the 7-day window plus the previous weekly summary (for continuity). Read state files and source list.
 2. **Phase 1 — Structured review.** Build five working lists from the daily briefs: top items, multi-day campaigns, CVE roll-up, sector/victim patterns, yearly reports.
-3. **Phase 2 — Horizon research.** Spawn three sub-agents in parallel:
-    - **W1** Long-horizon campaign status check (Salt Typhoon, Volt Typhoon, BRICKSTORM, Forest Blizzard, Akira/SonicWall, Ivanti waves, etc.).
-    - **W2** Yearly / quarterly threat reports published in the last 30 days that the daily briefs did not yet cover.
-    - **W3** Cybersecurity policy and regulatory developments relevant to Swiss and European public-sector entities.
+3. **Phase 2 — Horizon research.** Spawn two sub-agents in parallel:
+    - **W1** Long-horizon ongoing developments — combines a status check on long-running publicly-tracked campaigns with the periodic / annual threat reports published in the last 30 days that the daily briefs did not yet cover.
+    - **W2** Strategic & policy horizon — cybersecurity-policy and regulatory developments relevant to Swiss and European public-sector entities.
 4. **Phase 3 — Compose.** Write `briefs/weekly/YYYY-Www.md` with sections 0–10 (Week at a glance, Top stories, Multi-day chains, Vulnerability roll-up table, Sector & victim patterns, Incidents & disclosures recap, Annual/periodic reports, Long-running campaigns status, Policy & regulatory horizon, Looking ahead, Verification & coverage notes).
 5. **Phase 4 — State update.** Append `weekly_summary` appearance records to `covered_items.json`; update `cves_seen.json` `last_seen` for any CVE referenced; maintain `sources.json`.
 6. **Phase 5 — Commit.**

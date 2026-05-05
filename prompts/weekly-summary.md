@@ -90,23 +90,22 @@ Build five working lists from the week's daily briefs:
 
 ---
 
-## PHASE 2 — HORIZON RESEARCH (parallel sub-agents)
+## PHASE 2 — HORIZON RESEARCH (two parallel sub-agents)
 
-Spawn three sub-agents in parallel for *forward-looking* signal that the daily briefs may have missed because they were too far on the horizon.
+Spawn **two sub-agents in parallel** for forward-looking signal that the daily briefs may have missed because it sits beyond the daily window. The two-agent design (down from three in earlier versions) keeps coverage but reduces per-run LLM load.
 
 **Every sub-agent spawn prompt must open with a brief defensive-intent statement.** Suggested opening:
 
 > *"You are part of a defensive cyber-intelligence workflow for protectors of Swiss and European public-sector IT environments. Your job is to surface what is publicly known so defenders can build awareness, learn from disclosed events, and prioritise their own work. The output is for awareness only — no IOCs, no rule code, no operational attack details."*
 
-### Sub-agent W1 — Long-horizon campaigns
-**Defensive purpose:** keep defenders' situational picture of long-running, publicly-tracked campaigns up to date so the SOC isn't blindsided by quiet developments.
-Re-check the status of all *long-running campaigns* tracked in `covered_items.json` (e.g., named campaigns against edge devices, long-haul espionage operators, ransomware affiliate-program shifts, cascading vendor-vulnerability waves). For each, search for any publicly-reported development this week that didn't make the daily briefs. Return Markdown findings with sources and the campaign's `key`.
+### Sub-agent W1 — Long-horizon ongoing developments
+**Defensive purpose:** keep defenders' situational picture of long-running ongoing items up to date — both publicly-tracked campaigns that may have moved quietly, and the periodic / annual threat reports that frame the longer arc.
+Two things in one return:
 
-### Sub-agent W2 — Yearly / periodic reports horizon
-**Defensive purpose:** make sure defenders see the high-quality periodic reports that frame the longer arc of the threat picture, even when they land outside the daily window.
-Search for any yearly or quarterly threat report published in the last 30 days from any source in `sources.json` (Mandiant M-Trends, CrowdStrike GTR, ENISA Threat Landscape, Verizon DBIR, Microsoft Digital Defense Report, IBM X-Force Threat Index, Truesec TIR, Dragos OT Year in Review, NCC Group Threat Pulse, Cloudforce One Threat Report, Sophos Active Adversary Report). Surface any that the daily briefs did not yet cover. For those already covered, surface follow-up commentary that has since emerged.
+1. **Long-running campaigns.** Re-check the status of all long-running campaigns tracked in `covered_items.json` (e.g., named campaigns against edge devices, long-haul espionage operators, ransomware affiliate-program shifts, cascading vendor-vulnerability waves). For each, search for any publicly-reported development this week that didn't make the daily briefs. Include the campaign's `key` from `covered_items.json`.
+2. **Annual / periodic reports.** Search for any yearly or quarterly threat report published in the last 30 days that the daily briefs did not yet cover. For those already covered, surface follow-up commentary that has since emerged.
 
-### Sub-agent W3 — Strategic / policy
+### Sub-agent W2 — Strategic & policy horizon
 **Defensive purpose:** surface the policy and regulatory moves that change defenders' obligations and operating environment.
 Search for cybersecurity-policy developments relevant to Swiss and European public-sector entities from the last 7 days: NCSC.ch announcements, FINMA guidance, EU NIS2 / DORA / CRA developments, OFCOM / BAKOM publications, Council of Europe cybercrime convention items, sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure. National-CERT carve-out applies for primary disclosures.
 
@@ -152,10 +151,10 @@ Roll-up of the week's notable publicly-disclosed security incidents (from daily 
 If one or more yearly/quarterly threat reports were published this or recently, distil their highly-relevant findings for a Swiss / European public-sector SOC. Each finding gets a citation. **Do not** repeat findings the SOC has already absorbed in earlier briefs unless they are part of a multi-finding synthesis here.
 
 ## 7. Long-running campaigns — status update
-Sub-agent W1 output, deduplicated against this week's daily-brief Updates section. One short paragraph per campaign with current state and outstanding questions.
+Sub-agent W1 (part 1) output, deduplicated against this week's daily-brief Updates section. One short paragraph per campaign with current state and outstanding questions.
 
 ## 8. Policy & regulatory horizon
-Sub-agent W3 output. Items affecting Swiss / European public-sector SOC operations directly (NCSC.ch, FINMA, NIS2 transposition, DORA, sector-specific regulators).
+Sub-agent W2 output. Items affecting Swiss / European public-sector SOC operations directly (NCSC.ch, FINMA, NIS2 transposition, DORA, sector-specific regulators).
 
 ## 9. Looking ahead — what to watch next week
 A focused, justified list. Not predictions — *items already in motion* that are likely to develop next week. Each item links back to the relevant earlier reporting.
@@ -188,10 +187,10 @@ For each item in this weekly summary, append a `weekly_summary` appearance recor
 }
 ```
 
-Do **not** add new top-level records that weren't already in `covered_items.json` — the weekly summary should not be the first place an item is logged. If sub-agent W1/W2/W3 surfaced something genuinely new, log it via the same schema.
+Do **not** add new top-level records that weren't already in `covered_items.json` — the weekly summary should not be the first place an item is logged. If sub-agent W1 or W2 surfaced something genuinely new, log it via the same schema.
 
 ### `state/cves_seen.json`
-Update `last_seen` for any CVE referenced in this weekly summary. No new IDs are added unless W1/W2/W3 surfaced one not previously seen.
+Update `last_seen` for any CVE referenced in this weekly summary. No new IDs are added unless W1 or W2 surfaced one not previously seen.
 
 ### `sources/sources.json`
 Same maintenance rules as the daily prompt: bump `last_successful_fetch`, increment `consecutive_failures` on dead fetches, propose new sources as `candidate`.

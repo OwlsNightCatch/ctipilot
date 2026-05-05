@@ -4,6 +4,35 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.2 — 2026-05-05
+
+### Changed
+- **Daily sub-agents reduced from 7 to 4** with cleanly-partitioned source categories. The new four are:
+    1. Active Threats & Trending Vulnerabilities (was A + D)
+    2. Switzerland, Europe & Public Sector (was B + C)
+    3. Research & Investigative Reporting (was E + F)
+    4. Incidents & Disclosures (was G)
+  Each source category belongs to exactly one sub-agent's filter, so no two agents touch the same source for the same purpose. Goal: cut per-run LLM load to avoid stream-timeout and rate-limit failures, while keeping coverage.
+- **Daily brief output sections reduced from 10 to 8** to match the four-agent layout. New sections 0–7: TL;DR, Active Threats & Trending Vulnerabilities (with embedded vuln table as part 1b), Switzerland Europe & Public Sector, Notable Incidents & Disclosures, Research & Investigative Reporting, Deep Dive, Updates to Prior Coverage, Verification Notes.
+- **Weekly horizon sub-agents reduced from 3 to 2.** W1 now combines long-running-campaign status checks with the annual / periodic-report horizon (both are "ongoing items beyond the daily window"). W2 keeps the strategic / policy horizon. The composed weekly summary's section list is unchanged.
+- Quality gates and `Phase 5 — STATE UPDATE` `section` enum aligned to the new section names.
+
+### Source list updates
+- `cisa-kev` URL unchanged (`https://www.cisa.gov/known-exploited-vulnerabilities-catalog`).
+- `cisa-alerts` renamed to `cisa-advisories` (URL unchanged: `https://www.cisa.gov/news-events/cybersecurity-advisories`).
+- Added `cisa-news` (`https://www.cisa.gov/news-events/news`).
+- Added `cisa-directives` (`https://www.cisa.gov/news-events/directives`).
+- `shadowserver` URL updated to `https://www.shadowserver.org/news-insights/`.
+- `agid-csirt-it` renamed to `csirt-acn-it`, URL updated to `https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini`.
+- `prodaft` URL updated to `https://www.prodaft.com/reports`.
+- `ncsc-ch` split into two entries — `ncsc-ch-incidents` (`aktuelle-vorfaelle.html`) and `ncsc-ch-focus` (`im-fokus.html`); both German, with note to translate findings.
+- `ncsc-nl` removed (no news output available at the previous URL).
+
+### Why
+v2.1 runs were hitting "Stream idle timeout — partial response received" and Anthropic per-period usage limits when seven sub-agents ran in parallel and each did extensive WebFetch / WebSearch work. The four-agent design keeps the same scope under one tighter budget. The source-list updates align with the actual canonical pages of the publishers.
+
+---
+
 ## 2.1 — 2026-05-05
 
 ### Changed

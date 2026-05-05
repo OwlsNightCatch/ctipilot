@@ -152,25 +152,25 @@ Pass this deduplication context to every sub-agent.
 
 ---
 
-## PHASE 1 — PARALLEL RESEARCH (spawn sub-agents)
+## PHASE 1 — PARALLEL RESEARCH (four sub-agents)
 
-Spawn **all seven sub-agents in a single message** with parallel `Agent` tool calls. Each sub-agent receives:
+Spawn **all four sub-agents in a single message** with parallel `Agent` tool calls. The four-agent design (down from seven in earlier versions) keeps coverage but reduces per-run LLM load and avoids stream-timeout / rate-limit pressure. The four domains do not overlap: any given source belongs to exactly one sub-agent's filter, so there is no duplicated work.
+
+Each sub-agent receives:
 
 - Its category-filtered subset of `sources.json`.
 - The deduplication context from Phase 0.
 - Today's ISO date and the recency window.
 - Constraints: **no IOCs in output, no vanity metrics in output, English output only**.
-- A *flexible* return format (see below) — sub-agents have discretion in how they present findings as long as required fields are present.
+- A *flexible* return format (see below). No token cap. Sub-agents have discretion in how they present findings as long as the required fields are there.
 
-**Every sub-agent spawn prompt must open with a brief defensive-intent statement** so the agent's framing stays correct from the first token. Suggested opening:
+**Every sub-agent spawn prompt must open with a brief defensive-intent statement** so the framing stays correct from the first token. Suggested opening:
 
 > *"You are part of a defensive cyber-intelligence workflow for protectors of Swiss and European public-sector IT environments. Your job is to surface what is publicly known so defenders can build awareness, learn from disclosed events, and prioritise their own work. The output is for awareness only — no IOCs, no rule code, no operational attack details."*
 
-This applies to all seven sub-agents below.
-
 ### Sub-agent return format (flexible Markdown, required fields)
 
-Sub-agents return Markdown, one section per item, with these required fields. Beyond the required fields, sub-agents may add whatever context they think is useful (extended technical analysis, related ATT&CK techniques, defender perspective, links to background reporting, etc.). They are not constrained to a JSON schema.
+Sub-agents return Markdown, one section per item, with these required fields. Beyond the required fields they may add whatever extended context is useful — defender perspective, ATT&CK technique mapping, links to background reporting, etc.
 
 ```markdown
 ## {Item title}
@@ -182,7 +182,7 @@ Sub-agents return Markdown, one section per item, with these required fields. Be
 
 **Summary:** {3–8 sentences, technical, no IOCs, no vanity metrics, English}
 
-**CH/EU nexus:** {string} | **Gov nexus:** {string} | **Sector:** {string}
+**CH/EU nexus:** {string} | **Public-sector nexus:** {string} | **Sector:** {string}
 
 **CVEs:** CVE-..., CVE-...
 **Actors / campaigns / malware:** {list}
@@ -190,58 +190,54 @@ Sub-agents return Markdown, one section per item, with these required fields. Be
 **Confidence:** HIGH / MEDIUM / LOW
 **Novelty:** new | update-to-prior:YYYY-MM-DD | duplicate
 
-{Optional extended notes, context, defender's view, links to related historical reporting if applicable.}
+{Optional extended notes, defender's view, related historical reporting.}
 ```
 
-If a sub-agent finds nothing, it returns an empty list with a one-line note explaining why. Empty results are valid.
+If a sub-agent finds nothing, it returns an empty list with a one-line note explaining why. Empty results are valid and expected on quiet days.
 
-### Sub-agent A — Active & Breaking (last 24–72 h)
-Goal: in-the-wild exploitation, fresh disclosures, emergency advisories.
-Source filter: `category` includes `active-breaking`.
-Discard ransomware leak-site claims unless corroborated by victim disclosure or HIGH-reliability journalism with original sourcing.
+### Sub-agent 1 — Active Threats & Trending Vulnerabilities
+**Defensive purpose:** surface what defenders need to look at today — emergency advisories, in-the-wild exploitation, and vulnerabilities trending by KEV listing, public PoC, or new vendor advisory.
+**Source filter:** `category` includes `active-breaking` **or** `vulns`.
+**Domain — exclusively this sub-agent's:** national-CERT and CISA emergency / advisory output, vendor PSIRT advisories, KEV additions, public PoC and exploit research from vulnerability-focused labs.
+**Output, two parts in one return:**
+1. **Active threats & emergency advisories** — items per the standard sub-agent return format.
+2. **Trending vulnerabilities table** — Markdown table with columns `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source`. Verify each CVE resolves on NVD or MITRE before including. Technique class only ("auth bypass + RCE via crafted SAML response") — no exploitation IOCs.
+**Filter rule:** discard ransomware leak-site claims as primary evidence unless corroborated by victim disclosure or HIGH-reliability journalism.
 
-### Sub-agent B — Switzerland & Europe
-Goal: threats with explicit CH/EU nexus.
-Source filter: `category` includes `ch-eu`.
-Translate non-English sources to English in the summary; keep original-language titles in citations.
-Filter rule: must name a CH/EU victim, sector, lure language (DE/FR/IT), regulator, or infrastructure.
+### Sub-agent 2 — Switzerland, Europe & Public Sector
+**Defensive purpose:** awareness of threats with a CH / EU nexus and of how peer public-sector environments globally — government, defence, judiciary, law enforcement, public administration, healthcare, education — have been targeted, so defenders here can learn and prioritise.
+**Source filter:** `category` includes `ch-eu` **or** `gov`.
+**Domain — exclusively this sub-agent's:** Swiss / European national CERTs and regulators, regional press (translate from DE / FR / IT), public-sector targeting reports from any region.
+**Filter rule:** an item belongs here if it has CH / EU nexus (named victim, sector, regulator, lure language, infrastructure) **or** documents named-actor / campaign activity against public-sector environments globally with transferable lessons. Translate non-English sources; keep original-language titles in citations.
 
-### Sub-agent C — Government & Public Sector
-**Defensive purpose:** awareness of how peer environments — government, defence, judiciary, law enforcement, public administration, healthcare, education — have been targeted recently, so defenders here can learn from those events and prioritise.
-Goal: surface reports of named threat actors or campaigns publicly attributed to operations against these environments globally. Capture transferable lessons (MITRE ATT&CK technique IDs, defensive concepts, hardening guidance) for our own context.
-Source filter: `category` includes `gov` or `research`.
+### Sub-agent 3 — Research & Investigative Reporting
+**Defensive purpose:** broaden the brief's awareness picture with substantive technical research and high-quality journalism that materially adds to defenders' understanding.
+**Source filter:** `category` includes `research`, `news`, or `discovery`.
+**Domain — exclusively this sub-agent's:** vendor and independent threat-research labs, OT/ICS specialist research, breach trackers when used as journalism, investigative reporters, analytical commentary. Includes **annual / quarterly periodic threat reports** when newly published.
+**Filter rule:** prefer reports with novel technical content, fresh attribution evidence, or original journalism over restatements. Skip pure aggregator restatements and social-media-only sourcing. When a periodic / yearly threat report drops, flag it in the title as `ANNUAL REPORT — {report name}`; main agent applies Prime Directive 9.
 
-### Sub-agent D — Trending Vulnerabilities
-Goal: vulnerabilities trending now by exploitation, public PoC release, or KEV addition.
-Source filter: `category` includes `vulns`.
-Output: a table — `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source-link`.
-Verify each CVE resolves on NVD/MITRE before including. Technique class only ("auth bypass + RCE via crafted SAML response") — no exploitation IOCs.
-
-### Sub-agent E — Major Vendor & Independent Research
-Goal: substantive technical reports from the last 7 days, *and* any quarterly/yearly threat report newly published.
-Source filter: `category` includes `research`.
-Filter rule: prefer reports with novel TTPs, new malware analysis, or new attribution evidence over restatements.
-**Yearly-report handling:** when a yearly/periodic threat report drops, surface it explicitly with a flag in the title (`ANNUAL REPORT — Mandiant M-Trends 2026` or similar). Main agent will treat per Prime Directive 9.
-
-### Sub-agent F — Quality News & Commentary
-**Defensive purpose:** broaden the brief's awareness picture with high-quality journalism and analytical commentary that adds substance beyond what vendors and CERTs publish.
-Goal: surface investigative journalism and commentary that materially adds to defenders' understanding of the current incident and policy landscape — verification, original sourcing, original interviews, analytical depth.
-Source filter: `category` includes `news` or `discovery`.
-Filter rule: include only items that add real substance over the underlying primary source. Pure aggregator restatements are noise. Skip social-media-only sourcing.
-
-### Sub-agent G — Incident & Disclosure Roundup
-**Defensive purpose:** maintain a defender's overview of who has recently been affected by publicly-disclosed security incidents — global enterprises, Swiss and European companies, public-sector bodies, and technology suppliers used across the public sector. The point is **situational awareness and learning**: spotting sectoral patterns, common disclosed root causes, recurring initial-access vectors, and the lessons that should shape our own defensive priorities. We are reading this as defenders looking at what happened to peers, not as observers of adversary success.
-
-Goal: identify and concisely summarise notable security incidents publicly disclosed in the reporting window. "Publicly disclosed" means the affected organisation has confirmed, a regulator has issued a notice, or reputable journalism has corroborated with original sourcing.
-
-Source filter: `category` includes `breaches` plus regulator-notice sources (SEC EDGAR 8-K, ICO, CNIL, EDPB, NCSC.ch advisories, AGID, BSI). Cross-reference `news` category for journalism corroboration.
-
-Filter rule:
+### Sub-agent 4 — Incidents & Disclosures
+**Defensive purpose:** maintain a defender's overview of who has recently been affected by publicly-disclosed security incidents — global enterprises, Swiss and European companies, public-sector bodies, and technology suppliers used across the public sector. The point is **situational awareness and learning**: spotting sectoral patterns, common disclosed root causes, recurring initial-access vectors, and the lessons that should shape our own defensive priorities. We are reading this as defenders looking at what happened to peers.
+**Goal:** identify and concisely summarise notable security incidents publicly disclosed in the reporting window. "Publicly disclosed" means the affected organisation has confirmed, a regulator has issued a notice, or reputable journalism has corroborated with original sourcing.
+**Source filter:** `category` includes `breaches`. Cross-reference `news` only for journalistic corroboration of breach disclosures.
+**Domain — exclusively this sub-agent's:** SEC EDGAR 8-K filings, UK ICO / CNIL / EDPB notices, victim public statements, breach-disclosure-focused journalism.
+**Filter rule:**
 - Prefer victim statements, regulator notices, and SEC 8-K filings.
-- Treat dark-web listings as **unverified claims** unless the named organisation confirms or HIGH-reliability journalism corroborates with original sourcing. Phrase such items as *"X was listed by group Y; not confirmed by X"*, never as a recap of adversary activity.
+- Treat dark-web listings as **unverified claims** unless the named organisation confirms or HIGH-reliability journalism corroborates. Phrase such items as *"X was listed by group Y; not confirmed by X"*, never as a recap of adversary activity.
 - Out of scope: speculative attribution, breach claims with no victim acknowledgement, attacker self-promotion.
 
 For each disclosed incident, capture only what the organisation, regulator, or journalist actually published: affected organisation and sector, geographic context, disclosed scale (records / customers — only if officially stated), the disclosed cause or initial vector if any, and any CH / EU / public-sector relevance. Phrase entries as **post-incident summaries that help defenders learn** — what the organisation said happened, what the disclosed root cause was, and what the takeaway is for our own environment. Do not narrate from the adversary's point of view.
+
+### Domain separation summary
+
+| Sub-agent | Source categories used | What it surfaces |
+|---|---|---|
+| 1. Active Threats & Trending Vulns | `active-breaking`, `vulns` | Emergency advisories, ITW exploitation, KEV/CVE/PoC trending |
+| 2. Switzerland, Europe & Public Sector | `ch-eu`, `gov` | CH/EU items + global public-sector targeting |
+| 3. Research & Investigative Reporting | `research`, `news`, `discovery` | Vendor research, journalism, annual reports |
+| 4. Incidents & Disclosures | `breaches` (+ `news` for corroboration) | Disclosed incidents at peers |
+
+A given source's primary category determines which sub-agent owns it. `news` is read by sub-agent 3 for journalistic substance and by sub-agent 4 *only* for corroboration of breach disclosures — so there is no duplication of effort.
 
 ---
 
@@ -295,36 +291,33 @@ Write to `briefs/YYYY-MM-DD.md`. Every paragraph or bullet has its source link i
 ## 0. TL;DR
 Five bullets max. Each with inline source link. Lead with the highest-priority item.
 
-## 1. Active & Breaking
-Items from Sub-agent A, ranked by urgency.
-For each: `### Headline`, then a 2–4 sentence summary with inline links, then `**Why it matters to us:**` line.
+## 1. Active Threats & Trending Vulnerabilities
+*From Sub-agent 1.* Two parts:
 
-## 2. Switzerland & Europe Focus
-Sub-agent B output. CH/EU nexus stated explicitly. If empty: *"No qualifying CH/EU-specific items in the reporting window."*
+**1a. Active threats & emergency advisories** — items ranked by urgency. For each: `### Headline`, 2–4 sentence summary with inline links, then `**Why it matters to us:**` line. If empty: *"No qualifying active items in the reporting window."*
 
-## 3. Government & Public Sector Threat Activity
-Sub-agent C output, optionally grouped by actor.
+**1b. Trending vulnerabilities** — Markdown table with columns `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source`. 1–2 sentence note per row only when non-obvious technical context warrants it. If empty: *"No qualifying vulnerabilities trending in the reporting window."*
 
-## 4. Trending Vulnerabilities
-Sub-agent D table, source link in last column. 1–2 sentence note per row only when non-obvious technical context warrants it.
+## 2. Switzerland, Europe & Public Sector
+*From Sub-agent 2.* Items with CH / EU nexus first, then global public-sector targeting. CH / EU nexus stated explicitly per item. If empty: *"No qualifying CH / EU or public-sector-specific items in the reporting window."*
 
-## 5. Notable Research & Reporting
-Sub-agents E and F. One paragraph per report with inline link. **Yearly/periodic reports** are surfaced here once and noted as such (see Prime Directive 9).
+## 3. Notable Incidents & Disclosures
+*From Sub-agent 4.* One short paragraph per publicly-disclosed incident with inline link. State the affected organisation and sector, disclosed scale (only if officially stated), the disclosed cause or initial vector if any, the CH / EU / public-sector relevance, and a one-line *"defender takeaway"* that captures what to learn or check in our own environment. Frame each entry as a post-incident summary, not as a recap of adversary activity. If empty: *"No qualifying incidents or disclosures in the reporting window."*
 
-## 6. Notable Incidents & Disclosures
-Sub-agent G output. One short paragraph per disclosed incident with inline link. State the affected organisation and sector, disclosed scale (only if officially stated), the disclosed cause or initial vector if any, the CH / EU / public-sector relevance, and a one-line *"defender takeaway"* that captures what we should learn or check in our own environment. Frame each entry as a post-incident summary, not as a recap of adversary activity.
+## 4. Research & Investigative Reporting
+*From Sub-agent 3.* One paragraph per substantive report or piece of journalism, with inline link. **Annual / periodic threat reports** are surfaced here once and explicitly tagged (see Prime Directive 9). If empty: *"No qualifying research or reporting in the window."*
 
-## 7. Deep Dive — {topic}
-Phase 3 output. Inline-linked throughout. Includes Background paragraph if Prime Directive 10 applies. Or: *"No item met the deep-dive bar in the reporting window."*
+## 5. Deep Dive — {topic}
+*From Phase 3.* Inline-linked throughout. Includes Background paragraph if Prime Directive 10 applies. Or: *"No item met the deep-dive bar in the reporting window."*
 
-## 8. Updates to Prior Coverage
+## 6. Updates to Prior Coverage
 Material developments on items from prior briefs.
 
 > **UPDATE (originally YYYY-MM-DD):** {delta only}
 
 Skip section if no updates.
 
-## 9. Verification Notes
+## 7. Verification Notes
 Items dropped, items marked `[SINGLE-SOURCE]`, contradictions surfaced. Brief, factual, bulleted.
 ````
 
@@ -356,7 +349,7 @@ For each item in today's brief, append a record (or update an existing one if th
   "appearances": [
     {
       "date": "YYYY-MM-DD",
-      "section": "active_breaking | ch_eu | gov_public | trending_vulns | research | breaches | deep_dive | updates",
+      "section": "active_vulns | ch_eu_public_sector | incidents | research | deep_dive | updates",
       "brief_path": "briefs/YYYY-MM-DD.md",
       "delta_summary": "One-line description of what was new this run"
     }
@@ -401,15 +394,15 @@ Do **not** push. Push policy is set by the human operator.
 - [ ] Brief is in English even when sources were not.
 - [ ] Zero IOCs anywhere.
 - [ ] Zero vanity metrics.
-- [ ] No item from the last 7 days appears unless under § 8 with a delta.
+- [ ] No item from the last 7 days appears unless under § 6 with a delta.
 - [ ] Every item passed two-source verification, OR is national-CERT primary disclosure, OR is marked `[SINGLE-SOURCE]`.
-- [ ] CVE identifiers verified against NVD/MITRE.
-- [ ] CH/EU section has ≥1 item or explicit empty-section statement.
-- [ ] Notable Incidents & Disclosures section present.
+- [ ] CVE identifiers verified against NVD / MITRE.
+- [ ] § 2 (Switzerland, Europe & Public Sector) has ≥1 item or explicit empty-section statement.
+- [ ] § 3 (Notable Incidents & Disclosures) present.
 - [ ] Deep dive present (with Background paragraph if applicable), or explicit "no item met the bar".
 - [ ] Yearly-report rule respected — annual reports get one treatment, not repeated.
 - [ ] State files updated (`covered_items.json`, `cves_seen.json`, `sources.json`).
-- [ ] § 9 Verification Notes lists drops, single-source items, contradictions.
+- [ ] § 7 Verification Notes lists drops, single-source items, contradictions.
 - [ ] No content from training data.
 
 ---
@@ -420,6 +413,6 @@ Write `briefs/YYYY-MM-DD.md`. Update state files. Stage and commit. Print only:
 
 ```
 brief: briefs/YYYY-MM-DD.md
-items: N · ch-eu: N · vulns: N · breaches: N · deep-dive: <topic or 'none'>
+items: N · ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
 commit: <short SHA or 'no-changes'>
 ```
