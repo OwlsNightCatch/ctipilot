@@ -59,7 +59,7 @@ The agent walks through:
 4. **Phase 3 — Deep-dive selection**: at most 1–2 items.
 5. **Phase 4 — Compose**: write `briefs/YYYY-MM-DD.md` with sections 0–9.
 6. **Phase 5 — State update**: append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose new sources as `candidate`.
-7. **Phase 6 — Commit**.
+7. **Phase 6 — Commit & push to `origin/main`** — every brief is published the moment it is generated. No review branch, no staging gate. Briefs are already AI-content-noticed and source-linked.
 
 Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
 
@@ -77,14 +77,19 @@ The weekly summary:
 
 Unlike the daily brief, the weekly summary **may repeat material** from the dailies — that is its consolidating purpose. Repetition is allowed; padding is not.
 
-## Maintaining the source list
+## Maintaining the source list and the CVE index
 
-`sources/sources.json` is intentionally append-mostly. The agent may:
-- Increment `last_successful_fetch` for sources used today.
-- Demote a source's `reliability` after three consecutive failed/empty fetches (`status: "demoted"`).
-- Propose new sources discovered during research as `status: "candidate"`.
+`sources/sources.json` is actively maintained by the routine on each run, and `state/cves_seen.json` is the flat fast-lookup CVE index.
 
-The agent **must not** remove sources or auto-promote candidates. Humans review demotions and candidate additions periodically (`git log -- sources/sources.json`).
+**Sources** — the agent may:
+- Bump `last_successful_fetch` for sources used today.
+- **Update a `url` in place** when a publisher has moved canonical location (CMS migration, restructured advisories index) and an equivalent page exists.
+- **Demote** a source's `reliability` (and set `status: "demoted"`) after three consecutive failed fetches with no working canonical URL probe.
+- **Propose** newly discovered high-quality sources with `status: "candidate"` for human review.
+
+The agent **must not** delete sources or auto-promote candidates. Humans review URL changes, demotions, and candidate additions periodically (`git log -- sources/sources.json`).
+
+**CVE index** — the agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE — i.e., a hallucinated identifier slipped past verification on a previous run). Removals are documented in the run's commit body so the audit trail is preserved in git history.
 
 The current list (~75 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
 

@@ -148,30 +148,34 @@ If the `key` already exists, the agent appends to its `appearances` and bumps `l
 
 ---
 
-## 8. Phase 6 — Commit
+## 8. Phase 6 — Commit and push
 
-The agent stages and commits only the touched files:
+The agent stages, commits, and **pushes to `origin/main`** in one go. Each brief is published the moment it is generated.
 
 ```bash
 git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json sources/sources.json
 git commit -m "brief: YYYY-MM-DD
 
-- ch-eu: N · vulns: N · breaches: N · research: N · deep dive: <topic or 'none'>
+- ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
+- sources: <URL updates / demotions / candidates>
+- cves: <new: N · updated: N · removed: N>
 "
+git push origin main
 ```
 
-The agent does **not** push. Push policy is set by the human operator (e.g. weekly review-and-push, or auto-push to a private mirror with branch protection).
+The push goes to whatever remote is configured for the repo (Path A in setup is the typical: `git@github.com:OwlsNightCatch/security-newsletter.git`). The routine never `--force`-pushes. If a push fails (transient auth or network), the commit stays local and the next run — or a manual `git push` — publishes it. There is no review branch and no human gate; the briefs are AI-content-noticed and source-linked already.
 
 ---
 
 ## 9. Phase 7 — Output
 
-The agent prints exactly three lines to the terminal:
+The agent prints exactly four lines to the terminal:
 
 ```
 brief: briefs/YYYY-MM-DD.md
-items: N · ch-eu: N · vulns: N · deep-dive: <topic or 'none'>
+items: N · ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
 commit: <short SHA or 'no-changes'>
+push: ok | failed (<reason>)
 ```
 
 Everything else is in the file.

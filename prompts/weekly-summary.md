@@ -190,22 +190,28 @@ For each item in this weekly summary, append a `weekly_summary` appearance recor
 Do **not** add new top-level records that weren't already in `covered_items.json` — the weekly summary should not be the first place an item is logged. If sub-agent W1 or W2 surfaced something genuinely new, log it via the same schema.
 
 ### `state/cves_seen.json`
-Update `last_seen` for any CVE referenced in this weekly summary. No new IDs are added unless W1 or W2 surfaced one not previously seen.
+Update `last_seen` for any CVE referenced in this weekly summary. No new IDs are added unless W1 or W2 surfaced one not previously seen — same active-maintenance rules as the daily prompt (correct titles / primary URLs when better, remove invalid entries).
 
 ### `sources/sources.json`
-Same maintenance rules as the daily prompt: bump `last_successful_fetch`, increment `consecutive_failures` on dead fetches, propose new sources as `candidate`.
+Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` on use; on repeated failures attempt a canonical-URL probe and update the `url` in place if the publisher moved; demote after 3 consecutive failures; propose new sources as `candidate`; **never delete**.
 
 ---
 
-## PHASE 5 — COMMIT
+## PHASE 5 — COMMIT & PUSH
+
+The weekly summary is published the moment it is generated, the same way as daily briefs. Commit and push to `origin/main` directly.
 
 ```bash
 git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json sources/sources.json
 git commit -m "weekly: YYYY-Www summary
 
-- top stories: N · multi-day chains: N · CVEs: N · breaches: N · annual reports: N
+- top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N
+- sources: <one line summary of any URL updates / demotions / candidates>
 "
+git push origin main
 ```
+
+If the push fails, surface the error in the operator output but keep the commit. Never `--force` push from the routine.
 
 ---
 
@@ -224,10 +230,11 @@ git commit -m "weekly: YYYY-Www summary
 
 ## OUTPUT
 
-Write `briefs/weekly/YYYY-Www.md`. Update state. Commit. Print only:
+Write `briefs/weekly/YYYY-Www.md`. Update state. Commit and push to `origin/main`. Print only:
 
 ```
 weekly: briefs/weekly/YYYY-Www.md
-top: N · chains: N · cves: N · breaches: N · annual-reports: N
+top: N · chains: N · cves: N · incidents: N · annual-reports: N
 commit: <short SHA>
+push: ok | failed (<reason>)
 ```

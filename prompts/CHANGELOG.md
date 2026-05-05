@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.3 — 2026-05-05
+
+### Changed
+- **Phase 6 renamed `COMMIT & PUSH`.** The routine now `git push origin main` after committing — every brief is published immediately. No review branch, no staging gate. Same for the weekly summary. Push failures do not roll back the commit; they are surfaced in operator output and a later run / manual push catches up. The routine never `--force`-pushes.
+- **Active source maintenance** — Phase 5's `sources/sources.json` rules are now stronger:
+    - Before demoting a source on 3 consecutive failures, the agent does **one canonical-URL probe** and updates the `url` in place if an equivalent page exists at the same publisher.
+    - When a clearly better URL is discovered for an already-listed publisher, the agent updates the `url` in place (keeping the `id` stable so historical state references remain valid).
+    - Every URL change is annotated with a dated note in the source's `notes` field and enumerated in the run's commit body.
+    - Sources still cannot be deleted — `demoted` is the soft-removal mechanism.
+- **Active CVE-index maintenance** — Phase 5's `state/cves_seen.json` rules are now stronger:
+    - On reuse of an already-known CVE today, the agent updates `title` if a better short title exists (e.g., a CVE got a public name) and `primary_source_url` if a clearly better authoritative source now exists.
+    - Records that turn out to be invalid (e.g., the CVE ID does not resolve on NVD/MITRE — a hallucinated identifier from an earlier run) are **removed**, with the removal noted in the commit body.
+- Operator output now includes a `push: ok | failed (<reason>)` line.
+- README and `docs/workflow.md` updated to reflect auto-push behaviour and the active maintenance rules.
+
+### Why
+The routine produces a public CTI feed; manual review-and-push doesn't fit that model. Auto-push to `main` makes every brief live immediately. Active source / CVE maintenance keeps the repo operationally honest over time without human babysitting — broken links self-heal where possible, and bad data self-corrects.
+
+---
+
 ## 2.2 — 2026-05-05
 
 ### Changed

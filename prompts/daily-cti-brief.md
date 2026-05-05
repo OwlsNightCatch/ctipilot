@@ -361,30 +361,44 @@ For each item in today's brief, append a record (or update an existing one if th
 For each CVE referenced in today's brief, append (or update) a flat record:
 
 ```json
-{"id": "CVE-YYYY-NNNNN", "first_seen": "YYYY-MM-DD", "last_seen": "YYYY-MM-DD", "title": "..."}
+{"id": "CVE-YYYY-NNNNN", "first_seen": "YYYY-MM-DD", "last_seen": "YYYY-MM-DD", "title": "...", "primary_source_url": "..."}
 ```
 
-This file is the fast-lookup index for sub-agent dedup.
+Active CVE-index maintenance:
+
+- **New CVE today** → append with today as `first_seen` and `last_seen`.
+- **Already-known CVE referenced today** → bump `last_seen`. If a noticeably better short title emerged (e.g., the CVE got a public name), update `title`. If the previous `primary_source_url` is dead or a clearly better authoritative source now exists (e.g., NVD page is now populated, vendor advisory landed), update `primary_source_url` and add a one-line note in the commit body explaining why.
+- **Verification failed → entry invalid** (e.g., the CVE ID turns out not to resolve on NVD/MITRE; was a hallucinated identifier). Remove the record. Note the removal in the commit body so the change is auditable in git history.
 
 ### Update `sources/sources.json`
-- For sources fetched and used today: set `last_successful_fetch` to today's ISO date and reset `consecutive_failures` to 0.
-- For sources that returned 404 / dead host / empty content: increment `consecutive_failures`. If `>= 3`, drop reliability one tier (HIGH→MEDIUM, MEDIUM→LOW), set `status: "demoted"`, add a `notes` line with today's date and failure mode.
-- If a *new* high-quality source was discovered (linked from existing trusted sources, with editorial track record), append with `status: "candidate"`, `notes: "discovered YYYY-MM-DD via {source-id}"`. **Do not auto-promote.**
-- **Never delete a source.**
+Active source maintenance — keep the list operationally honest. The repository is the single source of truth, so the agent updates this file as part of every run.
+
+- **Source fetched and used today** → set `last_successful_fetch` to today and reset `consecutive_failures` to 0.
+- **Source returned 404, dead host, or empty content today** → increment `consecutive_failures`. If `>= 3`, drop `reliability` one tier (HIGH → MEDIUM → LOW), set `status: "demoted"`, and append a `notes` line with today's date and the failure mode. **Before demoting**, do one canonical-URL probe: many publishers move their news feed (e.g., a CMS migration). If a clearly equivalent canonical page now exists at the same publisher, **update the `url` in place** rather than demoting; reset `consecutive_failures`; append a note recording the URL change with today's date.
+- **Better URL discovered** for an already-listed publisher (e.g., the publisher moved their advisories index, or a more specific feed exists) → update the `url` in place and append a dated note in `notes`. Keep the `id` stable so historical state references remain valid.
+- **New high-quality source discovered** during research (linked from existing trusted sources, with editorial track record, no aggregator restatements) → append a new entry with `status: "candidate"` and `notes: "discovered YYYY-MM-DD via {source-id}"`. **Do not auto-promote.** A human reviewer flips `candidate → active` after audit.
+- **Never delete a source.** `demoted` is the soft-removal mechanism. Deletion would lose the audit trail of why a source left rotation.
+
+Every `sources.json` mutation must show up in the run's git diff; the commit body should briefly enumerate URL updates, demotions, and candidates added.
 
 ---
 
-## PHASE 6 — COMMIT
+## PHASE 6 — COMMIT & PUSH
+
+The repository is published from `main` directly. The routine commits and **pushes to `origin/main` immediately** so every brief is publicly available the moment it is generated. There is no review branch, no staging, no human gate between the commit and publication — that is intentional, the briefs are already AI-content-noticed and source-linked.
 
 ```bash
 git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json sources/sources.json
 git commit -m "brief: YYYY-MM-DD
 
-- ch-eu: N · vulns: N · breaches: N · research: N · deep dive: <topic or 'none'>
+- ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
+- sources: <one line summary of any URL updates / demotions / candidates>
+- cves: <new: N · updated: N · removed: N (with reason)>
 "
+git push origin main
 ```
 
-Do **not** push. Push policy is set by the human operator.
+If the push fails (network blip, transient auth issue), surface the error in the operator output but do not roll back the commit — the brief stays committed locally and a later run or manual `git push` will publish it. Never `--force` push from the routine.
 
 ---
 
@@ -409,10 +423,11 @@ Do **not** push. Push policy is set by the human operator.
 
 ## OUTPUT
 
-Write `briefs/YYYY-MM-DD.md`. Update state files. Stage and commit. Print only:
+Write `briefs/YYYY-MM-DD.md`. Update state files. Stage, commit, and push to `origin/main`. Print only:
 
 ```
 brief: briefs/YYYY-MM-DD.md
 items: N · ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
 commit: <short SHA or 'no-changes'>
+push: ok | failed (<reason>)
 ```
