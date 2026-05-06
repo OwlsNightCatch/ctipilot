@@ -4,6 +4,29 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.13 — 2026-05-06
+
+### Why
+Earlier prompt versions said the agent "must not auto-promote candidates" and that "humans review demotions and candidate additions periodically". That was a leftover from a model where a human reviewed routine output before merge. The actual operating model is fully autonomous — the routine fires, commits, pushes, no human gate. Encoded "human review" steps are dead weight; worse, they cause new candidate sources to never get promoted, and the source list silently stagnates.
+
+### Changed
+- **`sources/sources.json` lifecycle is now fully autonomous.** Every state transition runs in the routine, with the git diff as the audit trail. Encoded transitions:
+    - **Discovery → candidate** (already autonomous; unchanged).
+    - **Candidate → active**: auto-promote after 3 distinct runs where the candidate was successfully fetched *and* contributed content to a brief. No human gate.
+    - **Active → demoted**: after 3 consecutive failed fetches with no working canonical-URL probe (already autonomous; unchanged).
+    - **Demoted → active (recovery)**: NEW. A demoted source returns to `active` when a working canonical URL is found during research *and* that URL contributes content to a brief. Update url, reset counters, dated note. No human gate.
+    - **URL updates in place**: already autonomous; unchanged.
+    - **Reliability tier-down without demotion** for navigation-only sources: already encoded in v2.12; unchanged.
+- **Hard rules clarified**: do not delete sources (demotion is soft removal; cleanup is a separate manual commit), do not promote demoted → active without a recovery event, do not edit historical `notes` (append-only).
+- **README "Maintaining the source list and the CVE index"** rewritten to describe the autonomous lifecycle. The phrase "for human review" is gone everywhere; the new framing is "git log is the curation history".
+
+### Effect on the source list over time
+- Candidates that consistently deliver content get auto-promoted. The active source list grows organically as the routine encounters new high-quality publishers.
+- Demoted sources can self-heal when publishers fix their URLs.
+- The active list stays operationally honest without external curation cycles.
+
+---
+
 ## 2.12 — 2026-05-06
 
 ### Why

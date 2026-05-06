@@ -80,19 +80,24 @@ The weekly summary:
 
 Unlike the daily brief, the weekly summary **may repeat material** from the dailies — that is its consolidating purpose. Repetition is allowed; padding is not.
 
-## Maintaining the source list and the CVE index
+## Maintaining the source list and the CVE index — autonomous
 
-`sources/sources.json` is actively maintained by the routine on each run, and `state/cves_seen.json` is the flat fast-lookup CVE index.
+The repository is the agent's working memory. Both `sources/sources.json` and `state/cves_seen.json` are maintained by the routine on each run with **no human review gate**. Every change appears in the run's git diff and commit message; that's the audit trail. The git log on these files is the curation history.
 
-**Sources** — the agent may:
-- Bump `last_successful_fetch` for sources used today.
-- **Update a `url` in place** when a publisher has moved canonical location (CMS migration, restructured advisories index) and an equivalent page exists.
-- **Demote** a source's `reliability` (and set `status: "demoted"`) after three consecutive failed fetches with no working canonical URL probe.
-- **Propose** newly discovered high-quality sources with `status: "candidate"` for human review.
+### Source lifecycle (all transitions autonomous)
 
-The agent **must not** delete sources or auto-promote candidates. Humans review URL changes, demotions, and candidate additions periodically (`git log -- sources/sources.json`).
+- **Discovery → candidate.** When a sub-agent encounters a new high-quality publisher (primary source, editorial track record, in-scope) during research, it's added to `sources.json` with `status: "candidate"` and a `notes: "discovered YYYY-MM-DD via {source-id}"` line.
+- **Candidate → active.** A candidate is auto-promoted to `active` after **3 distinct runs** in which the source was successfully fetched *and* contributed content to a brief (i.e., its `last_covered_in_brief` was bumped on three different days). On promotion, append a dated note recording the auto-promotion.
+- **Active → demoted.** After **3 consecutive failed fetches** with no working canonical-URL probe (which is attempted before demotion — many publishers move their feed and a better URL exists at the same domain), the source's `reliability` drops one tier, `status` becomes `demoted`, and a dated `notes` line records the failure mode. Demoted sources are excluded from regular sub-agent rotation but kept in the file.
+- **Demoted → active (recovery).** A demoted source returns to `active` only when the agent finds a working canonical URL during research and the recovered URL contributes content to a brief. Update `url`, set `status: active`, reset `consecutive_failures` to 0, add a dated note explaining the recovery.
+- **URL updates in place.** Any time a better canonical URL is found for an active source (publisher CMS migration, restructured advisories index, more specific feed), update `url` and append a dated note. The source `id` stays stable so historical references in `state/covered_items.json` remain valid.
+- **Reliability tier-down without full demotion.** Sources that return navigation-only pages (no dated content) for **3+ consecutive attempted runs** despite drill-down attempts get a one-tier reliability drop and a dated `notes` flag, while staying `active`. They keep getting fetched but the brief weighs their output less when corroboration matters.
 
-**CVE index** — the agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE — i.e., a hallucinated identifier slipped past verification on a previous run). Removals are documented in the run's commit body so the audit trail is preserved in git history.
+**No source deletion.** Demoted and tier-downgraded sources stay in the file as historical record — the cost is a single extra entry, the benefit is a durable audit trail of why each source left or rejoined rotation. If the file ever grows unwieldy, that's a job for a separate cleanup commit, not a routine run.
+
+### CVE index — autonomous
+
+The agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE — a hallucinated identifier slipped past verification on a previous run). Removals are documented in the run's commit body so the audit trail is preserved in git history.
 
 The current list (~75 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
 
