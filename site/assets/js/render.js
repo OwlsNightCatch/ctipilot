@@ -268,43 +268,16 @@
     </div>`;
   }
 
-  /* ── home (renders today's / latest daily brief inline) ─────── */
+  /* ── home (empty state only — router redirects to latest daily) ── */
 
   async function renderHome() {
-    const dailies = Store.manifest.filter((b) => b.kind === 'daily');
-    const weeklies = Store.manifest.filter((b) => b.kind === 'weekly');
-    const today = todayISO();
-    const latestDaily = dailies.find((b) => b.name === today) || dailies[0];
-    const latestWeekly = weeklies[0];
-
-    if (!latestDaily) {
-      return `<div class="empty">
-        <h1>No briefs yet</h1>
-        <p>The first daily routine run will publish a brief here.</p>
-        <p><a href="#/about">About this newsletter →</a></p>
-      </div>`;
-    }
-
-    const isToday = latestDaily.name === today;
-    const banner = `
-      <div class="home-banner">
-        <div class="home-banner-left">
-          <div class="home-banner-eyebrow">${isToday ? "Today's brief" : 'Latest brief'} · <span class="mono">${esc(latestDaily.name)}</span></div>
-          <h1 style="margin:0.15rem 0 0">${esc(latestDaily.title)}</h1>
-        </div>
-        <div class="home-banner-right">
-          ${latestWeekly
-            ? `<a class="cta-weekly" href="#/briefs/weekly/${esc(latestWeekly.name)}" title="${esc(latestWeekly.title)}">
-                <span class="cta-eyebrow">Weekly summary</span>
-                <span class="cta-title">${esc(latestWeekly.name)} →</span>
-               </a>`
-            : `<span class="muted" style="font-size:0.85rem">No weekly summary yet — the first weekly routine will publish one on Sunday.</span>`}
-        </div>
-      </div>`;
-
-    const briefHtml = await renderBriefBody(latestDaily);
-
-    return `${banner}${briefHtml}${renderHomeFooter(latestDaily)}`;
+    // Reached only when no daily brief exists yet (router redirects to the
+    // latest daily otherwise — see router.js dispatch()).
+    return `<div class="empty">
+      <h1>No briefs yet</h1>
+      <p>The first daily routine run will publish a brief here.</p>
+      <p><a href="#/about">About this newsletter →</a></p>
+    </div>`;
   }
 
   function renderHomeFooter(currentBrief) {
@@ -315,12 +288,19 @@
       .filter((b) => b.name !== currentBrief.name)
       .slice(0, 5);
 
+    const fmt = (window.Personal && Personal.formatDwell) ? Personal.formatDwell : (() => '—');
     const personalHtml = personal.length
       ? `<ul class="entity-list">${personal.map((p) => {
           const b = Store.findBrief(p.name);
+          const totalDwell = fmt(p.totalDwellMs || 0);
+          const lastDwell  = fmt(p.lastDwellMs  || 0);
           return `<li>
             <span><a class="e-title" href="#/briefs/${esc(p.name)}">${b ? esc(b.title) : esc(p.name)}</a>
-              <div class="e-meta"><span class="e-tag">visited ${p.count}×</span><span class="muted">last ${esc(p.last)}</span></div>
+              <div class="e-meta">
+                <span class="e-tag">visited ${esc(p.count)}×</span>
+                ${p.totalDwellMs ? `<span class="e-tag" title="Total time you've spent on this brief, on this device">read ${esc(totalDwell)}${p.count > 1 ? ` (last ${esc(lastDwell)})` : ''}</span>` : ''}
+                <span class="muted">last ${esc(p.last)}</span>
+              </div>
             </span>
             <span class="mono muted">${esc(p.name)}</span>
           </li>`;
@@ -508,7 +488,41 @@
   async function renderBrief(state) {
     const brief = Store.findBrief(state.name);
     if (!brief) return notFound(`Brief ${esc(state.name)} not found.`);
-    return `<h1>${esc(brief.title)}</h1>${await renderBriefBody(brief)}`;
+
+    // The latest daily brief gets the home presentation: today's-brief
+    // banner above (with weekly CTA) and the "Continue exploring" footer
+    // below. Older briefs render plain.
+    const latestDaily = Store.manifest.find((b) => b.kind === 'daily');
+    const isLatestDaily = latestDaily && latestDaily.name === brief.name && brief.kind === 'daily';
+
+    if (!isLatestDaily) {
+      return `<h1>${esc(brief.title)}</h1>${await renderBriefBody(brief)}`;
+    }
+
+    const latestWeekly = Store.manifest.find((b) => b.kind === 'weekly');
+    const isToday = brief.name === todayISO();
+    const banner = renderHomeBanner(brief, latestWeekly, isToday);
+    const body = await renderBriefBody(brief);
+    const footer = renderHomeFooter(brief);
+    return `${banner}${body}${footer}`;
+  }
+
+  function renderHomeBanner(brief, latestWeekly, isToday) {
+    return `
+      <div class="home-banner">
+        <div class="home-banner-left">
+          <div class="home-banner-eyebrow">${isToday ? "Today's brief" : 'Latest brief'} · <span class="mono">${esc(brief.name)}</span></div>
+          <h1 style="margin:0.15rem 0 0">${esc(brief.title)}</h1>
+        </div>
+        <div class="home-banner-right">
+          ${latestWeekly
+            ? `<a class="cta-weekly" href="#/briefs/weekly/${esc(latestWeekly.name)}" title="${esc(latestWeekly.title)}">
+                <span class="cta-eyebrow">Weekly summary</span>
+                <span class="cta-title">${esc(latestWeekly.name)} →</span>
+               </a>`
+            : `<span class="muted" style="font-size:0.85rem">No weekly summary yet — the first weekly routine will publish one on Sunday.</span>`}
+        </div>
+      </div>`;
   }
 
   /* ── CVEs ───────────────────────────────────────────────────── */

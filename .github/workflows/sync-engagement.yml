@@ -12,9 +12,22 @@ name: Sync engagement metrics
 # Trigger: every 6 hours, plus manual dispatch. Six hours is a comfortable
 # cadence given the Traffic API's caching of ~24 hours behind real time.
 #
-# Permissions: contents: write (to commit the JSON back) is sufficient.
-# The default GITHUB_TOKEN has push access, which the Traffic API treats
-# as authorisation. No PAT or external service required.
+# Auth note: the GitHub Repo Traffic API requires `Administration: read`
+# on a fine-grained PAT (or `repo` scope on a classic PAT). The default
+# GITHUB_TOKEN that workflows get cannot request `administration` — that
+# permission isn't in the workflow `permissions:` keyword's allowlist.
+# So this workflow needs a separately-issued PAT, stored as the
+# `TRAFFIC_PAT` repo secret.
+#
+# One-time operator setup:
+#   1. Go to https://github.com/settings/tokens?type=beta
+#   2. Generate a fine-grained PAT scoped to ONLY this repo, with
+#      "Administration" repository permissions set to Read.
+#   3. https://github.com/<owner>/security-newsletter/settings/secrets/actions
+#      → New repository secret → name `TRAFFIC_PAT`, paste the token.
+#
+# If the secret is missing, the workflow exits cleanly with a message
+# rather than failing the run, so the rest of the pipeline keeps working.
 
 on:
   schedule:
@@ -43,9 +56,24 @@ jobs:
           git fetch --no-tags --depth=1 origin main
           git checkout -B main origin/main
 
-      - name: Pull traffic and update state/engagement.json
+      - name: Check for TRAFFIC_PAT
+        id: token
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.TRAFFIC_PAT }}
+        run: |
+          if [ -n "$PAT" ]; then
+            echo "available=true"  >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::TRAFFIC_PAT secret is not set; skipping engagement sync."
+            echo "Set it once via Settings → Secrets and variables → Actions."
+            echo "Fine-grained PAT, this repo only, Administration: read."
+          fi
+
+      - name: Pull traffic and update state/engagement.json
+        if: steps.token.outputs.available == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.TRAFFIC_PAT }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -133,6 +161,7 @@ jobs:
           PY
 
       - name: Commit changes (if any)
+        if: steps.token.outputs.available == 'true'
         run: |
           set -euo pipefail
           if git diff --quiet -- state/engagement.json; then

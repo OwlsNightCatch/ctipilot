@@ -66,10 +66,21 @@
     let visitedBrief = null;
     try {
       if (path.length === 0) {
-        html = await Render.home();
-        // Home renders the latest daily brief inline — record that visit too.
+        // Redirect home → latest daily brief so the URL bar reflects what's
+        // actually being read (and GitHub Pages logs a path-level view of
+        // briefs/<name>.md when the SPA fetches the markdown). This is a
+        // replaceState — the browser back button still goes to wherever
+        // the visitor came from. Falls through to the Render.home empty
+        // state if there are no daily briefs yet.
         const latest = (Store.manifest.find((b) => b.kind === 'daily') || {}).name;
-        if (latest) visitedBrief = latest;
+        if (latest) {
+          history.replaceState(null, '', '#/briefs/' + latest);
+          // Re-route now that the path has changed. parseHash will see the
+          // new hash. No infinite loop: dispatch always takes the briefs
+          // branch on the next call.
+          return dispatch();
+        }
+        html = await Render.home();
       } else if (path[0] === 'briefs') {
         if (path.length === 1) {
           html = Render.briefs({ q: query.q, filterKind: query.kind || 'all' });
@@ -112,6 +123,11 @@
     if (visitedBrief && window.Personal && Personal.isEnabled()) {
       try { Personal.recordVisit(visitedBrief); } catch (_) {}
     }
+    // Dwell-time FSM. Entering a brief route starts the clock; leaving any
+    // brief route flushes whatever was accrued. Re-entering the same brief
+    // is a no-op.
+    if (visitedBrief) startDwell(visitedBrief);
+    else flushDwell();
   }
 
   function inferTitle(path) {
@@ -184,11 +200,70 @@
     }
   }
 
+  /* Dwell-time tracking ------------------------------------------------
+
+     One pending dwell session at a time, bound to the brief currently in
+     view. State machine:
+
+         enter brief X     →  startDwell(X)        : starts the clock
+         leave brief X     →  flushDwell()         : commits to localStorage
+         tab hidden        →  pause                : accumulate, stop clock
+         tab visible again →  resume               : restart clock
+         pagehide / unload →  flushDwell()         : last-chance commit
+
+     Persisted only via Personal.recordDwell, which is DNT/GPC-aware and
+     localStorage-only. No telemetry leaves the device.
+  */
+  let _dwellName = null;
+  let _dwellStart = null;        // ms, null when paused
+  let _dwellAccumulated = 0;     // ms accrued before the current segment
+
+  function startDwell(name) {
+    if (!name) return;
+    if (_dwellName === name) {
+      // already tracking this brief; if paused (tab was hidden), resume
+      if (_dwellStart == null) _dwellStart = Date.now();
+      return;
+    }
+    flushDwell();
+    _dwellName = name;
+    _dwellStart = Date.now();
+    _dwellAccumulated = 0;
+  }
+
+  function flushDwell() {
+    if (!_dwellName) return;
+    let total = _dwellAccumulated;
+    if (_dwellStart != null) total += Date.now() - _dwellStart;
+    if (window.Personal && Personal.recordDwell) {
+      try { Personal.recordDwell(_dwellName, total); } catch (_) {}
+    }
+    _dwellName = null;
+    _dwellStart = null;
+    _dwellAccumulated = 0;
+  }
+
+  function pauseDwell() {
+    if (_dwellStart == null) return;
+    _dwellAccumulated += Date.now() - _dwellStart;
+    _dwellStart = null;
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseDwell();
+    else if (_dwellName && _dwellStart == null) _dwellStart = Date.now();
+  });
+  // pagehide is the cross-browser final-chance event (covers tab close,
+  // navigation, BFCache freeze). beforeunload is unreliable on mobile.
+  window.addEventListener('pagehide', flushDwell);
+
   window.Router = {
     parseHash,
     buildHash,
     updateQuery,
     dispatch,
+    startDwell,    // exposed so dispatch() can drive the FSM
+    flushDwell,
     boot() {
       window.addEventListener('hashchange', dispatch);
       window.addEventListener('popstate', dispatch);

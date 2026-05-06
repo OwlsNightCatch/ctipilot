@@ -49,7 +49,7 @@
   function recordVisit(name) {
     if (!name || dnt()) return;
     const state = load();
-    const cur = state.entries[name] || { count: 0, first: null, last: null };
+    const cur = state.entries[name] || { count: 0, first: null, last: null, totalDwellMs: 0, lastDwellMs: 0 };
     cur.count = (cur.count || 0) + 1;
     cur.last = new Date().toISOString();
     if (!cur.first) cur.first = cur.last;
@@ -57,12 +57,46 @@
     save(state);
   }
 
+  /** Record dwell time spent on a brief in milliseconds. Sane bounds:
+      < 1s is treated as a bounce and not stored; > 4h is treated as a
+      forgotten tab and clipped to 4h. Aggregate dwell is per-device only;
+      it never leaves localStorage. Honours DNT / GPC. */
+  function recordDwell(name, ms) {
+    if (!name || dnt() || !ms || typeof ms !== 'number') return;
+    if (ms < 1000) return;
+    const clipped = Math.min(ms, 4 * 60 * 60 * 1000);
+    const state = load();
+    const cur = state.entries[name] || { count: 0, first: null, last: null, totalDwellMs: 0, lastDwellMs: 0 };
+    cur.totalDwellMs = (cur.totalDwellMs || 0) + clipped;
+    cur.lastDwellMs = clipped;
+    state.entries[name] = cur;
+    save(state);
+  }
+
   function recent(n) {
     const state = load();
     return Object.entries(state.entries)
-      .map(([name, v]) => ({ name, count: v.count || 0, first: v.first, last: v.last }))
+      .map(([name, v]) => ({
+        name,
+        count: v.count || 0,
+        first: v.first,
+        last: v.last,
+        totalDwellMs: v.totalDwellMs || 0,
+        lastDwellMs: v.lastDwellMs || 0,
+      }))
       .sort((a, b) => (b.last || '').localeCompare(a.last || ''))
       .slice(0, n || 5);
+  }
+
+  /** Format milliseconds as a compact "1h 4m" / "3m 21s" / "47s" string. */
+  function formatDwell(ms) {
+    if (!ms || ms < 1000) return '<1s';
+    const sec = Math.floor(ms / 1000);
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec / 60);
+    if (min < 60) return min + 'm ' + (sec % 60) + 's';
+    const hr = Math.floor(min / 60);
+    return hr + 'h ' + (min % 60) + 'm';
   }
 
   function clear() {
@@ -71,5 +105,5 @@
 
   function isEnabled() { return !dnt(); }
 
-  window.Personal = { recordVisit, recent, clear, isEnabled };
+  window.Personal = { recordVisit, recordDwell, recent, clear, isEnabled, formatDwell };
 })();
