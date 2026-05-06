@@ -17,9 +17,35 @@
     wireGlobalSearch();
     wireKeyboard();
     wireLinkBehaviour();
+    surfaceSanitiserHealth();
     Router.boot();
     Router.dispatch();
   });
+
+  /** If render.js's boot-time XSS self-test failed (the sanitiser was
+      somehow broken or replaced), show a persistent warning banner above
+      the view so operators see it immediately on the next visit. The
+      site still renders — just with markdown content escaped to plain
+      text — so an attacker payload cannot execute. */
+  function surfaceSanitiserHealth() {
+    if (!window.Render || typeof Render.selfTest !== 'function') return;
+    let reason = Render.renderUnsafeReason && Render.renderUnsafeReason();
+    if (!reason) reason = Render.selfTest();
+    if (!reason) return;
+    const banner = document.createElement('div');
+    banner.setAttribute('role', 'alert');
+    banner.style.cssText = (
+      'position:sticky;top:0;z-index:1000;padding:.7rem 1rem;'
+      + 'background:#5a0e0e;color:#ffe;border-bottom:2px solid #ff8a8a;'
+      + 'font:600 .85rem/1.4 ui-monospace,monospace;'
+    );
+    banner.textContent = (
+      '⚠ Markdown sanitiser self-test failed. Brief content is being '
+      + 'rendered as escaped plain text for safety. Reload after the next '
+      + 'site deploy. (Detail in browser console.)'
+    );
+    document.body.insertBefore(banner, document.body.firstChild);
+  }
 
   /** Global click delegate for anchor behaviour:
        - href="#section"  (in-page anchor; not "#/...")  → smooth-scroll to

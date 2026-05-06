@@ -57,19 +57,197 @@
        3. DOMPurify with a restrictive allowlist strips script tags, on*
           handlers, and javascript:/data: in href/src.
   */
+  /* Defence in depth — every option here is justified.
+
+     USE_PROFILES.html              base allowlist of safe HTML tags.
+     ADD_ATTR target, rel           markdown links opening in new tabs need
+                                    these; the afterSanitizeAttributes hook
+                                    sets them on every external link.
+     FORBID_TAGS                    explicit superset over USE_PROFILES.html
+                                    that strips every "executes / parses
+                                    code" surface even if a future profile
+                                    change loosens defaults.
+     FORBID_ATTR                    attributes that have led to historic XSS
+                                    even on otherwise-safe tags.
+     FORBID_CONTENTS                drop the *text* of these tags too —
+                                    avoids the case where DOMPurify keeps
+                                    the inner content as inert text but a
+                                    downstream regex / unsafe sink could
+                                    still find a "javascript:" substring.
+     ALLOW_DATA_ATTR false          arbitrary data-* leaks into JS via
+                                    dataset; we never need them in briefs.
+     ALLOW_UNKNOWN_PROTOCOLS false  belt-and-braces with ALLOWED_URI_REGEXP.
+     ALLOWED_URI_REGEXP             only http(s):, mailto:, tel:, in-page
+                                    anchor (#…), or relative path.
+     SAFE_FOR_TEMPLATES             treats `${…}`-style template syntax as
+                                    text everywhere, not interpolation.
+     SANITIZE_DOM                   protects against DOM-clobbering via id
+                                    or name attributes that shadow globals.
+     SANITIZE_NAMED_PROPS           further DOM-clobbering protection on
+                                    named-property access.
+     KEEP_CONTENT                   default true — keep textual content of
+                                    forbidden non-script tags so a stray
+                                    <p> wrapped in <iframe> isn't lost.
+     IN_PLACE / WHOLE_DOCUMENT      defaults; explicit so a future flip
+                                    here would be deliberate.
+     RETURN_TRUSTED_TYPE            we ship plain strings; if the page
+                                    later opts into Trusted Types, flip
+                                    this and add a policy in app.js. */
   const PURIFY_CFG = Object.freeze({
     USE_PROFILES: { html: true },
     ADD_ATTR: ['target', 'rel'],
-    FORBID_TAGS: ['style', 'iframe', 'form', 'meta', 'link', 'embed', 'object', 'base', 'svg', 'math'],
-    FORBID_ATTR: ['srcdoc', 'srcset', 'formaction', 'xlink:href'],
+    FORBID_TAGS: [
+      'style', 'iframe', 'form', 'meta', 'link', 'embed', 'object', 'base',
+      'svg', 'math', 'noscript', 'noembed', 'noframes', 'plaintext', 'xmp',
+      'frame', 'frameset', 'applet', 'audio', 'video', 'source', 'track',
+      'portal', 'annotation-xml',
+    ],
+    FORBID_ATTR: [
+      'srcdoc', 'srcset', 'formaction', 'xlink:href', 'autofocus',
+      'background', 'ping', 'http-equiv', 'manifest',
+    ],
+    FORBID_CONTENTS: ['style', 'script', 'iframe', 'noscript', 'noembed', 'noframes', 'svg', 'math'],
     ALLOW_DATA_ATTR: false,
+    ALLOW_UNKNOWN_PROTOCOLS: false,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|#|\/)/i,
+    SAFE_FOR_TEMPLATES: true,
+    SANITIZE_DOM: true,
+    SANITIZE_NAMED_PROPS: true,
+    KEEP_CONTENT: true,
+    IN_PLACE: false,
+    WHOLE_DOCUMENT: false,
+    RETURN_TRUSTED_TYPE: false,
   });
+
+  /** Boot-time XSS self-test for the markdown sanitisation pipeline.
+
+     Runs a panel of known XSS vectors through the same marked + DOMPurify
+     path that user content takes. After sanitisation, we parse the output
+     into a detached document and look for *DOM-level* danger signals:
+       - any forbidden tag actually rendered (script, iframe, svg, math,
+         object, embed, form, meta, link, base, style, frame…)
+       - any attribute starting with on* (event handlers)
+       - any href/src/action/formaction/data starting with a dangerous
+         scheme (javascript:, data:, vbscript:, file:)
+
+     Substring-on-string checks are deliberately avoided because
+     KEEP_CONTENT preserves inert text; a stripped <style> tag's CSS
+     becomes harmless text that a regex would still match.
+
+     If any vector survives, runtime markdown rendering is *disabled* and
+     md() falls back to plain escaped text. The page stays usable; an
+     attacker payload cannot execute. The failure is logged so the
+     operator notices on the next visit / inspection. */
+
+  const XSS_VECTORS = Object.freeze([
+    '<script>alert(1)</script>',
+    '<img src=x onerror=alert(1)>',
+    '[link](javascript:alert(1))',
+    '[link](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)',
+    '[link](vbscript:msgbox(1))',
+    '<iframe src="javascript:alert(1)"></iframe>',
+    '<a href="" onmouseover="alert(1)">x</a>',
+    '<svg onload=alert(1)>',
+    '<svg><script>alert(1)</script></svg>',
+    '<math href="javascript:alert(1)">x</math>',
+    '<details ontoggle=alert(1) open>x</details>',
+    '<form action="javascript:alert(1)"><input type=submit></form>',
+    '<base href="https://evil.example/">',
+    '<style>body{background:url(javascript:alert(1))}</style>',
+    '<META http-equiv="refresh" content="0;url=javascript:alert(1)">',
+    '<link rel=import href="https://evil.example/x.html">',
+    '<object data="javascript:alert(1)"></object>',
+    '<embed src="javascript:alert(1)">',
+    '<scr<script>ipt>alert(1)</script>',
+    '<a href="javascript&#58;alert(1)">x</a>',
+    '<a href="java\nscript:alert(1)">x</a>',
+    '<a href="JaVaScRiPt:alert(1)">x</a>',
+    '<img src=`x` onerror=alert(1)>',
+    '<body onload=alert(1)>',
+    '<input autofocus onfocus=alert(1)>',
+    '"><script>alert(1)</script>',
+    '<a href="#" onclick="alert(1)">x</a>',
+    '<a href="https://example.com/" target="_blank" onmouseenter="alert(1)">x</a>',
+  ]);
+
+  const FORBIDDEN_TAGS_LOWER = new Set([
+    'script','iframe','form','meta','link','embed','object','base','svg','math',
+    'style','noscript','noembed','noframes','plaintext','xmp','frame','frameset',
+    'applet','portal','annotation-xml','body','html','head','title',
+  ]);
+  const DANGEROUS_URI = /^\s*(?:javascript|data|vbscript|file):/i;
+
+  /** Inspect sanitiser output as a DOM tree. Returns null if clean,
+      otherwise a string describing the first danger signal found. */
+  function findDangerInHtml(html) {
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+    } catch (_) {
+      return 'DOMParser failed';
+    }
+    const root = doc.body;
+    if (!root) return null;
+    for (const el of root.querySelectorAll('*')) {
+      const tag = (el.tagName || '').toLowerCase();
+      if (FORBIDDEN_TAGS_LOWER.has(tag)) return `forbidden tag rendered: <${tag}>`;
+      // attributes
+      for (const a of Array.from(el.attributes || [])) {
+        if (/^on/i.test(a.name)) return `event handler attr: ${a.name}`;
+        if ((a.name === 'href' || a.name === 'src' || a.name === 'action'
+             || a.name === 'formaction' || a.name === 'data') && DANGEROUS_URI.test(a.value)) {
+          return `dangerous URI in ${a.name}: ${a.value.slice(0, 80)}`;
+        }
+        if (a.name === 'style') return `inline style attr present`;
+      }
+    }
+    return null;
+  }
+
+  let _renderUnsafe = false;
+  function renderUnsafeReason() { return _renderUnsafe; }
+
+  function selfTest() {
+    if (!window.marked || !window.DOMPurify) return null; // libs not loaded yet
+    if (!configureMarked._done) { configureMarked(); configureMarked._done = true; }
+    attachExternalLinkHook();
+    for (const vec of XSS_VECTORS) {
+      let out;
+      try {
+        out = DOMPurify.sanitize(marked.parse(vec || ''), PURIFY_CFG);
+      } catch (e) {
+        return `sanitiser threw on vector ${JSON.stringify(vec)}: ${e.message}`;
+      }
+      const reason = findDangerInHtml(out);
+      if (reason) {
+        return `vector ${JSON.stringify(vec)} survived: ${reason}; output=${out.slice(0,160)}`;
+      }
+    }
+    return null;
+  }
+
+  /** Run the self-test once at module load; result is cached. Falls back
+      to plain text rendering if the pipeline is broken. */
+  function ensureSafe() {
+    if (ensureSafe._ran) return !_renderUnsafe;
+    ensureSafe._ran = true;
+    const failure = selfTest();
+    if (failure) {
+      _renderUnsafe = failure;
+      // eslint-disable-next-line no-console
+      console.error('[CTI Briefs] markdown sanitiser self-test FAILED — falling back to plain text. Detail:', failure);
+    }
+    return !_renderUnsafe;
+  }
 
   function md(markdown) {
     if (!window.marked || !window.DOMPurify) return esc(markdown);
     if (!configureMarked._done) { configureMarked(); configureMarked._done = true; }
     attachExternalLinkHook();
+    if (!ensureSafe()) {
+      // Pipeline broken or compromised — render as escaped plain text in <pre>.
+      return `<pre class="muted" style="white-space:pre-wrap">${esc(markdown)}</pre>`;
+    }
     const html = window.marked.parse(markdown || '');
     return window.DOMPurify.sanitize(html, PURIFY_CFG);
   }
@@ -177,7 +355,7 @@
           const b = Store.findBrief(t.name);
           return `<li>
             <span><a class="e-title" href="#/briefs/${esc(t.name)}">${b ? esc(b.title) : esc(t.name)}</a>
-              <div class="e-meta"><span class="e-tag">${t.views_14d || 0} views</span>${t.uniques_14d ? `<span>${t.uniques_14d} unique</span>` : ''}</div>
+              <div class="e-meta"><span class="e-tag">${esc(t.views_14d || 0)} views</span>${t.uniques_14d ? `<span>${esc(t.uniques_14d)} unique</span>` : ''}</div>
             </span>
             <span class="mono muted">${esc(t.name)}</span>
           </li>`;
@@ -190,10 +368,10 @@
         <h2 class="section-head" style="margin-top:2rem">Continue exploring</h2>
 
         <div class="stat-grid" style="margin-bottom: 1.4rem">
-          <div class="stat"><div class="v">${counts.briefs || 0}</div><div class="l"><a href="#/briefs">All briefs</a></div></div>
-          <div class="stat"><div class="v">${counts.cves || 0}</div><div class="l"><a href="#/cves">CVEs tracked</a></div></div>
-          <div class="stat"><div class="v">${counts.topics || 0}</div><div class="l"><a href="#/topics">Topics</a></div></div>
-          <div class="stat"><div class="v">${counts.sources || 0}</div><div class="l"><a href="#/sources">Sources</a></div></div>
+          <div class="stat"><div class="v">${esc(counts.briefs || 0)}</div><div class="l"><a href="#/briefs">All briefs</a></div></div>
+          <div class="stat"><div class="v">${esc(counts.cves || 0)}</div><div class="l"><a href="#/cves">CVEs tracked</a></div></div>
+          <div class="stat"><div class="v">${esc(counts.topics || 0)}</div><div class="l"><a href="#/topics">Topics</a></div></div>
+          <div class="stat"><div class="v">${esc(counts.sources || 0)}</div><div class="l"><a href="#/sources">Sources</a></div></div>
         </div>
 
         <div class="section-grid">
@@ -257,9 +435,9 @@
             <span><strong>${esc(brief.kind)}</strong></span>
             <span class="mono">${esc(brief.name)}</span>
             ${brief.generated_by ? `<span>${esc(brief.generated_by)}</span>` : ''}
-            <span>${brief.items} item${brief.items === 1 ? '' : 's'}</span>
-            ${brief.cves.length ? `<span>${brief.cves.length} CVE${brief.cves.length === 1 ? '' : 's'}</span>` : ''}
-            ${briefViews ? `<span title="GitHub Pages aggregate view count, last 14 days">${briefViews.views_14d || 0} views (14d)</span>` : ''}
+            <span>${esc(brief.items)} item${brief.items === 1 ? '' : 's'}</span>
+            ${brief.cves.length ? `<span>${esc(brief.cves.length)} CVE${brief.cves.length === 1 ? '' : 's'}</span>` : ''}
+            ${briefViews ? `<span title="GitHub Pages aggregate view count, last 14 days">${esc(briefViews.views_14d || 0)} views (14d)</span>` : ''}
           </div>
           <div class="brief-prose">${md(body)}</div>
         </div>
@@ -315,10 +493,10 @@
                   <span>
                     <a class="e-title" href="#/briefs/${esc(b.name)}">${esc(b.title)}</a>
                     <div class="e-meta">
-                      <span class="e-tag">${b.kind}</span>
-                      <span>${b.items} item${b.items === 1 ? '' : 's'}</span>
-                      ${b.cves.length ? `<span>${b.cves.length} CVE${b.cves.length === 1 ? '' : 's'}</span>` : ''}
-                      ${b.tldr.length ? `<span>${b.tldr.length} TL;DR bullet${b.tldr.length === 1 ? '' : 's'}</span>` : ''}
+                      <span class="e-tag">${esc(b.kind)}</span>
+                      <span>${esc(b.items)} item${b.items === 1 ? '' : 's'}</span>
+                      ${b.cves.length ? `<span>${esc(b.cves.length)} CVE${b.cves.length === 1 ? '' : 's'}</span>` : ''}
+                      ${b.tldr.length ? `<span>${esc(b.tldr.length)} TL;DR bullet${b.tldr.length === 1 ? '' : 's'}</span>` : ''}
                     </div>
                   </span>
                   <span class="mono muted">${esc(b.name)}</span>
@@ -442,7 +620,7 @@
             return `<li>
               <span>
                 <a class="e-title" href="#/briefs/${esc(n)}">${b ? esc(b.title) : esc(n)}</a>
-                ${b ? `<div class="e-meta"><span class="e-tag">${b.kind}</span><span>${b.items} items</span></div>` : ''}
+                ${b ? `<div class="e-meta"><span class="e-tag">${esc(b.kind)}</span><span>${esc(b.items)} items</span></div>` : ''}
               </span>
               <span class="mono muted">${esc(n)}</span>
             </li>`;
@@ -522,7 +700,7 @@
           </div>
           <div>
             <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">Appearances</div>
-            <div class="mono">${apps.length}</div>
+            <div class="mono">${esc(apps.length)}</div>
           </div>
         </div>
 
@@ -626,7 +804,7 @@
         <div class="e-meta" style="margin-top:0.4rem">
           ${(s.category || []).map((c) => `<span class="e-tag">${esc(c)}</span>`).join('')}
           ${(s.language || []).map((c) => `<span class="e-tag">lang: ${esc(c)}</span>`).join('')}
-          ${typeof s.consecutive_failures === 'number' ? `<span class="e-tag">failures: ${s.consecutive_failures}</span>` : ''}
+          ${typeof s.consecutive_failures === 'number' ? `<span class="e-tag">failures: ${esc(s.consecutive_failures)}</span>` : ''}
           <span class="e-tag">last fetch: ${esc(s.last_successful_fetch || 'never')}</span>
         </div>
         ${s.notes ? `<p class="muted" style="margin-top: 0.7rem">${esc(s.notes)}</p>` : ''}
@@ -640,7 +818,7 @@
             return `<li>
               <span>
                 <a class="e-title" href="#/briefs/${esc(n)}">${b ? esc(b.title) : esc(n)}</a>
-                ${b ? `<div class="e-meta"><span class="e-tag">${b.kind}</span><span>${b.items} items</span></div>` : ''}
+                ${b ? `<div class="e-meta"><span class="e-tag">${esc(b.kind)}</span><span>${esc(b.items)} items</span></div>` : ''}
               </span>
               <span class="mono muted">${esc(n)}</span>
             </li>`;
@@ -760,5 +938,7 @@
     notFound,
     md,
     esc,
+    selfTest,                  // exposed for the boot-time check in app.js
+    renderUnsafeReason,        // exposed so app.js can render a warning banner
   };
 })();

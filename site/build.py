@@ -341,6 +341,45 @@ def copy_tree(src: Path, dst: Path):
     shutil.copytree(src, dst)
 
 
+def cachebust_index(index_path: Path) -> str:
+    """Append ?v=<fingerprint> to every asset URL in index.html.
+
+    The fingerprint is the first 10 hex chars of a SHA-256 over the byte
+    contents of every .js / .css file under assets/. When any asset
+    changes, the fingerprint changes, the URLs change, and the browser
+    bypasses its on-disk cache for those URLs immediately. This stops the
+    "old JS still served from cache after a deploy" failure mode that
+    surfaces as readers seeing yesterday's bugs.
+
+    Vendored libs are included in the hash so a marked.js or DOMPurify
+    upgrade also forces a refresh.
+
+    Returns the fingerprint so the caller can log it.
+    """
+    assets_dir = index_path.parent / "assets"
+    h = hashlib.sha256()
+    for p in sorted(assets_dir.rglob("*")):
+        if p.is_file() and p.suffix in (".js", ".css"):
+            h.update(p.read_bytes())
+    fingerprint = h.hexdigest()[:10]
+
+    html = index_path.read_text()
+
+    def add_v(match: re.Match) -> str:
+        prefix, attr, url = match.group(1), match.group(2), match.group(3)
+        if "?" in url:
+            return match.group(0)
+        return f'{prefix}{attr}="{url}?v={fingerprint}"'
+
+    html = re.sub(
+        r'(<(?:script|link)[^>]*?\s)(src|href)="(assets/[^"]+\.(?:js|css))"',
+        add_v,
+        html,
+    )
+    index_path.write_text(html)
+    return fingerprint
+
+
 def main() -> int:
     if not (ROOT / "briefs").exists():
         print(f"error: no briefs/ directory at {ROOT}", file=sys.stderr)
@@ -360,6 +399,13 @@ def main() -> int:
     shutil.copy(SITE / "index.html", OUT / "index.html")
     copy_tree(SITE / "assets", OUT / "assets")
     (OUT / ".nojekyll").write_text("")
+
+    # 1a. Cache-bust the asset URLs in the copied index.html so post-deploy
+    #     stale-cache misses (Pages serves index.html with max-age=600 too)
+    #     don't strand readers on yesterday's JS forever. Only the URLs
+    #     change; the on-disk filenames stay stable so the SPA's relative
+    #     paths still resolve.
+    fp = cachebust_index(OUT / "index.html")
 
     # 2. Copy briefs (raw markdown, fetched on demand by the SPA).
     briefs_out = OUT / "briefs"
@@ -423,7 +469,7 @@ def main() -> int:
     }
     (data_out / "site.json").write_text(json.dumps(site_meta, indent=2))
 
-    print(f"built {OUT} · {site_meta['counts']}")
+    print(f"built {OUT} · {site_meta['counts']} · cachebust=v={fp}")
     return 0
 
 
