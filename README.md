@@ -26,6 +26,7 @@ The repository is the single source of truth for the workflow: prompts, source l
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── docs/
 │   ├── workflow.md            # End-to-end daily & weekly process
+│   ├── routine-setup.md       # One-time Claude Code routine setup (GitHub App, branch permissions)
 │   └── verification.md        # Fake-news verification policy
 └── .gitignore
 ```
@@ -50,6 +51,8 @@ These principles are encoded in the prompts and enforced by quality gates on eac
 ## Daily routine
 
 A scheduled Claude Code routine fires once per day. It is given exactly one instruction: read [`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md) and execute it.
+
+> **One-time setup** required for the routine to publish back to this repo: install the Claude GitHub App on the repo, and (optionally) enable **Allow unrestricted branch pushes** in the routine's permissions for direct-to-`main` publishing. Full instructions: [`docs/routine-setup.md`](docs/routine-setup.md).
 
 The agent walks through:
 
