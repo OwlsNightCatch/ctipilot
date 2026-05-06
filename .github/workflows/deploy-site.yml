@@ -15,6 +15,8 @@ name: Deploy GitHub Pages site
 # files).
 
 on:
+  # Direct push to main (manual commits or external pushes that don't go
+  # through the auto-merge chain).
   push:
     branches: [main]
     paths:
@@ -25,6 +27,13 @@ on:
       - "README.md"
       - "site/**"
       - ".github/workflows/deploy-site.yml"
+  # Routine pushes go through auto-merge-claude.yml, whose `git push origin
+  # main` uses GITHUB_TOKEN — and pushes by GITHUB_TOKEN do not retrigger
+  # other workflows. Chain explicitly via workflow_run instead.
+  workflow_run:
+    workflows: ["Auto-merge claude/* branches to main"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch: {}
 
 permissions:
@@ -39,6 +48,9 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # When chained from auto-merge, only deploy if that run succeeded.
+    # All other triggers (push, workflow_dispatch) always run.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Clone repo (shell-only, no Actions)
         env:
