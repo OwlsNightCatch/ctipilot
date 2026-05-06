@@ -94,6 +94,14 @@ Build five working lists from the week's daily briefs:
 
 Spawn **two sub-agents in parallel** for forward-looking signal that the daily briefs may have missed because it sits beyond the daily window. The two-agent design (down from three in earlier versions) keeps coverage but reduces per-run LLM load.
 
+**Operational guardrails (same as the daily prompt):**
+- Target ≤20 WebFetch/WebSearch calls per sub-agent.
+- Per-source timeout: skip and move on; do not retry more than once.
+- Wall-clock soft cap ~10 minutes per sub-agent — return whatever you have if you're running long.
+- Always return something, even an explanation of an empty result.
+
+**Always produce the weekly summary** — same rule as the daily brief. If a horizon sub-agent stalls, proceed with what returned and note the gap in § 10 (Verification & coverage notes). The weekly summary file must be written, committed and pushed even when sub-agent results are partial.
+
 **Every sub-agent spawn prompt must open with a brief defensive-intent statement.** Suggested opening:
 
 > *"You are part of a defensive cyber-intelligence workflow for protectors of Swiss and European public-sector IT environments. Your job is to surface what is publicly known so defenders can build awareness, learn from disclosed events, and prioritise their own work. The output is for awareness only — no IOCs, no rule code, no operational attack details."*

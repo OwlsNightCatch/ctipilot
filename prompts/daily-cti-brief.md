@@ -98,6 +98,20 @@ The intent: humans forget. When the BRICKSTORM-type story re-surfaces, the brief
 ### 11. No suppression, no padding
 Comprehensive on what matters, ruthless on what doesn't. Empty sections state so explicitly: *"No qualifying CH/EU-specific items in the reporting window."* Do not invent filler. Do not omit a genuinely important development to keep a brief short.
 
+### 12. Always produce a brief — never block on a single sub-agent
+A run **must always end with a written brief**, even when sub-agents fail, time out, or return nothing. Conditions and behaviour:
+
+- **All four sub-agents returned** → standard composition.
+- **Three of four returned** → compose with what you have. Add a line in § 7 (Verification Notes) naming the sub-agent that did not return and what scope was therefore not covered.
+- **One or two returned** → still compose. Open the brief with a banner: *"⚠ Partial brief — only N of 4 sub-agents returned. Coverage gaps listed in § 7."* (Use plain `> ` blockquote, no emoji.) Be explicit in § 7 about what's missing.
+- **Zero returned** → still write the file. Header line states *"Quiet run — no sub-agent results"*, sections are stubs ("No items returned"), § 7 explains the failure cause as best understood. Commit and push as normal.
+
+Never silently skip the write. The empty / partial brief in `briefs/` is the operational signal that a run took place — its absence is much worse than a sparse file.
+
+A sub-agent is considered to have "not returned" when:
+- it explicitly returned an empty list (this is fine — counts as "returned"); OR
+- it has not produced output within ~10 minutes wall-clock of being spawned (treat as stalled — proceed without it).
+
 ---
 
 ## EXECUTION ENVIRONMENT
@@ -162,7 +176,12 @@ Each sub-agent receives:
 - The deduplication context from Phase 0.
 - Today's ISO date and the recency window.
 - Constraints: **no IOCs in output, no vanity metrics in output, English output only**.
-- A *flexible* return format (see below). No token cap. Sub-agents have discretion in how they present findings as long as the required fields are there.
+- A *flexible* return format (see below). No output token cap. Sub-agents have discretion in how they present findings as long as the required fields are there.
+- **Operational guardrails** to keep each sub-agent within a reasonable run budget and avoid stalling the whole routine:
+    - Target **≤20 WebFetch/WebSearch calls** in total. Quality over exhaustive coverage. If you've spent your fetch budget without finding much, return what you have — this is normal on quiet days.
+    - **Per-source timeout: skip and move on.** If a `WebFetch` call hangs, errors, or returns empty, do **not** retry more than once. Note the failure in your return so the main agent can mark the source for maintenance review.
+    - **Wall-clock soft cap: ~10 minutes.** If you can see you are running long (slow translations, slow national-CERT pages, many failing fetches), return whatever you have so far with a one-line note in your output explaining the early exit. The main agent will compose the brief with whatever returned. **Never block the routine indefinitely.**
+    - **Always return something.** Even a single Markdown line of explanation ("no qualifying items in window — sources X/Y/Z fetched, all empty") is a valid return. An empty list with explanation is preferred over silence.
 
 **Every sub-agent spawn prompt must open with a brief defensive-intent statement** so the framing stays correct from the first token. Suggested opening:
 
@@ -243,7 +262,9 @@ A given source's primary category determines which sub-agent owns it. `news` is 
 
 ## PHASE 2 — VERIFICATION PASS (main context)
 
-For every candidate item across all sub-agent outputs:
+**Trigger condition.** Phase 2 begins as soon as **all sub-agents that are going to return have returned**. Concretely: if a sub-agent has not produced output within ~10 minutes of being spawned, treat it as stalled and proceed without it (Prime Directive 12). Do **not** wait indefinitely for a slow sub-agent — that is the most common failure mode and it blocks the whole brief.
+
+For every candidate item across all sub-agent outputs that *did* return:
 
 1. **Re-fetch the primary source** if any doubt the URL still resolves with the claimed content.
 2. **Apply the two-source / national-CERT rule** (Prime Directive 5).
@@ -416,8 +437,9 @@ If the push fails (network blip, transient auth issue), surface the error in the
 - [ ] Deep dive present (with Background paragraph if applicable), or explicit "no item met the bar".
 - [ ] Yearly-report rule respected — annual reports get one treatment, not repeated.
 - [ ] State files updated (`covered_items.json`, `cves_seen.json`, `sources.json`).
-- [ ] § 7 Verification Notes lists drops, single-source items, contradictions.
+- [ ] § 7 Verification Notes lists drops, single-source items, contradictions, **and any sub-agent that did not return on time** with the resulting coverage gap.
 - [ ] No content from training data.
+- [ ] **A brief file exists at `briefs/YYYY-MM-DD.md`** — even on a quiet day, even with sub-agent failures. The presence of the file is the operational signal that the run took place.
 
 ---
 

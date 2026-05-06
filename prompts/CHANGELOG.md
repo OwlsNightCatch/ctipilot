@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.4 — 2026-05-06
+
+### Why
+Observed failure mode on first real run (2026-05-05): three of four sub-agents returned successfully, the fourth (Switzerland, Europe & Public Sector — slow national-CERT pages with German translation work) did not return on time, and the main agent waited indefinitely. No brief was written. **Never block the routine on one slow sub-agent.**
+
+### Added
+- **Prime Directive 12 — Always produce a brief; never block on a single sub-agent.** Specifies exact behaviour for 4/4, 3/4, 1–2/4, and 0/4 sub-agent return rates. Worst case still produces a stub brief with a "Quiet run — no sub-agent results" header. The presence of the file is the operational signal that a run took place; its absence is worse than a sparse file.
+- **Operational guardrails for sub-agents** (Phase 1):
+    - Target ≤20 WebFetch / WebSearch calls per sub-agent.
+    - Per-source timeout: skip on hang/error, do not retry more than once.
+    - Wall-clock soft cap of ~10 minutes per sub-agent — return what you have if you run long.
+    - Always return something, even a one-line "no qualifying items" explanation.
+- **Phase 2 trigger condition** is now explicit: begin as soon as all sub-agents that are going to return have returned (10-minute stall window). Do not wait indefinitely.
+- **Quality gate added**: a brief file *must* exist at `briefs/YYYY-MM-DD.md` after every run.
+- Same partial-result rules ported to the weekly summary (Phase 2).
+
+---
+
 ## 2.3 — 2026-05-05
 
 ### Changed
