@@ -54,47 +54,27 @@ Enable that for this repo so the prompt's `git push origin HEAD:main` succeeds:
 
 After this, every routine run lands the brief directly on `main` with no PR / merge step.
 
-### 3. Optional fallback — GitHub Action that merges `claude/*` to `main`
+### 3. Auto-merge GitHub Action (required as safety net)
 
-If you'd like a safety net that catches the cases where the primary push to `main` fails (Path C accidentally disabled, etc.), add this workflow at `.github/workflows/auto-merge-claude.yml`:
+The workflow at [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) is shipped with the repository. It triggers on any push to a `claude/**` branch, fast-forwards `main` from the feature branch, and deletes the feature branch. This is what catches the case where the routine's primary `git push origin HEAD:main` is rejected (Path C off, branch protection, transient auth) — the fallback push to a `claude/...` branch is enough to publish, because the Action handles the merge.
 
-```yaml
-name: Auto-merge claude/* to main
-on:
-  push:
-    branches:
-      - "claude/**"
+What the Action requires:
 
-jobs:
-  merge:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main
-      - name: Fast-forward main from feature branch
-        env:
-          BRANCH: ${{ github.ref_name }}
-        run: |
-          git config user.name "Claude Code"
-          git config user.email "noreply@anthropic.com"
-          git fetch origin "$BRANCH"
-          # Allow only if the branch is a strict ancestor + descendant of main
-          # (i.e., it's a fast-forward).
-          if git merge-base --is-ancestor main "origin/$BRANCH"; then
-            git merge --ff-only "origin/$BRANCH"
-            git push origin main
-            git push origin --delete "$BRANCH" || true
-          else
-            echo "Branch $BRANCH is not a fast-forward of main; skipping."
-            exit 0
-          fi
-```
+- It is committed to the repo at the path above. Pushing this repo to GitHub installs it automatically.
+- The repo's default `GITHUB_TOKEN` permissions must allow `contents: write`. The workflow declares this in its `permissions:` block, so for most repositories it works without further configuration. If your repo or organization has set the default `GITHUB_TOKEN` permissions to **read-only**, the Action's `git push origin main` will be rejected and the brief will stay on the feature branch.
+    - To check / fix: GitHub repo → **Settings** → **Actions** → **General** → under **Workflow permissions**, choose **Read and write permissions**, save.
+- The Action only fast-forwards. If `main` has advanced since the routine started (rare for an unattended public feed), the Action exits cleanly and leaves the feature branch alone for human review.
+- The Action also exposes a manual `workflow_dispatch` trigger with a `branch` input, so you can merge a `claude/...` branch that was pushed before the workflow existed (or re-run after fixing an issue). GitHub repo → **Actions** → **Auto-merge claude/\* branches to main** → **Run workflow** → enter the branch name.
 
-With this Action in place, even a failed primary push still publishes the brief — the fallback push lands on `claude/...`, the Action fast-forwards `main`, and the feature branch is cleaned up. It's a redundant safety net; with Path C correctly enabled, the Action just sits idle.
+### Two-stage publishing chain
+
+With Path C and the auto-merge Action both in place, the publishing chain has redundancy at every step:
+
+| Stage | What happens | Brief on main? |
+|---|---|---|
+| 1. Direct push (`git push origin HEAD:main`) | Path C is enabled and the credential has write scope | **Yes**, immediately |
+| 2. Fallback to feature branch + auto-merge Action | Stage 1 was rejected; routine pushes `claude/...`; Action fast-forwards `main` | **Yes**, within a few seconds |
+| 3. Both stages failed | Routine credential lacks any push scope | **No** — local commit preserved; investigate the App / token permissions |
 
 ## Setting up the routine itself
 

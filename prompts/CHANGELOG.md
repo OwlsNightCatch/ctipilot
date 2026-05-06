@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.8 — 2026-05-06
+
+### Why
+After v2.7, `git push origin HEAD:main` is the primary publish path. But on the 2026-05-06 run that direct push was rejected (the routine container's enforcement varied from what Path C should have allowed), so the brief stayed on a `claude/...` feature branch even though Path C was enabled in the routine config. The fallback path needs to actually merge to `main` rather than depend on a human to merge a PR.
+
+### Changed
+- **Phase 6 (daily) and Phase 5 (weekly) now describe a two-stage publishing chain explicitly:**
+    1. Direct push (`git push origin HEAD:main`).
+    2. Fallback push to the current branch.
+    3. The repo's GitHub Action (`.github/workflows/auto-merge-claude.yml`) fast-forwards `main` from the feature branch and cleans up.
+  Operator output reports which stage published: `push: ok (direct main)`, `push: ok (via auto-merge action)`, or `push: failed (<reason>)`.
+- **The Action ships with the repo** at `.github/workflows/auto-merge-claude.yml`. It triggers on `push` to `claude/**` and on manual `workflow_dispatch` (with a `branch` input for after-the-fact merging). Concurrency-guarded so simultaneous merges don't race.
+
+### Set-up implication
+The auto-merge Action needs `contents: write` on the repo's default `GITHUB_TOKEN`. The workflow declares it; in most repos this works as-is. If the repo's organization sets the default token to read-only, the Action's push to `main` will fail — fix in the repo's **Settings → Actions → General → Workflow permissions**. Documented in `docs/routine-setup.md`.
+
+---
+
 ## 2.7 — 2026-05-06
 
 ### Why

@@ -1,0 +1,81 @@
+name: Auto-merge claude/* branches to main
+
+# Background:
+# The Claude Code routine container that runs the daily and weekly CTI
+# brief workflows always checks out a `claude/<adjective>-<name>-<id>`
+# branch on session start. The prompt's Phase 6 first attempts to push
+# the brief directly to `main` via `git push origin HEAD:main`. If that
+# is rejected (e.g., per-routine "Allow unrestricted branch pushes" is
+# off, or branch protection blocks the direct push), the prompt falls
+# back to pushing the current `claude/...` branch as-is.
+#
+# This workflow catches that fallback case. On any push to a `claude/**`
+# branch, it fast-forwards `main` from the feature branch, then deletes
+# the feature branch. End state in all cases: the brief is on `main`.
+
+on:
+  push:
+    branches:
+      - "claude/**"
+  # Allow manual triggering for branches pushed before this workflow
+  # existed, or when an automatic run needs to be re-attempted.
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Feature branch to merge into main (e.g. claude/determined-hypatia-PCpxM)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+# Avoid simultaneous merges from racing each other on a fast-moving feed.
+concurrency:
+  group: auto-merge-claude
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine source branch
+        id: branch
+        run: |
+          if [ -n "${{ github.event.inputs.branch }}" ]; then
+            echo "name=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fast-forward main from feature branch
+        env:
+          BRANCH: ${{ steps.branch.outputs.name }}
+        run: |
+          set -euo pipefail
+          git config user.name "Claude Code"
+          git config user.email "noreply@anthropic.com"
+
+          # Pull the feature branch into local refs.
+          git fetch origin "$BRANCH"
+
+          # Only merge if it is a strict descendant of main.
+          # Anything else means a human pushed conflicting work to main
+          # while the routine ran; skip and let a human resolve it.
+          if git merge-base --is-ancestor main "origin/$BRANCH"; then
+            echo "origin/$BRANCH fast-forwards from main; merging."
+            git merge --ff-only "origin/$BRANCH"
+            git push origin main
+            git push origin --delete "$BRANCH" || true
+            echo "Merged $BRANCH into main and deleted the feature branch."
+          else
+            echo "origin/$BRANCH is not a strict descendant of main."
+            echo "main may have advanced since the routine started."
+            echo "Skipping auto-merge; resolve manually."
+            exit 0
+          fi

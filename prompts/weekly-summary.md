@@ -216,9 +216,10 @@ Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` 
 
 ## PHASE 5 — COMMIT & PUSH
 
-Same publish path as the daily brief: commit on whatever branch the environment has checked out, then push directly to `main` via `HEAD:main`. With "Allow unrestricted branch pushes" enabled on the routine, the single push lands the summary on `main` immediately.
+Same two-stage publishing chain as the daily brief: direct push to `main` first, fallback to feature branch second, GitHub Action auto-merges as the safety net.
 
-### Commands
+**1. Stage and commit:**
+
 ```bash
 git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json sources/sources.json
 git commit -m "weekly: YYYY-Www summary
@@ -226,21 +227,33 @@ git commit -m "weekly: YYYY-Www summary
 - top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N
 - sources: <one line summary of any URL updates / demotions / candidates>
 "
-
-git push origin HEAD:main
 ```
 
-### Push-failure handling
-If the primary push is rejected with 403, fall back to pushing the current branch:
+**2. Try direct publish to `main`:**
 
 ```bash
-current_branch=$(git rev-parse --abbrev-ref HEAD)
-git push origin "$current_branch"
+if git push origin HEAD:main; then
+    PUBLISHED=true
+else
+    PUBLISHED=false
+fi
 ```
 
-- One attempt for each push. No retry-with-backoff.
-- On total failure, surface the error in operator output and keep the commit.
-- Never `--force`-push from the routine.
+**3. Fallback to feature branch — the `.github/workflows/auto-merge-claude.yml` Action will fast-forward `main`:**
+
+```bash
+if [ "$PUBLISHED" != "true" ]; then
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    git push origin "$current_branch"
+fi
+```
+
+**4. Operator output:** report `push: ok (direct main)`, `push: ok (via auto-merge action)`, or `push: failed (<reason>)`.
+
+### Hard rules
+- Each push attempted once. No retry-with-backoff.
+- Never `--force`-push.
+- Never roll back the commit on push failure.
 
 ---
 

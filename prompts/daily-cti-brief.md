@@ -429,17 +429,21 @@ Every `sources.json` mutation must show up in the run's git diff; the commit bod
 
 ## PHASE 6 — COMMIT & PUSH
 
-The repository is published from `main`. The routine commits and **pushes immediately** so every brief is publicly available the moment it is generated. There is no review branch, no staging, no human gate between commit and publication — the briefs are already AI-content-noticed and source-linked.
+The repository is published from `main`. The brief lands on `main` via a **two-stage publishing chain** — direct push first, GitHub-Action-driven auto-merge as the safety net. The routine commits and pushes; whichever stage succeeds, the brief is live the moment it lands on `main`.
 
-### Branch behaviour
+### Branch context
 
 The routine commits on whatever branch the execution environment has checked out:
 - **Local execution** (laptop, launchd, plain CI): typically `main` itself.
 - **Claude Code routine container**: a container-assigned `claude/<adjective>-<name>-<id>` branch.
 
-The local branch name does not matter for publishing — the publish target is always `main`. The push uses `HEAD:main` syntax to push the current commit to remote `main` regardless of the local branch.
+The local branch name does not matter for publishing — the publish target is always `main`.
 
-### Commands
+### Publishing chain — explicit steps
+
+The routine **must** run all four steps below, in order. Do not skip the fallback even when stage 1 succeeds — the conditional logic decides; just run the script.
+
+**1. Stage and commit on the current branch:**
 
 ```bash
 git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json sources/sources.json
@@ -449,28 +453,48 @@ git commit -m "brief: YYYY-MM-DD
 - sources: <one line summary of any URL updates / demotions / candidates>
 - cves: <new: N · updated: N · removed: N (with reason)>
 "
-
-# Primary publish path: push the current commit to remote main.
-# In Claude Code routine containers this requires the per-routine
-# permission "Allow unrestricted branch pushes" to be enabled for this
-# repo. With it enabled, this single push delivers the brief directly
-# to main and the brief is live.
-git push origin HEAD:main
 ```
 
-### Push-failure handling
-
-If `git push origin HEAD:main` fails with **403 / permission denied** (typically because "Allow unrestricted branch pushes" is *not* enabled, or the routine credential doesn't have repo-write scope), fall back to pushing the *current* branch as-is so something downstream can take it from there:
+**2. Try direct publish to `main`:**
 
 ```bash
-current_branch=$(git rev-parse --abbrev-ref HEAD)
-git push origin "$current_branch"
+# Push the current commit to remote main, regardless of local branch
+# name. With "Allow unrestricted branch pushes" enabled on the routine,
+# this succeeds and the brief is on main immediately.
+if git push origin HEAD:main; then
+    echo "published: direct push to main"
+    PUBLISHED=true
+else
+    echo "direct push to main rejected; falling back to feature branch"
+    PUBLISHED=false
+fi
 ```
 
-- If the fallback also fails → surface the error verbatim, keep the commit, exit. A later run / manual push will publish.
-- The fallback push to a `claude/<...>` branch leaves the brief on a feature branch where a GitHub auto-merge rule, GitHub Action, or PR review can land it on `main`. See `docs/routine-setup.md` for the recommended setup.
+**3. Fallback — push the current branch so the auto-merge Action can pick it up:**
+
+```bash
+if [ "$PUBLISHED" != "true" ]; then
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    git push origin "$current_branch"
+    echo "pushed: $current_branch — auto-merge-claude.yml will fast-forward main"
+fi
+```
+
+**4. Operator output — report which path published:**
+
+The `push:` line in the operator output reflects the chain outcome:
+- `push: ok (direct main)` — stage 2 succeeded.
+- `push: ok (via auto-merge action)` — stage 2 failed but stage 3 succeeded; the GitHub Action `.github/workflows/auto-merge-claude.yml` will fast-forward `main` from the feature branch within seconds.
+- `push: failed (<reason>)` — both stages failed (typically the routine credential lacks any push permission). Local commit preserved.
+
+### About the auto-merge Action
+
+The repo ships with a GitHub Action at `.github/workflows/auto-merge-claude.yml` that triggers on any push to `claude/**`. It fast-forwards `main` from the feature branch and deletes the feature branch. With it in place, the routine never has to coordinate the merge itself — pushing the feature branch is sufficient, and `main` is updated in a few seconds. See `docs/routine-setup.md`.
+
+### Hard rules
 - Try each push **once**. No retry-with-backoff. 403 is structural, not transient.
 - **Never `--force`-push from the routine**, ever.
+- Never roll back the commit on push failure — the local commit is the operational record of the run.
 
 ---
 
