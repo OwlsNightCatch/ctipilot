@@ -1,11 +1,18 @@
 name: Deploy GitHub Pages site
 
-# Builds the static reader site under site/ and deploys it to GitHub Pages.
-# Triggers only when the inputs to the build change, so it doesn't run on
-# every Claude Code routine commit (most of which only rotate state files).
+# Builds the static reader site under site/ and publishes it to the
+# `gh-pages` branch. GitHub Pages then serves it (configure once:
+# Settings → Pages → Build and deployment → Source: Deploy from a branch
+# → Branch: gh-pages, Folder: / (root)).
 #
-# Setup (one-time):
-#   GitHub repo → Settings → Pages → Build and deployment → Source: GitHub Actions
+# This workflow is shell-only — no third-party Actions — because the
+# org's policy restricts Actions to OwlsNightCatch. The work that
+# actions/upload-pages-artifact and actions/deploy-pages would do is
+# replaced by a direct force-push of site/_site/ to the gh-pages branch.
+#
+# Triggers only when the inputs to the build change, so it doesn't run
+# on every Claude Code routine commit (most of which only rotate state
+# files).
 
 on:
   push:
@@ -21,36 +28,51 @@ on:
   workflow_dispatch: {}
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Pages allows only one in-flight deploy at a time. Cancel pending runs in
-# favour of the newest commit so the live site converges on `main`.
+# Pages allows only one in-flight deploy at a time. Cancel pending runs
+# in favour of the newest commit so the live site converges on `main`.
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Clone repo (shell-only, no Actions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git fetch --no-tags --depth=1 origin main
+          git checkout -B main origin/main
 
       - name: Build site bundle
         run: python3 site/build.py
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/_site
+      - name: Publish to gh-pages branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          # Stage the build output in a fresh tree, then force-push it
+          # as a single orphan commit on `gh-pages`. The branch is a
+          # publishing target, not a history — full diff lives in main.
+          cd site/_site
+          git init -q .
+          git checkout --orphan gh-pages
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "deploy: ${GITHUB_SHA::7}"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git push --force origin gh-pages
+          echo "Pushed site/_site/ → origin/gh-pages."
+          echo "If this is the first deploy, set Settings → Pages → Source"
+          echo "to 'Deploy from a branch' → 'gh-pages' → '/ (root)'."

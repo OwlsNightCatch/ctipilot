@@ -32,9 +32,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
+      - name: Clone repo (shell-only, no Actions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git fetch --no-tags --depth=1 origin main
+          git checkout -B main origin/main
 
       - name: Pull traffic and update state/engagement.json
         env:

@@ -113,11 +113,13 @@ The repository ships with [`site/`](../site/) — a static reader for the briefs
 
 One-time enable:
 
-1. GitHub repo → **Settings** → **Pages**.
-2. Under **Build and deployment** → **Source**, choose **GitHub Actions**.
-3. Push any change touching the trigger paths above (or run the **Deploy GitHub Pages site** workflow manually). The first deploy takes 30–60 seconds; subsequent deploys are faster.
+1. Push any change touching the trigger paths above (or run the **Deploy GitHub Pages site** workflow manually). The first run creates a `gh-pages` branch containing the built site.
+2. GitHub repo → **Settings** → **Pages**.
+3. Under **Build and deployment** → **Source**, choose **Deploy from a branch**.
+4. Under **Branch**, choose **`gh-pages`** and **`/ (root)`**. Save.
+5. Refresh the Pages settings page — your live URL appears at the top.
 
-The site URL appears at the top of the **Pages** settings page after the first successful deploy. The site is fully static and read-only — it consumes the brief feed and never writes back.
+The site is fully static and read-only. The deploy workflow uses only shell-level git commands so it works under organisations that restrict third-party GitHub Actions.
 
 ## Limits to be aware of
 

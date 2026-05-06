@@ -12,6 +12,11 @@ name: Auto-merge claude/* branches to main
 # This workflow catches that fallback case. On any push to a `claude/**`
 # branch, it fast-forwards `main` from the feature branch, then deletes
 # the feature branch. End state in all cases: the brief is on `main`.
+#
+# This workflow is shell-only — no third-party Actions — because the
+# org's policy restricts Actions to the OwlsNightCatch org. The work
+# `actions/checkout` would do is replaced with a manual `git init` +
+# `git remote add` + `git fetch` using the default GITHUB_TOKEN.
 
 on:
   push:
@@ -38,6 +43,19 @@ jobs:
   merge:
     runs-on: ubuntu-latest
     steps:
+      - name: Clone repo (shell-only, no Actions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git fetch --no-tags --depth=0 origin main
+          git checkout -B main origin/main
+          git config user.name  "Claude Code"
+          git config user.email "noreply@anthropic.com"
+
       - name: Determine source branch
         id: branch
         run: |
@@ -47,19 +65,11 @@ jobs:
             echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
       - name: Fast-forward main from feature branch
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
           set -euo pipefail
-          git config user.name "Claude Code"
-          git config user.email "noreply@anthropic.com"
 
           # Pull the feature branch into local refs.
           git fetch origin "$BRANCH"
