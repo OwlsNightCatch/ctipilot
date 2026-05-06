@@ -57,43 +57,29 @@
        3. DOMPurify with a restrictive allowlist strips script tags, on*
           handlers, and javascript:/data: in href/src.
   */
-  /* Defence in depth — every option here is justified.
+  /* Defence in depth — every option here is justified and stays inside
+     DOMPurify's core "safe HTML" use case. Some experimental options
+     (SAFE_FOR_TEMPLATES, SANITIZE_NAMED_PROPS) caused "too much
+     recursion" on Firefox when sanitising real brief content with many
+     external links and an HTML table; they have been removed. Object
+     is NOT frozen — DOMPurify reserves the right to read/copy options.
 
      USE_PROFILES.html              base allowlist of safe HTML tags.
      ADD_ATTR target, rel           markdown links opening in new tabs need
-                                    these; the afterSanitizeAttributes hook
-                                    sets them on every external link.
+                                    these preserved; the afterSanitizeAttributes
+                                    hook sets them on every external link.
      FORBID_TAGS                    explicit superset over USE_PROFILES.html
-                                    that strips every "executes / parses
-                                    code" surface even if a future profile
-                                    change loosens defaults.
+                                    stripping every "executes / parses code"
+                                    surface even if a future profile change
+                                    loosens defaults.
      FORBID_ATTR                    attributes that have led to historic XSS
                                     even on otherwise-safe tags.
-     FORBID_CONTENTS                drop the *text* of these tags too —
-                                    avoids the case where DOMPurify keeps
-                                    the inner content as inert text but a
-                                    downstream regex / unsafe sink could
-                                    still find a "javascript:" substring.
      ALLOW_DATA_ATTR false          arbitrary data-* leaks into JS via
                                     dataset; we never need them in briefs.
      ALLOW_UNKNOWN_PROTOCOLS false  belt-and-braces with ALLOWED_URI_REGEXP.
      ALLOWED_URI_REGEXP             only http(s):, mailto:, tel:, in-page
-                                    anchor (#…), or relative path.
-     SAFE_FOR_TEMPLATES             treats `${…}`-style template syntax as
-                                    text everywhere, not interpolation.
-     SANITIZE_DOM                   protects against DOM-clobbering via id
-                                    or name attributes that shadow globals.
-     SANITIZE_NAMED_PROPS           further DOM-clobbering protection on
-                                    named-property access.
-     KEEP_CONTENT                   default true — keep textual content of
-                                    forbidden non-script tags so a stray
-                                    <p> wrapped in <iframe> isn't lost.
-     IN_PLACE / WHOLE_DOCUMENT      defaults; explicit so a future flip
-                                    here would be deliberate.
-     RETURN_TRUSTED_TYPE            we ship plain strings; if the page
-                                    later opts into Trusted Types, flip
-                                    this and add a policy in app.js. */
-  const PURIFY_CFG = Object.freeze({
+                                    anchor (#…), or relative path. */
+  const PURIFY_CFG = {
     USE_PROFILES: { html: true },
     ADD_ATTR: ['target', 'rel'],
     FORBID_TAGS: [
@@ -106,18 +92,10 @@
       'srcdoc', 'srcset', 'formaction', 'xlink:href', 'autofocus',
       'background', 'ping', 'http-equiv', 'manifest',
     ],
-    FORBID_CONTENTS: ['style', 'script', 'iframe', 'noscript', 'noembed', 'noframes', 'svg', 'math'],
     ALLOW_DATA_ATTR: false,
     ALLOW_UNKNOWN_PROTOCOLS: false,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|#|\/)/i,
-    SAFE_FOR_TEMPLATES: true,
-    SANITIZE_DOM: true,
-    SANITIZE_NAMED_PROPS: true,
-    KEEP_CONTENT: true,
-    IN_PLACE: false,
-    WHOLE_DOCUMENT: false,
-    RETURN_TRUSTED_TYPE: false,
-  });
+  };
 
   /** Boot-time XSS self-test for the markdown sanitisation pipeline.
 
