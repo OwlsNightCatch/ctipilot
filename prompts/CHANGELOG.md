@@ -4,6 +4,32 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.12 — 2026-05-06
+
+### Why
+The 2026-05-06 brief's § 7 listed real coverage gaps:
+
+> *"Coverage gaps: CCN-CERT Spain (not fetched, sub-agent budget limit); GovCERT.ch advisory archive (navigation page only); CERT.at and GovCERT Austria (navigation pages only, no dated advisory content returned); NCC Group Research, WithSecure Labs, Dragos, SANS ICS, Cloudflare Cloudforce One, Akamai SIRT, Elastic Security Labs, Group-IB, Secureworks CTU, Red Canary, Huntress, Sygnia — not fetched in this run."*
+
+That signal is structured and self-emitted by the brief — perfect for closing the loop. Without it, the same handful of high-yield sources (NCSC.ch, CISA, CERT-EU, top vendor labs) get fetched every run while the rest of the curated list is silently starved by budget limits, biasing coverage toward those publishers' framings of the threat landscape. The goal is **neutral, balanced documentation of the ongoing threat landscape**, which requires source rotation.
+
+### Added
+- **Phase 0 — source rotation list construction.** The agent parses the `Coverage gaps:` line from § 7 of every brief in the last 7 days, aggregates source IDs / publisher names that appeared as gaps in 2 or more recent runs, and tags them as **rotation-priority** for this run. Each gap also carries the most recent *reason* (budget limit / navigation-page-only / dead host) so different responses can be applied.
+- **Phase 1 — fetch budget reservation for rotation sources.** Each sub-agent reserves **6–8 of its ~30 fetch calls** for rotation-priority sources in its category scope. Must-have high-signal sources (CISA, NCSC.ch, CERT-EU, top vendor labs in scope) still go first; the reservation ensures the rest of the curated list also reaches the brief regularly.
+- **Rotation-list handling rules** in Phase 1, mapping gap reasons to actions:
+    - "not fetched, budget limit" → fetch this run.
+    - "navigation page only" → fetch and *drill into linked articles*; if no dated content exists, record for source-list maintenance.
+    - "consistent 404" → confirm and demote.
+    - Successful fetch this run → source drops off the rotation list naturally for the next run.
+- **Phase 4 § 7 format** — the `Coverage gaps:` line is now formally specified as parseable: single line, `Coverage gaps:` prefix, semicolon-separated `source-id (reason)` entries. Source IDs from `sources.json` preferred; publisher names fall back if not listed.
+- **Phase 5 sources.json maintenance** — adds an optional `last_covered_in_brief` field per source (alongside the existing `last_successful_fetch`). Distinguishes "alive but quiet" from "alive and feeding the brief". Schema is allowed to grow; existing sources don't need backfill.
+- **Phase 5** — new rule: a source that returns navigation pages only (no dated content) for 3+ consecutive attempted runs gets a `notes` flag and a reliability tier-down, but not full `demoted` status until a hard fetch failure.
+
+### Effect on output
+Over weeks, the brief covers a much wider slice of the curated source list. The W18 gaps (CCN-CERT, GovCERT.at, CERT.at, NCC Group Research, WithSecure Labs, Dragos, SANS ICS, Cloudforce One, Akamai SIRT, Elastic Security Labs, Group-IB, Secureworks CTU, Red Canary, Huntress, Sygnia) move to the front of W19's rotation reservation. Rotation is self-rebalancing: any source that gets fetched drops off the next run's rotation list automatically.
+
+---
+
 ## 2.11 — 2026-05-06
 
 ### Why

@@ -162,7 +162,16 @@ Build a **deduplication context** from the above:
 - Set of named actors / campaigns / incidents / annual reports already covered (from `covered_items.json`).
 - Headlines / first paragraphs of briefs in the last 7 days (so sub-agents can recognise paraphrases of already-covered items).
 
-Pass this deduplication context to every sub-agent.
+Build a **source rotation list** from the same set of recent briefs:
+
+- Parse the `Coverage gaps:` line from § 7 (Verification Notes) of every brief in the last 7 days. Each gap names sources or types of source that were not fetched (or returned no content) on that run.
+- Aggregate into a single set of source IDs / publisher names that have appeared in coverage gaps in any of the last 7 runs.
+- A source that has been a coverage gap in **2 or more** of the last 7 runs counts as a **rotation-priority** source. These need explicit attention this run.
+- For each rotation-priority source, record the *reason* most recently given ("not fetched, sub-agent budget limit" vs "navigation page only, no dated content returned" vs "consistent 404"). Different reasons drive different responses (priority fetch vs investigation vs demotion).
+
+Pass both the deduplication context and the rotation list to every sub-agent. Each sub-agent should filter the rotation list down to sources in its own category scope.
+
+The intent: balance coverage across the source list over time so the brief stays neutral. The same handful of high-signal sources (CISA, NCSC.ch, CERT-EU, top vendor labs) will always be fetched; the rotation list ensures the rest of the curated list also reaches the brief regularly rather than being silently starved by budget limits.
 
 ---
 
@@ -184,6 +193,14 @@ Each sub-agent receives:
 - **Per-source timeout: skip and move on.** If a `WebFetch` call hangs, errors, or returns empty, do **not** retry more than once. Note the failure in your return so the main agent can mark the source for maintenance review.
 - **Wall-clock soft cap: ~10 minutes.** If you can see you are running long (slow translations, slow national-CERT pages, many failing fetches), return whatever you have so far with a one-line note in your output explaining the early exit. The main agent will compose the brief with whatever returned. **Never block the routine indefinitely.**
 - **Always return something.** Even a single Markdown line of explanation ("no qualifying items in window — sources X/Y/Z fetched, all empty") is a valid return. An empty list with explanation is preferred over silence.
+- **Reserve budget for rotation-priority sources.** Each sub-agent gets a rotation list (filtered to its category scope) from Phase 0. Reserve at least **6–8 of your ~30 fetch calls** for those sources. The high-signal must-have sources (CISA, NCSC.ch, CERT-EU, top vendor labs in scope) still go first; the rotation reservation ensures the rest of the curated list isn't silently starved by budget limits over consecutive runs. The goal is balanced, neutral coverage of the threat landscape — not the same five publishers every day.
+
+#### Rotation-list handling rules
+
+- A rotation source whose last gap reason was **"not fetched, sub-agent budget limit"** → fetch it this run unless it's clearly off-topic. This is the most common case and the rotation reservation directly addresses it.
+- A rotation source whose last gap reason was **"navigation page only, no dated content returned"** → this is the index-page-without-drill-down failure. Try the source again, this time *follow the links* into individual articles. If the site genuinely does not have dated content (it's purely a static landing page or a search interface), record that in the `Sources discovered:` / `Source maintenance notes:` part of your return — Phase 5 will update the source's `notes` and after 3 such runs may demote.
+- A rotation source whose last gap reason was **"consistent 404 / dead host"** → confirm one more time. If still dead, return a maintenance note so Phase 5 demotes the source.
+- A rotation source you successfully fetch this run **drops off the rotation list** for the next run (until it appears in a coverage gap again). The list is naturally self-rebalancing.
 
 ### Research methodology — drill, search, pivot, discover
 
@@ -399,7 +416,7 @@ Splitting these gives the reader one set of primary sources per claim and lets e
 - **§ 4 Research & Investigative Reporting** — one paragraph per substantive primary report (vendor research blog post, CERT advisory, research lab paper, peer-reviewed publication). The cited link is to the **primary report itself**, not a news article that summarised it. If a news article led you there, the news link can be added as *"via [Publisher](url)"* but only when it adds something the report didn't. Annual / periodic threat reports get a clear flag (e.g., *"Annual report — Mandiant M-Trends 2026."*) and link to the report's landing page or PDF, not to coverage.
 - **§ 5 Deep Dive — {topic}** — selected in Phase 3. Inline-linked throughout. Includes a Background paragraph (3–5 sentences) if the item has prior public reporting older than ~6 months. Body covers: incident narrative, ATT&CK technique mapping, detection concepts, hardening / mitigation, and what to do this week. **No IOCs, no rule code.**
 - **§ 6 Updates to Prior Coverage** — material developments on items from prior briefs only. Format: `> **UPDATE (originally YYYY-MM-DD):** {delta only}`. If nothing changed: *"No updates this run."*
-- **§ 7 Verification Notes** — items dropped, items marked `[SINGLE-SOURCE]`, contradictions surfaced, sub-agents that didn't return on time. Brief, factual, bulleted.
+- **§ 7 Verification Notes** — items dropped, items marked `[SINGLE-SOURCE]`, contradictions surfaced, sub-agents that didn't return on time, and **`Coverage gaps:`**. The Coverage gaps line is consumed by the next run's Phase 0 to build its rotation list, so it must be parseable: format as a single line starting with `Coverage gaps:` followed by a semicolon-separated list of source IDs / publisher names with a brief parenthetical reason for each, e.g. `Coverage gaps: ccn-cert-es (not fetched, sub-agent budget limit); govcert-ch (navigation page only); sygnia, dragos, sans-ics — not fetched in this run.` Source IDs from `sources.json` are preferred; fall back to publisher names if the source isn't yet listed there.
 
 ### Compose the file incrementally
 
@@ -520,13 +537,15 @@ Active CVE-index maintenance:
 ### Update `sources/sources.json`
 Active source maintenance — keep the list operationally honest. The repository is the single source of truth, so the agent updates this file as part of every run.
 
-- **Source fetched and used today** → set `last_successful_fetch` to today and reset `consecutive_failures` to 0.
+- **Source fetched and used today** → set `last_successful_fetch` to today and reset `consecutive_failures` to 0. Optionally also set / bump `last_covered_in_brief` to today (this field can be added if it doesn't exist yet — the schema is allowed to grow). The combination of `last_successful_fetch` (was the source reachable) and `last_covered_in_brief` (did it actually contribute content) lets the next run distinguish "alive but quiet" from "alive and feeding the brief".
+- **Source was in scope but not fetched today (rotation gap)** → leave `last_successful_fetch` and `last_covered_in_brief` alone. The brief's § 7 `Coverage gaps:` line carries this signal forward; the next run's Phase 0 picks it up.
 - **Source returned 404, dead host, or empty content today** → increment `consecutive_failures`. If `>= 3`, drop `reliability` one tier (HIGH → MEDIUM → LOW), set `status: "demoted"`, and append a `notes` line with today's date and the failure mode. **Before demoting**, do one canonical-URL probe: many publishers move their news feed (e.g., a CMS migration). If a clearly equivalent canonical page now exists at the same publisher, **update the `url` in place** rather than demoting; reset `consecutive_failures`; append a note recording the URL change with today's date.
+- **Source consistently returns navigation pages only (no dated content)** for 3+ consecutive runs in which it was attempted → append a dated note flagging the issue and lower the reliability one tier (no `demoted` status yet). The next attempted run can decide based on whether drilling into linked articles works.
 - **Better URL discovered** for an already-listed publisher (e.g., the publisher moved their advisories index, or a more specific feed exists) → update the `url` in place and append a dated note in `notes`. Keep the `id` stable so historical state references remain valid.
 - **New high-quality source discovered** during research (linked from existing trusted sources, with editorial track record, no aggregator restatements) → append a new entry with `status: "candidate"` and `notes: "discovered YYYY-MM-DD via {source-id}"`. **Do not auto-promote.** A human reviewer flips `candidate → active` after audit.
 - **Never delete a source.** `demoted` is the soft-removal mechanism. Deletion would lose the audit trail of why a source left rotation.
 
-Every `sources.json` mutation must show up in the run's git diff; the commit body should briefly enumerate URL updates, demotions, and candidates added.
+Every `sources.json` mutation must show up in the run's git diff; the commit body should briefly enumerate URL updates, demotions, candidates added, and rotation-list-driven catch-ups.
 
 ---
 
