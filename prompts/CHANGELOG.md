@@ -4,6 +4,20 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.17 — 2026-05-06
+
+### Why
+Added `ncsc-ch-security-hub` (https://security-hub.ncsc.admin.ch/#/dashboard) to `sources/sources.json` — the unified Swiss NCSC security advisory dashboard. It's an SPA with hash routing, so a naive `WebFetch` on the dashboard URL returns only the JavaScript shell. The Phase 1 "drill into articles" rule already covered the general case; this version makes it explicit for SPA dashboards and forbids ever citing a dashboard / index / listing URL as the source for a claim. The fix is to find the SPA's underlying JSON API, list advisories, then open each per-advisory detail page and cite *that*.
+
+### Changed
+- **Phase 1 research methodology, item 1 expanded.** Strengthens the existing "follow links from index pages" rule: index pages, dashboards, listings, and feed views MUST never be the cited source. The inline citation always points to the per-article / per-advisory detail URL.
+- **New SPA-specific guidance.** Concrete recipe for the NCSC-CH Security Hub and similar dashboards: identify the underlying `/api/` endpoint, list advisories, fetch each detail page, cite the detail URL. If the SPA defeats every approach, record the failure mode in `Coverage gaps:` rather than falling back to a dashboard citation.
+
+### `sources/sources.json` change
+- Added `ncsc-ch-security-hub` (HIGH reliability, ch-eu / active-breaking / gov / vulns categories, multilingual de/fr/it/en). Includes a long `notes` field documenting that the URL is an SPA entry point and the per-advisory drill-down requirement.
+
+---
+
 ## 2.16 — 2026-05-06
 
 ### Why
