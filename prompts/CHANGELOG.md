@@ -4,6 +4,29 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.10 — 2026-05-06
+
+### Why
+News sites are excellent at *discovery* — they tell defenders which vendor reports, CERT advisories, and primary research are worth reading this week. They are not the substance. The substance lives in the original Mandiant blog post, the CERT-FR advisory, the Volexity write-up, the SEC 8-K filing. A brief that summarises news summaries is two layers removed from the technical detail; a brief that cites the primary report puts the reader one click from the full content.
+
+The 2026-05-06 brief was good but occasionally cited a news article when the underlying vendor report was the substance. This codifies the news-to-primary-source pivot as an explicit research and citation rule.
+
+### Added
+- **Phase 1 research methodology — rule 2: "News points to primary sources — always pivot to the report".** Sub-agents follow news links into the original vendor / CERT / research output and build the brief from the primary source. The news article becomes at most a *"via"* reference, included only when it adds something the primary source didn't.
+- **Citation strategy** subsection in Phase 4 (composition):
+    - Inline citations point to the primary source as the substance.
+    - News added as *"via [Publisher](url)"* only when it adds value beyond the primary source.
+    - Multiple primary sources are stacked inline when they corroborate (vendor blog + joint CISA advisory + Microsoft Threat Intel post on the same campaign — all three cited).
+    - "Always link the primary report" rule: a brief paragraph without a primary-report link is a dead end.
+- **Sub-agent 3 topical queries** expanded to include vendor-name + topic searches (e.g., *"Mandiant blog [today's month]"*, *"Talos research [today's month]"*) to surface primary reports directly without going through news.
+- **Section 4 (Research & Investigative Reporting) guidance** updated: the cited link is to the primary report itself, not a news article that summarised it. Annual / periodic reports link to the report's landing page or PDF, not to news coverage.
+- **Weekly summary** updated in parallel — same news-to-primary pivot rule.
+
+### Effect on output
+The brief becomes denser in primary-source links. A typical § 4 entry now links the actual vendor blog, advisory, or paper instead of the news article that pointed there. § 1, § 2, § 3 also gain primary-report links where journalism currently dominated.
+
+---
+
 ## 2.9 — 2026-05-06
 
 ### Why

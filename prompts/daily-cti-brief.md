@@ -185,20 +185,28 @@ Each sub-agent receives:
 - **Wall-clock soft cap: ~10 minutes.** If you can see you are running long (slow translations, slow national-CERT pages, many failing fetches), return whatever you have so far with a one-line note in your output explaining the early exit. The main agent will compose the brief with whatever returned. **Never block the routine indefinitely.**
 - **Always return something.** Even a single Markdown line of explanation ("no qualifying items in window — sources X/Y/Z fetched, all empty") is a valid return. An empty list with explanation is preferred over silence.
 
-### Research methodology — drill, search, discover
+### Research methodology — drill, search, pivot, discover
 
-The curated source list is the floor, not the ceiling. Each sub-agent does three kinds of research per run:
+The curated source list is the floor, not the ceiling. Each sub-agent does four kinds of research per run:
 
-1. **Drill into curated sources, follow links from index pages.** When you fetch an aggregator page — a CERT advisories index, a news feed, a research blog landing page, an `aktuelle-vorfaelle.html` overview — **do not summarise from titles or excerpts**. Open the linked article and read the full content. Two full advisories beat ten headline-level inferences. Index pages are routing, not content. Surface and follow promising links until you have enough substance to write a defensible summary.
+1. **Drill into curated sources, follow links from index pages.** When you fetch an aggregator page — a CERT advisories index, a news feed, a research blog landing page, an `aktuelle-vorfaelle.html` overview — **do not summarise from titles or excerpts**. Open the linked article and read the full content. Two full advisories beat ten headline-level inferences. Index pages are routing, not content.
 
-2. **Search for topics, not just fixed URLs.** Run 2–4 topical `WebSearch` queries appropriate to your scope each run. Examples:
+2. **News points to primary sources — always pivot to the report.** News sites are the *discovery layer*: they tell you what's worth reading. They are **not the substance**. When a news article describes a threat report, vendor advisory, or original research published elsewhere — e.g., BleepingComputer summarising a Mandiant blog post, The Record covering a CrowdStrike piece, Heise reporting on a CERT-FR advisory, SecurityWeek writing about a Volexity finding — **follow the news article's link to the original primary source and read the report in full**. The brief is built from the primary report, not from the news summary of it. A two-paragraph technical recap of the actual Mandiant post is worth more than four paragraphs paraphrased from a journalist's framing of it.
+
+   Concretely:
+   - The inline citation in the brief points to the **primary report** (the vendor blog, the CERT advisory, the research lab paper, the regulator filing). That's the substance.
+   - The news article that led you there is at most a *"via"* reference, included only when it adds something the primary source didn't (a victim interview, original confirmation, additional analysis).
+   - When multiple primary sources exist on the same item (e.g., the original Mandiant post + a CISA joint advisory citing it + a Microsoft blog with related telemetry), cite all of them inline. CTI value compounds with corroborating primary sources.
+   - **Always link the primary report.** Even if the brief paragraph is short, the reader must be one click away from the full technical detail.
+
+3. **Search for topics, not just fixed URLs.** Run 2–4 topical `WebSearch` queries appropriate to your scope each run. Examples:
     - Sub-agent 1: *"actively exploited vulnerabilities last 24 hours"*, *"CISA KEV addition this week"*, *"public PoC released [today's month / year]"*.
     - Sub-agent 2: *"Switzerland cyber incident [today's date]"*, *"NCSC advisory week"*, *"European public sector ransomware"*, *"DACH government breach"*.
-    - Sub-agent 3: *"threat research published this week"*, *"new APT activity [today's month]"*, *"annual cybersecurity threat report [year]"*.
+    - Sub-agent 3: *"threat research published this week"*, *"new APT activity [today's month]"*, *"annual cybersecurity threat report [year]"*, plus *vendor-name + topic* queries (*"Mandiant blog [today's month]"*, *"Talos research [today's month]"*) to find primary reports the news didn't surface.
     - Sub-agent 4: *"data breach disclosure [today's month]"*, *"SEC 8-K cyber incident this week"*, *"GDPR breach notification 2026-Q2"*.
    Use search results to (a) find primary sources outside the curated list, (b) cross-validate that the brief isn't missing a major story, and (c) discover new sources worth proposing.
 
-3. **Propose new sources you discovered.** When a topical search surfaces a publisher you haven't seen before that is clearly a primary source, has editorial track record, and is relevant to your scope, propose it as a candidate (the main agent does the actual `sources.json` write in Phase 5). Sub-agent return should include a `Sources discovered:` section listing each candidate with: publisher name, URL, why it's high-quality, and a one-line scope statement.
+4. **Propose new sources you discovered.** When a topical search or a news-to-primary pivot surfaces a publisher you haven't seen before that is clearly a primary source, has editorial track record, and is relevant to your scope, propose it as a candidate (the main agent does the actual `sources.json` write in Phase 5). Sub-agent return should include a `Sources discovered:` section listing each candidate with: publisher name, URL, why it's high-quality, and a one-line scope statement.
 
 ### Source self-curation across runs
 
@@ -365,7 +373,7 @@ The file opens with `# CTI Daily Brief — YYYY-MM-DD`, then the AI-content noti
     - **§ 1b Trending vulnerabilities** — Markdown table with columns `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source`. 1–2 sentence note per row only when non-obvious technical context warrants it.
 - **§ 2 Switzerland, Europe & Public Sector** — items with CH / EU nexus first, then transferable global public-sector items. State the nexus per item (Swiss telco, German federal supplier, etc.).
 - **§ 3 Notable Incidents & Disclosures** — one short paragraph per disclosed incident. Affected organisation + sector + scale (only if officially stated) + disclosed cause / initial vector + CH / EU / public-sector relevance + a one-line *"Defender takeaway:"* sentence.
-- **§ 4 Research & Investigative Reporting** — one paragraph per substantive report or piece of journalism. Annual / periodic threat reports get a clear flag (e.g., *"Annual report — Mandiant M-Trends 2026."*).
+- **§ 4 Research & Investigative Reporting** — one paragraph per substantive primary report (vendor research blog post, CERT advisory, research lab paper, peer-reviewed publication). The cited link is to the **primary report itself**, not a news article that summarised it. If a news article led you there, the news link can be added as *"via [Publisher](url)"* but only when it adds something the report didn't. Annual / periodic threat reports get a clear flag (e.g., *"Annual report — Mandiant M-Trends 2026."*) and link to the report's landing page or PDF, not to coverage.
 - **§ 5 Deep Dive — {topic}** — selected in Phase 3. Inline-linked throughout. Includes a Background paragraph (3–5 sentences) if the item has prior public reporting older than ~6 months. Body covers: incident narrative, ATT&CK technique mapping, detection concepts, hardening / mitigation, and what to do this week. **No IOCs, no rule code.**
 - **§ 6 Updates to Prior Coverage** — material developments on items from prior briefs only. Format: `> **UPDATE (originally YYYY-MM-DD):** {delta only}`. If nothing changed: *"No updates this run."*
 - **§ 7 Verification Notes** — items dropped, items marked `[SINGLE-SOURCE]`, contradictions surfaced, sub-agents that didn't return on time. Brief, factual, bulleted.
@@ -387,6 +395,13 @@ A single `Write` call for the whole brief is a large streamed output that in pra
 If a placeholder ever leaks into a published brief because of a mid-Edit failure, that is a quality bug — § 7 should explicitly note it and the next run should re-Edit the affected section.
 
 Every paragraph or bullet in the brief has its source link inline at the point of claim. Source titles in the original language for non-English sources, with a brief English gloss in parentheses if not self-evident.
+
+### Citation strategy
+
+- **Cite the primary source as the substance.** When a vendor research blog, CERT advisory, research lab paper, or regulator filing exists for a story, the inline citation goes to *that*. News articles are discovery, not substance.
+- **News as "via", only when it adds value.** A news article cited alongside the primary report should add something — a victim interview, original confirmation, regulatory context, additional analysis — that the primary source did not. Pure restatements add noise.
+- **Stack primary sources where they corroborate.** When a story has multiple primary sources (Mandiant blog + CISA joint advisory + Microsoft Threat Intel post on the same campaign), cite all of them inline so the reader has full primary-source coverage at a glance.
+- **Always link the primary report.** Even when the brief paragraph is two sentences, the reader must be one click away from the full technical detail. A summary without a primary-report link is a dead end.
 
 ````markdown
 # CTI Daily Brief — YYYY-MM-DD

@@ -102,6 +102,8 @@ Spawn **two sub-agents in parallel** for forward-looking signal that the daily b
 
 **Research methodology:** drill into curated sources by following their links into individual articles (do not summarise from index/listing titles), run 2–4 topical `WebSearch` queries to find primary sources outside the curated list, and propose new high-quality publishers as candidates per Phase 4. The curated list is the floor, not the ceiling.
 
+**News points to primary sources — always pivot.** When a news article references a vendor blog post, CERT advisory, or research paper, follow the link and read the primary source in full. The weekly summary cites the primary report; news is at most a *"via"* reference. Always link the primary report so the reader is one click away from full technical detail.
+
 **Always produce the weekly summary** — same rule as the daily brief. If a horizon sub-agent stalls, proceed with what returned and note the gap in § 10 (Verification & coverage notes). The weekly summary file must be written, committed and pushed even when sub-agent results are partial.
 
 **Every sub-agent spawn prompt must open with a brief defensive-intent statement.** Suggested opening:
