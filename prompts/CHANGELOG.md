@@ -4,6 +4,30 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.11 — 2026-05-06
+
+### Why
+A close read of the 2026-05-06 brief against the SANS ISC W18 TeamPCP weekly diary surfaced a structural problem: § 4 lumped four distinct W18 stories into one paragraph with one shared citation set:
+
+1. The Mini Shai-Hulud SAP npm worm (Wiz / Socket / StepSecurity).
+2. The cross-ecosystem propagation into PyPI Lightning and Packagist intercom-php (OX Security / Socket).
+3. The first documented weaponisation of AI coding agent config files (.claude/settings.json, .vscode/tasks.json) by Mini Shai-Hulud (Wiz / Socket).
+4. The Vect 2.0 ChaCha20 nonce-reuse / wiper-bug disclosure (Check Point Research, separate post).
+
+Each is a distinct finding with a distinct primary publisher; the brief instead collapsed them into one paragraph and cited two roll-up sources (SANS ISC weekly diary + a Check Point weekly digest) instead of the four primary research posts. Net effect: the reader couldn't tell which source supported which claim, the substance got buried, and the citations sat one layer removed from the actual research.
+
+### Added
+- **Phase 1 research methodology — clarification on roll-up sources.** Weekly diaries (SANS ISC), vendor weekly threat-intelligence digests (Check Point's weekly research notes, etc.), and monthly summaries are *discovery*, not substance. Treat them like news: open them, follow the links to the primary publishers named inside, read those, and cite those. A roll-up cited for an individual claim is the same anti-pattern as citing news for a Mandiant finding.
+- **Phase 4 — new "Item granularity — one story per item" subsection.** Distinct findings get distinct items, each with its own specific primary source set, even when they all attribute to the same actor / campaign / ecosystem. Worked example included (the W18 TeamPCP cluster: at least three brief items, possibly four — worm on SAP, cross-ecosystem propagation, AI-agent-config weaponisation, Vect wiper-bug). Section-level grouping with a one-line orientation sentence is fine; paragraph-level conflation is not.
+- **Citation strategy** subsection extended:
+    - "Don't cite a roll-up / weekly digest in place of the primary it summarises."
+    - "One story = one set of citations." When item A's primary is Wiz and item B's primary is Check Point, those are two items in the brief, not one mixed paragraph.
+
+### Effect on output
+Future briefs will have more items per section but each item will be tighter — one specific finding, one specific primary source set, one specific defender takeaway. Sections like § 4 should look more like the SANS ISC W18 dated event log in structure: discrete dated events, each with its own attribution and source link, even when they cluster around one campaign.
+
+---
+
 ## 2.10 — 2026-05-06
 
 ### Why
