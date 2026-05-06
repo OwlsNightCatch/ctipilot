@@ -18,6 +18,25 @@ Added `ncsc-ch-security-hub` (https://security-hub.ncsc.admin.ch/#/dashboard) to
 
 ---
 
+## 2.18 — 2026-05-06
+
+### Why
+Reverted the v2.15 engagement signal entirely. The GitHub Repo Traffic API exposes github.com repo traffic only — there is no public API for GitHub Pages site traffic — so `state/engagement.json` could never measure what the agent was meant to weight (Pages-site reader engagement). Pivoting to repo-blob view counts was honest but misleading: a niche signal dressed up as a primary one. Cleanest fix is to remove the dependency.
+
+### Changed
+- **Phase 0 step 5 removed** (engagement.json read).
+- **Reader-engagement context block removed** from Phase 0. The agent no longer accepts the soft-tiebreaker signal in deep-dive selection. All editorial weighting returns to verification + CH/EU nexus + novelty as before.
+- The `state/engagement.json` file is gone; `.github/workflows/sync-engagement.yml` is gone; the SPA's repo-traffic panels are gone.
+
+### What stays
+- **On-device personal reading history** in the site's localStorage. Per-brief visit count and dwell time, never leaves the device. This is the only "page count" the system keeps, and only for briefs the visitor opened on their own device.
+- **The agent's verification gates and source-rotation logic are unchanged.**
+
+### Why this is safe
+The signal that just got removed was already only a *tiebreaker*. Verification, two-source rule, CVE existence check, no-IOCs rule, no-vanity-metrics rule, and source-rotation memory all stay in place. Editorial integrity is unaffected; we removed an input that was measuring the wrong thing.
+
+---
+
 ## 2.16 — 2026-05-06
 
 ### Why

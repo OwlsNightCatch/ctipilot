@@ -254,13 +254,15 @@ That fails when a single hostname serves multiple unrelated publishers
 `url: https://www.microsoft.com/security/blog/` more specifically than a
 generic `microsoft.com` source. Update `build.py#annotate_sources`.
 
-### S7b — Pages-site analytics (separate pipeline)
+### S7b — Pages-site analytics (separate pipeline, opt-in)
 
-**Why.** The current engagement signal in `state/engagement.json` comes from
-the GitHub Repo Traffic API, which exposes **github.com repo traffic only,
-not GitHub Pages site traffic**. Visitors to the deployed Pages site at
-`<owner>.github.io/<repo>/` are invisible to that pipeline. For "true" SPA
-reader analytics we'd need a separate ingest path.
+**Why.** The repository previously pulled the GitHub Repo Traffic API into
+`state/engagement.json`. That API exposes **github.com repo traffic only,
+not GitHub Pages site traffic**, so the metric was misleading for our
+deployment shape — it has been removed (CHANGELOG v2.18). The site no
+longer collects any aggregate visit data. If real per-brief reader
+analytics is wanted, this is what it would look like; none of the
+options below are enabled by default.
 
 **How — three options, in order of operator effort:**
 

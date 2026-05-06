@@ -28,7 +28,6 @@ one-time enablement.
 ├── state/
 │   ├── covered_items.json     # Rolling log of items reported and when (full records)
 │   ├── cves_seen.json         # Flat fast-lookup CVE index (sub-agent dedup)
-│   ├── engagement.json        # Aggregate page-view counts (no PII)
 │   └── BLOCKED.md             # Soft kill-switch — present == agent aborts
 ├── briefs/
 │   ├── README.md              # Brief format and conventions
@@ -49,8 +48,7 @@ one-time enablement.
 │   └── improvements.md        # Recommended improvements (with rationale)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Routine fallback: ff-merge claude/* → main
-│   ├── deploy-site.yml        # Build + deploy site/ to GitHub Pages
-│   └── sync-engagement.yml    # Pull aggregate Pages traffic → state/engagement.json
+│   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
 └── .gitignore
 ```
 
@@ -131,24 +129,22 @@ The current list (~75 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT
 
 ## Reader engagement (privacy-by-design)
 
-The site exposes two engagement views, neither of which collects any
-personally identifiable information:
+The site collects **no** aggregate visit data. There are no analytics
+scripts, no beacons, no cookies, no fingerprinting, no third-party
+trackers, and no GitHub Action that pulls visit counts. The strict CSP
+(`connect-src 'self'`) blocks any future regression that tries to add
+cross-origin telemetry.
 
-- **Aggregate view counts** of each brief, sourced from the
-  [GitHub Repo Traffic API](https://docs.github.com/en/rest/metrics/traffic).
-  Pulled every six hours by [`.github/workflows/sync-engagement.yml`](.github/workflows/sync-engagement.yml)
-  into [`state/engagement.json`](state/engagement.json). The file
-  carries only counts: no IPs, no cookies, no sessions, no fingerprints.
-  Surfaced on the home page and inside each brief's metadata strip.
-- **Personal reading history**, stored only in the visitor's own
-  `localStorage`. The data never leaves the device. The module honours
-  `navigator.doNotTrack` and Global Privacy Control — when set, it is a
-  no-op. Cleared with one click.
+The only "page count" is a **per-device personal reading history** in
+the visitor's own browser `localStorage` — visit count and approximate
+dwell time per brief. The data never leaves the device. The module
+honours `navigator.doNotTrack` and Global Privacy Control (no-op when
+set) and supports one-click clear.
 
-The agent's Phase 0 reads `state/engagement.json` and uses it as a soft
-tiebreaker for deep-dive selection — readers' attention guides the
-agent's attention, but never overrides the editorial verification rules.
-Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
+The agent's Phase 0 does not consume any engagement signal. Editorial
+weighting is purely verification + CH/EU nexus + novelty per
+[`docs/verification.md`](docs/verification.md). Full posture in
+[`docs/security-review.md`](docs/security-review.md) § 4.
 
 ## Security posture
 

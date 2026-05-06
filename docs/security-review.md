@@ -27,7 +27,7 @@ conditions and what controls exist to bound that behaviour.
 | A4 | The source list (`sources/sources.json`) | Determines what the agent reads each run |
 | A5 | The git repository on GitHub | The single source of truth; push access = total control |
 | A6 | The Pages reader (`site/`) | The public face; XSS would land in defenders' browsers |
-| A7 | The engagement signal (`state/engagement.json`) | Soft feedback that nudges deep-dive selection |
+| A7 | *(removed — see § 4)* | The engagement-signal asset was removed; no aggregate visit data is stored. |
 | A8 | The Claude Code routine credentials (GitHub App token, API trigger token) | Authenticate the agent's git push |
 
 ### 1.2 Adversaries
@@ -47,7 +47,7 @@ conditions and what controls exist to bound that behaviour.
 │  ─ All web pages the agent fetches (publisher CMS may be compromised)│
 │  ─ Sub-agent return values (untrusted; may carry prompt-injection)   │
 │  ─ Brief markdown content (transitively reflects above)              │
-│  ─ Reader engagement signal (could be skewed by botnet visits)       │
+│  ─ (engagement signal asset removed — see § 4)                       │
 └──────────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -247,33 +247,14 @@ App, exploitable workflow_dispatch) can land arbitrary content on `main`.
 
 ---
 
-### 2.7 Engagement-signal manipulation (T7)
+### 2.7 Engagement-signal manipulation — *removed*
 
-**Risk.** A botnet hits `briefs/2026-XX-YY.md` repeatedly, inflating its
-view count in `state/engagement.json`. The agent's Phase 0 reads this and
-weights the topic in deep-dive selection. The adversary can therefore
-**influence which topics get extra attention** — not the verification
-gates, but the priority order.
-
-**Likelihood.** Low. GitHub's Traffic API counts unique visitors by IP and
-caps influence per IP; a botnet would need many distinct IPs and even then
-the lift is bounded by the top-10 ceiling.
-
-**Impact.** Mild. Extra attention on a topic the attacker wants
-overweighted. Cannot inject content; cannot bypass verification; cannot
-change the source list.
-
-**Mitigations in place.**
-- *Engagement signal is by-design a tiebreaker only,* per the prompt's Phase 0 ([`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)). The CHANGELOG entry ([`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) v2.15) calls this out explicitly.
-- *Verification rules unchanged.* Even an over-weighted topic must clear two-source verification + CVE-existence + recency.
-- *No IOC contamination path.* The engagement signal is path counts, not content.
-- *Signal is fully aggregate.* GitHub computes counts server-side from anonymised request logs; no IP/session/cookie stored locally; an attacker cannot poison the data file directly without push access (which would be T6, a different threat).
-
-**Residual risk.** A patient adversary could nudge attention. They cannot publish anything they didn't already cause to appear in some primary source.
-
-**What would strengthen further.**
-- **Outlier suppression.** When updating `state/engagement.json`, drop briefs whose `views_14d` is more than 10× the median — that's botnet-shaped.
-- **Multi-day requirement.** Require a brief to appear in the top-10 for 3 distinct days before the agent weights it. Single-day spikes are filtered.
+The engagement-signal pipeline was removed (CHANGELOG v2.18). The agent
+no longer reads any engagement file; the SPA no longer surfaces
+aggregate counts. There is no signal for an adversary to manipulate.
+The only remaining "page count" is the on-device localStorage personal
+history (see § 4), which is a per-visitor private record an attacker
+cannot influence on someone else's device.
 
 ---
 
@@ -330,14 +311,14 @@ or session is captured and used to identify them.
 - *No client-side telemetry script.* The site has no `<script src="//analytics.example.com/...">`. The only third-party load is the favicon (inline `data:` URI).
 - *No fingerprinting libraries.*
 - *Personal history (`assets/js/personal.js`) stays in localStorage and never leaves the device.* Module honours `navigator.doNotTrack` and Global Privacy Control — when set, the module silently no-ops.
-- *Engagement signal* is computed by GitHub from anonymised request logs (the GitHub Repo Traffic API) and exposes only aggregate counts. The site never sees per-visitor data.
+- *No aggregate engagement signal* is collected at all (the previous repo-Traffic pipeline was removed; see § 4).
 - *Strict CSP* prevents connections to any third-party origin even if a future change accidentally added one.
 - *`referrer` meta set to `strict-origin-when-cross-origin`* — outbound clicks to publishers leak only the origin, not the URL path.
 - *No forms.* The site doesn't collect any input.
 
 **Residual risk.** GitHub itself sees the visitor's IP and User-Agent — the site cannot prevent that, only the data we choose to consume. We choose to consume only the aggregate counts.
 
-**Privacy-pledge document** for readers: yes, lives in the About page, surfaced from this file's section *Privacy of readers*. The aggregate `state/engagement.json` carries a `privacy_notice` field that the SPA shows next to the panel.
+**Privacy-pledge document** for readers: yes, lives in the About page, surfaced from this file's section *Privacy of readers*. The site collects **no** aggregate visit data; the on-device personal history panel is the only counter and never leaves the visitor's browser.
 
 ---
 
@@ -403,87 +384,55 @@ realistic pragmatic answer.
 
 ---
 
-## 4. Engagement metrics — privacy posture in detail
+## 4. Engagement metrics — privacy posture (on-device only)
 
 ### 4.1 What we collect
 
-A single source: the **GitHub Repo Traffic API** at
-`/repos/{owner}/{repo}/traffic/popular/paths` and `/views`. Documented at
-<https://docs.github.com/en/rest/metrics/traffic>.
+**Nothing on any server.** The site has no analytics scripts, no
+beacons, no cookies, no fingerprinting, and no integration with any
+third-party traffic service. There is no aggregate visit counter.
 
-The endpoint returns:
-- `count`: total page views in the 14-day window per path / per day
-- `uniques`: count of unique visitors as estimated by GitHub from anonymised request logs
+The repository previously included a workflow that pulled the GitHub
+Repo Traffic API into `state/engagement.json` and surfaced it as "repo
+views". That pipeline was removed (commit history visible in
+`git log -- state/engagement.json .github/workflows/sync-engagement.yml`)
+because the API exposes github.com repo traffic only, not GitHub Pages
+site traffic — so the metric was measuring the wrong thing for our
+deployment shape. Honest "no metric" is better than a metric labelled
+ambiguously.
 
-We **do not receive**:
-- IP addresses
-- User agents
-- Session identifiers
-- Cookies
-- Geolocation
-- Referrer URLs
-- Any per-request data
+### 4.2 The personal history panel — the only "page count"
 
-### 4.1.1 Important scoping limitation (added 2026-05-06)
+[`assets/js/personal.js`](../site/assets/js/personal.js) records, in
+the visitor's own browser `localStorage` only:
 
-The Repo Traffic API exposes **github.com repo traffic only — not GitHub
-Pages site traffic**. There is no public API that surfaces Pages-site
-visit counts. Real engagement signals therefore come from readers
-viewing briefs directly on github.com (`/<owner>/<repo>/blob/main/briefs/<name>.md`,
-`/raw/main/...`), not from visitors to <https://owlsnightcatch.github.io/security-newsletter/>.
+- Which briefs they have opened.
+- How many times each brief has been opened on this device.
+- Approximate dwell time on each brief (visibility-aware: paused on
+  tab hide, flushed on page unload).
 
-Two consequences:
+That's the entire engagement surface. Defences:
 
-1. The brief-name regex in `sync-engagement.yml` matches `briefs/<name>.md`
-   anywhere in the path, so repo blob views and raw views are picked up.
-   Pages-site SPA visitors are invisible to this pipeline.
-2. UI labels say "repo views (14d)" rather than "views (14d)" so readers
-   are not misled about what the count represents.
+- **Never leaves the device.** No fetch, no beacon, no sync — verified
+  by code inspection and by the strict CSP (`connect-src 'self'`)
+  which would block any cross-origin POST even if a future change
+  accidentally added one.
+- **Honours `navigator.doNotTrack === '1'` and `window.globalPrivacyControl`** — when either is true, the module is a complete no-op (no reads, no writes).
+- **Capped at 100 entries.** LRU-evicted by last-visit timestamp.
+- **One-click clear** in the home footer's "Your reading history" panel.
+- **No cookies, no IndexedDB, no Service Worker storage** — only
+  `localStorage` under a single named key (`cti.briefs.personal.v1`).
 
-If true Pages-site engagement is wanted later, the realistic options
-(documented in [`docs/improvements.md`](improvements.md)):
+### 4.3 What the agent does with engagement data
 
-- A small Cloudflare Worker / Vercel function that accepts beacons from
-  the SPA and aggregates by brief name. Requires an external endpoint.
-- A privacy-respecting third-party analytics service (Plausible,
-  GoatCounter, Cloudflare Web Analytics). Requires a third-party trust
-  decision.
+Nothing. Phase 0 of [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)
+reads the source list, the past 7 days of briefs, `covered_items.json`,
+and `cves_seen.json`. There is no engagement input. Editorial weighting
+(deep-dive selection, Updates-to-Prior-Coverage ordering) returns to
+the verification + CH/EU nexus + novelty rules of v2.14. See
+`prompts/CHANGELOG.md` v2.18 for the rollback notes.
 
-Both add infrastructure outside the repo, so neither is shipped now.
-
-### 4.2 What we store in the repo
-
-Only aggregate counts plus a 180-day rolling history of *daily snapshots*
-of those aggregate counts. Schema is documented in
-[`state/engagement.json`](../state/engagement.json) `fields`.
-
-The file is plain text, world-readable on GitHub.
-
-### 4.3 What the SPA does
-
-- Loads `data/engagement.json` (a copy of `state/engagement.json`).
-- Renders aggregate per-brief view counts on the home page and inside each brief's metadata strip.
-- That's all.
-
-### 4.4 The personal history panel
-
-`assets/js/personal.js` records — locally, in the visitor's own
-localStorage — which briefs they have visited and how often. **The data
-never leaves the device.** Defences:
-
-- Honours `navigator.doNotTrack === '1'` and `window.globalPrivacyControl` — when either is true, the module is a no-op.
-- Capped at 100 entries; LRU-evicted by last-visit.
-- Cleared by a single click on the panel's "Clear" link.
-- Not synced anywhere; not in cookies; not in IndexedDB; not exposed via any API the site fetches.
-
-### 4.5 What the agent does with it
-
-Phase 0 of `prompts/daily-cti-brief.md` reads the file. It is used solely
-as a tiebreaker for deep-dive and Updates-to-Prior-Coverage selection.
-The verification gates are **unchanged**. See T7 above for why this is
-safe.
-
-### 4.6 What we do *not* do
+### 4.4 What we do *not* do
 
 - We do not embed any third-party analytics script.
 - We do not send beacons to any endpoint.
@@ -491,12 +440,28 @@ safe.
 - We do not fingerprint.
 - We do not correlate visitors across sessions.
 - We do not infer geography or device.
+- We do not run any GitHub Action that calls the Repo Traffic API.
 - We do not send the visitor any personalised content.
 
-If a future change tries to violate any of these, the strict CSP
-(`connect-src 'self'`) will block it at the browser level, the build's
-hash check will refuse altered vendor binaries, and the privacy notice
-will mismatch the code in code review.
+The strict CSP (`connect-src 'self'`) blocks any future regression that
+tries to add cross-origin telemetry. The site's only network calls go
+to its own origin: the data bundle JSONs and brief markdown files.
+
+### 4.5 If the operator wants aggregate page counts later
+
+This requires infrastructure outside the repo. The honest options:
+
+- **Cloudflare Web Analytics** — single-tag insertion, free up to 10M
+  req/mo, no cookies, IP truncation. Operator decision: trust Cloudflare.
+- **GoatCounter** (open source) or **Plausible** — privacy-by-design,
+  GDPR-friendly, both have an HTTP API the SPA could ping. The agent
+  could pull aggregates back into the repo via a daily workflow if
+  desired.
+- **Custom Cloudflare Worker / Vercel function** — full control, full
+  responsibility. Highest setup effort.
+
+None of these are enabled by default. Each is documented in
+[`docs/improvements.md`](improvements.md) item S7b.
 
 ---
 
@@ -508,7 +473,7 @@ will mismatch the code in code review.
 | `state/cves_seen.json` grew >25% in one commit | T3 (poisoning) | Revert the commit; investigate which CVEs were added and from which source |
 | Auto-merge merged a `claude/*` branch with non-brief content | T6 (credential or scope abuse) | Revert; rotate the GitHub App credential; investigate the branch's commits |
 | `python3 site/build.py` aborts on hash mismatch | T8 (vendor tampering or accidental upgrade) | Audit the vendored binary diff; only update HASHES in a commit that *also* documents the upstream version change |
-| Engagement counts spike implausibly for one brief | T7 (botnet) | Acknowledge — verification still gates everything; consider implementing the outlier suppression noted in T7 |
+| Personal-history panel grows unbounded or won't clear | localStorage write failure | Open browser devtools → Application → Local Storage; manually delete the `cti.briefs.personal.v1` key. The site re-creates it on next visit. |
 | Site shows mixed-content warnings | CSP misconfig | Check that all asset paths are relative or `https://`; check the `upgrade-insecure-requests` directive is still in the meta tag |
 
 The runbook lives next to the policies it triggers. Update both

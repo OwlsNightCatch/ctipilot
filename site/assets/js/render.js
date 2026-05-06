@@ -282,16 +282,7 @@
 
   function renderHomeFooter(currentBrief) {
     const counts = Store.site && Store.site.counts ? Store.site.counts : {};
-    const eng = Store.engagement || {};
     const personal = window.Personal ? Personal.recent(5) : [];
-    const top = (eng.by_brief || [])
-      .filter((b) => b.name !== currentBrief.name)
-      .slice(0, 5);
-    const referrers = (eng.referrers || []).slice(0, 8);
-    const totals = (eng.totals_14d || {});
-    const totalViews   = (totals.views   || {}).count   || eng.window_views_14d   || 0;
-    const totalClones  = (totals.clones  || {}).count   || 0;
-    const totalUniques = (totals.views   || {}).uniques || eng.window_uniques_14d || 0;
 
     const fmt = (window.Personal && Personal.formatDwell) ? Personal.formatDwell : (() => '—');
     const personalHtml = personal.length
@@ -313,37 +304,6 @@
         <p class="muted" style="font-size:0.75rem;margin:0.4rem 0 0">Stored only on this device — never sent anywhere. <a href="#" data-action="clear-personal">Clear</a></p>`
       : `<p class="muted" style="font-size:0.85rem">Briefs you open on this device will appear here. Stored locally only.</p>`;
 
-    const topHtml = top.length
-      ? `<ul class="entity-list">${top.map((t) => {
-          const b = Store.findBrief(t.name);
-          return `<li>
-            <span><a class="e-title" href="#/briefs/${esc(t.name)}">${b ? esc(b.title) : esc(t.name)}</a>
-              <div class="e-meta"><span class="e-tag">${esc(t.views_14d || 0)} repo views</span>${t.uniques_14d ? `<span>${esc(t.uniques_14d)} unique</span>` : ''}</div>
-            </span>
-            <span class="mono muted">${esc(t.name)}</span>
-          </li>`;
-        }).join('')}</ul>
-        <p class="muted" style="font-size:0.75rem;margin:0.4rem 0 0">Aggregate views from the GitHub repo Traffic API (last 14 days). Counts github.com readers — direct Pages-site visits aren't separately exposed by the API.</p>`
-      : `<p class="muted" style="font-size:0.85rem">Top briefs by github.com repo views appear here once the API surfaces them. The Traffic API has a ~24h delay and a top-10 cap, so a fresh site needs a few days of traffic before counts appear.</p>`;
-
-    const referrersHtml = referrers.length
-      ? `<ul class="entity-list">${referrers.map((r) => `<li>
-          <span class="e-title mono">${esc(r.referrer || '?')}</span>
-          <div class="e-meta">
-            <span class="e-tag">${esc(r.count || 0)} visits</span>
-            ${r.uniques ? `<span>${esc(r.uniques)} unique</span>` : ''}
-          </div>
-        </li>`).join('')}</ul>`
-      : `<p class="muted" style="font-size:0.85rem">Top sources of incoming traffic to the github.com repo will appear here once visitors arrive.</p>`;
-
-    const repoTotalsHtml = (totalViews || totalClones)
-      ? `<div class="stat-grid">
-          <div class="stat" title="Total views of the repo on github.com in the last 14 days"><div class="v">${esc(totalViews)}</div><div class="l">repo views (14d)</div></div>
-          <div class="stat" title="Unique github.com visitors over 14 days, as estimated by GitHub"><div class="v">${esc(totalUniques)}</div><div class="l">unique visitors</div></div>
-          <div class="stat" title="Repository git clones in the last 14 days"><div class="v">${esc(totalClones)}</div><div class="l">git clones (14d)</div></div>
-         </div>`
-      : '';
-
     return `
       <section class="home-footer">
         <h2 class="section-head" style="margin-top:2rem">Continue exploring</h2>
@@ -355,32 +315,15 @@
           <div class="stat"><div class="v">${esc(counts.sources || 0)}</div><div class="l"><a href="#/sources">Sources</a></div></div>
         </div>
 
-        ${repoTotalsHtml}
-
         <div class="section-grid" style="margin-top:1rem">
-          <section class="panel section">
-            <h2 class="section-head" style="margin-top:0">Top briefs (github.com, 14d)</h2>
-            ${topHtml}
-          </section>
           <section class="panel section">
             <h2 class="section-head" style="margin-top:0">Your reading history</h2>
             ${personalHtml}
+            <p class="muted" style="font-size:0.78rem; margin: 0.6rem 0 0">This panel is the only "page count" the site keeps — and only for briefs <strong>you</strong> have opened on this device. No aggregate counter is collected. There is no API for visit counts on a static GitHub Pages site without third-party analytics; we do not run any.</p>
           </section>
         </div>
 
-        <div class="section-grid" style="margin-top:1.4rem">
-          <section class="panel section">
-            <h2 class="section-head" style="margin-top:0">Top referrers (14d)</h2>
-            ${referrersHtml}
-          </section>
-          <section class="panel section">
-            <h2 class="section-head" style="margin-top:0">Engagement scope</h2>
-            <p class="muted" style="font-size:0.85rem; margin:0">${esc(eng.scope || 'GitHub repo Traffic API. The Pages site itself is not separately tracked.')}</p>
-            <p class="muted" style="font-size:0.78rem; margin: 0.6rem 0 0">Per-device reading history (above) lives in your localStorage and never leaves this browser. Aggregate counts (left, and brief metadata strips) come from GitHub's repo Traffic API and are anonymous by design.</p>
-          </section>
-        </div>
-
-        <p class="muted" style="font-size:0.78rem; margin-top: 1rem; font-family: var(--mono)">build · ${esc((Store.site && Store.site.built_at) || '—')}${eng.updated_at ? ` · engagement · ${esc(eng.updated_at)}` : ''}</p>
+        <p class="muted" style="font-size:0.78rem; margin-top: 1rem; font-family: var(--mono)">build · ${esc((Store.site && Store.site.built_at) || '—')}</p>
       </section>
     `;
   }
@@ -404,8 +347,6 @@
     const topics = Store.topicsInBrief(brief.name);
     const cited = Store.sourcesInBrief(brief.name);
     const sectionsToc = brief.sections.map((s) => `<li><a href="#${esc(s.anchor)}">${esc(s.heading)}</a></li>`).join('');
-    const briefViews = (Store.engagement && (Store.engagement.by_brief || []).find((x) => x.name === brief.name)) || null;
-
     const cveList = cves.length ? `
       <h3>CVEs in this brief</h3>
       <ul style="list-style:none;padding:0;margin:0">
@@ -432,7 +373,6 @@
             ${brief.generated_by ? `<span>${esc(brief.generated_by)}</span>` : ''}
             <span>${esc(brief.items)} item${brief.items === 1 ? '' : 's'}</span>
             ${brief.cves.length ? `<span>${esc(brief.cves.length)} CVE${brief.cves.length === 1 ? '' : 's'}</span>` : ''}
-            ${briefViews ? `<span title="github.com repo views in the last 14 days. Excludes Pages-site visitors — see About.">${esc(briefViews.views_14d || 0)} repo views (14d)</span>` : ''}
           </div>
           <div class="brief-prose">${md(body)}</div>
         </div>

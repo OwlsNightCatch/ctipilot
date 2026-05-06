@@ -121,27 +121,24 @@ One-time enable:
 
 The site is fully static and read-only. The deploy workflow uses only shell-level git commands so it works under organisations that restrict third-party GitHub Actions.
 
-## Enable engagement metrics (one-time)
+## Engagement metrics — none, by choice
 
-The repository ships with [`sync-engagement.yml`](../.github/workflows/sync-engagement.yml) — a workflow that pulls aggregate page-view counts from the GitHub Repo Traffic API into `state/engagement.json` so the agent can use reader engagement as a soft tiebreaker for deep-dive selection. The data is fully aggregate (no IPs, no sessions, no cookies).
+The site does **not** collect aggregate visit counts. The only "page
+count" is the per-device localStorage history that each visitor sees
+in the home footer's *Your reading history* panel — that data never
+leaves the device.
 
-The Traffic API requires a Personal Access Token; the default `GITHUB_TOKEN` issued to workflows cannot reach this endpoint (the `Administration: read` permission isn't in the workflow `permissions:` allowlist). One-time setup:
+A previous version of this repo pulled the GitHub Repo Traffic API
+into `state/engagement.json` (and required a `TRAFFIC_PAT` secret). It
+was removed because the API exposes github.com repo views only — not
+GitHub Pages site visits — so the metric was misleading for our
+deployment shape. If the operator wants real Pages-site analytics
+later, the realistic options are documented in
+[`docs/improvements.md`](improvements.md) item S7b (Cloudflare Web
+Analytics, GoatCounter, Plausible). None are enabled by default.
 
-1. Go to <https://github.com/settings/tokens?type=beta> and **Generate new fine-grained token**.
-2. **Resource owner**: yourself (or the org).
-3. **Repository access**: only the `security-newsletter` repo.
-4. **Repository permissions** → **Administration** → **Read-only**. (Nothing else needed.)
-5. **Generate token**, copy the `github_pat_…` value.
-6. In the repo: **Settings** → **Secrets and variables** → **Actions** → **New repository secret**.
-7. Name: `TRAFFIC_PAT`. Value: paste the token. Save.
-
-After this, the workflow runs every 6 hours via cron and can be triggered manually:
-
-```bash
-gh workflow run sync-engagement.yml --repo <owner>/security-newsletter
-```
-
-If the secret is missing, the workflow exits cleanly with a warning and does not fail the run — the rest of the pipeline keeps working.
+If a `TRAFFIC_PAT` secret was created during the previous version, you
+can safely delete it from the repo's secrets — nothing reads it now.
 
 ## Limits to be aware of
 

@@ -12,7 +12,6 @@
     topics: null,     // {items: [{key, type, title, first_covered, last_covered, primary_source_url, briefs, appearances}]}
     sources: null,    // {sources: [{id, publisher, url, category, reliability, language, status, notes, appearances, ...}]}
     search: null,     // [{kind, id, title, hint, tags, route}]
-    engagement: null, // {updated_at, by_brief: [{name, views_14d, uniques_14d}]} | null
 
     /** Lazily-fetched markdown by path. */
     _md: new Map(),
@@ -21,14 +20,13 @@
     async load() {
       if (this._loadPromise) return this._loadPromise;
       this._loadPromise = (async () => {
-        const [site, manifest, cves, topics, sources, search, engagement] = await Promise.all([
+        const [site, manifest, cves, topics, sources, search] = await Promise.all([
           this._json('data/site.json'),
           this._json('data/manifest.json'),
           this._json('data/cves.json'),
           this._json('data/topics.json'),
           this._json('data/sources.json'),
           this._json('data/search.json'),
-          this._json('data/engagement.json'),
         ]);
         this.site = site;
         this.manifest = manifest || [];
@@ -36,7 +34,6 @@
         this.topics = topics || { items: [] };
         this.sources = sources || { sources: [] };
         this.search = search || [];
-        this.engagement = engagement || null;
         return this;
       })();
       return this._loadPromise;

@@ -128,12 +128,8 @@ The agent maintains this file autonomously per the lifecycle in the top-level
 - [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — triggers on
   push to `main` whenever the site inputs change. Runs `site/build.py`,
   uploads the bundle to GitHub Pages.
-- [`sync-engagement.yml`](../.github/workflows/sync-engagement.yml) —
-  every 6 hours, pulls aggregate page-view counts from the GitHub Repo
-  Traffic API into `state/engagement.json`. Privacy posture in
-  [`docs/security-review.md`](security-review.md) § 4.
 
-The three workflows are independent. The site is a *consumer* of the agent's
+The two workflows are independent. The site is a *consumer* of the agent's
 output and never writes back.
 
 ### `site/` — the public reader
