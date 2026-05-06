@@ -254,6 +254,40 @@ That fails when a single hostname serves multiple unrelated publishers
 `url: https://www.microsoft.com/security/blog/` more specifically than a
 generic `microsoft.com` source. Update `build.py#annotate_sources`.
 
+### S7b — Pages-site analytics (separate pipeline)
+
+**Why.** The current engagement signal in `state/engagement.json` comes from
+the GitHub Repo Traffic API, which exposes **github.com repo traffic only,
+not GitHub Pages site traffic**. Visitors to the deployed Pages site at
+`<owner>.github.io/<repo>/` are invisible to that pipeline. For "true" SPA
+reader analytics we'd need a separate ingest path.
+
+**How — three options, in order of operator effort:**
+
+1. **Cloudflare Web Analytics** — privacy-respecting, no cookies, free up
+   to 10M req/mo. Single `<script>` tag insertion. Adds a third-party
+   trust decision but the data stays only on Cloudflare's servers, not
+   in this repo. Aggregate dashboards via Cloudflare UI; no API into
+   `state/engagement.json` (so the agent's Phase 0 can't consume it).
+
+2. **GoatCounter** (open-source) or **Plausible** — both privacy-by-design,
+   GDPR-friendly, GoatCounter has a free hosted tier and an API. A
+   small extension to `sync-engagement.yml` would query GoatCounter's
+   `/api/v0/stats/hits` and merge into `state/engagement.json`. This
+   integrates cleanly with the existing pipeline and gives the agent a
+   true Pages-traffic signal.
+
+3. **Cloudflare Worker / Vercel function** with a beacon endpoint — the
+   SPA POSTs `{brief, dwell}` events; the worker aggregates by day in
+   KV. A daily GitHub Action pulls the aggregates into the repo.
+   Highest effort, highest control. Best fit if engagement matters
+   enough to operate small infra.
+
+For now the github.com repo-blob views (which the current pipeline does
+capture) are the available signal. Many security professionals read
+markdown directly on github.com rather than on the rendered site, so
+that signal isn't worthless — just incomplete.
+
 ### S8 — Operations dashboard
 
 **Why.** Pairs with [A5](#a5--record-per-run-sub-agent-allocation). Once

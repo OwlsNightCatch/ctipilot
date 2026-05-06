@@ -79,36 +79,42 @@ jobs:
           set -euo pipefail
           mkdir -p state
 
-          # Pull popular paths (max 10 paths, 14-day window) and aggregate
-          # views/uniques. Both endpoints are documented at
-          # https://docs.github.com/en/rest/metrics/traffic .
-          gh api "repos/${REPO}/traffic/popular/paths" > /tmp/paths.json
-          gh api "repos/${REPO}/traffic/views"        > /tmp/views.json
+          # All four endpoints in the Repo Traffic API are pulled. The
+          # popular/paths endpoint caps at top-10 paths over 14 days, but
+          # we accumulate by_brief and popular_paths across runs so that a
+          # path falling out of the top-10 doesn't lose its last-known
+          # count. Documented:
+          # https://docs.github.com/en/rest/metrics/traffic
+          gh api "repos/${REPO}/traffic/popular/paths"      > /tmp/paths.json     || echo '[]' > /tmp/paths.json
+          gh api "repos/${REPO}/traffic/views"              > /tmp/views.json     || echo '{}' > /tmp/views.json
+          gh api "repos/${REPO}/traffic/popular/referrers"  > /tmp/referrers.json || echo '[]' > /tmp/referrers.json
+          gh api "repos/${REPO}/traffic/clones"             > /tmp/clones.json    || echo '{}' > /tmp/clones.json
 
           python3 - <<'PY'
-          import json, os, re, datetime
+          import json, re, datetime
           from pathlib import Path
 
-          paths = json.loads(Path('/tmp/paths.json').read_text() or '[]')
-          views = json.loads(Path('/tmp/views.json').read_text() or '{}')
+          paths     = json.loads(Path('/tmp/paths.json').read_text()     or '[]')
+          views     = json.loads(Path('/tmp/views.json').read_text()     or '{}')
+          referrers = json.loads(Path('/tmp/referrers.json').read_text() or '[]')
+          clones    = json.loads(Path('/tmp/clones.json').read_text()    or '{}')
 
           state_path = Path('state/engagement.json')
-          existing = {}
-          if state_path.exists():
-              try: existing = json.loads(state_path.read_text())
-              except Exception: existing = {}
-
-          history = existing.get('history', [])
+          try:
+              existing = json.loads(state_path.read_text()) if state_path.exists() else {}
+          except Exception:
+              existing = {}
 
           today = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-          # Only keep one snapshot per UTC day; later runs overwrite the day.
           today_date = today[:10]
-          history = [h for h in history if not h.get('snapshot_at','').startswith(today_date)]
 
-          # Map paths back to brief identifiers. Pages serves the SPA shell
-          # at /, but every brief is also fetched as /briefs/<name>.md, so
-          # those paths are uniquely attributable.
-          BRIEF_RE = re.compile(r'/briefs/(?:weekly/)?(?P<name>\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})\.md')
+          # ── Brief mapping. Repo Traffic exposes github.com paths only —
+          # see docs/security-review.md § 4.1.1. The regex matches the
+          # brief filename anywhere in the path so /<owner>/<repo>/blob/.../briefs/X.md,
+          # /<owner>/<repo>/raw/.../briefs/X.md, and direct /briefs/X.md
+          # are all picked up. Pages-site SPA visitors are NOT visible here.
+          BRIEF_RE = re.compile(r'briefs/(?:weekly/)?(?P<name>\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})\.md')
+
           by_brief = {}
           for entry in paths:
               path = entry.get('path', '')
@@ -116,48 +122,113 @@ jobs:
               if not m:
                   continue
               key = m.group('name')
-              by_brief[key] = {
-                  'name': key,
-                  'path': path,
-                  'views_14d':   entry.get('count', 0),
-                  'uniques_14d': entry.get('uniques', 0),
-                  'last_in_top10': today_date,
-              }
+              # If the same brief shows on multiple paths (blob + raw, etc.)
+              # take the highest count rather than overwriting.
+              prev = by_brief.get(key, {})
+              cur_views = entry.get('count', 0)
+              if cur_views >= prev.get('views_14d', 0):
+                  by_brief[key] = {
+                      'name': key,
+                      'path': path,
+                      'title': entry.get('title', ''),
+                      'views_14d':   cur_views,
+                      'uniques_14d': entry.get('uniques', 0),
+                      'last_in_top10': today_date,
+                  }
 
-          # Merge with prior snapshot — the API's top-10 ceiling means a
-          # brief can fall out of view; we don't lose its last-seen counts.
+          # Carry forward last-known counts when a brief drops out of the
+          # live top-10 (the API's ceiling).
           prev_by_name = {b['name']: b for b in (existing.get('by_brief') or [])}
           for name, prev in prev_by_name.items():
               if name not in by_brief:
                   by_brief[name] = prev
+          merged_briefs = sorted(by_brief.values(), key=lambda b: b.get('views_14d', 0), reverse=True)
 
-          merged = sorted(by_brief.values(), key=lambda b: b.get('views_14d', 0), reverse=True)
+          # ── Persist ALL popular paths (not just briefs), with same
+          # carry-forward semantics. Useful for the operator to see whether
+          # the README, file tree, or specific advisories are getting
+          # attention beyond what we attributed to briefs.
+          popular_paths = []
+          live = {}
+          for entry in paths:
+              p = entry.get('path', '')
+              live[p] = {
+                  'path': p,
+                  'title': entry.get('title', ''),
+                  'views_14d':   entry.get('count', 0),
+                  'uniques_14d': entry.get('uniques', 0),
+                  'last_in_top10': today_date,
+                  'brief_name': (BRIEF_RE.search(p).group('name') if BRIEF_RE.search(p) else None),
+              }
+          prev_paths = {p['path']: p for p in (existing.get('popular_paths') or [])}
+          for p, prev in prev_paths.items():
+              if p not in live:
+                  live[p] = prev
+          popular_paths = sorted(live.values(), key=lambda x: x.get('views_14d', 0), reverse=True)
 
+          # ── Referrers — top 10 over 14 days. Carry forward similarly.
+          live_refs = {r.get('referrer'): {
+                  'referrer': r.get('referrer'),
+                  'count':   r.get('count', 0),
+                  'uniques': r.get('uniques', 0),
+                  'last_seen': today_date,
+              } for r in referrers}
+          prev_refs = {r['referrer']: r for r in (existing.get('referrers') or [])}
+          for k, prev in prev_refs.items():
+              if k not in live_refs:
+                  live_refs[k] = prev
+          merged_refs = sorted(live_refs.values(), key=lambda r: r.get('count', 0), reverse=True)
+
+          # ── Daily snapshot — keep up to 180 days for trend analysis.
+          history = [h for h in (existing.get('history') or [])
+                     if not h.get('snapshot_at', '').startswith(today_date)]
           history.append({
-              'snapshot_at': today,
-              'window_views_14d':   views.get('count', 0),
-              'window_uniques_14d': views.get('uniques', 0),
-              'top10': [{'name': b['name'], 'views_14d': b['views_14d']} for b in merged[:10]],
+              'snapshot_at':           today,
+              'window_views_14d':      views.get('count', 0),
+              'window_uniques_14d':    views.get('uniques', 0),
+              'window_clones_14d':     clones.get('count', 0),
+              'window_clone_uniques_14d': clones.get('uniques', 0),
+              'top_paths': [{'path': p['path'], 'count': p['views_14d']} for p in popular_paths[:10]],
+              'top_referrers': [{'referrer': r['referrer'], 'count': r['count']} for r in merged_refs[:10]],
           })
-          # Keep at most 180 daily snapshots (~6 months).
           history = history[-180:]
 
           out = {
+              'schema_version': 2,
               'updated_at': today,
               'window_days': 14,
-              'window_views_14d':   views.get('count', 0),
-              'window_uniques_14d': views.get('uniques', 0),
-              'by_brief': merged,
+              'scope': (
+                  "github.com repository traffic. NOT GitHub Pages site traffic — "
+                  "the Pages site's visit logs are not exposed by any public API. "
+                  "Brief-level counts here reflect readers who opened the markdown "
+                  "files directly on github.com (blob view, raw view, file tree)."
+              ),
+              'totals_14d': {
+                  'views':   {'count': views.get('count', 0),  'uniques': views.get('uniques', 0)},
+                  'clones':  {'count': clones.get('count', 0), 'uniques': clones.get('uniques', 0)},
+              },
+              'by_brief': merged_briefs,
+              'popular_paths': popular_paths,
+              'referrers': merged_refs,
               'history': history,
               'privacy_notice': (
-                  "Aggregate counts only. Source: GitHub Repo Traffic API "
-                  "(https://docs.github.com/en/rest/metrics/traffic). "
-                  "No IP addresses, no session identifiers, no cookies, no fingerprints. "
-                  "Computed server-side by GitHub from anonymised request logs."
+                  "Aggregate counts only — no IP addresses, no session identifiers, "
+                  "no cookies, no fingerprints. Source: GitHub Repo Traffic API "
+                  "(https://docs.github.com/en/rest/metrics/traffic). The API "
+                  "exposes github.com repo traffic only; visits to the deployed "
+                  "GitHub Pages site are not separately surfaced by GitHub. "
+                  "See docs/security-review.md § 4 for the full posture."
               ),
           }
           state_path.write_text(json.dumps(out, indent=2) + '\n')
-          print(f"engagement: {len(merged)} briefs · 14d views {out['window_views_14d']} · uniques {out['window_uniques_14d']}")
+          print(
+              f"engagement v{out['schema_version']}: "
+              f"briefs={len(merged_briefs)} · "
+              f"paths={len(popular_paths)} · "
+              f"referrers={len(merged_refs)} · "
+              f"views_14d={views.get('count', 0)} ({views.get('uniques', 0)} unique) · "
+              f"clones_14d={clones.get('count', 0)}"
+          )
           PY
 
       - name: Commit changes (if any)

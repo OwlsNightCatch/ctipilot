@@ -424,6 +424,33 @@ We **do not receive**:
 - Referrer URLs
 - Any per-request data
 
+### 4.1.1 Important scoping limitation (added 2026-05-06)
+
+The Repo Traffic API exposes **github.com repo traffic only — not GitHub
+Pages site traffic**. There is no public API that surfaces Pages-site
+visit counts. Real engagement signals therefore come from readers
+viewing briefs directly on github.com (`/<owner>/<repo>/blob/main/briefs/<name>.md`,
+`/raw/main/...`), not from visitors to <https://owlsnightcatch.github.io/security-newsletter/>.
+
+Two consequences:
+
+1. The brief-name regex in `sync-engagement.yml` matches `briefs/<name>.md`
+   anywhere in the path, so repo blob views and raw views are picked up.
+   Pages-site SPA visitors are invisible to this pipeline.
+2. UI labels say "repo views (14d)" rather than "views (14d)" so readers
+   are not misled about what the count represents.
+
+If true Pages-site engagement is wanted later, the realistic options
+(documented in [`docs/improvements.md`](improvements.md)):
+
+- A small Cloudflare Worker / Vercel function that accepts beacons from
+  the SPA and aggregates by brief name. Requires an external endpoint.
+- A privacy-respecting third-party analytics service (Plausible,
+  GoatCounter, Cloudflare Web Analytics). Requires a third-party trust
+  decision.
+
+Both add infrastructure outside the repo, so neither is shipped now.
+
 ### 4.2 What we store in the repo
 
 Only aggregate counts plus a 180-day rolling history of *daily snapshots*
