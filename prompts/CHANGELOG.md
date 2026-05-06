@@ -4,6 +4,20 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.5 — 2026-05-06
+
+### Why
+Second observed failure mode: with v2.4, all four sub-agents returned successfully and verification + deep-dive selection completed, but the final composition step hit `API Error: Stream idle timeout — partial response received`. The brief was being written in a single large `Write` tool call (the entire 8-section Markdown blob in one streamed response). The model pauses between sections during generation, and those pauses are long enough to trip the proxy's idle threshold on a large output.
+
+### Changed
+- **Phase 4 (daily) and Phase 3 (weekly) now require incremental writes.** One `Write` for the skeleton (header + AI notice + metadata + TL;DR + section headings with `_(composing — see Phase 4)_` placeholders), one `Read` to satisfy the `Edit` tool's precondition, then one `Edit` per section to replace the placeholder with the section's full content. Each `Edit` is a much shorter streamed output, well within idle-threshold safety.
+- If a single section's content is itself unusually long (e.g., a vuln table with many rows), the agent splits that section's Edit into two halves.
+
+### Same-output guarantee
+The brief's content and structure are unchanged. Only the I/O pattern of the composition phase shifts — from one large `Write` to one `Write` + N `Edit` calls. This trades a small amount of tool-call overhead for stream-stability.
+
+---
+
 ## 2.4 — 2026-05-06
 
 ### Why

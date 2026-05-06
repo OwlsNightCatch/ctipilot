@@ -121,9 +121,18 @@ Sub-agents return free-form Markdown with required fields (sources with inline l
 
 ---
 
-## PHASE 3 — COMPOSE WEEKLY SUMMARY
+## PHASE 3 — COMPOSE WEEKLY SUMMARY (incremental writes — required)
 
-Write to `briefs/weekly/YYYY-Www.md`.
+Same incremental pattern as the daily brief — a single `Write` for the whole 11-section file is too long for streaming and trips `Stream idle timeout — partial response received`.
+
+**Required pattern:**
+
+1. **`Write` the skeleton.** Header, AI-generation notice, generated-by metadata line, the `## 0. Week at a glance` bullets (short, fine to include in the skeleton), then `## 1.` through `## 10.` each with a placeholder `_(composing — see Phase 3)_`.
+2. **`Read`** the freshly-written file.
+3. **`Edit` each section in turn**, one section per call. Replace the placeholder with the full section content.
+4. If any section is unusually long (e.g., the CVE roll-up table or the multi-day campaigns rollup), split that section's Edit into two halves.
+
+Then write to `briefs/weekly/YYYY-Www.md`.
 
 ````markdown
 # CTI Weekly Summary — YYYY-Www ({Mon DD} – {Sun DD}, YYYY)
