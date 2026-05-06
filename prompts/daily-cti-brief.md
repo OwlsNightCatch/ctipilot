@@ -431,10 +431,13 @@ Every `sources.json` mutation must show up in the run's git diff; the commit bod
 
 The repository is published from `main`. The routine commits and **pushes immediately** so every brief is publicly available the moment it is generated. There is no review branch, no staging, no human gate between commit and publication — the briefs are already AI-content-noticed and source-linked.
 
-### Branch selection
+### Branch behaviour
 
-- **Default:** push to `origin/main`.
-- **Environment override:** if the execution environment has given explicit instructions to develop on a different branch (e.g., a Claude Code routine container working on `claude/<adjective>-<name>-<id>`, or a custom CI worktree branch), honour those — commit and push to that branch. The brief is considered published when whatever PR / merge / fast-forward policy the environment provides lands the change on `main`. The routine's job is to commit and push *somewhere the environment can take from*; the environment handles the path to `main`.
+The routine commits on whatever branch the execution environment has checked out:
+- **Local execution** (laptop, launchd, plain CI): typically `main` itself.
+- **Claude Code routine container**: a container-assigned `claude/<adjective>-<name>-<id>` branch.
+
+The local branch name does not matter for publishing — the publish target is always `main`. The push uses `HEAD:main` syntax to push the current commit to remote `main` regardless of the local branch.
 
 ### Commands
 
@@ -446,16 +449,27 @@ git commit -m "brief: YYYY-MM-DD
 - sources: <one line summary of any URL updates / demotions / candidates>
 - cves: <new: N · updated: N · removed: N (with reason)>
 "
-# Replace 'main' below with the environment-mandated branch when applicable.
-git push origin <branch>
+
+# Primary publish path: push the current commit to remote main.
+# In Claude Code routine containers this requires the per-routine
+# permission "Allow unrestricted branch pushes" to be enabled for this
+# repo. With it enabled, this single push delivers the brief directly
+# to main and the brief is live.
+git push origin HEAD:main
 ```
 
 ### Push-failure handling
 
-- Try the push **once**. Do **not** retry-with-backoff. The two main classes of failure are:
-    - **`403 Forbidden` / `Permission denied`** — auth / GitHub-App-installation issue. Will not resolve in seconds. Retrying is noise.
-    - **Transient network blip** — will resolve, but the *next* run will pick up the commit anyway.
-- On any push failure: surface the error verbatim in the operator output, **do not roll back the commit**, and exit phase cleanly. The local commit is preserved; whoever fixes the auth (or the next successful run) will publish it.
+If `git push origin HEAD:main` fails with **403 / permission denied** (typically because "Allow unrestricted branch pushes" is *not* enabled, or the routine credential doesn't have repo-write scope), fall back to pushing the *current* branch as-is so something downstream can take it from there:
+
+```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+git push origin "$current_branch"
+```
+
+- If the fallback also fails → surface the error verbatim, keep the commit, exit. A later run / manual push will publish.
+- The fallback push to a `claude/<...>` branch leaves the brief on a feature branch where a GitHub auto-merge rule, GitHub Action, or PR review can land it on `main`. See `docs/routine-setup.md` for the recommended setup.
+- Try each push **once**. No retry-with-backoff. 403 is structural, not transient.
 - **Never `--force`-push from the routine**, ever.
 
 ---

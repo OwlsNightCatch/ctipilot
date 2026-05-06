@@ -2,11 +2,17 @@
 
 This repository's daily and weekly briefs are produced by [Claude Code routines](https://claude.ai/code/routines), running on Anthropic-managed cloud infrastructure. This page documents the one-time setup needed for the routine to push back to this repo, and the choices that affect how briefs are published.
 
-## Why the prompts default to `main`
+## How publishing works
 
-Both [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) and [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) instruct the agent to commit and push to `origin/main`. That's the *publishing target* — wherever the routine actually pushes (a `claude/...` feature branch or `main` directly), the brief is considered published when it lands on `main`.
+The routine container always checks out a `claude/<adjective>-<name>-<id>` branch on session start — that's hardcoded environment behavior. The prompts don't fight this; instead they commit on whatever branch the environment assigned and then publish with:
 
-The prompts also explicitly defer to environment-level branch instructions: when the routine container assigns a `claude/<adjective>-<name>-<id>` branch, the agent honours that and lets the environment's PR / merge / auto-merge policy take the change to `main`.
+```sh
+git push origin HEAD:main
+```
+
+This pushes the current commit directly to remote `main`, regardless of the local branch name. With **Allow unrestricted branch pushes** enabled on the routine for this repo, the push succeeds and the brief is live immediately.
+
+If that primary push is rejected (Path C below not enabled, branch protection rules, etc.), the prompt falls back to pushing the current `claude/...` branch as-is, so a GitHub auto-merge rule, a GitHub Action, or manual PR review can take it from there.
 
 ## What you need to do once
 
@@ -33,27 +39,62 @@ This widens your `gh` token to include `repo` write scope and syncs it to your c
 
 Either way, the credential the routine uses must have write access to this repo, otherwise the push step fails with HTTP 403 *(Permission to … denied)*.
 
-### 2. Decide on the publishing model
+### 2. Enable direct-push to `main`
 
-By default, the routine pushes to a `claude/<adjective>-<name>-<id>` feature branch. From the [Claude Code routines docs](https://docs.claude.com/en/docs/claude-code/routines):
+From the [Claude Code routines docs](https://docs.claude.com/en/docs/claude-code/routines):
 
 > By default, Claude can only push to branches prefixed with `claude/`. This prevents routines from accidentally modifying protected or long-lived branches. To remove this restriction for a specific repository, enable **Allow unrestricted branch pushes** for that repository when creating or editing the routine.
 
-Two acceptable workflows:
-
-| Workflow | Setup | Publishing latency |
-|---|---|---|
-| **Direct push to `main`** | Enable **Allow unrestricted branch pushes** in the routine's edit form for this repo | Brief is live the moment the routine commits |
-| **Feature branch + auto-merge** | Leave default; configure GitHub repo auto-merge for `claude/*` branches | Brief is live a few moments after the routine pushes — GitHub fast-forwards into `main` automatically |
-
-For a public CTI feed where every brief is meant to be live immediately, "direct push to `main`" is the simplest setup.
-
-To enable it:
+Enable that for this repo so the prompt's `git push origin HEAD:main` succeeds:
 
 1. <https://claude.ai/code/routines> → click the brief routine.
 2. Pencil icon → **Edit routine**.
 3. Scroll to **Permissions** → enable **Allow unrestricted branch pushes** for this repo.
 4. Save.
+
+After this, every routine run lands the brief directly on `main` with no PR / merge step.
+
+### 3. Optional fallback — GitHub Action that merges `claude/*` to `main`
+
+If you'd like a safety net that catches the cases where the primary push to `main` fails (Path C accidentally disabled, etc.), add this workflow at `.github/workflows/auto-merge-claude.yml`:
+
+```yaml
+name: Auto-merge claude/* to main
+on:
+  push:
+    branches:
+      - "claude/**"
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: Fast-forward main from feature branch
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "Claude Code"
+          git config user.email "noreply@anthropic.com"
+          git fetch origin "$BRANCH"
+          # Allow only if the branch is a strict ancestor + descendant of main
+          # (i.e., it's a fast-forward).
+          if git merge-base --is-ancestor main "origin/$BRANCH"; then
+            git merge --ff-only "origin/$BRANCH"
+            git push origin main
+            git push origin --delete "$BRANCH" || true
+          else
+            echo "Branch $BRANCH is not a fast-forward of main; skipping."
+            exit 0
+          fi
+```
+
+With this Action in place, even a failed primary push still publishes the brief — the fallback push lands on `claude/...`, the Action fast-forwards `main`, and the feature branch is cleaned up. It's a redundant safety net; with Path C correctly enabled, the Action just sits idle.
 
 ## Setting up the routine itself
 

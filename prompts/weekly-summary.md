@@ -216,10 +216,7 @@ Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` 
 
 ## PHASE 5 — COMMIT & PUSH
 
-The weekly summary is published the moment it is generated, the same way as daily briefs.
-
-### Branch selection
-Same rule as the daily prompt: default to `origin/main`; if the execution environment has explicitly assigned a different branch (e.g., a Claude Code routine container's `claude/<adjective>-<name>-<id>`), honour that. The environment is responsible for getting the branch to `main`.
+Same publish path as the daily brief: commit on whatever branch the environment has checked out, then push directly to `main` via `HEAD:main`. With "Allow unrestricted branch pushes" enabled on the routine, the single push lands the summary on `main` immediately.
 
 ### Commands
 ```bash
@@ -229,13 +226,20 @@ git commit -m "weekly: YYYY-Www summary
 - top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N
 - sources: <one line summary of any URL updates / demotions / candidates>
 "
-# Replace 'main' below with the environment-mandated branch when applicable.
-git push origin <branch>
+
+git push origin HEAD:main
 ```
 
 ### Push-failure handling
-- One attempt. No retry-with-backoff (403 won't fix itself in seconds; a network blip will be re-tried by the next run anyway).
-- On failure, surface the error in operator output and keep the commit.
+If the primary push is rejected with 403, fall back to pushing the current branch:
+
+```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+git push origin "$current_branch"
+```
+
+- One attempt for each push. No retry-with-backoff.
+- On total failure, surface the error in operator output and keep the commit.
 - Never `--force`-push from the routine.
 
 ---

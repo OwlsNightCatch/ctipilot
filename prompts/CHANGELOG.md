@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.7 — 2026-05-06
+
+### Why
+The 2026-05-06 run published successfully — but to a `claude/determined-hypatia-PCpxM` feature branch instead of `main`, even though "Allow unrestricted branch pushes" (Path C) was enabled on the routine. Cause: the routine container *always* checks out a `claude/<adjective>-<name>-<id>` branch on session start, and v2.6 told the agent to "honour the environment branch and push there". Path C means the routine *can* push to `main`, but v2.6 didn't tell it to try.
+
+### Changed
+- **Phase 6 (daily) and Phase 5 (weekly) now use `git push origin HEAD:main` as the primary publish path.** This pushes the current commit to remote `main` regardless of the local branch name. With Path C enabled, the brief lands directly on `main` and is live immediately. No PR step, no merge gate, no auto-merge dependency.
+- **Fallback** if the primary push is rejected with 403: push the current branch as-is, so a GitHub auto-merge rule, a GitHub Action, or a manual PR review can take the brief to `main`. This handles the case where Path C is accidentally disabled or the routine credential lacks repo-write scope.
+- Removed the v2.6 "honour environment branch override" framing — the prompt now actively pushes to `main`, with the fallback handling environments that block direct pushes.
+
+### `docs/routine-setup.md` updated
+- Explains the `HEAD:main` mechanism.
+- Adds an optional `.github/workflows/auto-merge-claude.yml` GitHub Action as a safety net for the fallback case.
+
+---
+
 ## 2.6 — 2026-05-06
 
 ### Why
