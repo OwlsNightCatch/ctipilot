@@ -19,7 +19,7 @@ Both share the same source list (`sources/sources.json`), state files (`state/co
 
 ## 1. Routine fires
 
-A scheduled Claude Code task fires once per day on Opus 4.7. Recommended schedule: weekday mornings local time, e.g. 06:30 Europe/Zurich, so the brief is available before the SOC's morning shift handover. Weekends optional.
+A scheduled Claude Code routine fires once per day on whichever Claude model the routine is currently configured to use. Recommended schedule: weekday mornings local time, e.g. 06:30 Europe/Zurich, so the brief is available before the SOC's morning shift handover. Weekends optional.
 
 The routine's prompt is exactly:
 
