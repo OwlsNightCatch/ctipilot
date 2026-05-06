@@ -95,10 +95,12 @@ Build five working lists from the week's daily briefs:
 Spawn **two sub-agents in parallel** for forward-looking signal that the daily briefs may have missed because it sits beyond the daily window. The two-agent design (down from three in earlier versions) keeps coverage but reduces per-run LLM load.
 
 **Operational guardrails (same as the daily prompt):**
-- Target ≤20 WebFetch/WebSearch calls per sub-agent.
+- Target ≤30 WebFetch/WebSearch calls per sub-agent.
 - Per-source timeout: skip and move on; do not retry more than once.
-- Wall-clock soft cap ~10 minutes per sub-agent — return whatever you have if you're running long.
+- Wall-clock soft cap ~10 minutes per sub-agent.
 - Always return something, even an explanation of an empty result.
+
+**Research methodology:** drill into curated sources by following their links into individual articles (do not summarise from index/listing titles), run 2–4 topical `WebSearch` queries to find primary sources outside the curated list, and propose new high-quality publishers as candidates per Phase 4. The curated list is the floor, not the ceiling.
 
 **Always produce the weekly summary** — same rule as the daily brief. If a horizon sub-agent stalls, proceed with what returned and note the gap in § 10 (Verification & coverage notes). The weekly summary file must be written, committed and pushed even when sub-agent results are partial.
 
@@ -121,18 +123,40 @@ Sub-agents return free-form Markdown with required fields (sources with inline l
 
 ---
 
-## PHASE 3 — COMPOSE WEEKLY SUMMARY (incremental writes — required)
+## PHASE 3 — COMPOSE WEEKLY SUMMARY
 
-Same incremental pattern as the daily brief — a single `Write` for the whole 11-section file is too long for streaming and trips `Stream idle timeout — partial response received`.
+The weekly summary is a finished publication. Same hard rule as the daily brief: **no workflow-internal language in the output.** No "From sub-agent W1", no "see Phase 2", no copies of section descriptions, no leaked placeholders.
 
-**Required pattern:**
+### Output structure
 
-1. **`Write` the skeleton.** Header, AI-generation notice, generated-by metadata line, the `## 0. Week at a glance` bullets (short, fine to include in the skeleton), then `## 1.` through `## 10.` each with a placeholder `_(composing — see Phase 3)_`.
+The summary has eleven sections in this exact order:
+
+| § | Title |
+|---|---|
+| 0 | Week at a glance |
+| 1 | Top stories of the week |
+| 2 | Multi-day campaigns and chains |
+| 3 | Vulnerability roll-up |
+| 4 | Sector & victim patterns |
+| 5 | Incidents & disclosures recap |
+| 6 | Annual / periodic threat reports |
+| 7 | Long-running campaigns — status update |
+| 8 | Policy & regulatory horizon |
+| 9 | Looking ahead — what to watch next week |
+| 10 | Verification & coverage notes |
+
+The file opens with `# CTI Weekly Summary — YYYY-Www ({Mon DD} – {Sun DD}, YYYY)`, the AI-content notice, and the metadata line, then the sections.
+
+### Compose the file incrementally
+
+A single `Write` for the whole 11-section file is too long for streaming and trips `Stream idle timeout — partial response received`. Required pattern:
+
+1. **`Write` the skeleton.** Header, AI-generation notice, metadata line, the `## 0. Week at a glance` bullets (short, fine to include in the skeleton), then `## 1.` through `## 10.` each with a placeholder `_(no content yet)_`.
 2. **`Read`** the freshly-written file.
-3. **`Edit` each section in turn**, one section per call. Replace the placeholder with the full section content.
+3. **`Edit` each section in turn**, one section per call. Replace the placeholder with the full section content per the daily prompt's per-section guidance, adapted for the weekly scope.
 4. If any section is unusually long (e.g., the CVE roll-up table or the multi-day campaigns rollup), split that section's Edit into two halves.
 
-Then write to `briefs/weekly/YYYY-Www.md`.
+The brief writes to `briefs/weekly/YYYY-Www.md`.
 
 ````markdown
 # CTI Weekly Summary — YYYY-Www ({Mon DD} – {Sun DD}, YYYY)
@@ -272,11 +296,19 @@ fi
 
 ## OUTPUT
 
-Write `briefs/weekly/YYYY-Www.md`. Update state. Commit and push to `origin/main`. Print only:
+Write `briefs/weekly/YYYY-Www.md`. Update state. Commit and push (two-stage publishing chain — direct to `main`, fallback to feature branch + auto-merge Action). Print only:
 
 ```
 weekly: briefs/weekly/YYYY-Www.md
 top: N · chains: N · cves: N · incidents: N · annual-reports: N
 commit: <short SHA>
-push: ok | failed (<reason>)
+push: ok (direct main) | ok (via auto-merge action) | failed (<reason>)
 ```
+
+---
+
+## META — self-evolution authority
+
+The weekly summary inherits the daily prompt's self-evolution authority and hard invariants. The agent has full authority to modify this prompt, the daily prompt, the source list, the documentation, the sub-agent structure, and the repository layout when doing so will improve future briefs. Changes commit alongside the summary in the same run.
+
+The hard invariants (AI-content notice, inline source links, two-source verification, no IOCs, no vanity metrics, English output, always-produce, no workflow-internal language in output, two-stage publishing) are non-negotiable; everything else is mutable. See the daily prompt's META section for the full process.

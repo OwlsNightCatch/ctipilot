@@ -172,16 +172,43 @@ Spawn **all four sub-agents in a single message** with parallel `Agent` tool cal
 
 Each sub-agent receives:
 
-- Its category-filtered subset of `sources.json`.
+- Its category-filtered subset of `sources.json` as a **starting set**, not an exhaustive list.
 - The deduplication context from Phase 0.
 - Today's ISO date and the recency window.
 - Constraints: **no IOCs in output, no vanity metrics in output, English output only**.
 - A *flexible* return format (see below). No output token cap. Sub-agents have discretion in how they present findings as long as the required fields are there.
-- **Operational guardrails** to keep each sub-agent within a reasonable run budget and avoid stalling the whole routine:
-    - Target **≤20 WebFetch/WebSearch calls** in total. Quality over exhaustive coverage. If you've spent your fetch budget without finding much, return what you have — this is normal on quiet days.
-    - **Per-source timeout: skip and move on.** If a `WebFetch` call hangs, errors, or returns empty, do **not** retry more than once. Note the failure in your return so the main agent can mark the source for maintenance review.
-    - **Wall-clock soft cap: ~10 minutes.** If you can see you are running long (slow translations, slow national-CERT pages, many failing fetches), return whatever you have so far with a one-line note in your output explaining the early exit. The main agent will compose the brief with whatever returned. **Never block the routine indefinitely.**
-    - **Always return something.** Even a single Markdown line of explanation ("no qualifying items in window — sources X/Y/Z fetched, all empty") is a valid return. An empty list with explanation is preferred over silence.
+
+### Operational guardrails for sub-agents
+
+- **Fetch budget — target ≤30 WebFetch/WebSearch calls.** Quality over exhaustive coverage. If you've spent your budget without finding much, return what you have — this is normal on quiet days.
+- **Per-source timeout: skip and move on.** If a `WebFetch` call hangs, errors, or returns empty, do **not** retry more than once. Note the failure in your return so the main agent can mark the source for maintenance review.
+- **Wall-clock soft cap: ~10 minutes.** If you can see you are running long (slow translations, slow national-CERT pages, many failing fetches), return whatever you have so far with a one-line note in your output explaining the early exit. The main agent will compose the brief with whatever returned. **Never block the routine indefinitely.**
+- **Always return something.** Even a single Markdown line of explanation ("no qualifying items in window — sources X/Y/Z fetched, all empty") is a valid return. An empty list with explanation is preferred over silence.
+
+### Research methodology — drill, search, discover
+
+The curated source list is the floor, not the ceiling. Each sub-agent does three kinds of research per run:
+
+1. **Drill into curated sources, follow links from index pages.** When you fetch an aggregator page — a CERT advisories index, a news feed, a research blog landing page, an `aktuelle-vorfaelle.html` overview — **do not summarise from titles or excerpts**. Open the linked article and read the full content. Two full advisories beat ten headline-level inferences. Index pages are routing, not content. Surface and follow promising links until you have enough substance to write a defensible summary.
+
+2. **Search for topics, not just fixed URLs.** Run 2–4 topical `WebSearch` queries appropriate to your scope each run. Examples:
+    - Sub-agent 1: *"actively exploited vulnerabilities last 24 hours"*, *"CISA KEV addition this week"*, *"public PoC released [today's month / year]"*.
+    - Sub-agent 2: *"Switzerland cyber incident [today's date]"*, *"NCSC advisory week"*, *"European public sector ransomware"*, *"DACH government breach"*.
+    - Sub-agent 3: *"threat research published this week"*, *"new APT activity [today's month]"*, *"annual cybersecurity threat report [year]"*.
+    - Sub-agent 4: *"data breach disclosure [today's month]"*, *"SEC 8-K cyber incident this week"*, *"GDPR breach notification 2026-Q2"*.
+   Use search results to (a) find primary sources outside the curated list, (b) cross-validate that the brief isn't missing a major story, and (c) discover new sources worth proposing.
+
+3. **Propose new sources you discovered.** When a topical search surfaces a publisher you haven't seen before that is clearly a primary source, has editorial track record, and is relevant to your scope, propose it as a candidate (the main agent does the actual `sources.json` write in Phase 5). Sub-agent return should include a `Sources discovered:` section listing each candidate with: publisher name, URL, why it's high-quality, and a one-line scope statement.
+
+### Source self-curation across runs
+
+The source list is a living artefact. Over time:
+
+- **Sources that consistently deliver get strengthened**: candidates that are seen in 3+ runs delivering original content get human-reviewed for promotion to `active`.
+- **Sources that consistently fail get demoted**: 3 consecutive failed fetches → tier-down + `status: "demoted"` (Phase 5 already encodes this).
+- **Sources that are still up but routinely empty / aggregator-only / paywalled / behind rate-limit walls** should be flagged in `notes` so a human reviewer can decide whether to keep them.
+
+The goal is for the source list to evolve into the strongest curated CTI feed for this audience without external pruning.
 
 **Every sub-agent spawn prompt must open with a brief defensive-intent statement** so the framing stays correct from the first token. Suggested opening:
 
@@ -298,32 +325,68 @@ If no candidate clears the bar: *"No item met the deep-dive bar in the reporting
 
 ---
 
-## PHASE 4 — COMPOSE BRIEF (incremental writes — required)
+## PHASE 4 — COMPOSE BRIEF
 
-Write to `briefs/YYYY-MM-DD.md` **incrementally, section by section**. A single `Write` call for the whole brief is a large streamed output, and in practice it trips "Stream idle timeout — partial response received" right when the brief is about to land. The fix is structural: split the composition into smaller `Edit` calls.
+The brief is a finished publication. The reader does not know about sub-agents, phases, or the prompt that drove the run. **Never let workflow-internal language leak into the output.**
 
-**Required pattern:**
+### Hard rule — no workflow-internal references in the brief
+
+Do not write any of these in the brief:
+- *"From Sub-agent X"*, *"Sub-agent X output"*, *"Items from sub-agent N"*.
+- *"see Phase Y"*, *"per Prime Directive Z"*, *"per Phase 5"*.
+- Section descriptions copied from this prompt (e.g., *"Items with CH/EU nexus first, then global"* — that's instruction to the agent; apply the ordering, do not write the sentence).
+- Placeholders that leaked through (`_(composing)_`, `_(pending)_`, etc.).
+- References to the deduplication context, fetch budgets, or any other operational mechanic.
+
+If a section is empty, say so plainly in reader-facing language: *"No qualifying items in the reporting window."* Not *"Sub-agent 2 returned no items"*.
+
+### Output structure (this is what the brief looks like)
+
+The brief has eight sections in this exact order. Every section starts with `## N. {Title}` exactly as below. Item-level sub-headings within a section use H3 (`### `).
+
+| § | Title |
+|---|---|
+| 0 | TL;DR |
+| 1 | Active Threats & Trending Vulnerabilities |
+| 2 | Switzerland, Europe & Public Sector |
+| 3 | Notable Incidents & Disclosures |
+| 4 | Research & Investigative Reporting |
+| 5 | Deep Dive — {topic} |
+| 6 | Updates to Prior Coverage |
+| 7 | Verification Notes |
+
+The file opens with `# CTI Daily Brief — YYYY-MM-DD`, then the AI-content notice, then a one-line `**Generated by:** ... · **Audience:** ... · **Classification:** TLP:CLEAR · **Language:** English`, then the sections.
+
+### Per-section content guidance (do not reproduce in the brief)
+
+- **§ 0 TL;DR** — five bullets max. Each bullet is a single concrete claim with its inline source link. Lead with the highest-priority item. Do not editorialise.
+- **§ 1 Active Threats & Trending Vulnerabilities** — produced from sub-agent 1's findings. Two subsections:
+    - **§ 1a Active threats & emergency advisories** — H3 per item, 2–4 sentence summary with inline links, then a `**Why it matters to us:**` line stating the practical defender takeaway.
+    - **§ 1b Trending vulnerabilities** — Markdown table with columns `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source`. 1–2 sentence note per row only when non-obvious technical context warrants it.
+- **§ 2 Switzerland, Europe & Public Sector** — items with CH / EU nexus first, then transferable global public-sector items. State the nexus per item (Swiss telco, German federal supplier, etc.).
+- **§ 3 Notable Incidents & Disclosures** — one short paragraph per disclosed incident. Affected organisation + sector + scale (only if officially stated) + disclosed cause / initial vector + CH / EU / public-sector relevance + a one-line *"Defender takeaway:"* sentence.
+- **§ 4 Research & Investigative Reporting** — one paragraph per substantive report or piece of journalism. Annual / periodic threat reports get a clear flag (e.g., *"Annual report — Mandiant M-Trends 2026."*).
+- **§ 5 Deep Dive — {topic}** — selected in Phase 3. Inline-linked throughout. Includes a Background paragraph (3–5 sentences) if the item has prior public reporting older than ~6 months. Body covers: incident narrative, ATT&CK technique mapping, detection concepts, hardening / mitigation, and what to do this week. **No IOCs, no rule code.**
+- **§ 6 Updates to Prior Coverage** — material developments on items from prior briefs only. Format: `> **UPDATE (originally YYYY-MM-DD):** {delta only}`. If nothing changed: *"No updates this run."*
+- **§ 7 Verification Notes** — items dropped, items marked `[SINGLE-SOURCE]`, contradictions surfaced, sub-agents that didn't return on time. Brief, factual, bulleted.
+
+### Compose the file incrementally
+
+A single `Write` call for the whole brief is a large streamed output that in practice trips `Stream idle timeout — partial response received`. Required pattern:
 
 1. **`Write` the skeleton.** One `Write` call. Contents:
-    - Header: `# CTI Daily Brief — YYYY-MM-DD`
-    - AI-generation notice block
-    - `Generated by` metadata line
-    - `## 0. TL;DR` heading + the actual TL;DR bullets (TL;DR is short, fine to include in the skeleton)
-    - For each of `## 1.` through `## 7.`: the section heading on its own line, and a placeholder line `_(composing — see Phase 4)_` underneath.
+    - `# CTI Daily Brief — YYYY-MM-DD` header.
+    - AI-generated content notice block.
+    - The `**Generated by:** ...` metadata line.
+    - `## 0. TL;DR` heading + the actual TL;DR bullets (TL;DR is short, fine in the skeleton).
+    - For each of `## 1.` through `## 7.`: the section heading on its own line and a single placeholder line `_(no content yet)_` underneath.
 2. **`Read`** the file you just wrote. (The `Edit` tool requires a prior `Read`; `Write` alone does not satisfy that.)
-3. **`Edit` each section in turn**, one section per call. Replace the `_(composing — see Phase 4)_` placeholder with the section's full content.
-    - § 1 Active Threats & Trending Vulnerabilities (write 1a active threats first, 1b vuln table second, in a single Edit for § 1).
-    - § 2 Switzerland, Europe & Public Sector.
-    - § 3 Notable Incidents & Disclosures.
-    - § 4 Research & Investigative Reporting.
-    - § 5 Deep Dive — {topic}.
-    - § 6 Updates to Prior Coverage (skip the Edit if there is nothing — leave the skeleton's placeholder OR replace with a one-line *"No updates this run."*).
-    - § 7 Verification Notes.
-4. If any single section's content is itself unusually long (e.g., a vuln table with many rows + commentary), split that section's Edit into two — one Edit for the first half, one for the second.
+3. **`Edit` each section in turn**, one section per call. Replace `_(no content yet)_` with the section's full content per the per-section guidance above. § 1 covers both subsections in one Edit.
+4. If a single section's content is unusually long (e.g., a vuln table with many rows + commentary), split that section's Edit into two halves.
 
-This pattern is **not optional**. The streaming-stability concern outweighs the slight overhead of multiple tool calls.
+If a placeholder ever leaks into a published brief because of a mid-Edit failure, that is a quality bug — § 7 should explicitly note it and the next run should re-Edit the affected section.
 
-Every paragraph or bullet has its source link inline at the point of claim.
+Every paragraph or bullet in the brief has its source link inline at the point of claim. Source titles in the original language for non-English sources, with a brief English gloss in parentheses if not self-evident.
 
 ````markdown
 # CTI Daily Brief — YYYY-MM-DD
@@ -528,3 +591,45 @@ items: N · ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive
 commit: <short SHA or 'no-changes'>
 push: ok | failed (<reason>)
 ```
+
+---
+
+## META — self-evolution authority
+
+This prompt is committed to the same repository it operates on. **The agent has full authority to modify this prompt, the source list, the documentation, the sub-agent structure, and the repository layout** when doing so will improve future briefs. Changes are committed alongside the brief in the same run; they show up in `git log` for human review after the fact, but no human gate blocks the change. The repo is the agent's working memory across runs — treat it that way.
+
+The goal is autonomous operation: a routine fires once per weekday, a brief lands on `main`, no human babysits. If the prompt has rough edges, smooth them. If a sub-agent's domain has drifted, redraw it. If the source list has dead weight, drop it; if a topical search keeps surfacing a strong publisher, promote it from candidate.
+
+### Hard invariants — never remove or weaken
+
+These exist to protect the brief's public-content posture and the user's stated requirements. Do **not** relax them under the guise of simplification:
+
+1. The AI-generated content notice in every brief.
+2. Inline source links at the point of claim (no bibliography).
+3. Two-source verification with the national-CERT carve-out.
+4. No IOCs (file hashes, IP addresses, attacker-controlled domains/URLs, rule code).
+5. No vanity metrics (median dwell time, breakout time, %-YoY counts, "X new adversaries tracked").
+6. English output regardless of source language.
+7. Always produce a brief; never block on a single sub-agent.
+8. No workflow-internal language in the brief itself.
+9. The two-stage publishing chain (direct push to `main`, fallback to feature branch + auto-merge Action).
+
+### Encouraged self-edits
+
+- **Source list curation.** Promote candidate sources that have delivered for ≥3 runs; demote dead / paywalled / aggregator-only sources. Add new candidates discovered through topical search. The list should look meaningfully different in three months.
+- **Sub-agent structure.** If a sub-agent's domain is consistently doing too much, split it. If two are overlapping, merge them. The current four-agent layout (active-vulns / CH-EU+pubsec / research / incidents) is a starting point, not a contract.
+- **Prompt clarity.** Tighten verbose sections. Fix ambiguities you've been getting confused by. Add concrete examples where past runs went off the rails.
+- **Section ordering / naming.** Reorganise the brief if a different layout serves readers better — but bump the version, document why, and the next reader still sees a coherent publication.
+- **Documentation.** Update `docs/routine-setup.md`, `docs/workflow.md`, `docs/verification.md`, or add new docs as the workflow evolves.
+- **Quality gates.** Add new gates if a recurring failure mode emerges; remove gates that are no longer earning their keep.
+
+### Process for self-edits
+
+When making a self-edit during a run:
+
+1. Make the change in the same run as the brief.
+2. Bump the prompt version in `prompts/CHANGELOG.md` (e.g. 2.9 → 2.10) and add a CHANGELOG entry that explains *what changed and why*. The entry is the audit trail.
+3. Commit alongside the brief and state-file updates. The brief and the prompt that produced it travel together in git history.
+4. Do not silently rewrite hard invariants. If a hard invariant feels wrong for a specific case, surface it in the brief's § 7 (Verification Notes) and let the human change the rule.
+
+If a self-edit is large enough that it might break the next run, prefer two smaller commits over one big one — one for the brief, one for the prompt change. That way a regression is easy to bisect.

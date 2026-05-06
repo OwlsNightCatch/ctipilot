@@ -4,6 +4,32 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.9 — 2026-05-06
+
+### Why
+Reviewing the 2026-05-06 brief, four issues stood out:
+
+1. **Workflow-internal language leaked into the brief.** Sentences like *"From Sub-agent 2. CH/EU nexus items first, then transferable global public-sector items."* appeared verbatim in the published Markdown. The reader doesn't know about sub-agents — that's prompt scaffolding, not output.
+2. **Sub-agents summarised from index pages without drilling in.** When sub-agent 2 fetched `https://www.ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html`, it took the page's title list as the data, instead of following the links into the individual advisories.
+3. **Sub-agents stuck to fixed URLs and missed topical breadth.** The curated source list was treated as the only set, not the starting set. New high-quality sources discovered while researching weren't proposed; sources that delivered nothing weren't flagged.
+4. **No explicit self-evolution authority.** The user's intent is fully autonomous operation — the agent should be free to refactor prompts, restructure sub-agents, curate sources, and add docs without a human gate. The prompt didn't say so explicitly.
+
+### Changed
+- **Phase 4 restructured.** The output structure (eight section headings) is now a clean table; per-section content guidance is a separate block clearly labelled *"do not reproduce in the brief"*. Added a hard rule against workflow-internal references in the output. Placeholder text changed from `_(composing — see Phase 4)_` to `_(no content yet)_` so any leak reads as a sensible empty-section indicator instead of a workflow reference.
+- **Phase 1 sub-agent operational guardrails expanded.**
+    - **Drill, don't summarise from index pages.** When fetching an aggregator / listing page, follow the links into individual articles. Two full advisories beat ten headline-level inferences.
+    - **Topical `WebSearch` per sub-agent.** Each sub-agent runs 2–4 topical search queries per run to discover primary sources outside the curated list and to validate against missing major stories. Concrete query examples per sub-agent included.
+    - **Source discovery.** Sub-agents return a `Sources discovered:` list with publisher, URL, why it's high-quality, scope. Main agent in Phase 5 writes them to `sources.json` as `candidate`.
+    - **Source self-curation across runs.** Promote candidates after 3 successful runs; demote consistent failures or aggregator-only sources.
+    - Fetch budget bumped from ≤20 to ≤30 calls per sub-agent to accommodate the drill-down work.
+- **New top-level section: META — self-evolution authority** in both the daily and weekly prompts. Authorises the agent to modify the prompt, source list, docs, sub-agent structure, and repo layout in normal operation. Lists hard invariants that must not be removed (AI-content notice, inline links, two-source rule, no IOCs / vanity metrics, English output, always-produce, no workflow-internal language, two-stage publishing). Documents the process: bump version, write CHANGELOG entry explaining the change, commit alongside the brief.
+- **Weekly summary** updated in parallel — Phase 3 restructured to match the daily Phase 4 pattern (clean output structure table, separate guidance block, no-leak rule); Phase 2 inherits the drill / topical-search / discover-sources rules.
+
+### Effect on operator output
+- The two-stage publishing chain is now reflected in the weekly's `push:` line variants: `push: ok (direct main) | ok (via auto-merge action) | failed (<reason>)`.
+
+---
+
 ## 2.8 — 2026-05-06
 
 ### Why
