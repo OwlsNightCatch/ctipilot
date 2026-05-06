@@ -429,7 +429,14 @@ Every `sources.json` mutation must show up in the run's git diff; the commit bod
 
 ## PHASE 6 — COMMIT & PUSH
 
-The repository is published from `main` directly. The routine commits and **pushes to `origin/main` immediately** so every brief is publicly available the moment it is generated. There is no review branch, no staging, no human gate between the commit and publication — that is intentional, the briefs are already AI-content-noticed and source-linked.
+The repository is published from `main`. The routine commits and **pushes immediately** so every brief is publicly available the moment it is generated. There is no review branch, no staging, no human gate between commit and publication — the briefs are already AI-content-noticed and source-linked.
+
+### Branch selection
+
+- **Default:** push to `origin/main`.
+- **Environment override:** if the execution environment has given explicit instructions to develop on a different branch (e.g., a Claude Code routine container working on `claude/<adjective>-<name>-<id>`, or a custom CI worktree branch), honour those — commit and push to that branch. The brief is considered published when whatever PR / merge / fast-forward policy the environment provides lands the change on `main`. The routine's job is to commit and push *somewhere the environment can take from*; the environment handles the path to `main`.
+
+### Commands
 
 ```bash
 git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json sources/sources.json
@@ -439,10 +446,17 @@ git commit -m "brief: YYYY-MM-DD
 - sources: <one line summary of any URL updates / demotions / candidates>
 - cves: <new: N · updated: N · removed: N (with reason)>
 "
-git push origin main
+# Replace 'main' below with the environment-mandated branch when applicable.
+git push origin <branch>
 ```
 
-If the push fails (network blip, transient auth issue), surface the error in the operator output but do not roll back the commit — the brief stays committed locally and a later run or manual `git push` will publish it. Never `--force` push from the routine.
+### Push-failure handling
+
+- Try the push **once**. Do **not** retry-with-backoff. The two main classes of failure are:
+    - **`403 Forbidden` / `Permission denied`** — auth / GitHub-App-installation issue. Will not resolve in seconds. Retrying is noise.
+    - **Transient network blip** — will resolve, but the *next* run will pick up the commit anyway.
+- On any push failure: surface the error verbatim in the operator output, **do not roll back the commit**, and exit phase cleanly. The local commit is preserved; whoever fixes the auth (or the next successful run) will publish it.
+- **Never `--force`-push from the routine**, ever.
 
 ---
 

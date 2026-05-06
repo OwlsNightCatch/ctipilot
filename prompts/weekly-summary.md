@@ -216,8 +216,12 @@ Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` 
 
 ## PHASE 5 — COMMIT & PUSH
 
-The weekly summary is published the moment it is generated, the same way as daily briefs. Commit and push to `origin/main` directly.
+The weekly summary is published the moment it is generated, the same way as daily briefs.
 
+### Branch selection
+Same rule as the daily prompt: default to `origin/main`; if the execution environment has explicitly assigned a different branch (e.g., a Claude Code routine container's `claude/<adjective>-<name>-<id>`), honour that. The environment is responsible for getting the branch to `main`.
+
+### Commands
 ```bash
 git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json sources/sources.json
 git commit -m "weekly: YYYY-Www summary
@@ -225,10 +229,14 @@ git commit -m "weekly: YYYY-Www summary
 - top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N
 - sources: <one line summary of any URL updates / demotions / candidates>
 "
-git push origin main
+# Replace 'main' below with the environment-mandated branch when applicable.
+git push origin <branch>
 ```
 
-If the push fails, surface the error in the operator output but keep the commit. Never `--force` push from the routine.
+### Push-failure handling
+- One attempt. No retry-with-backoff (403 won't fix itself in seconds; a network blip will be re-tried by the next run anyway).
+- On failure, surface the error in operator output and keep the commit.
+- Never `--force`-push from the routine.
 
 ---
 

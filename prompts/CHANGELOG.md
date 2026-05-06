@@ -4,6 +4,20 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.6 — 2026-05-06
+
+### Why
+First successful end-to-end execution of the daily prompt produced a 21-item brief but failed to publish: the routine ran in a Claude Code routine container which forces a feature-branch workflow (`claude/<adjective>-<name>-<id>`) and pushes through an internal git proxy. The proxy returned HTTP 403 because the GitHub App credential it uses doesn't have write access to the repo. The agent retried with backoff four times, which was noise — a 403 is a permissions issue, not a transient blip.
+
+### Changed
+- **Branch selection is now explicit.** Default is `origin/main`. If the execution environment has assigned a different branch (routine container, CI worktree, etc.), the routine pushes there and trusts the environment's PR / merge / fast-forward policy to land the change on `main`. The agent should not second-guess the environment's branch instructions.
+- **Push-failure handling is one-shot.** No retry-with-backoff. A 403 won't resolve in seconds; a network blip will be picked up by the next run. One push attempt, surface the error verbatim, keep the local commit, exit cleanly.
+
+### Same content guarantee
+The brief's content, structure, and source pipeline are unchanged. Only the publish-step semantics shifted to be honest about feature-branch workflows and to stop retrying on hard auth errors.
+
+---
+
 ## 2.5 — 2026-05-06
 
 ### Why
