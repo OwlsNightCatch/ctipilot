@@ -16,9 +16,60 @@
     setFooterMeta();
     wireGlobalSearch();
     wireKeyboard();
+    wireLinkBehaviour();
     Router.boot();
     Router.dispatch();
   });
+
+  /** Global click delegate for anchor behaviour:
+       - href="#section"  (in-page anchor; not "#/...")  → smooth-scroll to
+         the matching id, do not change the SPA's hash. Fixes the bug where
+         clicking "On this page" links landed nowhere because the SPA's
+         hashchange listener treated them as routes.
+       - href="https?://..." that isn't already same-origin → open in a new
+         tab. This is a safety net beyond the DOMPurify hook in render.js,
+         so any externally-pointing <a> in any template (markdown, sidebar,
+         topic/CVE/source pages) gets the same treatment.
+
+      Honours modifier-key clicks (cmd/ctrl/shift/alt) and middle-click —
+      the browser's native "open in new tab / window" stays untouched. */
+  function wireLinkBehaviour() {
+    document.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      const a = e.target.closest && e.target.closest('a[href]');
+      if (!a) return;
+      const href = a.getAttribute('href');
+      if (!href) return;
+
+      // In-page anchor (NOT an SPA hash route): smooth-scroll, keep SPA hash.
+      if (href.startsWith('#') && !href.startsWith('#/')) {
+        const id = decodeURIComponent(href.slice(1));
+        const el = id ? document.getElementById(id) : null;
+        if (el) {
+          e.preventDefault();
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          el.setAttribute('tabindex', '-1');
+          el.focus({ preventScroll: true });
+        } else {
+          // Anchor target missing — at least don't blow away the SPA hash.
+          e.preventDefault();
+        }
+        return;
+      }
+
+      // Off-origin absolute URL: ensure new tab. (Same-origin / relative
+      // links and mailto:/tel:/#/ SPA routes pass through untouched.)
+      if (/^https?:\/\//i.test(href)) {
+        try {
+          const u = new URL(href);
+          if (u.origin !== location.origin && a.target !== '_blank') {
+            e.preventDefault();
+            window.open(u.href, '_blank', 'noopener,noreferrer');
+          }
+        } catch (_) { /* malformed URL — let the browser decide */ }
+      }
+    });
+  }
 
   function setFooterMeta() {
     const meta = document.getElementById('footer-meta');

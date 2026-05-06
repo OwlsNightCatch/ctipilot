@@ -16,15 +16,6 @@
   function configureMarked() {
     if (!window.marked) return;
     const renderer = new marked.Renderer();
-    const linkOrig = renderer.link.bind(renderer);
-    renderer.link = function (href, title, text) {
-      const html = linkOrig(href, title, text);
-      // Only externalize absolute URLs.
-      if (/^https?:\/\//i.test(href)) {
-        return html.replace(/^<a /, '<a target="_blank" rel="noopener noreferrer" ');
-      }
-      return html;
-    };
     // Heading anchors so we can target sections from a TOC.
     renderer.heading = function (text, level, raw) {
       const slug = String(raw)
@@ -34,6 +25,24 @@
       return `<h${level} id="${slug}">${text}</h${level}>`;
     };
     marked.use({ renderer, gfm: true, breaks: false });
+  }
+
+  /* DOMPurify hook: any external <a href="https?://..."> gets target="_blank"
+     and rel="noopener noreferrer". Catches every link in every rendered
+     markdown body regardless of how marked produced it. Runs after the
+     sanitizer's attribute-allowlist so we know target/rel are permitted
+     (PURIFY_CFG.ADD_ATTR includes them). */
+  function attachExternalLinkHook() {
+    if (!window.DOMPurify || attachExternalLinkHook._done) return;
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName !== 'A') return;
+      const href = node.getAttribute('href') || '';
+      if (/^https?:\/\//i.test(href)) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+    attachExternalLinkHook._done = true;
   }
 
   /* Markdown rendering pipeline: marked → DOMPurify.
@@ -60,6 +69,7 @@
   function md(markdown) {
     if (!window.marked || !window.DOMPurify) return esc(markdown);
     if (!configureMarked._done) { configureMarked(); configureMarked._done = true; }
+    attachExternalLinkHook();
     const html = window.marked.parse(markdown || '');
     return window.DOMPurify.sanitize(html, PURIFY_CFG);
   }
