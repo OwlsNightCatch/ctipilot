@@ -107,6 +107,18 @@ After saving the routine, click **Run now** on its detail page once. A new sessi
 
 If you instead see `push: failed (HTTP 403 — …)`, return to step 1 above — the credential doesn't have write access to this repo.
 
+## Enable GitHub Pages
+
+The repository ships with [`site/`](../site/) — a static reader for the briefs — and a [`deploy-site.yml`](../.github/workflows/deploy-site.yml) workflow that publishes it to GitHub Pages. The workflow runs automatically on every push to `main` that touches `briefs/`, `state/`, `sources/`, `docs/`, `README.md`, or `site/`. It does *not* fire on every routine commit unrelated to brief content.
+
+One-time enable:
+
+1. GitHub repo → **Settings** → **Pages**.
+2. Under **Build and deployment** → **Source**, choose **GitHub Actions**.
+3. Push any change touching the trigger paths above (or run the **Deploy GitHub Pages site** workflow manually). The first deploy takes 30–60 seconds; subsequent deploys are faster.
+
+The site URL appears at the top of the **Pages** settings page after the first successful deploy. The site is fully static and read-only — it consumes the brief feed and never writes back.
+
 ## Limits to be aware of
 
 - **Daily routine cap.** Claude Code routines have an account-wide daily run cap. See your current consumption at <https://claude.ai/code/routines>.

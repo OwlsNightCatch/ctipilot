@@ -1,0 +1,56 @@
+name: Deploy GitHub Pages site
+
+# Builds the static reader site under site/ and deploys it to GitHub Pages.
+# Triggers only when the inputs to the build change, so it doesn't run on
+# every Claude Code routine commit (most of which only rotate state files).
+#
+# Setup (one-time):
+#   GitHub repo → Settings → Pages → Build and deployment → Source: GitHub Actions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "briefs/**"
+      - "state/**"
+      - "sources/**"
+      - "docs/**"
+      - "README.md"
+      - "site/**"
+      - ".github/workflows/deploy-site.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Pages allows only one in-flight deploy at a time. Cancel pending runs in
+# favour of the newest commit so the live site converges on `main`.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build site bundle
+        run: python3 site/build.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

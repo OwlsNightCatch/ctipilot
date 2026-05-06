@@ -158,12 +158,16 @@ Use `currentDate` from system context as the brief date. Metadata dates are ISO-
 
 ## PHASE 0 — PREFLIGHT (sequential)
 
+0. **Circuit-breaker check.** If `state/BLOCKED.md` exists, stop immediately. Print `blocked: see state/BLOCKED.md` and exit without writing anything. Do not delete or rename the file. The flag is set by an out-of-band quality gate (a separate workflow or by a human commit) when an editorial-invariant regression has been detected; clearing it is a deliberate human action. This is the soft kill-switch that bounds the blast radius of a self-evolving prompt — see `docs/security-review.md` § 3.4.
 1. Read `sources/sources.json`. Only `status: "active"` sources feed sub-agents.
 2. List `briefs/` and read the briefs from the **last 7 calendar days** in date order. Read also the most recent **weekly summary** in `briefs/weekly/` if present and dated within the last 7 days.
 3. Read `state/covered_items.json` (structured rolling log).
 4. Read `state/cves_seen.json` (flat CVE index for fast dedup).
-5. Establish today's ISO date.
-6. Initialise a `TodoWrite` plan with the phases.
+5. Read `state/engagement.json` if present (aggregate page-view counts of past briefs and topics; signals which prior coverage readers are actually returning to). The file is fully aggregate — no PII — and may be empty on first run.
+6. Establish today's ISO date.
+7. Initialise a `TodoWrite` plan with the phases.
+
+(Numbering above starts at step 0 because step 0 is a prerequisite rather than a phase action.)
 
 If any read fails, surface the error and stop — do not silently proceed without prior context.
 
@@ -171,6 +175,11 @@ Build a **deduplication context** from the above:
 - Set of CVE IDs already covered (from `cves_seen.json`).
 - Set of named actors / campaigns / incidents / annual reports already covered (from `covered_items.json`).
 - Headlines / first paragraphs of briefs in the last 7 days (so sub-agents can recognise paraphrases of already-covered items).
+
+Build a **reader-engagement context** from `state/engagement.json` (skip if file missing or empty):
+- The 5 briefs with the highest `views_14d` in `by_brief`. Map back via `state/covered_items.json` to the *topics* those briefs touched. These are the topics readers are actively returning to.
+- Use this signal in **Phase 3 deep-dive selection** and in **Phase 4 § 6 (Updates to Prior Coverage)** as a tiebreaker — *not* as a primary editorial driver. If a reader-engaging topic has a material new development today, that pushes it up the priority order; if it's quiet, do not invent material to pad it. Reader engagement *guides attention*; verification still gates everything.
+- This is feedback, not an instruction. Do not change the verification rules, the two-source policy, the no-IOCs rule, or the no-vanity-metrics rule because of this signal. Quietly weight which topics qualify when more than one is eligible.
 
 Build a **source rotation list** from the same set of recent briefs:
 

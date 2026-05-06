@@ -1,0 +1,142 @@
+name: Sync engagement metrics
+
+# Pulls aggregate page-view counts from the GitHub Repo Traffic API into
+# state/engagement.json. The Traffic API is fully aggregate — no IPs, no
+# sessions, no cookies — and is computed by GitHub from server logs of
+# the GitHub Pages domain. We never see individual visitors.
+#
+# Window: 14 days, top 10 paths (the API's hard ceiling). The action
+# accumulates a per-day snapshot in `history` so longer-horizon trend
+# analysis is possible even though the live API window stays at 14 days.
+#
+# Trigger: every 6 hours, plus manual dispatch. Six hours is a comfortable
+# cadence given the Traffic API's caching of ~24 hours behind real time.
+#
+# Permissions: contents: write (to commit the JSON back) is sufficient.
+# The default GITHUB_TOKEN has push access, which the Traffic API treats
+# as authorisation. No PAT or external service required.
+
+on:
+  schedule:
+    - cron: "11 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-engagement
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Pull traffic and update state/engagement.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p state
+
+          # Pull popular paths (max 10 paths, 14-day window) and aggregate
+          # views/uniques. Both endpoints are documented at
+          # https://docs.github.com/en/rest/metrics/traffic .
+          gh api "repos/${REPO}/traffic/popular/paths" > /tmp/paths.json
+          gh api "repos/${REPO}/traffic/views"        > /tmp/views.json
+
+          python3 - <<'PY'
+          import json, os, re, datetime
+          from pathlib import Path
+
+          paths = json.loads(Path('/tmp/paths.json').read_text() or '[]')
+          views = json.loads(Path('/tmp/views.json').read_text() or '{}')
+
+          state_path = Path('state/engagement.json')
+          existing = {}
+          if state_path.exists():
+              try: existing = json.loads(state_path.read_text())
+              except Exception: existing = {}
+
+          history = existing.get('history', [])
+
+          today = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+          # Only keep one snapshot per UTC day; later runs overwrite the day.
+          today_date = today[:10]
+          history = [h for h in history if not h.get('snapshot_at','').startswith(today_date)]
+
+          # Map paths back to brief identifiers. Pages serves the SPA shell
+          # at /, but every brief is also fetched as /briefs/<name>.md, so
+          # those paths are uniquely attributable.
+          BRIEF_RE = re.compile(r'/briefs/(?:weekly/)?(?P<name>\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})\.md')
+          by_brief = {}
+          for entry in paths:
+              path = entry.get('path', '')
+              m = BRIEF_RE.search(path)
+              if not m:
+                  continue
+              key = m.group('name')
+              by_brief[key] = {
+                  'name': key,
+                  'path': path,
+                  'views_14d':   entry.get('count', 0),
+                  'uniques_14d': entry.get('uniques', 0),
+                  'last_in_top10': today_date,
+              }
+
+          # Merge with prior snapshot — the API's top-10 ceiling means a
+          # brief can fall out of view; we don't lose its last-seen counts.
+          prev_by_name = {b['name']: b for b in (existing.get('by_brief') or [])}
+          for name, prev in prev_by_name.items():
+              if name not in by_brief:
+                  by_brief[name] = prev
+
+          merged = sorted(by_brief.values(), key=lambda b: b.get('views_14d', 0), reverse=True)
+
+          history.append({
+              'snapshot_at': today,
+              'window_views_14d':   views.get('count', 0),
+              'window_uniques_14d': views.get('uniques', 0),
+              'top10': [{'name': b['name'], 'views_14d': b['views_14d']} for b in merged[:10]],
+          })
+          # Keep at most 180 daily snapshots (~6 months).
+          history = history[-180:]
+
+          out = {
+              'updated_at': today,
+              'window_days': 14,
+              'window_views_14d':   views.get('count', 0),
+              'window_uniques_14d': views.get('uniques', 0),
+              'by_brief': merged,
+              'history': history,
+              'privacy_notice': (
+                  "Aggregate counts only. Source: GitHub Repo Traffic API "
+                  "(https://docs.github.com/en/rest/metrics/traffic). "
+                  "No IP addresses, no session identifiers, no cookies, no fingerprints. "
+                  "Computed server-side by GitHub from anonymised request logs."
+              ),
+          }
+          state_path.write_text(json.dumps(out, indent=2) + '\n')
+          print(f"engagement: {len(merged)} briefs · 14d views {out['window_views_14d']} · uniques {out['window_uniques_14d']}")
+          PY
+
+      - name: Commit changes (if any)
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- state/engagement.json; then
+            echo "no changes"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state/engagement.json
+          git commit -m "engagement: sync $(date -u +%Y-%m-%dT%H:%MZ)
+
+          Aggregate-only counts pulled from GitHub Repo Traffic API. No PII.
+          See docs/security-review.md (Engagement metrics) for details."
+          git push origin HEAD:main

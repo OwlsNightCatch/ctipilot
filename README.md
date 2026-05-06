@@ -6,30 +6,58 @@ A daily Cyber Threat Intelligence brief covering cyber threats targeting Switzer
 
 The repository is the single source of truth for the workflow: prompts, source list, rolling coverage state, and every brief are version-controlled.
 
+## Read on the web
+
+The briefs ship with a static GitHub Pages reader under [`site/`](site/) —
+search and cross-link across briefs, CVEs, topics, and sources. The site
+deploys automatically on every push to `main` that touches the brief feed.
+See [`site/README.md`](site/README.md) for internals and
+[`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for
+one-time enablement.
+
 ## What this repo contains
 
 ```
 .
 ├── prompts/
-│   ├── daily-cti-brief.md     # The canonical daily prompt (v2.0)
-│   ├── weekly-summary.md      # The weekly summary prompt (v1.0)
-│   └── CHANGELOG.md
+│   ├── daily-cti-brief.md     # The canonical daily prompt (v2.14)
+│   ├── weekly-summary.md      # The weekly summary prompt
+│   └── CHANGELOG.md           # Editorial-policy audit trail
 ├── sources/
-│   └── sources.json           # Curated, dynamic CTI source list (~75 sources)
+│   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
 │   ├── covered_items.json     # Rolling log of items reported and when (full records)
-│   └── cves_seen.json         # Flat fast-lookup CVE index (sub-agent dedup)
+│   ├── cves_seen.json         # Flat fast-lookup CVE index (sub-agent dedup)
+│   ├── engagement.json        # Aggregate page-view counts (no PII)
+│   └── BLOCKED.md             # Soft kill-switch — present == agent aborts
 ├── briefs/
 │   ├── README.md              # Brief format and conventions
 │   ├── YYYY-MM-DD.md          # Daily briefs
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
+├── site/                      # GitHub Pages reader (static SPA)
+│   ├── index.html             # SPA shell — vanilla JS, no framework
+│   ├── build.py               # Stdlib-only Python build of the data bundle
+│   ├── README.md              # Site internals
+│   └── assets/                # CSS, JS, vendored marked/DOMPurify
 ├── docs/
-│   ├── workflow.md            # End-to-end daily & weekly process
-│   ├── routine-setup.md       # One-time Claude Code routine setup (GitHub App, branch permissions)
-│   └── verification.md        # Fake-news verification policy
+│   ├── architecture.md        # End-to-end map: what reads/writes what
+│   ├── workflow.md            # End-to-end daily & weekly agent process
+│   ├── routine-setup.md       # One-time Claude Code routine + Pages setup
+│   ├── verification.md        # Fake-news verification policy
+│   ├── security-review.md     # Threat model for the autonomous-agent setup
+│   └── improvements.md        # Recommended improvements (with rationale)
+├── .github/workflows/
+│   ├── auto-merge-claude.yml  # Routine fallback: ff-merge claude/* → main
+│   ├── deploy-site.yml        # Build + deploy site/ to GitHub Pages
+│   └── sync-engagement.yml    # Pull aggregate Pages traffic → state/engagement.json
 └── .gitignore
 ```
+
+For an end-to-end map of how every piece reads and writes data, see
+[`docs/architecture.md`](docs/architecture.md). For improvements that have
+been *identified but not implemented*, see
+[`docs/improvements.md`](docs/improvements.md).
 
 ## Operating principles (non-negotiable)
 
@@ -100,6 +128,48 @@ The repository is the agent's working memory. Both `sources/sources.json` and `s
 The agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE — a hallucinated identifier slipped past verification on a previous run). Removals are documented in the run's commit body so the audit trail is preserved in git history.
 
 The current list (~75 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
+
+## Reader engagement (privacy-by-design)
+
+The site exposes two engagement views, neither of which collects any
+personally identifiable information:
+
+- **Aggregate view counts** of each brief, sourced from the
+  [GitHub Repo Traffic API](https://docs.github.com/en/rest/metrics/traffic).
+  Pulled every six hours by [`.github/workflows/sync-engagement.yml`](.github/workflows/sync-engagement.yml)
+  into [`state/engagement.json`](state/engagement.json). The file
+  carries only counts: no IPs, no cookies, no sessions, no fingerprints.
+  Surfaced on the home page and inside each brief's metadata strip.
+- **Personal reading history**, stored only in the visitor's own
+  `localStorage`. The data never leaves the device. The module honours
+  `navigator.doNotTrack` and Global Privacy Control — when set, it is a
+  no-op. Cleared with one click.
+
+The agent's Phase 0 reads `state/engagement.json` and uses it as a soft
+tiebreaker for deep-dive selection — readers' attention guides the
+agent's attention, but never overrides the editorial verification rules.
+Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
+
+## Security posture
+
+This is a fully autonomous, self-evolving system: the agent edits its own
+prompts, mutates its own state, and pushes directly to `main`. The
+defensive frame is "detect and correct", not "prevent at all costs".
+Threat model and current controls are documented in
+[`docs/security-review.md`](docs/security-review.md). Highlights:
+
+- **Soft kill-switch.** Phase 0 step 0 of the daily prompt aborts the run
+  if `state/BLOCKED.md` exists. Set automatically by editorial-invariant
+  CI on regression; cleared by a deliberate human commit. This is the
+  bound on the blast radius of self-evolving prompts.
+- **Vendored library integrity.** `site/build.py` aborts on SHA-256
+  mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
+- **Strict CSP** delivered via meta tag — no inline scripts, no
+  third-party `connect-src`, no inline frames or forms.
+- **DOMPurify on every brief render** with a pinned, restrictive config
+  (forbidden tags + URI scheme allowlist).
+- **Site privacy guarantees:** zero cookies, zero third-party scripts,
+  zero fingerprinting; engagement data is aggregate-only.
 
 ## Verification policy
 
