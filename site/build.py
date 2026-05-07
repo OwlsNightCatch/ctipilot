@@ -1468,7 +1468,109 @@ def render_brief_page(
         )
 
     md_anchor_base = canonical
-    body_html = render_markdown(body_md, base_url=md_anchor_base)
+
+    # Walk the parsed sections to emit a structured body: every H2 becomes
+    # a `<section data-section>`, every H3 a `<article class="brief-item"
+    # data-tags data-regions data-section>`. The metadata footer (when
+    # present) renders to a structured `<aside class="item-footer">` with
+    # tag / region / CVE pills that link to /tags/ and /regions/. Legacy
+    # items without a footer still get an article wrapper so the filter UI
+    # can hide them via section toggles, but their body renders as plain
+    # Markdown without tag pills.
+    preamble_md = body_md
+    first_h2 = re.search(r"^## ", body_md, re.MULTILINE)
+    if first_h2:
+        preamble_md = body_md[: first_h2.start()]
+    preamble_html = render_markdown(preamble_md, base_url=md_anchor_base) if preamble_md.strip() else ""
+
+    all_tags: set[str] = set()
+    all_regions: set[str] = set()
+    section_chips: list[tuple[str, str]] = []  # (anchor, heading)
+
+    sections_html: list[str] = []
+    for sec in brief["sections"]:
+        skey = sec["key"]
+        sec_anchor = sec["anchor"]
+        section_chips.append((sec_anchor, sec["heading"]))
+        inner: list[str] = []
+        for it in sec["items"]:
+            tags_attr = ""
+            regions_attr = ""
+            if it["footer"]:
+                tags_attr = " ".join(it["footer"].get("tags", []))
+                regions_attr = " ".join(it["footer"].get("regions", []))
+                all_tags.update(it["footer"].get("tags", []))
+                all_regions.update(it["footer"].get("regions", []))
+            article_id = it["anchor"]
+            slug = it["slug"]
+            item_body_html = render_markdown(it["body_md"], base_url=md_anchor_base)
+            footer_html = render_footer_html(it["footer"], prefix=prefix) if it["footer"] else ""
+            heading_html = (
+                f'<h3 id="{_escape(article_id)}">'
+                f'<a class="item-link" href="{prefix}items/{_escape(slug)}/">{_escape(it["heading"])}</a>'
+                f'</h3>'
+                if it["footer"]
+                else f'<h3 id="{_escape(article_id)}">{_escape(it["heading"])}</h3>'
+            )
+            inner.append(
+                f'<article class="brief-item" '
+                f'data-tags="{_escape(tags_attr)}" '
+                f'data-regions="{_escape(regions_attr)}" '
+                f'data-section="{_escape(skey)}">'
+                f'{heading_html}'
+                f'{item_body_html}'
+                f'{footer_html}'
+                f'</article>'
+            )
+        if not sec["items"]:
+            # No H3 items inside this section — render its raw body
+            # Markdown directly. Common for TL;DR (bullets only) and
+            # Verification Notes.
+            inner.append(render_markdown(sec["body_md"], base_url=md_anchor_base))
+        sections_html.append(
+            f'<section class="brief-section" '
+            f'data-section="{_escape(skey)}" '
+            f'id="{_escape(sec_anchor)}">'
+            f'<h2><a class="section-anchor" href="#{_escape(sec_anchor)}">{_escape(sec["heading"])}</a></h2>'
+            + "".join(inner)
+            + '</section>'
+        )
+
+    body_html = preamble_html + "".join(sections_html)
+
+    # Filter chip bar — section toggles always (every brief has sections);
+    # tag/region toggles only when the brief carries v2 metadata footers.
+    chips_html = ""
+    if section_chips or all_tags or all_regions:
+        section_toggle_html = "".join(
+            f'<button class="chip chip-section" data-target="{_escape(a)}" type="button" aria-pressed="true">{_escape(h)}</button>'
+            for a, h in section_chips
+        )
+        tag_chips_html = "".join(
+            f'<button class="chip chip-tag" data-tag="{_escape(t)}" type="button" aria-pressed="false">{_escape(t)}</button>'
+            for t in sorted(all_tags)
+        )
+        region_chips_html = "".join(
+            f'<button class="chip chip-region" data-region="{_escape(r)}" type="button" aria-pressed="false">{_escape(r)}</button>'
+            for r in sorted(all_regions)
+        )
+        region_group = (
+            '<details class="filter-group"><summary>Filter by region</summary>'
+            f'<div class="chip-row chip-row-regions">{region_chips_html}</div></details>'
+        ) if region_chips_html else ""
+        tag_group = (
+            '<details class="filter-group"><summary>Filter by tag</summary>'
+            f'<div class="chip-row chip-row-tags">{tag_chips_html}</div></details>'
+        ) if tag_chips_html else ""
+        chips_html = (
+            '<div class="filter-bar" data-filter="brief">'
+            '<details class="filter-group" open><summary>Sections</summary>'
+            f'<div class="chip-row chip-row-sections">{section_toggle_html}</div></details>'
+            f'{region_group}{tag_group}'
+            '<button type="button" class="filter-clear" data-action="clear-filters">Reset</button>'
+            '<p class="filter-status" data-role="filter-status" hidden></p>'
+            '</div>'
+        )
 
     cve_count = len(brief.get("cves", []))
     items_count = brief.get("items", 0)
@@ -1494,6 +1596,7 @@ def render_brief_page(
       <summary>On this page</summary>
       <div class="toc-mobile-body aside-toc">{toc_html}</div>
     </details>
+    {chips_html}
     <div class="brief-prose">{body_html}</div>
     {cited_footer}
   </div>
