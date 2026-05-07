@@ -25,18 +25,21 @@
                                                      plus the Umami beacon endpoint.
     object-src  'none'
     base-uri    'self'
-    form-action 'none'                              — site has no forms; this kills any
-                                                     injected ones.
-    frame-ancestors 'none'                          — clickjack defence.
+    form-action 'none'                              — site has no real forms; the search
+                                                     box's submit is wired in JS, this
+                                                     kills any injected ones.
     upgrade-insecure-requests                       — Pages serves HTTPS; force any stray
                                                      http:// up.
 
-    NOTE: `require-trusted-types-for 'script'` was removed when Umami was
-    added — Umami's tracker does not declare a Trusted Types policy and
-    would be rejected by the strict mode. DOMPurify alone provides
-    runtime equivalent string-level protection for our markdown pipeline.
+    NOTE: `frame-ancestors` and `require-trusted-types-for` cannot be
+    delivered via <meta http-equiv> — browsers warn and ignore them. We
+    rely on GitHub Pages's default `X-Frame-Options: DENY` (set by
+    GitHub) for clickjack defence; DOMPurify provides runtime
+    string-level XSS protection in lieu of Trusted Types (which we
+    dropped when Umami was added — Umami's tracker doesn't declare a
+    TT policy and would be rejected by the strict mode).
   -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cloud.umami.is; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'; upgrade-insecure-requests" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cloud.umami.is; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://cloud.umami.is; object-src 'none'; base-uri 'self'; form-action 'none'; upgrade-insecure-requests" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
 
   <!-- ── SEO ────────────────────────────────────────────────────────────
@@ -130,7 +133,7 @@
         </span>
       </a>
 
-      <form class="searchbox" role="search" onsubmit="return false;">
+      <form class="searchbox" role="search">
         <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
         <input
           id="q"

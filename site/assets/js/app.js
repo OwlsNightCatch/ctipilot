@@ -127,6 +127,12 @@
     const ul = document.getElementById('suggestions');
     if (!input || !ul) return;
 
+    // Prevent the form from submitting (we used to do this with an inline
+    // `onsubmit="return false;"` attribute, but that violates the strict
+    // CSP `script-src` directive — inline event handlers are blocked).
+    const form = input.form;
+    if (form) form.addEventListener('submit', (e) => e.preventDefault());
+
     let active = -1;
     let current = [];
 
