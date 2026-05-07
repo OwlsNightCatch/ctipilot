@@ -231,9 +231,13 @@
     console.info('1. <script> tag in DOM:', tag ? 'yes' : 'NO — markup missing');
     console.info('   src:', tag?.src, '· website-id:', tag?.dataset?.websiteId);
     console.info('2. window.umami global:', typeof window.umami !== 'undefined' ? 'defined' : 'UNDEFINED — script loaded but did not initialise (likely a content-blocker stripped it)');
-    console.info('3. POST to cloud.umami.is/api/send …');
+    console.info('3. POST to api-gateway.umami.dev/api/send …');
+    // The Umami Cloud script loads from cloud.umami.is, but actual events
+    // POST to api-gateway.umami.dev. Both must be reachable AND in the
+    // CSP `connect-src` allow-list. Testing the wrong host gives a
+    // false-positive "endpoint reachable" reading.
     try {
-      const r = await fetch('https://cloud.umami.is/api/send', {
+      const r = await fetch('https://api-gateway.umami.dev/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -249,10 +253,10 @@
           type: 'event',
         }),
       });
-      console.info('   HTTP', r.status, '— if 200, the beacon endpoint is reachable from your browser.');
+      console.info('   HTTP', r.status, '— if 200, the real Umami beacon endpoint is reachable from your browser.');
       if (!r.ok) console.warn('   ⚠ Non-200 response. Check the website-id matches the dashboard.');
     } catch (e) {
-      console.error('   ❌ Fetch failed:', e.message, '— this almost always means a privacy extension / Brave Shields / Pi-hole is blocking cloud.umami.is at the network layer. Disable shields for this site or test in another browser.');
+      console.error('   ❌ Fetch failed:', e.message, '— check (a) the page CSP includes `https://api-gateway.umami.dev` in connect-src, and (b) no privacy extension / Brave Shields / Pi-hole is blocking the host. CSP failures appear in the console as "Content-Security-Policy: The page\'s settings blocked the loading of a resource (connect-src) at https://api-gateway.umami.dev/…".');
     }
     console.info('4. Verbose logging: set `window.__ctibriefsDebugUmami = true` to log every umami.track() call to the console.');
     console.groupEnd();
