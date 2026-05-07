@@ -91,6 +91,15 @@ assert_in("link href present", 'href="https://example.com/cve"', link_html)
 assert_not_in("link bracket leak", "[the advisory]", link_html)
 assert_not_in("link paren leak", "(https://example.com", link_html)
 
+# Regression: inline code inside a link label used to leak the renderer's
+# placeholder marker (\x00CODE0\x00) which browsers strip to literal
+# "CODE0" text. See README/about page render bug.
+nested_html = render_inline("rules in [`docs/verification.md`](docs/verification.md), and `briefs/`.")
+assert_in("nested code inside link rendered", "<code>docs/verification.md</code>", nested_html)
+assert_in("outer code rendered", "<code>briefs/</code>", nested_html)
+assert_not_in("no \\x00 marker leak", "\x00", nested_html)
+assert_not_in("no CODE0 placeholder leak", "CODE0", nested_html)
+
 
 print("== render_markdown ==")
 md = """## Heading

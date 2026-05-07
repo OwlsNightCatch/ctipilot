@@ -345,11 +345,19 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
     s = _escape(s)
     s = s.replace("\x00B", "<strong>").replace("\x00b", "</strong>")
     s = s.replace("\x00I", "<em>").replace("\x00i", "</em>")
-    # Step 7: restore placeholders (codes + links) untouched. Their
-    # values are already valid HTML.
-    for key, value in placeholders.items():
-        s = s.replace(_escape(key), value)
-        s = s.replace(key, value)
+    # Step 7: restore placeholders (codes + links) — fixed-point loop so
+    # nested markers (e.g. an inline-code span inside a link's label,
+    # which got stashed as `\x00CODE0\x00` while the surrounding link
+    # was stashed as `\x00LINK1\x00`) get fully expanded.
+    for _ in range(8):  # bounded; placeholders are flat by construction
+        changed = False
+        for key, value in placeholders.items():
+            new_s = s.replace(_escape(key), value).replace(key, value)
+            if new_s != s:
+                s = new_s
+                changed = True
+        if not changed:
+            break
     return s
 
 
@@ -370,9 +378,15 @@ def render_inline_no_links(s: str) -> str:
     s = _escape(s)
     s = s.replace("\x00B", "<strong>").replace("\x00b", "</strong>")
     s = s.replace("\x00I", "<em>").replace("\x00i", "</em>")
-    for key, value in placeholders.items():
-        s = s.replace(_escape(key), value)
-        s = s.replace(key, value)
+    for _ in range(8):
+        changed = False
+        for key, value in placeholders.items():
+            new_s = s.replace(_escape(key), value).replace(key, value)
+            if new_s != s:
+                s = new_s
+                changed = True
+        if not changed:
+            break
     return s
 
 
@@ -2216,29 +2230,12 @@ def render_home_page(
         '</div>'
     )
 
-    # Inline JS bootstrap that converts old SPA hash URLs to clean URLs so
-    # any indexed `#/briefs/2026-05-07` redirects.
-    redirect_js = """
-<script>
-(function(){
-  var h = window.location.hash || '';
-  if (!h) return;
-  var m;
-  m = h.match(/^#\\/briefs\\/(\\d{4}-\\d{2}-\\d{2})$/);
-  if (m) { window.location.replace('briefs/' + m[1] + '/'); return; }
-  m = h.match(/^#\\/briefs\\/(\\d{4}-W\\d{2})$/);
-  if (m) { window.location.replace('briefs/weekly/' + m[1] + '/'); return; }
-  m = h.match(/^#\\/cves\\/(CVE-[0-9]+-[0-9]+)$/);
-  if (m) { window.location.replace('cves/' + m[1] + '/'); return; }
-  m = h.match(/^#\\/sources\\/(.+)$/);
-  if (m) { window.location.replace('sources/' + decodeURIComponent(m[1]) + '/'); return; }
-  m = h.match(/^#\\/topics\\/(.+)$/);
-  if (m) { window.location.replace('topics/' + decodeURIComponent(m[1]) + '/'); return; }
-  m = h.match(/^#\\/(briefs|cves|topics|sources|ops|about)$/);
-  if (m) { window.location.replace(m[1] + '/'); return; }
-})();
-</script>
-"""
+    # Bootstrap that converts old SPA hash URLs (`#/briefs/<name>`) to
+    # clean URLs. Loaded as an external script so the strict CSP can keep
+    # `'self'` and refuse all inline scripts.
+    redirect_js = (
+        f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
+    )
 
     body = f"""
 <div class="home-banner">
@@ -2256,7 +2253,6 @@ def render_home_page(
   <h2>TL;DR — {_escape(latest['name'])}</h2>
   {tldr_html}
   <div class="preview-tldr-cta">
-    <a class="cta" href="briefs/{_escape(latest['name'])}/">Read the full brief →</a>
     <a class="cta cta--secondary" href="briefs/">All briefs</a>
   </div>
 </section>
@@ -2908,11 +2904,32 @@ def self_check(
         path = OUT / info["path"]
         if not path.exists():
             errors.append(f"manifest page missing on disk: {url_path} -> {info['path']}")
-    # Every emitted HTML file contains the Umami snippet exactly once.
+    # Every emitted HTML file contains the Umami snippet exactly once and
+    # carries no inline `<script>` block (CSP `script-src 'self'` would
+    # refuse to execute it).
+    inline_script_re = re.compile(r"<script(?:\s[^>]*)?>(?!\s*</script>)[^<]", re.IGNORECASE)
     for path in OUT.rglob("*.html"):
         text = path.read_text(encoding="utf-8")
         if text.count("cloud.umami.is/script.js") != 1:
             errors.append(f"umami snippet count != 1 in {path.relative_to(OUT)}")
+        if inline_script_re.search(text):
+            errors.append(
+                f"inline <script> body in {path.relative_to(OUT)} — "
+                "CSP would refuse to execute it. Move to an external file under assets/js/."
+            )
+        # Markdown-renderer placeholder leakage: `\x00CODE0\x00` markers
+        # are stripped to literal "CODE0" text by browsers. If any survive
+        # into the published HTML, the renderer's fixed-point substitution
+        # is broken.
+        if "\x00" in text or re.search(r"\bCODE\d+\b", text) or re.search(r"\bLINK\d+\b(?!\.html)", text):
+            # Filter false positives: the literal word "CODE" can appear
+            # in legitimate prose. Only flag when adjacent to digits in the
+            # exact placeholder shape and not part of a real word.
+            if "\x00" in text or re.search(r"(?<![A-Za-z])CODE\d+(?![A-Za-z])", text):
+                errors.append(
+                    f"markdown placeholder leak in {path.relative_to(OUT)} — "
+                    "inline-code or link substitution is broken (renderer fixed-point regressed)"
+                )
     # No raw `**Markdown**` survives in any RSS content.
     for fp in feed_files:
         text = fp.read_text(encoding="utf-8")
