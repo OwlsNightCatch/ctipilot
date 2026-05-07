@@ -8,34 +8,43 @@ The repository is the single source of truth for the workflow: prompts, source l
 
 ## Where to read
 
-- **Public reader:** [https://owlsnightcatch.github.io/security-newsletter/](https://owlsnightcatch.github.io/security-newsletter/) — the static GitHub Pages site. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text and section-level search. The site has an **About** page that renders this same README directly from the repository — if you found this file via the site, you are already reading it. The site also exposes an [RSS feed](https://owlsnightcatch.github.io/security-newsletter/feed.xml).
-- **GitHub:** the briefs are markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
+- **Public reader:** [https://owlsnightcatch.github.io/security-newsletter/](https://owlsnightcatch.github.io/security-newsletter/) — a static GitHub Pages site. Every brief, every per-item block, every CVE / source / topic page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text autocomplete from the topbar.
+- **GitHub:** the briefs are Markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
 
 The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for one-time enablement.
 
+## RSS — three feeds
+
+| URL | Contents | Truncation |
+|-----|----------|------------|
+| [`/feed.xml`](https://owlsnightcatch.github.io/security-newsletter/feed.xml) | One item per daily brief | last 30 |
+| [`/feed-weekly.xml`](https://owlsnightcatch.github.io/security-newsletter/feed-weekly.xml) | One item per weekly summary | last 30 |
+| [`/feed-items.xml`](https://owlsnightcatch.github.io/security-newsletter/feed-items.xml) | One item per metadata-footer block (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive, Action Items) | last 50 |
+
+`<pubDate>` is the actual git-commit moment of the brief on `main`, not midnight-of-brief-date. `<content:encoded>` carries the full brief / item rendered to HTML — no Markdown emphasis survives into the feed payload. No UTM parameters, no per-source variants — every link is plain canonical.
+
 ## Reader features
 
-- **Home preview** — the landing view shows the TL;DR of the latest daily brief; clicking *Read the full brief* opens the full text.
-- **Cross-linked entities** — every CVE, source, and topic page lists the briefs that mention it; every brief lists the CVEs, topics and sources it cites.
-- **Section-level search** — typing in the top bar matches brief sections (H3 headings) as separate results, jumping straight to the relevant paragraph inside a brief.
-- **Verification filters** — the Topics page can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
-- **Operations dashboard** at `/#/ops` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). Useful for spotting rotation bias or a quietly broken source.
-- **RSS feed** at `/feed.xml`.
+- **Static HTML.** Every page contains its full content on first paint. View source on a brief and you can read it. JavaScript only enhances: search autocomplete, list-page filter chips, the brief-page tag/region/section toggles, theme cycle, copy-link button.
+- **Cross-linked entities.** Every CVE, source, and topic page lists the briefs that mention it; every brief lists the CVEs, topics, and sources it cites; every metadata footer's tag and region link to a per-tag / per-region index of every item carrying that label.
+- **Per-item permalinks.** Every Immediate Action, Active Threat, Trending Vulnerability, Research item, Update, Deep Dive, and Action Item gets its own stable `/items/<slug>/` URL.
+- **Topbar search.** Token-prefix scoring across briefs, sections, CVEs, topics, and sources. Press `/` anywhere on the site to focus. CVE ids match as a single token.
+- **Verification filters.** The Topics page can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
+- **Operations dashboard** at `/ops/` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). Useful for spotting rotation bias or a quietly broken source.
 - **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
 - **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
 - **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
-- **Permalink** — each brief has a *Copy link* button that puts the canonical SPA URL on your clipboard.
-- **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting), aggregate counts only. See About → *Analytics & privacy* for the full disclosure.
-- **SEO** — per-route `<title>` / `description` / OpenGraph rewrites in the SPA, plus a static `sitemap.xml` and JSON-LD `WebSite` block.
+- **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting), aggregate counts only. See [`docs/analytics.md`](docs/analytics.md) for the full disclosure.
+- **SEO** — per-page `<title>` / `description` / OpenGraph + canonical URLs, sitemap.xml, robots.txt.
 
 ## What this repo contains
 
 ```
 .
 ├── prompts/
-│   ├── daily-cti-brief.md     # The canonical daily prompt
+│   ├── daily-cti-brief.md     # The canonical daily prompt (v2.23+ schema)
 │   ├── weekly-summary.md      # The weekly summary prompt
-│   └── CHANGELOG.md           # Editorial-policy audit trail (rendered on the About page)
+│   └── CHANGELOG.md           # Editorial-policy audit trail (rendered at /about/changelog/)
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
@@ -44,23 +53,29 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── deep_dive_history.json # Last 30 days of deep-dive picks (rotation memory)
 │   └── run_log.json           # Per-run sub-agent allocation, fetch failures (Ops view)
 ├── briefs/
-│   ├── README.md              # Brief format and conventions
+│   ├── README.md              # Brief format and conventions (v2 schema + metadata footer)
 │   ├── YYYY-MM-DD.md          # Daily briefs
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── tools/
 │   └── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
-├── site/                      # GitHub Pages reader (static SPA)
-│   ├── index.html             # SPA shell — vanilla JS, no framework
-│   ├── build.py               # Stdlib-only Python build of the data bundle
+├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
+│   ├── build.py               # SSG entrypoint — emits real HTML pages for every URL
+│   ├── taxonomy.yaml          # Controlled vocabulary (themes, regions, CVE fields, sections)
+│   ├── test_build.py          # Stdlib-only smoke tests
 │   ├── README.md              # Site internals
-│   └── assets/                # CSS, JS, vendored marked/DOMPurify
+│   └── assets/
+│       ├── css/styles.css     # Dark-first stylesheet (light/dark/system, print)
+│       ├── js/                # theme.js, search.js, app.js (progressive enhancement only)
+│       └── vendor/            # marked.min.js, purify.min.js, filter.min.js + HASHES
 ├── docs/
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── workflow.md            # End-to-end daily & weekly agent process
 │   ├── routine-setup.md       # One-time Claude Code routine + Pages setup
 │   ├── verification.md        # Fake-news verification policy
 │   ├── security-review.md     # Threat model for the autonomous-agent setup
+│   ├── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
+│   ├── v2-plan.md             # Engineering scaffolding for the v2 cut-over
 │   └── improvements.md        # Recommended improvements (with rationale)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Routine fallback: ff-merge claude/* → main
@@ -145,7 +160,7 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 - Search-string parameters are excluded from collection.
 - Block at the network layer if you don't want to be counted: `cloud.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without it.
 
-The site's strict CSP allows only `'self'` and `https://cloud.umami.is` for both `script-src` and `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure on the [About page](https://owlsnightcatch.github.io/security-newsletter/#/about?at=analytics).
+The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://owlsnightcatch.github.io/security-newsletter/about/analytics/).
 
 The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md). Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
 
@@ -155,8 +170,8 @@ This is a fully autonomous, self-evolving system: the agent edits its own prompt
 
 - **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 1–4 item has a `covered_items.json` appearance for today, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
-- **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'` and `https://cloud.umami.is` (the analytics tracker, see About → Analytics & privacy); no inline frames or forms.
-- **DOMPurify on every brief render** with a pinned, restrictive config (forbidden tags + URI scheme allowlist).
+- **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'`, `https://cloud.umami.is` (the analytics script), and `https://api-gateway.umami.dev` (the beacon endpoint); no inline frames or forms.
+- **Build-side Markdown sanitisation** with a pinned tag/URI-scheme allowlist. The build refuses any rendered output that would carry an event handler, a `javascript:` / `data:` URI, or a forbidden tag.
 - **Site privacy guarantees:** no cookies set, no fingerprinting, no third-party scripts other than Umami's privacy-by-design tracker (aggregate counts only, no PII).
 
 ## Verification policy
