@@ -4,6 +4,39 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.20 — 2026-05-07
+
+### Why
+Operator review of the deployed site flagged three things to harden:
+(1) the agent had been citing the BSI generic landing page instead of the
+specific WID-SEC advisory; (2) several deep-dive items leaned on news
+articles when the underlying vendor / CERT report was reachable in one
+extra fetch; (3) the agent's fetch budget was too tight for the
+primary-source pivot work.
+
+### Phase 1 — research methodology (changed)
+- **Primary-source pivot mechanic made explicit and persistent.** The "follow news to the primary report" rule now spells out the pivot procedure step by step:
+  1. Scan the article for outbound links (prose, pull-quotes, "via" footers).
+  2. If no obvious link, search directly: `WebSearch "<vendor name> <topic> blog"` or jump to the vendor's `/research` / `/blog` index.
+  3. **Incident chain**: victim disclosure → regulator filing → IR-firm post-mortem → news. Walk it from the victim end.
+  4. **Vulnerability chain**: vendor PSIRT → NVD → national CERT (CERT-EU / CERT-FR / BSI WID / NCSC-CH CSH) → exploit-research lab → news.
+  5. Don't stop at the first link that looks plausible — confirm it's the primary, not another aggregator. Two pivots is normal; three is fine when the trail is real.
+  6. If the primary cannot be reached, record `Coverage gaps: <topic> — primary source <URL> unreachable, citing news as fallback` in § 7.
+
+### Phase 1 — operational guardrails (changed)
+- **Fetch budget raised 30 → 45 calls** to leave headroom for the pivot work (each pivot costs 2–3 fetches per item).
+- **Wall-clock soft cap raised 10 → 12 min** for the same reason.
+- **New "primary-source pivot reserve"** of ~10–15 of the 45 calls — fetches whose only purpose is to follow a news article down to the underlying primary report.
+- Per-source timeout exception: when chasing a primary, one alternate path (publisher blog index, `tools/fetch_source.py`) is allowed and counts as part of the pivot, not a retry.
+
+### Sources (`sources/sources.json`)
+- **BSI Germany** URL replaced. The previous URL (`https://www.bsi.bund.de/EN/Themen/Unternehmen-und-Organisationen/Cyber-Sicherheitslage/Technische-Sicherheitshinweise-und-Warnungen/Cyber-Sicherheitswarnungen/cyber-sicherheitswarnungen_node.html`) was a generic landing page that did not contain advisory content. New URL is `https://wid.cert-bund.de/portal/wid/kurzinformationen` (the CERT-Bund WID advisory index). RSS available at `https://wid.cert-bund.de/content/public/securityAdvisory/rss`. Per-advisory drill-down URL pattern is `https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-YYYY-NNNN`. Drill-down is mandatory: never cite the kurzinformationen index, always the per-advisory detail URL.
+
+### Existing briefs (retroactive)
+- `briefs/2026-05-06.md`: both BSI Copy Fail citations (TL;DR § 1a item header and § 5 deep-dive narrative) updated from the broken landing-page URL to `https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1232` (the WID-SEC ID for CVE-2026-31431 'Copy Fail').
+
+---
+
 ## 2.19 — 2026-05-07
 
 ### Why
