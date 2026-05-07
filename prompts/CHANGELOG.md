@@ -4,6 +4,79 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.25 — 2026-05-07 (audience + technical depth)
+
+### Why
+The brief was occasionally drifting toward executive-summary register —
+*"a critical vulnerability has been disclosed"*, *"organizations are urged
+to patch promptly"*, *"the threat landscape continues to evolve"* — when
+the actual audience is Tier 2/3 incident responders, threat hunters, and
+detection engineers who live in MITRE ATT&CK every day and read primary
+vendor research directly. They don't need to be told what BloodHound is;
+they need to be told which exact component, which exact technique, which
+exact event ID surfaces it. v2.25 makes the audience expectation
+unmissable and pins down what "deep technical level" means for every
+section.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+- Opening role description rewritten to spell out the audience (Tier
+  2/3 IR + threat hunters + detection engineers + reverse engineers +
+  red-team-aware defenders + SOC management who came up through
+  analyst rotations) and to give the assumed-fluency vocabulary as a
+  concrete list (BloodHound, Mythic, gMSA, S4U2Self, OAuth device-code
+  phishing, EDR userland hooking, BYOVD, LOLBAS, process hollowing,
+  kernel callback registration, …).
+- New "**The brief is a deep technical document.**" paragraph
+  enumerates what every item must include: exact vulnerable component;
+  technique class with MITRE ATT&CK IDs; exploitation prerequisites;
+  affected and patched versions at vendor-stated precision; observed
+  exploitation status with named campaign clusters; concrete defender
+  takeaway tied to the specificity (event ID / log source / EDR
+  telemetry / configuration switch).
+- New "**Technical depth — what every item must include**" section in
+  Phase 4, with a worked-good example fragment showing how the depth
+  reads in practice on a § 2 item. Explicitly notes: *better to write
+  less than to fabricate plausible-sounding specifics* (PD-1).
+- Phase 3 deep-dive guidance expanded to spell out the seven content
+  pillars: vulnerability or campaign mechanics; exploitation chain
+  mapped to the MITRE ATT&CK kill chain; affected and patched
+  versions; hunt and detection concepts (Sysmon EID 1, Windows event
+  IDs 4624 / 4625 / 4663 / 4769 / 5379, Linux audit syscalls, Sigma
+  technique categories); hardening and mitigation specifics; named
+  campaign cluster; background paragraph for material with prior
+  reporting older than ~6 months.
+- Style rules now include "deep technical register" with a concrete
+  example (`S4U2Self abuse to obtain a service ticket as a privileged
+  user, followed by silver-ticket forging with the captured TGS` —
+  *not* `attackers used Kerberos features to escalate privileges`)
+  and a list of banned filler phrasings (*"in today's evolving threat
+  landscape"*, *"organizations are urged to"*, *"this highlights the
+  importance of"*).
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Same audience description as the daily, with the explicit note that
+  SOC management read at the same level (they came up through analyst
+  rotations).
+- New "**The weekly summary is a deep technical document at SOC-analyst
+  register**" paragraph clarifying that the weekly's step-back lens is
+  about clustering threads / sectoral patterns / long-running-campaign
+  arcs, NOT about translating the dailies into executive-summary
+  register for a non-technical reader.
+- New "**Technical depth — same standard as the daily**" section inside
+  Phase 3 listing the seven specificity pillars and rejecting
+  surface-level talking points even at week-level register.
+- Style rules expanded to mirror the daily's "deep technical register"
+  +  banned-filler-phrasing list.
+
+### Hard invariants
+Unchanged. The 12 hard invariants in the daily prompt's META section
+still hold. The audience clarification is consistent with — and
+sharpens — Prime Directive 1 (zero LLM knowledge): you can't fabricate
+the technical specificity an audience this skilled will demand, so the
+specificity must come from the primary source you fetched today.
+
+---
+
 ## 2.24 — 2026-05-07 (prompt rewrite for clarity + Sonnet readability)
 
 ### Why
