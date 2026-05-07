@@ -121,25 +121,29 @@ One-time enable:
 
 The site is fully static and read-only. The deploy workflow uses only shell-level git commands so it works under organisations that restrict third-party GitHub Actions.
 
-## Engagement metrics — none, by choice
+## Engagement metrics — Umami Cloud (privacy-by-design)
 
-The site does **not** collect aggregate visit counts. There are no
-analytics scripts, beacons, cookies, fingerprinting, or third-party
-trackers, and no on-device personal-history panel. The strict CSP
-(`connect-src 'self'`) blocks any future regression that tries to add
-cross-origin telemetry.
+The site uses **Umami Cloud** for aggregate visitor counts so the
+operator can see whether the newsletter is being read. No cookies, no
+fingerprinting, aggregates only — see [`docs/analytics.md`](analytics.md)
+and `/about/analytics/` on the live site for the full disclosure.
 
-A previous version of this repo pulled the GitHub Repo Traffic API
-into `state/engagement.json` (and required a `TRAFFIC_PAT` secret). It
-was removed because the API exposes github.com repo views only — not
-GitHub Pages site visits — so the metric was misleading for our
-deployment shape. If the operator wants real Pages-site analytics
-later, the realistic options are documented in
-[`docs/improvements.md`](improvements.md) item S7b (Cloudflare Web
-Analytics, GoatCounter, Plausible). None are enabled by default.
+The script tag is hard-coded in `site/build.py`'s `UMAMI_SNIPPET`
+constant; the site's strict CSP allows only `'self'`,
+`https://cloud.umami.is` (script source), and `https://api-gateway.umami.dev`
+(beacon endpoint). No additional configuration is required at routine-
+setup time.
 
-If a `TRAFFIC_PAT` secret was created during the previous version, you
-can safely delete it from the repo's secrets — nothing reads it now.
+If the operator wants to **drop Umami**, it's a single-commit change:
+delete the `<script>` line in `UMAMI_SNIPPET`; remove `cloud.umami.is`
+and `api-gateway.umami.dev` from `CSP_META`'s `script-src` /
+`connect-src`; optionally drop the build self-check rule that asserts
+the snippet is present on every page. The site keeps working without
+analytics.
+
+If a legacy `TRAFFIC_PAT` secret was created at some earlier point in
+the project's history, it is safe to delete from the repo's secrets —
+nothing reads it.
 
 ## Sub-agent capability ceiling
 

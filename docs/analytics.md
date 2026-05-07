@@ -13,7 +13,7 @@ Block at the network layer if you don't want to be counted: `cloud.umami.is` and
 
 Every emitted HTML page on the site loads the Umami snippet exactly once: the home page, every brief page, every per-item page, every CVE / source / topic page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.
 
-When you click through from one page to another, the navigation registers as a normal Umami pageview. The clean URL layout means each route is a distinct pageview rather than a hash-fragment that some readers compress to a single home-page hit.
+Each click registers as a normal Umami pageview because every URL is a real HTML page (the site is a static-site generator, not a SPA). The legacy `#/...` hash-routes from the previous SPA still work via the home page's redirect bootstrap, but the redirect resolves to a clean URL before Umami sees it — so the indexed-old-URL → clean-URL transition is a single normal pageview from Umami's perspective.
 
 ## RSS feeds — deliberate non-tracking
 
@@ -35,4 +35,4 @@ If a future operator wants feed-open metrics, they can add a server-side beacon 
 
 ## Telemetry the agent emits
 
-Distinct from the site analytics: the agent persists `state/run_log.json` per run, listing sub-agent allocation, fetch failures, deep-dive picks, etc. That file is committed to the public repo and rendered at [`/ops/`](../site/_site/ops/). It contains no visitor data — only what the agent itself did during the run.
+Distinct from the site analytics: the agent persists `state/run_log.json` per run, listing sub-agent allocation, fetch failures, deep-dive picks, etc. That file is committed to the public repo and rendered at the operations dashboard `/ops/`. It contains no visitor data — only what the agent itself did during the run.

@@ -5,12 +5,10 @@ policy, the operator tooling, the site, and the docs. Each open item has a
 *Why* (what failure mode or pain point it addresses) and a *How* (concrete
 shape of the change). They are **independent** — pick any subset.
 
-> **Status as of 2026-05-07.** A pass through this file landed in v2.19 of
-> the prompt and the corresponding site refactor. The implemented items
-> are listed in [§ Implemented](#implemented), with a one-line hook back
-> to where the change lives. The unimplemented items are kept below in
-> their original sections, with a *Why not yet* note where the rationale
-> for delay is non-obvious.
+> **Status as of 2026-05-07.** A v2 cut-over landed in prompt v2.23 + the
+> SSG rewrite of `site/`, with prompt v2.24 tightening the prompt itself.
+> The implemented items below have one-line hooks back to where the change
+> lives. The unimplemented items are kept below in their original sections.
 
 ---
 
@@ -19,26 +17,30 @@ shape of the change). They are **independent** — pick any subset.
 | ID | One-line summary | Lives in |
 |----|------------------|----------|
 | **A1** | Sustained 403 / 429 / 5xx no longer demotes a source — recorded as transport block, source kept in rotation. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 |
-| **A2** | Phase 5.5 self-check gate — JSON parse, brief-CVE ↔ cves_seen, brief-item ↔ covered_items consistency. Drift aborts the commit. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5.5 |
-| **A5** | `state/run_log.json` — per-run sub-agent allocation (90-day FIFO). | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 + [`#/ops`](https://owlsnightcatch.github.io/security-newsletter/#/ops) view |
+| **A2** | Phase 5.5 self-check gate — JSON parse, brief-CVE ↔ cves_seen, brief-item ↔ covered_items consistency, every UPDATE has an inline cite, every H3 has a v2 metadata footer, every footer value is in the taxonomy. Drift aborts the commit. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5.5 |
+| **A5** | `state/run_log.json` — per-run sub-agent allocation (90-day FIFO). | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 + the operations dashboard at [`/ops/`](https://owlsnightcatch.github.io/security-newsletter/ops/) |
 | **A6** | Weekly summary read explicitly by name in Phase 0 — closes the Sunday-weekly / Monday-daily dedup gap. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 0 step 2 |
 | **A8** | Deep-dive category-rotation memory — 30-day rolling history, demotes repeated categories. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 3 + `state/deep_dive_history.json` |
 | **A9** | Distinct counters: `consecutive_quiet_periods` vs `consecutive_fetch_failures`. Demotion fires only on the content axis. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 |
-| **S1** | RSS 2.0 feed at `/feed.xml` (last 30 briefs, TL;DR as body). | [`site/build.py`](../site/build.py) `write_rss_feed` |
+| **A10** | Per-item metadata footer on every brief item, with controlled vocabulary in [`site/taxonomy.yaml`](../site/taxonomy.yaml). The build emits per-item / per-tag / per-region pages and a per-item RSS feed from this footer. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 4 + [`site/build.py`](../site/build.py) `parse_footer_line` |
+| **A11** | Consolidated anti-crash guards in the prompt's "CRITICAL" block — always write the file; ~10 min sub-agent timebox; compose-incrementally to dodge stream timeout; persist intermediate state to `work/<run-id>/`; bounded retries; two-stage publishing chain. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) top + [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) top |
+| **S1** | Three RSS feeds — `/feed.xml` (daily, last 30), `/feed-weekly.xml` (weekly, last 30), `/feed-items.xml` (per-item, last 50). All use the actual git-commit timestamp as `<pubDate>`. | [`site/build.py`](../site/build.py) `build_daily_feed` / `build_weekly_feed` / `build_items_feed`. [Closes #2](https://github.com/OwlsNightCatch/security-newsletter/issues/2). |
 | **S2** | Print stylesheet — clean, link-annotated, hides chrome. | [`site/assets/css/styles.css`](../site/assets/css/styles.css) `@media print` |
 | **S4** | Light / dark / system theme toggle, persisted in localStorage. | [`site/assets/js/theme.js`](../site/assets/js/theme.js) |
-| **S5** | Section-level deep-link in search — every H3 inside every brief is its own search entry, jumping to the matching paragraph. | [`site/build.py`](../site/build.py) `build_search_index` + `?at=anchor` in router |
-| **S6** | "Copy link" button in the brief header → clipboard, with toast. | [`site/assets/js/render.js`](../site/assets/js/render.js) `data-action="share"` |
+| **S5** | Topbar search autocomplete across briefs / CVEs / topics / sources. Token-prefix scoring; `/` shortcut; arrow-key navigation. | [`site/build.py`](../site/build.py) writes `data/search.json`; [`site/assets/js/search.js`](../site/assets/js/search.js) + [`site/assets/js/app.js`](../site/assets/js/app.js) `wireGlobalSearch` |
+| **S6** | "Copy link" button in the brief header → clipboard, with toast. | [`site/assets/js/app.js`](../site/assets/js/app.js) `wireCopyLinkButtons` |
 | **S7** | Source URL match by longest URL prefix instead of bare hostname. | [`site/build.py`](../site/build.py) `annotate_sources` |
-| **S8** | Operations dashboard at `#/ops` — recent runs, fetch failures, stale active sources. | [`site/assets/js/render.js`](../site/assets/js/render.js) `renderOps` |
-| **S9** | Verification-flag chip filters on the Topics page — filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, `[SINGLE-SOURCE-OTHER]`. | [`site/build.py`](../site/build.py) `annotate_topics` + Topics view chips |
-| **D2** | `prompts/CHANGELOG.md` rendered on the About page below the verification policy. | [`site/assets/js/render.js`](../site/assets/js/render.js) `renderAbout` |
+| **S8** | Operations dashboard at `/ops/` — recent runs, fetch failures, stale active sources. | [`site/build.py`](../site/build.py) `render_ops_page` |
+| **S9** | Verification-flag chip filters on the Topics page — filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, `[SINGLE-SOURCE-OTHER]`. | [`site/build.py`](../site/build.py) `annotate_topics` + `render_topic_list_page` |
+| **S10** | Brief-page filter UI — section toggles + tag chips + region chips, all merged into the aside-toc. Default = all selected = entire report visible; click a chip to negate. Multi-combo. | [`site/build.py`](../site/build.py) `render_brief_page` filter bar + [`site/assets/vendor/filter.min.js`](../site/assets/vendor/filter.min.js) |
+| **S11** | Static-site rendering — every URL is a real HTML page rendered server-side at build time. No SPA, no client-side Markdown rendering. | [`site/build.py`](../site/build.py) `base_template` + per-page renderers |
+| **D2** | `prompts/CHANGELOG.md` rendered on the About page at `/about/changelog/`. | [`site/build.py`](../site/build.py) `render_static_doc` |
 | **D3** | Per-brief prompt-version badge linking to the matching CHANGELOG entry. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) compose template + [`site/build.py`](../site/build.py) `parse_brief` |
-| **SR4** | Sub-agent capability ceiling explicitly documented. | [`docs/routine-setup.md`](routine-setup.md#sub-agent-capability-ceiling) |
-| **SR5** | Trusted Types CSP directive (`require-trusted-types-for 'script'; trusted-types ctibriefs-marked dompurify default`). | [`site/index.html`](../site/index.html) meta-CSP + [`site/assets/js/render.js`](../site/assets/js/render.js) policy |
-| **SR9** | Routine credential rotation cadence documented (90 days). | [`docs/routine-setup.md`](routine-setup.md#rotation-cadence-credentials) |
-| **SR10** | One new candidate source per run, maximum. Overflow goes to § 7. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 |
-| **(BLOCKED removal)** | The `state/BLOCKED.md` circuit-breaker (v2.16) is gone — superseded by Phase 5.5 self-check, which is structurally stronger and doesn't depend on an external workflow. | [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) v2.19 |
+| **D4** | Repo-relative links in `README.md` and `docs/*.md` rewritten to `/about/<doc>/` (or to GitHub blob URLs for non-rendered files) when emitted on About pages. Fragment identifiers preserved. | [`site/build.py`](../site/build.py) `_rewrite_about_links` |
+| **SR4** | Sub-agent capability ceiling explicitly documented. | [`docs/routine-setup.md`](routine-setup.md) |
+| **SR5** | Build-side Markdown sanitisation — fixed tag + URI-scheme allowlist, no client-side renderer to bypass. Vendored marked.js + DOMPurify kept for reference but not wired into the runtime. | [`site/build.py`](../site/build.py) `render_markdown` + `render_inline` + `render_static_doc` |
+| **SR9** | Routine credential rotation cadence documented (90 days). | [`docs/routine-setup.md`](routine-setup.md) |
+| **SR10** | One new candidate source per run, maximum. Overflow goes to § 8. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 |
 
 ---
 

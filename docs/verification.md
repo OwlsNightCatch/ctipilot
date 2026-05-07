@@ -22,7 +22,7 @@ The reasoning: these organisations *are* the authoritative source for advisories
 
 **Single-source items that do not qualify for the carve-out** must be marked `[SINGLE-SOURCE]` next to the item title, with the source named explicitly in the body.
 
-**Contradictions** are surfaced in § 8 of the brief, not silently resolved by picking a side.
+**Contradictions** are surfaced in § 8 Verification Notes of the brief, not silently resolved by picking a side.
 
 ---
 
@@ -69,7 +69,7 @@ Single-source social-media posts are not sources. Even if the post is by a resea
 
 Every item in the brief must reflect events within the last 24 h (default) or 72 h (active campaign). When a sub-agent surfaces something older, the agent must confirm it qualifies under one of:
 
-- A *material new development* on a longer-running campaign (in which case it goes under § 7 Updates with the original date).
+- A *material new development* on a longer-running campaign (in which case it goes under § 5 Updates to Prior Coverage with the original date).
 - A vendor advisory that happened to land late but is freshly relevant (e.g., a CVE quietly added to KEV today for a 2024-disclosed flaw).
 - A national-CERT publication today that references prior activity.
 
@@ -82,10 +82,10 @@ In every case the brief states the original date so the reader is not misled.
 - [ ] Every claim has an inline link to a source fetched today.
 - [ ] Zero IOCs anywhere (hashes, IPs, attacker domains/URLs, rule code).
 - [ ] Zero vanity metrics (dwell time, breakout time, YoY counts).
-- [ ] No item from last 5 briefs appears unless under § 7 Updates with a delta.
+- [ ] No item from the last 7 briefs appears unless under § 5 Updates with a delta + an inline citation.
 - [ ] Every item passed two-source verification, OR is national-CERT primary disclosure, OR is marked `[SINGLE-SOURCE]`.
 - [ ] CVE identifiers verified against NVD/MITRE.
-- [ ] CH/EU section has ≥1 item or explicit empty-section statement.
+- [ ] CH/EU/public-sector items in § 2 carry the appropriate `Region:` and `Sector:` tags in their metadata footer.
 - [ ] Deep dive present, or explicit "no item met the bar".
 - [ ] State files updated (`state/covered_items.json`, `sources/sources.json`).
 - [ ] Verification Notes section lists drops, single-source items, and contradictions.

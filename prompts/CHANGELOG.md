@@ -4,6 +4,41 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.24 — 2026-05-07 (prompt rewrite for clarity + Sonnet readability)
+
+### Why
+The v2.23 cut-over landed all the new features (9-section structure, per-item metadata footer, Trending Vulnerabilities inclusion gates, Action Items, Immediate Actions, primary-source bias) but the prompts had grown organically — daily was 1067 lines / ~25k tokens with significant duplication and verbose subsections. Goals for v2.24:
+- One read-through is enough — Sonnet 4.6 should not need to refer back mid-execution.
+- Every anti-crash guard is explicit and prominent.
+- Total budget well under 25k tokens (now 14k for daily, 6.5k for weekly).
+- All v2 features still fully specified (9 sections / footer / gates / taxonomy / patience clause / primary-source bias).
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+- Total length 1067 → 671 lines (~14k tokens). Same scope; tighter prose.
+- New "**CRITICAL: this run must produce a brief**" block at the top consolidating all 8 anti-crash guards (always write the file; ~10 min sub-agent timebox; compose-incrementally to dodge stream-idle-timeout; persist intermediate state to `work/<run-id>/`; drop raw HTML; bounded retries; two-stage publishing chain; quality over retries).
+- 12 prime directives consolidated into a single ordered list (was 12 H3 subsections); each directive is now 3–6 lines instead of 10–25. Every directive that previously needed a sub-table or nested bullet keeps it.
+- "Trace to the most primary source" promoted from buried sub-agent guidance to PD-12.
+- Phase-by-phase descriptions reorganised under H2 headings with explicit time budgets (~1 min preflight, ~10 min Phase 1, ~5 min Phase 2, ~2 min Phase 3, ~10 min Phase 4).
+- Sub-agent spawn template consolidated into a single block-quoted message that opens every spawn — covers defensive intent + patience + primary-source bias + always-return-something. Used to be three separate paragraphs scattered through Phase 1.
+- Research methodology compressed (drill / pivot / search / propose) — 80 lines → 30 lines without losing the bridge-fetcher recipes (NCSC.ch CSH, CISA KEV, generic allow-listed hosts).
+- Phase 4 "Output structure" now lists the 9 sections as a normative table on first read; the per-section guidance follows. The reference template at the end still shows the full Markdown skeleton with every metadata footer.
+- Phase 5 source lifecycle compressed (60 lines → 25 lines) without dropping any rule.
+- Phase 5.5 self-check expanded with the v2.23 retargeting at sections 2–4 plus the metadata-footer presence check (step 5) and the taxonomy-validation check (step 6).
+- META "Hard invariants" list now includes (10) Phase 5.5 self-check gate, (11) per-item metadata footer, (12) strict CSP + vendored-library hash check.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Total length 363 → 448 lines (~6.5k tokens). Slightly longer because we added the same anti-crash guards block, the consolidated spawn template, and an explicit Phase 4.5 self-check gate.
+- New "**CRITICAL: this run must produce a summary**" block mirroring the daily.
+- Sub-agent spawn template consolidated into a single block-quoted message (was three).
+- Per-item metadata footer NORMATIVE block referencing `site/taxonomy.yaml` for the controlled vocabulary (instead of duplicating the full vocab list — the daily prompt is the source of truth).
+- New Phase 4.5 self-check gate: state JSON parses; every CVE in cves_seen.json; every H3 in §§ 1–8 carries a v2 metadata footer; every footer value is in the taxonomy.
+- Reference template at the end now shows every section with a representative metadata footer.
+
+### Hard invariants — unchanged
+The 12 hard invariants in the daily prompt's META section are unchanged. The two prompts share the same publishing chain, the same metadata-footer schema, the same taxonomy file, and the same anti-crash guard list.
+
+---
+
 ## 2.23 — 2026-05-07 (v2 schema cut-over)
 
 ### Why

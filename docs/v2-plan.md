@@ -1,10 +1,18 @@
-# CTI Brief v2 — implementation plan
+# CTI Brief v2 — implementation plan (historical)
 
-This document is the engineering scaffolding for the v2 upgrade. It is meant to
-be read alongside `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, and
-`site/build.py`. It is short on purpose; the prompts are the editorial source
-of truth, and the build script is the SSG source of truth — this file just
-explains how the pieces fit together.
+> **Status: shipped.** Every item in this plan landed in prompt v2.23 (the
+> v2 schema cut-over) and v2.24 (prompt-clarity tightening). The document
+> is kept as a historical record of why the v2 cut-over happened and what
+> was in scope. For current behaviour, read the live source of truth:
+>
+> - **Editorial:** [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md), [`prompts/weekly-summary.md`](../prompts/weekly-summary.md), [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md).
+> - **Build:** [`site/build.py`](../site/build.py), [`site/taxonomy.yaml`](../site/taxonomy.yaml), [`site/test_build.py`](../site/test_build.py).
+> - **Architecture:** [`docs/architecture.md`](architecture.md), [`docs/workflow.md`](workflow.md), [`site/README.md`](../site/README.md).
+
+This document is the original engineering scaffolding for the v2 upgrade.
+The prompts are now the editorial source of truth, and the build script
+is the SSG source of truth — this file explains how the pieces were
+designed to fit together.
 
 ## Goals (in order of priority)
 
@@ -220,14 +228,21 @@ it out explicitly; nothing is silently relaxed.
 The full checklist lives in the v2 implementation prompt. Re-running this
 plan as a verification pass should hit every item in that list.
 
-## Implementation order
+## Implementation order — all shipped
 
-1. **(Done — this PR)** Land plan, taxonomy, footer parser, tests.
-2. Update prompts (daily v→ next, weekly v→ next): new section order,
-   metadata footer, region+sector tagging, Action Items, Immediate Actions.
-3. Land the new SSG end-to-end in `site/build.py`: URL layout, base
+1. ✅ Land plan, taxonomy, footer parser, tests.
+2. ✅ Update prompts (v2.23): new section order, metadata footer,
+   region+sector tagging, Action Items, Immediate Actions, Trending
+   Vulnerabilities inclusion gates, primary-source bias, patience clause.
+3. ✅ Land the new SSG end-to-end in `site/build.py`: URL layout, base
    templates, manifest, atomic writes, three RSS feeds, self-check.
-4. Migrate historical briefs through the new pipeline. Add the legacy
-   hash-route bootstrap.
-5. Sub-agent prompt edits: source tracing + patience.
-6. Full dry-run; cut over.
+4. ✅ Migrate historical briefs through the new pipeline. Legacy
+   hash-route bootstrap on `/`.
+5. ✅ Sub-agent prompt edits: source tracing + patience.
+6. ✅ Cut over.
+
+Subsequent tightening:
+
+7. ✅ Prompt-clarity rewrite (v2.24, 2026-05-07) — daily 1067 → 671 lines,
+   weekly 363 → 448 lines, anti-crash guards consolidated at top of each
+   prompt, sub-agent spawn templates merged.

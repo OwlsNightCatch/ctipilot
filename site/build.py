@@ -3204,10 +3204,15 @@ def self_check(
     # carries no inline `<script>` block (CSP `script-src 'self'` would
     # refuse to execute it).
     inline_script_re = re.compile(r"<script(?:\s[^>]*)?>(?!\s*</script>)[^<]", re.IGNORECASE)
+    # Match the actual `<script>` tag that loads Umami, not stray textual
+    # mentions of the URL (which can appear in docs that describe the
+    # analytics setup).
+    umami_tag_re = re.compile(r'<script[^>]*\bsrc=(?:"|&quot;)https://cloud\.umami\.is/script\.js', re.IGNORECASE)
     for path in OUT.rglob("*.html"):
         text = path.read_text(encoding="utf-8")
-        if text.count("cloud.umami.is/script.js") != 1:
-            errors.append(f"umami snippet count != 1 in {path.relative_to(OUT)}")
+        umami_count = len(umami_tag_re.findall(text))
+        if umami_count != 1:
+            errors.append(f"umami <script> tag count = {umami_count} (expected 1) in {path.relative_to(OUT)}")
         if inline_script_re.search(text):
             errors.append(
                 f"inline <script> body in {path.relative_to(OUT)} — "

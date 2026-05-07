@@ -101,7 +101,7 @@ Deep-dive content includes the incident narrative (defender's perspective), ATT&
 
 ## 6. Phase 4 — Compose brief
 
-The agent writes `briefs/YYYY-MM-DD.md` with sections 0–9 per the canonical structure (see `briefs/README.md`).
+The agent writes `briefs/YYYY-MM-DD.md` with sections 0–8 per the canonical structure: 0 TL;DR · 1 Immediate Actions (often absent) · 2 Active Threats / Trending Actors / Notable Incidents & Disclosures · 3 Trending Vulnerabilities · 4 Research & Investigative Reporting · 5 Updates to Prior Coverage · 6 Deep Dive · 7 Action Items · 8 Verification Notes. Each H3 item carries a v2 metadata footer (see `briefs/README.md` for the full schema).
 
 Style enforced by quality gates:
 - Always English.
@@ -159,17 +159,20 @@ If a deep dive was selected this run, append `{date, topic, category}` and trim 
 
 ### `state/run_log.json`
 
-Append a per-run record (model, sub-agent allocation, fetch failures, items published, deep-dive slug, duration) and trim to 90 days. Surfaced by the SPA's `#/ops` view.
+Append a per-run record (model, sub-agent allocation, fetch failures, items published, deep-dive slug, duration) and trim to 90 days. Surfaced on the operations dashboard at `/ops/`.
 
 ---
 
 ## 8. Phase 5.5 — Self-check gate
 
-Before committing, the agent runs three checks:
+Before committing, the agent runs six checks:
 
 1. **JSON parses cleanly** for every state file it wrote.
 2. **Every CVE referenced in the brief** appears in `state/cves_seen.json`.
-3. **Every § 1–4 H3 item** has a matching `appearances[].date == today` record in `state/covered_items.json`.
+3. **Every § 2–4 H3 item** has a matching `appearances[].date == today` record in `state/covered_items.json` (items in §§ 1, 5, 6, 7, 8 are not required to be there).
+4. **Every § 5 UPDATE block** carries at least one inline `[label](url)` citation.
+5. **Every H3 item in §§ 1, 2, 3, 4, 5, 6, 7** carries a v2 metadata footer (last non-empty line matching `^\s*[—-]\s*\*Source:\s*.+\*\s*$`).
+6. **Every footer's tags / regions / vectors / auth / statuses** are values from `site/taxonomy.yaml`.
 
 If any check fails, Phase 6 is aborted and the operator output prints `state: drift — <reason>`. The brief file remains on disk; the next run rebuilds the state delta from the brief itself (the brief is the canonical artefact).
 

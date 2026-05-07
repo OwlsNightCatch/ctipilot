@@ -118,9 +118,9 @@ The agent walks through:
 2. **Phase 1 — Parallel research.** Spawn **four** sub-agents in parallel with cleanly partitioned source categories — (1) Active Threats & Trending Vulnerabilities, (2) Switzerland, Europe & Public Sector, (3) Research & Investigative Reporting, (4) Incidents & Disclosures.
 3. **Phase 2 — Verification.** Re-fetch primaries, enforce two-source / national-CERT rule, drop already-covered items, surface contradictions.
 4. **Phase 3 — Deep-dive selection.** At most 1–2 items, with the category-rotation rule applied.
-5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–7, including the prompt-version metadata field.
+5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–8 (TL;DR; Immediate Actions, often absent; Active Threats / Trending Actors / Notable Incidents & Disclosures; Trending Vulnerabilities; Research & Investigative Reporting; Updates to Prior Coverage; Deep Dive; Action Items; Verification Notes). Each H3 item carries a v2 metadata footer (`— *Source: … · Tags: … · Region: … [· CVE: …] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*`) parseable by the build.
 6. **Phase 5 — State update.** Append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose at most one new source as `candidate`; append to `deep_dive_history.json` if a deep dive was selected; append a record to `run_log.json`.
-7. **Phase 5.5 — Self-check gate.** Verify state JSON parses, every CVE in the brief is in `cves_seen.json`, every § 1–4 item has a matching `covered_items.json` appearance for today. If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
+7. **Phase 5.5 — Self-check gate.** Verify state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
 8. **Phase 6 — Commit & push to `origin/main`** — every brief is published the moment it is generated. No review branch, no staging gate.
 
 Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
@@ -168,7 +168,7 @@ The agent's Phase 0 does **not** consume any engagement signal. Editorial weight
 
 This is a fully autonomous, self-evolving system: the agent edits its own prompts, mutates its own state, and pushes directly to `main`. The defensive frame is "detect and correct", not "prevent at all costs". Threat model and current controls are documented in [`docs/security-review.md`](docs/security-review.md). Highlights:
 
-- **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 1–4 item has a `covered_items.json` appearance for today, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
+- **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 2–4 item has a `covered_items.json` appearance for today, every § 5 UPDATE carries an inline citation, every H3 in §§ 1–7 carries a v2 metadata footer, every footer value is in `site/taxonomy.yaml`, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
 - **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'`, `https://cloud.umami.is` (the analytics script), and `https://api-gateway.umami.dev` (the beacon endpoint); no inline frames or forms.
 - **Build-side Markdown sanitisation** with a pinned tag/URI-scheme allowlist. The build refuses any rendered output that would carry an event handler, a `javascript:` / `data:` URI, or a forbidden tag.

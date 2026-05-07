@@ -126,12 +126,12 @@ window to detect can be days.
 **Mitigations in place.**
 - *CHANGELOG.md update is part of the prompt's own self-discipline.* Every prompt change in v2.x has been recorded.
 - *Git history is the audit trail.* `git log -- prompts/` shows every change.
-- *Output structure is immutable independent of the prompt.* The brief template's section structure (0–9) is enforced by the template itself; a prompt that drops a rule still must produce a brief that passes the template — which limits the impact surface.
+- *Output structure is immutable independent of the prompt.* The brief template's section structure (0–8 daily, 0–10 weekly) is enforced by the build's metadata-footer parser and by `site/taxonomy.yaml`; a prompt that drops a rule still must produce a brief that passes the build self-check — which limits the impact surface.
 
 **Residual risk.** A subtle weakening — e.g., changing "drop items in last 5 briefs" to "drop items in last 1 brief" — would not break the template, would not surface in the brief, and would only be detected by a human reviewing diffs.
 
 **What would strengthen further (the hardest of the three big residual risks).**
-- **Phase 5.5 self-check is now the in-prompt control.** Every run validates state JSON parses, every brief CVE is in `cves_seen.json`, and every § 1–4 item has a matching `covered_items.json` appearance for today. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it. This catches the most common drift mode (state/output divergence) without external workflows.
+- **Phase 5.5 self-check is the in-prompt control.** Every run validates state JSON parses, every brief CVE is in `cves_seen.json`, every § 2–4 item has a matching `covered_items.json` appearance for today, every § 5 UPDATE carries an inline citation, every H3 in §§ 1–7 carries a v2 metadata footer, and every footer value is in `site/taxonomy.yaml`. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it. This catches the most common drift mode (state/output divergence) without external workflows.
 - **Prompt diff alerting.** A workflow `prompt-drift-alert.yml` that on every push touching `prompts/*.md` posts a diff to a notification channel (GitHub issue, email via a secret). No blocking, just visibility — the operator notices a 200-line edit even if they don't read every commit. *Not implemented in-repo.*
 - **Prompt size and shape budget.** A CI test that rejects a prompt change if the rendered file size moves by >25%, or if the count of "MUST"/"DO NOT" lines drops, on any single commit. Catches the "rewritten by hallucination" failure mode. *Not implemented in-repo.*
 - **Read-only baseline copy.** Keep `prompts/baseline/daily-cti-brief.md` mirroring the last version a human reviewed; a CI job compares current to baseline and surfaces semantic deltas (rule additions/removals). The baseline is updated by an explicit human PR; the agent cannot. *Not implemented.*
@@ -205,20 +205,22 @@ contains `<img src=x onerror=alert(1)>` or similar.
 most active content; only when a brief contains literal HTML can this
 escalate. The agent does not currently emit raw HTML.
 
-**Impact.** XSS on the public reader. Could exfiltrate localStorage (the
-personal-history map — mostly the user's own brief visit list, harmless)
-or pivot through CSP escapes.
+**Impact.** XSS on the public reader. The site has no localStorage state
+to exfiltrate (no cookies, no per-visitor identifiers); the realistic
+attack surface is pivoting through any CSP-escape primitive a sufficiently
+clever payload can find.
 
 **Mitigations in place.**
 - *Markdown is rendered server-side at build time by [`site/build.py`](../site/build.py).* The renderer emits HTML directly from a fixed allowlist of constructs (headings, paragraphs, lists, blockquotes, fenced code, tables, inline bold/italic/code/links, autolinks). Raw HTML from the brief is HTML-escaped, not interpreted — `<script>`, `<iframe>`, `on*=` handlers, `<style>`, `<form>` etc. cannot appear in a brief because there is no Markdown construct that emits them.
+- *No client-side Markdown rendering.* The brief text never reaches the visitor's browser as Markdown — only as already-rendered HTML. This eliminates the entire class of marked.js / DOMPurify runtime-bypass vulnerabilities.
 - *Server-side URL-scheme allowlist* (`_safe_url` in `site/build.py`). Every `<a href>` value derived from brief content — Markdown links, autolinks, metadata-footer source URLs, citation links — is checked against `http://` `https://` `mailto:` `tel:` (or relative / anchor); anything else (`javascript:`, `data:`, `vbscript:`, `file:`, …) is replaced with `#` so the link becomes inert. Whitespace and ASCII control characters are stripped before the scheme check so an attacker cannot smuggle `java\tscript:` past it.
 - *Server-side path-segment allowlist* (`is_safe_path_segment`). State-file IDs (`cves_seen.json` ids, `sources.json` ids, `covered_items.json` keys, brief filenames, item slugs) are validated against `^[A-Za-z0-9._-]+$` (no `..`, no `/`, no leading `.` or `-`) before being used as a URL path or filesystem path. Prevents an LLM-mutated state file from making the build write outside `_site/` (e.g. into `prompts/`, `briefs/`, or `.github/workflows/`).
 - *RSS CDATA-break defence* (`_cdata_safe`). Even though the renderer always HTML-escapes `>`, the CDATA wrappers in the three RSS feeds defensively split any literal `]]>` across two CDATA sections so a future renderer change cannot allow XML injection out of `<content:encoded>` into the surrounding feed structure.
 - *Strict CSP meta tag* (`CSP_META` in `site/build.py`) on every emitted page. `default-src 'self'`; `script-src 'self' https://cloud.umami.is` (no inline scripts, no `'unsafe-inline'`, no `'unsafe-eval'`); `style-src 'self' 'unsafe-inline'`; `img-src 'self' data:`; `connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev`; `object-src 'none'`; `base-uri 'self'`; `form-action 'none'`; `upgrade-insecure-requests`. Note that `frame-ancestors` and `X-Frame-Options` cannot be delivered via a `<meta>` tag — clickjack defence is a residual gap on GitHub Pages, which doesn't allow custom HTTP headers.
-- *Vendored library integrity hashes* ([`HASHES`](../site/assets/vendor/HASHES)). `site/build.py` aborts on hash mismatch — catches both tampering and accidental upgrades that could introduce a vulnerability. The SHA-256 hashes are byte-for-byte verified at the start of every build.
-- *Self-check before publish.* The build's end-of-run self-check refuses to ship a tree that contains an inline `<script>` block or a Markdown-renderer placeholder leak (`\x00CODE0\x00` markers). Any such regression aborts the build with a non-zero exit code; the previous live site stays unchanged.
+- *Vendored library integrity hashes* ([`HASHES`](../site/assets/vendor/HASHES)) cover marked.js (kept as a vendored fallback), DOMPurify, the first-party `filter.min.js`, and `spa-redirect.js`. `site/build.py` aborts on hash mismatch — catches both tampering and accidental upgrades. The SHA-256 hashes are byte-for-byte verified at the start of every build.
+- *Self-check before publish.* The build's end-of-run self-check refuses to ship a tree that contains an inline `<script>` block, a Markdown-renderer placeholder leak (`\x00CODE0\x00` markers), or a UTM parameter on any URL. Any such regression aborts the build with a non-zero exit code; the previous live site stays unchanged. Unit tests (`site/test_build.py`) include XSS-vector regression cases and assert no Markdown-control characters survive into rendered HTML.
 
-**Residual risk.** A zero-day in `marked` / `DOMPurify`-equivalent behaviour at the renderer level (a Markdown construct that produces an unexpected HTML shape) — bounded by the small set of constructs the renderer actually supports, and by the URL-scheme allowlist that runs even after the construct is recognised. The frame-ancestors / `X-Frame-Options` gap is real but bounded: an attacker who frames the site can only see what a public reader sees.
+**Residual risk.** A bug in the build-side Markdown renderer (`render_inline` / `render_markdown` in `site/build.py`) that lets a forbidden tag or URI scheme slip through — bounded by the small set of constructs the renderer actually supports, the `_safe_url` allowlist, and the regression tests. The frame-ancestors / `X-Frame-Options` gap is real but bounded: an attacker who frames the site can only see what a public reader sees.
 
 **What would strengthen further.**
 - **HTTP-header CSP** if/when the deployment moves off GitHub Pages — `frame-ancestors 'none'` is the most useful directive that requires header delivery.
@@ -253,14 +255,14 @@ App, exploitable workflow_dispatch) can land arbitrary content on `main`.
 
 ---
 
-### 2.7 Engagement-signal manipulation — *removed*
+### 2.7 Engagement-signal manipulation — *not applicable*
 
-The engagement-signal pipeline was removed (CHANGELOG v2.18). The agent
-no longer reads any engagement file; the SPA no longer surfaces
-aggregate counts. There is no signal for an adversary to manipulate.
-The only remaining "page count" is the on-device localStorage personal
-history (see § 4), which is a per-visitor private record an attacker
-cannot influence on someone else's device.
+The agent's editorial decisions are not influenced by any engagement
+signal — Phase 0 reads only sources, briefs, state files, and the
+taxonomy. There is no engagement input for an adversary to manipulate.
+Aggregate visit counts come from Umami Cloud (§ 4) and are visible to
+the operator alone via the Umami dashboard; they do not feed back into
+the agent.
 
 ---
 
@@ -318,14 +320,17 @@ or session is captured and used to identify them.
 
 **Mitigations in place.**
 - *No cookies set by the site.* Verifiable with browser DevTools.
-- *Privacy-by-design analytics (Umami).* Aggregate counts only, no fingerprinting, no cookies, IP discarded after country lookup. Full disclosure at [`docs/analytics.md`](analytics.md).
 - *No fingerprinting libraries.*
+- *Privacy-by-design analytics only.* The single third-party script the site loads is Umami Cloud (`cloud.umami.is/script.js`), which posts pageviews to `api-gateway.umami.dev`. Umami collects no cookies, no fingerprint, no PII; aggregates only — page URL, referrer host, country (from IP, then the IP is discarded), and a daily-rotated hash for unique-visitor counting. Search-string parameters are excluded from collection (`data-exclude-search="true"`). Documented in [`docs/analytics.md`](analytics.md) and on the live site at `/about/analytics/`.
 - *No on-device personal-history tracking.* The build emits no JavaScript that reads or writes `localStorage` for engagement purposes — the only `localStorage` use is the theme preference (light/dark/system, stored under `cti.briefs.theme`).
-- *Strict CSP* prevents connections to any third-party origin other than the Umami snippet/beacon endpoints.
+- *Strict CSP* allows only `'self'`, `https://cloud.umami.is` (script source), and `https://api-gateway.umami.dev` (beacon endpoint) on `script-src` / `connect-src`. No other third-party origin can run code or receive data from this page.
 - *`referrer` meta set to `strict-origin-when-cross-origin`* — outbound clicks to publishers leak only the origin, not the URL path.
 - *No forms.* The site doesn't collect any input.
+- *RSS-open tracking is deliberately not implemented.* Feed `<link>` and `<guid>` URLs are plain canonical (no UTM); the build's self-check fails on any `[?&]utm_[a-z_]+=` regression. Click-through from a feed reader registers as a normal Umami pageview on the destination page.
 
-**Residual risk.** GitHub Pages and Umami both see the visitor's IP and User-Agent — the site cannot prevent that, only the data each choose to retain. GitHub Pages logs are not exposed to repo owners; Umami discards the IP after country lookup.
+**Residual risk.** GitHub Pages and Umami both see the visitor's IP and User-Agent — the site cannot prevent that, only the data each choose to retain. GitHub Pages logs are not exposed to repo owners; Umami discards the IP after country lookup. The agent's editorial decisions are **not** influenced by Umami; the daily prompt's Phase 0 reads source list, briefs, state files, taxonomy — never visit data.
+
+**Privacy disclosure for readers** lives at `/about/analytics/` and in [`docs/analytics.md`](analytics.md). Visitors who don't want to be counted can block `cloud.umami.is` and `api-gateway.umami.dev` at the network layer (browser, ad-blocker, DNS resolver) — the site keeps working without them.
 
 ---
 
@@ -374,15 +379,17 @@ For a self-evolving CTI feed, the right defensive frame is **"detect and
 correct"**, not **"prevent at all costs"**. The system should:
 
 - **Run unattended by default.**
-- **Surface anomalies.** The site's `#/ops` view (sourced from
-`state/run_log.json`) shows recent runs, sub-agent allocation, fetch
-failures, and stale active sources. The operator skims this in a few
-minutes a week.
+- **Surface anomalies.** The site's operations dashboard at `/ops/`
+(sourced from `state/run_log.json`) shows recent runs, sub-agent
+allocation, fetch failures, and stale active sources. The operator
+skims this in a few minutes a week.
 - **Self-check before commit.** Phase 5.5 of the daily prompt verifies
-state JSON parses, every CVE in the brief is in `cves_seen.json`, and
-every § 1–4 item has a `covered_items.json` appearance for today. Drift
-aborts the commit; the brief stays on disk and the next run rebuilds
-state from it.
+state JSON parses, every CVE in the brief is in `cves_seen.json`,
+every § 2–4 item has a `covered_items.json` appearance for today, every
+§ 5 UPDATE carries an inline citation, every H3 in §§ 1–7 carries a
+v2 metadata footer, and every footer value is in `site/taxonomy.yaml`.
+Drift aborts the commit; the brief stays on disk and the next run
+rebuilds state from it.
 - **Fail closed on integrity errors.** If `HASHES` doesn't match, the
 build aborts. If `state/*.json` doesn't parse, the agent stops. Never
 silently degrade.
@@ -393,74 +400,102 @@ realistic pragmatic answer.
 
 ---
 
-## 4. Engagement metrics — privacy posture
+## 4. Reader analytics — privacy posture
 
 ### 4.1 What we collect
 
 The site uses **Umami Cloud** for aggregate visitor counts. Umami is a
-privacy-by-design analytics service: no cookies, no fingerprinting,
-IP discarded after country lookup, search-string parameters excluded
-from collection, and only a daily-rotated salted hash for unique-visitor
-counting. Full disclosure is at [`docs/analytics.md`](analytics.md) and
-on the deployed site at `/about/analytics/`.
+privacy-by-design alternative to mainstream analytics:
+
+- **No cookies.** Verifiable with browser DevTools.
+- **No fingerprinting.** Umami does not build a per-visitor profile across sites.
+- **Aggregates only.** The collected fields are page URL, referrer host,
+  country (from IP, IP discarded after lookup), and a daily-rotated hash
+  for unique-visitor counting. Search-string parameters are excluded
+  (`data-exclude-search="true"`).
+- **No personalisation.** No content is tailored per visitor.
+
+The script loads from `cloud.umami.is`; events post to `api-gateway.umami.dev`.
+Both hosts are explicitly listed in the CSP `script-src` / `connect-src` —
+no other third-party origin can run code or receive data from this page.
+Umami's privacy policy: <https://umami.is/privacy>. The website ID is
+public (in the page source): `abe09860-85be-4b06-8383-002f2e598061`.
 
 ### 4.2 What restricts the analytics surface
 
-- **Strict CSP.** `script-src` is restricted to `'self'` plus the
-  Umami snippet host. `connect-src` is restricted to `'self'` plus
-  the Umami beacon endpoints. No other third-party origin can run
-  code on the page or receive a beacon from it. A future change that
-  tried to add a different analytics service would have to extend
-  the CSP in the same commit, which surfaces in the git diff.
-- **Build self-check.** The build refuses to ship a tree that
-  contains an inline `<script>` block (CSP would refuse to execute
-  it anyway, but the self-check catches the regression at publish
-  time).
-- **Umami snippet present exactly once per page.** The build
-  self-check asserts the snippet appears in every emitted HTML page
-  exactly one time — neither zero (analytics broken) nor more than
-  one (duplicate beacons / debug leftovers).
+- **Strict CSP.** `script-src` is restricted to `'self'` plus the Umami
+  snippet host. `connect-src` is restricted to `'self'` plus the Umami
+  beacon endpoints. A future change that tried to add a different
+  analytics service would have to extend the CSP in the same commit —
+  surfaces in the git diff.
+- **Build self-check.** The build refuses to ship a tree that contains
+  an inline `<script>` block (CSP would refuse to execute it anyway,
+  but the self-check catches the regression at publish time). The build
+  also asserts the Umami `<script>` tag is present in every emitted HTML
+  page exactly once — neither zero (analytics broken) nor more than one
+  (duplicate beacons).
+- **No UTM parameters anywhere.** Feed `<link>` and `<guid>` URLs are
+  plain canonical; the build's self-check fails the build on any
+  `[?&]utm_[a-z_]+=` regression.
 
-### 4.3 What the agent does with engagement data
+### 4.3 What never leaves the site
 
-Nothing. Phase 0 of [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)
-reads the source list, the past 7 days of briefs, `covered_items.json`,
-and `cves_seen.json`. There is no engagement input. Editorial weighting
-(deep-dive selection, Updates-to-Prior-Coverage ordering) returns to
-the verification + CH/EU nexus + novelty rules of v2.14. See
-`prompts/CHANGELOG.md` v2.18 for the rollback notes. Even if Umami
-exposed a back-channel API, the build pipeline would not consume it.
+- IP addresses (Umami discards after country lookup).
+- Browser version, OS version, hardware fingerprinting.
+- `Referer` header data beyond the host name.
+- Any cookie, ever.
+- Any input (the site has no forms).
+- Any LLM editorial signal: visitor data does **not** feed back into the
+  agent's source-selection or topic-prioritisation logic. Phase 0 of
+  `prompts/daily-cti-brief.md` reads sources, briefs, state files,
+  taxonomy — never visit data. The brief is editorially neutral with
+  respect to readership; what is read is not reflected in what is
+  written. Even if Umami exposed a back-channel API, the build
+  pipeline would not consume it.
 
-### 4.4 What we do *not* do
+### 4.4 RSS-open tracking — deliberately not implemented
 
-- We do not set cookies.
-- We do not fingerprint.
-- We do not correlate visitors across sessions.
-- We do not run any GitHub Action that calls the Repo Traffic API.
-- We do not send the visitor any personalised content.
-- We do not include UTM parameters on outbound or feed links — the
-  build's self-check refuses to publish a tree containing `?utm_…` /
-  `&utm_…`.
+RSS feeds are pure XML; readers strip active content. We accept the
+inability to track feed opens and do not work around it.
 
-The strict CSP blocks any future regression that tries to add a
-different cross-origin telemetry destination without an explicit CSP
-edit in the same commit.
+- Feed `<link>` and `<guid>` URLs are plain canonical. **No UTM parameters
+  anywhere.** No query strings, no per-source variants. The build's
+  self-check fails the build on any `utm_` regression.
+- Feed click-through registers as a normal Umami pageview on the
+  destination page (the user's RSS reader is the referrer).
+- The `feed-click` event helper (`umami.track('feed-click', { feed: ... })`)
+  fires on RSS link anchors visible on the site itself, before the user
+  leaves. That's the only place feed interest is measured.
+- Documented at `/about/analytics/` for transparency.
 
-### 4.5 If the operator wants aggregate page counts later
+### 4.5 How a visitor opts out
 
-This requires infrastructure outside the repo. The honest options:
+Block `cloud.umami.is` and `api-gateway.umami.dev` at the network layer:
+browser settings, ad-blocker, DNS resolver, or system hosts file. The
+site keeps working without them.
 
-- **Cloudflare Web Analytics** — single-tag insertion, free up to 10M
-  req/mo, no cookies, IP truncation. Operator decision: trust Cloudflare.
-- **GoatCounter** (open source) or **Plausible** — privacy-by-design,
-  GDPR-friendly, both have an HTTP API the SPA could ping. The agent
-  could pull aggregates back into the repo via a daily workflow if
-  desired.
-- **Custom Cloudflare Worker / Vercel function** — full control, full
-  responsibility. Highest setup effort.
+The site does not respect `Do-Not-Track` or `Global Privacy Control`
+headers — Umami's posture is that no header signal is needed because
+the data collected is already aggregate and contains no per-visitor
+identifier. If the operator decides DNT/GPC support is required, it
+can be added by extending Umami's runtime config in `site/build.py`'s
+`UMAMI_SNIPPET`.
 
-None of these are enabled by default. Each is documented in
-[`docs/improvements.md`](improvements.md) item S7b.
+### 4.6 What the agent emits (separate concern)
+
+`state/run_log.json` records per-run telemetry — model, sub-agent
+allocation, fetch failures, deep-dive picks. It is committed to the
+public repo and rendered at `/ops/`. It contains no visitor data —
+only what the agent itself did during the run. The operator uses it
+to spot rotation bias or a quietly broken source.
+
+### 4.7 If the operator decides to drop Umami
+
+Single-commit removal: blank the `UMAMI_SNIPPET` constant in
+[`site/build.py`](../site/build.py); remove the two Umami hosts from
+`CSP_META`'s `script-src` / `connect-src`. Optionally drop the
+self-check rule that asserts the snippet is present on every emitted
+page. The site keeps working without analytics.
 
 ---
 

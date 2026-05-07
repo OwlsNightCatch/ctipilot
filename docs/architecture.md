@@ -45,8 +45,8 @@ debugging an unexpected commit or onboarding a new operator, start here.
                                                           │
                                                           ▼
                                               GitHub Pages reader
-                                              (static HTML rendered
-                                               by site/build.py)
+                                              (real HTML pages emitted
+                                              by site/build.py — no SPA)
 ```
 
 ## Components
@@ -57,21 +57,29 @@ Two prompts. Each is the *entire* runtime contract for a routine; the routine
 is invoked with a one-line wrapper ("Read this prompt and execute it").
 
 - [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) — the daily
-  brief. Phases 0–7 (preflight → parallel research → verification → deep dive
-  → compose → state update → commit/push → output). Spawns four parallel
-  research sub-agents.
+  brief. Phases 0–6 + a 5.5 self-check gate (preflight → parallel research →
+  verification → deep dive → compose → state update → self-check →
+  commit/push). Spawns four parallel research sub-agents.
 - [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) — the weekly
   consolidating summary. Reads the past 7 days of dailies, plus two
-  long-horizon sub-agents.
+  long-horizon sub-agents (W1 long-running campaigns + annual reports;
+  W2 policy + regulatory).
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
   the prompt itself. Treat as the audit trail for editorial-policy changes.
 
 ### `briefs/` — the canonical output
 
 One Markdown file per day at `briefs/YYYY-MM-DD.md`, one per ISO week at
-`briefs/weekly/YYYY-Www.md`. Sections 0–9 per the structure pinned in
-[`briefs/README.md`](../briefs/README.md). These files are immutable once
-committed — corrections happen in the *next* brief, not by editing past ones.
+`briefs/weekly/YYYY-Www.md`. Sections 0–8 per the structure pinned in
+[`briefs/README.md`](../briefs/README.md):
+0 TL;DR · 1 Immediate Actions (often absent) · 2 Active Threats / Trending
+Actors / Notable Incidents & Disclosures · 3 Trending Vulnerabilities ·
+4 Research & Investigative Reporting · 5 Updates to Prior Coverage ·
+6 Deep Dive · 7 Action Items · 8 Verification Notes. Each individual H3
+item carries a structured metadata footer (`— *Source: … · Tags: … ·
+Region: … [· CVE: …] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*`)
+parseable by the build. These files are immutable once committed —
+corrections happen in the *next* brief, not by editing past ones.
 
 ### `state/` — rolling memory across runs
 
@@ -79,8 +87,8 @@ The agent re-reads these every run before writing.
 
 - [`state/covered_items.json`](../state/covered_items.json) — full coverage
   records for every CVE / actor / campaign / incident / tool / annual report
-  ever referenced. Each item has an `appearances[]` array — the SPA uses this
-  to render the "story timeline" view.
+  ever referenced. Each item has an `appearances[]` array — the site uses this
+  to render the "story timeline" on each topic page.
 - [`state/cves_seen.json`](../state/cves_seen.json) — flat fast-lookup CVE
   index for sub-agent dedup. A subset of `covered_items.json` (CVEs only)
   with a tighter schema.
@@ -89,7 +97,7 @@ The agent re-reads these every run before writing.
 - `state/run_log.json` — rolling 90-day per-run record: model, sub-agent
   source allocation (`sources_attempted` / `sources_used` / `items_returned`
   per S1–S4), `fetch_failures`, `items_published`, `deep_dive`. Surfaced
-  by the SPA's `#/ops` view.
+  on the operations dashboard at `/ops/`.
 
 ### `sources/` — the curated source list
 
@@ -154,19 +162,34 @@ output and never writes back.
 
 ### `site/` — the public reader
 
-A static SPA, served from GitHub Pages. See [`site/README.md`](../site/README.md)
-for the internal layout. The site is read-only with respect to the rest of
-the repo:
+A stdlib-only Python static-site generator (`site/build.py`) emits a real
+HTML page for every URL — home, every brief, every per-item block, every
+CVE / source / topic page, every tag and region index, the operations
+dashboard, the about pages. JavaScript only enhances (topbar search
+autocomplete via `data/search.json`, GitHub-stars badge, brief-page filter
+chips, theme cycle, copy-link, SPA-redirect bootstrap on `/`). With JS
+disabled the site is fully readable. See [`site/README.md`](../site/README.md)
+for the internal layout. The site is read-only with respect to the rest
+of the repo:
 
 - It only **reads** `briefs/`, `state/`, `sources/`, `README.md`,
-  `docs/*.md`, and `prompts/CHANGELOG.md` (rendered on the About page).
+  `docs/*.md`, `prompts/CHANGELOG.md`, and `site/taxonomy.yaml`.
 - It writes nothing back — its build artifact lives entirely under
-  `site/_site/` (gitignored locally; uploaded as a Pages artifact in CI).
-- It generates an RSS feed at `_site/feed.xml` (the recent 30 briefs) and
-  a section-level search index (every H3 inside every brief is its own
-  search entry, jumping straight to the matching paragraph).
-- It mirrors `state/run_log.json` to `_site/data/run_log.json` so the
-  `#/ops` view can render the run history client-side.
+  `site/_site/` (gitignored locally; force-pushed to the `gh-pages` branch
+  by the CI workflow).
+- It emits **three RSS feeds**: `/feed.xml` (daily, last 30), `/feed-weekly.xml`
+  (weekly, last 30), `/feed-items.xml` (per-item granular, last 50). All
+  three use the actual git-commit timestamp of the underlying brief as
+  `<pubDate>` (not midnight-of-brief-date).
+- The unified search index at `_site/data/search.json` covers briefs,
+  CVEs, topics, and sources.
+- The operations dashboard at `/ops/` is rendered server-side from
+  `state/run_log.json` at build time.
+
+[`site/taxonomy.yaml`](../site/taxonomy.yaml) is the controlled vocabulary
+for every metadata-footer value (themes / sectors / regions / nexus /
+cve_types / cve_vectors / cve_auth / cve_status / sections). The build
+refuses any post-cut-over item using a value not in this file.
 
 ## Data flow per routine run
 
@@ -208,8 +231,11 @@ the repo:
  ┌──────────────────────────────┐
  │ Phase 5.5 — self-check gate  │  ─ JSON parses
  │                              │  ─ every brief CVE is in cves_seen
- │                              │  ─ every § 1–4 item has appearance
+ │                              │  ─ every § 2–4 item has appearance
  │                              │    today in covered_items
+ │                              │  ─ every § 5 UPDATE has an inline cite
+ │                              │  ─ every H3 in §§ 1–7 has a v2 footer
+ │                              │  ─ every footer value is in taxonomy
  │  drift → abort commit;       │
  │  brief stays on disk; next   │
  │  run rebuilds state from it  │
