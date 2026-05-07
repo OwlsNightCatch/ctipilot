@@ -949,6 +949,19 @@ def main() -> int:
     copy_tree(SITE / "assets", OUT / "assets")
     (OUT / ".nojekyll").write_text("")
 
+    # 1.b Strip `//# sourceMappingURL=…` comments from vendored libs in the
+    # build output. The upstream-pristine sources (kept under
+    # site/assets/vendor/ for HASHES integrity verification) reference
+    # `.map` files we don't ship, which causes a noisy DevTools "Source
+    # map error: request failed with status 404" on every visit. The
+    # source file stays unmodified — only the deployed copy is rewritten.
+    sourcemap_re = re.compile(rb"\n?//# sourceMappingURL=[^\n]+", re.MULTILINE)
+    for vendored in (OUT / "assets" / "vendor").glob("*.js"):
+        body = vendored.read_bytes()
+        cleaned = sourcemap_re.sub(b"", body)
+        if cleaned != body:
+            vendored.write_bytes(cleaned)
+
     # 1a. Cache-bust the asset URLs.
     fp = cachebust_index(OUT / "index.html")
 
