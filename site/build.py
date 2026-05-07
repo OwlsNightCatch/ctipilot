@@ -1382,10 +1382,67 @@ def render_brief_page(
     raw = brief["text"]
     body_md = re.sub(r"\A# .+\n+", "", raw)
 
-    # Section-level TOC links. H2 anchors in the body are slug-based.
+    # Walk parsed sections + items first to gather (a) section list, (b)
+    # union of tags + regions across items with v2 metadata footers. These
+    # drive the merged page-overview / filter UI on the right.
+    section_index: list[tuple[str, str, str]] = []  # (anchor, heading, key)
+    all_tags_set: set[str] = set()
+    all_regions_set: set[str] = set()
+    for sec in brief["sections"]:
+        section_index.append((sec["anchor"], sec["heading"], sec["key"]))
+        for it in sec["items"]:
+            if it["footer"]:
+                all_tags_set.update(it["footer"].get("tags", []))
+                all_regions_set.update(it["footer"].get("regions", []))
+
+    # Sections list — each entry is BOTH a scroll-anchor link (text)
+    # AND a small toggle button (visibility). The text scrolls; the
+    # toggle hides/shows the section. Default state: all visible.
     sections_toc = "".join(
-        f'<li><a href="#{_escape(s["anchor"])}">{_escape(s["heading"])}</a></li>'
-        for s in brief["sections"]
+        '<li class="toc-row" data-section-row="' + _escape(a) + '">'
+        f'<a class="toc-link" href="#{_escape(a)}">{_escape(h)}</a>'
+        f'<button type="button" class="toc-toggle" data-section-toggle="{_escape(a)}" '
+        f'aria-pressed="true" aria-label="Toggle section visibility" title="Hide / show section">'
+        '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+        '<path class="eye-open" d="M8 3.5c-3 0-5.5 2.4-6.5 4.5 1 2.1 3.5 4.5 6.5 4.5s5.5-2.4 6.5-4.5C13.5 5.9 11 3.5 8 3.5zm0 7.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z" fill="currentColor"/>'
+        '<path class="eye-shut" d="M2 3l12 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
+        '</svg>'
+        '</button>'
+        '</li>'
+        for a, h, _k in section_index
+    )
+
+    # Tag + region filter groups (collapsed by default for subtlety).
+    # Default state: all chips active (everything shown). Click a chip
+    # to negate — items carrying that tag/region are then hidden.
+    def _filter_chip_row(items: list[str], facet: str) -> str:
+        attr = facet[:-1] if facet.endswith("s") else facet
+        return "".join(
+            f'<button type="button" class="filter-chip" '
+            f'data-filter-{attr}="{_escape(v)}" aria-pressed="true" '
+            f'title="Toggle {_escape(v)}">{_escape(v)}</button>'
+            for v in sorted(items)
+        )
+
+    tag_group = (
+        '<details class="filter-group"><summary>Tags <span class="filter-count">'
+        f'<span class="muted">({len(all_tags_set)})</span></span></summary>'
+        f'<div class="filter-chip-row">{_filter_chip_row(sorted(all_tags_set), "tags")}</div>'
+        '</details>'
+    ) if all_tags_set else ''
+    region_group = (
+        '<details class="filter-group"><summary>Regions <span class="filter-count">'
+        f'<span class="muted">({len(all_regions_set)})</span></span></summary>'
+        f'<div class="filter-chip-row">{_filter_chip_row(sorted(all_regions_set), "regions")}</div>'
+        '</details>'
+    ) if all_regions_set else ''
+
+    filter_bar = (
+        '<div class="toc-filters">'
+        f'{tag_group}{region_group}'
+        '<button type="button" class="filter-reset" data-action="clear-filters" hidden>Reset filters</button>'
+        '<p class="filter-status" data-role="filter-status" hidden></p>'
+        '</div>'
     )
 
     # Collapsible references block under the TOC.
@@ -1418,6 +1475,7 @@ def render_brief_page(
     toc_html = (
         '<h3>On this page</h3>'
         f'<ul class="toc-sections">{sections_toc or "<li class=\"muted\">—</li>"}</ul>'
+        f'{filter_bar}'
         f'{refs_block}'
     )
 
@@ -1483,15 +1541,10 @@ def render_brief_page(
         preamble_md = body_md[: first_h2.start()]
     preamble_html = render_markdown(preamble_md, base_url=md_anchor_base) if preamble_md.strip() else ""
 
-    all_tags: set[str] = set()
-    all_regions: set[str] = set()
-    section_chips: list[tuple[str, str]] = []  # (anchor, heading)
-
     sections_html: list[str] = []
     for sec in brief["sections"]:
         skey = sec["key"]
         sec_anchor = sec["anchor"]
-        section_chips.append((sec_anchor, sec["heading"]))
         inner: list[str] = []
         for it in sec["items"]:
             tags_attr = ""
@@ -1499,8 +1552,6 @@ def render_brief_page(
             if it["footer"]:
                 tags_attr = " ".join(it["footer"].get("tags", []))
                 regions_attr = " ".join(it["footer"].get("regions", []))
-                all_tags.update(it["footer"].get("tags", []))
-                all_regions.update(it["footer"].get("regions", []))
             article_id = it["anchor"]
             slug = it["slug"]
             item_body_html = render_markdown(it["body_md"], base_url=md_anchor_base)
@@ -1538,40 +1589,6 @@ def render_brief_page(
 
     body_html = preamble_html + "".join(sections_html)
 
-    # Filter chip bar — section toggles always (every brief has sections);
-    # tag/region toggles only when the brief carries v2 metadata footers.
-    chips_html = ""
-    if section_chips or all_tags or all_regions:
-        section_toggle_html = "".join(
-            f'<button class="chip chip-section" data-target="{_escape(a)}" type="button" aria-pressed="true">{_escape(h)}</button>'
-            for a, h in section_chips
-        )
-        tag_chips_html = "".join(
-            f'<button class="chip chip-tag" data-tag="{_escape(t)}" type="button" aria-pressed="false">{_escape(t)}</button>'
-            for t in sorted(all_tags)
-        )
-        region_chips_html = "".join(
-            f'<button class="chip chip-region" data-region="{_escape(r)}" type="button" aria-pressed="false">{_escape(r)}</button>'
-            for r in sorted(all_regions)
-        )
-        region_group = (
-            '<details class="filter-group"><summary>Filter by region</summary>'
-            f'<div class="chip-row chip-row-regions">{region_chips_html}</div></details>'
-        ) if region_chips_html else ""
-        tag_group = (
-            '<details class="filter-group"><summary>Filter by tag</summary>'
-            f'<div class="chip-row chip-row-tags">{tag_chips_html}</div></details>'
-        ) if tag_chips_html else ""
-        chips_html = (
-            '<div class="filter-bar" data-filter="brief">'
-            '<details class="filter-group" open><summary>Sections</summary>'
-            f'<div class="chip-row chip-row-sections">{section_toggle_html}</div></details>'
-            f'{region_group}{tag_group}'
-            '<button type="button" class="filter-clear" data-action="clear-filters">Reset</button>'
-            '<p class="filter-status" data-role="filter-status" hidden></p>'
-            '</div>'
-        )
-
     cve_count = len(brief.get("cves", []))
     items_count = brief.get("items", 0)
     raw_path = f"{prefix}briefs/{'weekly/' if brief['kind'] == 'weekly' else ''}{_escape(brief['name'])}.md"
@@ -1592,15 +1609,14 @@ def render_brief_page(
         <a href="{raw_path}" target="_blank" rel="noopener noreferrer" title="View raw Markdown">Raw .md</a>
       </span>
     </div>
-    <details class="toc-mobile">
+    <details class="toc-mobile" data-filter="brief">
       <summary>On this page</summary>
       <div class="toc-mobile-body aside-toc">{toc_html}</div>
     </details>
-    {chips_html}
     <div class="brief-prose">{body_html}</div>
     {cited_footer}
   </div>
-  <aside class="aside-toc aside-toc--desktop" aria-label="In this brief">
+  <aside class="aside-toc aside-toc--desktop" aria-label="In this brief" data-filter="brief">
     {toc_html}
   </aside>
 </article>
