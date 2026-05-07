@@ -45,7 +45,8 @@ debugging an unexpected commit or onboarding a new operator, start here.
                                                           │
                                                           ▼
                                               GitHub Pages reader
-                                              (site/index.html SPA)
+                                              (static HTML rendered
+                                               by site/build.py)
 ```
 
 ## Components

@@ -21,10 +21,14 @@ SITE = Path(__file__).resolve().parent
 
 sys.path.insert(0, str(SITE))
 from build import (  # noqa: E402
+    _cdata_safe,
+    _safe_url,
+    is_safe_path_segment,
     parse_footer_line,
     parse_taxonomy,
     render_inline,
     render_markdown,
+    render_footer_html,
     validate_footer,
 )
 
@@ -205,6 +209,95 @@ assert_in("rendered em", "<em>summary</em>", rendered)
 assert_in("rendered link", 'href="https://example.com/x"', rendered)
 assert_not_in("no `**` survives", "**", rendered)
 assert_not_in("no Markdown link `]( ` survives", "](", rendered)
+
+
+# ---------------------------------------------------------------------
+# Security: URL-scheme allowlist on rendered links
+# ---------------------------------------------------------------------
+print("== _safe_url ==")
+# Allowed schemes pass through unchanged.
+assert_eq("http allowed",  _safe_url("http://example.com/x"),  "http://example.com/x")
+assert_eq("https allowed", _safe_url("https://example.com/x"), "https://example.com/x")
+assert_eq("mailto allowed",_safe_url("mailto:a@b.c"),          "mailto:a@b.c")
+assert_eq("tel allowed",   _safe_url("tel:+12345"),            "tel:+12345")
+assert_eq("anchor allowed",_safe_url("#section"),              "#section")
+assert_eq("relative allowed", _safe_url("foo/bar"),            "foo/bar")
+
+# Dangerous schemes are neutered to '#'.
+for hostile in (
+    "javascript:alert(1)",
+    "JaVaScRiPt:alert(1)",
+    "data:text/html,<script>alert(1)</script>",
+    "vbscript:msgbox(1)",
+    "file:///etc/passwd",
+    "about:blank",
+    "blob:https://example.com/x",
+    "  javascript:alert(1)",
+    "java\nscript:alert(1)",
+    "java\x00script:alert(1)",
+    "java\tscript:alert(1)",
+):
+    assert_eq(f"hostile {hostile[:25]!r} → #", _safe_url(hostile), "#")
+assert_eq("empty url → #", _safe_url(""), "#")
+
+print("== render_inline scheme allowlist ==")
+hostile_md = "click [here](javascript:alert(1)) and **bold**"
+out = render_inline(hostile_md)
+assert_in("hostile link neutered", 'href="#"', out)
+assert_not_in("no js: in output",   "javascript:", out)
+assert_in("bold still rendered",    "<strong>bold</strong>", out)
+
+hostile_md = "[click](data:text/html,<script>alert(1)</script>)"
+out = render_inline(hostile_md)
+assert_in("data: neutered", 'href="#"', out)
+assert_not_in("no script tag", "<script>", out)
+assert_not_in("no data: scheme", "data:text/html", out)
+
+
+# ---------------------------------------------------------------------
+# Security: render_footer_html scheme allowlist
+# ---------------------------------------------------------------------
+print("== render_footer_html scheme allowlist ==")
+footer = {
+    "sources": [
+        {"label": "Hostile", "url": "javascript:alert(1)"},
+        {"label": "Benign",  "url": "https://example.com/article"},
+    ],
+    "tags": [], "regions": [], "sectors": [],
+    "cve": None, "cvss": None, "vector": None, "auth": None, "status": [],
+}
+html = render_footer_html(footer)
+assert_in("benign source survives", 'href="https://example.com/article"', html)
+assert_not_in("hostile source neutered", "javascript:", html)
+assert_in("hostile source has '#'", 'href="#"', html)
+
+
+# ---------------------------------------------------------------------
+# Security: path-segment allowlist (state-file IDs cannot escape _site/)
+# ---------------------------------------------------------------------
+print("== is_safe_path_segment ==")
+for ok in ("CVE-2026-31431", "ncsc-ch-incidents", "actor.lazarus",
+           "tag_name", "actor:Lazarus", "campaign:foo-bar"):
+    assert is_safe_path_segment(ok), f"safe id rejected: {ok!r}"
+    print(f"  ok  {ok!r} accepted")
+for bad in ("..", ".", "./foo", "../etc/passwd", "foo/bar", "foo bar",
+            "foo\\bar", "foo\x00bar", "-leading", "", "foo%2Fbar",
+            "..foo", "foo..bar", "/abs", ":leading-colon", ".leading-dot"):
+    assert not is_safe_path_segment(bad), f"unsafe id accepted: {bad!r}"
+    print(f"  ok  {bad!r} rejected")
+
+
+# ---------------------------------------------------------------------
+# Security: CDATA-break defence in RSS body wrappers
+# ---------------------------------------------------------------------
+print("== _cdata_safe ==")
+assert_eq("plain unchanged",
+          _cdata_safe("<p>hello</p>"), "<p>hello</p>")
+assert_eq("split CDATA terminator",
+          _cdata_safe("foo]]>bar"),
+          "foo]]]]><![CDATA[>bar")
+# A doubled occurrence stays safe.
+assert_not_in("no '\\]\\]>' surives doubled", "]]>", _cdata_safe("a]]>b]]>c").replace("]]]]><![CDATA[>", ""))
 
 
 # ---------------------------------------------------------------------

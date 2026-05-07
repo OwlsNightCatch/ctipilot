@@ -111,6 +111,36 @@ FOOTER_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^)\s]+)\)")
 
 # === SLUG / HOST HELPERS ================================================
 
+# Path-segment safety: every value that becomes a URL path segment AND a
+# filesystem path segment (CVE id, source id, topic key, brief name, item
+# slug) MUST match this regex. The build refuses to emit otherwise — a
+# state-file entry like `{"id": "../foo"}` could otherwise traverse out of
+# the `_site` output directory and overwrite source files (briefs, prompts,
+# state, workflows). State files are agent-written, which means they're
+# only as trustworthy as the prompt is uncorrupted; we treat them as
+# untrusted at this boundary.
+#
+# `:` is allowed because the agent uses it as a topic-key qualifier
+# (`actor:Lazarus`, `campaign:mini-shai-hulud`, `incident:foo-2026`); it
+# is safe in URL path segments (it gets percent-encoded by
+# `urllib.parse.quote(safe='')`) and on Linux/macOS filesystems (the
+# only deployment targets). The forbidden chars are `/`, `\`, `..`,
+# leading `.`, leading `-`, NUL, whitespace, control characters, and
+# anything outside alnum + `:` `.` `_` `-`.
+_SAFE_ID_RE = re.compile(r"^[A-Za-z0-9:._-]+$")
+
+
+def is_safe_path_segment(value: str) -> bool:
+    """True iff `value` is a non-empty path-segment-safe string with no
+    leading `.` / `-` / `:` (so `.`, `..`, `.htaccess`-style and
+    `--rf`-style values are rejected)."""
+    if not value or value[0] in (".", "-", ":"):
+        return False
+    if ".." in value:
+        return False
+    return bool(_SAFE_ID_RE.match(value))
+
+
 def slugify(text: str) -> str:
     text = text.lower()
     text = re.sub(r"[^a-z0-9]+", "-", text)
@@ -295,6 +325,50 @@ def _escape(s: str) -> str:
     )
 
 
+# URL-scheme allowlist for rendered <a href> values. Briefs are LLM-generated
+# from external sources; a prompt-injected source could plant a Markdown link
+# of the form `[click](javascript:...)`, `[click](data:text/html,...)`,
+# `[click](vbscript:...)`. The strict CSP delivered by the page would block
+# `javascript:` script execution in compliant browsers, but `data:` URIs are
+# still permitted by some browsers in `<a href>` and would render attacker
+# HTML. Centralised allowlist enforced at every render site.
+_ALLOWED_SCHEMES = ("http://", "https://", "mailto:", "tel:")
+
+
+def _safe_url(url: str) -> str:
+    """Return `url` unchanged if its scheme is on the allowlist, an anchor /
+    relative path is acceptable too. Otherwise return '#' so the link
+    becomes inert (defence-in-depth alongside CSP). Whitespace and control
+    characters are stripped — they can be used to obfuscate `javascript:`
+    payloads (e.g. `java\\nscript:alert(1)`)."""
+    if not url:
+        return "#"
+    # Strip leading/trailing whitespace and any embedded ASCII control
+    # characters (incl. NUL, tab, newline, CR) so an attacker can't smuggle
+    # `java\tscript:` through the scheme check.
+    stripped = "".join(c for c in url if ord(c) > 0x20 and c not in ("\x7f",)).strip()
+    if not stripped:
+        return "#"
+    lower = stripped.lower()
+    # Anchor-only or fragment links are safe.
+    if lower.startswith("#") or lower.startswith("?"):
+        return stripped
+    # Relative path (no scheme). A scheme always has a colon before any '/'
+    # or '?' or '#'. Find the first occurrence of any of those.
+    first_special = min(
+        (i for i in (lower.find(c) for c in (":", "/", "?", "#")) if i >= 0),
+        default=-1,
+    )
+    if first_special < 0 or lower[first_special] != ":":
+        # No scheme present — relative URL.
+        return stripped
+    # A scheme is present; must match the allowlist.
+    for s in _ALLOWED_SCHEMES:
+        if lower.startswith(s):
+            return stripped
+    return "#"
+
+
 def render_inline(s: str, *, base_url: str | None = None) -> str:
     """Render Markdown inline constructs to HTML.
 
@@ -319,6 +393,11 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
         url = m.group(2)
         if base_url and not (url.startswith("http://") or url.startswith("https://") or url.startswith("mailto:")):
             url = urllib.parse.urljoin(base_url, url)
+        # Defence-in-depth URL-scheme allowlist (alongside CSP). A
+        # prompt-injected source could plant a `[click](javascript:…)` or
+        # `[click](data:text/html,…)` Markdown link in a brief; reject
+        # anything outside the allowlist by neutering the href.
+        url = _safe_url(url)
         # Recurse on link text for inline formatting (excluding nested
         # links, which Markdown forbids anyway).
         rendered_text = render_inline_no_links(text)
@@ -1329,7 +1408,7 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "") -> str:
         src_parts = []
         for i, src in enumerate(footer["sources"]):
             label = _escape(src.get("label", ""))
-            url = _escape(src.get("url", ""))
+            url = _escape(_safe_url(src.get("url", "")))
             cls = "src-primary" if i == 0 else "src-additional"
             src_parts.append(f'<a class="{cls}" href="{url}" rel="noopener noreferrer">{label}</a>')
         parts.append('<span class="meta-sources"><strong>Sources:</strong> ' + " · ".join(src_parts) + "</span>")
@@ -1780,9 +1859,10 @@ def render_cve_page(
                 for n in briefs_set
             )
             source_id = c.get("source_id")
+            cite_url = _safe_url(c.get("url", ""))
             cite_items.append(
                 '<li class="cite">'
-                f'<a class="cite-link" href="{_escape(c.get("url", ""))}" target="_blank" rel="noopener noreferrer" title="Open the article in a new tab">'
+                f'<a class="cite-link" href="{_escape(cite_url)}" target="_blank" rel="noopener noreferrer" title="Open the article in a new tab">'
                 f'<span class="cite-host">{_escape(h)}</span>'
                 + ('<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>' if is_primary else '')
                 + f'<span class="cite-label">{_escape(c.get("label") or c.get("url",""))}</span>'
@@ -1967,9 +2047,10 @@ def render_topic_page(
                 for n in briefs_set
             )
             source_id = c.get("source_id")
+            cite_url = _safe_url(c.get("url", ""))
             cite_items.append(
                 '<li class="cite">'
-                f'<a class="cite-link" href="{_escape(c.get("url", ""))}" target="_blank" rel="noopener noreferrer">'
+                f'<a class="cite-link" href="{_escape(cite_url)}" target="_blank" rel="noopener noreferrer">'
                 f'<span class="cite-host">{_escape(h)}</span>'
                 + ('<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>' if is_primary else '')
                 + f'<span class="cite-label">{_escape(c.get("label") or c.get("url",""))}</span>'
@@ -2181,7 +2262,7 @@ def render_source_page(
 <p class="subtitle"><span class="mono">{_escape(source['id'])}</span> · {reliability_badge(source.get('reliability') or '')} · {status_badge(source.get('status') or '')}</p>
 
 <div class="panel">
-  <p><a href="{_escape(source.get('url', '') or '')}" target="_blank" rel="noopener noreferrer">{_escape(source.get('url', '') or '')}</a></p>
+  <p><a href="{_escape(_safe_url(source.get('url', '') or ''))}" target="_blank" rel="noopener noreferrer">{_escape(source.get('url', '') or '')}</a></p>
   <div class="e-meta" style="margin-top:0.4rem">
     {''.join(e_tags)}
   </div>
@@ -2632,6 +2713,16 @@ def render_ops_page(
 
 # === RSS BUILDERS ======================================================
 
+def _cdata_safe(s: str) -> str:
+    """Make `s` safe to embed inside `<![CDATA[ … ]]>`. The current
+    Markdown renderer always HTML-escapes `>` (so `]]>` never appears
+    organically in rendered output), but defence-in-depth: split a literal
+    `]]>` across two CDATA sections so a future renderer change cannot
+    silently allow a CDATA-break injection that would let attacker XML
+    leak into the RSS feed body."""
+    return s.replace("]]>", "]]]]><![CDATA[>")
+
+
 def _xml_validate(content: str) -> list[str]:
     try:
         ET.fromstring(content)
@@ -2706,8 +2797,8 @@ def build_daily_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
             f"<pubDate>{b['publish_rfc822']}</pubDate>"
             f"<dc:date>{_escape(b['publish_iso'])}</dc:date>"
             f"{cats}"
-            f"<description><![CDATA[{desc_html}]]></description>"
-            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
+            f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
             f"</item>"
         )
         if b["publish_ts"] > most_recent:
@@ -2742,8 +2833,8 @@ def build_weekly_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[s
             f"<pubDate>{b['publish_rfc822']}</pubDate>"
             f"<dc:date>{_escape(b['publish_iso'])}</dc:date>"
             f"{cats}"
-            f"<description><![CDATA[{desc_html}]]></description>"
-            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
+            f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
             f"</item>"
         )
         if b["publish_ts"] > most_recent:
@@ -2807,8 +2898,8 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
             f"<pubDate>{it['publish_rfc822']}</pubDate>"
             f"<dc:date>{_escape(it['publish_iso'])}</dc:date>"
             f"{cats}"
-            f"<description><![CDATA[{desc_html}]]></description>"
-            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
+            f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
             f"</item>"
         )
         if it["publish_ts"] > most_recent:
@@ -3232,6 +3323,21 @@ def main() -> int:
         if rel_url == "":
             rel_path = "index.html"
         out_path = OUT / rel_path
+        # Defence-in-depth: refuse any rel_path that resolves outside OUT.
+        # All ID-bearing call sites already validate via is_safe_path_segment,
+        # but keep this last-line check so future call sites can't regress.
+        try:
+            resolved = out_path.resolve()
+            out_resolved = OUT.resolve()
+            if not (resolved == out_resolved or out_resolved in resolved.parents):
+                raise RuntimeError(
+                    f"refused: rel_url {rel_url!r} resolves outside _site/ "
+                    f"({resolved} not under {out_resolved})"
+                )
+        except RuntimeError:
+            raise
+        except Exception as e:  # noqa: BLE001
+            raise RuntimeError(f"refused: cannot resolve {rel_url!r}: {e}")
         atomic_write_text(out_path, html)
         h = hashlib.sha256(html.encode("utf-8")).hexdigest()
         manifest_pages[rel_url or "/"] = {"path": rel_path, "hash": h}
@@ -3259,6 +3365,13 @@ def main() -> int:
     region_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     for b in briefs:
+        # `b["name"]` was validated against the canonical YYYY-MM-DD or
+        # YYYY-Www regex in collect_briefs(), but enforce again at the
+        # path-construction boundary so an arbitrary code path adding a
+        # brief later cannot bypass it.
+        if not is_safe_path_segment(b["name"]):
+            print(f"warning: skipping brief with unsafe name {b['name']!r}", file=sys.stderr)
+            continue
         rel_url = ("briefs/weekly/" if b["kind"] == "weekly" else "briefs/") + b["name"] + "/"
         prefix = "../" * rel_url.count("/")  # path back to root
         canonical = site_url + rel_url
@@ -3291,6 +3404,9 @@ def main() -> int:
 
     # ---- Per-item pages -----------------------------------------------
     for slug, entry in items_index.items():
+        if not is_safe_path_segment(slug):
+            print(f"warning: skipping item with unsafe slug {slug!r}", file=sys.stderr)
+            continue
         rel_url = f"items/{slug}/"
         prefix = "../" * rel_url.count("/")
         canonical = site_url + rel_url
@@ -3306,6 +3422,13 @@ def main() -> int:
 
     # ---- Per-CVE pages ------------------------------------------------
     for c in cves["cves"]:
+        if not is_safe_path_segment(c["id"]) or not CVE_RE.fullmatch(c["id"]):
+            print(
+                f"warning: skipping CVE entry with unsafe id {c['id']!r}; "
+                "expected canonical CVE-YYYY-NNNN format",
+                file=sys.stderr,
+            )
+            continue
         rel_url = f"cves/{c['id']}/"
         prefix = "../" * 2
         canonical = site_url + rel_url
@@ -3321,6 +3444,12 @@ def main() -> int:
 
     # ---- Per-source pages ---------------------------------------------
     for s in sources["sources"]:
+        if not is_safe_path_segment(s.get("id", "") or ""):
+            print(
+                f"warning: skipping source entry with unsafe id {s.get('id')!r}",
+                file=sys.stderr,
+            )
+            continue
         rel_url = f"sources/{urllib.parse.quote(s['id'], safe='')}/"
         prefix = "../" * 2
         canonical = site_url + rel_url
@@ -3336,6 +3465,12 @@ def main() -> int:
 
     # ---- Per-topic pages ----------------------------------------------
     for t in topics["items"]:
+        if not is_safe_path_segment(t.get("key", "") or ""):
+            print(
+                f"warning: skipping topic entry with unsafe key {t.get('key')!r}",
+                file=sys.stderr,
+            )
+            continue
         rel_url = f"topics/{urllib.parse.quote(t['key'], safe='')}/"
         prefix = "../" * 2
         canonical = site_url + rel_url
@@ -3375,9 +3510,15 @@ def main() -> int:
         )
 
     for tag, entries in tag_index.items():
+        if not is_safe_path_segment(tag):
+            print(f"warning: skipping tag index with unsafe tag {tag!r}", file=sys.stderr)
+            continue
         rel_url = f"tags/{tag}/"
         emit_html(rel_url, tag_or_region_page("tags", tag, entries))
     for region, entries in region_index.items():
+        if not is_safe_path_segment(region):
+            print(f"warning: skipping region index with unsafe region {region!r}", file=sys.stderr)
+            continue
         rel_url = f"regions/{region}/"
         emit_html(rel_url, tag_or_region_page("regions", region, entries))
 
