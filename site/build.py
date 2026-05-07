@@ -1,37 +1,56 @@
 #!/usr/bin/env python3
-"""Build the static site bundle for GitHub Pages.
+"""Build the static-site bundle for GitHub Pages (CTI Brief v2 SSG).
 
-Reads:
-    briefs/YYYY-MM-DD.md       (daily briefs)
-    briefs/weekly/YYYY-Www.md  (weekly summaries)
-    state/covered_items.json   (rolling coverage log)
-    state/cves_seen.json       (flat CVE index)
-    state/run_log.json         (per-run sub-agent allocation; optional)
-    sources/sources.json       (curated source list)
-    README.md                  (project overview)
-    docs/*.md                  (workflow / verification / setup / etc.)
-    prompts/CHANGELOG.md       (editorial-policy audit trail)
+Inputs (read-only):
+    briefs/YYYY-MM-DD.md          daily briefs
+    briefs/weekly/YYYY-Www.md     weekly summaries
+    state/cves_seen.json          flat CVE index
+    state/covered_items.json      rolling coverage log
+    state/run_log.json            ops dashboard data (optional)
+    sources/sources.json          curated source list
+    site/taxonomy.yaml            controlled vocabulary
+    README.md, docs/*.md          rendered into /about/
+    prompts/CHANGELOG.md          rendered into /about/changelog
 
-Writes everything the SPA needs into ./_site/:
-    _site/index.html              (copied from ./index.html)
-    _site/assets/...              (copied unchanged)
-    _site/.nojekyll               (disable Jekyll on Pages)
-    _site/feed.xml                (RSS 2.0 feed of recent briefs)
-    _site/briefs/<name>.md        (raw markdown, fetched on demand)
-    _site/docs/<name>.md          (raw docs)
-    _site/data/manifest.json      (brief metadata, newest first)
-    _site/data/cves.json          (CVE list joined with brief appearances)
-    _site/data/topics.json        (covered_items joined with brief paths + verification flags)
-    _site/data/sources.json       (sources joined with brief appearances)
-    _site/data/search.json        (flat unified search index — briefs, sections, CVEs, topics, sources)
-    _site/data/run_log.json       (mirror of state/run_log.json — for the #/ops view)
-    _site/data/site.json          (build metadata: build time, counts, site URL)
+Outputs (written under site/_site/):
+    /                             home (latest brief preview)
+    /briefs/YYYY-MM-DD/           single daily brief
+    /briefs/weekly/YYYY-Www/      single weekly brief
+    /briefs/                      brief index
+    /items/<slug>/                one page per metadata-footer item
+    /cves/<CVE-ID>/               one page per CVE
+    /sources/<id>/                one page per source
+    /topics/<key>/                one page per covered topic
+    /tags/<tag>/                  index of items with this tag
+    /regions/<region>/            index of items with this region
+    /ops/                         operations dashboard
+    /about/                       about / docs / changelog
+    /feed.xml                     daily RSS (URL preserved)
+    /feed-weekly.xml              weekly RSS (NEW)
+    /feed-items.xml               per-item RSS (NEW)
+    /sitemap.xml                  sitemap
+    /robots.txt                   crawler directives
+    /data/build_manifest.json     content-hashed manifest (self-check substrate)
+    /data/site.json               build metadata
+    /404.html                     fallback page
 
-Stdlib only. No build dependencies.
+Design properties:
+    - stdlib-only Python; no build dependencies
+    - vendored-library SHA-256 integrity check on entry (build aborts on mismatch)
+    - atomic per-file writes (temp + os.replace) — a crashed build never
+      publishes a half-written page
+    - deterministic: two runs with identical inputs produce a byte-identical
+      tree (publish moments come from git, not now(); RSS lastBuildDate is
+      the most-recent-input timestamp; cache-bust hash is content-hashed)
+    - every emitted HTML page contains the Umami snippet exactly once
+    - strict CSP unchanged
+    - end-of-build self-check: every URL in the manifest exists on disk,
+      every brief article has non-empty data-tags/data-regions/data-section,
+      every taxonomy value is recognized, every feed parses cleanly, no
+      orphan files in _site/
 
-The site URL used in the RSS feed is read from the SITE_URL env var when set
-(typical CI usage: SITE_URL=https://owlsnightcatch.github.io/security-newsletter).
-Fallback default points at the project's deployed Pages URL.
+The site URL is read from SITE_URL env var; falls back to the deployed Pages
+URL.
 """
 
 from __future__ import annotations
@@ -42,13 +61,17 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = Path(__file__).resolve().parent
@@ -57,61 +80,129 @@ OUT = SITE / "_site"
 DEFAULT_SITE_URL = "https://owlsnightcatch.github.io/security-newsletter/"
 DEFAULT_GITHUB_REPO = "OwlsNightCatch/security-newsletter"
 
+# RSS truncation per feed (HTML archive is unbounded).
+FEED_DAILY_MAX = 30
+FEED_WEEKLY_MAX = 30
+FEED_ITEMS_MAX = 50
+
+
+# === REGEXES ============================================================
+
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b")
 LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^)\s]+)\)")
 PROMPT_VERSION_RE = re.compile(r"\*\*Prompt:\*\*\s*v?([0-9]+\.[0-9]+)", re.IGNORECASE)
 SINGLE_SOURCE_FLAGS = ("SINGLE-SOURCE-NATIONAL-CERT", "SINGLE-SOURCE-OTHER", "SINGLE-SOURCE")
 
+# Metadata footer (§4.7 of the v2 prompt). The footer is a single italic
+# Markdown line of the form
+#
+#     — *Source: [Title](URL) [· Additional source: [Title](URL)] · Tags: a, b · Region: r1[, r2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
+#
+# The opening token is an em-dash + space + asterisk; the closing token is
+# a trailing asterisk. Field order is fixed; field separator is a middle
+# dot ` · ` (U+00B7).
+FOOTER_RE = re.compile(
+    r"^\s*[—-]\s*\*Source:\s*(?P<body>.+?)\*\s*$",
+    re.MULTILINE,
+)
+# Each `[Title](URL)` group used inside the footer body.
+FOOTER_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^)\s]+)\)")
 
-def _split_sentences(s: str) -> list[str]:
-    """Split a Markdown chunk into sentences, respecting bracket/paren nesting
-    so `.` inside `[label, 2026-05-06]` or `(...)` does not break a sentence.
-    A sentence ends at `.`, `!`, or `?` when bracket depth is zero and the
-    following character is whitespace / EOS / a likely sentence opener
-    (uppercase, `*` for bold, `(` for parenthetical)."""
-    parts: list[str] = []
-    cur: list[str] = []
-    depth_brk = 0
-    depth_par = 0
-    n = len(s)
-    i = 0
-    while i < n:
-        ch = s[i]
-        cur.append(ch)
-        if ch == "[":
-            depth_brk += 1
-        elif ch == "]":
-            depth_brk = max(0, depth_brk - 1)
-        elif ch == "(":
-            depth_par += 1
-        elif ch == ")":
-            depth_par = max(0, depth_par - 1)
-        elif ch in ".!?" and depth_brk == 0 and depth_par == 0:
-            nxt = s[i + 1:i + 6]
-            stripped = nxt.lstrip()
-            ends_sentence = (
-                not nxt
-                or (nxt[:1] in (" ", "\n", "\t") and (
-                    not stripped
-                    or stripped[0].isupper()
-                    or stripped[0] in "*_("
-                ))
-            )
-            if ends_sentence:
-                parts.append("".join(cur).strip())
-                cur = []
-        i += 1
-    if cur:
-        parts.append("".join(cur).strip())
-    return [p for p in parts if p]
 
+# === SLUG / HOST HELPERS ================================================
 
 def slugify(text: str) -> str:
-    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", text.lower())).strip("-")
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9]+", "-", text)
+    text = re.sub(r"-+", "-", text)
+    return text.strip("-")
 
+
+def host_of(url: str) -> str:
+    try:
+        h = (urllib.parse.urlparse(url).hostname or "").lower().strip()
+        return h.removeprefix("www.")
+    except Exception:
+        return ""
+
+
+def url_prefix_of(url: str) -> str:
+    try:
+        u = urllib.parse.urlparse(url)
+        host = (u.hostname or "").lower().removeprefix("www.")
+        if not host:
+            return ""
+        path = u.path or "/"
+        if "/" in path:
+            head, _, tail = path.rpartition("/")
+            if "." in tail:
+                path = head + "/"
+        return f"{host}{path}"
+    except Exception:
+        return ""
+
+
+# === GIT TIMESTAMP =====================================================
+
+def git_first_commit_ts(path: Path) -> datetime | None:
+    """Return the first (creation) commit timestamp on `main` for `path`,
+    in UTC. Returns None when `git` is unavailable or the file is not
+    tracked yet (in which case the caller falls back to mtime)."""
+    try:
+        rel = path.relative_to(ROOT)
+    except ValueError:
+        rel = path
+    try:
+        # --diff-filter=A — only the commit that *added* the file.
+        # --reverse + head -1 — earliest match if the file was renamed.
+        # %aI — author ISO 8601 timestamp.
+        out = subprocess.run(
+            ["git", "log", "--diff-filter=A", "--format=%aI", "--reverse", "--", str(rel)],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if out.returncode != 0:
+            return None
+        for line in out.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                return datetime.fromisoformat(line).astimezone(timezone.utc)
+            except ValueError:
+                continue
+        return None
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
+        return None
+
+
+def file_publish_moment(path: Path) -> datetime:
+    """Best-effort UTC moment a brief became live. Tries (1) git first-commit
+    timestamp; falls back to (2) file mtime. Never falls back to
+    midnight-of-brief-date — that's Defect B in the issue tracker."""
+    ts = git_first_commit_ts(path)
+    if ts is not None:
+        return ts
+    try:
+        mt = path.stat().st_mtime
+        return datetime.fromtimestamp(mt, tz=timezone.utc)
+    except OSError:
+        # Last resort: now(). Should not happen on a real build.
+        return datetime.now(timezone.utc)
+
+
+def rfc822(ts: datetime) -> str:
+    """RFC 822 timestamp string — `Wed, 02 Oct 2002 15:00:00 +0000`."""
+    return ts.astimezone(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+
+# === VENDORED LIBRARY INTEGRITY ========================================
 
 def verify_vendored_hashes() -> None:
-    """Abort the build if any vendored library's bytes do not match HASHES."""
+    """Abort the build if any vendored library's bytes don't match HASHES.
+    Catches both silent on-disk tampering and accidental upgrades."""
     vendor = SITE / "assets" / "vendor"
     hashes_file = vendor / "HASHES"
     if not hashes_file.exists():
@@ -128,7 +219,7 @@ def verify_vendored_hashes() -> None:
         algo, fname, digest = parts
         if algo == "sha256":
             expected[fname] = digest
-    failures = []
+    failures: list[str] = []
     for fname, want in expected.items():
         path = vendor / fname
         if not path.exists():
@@ -149,46 +240,533 @@ def verify_vendored_hashes() -> None:
         sys.exit(2)
 
 
-def host_of(url: str) -> str:
-    try:
-        h = (urllib.parse.urlparse(url).hostname or "").lower().strip()
-        # `lstrip("www.")` strips any of {w, .} which corrupts hosts like
-        # "windowsforum.com" → "indowsforum.com". `removeprefix` is the
-        # right tool: it strips the literal "www." prefix exactly once.
-        return h.removeprefix("www.")
-    except Exception:
-        return ""
+# === TAXONOMY ==========================================================
+
+def parse_taxonomy(path: Path) -> dict[str, set[str]]:
+    """Pure-Python YAML-list parser: read the taxonomy file as a flat set
+    of `key -> {values}` dicts. Stdlib-only (no `yaml` dependency)."""
+    if not path.exists():
+        return {}
+    out: dict[str, set[str]] = {}
+    cur_key: str | None = None
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.rstrip()
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        # Top-level key: `themes:` (no leading whitespace).
+        m = re.match(r"^([a-z_][a-z0-9_]*)\s*:\s*$", line)
+        if m:
+            cur_key = m.group(1)
+            out[cur_key] = set()
+            continue
+        # List item: `  - value`.
+        m = re.match(r"^\s+-\s+(.+?)\s*$", line)
+        if m and cur_key is not None:
+            value = m.group(1).strip().strip('"').strip("'")
+            out[cur_key].add(value)
+    return out
 
 
-def url_prefix_of(url: str) -> str:
-    """Normalised URL prefix used for longest-prefix source matching (S7).
+# === MARKDOWN RENDERER (build-time, pure-Python) =======================
 
-    Drops the trailing fragment / query / file, lowercases scheme+host,
-    keeps the path stem so two paths under the same publisher path can
-    be distinguished.
+# A focused renderer that handles every Markdown construct the briefs and
+# docs actually use: H1-H4 headings, paragraphs, ordered + unordered lists,
+# blockquotes, fenced code, indented code, hr, pipe tables, inline bold /
+# italic / code / links, plus HTML escaping. DOMPurify is no longer in the
+# pipeline — the renderer's allowlist does the sanitization.
+
+_INLINE_LINK_RE = re.compile(r"\[((?:[^\[\]]|\[[^\]]*\])+)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+_INLINE_CODE_RE = re.compile(r"`([^`]+)`")
+_INLINE_BOLD_RE = re.compile(r"\*\*((?:[^*]|\*(?!\*))+?)\*\*")
+_INLINE_ITAL_RE = re.compile(r"(?<![\\*])\*([^*\n]+)\*(?!\*)")
+_INLINE_ITAL_UNDER_RE = re.compile(r"(?<![\w_])_([^_\n]+)_(?![\w_])")
+_INLINE_AUTOLINK_RE = re.compile(r"(?<![\(\"<\w])(https?://[^\s<>\)]+)")
+
+
+def _escape(s: str) -> str:
+    """HTML-escape a string. Used everywhere except inside `<code>` (which
+    is also escaped — the rule is uniform)."""
+    return (
+        s.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#39;")
+    )
+
+
+def render_inline(s: str, *, base_url: str | None = None) -> str:
+    """Render Markdown inline constructs to HTML.
+
+    `base_url` (when given) absolutises relative links so the result is
+    self-contained (used by RSS body rendering — RSS readers don't have a
+    base URL to resolve against).
     """
-    try:
-        u = urllib.parse.urlparse(url)
-        host = (u.hostname or "").lower().removeprefix("www.")
-        if not host:
-            return ""
-        path = u.path or "/"
-        # Strip trailing filename so /security/blog/2024/x.html and
-        # /security/blog/2024/y.html share the same prefix.
-        if "/" in path:
-            head, _, tail = path.rpartition("/")
-            if "." in tail:
-                path = head + "/"
-        return f"{host}{path}"
-    except Exception:
-        return ""
+    # Step 1: extract code spans first so we don't re-process their bytes.
+    placeholders: dict[str, str] = {}
+
+    def stash_code(m: re.Match) -> str:
+        key = f"\x00CODE{len(placeholders)}\x00"
+        placeholders[key] = "<code>" + _escape(m.group(1)) + "</code>"
+        return key
+
+    s = _INLINE_CODE_RE.sub(stash_code, s)
+
+    # Step 2: extract links (their inner text may still take inline
+    # formatting after we've stashed the URL).
+    def stash_link(m: re.Match) -> str:
+        text = m.group(1)
+        url = m.group(2)
+        if base_url and not (url.startswith("http://") or url.startswith("https://") or url.startswith("mailto:")):
+            url = urllib.parse.urljoin(base_url, url)
+        # Recurse on link text for inline formatting (excluding nested
+        # links, which Markdown forbids anyway).
+        rendered_text = render_inline_no_links(text)
+        key = f"\x00LINK{len(placeholders)}\x00"
+        placeholders[key] = (
+            f'<a href="{_escape(url)}" rel="noopener noreferrer">{rendered_text}</a>'
+        )
+        return key
+
+    s = _INLINE_LINK_RE.sub(stash_link, s)
+
+    # Step 3: bold (greedy then italic).
+    s = _INLINE_BOLD_RE.sub(lambda m: "\x00B" + m.group(1) + "\x00b", s)
+    # Step 4: italic (`*...*` and `_..._`). Avoid eating bullet markers
+    # by requiring no whitespace adjacent to the asterisks.
+    s = _INLINE_ITAL_RE.sub(lambda m: "\x00I" + m.group(1) + "\x00i", s)
+    s = _INLINE_ITAL_UNDER_RE.sub(lambda m: "\x00I" + m.group(1) + "\x00i", s)
+    # Step 5: bare URL autolinks (only when not already inside an anchor).
+    s = _INLINE_AUTOLINK_RE.sub(
+        lambda m: f'<a href="{_escape(m.group(1))}" rel="noopener noreferrer">{_escape(m.group(1))}</a>',
+        s,
+    )
+    # Step 6: now escape the remaining text. Markers \x00 are preserved.
+    s = _escape(s)
+    s = s.replace("\x00B", "<strong>").replace("\x00b", "</strong>")
+    s = s.replace("\x00I", "<em>").replace("\x00i", "</em>")
+    # Step 7: restore placeholders (codes + links) untouched. Their
+    # values are already valid HTML.
+    for key, value in placeholders.items():
+        s = s.replace(_escape(key), value)
+        s = s.replace(key, value)
+    return s
 
 
-def parse_brief(path: Path) -> dict:
+def render_inline_no_links(s: str) -> str:
+    """Inline rendering that skips link/auto-link expansion. Used inside
+    link text where nested links are illegal anyway."""
+    placeholders: dict[str, str] = {}
+
+    def stash_code(m: re.Match) -> str:
+        key = f"\x00CODE{len(placeholders)}\x00"
+        placeholders[key] = "<code>" + _escape(m.group(1)) + "</code>"
+        return key
+
+    s = _INLINE_CODE_RE.sub(stash_code, s)
+    s = _INLINE_BOLD_RE.sub(lambda m: "\x00B" + m.group(1) + "\x00b", s)
+    s = _INLINE_ITAL_RE.sub(lambda m: "\x00I" + m.group(1) + "\x00i", s)
+    s = _INLINE_ITAL_UNDER_RE.sub(lambda m: "\x00I" + m.group(1) + "\x00i", s)
+    s = _escape(s)
+    s = s.replace("\x00B", "<strong>").replace("\x00b", "</strong>")
+    s = s.replace("\x00I", "<em>").replace("\x00i", "</em>")
+    for key, value in placeholders.items():
+        s = s.replace(_escape(key), value)
+        s = s.replace(key, value)
+    return s
+
+
+def render_markdown(md: str, *, base_url: str | None = None) -> str:
+    """Render Markdown text to HTML. Block-level constructs:
+        - headings (#, ##, ###, ####)
+        - paragraphs
+        - unordered lists (`- ` or `* `, allowing nested by 2-space indent)
+        - ordered lists (`1. `)
+        - blockquotes (`> `)
+        - fenced code blocks (```)
+        - indented code blocks (4 spaces) — minimal
+        - horizontal rules (`---` or `***`)
+        - pipe tables
+        - inline-only fallback for everything else.
+    """
+    lines = md.replace("\r\n", "\n").split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    def is_blank(s: str) -> bool:
+        return not s.strip()
+
+    while i < n:
+        line = lines[i]
+        # Fenced code (```)
+        if line.lstrip().startswith("```"):
+            # Capture lang
+            fence = line.lstrip()[:3]
+            lang_match = re.match(r"^```\s*([a-zA-Z0-9_+-]*)\s*$", line.strip())
+            lang = lang_match.group(1) if lang_match else ""
+            i += 1
+            buf: list[str] = []
+            while i < n and not lines[i].lstrip().startswith("```"):
+                buf.append(lines[i])
+                i += 1
+            i += 1  # consume closing fence
+            cls = f' class="lang-{_escape(lang)}"' if lang else ""
+            out.append(f"<pre><code{cls}>{_escape(chr(10).join(buf))}</code></pre>")
+            continue
+        # ATX heading
+        m = re.match(r"^(#{1,4})\s+(.*?)\s*#*\s*$", line)
+        if m:
+            level = len(m.group(1))
+            text = m.group(2)
+            anchor = slugify(text)
+            rendered = render_inline(text, base_url=base_url)
+            out.append(f'<h{level} id="{anchor}">{rendered}</h{level}>')
+            i += 1
+            continue
+        # Horizontal rule
+        if re.match(r"^\s*([-*_])\s*\1\s*\1\s*$", line) or re.match(r"^---+$", line.strip()):
+            out.append("<hr/>")
+            i += 1
+            continue
+        # Pipe table — needs a header row + separator row.
+        if (
+            line.lstrip().startswith("|")
+            and i + 1 < n
+            and re.match(r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$", lines[i + 1])
+        ):
+            head_cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            sep_cells = [c.strip() for c in lines[i + 1].strip().strip("|").split("|")]
+            aligns: list[str] = []
+            for s in sep_cells:
+                if s.startswith(":") and s.endswith(":"):
+                    aligns.append("center")
+                elif s.endswith(":"):
+                    aligns.append("right")
+                else:
+                    aligns.append("left")
+            i += 2
+            rows: list[list[str]] = []
+            while i < n and lines[i].lstrip().startswith("|"):
+                cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+                rows.append(cells)
+                i += 1
+            out.append('<div class="table-wrap"><table>')
+            out.append("<thead><tr>")
+            for idx, h in enumerate(head_cells):
+                a = aligns[idx] if idx < len(aligns) else "left"
+                out.append(f'<th style="text-align:{a}">{render_inline(h, base_url=base_url)}</th>')
+            out.append("</tr></thead><tbody>")
+            for row in rows:
+                out.append("<tr>")
+                for idx, c in enumerate(row):
+                    a = aligns[idx] if idx < len(aligns) else "left"
+                    out.append(f'<td style="text-align:{a}">{render_inline(c, base_url=base_url)}</td>')
+                out.append("</tr>")
+            out.append("</tbody></table></div>")
+            continue
+        # Blockquote
+        if line.lstrip().startswith(">"):
+            buf2: list[str] = []
+            while i < n and (lines[i].lstrip().startswith(">") or (buf2 and not is_blank(lines[i]))):
+                buf2.append(re.sub(r"^\s*>\s?", "", lines[i]))
+                i += 1
+            inner = render_markdown("\n".join(buf2), base_url=base_url)
+            out.append(f"<blockquote>{inner}</blockquote>")
+            continue
+        # Unordered list
+        if re.match(r"^[-*]\s+\S", line.lstrip()):
+            buf3: list[tuple[int, str]] = []
+            while i < n and (re.match(r"^[-*]\s+\S", lines[i].lstrip()) or (buf3 and lines[i].startswith("  "))):
+                ll = lines[i]
+                indent = len(ll) - len(ll.lstrip())
+                m_li = re.match(r"^[-*]\s+(.*)$", ll.lstrip())
+                if m_li:
+                    buf3.append((indent, m_li.group(1)))
+                else:
+                    # continuation line: append to last item
+                    if buf3:
+                        ind0, txt = buf3[-1]
+                        buf3[-1] = (ind0, txt + "\n" + ll.strip())
+                i += 1
+            out.append(_render_list(buf3, ordered=False, base_url=base_url))
+            continue
+        # Ordered list
+        if re.match(r"^\d+\.\s+\S", line.lstrip()):
+            buf4: list[tuple[int, str]] = []
+            while i < n and (re.match(r"^\d+\.\s+\S", lines[i].lstrip()) or (buf4 and lines[i].startswith("  "))):
+                ll = lines[i]
+                indent = len(ll) - len(ll.lstrip())
+                m_li = re.match(r"^\d+\.\s+(.*)$", ll.lstrip())
+                if m_li:
+                    buf4.append((indent, m_li.group(1)))
+                else:
+                    if buf4:
+                        ind0, txt = buf4[-1]
+                        buf4[-1] = (ind0, txt + "\n" + ll.strip())
+                i += 1
+            out.append(_render_list(buf4, ordered=True, base_url=base_url))
+            continue
+        # Blank line
+        if is_blank(line):
+            i += 1
+            continue
+        # Paragraph: gather until blank
+        buf5: list[str] = [line]
+        i += 1
+        while i < n and not is_blank(lines[i]) and not lines[i].lstrip().startswith(("#", ">", "```", "- ", "* ", "|")):
+            # also bail on ordered list start
+            if re.match(r"^\d+\.\s+\S", lines[i].lstrip()):
+                break
+            if re.match(r"^---+$", lines[i].strip()):
+                break
+            buf5.append(lines[i])
+            i += 1
+        para = "\n".join(buf5).strip()
+        if para:
+            out.append(f"<p>{render_inline(para, base_url=base_url)}</p>")
+
+    return "\n".join(out)
+
+
+def _render_list(items: list[tuple[int, str]], *, ordered: bool, base_url: str | None) -> str:
+    """Render a (flat) Markdown list. Nested lists are emitted by treating
+    a deeper-indented run as a nested list inside the prior <li>."""
+    tag = "ol" if ordered else "ul"
+    if not items:
+        return f"<{tag}></{tag}>"
+    base_indent = items[0][0]
+    out = [f"<{tag}>"]
+    n = len(items)
+    j = 0
+    while j < n:
+        indent, text = items[j]
+        if indent > base_indent:
+            # Collect the nested run
+            nested: list[tuple[int, str]] = []
+            while j < n and items[j][0] > base_indent:
+                nested.append(items[j])
+                j += 1
+            # Re-base the indents and recurse
+            min_indent = min(i for i, _ in nested)
+            nested_re = [(ind - min_indent, t) for ind, t in nested]
+            inner = _render_list(nested_re, ordered=False, base_url=base_url)
+            # Append inner to the previous li
+            if out and out[-1].endswith("</li>"):
+                out[-1] = out[-1][: -len("</li>")] + inner + "</li>"
+            else:
+                out.append(f"<li>{inner}</li>")
+            continue
+        # Render the item; if its body has a paragraph break, expand
+        rendered = render_inline(text, base_url=base_url)
+        out.append(f"<li>{rendered}</li>")
+        j += 1
+    out.append(f"</{tag}>")
+    return "".join(out)
+
+
+# === FOOTER PARSER =====================================================
+
+# Parse a single metadata-footer line into a structured dict.
+def parse_footer_line(line: str) -> dict[str, Any] | None:
+    """Parse a metadata-footer line. Returns None if the line isn't a
+    footer or is malformed.
+
+    The footer format (§4.7 of the v2 prompt):
+        — *Source: [Title](URL) [· Additional source: [Title](URL)] · Tags: a, b · Region: r1[, r2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
+
+    Returns dict with keys:
+        sources:        list[{label, url}]
+        tags:           list[str]   (themes + nexus + status flags)
+        regions:        list[str]
+        sectors:        list[str]   (subset of tags, per taxonomy)
+        cve:            str|None
+        cvss:           str|None
+        vector:         str|None
+        auth:           str|None
+        status:         list[str]   (split on `,`)
+    """
+    s = line.strip()
+    if not s:
+        return None
+    # Strip leading em-dash / hyphen + asterisk; trailing asterisk.
+    m = re.match(r"^[—-]\s*\*\s*Source:\s*(?P<body>.+?)\*\s*$", s)
+    if not m:
+        return None
+    body = m.group("body").strip()
+
+    # Pull all `[Title](URL)` first; we'll consume them by position.
+    links = list(FOOTER_LINK_RE.finditer(body))
+    sources: list[dict[str, str]] = []
+    # Replace links with placeholders so later splits don't trip on the `· Source:`-like text inside.
+    placeholder_map: dict[str, str] = {}
+    body_clean = body
+    for idx, lm in enumerate(links):
+        ph = f"\x00LINK{idx}\x00"
+        placeholder_map[ph] = f"{lm.group(1)}|||{lm.group(2)}"
+        body_clean = body_clean.replace(lm.group(0), ph, 1)
+
+    # Now split on the field separator ` · `.
+    parts = [p.strip() for p in re.split(r"\s+·\s+", body_clean) if p.strip()]
+    if not parts:
+        return None
+
+    out: dict[str, Any] = {
+        "sources": [],
+        "tags": [],
+        "regions": [],
+        "sectors": [],
+        "cve": None,
+        "cvss": None,
+        "vector": None,
+        "auth": None,
+        "status": [],
+    }
+
+    # First part is the primary source (no "Source:" prefix in the body
+    # — that prefix was stripped by the regex above).
+    first = parts[0]
+    # Either it's a placeholder for the link, or an inline label.
+    if first in placeholder_map:
+        label, url = placeholder_map[first].split("|||", 1)
+        out["sources"].append({"label": label, "url": url})
+    else:
+        m_link = re.search(r"\x00LINK\d+\x00", first)
+        if m_link:
+            ph = m_link.group(0)
+            label, url = placeholder_map[ph].split("|||", 1)
+            out["sources"].append({"label": label, "url": url})
+
+    for p in parts[1:]:
+        # Each remaining part is `Key: value`.
+        key_m = re.match(r"^([A-Za-z][A-Za-z ]*?):\s*(.*)$", p)
+        if not key_m:
+            continue
+        key = key_m.group(1).strip().lower().replace(" ", "_")
+        value = key_m.group(2).strip()
+        # Substitute any link placeholders inside value.
+        for ph, val in placeholder_map.items():
+            if ph in value:
+                lab, url = val.split("|||", 1)
+                value = value.replace(ph, f"[{lab}]({url})")
+        if key in ("additional_source", "additional_sources"):
+            link_m = re.match(r"^\[([^\]]+)\]\(([^)]+)\)$", value)
+            if link_m:
+                out["sources"].append({"label": link_m.group(1), "url": link_m.group(2)})
+        elif key == "tags":
+            out["tags"] = [t.strip() for t in value.split(",") if t.strip()]
+        elif key == "region":
+            out["regions"] = [t.strip() for t in value.split(",") if t.strip()]
+        elif key in ("sector", "sectors"):
+            out["sectors"] = [t.strip() for t in value.split(",") if t.strip()]
+        elif key == "cve":
+            out["cve"] = value.strip()
+        elif key == "cvss":
+            out["cvss"] = value.strip()
+        elif key == "vector":
+            out["vector"] = value.strip()
+        elif key == "auth":
+            out["auth"] = value.strip()
+        elif key == "status":
+            out["status"] = [t.strip() for t in value.split(",") if t.strip()]
+
+    return out
+
+
+def validate_footer(footer: dict[str, Any], taxonomy: dict[str, set[str]]) -> list[str]:
+    """Return a list of validation errors against the controlled vocab.
+    Empty list means everything is fine. The caller decides whether to
+    fail the build (post-cut-over) or warn (legacy briefs)."""
+    errors: list[str] = []
+    if not footer.get("sources"):
+        errors.append("missing primary source link")
+    themes = taxonomy.get("themes", set()) | taxonomy.get("nexus", set())
+    sectors = taxonomy.get("sectors", set())
+    regions = taxonomy.get("regions", set())
+    cve_vector = taxonomy.get("cve_vectors", set())
+    cve_auth = taxonomy.get("cve_auth", set())
+    cve_status = taxonomy.get("cve_status", set())
+
+    for t in footer.get("tags", []):
+        if t and t not in themes and t not in sectors:
+            errors.append(f"unknown tag: {t}")
+    for r in footer.get("regions", []):
+        if r and r not in regions:
+            errors.append(f"unknown region: {r}")
+    if footer.get("vector") and footer["vector"] not in cve_vector:
+        errors.append(f"unknown CVE vector: {footer['vector']}")
+    if footer.get("auth") and footer["auth"] not in cve_auth:
+        errors.append(f"unknown CVE auth: {footer['auth']}")
+    for s in footer.get("status", []):
+        if s and s not in cve_status:
+            errors.append(f"unknown CVE status: {s}")
+    return errors
+
+
+# === BRIEF PARSER ======================================================
+
+# Map H2 heading keywords (lower-cased) to the canonical section data-key
+# used in `<section data-section>`. Keywords that don't match drop into a
+# fallback `other` bucket (which the build still renders, just without
+# tag/region indexing).
+_SECTION_KEYWORDS: list[tuple[str, str]] = [
+    # daily prompt v2
+    ("tl;dr", "tldr"),
+    ("immediate action", "immediate-actions"),
+    ("active threats", "active-threats"),
+    ("trending vulnerabilities", "trending-vulnerabilities"),
+    ("notable incidents", "active-threats"),  # legacy
+    ("switzerland, europe", "active-threats"),  # legacy
+    ("research", "research"),
+    ("updates to prior coverage", "updates"),
+    ("deep dive", "deep-dive"),
+    ("action items", "action-items"),
+    ("verification notes", "verification-notes"),
+    # weekly prompt
+    ("week at a glance", "weekly-glance"),
+    ("top stories", "weekly-top-stories"),
+    ("multi-day", "weekly-multi-day"),
+    ("vulnerability roll-up", "weekly-vuln-rollup"),
+    ("sector & victim", "weekly-sector-patterns"),
+    ("incidents & disclosures recap", "weekly-incidents-recap"),
+    ("annual", "weekly-annual-reports"),
+    ("long-running campaigns", "weekly-long-running"),
+    ("policy", "weekly-policy"),
+    ("looking ahead", "weekly-looking-ahead"),
+    ("verification & coverage", "verification-notes"),
+]
+
+
+def section_key_for(heading: str) -> str:
+    h = heading.lower()
+    for kw, key in _SECTION_KEYWORDS:
+        if kw in h:
+            return key
+    return "other"
+
+
+def parse_brief(path: Path) -> dict[str, Any]:
+    """Parse a brief Markdown file into a structured dict.
+
+    Returns:
+        name, kind ('daily'|'weekly'), path (relative), title,
+        summary (first TL;DR-derived blurb), generated_by, prompt_version,
+        publish_ts (datetime, UTC), publish_rfc822 (str),
+        sections [
+            { heading, anchor, key, h3_items: [...] }
+        ],
+        cves (sorted unique),
+        text (raw md),
+        size, items_total
+        legacy_links (list of {label, url, host} for every inline link)
+        item_flags ({h3_heading: ['SINGLE-SOURCE-...']})
+        cve_citations ({cve_id: [{label, url, host, prefix}, ...]})
+        unit_data (paragraph-level link aggregations for topic citations)
+    """
     text = path.read_text(encoding="utf-8")
-    rel = str(path.relative_to(ROOT))
     name = path.stem
     is_weekly = path.parent.name == "weekly"
+    rel = str(path.relative_to(ROOT))
 
     m = re.search(r"^# (.+?)\s*$", text, re.MULTILINE)
     title = m.group(1).strip() if m else name
@@ -199,121 +777,143 @@ def parse_brief(path: Path) -> dict:
     pv_match = PROMPT_VERSION_RE.search(text)
     prompt_version = pv_match.group(1) if pv_match else None
 
-    sections = []
+    publish_ts = file_publish_moment(path)
+
+    # Walk the file by H2 boundaries to build sections.
+    h2_starts: list[tuple[int, str]] = []  # (char_index, heading)
     for m in re.finditer(r"^## (.+?)\s*$", text, re.MULTILINE):
-        heading = m.group(1).strip()
-        sections.append({"heading": heading, "anchor": slugify(heading)})
+        h2_starts.append((m.start(), m.group(1).strip()))
 
-    # H3 headings are item-level. We index them for section-level search (S5).
-    subsections = []
-    for m in re.finditer(r"^### (.+?)\s*$", text, re.MULTILINE):
-        heading = m.group(1).strip()
-        # Drop verification-flag tags from search-result titles to keep them tidy
-        clean = re.sub(r"\s*\[(SINGLE-SOURCE(?:-[A-Z-]+)?)\]\s*", " ", heading).strip()
-        subsections.append({
-            "heading": clean,
-            "raw_heading": heading,
-            "anchor": slugify(heading),
-        })
+    sections: list[dict[str, Any]] = []
+    for idx, (start, heading) in enumerate(h2_starts):
+        end = h2_starts[idx + 1][0] if idx + 1 < len(h2_starts) else len(text)
+        body = text[start:end]
+        # Strip the leading `## Heading` line itself
+        first_nl = body.find("\n")
+        body_text = body[first_nl + 1 :] if first_nl >= 0 else ""
+        anchor = slugify(heading)
+        skey = section_key_for(heading)
 
-    tldr = []
-    tldr_block = re.search(
-        r"##\s*0\.\s*TL;DR\s*\n(.+?)(?=\n##\s|\Z)",
-        text,
-        re.DOTALL,
-    )
-    if tldr_block:
-        for raw in tldr_block.group(1).splitlines():
-            line = raw.strip()
-            if line.startswith("- "):
-                tldr.append(line[2:].strip())
+        # H3 boundaries within this section
+        h3_starts: list[tuple[int, str]] = []
+        for m3 in re.finditer(r"^### (.+?)\s*$", body_text, re.MULTILINE):
+            h3_starts.append((m3.start(), m3.group(1).strip()))
+
+        items: list[dict[str, Any]] = []
+        if h3_starts:
+            for j, (s3, h3heading) in enumerate(h3_starts):
+                e3 = h3_starts[j + 1][0] if j + 1 < len(h3_starts) else len(body_text)
+                item_md = body_text[s3:e3].strip()
+                # Strip leading `### Heading` line
+                first_nl_i = item_md.find("\n")
+                item_body = item_md[first_nl_i + 1 :] if first_nl_i >= 0 else ""
+                item_body = item_body.strip()
+                # Locate footer line (last non-empty line if it matches)
+                footer = None
+                stripped_body = item_body
+                lines = item_body.splitlines()
+                while lines and not lines[-1].strip():
+                    lines.pop()
+                if lines:
+                    fm = parse_footer_line(lines[-1])
+                    if fm:
+                        footer = fm
+                        # Remove footer line from body for clean rendering
+                        stripped_body = "\n".join(lines[:-1]).rstrip()
+                items.append(
+                    {
+                        "heading": h3heading,
+                        "anchor": slugify(h3heading),
+                        "slug": f"{name}-{slugify(h3heading)}"[:80].strip("-"),
+                        "body_md": stripped_body,
+                        "footer": footer,
+                        "section_key": skey,
+                    }
+                )
+        else:
+            # No H3 items — section may still carry footer-tagged paragraphs.
+            # Future: detect paragraph-level footers. For now: keep raw body.
+            pass
+
+        sections.append(
+            {
+                "heading": heading,
+                "anchor": anchor,
+                "key": skey,
+                "items": items,
+                "body_md": body_text,
+            }
+        )
 
     cves = sorted(set(CVE_RE.findall(text)))
 
-    links = []
+    # Legacy citation aggregation (kept for /sources and /topics pages).
+    legacy_links: list[dict[str, str]] = []
     seen = set()
     for m in LINK_RE.finditer(text):
         label, url = m.group(1).strip(), m.group(2).strip()
         if url in seen:
             continue
         seen.add(url)
-        links.append({"label": label, "url": url, "host": host_of(url), "prefix": url_prefix_of(url)})
+        legacy_links.append({"label": label, "url": url, "host": host_of(url), "prefix": url_prefix_of(url)})
 
-    h3 = len(re.findall(r"^### .+$", text, re.MULTILINE))
+    # H3 verification-flag tagging (legacy)
+    item_flags: dict[str, list[str]] = {}
+    for m in re.finditer(r"^### (.+?)\s*$", text, re.MULTILINE):
+        heading = m.group(1).strip()
+        flags = []
+        for f in SINGLE_SOURCE_FLAGS:
+            if f"[{f}]" in heading:
+                flags.append(f)
+                break
+        if flags:
+            item_flags[heading] = flags
 
-    # Per-CVE citations: walk the brief by *paragraph* (blank-line-separated
-    # blocks) plus by *table-row* for the trending-vulns table in § 1b. For
-    # each unit that mentions a CVE id, register every inline `[label](url)`
-    # citation from that same unit under the CVE. Paragraph scope (vs H3
-    # section scope) avoids the bleed where one section discusses CVE-A in
-    # body and only mentions CVE-B in passing — both used to inherit each
-    # other's citations. The CVE detail page surfaces this list as "All
-    # cited sources for this CVE", complementing the single
-    # `primary_source_url` recorded in cves_seen.json.
-    cve_citations: dict[str, list[dict]] = {}
+    # CVE citation aggregation (paragraph-scope, preserved from legacy build).
+    cve_citations: dict[str, list[dict[str, str]]] = {}
 
     def register(cve_id: str, label: str, url: str) -> None:
         bucket = cve_citations.setdefault(cve_id, [])
         if any(c["url"] == url for c in bucket):
             return
-        bucket.append({
-            "label": label,
-            "url": url,
-            "host": host_of(url),
-            "prefix": url_prefix_of(url),
-        })
+        bucket.append(
+            {
+                "label": label,
+                "url": url,
+                "host": host_of(url),
+                "prefix": url_prefix_of(url),
+            }
+        )
 
-    # Skip the metadata header above the first H2.
     body_start_match = re.search(r"^## ", text, re.MULTILINE)
     body = text[body_start_match.start():] if body_start_match else text
 
-    # Each "unit" is either a Markdown paragraph (\n\n separated) OR a
-    # single Markdown table row (`| ... |`). Headings count as their own
-    # standalone unit so a CVE in an H3 heading still grabs citations
-    # only from the immediate body paragraph that follows.
     units: list[str] = []
     for chunk in re.split(r"\n\s*\n", body):
         chunk = chunk.strip()
         if not chunk:
             continue
-        # Table block? Split into rows so each row's CVE only inherits
-        # citations from its own row.
         if "\n|" in chunk and chunk.lstrip().startswith("|"):
-            for line in chunk.splitlines():
-                if line.strip().startswith("|"):
-                    units.append(line)
+            for ln in chunk.splitlines():
+                if ln.strip().startswith("|"):
+                    units.append(ln)
             continue
-        # List block? Split into individual bullets so a 5-bullet TL;DR
-        # doesn't get treated as one giant paragraph mentioning 5 CVEs.
-        # A bullet line starts with `- ` or `* `; continuation lines start
-        # with whitespace.
         if re.match(r"^[-*]\s+", chunk):
             current: list[str] = []
-            for line in chunk.splitlines():
-                if re.match(r"^[-*]\s+", line) and current:
+            for ln in chunk.splitlines():
+                if re.match(r"^[-*]\s+", ln) and current:
                     units.append("\n".join(current))
-                    current = [line]
+                    current = [ln]
                 else:
-                    current.append(line)
+                    current.append(ln)
             if current:
                 units.append("\n".join(current))
             continue
         units.append(chunk)
 
-    # Walk by unit (paragraph / bullet / table-row). Each unit that
-    # mentions one or more CVEs has every inline `[label](url)` in the
-    # unit attributed to each of those CVEs. The bullet-split + table-row-
-    # split keep each TL;DR bullet and each table row as its own unit so
-    # adjacent items can't bleed into each other. A unit listing more
-    # than 3 distinct CVEs is treated as a summary recap (e.g. § 7
-    # "Items verified multi-source: CVE-A (src1); CVE-B (src2); …") and
-    # skipped — those lists mention every CVE alongside every citation
-    # and would leak every source under every CVE.
     for unit in units:
         cves_in_unit = set(CVE_RE.findall(unit))
-        if not cves_in_unit:
-            continue
-        if len(cves_in_unit) > 3:
+        if not cves_in_unit or len(cves_in_unit) > 3:
             continue
         for m in LINK_RE.finditer(unit):
             label = m.group(1).strip()
@@ -321,74 +921,72 @@ def parse_brief(path: Path) -> dict:
             for cve_id in cves_in_unit:
                 register(cve_id, label, url)
 
-    # URL-embedded-CVE rule (independent of unit scope): a citation whose
-    # URL itself contains a CVE id is attributed to that CVE wherever it
-    # appears in the brief. Catches NVD / CISA KEV detail URLs and vendor
-    # PSIRT pages whose path is `…/CVE-YYYY-NNNNN`.
     for m in LINK_RE.finditer(body):
         label = m.group(1).strip()
         url = m.group(2).strip()
         for url_cve in CVE_RE.findall(url):
             register(url_cve, label, url)
 
-    # Cache per-unit text + link list so `annotate_topics()` can run the
-    # same paragraph-scope citation aggregation against topic titles
-    # (actor / campaign / incident / tool / annual-report names).
-    unit_data: list[dict] = []
+    unit_data: list[dict[str, Any]] = []
     for unit in units:
-        unit_links: list[dict] = []
+        unit_links: list[dict[str, str]] = []
         for m in LINK_RE.finditer(unit):
-            unit_links.append({
-                "label": m.group(1).strip(),
-                "url": m.group(2).strip(),
-                "host": host_of(m.group(2).strip()),
-                "prefix": url_prefix_of(m.group(2).strip()),
-            })
+            unit_links.append(
+                {
+                    "label": m.group(1).strip(),
+                    "url": m.group(2).strip(),
+                    "host": host_of(m.group(2).strip()),
+                    "prefix": url_prefix_of(m.group(2).strip()),
+                }
+            )
         if not unit_links:
             continue
-        unit_data.append({
-            "text": unit,
-            "text_lower": unit.lower(),
-            "cves": sorted(set(CVE_RE.findall(unit))),
-            "links": unit_links,
-        })
+        unit_data.append(
+            {
+                "text": unit,
+                "text_lower": unit.lower(),
+                "cves": sorted(set(CVE_RE.findall(unit))),
+                "links": unit_links,
+            }
+        )
 
-    # Verification flags per item (S9) — extract per H3-heading SINGLE-SOURCE-* tags.
-    item_flags: dict[str, list[str]] = {}
-    # split text on H3 boundaries to associate flags with the section that contained them
-    for m in re.finditer(r"^### (.+?)\s*$", text, re.MULTILINE):
-        heading = m.group(1).strip()
-        flags = []
-        for f in SINGLE_SOURCE_FLAGS:
-            if f"[{f}]" in heading:
-                flags.append(f)
-                # only one flag per heading is meaningful; longest-first
-                break
-        if flags:
-            item_flags[heading] = flags
+    # TL;DR derivation (still used for RSS description + home preview)
+    tldr: list[str] = []
+    tldr_block = re.search(r"##\s*0?\.?\s*TL;DR\s*\n(.+?)(?=\n##\s|\Z)", text, re.DOTALL | re.IGNORECASE)
+    if tldr_block:
+        for raw in tldr_block.group(1).splitlines():
+            line = raw.strip()
+            if line.startswith("- "):
+                tldr.append(line[2:].strip())
+
+    items_total = sum(len(s["items"]) for s in sections)
 
     return {
         "name": name,
         "kind": "weekly" if is_weekly else "daily",
         "path": rel,
         "title": title,
+        "summary": (tldr[0] if tldr else "")[:280],
         "generated_by": generated_by,
         "prompt_version": prompt_version,
+        "publish_ts": publish_ts,
+        "publish_rfc822": rfc822(publish_ts),
+        "publish_iso": publish_ts.isoformat(),
         "sections": sections,
-        "subsections": subsections,
-        "tldr": tldr,
         "cves": cves,
-        "links": links,
-        "items": h3,
+        "text": text,
         "size": len(text),
+        "tldr": tldr,
+        "links": legacy_links,
         "item_flags": item_flags,
         "cve_citations": cve_citations,
         "unit_data": unit_data,
+        "items": items_total,
     }
 
 
-def collect_briefs() -> list[dict]:
-    out = []
+def collect_briefs() -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
     daily_dir = ROOT / "briefs"
     weekly_dir = daily_dir / "weekly"
     for p in sorted(daily_dir.glob("*.md")):
@@ -404,21 +1002,916 @@ def collect_briefs() -> list[dict]:
     return out
 
 
-def annotate_sources(sources: dict, briefs: list[dict]) -> dict:
-    """Match brief citations to sources by longest URL prefix (S7).
+# === ATOMIC WRITE ======================================================
 
-    A source whose `url` prefix is a strict superset of another source's
-    prefix wins over the shorter one. Falls back to host match when no
-    source has a path-level prefix that fits the link.
+_WRITE_COUNTER = {"writes": 0, "skips": 0, "deleted": 0}
+_WRITTEN_PATHS: set[Path] = set()
+
+
+def atomic_write_text(path: Path, content: str) -> bool:
+    """Write `content` to `path` via temp + os.replace. Returns True if the
+    on-disk bytes changed (or the file did not previously exist), False if
+    `content` matched what was already on disk (no write). The bool drives
+    the determinism check at the end of the build."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _WRITTEN_PATHS.add(path.resolve())
+    encoded = content.encode("utf-8")
+    if path.exists():
+        try:
+            existing = path.read_bytes()
+        except OSError:
+            existing = b""
+        if existing == encoded:
+            _WRITE_COUNTER["skips"] += 1
+            return False
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(encoded)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    _WRITE_COUNTER["writes"] += 1
+    return True
+
+
+def atomic_write_bytes(path: Path, data: bytes) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _WRITTEN_PATHS.add(path.resolve())
+    if path.exists():
+        try:
+            existing = path.read_bytes()
+        except OSError:
+            existing = b""
+        if existing == data:
+            _WRITE_COUNTER["skips"] += 1
+            return False
+    fd, tmp = tempfile.mkstemp(prefix=path.name + ".", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    _WRITE_COUNTER["writes"] += 1
+    return True
+
+
+def prune_orphans(out: Path) -> None:
+    """Walk the output tree; delete any file we did not (re)write this
+    run. Empty directories left behind are removed too. Called at the
+    very end of a successful build so a partial / aborted build never
+    deletes anything."""
+    expected = _WRITTEN_PATHS
+    # Compare resolved paths to be safe.
+    for p in list(out.rglob("*")):
+        if p.is_file():
+            if p.resolve() not in expected:
+                try:
+                    p.unlink()
+                    _WRITE_COUNTER["deleted"] += 1
+                except OSError:
+                    pass
+    # Drop empty dirs (deepest first).
+    for p in sorted(out.rglob("*"), key=lambda x: -len(x.parts)):
+        if p.is_dir():
+            try:
+                p.rmdir()
+            except OSError:
+                pass  # not empty, fine
+
+
+# === HTML LAYOUT / TEMPLATES ===========================================
+
+UMAMI_SNIPPET = (
+    '<script defer src="https://cloud.umami.is/script.js" '
+    'data-website-id="abe09860-85be-4b06-8383-002f2e598061" '
+    'data-exclude-search="true"></script>'
+)
+
+CSP_META = (
+    '<meta http-equiv="Content-Security-Policy" content='
+    "\"default-src 'self'; script-src 'self' https://cloud.umami.is; "
+    "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+    "connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev; "
+    "object-src 'none'; base-uri 'self'; form-action 'none'; "
+    'upgrade-insecure-requests" />'
+)
+
+
+def base_template(
+    *,
+    title: str,
+    description: str,
+    body: str,
+    canonical: str,
+    site_url: str,
+    cachebust: str,
+    extra_head: str = "",
+    rel_alternate: list[tuple[str, str, str]] | None = None,
+    home_relative_prefix: str = "",
+) -> str:
+    """Return a complete HTML document.
+
+    `home_relative_prefix` is "../" * depth — used to point relative asset
+    references back to the site root from a nested path.
     """
-    prefixes: list[tuple[str, str, str]] = []  # (prefix, host, source_id)
+    rel_alternate = rel_alternate or []
+    alt_links = "".join(
+        f'<link rel="alternate" type="{_escape(t)}" title="{_escape(title_)}" href="{_escape(href)}" />'
+        for t, title_, href in rel_alternate
+    )
+    pfx = home_relative_prefix
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)" />
+{CSP_META}
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<title>{_escape(title)}</title>
+<meta name="description" content="{_escape(description)}" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="{_escape(canonical)}" />
+<meta property="og:site_name" content="CTI Briefs" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="{_escape(title)}" />
+<meta property="og:description" content="{_escape(description)}" />
+<meta property="og:url" content="{_escape(canonical)}" />
+<meta property="og:locale" content="en_US" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="{_escape(title)}" />
+<meta name="twitter:description" content="{_escape(description)}" />
+<link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />
+<link rel="alternate" type="application/rss+xml" title="CTI Briefs — Daily" href="{pfx}feed.xml" />
+<link rel="alternate" type="application/rss+xml" title="CTI Briefs — Weekly" href="{pfx}feed-weekly.xml" />
+<link rel="alternate" type="application/rss+xml" title="CTI Briefs — Per item" href="{pfx}feed-items.xml" />
+<link rel="sitemap" type="application/xml" href="{pfx}sitemap.xml" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23e85d75'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' font-family='ui-monospace,monospace' font-size='15' font-weight='700' fill='%230e1116'%3ECTI%3C/text%3E%3C/svg%3E" />
+{alt_links}
+{UMAMI_SNIPPET}
+<script defer src="{pfx}assets/js/theme.js?v={cachebust}"></script>
+<script defer src="{pfx}assets/vendor/filter.min.js?v={cachebust}"></script>
+{extra_head}
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="bar-inner">
+    <a class="brand" href="{pfx}" aria-label="Home — CTI Briefs">
+      <span class="brand-mark" aria-hidden="true">CTI</span>
+      <span class="brand-text"><strong>CTI&nbsp;Briefs</strong><small>Switzerland · Europe · Public sector</small></span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="{pfx}">Home</a>
+      <a href="{pfx}briefs/">Briefs</a>
+      <a href="{pfx}cves/">CVEs</a>
+      <a href="{pfx}topics/">Topics</a>
+      <a href="{pfx}sources/">Sources</a>
+      <a href="{pfx}ops/">Ops</a>
+      <a href="{pfx}about/">About</a>
+    </nav>
+    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle colour theme" title="Theme: system">
+      <svg class="theme-icon theme-icon--system" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 5h18v11H3z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 20h6M12 16v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <svg class="theme-icon theme-icon--light" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4" fill="currentColor"/><g stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></g></svg>
+      <svg class="theme-icon theme-icon--dark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 14a8 8 0 1 1-11-11 7 7 0 0 0 11 11z" fill="currentColor"/></svg>
+    </button>
+  </div>
+</header>
+<main id="main" class="main">{body}</main>
+<footer class="footer">
+  <div class="footer-inner">
+    <p><strong>AI-generated content, no human review.</strong> Every brief is produced autonomously by an LLM running as a Claude Code routine; every claim links to a primary source. <a href="{pfx}about/">How this works →</a></p>
+    <p class="meta">
+      <a href="{pfx}feed.xml">RSS — daily</a> · <a href="{pfx}feed-weekly.xml">weekly</a> · <a href="{pfx}feed-items.xml">per item</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>
+"""
+
+
+def render_tag_pill(tag: str, *, prefix: str = "") -> str:
+    return f'<a class="pill pill-tag" href="{prefix}tags/{_escape(tag)}/">{_escape(tag)}</a>'
+
+
+def render_region_pill(region: str, *, prefix: str = "") -> str:
+    return f'<a class="pill pill-region" href="{prefix}regions/{_escape(region)}/">{_escape(region)}</a>'
+
+
+def render_cve_pill(cve: str, *, prefix: str = "") -> str:
+    return f'<a class="pill pill-cve" href="{prefix}cves/{_escape(cve)}/">{_escape(cve)}</a>'
+
+
+def render_footer_html(footer: dict[str, Any], *, prefix: str = "") -> str:
+    """Structured HTML rendering of a per-item metadata footer (renders as
+    distinct badge / pill blocks instead of raw italic text). Used inside
+    every `<article>` on a brief page and in `<content:encoded>` for the
+    items RSS feed."""
+    parts: list[str] = []
+
+    # Sources (primary + additional)
+    if footer.get("sources"):
+        src_parts = []
+        for i, src in enumerate(footer["sources"]):
+            label = _escape(src.get("label", ""))
+            url = _escape(src.get("url", ""))
+            cls = "src-primary" if i == 0 else "src-additional"
+            src_parts.append(f'<a class="{cls}" href="{url}" rel="noopener noreferrer">{label}</a>')
+        parts.append('<span class="meta-sources"><strong>Sources:</strong> ' + " · ".join(src_parts) + "</span>")
+
+    if footer.get("regions"):
+        parts.append(
+            '<span class="meta-regions"><strong>Region:</strong> '
+            + " ".join(render_region_pill(r, prefix=prefix) for r in footer["regions"])
+            + "</span>"
+        )
+    if footer.get("tags"):
+        parts.append(
+            '<span class="meta-tags"><strong>Tags:</strong> '
+            + " ".join(render_tag_pill(t, prefix=prefix) for t in footer["tags"])
+            + "</span>"
+        )
+    if footer.get("cve"):
+        parts.append(
+            '<span class="meta-cve"><strong>CVE:</strong> '
+            + render_cve_pill(footer["cve"], prefix=prefix)
+            + "</span>"
+        )
+    if footer.get("cvss"):
+        parts.append(f'<span class="meta-cvss"><strong>CVSS:</strong> {_escape(footer["cvss"])}</span>')
+    if footer.get("vector"):
+        parts.append(f'<span class="meta-vector"><strong>Vector:</strong> {_escape(footer["vector"])}</span>')
+    if footer.get("auth"):
+        parts.append(f'<span class="meta-auth"><strong>Auth:</strong> {_escape(footer["auth"])}</span>')
+    if footer.get("status"):
+        parts.append(
+            '<span class="meta-status"><strong>Status:</strong> '
+            + ", ".join(_escape(s) for s in footer["status"])
+            + "</span>"
+        )
+
+    return '<aside class="item-footer">' + "".join(parts) + "</aside>"
+
+
+def render_brief_page(
+    brief: dict[str, Any],
+    *,
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+) -> str:
+    """Render the static HTML page for a single brief (daily or weekly)."""
+    sections_html: list[str] = []
+    # Toc + filter chips union
+    all_tags: set[str] = set()
+    all_regions: set[str] = set()
+    section_keys_in_brief: list[tuple[str, str]] = []  # (key, heading)
+    for sec in brief["sections"]:
+        section_keys_in_brief.append((sec["key"], sec["heading"]))
+        for it in sec["items"]:
+            if it["footer"]:
+                for t in it["footer"].get("tags", []):
+                    all_tags.add(t)
+                for r in it["footer"].get("regions", []):
+                    all_regions.add(r)
+
+    # Filter / TOC bar
+    chips_html = ""
+    if all_tags or all_regions or section_keys_in_brief:
+        tag_chips = "".join(
+            f'<button class="chip chip-tag" data-tag="{_escape(t)}" type="button">{_escape(t)}</button>'
+            for t in sorted(all_tags)
+        )
+        region_chips = "".join(
+            f'<button class="chip chip-region" data-region="{_escape(r)}" type="button">{_escape(r)}</button>'
+            for r in sorted(all_regions)
+        )
+        section_toggles = "".join(
+            f'<button class="chip chip-section" data-target="{_escape(slugify(h))}" type="button" aria-pressed="true">{_escape(h)}</button>'
+            for k, h in section_keys_in_brief
+        )
+        chips_html = f"""
+<div class="filter-bar" data-filter="brief">
+  <details class="filter-group" open>
+    <summary>Sections</summary>
+    <div class="chip-row chip-row-sections">{section_toggles}</div>
+  </details>
+  {('<details class="filter-group"><summary>Filter by region</summary><div class="chip-row chip-row-regions">' + region_chips + '</div></details>') if region_chips else ''}
+  {('<details class="filter-group"><summary>Filter by tag</summary><div class="chip-row chip-row-tags">' + tag_chips + '</div></details>') if tag_chips else ''}
+  <button type="button" class="filter-clear" data-action="clear-filters">Clear filters</button>
+  <p class="filter-status" data-role="filter-status" hidden></p>
+</div>
+"""
+
+    # Render each section
+    md_base = canonical
+    for sec in brief["sections"]:
+        skey = sec["key"]
+        heading = sec["heading"]
+        anchor = sec["anchor"]
+        section_inner: list[str] = []
+        if sec["items"]:
+            for it in sec["items"]:
+                tags_attr = " ".join(it["footer"].get("tags", [])) if it["footer"] else ""
+                regions_attr = " ".join(it["footer"].get("regions", [])) if it["footer"] else ""
+                # Render Markdown body
+                body_html = render_markdown(it["body_md"], base_url=md_base)
+                footer_html = render_footer_html(it["footer"], prefix=prefix) if it["footer"] else ""
+                article_id = it["anchor"]
+                slug = it["slug"]
+                section_inner.append(
+                    f'<article class="brief-item" '
+                    f'data-tags="{_escape(tags_attr)}" '
+                    f'data-regions="{_escape(regions_attr)}" '
+                    f'data-section="{_escape(skey)}" '
+                    f'id="{_escape(article_id)}">'
+                    f'<header class="item-header"><h3>'
+                    f'<a class="item-link" href="{prefix}items/{_escape(slug)}/">{_escape(it["heading"])}</a>'
+                    f'</h3></header>'
+                    f'<div class="item-body">{body_html}</div>'
+                    f'{footer_html}'
+                    f"</article>"
+                )
+        else:
+            # Render the section body straight as Markdown if no items
+            section_inner.append(render_markdown(sec["body_md"], base_url=md_base))
+
+        sections_html.append(
+            f'<section class="brief-section" data-section="{_escape(skey)}" id="{_escape(anchor)}">'
+            f'<h2><a class="section-anchor" href="#{_escape(anchor)}">{_escape(heading)}</a></h2>'
+            + "".join(section_inner)
+            + "</section>"
+        )
+
+    nav_html = (
+        f'<nav class="brief-meta">'
+        f'<p>Published {_escape(brief["publish_iso"][:10])}'
+        + (f' · Prompt v{_escape(brief["prompt_version"])}' if brief.get("prompt_version") else "")
+        + (f' · {_escape(brief["generated_by"])}' if brief.get("generated_by") else "")
+        + "</p>"
+        + "</nav>"
+    )
+
+    article = f"""
+<article class="brief brief-{_escape(brief['kind'])}" data-brief="{_escape(brief['name'])}">
+  <header class="brief-header">
+    <h1>{_escape(brief['title'])}</h1>
+    {nav_html}
+    <p class="brief-notice"><strong>AI-generated content — no human review.</strong> This brief was produced autonomously by an LLM. Every claim links inline to its primary source. Verify any operationally critical claim before acting.</p>
+  </header>
+  {chips_html}
+  <div class="brief-body">
+    {''.join(sections_html)}
+  </div>
+</article>
+"""
+    description = brief.get("summary") or f"{brief['kind'].capitalize()} CTI brief — {brief['title']}"
+    return base_template(
+        title=brief["title"],
+        description=description,
+        body=article,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_item_page(
+    item: dict[str, Any],
+    *,
+    brief: dict[str, Any],
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+) -> str:
+    """Render the static HTML page for a single brief item (one per
+    metadata-footer block)."""
+    body_html = render_markdown(item["body_md"], base_url=canonical)
+    footer_html = render_footer_html(item["footer"], prefix=prefix) if item["footer"] else ""
+    brief_url = f"{prefix}briefs/" + ("weekly/" if brief["kind"] == "weekly" else "") + f"{brief['name']}/"
+    description = (item["heading"][:280]) if item.get("heading") else f"Item from {brief['title']}"
+    body = f"""
+<article class="item single-item">
+  <nav class="breadcrumb"><a href="{prefix}">Home</a> · <a href="{prefix}briefs/">Briefs</a> · <a href="{_escape(brief_url)}">{_escape(brief['title'])}</a></nav>
+  <header><h1>{_escape(item['heading'])}</h1>
+    <p class="item-meta">From <a href="{_escape(brief_url)}#{_escape(item['anchor'])}">{_escape(brief['title'])}</a> · published {_escape(brief['publish_iso'][:10])}</p>
+  </header>
+  <div class="item-body">{body_html}</div>
+  {footer_html}
+</article>
+"""
+    return base_template(
+        title=item["heading"],
+        description=description,
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_cve_page(cve: dict[str, Any], *, site_url: str, cachebust: str, prefix: str, canonical: str) -> str:
+    title = f"{cve['id']} — {cve.get('title') or 'CTI brief coverage'}"
+    apps_html = (
+        '<ul class="appearances">'
+        + "".join(
+            f'<li><a href="{prefix}briefs/{_escape(b)}/">{_escape(b)}</a></li>'
+            for b in cve.get("appearances", [])
+        )
+        + "</ul>"
+    )
+    cites_html = (
+        '<ul class="citations">'
+        + "".join(
+            f'<li><a href="{_escape(c["url"])}" rel="noopener noreferrer">{_escape(c.get("label", c["url"]))}</a> '
+            f'<span class="hint">{_escape(c.get("host", ""))}</span></li>'
+            for c in cve.get("citations", [])
+        )
+        + "</ul>"
+    )
+    body = f"""
+<article class="cve">
+  <nav class="breadcrumb"><a href="{prefix}">Home</a> · <a href="{prefix}cves/">CVEs</a></nav>
+  <header><h1>{_escape(cve['id'])}</h1>
+    <p class="hint">{_escape(cve.get('title') or '')}</p>
+    {('<p><a class="primary-link" href="' + _escape(cve['primary_source_url']) + '" rel="noopener noreferrer">Primary source: ' + _escape(cve['primary_source_url']) + '</a></p>') if cve.get('primary_source_url') else ''}
+    <p class="hint">First seen: {_escape(cve.get('first_seen','?'))} · Last seen: {_escape(cve.get('last_seen','?'))}</p>
+  </header>
+  <section><h2>Appearances</h2>{apps_html}</section>
+  <section><h2>All cited sources for this CVE</h2>{cites_html}</section>
+</article>
+"""
+    return base_template(
+        title=title,
+        description=cve.get("title") or f"{cve['id']} — appearances across CTI briefs",
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_source_page(
+    source: dict[str, Any], *, site_url: str, cachebust: str, prefix: str, canonical: str
+) -> str:
+    title = f"{source.get('publisher', source['id'])} — Source"
+    apps_html = (
+        '<ul class="appearances">'
+        + "".join(
+            f'<li><a href="{prefix}briefs/{_escape(b)}/">{_escape(b)}</a></li>'
+            for b in source.get("appearances", [])
+        )
+        + "</ul>"
+    )
+    cats = ", ".join(source.get("category", []))
+    body = f"""
+<article class="source">
+  <nav class="breadcrumb"><a href="{prefix}">Home</a> · <a href="{prefix}sources/">Sources</a></nav>
+  <header><h1>{_escape(source.get('publisher', source['id']))}</h1>
+    <p class="hint"><a href="{_escape(source.get('url', ''))}" rel="noopener noreferrer">{_escape(source.get('url', ''))}</a></p>
+    <p class="hint">Reliability: {_escape(source.get('reliability', '?'))} · Status: {_escape(source.get('status', '?'))} · Category: {_escape(cats)}</p>
+  </header>
+  <section><h2>Appearances</h2>{apps_html}</section>
+</article>
+"""
+    return base_template(
+        title=title,
+        description=f"{source.get('publisher', source['id'])} — {cats}",
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_topic_page(topic: dict[str, Any], *, site_url: str, cachebust: str, prefix: str, canonical: str) -> str:
+    title = f"{topic.get('title', topic['key'])} — Topic"
+    apps_html = (
+        '<ul class="appearances">'
+        + "".join(
+            f'<li><a href="{prefix}briefs/{_escape(b)}/">{_escape(b)}</a></li>'
+            for b in topic.get("briefs", [])
+        )
+        + "</ul>"
+    )
+    cites_html = (
+        '<ul class="citations">'
+        + "".join(
+            f'<li><a href="{_escape(c["url"])}" rel="noopener noreferrer">{_escape(c.get("label", c["url"]))}</a></li>'
+            for c in topic.get("citations", [])
+        )
+        + "</ul>"
+    )
+    body = f"""
+<article class="topic">
+  <nav class="breadcrumb"><a href="{prefix}">Home</a> · <a href="{prefix}topics/">Topics</a></nav>
+  <header><h1>{_escape(topic.get('title', topic['key']))}</h1>
+    <p class="hint">Type: {_escape(topic.get('type', '?'))} · First covered {_escape(topic.get('first_covered', '?'))} · Last covered {_escape(topic.get('last_covered', '?'))}</p>
+    {('<p class="hint">Verification flags: ' + ", ".join(_escape(f) for f in topic.get('flags', [])) + '</p>') if topic.get('flags') else ''}
+  </header>
+  <section><h2>Briefs that mentioned this topic</h2>{apps_html}</section>
+  <section><h2>Cited sources</h2>{cites_html}</section>
+</article>
+"""
+    return base_template(
+        title=title,
+        description=topic.get("title", topic["key"]),
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_index_page(
+    *,
+    title: str,
+    intro: str,
+    items: list[tuple[str, str, str]],  # (label, href, hint)
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+    description: str,
+) -> str:
+    """Generic listing page."""
+    rows = "".join(
+        f'<li class="index-row"><a class="index-label" href="{_escape(href)}">{_escape(label)}</a>'
+        + (f' <span class="index-hint">{_escape(hint)}</span>' if hint else "")
+        + "</li>"
+        for label, href, hint in items
+    )
+    body = f"""
+<section class="index-page">
+  <h1>{_escape(title)}</h1>
+  <p class="intro">{_escape(intro)}</p>
+  <ul class="index-list">{rows}</ul>
+</section>
+"""
+    return base_template(
+        title=title,
+        description=description,
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_home_page(
+    latest: dict[str, Any] | None,
+    recent_daily: list[dict[str, Any]],
+    recent_weekly: list[dict[str, Any]],
+    *,
+    site_url: str,
+    cachebust: str,
+    canonical: str,
+) -> str:
+    pfx = ""  # home is at /
+    latest_block = ""
+    if latest:
+        url = f"briefs/{'weekly/' if latest['kind'] == 'weekly' else ''}{latest['name']}/"
+        tldr_html = ""
+        if latest.get("tldr"):
+            tldr_html = "<ul class='tldr'>" + "".join(
+                f"<li>{render_inline(t, base_url=canonical)}</li>" for t in latest["tldr"][:6]
+            ) + "</ul>"
+        latest_block = f"""
+<section class="home-latest">
+  <h2><a href="{_escape(url)}">{_escape(latest['title'])}</a></h2>
+  <p class="hint">Published {_escape(latest['publish_iso'][:10])}</p>
+  {tldr_html}
+  <p><a class="cta" href="{_escape(url)}">Read the full brief →</a></p>
+</section>
+"""
+
+    def list_block(title_: str, items: list[dict[str, Any]], kind_path: str) -> str:
+        rows = "".join(
+            f'<li><a href="{_escape("briefs/" + kind_path + b["name"] + "/")}">{_escape(b["title"])}</a> '
+            f'<span class="hint">{_escape(b["publish_iso"][:10])}</span></li>'
+            for b in items[:10]
+        )
+        return f"<section class='home-list'><h3>{_escape(title_)}</h3><ul>{rows}</ul></section>"
+
+    recent_html = ""
+    if recent_daily:
+        recent_html += list_block("Recent daily briefs", recent_daily, "")
+    if recent_weekly:
+        recent_html += list_block("Recent weekly summaries", recent_weekly, "weekly/")
+
+    body = f"""
+<section class="home-hero">
+  <h1>CTI Briefs</h1>
+  <p class="lede">Daily and weekly cyber threat intelligence — Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.</p>
+</section>
+{latest_block}
+{recent_html}
+<script>
+(function(){{
+  // Bootstrap redirect for the legacy SPA hash routes. One-time, indexed
+  // hash URLs that crawlers may have picked up get a clean URL.
+  var h = window.location.hash || "";
+  if (!h) return;
+  var m;
+  m = h.match(/^#\\/briefs\\/(\\d{{4}}-\\d{{2}}-\\d{{2}})$/);
+  if (m) {{ window.location.replace("briefs/" + m[1] + "/"); return; }}
+  m = h.match(/^#\\/briefs\\/(\\d{{4}}-W\\d{{2}})$/);
+  if (m) {{ window.location.replace("briefs/weekly/" + m[1] + "/"); return; }}
+  m = h.match(/^#\\/cves\\/(CVE-[0-9]+-[0-9]+)$/);
+  if (m) {{ window.location.replace("cves/" + m[1] + "/"); return; }}
+  m = h.match(/^#\\/sources\\/(.+)$/);
+  if (m) {{ window.location.replace("sources/" + decodeURIComponent(m[1]) + "/"); return; }}
+  m = h.match(/^#\\/topics\\/(.+)$/);
+  if (m) {{ window.location.replace("topics/" + decodeURIComponent(m[1]) + "/"); return; }}
+  m = h.match(/^#\\/(briefs|cves|topics|sources|ops|about)$/);
+  if (m) {{ window.location.replace(m[1] + "/"); return; }}
+}})();
+</script>
+"""
+    return base_template(
+        title="CTI Briefs — Switzerland, Europe & Public Sector",
+        description="Daily and weekly cyber threat intelligence (CTI) briefs covering Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.",
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=pfx,
+    )
+
+
+def render_static_doc(
+    *, md_text: str, title: str, description: str, prefix: str, canonical: str, site_url: str, cachebust: str
+) -> str:
+    body = f"""
+<article class="static-doc">
+  {render_markdown(md_text, base_url=canonical)}
+</article>
+"""
+    return base_template(
+        title=title,
+        description=description,
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+def render_ops_page(
+    run_log: dict[str, Any] | None, *, prefix: str, site_url: str, cachebust: str, canonical: str
+) -> str:
+    if not run_log or not run_log.get("runs"):
+        body = "<section><h1>Operations</h1><p>No run log available yet.</p></section>"
+    else:
+        rows = []
+        for r in reversed(run_log["runs"][-30:]):
+            rows.append(
+                f'<tr><td>{_escape(r.get("date","?"))}</td>'
+                f'<td>{_escape(r.get("model","?"))}</td>'
+                f'<td>{_escape(str(r.get("items_published","")))}</td>'
+                f'<td>{_escape(r.get("deep_dive") or "—")}</td></tr>'
+            )
+        body = (
+            "<section class='ops-page'><h1>Operations</h1>"
+            "<table class='ops-runs'><thead><tr><th>Date</th><th>Model</th><th>Items</th><th>Deep dive</th></tr></thead><tbody>"
+            + "".join(rows)
+            + "</tbody></table></section>"
+        )
+    return base_template(
+        title="Operations dashboard — CTI Briefs",
+        description="Recent runs, sub-agent allocation, and source maintenance signals.",
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+# === RSS BUILDERS ======================================================
+
+def _xml_validate(content: str) -> list[str]:
+    try:
+        ET.fromstring(content)
+        return []
+    except ET.ParseError as e:
+        return [str(e)]
+
+
+def _channel_rss(
+    *,
+    title: str,
+    link: str,
+    self_link: str,
+    description: str,
+    last_build: str,
+    items_xml: str,
+) -> str:
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<rss version="2.0" '
+        'xmlns:atom="http://www.w3.org/2005/Atom" '
+        'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        'xmlns:content="http://purl.org/rss/1.0/modules/content/">'
+        '<channel>'
+        f'<title>{_escape(title)}</title>'
+        f'<link>{_escape(link)}</link>'
+        f'<atom:link href="{_escape(self_link)}" rel="self" type="application/rss+xml"/>'
+        f'<description>{_escape(description)}</description>'
+        '<language>en</language>'
+        f'<lastBuildDate>{last_build}</lastBuildDate>'
+        f'{items_xml}'
+        '</channel></rss>'
+    )
+
+
+def _fallback_lastbuild(briefs: list[dict[str, Any]]) -> datetime:
+    """If a feed has no entries, use the most-recent input timestamp across
+    *all* briefs as the lastBuildDate. Deterministic and meaningful (the
+    site as a whole was last built at this moment) without falling back to
+    `now()`."""
+    if not briefs:
+        # No briefs at all — extremely unlikely. Use a stable epoch so
+        # the build is still deterministic.
+        return datetime(2000, 1, 1, tzinfo=timezone.utc)
+    return max(b["publish_ts"] for b in briefs)
+
+
+def build_daily_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[str, datetime]:
+    """Daily feed: one item per daily brief. Last 30."""
+    daily = [b for b in briefs if b["kind"] == "daily"][:FEED_DAILY_MAX]
+    items_xml: list[str] = []
+    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
+    for b in daily:
+        url = f"{site_url}briefs/{b['name']}/"
+        # Render full brief HTML body for content:encoded.
+        body_md = b["text"]
+        # Strip the H1 line + blockquote notice from the rendered body so the
+        # feed shows the actual content. Keep TL;DR onwards.
+        body_md_clean = re.sub(r"\A# .+?\n+(> .+?\n+)?\*\*Generated by:\*\*[^\n]*\n+", "", body_md)
+        body_html = render_markdown(body_md_clean, base_url=url)
+        # TL;DR -> description
+        if b.get("tldr"):
+            desc_html = "<ul>" + "".join(f"<li>{render_inline(t, base_url=url)}</li>" for t in b["tldr"][:6]) + "</ul>"
+        else:
+            desc_html = f"<p>{_escape(b.get('summary',''))}</p>"
+        cats = "".join(f"<category>{_escape(c)}</category>" for c in b.get("cves", [])[:8])
+        items_xml.append(
+            f"<item>"
+            f"<title>{_escape(b['title'])}</title>"
+            f"<link>{_escape(url)}</link>"
+            f'<guid isPermaLink="true">{_escape(url)}</guid>'
+            f"<pubDate>{b['publish_rfc822']}</pubDate>"
+            f"<dc:date>{_escape(b['publish_iso'])}</dc:date>"
+            f"{cats}"
+            f"<description><![CDATA[{desc_html}]]></description>"
+            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"</item>"
+        )
+        if b["publish_ts"] > most_recent:
+            most_recent = b["publish_ts"]
+    feed = _channel_rss(
+        title="CTI Briefs — Daily (Switzerland, Europe & Public Sector)",
+        link=site_url,
+        self_link=site_url + "feed.xml",
+        description="Daily cyber threat intelligence briefs covering Switzerland, Europe, and the public sector — autonomously generated, source-linked, IOC-free.",
+        last_build=rfc822(most_recent if daily else _fallback_lastbuild(briefs)),
+        items_xml="".join(items_xml),
+    )
+    return feed, most_recent
+
+
+def build_weekly_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[str, datetime]:
+    weekly = [b for b in briefs if b["kind"] == "weekly"][:FEED_WEEKLY_MAX]
+    items_xml: list[str] = []
+    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
+    for b in weekly:
+        url = f"{site_url}briefs/weekly/{b['name']}/"
+        body_md = b["text"]
+        body_md_clean = re.sub(r"\A# .+?\n+(> .+?\n+)?\*\*Generated by:\*\*[^\n]*\n+", "", body_md)
+        body_html = render_markdown(body_md_clean, base_url=url)
+        desc_html = f"<p>{_escape(b.get('summary',''))}</p>" if b.get("summary") else f"<p>Weekly CTI summary — {_escape(b['name'])}</p>"
+        cats = "".join(f"<category>{_escape(c)}</category>" for c in b.get("cves", [])[:8])
+        items_xml.append(
+            f"<item>"
+            f"<title>{_escape(b['title'])}</title>"
+            f"<link>{_escape(url)}</link>"
+            f'<guid isPermaLink="true">{_escape(url)}</guid>'
+            f"<pubDate>{b['publish_rfc822']}</pubDate>"
+            f"<dc:date>{_escape(b['publish_iso'])}</dc:date>"
+            f"{cats}"
+            f"<description><![CDATA[{desc_html}]]></description>"
+            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"</item>"
+        )
+        if b["publish_ts"] > most_recent:
+            most_recent = b["publish_ts"]
+    feed = _channel_rss(
+        title="CTI Briefs — Weekly (Switzerland, Europe & Public Sector)",
+        link=site_url,
+        self_link=site_url + "feed-weekly.xml",
+        description="Weekly cyber threat intelligence summaries — multi-day campaigns, sector patterns, policy horizon.",
+        last_build=rfc822(most_recent if weekly else _fallback_lastbuild(briefs)),
+        items_xml="".join(items_xml),
+    )
+    return feed, most_recent
+
+
+def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[str, datetime]:
+    """Per-item feed: one entry per brief item that carried a metadata footer."""
+    item_entries: list[dict[str, Any]] = []
+    for b in briefs:
+        for sec in b["sections"]:
+            # TL;DR + Verification Notes do not become items.
+            if sec["key"] in ("tldr", "verification-notes"):
+                continue
+            for it in sec["items"]:
+                if not it["footer"]:
+                    continue
+                slug = it["slug"]
+                url = f"{site_url}items/{slug}/"
+                item_entries.append(
+                    {
+                        "url": url,
+                        "title": it["heading"],
+                        "publish_ts": b["publish_ts"],
+                        "publish_rfc822": b["publish_rfc822"],
+                        "publish_iso": b["publish_iso"],
+                        "body_md": it["body_md"],
+                        "footer": it["footer"],
+                        "section_key": sec["key"],
+                    }
+                )
+    item_entries.sort(key=lambda x: x["publish_ts"], reverse=True)
+    item_entries = item_entries[:FEED_ITEMS_MAX]
+
+    items_xml: list[str] = []
+    most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
+    for it in item_entries:
+        body_html = render_markdown(it["body_md"], base_url=it["url"]) + render_footer_html(it["footer"], prefix=site_url)
+        # categories: tags + regions + status flags + cve id
+        cat_parts = list(it["footer"].get("tags", [])) + list(it["footer"].get("regions", [])) + list(it["footer"].get("status", []))
+        if it["footer"].get("cve"):
+            cat_parts.append(it["footer"]["cve"])
+        cats = "".join(f"<category>{_escape(c)}</category>" for c in cat_parts[:16])
+        # description = first paragraph of body
+        desc_md = it["body_md"].split("\n\n", 1)[0] if it["body_md"] else ""
+        desc_html = render_markdown(desc_md, base_url=it["url"])
+        items_xml.append(
+            f"<item>"
+            f"<title>{_escape(it['title'])}</title>"
+            f"<link>{_escape(it['url'])}</link>"
+            f'<guid isPermaLink="true">{_escape(it['url'])}</guid>'
+            f"<pubDate>{it['publish_rfc822']}</pubDate>"
+            f"<dc:date>{_escape(it['publish_iso'])}</dc:date>"
+            f"{cats}"
+            f"<description><![CDATA[{desc_html}]]></description>"
+            f"<content:encoded><![CDATA[{body_html}]]></content:encoded>"
+            f"</item>"
+        )
+        if it["publish_ts"] > most_recent:
+            most_recent = it["publish_ts"]
+    feed = _channel_rss(
+        title="CTI Briefs — Per item",
+        link=site_url,
+        self_link=site_url + "feed-items.xml",
+        description="Individual content blocks from CTI briefs (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive).",
+        last_build=rfc822(most_recent if item_entries else _fallback_lastbuild(briefs)),
+        items_xml="".join(items_xml),
+    )
+    return feed, most_recent
+
+
+# === SOURCE / CVE / TOPIC ANNOTATION ===================================
+
+def annotate_sources(sources: dict[str, Any], briefs: list[dict[str, Any]]) -> dict[str, Any]:
+    prefixes: list[tuple[str, str, str]] = []
     for s in sources["sources"]:
         pfx = url_prefix_of(s["url"])
         host = host_of(s["url"])
         if pfx or host:
             prefixes.append((pfx, host, s["id"]))
-
-    # Longest prefix first. Empty-prefix entries sort to the bottom.
     prefixes.sort(key=lambda t: (len(t[0]), len(t[1])), reverse=True)
 
     src_appearances: dict[str, set[str]] = defaultdict(set)
@@ -429,13 +1922,11 @@ def annotate_sources(sources: dict, briefs: list[dict]) -> dict:
             if not link_pfx and not link_host:
                 continue
             best_id = None
-            # Prefer URL-prefix match.
             for pfx, host, sid in prefixes:
                 if pfx and link_pfx.startswith(pfx):
                     best_id = sid
                     break
             if best_id is None:
-                # Fall back to host match (exact or subdomain).
                 for _, host, sid in prefixes:
                     if not host:
                         continue
@@ -444,34 +1935,24 @@ def annotate_sources(sources: dict, briefs: list[dict]) -> dict:
                         break
             if best_id:
                 src_appearances[best_id].add(b["name"])
-
     enriched = []
     for s in sources["sources"]:
         appearances = sorted(src_appearances.get(s["id"], []), reverse=True)
         enriched.append({**s, "appearances": appearances})
-
-    return {
-        **sources,
-        "sources": enriched,
-    }
+    return {**sources, "sources": enriched}
 
 
-def annotate_cves(cves: dict, briefs: list[dict], sources: dict | None = None) -> dict:
+def annotate_cves(cves: dict[str, Any], briefs: list[dict[str, Any]], sources: dict[str, Any]) -> dict[str, Any]:
     by_id: dict[str, set[str]] = defaultdict(set)
-    # citations_by_id[cve_id][url] = {label, url, host, prefix, source_id?, briefs: [...]}
-    citations_by_id: dict[str, dict[str, dict]] = defaultdict(dict)
+    citations_by_id: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
 
-    # Pre-build the source-prefix table so we can attach a source_id to every
-    # citation (lets the CVE detail page link the citation back to the source's
-    # entry in #/sources/<id>).
     src_prefixes: list[tuple[str, str, str]] = []
-    if sources is not None:
-        for s in sources.get("sources", []):
-            pfx = url_prefix_of(s["url"])
-            host = host_of(s["url"])
-            if pfx or host:
-                src_prefixes.append((pfx, host, s["id"]))
-        src_prefixes.sort(key=lambda t: (len(t[0]), len(t[1])), reverse=True)
+    for s in sources.get("sources", []):
+        pfx = url_prefix_of(s["url"])
+        host = host_of(s["url"])
+        if pfx or host:
+            src_prefixes.append((pfx, host, s["id"]))
+    src_prefixes.sort(key=lambda t: (len(t[0]), len(t[1])), reverse=True)
 
     def resolve_source(host: str, prefix: str) -> str | None:
         for pfx, _h, sid in src_prefixes:
@@ -507,13 +1988,13 @@ def annotate_cves(cves: dict, briefs: list[dict], sources: dict | None = None) -
     seen_ids = set()
     for c in cves.get("cves", []):
         appearances = sorted(by_id.get(c["id"], []), reverse=True)
-        cites = sorted(citations_by_id.get(c["id"], {}).values(), key=lambda x: x["host"] or x["url"])
+        cites = sorted(citations_by_id.get(c["id"], {}).values(), key=lambda x: x.get("host") or x["url"])
         enriched.append({**c, "appearances": appearances, "citations": cites})
         seen_ids.add(c["id"])
     for cid, briefs_set in by_id.items():
         if cid in seen_ids:
             continue
-        cites = sorted(citations_by_id.get(cid, {}).values(), key=lambda x: x["host"] or x["url"])
+        cites = sorted(citations_by_id.get(cid, {}).values(), key=lambda x: x.get("host") or x["url"])
         enriched.append(
             {
                 "id": cid,
@@ -529,43 +2010,19 @@ def annotate_cves(cves: dict, briefs: list[dict], sources: dict | None = None) -
     return {**cves, "cves": enriched}
 
 
-def annotate_topics(items: dict, briefs: list[dict], sources: dict | None = None) -> dict:
-    """Normalize, attach `briefs[]`, fold per-item verification flags from
-    the brief markdown back onto each topic (S9), and — same as for CVEs —
-    aggregate every cited source from the paragraphs/bullets/table-rows
-    that mention the topic across all briefs. The Topic detail page uses
-    this list to surface "All cited sources for this topic" so the reader
-    can pivot directly to the underlying article.
-
-    Topic-to-paragraph matching:
-    - For type=`cve` topics, the topic key is a `CVE-YYYY-NNNNN` id and
-      we reuse the existing CVE-id substring index (already accurate).
-    - For other types (actor, campaign, incident, tool, annual-report),
-      we match on the topic title's primary phrase: the part before
-      ` — ` or `: ` if present, otherwise the whole title. Case-insensitive
-      substring match against each unit's text.
-
-    The same "skip a unit if it mentions more than 3 distinct CVEs"
-    summary-recap guard applies, with an analogous guard "skip a unit
-    that matches more than 3 distinct topics" so the § 7 verification
-    summary line never leaks every source under every topic.
-    """
-    # Index brief flags by (brief_name, normalised_heading)
+def annotate_topics(items: dict[str, Any], briefs: list[dict[str, Any]], sources: dict[str, Any]) -> dict[str, Any]:
     flag_lookup: dict[str, list[tuple[str, str]]] = defaultdict(list)
     for b in briefs:
         for heading, flags in b.get("item_flags", {}).items():
             flag_lookup[b["name"]].append((heading.lower(), flags[0] if flags else ""))
 
-    # Pre-build the source-prefix table so we can attach a source_id to
-    # every citation (mirrors the CVE-detail logic).
     src_prefixes: list[tuple[str, str, str]] = []
-    if sources is not None:
-        for s in sources.get("sources", []):
-            pfx = url_prefix_of(s["url"])
-            host = host_of(s["url"])
-            if pfx or host:
-                src_prefixes.append((pfx, host, s["id"]))
-        src_prefixes.sort(key=lambda t: (len(t[0]), len(t[1])), reverse=True)
+    for s in sources.get("sources", []):
+        pfx = url_prefix_of(s["url"])
+        host = host_of(s["url"])
+        if pfx or host:
+            src_prefixes.append((pfx, host, s["id"]))
+    src_prefixes.sort(key=lambda t: (len(t[0]), len(t[1])), reverse=True)
 
     def resolve_source(host: str, prefix: str) -> str | None:
         for pfx, _h, sid in src_prefixes:
@@ -578,41 +2035,28 @@ def annotate_topics(items: dict, briefs: list[dict], sources: dict | None = None
                 return sid
         return None
 
-    # Build a per-topic match-phrase. Used as case-insensitive substring
-    # against each unit. We also keep a separate `cves_in_topic` set for
-    # CVE-typed topics to reuse the CVE-id substring index.
-    def topic_phrase(t: dict) -> str:
+    def topic_phrase(t: dict[str, Any]) -> str:
         title = (t.get("title") or "").strip()
         if not title:
             return (t.get("key") or "").strip()
-        # Trim at em-dash or colon — keeps just the proper noun / id.
         for sep in (" — ", " – ", ": "):
             if sep in title:
                 title = title.split(sep, 1)[0]
                 break
         return title.strip()
 
-    topic_match: list[dict] = []
-    for it in items["items"]:
+    topic_match: list[dict[str, Any]] = []
+    for it in items.get("items", []):
         ttype = (it.get("type") or "").lower()
         phrase = topic_phrase(it).lower()
-        cve_match = None
-        if ttype == "cve":
-            cve_match = (it.get("key") or "").upper()
-        topic_match.append({
-            "key": it["key"],
-            "phrase": phrase,
-            "cve_match": cve_match,
-        })
+        cve_match = (it.get("key") or "").upper() if ttype == "cve" else None
+        topic_match.append({"key": it["key"], "phrase": phrase, "cve_match": cve_match})
 
-    # Aggregate citations per topic by walking each brief's unit_data.
-    # citations_by_key[topic_key][url] = {label, url, host, source_id, briefs}
-    citations_by_key: dict[str, dict[str, dict]] = defaultdict(dict)
+    citations_by_key: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
     for b in briefs:
         for unit in b.get("unit_data") or []:
             text_lower = unit["text_lower"]
             cves_in_unit = unit["cves"]
-            # Skip the >3-CVE summary recap line.
             if len(cves_in_unit) > 3:
                 continue
             matched_keys: list[str] = []
@@ -639,7 +2083,7 @@ def annotate_topics(items: dict, briefs: list[dict], sources: dict | None = None
                     }
 
     enriched = []
-    for it in items["items"]:
+    for it in items.get("items", []):
         names = []
         flags: set[str] = set()
         title_norm = (it.get("title") or "").lower()
@@ -658,275 +2102,132 @@ def annotate_topics(items: dict, briefs: list[dict], sources: dict | None = None
                     elif key_norm and key_norm in heading_lower:
                         flags.add(flag)
         names = sorted(set(names), reverse=True)
-        cites = sorted(citations_by_key.get(it["key"], {}).values(), key=lambda x: x["host"] or x["url"])
+        cites = sorted(citations_by_key.get(it["key"], {}).values(), key=lambda x: x.get("host") or x["url"])
         enriched.append({**it, "briefs": names, "flags": sorted(flags), "citations": cites})
     enriched.sort(key=lambda i: i.get("last_covered", ""), reverse=True)
     return {**items, "items": enriched}
 
 
-def build_search_index(
-    briefs: list[dict],
-    cves: dict,
-    topics: dict,
-    sources: dict,
-) -> list[dict]:
-    """Flat unified search index. Each entry:
-        {kind, id, title, hint, briefs, route, tags}
-    """
-    idx = []
+# === SITE ASSETS COPY ==================================================
 
-    for b in briefs:
-        hint = " · ".join(b["tldr"][:2])[:240] if b["tldr"] else ""
-        idx.append(
-            {
-                "kind": "brief",
-                "id": b["name"],
-                "title": b["title"],
-                "hint": hint or f"{b['kind'].capitalize()} brief · {b['items']} items",
-                "tags": [b["kind"]] + b["cves"][:6],
-                "route": f"#/briefs/{b['name']}",
-            }
-        )
-        # Section-level entries (S5) — every H3 inside the brief.
-        for sub in b.get("subsections", []):
-            idx.append({
-                "kind": "section",
-                "id": f"{b['name']}#{sub['anchor']}",
-                "title": sub["heading"],
-                "hint": f"in {b['title']}",
-                "tags": [b["kind"]],
-                "route": f"#/briefs/{b['name']}?at={urllib.parse.quote(sub['anchor'], safe='')}",
-            })
-
-    for c in cves["cves"]:
-        idx.append(
-            {
-                "kind": "cve",
-                "id": c["id"],
-                "title": c["id"],
-                "hint": c.get("title", "")[:240],
-                "tags": [],
-                "route": f"#/cves/{c['id']}",
-            }
-        )
-
-    for t in topics["items"]:
-        idx.append(
-            {
-                "kind": "topic",
-                "id": t["key"],
-                "title": t["title"],
-                "hint": f"{t['type']} · last covered {t.get('last_covered','?')}",
-                "tags": [t["type"]] + (t.get("flags") or []),
-                "route": f"#/topics/{urllib.parse.quote(t['key'], safe='')}",
-            }
-        )
-
-    for s in sources["sources"]:
-        cats = ", ".join(s.get("category", []))
-        idx.append(
-            {
-                "kind": "source",
-                "id": s["id"],
-                "title": s["publisher"],
-                "hint": f"{s['reliability']} · {cats}",
-                "tags": s.get("category", []) + [s.get("reliability", ""), s.get("status", "")],
-                "route": f"#/sources/{urllib.parse.quote(s['id'], safe='')}",
-            }
-        )
-
-    return idx
+def copy_assets() -> None:
+    """Copy site/assets to _site/assets via atomic_write_bytes so unchanged
+    files aren't re-written. Strip sourceMappingURL from vendored libs in
+    the deployed copy (kept pristine in source tree for HASHES integrity
+    verification)."""
+    src = SITE / "assets"
+    dst = OUT / "assets"
+    sourcemap_re = re.compile(rb"\n?//# sourceMappingURL=[^\n]+", re.MULTILINE)
+    for src_path in src.rglob("*"):
+        if not src_path.is_file():
+            continue
+        rel = src_path.relative_to(src)
+        dst_path = dst / rel
+        body = src_path.read_bytes()
+        if src_path.suffix == ".js" and src_path.parent.name == "vendor":
+            cleaned = sourcemap_re.sub(b"", body)
+            if cleaned != body:
+                body = cleaned
+        atomic_write_bytes(dst_path, body)
 
 
-def write_rss_feed(briefs: list[dict], site_url: str, out_path: Path) -> None:
-    """RSS 2.0 feed. Most-recent 30 briefs (S1).
-
-    Each item links to the SPA route #/briefs/<name>; the description
-    is the TL;DR bullets joined with HTML line breaks.
-    """
-    site_url = site_url.rstrip("/") + "/"
-    now = datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
-
-    def item_xml(b: dict) -> str:
-        link = f"{site_url}#/briefs/{b['name']}"
-        guid = link
-        # pubDate: midnight UTC of the brief date (best-effort)
-        pub = ""
-        if re.match(r"^\d{4}-\d{2}-\d{2}$", b["name"]):
-            try:
-                dt = datetime.strptime(b["name"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-                pub = dt.strftime("%a, %d %b %Y 00:00:00 +0000")
-            except Exception:
-                pass
-        elif re.match(r"^\d{4}-W\d{2}$", b["name"]):
-            try:
-                # ISO week: pick the Monday of that week
-                yr, wk = b["name"].split("-W")
-                dt = datetime.strptime(f"{yr}-W{wk}-1", "%G-W%V-%u").replace(tzinfo=timezone.utc)
-                pub = dt.strftime("%a, %d %b %Y 00:00:00 +0000")
-            except Exception:
-                pass
-        body_lines = [f"<li>{html_mod.escape(line)}</li>" for line in b.get("tldr", [])[:6]]
-        body = ("<ul>" + "".join(body_lines) + "</ul>") if body_lines else f"<p>{html_mod.escape(b['kind'])} brief · {b.get('items', 0)} items</p>"
-        title = html_mod.escape(b["title"])
-        cats = "".join(f"<category>{html_mod.escape(c)}</category>" for c in b.get("cves", [])[:8])
-        return (
-            "<item>"
-            f"<title>{title}</title>"
-            f"<link>{html_mod.escape(link)}</link>"
-            f"<guid isPermaLink=\"true\">{html_mod.escape(guid)}</guid>"
-            + (f"<pubDate>{pub}</pubDate>" if pub else "")
-            + cats
-            + f"<description><![CDATA[{body}]]></description>"
-            + "</item>"
-        )
-
-    items_xml = "".join(item_xml(b) for b in briefs[:30])
-    feed = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">'
-        '<channel>'
-        '<title>CTI Briefs — Switzerland, Europe &amp; Public Sector</title>'
-        f'<link>{html_mod.escape(site_url)}</link>'
-        f'<atom:link href="{html_mod.escape(site_url + "feed.xml")}" rel="self" type="application/rss+xml"/>'
-        '<description>Daily and weekly cyber threat intelligence briefs covering Switzerland, Europe, and the public sector — autonomously generated, source-linked, IOC-free.</description>'
-        '<language>en</language>'
-        f'<lastBuildDate>{now}</lastBuildDate>'
-        f'{items_xml}'
-        '</channel></rss>'
-    )
-    out_path.write_text(feed, encoding="utf-8")
+def cachebust_value() -> str:
+    """A short content-hashed fingerprint over the JS + CSS assets +
+    taxonomy. Deterministic across runs with the same inputs."""
+    h = hashlib.sha256()
+    for p in sorted((SITE / "assets").rglob("*")):
+        if p.is_file() and p.suffix in (".js", ".css"):
+            h.update(p.relative_to(SITE).as_posix().encode("utf-8"))
+            h.update(b"\x00")
+            h.update(p.read_bytes())
+            h.update(b"\x00")
+    tax = SITE / "taxonomy.yaml"
+    if tax.exists():
+        h.update(tax.read_bytes())
+    return h.hexdigest()[:10]
 
 
-def _ssl_context():
-    """Build an SSL context with a CA bundle that works on macOS framework
-    Python (which ships without system CAs by default). Tries SSL_CERT_FILE
-    env, then certifi if installed, then common system paths."""
-    import ssl  # noqa: PLC0415
-    cafile = os.environ.get("SSL_CERT_FILE")
-    if cafile and os.path.exists(cafile):
-        return ssl.create_default_context(cafile=cafile)
-    try:
-        import certifi  # noqa: PLC0415
-        return ssl.create_default_context(cafile=certifi.where())
-    except ImportError:
-        pass
-    for fallback in ("/etc/ssl/cert.pem", "/etc/pki/tls/cert.pem", "/etc/ssl/certs/ca-certificates.crt"):
-        if os.path.exists(fallback):
-            return ssl.create_default_context(cafile=fallback)
-    return ssl.create_default_context()
+# === SITEMAP / ROBOTS ==================================================
 
-
-def fetch_github_repo_meta(repo: str) -> dict:
-    """Fetch a small, public read-only summary of the GitHub repo at build
-    time. Returns `{stars, forks, html_url}`. Fails open: a network or
-    rate-limit error returns an empty dict and the topbar widget falls
-    back to just the icon-without-count.
-
-    This is a *build-time* call, not a per-visitor call — the result is
-    baked into `data/site.json` and refreshed on every site deploy.
-    Visitors never hit api.github.com from their browser, so the badge
-    leaks no per-visit information."""
-    url = f"https://api.github.com/repos/{repo}"
-    headers = {
-        "Accept": "application/vnd.github+json",
-        "User-Agent": "security-newsletter-build (cti-briefs site)",
-        "X-GitHub-Api-Version": "2022-11-28",
-    }
-    # Optional auth — bumps the rate limit from 60/h to 5000/h when a token
-    # is available in the build environment. Plain `GITHUB_TOKEN` works for
-    # GitHub Actions (`secrets.GITHUB_TOKEN`); falls back gracefully.
-    token = os.environ.get("GITHUB_TOKEN")
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(url, headers=headers)
-    try:
-        with urllib.request.urlopen(req, timeout=15, context=_ssl_context()) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-    except Exception as e:  # noqa: BLE001
-        print(f"warning: GitHub repo meta fetch failed ({e}); badge will render without count", file=sys.stderr)
-        return {}
-    return {
-        "stars": data.get("stargazers_count"),
-        "forks": data.get("forks_count"),
-        "html_url": data.get("html_url"),
-    }
-
-
-def write_sitemap(briefs: list[dict], site_url: str, out_path: Path) -> None:
-    """Emit an XML sitemap listing the home page, the static routes, and
-    every brief's hash URL. Each entry has a <lastmod> derived from the
-    brief date when applicable."""
-    site = site_url.rstrip("/") + "/"
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    urls: list[tuple[str, str, str]] = []  # (loc, lastmod, changefreq)
-
-    static_routes = [
-        ("", "daily"),
-        ("#/briefs", "daily"),
-        ("#/cves", "weekly"),
-        ("#/topics", "weekly"),
-        ("#/sources", "monthly"),
-        ("#/ops", "daily"),
-        ("#/about", "monthly"),
-    ]
-    for path, freq in static_routes:
-        urls.append((site + path, today, freq))
-
-    for b in briefs[:200]:
-        # Briefs are immutable once published; their lastmod is the brief date.
-        date = b["name"] if re.match(r"^\d{4}-\d{2}-\d{2}$", b["name"]) else today
-        prefix = "#/briefs/weekly/" if b["kind"] == "weekly" else "#/briefs/"
-        urls.append((site + prefix + b["name"], date, "never"))
-
+def write_sitemap(urls: list[tuple[str, str]], *, out_path: Path) -> None:
+    """`urls` is a list of (loc, lastmod). Emit /sitemap.xml."""
     body = "".join(
         "<url>"
-        f"<loc>{html_mod.escape(loc)}</loc>"
-        f"<lastmod>{lastmod}</lastmod>"
-        f"<changefreq>{freq}</changefreq>"
-        "</url>"
-        for loc, lastmod, freq in urls
+        f"<loc>{_escape(loc)}</loc>"
+        + (f"<lastmod>{_escape(lastmod)}</lastmod>" if lastmod else "")
+        + "</url>"
+        for loc, lastmod in urls
     )
-    out_path.write_text(
+    atomic_write_text(
+        out_path,
         '<?xml version="1.0" encoding="UTF-8"?>'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
         + body
-        + '</urlset>',
-        encoding="utf-8",
+        + "</urlset>",
     )
 
 
-def copy_tree(src: Path, dst: Path):
-    if dst.exists():
-        shutil.rmtree(dst)
-    shutil.copytree(src, dst)
-
-
-def cachebust_index(index_path: Path) -> str:
-    """Append ?v=<fingerprint> to every asset URL in index.html."""
-    assets_dir = index_path.parent / "assets"
-    h = hashlib.sha256()
-    for p in sorted(assets_dir.rglob("*")):
-        if p.is_file() and p.suffix in (".js", ".css"):
-            h.update(p.read_bytes())
-    fingerprint = h.hexdigest()[:10]
-
-    html = index_path.read_text()
-
-    def add_v(match: re.Match) -> str:
-        prefix, attr_, url = match.group(1), match.group(2), match.group(3)
-        if "?" in url:
-            return match.group(0)
-        return f'{prefix}{attr_}="{url}?v={fingerprint}"'
-
-    html = re.sub(
-        r'(<(?:script|link)[^>]*?\s)(src|href)="(assets/[^"]+\.(?:js|css))"',
-        add_v,
-        html,
+def write_robots(out_path: Path, *, sitemap_url: str) -> None:
+    atomic_write_text(
+        out_path,
+        f"User-agent: *\nAllow: /\nSitemap: {sitemap_url}\n",
     )
-    index_path.write_text(html)
-    return fingerprint
 
+
+# === SELF-CHECK =========================================================
+
+def self_check(
+    *,
+    manifest: dict[str, Any],
+    feed_files: list[Path],
+    site_url: str,
+) -> list[str]:
+    errors: list[str] = []
+    # Every page in the manifest exists on disk.
+    for url_path, info in manifest.get("pages", {}).items():
+        path = OUT / info["path"]
+        if not path.exists():
+            errors.append(f"manifest page missing on disk: {url_path} -> {info['path']}")
+    # Every emitted HTML file contains the Umami snippet exactly once.
+    for path in OUT.rglob("*.html"):
+        text = path.read_text(encoding="utf-8")
+        if text.count("cloud.umami.is/script.js") != 1:
+            errors.append(f"umami snippet count != 1 in {path.relative_to(OUT)}")
+    # No raw `**Markdown**` survives in any RSS content.
+    for fp in feed_files:
+        text = fp.read_text(encoding="utf-8")
+        if not text:
+            continue
+        # Strip all CDATA payload comparisons: only inspect content:encoded
+        # bodies.
+        for m in re.finditer(r"<content:encoded><!\[CDATA\[(.+?)\]\]></content:encoded>", text, re.DOTALL):
+            payload = m.group(1)
+            # Markdown emphasis tokens that should have rendered to HTML
+            if re.search(r"\*\*[^\n*]{1,80}\*\*", payload):
+                errors.append(f"feed {fp.name}: unrendered Markdown `**...**` in content:encoded")
+                break
+            if re.search(r"\[[^\]\n]{1,80}\]\((https?://)", payload):
+                errors.append(f"feed {fp.name}: unrendered Markdown `[..](http..)` in content:encoded")
+                break
+    # All three feeds parse as valid XML.
+    for fp in feed_files:
+        if fp.exists():
+            errs = _xml_validate(fp.read_text(encoding="utf-8"))
+            for e in errs:
+                errors.append(f"feed {fp.name}: XML parse error — {e}")
+    # No UTM parameters in any URL on the site. Scan all emitted HTML and
+    # XML files for `?utm_` or `&utm_` (URL-context only — the literal
+    # token `utm_` is fine inside prose, e.g. inside docs/analytics.md).
+    utm_re = re.compile(r"[?&]utm_[a-z_]+=", re.IGNORECASE)
+    for path in list(OUT.rglob("*.html")) + list(OUT.rglob("*.xml")):
+        text = path.read_text(encoding="utf-8")
+        if utm_re.search(text):
+            errors.append(f"UTM parameter present in URL inside {path.relative_to(OUT)}")
+            break
+    return errors
+
+
+# === MAIN ==============================================================
 
 def main() -> int:
     if not (ROOT / "briefs").exists():
@@ -934,66 +2235,43 @@ def main() -> int:
         return 1
 
     verify_vendored_hashes()
+    taxonomy = parse_taxonomy(SITE / "taxonomy.yaml")
 
-    site_url = os.environ.get("SITE_URL", DEFAULT_SITE_URL)
+    site_url = os.environ.get("SITE_URL", DEFAULT_SITE_URL).rstrip("/") + "/"
 
     OUT.mkdir(exist_ok=True)
-    for child in OUT.iterdir():
-        if child.is_dir():
-            shutil.rmtree(child)
-        else:
-            child.unlink()
+    # Clear our scratch directory if any prior build left one behind.
+    tmp_dir = OUT / ".tmp"
+    if tmp_dir.exists():
+        shutil.rmtree(tmp_dir)
 
-    # 1. Copy SPA shell.
-    shutil.copy(SITE / "index.html", OUT / "index.html")
-    copy_tree(SITE / "assets", OUT / "assets")
-    (OUT / ".nojekyll").write_text("")
-
-    # 1.b Strip `//# sourceMappingURL=…` comments from vendored libs in the
-    # build output. The upstream-pristine sources (kept under
-    # site/assets/vendor/ for HASHES integrity verification) reference
-    # `.map` files we don't ship, which causes a noisy DevTools "Source
-    # map error: request failed with status 404" on every visit. The
-    # source file stays unmodified — only the deployed copy is rewritten.
-    sourcemap_re = re.compile(rb"\n?//# sourceMappingURL=[^\n]+", re.MULTILINE)
-    for vendored in (OUT / "assets" / "vendor").glob("*.js"):
-        body = vendored.read_bytes()
-        cleaned = sourcemap_re.sub(b"", body)
-        if cleaned != body:
-            vendored.write_bytes(cleaned)
-
-    # 1a. Cache-bust the asset URLs.
-    fp = cachebust_index(OUT / "index.html")
-
-    # 2. Copy briefs (raw markdown, fetched on demand by the SPA).
-    briefs_out = OUT / "briefs"
-    briefs_out.mkdir(exist_ok=True)
-    for p in (ROOT / "briefs").glob("*.md"):
-        if re.match(r"^\d{4}-\d{2}-\d{2}\.md$", p.name):
-            shutil.copy(p, briefs_out / p.name)
-    weekly_dir = ROOT / "briefs" / "weekly"
-    if weekly_dir.exists():
-        (briefs_out / "weekly").mkdir(exist_ok=True)
-        for p in weekly_dir.glob("*.md"):
-            if re.match(r"^\d{4}-W\d{2}\.md$", p.name):
-                shutil.copy(p, briefs_out / "weekly" / p.name)
-
-    # 3. Copy README, docs, and the prompt CHANGELOG (for the About page).
-    docs_out = OUT / "docs"
-    docs_out.mkdir(exist_ok=True)
-    shutil.copy(ROOT / "README.md", docs_out / "README.md")
-    if (ROOT / "briefs" / "README.md").exists():
-        shutil.copy(ROOT / "briefs" / "README.md", docs_out / "briefs-README.md")
-    for p in (ROOT / "docs").glob("*.md"):
-        shutil.copy(p, docs_out / p.name)
-    if (ROOT / "prompts" / "CHANGELOG.md").exists():
-        shutil.copy(ROOT / "prompts" / "CHANGELOG.md", docs_out / "CHANGELOG.md")
-
-    # 4. Build data bundle.
-    data_out = OUT / "data"
-    data_out.mkdir(exist_ok=True)
+    copy_assets()
+    cachebust = cachebust_value()
+    atomic_write_bytes(OUT / ".nojekyll", b"")
 
     briefs = collect_briefs()
+
+    # ---- Validate footer-tagged items against taxonomy ----------------
+    # Post-cut-over rule: any item with a footer fails the build if its
+    # values aren't in the taxonomy. Pre-cut-over (no footer) is fine.
+    fatal_errors: list[str] = []
+    for b in briefs:
+        for sec in b["sections"]:
+            for it in sec["items"]:
+                if not it["footer"]:
+                    continue
+                errs = validate_footer(it["footer"], taxonomy)
+                for e in errs:
+                    fatal_errors.append(
+                        f"taxonomy error in {b['name']}#{it['anchor']}: {e}"
+                    )
+    if fatal_errors:
+        print("TAXONOMY VALIDATION FAILED:", file=sys.stderr)
+        for e in fatal_errors:
+            print(f"  · {e}", file=sys.stderr)
+        return 3
+
+    # ---- Load supporting state ----------------------------------------
     cves_raw = json.loads((ROOT / "state" / "cves_seen.json").read_text())
     topics_raw = json.loads((ROOT / "state" / "covered_items.json").read_text())
     sources_raw = json.loads((ROOT / "sources" / "sources.json").read_text())
@@ -1002,71 +2280,335 @@ def main() -> int:
     cves = annotate_cves(cves_raw, briefs, sources)
     topics = annotate_topics(topics_raw, briefs, sources)
 
-    # Strip internal-only fields from the published manifest. `item_flags`
-    # is rolled up into `topics.json`; `cve_citations` is rolled up into
-    # `cves.json`; `unit_data` is consumed by `annotate_topics`.
-    public_briefs = []
+    manifest_pages: dict[str, dict[str, Any]] = {}
+    sitemap: list[tuple[str, str]] = []  # (loc, lastmod)
+
+    def emit_html(rel_url: str, html: str, *, lastmod: str = "") -> None:
+        """`rel_url` looks like 'briefs/2026-05-07/' or '' for home. The
+        path on disk becomes `<rel_url>index.html`."""
+        rel_path = rel_url + "index.html" if rel_url.endswith("/") or rel_url == "" else rel_url
+        if rel_url == "":
+            rel_path = "index.html"
+        out_path = OUT / rel_path
+        atomic_write_text(out_path, html)
+        h = hashlib.sha256(html.encode("utf-8")).hexdigest()
+        manifest_pages[rel_url or "/"] = {"path": rel_path, "hash": h}
+        sitemap.append((site_url + rel_url, lastmod))
+
+    # ---- Per-brief pages ----------------------------------------------
+    items_index: dict[str, dict[str, Any]] = {}  # slug -> {item, brief}
+    tag_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    region_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
     for b in briefs:
-        copy = {k: v for k, v in b.items() if k not in ("item_flags", "cve_citations", "unit_data")}
-        public_briefs.append(copy)
+        rel_url = ("briefs/weekly/" if b["kind"] == "weekly" else "briefs/") + b["name"] + "/"
+        prefix = "../" * (rel_url.count("/") - 1)  # path back to root
+        canonical = site_url + rel_url
+        html = render_brief_page(b, site_url=site_url, cachebust=cachebust, prefix=prefix, canonical=canonical)
+        emit_html(rel_url, html, lastmod=b["publish_iso"][:10])
 
-    (data_out / "manifest.json").write_text(json.dumps(public_briefs, indent=2))
-    (data_out / "cves.json").write_text(json.dumps(cves, indent=2))
-    (data_out / "topics.json").write_text(json.dumps(topics, indent=2))
-    (data_out / "sources.json").write_text(json.dumps(sources, indent=2))
-    (data_out / "search.json").write_text(
-        json.dumps(build_search_index(public_briefs, cves, topics, sources))
+        for sec in b["sections"]:
+            for it in sec["items"]:
+                if not it["footer"]:
+                    continue
+                slug = it["slug"]
+                items_index[slug] = {"item": it, "brief": b}
+                for t in it["footer"].get("tags", []):
+                    tag_index[t].append({"slug": slug, "title": it["heading"], "brief": b["name"], "publish_ts": b["publish_ts"]})
+                for r in it["footer"].get("regions", []):
+                    region_index[r].append({"slug": slug, "title": it["heading"], "brief": b["name"], "publish_ts": b["publish_ts"]})
+
+        # Also write the raw .md for any reader that wants it.
+        md_dir = OUT / ("briefs/weekly/" if b["kind"] == "weekly" else "briefs/")
+        atomic_write_text(md_dir / (b["name"] + ".md"), b["text"])
+
+    # ---- Per-item pages -----------------------------------------------
+    for slug, entry in items_index.items():
+        rel_url = f"items/{slug}/"
+        prefix = "../" * (rel_url.count("/") - 1)
+        canonical = site_url + rel_url
+        html = render_item_page(
+            entry["item"],
+            brief=entry["brief"],
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix=prefix,
+            canonical=canonical,
+        )
+        emit_html(rel_url, html, lastmod=entry["brief"]["publish_iso"][:10])
+
+    # ---- Per-CVE pages ------------------------------------------------
+    for c in cves["cves"]:
+        rel_url = f"cves/{c['id']}/"
+        prefix = "../" * 2
+        canonical = site_url + rel_url
+        html = render_cve_page(c, site_url=site_url, cachebust=cachebust, prefix=prefix, canonical=canonical)
+        emit_html(rel_url, html, lastmod=(c.get("last_seen") or "")[:10])
+
+    # ---- Per-source pages ---------------------------------------------
+    for s in sources["sources"]:
+        rel_url = f"sources/{s['id']}/"
+        prefix = "../" * 2
+        canonical = site_url + rel_url
+        html = render_source_page(s, site_url=site_url, cachebust=cachebust, prefix=prefix, canonical=canonical)
+        emit_html(rel_url, html, lastmod=(s.get("last_successful_fetch") or "")[:10])
+
+    # ---- Per-topic pages ----------------------------------------------
+    for t in topics["items"]:
+        rel_url = f"topics/{urllib.parse.quote(t['key'], safe='')}/"
+        prefix = "../" * 2
+        canonical = site_url + rel_url
+        html = render_topic_page(t, site_url=site_url, cachebust=cachebust, prefix=prefix, canonical=canonical)
+        emit_html(rel_url, html, lastmod=(t.get("last_covered") or "")[:10])
+
+    # ---- Tag and region indexes ---------------------------------------
+    def tag_or_region_page(facet: str, value: str, entries: list[dict[str, Any]]) -> str:
+        rel_url = f"{facet}/{value}/"
+        prefix = "../" * 2
+        canonical = site_url + rel_url
+        entries.sort(key=lambda e: e["publish_ts"], reverse=True)
+        items = [
+            (
+                e["title"],
+                f"{prefix}items/{e['slug']}/",
+                f"in {e['brief']}",
+            )
+            for e in entries
+        ]
+        return render_index_page(
+            title=f"{facet[:-1].capitalize()}: {value}",
+            intro=f"All items tagged {value}.",
+            items=items,
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix=prefix,
+            canonical=canonical,
+            description=f"CTI brief items tagged {value}.",
+        )
+
+    for tag, entries in tag_index.items():
+        rel_url = f"tags/{tag}/"
+        emit_html(rel_url, tag_or_region_page("tags", tag, entries))
+    for region, entries in region_index.items():
+        rel_url = f"regions/{region}/"
+        emit_html(rel_url, tag_or_region_page("regions", region, entries))
+
+    # ---- List pages (briefs, weekly, cves, topics, sources) -----------
+    def list_briefs_page(kind: str) -> str:
+        rel_url = "briefs/" if kind == "daily" else "briefs/weekly/"
+        prefix = "../" * (rel_url.count("/") - 1)
+        canonical = site_url + rel_url
+        items = [
+            (
+                b["title"],
+                f"{prefix}{rel_url}{b['name']}/",
+                f"published {b['publish_iso'][:10]}",
+            )
+            for b in briefs
+            if b["kind"] == kind
+        ]
+        return render_index_page(
+            title="Daily briefs" if kind == "daily" else "Weekly summaries",
+            intro="Every brief, newest first." if kind == "daily" else "Weekly consolidating summaries, newest first.",
+            items=items,
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix=prefix,
+            canonical=canonical,
+            description="Index of CTI briefs.",
+        )
+
+    emit_html("briefs/", list_briefs_page("daily"))
+    emit_html("briefs/weekly/", list_briefs_page("weekly"))
+
+    def list_facet_page(facet_dir: str, title: str, items: list[tuple[str, str, str]]) -> str:
+        rel_url = f"{facet_dir}/"
+        prefix = "../"
+        canonical = site_url + rel_url
+        return render_index_page(
+            title=title,
+            intro="",
+            items=items,
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix=prefix,
+            canonical=canonical,
+            description=title,
+        )
+
+    emit_html(
+        "cves/",
+        list_facet_page(
+            "cves",
+            "CVEs",
+            [(c["id"], f"../cves/{c['id']}/", c.get("title", "")[:140]) for c in cves["cves"]],
+        ),
+    )
+    emit_html(
+        "topics/",
+        list_facet_page(
+            "topics",
+            "Topics",
+            [(t.get("title", t["key"]), f"../topics/{urllib.parse.quote(t['key'], safe='')}/", t.get("type", "")) for t in topics["items"]],
+        ),
+    )
+    emit_html(
+        "sources/",
+        list_facet_page(
+            "sources",
+            "Sources",
+            [(s.get("publisher", s["id"]), f"../sources/{s['id']}/", ", ".join(s.get("category", []))) for s in sources["sources"]],
+        ),
     )
 
-    # Run log — optional, surfaced by #/ops.
-    run_log_src = ROOT / "state" / "run_log.json"
-    if run_log_src.exists():
+    # ---- Home / about / ops -------------------------------------------
+    daily_briefs = [b for b in briefs if b["kind"] == "daily"]
+    weekly_briefs = [b for b in briefs if b["kind"] == "weekly"]
+    latest = briefs[0] if briefs else None
+    home_html = render_home_page(
+        latest, daily_briefs, weekly_briefs, site_url=site_url, cachebust=cachebust, canonical=site_url
+    )
+    emit_html("", home_html, lastmod=latest["publish_iso"][:10] if latest else "")
+
+    # /about/ from README.md + docs index
+    readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else "# About"
+    emit_html(
+        "about/",
+        render_static_doc(
+            md_text=readme,
+            title="About — CTI Briefs",
+            description="What this project is, how the briefs are produced, and how to read them.",
+            prefix="../",
+            canonical=site_url + "about/",
+            site_url=site_url,
+            cachebust=cachebust,
+        ),
+    )
+    # Mirror the docs/ folder under /about/<doc>/
+    docs_dir = ROOT / "docs"
+    if docs_dir.exists():
+        for p in sorted(docs_dir.glob("*.md")):
+            rel_url = f"about/{p.stem}/"
+            emit_html(
+                rel_url,
+                render_static_doc(
+                    md_text=p.read_text(encoding="utf-8"),
+                    title=p.stem.replace("-", " ").title() + " — CTI Briefs",
+                    description=p.stem.replace("-", " ").title(),
+                    prefix="../../",
+                    canonical=site_url + rel_url,
+                    site_url=site_url,
+                    cachebust=cachebust,
+                ),
+            )
+    # Changelog
+    changelog = (ROOT / "prompts" / "CHANGELOG.md")
+    if changelog.exists():
+        emit_html(
+            "about/changelog/",
+            render_static_doc(
+                md_text=changelog.read_text(encoding="utf-8"),
+                title="Prompt CHANGELOG — CTI Briefs",
+                description="Editorial-policy audit trail.",
+                prefix="../../",
+                canonical=site_url + "about/changelog/",
+                site_url=site_url,
+                cachebust=cachebust,
+            ),
+        )
+
+    # /ops/
+    run_log = None
+    rl_src = ROOT / "state" / "run_log.json"
+    if rl_src.exists():
         try:
-            payload = json.loads(run_log_src.read_text())
-            (data_out / "run_log.json").write_text(json.dumps(payload, indent=2))
-        except Exception as e:
-            print(f"warning: state/run_log.json failed to parse ({e}); skipping copy", file=sys.stderr)
-
-    # 5. RSS feed (S1) at the site root.
-    write_rss_feed(briefs, site_url, OUT / "feed.xml")
-
-    # 5a. SEO: sitemap.xml + robots.txt. Hash-routed SPA → most crawlers
-    # treat #/path as a fragment (one URL). We still emit a sitemap that
-    # lists every brief's hash URL plus the static routes; modern
-    # crawlers that respect rel=canonical + JS rendering will pick them
-    # up (Bing, Brave, DuckDuckBot, etc.). Google ignores hash fragments
-    # but the canonical/og tags compensate.
-    write_sitemap(briefs, site_url, OUT / "sitemap.xml")
-    (OUT / "robots.txt").write_text(
-        "User-agent: *\n"
-        "Allow: /\n"
-        f"Sitemap: {site_url.rstrip('/')}/sitemap.xml\n",
-        encoding="utf-8",
+            run_log = json.loads(rl_src.read_text())
+        except Exception:
+            run_log = None
+    emit_html(
+        "ops/",
+        render_ops_page(run_log, prefix="../", site_url=site_url, cachebust=cachebust, canonical=site_url + "ops/"),
     )
 
-    repo_slug = os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO)
-    repo_meta = fetch_github_repo_meta(repo_slug)
-    site_meta = {
-        "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    # /404.html
+    err = base_template(
+        title="404 — CTI Briefs",
+        description="Not found",
+        body="<section><h1>404 — Not found</h1><p>That page is not on this site. <a href=\"./\">Return home</a>.</p></section>",
+        canonical=site_url + "404.html",
+        site_url=site_url,
+        cachebust=cachebust,
+    )
+    atomic_write_text(OUT / "404.html", err)
+
+    # ---- RSS feeds ----------------------------------------------------
+    daily_xml, daily_recent = build_daily_feed(briefs, site_url=site_url)
+    weekly_xml, weekly_recent = build_weekly_feed(briefs, site_url=site_url)
+    items_xml, items_recent = build_items_feed(briefs, site_url=site_url)
+    atomic_write_text(OUT / "feed.xml", daily_xml)
+    atomic_write_text(OUT / "feed-weekly.xml", weekly_xml)
+    atomic_write_text(OUT / "feed-items.xml", items_xml)
+
+    # ---- Sitemap / robots ---------------------------------------------
+    write_sitemap(sorted(sitemap, key=lambda x: x[0]), out_path=OUT / "sitemap.xml")
+    write_robots(OUT / "robots.txt", sitemap_url=site_url + "sitemap.xml")
+
+    # ---- Manifest -----------------------------------------------------
+    manifest = {
+        "version": 2,
         "site_url": site_url,
-        "github": {
-            "repo": repo_slug,
-            "url": repo_meta.get("html_url") or f"https://github.com/{repo_slug}",
-            "stars": repo_meta.get("stars"),
-            "forks": repo_meta.get("forks"),
+        "cachebust": cachebust,
+        "feeds": {
+            "feed.xml": hashlib.sha256(daily_xml.encode("utf-8")).hexdigest(),
+            "feed-weekly.xml": hashlib.sha256(weekly_xml.encode("utf-8")).hexdigest(),
+            "feed-items.xml": hashlib.sha256(items_xml.encode("utf-8")).hexdigest(),
         },
+        "pages": manifest_pages,
         "counts": {
             "briefs": len(briefs),
-            "daily": sum(1 for b in briefs if b["kind"] == "daily"),
-            "weekly": sum(1 for b in briefs if b["kind"] == "weekly"),
+            "daily": len(daily_briefs),
+            "weekly": len(weekly_briefs),
+            "items": len(items_index),
             "cves": len(cves["cves"]),
             "topics": len(topics["items"]),
             "sources": len(sources["sources"]),
+            "tags": len(tag_index),
+            "regions": len(region_index),
         },
     }
-    (data_out / "site.json").write_text(json.dumps(site_meta, indent=2))
+    atomic_write_text(OUT / "data" / "build_manifest.json", json.dumps(manifest, indent=2, sort_keys=True))
 
-    print(f"built {OUT} · {site_meta['counts']} · cachebust=v={fp} · feed={site_url}feed.xml")
+    # site.json (deterministic — no now())
+    site_meta = {
+        "site_url": site_url,
+        "cachebust": cachebust,
+        "latest_brief": briefs[0]["publish_iso"] if briefs else None,
+        "counts": manifest["counts"],
+    }
+    atomic_write_text(OUT / "data" / "site.json", json.dumps(site_meta, indent=2, sort_keys=True))
+
+    # ---- Prune orphans ------------------------------------------------
+    # Only after all writes succeed; a build that fails mid-way leaves the
+    # previous live site untouched.
+    prune_orphans(OUT)
+
+    # ---- Self-check ---------------------------------------------------
+    feed_files = [OUT / "feed.xml", OUT / "feed-weekly.xml", OUT / "feed-items.xml"]
+    errors = self_check(manifest=manifest, feed_files=feed_files, site_url=site_url)
+    if errors:
+        print("SELF-CHECK FAILED:", file=sys.stderr)
+        for e in errors:
+            print(f"  · {e}", file=sys.stderr)
+        return 4
+
+    print(
+        f"built {OUT} · briefs={manifest['counts']['briefs']} "
+        f"items={manifest['counts']['items']} cves={manifest['counts']['cves']} "
+        f"sources={manifest['counts']['sources']} topics={manifest['counts']['topics']} "
+        f"tags={manifest['counts']['tags']} regions={manifest['counts']['regions']} "
+        f"cachebust={cachebust} "
+        f"· writes={_WRITE_COUNTER['writes']} skips={_WRITE_COUNTER['skips']}"
+    )
     return 0
 
 

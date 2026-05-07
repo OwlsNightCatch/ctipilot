@@ -4,6 +4,69 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.23 — 2026-05-07 (v2 schema cut-over)
+
+### Why
+Substantial editorial + engineering upgrade landed together: the SPA reader is replaced by a real static-site SSG, every brief item gets a structured metadata footer parsed by the build, and the section structure is reorganised so per-item tagging (region + sector + theme) replaces the dedicated "Switzerland, Europe & Public Sector" section. Full plan: [`docs/v2-plan.md`](../docs/v2-plan.md).
+
+### Daily prompt — section structure
+The eight-section structure (`0. TL;DR / 1. Active Threats & Trending Vulns / 2. Switzerland, Europe & Public Sector / 3. Notable Incidents & Disclosures / 4. Research & Investigative Reporting / 5. Deep Dive / 6. Updates / 7. Verification Notes`) becomes a nine-section structure:
+
+```
+0. TL;DR
+1. Immediate Actions                                         (often absent — see below)
+2. Active Threats, Trending Actors, Notable Incidents & Disclosures
+3. Trending Vulnerabilities                                  (consolidated, with inclusion gates)
+4. Research & Investigative Reporting
+5. Updates to Prior Coverage
+6. Deep Dive — {topic}
+7. Action Items                                              (derived from today's content only)
+8. Verification Notes
+```
+
+Switzerland / Europe / public-sector emphasis is now expressed as **per-item region + sector tags** on every § 2 item, ordered with CH/EU/public-sector first then global then the rest. There is no separate § 2 in the v2 layout — the editorial focus rides on the metadata footer.
+
+### Daily prompt — Immediate Actions
+New § 1, **omitted entirely on most days**. An item only enters when it satisfies at least one of: actively-exploited zero-day with RCE/auth-bypass; zero-click RCE (exploited or with public PoC); pre-auth RCE on internet-exposed enterprise software; supply-chain compromise affecting widely deployed software; active campaign with confirmed European public-sector impact. Empty Immediate Actions is part of the design — rendering the heading every day with a placeholder dilutes the meaning when something does meet the bar.
+
+### Daily prompt — Trending Vulnerabilities inclusion gate
+§ 3 now narrows the CVE bar with explicit inclusion gates. CVEs that the news cycle is hyping but that don't clear at least one gate (CISA KEV, ENISA EUVD `exploited=true`, ENISA EUVD CVSS ≥9.0, ITW report from a HIGH-reliability researcher, pre-auth internet-exposed RCE with public PoC) **stay out of the brief** — logged in § 8 with the reason. The legacy `CVE | Product | …` table is folded in as a secondary aggregation beneath the per-CVE entries.
+
+### Daily prompt — Action Items
+New § 7. Specific, derived-from-this-brief recommendations only. Generic advice does not belong here. Skews toward patching / mitigations for actively-exploited CVEs covered today, hunting queries / IoC-free detection concepts for campaigns covered today, configuration changes that close the specific attack path covered today.
+
+### Daily prompt — per-item metadata footer (NORMATIVE)
+Every individual content block (every § 1 / § 2 / § 3 / § 4 / § 5 / § 6 / § 7 item) ends with **exactly one italic Markdown line** in the format
+
+```
+— *Source: [Title](URL) [· Additional source: [Title](URL)] · Tags: tag1, tag2 · Region: region1[, region2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
+```
+
+Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). Controlled vocabularies live in [`site/taxonomy.yaml`](../site/taxonomy.yaml). The build refuses any item using a value not in the taxonomy. The build splits each brief by H3 + footer and emits one stable `/items/<slug>/` page per content block plus per-tag, per-region, per-CVE indexes. Missing or malformed footer on a post-cut-over item is a build failure.
+
+### Daily prompt — Phase 5.5 self-check
+- Steps 1, 2 unchanged.
+- Step 3 retargets at sections 2–4 (was 1–4).
+- Step 4 retargets at § 5 (was § 6) and additionally requires a metadata footer inside each UPDATE blockquote.
+- Steps 5 and 6 added: every H3 in §§ 1, 2, 3, 4, 5, 7 carries a footer; every footer's values are in `site/taxonomy.yaml`.
+
+### Sub-agent spawn — patience and primary-source bias
+Both sub-agent spawn-prompt blocks gain explicit "take your time, persist intermediate state, never block the brief" and "trace to the most primary source you can verify; news is at most a *via* reference" stanzas, replacing earlier soft guidance.
+
+### Engineering — `site/build.py`, RSS, taxonomy
+- New SSG emits real HTML pages for every URL: home, brief, item, CVE, source, topic, tag, region, ops, about. The legacy SPA hash routes get a one-time JS bootstrap on `/` that converts indexed `#/briefs/<name>` URLs to the clean URL.
+- Three valid RSS feeds: `/feed.xml` (daily, URL preserved), `/feed-weekly.xml` (NEW), `/feed-items.xml` (NEW per-item, last 50). Closes [#2](https://github.com/OwlsNightCatch/security-newsletter/issues/2):
+  - **Defect A fixed:** Markdown emphasis / links / inline code render to HTML before the body is CDATA-wrapped. A unit test asserts no unrendered `**...**` or `[..](http..)` survives into `<content:encoded>` payloads.
+  - **Defect B fixed:** `<pubDate>` is the actual git-commit moment of the brief on `main` (sourced from `git log --diff-filter=A --format=%aI -- briefs/YYYY-MM-DD.md`), falling back to file mtime — never midnight-of-brief-date.
+- Vendored library integrity check is preserved and now also covers the new `filter.min.js`.
+- Strict CSP unchanged.
+- Self-check at the end of every build asserts: every emitted HTML page contains the Umami snippet exactly once; every feed parses as XML; no UTM parameters anywhere; no unrendered Markdown emphasis in any feed body.
+
+### Weekly prompt
+Adopts the same metadata footer on every item. Section structure unchanged.
+
+---
+
 ## 2.22 — 2026-05-07
 
 ### Why

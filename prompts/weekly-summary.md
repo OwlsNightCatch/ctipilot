@@ -152,6 +152,26 @@ Sub-agents return free-form Markdown with required fields (sources with inline l
 
 The weekly summary is a finished publication. Same hard rule as the daily brief: **no workflow-internal language in the output.** No "From sub-agent W1", no "see Phase 2", no copies of section descriptions, no leaked placeholders.
 
+### Per-item metadata footer (NORMATIVE — same as the daily prompt)
+
+Every individual content block in the weekly summary — every Top Story, every Multi-day Chain, every Vulnerability Roll-up entry, every Sector pattern, every Incidents Recap entry, every Annual / Periodic report, every Long-running campaign, every Policy item — ends with exactly one italic Markdown line in this exact format (em-dash + space + asterisk to open; trailing asterisk to close):
+
+```
+— *Source: [Title](URL) [· Additional source: [Title](URL)] · Tags: tag1, tag2 · Region: region1[, region2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
+```
+
+Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). Controlled vocabularies live in [`site/taxonomy.yaml`](../site/taxonomy.yaml). The build refuses any item using a value not in the taxonomy. The same footer requirement, parser, and per-item RSS pipeline apply to weekly briefs.
+
+The TL;DR-equivalent ("Week at a glance") and Verification Notes do **not** carry per-item footers.
+
+### Sub-agent spawn — patience and primary-source bias (same as the daily prompt)
+
+Append to every sub-agent spawn message:
+
+> *"Take your time. There is no rush. The single most important property of this pipeline is that it produces a correct, complete summary and that the publish step never fails. After every meaningful unit of work, write your partial result to disk under `work/<run-id>/` (gitignored) so a later step that fails or times out can resume from the last good checkpoint. Drop raw HTML once you've extracted what you need; keep the working context tight. If a subtask is taking unusually long, cut your losses, log it in § 11, and move on. Never let one stuck subtask block the whole summary. Always return something."*
+
+> *"For every claim, identify and link the **most primary** source you can verify, not the aggregator. Walk the chain: news article → vendor blog / CERT advisory / research lab post / regulator filing / victim disclosure → the inline citation. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primary sources over English aggregators. If only an aggregator was reachable after a fair attempt, flag the item with `included with reduced confidence: only aggregator source available` so § 11 records it."*
+
 ### Output structure
 
 The summary has eleven sections in this exact order:
