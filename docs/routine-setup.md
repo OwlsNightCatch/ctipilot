@@ -89,12 +89,12 @@ If you don't yet have the routine, create one as follows:
     ```
 5. **Repositories**: add this repo.
 6. **Environment**: the **Default** cloud environment is fine for first runs. The brief workflow only needs network access to the source list, which is covered by the **Trusted** access level.
-7. **Trigger**: choose a schedule. A reasonable starting cadence is **Daily, weekday mornings, 06:30 Europe/Zurich** (the form converts automatically).
+7. **Trigger**: choose a schedule. The recommended cadence is **Mon–Fri, 06:30 Europe/Zurich** — *working days only*. Saturday and Sunday are covered by the weekly summary; the Monday daily then expands its recency window to cover Friday-late + the weekend (Prime Directive 7 in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)).
 8. **Connectors**: none needed. The brief workflow is self-contained.
 9. **Permissions**: enable **Allow unrestricted branch pushes** for this repo if you want direct-to-`main` (recommended for a public feed).
 10. **Create**.
 
-Repeat for the weekly summary with prompt `Read prompts/weekly-summary.md and execute it.` and a Sunday-evening schedule.
+Repeat for the weekly summary with prompt `Read prompts/weekly-summary.md and execute it.` and a **Sunday night** schedule (typically 18:00–22:00 Europe/Zurich, before the Monday daily fires).
 
 ## Verifying the setup
 

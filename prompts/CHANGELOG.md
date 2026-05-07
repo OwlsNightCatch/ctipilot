@@ -4,6 +4,34 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.21 — 2026-05-07
+
+### Why
+The daily routine runs **only on working days** (Mon–Fri); the weekly summary runs **Sunday night**. Saturday + Sunday + Friday-during-the-day events therefore fall through the cracks unless the Monday brief explicitly catches them up. Earlier prompt versions said "Default window: events from the last 24 hours" with no day-of-week awareness — Mondays were producing a same-size brief that silently dropped two and a half days of operational signal.
+
+### Prime Directive 7 (Recency) — schedule-aware window
+- New explicit table mapping day-of-week to recency window:
+  - **Mon** → 72–84 h (Fri-morning → Mon-morning); Monday brief is expected to be larger (typically 6–10 § 1a items vs the usual 3–5).
+  - **Tue–Fri** → 24 h, extend 72 h for actively developing items.
+  - **Sat / Sun** → routine should not run; off-schedule run is treated as Monday-class with the gap surfaced in § 7.
+- Monday brief explicitly catches Friday-during-the-day publications (vendor advisories that landed after the Friday brief, victim disclosures filed into EU close-of-business, US-afternoon CISA KEV additions) plus the entire weekend.
+- "Don't bridge to the weekly summary" rule: the Sunday-night weekly is week-level synthesis; the Monday daily is *catch-up of the operational items the daily missed*. The two are complementary, not redundant.
+- First brief after any unscheduled gap (public holiday, missed run) extends the window the same way and surfaces the gap in § 7 (`Coverage window: extended to N hours due to scheduling gap; previous brief YYYY-MM-DD`).
+
+### "Determining today" — day-of-week derivation
+- Phase 0 now derives the day-of-week from `currentDate` and applies the recency-window table.
+- Sub-agent spawn messages receive the computed window length so their `WebSearch` / `WebFetch` budgets target the right time range.
+
+### META autonomy paragraph
+- "fires once per weekday" replaced with "fires once per **working day** (Monday–Friday)"; weekly cadence stated explicitly as Sunday night.
+
+### Docs
+- `docs/workflow.md` schedule table updated.
+- `README.md` daily-routine + weekly-routine paragraphs updated.
+- `docs/routine-setup.md` recommended-cadence step updated to "Mon–Fri, 06:30 Europe/Zurich".
+
+---
+
 ## 2.20 — 2026-05-07
 
 ### Why

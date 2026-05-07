@@ -77,7 +77,28 @@ Apply extra scrutiny to:
 Full policy: `docs/verification.md`.
 
 ### 7. Recency
-Default window: events from the last 24 hours. Extend up to 72 hours for items still actively developing. Anything older requires explicit justification (see § Long-running campaigns and § Yearly reports).
+
+The recency window is **explicitly schedule-aware**. The daily routine fires on **working days only** (Monday → Friday); the weekly summary fires on **Sunday night** (typically 18:00–22:00 Europe/Zurich). The brief must not pretend the routine ran every day.
+
+- **Tuesday → Friday brief:** events from the **last 24 hours**, extend to **72 hours** for items still actively developing.
+
+- **Monday brief (the longest brief of the week):** the recency window covers **everything from Friday morning through Monday morning**, i.e. **roughly the last 72–84 hours**. Friday-during-the-day disclosures (vendor advisories that landed after the Friday brief was generated, victim disclosures filed into the EU close-of-business window, US-afternoon CISA KEV additions) plus the entire weekend (Saturday + Sunday) are first-coverage candidates here. The Monday brief is expected to be **larger than a midweek brief** — typically 6–10 § 1a items vs the usual 3–5 — and to consume more fetch budget. Section § 7 should call out which items are weekend-discovered with their original publication timestamp.
+
+- **First brief after a public holiday or after any unscheduled gap:** treat the same way as Monday — extend the window to cover the entire gap (consult `briefs/` to see when the previous brief actually landed) and increase the items-per-section budget proportionally. Surface the gap in § 7 (`Coverage window: extended to N hours due to scheduling gap; previous brief YYYY-MM-DD`).
+
+- **Anything older than the active window** still requires explicit justification (see § Long-running campaigns and § Yearly reports).
+
+**Don't bridge to the weekly summary.** The Sunday-night weekly summary already exists for week-level synthesis; the Monday brief is *catch-up coverage of the operational window the daily routine missed*, not a re-run of the weekly. The two complement each other:
+
+- **Weekly summary** (Sunday night) — consolidating, week-level, allowed to repeat.
+- **Monday brief** (Monday morning) — first coverage of the Friday-late + Saturday + Sunday operational items the dailies have not seen yet, plus Monday-morning fresh items.
+
+In Phase 0, derive today's window from `currentDate`'s day-of-week:
+- Mon → 72–84h window (cover Fri-late through Mon-morning).
+- Tue → 24h (default).
+- Wed–Thu → 24h (default), 72h for actively developing items.
+- Fri → 24h (default), 72h for actively developing items.
+- Sat / Sun → the routine should not run; if it somehow does, treat as a Monday-class brief and surface the off-schedule run in § 7.
 
 ### 8. No repetition across runs
 Read the **last 7 days of briefs** before starting (not just 5). Items already covered are not re-reported, with two exceptions:
@@ -153,8 +174,21 @@ docs/                              # workflow + verification policy
 ### Sub-agent token policy
 **Do not impose token caps on sub-agents.** Allow each to do whatever depth of research the topic warrants. They return summarised findings, not raw HTML.
 
-### Determining "today"
+### Determining "today" + the recency window from the day-of-week
+
 Use `currentDate` from system context as the brief date. Metadata dates are ISO-8601; prose may use readable dates.
+
+**The day-of-week determines the size of the recency window** (Prime Directive 7). Compute the day-of-week from `currentDate` and apply:
+
+| Day | Window | Why |
+|---|---|---|
+| Monday | 72–84 h (Fri-morning → Mon-morning) | Catches Friday-during-the-day publications + the entire weekend; daily routine doesn't run Sat/Sun |
+| Tuesday – Friday | 24 h, extend 72 h for actively developing | Standard daily window |
+| Saturday / Sunday | (routine should not run) | Weekly summary covers the week instead |
+
+Pass the computed window length to every sub-agent's spawn message so their `WebSearch` / `WebFetch` budgets target the right time range. The Monday brief is allowed — and expected — to be larger: 6–10 § 1a items vs the usual 3–5, deeper § 4 research coverage, and § 7 should explicitly call out which items were weekend-discovered.
+
+If `currentDate`'s day-of-week is Saturday or Sunday, surface this in § 7 (`Coverage window: off-schedule run on <day-of-week>; weekly summary normally covers this period`) and treat the run as a Monday-class brief (extended window).
 
 ---
 
@@ -841,7 +875,7 @@ push: ok | failed (<reason>)
 
 This prompt is committed to the same repository it operates on. **The agent has full authority to modify this prompt, the source list, the documentation, the sub-agent structure, and the repository layout** when doing so will improve future briefs. Changes are committed alongside the brief in the same run; they show up in `git log` for human review after the fact, but no human gate blocks the change. The repo is the agent's working memory across runs — treat it that way.
 
-The goal is autonomous operation: a routine fires once per weekday, a brief lands on `main`, no human babysits. If the prompt has rough edges, smooth them. If a sub-agent's domain has drifted, redraw it. If the source list has dead weight, drop it; if a topical search keeps surfacing a strong publisher, promote it from candidate.
+The goal is autonomous operation: a routine fires once per **working day** (Monday–Friday), a brief lands on `main`, no human babysits. The weekly summary fires Sunday night. If the prompt has rough edges, smooth them. If a sub-agent's domain has drifted, redraw it. If the source list has dead weight, drop it; if a topical search keeps surfacing a strong publisher, promote it from candidate.
 
 ### Hard invariants — never remove or weaken
 
