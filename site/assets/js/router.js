@@ -141,6 +141,7 @@
     highlightActiveNav(path[0] || 'home');
     closeMobileNav();
     bindRouteHandlers(path, query);
+    trackPageview();
 
     // Scroll behaviour: if ?at=anchor is in the hash, jump there; else top.
     if (query.at) {
@@ -223,6 +224,35 @@
     const toggle = document.getElementById('nav-toggle');
     if (bar) bar.classList.remove('is-open');
     if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  /** Tell Umami the current "page" changed.
+
+      Umami's auto-tracker hooks into the History API (`pushState` /
+      `popstate`); it does NOT fire on `hashchange`. Our SPA is
+      hash-routed (`#/briefs/foo`), so without this manual call only
+      the initial page load would be recorded and every subsequent
+      navigation would be invisible in the dashboard. We call this
+      after every router dispatch.
+
+      `umami.track()` with no args sends a default pageview payload
+      using the current `location.href` and `document.title` (already
+      updated by `setMeta()` above). If Umami isn't loaded — script
+      blocked, host unreachable, or the visitor's browser sent DNT and
+      our `data-do-not-track="true"` flag silenced the tracker — this
+      is a silent no-op. */
+  let _lastTrackedUrl = null;
+  function trackPageview() {
+    try {
+      if (typeof window.umami === 'undefined' || typeof window.umami.track !== 'function') return;
+      // hashchange + popstate both fire on hash navigation — only count
+      // once per actual URL change.
+      if (window.location.href === _lastTrackedUrl) return;
+      _lastTrackedUrl = window.location.href;
+      window.umami.track();
+    } catch (_) {
+      // never let analytics break navigation
+    }
   }
 
   function showToast(text) {

@@ -43,7 +43,9 @@ import os
 import re
 import shutil
 import sys
+import urllib.error
 import urllib.parse
+import urllib.request
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,6 +55,7 @@ SITE = Path(__file__).resolve().parent
 OUT = SITE / "_site"
 
 DEFAULT_SITE_URL = "https://owlsnightcatch.github.io/security-newsletter/"
+DEFAULT_GITHUB_REPO = "OwlsNightCatch/security-newsletter"
 
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b")
 LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^)\s]+)\)")
@@ -795,6 +798,61 @@ def write_rss_feed(briefs: list[dict], site_url: str, out_path: Path) -> None:
     out_path.write_text(feed, encoding="utf-8")
 
 
+def _ssl_context():
+    """Build an SSL context with a CA bundle that works on macOS framework
+    Python (which ships without system CAs by default). Tries SSL_CERT_FILE
+    env, then certifi if installed, then common system paths."""
+    import ssl  # noqa: PLC0415
+    cafile = os.environ.get("SSL_CERT_FILE")
+    if cafile and os.path.exists(cafile):
+        return ssl.create_default_context(cafile=cafile)
+    try:
+        import certifi  # noqa: PLC0415
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        pass
+    for fallback in ("/etc/ssl/cert.pem", "/etc/pki/tls/cert.pem", "/etc/ssl/certs/ca-certificates.crt"):
+        if os.path.exists(fallback):
+            return ssl.create_default_context(cafile=fallback)
+    return ssl.create_default_context()
+
+
+def fetch_github_repo_meta(repo: str) -> dict:
+    """Fetch a small, public read-only summary of the GitHub repo at build
+    time. Returns `{stars, forks, html_url}`. Fails open: a network or
+    rate-limit error returns an empty dict and the topbar widget falls
+    back to just the icon-without-count.
+
+    This is a *build-time* call, not a per-visitor call — the result is
+    baked into `data/site.json` and refreshed on every site deploy.
+    Visitors never hit api.github.com from their browser, so the badge
+    leaks no per-visit information."""
+    url = f"https://api.github.com/repos/{repo}"
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "security-newsletter-build (cti-briefs site)",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    # Optional auth — bumps the rate limit from 60/h to 5000/h when a token
+    # is available in the build environment. Plain `GITHUB_TOKEN` works for
+    # GitHub Actions (`secrets.GITHUB_TOKEN`); falls back gracefully.
+    token = os.environ.get("GITHUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15, context=_ssl_context()) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:  # noqa: BLE001
+        print(f"warning: GitHub repo meta fetch failed ({e}); badge will render without count", file=sys.stderr)
+        return {}
+    return {
+        "stars": data.get("stargazers_count"),
+        "forks": data.get("forks_count"),
+        "html_url": data.get("html_url"),
+    }
+
+
 def write_sitemap(briefs: list[dict], site_url: str, out_path: Path) -> None:
     """Emit an XML sitemap listing the home page, the static routes, and
     every brief's hash URL. Each entry has a <lastmod> derived from the
@@ -973,9 +1031,17 @@ def main() -> int:
         encoding="utf-8",
     )
 
+    repo_slug = os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO)
+    repo_meta = fetch_github_repo_meta(repo_slug)
     site_meta = {
         "built_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "site_url": site_url,
+        "github": {
+            "repo": repo_slug,
+            "url": repo_meta.get("html_url") or f"https://github.com/{repo_slug}",
+            "stars": repo_meta.get("stars"),
+            "forks": repo_meta.get("forks"),
+        },
         "counts": {
             "briefs": len(briefs),
             "daily": sum(1 for b in briefs if b["kind"] == "daily"),

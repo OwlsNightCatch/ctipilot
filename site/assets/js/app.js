@@ -14,6 +14,7 @@
     }
 
     setFooterMeta();
+    wireGithubBadge();
     wireGlobalSearch();
     wireKeyboard();
     wireLinkBehaviour();
@@ -84,6 +85,32 @@
         } catch (_) { /* malformed URL — let the browser decide */ }
       }
     });
+  }
+
+  /** Populate the topbar GitHub icon's href and star count from
+      `data/site.json#github`. The values are baked at build time
+      (site/build.py fetches the GitHub repo metadata once per deploy);
+      no per-visitor request to api.github.com — and therefore no
+      cross-origin connection from the visitor's browser. If the
+      build-time fetch failed (rate limit, no network in CI), the
+      number stays hidden and only the icon shows. */
+  function wireGithubBadge() {
+    const link = document.getElementById('github-link');
+    const stars = document.getElementById('github-stars');
+    const gh = (Store.site && Store.site.github) || {};
+    if (link && gh.url) link.setAttribute('href', gh.url);
+    if (stars && typeof gh.stars === 'number') {
+      stars.textContent = formatStars(gh.stars);
+      stars.hidden = false;
+      if (link) link.title = `View source on GitHub · ${gh.stars} stars`;
+    }
+  }
+
+  /** Compact star formatter: 1234 → "1.2k", 12345 → "12.3k". */
+  function formatStars(n) {
+    if (n < 1000) return String(n);
+    if (n < 10000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return Math.round(n / 1000) + 'k';
   }
 
   function setFooterMeta() {

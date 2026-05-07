@@ -1077,6 +1077,15 @@ completely, enable Do Not Track in your browser; the script self-disables.
 You can also block it at the network layer — \`cloud.umami.is\` — without
 breaking the site.
 
+**Operator note: if you don't see your own visits in the Umami
+dashboard**, the most likely cause is that *your* browser sends Do
+Not Track and the tracker correctly honoured it (\`data-do-not-track="true"\`
+in the script tag). Check in another browser or in incognito with DNT
+turned off. The site uses hash routing (\`#/...\`); to make every
+SPA route get recorded, the router calls \`umami.track()\` on every
+dispatch — without that call, only the initial page load would appear
+in the dashboard.
+
 The agent's editorial decisions are **not** influenced by Umami. The
 brief prompt has no input from this signal. It exists for the operator,
 not for the writer.`;
