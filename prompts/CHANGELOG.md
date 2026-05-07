@@ -4,6 +4,54 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.22 — 2026-05-07
+
+### Why
+Operator changed the routine schedule (daily Mon–Fri 06:00 GMT+2, weekly Mondays 11:00) and asked that *no time, day, or schedule assumption* be hardcoded in the prompt. The agent should always derive its recency window from `briefs/` so:
+
+- (a) the operator can change cron times freely without touching the prompt,
+- (b) a failed run is automatically caught up by the next run (Tuesday fails → Wednesday's brief covers Mon-noon → Wed-morning),
+- (c) the daily covers the gap since the last *daily* and the weekly covers the gap since the last *weekly*, independently and self-coordinating.
+
+v2.21's day-of-week recency table conflicted with goal (a) — it baked Mon–Fri / Sat–Sun assumptions into the prompt. Removed.
+
+### Prime Directive 7 (Recency) — gap-derived, schedule-agnostic, self-healing
+- Day-of-week table replaced with a **gap-derivation rule from disk**:
+  ```
+  latest_brief = max(date in briefs/*.md by lex sort)
+  gap_hours    = (currentDate - latest_brief) * 24
+  window_hours = max(24, gap_hours + 12)   # 12h safety overlap
+  ```
+- New window-class table maps `gap_hours` to expected brief size and § 7 disclosure:
+  - ≤ 30 h → standard daily (3–5 § 1a items)
+  - 30 – 60 h → extended (one missed run; 5–8 items)
+  - 60 – 96 h → catch-up (typical Monday after Mon–Fri schedule, OR two missed runs; 6–10 items)
+  - > 96 h → major gap (cap at 10–12 items, surface unhandled volume in § 7)
+- Self-healing by construction: any missed run is automatically caught up by the next run because the gap on disk widens.
+- Schedule independence by construction: the prompt doesn't know — and doesn't need to know — when the cron fires.
+
+### Phase 0 step 7 (new)
+- After loading state, the agent now explicitly computes `gap_hours` and `window_hours` from the latest file in `briefs/`, sets the window-class, and passes `window_hours` to every Phase 1 sub-agent's spawn message.
+
+### "Determining today" subsection
+- Day-of-week table replaced with the gap-derivation pseudocode and the rule "do not hardcode times, days, or schedule assumptions".
+
+### Weekly summary (`prompts/weekly-summary.md`)
+- Same gap-derivation rule applied: `latest_weekly = max(briefs/weekly/*.md)`, `gap_days = today - latest_weekly_end`, `window_days = max(7, gap_days + 1)`.
+- Weekly window-class table:
+  - ≤ 8 d → standard week
+  - 9 – 15 d → one missed week (doubled coverage)
+  - > 15 d → major gap (cap at ~3 weeks of detail)
+- Header `fires once per week` softened to `schedule is set by the operator`.
+
+### META autonomy paragraph
+- "fires once per **working day** (Monday–Friday) … weekly summary fires Sunday night" → "scheduled routines fire on whatever cadence the operator configured … schedule is **not** encoded in this prompt".
+
+### Docs
+- README, `docs/workflow.md`, `docs/routine-setup.md` all stripped of hardcoded times (no `06:30 Europe/Zurich`, no `18:00–22:00`, no `Sunday night`); the gap-derivation rule is explained as a self-healing + schedule-agnostic mechanic.
+
+---
+
 ## 2.21 — 2026-05-07
 
 ### Why

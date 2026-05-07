@@ -173,8 +173,8 @@ the repo:
  ┌──────────────┐  preflight   ┌──────────────────────────────┐
  │  routine     │─────────────▶│  load sources.json (active)  │
  │  fires       │              │  load past 7 days of briefs  │
- │  (06:30 CET) │              │  load covered_items.json     │
- └──────┬───────┘              │  load cves_seen.json         │
+ │  (operator-  │              │  load covered_items.json     │
+ │  scheduled)  │              │  load cves_seen.json         │
         │                      └──────────┬───────────────────┘
         │                                 │
         ▼  spawn 4 sub-agents in parallel │

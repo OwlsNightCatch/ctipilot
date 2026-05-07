@@ -6,10 +6,10 @@ End-to-end process for both the daily routine and the weekly summary routine.
 
 | Routine | Cadence | Prompt | Output |
 |---|---|---|---|
-| Daily CTI brief | **Working days only** — Mon–Fri at e.g. 06:30 Europe/Zurich | `prompts/daily-cti-brief.md` | `briefs/YYYY-MM-DD.md` |
-| Weekly summary | **Sunday night** (typically 18:00–22:00 Europe/Zurich) | `prompts/weekly-summary.md` | `briefs/weekly/YYYY-Www.md` |
+| Daily CTI brief | Operator-chosen (typically working days only — Mon–Fri) | `prompts/daily-cti-brief.md` | `briefs/YYYY-MM-DD.md` |
+| Weekly summary | Operator-chosen (typically once per week) | `prompts/weekly-summary.md` | `briefs/weekly/YYYY-Www.md` |
 
-**Cadence implication for the Monday brief.** Because the daily routine does not run Saturday or Sunday, the Monday brief covers a 72–84 h window (Friday-morning → Monday-morning) instead of the usual 24 h. It is deliberately **larger than a midweek brief** (typically 6–10 § 1a items vs the usual 3–5) and consumes more fetch budget. The Sunday-night weekly summary remains the consolidating week-level view; the Monday brief is *catch-up of the operational items the daily missed*, not a re-run of the weekly. See Prime Directive 7 in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md).
+**Recency window is gap-derived, not schedule-derived.** Each run reads its own brief directory (`briefs/` for the daily, `briefs/weekly/` for the weekly), finds the most recent published brief, and computes the recency window as `max(default, gap_since_previous + safety_overlap)`. This is **self-healing** for missed runs (a failed Tuesday is automatically caught up by Wednesday) and **schedule-agnostic** (the operator can change cron times or skip days without touching the prompt). The Monday daily naturally covers Friday-late + the weekend on a Mon–Fri schedule because the gap on disk is ~72–84 h. See Prime Directive 7 in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md).
 
 Both share the same source list (`sources/sources.json`), state files (`state/covered_items.json`, `state/cves_seen.json`), verification policy (`docs/verification.md`), and quality gates. The weekly routine reads the daily briefs from the past week and adds horizon view; the daily routine reads the past 7 days of briefs (including the latest weekly summary if recent) for deduplication.
 
@@ -21,7 +21,7 @@ Both share the same source list (`sources/sources.json`), state files (`state/co
 
 ## 1. Routine fires
 
-A scheduled Claude Code routine fires once per day on whichever Claude model the routine is currently configured to use. Recommended schedule: weekday mornings local time, e.g. 06:30 Europe/Zurich, so the brief is available before the SOC's morning shift handover. Weekends optional.
+A scheduled Claude Code routine fires on whatever cadence the operator chose; the prompt does not assume a specific time or day. The recommended pattern is weekday mornings before the SOC's morning shift handover, with weekends covered by the gap-derivation rule on the next run.
 
 The routine's prompt is exactly:
 

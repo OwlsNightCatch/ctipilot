@@ -89,12 +89,12 @@ If you don't yet have the routine, create one as follows:
     ```
 5. **Repositories**: add this repo.
 6. **Environment**: the **Default** cloud environment is fine for first runs. The brief workflow only needs network access to the source list, which is covered by the **Trusted** access level.
-7. **Trigger**: choose a schedule. The recommended cadence is **Mon–Fri, 06:30 Europe/Zurich** — *working days only*. Saturday and Sunday are covered by the weekly summary; the Monday daily then expands its recency window to cover Friday-late + the weekend (Prime Directive 7 in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)).
+7. **Trigger**: choose any schedule that suits your team. The prompt does **not** hardcode times or days — every run reads `briefs/` and covers the gap since the previous published brief, with a 12-hour safety overlap (Prime Directive 7 in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md)). A common pattern is *weekday mornings* before the SOC shift handover (Mon–Fri, before working hours start); the next-Monday brief then naturally widens its window to cover Friday-late + the weekend on its own. Skipping days, public holidays, and failed runs are all auto-recovered by the next run — change the cron freely without touching the prompt.
 8. **Connectors**: none needed. The brief workflow is self-contained.
 9. **Permissions**: enable **Allow unrestricted branch pushes** for this repo if you want direct-to-`main` (recommended for a public feed).
 10. **Create**.
 
-Repeat for the weekly summary with prompt `Read prompts/weekly-summary.md and execute it.` and a **Sunday night** schedule (typically 18:00–22:00 Europe/Zurich, before the Monday daily fires).
+Repeat for the weekly summary with prompt `Read prompts/weekly-summary.md and execute it.` and any cadence the operator prefers (typical: once per week). The weekly prompt uses the same gap-derivation rule against `briefs/weekly/` — change the cron freely; the next run catches up.
 
 ## Verifying the setup
 

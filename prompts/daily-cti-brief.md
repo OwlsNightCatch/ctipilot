@@ -76,29 +76,40 @@ Apply extra scrutiny to:
 
 Full policy: `docs/verification.md`.
 
-### 7. Recency
+### 7. Recency — gap-derived window, schedule-agnostic, self-healing
 
-The recency window is **explicitly schedule-aware**. The daily routine fires on **working days only** (Monday → Friday); the weekly summary fires on **Sunday night** (typically 18:00–22:00 Europe/Zurich). The brief must not pretend the routine ran every day.
+**The recency window is computed from the actual `briefs/` directory, not from a hardcoded schedule.** The operator is free to change the routine cadence (daily times, weekend coverage, weekly day) without touching this prompt — the agent always asks the filesystem "when did the last brief land?" and covers the entire gap from then to `currentDate`.
 
-- **Tuesday → Friday brief:** events from the **last 24 hours**, extend to **72 hours** for items still actively developing.
+The mechanic, applied in Phase 0:
 
-- **Monday brief (the longest brief of the week):** the recency window covers **everything from Friday morning through Monday morning**, i.e. **roughly the last 72–84 hours**. Friday-during-the-day disclosures (vendor advisories that landed after the Friday brief was generated, victim disclosures filed into the EU close-of-business window, US-afternoon CISA KEV additions) plus the entire weekend (Saturday + Sunday) are first-coverage candidates here. The Monday brief is expected to be **larger than a midweek brief** — typically 6–10 § 1a items vs the usual 3–5 — and to consume more fetch budget. Section § 7 should call out which items are weekend-discovered with their original publication timestamp.
+1. List `briefs/*.md`. Find the most recent file by name (lexicographic sort on `YYYY-MM-DD` is correct).
+2. Compute `gap_hours = (currentDate − latest_brief_date) × 24`. If `briefs/` is empty (first run ever), use 24 h.
+3. Set the **active recency window** to `max(24, gap_hours + 12)` hours — the gap plus a 12-hour safety overlap so a publication that landed near the previous brief's cutoff is not lost.
+4. The **active developing window** stays at `max(72, gap_hours + 24)` hours — used for items still actively developing (multi-day exploitation campaigns, ongoing incidents, advisories that received material updates).
+5. Pass the computed window length to every sub-agent's spawn message so their `WebSearch` / `WebFetch` budgets target the right time range.
 
-- **First brief after a public holiday or after any unscheduled gap:** treat the same way as Monday — extend the window to cover the entire gap (consult `briefs/` to see when the previous brief actually landed) and increase the items-per-section budget proportionally. Surface the gap in § 7 (`Coverage window: extended to N hours due to scheduling gap; previous brief YYYY-MM-DD`).
+This rule is **self-healing**: if any run fails for any reason (sub-agent timeout, network outage, credential failure, model unavailable), the *next* run sees a larger gap on disk and automatically extends its window to cover the missed period. The operator does not have to do anything; the brief that lands always covers everything since the previous published brief.
 
-- **Anything older than the active window** still requires explicit justification (see § Long-running campaigns and § Yearly reports).
+The same rule **derives Monday's expanded window from the data, not from the calendar**. If the daily routine runs Mon–Fri only (a typical schedule), the Monday brief naturally finds the previous brief is Friday's, computes a ~72–84 h gap, and sizes accordingly. If the operator changes the schedule to skip Wednesdays, the Thursday brief automatically covers Tue→Thu. The agent does not need to know — or hard-code — which days the routine fires.
 
-**Don't bridge to the weekly summary.** The Sunday-night weekly summary already exists for week-level synthesis; the Monday brief is *catch-up coverage of the operational window the daily routine missed*, not a re-run of the weekly. The two complement each other:
+**Window-class rules for composing the brief:**
 
-- **Weekly summary** (Sunday night) — consolidating, week-level, allowed to repeat.
-- **Monday brief** (Monday morning) — first coverage of the Friday-late + Saturday + Sunday operational items the dailies have not seen yet, plus Monday-morning fresh items.
+| `gap_hours` | Window class | Expected size | § 7 disclosure |
+|---|---|---|---|
+| ≤ 30 h | Standard daily (catches the previous calendar day) | 3–5 § 1a items, deep dive optional | None needed |
+| 30 – 60 h | Extended (one missed run, e.g. Friday after Thursday) | 5–8 § 1a items | `Coverage window: extended to N h (previous brief YYYY-MM-DD)` |
+| 60 – 96 h | Catch-up (typical Monday after Mon–Fri schedule, or two missed runs) | 6–10 § 1a items, deeper § 4 research, deep dive expected | `Coverage window: catch-up of N h (previous brief YYYY-MM-DD); items first-coverage flagged with publication timestamps` |
+| > 96 h | Major gap (extended outage, holiday cluster) | Cap at 10–12 § 1a items; surface unhandled volume in § 7 | `Coverage window: major gap of N h (previous brief YYYY-MM-DD); coverage prioritised by exploitation severity, residual items rolled into next brief` |
 
-In Phase 0, derive today's window from `currentDate`'s day-of-week:
-- Mon → 72–84h window (cover Fri-late through Mon-morning).
-- Tue → 24h (default).
-- Wed–Thu → 24h (default), 72h for actively developing items.
-- Fri → 24h (default), 72h for actively developing items.
-- Sat / Sun → the routine should not run; if it somehow does, treat as a Monday-class brief and surface the off-schedule run in § 7.
+**Anything older than the active window** still requires explicit justification (see § Long-running campaigns and § Yearly reports).
+
+**Coordination with the weekly summary.** A separate routine consumes [`prompts/weekly-summary.md`](weekly-summary.md) and writes `briefs/weekly/YYYY-Www.md`. The two routines are **independent and self-coordinating** through the same gap-derivation rule:
+
+- The **daily** brief catches up the operational window since the last *daily* brief (read from `briefs/*.md`, not from `briefs/weekly/`).
+- The **weekly** summary catches up the consolidating week-level view since the last *weekly* brief (read from `briefs/weekly/*.md`).
+- They overlap by design — the daily covers individual events as first coverage; the weekly synthesises the week and is allowed to repeat. Neither prompt needs to know when the other runs.
+
+The daily brief is the *primary* source of operational coverage; the weekly summary is the consolidating view. If a weekend event has not been picked up by any daily yet, the next daily must cover it (Phase 0's gap rule will already have widened the window appropriately) — the weekly does not substitute for daily coverage.
 
 ### 8. No repetition across runs
 Read the **last 7 days of briefs** before starting (not just 5). Items already covered are not re-reported, with two exceptions:
@@ -174,21 +185,22 @@ docs/                              # workflow + verification policy
 ### Sub-agent token policy
 **Do not impose token caps on sub-agents.** Allow each to do whatever depth of research the topic warrants. They return summarised findings, not raw HTML.
 
-### Determining "today" + the recency window from the day-of-week
+### Determining "today" + the recency window from the gap on disk
 
 Use `currentDate` from system context as the brief date. Metadata dates are ISO-8601; prose may use readable dates.
 
-**The day-of-week determines the size of the recency window** (Prime Directive 7). Compute the day-of-week from `currentDate` and apply:
+**The recency window is derived from the actual contents of `briefs/`, not from the day-of-week or any hardcoded schedule** (Prime Directive 7). In Phase 0:
 
-| Day | Window | Why |
-|---|---|---|
-| Monday | 72–84 h (Fri-morning → Mon-morning) | Catches Friday-during-the-day publications + the entire weekend; daily routine doesn't run Sat/Sun |
-| Tuesday – Friday | 24 h, extend 72 h for actively developing | Standard daily window |
-| Saturday / Sunday | (routine should not run) | Weekly summary covers the week instead |
+```bash
+# pseudocode — do this with Bash + ls in Phase 0
+latest_brief = max(date in briefs/*.md by lexicographic sort of filename)
+gap_hours    = (currentDate - latest_brief) * 24
+window_hours = max(24, gap_hours + 12)        # +12 h safety overlap
+```
 
-Pass the computed window length to every sub-agent's spawn message so their `WebSearch` / `WebFetch` budgets target the right time range. The Monday brief is allowed — and expected — to be larger: 6–10 § 1a items vs the usual 3–5, deeper § 4 research coverage, and § 7 should explicitly call out which items were weekend-discovered.
+The window-class table in Prime Directive 7 maps the computed `gap_hours` to a brief size and a § 7 disclosure line. Pass `window_hours` to every sub-agent's spawn message so their `WebSearch` / `WebFetch` queries target the right time range.
 
-If `currentDate`'s day-of-week is Saturday or Sunday, surface this in § 7 (`Coverage window: off-schedule run on <day-of-week>; weekly summary normally covers this period`) and treat the run as a Monday-class brief (extended window).
+**Do not hardcode times, days, or schedule assumptions in this prompt.** The operator owns the cron schedule. The agent's job is to publish a brief that covers the entire gap on disk, regardless of when the previous brief landed. This makes the system self-healing for missed runs, robust to schedule changes, and free of timezone assumptions.
 
 ---
 
@@ -200,7 +212,8 @@ If `currentDate`'s day-of-week is Saturday or Sunday, surface this in § 7 (`Cov
 4. Read `state/cves_seen.json` (flat CVE index for fast dedup).
 5. Read `state/deep_dive_history.json` if present (rolling 30-day list of deep-dive picks; used by Phase 3).
 6. Establish today's ISO date.
-7. Initialise a `TodoWrite` plan with the phases.
+7. **Compute the gap-derived recency window** (Prime Directive 7). From the listing in step 2, find the most recent daily brief filename (`max` of the lexicographically-sorted list of `briefs/YYYY-MM-DD.md`). Compute `gap_hours = (today - latest_brief_date) * 24`. Set `window_hours = max(24, gap_hours + 12)` and `developing_window_hours = max(72, gap_hours + 24)`. Determine the window-class per the table in Prime Directive 7. Pass `window_hours` to every Phase 1 sub-agent. Surface in § 7 if `gap_hours > 30` (`Coverage window: <class> — <N>h gap; previous brief YYYY-MM-DD`).
+8. Initialise a `TodoWrite` plan with the phases.
 
 If any read fails, surface the error and stop — do not silently proceed without prior context.
 
@@ -875,7 +888,7 @@ push: ok | failed (<reason>)
 
 This prompt is committed to the same repository it operates on. **The agent has full authority to modify this prompt, the source list, the documentation, the sub-agent structure, and the repository layout** when doing so will improve future briefs. Changes are committed alongside the brief in the same run; they show up in `git log` for human review after the fact, but no human gate blocks the change. The repo is the agent's working memory across runs — treat it that way.
 
-The goal is autonomous operation: a routine fires once per **working day** (Monday–Friday), a brief lands on `main`, no human babysits. The weekly summary fires Sunday night. If the prompt has rough edges, smooth them. If a sub-agent's domain has drifted, redraw it. If the source list has dead weight, drop it; if a topical search keeps surfacing a strong publisher, promote it from candidate.
+The goal is autonomous operation: scheduled routines fire on whatever cadence the operator configured, a brief lands on `main`, no human babysits. The schedule is **not** encoded in this prompt — the agent always covers the gap since the previous brief on disk. If the prompt has rough edges, smooth them. If a sub-agent's domain has drifted, redraw it. If the source list has dead weight, drop it; if a topical search keeps surfacing a strong publisher, promote it from candidate.
 
 ### Hard invariants — never remove or weaken
 

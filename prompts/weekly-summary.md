@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fires once per week
+> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The schedule is set by the operator (typically once per week); this prompt does not assume a specific cadence.
 > **Output:** `briefs/weekly/YYYY-Www.md` (ISO week, English)
 > **Version log:** `prompts/CHANGELOG.md`
 
@@ -51,7 +51,8 @@ The weekly summary inherits these from the daily prompt:
 The repository root (containing `prompts/`, `sources/`, `state/`, `briefs/`, `docs/`). All paths in this prompt are relative to that root. Use the current working directory of the Claude Code session — do not hard-code an absolute path.
 
 ### Inputs
-- `briefs/` — read every daily brief from the last 7 calendar days (Mon–Sun, or rolling-7-day window if running mid-week).
+- `briefs/` — read every daily brief whose date falls within the gap-derived window (see Phase 0 step 2).
+- `briefs/weekly/` — used to determine the previous weekly summary so the gap can be computed.
 - `state/covered_items.json` and `state/cves_seen.json` — full coverage history.
 - `sources/sources.json` — for any fresh-source verification.
 - WebSearch / WebFetch — to verify, refresh, and pull horizon material.
@@ -66,15 +67,37 @@ The repository root (containing `prompts/`, `sources/`, `state/`, `briefs/`, `do
 
 ## PHASE 0 — PREFLIGHT (sequential)
 
-1. Compute today's ISO week (`YYYY-Www`, e.g., `2026-W19`). The brief is for the **completed week** ending today (or the most recently completed week if running on a weekday).
-2. Determine the date range: 7 calendar days back to today (inclusive). Adjust naming: `briefs/weekly/YYYY-Www.md`.
-3. List `briefs/` and read **all** daily briefs whose date is within the window.
+1. Compute today's ISO week (`YYYY-Www`, e.g., `2026-W19`). The output filename is `briefs/weekly/<this-iso-week>.md`. If a file with that name already exists from a previous run today, treat it as a re-run and overwrite cleanly.
+
+2. **Compute the gap-derived recency window from `briefs/weekly/`.** The same self-healing rule the daily prompt uses, applied to the weekly cadence:
+   ```
+   latest_weekly = max(date in briefs/weekly/*.md by lexicographic sort, parsed from YYYY-Www)
+   gap_days      = today - latest_weekly_end   # in calendar days
+   window_days   = max(7, gap_days + 1)        # +1 day safety overlap
+   ```
+   If `briefs/weekly/` is empty (first ever run), use 7 days. The window-class table:
+
+   | `gap_days` | Window class | Expected size | Disclosure in § 11 |
+   |---|---|---|---|
+   | ≤ 8 d | Standard week | normal coverage | none needed |
+   | 9 – 15 d | One missed week | doubled — covers two weeks | `Coverage window: catch-up of N days; previous weekly YYYY-Www` |
+   | > 15 d | Major gap | cap at ~3 weeks of detail; older items as bullets | `Coverage window: major gap of N days; previous weekly YYYY-Www; older items condensed` |
+
+3. List `briefs/` and read **all** daily briefs whose date falls within the gap-derived window. The window may span more than 7 days when the previous weekly is overdue — the daily briefs are the substrate, and they must all be consumed.
+
 4. Read `state/covered_items.json` and `state/cves_seen.json` for the structured history (especially anything older than the window that is still active).
+
 5. Read `sources/sources.json`.
-6. Read the **previous week's** weekly summary if present (for continuity).
+
+6. Read the **previous weekly summary** (whatever the latest file in `briefs/weekly/` is) for continuity.
+
 7. Initialise a `TodoWrite` plan.
 
 If reads fail, surface the error and stop.
+
+**Self-healing.** This rule means the weekly summary recovers automatically from a missed run. If last week's weekly didn't fire, today's run sees a 14-day gap on disk and naturally widens the window. The operator does not have to do anything.
+
+**Schedule independence.** The prompt does not assume a specific day or time. The operator owns the cron; the agent always covers the gap since the previous weekly. The operator can move the weekly run to any day or time — no edit to this prompt is needed.
 
 ---
 

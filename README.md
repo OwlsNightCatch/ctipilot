@@ -91,7 +91,9 @@ These principles are encoded in the prompts and enforced by quality gates on eac
 
 ## Daily routine
 
-A scheduled Claude Code routine fires once per **working day** (Monday–Friday) at, e.g., 06:30 Europe/Zurich. It is given exactly one instruction: read [`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md) and execute it. The routine does **not** run on Saturday or Sunday — those are covered by the Sunday-night weekly summary, and the next Monday brief expands its recency window to cover Friday-during-the-day events plus the entire weekend (typically 6–10 § 1a items vs the usual 3–5).
+A scheduled Claude Code routine fires on whatever cadence the operator configured. The recommended pattern is **working days only**, so the prompt assumes Saturday and Sunday are not covered by the daily routine. The routine is given exactly one instruction: read [`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md) and execute it.
+
+The recency window is **derived from `briefs/`, not from a hardcoded schedule** (Prime Directive 7). Every run computes the gap since the last brief on disk and covers the entire gap plus a 12-hour safety overlap. This makes the system **self-healing** for missed runs — if Tuesday's run fails, Wednesday's run sees a ~48 h gap and naturally extends its window — and **schedule-agnostic** — the operator can change cron times, days, or even routines without touching the prompt. The brief that lands always covers everything since the previous published brief.
 
 > **One-time setup** required for the routine to publish back to this repo: install the Claude GitHub App on the repo, and (optionally) enable **Allow unrestricted branch pushes** in the routine's permissions for direct-to-`main` publishing. Full instructions: [`docs/routine-setup.md`](docs/routine-setup.md).
 
@@ -110,7 +112,7 @@ Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
 
 ## Weekly routine
 
-A separate scheduled routine fires **Sunday night** (typically 18:00–22:00 Europe/Zurich). Reads [`prompts/weekly-summary.md`](prompts/weekly-summary.md). Output: `briefs/weekly/YYYY-Www.md`.
+A separate scheduled routine fires once per week (operator-chosen day and time — no schedule is hardcoded). Reads [`prompts/weekly-summary.md`](prompts/weekly-summary.md). Output: `briefs/weekly/YYYY-Www.md`. The same gap-derivation rule applies: each run reads `briefs/weekly/` to find the previous summary and covers the entire gap. A missed week is automatically caught up by the next run.
 
 The weekly summary reads every daily brief from the past 7 days, builds a top-stories list, multi-day campaign roll-ups, full CVE roll-up table, sector/victim patterns, and major-breaches recap. It then spawns horizon sub-agents (long-horizon campaigns, yearly/periodic reports, policy/regulatory) for material the dailies did not cover, distils any newly published yearly threat report, and produces a "looking ahead" list. Unlike the daily brief, the weekly summary **may repeat material** from the dailies — that is its consolidating purpose.
 
