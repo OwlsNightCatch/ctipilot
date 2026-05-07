@@ -257,9 +257,19 @@
       // once per actual URL change.
       if (window.location.href === _lastTrackedUrl) return;
       _lastTrackedUrl = window.location.href;
-      window.umami.track();
+
+      // Build a per-route URL the dashboard can group. Umami's default
+      // payload uses `location.pathname` only — it strips `location.hash`,
+      // which collapses every SPA route into the single root path
+      // `/security-newsletter/`. We use the function form of track() so
+      // we keep all the auto-collected fields (referrer, screen,
+      // language, etc.) and only override `url` and `title`.
+      const url = location.pathname + location.search + location.hash;
+      const title = document.title;
+      window.umami.track((props) => ({ ...props, url: url, title: title }));
+
       // eslint-disable-next-line no-console
-      if (window.__ctibriefsDebugUmami) console.info('[umami] tracked', window.location.href);
+      if (window.__ctibriefsDebugUmami) console.info('[umami] tracked', url, '·', title);
     } catch (_) {
       // never let analytics break navigation
     }
