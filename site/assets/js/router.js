@@ -1,19 +1,23 @@
 /* router.js — hash-based router. URLs:
-       #/                     → home
+       #/                     → home (preview of latest daily brief)
        #/briefs               → briefs index
-       #/briefs/<name>        → single brief (daily YYYY-MM-DD or weekly YYYY-Www)
+       #/briefs/<name>        → single brief (full text; daily YYYY-MM-DD or weekly YYYY-Www)
        #/cves                 → CVE list
        #/cves/<id>            → CVE detail
        #/topics               → topics list
        #/topics/<key>         → topic detail (encoded)
        #/sources              → sources list
        #/sources/<id>         → source detail (encoded)
+       #/ops                  → operations dashboard (run log + stale sources)
        #/search?q=...         → search results
        #/about                → about / docs
 
    Filter / search query is also pushed into the hash for shareable URLs:
        #/briefs?q=apache&kind=daily
-       #/topics?q=copy+fail&type=cve
+       #/topics?q=copy+fail&type=cve&flag=SINGLE-SOURCE
+
+   ?at=<anchor> — after render, scroll the matching #anchor into view.
+   Used by section-level search results (S5) and the prompt-version badge.
 */
 
 (function () {
@@ -23,7 +27,7 @@
     const raw = window.location.hash || '#/';
     const cleaned = raw.startsWith('#') ? raw.slice(1) : raw;
     const [pathRaw, queryRaw] = cleaned.split('?');
-    const path = (pathRaw || '/').split('/').filter(Boolean); // ['briefs','2026-05-06']
+    const path = (pathRaw || '/').split('/').filter(Boolean);
     const query = {};
     if (queryRaw) {
       for (const pair of queryRaw.split('&')) {
@@ -35,7 +39,6 @@
     return { path, query };
   }
 
-  /** Build a hash URL from a route + query. */
   function buildHash(route, query) {
     const qs = query
       ? Object.entries(query)
@@ -46,56 +49,72 @@
     return '#' + route + (qs ? '?' + qs : '');
   }
 
-  /** Update only the query part of the current hash without re-routing. */
   function updateQuery(query) {
     const { path } = parseHash();
     const route = '/' + path.join('/');
     const target = buildHash(route, query);
     if (target !== window.location.hash) {
-      // Use replaceState so filter changes don't pollute history.
       history.replaceState(null, '', target);
     }
+  }
+
+  function writeView(view, html) {
+    view.innerHTML = html;
+  }
+
+  /** Update document.title, meta[name=description] and the OpenGraph
+      equivalents to match the current route. Helps both link-preview
+      and search engines treat each route as its own page even though
+      we're a hash-routed SPA. */
+  function setMeta({ title, description }) {
+    if (title) document.title = title;
+    const ensureMeta = (selector, attr, value) => {
+      const el = document.head.querySelector(selector);
+      if (!el || value == null) return;
+      el.setAttribute(attr, value);
+    };
+    if (description) {
+      ensureMeta('meta[name="description"]', 'content', description);
+      ensureMeta('meta[property="og:description"]', 'content', description);
+      ensureMeta('meta[name="twitter:description"]', 'content', description);
+    }
+    if (title) {
+      ensureMeta('meta[property="og:title"]', 'content', title);
+      ensureMeta('meta[name="twitter:title"]', 'content', title);
+    }
+    // Canonical: include the current hash so each route has a distinct URL.
+    const link = document.head.querySelector('link[rel="canonical"]');
+    if (link) {
+      const base = (link.dataset.base || link.getAttribute('href') || '').replace(/#.*/, '').replace(/\/$/, '');
+      if (!link.dataset.base) link.dataset.base = base;
+      link.setAttribute('href', base + '/' + (window.location.hash || ''));
+    }
+    const og = document.head.querySelector('meta[property="og:url"]');
+    if (og) og.setAttribute('content', window.location.href);
   }
 
   async function dispatch() {
     const { path, query } = parseHash();
     const view = document.getElementById('view');
-    view.innerHTML = '<p class="loading">Loading…</p>';
+    writeView(view, '<p class="loading">Loading…</p>');
 
     let html = '';
-    let visitedBrief = null;
     try {
       if (path.length === 0) {
-        // Redirect home → latest daily brief so the URL bar reflects what's
-        // actually being read (and GitHub Pages logs a path-level view of
-        // briefs/<name>.md when the SPA fetches the markdown). This is a
-        // replaceState — the browser back button still goes to wherever
-        // the visitor came from. Falls through to the Render.home empty
-        // state if there are no daily briefs yet.
-        const latest = (Store.manifest.find((b) => b.kind === 'daily') || {}).name;
-        if (latest) {
-          history.replaceState(null, '', '#/briefs/' + latest);
-          // Re-route now that the path has changed. parseHash will see the
-          // new hash. No infinite loop: dispatch always takes the briefs
-          // branch on the next call.
-          return dispatch();
-        }
         html = await Render.home();
       } else if (path[0] === 'briefs') {
         if (path.length === 1) {
           html = Render.briefs({ q: query.q, filterKind: query.kind || 'all' });
         } else if (path[1] === 'weekly' && path[2]) {
           html = await Render.brief({ name: path[2] });
-          visitedBrief = path[2];
         } else {
           html = await Render.brief({ name: path[1] });
-          visitedBrief = path[1];
         }
       } else if (path[0] === 'cves') {
         if (path.length === 1) html = Render.cves({ q: query.q });
         else html = Render.cve({ id: decodeURIComponent(path[1]) });
       } else if (path[0] === 'topics') {
-        if (path.length === 1) html = Render.topics({ q: query.q, filterType: query.type || 'all' });
+        if (path.length === 1) html = Render.topics({ q: query.q, filterType: query.type || 'all', filterFlag: query.flag || 'all' });
         else html = Render.topic({ key: decodeURIComponent(path[1]) });
       } else if (path[0] === 'sources') {
         if (path.length === 1) {
@@ -103,6 +122,8 @@
         } else {
           html = Render.source({ id: decodeURIComponent(path[1]) });
         }
+      } else if (path[0] === 'ops') {
+        html = await Render.ops();
       } else if (path[0] === 'search') {
         html = Render.search({ q: query.q || '' });
       } else if (path[0] === 'about') {
@@ -115,34 +136,78 @@
       html = `<div class="empty"><h1>Error</h1><p>${Render.esc(e.message)}</p><p><a href="#/">← back home</a></p></div>`;
     }
 
-    view.innerHTML = html;
-    document.title = inferTitle(path);
+    writeView(view, html);
+    setMeta(inferMeta(path, query));
     highlightActiveNav(path[0] || 'home');
-    window.scrollTo({ top: 0 });
+    closeMobileNav();
     bindRouteHandlers(path, query);
-    if (visitedBrief && window.Personal && Personal.isEnabled()) {
-      try { Personal.recordVisit(visitedBrief); } catch (_) {}
+
+    // Scroll behaviour: if ?at=anchor is in the hash, jump there; else top.
+    if (query.at) {
+      // Two-step scroll because <details>-wrapped sections expand on click.
+      const target = document.getElementById(query.at);
+      if (target) {
+        const det = target.closest('details');
+        if (det) det.open = true;
+        target.scrollIntoView({ block: 'start' });
+      } else {
+        window.scrollTo({ top: 0 });
+      }
+    } else {
+      window.scrollTo({ top: 0 });
     }
-    // Dwell-time FSM. Entering a brief route starts the clock; leaving any
-    // brief route flushes whatever was accrued. Re-entering the same brief
-    // is a no-op.
-    if (visitedBrief) startDwell(visitedBrief);
-    else flushDwell();
   }
 
-  function inferTitle(path) {
+  function inferMeta(path, query) {
     const root = path[0];
-    const map = {
-      undefined: 'CTI Briefs',
-      briefs: 'Briefs · CTI Briefs',
-      cves: 'CVEs · CTI Briefs',
-      topics: 'Topics · CTI Briefs',
-      sources: 'Sources · CTI Briefs',
-      search: 'Search · CTI Briefs',
-      about: 'About · CTI Briefs',
+    const SUFFIX = ' · CTI Briefs';
+    const desc = (s) => `${s} — daily and weekly cyber threat intelligence briefing covering Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated.`;
+
+    if (!root) return {
+      title: 'CTI Briefs — Daily cyber threat intelligence for Switzerland, Europe & the public sector',
+      description: desc('Latest CTI briefs'),
     };
-    if (root && path[1]) return `${decodeURIComponent(path[1])} · CTI Briefs`;
-    return map[root] || 'CTI Briefs';
+    if (root === 'briefs' && path[1]) {
+      const name = decodeURIComponent(path[1] === 'weekly' ? path[2] || '' : path[1]);
+      const brief = window.Store && Store.findBrief && Store.findBrief(name);
+      if (brief) {
+        const tldr = (brief.tldr || []).slice(0, 2).map((s) => s.replace(/\([^)]*\)/g, '').replace(/[*_`]/g, '').trim()).join(' ');
+        return {
+          title: brief.title + SUFFIX,
+          description: tldr ? tldr.slice(0, 280) : desc(brief.title),
+        };
+      }
+      return { title: name + SUFFIX, description: desc(name) };
+    }
+    if (root === 'cves' && path[1]) {
+      const id = decodeURIComponent(path[1]);
+      const cve = window.Store && Store.findCve && Store.findCve(id);
+      const title = (cve && cve.title) || id;
+      return { title: id + ' — ' + title + SUFFIX, description: title };
+    }
+    if (root === 'topics' && path[1]) {
+      const key = decodeURIComponent(path[1]);
+      const t = window.Store && Store.findTopic && Store.findTopic(key);
+      const title = (t && t.title) || key;
+      return { title: title + SUFFIX, description: 'Tracked topic: ' + title };
+    }
+    if (root === 'sources' && path[1]) {
+      const id = decodeURIComponent(path[1]);
+      const s = window.Store && Store.findSource && Store.findSource(id);
+      const title = (s && s.publisher) || id;
+      return { title: title + SUFFIX, description: 'Source: ' + title };
+    }
+    const map = {
+      briefs: 'All briefs',
+      cves: 'CVEs referenced across briefs',
+      topics: 'Tracked topics across briefs',
+      sources: 'Curated source list',
+      ops: 'Operations dashboard',
+      search: query.q ? `Search results for "${query.q}"` : 'Search',
+      about: 'About this newsletter',
+    };
+    const label = map[root] || 'CTI Briefs';
+    return { title: label + SUFFIX, description: desc(label) };
   }
 
   function highlightActiveNav(root) {
@@ -153,16 +218,38 @@
     });
   }
 
-  /** Wire up filter chips and inline search inputs after each render. */
-  function bindRouteHandlers(path, query) {
-    const root = path[0] || '';
+  function closeMobileNav() {
+    const bar = document.querySelector('.bar-inner');
+    const toggle = document.getElementById('nav-toggle');
+    if (bar) bar.classList.remove('is-open');
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
+  }
 
-    // Filter chips with data-kind / data-type / data-cat / data-status
+  function showToast(text) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'toast';
+      el.setAttribute('role', 'status');
+      document.body.appendChild(el);
+    }
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => el.classList.remove('show'), 1500);
+  }
+
+  /** Wire up filter chips, share button, and inline search inputs after each render. */
+  function bindRouteHandlers(path, query) {
     document.querySelectorAll('[data-kind]').forEach((el) =>
       el.addEventListener('click', () => updateQuery({ ...query, kind: el.dataset.kind === 'all' ? undefined : el.dataset.kind }) || dispatch())
     );
     document.querySelectorAll('[data-type]').forEach((el) =>
       el.addEventListener('click', () => updateQuery({ ...query, type: el.dataset.type === 'all' ? undefined : el.dataset.type }) || dispatch())
+    );
+    document.querySelectorAll('[data-flag]').forEach((el) =>
+      el.addEventListener('click', () => updateQuery({ ...query, flag: el.dataset.flag === 'all' ? undefined : el.dataset.flag }) || dispatch())
     );
     document.querySelectorAll('[data-cat]').forEach((el) =>
       el.addEventListener('click', () => updateQuery({ ...query, cat: el.dataset.cat === 'all' ? undefined : el.dataset.cat }) || dispatch())
@@ -171,12 +258,17 @@
       el.addEventListener('click', () => updateQuery({ ...query, status: el.dataset.status === 'all' ? undefined : el.dataset.status }) || dispatch())
     );
 
-    // "Clear" link in the personal-history panel.
-    document.querySelectorAll('[data-action="clear-personal"]').forEach((el) => {
-      el.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (window.Personal) Personal.clear();
-        dispatch();
+    // Share / copy-permalink
+    document.querySelectorAll('[data-action="share"]').forEach((el) => {
+      el.addEventListener('click', async () => {
+        const url = window.location.href;
+        try {
+          await navigator.clipboard.writeText(url);
+          showToast('Permalink copied');
+        } catch (_) {
+          // Fallback: highlight the URL bar
+          window.prompt('Copy this URL', url);
+        }
       });
     });
 
@@ -193,80 +285,41 @@
           dispatch();
         }, 120);
       });
-      // Restore caret to end of value after re-render
       el.focus();
       const len = el.value.length;
       try { el.setSelectionRange(len, len); } catch (_) {}
     }
   }
 
-  /* Dwell-time tracking ------------------------------------------------
-
-     One pending dwell session at a time, bound to the brief currently in
-     view. State machine:
-
-         enter brief X     →  startDwell(X)        : starts the clock
-         leave brief X     →  flushDwell()         : commits to localStorage
-         tab hidden        →  pause                : accumulate, stop clock
-         tab visible again →  resume               : restart clock
-         pagehide / unload →  flushDwell()         : last-chance commit
-
-     Persisted only via Personal.recordDwell, which is DNT/GPC-aware and
-     localStorage-only. No telemetry leaves the device.
-  */
-  let _dwellName = null;
-  let _dwellStart = null;        // ms, null when paused
-  let _dwellAccumulated = 0;     // ms accrued before the current segment
-
-  function startDwell(name) {
-    if (!name) return;
-    if (_dwellName === name) {
-      // already tracking this brief; if paused (tab was hidden), resume
-      if (_dwellStart == null) _dwellStart = Date.now();
-      return;
-    }
-    flushDwell();
-    _dwellName = name;
-    _dwellStart = Date.now();
-    _dwellAccumulated = 0;
+  /** Mobile hamburger menu — toggles a class on .bar-inner that the CSS uses
+      to drop the nav into a panel below the topbar. Closes on route change
+      (handled by closeMobileNav after dispatch) and on outside click. */
+  function wireNavToggle() {
+    const toggle = document.getElementById('nav-toggle');
+    const bar = document.querySelector('.bar-inner');
+    if (!toggle || !bar) return;
+    toggle.addEventListener('click', () => {
+      const open = bar.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+    document.addEventListener('click', (e) => {
+      if (!bar.contains(e.target)) closeMobileNav();
+    });
+    // Close on Escape.
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeMobileNav();
+    });
   }
-
-  function flushDwell() {
-    if (!_dwellName) return;
-    let total = _dwellAccumulated;
-    if (_dwellStart != null) total += Date.now() - _dwellStart;
-    if (window.Personal && Personal.recordDwell) {
-      try { Personal.recordDwell(_dwellName, total); } catch (_) {}
-    }
-    _dwellName = null;
-    _dwellStart = null;
-    _dwellAccumulated = 0;
-  }
-
-  function pauseDwell() {
-    if (_dwellStart == null) return;
-    _dwellAccumulated += Date.now() - _dwellStart;
-    _dwellStart = null;
-  }
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) pauseDwell();
-    else if (_dwellName && _dwellStart == null) _dwellStart = Date.now();
-  });
-  // pagehide is the cross-browser final-chance event (covers tab close,
-  // navigation, BFCache freeze). beforeunload is unreliable on mobile.
-  window.addEventListener('pagehide', flushDwell);
 
   window.Router = {
     parseHash,
     buildHash,
     updateQuery,
     dispatch,
-    startDwell,    // exposed so dispatch() can drive the FSM
-    flushDwell,
     boot() {
       window.addEventListener('hashchange', dispatch);
       window.addEventListener('popstate', dispatch);
+      wireNavToggle();
     },
   };
 })();

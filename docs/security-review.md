@@ -130,13 +130,13 @@ window to detect can be days.
 **Residual risk.** A subtle weakening — e.g., changing "drop items in last 5 briefs" to "drop items in last 1 brief" — would not break the template, would not surface in the brief, and would only be detected by a human reviewing diffs.
 
 **What would strengthen further (the hardest of the three big residual risks).**
-- **Soft circuit breaker.** A `state/BLOCKED.md` flag the prompt must check in Phase 0; if present, the agent aborts. The flag is set automatically by a separate workflow that detects editorial regressions (count of [SINGLE-SOURCE] items, count of dropped items, output of CI invariant tests). A human clears the flag. This is the practical compromise between "fully autonomous" and "no human in the loop ever".
-- **Prompt diff alerting.** A workflow `prompt-drift-alert.yml` that on every push touching `prompts/*.md` posts a diff to a notification channel (GitHub issue, email via a secret). No blocking, just visibility — the operator notices a 200-line edit even if they don't read every commit.
-- **Prompt size and shape budget.** A CI test that rejects a prompt change if the rendered file size moves by >25%, or if the count of "MUST"/"DO NOT" lines drops, on any single commit. Catches the "rewritten by hallucination" failure mode.
-- **Read-only baseline copy.** Keep `prompts/baseline/daily-cti-brief.md` mirroring the last version a human reviewed; a CI job compares current to baseline and surfaces semantic deltas (rule additions/removals). The baseline is updated by an explicit human PR; the agent cannot.
+- **Phase 5.5 self-check is now the in-prompt control.** Every run validates state JSON parses, every brief CVE is in `cves_seen.json`, and every § 1–4 item has a matching `covered_items.json` appearance for today. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it. This catches the most common drift mode (state/output divergence) without external workflows.
+- **Prompt diff alerting.** A workflow `prompt-drift-alert.yml` that on every push touching `prompts/*.md` posts a diff to a notification channel (GitHub issue, email via a secret). No blocking, just visibility — the operator notices a 200-line edit even if they don't read every commit. *Not implemented in-repo.*
+- **Prompt size and shape budget.** A CI test that rejects a prompt change if the rendered file size moves by >25%, or if the count of "MUST"/"DO NOT" lines drops, on any single commit. Catches the "rewritten by hallucination" failure mode. *Not implemented in-repo.*
+- **Read-only baseline copy.** Keep `prompts/baseline/daily-cti-brief.md` mirroring the last version a human reviewed; a CI job compares current to baseline and surfaces semantic deltas (rule additions/removals). The baseline is updated by an explicit human PR; the agent cannot. *Not implemented.*
 - **Sign and verify.** Sign the active prompt with a key the agent doesn't have access to; a CI job verifies before the routine runs. Practical only with a managed signing key — not currently feasible without external infra.
 
-The realistic recommendation: ship the **soft circuit breaker** plus **diff alerting** plus the **size/shape budget** test. Together they bound the worst case without breaking the autonomy model.
+The realistic recommendation: keep the **Phase 5.5 self-check** in the prompt (in place), and add **diff alerting** plus the **size/shape budget** test if external CI is added. Together they bound the worst case without breaking the autonomy model.
 
 ---
 
@@ -216,9 +216,10 @@ or pivot through CSP escapes.
 
 **Residual risk.** A zero-day in DOMPurify itself. Fully mitigated only by upgrading on disclosure; the SHA-256 hashes ensure that an upgrade is a deliberate, audited event.
 
+**Implemented:** **Trusted Types** (`require-trusted-types-for 'script'; trusted-types ctibriefs-marked dompurify default`) — catches DOM XSS at sink in supporting browsers. Brief HTML flows through DOMPurify and is then assigned to `view.innerHTML` via the named `ctibriefs-marked` policy. Browsers without Trusted Types (Safari, Firefox today) skip the enforcement; DOMPurify alone provides equivalent runtime safety.
+
 **What would strengthen further.**
 - **CI dependency-audit job** that warns when the vendored versions are behind.
-- **Trusted Types** (CSP `require-trusted-types-for 'script'`) — catches DOM XSS at sink. Browser support is good and getting better; would require small refactors to inject `setHTML` only via a defined policy.
 
 ---
 
@@ -367,18 +368,20 @@ For a self-evolving CTI feed, the right defensive frame is **"detect and
 correct"**, not **"prevent at all costs"**. The system should:
 
 - **Run unattended by default.**
-- **Surface anomalies.** A weekly digest job that posts (a) prompt diffs,
-(b) state-file growth, (c) editorial-invariant test results, (d) source
-list churn. The operator skims this in 5 minutes a week.
-- **Have a soft kill-switch.** `state/BLOCKED.md`. The prompt's Phase 0
-checks for it. Set automatically on hard editorial-invariant failures
-(IOC detected, CVE doesn't resolve, multi-day flood of [SINGLE-SOURCE]
-items). Cleared by a human commit.
+- **Surface anomalies.** The site's `#/ops` view (sourced from
+`state/run_log.json`) shows recent runs, sub-agent allocation, fetch
+failures, and stale active sources. The operator skims this in a few
+minutes a week.
+- **Self-check before commit.** Phase 5.5 of the daily prompt verifies
+state JSON parses, every CVE in the brief is in `cves_seen.json`, and
+every § 1–4 item has a `covered_items.json` appearance for today. Drift
+aborts the commit; the brief stays on disk and the next run rebuilds
+state from it.
 - **Fail closed on integrity errors.** If `HASHES` doesn't match, the
 build aborts. If `state/*.json` doesn't parse, the agent stops. Never
 silently degrade.
 
-These three controls turn "self-evolving" from "uncontrolled" to
+These controls turn "self-evolving" from "uncontrolled" to
 "observable, recoverable, with bounded blast radius". They are the
 realistic pragmatic answer.
 
@@ -469,7 +472,7 @@ None of these are enabled by default. Each is documented in
 
 | Symptom | Likely cause | Immediate response |
 |---|---|---|
-| Brief contains an IOC-shaped string | T1 (injection) or T2 (drift) | Revert the offending brief commit; create `state/BLOCKED.md`; investigate prompt diff |
+| Brief contains an IOC-shaped string | T1 (injection) or T2 (drift) | Revert the offending brief commit; investigate prompt diff in `git log -- prompts/` |
 | `state/cves_seen.json` grew >25% in one commit | T3 (poisoning) | Revert the commit; investigate which CVEs were added and from which source |
 | Auto-merge merged a `claude/*` branch with non-brief content | T6 (credential or scope abuse) | Revert; rotate the GitHub App credential; investigate the branch's commits |
 | `python3 site/build.py` aborts on hash mismatch | T8 (vendor tampering or accidental upgrade) | Audit the vendored binary diff; only update HASHES in a commit that *also* documents the upstream version change |

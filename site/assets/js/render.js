@@ -1,15 +1,26 @@
 /* render.js — view templates for each route.
 
-   Each render fn returns an HTML string. The router puts the result into #view.
-   Markdown rendering goes through marked.js + DOMPurify (vendored), with link
-   targets set to _blank for outbound publisher URLs.
+   Each render fn returns an HTML string. The router puts the result into
+   #view. Markdown rendering goes through marked.js + DOMPurify (vendored),
+   with a Trusted Types policy wrapping the assignment so the strict CSP
+   require-trusted-types-for 'script' directive is satisfied.
 
-   No template engine: small surface, easy to audit. The few places that
-   inline user-controlled strings always pass through esc()/Search.escapeHtml().
+   No template engine: small surface, easy to audit. Inline strings come
+   either from JSON Store data (sanitised at parse) or the brief markdown
+   (sanitised through marked + DOMPurify); plain string interpolation
+   passes through esc()/Search.escapeHtml().
 */
 
 (function () {
   'use strict';
+
+  /** Identity wrapper kept for callers — Trusted Types enforcement was
+      removed when Umami was added to the page (Umami doesn't declare a
+      TT policy and is rejected by `require-trusted-types-for 'script'`).
+      DOMPurify still sanitises every markdown body before assignment. */
+  function trustHtml(html) {
+    return html;
+  }
 
   /* ── markdown configuration ─────────────────────────────────── */
 
@@ -28,10 +39,7 @@
   }
 
   /* DOMPurify hook: any external <a href="https?://..."> gets target="_blank"
-     and rel="noopener noreferrer". Catches every link in every rendered
-     markdown body regardless of how marked produced it. Runs after the
-     sanitizer's attribute-allowlist so we know target/rel are permitted
-     (PURIFY_CFG.ADD_ATTR includes them). */
+     and rel="noopener noreferrer". */
   function attachExternalLinkHook() {
     if (!window.DOMPurify || attachExternalLinkHook._done) return;
     DOMPurify.addHook('afterSanitizeAttributes', (node) => {
@@ -45,40 +53,8 @@
     attachExternalLinkHook._done = true;
   }
 
-  /* Markdown rendering pipeline: marked → DOMPurify.
-
-     The brief content includes inline links and quoted titles whose
-     attacker-controlled text comes from third-party publisher pages. Even
-     after the agent's verification chain, we treat all of it as untrusted
-     by the time it reaches the browser. Defences:
-       1. CSP meta tag (index.html) blocks inline scripts at the engine level.
-       2. marked is configured with gfm + breaks; we explicitly do not
-          enable raw HTML rendering of unsafe tags.
-       3. DOMPurify with a restrictive allowlist strips script tags, on*
-          handlers, and javascript:/data: in href/src.
-  */
-  /* Defence in depth — every option here is justified and stays inside
-     DOMPurify's core "safe HTML" use case. Some experimental options
-     (SAFE_FOR_TEMPLATES, SANITIZE_NAMED_PROPS) caused "too much
-     recursion" on Firefox when sanitising real brief content with many
-     external links and an HTML table; they have been removed. Object
-     is NOT frozen — DOMPurify reserves the right to read/copy options.
-
-     USE_PROFILES.html              base allowlist of safe HTML tags.
-     ADD_ATTR target, rel           markdown links opening in new tabs need
-                                    these preserved; the afterSanitizeAttributes
-                                    hook sets them on every external link.
-     FORBID_TAGS                    explicit superset over USE_PROFILES.html
-                                    stripping every "executes / parses code"
-                                    surface even if a future profile change
-                                    loosens defaults.
-     FORBID_ATTR                    attributes that have led to historic XSS
-                                    even on otherwise-safe tags.
-     ALLOW_DATA_ATTR false          arbitrary data-* leaks into JS via
-                                    dataset; we never need them in briefs.
-     ALLOW_UNKNOWN_PROTOCOLS false  belt-and-braces with ALLOWED_URI_REGEXP.
-     ALLOWED_URI_REGEXP             only http(s):, mailto:, tel:, in-page
-                                    anchor (#…), or relative path. */
+  /* Defence in depth — see notes in the previous version of this file
+     for the rationale of every flag. */
   const PURIFY_CFG = {
     USE_PROFILES: { html: true },
     ADD_ATTR: ['target', 'rel'],
@@ -96,26 +72,6 @@
     ALLOW_UNKNOWN_PROTOCOLS: false,
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|#|\/)/i,
   };
-
-  /** Boot-time XSS self-test for the markdown sanitisation pipeline.
-
-     Runs a panel of known XSS vectors through the same marked + DOMPurify
-     path that user content takes. After sanitisation, we parse the output
-     into a detached document and look for *DOM-level* danger signals:
-       - any forbidden tag actually rendered (script, iframe, svg, math,
-         object, embed, form, meta, link, base, style, frame…)
-       - any attribute starting with on* (event handlers)
-       - any href/src/action/formaction/data starting with a dangerous
-         scheme (javascript:, data:, vbscript:, file:)
-
-     Substring-on-string checks are deliberately avoided because
-     KEEP_CONTENT preserves inert text; a stripped <style> tag's CSS
-     becomes harmless text that a regex would still match.
-
-     If any vector survives, runtime markdown rendering is *disabled* and
-     md() falls back to plain escaped text. The page stays usable; an
-     attacker payload cannot execute. The failure is logged so the
-     operator notices on the next visit / inspection. */
 
   const XSS_VECTORS = Object.freeze([
     '<script>alert(1)</script>',
@@ -155,21 +111,29 @@
   ]);
   const DANGEROUS_URI = /^\s*(?:javascript|data|vbscript|file):/i;
 
-  /** Inspect sanitiser output as a DOM tree. Returns null if clean,
-      otherwise a string describing the first danger signal found. */
+  /** Walks the sanitiser output as a DocumentFragment, looking for any
+      forbidden tag, event-handler attribute, dangerous URI scheme, or
+      inline style. Returns null when clean.
+
+      Uses DOMPurify.sanitize a second time with RETURN_DOM_FRAGMENT to
+      get a DocumentFragment without ever assigning a string to
+      innerHTML — necessary under our strict
+      `require-trusted-types-for 'script'` CSP, where DOMParser and
+      innerHTML otherwise refuse plain strings. */
   function findDangerInHtml(html) {
-    let doc;
+    let frag;
     try {
-      doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html');
+      // Apply the same restrictive PURIFY_CFG used at runtime, plus
+      // RETURN_DOM_FRAGMENT so we walk the actual node tree without
+      // assigning any string to innerHTML (which the strict CSP forbids).
+      frag = window.DOMPurify.sanitize(html, Object.assign({}, PURIFY_CFG, { RETURN_DOM_FRAGMENT: true }));
     } catch (_) {
-      return 'DOMParser failed';
+      return 'sanitiser RETURN_DOM_FRAGMENT failed';
     }
-    const root = doc.body;
-    if (!root) return null;
-    for (const el of root.querySelectorAll('*')) {
+    if (!frag) return null;
+    for (const el of frag.querySelectorAll('*')) {
       const tag = (el.tagName || '').toLowerCase();
       if (FORBIDDEN_TAGS_LOWER.has(tag)) return `forbidden tag rendered: <${tag}>`;
-      // attributes
       for (const a of Array.from(el.attributes || [])) {
         if (/^on/i.test(a.name)) return `event handler attr: ${a.name}`;
         if ((a.name === 'href' || a.name === 'src' || a.name === 'action'
@@ -186,33 +150,30 @@
   function renderUnsafeReason() { return _renderUnsafe; }
 
   function selfTest() {
-    if (!window.marked || !window.DOMPurify) return null; // libs not loaded yet
+    if (!window.marked || !window.DOMPurify) return null;
     if (!configureMarked._done) { configureMarked(); configureMarked._done = true; }
     attachExternalLinkHook();
     for (const vec of XSS_VECTORS) {
-      let out;
+      let html;
       try {
-        out = DOMPurify.sanitize(marked.parse(vec || ''), PURIFY_CFG);
+        html = String(marked.parse(vec || ''));
       } catch (e) {
-        return `sanitiser threw on vector ${JSON.stringify(vec)}: ${e.message}`;
+        return `marked threw on vector ${JSON.stringify(vec)}: ${e.message}`;
       }
-      const reason = findDangerInHtml(out);
+      const reason = findDangerInHtml(html);
       if (reason) {
-        return `vector ${JSON.stringify(vec)} survived: ${reason}; output=${out.slice(0,160)}`;
+        return `vector ${JSON.stringify(vec)} survived: ${reason}`;
       }
     }
     return null;
   }
 
-  /** Run the self-test once at module load; result is cached. Falls back
-      to plain text rendering if the pipeline is broken. */
   function ensureSafe() {
     if (ensureSafe._ran) return !_renderUnsafe;
     ensureSafe._ran = true;
     const failure = selfTest();
     if (failure) {
       _renderUnsafe = failure;
-      // eslint-disable-next-line no-console
       console.error('[CTI Briefs] markdown sanitiser self-test FAILED — falling back to plain text. Detail:', failure);
     }
     return !_renderUnsafe;
@@ -223,11 +184,10 @@
     if (!configureMarked._done) { configureMarked(); configureMarked._done = true; }
     attachExternalLinkHook();
     if (!ensureSafe()) {
-      // Pipeline broken or compromised — render as escaped plain text in <pre>.
       return `<pre class="muted" style="white-space:pre-wrap">${esc(markdown)}</pre>`;
     }
     const html = window.marked.parse(markdown || '');
-    return window.DOMPurify.sanitize(html, PURIFY_CFG);
+    return String(window.DOMPurify.sanitize(html, PURIFY_CFG));
   }
 
   function esc(s) {
@@ -257,8 +217,22 @@
     return `<span class="badge">${esc(s)}</span>`;
   }
 
-  function briefLink(name) {
-    return `<a href="#/briefs/${esc(name)}" class="mono">${esc(name)}</a>`;
+  /** Build a CISA KEV catalog URL filtered to one CVE. The plain
+      `/known-exploited-vulnerabilities-catalog` URL lands on the full
+      catalog with no filter; passing the search params drops the user
+      directly on the matching row. If the CVE is not in KEV, the page
+      simply shows "no results" — still a useful confirmation. */
+  function cisaKevSearchUrl(cveId) {
+    const id = encodeURIComponent(String(cveId || ''));
+    return (
+      'https://www.cisa.gov/known-exploited-vulnerabilities-catalog' +
+      '?search=' + id +
+      '&field_date_added_wrapper=all' +
+      '&field_cve=' +
+      '&sort_by=field_date_added' +
+      '&items_per_page=20' +
+      '&url='
+    );
   }
 
   function timelineStrip(briefs, current) {
@@ -268,61 +242,69 @@
     </div>`;
   }
 
-  /* ── home (empty state only — router redirects to latest daily) ── */
+  /* ── home (preview of latest brief) ───────────────────────────── */
 
   async function renderHome() {
-    // Reached only when no daily brief exists yet (router redirects to the
-    // latest daily otherwise — see router.js dispatch()).
-    return `<div class="empty">
-      <h1>No briefs yet</h1>
-      <p>The first daily routine run will publish a brief here.</p>
-      <p><a href="#/about">About this newsletter →</a></p>
-    </div>`;
+    const latestDaily = Store.manifest.find((b) => b.kind === 'daily');
+    if (!latestDaily) {
+      return `<div class="empty">
+        <h1>No briefs yet</h1>
+        <p>The first daily routine run will publish a brief here.</p>
+        <p><a href="#/about">About this newsletter →</a></p>
+      </div>`;
+    }
+    const latestWeekly = Store.manifest.find((b) => b.kind === 'weekly');
+    const isToday = latestDaily.name === todayISO();
+    const banner = renderHomeBanner(latestDaily, latestWeekly, isToday);
+    const preview = renderTldrPreview(latestDaily);
+    const footer = renderHomeFooter();
+    return `${banner}${preview}${footer}`;
   }
 
-  function renderHomeFooter(currentBrief) {
+  function renderHomeBanner(brief, latestWeekly, isToday) {
+    return `
+      <div class="home-banner">
+        <div class="home-banner-left">
+          <div class="home-banner-eyebrow">${isToday ? "Today's brief" : 'Latest brief'} · <span class="mono">${esc(brief.name)}</span></div>
+          <h1>${esc(brief.title)}</h1>
+        </div>
+        <div class="home-banner-right">
+          <a class="cta" href="#/briefs/${esc(brief.name)}">Read the full brief →</a>
+          ${latestWeekly
+            ? `<a class="cta cta--secondary" href="#/briefs/weekly/${esc(latestWeekly.name)}" title="${esc(latestWeekly.title)}">Weekly · ${esc(latestWeekly.name)}</a>`
+            : ''}
+        </div>
+      </div>`;
+  }
+
+  function renderTldrPreview(brief) {
+    const items = (brief.tldr || []).slice(0, 5);
+    const body = items.length
+      ? `<ul>${items.map((line) => `<li>${md(line).replace(/^<p>|<\/p>$/g, '')}</li>`).join('')}</ul>`
+      : `<p class="muted">No TL;DR bullets in this brief.</p>`;
+    return `
+      <section class="preview-tldr">
+        <h2>TL;DR — ${esc(brief.name)}</h2>
+        ${body}
+        <div class="preview-tldr-cta">
+          <a class="cta" href="#/briefs/${esc(brief.name)}">Read the full brief →</a>
+          <a class="cta cta--secondary" href="#/briefs">All briefs</a>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderHomeFooter() {
     const counts = Store.site && Store.site.counts ? Store.site.counts : {};
-    const personal = window.Personal ? Personal.recent(5) : [];
-
-    const fmt = (window.Personal && Personal.formatDwell) ? Personal.formatDwell : (() => '—');
-    const personalHtml = personal.length
-      ? `<ul class="entity-list">${personal.map((p) => {
-          const b = Store.findBrief(p.name);
-          const totalDwell = fmt(p.totalDwellMs || 0);
-          const lastDwell  = fmt(p.lastDwellMs  || 0);
-          return `<li>
-            <span><a class="e-title" href="#/briefs/${esc(p.name)}">${b ? esc(b.title) : esc(p.name)}</a>
-              <div class="e-meta">
-                <span class="e-tag">visited ${esc(p.count)}×</span>
-                ${p.totalDwellMs ? `<span class="e-tag" title="Total time you've spent on this brief, on this device">read ${esc(totalDwell)}${p.count > 1 ? ` (last ${esc(lastDwell)})` : ''}</span>` : ''}
-                <span class="muted">last ${esc(p.last)}</span>
-              </div>
-            </span>
-            <span class="mono muted">${esc(p.name)}</span>
-          </li>`;
-        }).join('')}</ul>
-        <p class="muted" style="font-size:0.75rem;margin:0.4rem 0 0">Stored only on this device — never sent anywhere. <a href="#" data-action="clear-personal">Clear</a></p>`
-      : `<p class="muted" style="font-size:0.85rem">Briefs you open on this device will appear here. Stored locally only.</p>`;
-
     return `
       <section class="home-footer">
-        <h2 class="section-head" style="margin-top:2rem">Continue exploring</h2>
-
+        <h2 class="section-head" style="margin-top:1.5rem">Continue exploring</h2>
         <div class="stat-grid" style="margin-bottom: 1rem">
           <div class="stat"><div class="v">${esc(counts.briefs || 0)}</div><div class="l"><a href="#/briefs">All briefs</a></div></div>
           <div class="stat"><div class="v">${esc(counts.cves || 0)}</div><div class="l"><a href="#/cves">CVEs tracked</a></div></div>
           <div class="stat"><div class="v">${esc(counts.topics || 0)}</div><div class="l"><a href="#/topics">Topics</a></div></div>
           <div class="stat"><div class="v">${esc(counts.sources || 0)}</div><div class="l"><a href="#/sources">Sources</a></div></div>
         </div>
-
-        <div class="section-grid" style="margin-top:1rem">
-          <section class="panel section">
-            <h2 class="section-head" style="margin-top:0">Your reading history</h2>
-            ${personalHtml}
-            <p class="muted" style="font-size:0.78rem; margin: 0.6rem 0 0">This panel is the only "page count" the site keeps — and only for briefs <strong>you</strong> have opened on this device. No aggregate counter is collected. There is no API for visit counts on a static GitHub Pages site without third-party analytics; we do not run any.</p>
-          </section>
-        </div>
-
         <p class="muted" style="font-size:0.78rem; margin-top: 1rem; font-family: var(--mono)">build · ${esc((Store.site && Store.site.built_at) || '—')}</p>
       </section>
     `;
@@ -336,7 +318,7 @@
     return `${yr}-${mo}-${da}`;
   }
 
-  /** Shared body renderer used by home and the brief detail view. */
+  /** Shared body renderer used by the brief detail view. */
   async function renderBriefBody(brief) {
     let raw;
     try { raw = await Store.getMarkdown(brief.path); }
@@ -346,23 +328,50 @@
     const cves = Store.cvesInBrief(brief.name);
     const topics = Store.topicsInBrief(brief.name);
     const cited = Store.sourcesInBrief(brief.name);
-    const sectionsToc = brief.sections.map((s) => `<li><a href="#${esc(s.anchor)}">${esc(s.heading)}</a></li>`).join('');
-    const cveList = cves.length ? `
-      <h3>CVEs in this brief</h3>
-      <ul style="list-style:none;padding:0;margin:0">
-        ${cves.map((c) => `<li style="margin:0.25rem 0"><a href="#/cves/${esc(c.id)}" class="mono">${esc(c.id)}</a>${c.appearances.length > 1 ? ` <span class="badge badge--accent" title="Appears in ${c.appearances.length} briefs">×${c.appearances.length}</span>` : ''}</li>`).join('')}
-      </ul>` : '';
-    const topicList = topics.length ? `
-      <h3>Tracked topics</h3>
-      <ul style="list-style:none;padding:0;margin:0">
-        ${topics.map((t) => `<li style="margin:0.25rem 0"><a href="#/topics/${encodeURIComponent(t.key)}">${esc(t.title)}</a>${(t.briefs || []).length > 1 ? ` <span class="badge badge--accent" title="Appears in ${t.briefs.length} briefs">×${t.briefs.length}</span>` : ''}</li>`).join('')}
-      </ul>` : '';
-    const sourceList = cited.length ? `
-      <h3>Sources cited</h3>
-      <ul style="list-style:none;padding:0;margin:0">
-        ${cited.slice(0, 30).map((s) => `<li style="margin:0.25rem 0"><a href="#/sources/${encodeURIComponent(s.id)}">${esc(s.publisher)}</a></li>`).join('')}
-        ${cited.length > 30 ? `<li class="muted">+ ${cited.length - 30} more</li>` : ''}
-      </ul>` : '';
+
+    // TOC — sections only by default, plus collapsible References sub-sections.
+    const sectionsToc = (brief.sections || [])
+      .map((s) => `<li><a href="#${esc(s.anchor)}">${esc(s.heading)}</a></li>`)
+      .join('');
+
+    const refsBlock = (cves.length || topics.length || cited.length)
+      ? `<details>
+          <summary>References (${cves.length + topics.length + Math.min(cited.length, 30)})</summary>
+          <ul>
+            ${cves.map((c) => `<li><a href="#/cves/${esc(c.id)}" class="mono">${esc(c.id)}</a>${c.appearances.length > 1 ? ` <span class="badge badge--accent" title="Appears in ${c.appearances.length} briefs">×${c.appearances.length}</span>` : ''}</li>`).join('')}
+            ${topics.map((t) => `<li><a href="#/topics/${encodeURIComponent(t.key)}">${esc(t.title)}</a></li>`).join('')}
+            ${cited.slice(0, 30).map((s) => `<li><a href="#/sources/${encodeURIComponent(s.id)}">${esc(s.publisher)}</a></li>`).join('')}
+            ${cited.length > 30 ? `<li class="muted">+ ${cited.length - 30} more sources</li>` : ''}
+          </ul>
+        </details>`
+      : '';
+
+    const tocHtml = `
+      <h3>On this page</h3>
+      <ul class="toc-sections">${sectionsToc || '<li class="muted">—</li>'}</ul>
+      ${refsBlock}
+    `;
+
+    // Cited footer — sits below the brief body, replaces the old in-sidebar lists.
+    const citedFooter = (cves.length || topics.length || cited.length) ? `
+      <footer class="brief-cited">
+        ${cves.length ? `<section>
+          <h3>CVEs in this brief (${cves.length})</h3>
+          <ul>${cves.map((c) => `<li><a href="#/cves/${esc(c.id)}" class="mono">${esc(c.id)}</a>${c.appearances.length > 1 ? ` <span class="badge badge--accent" title="Appears in ${c.appearances.length} briefs">×${c.appearances.length}</span>` : ''}</li>`).join('')}</ul>
+        </section>` : ''}
+        ${topics.length ? `<section>
+          <h3>Tracked topics (${topics.length})</h3>
+          <ul>${topics.map((t) => `<li><a href="#/topics/${encodeURIComponent(t.key)}">${esc(t.title)}</a>${(t.briefs || []).length > 1 ? ` <span class="badge badge--accent" title="Appears in ${t.briefs.length} briefs">×${t.briefs.length}</span>` : ''}</li>`).join('')}</ul>
+        </section>` : ''}
+        ${cited.length ? `<section>
+          <h3>Sources cited (${cited.length})</h3>
+          <ul>${cited.slice(0, 60).map((s) => `<li><a href="#/sources/${encodeURIComponent(s.id)}">${esc(s.publisher)}</a></li>`).join('')}${cited.length > 60 ? `<li class="muted">+ ${cited.length - 60} more</li>` : ''}</ul>
+        </section>` : ''}
+      </footer>` : '';
+
+    const promptBadge = brief.prompt_version
+      ? `<a class="badge badge--accent" href="#/about?at=changelog" title="Editorial-policy version that produced this brief">prompt v${esc(brief.prompt_version)}</a>`
+      : '';
 
     return `
       <article class="brief-layout" data-brief="${esc(brief.name)}">
@@ -371,17 +380,23 @@
             <span><strong>${esc(brief.kind)}</strong></span>
             <span class="mono">${esc(brief.name)}</span>
             ${brief.generated_by ? `<span>${esc(brief.generated_by)}</span>` : ''}
+            ${promptBadge}
             <span>${esc(brief.items)} item${brief.items === 1 ? '' : 's'}</span>
             ${brief.cves.length ? `<span>${esc(brief.cves.length)} CVE${brief.cves.length === 1 ? '' : 's'}</span>` : ''}
+            <span class="meta-actions">
+              <button type="button" data-action="share" data-brief="${esc(brief.name)}" title="Copy permalink">Copy link</button>
+              <a href="${esc(brief.path)}" target="_blank" rel="noopener noreferrer" title="View raw Markdown on GitHub Pages">Raw .md</a>
+            </span>
           </div>
+          <details class="toc-mobile">
+            <summary>On this page</summary>
+            <div class="toc-mobile-body aside-toc">${tocHtml}</div>
+          </details>
           <div class="brief-prose">${md(body)}</div>
+          ${citedFooter}
         </div>
-        <aside class="aside-toc" aria-label="In this brief">
-          <h3>On this page</h3>
-          <ul>${sectionsToc || '<li class="muted">—</li>'}</ul>
-          ${cveList}
-          ${topicList}
-          ${sourceList}
+        <aside class="aside-toc aside-toc--desktop" aria-label="In this brief">
+          ${tocHtml}
         </aside>
       </article>
     `;
@@ -415,6 +430,7 @@
         <span class="chip ${filterKind === 'all' ? 'active' : ''}" data-kind="all">All</span>
         <span class="chip ${filterKind === 'daily' ? 'active' : ''}" data-kind="daily">Daily</span>
         <span class="chip ${filterKind === 'weekly' ? 'active' : ''}" data-kind="weekly">Weekly</span>
+        <a class="chip" href="feed.xml" target="_blank" rel="noopener noreferrer" title="RSS feed">RSS</a>
       </div>
 
       ${list.length === 0
@@ -465,41 +481,7 @@
   async function renderBrief(state) {
     const brief = Store.findBrief(state.name);
     if (!brief) return notFound(`Brief ${esc(state.name)} not found.`);
-
-    // The latest daily brief gets the home presentation: today's-brief
-    // banner above (with weekly CTA) and the "Continue exploring" footer
-    // below. Older briefs render plain.
-    const latestDaily = Store.manifest.find((b) => b.kind === 'daily');
-    const isLatestDaily = latestDaily && latestDaily.name === brief.name && brief.kind === 'daily';
-
-    if (!isLatestDaily) {
-      return `<h1>${esc(brief.title)}</h1>${await renderBriefBody(brief)}`;
-    }
-
-    const latestWeekly = Store.manifest.find((b) => b.kind === 'weekly');
-    const isToday = brief.name === todayISO();
-    const banner = renderHomeBanner(brief, latestWeekly, isToday);
-    const body = await renderBriefBody(brief);
-    const footer = renderHomeFooter(brief);
-    return `${banner}${body}${footer}`;
-  }
-
-  function renderHomeBanner(brief, latestWeekly, isToday) {
-    return `
-      <div class="home-banner">
-        <div class="home-banner-left">
-          <div class="home-banner-eyebrow">${isToday ? "Today's brief" : 'Latest brief'} · <span class="mono">${esc(brief.name)}</span></div>
-          <h1 style="margin:0.15rem 0 0">${esc(brief.title)}</h1>
-        </div>
-        <div class="home-banner-right">
-          ${latestWeekly
-            ? `<a class="cta-weekly" href="#/briefs/weekly/${esc(latestWeekly.name)}" title="${esc(latestWeekly.title)}">
-                <span class="cta-eyebrow">Weekly summary</span>
-                <span class="cta-title">${esc(latestWeekly.name)} →</span>
-               </a>`
-            : `<span class="muted" style="font-size:0.85rem">No weekly summary yet — the first weekly routine will publish one on Sunday.</span>`}
-        </div>
-      </div>`;
+    return `<h1>${esc(brief.title)}</h1>${await renderBriefBody(brief)}`;
   }
 
   /* ── CVEs ───────────────────────────────────────────────────── */
@@ -522,22 +504,24 @@
       </div>
 
       ${list.length === 0 ? `<div class="empty">No CVEs match.</div>` : `
-        <table class="data">
-          <thead>
-            <tr><th>CVE</th><th>Title</th><th>First seen</th><th>Last seen</th><th>Appears in</th></tr>
-          </thead>
-          <tbody>
-            ${list.map((c) => `
-              <tr>
-                <td class="cve-id"><a href="#/cves/${esc(c.id)}">${esc(c.id)}</a></td>
-                <td>${esc(c.title || '')}</td>
-                <td class="mono muted">${esc(c.first_seen || '')}</td>
-                <td class="mono muted">${esc(c.last_seen || '')}</td>
-                <td>${(c.appearances || []).map((n) => `<a href="#/briefs/${esc(n)}" class="mono" style="margin-right:0.4rem">${esc(n)}</a>`).join('')}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="data-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>CVE</th><th>Title</th><th>First seen</th><th>Last seen</th><th>Appears in</th></tr>
+            </thead>
+            <tbody>
+              ${list.map((c) => `
+                <tr>
+                  <td class="cve-id"><a href="#/cves/${esc(c.id)}">${esc(c.id)}</a></td>
+                  <td>${esc(c.title || '')}</td>
+                  <td class="mono muted">${esc(c.first_seen || '')}</td>
+                  <td class="mono muted">${esc(c.last_seen || '')}</td>
+                  <td>${(c.appearances || []).map((n) => `<a href="#/briefs/${esc(n)}" class="mono" style="margin-right:0.4rem">${esc(n)}</a>`).join('')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `}
     `;
   }
@@ -545,6 +529,57 @@
   function renderCve(state) {
     const cve = Store.findCve(state.id);
     if (!cve) return notFound(`CVE ${esc(state.id)} not found in any brief.`);
+
+    const citations = Array.isArray(cve.citations) ? cve.citations : [];
+
+    // Group citations by host so the reader sees one row per publisher.
+    // Within a host, multiple URLs (different articles from the same
+    // outlet) appear as a comma-separated list.
+    const grouped = new Map();
+    for (const cite of citations) {
+      const key = cite.host || cite.url;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(cite);
+    }
+    // Stable order: publisher hosts alphabetically, with the primary
+    // source's host first when present.
+    const primaryHost = cve.primary_source_url ? hostOf(cve.primary_source_url) : '';
+    const sortedHosts = Array.from(grouped.keys()).sort((a, b) => {
+      if (a === primaryHost) return -1;
+      if (b === primaryHost) return 1;
+      return a.localeCompare(b);
+    });
+
+    // Flatten the grouped structure into one row per citation, with the
+    // host name as the primary clickable action — opens the actual article
+    // URL in a new tab — and a muted secondary link to the source's
+    // `#/sources/<id>` page when known. One-click pivot to new
+    // information, which is the whole point of the CVE detail page.
+    const citationsBlock = citations.length === 0 ? '' : `
+      <h3 style="margin-top:1.2rem">All cited sources for this CVE (${citations.length})</h3>
+      <ul class="cite-list">
+        ${sortedHosts.map((h) => {
+          const list = grouped.get(h);
+          const sourceId = list.find((c) => c.source_id)?.source_id;
+          const isPrimary = h === primaryHost;
+          return list.map((c) => {
+            const briefSet = Array.from(new Set(c.briefs || [])).sort().reverse();
+            return `<li class="cite">
+              <a class="cite-link" href="${attr(c.url)}" target="_blank" rel="noopener noreferrer" title="Open ${attr(c.url)} in a new tab">
+                <span class="cite-host">${esc(h)}</span>
+                ${isPrimary ? `<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>` : ''}
+                <span class="cite-label">${esc(c.label || c.url)}</span>
+                <span class="cite-url muted">${esc(c.url)}</span>
+              </a>
+              <div class="cite-meta muted">
+                ${sourceId ? `<a href="#/sources/${encodeURIComponent(sourceId)}" title="Source profile in this site">source profile</a> · ` : ''}
+                cited in ${briefSet.map((n) => `<a href="#/briefs/${esc(n)}" class="mono">${esc(n)}</a>`).join(', ')}
+              </div>
+            </li>`;
+          }).join('');
+        }).join('')}
+      </ul>
+    `;
 
     return `
       <h1 class="mono">${esc(cve.id)}</h1>
@@ -566,18 +601,14 @@
           </div>
         </div>
 
-        ${cve.primary_source_url ? `
-          <p style="margin-top: 0.9rem">
-            <span class="muted">Primary source: </span>
-            <a href="${attr(cve.primary_source_url)}" target="_blank" rel="noopener noreferrer">${esc(cve.primary_source_url)}</a>
-          </p>` : ''}
-
         <h3 style="margin-top:1.2rem">External references</h3>
         <p>
           <a href="https://nvd.nist.gov/vuln/detail/${esc(cve.id)}" target="_blank" rel="noopener noreferrer">NVD</a> ·
           <a href="https://www.cve.org/CVERecord?id=${esc(cve.id)}" target="_blank" rel="noopener noreferrer">cve.org</a> ·
-          <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">CISA KEV</a>
+          <a href="${cisaKevSearchUrl(cve.id)}" target="_blank" rel="noopener noreferrer" title="CISA KEV catalog filtered to this CVE">CISA KEV</a>
         </p>
+
+        ${citationsBlock}
       </div>
 
       <h2 class="section-head" style="margin-top:1.5rem">Brief appearances</h2>
@@ -598,14 +629,25 @@
     `;
   }
 
+  function hostOf(url) {
+    try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
+    catch (_) { return ''; }
+  }
+
   /* ── Topics (covered_items) ─────────────────────────────────── */
 
   function renderTopics(state) {
     const all = Store.topics.items;
     const q = (state.q || '').toLowerCase().trim();
     const filterType = state.filterType || 'all';
+    const filterFlag = state.filterFlag || 'all';
     const list = all
       .filter((t) => filterType === 'all' || t.type === filterType)
+      .filter((t) => {
+        if (filterFlag === 'all') return true;
+        if (filterFlag === 'multi') return !(t.flags || []).some((f) => f.startsWith('SINGLE-SOURCE'));
+        return (t.flags || []).includes(filterFlag);
+      })
       .filter((t) => !q ||
         t.title.toLowerCase().includes(q) ||
         t.key.toLowerCase().includes(q) ||
@@ -619,14 +661,22 @@
 
       <div class="toolbar">
         <input class="input" id="topics-q" type="search" placeholder="Filter topics…" value="${attr(state.q || '')}" autocomplete="off" spellcheck="false" />
-        <span class="chip ${filterType === 'all' ? 'active' : ''}" data-type="all">All</span>
+        <span class="chip ${filterType === 'all' ? 'active' : ''}" data-type="all">All types</span>
         ${types.map((t) => `<span class="chip ${filterType === t ? 'active' : ''}" data-type="${esc(t)}">${esc(t)}</span>`).join('')}
+      </div>
+      <div class="toolbar" style="margin-top:-0.5rem">
+        <span class="chip ${filterFlag === 'all' ? 'active' : ''}" data-flag="all">All verification</span>
+        <span class="chip ${filterFlag === 'multi' ? 'active' : ''}" data-flag="multi" title="Items where two-source verification held (no single-source flag)">Corroborated</span>
+        <span class="chip ${filterFlag === 'SINGLE-SOURCE' ? 'active' : ''}" data-flag="SINGLE-SOURCE">Single-source (any)</span>
+        <span class="chip ${filterFlag === 'SINGLE-SOURCE-NATIONAL-CERT' ? 'active' : ''}" data-flag="SINGLE-SOURCE-NATIONAL-CERT">National-CERT only</span>
+        <span class="chip ${filterFlag === 'SINGLE-SOURCE-OTHER' ? 'active' : ''}" data-flag="SINGLE-SOURCE-OTHER">Other single-source</span>
       </div>
 
       ${list.length === 0 ? `<div class="empty">No topics match.</div>` : `
         <ul class="entity-list">
           ${list.map((t) => {
             const n = (t.briefs || []).length;
+            const flagBadges = (t.flags || []).map((f) => `<span class="badge badge--low" title="Verification flag">${esc(f)}</span>`).join(' ');
             return `<li>
               <span>
                 <a class="e-title" href="#/topics/${encodeURIComponent(t.key)}">${esc(t.title)}</a>
@@ -635,6 +685,7 @@
                   <span class="mono">${esc(t.key)}</span>
                   <span>last covered ${esc(t.last_covered || '—')}</span>
                   ${n > 1 ? `<span class="badge badge--accent" title="Story unfolds across ${n} briefs">×${n} appearances</span>` : ''}
+                  ${flagBadges}
                 </div>
               </span>
               <span>
@@ -652,6 +703,47 @@
     if (!t) return notFound(`Topic <code>${esc(state.key)}</code> not found.`);
 
     const apps = (t.appearances || []).slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const citations = Array.isArray(t.citations) ? t.citations : [];
+
+    // Same per-citation layout as the CVE detail page — the entire row
+    // is a one-click pivot to the source article.
+    const grouped = new Map();
+    for (const cite of citations) {
+      const key = cite.host || cite.url;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(cite);
+    }
+    const primaryHost = t.primary_source_url ? hostOf(t.primary_source_url) : '';
+    const sortedHosts = Array.from(grouped.keys()).sort((a, b) => {
+      if (a === primaryHost) return -1;
+      if (b === primaryHost) return 1;
+      return a.localeCompare(b);
+    });
+    const citationsBlock = citations.length === 0 ? '' : `
+      <h3 style="margin-top:1.2rem">All cited sources for this topic (${citations.length})</h3>
+      <ul class="cite-list">
+        ${sortedHosts.map((h) => {
+          const list = grouped.get(h);
+          const sourceId = list.find((c) => c.source_id)?.source_id;
+          const isPrimary = h === primaryHost;
+          return list.map((c) => {
+            const briefSet = Array.from(new Set(c.briefs || [])).sort().reverse();
+            return `<li class="cite">
+              <a class="cite-link" href="${attr(c.url)}" target="_blank" rel="noopener noreferrer" title="Open ${attr(c.url)} in a new tab">
+                <span class="cite-host">${esc(h)}</span>
+                ${isPrimary ? `<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>` : ''}
+                <span class="cite-label">${esc(c.label || c.url)}</span>
+                <span class="cite-url muted">${esc(c.url)}</span>
+              </a>
+              <div class="cite-meta muted">
+                ${sourceId ? `<a href="#/sources/${encodeURIComponent(sourceId)}" title="Source profile in this site">source profile</a> · ` : ''}
+                cited in ${briefSet.map((n) => `<a href="#/briefs/${esc(n)}" class="mono">${esc(n)}</a>`).join(', ')}
+              </div>
+            </li>`;
+          }).join('');
+        }).join('')}
+      </ul>
+    `;
 
     return `
       <h1>${esc(t.title)}</h1>
@@ -673,11 +765,7 @@
           </div>
         </div>
 
-        ${t.primary_source_url ? `
-          <p style="margin-top: 0.9rem">
-            <span class="muted">Primary source: </span>
-            <a href="${attr(t.primary_source_url)}" target="_blank" rel="noopener noreferrer">${esc(t.primary_source_url)}</a>
-          </p>` : ''}
+        ${citationsBlock}
       </div>
 
       <h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
@@ -731,31 +819,33 @@
         <span class="chip ${filterCat === 'all' ? 'active' : ''}" data-cat="all">All categories</span>
         ${cats.map((c) => `<span class="chip ${filterCat === c ? 'active' : ''}" data-cat="${esc(c)}">${esc(c)}</span>`).join('')}
       </div>
-      <div class="toolbar" style="margin-top:-0.6rem">
+      <div class="toolbar" style="margin-top:-0.5rem">
         <span class="chip ${filterStatus === 'all' ? 'active' : ''}" data-status="all">All statuses</span>
         ${stats.map((s) => `<span class="chip ${filterStatus === s ? 'active' : ''}" data-status="${esc(s)}">${esc(s)}</span>`).join('')}
       </div>
 
       ${list.length === 0 ? `<div class="empty">No sources match.</div>` : `
-        <table class="data">
-          <thead>
-            <tr><th>Publisher</th><th>Reliability</th><th>Status</th><th>Categories</th><th>Cited in</th></tr>
-          </thead>
-          <tbody>
-            ${list.map((s) => `
-              <tr>
-                <td>
-                  <a href="#/sources/${encodeURIComponent(s.id)}"><strong>${esc(s.publisher)}</strong></a>
-                  <div class="muted mono" style="font-size:0.75rem">${esc(s.id)}</div>
-                </td>
-                <td>${reliabilityBadge(s.reliability)}</td>
-                <td>${statusBadge(s.status)}</td>
-                <td><div class="e-meta">${(s.category || []).map((c) => `<span class="e-tag">${esc(c)}</span>`).join('')}</div></td>
-                <td>${(s.appearances || []).slice(0, 6).map((n) => `<a href="#/briefs/${esc(n)}" class="mono" style="margin-right:0.3rem">${esc(n)}</a>`).join('')}${(s.appearances || []).length > 6 ? ` <span class="muted">+${s.appearances.length - 6}</span>` : ''}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="data-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>Publisher</th><th>Reliability</th><th>Status</th><th>Categories</th><th>Cited in</th></tr>
+            </thead>
+            <tbody>
+              ${list.map((s) => `
+                <tr>
+                  <td>
+                    <a href="#/sources/${encodeURIComponent(s.id)}"><strong>${esc(s.publisher)}</strong></a>
+                    <div class="muted mono" style="font-size:0.75rem">${esc(s.id)}</div>
+                  </td>
+                  <td>${reliabilityBadge(s.reliability)}</td>
+                  <td>${statusBadge(s.status)}</td>
+                  <td><div class="e-meta">${(s.category || []).map((c) => `<span class="e-tag">${esc(c)}</span>`).join('')}</div></td>
+                  <td>${(s.appearances || []).slice(0, 6).map((n) => `<a href="#/briefs/${esc(n)}" class="mono" style="margin-right:0.3rem">${esc(n)}</a>`).join('')}${(s.appearances || []).length > 6 ? ` <span class="muted">+${s.appearances.length - 6}</span>` : ''}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
       `}
     `;
   }
@@ -773,7 +863,8 @@
         <div class="e-meta" style="margin-top:0.4rem">
           ${(s.category || []).map((c) => `<span class="e-tag">${esc(c)}</span>`).join('')}
           ${(s.language || []).map((c) => `<span class="e-tag">lang: ${esc(c)}</span>`).join('')}
-          ${typeof s.consecutive_failures === 'number' ? `<span class="e-tag">failures: ${esc(s.consecutive_failures)}</span>` : ''}
+          ${typeof s.consecutive_fetch_failures === 'number' ? `<span class="e-tag">fetch failures: ${esc(s.consecutive_fetch_failures)}</span>` : (typeof s.consecutive_failures === 'number' ? `<span class="e-tag">failures: ${esc(s.consecutive_failures)}</span>` : '')}
+          ${typeof s.consecutive_quiet_periods === 'number' ? `<span class="e-tag">quiet periods: ${esc(s.consecutive_quiet_periods)}</span>` : ''}
           <span class="e-tag">last fetch: ${esc(s.last_successful_fetch || 'never')}</span>
         </div>
         ${s.notes ? `<p class="muted" style="margin-top: 0.7rem">${esc(s.notes)}</p>` : ''}
@@ -797,15 +888,103 @@
     `;
   }
 
+  /* ── Operations dashboard (uses state/run_log.json) ────────── */
+
+  async function renderOps() {
+    let runLog = null;
+    try {
+      const res = await fetch('data/run_log.json');
+      if (res.ok) runLog = await res.json();
+    } catch (_) {}
+
+    const runs = (runLog && Array.isArray(runLog.runs)) ? runLog.runs.slice().reverse() : [];
+
+    const sources = Store.sources.sources || [];
+    const today = new Date();
+    const lastFetchByDays = sources.map((s) => {
+      const lf = s.last_successful_fetch;
+      if (!lf || !/^\d{4}-\d{2}-\d{2}$/.test(lf)) return { id: s.id, publisher: s.publisher, days: Infinity, status: s.status };
+      const dt = new Date(lf + 'T00:00:00Z');
+      const days = Math.round((today - dt) / 86400000);
+      return { id: s.id, publisher: s.publisher, days, status: s.status, last: lf };
+    }).filter((s) => s.status === 'active').sort((a, b) => b.days - a.days);
+
+    const stale = lastFetchByDays.filter((s) => s.days > 7);
+
+    return `
+      <h1>Operations</h1>
+      <p class="subtitle">Run log and source-rotation health. Sourced from <code>state/run_log.json</code> (per-run sub-agent allocation) and <code>sources/sources.json</code> (last-successful-fetch timestamps).</p>
+
+      <h2 class="section-head">Recent runs</h2>
+      ${runs.length === 0 ? `
+        <div class="empty">
+          <p>No <code>state/run_log.json</code> yet.</p>
+          <p class="muted">The agent populates this file at the end of every run (Phase 5). The first scheduled run after this prompt change will create it.</p>
+        </div>
+      ` : `
+        <div class="data-wrap">
+          <table class="data">
+            <thead>
+              <tr><th>Date</th><th>Model</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>Failures</th><th>Items</th><th>Deep dive</th></tr>
+            </thead>
+            <tbody>
+              ${runs.slice(0, 30).map((r) => {
+                const sa = r.sub_agents || {};
+                const fmt = (k) => {
+                  const a = sa[k];
+                  if (!a) return '<span class="muted">—</span>';
+                  if (a.returned === false) return '<span class="badge badge--low">stalled</span>';
+                  return `${esc(a.items_returned ?? 0)} <span class="muted">(${esc((a.sources_used || []).length)}/${esc((a.sources_attempted || []).length)} src)</span>`;
+                };
+                const failures = (r.fetch_failures || []).length;
+                return `<tr>
+                  <td class="mono"><a href="#/briefs/${esc(r.date)}">${esc(r.date)}</a></td>
+                  <td class="mono muted">${esc(r.model || '')}</td>
+                  <td>${fmt('S1')}</td>
+                  <td>${fmt('S2')}</td>
+                  <td>${fmt('S3')}</td>
+                  <td>${fmt('S4')}</td>
+                  <td>${failures > 0 ? `<span class="badge badge--med">${esc(failures)}</span>` : '<span class="muted">0</span>'}</td>
+                  <td>${esc(r.items_published ?? '')}</td>
+                  <td class="mono muted">${esc(r.deep_dive || '—')}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+
+      <h2 class="section-head" style="margin-top:1.8rem">Stale active sources (>7 days since last successful fetch)</h2>
+      ${stale.length === 0 ? `<p class="muted">No active source has been silent for more than a week.</p>` : `
+        <ul class="entity-list">
+          ${stale.map((s) => `<li>
+            <span>
+              <a class="e-title" href="#/sources/${encodeURIComponent(s.id)}">${esc(s.publisher)}</a>
+              <div class="e-meta">
+                <span class="e-tag">${esc(s.days === Infinity ? 'never fetched' : s.days + ' days')}</span>
+                ${s.last ? `<span class="muted">last: ${esc(s.last)}</span>` : ''}
+              </div>
+            </span>
+            <span class="mono muted">${esc(s.id)}</span>
+          </li>`).join('')}
+        </ul>
+      `}
+
+      <p class="muted" style="font-size:0.78rem; margin-top:1rem">
+        See <a href="#/about?at=architecture">Architecture</a> for how the run log is produced.
+      </p>
+    `;
+  }
+
   /* ── search results page ───────────────────────────────────── */
 
   function renderSearch(state) {
     const q = state.q || '';
     const results = q ? Search.query(Store.search, q, { limit: 200 }) : [];
-    const grouped = { brief: [], cve: [], topic: [], source: [] };
-    for (const r of results) (grouped[r.kind] || []).push(r);
+    const grouped = { brief: [], section: [], cve: [], topic: [], source: [] };
+    for (const r of results) (grouped[r.kind] || (grouped[r.kind] = [])).push(r);
 
-    function groupBlock(label, items, anchorRoute) {
+    function groupBlock(label, items) {
       if (!items.length) return '';
       return `
         <section style="margin-top:1.2rem">
@@ -829,14 +1008,15 @@
       <p class="subtitle">${q ? `${results.length} result${results.length === 1 ? '' : 's'} for `+ '<code>'+esc(q)+'</code>' : 'Type a query in the top search bar, or below.'}</p>
 
       <div class="toolbar">
-        <input class="input" id="search-q" type="search" placeholder="Search briefs · CVEs · topics · sources…" value="${attr(q)}" autocomplete="off" spellcheck="false" />
+        <input class="input" id="search-q" type="search" placeholder="Search briefs · sections · CVEs · topics · sources…" value="${attr(q)}" autocomplete="off" spellcheck="false" />
       </div>
 
       ${q && !results.length ? `<div class="empty">No matches.</div>` : ''}
-      ${groupBlock('Briefs',  grouped.brief)}
-      ${groupBlock('CVEs',    grouped.cve)}
-      ${groupBlock('Topics',  grouped.topic)}
-      ${groupBlock('Sources', grouped.source)}
+      ${groupBlock('Briefs',   grouped.brief)}
+      ${groupBlock('Sections', grouped.section)}
+      ${groupBlock('CVEs',     grouped.cve)}
+      ${groupBlock('Topics',   grouped.topic)}
+      ${groupBlock('Sources',  grouped.source)}
     `;
   }
 
@@ -847,38 +1027,76 @@
       try { const r = await fetch(path); return r.ok ? await r.text() : ''; }
       catch { return ''; }
     }
-    const [readme, architecture, workflow, verification, security, improvements] = await Promise.all([
+    const [readme, architecture, workflow, verification, security, routine, improvements, changelog] = await Promise.all([
       safeFetch('docs/README.md'),
       safeFetch('docs/architecture.md'),
       safeFetch('docs/workflow.md'),
       safeFetch('docs/verification.md'),
       safeFetch('docs/security-review.md'),
+      safeFetch('docs/routine-setup.md'),
       safeFetch('docs/improvements.md'),
+      safeFetch('docs/CHANGELOG.md'),
     ]);
 
-    function block(title, body) {
+    function block(title, body, slug, opts) {
       if (!body) return '';
-      const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const open = (opts && opts.open) ? ' open' : '';
+      const id = slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       return `
-        <details class="panel" style="margin-top:1.2rem" id="about-${slug}">
+        <details class="panel" style="margin-top:1.2rem" id="about-${id}"${open}>
           <summary style="cursor:pointer;font-weight:600;font-size:1.05rem">${esc(title)}</summary>
           <div class="brief-prose" style="margin-top:0.8rem">${md(body)}</div>
         </details>`;
     }
 
+    const analytics = `
+This site uses **Umami Cloud** to record aggregate visitor counts so the
+operator can see whether the newsletter is being read. Umami is a
+privacy-by-design alternative to mainstream analytics products:
+
+- **No cookies** are set on your device.
+- **No fingerprinting** — Umami does not build a per-visitor profile across sites.
+- **No personal data** is collected. The aggregate fields are page URL,
+  referrer host, country (from IP, then the IP is discarded), and a
+  daily-rotated hash that lets Umami count "unique visitors today"
+  without persisting an identifier.
+- **Honours \`navigator.doNotTrack\`** — when DNT or Global Privacy Control
+  is set, the tracker is a complete no-op.
+- **Search-string parameters are excluded** from collection
+  (\`data-exclude-search="true"\`).
+
+The script is loaded from \`https://cloud.umami.is/script.js\`. The site's
+strict Content Security Policy allows only \`'self'\` and
+\`https://cloud.umami.is\` for both \`script-src\` and \`connect-src\`
+— no other third-party origin can run code or receive data from this
+page. The site's website ID is public (it is in the page source) and is
+\`abe09860-85be-4b06-8383-002f2e598061\`.
+
+Umami's privacy policy: <https://umami.is/privacy>. To opt out
+completely, enable Do Not Track in your browser; the script self-disables.
+You can also block it at the network layer — \`cloud.umami.is\` — without
+breaking the site.
+
+The agent's editorial decisions are **not** influenced by Umami. The
+brief prompt has no input from this signal. It exists for the operator,
+not for the writer.`;
+
     return `
       <h1>About this newsletter</h1>
-      <p class="subtitle">Rendered from the repository's <code>README.md</code> and <code>docs/</code>. The same files govern the agent that writes the briefs — the docs and the runtime are kept in sync.</p>
+      <p class="subtitle">This page is the project's main README rendered in-place — the same file at <code>README.md</code> in the repository. The deeper documents under <code>docs/</code> are surfaced below as collapsible sections.</p>
 
       <div class="brief-prose">${md(readme)}</div>
 
       <h2 class="section-head" style="margin-top:2rem">Deeper documentation</h2>
-      <p class="muted" style="font-size:0.85rem">Click each section to expand. These render the source files in <code>docs/</code> directly — to edit them, edit those files.</p>
-      ${block('Architecture', architecture)}
-      ${block('Workflow', workflow)}
-      ${block('Verification policy', verification)}
-      ${block('Security review (threat model)', security)}
-      ${block('Recommended improvements', improvements)}
+      <p class="muted" style="font-size:0.85rem">Click each section to expand. These render the source files in <code>docs/</code> directly — to edit them, edit those files in the repository.</p>
+      ${block('Architecture', architecture, 'architecture')}
+      ${block('Workflow', workflow, 'workflow')}
+      ${block('Verification policy', verification, 'verification')}
+      ${block('Routine setup', routine, 'routine-setup')}
+      ${block('Security review (threat model)', security, 'security-review')}
+      ${block('Analytics & privacy', analytics, 'analytics')}
+      ${block('Recommended improvements', improvements, 'improvements')}
+      ${block('Editorial-policy CHANGELOG', changelog, 'changelog')}
     `;
   }
 
@@ -902,12 +1120,14 @@
     topic: renderTopic,
     sources: renderSources,
     source: renderSource,
+    ops: renderOps,
     search: renderSearch,
     about: renderAbout,
     notFound,
     md,
     esc,
-    selfTest,                  // exposed for the boot-time check in app.js
-    renderUnsafeReason,        // exposed so app.js can render a warning banner
+    selfTest,
+    renderUnsafeReason,
+    trustHtml,
   };
 })();

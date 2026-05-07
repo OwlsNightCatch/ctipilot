@@ -21,8 +21,9 @@ debugging an unexpected commit or onboarding a new operator, start here.
          │                                                          │
          │  prompts/                state/                          │
          │   ├ daily-cti-brief.md    ├ covered_items.json           │
-         │   ├ weekly-summary.md     └ cves_seen.json               │
-         │   └ CHANGELOG.md                                         │
+         │   ├ weekly-summary.md     ├ cves_seen.json               │
+         │   └ CHANGELOG.md          ├ deep_dive_history.json       │
+         │                           └ run_log.json                 │
          │                          sources/                        │
          │  briefs/                  └ sources.json                 │
          │   ├ YYYY-MM-DD.md                                        │
@@ -82,6 +83,12 @@ The agent re-reads these every run before writing.
 - [`state/cves_seen.json`](../state/cves_seen.json) — flat fast-lookup CVE
   index for sub-agent dedup. A subset of `covered_items.json` (CVEs only)
   with a tighter schema.
+- `state/deep_dive_history.json` — rolling 30-day list of `{date, topic, category}`
+  entries used by Phase 3 to apply the deep-dive category-rotation rule.
+- `state/run_log.json` — rolling 90-day per-run record: model, sub-agent
+  source allocation (`sources_attempted` / `sources_used` / `items_returned`
+  per S1–S4), `fetch_failures`, `items_published`, `deep_dive`. Surfaced
+  by the SPA's `#/ops` view.
 
 ### `sources/` — the curated source list
 
@@ -105,6 +112,18 @@ national CERTs, vendor TI, journalism, breach trackers. Schema:
 
 The agent maintains this file autonomously per the lifecycle in the top-level
 [README](../README.md#source-lifecycle-all-transitions-autonomous).
+
+### `tools/` — small operator-shipped helpers
+
+- [`tools/fetch_source.py`](../tools/fetch_source.py) — stdlib-only Python
+  bridge that re-issues HTTP requests with a stable desktop-Chrome
+  User-Agent. Solves the recurring 403 / 302-to-login that the routine
+  container hits on a handful of high-signal publishers (CISA pages, the
+  Swiss NCSC Cyber Security Hub) where the upstream WAF is filtering
+  the agent's default UA. Read-only by design: no auth, no JS execution,
+  no third-party deps, host allow-list enforced. Surfaced to the agent
+  in the daily prompt's Phase 1 research-methodology section as the
+  documented fallback whenever a `WebFetch` comes back blocked.
 
 ### `docs/` — operator-facing documentation
 
@@ -138,10 +157,15 @@ A static SPA, served from GitHub Pages. See [`site/README.md`](../site/README.md
 for the internal layout. The site is read-only with respect to the rest of
 the repo:
 
-- It only **reads** `briefs/`, `state/`, `sources/`, `README.md`, and
-  `docs/*.md`.
+- It only **reads** `briefs/`, `state/`, `sources/`, `README.md`,
+  `docs/*.md`, and `prompts/CHANGELOG.md` (rendered on the About page).
 - It writes nothing back — its build artifact lives entirely under
   `site/_site/` (gitignored locally; uploaded as a Pages artifact in CI).
+- It generates an RSS feed at `_site/feed.xml` (the recent 30 briefs) and
+  a section-level search index (every H3 inside every brief is its own
+  search entry, jumping straight to the matching paragraph).
+- It mirrors `state/run_log.json` to `_site/data/run_log.json` so the
+  `#/ops` view can render the run history client-side.
 
 ## Data flow per routine run
 
@@ -165,21 +189,34 @@ the repo:
  ┌──────────────────────────────┐         │
  │ verify (two-source / CERT)   │         │
  │ dedup vs preflight context   │         │
- │ rank, pick deep dive         │         │
+ │ rank, apply deep-dive        │         │
+ │   category-rotation rule     │         │
  └──────────┬───────────────────┘         │
             ▼                             │
  ┌──────────────────────────────┐         │
  │ Write briefs/YYYY-MM-DD.md   │         │
+ │ (with prompt-version badge)  │         │
  └──────────┬───────────────────┘         │
             ▼                             │
  ┌──────────────────────────────────────────────────────────────┐
  │ Update state/covered_items.json, state/cves_seen.json,       │
+ │ state/deep_dive_history.json, state/run_log.json,            │
  │ sources/sources.json (last-seen, demotions, candidates)      │
  └──────────┬───────────────────────────────────────────────────┘
             ▼
- ┌──────────────────────────────┐  one of:                      │
- │ git commit + push            │  ① push origin HEAD:main      │
- │                              │  ② push claude/<name>; CI ff  │
+ ┌──────────────────────────────┐
+ │ Phase 5.5 — self-check gate  │  ─ JSON parses
+ │                              │  ─ every brief CVE is in cves_seen
+ │                              │  ─ every § 1–4 item has appearance
+ │                              │    today in covered_items
+ │  drift → abort commit;       │
+ │  brief stays on disk; next   │
+ │  run rebuilds state from it  │
+ └──────────┬───────────────────┘
+            ▼
+ ┌──────────────────────────────┐  one of:
+ │ git commit + push            │  ① push origin HEAD:main
+ │                              │  ② push claude/<name>; CI ff
  └──────────────────────────────┘
 ```
 

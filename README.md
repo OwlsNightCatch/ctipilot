@@ -6,34 +6,50 @@ A daily Cyber Threat Intelligence brief covering cyber threats targeting Switzer
 
 The repository is the single source of truth for the workflow: prompts, source list, rolling coverage state, and every brief are version-controlled.
 
-## Read on the web
+## Where to read
 
-The briefs ship with a static GitHub Pages reader under [`site/`](site/) —
-search and cross-link across briefs, CVEs, topics, and sources. The site
-deploys automatically on every push to `main` that touches the brief feed.
-See [`site/README.md`](site/README.md) for internals and
-[`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for
-one-time enablement.
+- **Public reader:** [https://owlsnightcatch.github.io/security-newsletter/](https://owlsnightcatch.github.io/security-newsletter/) — the static GitHub Pages site. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text and section-level search. The site has an **About** page that renders this same README directly from the repository — if you found this file via the site, you are already reading it. The site also exposes an [RSS feed](https://owlsnightcatch.github.io/security-newsletter/feed.xml).
+- **GitHub:** the briefs are markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
+
+The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for one-time enablement.
+
+## Reader features
+
+- **Home preview** — the landing view shows the TL;DR of the latest daily brief; clicking *Read the full brief* opens the full text.
+- **Cross-linked entities** — every CVE, source, and topic page lists the briefs that mention it; every brief lists the CVEs, topics and sources it cites.
+- **Section-level search** — typing in the top bar matches brief sections (H3 headings) as separate results, jumping straight to the relevant paragraph inside a brief.
+- **Verification filters** — the Topics page can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
+- **Operations dashboard** at `/#/ops` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). Useful for spotting rotation bias or a quietly broken source.
+- **RSS feed** at `/feed.xml`.
+- **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
+- **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
+- **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
+- **Permalink** — each brief has a *Copy link* button that puts the canonical SPA URL on your clipboard.
+- **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting, honours Do Not Track), aggregate counts only. See About → *Analytics & privacy* for the full disclosure.
+- **SEO** — per-route `<title>` / `description` / OpenGraph rewrites in the SPA, plus a static `sitemap.xml` and JSON-LD `WebSite` block.
 
 ## What this repo contains
 
 ```
 .
 ├── prompts/
-│   ├── daily-cti-brief.md     # The canonical daily prompt (v2.14)
+│   ├── daily-cti-brief.md     # The canonical daily prompt
 │   ├── weekly-summary.md      # The weekly summary prompt
-│   └── CHANGELOG.md           # Editorial-policy audit trail
+│   └── CHANGELOG.md           # Editorial-policy audit trail (rendered on the About page)
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
 │   ├── covered_items.json     # Rolling log of items reported and when (full records)
 │   ├── cves_seen.json         # Flat fast-lookup CVE index (sub-agent dedup)
-│   └── BLOCKED.md             # Soft kill-switch — present == agent aborts
+│   ├── deep_dive_history.json # Last 30 days of deep-dive picks (rotation memory)
+│   └── run_log.json           # Per-run sub-agent allocation, fetch failures (Ops view)
 ├── briefs/
 │   ├── README.md              # Brief format and conventions
 │   ├── YYYY-MM-DD.md          # Daily briefs
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
+├── tools/
+│   └── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
 ├── site/                      # GitHub Pages reader (static SPA)
 │   ├── index.html             # SPA shell — vanilla JS, no framework
 │   ├── build.py               # Stdlib-only Python build of the data bundle
@@ -52,10 +68,7 @@ one-time enablement.
 └── .gitignore
 ```
 
-For an end-to-end map of how every piece reads and writes data, see
-[`docs/architecture.md`](docs/architecture.md). For improvements that have
-been *identified but not implemented*, see
-[`docs/improvements.md`](docs/improvements.md).
+For an end-to-end map of how every piece reads and writes data, see [`docs/architecture.md`](docs/architecture.md). For improvements identified but not yet implemented, see [`docs/improvements.md`](docs/improvements.md).
 
 ## Operating principles (non-negotiable)
 
@@ -67,12 +80,14 @@ These principles are encoded in the prompts and enforced by quality gates on eac
 4. **No vanity metrics.** Skip "median dwell time", "breakout time", "X% YoY", "Y new adversaries tracked", and similar vendor-marketing numbers. Operational scoring (CVSS, EPSS, KEV status) is fine.
 5. **Always English** (output). Sources may be in German / French / Italian / Polish; the brief translates findings and cites originals by their native title with a brief English gloss.
 6. **Two-source verification by default**, with a national-CERT carve-out for HIGH-reliability authorities (NCSC-CH, GovCERT.ch, CERT-EU, BSI, ANSSI, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID, CERT.at, CERT-PL) when they are the primary disclosing party for their own jurisdiction. Other single-source items are flagged `[SINGLE-SOURCE]`.
-7. **No repetition across runs.** The agent reads the **last 7 days of briefs** plus `state/cves_seen.json` and `state/covered_items.json` before writing. Repeats appear only under "Updates to Prior Coverage" with a material new-information delta.
+7. **No repetition across runs.** The agent reads the **last 7 days of briefs** plus the most recent weekly summary plus `state/cves_seen.json` and `state/covered_items.json` before writing. Repeats appear only under "Updates to Prior Coverage" with a material new-information delta.
 8. **Yearly / periodic threat reports get one dedicated treatment**, then are not re-summarised. Specific findings can be cross-referenced as context.
-9. **Historical-context rule.** For *highly relevant* deep-dive items with prior public reporting older than ~6 months, the brief includes a 3–5-sentence Background paragraph linking 2–3 of the most relevant prior reports — to refresh defenders' memory without bloating routine items.
+9. **Historical-context rule.** For *highly relevant* deep-dive items with prior public reporting older than ~6 months, the brief includes a 3–5-sentence Background paragraph linking 2–3 of the most relevant prior reports.
 10. **Long-running campaigns** get ≤1 consolidated UPDATE per week unless something critical changes. The weekly summary is the canonical place for "what happened with X this week".
 11. **Recency.** Daily window: 24 h default, 72 h for actively developing items.
 12. **No suppression, no padding.** Empty sections state so explicitly.
+13. **Deep-dive category rotation.** The agent keeps a 30-day rolling history of deep-dive picks and demotes a candidate one rank if its category was already covered in the prior 7 days, unless active exploitation makes it irreducibly urgent.
+14. **One new candidate source per run, maximum.** A flood of new candidates is anomalous; overflow goes into the next run via § 7.
 
 ## Daily routine
 
@@ -82,13 +97,14 @@ A scheduled Claude Code routine fires once per day. It is given exactly one inst
 
 The agent walks through:
 
-1. **Phase 0 — Preflight**: load source list, last 7 days of briefs, state files.
-2. **Phase 1 — Parallel research**: spawn **four** sub-agents in parallel with cleanly partitioned source categories — (1) Active Threats & Trending Vulnerabilities, (2) Switzerland, Europe & Public Sector, (3) Research & Investigative Reporting, (4) Incidents & Disclosures. No token cap. Sub-agents return flexible Markdown with required fields. Each spawn prompt opens with a defensive-intent statement.
-3. **Phase 2 — Verification**: re-fetch primaries, enforce two-source / national-CERT rule, drop already-covered items, surface contradictions.
-4. **Phase 3 — Deep-dive selection**: at most 1–2 items.
-5. **Phase 4 — Compose**: write `briefs/YYYY-MM-DD.md` with sections 0–9.
-6. **Phase 5 — State update**: append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose new sources as `candidate`.
-7. **Phase 6 — Commit & push to `origin/main`** — every brief is published the moment it is generated. No review branch, no staging gate. Briefs are already AI-content-noticed and source-linked.
+1. **Phase 0 — Preflight.** Load source list, last 7 days of briefs (and the most recent weekly summary for the current and prior ISO weeks), state files, deep-dive history.
+2. **Phase 1 — Parallel research.** Spawn **four** sub-agents in parallel with cleanly partitioned source categories — (1) Active Threats & Trending Vulnerabilities, (2) Switzerland, Europe & Public Sector, (3) Research & Investigative Reporting, (4) Incidents & Disclosures.
+3. **Phase 2 — Verification.** Re-fetch primaries, enforce two-source / national-CERT rule, drop already-covered items, surface contradictions.
+4. **Phase 3 — Deep-dive selection.** At most 1–2 items, with the category-rotation rule applied.
+5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–7, including the prompt-version metadata field.
+6. **Phase 5 — State update.** Append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose at most one new source as `candidate`; append to `deep_dive_history.json` if a deep dive was selected; append a record to `run_log.json`.
+7. **Phase 5.5 — Self-check gate.** Verify state JSON parses, every CVE in the brief is in `cves_seen.json`, every § 1–4 item has a matching `covered_items.json` appearance for today. If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
+8. **Phase 6 — Commit & push to `origin/main`** — every brief is published the moment it is generated. No review branch, no staging gate.
 
 Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
 
@@ -96,76 +112,50 @@ Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
 
 A separate scheduled routine fires once a week (Sunday recommended). Reads [`prompts/weekly-summary.md`](prompts/weekly-summary.md). Output: `briefs/weekly/YYYY-Www.md`.
 
-The weekly summary:
+The weekly summary reads every daily brief from the past 7 days, builds a top-stories list, multi-day campaign roll-ups, full CVE roll-up table, sector/victim patterns, and major-breaches recap. It then spawns horizon sub-agents (long-horizon campaigns, yearly/periodic reports, policy/regulatory) for material the dailies did not cover, distils any newly published yearly threat report, and produces a "looking ahead" list. Unlike the daily brief, the weekly summary **may repeat material** from the dailies — that is its consolidating purpose.
 
-1. Reads every daily brief from the past 7 days.
-2. Builds a top-stories list, multi-day campaign roll-ups, full CVE roll-up table, sector/victim patterns, and major-breaches recap.
-3. Spawns three horizon sub-agents (long-horizon campaigns, yearly/periodic reports, policy/regulatory) for material the daily briefs did not cover.
-4. Distils any yearly threat report newly published.
-5. Produces a "looking ahead" list of items in motion likely to develop next week.
+## Source list and CVE index — autonomous
 
-Unlike the daily brief, the weekly summary **may repeat material** from the dailies — that is its consolidating purpose. Repetition is allowed; padding is not.
-
-## Maintaining the source list and the CVE index — autonomous
-
-The repository is the agent's working memory. Both `sources/sources.json` and `state/cves_seen.json` are maintained by the routine on each run with **no human review gate**. Every change appears in the run's git diff and commit message; that's the audit trail. The git log on these files is the curation history.
+The repository is the agent's working memory. Both `sources/sources.json` and `state/cves_seen.json` are maintained by the routine on each run with **no human review gate**. Every change appears in the run's git diff and commit message; that's the audit trail.
 
 ### Source lifecycle (all transitions autonomous)
 
-- **Discovery → candidate.** When a sub-agent encounters a new high-quality publisher (primary source, editorial track record, in-scope) during research, it's added to `sources.json` with `status: "candidate"` and a `notes: "discovered YYYY-MM-DD via {source-id}"` line.
-- **Candidate → active.** A candidate is auto-promoted to `active` after **3 distinct runs** in which the source was successfully fetched *and* contributed content to a brief (i.e., its `last_covered_in_brief` was bumped on three different days). On promotion, append a dated note recording the auto-promotion.
-- **Active → demoted.** After **3 consecutive failed fetches** with no working canonical-URL probe (which is attempted before demotion — many publishers move their feed and a better URL exists at the same domain), the source's `reliability` drops one tier, `status` becomes `demoted`, and a dated `notes` line records the failure mode. Demoted sources are excluded from regular sub-agent rotation but kept in the file.
-- **Demoted → active (recovery).** A demoted source returns to `active` only when the agent finds a working canonical URL during research and the recovered URL contributes content to a brief. Update `url`, set `status: active`, reset `consecutive_failures` to 0, add a dated note explaining the recovery.
-- **URL updates in place.** Any time a better canonical URL is found for an active source (publisher CMS migration, restructured advisories index, more specific feed), update `url` and append a dated note. The source `id` stays stable so historical references in `state/covered_items.json` remain valid.
-- **Reliability tier-down without full demotion.** Sources that return navigation-only pages (no dated content) for **3+ consecutive attempted runs** despite drill-down attempts get a one-tier reliability drop and a dated `notes` flag, while staying `active`. They keep getting fetched but the brief weighs their output less when corroboration matters.
+- **Discovery → candidate.** When a sub-agent encounters a new high-quality publisher (primary source, editorial track record, in-scope) during research, it's added to `sources.json` with `status: "candidate"`. **At most one new candidate per run** — overflow waits for the next run.
+- **Candidate → active.** A candidate is auto-promoted to `active` after **3 distinct runs** in which the source was successfully fetched *and* contributed content to a brief.
+- **Active → demoted (content axis only).** Demotion fires only on the **content axis**, never on the transport axis. After 3 consecutive `consecutive_quiet_periods` increments accompanied by a failed canonical-URL probe, OR after 5 consecutive `consecutive_fetch_failures` of code 404 (sustained 4xx-not-403/429), the source's `reliability` drops one tier and `status` becomes `demoted`. Sustained 403 / 429 / 503 / 5xx **never** demotes — that pattern means the publisher is blocking the agent's request shape, not that the source is dead. For those, the agent records an alternate-URL strategy in `notes` and keeps the source in rotation.
+- **Demoted → active (recovery).** A demoted source returns to `active` only when the agent finds a working canonical URL during research and the recovered URL contributes content to a brief.
+- **URL updates in place.** Any time a better canonical URL is found for an active source (publisher CMS migration, restructured advisories index), update `url` and append a dated note. The source `id` stays stable so historical references in `state/covered_items.json` remain valid.
 
-**No source deletion.** Demoted and tier-downgraded sources stay in the file as historical record — the cost is a single extra entry, the benefit is a durable audit trail of why each source left or rejoined rotation. If the file ever grows unwieldy, that's a job for a separate cleanup commit, not a routine run.
+**No source deletion.** Demoted and tier-downgraded sources stay in the file as historical record.
 
 ### CVE index — autonomous
 
-The agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE — a hallucinated identifier slipped past verification on a previous run). Removals are documented in the run's commit body so the audit trail is preserved in git history.
+The agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE). Removals are documented in the run's commit body.
 
-The current list (~75 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
+The current list (~80 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
 
 ## Reader engagement (privacy-by-design)
 
-The site collects **no** aggregate visit data. There are no analytics
-scripts, no beacons, no cookies, no fingerprinting, no third-party
-trackers, and no GitHub Action that pulls visit counts. The strict CSP
-(`connect-src 'self'`) blocks any future regression that tries to add
-cross-origin telemetry.
+The site uses **Umami Cloud** for aggregate visitor counts so the operator can see whether the newsletter is being read. Umami is a privacy-by-design alternative to mainstream analytics:
 
-The only "page count" is a **per-device personal reading history** in
-the visitor's own browser `localStorage` — visit count and approximate
-dwell time per brief. The data never leaves the device. The module
-honours `navigator.doNotTrack` and Global Privacy Control (no-op when
-set) and supports one-click clear.
+- No cookies. No fingerprinting. No personal data persisted.
+- Aggregates only: page URL, referrer host, country (IP discarded after lookup), and a daily-rotated hash for unique-visitor counting.
+- Honours `navigator.doNotTrack` and Global Privacy Control — when set, the script self-disables.
+- Search-string parameters are excluded from collection.
 
-The agent's Phase 0 does not consume any engagement signal. Editorial
-weighting is purely verification + CH/EU nexus + novelty per
-[`docs/verification.md`](docs/verification.md). Full posture in
-[`docs/security-review.md`](docs/security-review.md) § 4.
+The site's strict CSP allows only `'self'` and `https://cloud.umami.is` for both `script-src` and `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure on the [About page](https://owlsnightcatch.github.io/security-newsletter/#/about?at=analytics).
+
+The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md). Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
 
 ## Security posture
 
-This is a fully autonomous, self-evolving system: the agent edits its own
-prompts, mutates its own state, and pushes directly to `main`. The
-defensive frame is "detect and correct", not "prevent at all costs".
-Threat model and current controls are documented in
-[`docs/security-review.md`](docs/security-review.md). Highlights:
+This is a fully autonomous, self-evolving system: the agent edits its own prompts, mutates its own state, and pushes directly to `main`. The defensive frame is "detect and correct", not "prevent at all costs". Threat model and current controls are documented in [`docs/security-review.md`](docs/security-review.md). Highlights:
 
-- **Soft kill-switch.** Phase 0 step 0 of the daily prompt aborts the run
-  if `state/BLOCKED.md` exists. Set automatically by editorial-invariant
-  CI on regression; cleared by a deliberate human commit. This is the
-  bound on the blast radius of self-evolving prompts.
-- **Vendored library integrity.** `site/build.py` aborts on SHA-256
-  mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
-- **Strict CSP** delivered via meta tag — no inline scripts, no
-  third-party `connect-src`, no inline frames or forms.
-- **DOMPurify on every brief render** with a pinned, restrictive config
-  (forbidden tags + URI scheme allowlist).
-- **Site privacy guarantees:** zero cookies, zero third-party scripts,
-  zero fingerprinting; engagement data is aggregate-only.
+- **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 1–4 item has a `covered_items.json` appearance for today, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
+- **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
+- **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'` and `https://cloud.umami.is` (the analytics tracker, see About → Analytics & privacy); no inline frames or forms.
+- **DOMPurify on every brief render** with a pinned, restrictive config (forbidden tags + URI scheme allowlist).
+- **Site privacy guarantees:** no cookies set, no fingerprinting, no third-party scripts other than Umami's privacy-by-design tracker (which honours Do Not Track and stores no PII).
 
 ## Verification policy
 

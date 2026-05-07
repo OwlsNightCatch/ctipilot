@@ -9,7 +9,7 @@
     try {
       await Store.load();
     } catch (e) {
-      view.innerHTML = `<div class="empty"><h1>Failed to load data</h1><p>${e.message}</p></div>`;
+      writeView(view, `<div class="empty"><h1>Failed to load data</h1><p>${escapeHtml(e.message)}</p></div>`);
       return;
     }
 
@@ -22,11 +22,11 @@
     Router.dispatch();
   });
 
+  function writeView(view, html) { view.innerHTML = html; }
+  function setHTML(el, html) { el.innerHTML = html; }
+
   /** If render.js's boot-time XSS self-test failed (the sanitiser was
-      somehow broken or replaced), show a persistent warning banner above
-      the view so operators see it immediately on the next visit. The
-      site still renders — just with markdown content escaped to plain
-      text — so an attacker payload cannot execute. */
+      somehow broken or replaced), show a persistent warning banner. */
   function surfaceSanitiserHealth() {
     if (!window.Render || typeof Render.selfTest !== 'function') return;
     let reason = Render.renderUnsafeReason && Render.renderUnsafeReason();
@@ -47,18 +47,7 @@
     document.body.insertBefore(banner, document.body.firstChild);
   }
 
-  /** Global click delegate for anchor behaviour:
-       - href="#section"  (in-page anchor; not "#/...")  → smooth-scroll to
-         the matching id, do not change the SPA's hash. Fixes the bug where
-         clicking "On this page" links landed nowhere because the SPA's
-         hashchange listener treated them as routes.
-       - href="https?://..." that isn't already same-origin → open in a new
-         tab. This is a safety net beyond the DOMPurify hook in render.js,
-         so any externally-pointing <a> in any template (markdown, sidebar,
-         topic/CVE/source pages) gets the same treatment.
-
-      Honours modifier-key clicks (cmd/ctrl/shift/alt) and middle-click —
-      the browser's native "open in new tab / window" stays untouched. */
+  /** Global click delegate for anchor behaviour. */
   function wireLinkBehaviour() {
     document.addEventListener('click', (e) => {
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
@@ -73,18 +62,18 @@
         const el = id ? document.getElementById(id) : null;
         if (el) {
           e.preventDefault();
+          const det = el.closest('details');
+          if (det) det.open = true;
           el.scrollIntoView({ behavior: 'smooth', block: 'start' });
           el.setAttribute('tabindex', '-1');
           el.focus({ preventScroll: true });
         } else {
-          // Anchor target missing — at least don't blow away the SPA hash.
           e.preventDefault();
         }
         return;
       }
 
-      // Off-origin absolute URL: ensure new tab. (Same-origin / relative
-      // links and mailto:/tel:/#/ SPA routes pass through untouched.)
+      // Off-origin absolute URL: ensure new tab.
       if (/^https?:\/\//i.test(href)) {
         try {
           const u = new URL(href);
@@ -111,16 +100,16 @@
     const ul = document.getElementById('suggestions');
     if (!input || !ul) return;
 
-    let active = -1; // index into current results
+    let active = -1;
     let current = [];
 
-    function close() { ul.hidden = true; ul.innerHTML = ''; active = -1; current = []; }
+    function close() { ul.hidden = true; setHTML(ul, ''); active = -1; current = []; }
 
     function open(results) {
       current = results;
       active = -1;
       if (!results.length) { close(); return; }
-      ul.innerHTML = results.map((r, i) => `
+      const html = results.map((r, i) => `
         <li role="option" data-route="${escapeAttr(r.route)}" data-idx="${i}">
           <span class="kind-pill">${escapeHtml(r.kind)}</span>
           <div class="s-row">
@@ -129,6 +118,7 @@
           </div>
         </li>
       `).join('');
+      setHTML(ul, html);
       ul.hidden = false;
     }
 
@@ -182,7 +172,8 @@
       const editable = tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable;
       if (e.key === '/' && !editable) {
         e.preventDefault();
-        document.getElementById('q').focus();
+        const input = document.getElementById('q');
+        if (input) input.focus();
       }
     });
   }

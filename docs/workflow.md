@@ -33,9 +33,10 @@ The agent is given the repository root as its working directory and write access
 
 The agent loads:
 - `sources/sources.json` — only `status: "active"` sources feed sub-agents.
-- The briefs from the **last 7 calendar days** under `briefs/` (and the most recent weekly summary in `briefs/weekly/` if dated within the window) — extracts a dedup index of CVEs, actors, campaigns, victims, annual-reports.
+- The briefs from the **last 7 calendar days** under `briefs/`, plus the **most recent weekly summary** at `briefs/weekly/YYYY-Www.md` for the current ISO week and the prior ISO week (named explicitly, regardless of mtime) — extracts a dedup index of CVEs, actors, campaigns, victims, annual-reports.
 - `state/covered_items.json` — structured rolling log (full records).
 - `state/cves_seen.json` — flat fast-lookup CVE index.
+- `state/deep_dive_history.json` (if present) — last 30 days of deep-dive picks. Used by Phase 3's category-rotation rule.
 
 If any read fails, the agent surfaces the error and stops; it does not silently proceed without prior context.
 
@@ -87,6 +88,8 @@ The agent picks at most 1 (exceptionally 2) items for technical deep dive. Selec
 1. Active in-the-wild exploitation **and** non-trivial exposure for Swiss / European public-sector environments.
 2. Active exploitation with strong CH/EU or government nexus.
 3. Substantive new technical analysis with sufficient public detail to be actionable.
+
+**Category-rotation rule.** The agent reads `state/deep_dive_history.json`. If a candidate's category was already covered in the prior 7 days, the candidate is demoted one rank — unless criterion 1 (active exploitation + non-trivial CH/EU public-sector exposure) makes it irreducibly urgent. The intent: avoid covering Linux LPE five days running while network-stack RCE, identity infrastructure, and OT go untouched.
 
 If no item clears the bar, the deep-dive section says so explicitly. The agent does not invent depth.
 
@@ -141,19 +144,44 @@ For each item written into today's brief, append a record:
 If the `key` already exists, the agent appends to its `appearances` and bumps `last_covered`. It does not duplicate the record.
 
 ### `sources/sources.json`
-- For each source the agent fetched and used today, set `last_successful_fetch` to today's ISO date and reset `consecutive_failures` to 0.
-- For each source that returned 404 / dead host / empty content, increment `consecutive_failures`. If `>= 3`, drop the reliability tier by one (HIGH → MEDIUM, MEDIUM → LOW), set status to `demoted`, and add a `notes` line with today's date and the failure mode.
-- If a *new* high-quality source was discovered (linked from existing trusted sources, with editorial track record), append it with `status: "candidate"`, `notes: "discovered YYYY-MM-DD via {source-id}"`. **Never auto-promote.** Humans review candidates.
-- **Never delete a source.** Demotions are reversible by humans editing the file.
+- For each source the agent fetched and used today, set `last_successful_fetch` to today's ISO date and reset `consecutive_fetch_failures` and `consecutive_quiet_periods` to 0.
+- For each source that returned 200 with no in-window items, increment `consecutive_quiet_periods` (a content signal — does not demote on its own).
+- For each source that returned a transport error (HTTP 403 / 429 / 503 / 5xx / connection failure), increment `consecutive_fetch_failures`. **Sustained 403/429/5xx never demotes** — that pattern means the publisher is blocking the agent, not that the source is dead. Record an alternate-URL strategy in `notes`.
+- For each source that returned 404 / dead host, increment `consecutive_fetch_failures` and try one canonical-URL probe. Demotion fires only after 5 consecutive 404 fails (with no working probe) or 3 consecutive quiet periods with a failed probe.
+- If a *new* high-quality source was discovered, append it with `status: "candidate"`. **At most one new candidate per run.** A candidate auto-promotes to `active` after 3 distinct runs in which it was successfully fetched and contributed content.
+- **Never delete a source.** Demotion is the soft-removal mechanism; demoted sources stay in the file as audit trail.
+
+### `state/deep_dive_history.json`
+
+If a deep dive was selected this run, append `{date, topic, category}` and trim to the most-recent 30 entries. Phase 3 reads this on the next run.
+
+### `state/run_log.json`
+
+Append a per-run record (model, sub-agent allocation, fetch failures, items published, deep-dive slug, duration) and trim to 90 days. Surfaced by the SPA's `#/ops` view.
 
 ---
 
-## 8. Phase 6 — Commit and push
+## 8. Phase 5.5 — Self-check gate
+
+Before committing, the agent runs three checks:
+
+1. **JSON parses cleanly** for every state file it wrote.
+2. **Every CVE referenced in the brief** appears in `state/cves_seen.json`.
+3. **Every § 1–4 H3 item** has a matching `appearances[].date == today` record in `state/covered_items.json`.
+
+If any check fails, Phase 6 is aborted and the operator output prints `state: drift — <reason>`. The brief file remains on disk; the next run rebuilds the state delta from the brief itself (the brief is the canonical artefact).
+
+---
+
+## 9. Phase 6 — Commit and push
 
 The agent stages, commits, and **pushes to `origin/main`** in one go. Each brief is published the moment it is generated.
 
 ```bash
-git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json sources/sources.json
+git add briefs/YYYY-MM-DD.md \
+        state/covered_items.json state/cves_seen.json \
+        state/deep_dive_history.json state/run_log.json \
+        sources/sources.json
 git commit -m "brief: YYYY-MM-DD
 
 - ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
@@ -167,7 +195,7 @@ The push goes to whatever remote is configured for the repo (Path A in setup is 
 
 ---
 
-## 9. Phase 7 — Output
+## 10. Phase 7 — Output
 
 The agent prints exactly four lines to the terminal:
 

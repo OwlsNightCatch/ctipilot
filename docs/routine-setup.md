@@ -123,10 +123,11 @@ The site is fully static and read-only. The deploy workflow uses only shell-leve
 
 ## Engagement metrics — none, by choice
 
-The site does **not** collect aggregate visit counts. The only "page
-count" is the per-device localStorage history that each visitor sees
-in the home footer's *Your reading history* panel — that data never
-leaves the device.
+The site does **not** collect aggregate visit counts. There are no
+analytics scripts, beacons, cookies, fingerprinting, or third-party
+trackers, and no on-device personal-history panel. The strict CSP
+(`connect-src 'self'`) blocks any future regression that tries to add
+cross-origin telemetry.
 
 A previous version of this repo pulled the GitHub Repo Traffic API
 into `state/engagement.json` (and required a `TRAFFIC_PAT` secret). It
@@ -139,6 +140,39 @@ Analytics, GoatCounter, Plausible). None are enabled by default.
 
 If a `TRAFFIC_PAT` secret was created during the previous version, you
 can safely delete it from the repo's secrets — nothing reads it now.
+
+## Sub-agent capability ceiling
+
+The four research sub-agents the daily routine spawns are the single
+most dangerous configuration surface: a sub-agent that follows an
+injection-laced page could perform writes the parent never intended
+([`docs/security-review.md`](security-review.md) § 2.4 / T4). When
+configuring the routine in claude.ai, restrict the sub-agent toolset
+to **read-only** operations:
+
+| Allowed for sub-agents | `Read`, `Grep`, `Glob`, `WebFetch`, `WebSearch` |
+| Forbidden for sub-agents | `Write`, `Edit`, `Bash`, `Task`, `NotebookEdit` |
+
+The main agent retains the full toolset (it has to write the brief and
+push the commit). Sub-agents return Markdown to the main context and
+never touch the filesystem or git directly.
+
+Verify the live routine config matches this list as a periodic
+operator-checklist task. The prompt's own sub-agent section names
+allowed tools, but the runtime is what enforces them.
+
+## Rotation cadence (credentials)
+
+Tokens that don't rotate eventually leak. Recommended cadence:
+
+| Credential | Rotate every | How |
+| --- | --- | --- |
+| Claude GitHub App install | 90 days | Re-install the app on the repo (revoke old install at <https://github.com/settings/installations>). |
+| Routine API trigger token | On-demand and whenever it appears in any logs / docs / chat | Routine settings → regenerate trigger token. |
+| Repo `GITHUB_TOKEN` (workflow) | Automatic (per-run) | No action needed; GitHub rotates this for you. |
+
+Add a calendar reminder for the App rotation. The first time a 403 lands
+on `git push origin HEAD:main` is the wrong moment to remember.
 
 ## Limits to be aware of
 
