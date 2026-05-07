@@ -25,7 +25,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 - **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
 - **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
 - **Permalink** — each brief has a *Copy link* button that puts the canonical SPA URL on your clipboard.
-- **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting, honours Do Not Track), aggregate counts only. See About → *Analytics & privacy* for the full disclosure.
+- **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting), aggregate counts only. See About → *Analytics & privacy* for the full disclosure.
 - **SEO** — per-route `<title>` / `description` / OpenGraph rewrites in the SPA, plus a static `sitemap.xml` and JSON-LD `WebSite` block.
 
 ## What this repo contains
@@ -142,8 +142,8 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 
 - No cookies. No fingerprinting. No personal data persisted.
 - Aggregates only: page URL, referrer host, country (IP discarded after lookup), and a daily-rotated hash for unique-visitor counting.
-- Honours `navigator.doNotTrack` and Global Privacy Control — when set, the script self-disables.
 - Search-string parameters are excluded from collection.
+- Block at the network layer if you don't want to be counted: `cloud.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without it.
 
 The site's strict CSP allows only `'self'` and `https://cloud.umami.is` for both `script-src` and `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure on the [About page](https://owlsnightcatch.github.io/security-newsletter/#/about?at=analytics).
 
@@ -157,7 +157,7 @@ This is a fully autonomous, self-evolving system: the agent edits its own prompt
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
 - **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'` and `https://cloud.umami.is` (the analytics tracker, see About → Analytics & privacy); no inline frames or forms.
 - **DOMPurify on every brief render** with a pinned, restrictive config (forbidden tags + URI scheme allowlist).
-- **Site privacy guarantees:** no cookies set, no fingerprinting, no third-party scripts other than Umami's privacy-by-design tracker (which honours Do Not Track and stores no PII).
+- **Site privacy guarantees:** no cookies set, no fingerprinting, no third-party scripts other than Umami's privacy-by-design tracker (aggregate counts only, no PII).
 
 ## Verification policy
 

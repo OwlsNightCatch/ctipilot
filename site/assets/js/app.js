@@ -217,14 +217,12 @@
         1. Is the umami script element in the DOM?
         2. Is the `window.umami` global defined? (script may have loaded
            but a privacy extension stripped its init.)
-        3. Is `navigator.doNotTrack` set? Combined with our
-           `data-do-not-track="true"` flag, that silences the tracker.
-        4. Does an actual fetch to https://cloud.umami.is/api/send
-           succeed? If this fails with `Failed to fetch` and no other
-           obvious cause, it's almost certainly a content-blocker —
-           Brave Shields, uBlock Origin, AdGuard, Pi-hole, etc. — that
-           blacklists cloud.umami.is at the network layer. The script
-           tag may load (cached), but the beacon POST is dropped.
+        3. Does an actual fetch to https://cloud.umami.is/api/send
+           succeed? If this fails with `Failed to fetch`, it's almost
+           certainly a content-blocker — Brave Shields, uBlock Origin,
+           AdGuard, Pi-hole, etc. — that blacklists cloud.umami.is at
+           the network layer. The script tag may load (cached), but
+           the beacon POST is dropped.
       Logs each result as `info` / `warn` / `error` so it's easy to
       eyeball in the console. */
   window.checkUmami = async function checkUmami() {
@@ -232,13 +230,8 @@
     console.group('[checkUmami]');
     console.info('1. <script> tag in DOM:', tag ? 'yes' : 'NO — markup missing');
     console.info('   src:', tag?.src, '· website-id:', tag?.dataset?.websiteId);
-    console.info('   data-do-not-track:', tag?.dataset?.doNotTrack || '(not set)');
     console.info('2. window.umami global:', typeof window.umami !== 'undefined' ? 'defined' : 'UNDEFINED — script loaded but did not initialise (likely a content-blocker stripped it)');
-    console.info('3. navigator.doNotTrack:', navigator.doNotTrack, '· globalPrivacyControl:', !!window.globalPrivacyControl);
-    if (navigator.doNotTrack === '1' || window.globalPrivacyControl) {
-      console.warn('   ⚠ Browser sends DNT/GPC. With data-do-not-track="true" the tracker is a deliberate no-op. Test in another browser or disable DNT to see your own visits.');
-    }
-    console.info('4. POST to cloud.umami.is/api/send …');
+    console.info('3. POST to cloud.umami.is/api/send …');
     try {
       const r = await fetch('https://cloud.umami.is/api/send', {
         method: 'POST',
@@ -261,7 +254,7 @@
     } catch (e) {
       console.error('   ❌ Fetch failed:', e.message, '— this almost always means a privacy extension / Brave Shields / Pi-hole is blocking cloud.umami.is at the network layer. Disable shields for this site or test in another browser.');
     }
-    console.info('5. Verbose logging: set `window.__ctibriefsDebugUmami = true` to log every umami.track() call to the console.');
+    console.info('4. Verbose logging: set `window.__ctibriefsDebugUmami = true` to log every umami.track() call to the console.');
     console.groupEnd();
     return 'See console output above';
   };

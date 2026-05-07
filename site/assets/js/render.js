@@ -1060,8 +1060,6 @@ privacy-by-design alternative to mainstream analytics products:
   referrer host, country (from IP, then the IP is discarded), and a
   daily-rotated hash that lets Umami count "unique visitors today"
   without persisting an identifier.
-- **Honours \`navigator.doNotTrack\`** — when DNT or Global Privacy Control
-  is set, the tracker is a complete no-op.
 - **Search-string parameters are excluded** from collection
   (\`data-exclude-search="true"\`).
 
@@ -1072,18 +1070,16 @@ strict Content Security Policy allows only \`'self'\` and
 page. The site's website ID is public (it is in the page source) and is
 \`abe09860-85be-4b06-8383-002f2e598061\`.
 
-Umami's privacy policy: <https://umami.is/privacy>. To opt out
-completely, enable Do Not Track in your browser; the script self-disables.
-You can also block it at the network layer — \`cloud.umami.is\` — without
-breaking the site.
+Umami's privacy policy: <https://umami.is/privacy>. You can block
+collection entirely at the network layer — block \`cloud.umami.is\` in
+your browser, ad-blocker, or DNS resolver. The site keeps working
+without it.
 
-**Operator note: if you don't see your own visits in the Umami dashboard**, run **\`checkUmami()\`** in your browser's DevTools console — it tests every link in the chain (script tag, \`window.umami\` global, DNT/GPC state, and an actual POST to \`cloud.umami.is/api/send\`) and reports each result. The three common causes:
+**Operator note: if you don't see your own visits in the Umami dashboard**, run **\`checkUmami()\`** in your browser's DevTools console — it tests every link in the chain (script tag, \`window.umami\` global, and an actual POST to \`cloud.umami.is/api/send\`) and reports each result. The two common causes:
 
-1. **Privacy browser / extension blocks \`cloud.umami.is\` at the network layer.** Brave Shields, uBlock Origin, AdGuard, Pi-hole, Firefox Enhanced Tracking Protection (Strict), and similar tools blacklist the host. The script tag may load (often from cache), but the \`POST /api/send\` is dropped — no event reaches the dashboard, and DevTools usually shows the request as cancelled or doesn't list it at all. Disable shields for \`owlsnightcatch.github.io\` to verify, or test in another browser. **This is the most likely reason you see no traffic in Umami.**
+1. **Privacy browser / extension blocks \`cloud.umami.is\` at the network layer.** Brave Shields, uBlock Origin, AdGuard, Pi-hole, Firefox Enhanced Tracking Protection (Strict), and similar tools blacklist the host. The script tag may load (often from cache), but the \`POST /api/send\` is dropped — no event reaches the dashboard. Disable shields for \`owlsnightcatch.github.io\` to verify, or test in another browser. **This is the most likely reason you see no traffic in Umami.**
 
-2. **Browser sends Do Not Track and the tracker honours it** (\`data-do-not-track="true"\` is part of the privacy promise). Brave doesn't send DNT by default but Firefox-Strict, some extensions, and any user who toggled it on will. Test in incognito with DNT off.
-
-3. **SPA route changes weren't tracked.** The site uses hash routing (\`#/...\`); Umami's auto-tracker only fires on History API events. The router calls \`umami.track()\` after every dispatch to fix this. If \`window.umami\` is undefined when a route fires (script blocked entirely), the call no-ops silently and a single notice is logged once to the console.
+2. **SPA route changes weren't tracked.** The site uses hash routing (\`#/...\`); Umami's auto-tracker only fires on History API events. The router calls \`umami.track()\` after every dispatch to fix this. If \`window.umami\` is undefined when a route fires (script blocked entirely), the call no-ops silently and a single notice is logged once to the console.
 
 To verbose-log every track call, set \`window.__ctibriefsDebugUmami = true\` in the console — every dispatched route then logs \`[umami] tracked <url>\`.
 

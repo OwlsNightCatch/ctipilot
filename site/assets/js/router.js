@@ -249,7 +249,7 @@
         if (!trackPageview._warned) {
           trackPageview._warned = true;
           // eslint-disable-next-line no-console
-          console.info('[umami] window.umami is not available. Likely causes: tracker script blocked by an ad-blocker / Brave Shields / browser privacy extension, browser sends Do Not Track and the tracker honoured `data-do-not-track="true"`, or cloud.umami.is is unreachable. Run `window.checkUmami()` for a full diagnostic.');
+          console.info('[umami] window.umami is not available. Likely causes: tracker script blocked by an ad-blocker / Brave Shields / browser privacy extension, or cloud.umami.is is unreachable. Run `window.checkUmami()` for a full diagnostic.');
         }
         return;
       }
