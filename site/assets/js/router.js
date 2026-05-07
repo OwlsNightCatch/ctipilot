@@ -244,12 +244,22 @@
   let _lastTrackedUrl = null;
   function trackPageview() {
     try {
-      if (typeof window.umami === 'undefined' || typeof window.umami.track !== 'function') return;
+      if (typeof window.umami === 'undefined' || typeof window.umami.track !== 'function') {
+        // Surface ONCE so the operator can debug missing analytics in the console.
+        if (!trackPageview._warned) {
+          trackPageview._warned = true;
+          // eslint-disable-next-line no-console
+          console.info('[umami] window.umami is not available. Likely causes: tracker script blocked by an ad-blocker / Brave Shields / browser privacy extension, browser sends Do Not Track and the tracker honoured `data-do-not-track="true"`, or cloud.umami.is is unreachable. Run `window.checkUmami()` for a full diagnostic.');
+        }
+        return;
+      }
       // hashchange + popstate both fire on hash navigation — only count
       // once per actual URL change.
       if (window.location.href === _lastTrackedUrl) return;
       _lastTrackedUrl = window.location.href;
       window.umami.track();
+      // eslint-disable-next-line no-console
+      if (window.__ctibriefsDebugUmami) console.info('[umami] tracked', window.location.href);
     } catch (_) {
       // never let analytics break navigation
     }
