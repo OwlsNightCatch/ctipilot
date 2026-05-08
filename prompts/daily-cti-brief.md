@@ -379,7 +379,7 @@ Phase 5.5's script enforces a non-negotiable URL allowlist on every footer's `So
 
 **Rule of thumb:** if removing the trailing path component still resolves to a meaningful page, the URL is too generic. The only acceptable URLs are ones that point at a single article / advisory / blog post / regulator filing / victim statement / vendor PSIRT page.
 
-The script also runs a **live HEAD/GET on every Source URL** in the brief and FAILs the commit on any 404. Fabricated URLs that look plausible but don't exist (`https://securelist.com/amazon-ses-bec-campaign-2026/`, `https://www.deepinstinct.com/blog/muddywater-2026`, etc.) are caught here without needing the Phase 4.5 sub-agent. Run with `--no-link-check` for offline test runs only.
+The script also runs a **live HEAD/GET on every Source URL** in the brief and FAILs the commit on any 404. Fabricated URLs that look plausible but don't exist (`https://securelist.com/amazon-ses-bec-campaign-2026/`, `https://www.deepinstinct.com/blog/muddywater-2026`, etc.) are caught here without needing the Phase 4.5 sub-agent.
 
 In every other case: pivot from NVD/CERT to the vendor or research lab. Phase 4.5's verifier additionally flags `Source: CERT-FR` as the **only** source on an item as a `primary-source-quality` WARN.
 
@@ -875,7 +875,7 @@ The script bundles every Phase 5.5 mechanical check **plus** the build-side smok
 11. **Multi-CVE hygiene** — when an item lists multiple CVEs, CVSS must either be a single shared value or carry per-CVE breakdown (`9.1 / 7.2` or `9.1 (CVE-2026-5787), 7.2 (CVE-2026-6973)`).
 12. **Blocked source patterns** (FAIL) — Source URL is on the never-acceptable list: NVD/MITRE/cve.org per-CVE pages (always derived), generic landings (`heise.de/`, `heise.de/news/`, `heise.de/security`, `nos.nl/`, `nos.nl/artikel/`), aggregator indexes (`cert.ssi.gouv.fr/avis/`, `cisa.gov/known-exploited-vulnerabilities-catalog/`, `dragos.com/year-in-review/`, `abw.gov.pl/pl/cyberbezpieczenstwo/`, etc.). The full list lives at the top of `tools/check_brief.py`.
 13. **Primary-source quality** (WARN) — flags items whose only source is a national CERT/NCSC. Editorial rule: vendor advisories / research blogs / regulator filings / victim statements are preferred as the primary; CERT belongs as `Additional source:`.
-14. **Live URL liveness** — HEAD/GET every Source URL in every footer; FAIL on 404. Catches fabricated URLs that look plausible but don't exist. Use `--no-link-check` for offline runs only.
+14. **Live URL liveness** — HEAD/GET every Source URL in every footer; FAIL on 404. Catches fabricated URLs that look plausible but don't exist.
 15. **`tools/fetch_source.py` for known-403 hosts** — when the brief cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids that wasn't mitigated via the Python bridge, the script FAILs.
 16. **`covered_items.json` appearances** — H3 count in core sections matches `appearances[].date == today` count within tolerance 1 (heuristic; warns).
 17. **`run_log.json` fully populated for today** — every key the Ops dashboard renders (`sub_agents.{S1..S4}.{sources_attempted, sources_used, items_returned, returned}`, `fetch_failures`, `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count`).

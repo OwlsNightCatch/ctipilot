@@ -201,20 +201,40 @@ CVE_RE = re.compile(r"CVE-\d{4}-\d{4,7}")
 # site/build.py `_SECTION_KEYWORDS` so the script and the renderer agree on
 # what each heading means.
 _SECTION_KEYWORDS: list[tuple[str, str]] = [
+    # Daily-prompt sections.
     ("tl;dr", "tldr"),
     ("immediate action", "immediate-actions"),
     ("active threats", "active-threats"),
     ("active threat", "active-threats"),
     ("trending vulnerabilities", "trending-vulnerabilities"),
     ("research", "research"),
-    ("notable incidents", "active-threats"),  # legacy
-    ("switzerland, europe", "active-threats"),  # legacy
+    ("notable incidents", "active-threats"),  # legacy daily
+    ("switzerland, europe", "active-threats"),  # legacy daily
     ("updates to prior coverage", "updates"),
     ("updates on previously", "updates"),
     ("deep dive", "deep-dive"),
     ("action items", "action-items"),
     ("verification notes", "verification-notes"),
     ("verification & coverage", "verification-notes"),
+    # Weekly-prompt sections (the daily/weekly distinction comes from the
+    # brief filename — YYYY-MM-DD.md vs YYYY-Www.md). The keys mirror
+    # site/taxonomy.yaml's `sections` list.
+    ("week at a glance", "weekly-glance"),
+    ("highest-impact events", "weekly-top-stories"),
+    ("highest impact events", "weekly-top-stories"),
+    ("top stories", "weekly-top-stories"),
+    ("multi-day", "weekly-multi-day"),
+    ("vulnerability roll-up", "weekly-vuln-rollup"),
+    ("sector & victim", "weekly-sector-patterns"),
+    ("sector and victim", "weekly-sector-patterns"),
+    ("incidents & disclosures recap", "weekly-incidents-recap"),
+    ("annual / periodic", "weekly-annual-reports"),
+    ("annual /", "weekly-annual-reports"),
+    ("annual ", "weekly-annual-reports"),
+    ("long-running campaigns", "weekly-long-running"),
+    ("policy & regulatory", "weekly-policy"),
+    ("policy and regulatory", "weekly-policy"),
+    ("looking ahead", "weekly-looking-ahead"),
 ]
 
 
@@ -389,13 +409,35 @@ FOOTERED_SECTION_KEYS = (
     "research", "updates", "deep-dive", "action-items",
 )
 
+# Weekly-brief equivalents — the weekly does not have the daily's three core
+# sections (active-threats / trending-vulnerabilities / research) but has its
+# own required scaffolding.
+WEEKLY_REQUIRED_SECTION_KEYS = (
+    "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
+    "weekly-incidents-recap",
+)
+WEEKLY_FOOTERED_SECTION_KEYS = (
+    "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
+    "weekly-sector-patterns", "weekly-incidents-recap", "weekly-annual-reports",
+    "weekly-long-running", "weekly-policy",
+)
 
-def check_section_h3_coverage(sections: list[dict[str, Any]]) -> None:
-    """The three core content sections (active-threats, trending-vulnerabilities,
-    research) must each carry ≥1 H3 item. An empty core section is editorial
-    drift — a sub-agent failed and the gap was not surfaced as a stub."""
+
+def check_section_h3_coverage(sections: list[dict[str, Any]],
+                                *, kind: str = "daily") -> None:
+    """For daily briefs: active-threats / trending-vulnerabilities / research
+    must each carry ≥1 H3 item. For weekly briefs: weekly-top-stories /
+    weekly-multi-day / weekly-vuln-rollup / weekly-incidents-recap. An empty
+    required section is editorial drift — a sub-agent failed and the gap was
+    not surfaced as a stub.
+
+    The weekly's "Highest-impact events" (weekly-top-stories) section is
+    legitimately empty if no item from the week qualified as an "if you did
+    nothing this would be ongoing" candidate — but this must be stated
+    explicitly in the body."""
+    keys = WEEKLY_REQUIRED_SECTION_KEYS if kind == "weekly" else REQUIRED_SECTION_KEYS
     by_key = sections_by_key(sections)
-    for key in REQUIRED_SECTION_KEYS:
+    for key in keys:
         secs = by_key.get(key, [])
         if not secs:
             fail("section-present", f"section '{key}' missing")
@@ -403,11 +445,13 @@ def check_section_h3_coverage(sections: list[dict[str, Any]]) -> None:
         total = sum(len(s["items"]) for s in secs)
         title = secs[0]["title"]
         if total == 0:
-            # Empty is acceptable only if the section explicitly carries an
-            # 'intentionally left empty' stub (less-is-more rule from v2.27).
             body = "\n".join(secs[0]["lines"])
-            if re.search(r"intentionally left empty|no qualifying items|no item met the bar",
-                         body, re.IGNORECASE):
+            if re.search(
+                r"intentionally left empty|no qualifying items|no item met the bar|"
+                r"no item .{0,40}continued to be operationally critical|"
+                r"no inaction-=-incident",
+                body, re.IGNORECASE,
+            ):
                 ok("section-h3", f"'{title}' ({key}): empty with explicit stub")
             else:
                 warn("section-h3", f"'{title}' ({key}): no H3 items and no empty-stub marker")
@@ -462,7 +506,8 @@ def _has_cve_in_heading(heading: str) -> bool:
     return bool(CVE_RE.search(heading))
 
 
-def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str]]) -> None:
+def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str]],
+                       *, kind: str = "daily") -> None:
     """Every H3 in immediate-actions / active-threats / trending-vulnerabilities /
     research / updates / deep-dive / action-items must end with a v2 metadata footer.
     Every footer must have Source + Tags + Region. CVE entries in
@@ -474,8 +519,9 @@ def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str
     bad_taxonomy: list[str] = []
     cve_field_missing: list[str] = []
 
+    keys = WEEKLY_FOOTERED_SECTION_KEYS if kind == "weekly" else FOOTERED_SECTION_KEYS
     by_key = sections_by_key(sections)
-    for key in FOOTERED_SECTION_KEYS:
+    for key in keys:
         for sec in by_key.get(key, []):
             for it in sec["items"]:
                 if it.get("level") == 4:
@@ -498,7 +544,12 @@ def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str
                 if errs:
                     bad_taxonomy.append(f"{tag}: {errs}")
                 # CVE-typed items: every required CVE field must be present.
-                if key == "trending-vulnerabilities" and _has_cve_in_heading(it["heading"]):
+                # Daily: only the dedicated CVE section (trending-vulnerabilities).
+                # Weekly: the equivalent (weekly-vuln-rollup).
+                cve_section = (
+                    "weekly-vuln-rollup" if kind == "weekly" else "trending-vulnerabilities"
+                )
+                if key == cve_section and _has_cve_in_heading(it["heading"]):
                     if not footer.get("cve"):
                         cve_field_missing.append(f"{tag}: missing CVE field")
                     if not footer.get("vector"):
@@ -534,14 +585,21 @@ def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str
         ok("cve-footer-fields", "CVE entries carry CVE/Vector/Auth/Status")
 
 
-def check_multi_cve_footers(sections: list[dict[str, Any]]) -> None:
+def check_multi_cve_footers(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
     """When a footer's CVE field is comma-separated (multi-CVE entry), CVSS
     must either be a single value (shared) or carry per-CVE breakdown using
     `/` or `(CVE-...)` syntax. Same for Vector / Auth — flag if multi-CVE and
     a single value claims to apply to all without explicit markup."""
     by_key = sections_by_key(sections)
     soft_warns: list[str] = []
-    for key in ("trending-vulnerabilities", "active-threats", "deep-dive", "immediate-actions"):
+    if kind == "weekly":
+        target_keys = (
+            "weekly-vuln-rollup", "weekly-top-stories", "weekly-multi-day",
+            "weekly-incidents-recap",
+        )
+    else:
+        target_keys = ("trending-vulnerabilities", "active-threats", "deep-dive", "immediate-actions")
+    for key in target_keys:
         for sec in by_key.get(key, []):
             for it in sec["items"]:
                 footer = it.get("footer")
@@ -626,16 +684,20 @@ def _host_path(url: str) -> tuple[str, str]:
         return "", ""
 
 
-def check_blocked_source_patterns(sections: list[dict[str, Any]]) -> None:
+def check_blocked_source_patterns(sections: list[dict[str, Any]],
+                                    *, kind: str = "daily") -> None:
     """Hard FAIL when any footer's `Source:` list contains a URL matching a
     known-bad pattern: NVD/MITRE/cve.org per-CVE pages (always derived,
     never the disclosing party) or generic landing / category / index URLs
     that point at navigation, not content."""
     blocked: list[str] = []
-    target_keys = (
-        "active-threats", "trending-vulnerabilities", "research",
-        "deep-dive", "updates", "immediate-actions", "action-items",
-    )
+    if kind == "weekly":
+        target_keys = WEEKLY_FOOTERED_SECTION_KEYS
+    else:
+        target_keys = (
+            "active-threats", "trending-vulnerabilities", "research",
+            "deep-dive", "updates", "immediate-actions", "action-items",
+        )
     for sec in sections:
         if sec["key"] not in target_keys:
             continue
@@ -663,7 +725,8 @@ def check_blocked_source_patterns(sections: list[dict[str, Any]]) -> None:
         ok("blocked-source", "no Source URL matches a known-bad pattern (NVD / landing / index)")
 
 
-def check_primary_source_quality(sections: list[dict[str, Any]]) -> None:
+def check_primary_source_quality(sections: list[dict[str, Any]],
+                                   *, kind: str = "daily") -> None:
     """Soft-warn when an item's first source is a national CERT/NCSC. The
     editorial rule (v2.28) is: prefer vendor advisories / blogs / research-lab
     posts as primary. CERTs belong as `Additional source:` unless the item
@@ -674,9 +737,16 @@ def check_primary_source_quality(sections: list[dict[str, Any]]) -> None:
         "ncsc.gov.uk", "ncsc.nl", "bsi.bund.de", "cert.europa.eu", "enisa.europa.eu",
         "csirt.gov.it", "agid.gov.it", "cert.at", "cert.pl", "ccn-cert.cni.es",
     )
+    if kind == "weekly":
+        target_keys = (
+            "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
+            "weekly-annual-reports", "weekly-long-running",
+        )
+    else:
+        target_keys = ("active-threats", "trending-vulnerabilities", "research", "deep-dive")
     soft: list[str] = []
     for sec in sections:
-        if sec["key"] not in ("active-threats", "trending-vulnerabilities", "research", "deep-dive"):
+        if sec["key"] not in target_keys:
             continue
         for it in sec["items"]:
             footer = it.get("footer") or {}
@@ -899,7 +969,8 @@ def check_covered_items_appearances(brief_date: str,
            f"H3/appearances match within tolerance ({h3_count} vs {appearances})")
 
 
-def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None) -> None:
+def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
+                              *, kind: str = "daily", iso_week: str | None = None) -> None:
     """`state/run_log.json` is the Ops dashboard's data source. A sparse record
     leaves the dashboard with `—` cells and hides source-rotation health.
 
@@ -914,28 +985,57 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None) -> 
         warn("run-log", "state/run_log.json missing (first run only — fail next run)")
         return
     runs = run_log.get("runs") or []
-    today_runs = [r for r in runs if r.get("date") == brief_date]
-    if not today_runs:
-        fail("run-log", f"no entry for {brief_date} in run_log.json — Ops dashboard will not show this run")
-        return
-    rec = today_runs[-1]
 
-    # Required top-level keys (matches the v2.27+ schema).
-    required = {
-        "date", "model", "sub_agents", "fetch_failures", "items_published",
-        "deep_dive", "verification_iterations", "verification_residual_count",
-    }
+    # Pick this run: prefer kind-specific match (weekly entries should carry
+    # iso_week == this week + kind == "weekly"); fall back to date match for
+    # legacy records.
+    matching = []
+    for r in runs:
+        if kind == "weekly":
+            if r.get("kind") == "weekly" and (
+                (iso_week and r.get("iso_week") == iso_week)
+                or r.get("date") == brief_date
+            ):
+                matching.append(r)
+        else:
+            if r.get("kind", "daily") == "daily" and r.get("date") == brief_date:
+                matching.append(r)
+    if not matching:
+        # Fall back to any run record matching the date (helps during the
+        # daily/weekly schema transition).
+        matching = [r for r in runs if r.get("date") == brief_date]
+    if not matching:
+        ident = iso_week if kind == "weekly" else brief_date
+        fail("run-log",
+             f"no {kind} entry for {ident} in run_log.json — Ops dashboard will not show this run")
+        return
+    rec = matching[-1]
+
+    # Required top-level keys. Daily and weekly share most of the schema but
+    # diverge on a couple of fields (`deep_dive` is daily-only; `iso_week` /
+    # `kind` are weekly-only).
+    if kind == "weekly":
+        required = {
+            "date", "iso_week", "kind", "model", "sub_agents", "fetch_failures",
+            "items_published", "verification_iterations", "verification_residual_count",
+        }
+    else:
+        required = {
+            "date", "model", "sub_agents", "fetch_failures", "items_published",
+            "deep_dive", "verification_iterations", "verification_residual_count",
+        }
     missing = required - set(rec.keys())
     if missing:
-        fail("run-log-fields", f"{brief_date} record missing keys: {sorted(missing)}")
+        fail("run-log-fields", f"record missing keys: {sorted(missing)}")
     else:
-        ok("run-log-fields", f"{brief_date} record has every required top-level key")
+        ok("run-log-fields", "run_log record has every required top-level key")
 
     # Sub-agent allocation block.
     sa = rec.get("sub_agents") or {}
     incomplete: list[str] = []
     empty_alloc: list[str] = []
-    for k in ("S1", "S2", "S3", "S4"):
+    sub_agent_keys = ("W1", "W2") if kind == "weekly" else ("S1", "S2", "S3", "S4")
+    for k in sub_agent_keys:
         a = sa.get(k)
         if not a or not isinstance(a, dict):
             incomplete.append(f"{k}: missing")
@@ -951,7 +1051,8 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None) -> 
     if incomplete:
         fail("run-log-subagents", f"sub-agent records incomplete: {incomplete}")
     else:
-        ok("run-log-subagents", "all four sub-agent allocation records present")
+        n = len(sub_agent_keys)
+        ok("run-log-subagents", f"all {n} sub-agent allocation record(s) present ({', '.join(sub_agent_keys)})")
     if empty_alloc:
         warn("run-log-subagents", f"sub-agents with empty source allocation: {empty_alloc}")
 
@@ -1125,7 +1226,8 @@ def check_no_iocs(brief_text: str) -> None:
 # --- Driver ----------------------------------------------------------------
 
 def resolve_brief_path(arg: str | None) -> Path:
-    """Accepts a YYYY-MM-DD string, a path, or None (→ today)."""
+    """Accepts a YYYY-MM-DD (daily) or YYYY-Www (weekly) string, a path, or
+    None (→ today's daily). Weekly briefs live under `briefs/weekly/`."""
     if arg is None:
         today = datetime.now(timezone.utc).date().isoformat()
         return BRIEFS_DIR / f"{today}.md"
@@ -1134,7 +1236,29 @@ def resolve_brief_path(arg: str | None) -> Path:
         return p if p.is_absolute() else (ROOT / arg)
     if re.match(r"^\d{4}-\d{2}-\d{2}$", arg):
         return BRIEFS_DIR / f"{arg}.md"
+    if re.match(r"^\d{4}-W\d{2}$", arg):
+        return BRIEFS_DIR / "weekly" / f"{arg}.md"
     raise SystemExit(f"could not interpret brief argument: {arg!r}")
+
+
+def detect_brief_kind(brief_path: Path) -> tuple[str, str, str | None]:
+    """Returns (kind, brief_date, iso_week_or_None).
+
+    kind: "daily" if the filename matches YYYY-MM-DD; "weekly" if it matches
+    YYYY-Www (and the brief lives under `briefs/weekly/`). Anything else is
+    a fatal misuse — the caller raises.
+    """
+    stem = brief_path.stem
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", stem):
+        return ("daily", stem, None)
+    if re.match(r"^\d{4}-W\d{2}$", stem):
+        # Weekly brief — the per-record `date` in run_log.json is the publish
+        # date, which we don't know from the filename alone. Use today's UTC
+        # date as the comparison anchor and let the run_log check do
+        # iso_week-based matching first.
+        today = datetime.now(timezone.utc).date().isoformat()
+        return ("weekly", today, stem)
+    raise SystemExit(f"brief filename does not parse as daily (YYYY-MM-DD) or weekly (YYYY-Www): {stem}")
 
 
 def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: bool) -> int:
@@ -1144,10 +1268,12 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
         print(f"FATAL: brief file not found at {brief_path}")
         return 2
     brief_text = brief_path.read_text(encoding="utf-8")
-    brief_date = brief_path.stem  # YYYY-MM-DD
-    if not re.match(r"^\d{4}-\d{2}-\d{2}$", brief_date):
-        print(f"FATAL: brief filename does not parse as YYYY-MM-DD: {brief_date}")
+    try:
+        kind, brief_date, iso_week = detect_brief_kind(brief_path)
+    except SystemExit as e:
+        print(f"FATAL: {e}")
         return 2
+    print(f"detected kind: {kind}" + (f" · iso_week: {iso_week}" if iso_week else "") + "\n")
 
     print(f"== state files ==")
     parsed = check_state_json_valid()
@@ -1161,7 +1287,7 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== brief structure ==")
     sections = split_sections(brief_text)
-    check_section_h3_coverage(sections)
+    check_section_h3_coverage(sections, kind=kind)
 
     print(f"\n== AI-content notice ==")
     check_ai_notice(brief_text)
@@ -1172,20 +1298,26 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== CVE sync ==")
     check_cve_sync(brief_text, cves_seen)
 
-    print(f"\n== UPDATE citations ==")
-    check_updates_citations(sections)
+    if kind == "daily":
+        print(f"\n== UPDATE citations ==")
+        check_updates_citations(sections)
+    else:
+        # Weekly briefs do not carry an "Updates to Prior Coverage" section in
+        # the same form — § 7 (Long-running campaigns) is the equivalent and
+        # uses regular H3 + footer rather than UPDATE blockquotes.
+        ok("updates-citations", "n/a for weekly brief (long-running campaigns covered as H3 in § 7)")
 
     print(f"\n== H3 footers ==")
-    check_h3_footers(sections, taxonomy)
+    check_h3_footers(sections, taxonomy, kind=kind)
 
     print(f"\n== multi-CVE footer hygiene ==")
-    check_multi_cve_footers(sections)
+    check_multi_cve_footers(sections, kind=kind)
 
     print(f"\n== blocked source patterns (NVD per-CVE / generic landings / indexes) ==")
-    check_blocked_source_patterns(sections)
+    check_blocked_source_patterns(sections, kind=kind)
 
     print(f"\n== primary-source quality ==")
-    check_primary_source_quality(sections)
+    check_primary_source_quality(sections, kind=kind)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
     check_source_urls_resolve(sections, skip=skip_link_check)
@@ -1193,11 +1325,12 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== fetch_source.py for known-403 hosts ==")
     check_fetch_source_for_known_403(brief_text, run_log, brief_date)
 
-    print(f"\n== covered_items.json appearances ==")
-    check_covered_items_appearances(brief_date, sections, covered)
+    if kind == "daily":
+        print(f"\n== covered_items.json appearances ==")
+        check_covered_items_appearances(brief_date, sections, covered)
 
     print(f"\n== run_log.json (Ops dashboard data) ==")
-    check_run_log_for_today(brief_date, run_log)
+    check_run_log_for_today(brief_date, run_log, kind=kind, iso_week=iso_week)
 
     print(f"\n== sources.json bookkeeping ==")
     check_sources_touched_today(brief_date, sources_data)

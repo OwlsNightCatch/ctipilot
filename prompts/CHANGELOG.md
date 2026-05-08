@@ -4,6 +4,58 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.30 — 2026-05-08 (weekly prompt rewritten on top of the daily's institutionalised stack + new editorial intent)
+
+### Why
+v2.28 + v2.29 institutionalised seven things in the **daily** prompt — the dual-axis Phase 4.5 verifier, the iterative refinement loop with up to three follow-up research sub-agents, the `tools/check_brief.py` Phase 5.5 gate, the multi-CVE / multi-source / multi-primary footer rules, the "avoid NVD/CERT as primary" rule with a hard-blocked URL allowlist, the `tools/fetch_source.py` mandate for CISA + NCSC.ch every run, and the `state/run_log.json` Ops-dashboard schema. The **weekly** prompt was still on the v2.23-era structure (single round of W1/W2 horizon research, inline Phase 4.5 shell snippet, no verification sub-agent loop, no blocked-URL list, no fetch_source.py mandate). The two prompts had diverged.
+
+Plus the operator surfaced a missing editorial framing for the weekly: it was being authored as a one-to-one rollup of the dailies. The weekly's actual job is the strategic-horizon view + an explicit "what would be on fire if no one acted on the dailies" register — items where active exploitation continued through the week, where a CISA KEV deadline passed, where a campaign is still acquiring victims, where a patch window closed. Pure recap is not weekly content.
+
+### Weekly prompt — `prompts/weekly-summary.md` (full rewrite on top of the daily's institutionalised stack)
+
+- **New editorial intent block at the top** ("What the weekly is for — and what it is NOT"). Three explicit lenses:
+  1. *What would be on fire by Monday morning if no one had acted on the dailies this week* — Mon-morning escalation register.
+  2. *The strategic-horizon view a daily reader cannot see from any single day* — multi-day chains, sectoral pressure, long-running operator turnovers, regulatory shifts.
+  3. *The longer arc on items the dailies could only sketch* — the disclosure-only-Monday-but-KEV-by-Friday case.
+
+  Repetition without one of these lenses is padding.
+
+- **New W-PD-1 prime directive.** Every weekly item must answer one of the three questions above. Items that don't get dropped in Phase 3.5 even if they were prominent in a daily.
+
+- **Phase 1 Structured review** gains a sixth working list: **"Items where inaction = incident"**. Built from lists 1–3 by asking *if a Swiss / EU public-sector SOC reader did not act on this when it appeared in the daily, would they currently be in an incident?* This list drives the new § 1 framing.
+
+- **Output structure (NORMATIVE)** keeps the 11-section layout but renames § 1 from *"Top stories of the week"* to *"Highest-impact events — what's on fire if no one acted"*. Each H3 in § 1 leads with a one-line **"If you did nothing this week:"** framing — operational reality of what's currently breaking. § 1 may be empty when no item from the week continued to be operationally critical at week-end; the prompt requires explicit empty-stub text in that case.
+
+- **Phase 2 horizon sub-agents (W1, W2)** spawn template now mirrors the daily's: explicit primary-source bias, hard-blocked URL list reference, NVD/MITRE/cve.org per-CVE blocked outright as primary Source, mandatory `tools/fetch_source.py` for CISA + NCSC.ch.
+
+- **Per-item metadata footer (NORMATIVE)** matches the daily verbatim: multi-source forms (`Source: [a](u) · [b](u) · [c](u)` and the `Additional source:` form, both supported), multi-primary case examples (vendor advisory + research blog, vendor + 8-K, CERT + vendor), avoid-NVD/CERT-as-primary rule with the narrow exceptions, hard-blocked URL patterns referenced from the daily's full list, multi-CVE per-CVE breakdown syntax (`CVSS: 9.1 / 7.2`, `Auth: pre-auth (CVE-…), admin-required (CVE-…)`).
+
+- **NEW Phase 3.5 — Final verification sub-agent (URL truth + editorial quality, loop until clean)**. Mirrors the daily's Phase 4.5 with weekly-specific framing in the editorial-quality gate: every item must answer one of W-PD-1's three questions or get flagged for drop. Truth gate identical (every URL fetched, every claim cross-checked, every named entity grounded). Loop cap: 3 iterations. Main agent may spawn up to 3 follow-up research sub-agents per iteration for `Needs more research` / `Missed angles`. Iteration count + residuals written to `run_log.json`.
+
+- **Phase 4 State update** adds the `state/run_log.json` weekly-specific schema with `iso_week`, `kind: "weekly"`, `sub_agents: { W1, W2 }`, every Ops-dashboard-required field. Same population rules as the daily.
+
+- **NEW Phase 4.5 — Self-check gate via `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md`**. Replaces the v2.23 inline shell snippet. Same script, same 17-check inventory, with weekly-aware section keys (`weekly-top-stories`, `weekly-multi-day`, `weekly-vuln-rollup`, `weekly-incidents-recap`).
+
+- **Hard invariants — 9 → 15 + 2 weekly-specific (W-INV-1, W-INV-2).** The weekly now mirrors the daily's 15 invariants (Phase 3.5 verification loop, Phase 4.5 script gate, fetch_source.py mandate, run_log.json populate). New weekly invariants: every item answers W-PD-1's three questions; § 1 frames items as "what's on fire if no one acted".
+
+- **Quality gates** updated to include the W-PD-1 framing check, the Phase 3.5 verification check, the script invocation, the multi-CVE breakdown rule, the NVD/CERT-as-only-primary rule, the run_log population check.
+
+### Script — `tools/check_brief.py`
+
+- **Now kind-aware.** `resolve_brief_path` accepts `YYYY-Www` and routes to `briefs/weekly/`. `detect_brief_kind` reads the filename pattern and returns `("daily", date, None)` or `("weekly", date, iso_week)`.
+- New section keys for the weekly (`weekly-glance`, `weekly-top-stories`, `weekly-multi-day`, `weekly-vuln-rollup`, `weekly-sector-patterns`, `weekly-incidents-recap`, `weekly-annual-reports`, `weekly-long-running`, `weekly-policy`, `weekly-looking-ahead`).
+- `check_section_h3_coverage` — for weekly, requires `weekly-top-stories`, `weekly-multi-day`, `weekly-vuln-rollup`, `weekly-incidents-recap`. Empty weekly-top-stories is acceptable when the body explicitly states `no item .{0,40}continued to be operationally critical` or similar — the v2.30 inaction-=-incident framing.
+- `check_h3_footers`, `check_multi_cve_footers`, `check_blocked_source_patterns`, `check_primary_source_quality` — all thread `kind` through; weekly variants target the weekly section keys.
+- `check_run_log_for_today` — picks the right run record by `(kind, iso_week)` for weekly, by `(kind, date)` for daily. Weekly's required schema: `iso_week`, `kind`, `sub_agents: { W1, W2 }`, no `deep_dive`. Daily unchanged.
+- The `updates-citations` check only fires for daily briefs; the weekly's § 7 (Long-running campaigns) is regular H3 + footer, not UPDATE blockquotes.
+- The `covered-items` heuristic is daily-only (the weekly logs `weekly_summary` appearances which the heuristic doesn't model).
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+Minor cleanup: dropped the "Run with `--no-link-check` for offline test runs only." parenthetical from two places (per-item-metadata-footer NVD section + Phase 5.5 check inventory). The flag still exists in the script for ergonomics; it just isn't documented in the prompt — Phase 5.5 always runs the live URL check.
+
+---
+
 ## 2.29 — 2026-05-08 (blocked-URL allowlist + live URL HEAD check + every external link opens in new tab)
 
 ### Why
