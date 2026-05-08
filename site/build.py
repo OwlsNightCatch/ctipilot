@@ -812,6 +812,8 @@ _SECTION_KEYWORDS: list[tuple[str, str]] = [
     ("switzerland, europe", "active-threats"),  # legacy
     ("research", "research"),
     ("updates to prior coverage", "updates"),
+    ("updates on previously covered", "updates"),
+    ("previously covered items", "updates"),
     ("deep dive", "deep-dive"),
     ("action items", "action-items"),
     ("verification notes", "verification-notes"),
@@ -907,11 +909,23 @@ def parse_brief(path: Path) -> dict[str, Any]:
                 first_nl_i = item_md.find("\n")
                 item_body = item_md[first_nl_i + 1 :] if first_nl_i >= 0 else ""
                 item_body = item_body.strip()
-                # Locate footer line (last non-empty line if it matches)
+                # Locate footer line (last meaningful line if it matches).
+                # Skip trailing blanks AND trailing Markdown horizontal
+                # rules (`---` / `***` / `___`) — the prompt emits a `---`
+                # divider between H2 sections, and that divider falls
+                # inside the last H3 item's body when the body slice runs
+                # to the end of the section.
                 footer = None
                 stripped_body = item_body
                 lines = item_body.splitlines()
-                while lines and not lines[-1].strip():
+
+                def _is_skippable_trailer(s: str) -> bool:
+                    t = s.strip()
+                    if not t:
+                        return True
+                    return bool(re.match(r"^(?:-{3,}|\*{3,}|_{3,})$", t))
+
+                while lines and _is_skippable_trailer(lines[-1]):
                     lines.pop()
                 if lines:
                     fm = parse_footer_line(lines[-1])
@@ -1049,9 +1063,13 @@ def parse_brief(path: Path) -> dict[str, Any]:
             }
         )
 
-    # TL;DR derivation (still used for RSS description + home preview)
+    # TL;DR derivation (still used for RSS description + home preview).
+    # Matches the H2 heading regardless of the prefix the prompt uses for
+    # section numbering (`## 1. TL;DR`, `## § 1 — TL;DR`, `## TL;DR`, etc.)
+    # — anything before the literal token `TL;DR` on the heading line is
+    # absorbed.
     tldr: list[str] = []
-    tldr_block = re.search(r"##\s*0?\.?\s*TL;DR\s*\n(.+?)(?=\n##\s|\Z)", text, re.DOTALL | re.IGNORECASE)
+    tldr_block = re.search(r"^##[^\n]*?TL;DR[^\n]*\n(.+?)(?=\n##\s|\Z)", text, re.DOTALL | re.IGNORECASE | re.MULTILINE)
     if tldr_block:
         for raw in tldr_block.group(1).splitlines():
             line = raw.strip()

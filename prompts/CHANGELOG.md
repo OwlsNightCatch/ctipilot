@@ -4,6 +4,47 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.26 — 2026-05-08 (Immediate Actions bar + source-link discipline)
+
+### Why
+Operator review of the 2026-05-08 brief surfaced three editorial defects:
+
+1. **§ 1 Immediate Actions was over-inclusive.** A Windows Shell NTLM-coercion item entered § 1 because of an upcoming CISA KEV federal-remediation deadline, even though the underlying vulnerability had been patched in April Patch Tuesday and was not freshly weaponised. § 1 is meant to be the "stop reading and act now" section — emergency patches, immediate isolation, instant credential rotation — not a KEV-deadline reminder.
+
+2. **Hallucinated and oversight URLs.** Several inline citations pointed to homepages, news category landing pages, or fabricated blog slugs (`https://heise.de/news/`, `https://nos.nl/artikel/`, `https://www.surf.nl/actualiteiten/2026/canvas-security-update`). The reader cannot verify a claim from a URL that 404s or lands on a generic feed.
+
+3. The site-build TL;DR, Updates-section keyword, and footer-detection regexes had drift bugs against the prompt's `## § N — Heading` numbering and the trailing `---` horizontal rule between sections — those are fixed in `site/build.py` in this same change.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **PD-2 expanded** with an explicit "Critical link discipline" paragraph banning URL fabrication, URL inference from advisory IDs, and citation of homepages / news categories / listing indexes. Every URL in a brief must be a URL the agent actually fetched in this run that resolved to content matching the claim. Surface every relevant URL where the claim was found (primary + corroborating), not just one.
+
+- **§ 1 Immediate Actions criteria rewritten** as a **conjunctive** test instead of a disjunctive one. An item now needs to be (a) newly disclosed or newly weaponised, AND (b) actively exploited or with imminent expected mass exploitation, AND (c) require time-critical-to-the-hour-or-day action. CISA KEV deadlines on already-covered items are explicitly disqualified from § 1 — they belong in § 5 (Updates) or the § 7 Action Items table. New "If unsure, it does not belong in § 1" tiebreaker.
+
+- **New `Source-link discipline (highly critical)` sub-section** in Phase 1 spelling out, for sub-agents:
+  - Only fetched URLs may be cited.
+  - URLs must point to specific article / advisory / vendor PSIRT / regulator filing / victim statement pages, never homepages or category landings.
+  - Drill to the most primary source, AND keep the corroborating sources too.
+  - News-only fallback is acceptable when the primary was unreachable, provided the URL is a specific article URL (not the news site's homepage) and the item is flagged in § 8.
+  - Verify each link actually resolves before returning it.
+  - If unsure, drop the item rather than ship a guessed URL.
+
+- **Sub-agent spawn template** now includes a prominent "LINKS ARE ABSOLUTELY CRITICAL — read this twice" paragraph that mirrors the same rules in plain language inside the template the four sub-agents see at spawn time.
+
+- **Phase 2 step 1 expanded** from "re-fetch the primary source if any doubt" to a full URL spot-check: every cited URL is checked against the sub-agent's fetch transcript, 404s and homepage redirects fail the item, and items whose URLs cannot be replaced are dropped to § 8 with a `URL verification failed: ...` line.
+
+### Site build — `site/build.py`
+
+(Not strictly a prompt change but co-released with v2.26 because it surfaced the same review.)
+
+- **TL;DR parsing regex** broadened from `## 0?. TL;DR` to `## ...TL;DR...`, so the home-page TL;DR preview, the RSS description, and the brief summary populate correctly when the prompt uses any heading-prefix style (`## TL;DR`, `## 0. TL;DR`, `## § 1 — TL;DR`).
+
+- **Item-footer detection** in `parse_brief` now skips trailing blank lines AND trailing Markdown horizontal rules (`---`, `***`, `___`) when locating the metadata-footer line. The 2026-05-08 brief's last H3 in each section was failing footer parsing because the H2-section divider `---` ended up inside the slice, hiding the actual footer line — leaving the per-item Tags / Region pills unrendered and the line emitted as raw italic Markdown instead.
+
+- **`_SECTION_KEYWORDS`** now also recognises `Updates on Previously Covered Items` and `Previously Covered Items` as the canonical "updates" section, in addition to the existing `Updates to Prior Coverage`.
+
+---
+
 ## 2.25 — 2026-05-07 (audience + technical depth)
 
 ### Why

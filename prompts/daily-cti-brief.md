@@ -38,7 +38,9 @@ Anti-crash guards in priority order:
 ## Prime directives (non-negotiable)
 
 1. **Zero LLM knowledge.** Every fact, name, date, version number, attribution, technique, vulnerability description, or claim **must** come from a source you fetched in this run. If you didn't read it today, don't write it. If uncertain, omit. Even "background" context like *"APT28 is attributed to GRU Unit 26165"* requires a source link in the brief.
-2. **Inline links at the point of claim.** Every claim is followed immediately by `([Publisher, YYYY-MM-DD](URL))`. No bibliography. No footnotes. The reader must be one click away from the primary source for the exact sentence making the claim. **This rule applies in every section without exception**, including § 5 Updates and § 7 Action Items. An UPDATE that says "no material change" still cites the source the agent checked. Updates without citations are an editorial regression — not a tolerated shortcut.
+2. **Inline links at the point of claim — and links must be real.** Every claim is followed immediately by `([Publisher, YYYY-MM-DD](URL))`. No bibliography. No footnotes. The reader must be one click away from the primary source for the exact sentence making the claim. **This rule applies in every section without exception**, including § 5 Updates and § 7 Action Items. An UPDATE that says "no material change" still cites the source the agent checked. Updates without citations are an editorial regression — not a tolerated shortcut.
+
+   **Critical link discipline (extends PD-1 to URLs):** every URL in the brief is a URL that was actually fetched in this run and resolved to content matching the claim. **Never construct, infer, or guess a URL slug** ("the Securelist post on Amazon SES BEC must live at `https://securelist.com/amazon-ses-bec-campaign-2026/`") — fetch the listing, find the real link, verify it, and cite it. **Never cite a homepage, news category, listing index, blog landing, or generic CERT/news section page** as the source — those are routing pages. Only specific article / advisory / vendor PSIRT / regulator filing / victim statement URLs are acceptable. When the primary advisory URL was unreachable, fall back to the **specific news-article URL** you actually read (never the news site's homepage), and flag the item in § 8. **Surface every relevant URL where the claim was found**, primary plus corroborating; more verifiable links is better than fewer. A hallucinated or generic URL invalidates the claim — the item is dropped.
 3. **No IOCs.** No file hashes (MD5/SHA-1/SHA-256/imphash), no IP addresses, no attacker-controlled domain names or URL paths, no YARA / Sigma / Suricata rule code. The brief is about *knowledge* — TTPs, campaigns, actors, vulnerabilities, targeting, sectors, detection concepts. IOC distribution belongs elsewhere (MISP). When a source emphasises IOCs, summarise the *behaviour*, not the indicator.
 4. **No vanity metrics.** Skip vendor-marketing numbers — median dwell time, average breakout time, year-over-year %, "X new adversaries tracked", "$Y billion in damage", "Z% of CISOs say". Operational scoring is fine: CVSS, EPSS, CISA KEV inclusion, vendor severity, exploitation status.
 5. **Two-source verification, with a national-CERT carve-out.** Default: every claim corroborated by ≥2 independent reputable sources before inclusion. If only one exists, mark `[SINGLE-SOURCE]` next to the item title and name the source. **Carve-out:** when a HIGH-reliability national CERT or government cybersecurity authority (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL) is the **primary disclosing party for its own jurisdiction or an advisory it owns**, single-source is acceptable. Their *commentary on someone else's disclosure* still requires the standard rule. Contradictions are surfaced in § 8 — don't silently pick a side.
@@ -132,6 +134,8 @@ Spawn **all four sub-agents in a single message** with parallel `Agent` tool cal
 >
 > *For every claim you intend to include, identify and link the **most primary** source you can verify, not the aggregator that re-reported it. Walk the chain: news article → vendor blog / CERT advisory / research lab post / regulator filing / victim disclosure → the inline citation. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primary sources over English aggregators — link them with the native title and a short English gloss. If only an aggregator was reachable after a fair attempt, flag the item with `included with reduced confidence: only aggregator source available`.*
 >
+> ***LINKS ARE ABSOLUTELY CRITICAL — read this twice.*** *Every URL you return is **a URL you actually fetched** in this run and that resolved to content matching the claim it cites. **Never guess a URL slug.** **Never construct a URL by inference** ("the advisory ID is `CERTFR-2026-AVI-0551` so the URL must be `cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0551/`") — fetch the index page or run `WebSearch`, find the real link, follow it, fetch it, and only then cite it. **Never cite a homepage, news category, listing index, dashboard, or "/blog/" / "/news/" / "/aktuelles/" landing page** as a "Source" — those are routing pages, not content. If your link points to a generic landing or oversight page, the entire claim is treated as unverified and the item is dropped. The only acceptable URLs are: (a) the **specific article / advisory / blog post / regulator filing / victim statement / vendor PSIRT page** where the claim was made, OR (b) — when no primary article URL was reachable — the **specific news-article URL** (not the news site's homepage) you actually read. **Surface every relevant link you have**, not just one: the primary advisory plus the vendor blog plus the corroborating news article all belong in the return as separate sources. The reader needs to land exactly on the page where the information lives. **If you cannot produce a real fetched URL for a claim, drop the claim** — fabricating or approximating a URL is worse than omitting the item.*
+>
 > *Always return something, even if it is a one-line "no qualifying items in window — sources X/Y/Z fetched, all empty" explanation. Empty results are valid and expected on quiet days.*
 
 Then append: window length (`window_hours`), category-filtered subset of `sources.json`, deduplication context, rotation-priority list (filtered to your category), and the sub-agent's specific domain (below).
@@ -165,6 +169,24 @@ Then append: window length (`window_hours`), category-filtered subset of `source
 3. **Search topically, not just by URL.** Run 2–4 `WebSearch` queries per sub-agent appropriate to your scope. Use search to (a) find primary sources outside the curated list, (b) cross-validate against missed major stories, (c) discover new candidate sources.
 
 4. **Propose new sources.** When research surfaces a new high-quality publisher (primary source, editorial track record, in-scope), propose **at most one** as a candidate in your return — the main agent does the actual `sources.json` write in Phase 5.
+
+### Source-link discipline (highly critical)
+
+Every URL in every brief item is the **single most important verifiability artefact** for the reader. A wrong, fabricated, or generic URL invalidates the claim and the item is treated as unverified. Treat link discipline with the same rigour as factual accuracy.
+
+1. **Only fetched URLs.** Every URL you return must have been opened by `WebFetch` (or `tools/fetch_source.py` / `WebSearch` result you then opened) **in this run**, and it must have resolved to content matching the claim. **Never write a URL you have not loaded.** **Never construct a URL from a pattern** (advisory ID, CVE ID, blog-slug guess) without verifying it resolves. If `WebFetch` failed for a URL, it is not a citation candidate; either find an alternative reachable URL or flag the item as a coverage gap.
+
+2. **Specific page, never the landing.** The cited URL must point to the **specific advisory, blog post, news article, advisory detail page, regulator filing, victim statement, or vendor PSIRT entry** where the claim was made. **Forbidden** as a "Source": homepages (`https://heise.de/`), news categories (`https://nos.nl/artikel/`), blog landings (`https://securelist.com/`, `https://www.dragos.com/year-in-review/`), advisories indexes (`https://www.cert.ssi.gouv.fr/avis/`), generic CERT cybersecurity pages (`https://abw.gov.pl/pl/cyberbezpieczenstwo/`). If the only thing you can produce is a landing page, you have not actually located the source — go back and fetch the linked detail page, or drop the item.
+
+3. **Drill to the primary, then keep the secondary too.** The first link in the footer is the **most primary** source (vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > news). Then **also include every other URL where you read the claim** — vendor blog AND CISA advisory AND the news article that surfaced it all belong as `· Additional source:` entries. Including more relevant primary + corroborating sources is better than including fewer; readers want to triangulate. (News *aggregator oversights* — generic feed indexes that are too dynamic to deep-link — are the exception: skip the oversight and include the specific article you actually read.)
+
+4. **News-only fallback is acceptable when explicit.** If the primary advisory was unreachable after a fair attempt, cite the **specific news article URL** (not the news site's homepage) and flag the item with `included with reduced confidence: only aggregator/news source available` in § 8. A real fetched news URL is always better than an invented advisory URL.
+
+5. **Verify before returning.** Before adding any link to a citation in your return, perform a final pass: open each URL once more if you have any doubt, confirm the page text contains the substantive claim you are citing. If a URL 404s, redirects to a homepage, or shows unrelated content, replace it or drop the claim. **A hallucinated URL in a returned item poisons the brief — the operator-visible failure mode is "the link goes nowhere."**
+
+6. **If unsure: drop the item.** Better to omit a candidate than to ship one with a guessed URL. PD-1 (Zero LLM knowledge) extends to URLs: a URL you did not fetch is not a fact you read.
+
+The main agent **will spot-check** a sample of returned URLs in Phase 2; items whose URLs do not resolve or do not support the claim are dropped and the failure is logged in § 8.
 
 ### Sub-agent return format (flexible Markdown, required fields)
 
@@ -209,7 +231,7 @@ A given source's primary category determines which sub-agent owns it. `news` is 
 
 For every candidate item:
 
-1. Re-fetch the primary source if any doubt the URL still resolves with the claimed content.
+1. **Spot-check URLs.** For every link in the candidate's sources, confirm the URL was actually fetched by a sub-agent in this run (i.e. it appears in your fetch transcript, not invented post-hoc). Re-fetch the primary URL if there is any doubt it resolves with the claimed content. **Drop the item** if a cited URL: returns 404 / redirects to a homepage / lands on a generic listing or news category / contains content unrelated to the claim. Replace landing-page URLs with the specific article/advisory URL. Items whose URLs cannot be replaced go to § 8 as `URL verification failed: <url> — <reason>`. **A returned URL that the agent never actually fetched is treated as fabricated** — drop the item and surface the sub-agent failure in § 8.
 2. Apply the two-source / national-CERT rule (PD-5).
 3. Apply the fake-news guard (PD-6).
 4. Verify CVE identifiers resolve on NVD / MITRE.
@@ -295,15 +317,25 @@ Rules:
 
 ### § 1 Immediate Actions criteria
 
-Reserved for items that demand action **today**. An item enters only if it satisfies at least one:
+**This is the "stop reading and act now" section.** Read literally: the reader should be initiating an emergency-change ticket, paging an on-call engineer, or pushing an emergency configuration the moment they see the item — *before* they read the rest of the brief. The bar is intentionally extremely high; fewer items is correct.
 
-1. Actively-exploited zero-day with RCE or auth bypass.
-2. Zero-click remote code execution (exploited, or with public PoC).
-3. Pre-auth RCE on internet-exposed enterprise software (VPN, MDM, mail, identity, edge appliances).
-4. Supply-chain compromise affecting widely deployed software.
-5. Active campaign with confirmed impact on European public sector.
+An item enters § 1 only if **all** of the following are true:
 
-On most days, **omit the entire section** — no heading, no placeholder, no "no immediate actions today" stub. An empty Immediate Actions on most days is the design.
+- The vulnerability, incident, or campaign is **newly disclosed** or **newly weaponised** (typically within the recency window — first-coverage by this brief series, or a *material* new development for a previously-covered item that itself meets the bar today).
+- It is **actively being exploited in the wild right now**, OR mass exploitation is *imminent and expected* without operator action (e.g. pre-auth RCE on internet-exposed enterprise edge software with a public working PoC and verified scanning), OR a campaign is *currently underway* with confirmed impact and ongoing victim acquisition.
+- The action a defender must take is **time-critical to the hour or the day** — emergency patch, emergency mitigation, immediate isolation, immediate credential rotation, immediate detection rule push. *"Apply within the change window"* is **not** § 1.
+
+Disqualifiers — these belong in § 3 / § 5, **never** in § 1:
+
+- **CISA KEV remediation deadlines on already-covered items.** The KEV deadline is a federal compliance date, not a fresh threat signal. Surface KEV deadlines as Updates (§ 5) or in the § 7 Action Items table — never as § 1. An item already covered in a prior brief that simply has a KEV deadline approaching does **not** re-enter § 1; if the KEV deadline is operationally relevant, surface it as a § 5 UPDATE or in § 7.
+- **Patches that have been available for ≥ 1 week** without new exploitation activity.
+- **News of a breach with no defender action available** (notification only, post-hoc disclosure, regulator filing).
+- **Routine Patch Tuesday coverage** unless a specific CVE in the cycle independently meets the § 1 bar.
+- **"Critical CVSS 9+"** is not enough on its own — score plus exploitation context is required.
+
+Examples that **do** belong in § 1: a freshly-disclosed pre-auth RCE on Citrix NetScaler / Ivanti Connect Secure / Fortinet SSL-VPN with confirmed in-the-wild exploitation; a working zero-day in a widely-deployed mail gateway with attacker-controlled servers actively scanning; a same-day vendor advisory for an unauthenticated RCE in an MDM platform with exploitation confirmed by CISA. Examples that **do not** belong in § 1 even though they are critical: a CISA KEV deadline tomorrow on a vulnerability we already covered last week; a high-severity post-auth RCE without exploitation evidence; a months-old vulnerability that is finally being patched.
+
+On most days, **omit the entire section** — no heading, no placeholder, no "no immediate actions today" stub. An empty Immediate Actions on most days is the design. **If you are unsure whether something belongs in § 1, it does not.** Place it in § 2 / § 3 instead and surface the urgency through § 7 Action Items.
 
 ### § 3 Trending Vulnerabilities — inclusion gates
 
