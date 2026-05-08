@@ -26,7 +26,7 @@
     wireThemeButtonTitle();
     wireMobileNavToggle();
     wireKeyboardShortcuts();
-    wireCopyLinkButtons();
+    wireMdSplitButtons();
     await Promise.all([wireGlobalSearch(), wireGithubBadge(), wireListFilters()]);
   }
 
@@ -181,19 +181,106 @@
     });
   }
 
-  // ── copy-link button (brief page) ──────────────────────────────────
+  // ── md split-button (brief page) ───────────────────────────────────
 
-  function wireCopyLinkButtons() {
-    document.querySelectorAll('button[data-action="share"]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var url = window.location.href.split('#')[0];
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(url).then(function () {
-            btn.textContent = 'Copied!';
-            setTimeout(function () { btn.textContent = 'Copy link'; }, 1500);
-          });
+  function wireMdSplitButtons() {
+    var roots = document.querySelectorAll('[data-md-split]');
+    if (!roots.length) return;
+
+    function flashPrimary(root, msg) {
+      var label = root.querySelector('.md-split__primary .md-split__label');
+      if (!label) return;
+      var prev = label.textContent;
+      label.textContent = msg;
+      setTimeout(function () { label.textContent = prev; }, 1500);
+    }
+
+    function closeMenu(root) {
+      var caret = root.querySelector('.md-split__caret');
+      var menu = root.querySelector('.md-split__menu');
+      if (!caret || !menu) return;
+      caret.setAttribute('aria-expanded', 'false');
+      menu.hidden = true;
+    }
+
+    function closeAllMenus() {
+      roots.forEach(closeMenu);
+    }
+
+    function copyMarkdown(rawUrl, root) {
+      if (!rawUrl) return;
+      fetch(rawUrl, { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.text() : Promise.reject(new Error('http ' + r.status)); })
+        .then(function (text) {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text);
+          }
+          return Promise.reject(new Error('no clipboard'));
+        })
+        .then(function () { flashPrimary(root, 'Copied!'); })
+        .catch(function () { window.open(rawUrl, '_blank', 'noopener'); });
+    }
+
+    function copyLink(root) {
+      var url = window.location.href.split('#')[0];
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { flashPrimary(root, 'Link copied!'); });
+      }
+    }
+
+    roots.forEach(function (root) {
+      var caret = root.querySelector('.md-split__caret');
+      var menu = root.querySelector('.md-split__menu');
+
+      if (caret && menu) {
+        caret.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = caret.getAttribute('aria-expanded') === 'true';
+          closeAllMenus();
+          if (!open) {
+            caret.setAttribute('aria-expanded', 'true');
+            menu.hidden = false;
+          }
+        });
+      }
+
+      root.querySelectorAll('[data-action]').forEach(function (el) {
+        el.addEventListener('click', function (e) {
+          var action = el.getAttribute('data-action');
+          if (action === 'copy-md') {
+            e.preventDefault();
+            copyMarkdown(el.getAttribute('data-raw-url'), root);
+          } else if (action === 'share') {
+            e.preventDefault();
+            copyLink(root);
+          }
+          if (el.getAttribute('role') === 'menuitem') closeMenu(root);
+        });
+      });
+
+      // closing the menu when an external-link menu item is clicked
+      root.querySelectorAll('a[role="menuitem"]').forEach(function (a) {
+        a.addEventListener('click', function () { closeMenu(root); });
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      var inside = e.target.closest && e.target.closest('[data-md-split]');
+      if (!inside) closeAllMenus();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      var anyOpen = false;
+      roots.forEach(function (root) {
+        var caret = root.querySelector('.md-split__caret');
+        if (caret && caret.getAttribute('aria-expanded') === 'true') {
+          anyOpen = true;
+          closeMenu(root);
+          caret.focus();
         }
       });
+      if (anyOpen) e.stopPropagation();
     });
   }
 
