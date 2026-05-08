@@ -1315,6 +1315,26 @@ THEME_TOGGLE_SVG = (
     '</svg>'
 )
 
+COPY_ICON_SVG = (
+    '<svg class="md-split__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+    '<path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/>'
+    '<path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>'
+    '</svg>'
+)
+
+CARET_DOWN_SVG = (
+    '<svg class="md-split__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+    '<path fill="currentColor" d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/>'
+    '</svg>'
+)
+
+EXTERNAL_LINK_SVG = (
+    '<svg class="md-split__ext" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
+    '<path fill="currentColor" d="M3.75 2A1.75 1.75 0 0 0 2 3.75v8.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-3.5a.75.75 0 0 0-1.5 0v3.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-8.5a.25.25 0 0 1 .25-.25h3.5a.75.75 0 0 0 0-1.5Z"/>'
+    '<path fill="currentColor" d="M9.25 2a.75.75 0 0 0 0 1.5h2.19L6.22 8.72a.749.749 0 1 0 1.06 1.06l5.22-5.22v2.19a.75.75 0 0 0 1.5 0v-4a.75.75 0 0 0-.75-.75Z"/>'
+    '</svg>'
+)
+
 
 def base_template(
     *,
@@ -1827,8 +1847,28 @@ def render_brief_page(
       <span>{items_count} item{'' if items_count == 1 else 's'}</span>
       {('<span>' + str(cve_count) + ' CVE' + ('' if cve_count == 1 else 's') + '</span>') if cve_count else ''}
       <span class="meta-actions">
-        <button type="button" data-action="share" data-brief="{_escape(brief['name'])}" title="Copy permalink">Copy link</button>
-        <a href="{raw_path}" target="_blank" rel="noopener noreferrer" title="View raw Markdown">Raw .md</a>
+        <div class="md-split" data-md-split>
+          <button type="button" class="md-split__primary" data-action="copy-md" data-raw-url="{raw_path}" title="Copy the raw Markdown content">
+            {COPY_ICON_SVG}<span class="md-split__label">Copy as Markdown</span>
+          </button>
+          <button type="button" class="md-split__caret" aria-haspopup="menu" aria-expanded="false" aria-label="More copy options">
+            {CARET_DOWN_SVG}
+          </button>
+          <div class="md-split__menu" role="menu" hidden>
+            <button type="button" role="menuitem" class="md-split__item" data-action="copy-md" data-raw-url="{raw_path}">
+              <span class="md-split__item-title">Copy as Markdown</span>
+              <span class="md-split__item-sub">Copy the raw .md content</span>
+            </button>
+            <button type="button" role="menuitem" class="md-split__item" data-action="share">
+              <span class="md-split__item-title">Copy link</span>
+              <span class="md-split__item-sub">Copy permalink to this brief</span>
+            </button>
+            <a role="menuitem" class="md-split__item" href="{raw_path}" target="_blank" rel="noopener noreferrer">
+              <span class="md-split__item-title">View raw .md{EXTERNAL_LINK_SVG}</span>
+              <span class="md-split__item-sub">Open the .md file in a new tab</span>
+            </a>
+          </div>
+        </div>
       </span>
     </div>
     <details class="toc-mobile" data-filter="brief">
