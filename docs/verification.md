@@ -92,7 +92,9 @@ In every case the brief states the original date so the reader is not misled.
 - [ ] No content from training data — only from today's fetches.
 - [ ] **Phase 4.5 verification subagent ran** (see below) covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤3 iterations or residual findings logged in § 8.
 - [ ] **`python3 tools/check_brief.py` exits 0** — every mechanical consistency check passes.
-- [ ] CVE entries do not lean on NVD/MITRE or a national CERT/NCSC as the *only* primary source — the disclosing vendor's PSIRT advisory or research-lab post is preferred.
+- [ ] CVE entries do not lean on a national CERT/NCSC as the *only* primary source — the disclosing vendor's PSIRT advisory or research-lab post is preferred.
+- [ ] **No `Source:` URL is on the hard-blocked allowlist** (NVD/MITRE/cve.org per-CVE pages, Heise homepage / `/news/` / `/security`, NOS homepage / `/artikel/`, CERT-FR `/avis/` or `/actualite/` indexes, CISA news-events root, Dragos year-in-review marketing landing, ABW cybersecurity category landing). The full list is enforced by `tools/check_brief.py` and lives at the top of the script.
+- [ ] **Every `Source:` URL returns HTTP 200 on a live HEAD/GET** at commit time (`tools/check_brief.py` validates). 404s are typically fabricated URLs that look plausible — re-pivot to a real one or drop the item.
 - [ ] Multi-CVE items carry per-CVE breakdown for fields whose value differs (`CVSS: 9.1 / 7.2`, `Auth: pre-auth (CVE-…), admin-required (CVE-…)`).
 
 ---

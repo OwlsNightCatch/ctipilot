@@ -402,8 +402,14 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
         # links, which Markdown forbids anyway).
         rendered_text = render_inline_no_links(text)
         key = f"\x00LINK{len(placeholders)}\x00"
+        # External links (anything starting with http/https/mailto) open in a
+        # new tab; in-site relative links stay in the current tab. The reader
+        # is consuming a brief and clicking citations to verify them — losing
+        # the brief tab on every click is bad UX.
+        is_external = url.startswith("http://") or url.startswith("https://") or url.startswith("mailto:")
+        target_attr = ' target="_blank"' if is_external else ""
         placeholders[key] = (
-            f'<a href="{_escape(url)}" rel="noopener noreferrer">{rendered_text}</a>'
+            f'<a href="{_escape(url)}"{target_attr} rel="noopener noreferrer">{rendered_text}</a>'
         )
         return key
 
@@ -1510,7 +1516,9 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "", sources_only
             label = _escape(src.get("label", ""))
             url = _escape(_safe_url(src.get("url", "")))
             cls = "src-primary" if i == 0 else "src-additional"
-            src_parts.append(f'<a class="{cls}" href="{url}" rel="noopener noreferrer">{label}</a>')
+            src_parts.append(
+                f'<a class="{cls}" href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>'
+            )
         parts.append('<span class="meta-sources"><strong>Sources:</strong> ' + " · ".join(src_parts) + "</span>")
 
     if sources_only:
@@ -2665,7 +2673,17 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         return repo_blob + p + frag
 
     def sub(m: re.Match) -> str:
-        return f'<a href="{_escape(remap(m.group(1)))}"'
+        new = remap(m.group(1))
+        # If the rewritten URL is external (e.g. relative paths the agent
+        # typed in docs/*.md got remapped to github.com/.../blob/main/...),
+        # add target="_blank" so it opens in a new tab. The original render
+        # pass only set target on hrefs that were already external before
+        # the rewrite.
+        is_external = new.startswith("http://") or new.startswith("https://") or new.startswith("mailto:")
+        attrs = f'href="{_escape(new)}"'
+        if is_external:
+            attrs += ' target="_blank"'
+        return f'<a {attrs}'
 
     return _ABOUT_LINK_RE.sub(sub, html)
 
@@ -3922,7 +3940,7 @@ def main() -> int:
 
   <p class="muted" style="margin-top:1.6rem;font-size:0.82rem">
     If you think this is a broken link inside the site, please open an issue at
-    <a href="https://github.com/OwlsNightCatch/security-newsletter/issues" rel="noopener noreferrer">github.com/OwlsNightCatch/security-newsletter</a>.
+    <a href="https://github.com/OwlsNightCatch/security-newsletter/issues" target="_blank" rel="noopener noreferrer">github.com/OwlsNightCatch/security-newsletter</a>.
   </p>
 </section>
 """

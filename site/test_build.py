@@ -98,6 +98,15 @@ link_html = render_inline("see [the advisory](https://example.com/cve)")
 assert_in("link href present", 'href="https://example.com/cve"', link_html)
 assert_not_in("link bracket leak", "[the advisory]", link_html)
 assert_not_in("link paren leak", "(https://example.com", link_html)
+# External links must open in a new tab (the brief is a hub; reader
+# clicks citations expecting to keep the brief tab open).
+assert_in("external link target=_blank", 'target="_blank"', link_html)
+assert_in("external link rel noopener", 'rel="noopener noreferrer"', link_html)
+
+# In-site relative links stay in the current tab.
+relative_html = render_inline("see [other section](#anchor)")
+assert_in("relative link href present", 'href="#anchor"', relative_html)
+assert_not_in("relative link no target", 'target="_blank"', relative_html)
 
 # Regression: inline code inside a link label used to leak the renderer's
 # placeholder marker (\x00CODE0\x00) which browsers strip to literal

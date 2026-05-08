@@ -567,13 +567,108 @@ def check_multi_cve_footers(sections: list[dict[str, Any]]) -> None:
         ok("multi-cve-cvss", "multi-CVE entries either single CVSS or carry per-CVE breakdown")
 
 
+# Sources that are NEVER acceptable in a footer's `Source:` list (per v2.28
+# editorial rule). NVD and MITRE per-CVE pages are derived data sheets — the
+# vendor PSIRT advisory or research-lab post is the primary disclosing source
+# and must be cited instead. NVD/MITRE still appear automatically as
+# "External references" on every per-CVE page in the build.
+BLOCKED_SOURCE_PATTERNS: list[tuple[str, str, str]] = [
+    # (host fragment, path regex, reason)
+    ("nvd.nist.gov", r"^/vuln/detail/CVE-",
+     "NVD per-CVE pages are derived data sheets — cite the vendor advisory or research blog instead"),
+    ("cve.mitre.org", r"^/cgi-bin/cvename\.cgi",
+     "MITRE per-CVE pages are derived data sheets — cite the vendor advisory or research blog instead"),
+    ("cve.org", r"^/CVERecord",
+     "cve.org per-CVE pages are derived data sheets — cite the vendor advisory or research blog instead"),
+]
+
+# Generic landing / category / index pages — never an acceptable Source.
+# A "Source" must be a specific article / advisory / blog post / regulator
+# filing. Generic landings rot, get reorganised, and don't pin the claim.
+BLOCKED_LANDING_PATTERNS: list[tuple[str, str, str]] = [
+    ("heise.de", r"^/?$", "Heise homepage is not a source — link the specific article URL"),
+    ("heise.de", r"^/news/?$", "Heise news landing is not a source — link the specific article URL"),
+    ("heise.de", r"^/security/?$", "Heise Security category is not a source — link the specific article URL"),
+    ("nos.nl", r"^/artikel/?$", "NOS article namespace landing is not a source — link the specific article URL"),
+    ("nos.nl", r"^/?$", "NOS homepage is not a source — link the specific article URL"),
+    ("bleepingcomputer.com", r"^/?$", "BleepingComputer homepage is not a source"),
+    ("bleepingcomputer.com", r"^/news/?$", "BleepingComputer news landing is not a source"),
+    ("therecord.media", r"^/?$", "The Record homepage is not a source"),
+    ("securelist.com", r"^/?$", "Securelist homepage is not a source"),
+    ("krebsonsecurity.com", r"^/?$", "Krebs on Security homepage is not a source"),
+    ("thehackernews.com", r"^/?$", "The Hacker News homepage is not a source"),
+    ("cisa.gov", r"^/news-events/?$", "CISA news-events landing is not a source — link the specific advisory"),
+    ("cisa.gov", r"^/known-exploited-vulnerabilities-catalog/?$",
+     "CISA KEV catalog root is not a source — link the per-CVE advisory or vendor PSIRT"),
+    ("cert.ssi.gouv.fr", r"^/avis/?$", "CERT-FR advisories index is not a source — link the specific avis ID"),
+    ("cert.ssi.gouv.fr", r"^/actualite/?$", "CERT-FR actualité index is not a source — link the specific actualité"),
+    ("cert.europa.eu", r"^/publications/?$", "CERT-EU publications index is not a source"),
+    ("ncsc.admin.ch", r"^/?$", "NCSC.ch homepage is not a source — link the specific advisory"),
+    ("ncsc.admin.ch", r"^/ncsc/[a-z]{2}/home(\.html)?/?$",
+     "NCSC.ch home page is not a source — link the specific advisory detail page"),
+    ("dragos.com", r"^/year-in-review/?$",
+     "Dragos year-in-review landing is not a source — link the specific article or PDF"),
+    ("abw.gov.pl", r"^/pl/cyberbezpieczenstwo/?$",
+     "ABW cybersecurity category landing is not a source — link the specific advisory"),
+    ("surf.nl", r"^/?$", "SURF homepage is not a source"),
+    ("ico.org.uk", r"^/?$", "UK ICO homepage is not a source"),
+]
+
+
+def _host_path(url: str) -> tuple[str, str]:
+    """Return (lowercased host, path-or-'/') for a URL. Tolerates malformed
+    input by returning empty strings."""
+    try:
+        from urllib.parse import urlsplit
+        u = urlsplit(url)
+        return u.netloc.lower(), u.path or "/"
+    except Exception:
+        return "", ""
+
+
+def check_blocked_source_patterns(sections: list[dict[str, Any]]) -> None:
+    """Hard FAIL when any footer's `Source:` list contains a URL matching a
+    known-bad pattern: NVD/MITRE/cve.org per-CVE pages (always derived,
+    never the disclosing party) or generic landing / category / index URLs
+    that point at navigation, not content."""
+    blocked: list[str] = []
+    target_keys = (
+        "active-threats", "trending-vulnerabilities", "research",
+        "deep-dive", "updates", "immediate-actions", "action-items",
+    )
+    for sec in sections:
+        if sec["key"] not in target_keys:
+            continue
+        for it in sec["items"]:
+            footer = it.get("footer") or {}
+            for src in footer.get("sources") or []:
+                url = src.get("url", "")
+                host, path = _host_path(url)
+                matched = False
+                for h_frag, p_re, reason in BLOCKED_SOURCE_PATTERNS:
+                    if h_frag in host and re.search(p_re, path):
+                        blocked.append(f"'{it['heading'][:60]}' cites {url} — {reason}")
+                        matched = True
+                        break
+                if matched:
+                    continue
+                for h_frag, p_re, reason in BLOCKED_LANDING_PATTERNS:
+                    if h_frag in host and re.search(p_re, path):
+                        blocked.append(f"'{it['heading'][:60]}' cites {url} — {reason}")
+                        break
+    if blocked:
+        for b in blocked:
+            fail("blocked-source", b)
+    else:
+        ok("blocked-source", "no Source URL matches a known-bad pattern (NVD / landing / index)")
+
+
 def check_primary_source_quality(sections: list[dict[str, Any]]) -> None:
-    """Soft-warn when an item's first (= 'most primary') source is NVD or a
-    national CERT/NCSC and the item also has only one source. The editorial
-    rule (v2.28) is: prefer vendor advisories / blogs / research-lab posts as
-    primary. CERTs and NVD belong as additional sources unless the item has
-    no other reachable primary."""
-    NVD_HOSTS = ("nvd.nist.gov", "cve.mitre.org")
+    """Soft-warn when an item's first source is a national CERT/NCSC. The
+    editorial rule (v2.28) is: prefer vendor advisories / blogs / research-lab
+    posts as primary. CERTs belong as `Additional source:` unless the item
+    has no other reachable primary. (NVD/MITRE/cve.org per-CVE pages are
+    handled by `blocked-source` above as a hard FAIL.)"""
     CERT_HOSTS = (
         "cert.ssi.gouv.fr", "cisa.gov", "ncsc.admin.ch", "ncsc.ch", "govcert.ch",
         "ncsc.gov.uk", "ncsc.nl", "bsi.bund.de", "cert.europa.eu", "enisa.europa.eu",
@@ -588,21 +683,141 @@ def check_primary_source_quality(sections: list[dict[str, Any]]) -> None:
             sources = footer.get("sources") or []
             if not sources:
                 continue
-            primary_url = sources[0]["url"].lower()
+            primary_url = (sources[0].get("url") or "").lower()
             host = primary_url.split("//", 1)[-1].split("/", 1)[0]
-            is_nvd = any(h in host for h in NVD_HOSTS)
-            is_cert = any(h in host for h in CERT_HOSTS)
-            if (is_nvd or is_cert) and len(sources) == 1:
-                kind = "NVD/MITRE" if is_nvd else "CERT/NCSC"
+            if any(h in host for h in CERT_HOSTS) and len(sources) == 1:
                 soft.append(
-                    f"'{it['heading'][:60]}': only source is {kind} ({host}) — "
+                    f"'{it['heading'][:60]}': only source is CERT/NCSC ({host}) — "
                     "look for the original vendor advisory or research blog"
                 )
     if soft:
         for w in soft:
             warn("primary-source-quality", w)
     else:
-        ok("primary-source-quality", "no item leans on NVD/CERT as sole primary source")
+        ok("primary-source-quality", "no item leans on CERT/NCSC as sole primary source")
+
+
+def check_source_urls_resolve(sections: list[dict[str, Any]],
+                                *, skip: bool, timeout: float = 10.0) -> None:
+    """Live HEAD/GET every Source URL in every footer; FAIL on 404. Catches
+    fabricated-URL drift the v2.27 verifier was designed to find — duplicating
+    it here so the operator gets a green/red answer locally without spawning
+    a sub-agent. Use `--no-link-check` for offline runs."""
+    if skip:
+        warn("source-urls", "skipped (--no-link-check)")
+        return
+
+    import urllib.request
+    import urllib.error
+    import socket
+    import ssl
+
+    urls: dict[str, list[str]] = {}
+    for sec in sections:
+        for it in sec["items"]:
+            footer = it.get("footer") or {}
+            for src in footer.get("sources") or []:
+                u = src.get("url", "")
+                if u.startswith("http://") or u.startswith("https://"):
+                    urls.setdefault(u, []).append(f"'{sec['title'][:30]}' › '{it['heading'][:50]}'")
+
+    if not urls:
+        ok("source-urls", "no http(s) source URLs to check")
+        return
+
+    # Pre-flight: probe a single high-availability host. If the SSL handshake
+    # fails because the local Python has no CA trust store (a common macOS
+    # footgun where `python3` is the system one without certifi), we emit a
+    # single WARN and skip the rest — running 50 of these only to produce 50
+    # identical CERTIFICATE_VERIFY_FAILED lines is noise. CI (Linux + bundled
+    # certifi) is unaffected.
+    try:
+        probe = urllib.request.Request(
+            "https://www.google.com/",
+            headers={"User-Agent": "check_brief.py probe"},
+            method="HEAD",
+        )
+        urllib.request.urlopen(probe, timeout=5).close()
+    except Exception as e:
+        msg = str(e)
+        if "CERTIFICATE_VERIFY_FAILED" in msg or "SSL" in msg:
+            warn("source-urls",
+                 "local Python has no CA bundle (SSL: CERTIFICATE_VERIFY_FAILED on https probe) — "
+                 "skipping live URL check; CI runs unaffected. Pass --no-link-check to silence locally.")
+            return
+        # Any other pre-flight failure: keep going — the per-URL loop will
+        # surface real errors.
+
+    # Hosts that reliably 403 the default UA but are otherwise alive — we
+    # treat 403/429 from these as PASS, since the agent is expected to use
+    # tools/fetch_source.py for them. The unmitigated-403 problem is checked
+    # separately via run_log.json.
+    KNOWN_UA_BLOCKED = (
+        "www.cisa.gov", "cisa.gov", "ncsc.admin.ch", "www.ncsc.admin.ch",
+        "talosintelligence.com", "blog.talosintelligence.com",
+        "csirt-italia.it", "www.csirt-italia.it",
+        "prodaft.com", "www.prodaft.com",
+        "inside-it.ch", "www.inside-it.ch",
+        "ico.org.uk", "www.ico.org.uk",
+    )
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    def _check_one(url: str) -> tuple[int | None, str]:
+        for method in ("HEAD", "GET"):
+            try:
+                req = urllib.request.Request(url, headers=headers, method=method)
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return resp.status, ""
+            except urllib.error.HTTPError as e:
+                if e.code in (405, 501) and method == "HEAD":
+                    continue  # retry with GET
+                return e.code, ""
+            except (urllib.error.URLError, socket.timeout, ConnectionError, Exception) as e:
+                return None, str(e)[:80]
+        return None, "exhausted methods"
+
+    bad_404: list[tuple[str, list[str]]] = []
+    other_errors: list[tuple[str, int | None, str, list[str]]] = []
+    ua_blocked: list[str] = []
+    checked = 0
+    print(f"  ... checking {len(urls)} URL(s) ...")
+    for url in sorted(urls.keys()):
+        checked += 1
+        host, _ = _host_path(url)
+        status, err = _check_one(url)
+        if status == 200:
+            continue
+        if status in (403, 429) and host in KNOWN_UA_BLOCKED:
+            ua_blocked.append(url)
+            continue
+        if status == 404:
+            bad_404.append((url, urls[url]))
+        else:
+            other_errors.append((url, status, err, urls[url]))
+
+    if bad_404:
+        for u, cited_in in bad_404:
+            preview = cited_in[:2]
+            more = f" + {len(cited_in) - 2} more" if len(cited_in) > 2 else ""
+            fail("source-urls",
+                 f"{u} returns 404 — cited in: {preview}{more}")
+    if other_errors:
+        for u, status, err, cited_in in other_errors:
+            warn("source-urls",
+                 f"{u}: status={status} err={err!r} — cited in: {cited_in[:2]}")
+    if ua_blocked:
+        ok("source-urls",
+           f"{len(ua_blocked)} URL(s) on UA-blocked hosts (CISA/NCSC.ch/etc.) — handled by fetch_source.py check")
+    if not bad_404 and not other_errors:
+        ok("source-urls", f"all {checked} source URL(s) returned HTTP 200 (or UA-blocked allowlisted)")
 
 
 def check_fetch_source_for_known_403(brief_text: str,
@@ -922,7 +1137,7 @@ def resolve_brief_path(arg: str | None) -> Path:
     raise SystemExit(f"could not interpret brief argument: {arg!r}")
 
 
-def run_checks(brief_path: Path, *, skip_build_tests: bool) -> int:
+def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: bool) -> int:
     print(f"check_brief.py — {brief_path.relative_to(ROOT) if brief_path.is_absolute() else brief_path}\n")
 
     if not brief_path.exists():
@@ -966,8 +1181,14 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool) -> int:
     print(f"\n== multi-CVE footer hygiene ==")
     check_multi_cve_footers(sections)
 
+    print(f"\n== blocked source patterns (NVD per-CVE / generic landings / indexes) ==")
+    check_blocked_source_patterns(sections)
+
     print(f"\n== primary-source quality ==")
     check_primary_source_quality(sections)
+
+    print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
+    check_source_urls_resolve(sections, skip=skip_link_check)
 
     print(f"\n== fetch_source.py for known-403 hosts ==")
     check_fetch_source_for_known_403(brief_text, run_log, brief_date)
@@ -1003,8 +1224,14 @@ def main() -> int:
                    help="YYYY-MM-DD or path to a brief; defaults to today")
     p.add_argument("--no-build-tests", action="store_true",
                    help="skip running site/test_build.py")
+    p.add_argument("--no-link-check", action="store_true",
+                   help="skip the live HEAD/GET check on every Source URL (offline runs)")
     args = p.parse_args()
-    return run_checks(resolve_brief_path(args.brief), skip_build_tests=args.no_build_tests)
+    return run_checks(
+        resolve_brief_path(args.brief),
+        skip_build_tests=args.no_build_tests,
+        skip_link_check=args.no_link_check,
+    )
 
 
 if __name__ == "__main__":

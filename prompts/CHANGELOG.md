@@ -4,6 +4,43 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.29 — 2026-05-08 (blocked-URL allowlist + live URL HEAD check + every external link opens in new tab)
+
+### Why
+Three operator-visible defects in the 2026-05-08 brief and rendered site:
+
+1. **NVD/MITRE per-CVE pages and generic landings still appeared as `Source:` entries.** The 2026-05-08 brief cited `https://nvd.nist.gov/vuln/detail/CVE-2026-5787`, `https://www.heise.de/news/`, `https://nos.nl/artikel/`, `https://www.dragos.com/year-in-review/`, `https://abw.gov.pl/pl/cyberbezpieczenstwo/` — derived data sheets and category landings, not disclosing-party content. v2.28 had this as a soft WARN; v2.29 escalates it to a hard FAIL backed by an explicit blocked-URL list in `tools/check_brief.py`.
+
+2. **Fabricated URLs** like `https://securelist.com/amazon-ses-bec-campaign-2026/`, `https://www.surf.nl/actualiteiten/2026/canvas-security-update`, `https://www.deepinstinct.com/blog/muddywater-2026` looked plausible but 404. The Phase 4.5 verifier was supposed to catch these by fetching every URL — but a local pre-publish check had no equivalent. v2.29 adds it to `tools/check_brief.py` so the operator sees the same FAIL signal at commit time.
+
+3. **External links opened in the same tab**, costing the reader the brief tab on every citation click. The Markdown renderer's `<a>` emission carried `rel="noopener noreferrer"` but no `target="_blank"`. The `_rewrite_about_links` pass on docs/* pages also didn't add target when the rewrite turned a relative path into a `github.com/.../blob/main/...` URL.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **Per-item metadata footer (NORMATIVE) gains a "Hard-blocked URL patterns" subsection.** Lists every NVD/MITRE per-CVE pattern, the four "/news/", "/security", landing-page Heise variants, NOS landing pages, CERT-FR `/avis/` and `/actualite/` index roots, CISA news-events root, Dragos year-in-review marketing landing, ABW category landing, and the rule-of-thumb (if dropping the trailing path component still resolves to a meaningful page, the URL is too generic). Includes a Bad → Good table mapping each blocked pattern to the right vendor PSIRT / research-blog URL pattern.
+- **Phase 5.5 check inventory expanded** from 17 → 19 checks. New entries:
+  - `blocked-source` (FAIL) — host + path pattern match against the v2.29 blocked-URL list.
+  - `source-urls` (FAIL on 404, WARN on other non-200) — live HEAD/GET on every Source URL in every footer. Includes a Mac local-Python SSL-trust-store pre-flight: if the local Python lacks a CA bundle, the check emits a single environment-level WARN and skips the per-URL loop. CI on Linux runs the check normally.
+- **Phase 5.5 "How to fix common FAILs" table** gains entries for `blocked-source: ... cites NVD per-CVE`, `blocked-source: ... cites heise.de/news/` (or any landing), and `source-urls: <url> returns 404`.
+
+### Site — `site/build.py`
+
+- **`render_inline` Markdown link emission** now adds `target="_blank"` for any href starting with `http://`, `https://`, or `mailto:`. Internal/relative links keep current-tab navigation. Every inline citation in every brief now opens in a new tab.
+- **`render_footer_html` source pills** add `target="_blank"`. Footer source links open in a new tab.
+- **`_rewrite_about_links`** — when a relative path in `docs/*.md` gets rewritten to `https://github.com/<repo>/blob/main/<path>`, the rewriter now adds `target="_blank"` to the resulting anchor.
+- **404 page's GitHub-issues link** had `rel="noopener noreferrer"` but no target — fixed.
+
+Full-site audit after the fix: 911 external anchors, 0 missing `target="_blank"`. 4525 internal anchors, 9 deliberately carrying `target="_blank"` (RSS-feed chips on the briefs index — pre-existing UX choice).
+
+### Tests
+
+`site/test_build.py` gains:
+- `external link target=_blank` — `render_inline` emits `target="_blank"` for `https://` hrefs.
+- `external link rel noopener` — accompanying `rel="noopener noreferrer"`.
+- `relative link no target` — `#anchor` and other relative hrefs do *not* pick up the target.
+
+---
+
 ## 2.28 — 2026-05-08 (institutionalised self-check script + multi-CVE / multi-source footers + Phase 4.5 quality gate + mandatory fetch_source.py for CISA + NCSC.ch)
 
 ### Why

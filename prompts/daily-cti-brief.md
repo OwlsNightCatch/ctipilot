@@ -356,12 +356,32 @@ In these cases the first two `[Title](URL)` blocks are both primaries; subsequen
 
 For CVE-typed items, **a vendor PSIRT advisory or vendor research blog almost always exists** — find it and put it first. NVD/MITRE and national CERTs/NCSCs are **second-tier primaries**: they aggregate and curate but rarely disclose. They belong as **`Additional source:` / corroborating links**, not as the lead source.
 
-The narrow exceptions where NVD or a national CERT *is* the right primary:
-- The CVE has been quietly added to KEV / NVD before the vendor's own advisory page was discoverable.
+The narrow exceptions where a national CERT *is* the right primary:
 - The disclosure is a national CERT publication for its own jurisdiction (e.g. an NCSC.ch incident bulletin on a Swiss federal incident, or a CERT-FR breach disclosure for a French agency) where no vendor or research-lab post exists.
 - An ENISA EUVD entry for an EU-discovered vulnerability where the EU body is the disclosing party.
 
-In every other case: pivot from NVD/CERT to the vendor or research lab. Phase 4.5's verifier flags `Source: NVD` / `Source: CERT-FR` as the **only** source on a CVE entry, and Phase 5.5's `tools/check_brief.py` raises a `primary-source-quality` WARN.
+#### Hard-blocked URL patterns — `tools/check_brief.py` FAILs the commit on any of these
+
+Phase 5.5's script enforces a non-negotiable URL allowlist on every footer's `Source:` list. **NVD/MITRE per-CVE pages are NEVER acceptable as a Source** — they are derived data sheets, not disclosures. The build emits NVD / cve.org / CISA-KEV-search auto-references on every per-CVE page anyway, so there is no information loss from refusing them in footers.
+
+| Bad — never a Source | Why | Good — what to use instead |
+|---|---|---|
+| `https://nvd.nist.gov/vuln/detail/CVE-…` | Derived data sheet | The vendor PSIRT advisory: `https://msrc.microsoft.com/update-guide/vulnerability/CVE-…` · `https://security.paloaltonetworks.com/CVE-…` · `https://www.ivanti.com/blog/…` |
+| `https://www.cve.org/CVERecord?id=CVE-…` | Same — derived | Same |
+| `https://cve.mitre.org/cgi-bin/cvename.cgi?…` | Same — derived | Same |
+| `https://www.heise.de/`, `…/news/`, `…/security` | Homepage / category landing | The specific article URL, e.g. `https://www.heise.de/news/Dirty-Frag-Linux-Luecken-…-11286691.html` |
+| `https://nos.nl/`, `https://nos.nl/artikel/` | Homepage / namespace landing | The specific article URL with slug |
+| `https://www.cert.ssi.gouv.fr/avis/`, `…/actualite/` | Index page | The specific avis / actualité URL with the ID |
+| `https://www.cisa.gov/news-events/`, `…/known-exploited-vulnerabilities-catalog/` | Catalog root | The per-CVE advisory page or vendor PSIRT |
+| `https://www.dragos.com/year-in-review/` | Marketing landing | The specific PDF / blog post URL |
+| `https://abw.gov.pl/pl/cyberbezpieczenstwo/` | Category landing | The specific advisory page |
+| Any `<publisher>/`, `<publisher>/news/`, `<publisher>/blog/` with no slug | Routing, not content | The specific article URL |
+
+**Rule of thumb:** if removing the trailing path component still resolves to a meaningful page, the URL is too generic. The only acceptable URLs are ones that point at a single article / advisory / blog post / regulator filing / victim statement / vendor PSIRT page.
+
+The script also runs a **live HEAD/GET on every Source URL** in the brief and FAILs the commit on any 404. Fabricated URLs that look plausible but don't exist (`https://securelist.com/amazon-ses-bec-campaign-2026/`, `https://www.deepinstinct.com/blog/muddywater-2026`, etc.) are caught here without needing the Phase 4.5 sub-agent. Run with `--no-link-check` for offline test runs only.
+
+In every other case: pivot from NVD/CERT to the vendor or research lab. Phase 4.5's verifier additionally flags `Source: CERT-FR` as the **only** source on an item as a `primary-source-quality` WARN.
 
 #### Multi-CVE — one item, several CVEs
 
@@ -853,12 +873,14 @@ The script bundles every Phase 5.5 mechanical check **plus** the build-side smok
 9. **Footer fields** — every footer carries Source (≥1 link), Tags, and Region. CVE-typed entries in `trending-vulnerabilities` additionally carry CVE / Vector / Auth / Status.
 10. **Footer taxonomy** — every Tag / Region / Sector / Vector / Auth / Status value is in `site/taxonomy.yaml`.
 11. **Multi-CVE hygiene** — when an item lists multiple CVEs, CVSS must either be a single shared value or carry per-CVE breakdown (`9.1 / 7.2` or `9.1 (CVE-2026-5787), 7.2 (CVE-2026-6973)`).
-12. **Primary-source quality** (WARN) — flags items whose only source is NVD/MITRE or a national CERT/NCSC. Editorial rule: vendor advisories / research blogs / regulator filings / victim statements are preferred as the primary; CERT/NVD belong as additional sources.
-13. **`tools/fetch_source.py` for known-403 hosts** — when the brief cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids that wasn't mitigated via the Python bridge, the script FAILs.
-14. **`covered_items.json` appearances** — H3 count in core sections matches `appearances[].date == today` count within tolerance 1 (heuristic; warns).
-15. **`run_log.json` fully populated for today** — every key the Ops dashboard renders (`sub_agents.{S1..S4}.{sources_attempted, sources_used, items_returned, returned}`, `fetch_failures`, `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count`).
-16. **`sources/sources.json` bookkeeping** — at least one source has `last_successful_fetch == today` (else Phase 5 source bookkeeping was skipped).
-17. **`site/test_build.py`** — build-side smoke tests pass (footer parser round-trip, taxonomy validation, Markdown renderer, URL allowlist).
+12. **Blocked source patterns** (FAIL) — Source URL is on the never-acceptable list: NVD/MITRE/cve.org per-CVE pages (always derived), generic landings (`heise.de/`, `heise.de/news/`, `heise.de/security`, `nos.nl/`, `nos.nl/artikel/`), aggregator indexes (`cert.ssi.gouv.fr/avis/`, `cisa.gov/known-exploited-vulnerabilities-catalog/`, `dragos.com/year-in-review/`, `abw.gov.pl/pl/cyberbezpieczenstwo/`, etc.). The full list lives at the top of `tools/check_brief.py`.
+13. **Primary-source quality** (WARN) — flags items whose only source is a national CERT/NCSC. Editorial rule: vendor advisories / research blogs / regulator filings / victim statements are preferred as the primary; CERT belongs as `Additional source:`.
+14. **Live URL liveness** — HEAD/GET every Source URL in every footer; FAIL on 404. Catches fabricated URLs that look plausible but don't exist. Use `--no-link-check` for offline runs only.
+15. **`tools/fetch_source.py` for known-403 hosts** — when the brief cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids that wasn't mitigated via the Python bridge, the script FAILs.
+16. **`covered_items.json` appearances** — H3 count in core sections matches `appearances[].date == today` count within tolerance 1 (heuristic; warns).
+17. **`run_log.json` fully populated for today** — every key the Ops dashboard renders (`sub_agents.{S1..S4}.{sources_attempted, sources_used, items_returned, returned}`, `fetch_failures`, `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count`).
+18. **`sources/sources.json` bookkeeping** — at least one source has `last_successful_fetch == today` (else Phase 5 source bookkeeping was skipped).
+19. **`site/test_build.py`** — build-side smoke tests pass (footer parser round-trip, taxonomy validation, Markdown renderer, URL allowlist, multi-CVE pill split, external-link target).
 
 **How to fix common FAILs:**
 
@@ -872,6 +894,9 @@ The script bundles every Phase 5.5 mechanical check **plus** the build-side smok
 | `footer-taxonomy: unknown ...` | Either correct the footer or extend `site/taxonomy.yaml` in the same commit. |
 | `fetch-source-403: 403/429 on known-403 hosts not mitigated` | Re-run the affected URL via `python3 tools/fetch_source.py …` and update the source bookkeeping. |
 | `multi-cve-cvss: N CVEs but single CVSS` | Either confirm both CVEs share that CVSS (single value is fine) or write per-CVE: `CVSS: 9.1 / 7.2` or `CVSS: 9.1 (CVE-…), 7.2 (CVE-…)`. |
+| `blocked-source: ... cites https://nvd.nist.gov/vuln/detail/CVE-…` | Replace with the vendor PSIRT advisory or research blog. NVD/MITRE/cve.org per-CVE pages are blocked as Sources — they are derived. The build still surfaces them automatically as External References on every per-CVE page. |
+| `blocked-source: ... cites https://www.heise.de/news/` (or any landing) | Re-fetch and link the **specific article URL** (e.g. `https://www.heise.de/news/Dirty-Frag-…-11286691.html`). Generic landings are not Sources. |
+| `source-urls: <url> returns 404` | The URL is fabricated or moved. Re-do the primary-source pivot (`WebSearch` for the topic, fetch the result, swap the citation). If the original primary genuinely doesn't exist, drop the item. |
 
 **WARNs are not blocking** — they are editorial signal. Note them in § 8 and consider acting on them. Specifically:
 
