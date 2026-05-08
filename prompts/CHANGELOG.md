@@ -4,6 +4,98 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.34 — 2026-05-08 (weekly prompt brought up to daily quality bar — knowledge transfer)
+
+### Why
+The v2.33 compression aligned daily and weekly on the same docs (spawn-templates.md, brief-template.md, check-brief-fixes.md), but the weekly prompt itself was still thinner than the daily on several editorial-quality and operational-discipline sections. Operator and audit feedback called for the weekly to publish at the same technical / editorial bar as the daily — not a softer, "summary-grade" version. This release transfers the daily's load-bearing operational sections into the weekly so the weekly stands alone with the same rigour.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+**Phase 0 — Preflight:** added explicit construction of the **deduplication context** (CVE IDs from `cves_seen.json`; named actors / campaigns / incidents / annual reports from `covered_items.json`; headlines and key paragraphs from each daily brief in the gap window; previous weekly's "Looking ahead" items as first-priority status-update candidates) and the **source rotation list** (parsed from `Coverage gaps:` lines in daily § 8 and prior weekly § 10; rotation-priority sources passed to W1 and W2, filtered by category — W1 → research/news/discovery/active-breaking; W2 → gov/policy/regulatory). The weekly previously assumed the daily provided this; now it builds its own.
+
+**Phase 2 — Reinforced rules for the main agent:** new section mirroring the daily's. Carries the seven operational discipline points (drill into curated sources; `tools/fetch_source.py` MANDATORY for CISA + NCSC.ch with all five `python3 tools/fetch_source.py {ncsc-csh recent 10 | ncsc-csh post <ID> | cisa-kev | cisa page <URL> | url <full-URL>}` invocation forms; pivot from news to primary; `WebFetch` outbound-links template not optional; search topically — especially for previous weekly's "in motion" items where this week's status delta is the value-add; propose new sources at most one per run; full source-link discipline). Previously the weekly assumed the agent would re-derive these from the spawn template — now they're explicit for the consolidate / verify phases too.
+
+**Phase 3 — Per-item metadata footer:** the **hard-blocked URL patterns table** is now inline (8 rows: NVD/MITRE/cve.org per-CVE; news-site landings; broadcaster namespace roots; national-CERT advisory indexes; CISA-catalog roots; research-lab marketing landings; gov cybersecurity-section landings; bare publisher/news/blog with no slug). Previously the weekly cross-referenced the daily; now it stands alone. Added the "Rule of thumb: if removing the trailing path component still resolves to a meaningful page, the URL is too generic" guidance and the live HEAD/GET 404 enforcement note.
+
+**Phase 3 — Source-link discipline (numbered):** new explicit 6-point numbered list — only fetched URLs, specific page never landing, drill to primary keep secondaries, news-only fallback acceptable when explicit, verify before publishing, drop if unsure.
+
+**Phase 3 — Multi-CVE breakdown:** expanded with the full footer example block and per-field breakdown rules (CVSS slash-separated or per-CVE explicit; Vector/Auth shared or per-CVE; Status comma-separated or per-CVE-scoped). Was previously one line.
+
+**Phase 3 — Technical depth section:** new section ported from the daily, adapted for weekly. Carries the six bullet points — exact vulnerable component, MITRE ATT&CK technique IDs (with the daily's `T1190` / `T1059.001` / `T1505.003` / `T1557.001` / `T1068` / `T1078.004` / `T1556.006` / `T1611` example list), exploitation prerequisites (NTLM relay / OAuth device-code / SAML response forgery / S4U2Self), affected/patched versions to vendor-stated precision, observed exploitation status with named clusters (UNC / Storm / TA / APT / CL-STA), concrete defender takeaway with detection events (`Sysmon EID 1`, `4624 Logon Type 9`, `4663` on `ntds.dit`, `4769`), affected sectors and regions in footer fields. Cross-references the worked-good fragment in `docs/brief-template.md`. Includes the "weekly's consolidating role does NOT lower the technical bar — items get more synthesis context, not less specificity" framing.
+
+**Phase 3 — Item granularity section:** new — one story per item, with weekly-specific framing on when consolidation is allowed (multiple daily items into one weekly item only when they truly are one story).
+
+**Phase 3 — Citation strategy section:** new — primary source as substance, news as via, stack primary sources, always link primary AND originating daily brief (week → day → original primary walk), don't cite roll-up in place of primary (with the explicit reminder that the weekly summary IS itself a roll-up so it must cite the primaries underneath).
+
+**Prime directives expanded:** the eight existing PDs were highlights of the daily's PDs; added four more for completeness as standalone weekly directives — fake-news guard (full text with all the daily's leak-site / hallucinated-CVE / blogspam / months-old-news / sweeping-attribution / Telegram-X-only specifics), no-IOCs (with MISP pointer), no-vanity-metrics, less-is-more (with the weekly-specific "bar is higher than the daily's because every item must additionally answer W-PD-1" framing, drop-without-ceremony list, variable-size rule, empty-section stub format).
+
+**Phase 4.5 — Self-check checks expanded:** added two checks the daily's check_brief.py runs that the weekly was missing — `covered_items.json` appearances (every § 1 / § 2 / § 7 H3 with a key matching covered_items.json has a `weekly_summary` appearances[] record for today, warns) and Daily-brief link integrity (every `briefs/YYYY-MM-DD.md` link points to a file in the gap window, warns; surfaces file-rename drift). Brings weekly check count from 17 to 19, matching the daily.
+
+### Net effect
+- Weekly prompt now stands alone with the same operational rigour as the daily — no implicit cross-references for load-bearing rules.
+- Every published weekly item carries the same technical-depth bar, citation discipline, and verification gating as a daily item, plus the weekly's W-PD-1 framing on top.
+- File still fits in a single Read (~17K tokens, well under the 25K limit).
+
+### Compatibility
+- No changes to `tools/check_brief.py` itself — the two new weekly checks (covered_items appearances, daily-brief link integrity) need to be added to the script in a follow-up commit if they aren't already covered by the existing daily-mode checks. Output artefacts and footer format unchanged.
+- Hard invariants list is unchanged (15 items + W-INV-1 / W-INV-2).
+
+---
+
+## 2.33 — 2026-05-08 (single-Read prompt fit for Sonnet 4.6 + spawn templates / reference template / FAIL-fix table extracted to docs)
+
+### Why
+The daily and weekly master prompts were the agent's first-step `Read`. Both had grown to the point where a single default `Read` failed (`File content (NN tokens) exceeds maximum allowed tokens (25000)`) — the daily was ~45K tokens, the weekly ~17K. Forcing the agent to do offset/limit reads at startup is a structural failure mode: the routine should never start in a degraded state. Target model is **Claude Sonnet 4.6**, which can handle dense / terse prose without the lengthy reinforcement that earlier prompt versions used.
+
+### Goal
+Both prompts must fit in **one** `Read` (≤25K tokens) so the agent can load the master prompt at the start of the run with a single tool call. **No operational content lost** — every rule, schema, command, empirical finding (Krebs feed test, CERT-FR per-advisory shape, `<content:encoded>` vs `<description>` RSS, listing-page outbound-link drop), bridge-fetcher invocation, hard-blocked URL pattern, inclusion gate, hard invariant, anti-crash guard, and verification check must remain operational.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+- **All operational content preserved**: 12 prime directives, 8 anti-crash guards, 4-class recency-window table, 4 sub-agents (S1–S4), § 1 do/do-not shape catalog, § 3 inclusion gates, hard-blocked URL patterns table, 19 Phase 5.5 checks, two-stage push chain, 15 hard invariants, every empirical finding from the operator's WebFetch audit, every fetch_source.py invocation form, the discovery-trace rationale + 3 example shapes + 6 mandatory rules, the worked-good fragment (now in `docs/brief-template.md`), the "What this phase fixes" Phase 4.5 catalog.
+- **Externalised** to keep the master prompt under the Read limit:
+  - **Reference template** for the rendered brief → `docs/brief-template.md` (also adds the worked-good § 2 fragment for technical-depth pedagogy).
+  - **Sub-agent + verifier spawn templates** (the verbatim quoted blocks passed to spawned agents) → `docs/spawn-templates.md`. The agent reads this file once during Phase 1 (research sub-agents) and Phase 4.5 (verifier sub-agent) and passes the contents verbatim. Empirical findings (Krebs / CERT-FR / RSS shapes / listing-page drop), bridge-fetcher hostnames, WebFetch outbound-links template, Discovery-trace requirements, return format, operational guardrails all live there.
+  - **Phase 5.5 FAIL-fix recipes** → `docs/check-brief-fixes.md` (cve-sync, footer-presence, run-log-fields, run-log-subagents, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source NVD/news, source-urls 404).
+- **Prose tightened** throughout (audience description, execution environment, Phase 5 sources/sources.json bookkeeping, META section) without removing rules or examples — terser sentences, fewer redundant repetitions of already-stated rules.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Same externalisation pattern: research-sub-agent and verifier spawn templates → `docs/spawn-templates.md`; reference template → `docs/brief-template.md` (under the "Weekly summary reference template" heading); FAIL-fix recipes → `docs/check-brief-fixes.md`.
+- W-PD-1 weekly-editorial-framing rule, six Phase 1 working lists (with the inaction-=-incident list as the editorial centre), 11-section output structure, weekly-specific § 1 framing, all 15 hard invariants + 2 W-INV addenda preserved verbatim.
+- The verifier check 11 in the shared spawn template now carries the weekly-specific W-PD-1 question; the F7 finding category in the shared spawn template now covers the weekly-specific drop case for "pure one-to-one daily-brief summary".
+
+### `docs/spawn-templates.md` (NEW)
+Single canonical home for both spawn templates:
+1. **Research sub-agent spawn template** — passed verbatim by both daily Phase 1 and weekly Phase 2. Contains the full operational guidance the sub-agent depends on: defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts (CISA, NCSC.ch, CSIRT Italia, UK ICO, Inside IT, PRODAFT, DataBreaches, NCC Group, Cisco Talos), `WebFetch` outbound-links prompt template, both empirical rules (Krebs feed 13-outbound-links test; CERT-FR per-advisory carries vendor citations from "Documentation"/"Références"), the BSI WID-SEC / NCSC-NL / NCSC-CH CSH / ENISA EUVD same-shape note, `<content:encoded>` vs `<description>` RSS distinction, "silent loss of outbound links is the failure mode that turns a brief into a dead-end stub" warning, Discovery-trace requirements + 3 example shapes + 6 mandatory rules, sub-agent return format with all required fields, operational guardrails.
+2. **Verifier sub-agent spawn template** — passed verbatim by both daily Phase 4.5 and weekly Phase 3.5. Truth checks 1–4, editorial-quality checks 5–10, whole-brief checks 11–13 (check 11 carries the weekly-specific W-PD-1 question), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line.
+3. **"What this verification phase fixes"** catalog of editorial defects the loop catches.
+
+### `docs/brief-template.md` (NEW)
+Single canonical home for the rendered output skeletons:
+- **Daily brief reference template** — exact heading hierarchy (§§ 0–8), AI-content-notice text, `Generated by:` metadata line, footer placement per section, § 3 vulnerability secondary-aggregation table.
+- **Weekly summary reference template** — exact heading hierarchy (§§ 0–10), AI-content-notice text, `Generated by:` metadata line, footer placement per section, § 3 vulnerability roll-up table.
+- **Worked-good § 2 fragment** — illustrative npm supply-chain compromise showing the technical-depth bar (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
+
+### `docs/check-brief-fixes.md` (NEW)
+Operator playbook of FAIL-message → fix-action mappings for the most common `tools/check_brief.py` failures, plus WARN-level signal explanations.
+
+### Net effect
+- Daily master prompt: ~45K → ~24K tokens, fits in a single default `Read` call.
+- Weekly master prompt: ~17K → ~14K tokens, fits in a single default `Read` call.
+- No operational content lost; ALL schemas, commands, empirical findings, and rules preserved either in the master prompts or in the externalised docs.
+
+### Routine integration
+- Daily Phase 1 reads `docs/spawn-templates.md` once before spawning S1–S4 in parallel; uses the verbatim research-sub-agent template per spawn.
+- Daily Phase 4 reads `docs/brief-template.md` once before composing.
+- Daily Phase 4.5 reads `docs/spawn-templates.md` once before spawning the verifier (already in context if read in Phase 1; the agent can re-use the loaded copy or re-Read for a fresh copy of the verifier-template section).
+- Weekly Phase 2 / Phase 3 / Phase 3.5 follow the same pattern.
+
+### Compatibility
+- Output artefacts (daily brief, weekly summary, state JSON, footer format, taxonomy) are unchanged.
+- `tools/check_brief.py` and `site/test_build.py` continue to enforce the same checks unchanged.
+- Hard invariants list is unchanged (15 items + W-INV-1 / W-INV-2).
+
+---
+
 ## 2.32 — 2026-05-08 (WebFetch outbound-links discipline + sources audit cleanup)
 
 ### Why
