@@ -682,15 +682,25 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     s = line.strip()
     if not s:
         return None
-    # Strip leading em-dash / hyphen + asterisk; trailing asterisk.
-    m = re.match(r"^[—-]\s*\*\s*Source:\s*(?P<body>.+?)\*\s*$", s)
+    # Match the italic footer line. Source: prefix is no longer required —
+    # the TL;DR section emits an aggregate `— *Tags: ... · Region: ...*`
+    # tail line that has no Source. We still validate downstream that the
+    # parsed result contains at least one recognised footer field, so
+    # this regex change does NOT cause arbitrary italic prose to be
+    # treated as a footer.
+    m = re.match(r"^[—-]\s*\*\s*(?P<body>.+?)\*\s*$", s)
     if not m:
         return None
     body = m.group("body").strip()
 
+    # Sanity gate: the line must contain at least one of the footer field
+    # labels somewhere in the body. Otherwise we'd treat any italic line
+    # ending in `*` as a footer, which would corrupt prose paragraphs.
+    if not re.search(r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources):", body):
+        return None
+
     # Pull all `[Title](URL)` first; we'll consume them by position.
     links = list(FOOTER_LINK_RE.finditer(body))
-    sources: list[dict[str, str]] = []
     # Replace links with placeholders so later splits don't trip on the `· Source:`-like text inside.
     placeholder_map: dict[str, str] = {}
     body_clean = body
@@ -704,6 +714,12 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     if not parts:
         return None
 
+    # Strip the optional `Source:` / `Sources:` prefix from the first
+    # part — historical shape. After this normalisation every part is
+    # either a bare link placeholder (additional source) or a typed
+    # `Key: value` field.
+    parts[0] = re.sub(r"^Sources?:\s*", "", parts[0]).strip()
+
     out: dict[str, Any] = {
         "sources": [],
         "tags": [],
@@ -716,52 +732,71 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
         "status": [],
     }
 
-    # First part is the primary source (no "Source:" prefix in the body
-    # — that prefix was stripped by the regex above).
-    first = parts[0]
-    # Either it's a placeholder for the link, or an inline label.
-    if first in placeholder_map:
-        label, url = placeholder_map[first].split("|||", 1)
-        out["sources"].append({"label": label, "url": url})
-    else:
-        m_link = re.search(r"\x00LINK\d+\x00", first)
-        if m_link:
-            ph = m_link.group(0)
-            label, url = placeholder_map[ph].split("|||", 1)
-            out["sources"].append({"label": label, "url": url})
+    KNOWN_TYPED_KEYS = {
+        "tags", "region", "sector", "sectors", "cve", "cvss",
+        "vector", "auth", "status", "additional_source", "additional_sources",
+        "source", "sources",
+    }
 
-    for p in parts[1:]:
-        # Each remaining part is `Key: value`.
+    def _add_source_from_placeholder(ph: str) -> None:
+        if ph not in placeholder_map:
+            return
+        label, url = placeholder_map[ph].split("|||", 1)
+        if any(s["url"] == url for s in out["sources"]):
+            return
+        out["sources"].append({"label": label, "url": url})
+
+    for p in parts:
+        # Try `Key: value`.
         key_m = re.match(r"^([A-Za-z][A-Za-z ]*?):\s*(.*)$", p)
-        if not key_m:
-            continue
-        key = key_m.group(1).strip().lower().replace(" ", "_")
-        value = key_m.group(2).strip()
-        # Substitute any link placeholders inside value.
-        for ph, val in placeholder_map.items():
-            if ph in value:
-                lab, url = val.split("|||", 1)
-                value = value.replace(ph, f"[{lab}]({url})")
-        if key in ("additional_source", "additional_sources"):
-            link_m = re.match(r"^\[([^\]]+)\]\(([^)]+)\)$", value)
-            if link_m:
-                out["sources"].append({"label": link_m.group(1), "url": link_m.group(2)})
-        elif key == "tags":
-            out["tags"] = [t.strip() for t in value.split(",") if t.strip()]
-        elif key == "region":
-            out["regions"] = [t.strip() for t in value.split(",") if t.strip()]
-        elif key in ("sector", "sectors"):
-            out["sectors"] = [t.strip() for t in value.split(",") if t.strip()]
-        elif key == "cve":
-            out["cve"] = value.strip()
-        elif key == "cvss":
-            out["cvss"] = value.strip()
-        elif key == "vector":
-            out["vector"] = value.strip()
-        elif key == "auth":
-            out["auth"] = value.strip()
-        elif key == "status":
-            out["status"] = [t.strip() for t in value.split(",") if t.strip()]
+        if key_m:
+            key = key_m.group(1).strip().lower().replace(" ", "_")
+            value = key_m.group(2).strip()
+            # Substitute any link placeholders inside value.
+            for ph, val in placeholder_map.items():
+                if ph in value:
+                    lab, url = val.split("|||", 1)
+                    value = value.replace(ph, f"[{lab}]({url})")
+            if key in KNOWN_TYPED_KEYS:
+                if key in ("additional_source", "additional_sources", "source", "sources"):
+                    link_m = re.match(r"^\[([^\]]+)\]\(([^)]+)\)$", value)
+                    if link_m and not any(s["url"] == link_m.group(2) for s in out["sources"]):
+                        out["sources"].append({"label": link_m.group(1), "url": link_m.group(2)})
+                elif key == "tags":
+                    out["tags"] = [t.strip() for t in value.split(",") if t.strip()]
+                elif key == "region":
+                    out["regions"] = [t.strip() for t in value.split(",") if t.strip()]
+                elif key in ("sector", "sectors"):
+                    out["sectors"] = [t.strip() for t in value.split(",") if t.strip()]
+                elif key == "cve":
+                    out["cve"] = value.strip()
+                elif key == "cvss":
+                    out["cvss"] = value.strip()
+                elif key == "vector":
+                    out["vector"] = value.strip()
+                elif key == "auth":
+                    out["auth"] = value.strip()
+                elif key == "status":
+                    out["status"] = [t.strip() for t in value.split(",") if t.strip()]
+                continue
+            # Unknown typed key — fall through and try bare-link extraction.
+        # Bare link(s): every link placeholder in this part becomes an
+        # additional source. This handles the deep-dive footer shape:
+        # `— *Source: [a](u) · [b](u) · [c](u) · Tags: ...*` where a / b /
+        # c are all sources (not Additional-source-prefixed).
+        for ph in re.findall(r"\x00LINK\d+\x00", p):
+            _add_source_from_placeholder(ph)
+
+    # Final gate: require at least ONE recognised footer field after
+    # parsing — sources, tags, regions, sectors, cve, status. Without
+    # this, a `— *some italic comment*` line could otherwise pass the
+    # earlier sanity gate via false matches.
+    has_field = bool(
+        out["sources"] or out["tags"] or out["regions"]
+        or out["sectors"] or out["cve"] or out["status"]
+    )
+    if not has_field:
+        return None
 
     return out
 
@@ -840,6 +875,32 @@ def section_key_for(heading: str) -> str:
     return "other"
 
 
+# Skip trailing blanks and Markdown horizontal rules (`---` / `***` /
+# `___`) when locating the footer line — sections are separated in the
+# prompt by `---` dividers, and that divider falls inside the last
+# item's body when the slice runs to the end of the section.
+def _is_skippable_trailer(s: str) -> bool:
+    t = s.strip()
+    if not t:
+        return True
+    return bool(re.match(r"^(?:-{3,}|\*{3,}|_{3,})$", t))
+
+
+def _split_trailing_footer(body: str) -> tuple[dict[str, Any] | None, str]:
+    """If the trailing line of `body` (after stripping blanks and
+    horizontal rules) is a metadata footer, return `(parsed, body
+    without footer line)`. Otherwise return `(None, body unchanged)`."""
+    lines = body.splitlines()
+    while lines and _is_skippable_trailer(lines[-1]):
+        lines.pop()
+    if not lines:
+        return None, body
+    fm = parse_footer_line(lines[-1])
+    if not fm:
+        return None, body
+    return fm, "\n".join(lines[:-1]).rstrip()
+
+
 def parse_brief(path: Path) -> dict[str, Any]:
     """Parse a brief Markdown file into a structured dict.
 
@@ -895,58 +956,51 @@ def parse_brief(path: Path) -> dict[str, Any]:
         anchor = slugify(heading)
         skey = section_key_for(heading)
 
-        # H3 boundaries within this section
+        # Item boundaries within this section. Sections normally use H3
+        # per item; § 4 Trending Vulnerabilities in the v2 layout uses H4
+        # because the section opens with a CVE summary table at H3-equivalent
+        # depth and emits per-CVE detail blocks underneath. We detect H4
+        # only when no H3 is present, so a section that mixes both does
+        # not lose its H3-level grouping.
         h3_starts: list[tuple[int, str]] = []
         for m3 in re.finditer(r"^### (.+?)\s*$", body_text, re.MULTILINE):
             h3_starts.append((m3.start(), m3.group(1).strip()))
+        item_starts = h3_starts
+        if not item_starts:
+            for m4 in re.finditer(r"^#### (.+?)\s*$", body_text, re.MULTILINE):
+                item_starts.append((m4.start(), m4.group(1).strip()))
 
         items: list[dict[str, Any]] = []
-        if h3_starts:
-            for j, (s3, h3heading) in enumerate(h3_starts):
-                e3 = h3_starts[j + 1][0] if j + 1 < len(h3_starts) else len(body_text)
-                item_md = body_text[s3:e3].strip()
-                # Strip leading `### Heading` line
-                first_nl_i = item_md.find("\n")
-                item_body = item_md[first_nl_i + 1 :] if first_nl_i >= 0 else ""
-                item_body = item_body.strip()
-                # Locate footer line (last meaningful line if it matches).
-                # Skip trailing blanks AND trailing Markdown horizontal
-                # rules (`---` / `***` / `___`) — the prompt emits a `---`
-                # divider between H2 sections, and that divider falls
-                # inside the last H3 item's body when the body slice runs
-                # to the end of the section.
-                footer = None
-                stripped_body = item_body
-                lines = item_body.splitlines()
+        for j, (s_item, item_heading) in enumerate(item_starts):
+            e_item = item_starts[j + 1][0] if j + 1 < len(item_starts) else len(body_text)
+            item_md = body_text[s_item:e_item].strip()
+            # Strip the leading heading line itself (### or ####).
+            first_nl_i = item_md.find("\n")
+            item_body = item_md[first_nl_i + 1 :] if first_nl_i >= 0 else ""
+            item_body = item_body.strip()
+            footer, stripped_body = _split_trailing_footer(item_body)
+            items.append(
+                {
+                    "heading": item_heading,
+                    "anchor": slugify(item_heading),
+                    "slug": f"{name}-{slugify(item_heading)}"[:80].strip("-"),
+                    "body_md": stripped_body,
+                    "footer": footer,
+                    "section_key": skey,
+                }
+            )
 
-                def _is_skippable_trailer(s: str) -> bool:
-                    t = s.strip()
-                    if not t:
-                        return True
-                    return bool(re.match(r"^(?:-{3,}|\*{3,}|_{3,})$", t))
-
-                while lines and _is_skippable_trailer(lines[-1]):
-                    lines.pop()
-                if lines:
-                    fm = parse_footer_line(lines[-1])
-                    if fm:
-                        footer = fm
-                        # Remove footer line from body for clean rendering
-                        stripped_body = "\n".join(lines[:-1]).rstrip()
-                items.append(
-                    {
-                        "heading": h3heading,
-                        "anchor": slugify(h3heading),
-                        "slug": f"{name}-{slugify(h3heading)}"[:80].strip("-"),
-                        "body_md": stripped_body,
-                        "footer": footer,
-                        "section_key": skey,
-                    }
-                )
-        else:
-            # No H3 items — section may still carry footer-tagged paragraphs.
-            # Future: detect paragraph-level footers. For now: keep raw body.
-            pass
+        # Section-level footer for sections with no items. The v2 prompt
+        # places aggregate metadata at the tail of the TL;DR section
+        # (`— *Tags: ... · Region: ...*`) and a structured Source/Tags
+        # footer at the tail of the Deep Dive section. Both used to
+        # render as raw italic Markdown — promote them into the same
+        # structured-footer path so the rendered page and the per-item
+        # RSS feed see them as first-class metadata.
+        section_footer: dict[str, Any] | None = None
+        section_body_md = body_text
+        if not items:
+            section_footer, section_body_md = _split_trailing_footer(body_text)
 
         sections.append(
             {
@@ -954,7 +1008,8 @@ def parse_brief(path: Path) -> dict[str, Any]:
                 "anchor": anchor,
                 "key": skey,
                 "items": items,
-                "body_md": body_text,
+                "body_md": section_body_md,
+                "section_footer": section_footer,
             }
         )
 
@@ -1415,11 +1470,18 @@ def cisa_kev_search_url(cve_id: str) -> str:
     )
 
 
-def render_footer_html(footer: dict[str, Any], *, prefix: str = "") -> str:
+def render_footer_html(footer: dict[str, Any], *, prefix: str = "", sources_only: bool = False) -> str:
     """Structured HTML rendering of a per-item metadata footer (badge /
     pill blocks instead of raw italic Markdown). Used inside every
     `<article>` on a brief page and inside `<content:encoded>` for the
-    items RSS feed."""
+    items RSS feed.
+
+    When `sources_only=True`, only the Sources line is rendered — Tags,
+    Region, CVE, CVSS, Vector, Auth, Status are all suppressed. The RSS
+    feeds use this mode so the feed body stays focused on the source
+    links and does not duplicate the per-item taxonomy that already
+    appears in the structured `<category>` feed metadata.
+    """
     parts: list[str] = []
 
     if footer.get("sources"):
@@ -1430,6 +1492,9 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "") -> str:
             cls = "src-primary" if i == 0 else "src-additional"
             src_parts.append(f'<a class="{cls}" href="{url}" rel="noopener noreferrer">{label}</a>')
         parts.append('<span class="meta-sources"><strong>Sources:</strong> ' + " · ".join(src_parts) + "</span>")
+
+    if sources_only:
+        return '<aside class="item-footer">' + "".join(parts) + "</aside>"
 
     if footer.get("regions"):
         parts.append(
@@ -1697,10 +1762,14 @@ def render_brief_page(
                 f'</article>'
             )
         if not sec["items"]:
-            # No H3 items inside this section — render its raw body
+            # No items inside this section — render its raw body
             # Markdown directly. Common for TL;DR (bullets only) and
-            # Verification Notes.
+            # Verification Notes. The footer line, if any, has already
+            # been split out by parse_brief and is rendered as a
+            # structured pill block below the section body.
             inner.append(render_markdown(sec["body_md"], base_url=md_anchor_base))
+            if sec.get("section_footer"):
+                inner.append(render_footer_html(sec["section_footer"], prefix=prefix))
         sections_html.append(
             f'<section class="brief-section" '
             f'data-section="{_escape(skey)}" '
@@ -2788,6 +2857,67 @@ def _fallback_lastbuild(briefs: list[dict[str, Any]]) -> datetime:
     return max(b["publish_ts"] for b in briefs)
 
 
+_FOOTER_META_KEY_RE = re.compile(
+    r"\s+·\s+(?:Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status):"
+)
+
+
+def _strip_footer_metadata_in_md(body_md: str) -> str:
+    """Inside any italic metadata-footer line (`— *Source: ...*` or
+    `— *Tags: ...*`), drop every field other than Source / Sources /
+    Additional source(s). Used for RSS body rendering so feed bodies
+    only show the source links — Tags / Region / CVE / CVSS / Vector /
+    Auth / Status appear as `<category>` feed metadata instead.
+
+    A footer line is recognised by the same shape `parse_footer_line`
+    accepts: starts with `— *` (em-dash + space + asterisk) or `- *`,
+    ends with `*`, and contains at least one footer field label. A
+    footer line whose only fields are non-Source (e.g. the TL;DR
+    aggregate `Tags + Region` footer) collapses to nothing and the
+    entire line is dropped.
+    """
+    out_lines: list[str] = []
+    for line in body_md.splitlines():
+        stripped = line.strip()
+        is_footer = (
+            (stripped.startswith("— *") or stripped.startswith("- *"))
+            and stripped.endswith("*")
+            and re.search(
+                r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources):",
+                stripped,
+            )
+        )
+        if is_footer:
+            m = re.match(r"^(?P<lead>\s*[—-]\s*\*\s*)(?P<body>.+?)\*\s*$", line)
+            if m:
+                inner = m.group("body")
+                # Case A: the line begins directly with a non-Source
+                # field (e.g. `*Tags: ... · Region: ...*`). There is no
+                # Source content to preserve — drop the whole line.
+                if re.match(
+                    r"^(?:Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status):",
+                    inner,
+                ):
+                    continue
+                # Case B: the line begins with a Source (explicit
+                # `Source:` prefix or a bare `[Title](URL)` link). Drop
+                # everything from the first ` · (Tags|...)` onwards.
+                cut = _FOOTER_META_KEY_RE.search(inner)
+                if cut:
+                    inner = inner[: cut.start()].rstrip()
+                inner = inner.rstrip(" ·").rstrip()
+                if not inner.strip() or inner.strip().lower() in {"source:", "sources:"}:
+                    continue
+                line = m.group("lead") + inner + "*"
+        out_lines.append(line)
+    result = "\n".join(out_lines)
+    # Preserve the input's trailing newline if there was one — important
+    # for callers that splice the result back into a larger document.
+    if body_md.endswith("\n") and not result.endswith("\n"):
+        result += "\n"
+    return result
+
+
 def build_daily_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[str, datetime]:
     """Daily feed: one item per daily brief. Last 30."""
     daily = [b for b in briefs if b["kind"] == "daily"][:FEED_DAILY_MAX]
@@ -2800,6 +2930,11 @@ def build_daily_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
         # Strip the H1 line + blockquote notice from the rendered body so the
         # feed shows the actual content. Keep TL;DR onwards.
         body_md_clean = re.sub(r"\A# .+?\n+(> .+?\n+)?\*\*Generated by:\*\*[^\n]*\n+", "", body_md)
+        # In RSS body, keep only the Sources portion of every metadata
+        # footer line — Tags / Region / CVE / CVSS / Vector / Auth /
+        # Status are RSS-feed metadata (`<category>`) and should not be
+        # duplicated as visible italic text inside the feed body.
+        body_md_clean = _strip_footer_metadata_in_md(body_md_clean)
         body_html = render_markdown(body_md_clean, base_url=url)
         # TL;DR -> description
         if b.get("tldr"):
@@ -2840,6 +2975,7 @@ def build_weekly_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[s
         url = f"{site_url}briefs/weekly/{b['name']}/"
         body_md = b["text"]
         body_md_clean = re.sub(r"\A# .+?\n+(> .+?\n+)?\*\*Generated by:\*\*[^\n]*\n+", "", body_md)
+        body_md_clean = _strip_footer_metadata_in_md(body_md_clean)
         body_html = render_markdown(body_md_clean, base_url=url)
         desc_html = f"<p>{_escape(b.get('summary',''))}</p>" if b.get("summary") else f"<p>Weekly CTI summary — {_escape(b['name'])}</p>"
         cats = "".join(f"<category>{_escape(c)}</category>" for c in b.get("cves", [])[:8])
@@ -2869,7 +3005,10 @@ def build_weekly_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[s
 
 
 def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[str, datetime]:
-    """Per-item feed: one entry per brief item that carried a metadata footer."""
+    """Per-item feed: one entry per content block that carries a metadata
+    footer. Every H3 / H4 item with a footer becomes an entry; sections
+    that have a section-level footer instead of per-item footers (Deep
+    Dive in the v2 layout) also become a single entry."""
     item_entries: list[dict[str, Any]] = []
     for b in briefs:
         for sec in b["sections"]:
@@ -2893,13 +3032,32 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
                         "section_key": sec["key"],
                     }
                 )
+            # A section without per-item footers but with a section-level
+            # footer (Deep Dive in v2) is itself a publishable unit. The
+            # sec_footer carries Sources / Tags / CVE / etc that the
+            # reader expects to land on as a single feed entry.
+            if not sec["items"] and sec.get("section_footer"):
+                slug = f"{b['name']}-{sec['anchor']}"[:80].strip("-")
+                url = f"{site_url}briefs/{b['name']}/#{sec['anchor']}"
+                item_entries.append(
+                    {
+                        "url": url,
+                        "title": sec["heading"],
+                        "publish_ts": b["publish_ts"],
+                        "publish_rfc822": b["publish_rfc822"],
+                        "publish_iso": b["publish_iso"],
+                        "body_md": sec["body_md"],
+                        "footer": sec["section_footer"],
+                        "section_key": sec["key"],
+                    }
+                )
     item_entries.sort(key=lambda x: x["publish_ts"], reverse=True)
     item_entries = item_entries[:FEED_ITEMS_MAX]
 
     items_xml: list[str] = []
     most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
     for it in item_entries:
-        body_html = render_markdown(it["body_md"], base_url=it["url"]) + render_footer_html(it["footer"], prefix=site_url)
+        body_html = render_markdown(it["body_md"], base_url=it["url"]) + render_footer_html(it["footer"], prefix=site_url, sources_only=True)
         # categories: tags + regions + status flags + cve id
         cat_parts = list(it["footer"].get("tags", [])) + list(it["footer"].get("regions", [])) + list(it["footer"].get("status", []))
         if it["footer"].get("cve"):

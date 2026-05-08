@@ -43,6 +43,18 @@ Operator review of the 2026-05-08 brief surfaced three editorial defects:
 
 - **`_SECTION_KEYWORDS`** now also recognises `Updates on Previously Covered Items` and `Previously Covered Items` as the canonical "updates" section, in addition to the existing `Updates to Prior Coverage`.
 
+- **H4 item fallback in `parse_brief`.** § 4 Trending Vulnerabilities in v2 emits each per-CVE detail block under a `#### CVE-...` heading (the section opens with an H3-equivalent table, so per-CVE blocks step down to H4). Sections with no H3 items now also walk H4 boundaries for item detection. Previously these blocks fell through into the section's raw body Markdown and their per-item footer lines rendered as plain italic text.
+
+- **`parse_footer_line` accepts Source-less footers.** The previous regex hard-required a `Source:` prefix, which dropped both (a) the TL;DR aggregate footer (`— *Tags: ... · Region: ...*`) and (b) any other footer style without an explicit `Source:` label. The matcher is now permissive on the prefix while still requiring at least one recognised footer-field label (`Sources?`, `Tags`, `Region`, `Sector`, `CVE`, `CVSS`, `Vector`, `Auth`, `Status`, `Additional source`) to qualify, so arbitrary italic prose does not get misclassified as a footer.
+
+- **Multiple bare-link sources at the head of a footer.** The deep-dive shape `— *Source: [a](u) · [b](u) · [c](u) · [d](u) · Tags: ...*` previously kept only the first link; the parser now treats every leading bare-link part as an additional source and de-dupes by URL. The reader sees every primary + corroborating link the writer attached to the unit.
+
+- **Section-level footer detection.** The Deep Dive (§ 7) has no item heading — its block-level metadata footer sits at the section tail. `parse_brief` now extracts a section-level footer for sections that have no H3 / H4 items, exposes it as `section["section_footer"]`, and the brief-page renderer emits it as a structured pill block under the section body.
+
+- **Per-item RSS feed includes section-level footers.** A section that carries a section-level footer (Deep Dive) now produces a single per-item-feed entry pointing at `briefs/<name>/#<section-anchor>`, so every block of content with its own metadata footer reaches the per-item feed reader.
+
+- **RSS feed bodies render Sources only.** `render_footer_html` gains a `sources_only=True` flag; the per-item feed uses it so the structured footer block in `<content:encoded>` shows just the Sources line. Tags / Region / CVE / CVSS / Vector / Auth / Status remain as `<category>` feed metadata. The daily and weekly feed bodies, which use the brief's raw markdown rather than the parsed structure, run a new `_strip_footer_metadata_in_md` pre-pass that drops every non-Source field from each italic footer line before rendering. Tags-only footers (TL;DR aggregate) collapse to nothing.
+
 ---
 
 ## 2.25 — 2026-05-07 (audience + technical depth)
