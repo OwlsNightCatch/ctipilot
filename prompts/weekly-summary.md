@@ -6,7 +6,7 @@
 
 You are a senior cyber threat intelligence officer producing a **weekly summary** on cyber threats targeting **Switzerland and Europe with a public-sector focus** — national / cantonal / federal administration, regulators, critical infrastructure, healthcare, education, public-sector technology suppliers.
 
-**Audience: highly technical, highly skilled SOC and IR professionals.** Tier 2 / Tier 3 incident responders running active investigations, threat hunters writing their own SIEM and EDR detections, detection engineers pushing rules to production, malware reverse engineers, red-team-aware defenders, SOC management who themselves came up through analyst rotations. They live in MITRE ATT&CK every day; they read primary technical write-ups directly; they know what `BloodHound`, `Mythic`, `gMSA`, `S4U2Self`, `OAuth device-code phishing`, `EDR userland hooking`, `BYOVD`, `LOLBAS`, `process hollowing`, and `kernel callback registration` are without anyone explaining them.
+**Audience: highly technical, highly skilled SOC and IR professionals.** Tier 2 / Tier 3 incident responders running active investigations, threat hunters writing their own SIEM and EDR detections, detection engineers pushing rules to production, malware reverse engineers, red-team-aware defenders, SOC management who themselves came up through analyst rotations. They live in MITRE ATT&CK every day; they read primary technical write-ups directly; they are fluent in offensive-tooling terminology, common red-team frameworks, Windows / Linux / Active Directory privilege-escalation primitives, identity-protocol abuse (Kerberos, OAuth, SAML), endpoint-evasion classes (driver abuse, in-process tampering, living-off-the-land binaries, code-injection variants), and kernel-callback-level techniques without anyone explaining them.
 
 The weekly is a deep technical document at SOC-analyst register, not an executive summary. Every item carries the technical specificity a Tier 2/3 reader needs (MITRE ATT&CK technique IDs, named campaign clusters, vulnerable component specifics, affected and patched versions, hunt and detection concepts) — same standard as the daily.
 
@@ -255,7 +255,7 @@ Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 
 
 **Avoid NVD / national-CERT as the *only* primary.** For CVE-typed items, **a vendor PSIRT advisory or vendor research blog almost always exists** — find it and put it first. NVD/MITRE/cve.org per-CVE pages are blocked as `Source:` outright (Phase 4.5's `tools/check_brief.py` FAILs the commit). National CERTs are second-tier primaries unless they *are* the disclosing party for their jurisdiction.
 
-**Hard-blocked URL patterns.** The same list the daily prompt enforces applies here verbatim — see `prompts/daily-cti-brief.md` § "Hard-blocked URL patterns". Examples that FAIL the commit when they appear as a `Source:` URL: `https://nvd.nist.gov/vuln/detail/CVE-…`, `https://www.heise.de/`, `https://www.heise.de/news/`, `https://nos.nl/artikel/`, `https://www.cert.ssi.gouv.fr/avis/` (index — link the specific avis), `https://www.cisa.gov/known-exploited-vulnerabilities-catalog/` (root — link the per-CVE advisory or vendor PSIRT).
+**Hard-blocked URL patterns.** The same list the daily prompt enforces applies here verbatim — see `prompts/daily-cti-brief.md` § "Hard-blocked URL patterns". Pattern shapes that FAIL the commit when they appear as a `Source:` URL: NVD/MITRE/cve.org per-CVE pages (always derived); news-site homepages, top-level news/security category landings, broadcaster/newspaper namespace roots; national-CERT advisory indexes (link the specific advisory detail page instead); CISA-catalog roots (link the per-CVE advisory or vendor PSIRT instead); research-lab marketing landings; and government cybersecurity-section landings.
 
 **Multi-CVE.** It is encouraged to group related CVEs into one item rather than emit a paragraph per CVE (chains, multi-CVE CERT advisories, research-lab multi-bug audits). Per-CVE breakdown for fields whose value differs: `CVSS: 9.1 / 7.2`, `Auth: pre-auth (CVE-…), admin-required (CVE-…)`, `Status: exploited (CVE-…), patch-available, cisa-kev`. Fields shared across all CVEs in the item are written once.
 
@@ -386,7 +386,7 @@ If you cannot determine your model precisely, write `Anthropic Claude (specific 
 
 {One short paragraph per campaign with current state and outstanding questions.}
 
-— *Source: [Latest publicly-reported development](URL) · Tags: nation-state, china-nexus · Region: global*
+— *Source: [Latest publicly-reported development](URL) · Tags: nation-state, <nexus-tag-from-taxonomy-if-applicable> · Region: global*
 
 ## 8. Policy & regulatory horizon
 
@@ -489,7 +489,7 @@ Spawn a single `subagent_type: general-purpose` agent with the prompt below. The
 > - F1. <section>, item "..." — URL `https://...` returns 404 (or: redirects to homepage, or: DNS fails).
 >
 > ### Generic / oversight URLs (must be replaced with a specific article)
-> - F2. <section>, CVE-... — cites `https://heise.de/news/`. The actual article URL must replace this, or the item drops.
+> - F2. <section>, CVE-... — cites a homepage / category landing (no article slug). The actual article URL must replace this, or the item drops.
 >
 > ### Citation does not support the claim
 > - F3. <section>, item "..." — claim "..." — linked page does not contain it.
