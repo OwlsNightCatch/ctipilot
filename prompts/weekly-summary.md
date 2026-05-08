@@ -58,6 +58,12 @@ The weekly inherits every prime directive from `prompts/daily-cti-brief.md`. Hig
 6. **Weekly editorial framing (W-PD-1).** Every item answers one of three questions: (a) *what would be on fire if no one acted on the daily?*, (b) *what cross-day pattern emerged that no single daily could surface?*, (c) *what strategic / horizon shift happened that changes defender obligations going forward?*. Items that answer none of these three get dropped — even if they were prominent in a daily.
 7. **Annual / periodic reports** get fuller distillation in the weekly than the daily, since the weekly's audience expects horizon framing.
 8. **`tools/fetch_source.py` is mandatory for CISA + NCSC.ch every run** — never `WebFetch` those hosts directly. Same rule as daily.
+9. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `docs/verification.md`.
+10. **No IOCs.** No file hashes (MD5/SHA-1/SHA-256/imphash), no IPs, no attacker-controlled domains/URL paths, no YARA/Sigma/Suricata. The weekly is *knowledge* — TTPs, campaigns, actors, vulnerabilities, targeting, sectors, detection concepts. IOC distribution belongs elsewhere (MISP). When a source emphasises IOCs, summarise the *behaviour*, not the indicator.
+11. **No vanity metrics.** Skip vendor-marketing numbers — median dwell time, breakout time, YoY %, "X new adversaries tracked", "$Y billion damage", "Z% of CISOs say". Operational scoring (CVSS, EPSS, CISA KEV, vendor severity, exploitation status) is fine.
+12. **Less is more — relevance over volume.** Every item costs reader attention. Ship fewer, sharper items. The weekly's bar is **higher than the daily's** because every item must additionally answer W-PD-1 — items that are interesting in isolation but don't meet inaction-=-incident / cross-day-pattern / horizon-shift get dropped. Drop without ceremony: vendor marketing dressed as research; commentary on already-covered stories without material delta; awareness pieces; industry surveys; conference recaps; product launches; YoY statistics without defender takeaway.
+
+    **Variable size by signal.** Quiet week = short summary; noisy week = longer one. Don't pad. **Reader trusts brevity reflects signal, not laziness.** Within a section, prefer 3 sharp items over 8 mediocre; when in doubt, drop. **Empty sections are explicit:** render the heading + a one-line italic stub stating so on purpose (e.g. *"No qualifying multi-day chains in window — section intentionally empty."*).
 
 The weekly **may** repeat material from the daily briefs — the daily's PD-8 (no repetition across runs) does not apply. But every repeated item must answer W-PD-1's three questions.
 
@@ -136,6 +142,10 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
 If reads fail, surface the error and stop.
 
+Build a **deduplication context**: CVE IDs from `cves_seen.json`; named actors / campaigns / incidents / annual reports from `covered_items.json`; headlines and key paragraphs from each daily brief in the gap window; previous weekly's "Looking ahead" items (`§ 9` of the prior weekly file) since these are first-priority candidates for status updates this run.
+
+Build a **source rotation list** by parsing `Coverage gaps:` from § 8 of each daily brief in the gap window and § 10 of the previous weekly. A source listed as a gap in **2+ of the daily briefs in the window** is **rotation-priority** for W1/W2 — the horizon sub-agents reserve fetch budget for it. Pass dedup + rotation to W1 and W2, filtering rotation by category (W1 → research/news/discovery/active-breaking; W2 → gov/policy/regulatory).
+
 ---
 
 ## Phase 1 — Structured review (main context, ~5 min)
@@ -167,6 +177,18 @@ Spawn **two sub-agents in parallel** for forward-looking signal that the daily b
 `Read` [`docs/spawn-templates.md`](../docs/spawn-templates.md) once during Phase 2. The **research-sub-agent spawn template** there is the same template the daily uses — defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links prompt template, empirical findings (listing pages return zero outbound links; Krebs feed returned 13 outbound links from one article in our test; CERT-FR per-advisory pages carry vendor citations in "Documentation"/"Références"; same shape for BSI WID-SEC, NCSC-NL, NCSC-CH CSH, ENISA EUVD; `<content:encoded>` RSS preserves outbound links while `<description>`-only RSS does not), Discovery-trace requirements, return format, operational guardrails.
 
 For each spawn, append the verbatim template + the sub-agent's specific domain (W1 or W2 below).
+
+### Reinforced rules for the main agent (same rules in Phase 3 compose / Phase 3.5 verification)
+
+The spawn template carries the full operational rules for sub-agents. The main agent applies the same rules when consolidating daily-brief content into the weekly and when verifying. Reinforced points:
+
+1. **Drill into curated sources.** Index pages, dashboards, listings are routing — citation always points to per-article / per-advisory detail URL. SPA dashboards (e.g. NCSC.ch CSH) need underlying JSON API endpoints fetched per-advisory; cite the canonical SPA detail URL the human would open.
+2. **`tools/fetch_source.py` MANDATORY for CISA + NCSC.ch every run** (KEV catalog + NCSC-CSH listing — skipping means missing both). Phase 4.5 FAILs the commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use. Use the bridge for any allow-listed host the moment its `WebFetch` returns 403. Commands: `python3 tools/fetch_source.py {ncsc-csh recent 10 | ncsc-csh post <ID> | cisa-kev | cisa page <URL> | url <full-URL>}`. 403 on these hosts is **transport-side**, never demotes the source.
+3. **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
+4. **`WebFetch` prompt template** (in `docs/spawn-templates.md`) **not optional** — without the explicit "Outbound links" ask, `WebFetch` returns prose-only and forces a second round-trip.
+5. **Search topically.** 2–4 `WebSearch` queries per sub-agent, especially for the previous weekly's "in motion" items where this week's status delta is the value-add.
+6. **Propose new sources** — at most one candidate per run; main agent writes `sources.json` in Phase 4.
+7. **Source-link discipline** — only fetched URLs; specific page never landing; first link most primary, include every other URL as `· Additional source:`; news-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 10); if unsure, drop.
 
 ### Operational guardrails (per sub-agent)
 
@@ -247,11 +269,32 @@ Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 
 
 **Multi-primary.** Two distinct primary sources is fine when the canonical case applies: vendor advisory + research blog (the disclosing team often blogs separately), vendor advisory + regulator filing (8-K, ICO notice), CERT advisory + the vendor advisory it references (when the CERT itself is the primary disclosing party for its jurisdiction).
 
-**Avoid NVD / national-CERT as the *only* primary.** For CVE-typed items, **a vendor PSIRT advisory or vendor research blog almost always exists** — find it and put it first. NVD/MITRE/cve.org per-CVE pages are blocked as `Source:` outright (Phase 4.5's `tools/check_brief.py` FAILs the commit). National CERTs are second-tier primaries unless they *are* the disclosing party for their jurisdiction.
+**Avoid NVD / national-CERT as the *only* primary.** For CVE-typed items, **a vendor PSIRT advisory or vendor research blog almost always exists** — find it and put it first. NVD/MITRE/cve.org per-CVE pages are blocked as `Source:` outright (Phase 4.5's `tools/check_brief.py` FAILs the commit). National CERTs are second-tier primaries unless they *are* the disclosing party for their jurisdiction. Narrow exceptions where a national CERT *is* the right primary: CERT publication for its own jurisdiction (e.g. NCSC.ch incident bulletin on a Swiss federal incident) where no vendor/research-lab post exists; ENISA EUVD entry for an EU-discovered vulnerability where the EU body is the disclosing party.
 
-**Hard-blocked URL patterns.** Same list the daily prompt enforces applies here verbatim — see `prompts/daily-cti-brief.md` § "Hard-blocked URL patterns". Pattern shapes that FAIL the commit when they appear as a `Source:` URL: NVD/MITRE/cve.org per-CVE pages (always derived); news-site homepages, top-level news/security category landings, broadcaster/newspaper namespace roots; national-CERT advisory indexes (link the specific advisory detail page instead); CISA-catalog roots (link the per-CVE advisory or vendor PSIRT instead); research-lab marketing landings; government cybersecurity-section landings.
+**Hard-blocked URL patterns — `tools/check_brief.py` FAILs the commit on any.** Phase 4.5 enforces a non-negotiable URL allowlist on every footer's `Source:`. **NVD/MITRE per-CVE pages are NEVER acceptable as a Source** — derived data sheets (the build emits NVD / cve.org / CISA-KEV-search auto-references on every per-CVE page anyway).
 
-**Multi-CVE.** Encouraged to group related CVEs into one item rather than emit a paragraph per CVE (chains, multi-CVE CERT advisories, research-lab multi-bug audits). Per-CVE breakdown for fields whose value differs: `CVSS: 9.1 / 7.2`, `Auth: pre-auth (CVE-…), admin-required (CVE-…)`, `Status: exploited (CVE-…), patch-available, cisa-kev`. Fields shared across all CVEs in the item are written once.
+| Bad — never a Source | Good — what to use |
+|---|---|
+| `nvd.nist.gov/vuln/detail/CVE-…`, `www.cve.org/CVERecord?id=CVE-…`, `cve.mitre.org/cgi-bin/cvename.cgi?…` | Vendor PSIRT advisory page |
+| News-site homepage, `/news/` or `/security` category landing | Specific article URL with slug |
+| Broadcaster / newspaper namespace root (`<publisher>/`, `<publisher>/artikel/`) | Specific article URL with slug |
+| National-CERT advisory index (`…/avis/`, `…/actualite/`, `…/advisories/`) | Specific advisory detail URL with its ID |
+| `cisa.gov/news-events/`, `…/known-exploited-vulnerabilities-catalog/` | Per-CVE advisory page or vendor PSIRT |
+| Research-lab marketing landing (`…/year-in-review/`, `…/threat-report/`) | Specific PDF / blog post / report-section URL |
+| Government cybersecurity-section landing (`…/cybersecurity/`, `…/cyber/`) | Specific advisory page |
+| `<publisher>/`, `<publisher>/news/`, `<publisher>/blog/` with no slug | Specific article URL |
+
+**Rule of thumb:** if removing the trailing path component still resolves to a meaningful page, the URL is too generic. Script also runs **live HEAD/GET on every Source URL**, FAILs on 404 (catches fabricated URLs). Phase 3.5's verifier WARNs any single national-CERT URL as the **only** source on a CVE-typed item.
+
+**Source-link discipline (numbered).** (1) Only fetched URLs — every URL must have been opened by `WebFetch` or `tools/fetch_source.py` in this run, resolving to content matching the claim. Never construct a URL from a pattern (advisory ID, CVE ID, blog-slug guess) without verifying. (2) Specific page, never the landing — see hard-blocked patterns above. (3) Drill to primary, keep secondaries — first link most primary; include every other URL where you read the claim as `· Additional source:`. (4) News-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 10). (5) Verify before publishing — re-confirm doubt cases; if a URL 404s, redirects to homepage, or shows unrelated content, replace or drop. (6) If unsure: drop the item.
+
+**Multi-CVE — one item, several CVEs.** **Encouraged** to group related CVEs into one item (vendor monthly patch advisory disclosing a chain; CERT advisory grouping multiple CVEs in a product family; research-lab disclosure of multiple bugs in one audit). Footer carries comma-separated `CVE:` and **per-CVE breakdown** for any field that differs:
+
+```
+— *Source: [Vendor advisory](url) · [Corroborating coverage](url) · Tags: vulnerabilities, actively-exploited, pre-auth, rce, auth-bypass, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN, CVE-YYYY-MMMMM · CVSS: 9.1 / 7.2 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available*
+```
+
+Breakdown: **CVSS:** `9.1 / 7.2` (slash-separated, **same order as CVEs**), or `9.1 (CVE-YYYY-NNNNN), 7.2 (CVE-YYYY-MMMMM)` (explicit) when ambiguous or >2 CVEs. **Vector / Auth:** if all share, write once; if differ: `Auth: pre-auth (CVE-YYYY-NNNNN), admin-required (CVE-YYYY-MMMMM)`. **Status:** comma-separated for the item; per-CVE-scoped: `Status: exploited (CVE-YYYY-MMMMM), patch-available, cisa-kev`. `check_brief.py` validates either single shared CVSS or per-CVE breakdown.
 
 **Controlled vocabularies live in [`site/taxonomy.yaml`](../site/taxonomy.yaml)** (read in Phase 0). Pick existing values; the build refuses any item using a value not in the taxonomy. The vocabulary mirrors the daily's — see `prompts/daily-cti-brief.md` § "Per-item metadata footer" / `site/taxonomy.yaml` for the full list (themes / sectors / regions / nexus / cve_types / cve_vectors / cve_auth / cve_status). Extend the taxonomy in the same commit if a real item needs a value that isn't there.
 
@@ -306,6 +349,35 @@ If you cannot determine your model precisely, write `Anthropic Claude (specific 
 **§ 9 Looking ahead — what to watch next week.** A focused, justified list. **Not predictions** — items already in motion that are likely to develop next week (KEV deadlines pending, vendor advisories with patches mid-rollout, campaigns still acquiring victims, regulatory consultations closing). Each item links back to the relevant earlier reporting. No footer per item; this is a list section.
 
 **§ 10 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context.
+
+### Technical depth — what every item must include
+
+Audience is **highly technical** (Tier 2/3 IR, threat hunters, detection engineers — same as the daily). Every item must give enough specificity to reason about detection, hunt, and hardening. **Surface-level talking points are a quality regression.** The weekly's consolidating role does NOT lower the technical bar — items get more synthesis context, not less specificity.
+
+For every item, where the source supports:
+
+- **Exact vulnerable component / attack surface** — name the file / function / RPC interface / endpoint / config switch / handler / protocol parser / virtual server / service the source identifies. Whatever the source states; never substitute generic phrasing.
+- **Technique class with MITRE ATT&CK technique IDs** when the source provides them or mapping is unambiguous: `T1190 Exploit Public-Facing Application`, `T1059.001 PowerShell`, `T1505.003 Web Shell`, `T1557.001 LLMNR/NBT-NS Poisoning`, `T1068 Exploitation for Privilege Escalation`, `T1078.004 Cloud Accounts`, `T1556.006 MFA`, `T1611 Escape to Host`. Link to `attack.mitre.org`.
+- **Exploitation prerequisites** — auth state; default-config or only-when-X-is-enabled; prior foothold; auth scheme abused (NTLM relay, OAuth device-code, SAML response forgery, S4U2Self); privilege required.
+- **Affected and patched versions** to vendor-stated precision (`<= 14.1-12.30`, `before 2024.4`, `9.x prior to 9.6.10`, `cumulative update CU14 + KB5034762`). Don't round.
+- **Observed exploitation status** with named clusters when the source provides one (UNC####, Storm-####, TA####, APT##, CL-###-####, espionage-actor codename, ransomware-affiliate). Cite the source that named the cluster — never carry a cluster name without that source.
+- **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts.
+- **Affected sectors and regions** in footer's `Tags` / `Region` / `Sector` fields, not filler prose.
+
+A worked-good fragment showing this depth lives in [`docs/brief-template.md`](../docs/brief-template.md) (illustrative npm supply-chain compromise with osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics). Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
+
+### Item granularity — one story per item
+
+Each distinct finding gets its own item with its own primary source(s). Distinct = different technical finding, different primary publisher, different victim class, or different time window. Group at section level — multiple items from the same actor cluster sit next to each other in § 2 with a one-line orientation sentence, but each gets its own paragraph and primary-source links. The weekly may consolidate multiple daily items into one weekly item **only** when they truly are one story (same campaign, same chain, same incident with multiple disclosures); never collapse two distinct campaigns into one item to save space.
+
+### Citation strategy
+
+- Cite **primary source** as substance — vendor research blog, CERT advisory, research-lab paper, regulator filing.
+- News as `via` only when adds value beyond primary (victim interview, original confirmation, regulatory context).
+- **Stack primary sources** when they corroborate — independent research-lab + government joint advisory + major-vendor threat-intel post all describe same campaign → all three inline.
+- **Always link the primary** — even a two-sentence weekly summary paragraph; reader is one click from full technical detail. Also link the originating daily brief (`briefs/YYYY-MM-DD.md`) — readers should be able to walk from week → day → original primary.
+- **Don't cite a roll-up / weekly digest in place of the primary it summarises** (e.g. SANS ISC diary + Check Point weekly digest = one layer removed from actual research). The weekly summary IS itself a roll-up — cite the primaries underneath, never another roll-up.
+- **One story = one set of citations**; different primaries → different items.
 
 ### Reference template
 
@@ -440,7 +512,9 @@ Bundles every Phase 4.5 mechanical check **plus** build-side smoke tests (`site/
 14. **`tools/fetch_source.py` for known-403 hosts** — when the summary cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids without bridge mitigation, the script FAILs.
 15. `run_log.json` fully populated for today (every Ops-dashboard field).
 16. At least one source has `last_successful_fetch == today` in `sources/sources.json`.
-17. `site/test_build.py` exits 0.
+17. **`covered_items.json` appearances** — every § 1 / § 2 / § 7 H3 item with a `key` matching `covered_items.json` has a `weekly_summary` `appearances[]` record for today (warns).
+18. **Daily-brief link integrity** — every `briefs/YYYY-MM-DD.md` link in the summary points to a file that exists in the gap window (warns; surfaces file-rename drift between daily and weekly routines).
+19. `site/test_build.py` exits 0.
 
 WARNs are tolerated and logged in § 10; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`docs/check-brief-fixes.md`](../docs/check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
 
