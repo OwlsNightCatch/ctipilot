@@ -114,6 +114,29 @@ Style enforced by quality gates:
 
 ---
 
+## 6.5 Phase 4.5 — Final verification sub-agent (URL truth + editorial quality)
+
+After the brief is composed, an independent verification sub-agent reads it end-to-end. The verifier covers two concerns in the same pass:
+
+- **Truth gate** — every URL fetched, every claim cross-checked against its linked source, every named entity (CVE / actor / campaign / version / number) traced back to a source the verifier could read.
+- **Editorial-quality gate** — relevance to a Swiss / EU public-sector SOC, primary-source strength (NVD/MITRE and national CERTs/NCSCs are second-tier primaries — the disclosing vendor's PSIRT advisory or research-lab post is preferred), vendor-marketing tells, fake-news patterns, contradictions, clarity. Items the audience does not need are flagged for drop.
+
+The verifier returns structured findings and a verdict (`CLEAN` / `NEEDS_FIXES`). The main agent applies remediation per finding type:
+
+- Broken / generic URLs → re-pivot via `WebFetch` / `WebSearch` / `tools/fetch_source.py` to a specific article URL, or drop.
+- Unsupported facts → drop.
+- Strengthen primary source → promote vendor advisory, demote NVD/CERT to `Additional source:`.
+- Drop (low relevance) → remove the item, log in § 8, drop the today-appearance from `covered_items.json`.
+- Needs more research → spawn ≤3 follow-up research sub-agents in parallel; re-Edit or drop.
+- Surface contradiction → explicit § 8 contradiction line; do not silently pick a side.
+- Missed angles → spawn one targeted research sub-agent if it would clear the inclusion gate; else log as a coverage gap.
+
+A fresh verification sub-agent then runs against the updated brief. The loop runs until verdict `CLEAN` or until the iteration cap (3) is reached. Verification iterations and residual count are written to `state/run_log.json` (`verification_iterations`, `verification_residual_count`) — the Ops dashboard reads them.
+
+Full details and the verbatim spawn template live in [`../prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 4.5; quality bar definitions live in [`verification.md`](verification.md).
+
+---
+
 ## 7. Phase 5 — State update
 
 The agent updates two files:
@@ -157,22 +180,45 @@ If the `key` already exists, the agent appends to its `appearances` and bumps `l
 
 If a deep dive was selected this run, append `{date, topic, category}` and trim to the most-recent 30 entries. Phase 3 reads this on the next run.
 
-### `state/run_log.json`
+### `state/run_log.json` — feeds the Ops dashboard
 
-Append a per-run record (model, sub-agent allocation, fetch failures, items published, deep-dive slug, duration) and trim to 90 days. Surfaced on the operations dashboard at `/ops/`.
+Append a per-run record (model, prompt version, sub-agent allocation, verification-loop counters, fetch failures, items published, deep-dive slug, duration) and trim to 90 days. **Every key in the schema must be populated every run** — a sparse record produces an empty Ops dashboard at `/ops/`. The agent fills in:
+
+- `model`, `prompt_version` — runtime context + `prompts/CHANGELOG.md`.
+- `sub_agents.{S1..S4}` — `sources_attempted` (every id named in the spawn message), `sources_used` (subset that contributed at least one citation), `items_returned`, `returned: false` only when the sub-agent stalled past its 10-min budget.
+- `verification_iterations`, `verification_residual_count` — Phase 4.5 loop counters.
+- `fetch_failures` — every transport error encountered with its HTTP code; `[]` when none.
+- `items_published`, `items_dropped_by_verification`, `deep_dive` — final counts.
+
+The Ops dashboard renders sub-agent cells as `items (used/attempted src)`, surfaces a `stalled` badge when `returned: false`, and a yellow badge when `fetch_failures` is non-empty. If any cell on the dashboard reads `—` for today's run, Phase 5 bookkeeping was skipped — Phase 5.5's self-check script catches this.
 
 ---
 
-## 8. Phase 5.5 — Self-check gate
+## 8. Phase 5.5 — Self-check gate (institutionalised script)
 
-Before committing, the agent runs six checks:
+Phase 5.5 is **a single command**: `python3 tools/check_brief.py`. The script is version-controlled at [`../tools/check_brief.py`](../tools/check_brief.py); the agent runs it after Phase 5 and treats a non-zero exit as a hard stop on the publishing chain.
 
-1. **JSON parses cleanly** for every state file it wrote.
-2. **Every CVE referenced in the brief** appears in `state/cves_seen.json`.
-3. **Every § 2–4 H3 item** has a matching `appearances[].date == today` record in `state/covered_items.json` (items in §§ 1, 5, 6, 7, 8 are not required to be there).
-4. **Every § 5 UPDATE block** carries at least one inline `[label](url)` citation.
-5. **Every H3 item in §§ 1, 2, 3, 4, 5, 6, 7** carries a v2 metadata footer (last non-empty line matching `^\s*[—-]\s*\*Source:\s*.+\*\s*$`).
-6. **Every footer's tags / regions / vectors / auth / statuses** are values from `site/taxonomy.yaml`.
+The script bundles every consistency check the prompt previously listed inline, **plus** the build-side smoke tests in `site/test_build.py`. It verifies:
+
+1. State JSON files (`covered_items.json`, `cves_seen.json`, `deep_dive_history.json`, `run_log.json`, `sources/sources.json`) parse cleanly.
+2. `site/taxonomy.yaml` loads with every required key.
+3. Core sections (`active-threats`, `trending-vulnerabilities`, `research`) carry ≥1 H3 item or an explicit `intentionally left empty` stub.
+4. AI-content notice present at the top of the brief.
+5. **IOC heuristic scan** — SHA-256 / SHA-1 / MD5 patterns and routable IPv4 (with version-string false-positive suppression) → FAIL.
+6. Every CVE referenced in the brief appears in `state/cves_seen.json`.
+7. Every UPDATE block carries at least one inline `[label](url)` citation.
+8. Every H3 in `immediate-actions / active-threats / trending-vulnerabilities / research / updates / deep-dive / action-items` ends with a v2 metadata footer.
+9. Every footer carries Source (≥1 link), Tags, Region; CVE-typed entries additionally carry CVE / Vector / Auth / Status.
+10. Every footer's tags / regions / sectors / vectors / auth / statuses are values from `site/taxonomy.yaml`.
+11. Multi-CVE items use either a single shared CVSS or per-CVE breakdown (`9.1 / 7.2` or `9.1 (CVE-…), 7.2 (CVE-…)`).
+12. **Primary-source quality** (WARN) — items whose only source is NVD/MITRE or a national CERT/NCSC.
+13. **`tools/fetch_source.py` for known-403 hosts** — when the brief cites CISA / NCSC.ch URLs and the run log records an unmitigated 403/429 on those source ids → FAIL.
+14. H3 count in core sections matches `appearances[].date == today` count within tolerance 1 (heuristic; warns).
+15. `run_log.json` for today is fully populated (every Ops-dashboard field).
+16. At least one source has `last_successful_fetch == today` in `sources/sources.json`.
+17. `site/test_build.py` exits 0.
+
+Output is line-by-line `PASS / FAIL / WARN  <check>: <detail>` with a final summary. WARNs are tolerated; FAILs block the commit. The script is read-only — the agent fixes drift, the script reports it. New checks added to the script require a prompt-version bump.
 
 If any check fails, Phase 6 is aborted and the operator output prints `state: drift — <reason>`. The brief file remains on disk; the next run rebuilds the state delta from the brief itself (the brief is the canonical artefact).
 

@@ -4,6 +4,55 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.28 — 2026-05-08 (institutionalised self-check script + multi-CVE / multi-source footers + Phase 4.5 quality gate + mandatory fetch_source.py for CISA + NCSC.ch)
+
+### Why
+The 2026-05-08 run exposed three classes of drift that the v2.27 prompt could not catch on its own:
+
+1. **The Phase 5.5 self-check was a copy-paste of inline shell snippets**: the agent reproduced them imperfectly run-to-run, and any new check (e.g. footer-field completeness, `run_log.json` Ops-dashboard population, primary-source quality, multi-CVE hygiene, IOC heuristic) had to be added in the prompt and re-pasted by the agent. The 2026-05-08 inline check found 5 CVEs missing from `cves_seen.json` — useful, but did not also catch that `run_log.json` was empty (Ops dashboard renders `—` cells), that 4 CVE entries cited NVD/CERT-FR as the *only* primary source instead of the vendor advisory, that CISA was 403'd without `tools/fetch_source.py` mitigation, or that the 2026-05-08 brief had Ivanti EPMM CVE-2026-5787 + CVE-2026-6973 as a multi-CVE footer that needed per-CVE CVSS breakdown.
+
+2. **The Phase 4.5 verification sub-agent was URL-truth only.** It caught fabricated and broken URLs but did not assess *editorial quality*: relevance to a Swiss / EU public-sector SOC, primary-source strength (NVD/CERT cited as sole primary on items where a vendor PSIRT advisory existed), vendor-marketing tells, missed angles a senior reader would expect.
+
+3. **Multi-CVE / multi-source footer patterns were happening organically but not documented.** The 2026-05-08 brief used `CVE: CVE-2026-5787, CVE-2026-6973 · CVSS: 9.1 (CVE-2026-5787), 7.2 (CVE-2026-6973)` and `Source: [Ivanti — …](url) · [NVD — …](url) · [The Hacker News — …](url)` — both correct, both unparseable as conventions because the prompt didn't spell them out.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **New `tools/check_brief.py`** — institutionalised, version-controlled, stdlib-only Python script that imports `parse_footer_line` / `validate_footer` / `parse_taxonomy` from `site/build.py` so script and build agree on parsing rules. Bundles 17 checks: state JSON parses · taxonomy loads · core sections present (title-based, schema-neutral about § numbering) · AI-content notice · IOC heuristic scan with version-string false-positive suppression · CVE sync · UPDATE inline citations · footer presence (skips Markdown thematic breaks `---`) · footer Source/Tags/Region/CVE-fields completeness · footer taxonomy validation · multi-CVE per-CVE CVSS breakdown · primary-source quality (warns on NVD/CERT as sole primary) · `tools/fetch_source.py` enforcement on known-403 hosts · `covered_items.json` appearance heuristic · `run_log.json` Ops-dashboard fields fully populated · `sources.json` last-fetched bookkeeping · `site/test_build.py` smoke tests. Read-only by design — agent fixes drift, script reports it. Non-zero exit aborts the commit.
+
+- **Phase 5.5 rewritten** — replaces the six inline shell snippets with a single `python3 tools/check_brief.py` invocation, lists the 17 checks the script bundles, and ships a "How to fix common FAILs" table so the agent has a recipe for each `FAIL` line.
+
+- **Phase 4.5 widened from URL-truth-only to URL-truth + editorial-quality.** The verification sub-agent's spawn template now also assesses (per item) relevance to a Swiss / EU public-sector SOC, primary-source strength with explicit guidance to flag NVD/MITRE/CERT-as-sole-primary, vendor-marketing tells, fake-news patterns, contradictions, and clarity. Whole-brief checks added: coverage shape, style discipline, missed angles. The verifier now returns 5 additional finding categories (`Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`) on top of the 5 truth categories from v2.27. The main-agent loop authorises spawning **≤3 follow-up research sub-agents per iteration** for `Needs more research` / `Missed angles` findings — iterative refinement so unclear or under-sourced items can be deepened rather than dropped on the spot. Iteration cap stays at 3 (the brief must publish).
+
+- **`tools/fetch_source.py` is now MANDATORY for CISA + NCSC.ch every run.** The Phase 1 research-methodology section says: do not even attempt `WebFetch` on `cisa.gov` / `www.cisa.gov` / `ncsc.admin.ch` / `ncsc.ch` first — go straight to the bridge. Phase 5.5's script FAILs the commit if `run_log.json.fetch_failures` lists a 403/429 on a known-403 source id without bridge mitigation. The 2026-05-08 brief skipped CISA because of an unhandled 403 — this run-class drift is now caught both ways.
+
+- **Multi-CVE / multi-source / multi-primary footer pattern documented in the per-item metadata footer (NORMATIVE) section.** Three new subsections:
+  - **Multi-source — primary + corroborating in the same footer.** Two equivalent forms supported: `Source: [a](u) · [b](u) · [c](u)` (preferred for 2–4 sources) and `Source: [a](u) · Additional source: [b](u) · Additional source: [c](u)`. Both parse to the same structured list.
+  - **When more than one publisher counts as a "primary" source.** Vendor advisory + vendor research blog, vendor advisory + regulator filing (8-K), CERT advisory (when it *is* the primary disclosing party for its jurisdiction) + vendor advisory it references — these are dual primaries. The first two `[Title](URL)` blocks are both leads.
+  - **Avoid NVD / national-CERT as the *only* primary.** Editorial rule: vendor PSIRT advisories / research-lab posts / vendor blogs / regulator filings / victim statements are preferred as the lead. NVD/MITRE and national CERTs/NCSCs are second-tier primaries — `Additional source:` material — except in the narrow cases where they genuinely *are* the disclosing party (NCSC.ch on a Swiss federal incident, ENISA EUVD on an EU-discovered vuln, KEV before vendor's advisory page is up).
+  - **Multi-CVE — one item, several CVEs.** It is *encouraged* to group related CVEs into one item rather than emit a paragraph per CVE (Ivanti EPMM chain, CERT-FR multi-CVE advisory, research-lab multi-bug audit). The footer carries a comma-separated `CVE:` field and per-CVE breakdown for any field whose value differs (`CVSS: 9.1 / 7.2`, `Auth: pre-auth (CVE-…), admin-required (CVE-…)`).
+
+- **`state/run_log.json` schema made exhaustive** with `prompt_version`, `items_dropped_by_verification`, and explicit population rules for every field. The Ops dashboard renders sub-agent cells as `items (used/attempted src)`, surfaces a `stalled` badge on `returned: false`, and a yellow badge when `fetch_failures` is non-empty — empty fields produce empty dashboard cells. Every field is required every run, no exceptions. `tools/check_brief.py` validates the population.
+
+- **Quality gates** add: Phase 4.5 ran covering both axes; `run_log.json` fully populated; `tools/fetch_source.py` used for CISA + NCSC.ch; `python3 tools/check_brief.py` exits 0.
+
+- **Hard invariants — 12 → 15 entries.** All 12 from v2.27 preserved. New: (10) Phase 4.5 verification sub-agent loop covering URL truth + editorial quality, ≤3 iterations, may spawn ≤3 follow-up research sub-agents per iteration; (11) Phase 5.5 self-check via `tools/check_brief.py`; (14) `tools/fetch_source.py` is the bridge for CISA + NCSC.ch every run; (15) `state/run_log.json` populated every run with the full per-sub-agent allocation block + verification counters.
+
+- **Working-directory layout** adds `tools/check_brief.py` and `site/test_build.py`; clarifies that `tools/fetch_source.py` is mandatory for CISA + NCSC.ch.
+
+### Documentation
+
+- **`docs/verification.md`** — adds a Phase 4.5 section describing the dual-axis verification (truth gate + editorial-quality gate), the 6-item editorial bar, the iterative refinement table, and the 3-iteration / 3-follow-up-sub-agent caps. Quality-gate checklist gains the script + Phase 4.5 entries + multi-CVE breakdown + anti-NVD/CERT-as-primary rule.
+
+- **`docs/workflow.md`** — adds a § 6.5 Phase 4.5 section between Phase 4 and Phase 5; replaces the six-bullet Phase 5.5 description with the 17-check institutionalised script invocation; expands the `state/run_log.json` description to spell out every required field and how the Ops dashboard renders each.
+
+- **`docs/architecture.md`** — adds `tools/check_brief.py` to the components list (with the full check inventory + import-from-`build.py` design); updates the data-flow diagram to show Phase 4.5 (truth + editorial) and the script-driven Phase 5.5 as discrete boxes.
+
+### Hard invariants — 12 → 15
+
+All 12 from v2.27 preserved. Three new entries (Phase 4.5 dual-axis loop, `tools/check_brief.py` gate, `tools/fetch_source.py` mandatory for CISA+NCSC.ch, `run_log.json` populate) make the new dependencies non-removable.
+
+---
+
 ## 2.27 — 2026-05-08 (final-verification sub-agent loop + less-is-more rewrite)
 
 ### Why

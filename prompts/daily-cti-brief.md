@@ -114,6 +114,9 @@ briefs/YYYY-MM-DD.md               # daily output
 briefs/weekly/YYYY-Www.md          # weekly summary output
 docs/                              # workflow + verification policy
 site/taxonomy.yaml                 # controlled vocabulary for metadata footers
+site/test_build.py                 # build-side smoke tests (footer parser + taxonomy + renderer)
+tools/check_brief.py               # institutionalised Phase 5.5 self-check; bundles every gate + test_build.py
+tools/fetch_source.py              # HTTP bridge for sources that 403 the routine's default UA (CISA, NCSC.ch, …)
 work/<run-id>/                     # gitignored intermediate state
 ```
 
@@ -172,16 +175,18 @@ Then append: window length (`window_hours`), category-filtered subset of `source
 
    **SPA dashboards** (e.g. NCSC.ch Cyber Security Hub) are an extreme version: a `WebFetch` on the dashboard URL returns the SPA shell with no content. Identify the underlying JSON API endpoints and fetch each advisory's detail page individually, then cite the canonical SPA detail URL the human would open.
 
-   **`tools/fetch_source.py` — the operator-blessed bridge for sources that block the routine's default User-Agent.** CISA pages, NCSC.ch CSH, CSIRT Italia, Cisco Talos, PRODAFT, Inside IT, UK ICO, and others refuse the routine's `WebFetch` with HTTP 403 even though the same URLs work in any normal browser. Run this script via `Bash` whenever a known-403 host appears:
+   **`tools/fetch_source.py` — the operator-blessed bridge for sources that block the routine's default User-Agent.** CISA pages, NCSC.ch CSH, CSIRT Italia, Cisco Talos, PRODAFT, Inside IT, UK ICO, and others refuse the routine's `WebFetch` with HTTP 403 even though the same URLs work in any normal browser.
+
+   **MANDATORY for CISA + NCSC.ch every run.** Do not even attempt `WebFetch` on `cisa.gov` / `www.cisa.gov` / `ncsc.admin.ch` / `ncsc.ch` first — go straight to `tools/fetch_source.py`. These two sources are reliably 403 on the routine's default UA and are operationally critical (KEV catalog, CH NCSC advisories). Skipping the bridge means missing both. Phase 5.5's `tools/check_brief.py` FAILs the commit if `run_log.json.fetch_failures` lists a 403/429 on a known-403 source id without the bridge having been used.
 
    ```bash
-   python3 tools/fetch_source.py ncsc-csh recent 10        # NCSC.ch listing + full content
+   python3 tools/fetch_source.py ncsc-csh recent 10        # NCSC.ch listing + full content (every run)
    python3 tools/fetch_source.py ncsc-csh post 12542       # one NCSC.ch post
-   python3 tools/fetch_source.py cisa-kev                  # full KEV JSON catalog
+   python3 tools/fetch_source.py cisa-kev                  # full KEV JSON catalog (every run)
    python3 tools/fetch_source.py url <full-URL>            # arbitrary allow-listed host
    ```
 
-   The script enforces a host allow-list and forwards a desktop-Chrome User-Agent. 403 on a CISA / NCSC-CSH / CSIRT-Italia URL is **transport-side** and **never demotes** the source (Phase 5 rule).
+   The script enforces a host allow-list and forwards a desktop-Chrome User-Agent. 403 on a CISA / NCSC-CSH / CSIRT-Italia URL is **transport-side** and **never demotes** the source (Phase 5 rule). Use the bridge for any other allow-listed host the moment its `WebFetch` returns 403.
 
 2. **Pivot from news to primary sources.** When a news article describes someone else's research (BleepingComputer summarising Mandiant; The Record covering CrowdStrike; Heise reporting on a CERT-FR advisory), follow the outbound links until you reach the vendor blog / CERT advisory / research-lab post / regulator filing. Read the primary report in full. The brief is built from the primary; news is at most a `via` reference. Two pivots is normal; three is fine when the trail is real. If you cannot reach the primary after a fair attempt, log it in § 8 as `Coverage gaps: <topic> — primary source <URL> unreachable, citing news as fallback`. Roll-up / digest sources (SANS ISC weekly diaries, Check Point weekly digests, ENISA monthly summaries) are discovery only — open them, follow the links, cite the primaries they reference.
 
@@ -315,14 +320,70 @@ Updates (§ 5) sit **above** the Deep Dive (§ 6) intentionally so a daily reade
 Every individual content block — every Immediate Action, every § 2 item, every Trending Vulnerability, every Research item, every Update, the Deep Dive, every Action Item — ends with **exactly one italic Markdown line** as the **last line** of the block:
 
 ```
-— *Source: [Title](URL) [· Additional source: [Title](URL)] · Tags: tag1, tag2 · Region: region1[, region2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
+— *Source: [Title](URL) [· [Title](URL)]* …additional sources… *[· Tags: tag1, tag2] · Region: region1[, region2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
 ```
 
 Rules:
 - Leading `— *` and trailing `*` are required. Field separator is the middle dot ` · ` (U+00B7, with a space on each side).
-- `Source` is always first and is the **most primary** source you verified.
+- `Source:` opens the source list and is followed by **one or more** `[Title](URL)` blocks separated by ` · `. Every source URL is one the agent fetched in this run and that resolved to content matching the claim.
 - `Tags` and `Region` are **always present**.
-- `Additional source`, `CVE`, `CVSS`, `Vector`, `Auth`, `Status` are present only when applicable. CVE entries always carry `CVE`, `Vector`, `Auth`, `Status`; `CVSS` is `n/a` when not yet assigned.
+- `Additional source`, `CVE`, `CVSS`, `Vector`, `Auth`, `Status` are present only when applicable. CVE-typed entries always carry `CVE`, `Vector`, `Auth`, `Status`; `CVSS` is `n/a` when not yet assigned.
+
+#### Multi-source — primary + corroborating in the same footer
+
+When more than one publisher carries substantive sourcing for an item, list them all. The build supports two equivalent forms:
+
+```
+— *Source: [Vendor PSIRT](url1) · [Vendor research blog](url2) · [Independent analysis](url3) · Tags: …*
+— *Source: [Vendor PSIRT](url1) · Additional source: [Vendor research blog](url2) · Additional source: [Independent analysis](url3) · Tags: …*
+```
+
+Both forms parse to the same structured list of sources. **Prefer the bare-link form** (`Source: [a](u) · [b](u) · [c](u)`) for readability when there are 2–4 sources.
+
+The **first link** in the source list is the **most primary**: vendor PSIRT advisory > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news. Every subsequent link is corroborating — include it because readers want to triangulate.
+
+#### When more than one publisher counts as a "primary" source
+
+It is fine to have **two distinct primary sources** in the same item — the canonical case is:
+
+- A **vendor security advisory** (the disclosing vendor's own page) AND a **vendor research blog** that publishes the technical analysis (often a different team at the same vendor or a third-party research lab that did the discovery).
+- A **vendor advisory** AND a **regulator filing** (e.g. SEC 8-K) when the same disclosure appears on both axes.
+- A **CERT advisory** that is itself the primary disclosing party for its jurisdiction AND a vendor advisory it references.
+
+In these cases the first two `[Title](URL)` blocks are both primaries; subsequent blocks are corroborating.
+
+#### Avoid NVD / national-CERT as the *only* primary
+
+For CVE-typed items, **a vendor PSIRT advisory or vendor research blog almost always exists** — find it and put it first. NVD/MITRE and national CERTs/NCSCs are **second-tier primaries**: they aggregate and curate but rarely disclose. They belong as **`Additional source:` / corroborating links**, not as the lead source.
+
+The narrow exceptions where NVD or a national CERT *is* the right primary:
+- The CVE has been quietly added to KEV / NVD before the vendor's own advisory page was discoverable.
+- The disclosure is a national CERT publication for its own jurisdiction (e.g. an NCSC.ch incident bulletin on a Swiss federal incident, or a CERT-FR breach disclosure for a French agency) where no vendor or research-lab post exists.
+- An ENISA EUVD entry for an EU-discovered vulnerability where the EU body is the disclosing party.
+
+In every other case: pivot from NVD/CERT to the vendor or research lab. Phase 4.5's verifier flags `Source: NVD` / `Source: CERT-FR` as the **only** source on a CVE entry, and Phase 5.5's `tools/check_brief.py` raises a `primary-source-quality` WARN.
+
+#### Multi-CVE — one item, several CVEs
+
+It is **encouraged** to group related CVEs into a single item rather than emit one paragraph per CVE. Examples that should be one item, not three:
+
+- A vendor's monthly Patch Tuesday advisory disclosing a chain (e.g. Ivanti EPMM CVE-2026-5787 → CVE-2026-6973: cert-validation flaw chains to admin RCE).
+- A CERT advisory covering a product family (e.g. CERT-FR CERTFR-2026-AVI-0551 listing 7 GLPI CVEs).
+- A research-lab disclosure of multiple bugs found in a single audit.
+
+For multi-CVE items, the footer carries a comma-separated `CVE:` field and **per-CVE breakdown** for any CVE-specific field that differs:
+
+```
+— *Source: [Vendor advisory](url) · [The Hacker News article](url) · Tags: vulnerabilities, actively-exploited, pre-auth, rce, auth-bypass, cisa-kev · Region: global · CVE: CVE-2026-5787, CVE-2026-6973 · CVSS: 9.1 / 7.2 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available*
+```
+
+Breakdown conventions for fields whose value differs per CVE:
+
+- **CVSS:** `9.1 / 7.2` (slash-separated, in the **same order as the CVEs**), or `9.1 (CVE-2026-5787), 7.2 (CVE-2026-6973)` (explicit) when the order is ambiguous or there are >2 CVEs.
+- **Vector / Auth:** if all CVEs share the same value, write it once. If they differ, use the same `(CVE-…)` notation: `Auth: pre-auth (CVE-2026-5787), admin-required (CVE-2026-6973)`.
+- **Status:** comma-separated list applies to the item as a whole. If a status applies only to one CVE, scope it: `Status: exploited (CVE-2026-6973), patch-available, cisa-kev`.
+
+Phase 5.5's `tools/check_brief.py` validates that multi-CVE items have either a single shared CVSS or per-CVE breakdown.
 
 **Controlled vocabularies live in [`site/taxonomy.yaml`](../site/taxonomy.yaml).** Pick existing values; the build refuses any item using a value not in the taxonomy. If you need a new value, extend the taxonomy in the same commit. The vocab covers:
 - **Tags** (themes + nexus + status flags): `ransomware`, `nation-state`, `espionage`, `hacktivism`, `organized-crime`, `law-enforcement`, `vulnerabilities`, `supply-chain`, `data-breach`, `phishing`, `ddos`, `wiper`, `infostealer`, `botnet`, `cryptocrime`, `insider-threat`, `disinformation`, `ot-ics`, `cloud`, `identity`, `mobile`, `ai-abuse`, `zero-day`, `actively-exploited`, `zero-click`, `pre-auth`, `default-config`, `rce`, `lpe`, `priv-esc`, `auth-bypass`, `dos`, `info-disclosure`, `cisa-kev`, `enisa-critical`, `poc-public`, `patch-available`, `no-patch`, plus nexus tags `china-nexus`, `russia-nexus`, `north-korea-nexus`, `iran-nexus`, `us-nexus`, `eu-nexus`.
@@ -538,80 +599,140 @@ Reproduce only the section headings and structure; do not copy the placeholder t
 
 ---
 
-## Phase 4.5 — Final verification sub-agent (loop until clean)
+## Phase 4.5 — Final verification sub-agent (URL truth + editorial quality, loop until clean)
 
-After Phase 4 has written the brief to disk, **before** state update or commit, the brief is run through an independent verification sub-agent. The verification agent has not seen the research transcript and reads the brief as a hostile reader would: every claim cross-checked against its cited sources, every URL fetched, every link confirmed to point at a specific page that supports the claim.
+After Phase 4 has written the brief to disk, **before** state update or commit, the brief goes through an independent verification sub-agent. The verifier has not seen the research transcript and reads the brief as a hostile, technically-fluent SOC reader would. Two distinct concerns are checked in the same pass:
 
-This is the last gate that catches hallucinated facts and invented URLs before publication. It is **non-negotiable**: do not skip it, do not short-circuit it, do not commit the brief while verification is pending.
+- **Truth gate** — every URL fetched, every claim cross-checked against its linked source, every named entity (CVE / actor / campaign / version / date / number) traced back to a source the verifier could read.
+- **Editorial quality gate** — every item assessed for relevance to a Swiss / EU public-sector SOC, primary-source strength, signal-to-noise, vendor-marketing tells, missed angles. Items the audience does not need are flagged for drop.
+
+This is **non-negotiable**: do not skip it, do not short-circuit it, do not commit the brief while verification is pending. Verification removes bad and irrelevant content; it never prevents the brief from being written (the CRITICAL anti-crash header at the top of this prompt always wins).
 
 ### Spawn template — verification sub-agent
 
-Spawn a single `subagent_type: general-purpose` agent with the prompt below. The verification agent **must not** rewrite the brief — it produces findings only.
+Spawn a single `subagent_type: general-purpose` agent with the prompt below. The verifier **must not** rewrite the brief — it produces findings only.
 
-> *You are a defensive verification agent for a CTI brief that is about to be published. Your role is to find every problem with the brief: hallucinated facts, claims without source backing, fabricated or broken URLs, generic homepages cited as sources, mismatched citations (the linked page does not actually contain the claim).*
+> *You are an independent verification agent for a CTI brief that is about to be published. Your readers are Tier 2/3 incident responders, threat hunters, and detection engineers at a Swiss federal SOC. They are technical and time-poor. They will not forgive padding, generic vendor content, weak sourcing, recycled news, hallucinated URLs, or items that do not matter to a Swiss / European public-sector defender.*
 >
-> *Read the brief at `briefs/YYYY-MM-DD.md` end to end. For every individual claim — every § 2 item, every § 3 CVE, every § 4 research item, every § 5 update, every deep-dive paragraph, every § 7 action item, the TL;DR — do the following:*
+> *Your role is to find every problem with the brief — both **truth defects** (hallucinated facts, broken URLs, claims that the cited source does not actually support) and **editorial defects** (low relevance, weak primary sourcing, signal-to-noise, missed angles). You read only. You never edit the brief.*
 >
-> 1. *Identify the inline source link(s) attached to the claim. Use `WebFetch` to open every URL.*
+> *Read the brief at `briefs/YYYY-MM-DD.md` end to end. The dedup context (last 7 days of briefs + `state/cves_seen.json` + `state/covered_items.json`) and the source-coverage record (`state/run_log.json`) are passed to you separately — use them to assess duplication and missed angles.*
 >
-> 2. *Confirm each URL: (a) resolves successfully (no 404, no DNS failure, no `connection refused`), (b) lands on a specific article / advisory / vendor PSIRT entry / regulator filing / victim statement (NOT a homepage, news category, blog landing, listing index, dashboard), (c) the page text actually supports the claim being cited.*
+> ### Truth checks (per item)
 >
-> 3. *Walk the brief for claims with no inline citation in the same sentence or the immediately surrounding paragraph. Every sentence containing a fact, name, date, version, attribution, technique, CVSS / CVE / KEV claim, or named campaign needs a link.*
+> *For every claim — every TL;DR bullet, every active-threats H3, every trending-vulnerability H3, every research H3, every UPDATE block, every deep-dive paragraph, every action item:*
 >
-> 4. *Cross-check named entities (CVEs, actor groups, campaign clusters, products, victim names, dates) against the linked sources. Flag any that appear in the brief but not in any linked source — those are hallucinated.*
+> 1. *Identify the inline source link(s) attached to the claim. `WebFetch` every URL.*
 >
-> 5. *Spot-check § 4 Trending Vulnerabilities CVE entries against `https://nvd.nist.gov/vuln/detail/<CVE>` if the brief did not already link there.*
+> 2. *Confirm each URL: (a) resolves successfully (no 404, no DNS failure, no `connection refused`), (b) lands on a **specific article / advisory / vendor PSIRT / research-lab post / regulator filing / victim statement / vendor blog** — never a homepage, news category, blog landing, listing index, or dashboard, (c) the page text actually supports the claim being cited.*
 >
-> *Return a structured Markdown report with the following sections, every issue uniquely numbered so the main agent can fix or drop it surgically:*
+> 3. *Walk the brief for claims with no inline citation in the same sentence or surrounding paragraph. Every sentence carrying a fact, name, date, version, attribution, technique, CVSS / CVE / KEV claim, or named campaign needs a link.*
+>
+> 4. *Cross-check named entities (CVEs, actor groups, campaign clusters, products, victim names, dates, version numbers, vendor advisory IDs) against the linked sources. Flag any that appear in the brief but not in any linked source — those are hallucinated.*
+>
+> ### Editorial-quality checks (per item)
+>
+> 5. *Is the item **highly relevant** to a Swiss / EU public-sector SOC right now? CH/EU nexus, public-sector targeting, widely-deployed-tech CVE, transferable defensive lessons, active campaign reaching this region. Items that are interesting in the abstract but operationally irrelevant to this audience are noise — flag for drop.*
+>
+> 6. *Is the **primary source the right kind**? The first source in the footer should be a vendor advisory / research-lab post / vendor blog / regulator filing / victim statement — i.e. **the actual disclosing party**. **NVD/MITRE and national CERTs/NCSCs are second-tier primaries** and should appear as `Additional source:` rather than the lead, unless a vendor advisory or research blog genuinely does not exist for this item. If you see `Source: [NVD — CVE-…](https://nvd.nist.gov/…)` or `Source: [CERT-FR — CERTFR-…](https://www.cert.ssi.gouv.fr/…)` as the **only** source on a CVE entry, flag it: a vendor PSIRT advisory or vendor blog almost certainly exists.*
+>
+> 7. *Vendor-marketing tells — vanity metrics (dwell time, breakout time, YoY %), product-efficacy claims, AI-blogspam patterns (uniform paragraph length, no original sourcing, no named author).*
+>
+> 8. *Fake-news patterns — leak-site claims as fact, sweeping attribution by non-research outfits, Telegram/X-only sourcing, months-old news as new.*
+>
+> 9. *Contradictions between sources cited for the same item — should be surfaced in § Verification Notes, not silently resolved.*
+>
+> 10. *Clarity — is anything under-explained to the point that a Tier 2 responder could not act on it without further research? (Flag as `Needs more research` so the main agent can spawn follow-up sub-agents.)*
+>
+> ### Whole-brief checks
+>
+> 11. *Coverage shape — does the active-threats section lead with CH/EU/public-sector items? Are trending-vulnerabilities inclusion gates honoured (CISA KEV / EUVD-exploited / EUVD-CVSS-9+ / ITW / pre-auth-RCE-with-PoC)? Does the deep dive earn its length, or is it padding?*
+>
+> 12. *Style discipline — zero IOCs, zero vanity metrics, English throughout, no workflow-internal language ("sub-agent", "Phase N", "spawn", etc.) leaking into the publication.*
+>
+> 13. *Missed angles — given the dedup context and the source-coverage record, is there a likely-relevant story the four research sub-agents probably skipped that a senior CTI officer would flag? Suggest one search query the main agent could run.*
+>
+> ### Return format
+>
+> *Return a structured Markdown report with the sections below, every issue uniquely numbered so the main agent can fix / drop / deepen surgically:*
 >
 > ```markdown
 > ## Verification report — briefs/YYYY-MM-DD.md (iteration N)
 >
 > ### Broken / unreachable URLs
-> - F1. § 2, item "..." — URL `https://...` returns 404 (or: redirects to homepage, or: DNS fails).
+> - F1. <section>, item "..." — URL `https://...` returns 404 (or: redirects to homepage, or: DNS fails).
 >
 > ### Generic / oversight URLs (must be replaced with a specific article)
-> - F2. § 3, CVE-... — cites `https://heise.de/news/` (homepage). The actual article URL must replace this, or the item drops.
+> - F2. <section>, CVE-... — cites `https://heise.de/news/` (homepage). The actual article URL must replace this, or the item drops.
 >
 > ### Citation does not support the claim
-> - F3. § 2, item "..." — claim "APT28 active against EU governments" — linked page contains no APT28 attribution; the page covers a different campaign.
+> - F3. <section>, item "..." — claim "APT28 active against EU governments" — linked page contains no APT28 attribution; the page covers a different campaign.
 >
 > ### Unsupported / hallucinated facts
-> - F4. § 2, item "..." — claim "508 EU on-premises instances internet-reachable (Censys/Shodan telemetry)" — none of the linked sources mention this number; appears fabricated or attributed to the wrong source.
+> - F4. <section>, item "..." — claim "508 EU on-premises instances internet-reachable (Censys/Shodan telemetry)" — none of the linked sources mention this number; appears fabricated or attributed to the wrong source.
 >
 > ### Claims missing inline citation
 > - F5. Deep dive, paragraph 4 — sentence "Historical precedent: CVE-2023-35078 was exploited by APT29 within days" has no inline link.
 >
+> ### Strengthen primary source
+> - F6. <section>, CVE-... — only source is `https://nvd.nist.gov/vuln/detail/CVE-…`. The vendor PSIRT advisory at `https://<vendor>/security/CVE-…` (or a research-lab write-up) likely exists; promote it to primary, demote NVD to `Additional source:`.
+>
+> ### Drop (low relevance / off-audience)
+> - F7. <section>, item "..." — globally interesting but no CH/EU/public-sector nexus, no transferable lesson; pure noise for this audience.
+>
+> ### Needs more research (unclear / under-explained)
+> - F8. <section>, item "..." — claim is correct as far as it goes but a Tier 2 responder cannot act without knowing <X>. Suggested follow-up: <specific source / search angle>.
+>
+> ### Surface contradiction
+> - F9. <topic> — source A says X (URL); source B says Y (URL). Brief currently picks A silently.
+>
+> ### Missed angles
+> - F10. <one-line description>: why relevant + suggested search query.
+>
 > ### Editorial / less-is-more flags (advisory, not blocking)
-> - F6. § 2, item "..." — defender takeaway is generic ("apply patches and monitor"); either drop the takeaway or replace with a specific detection / hardening step from a linked source.
+> - F11. <section>, item "..." — defender takeaway is generic ("apply patches and monitor"); either drop the takeaway or replace with a specific detection / hardening step from a linked source.
 >
 > ### Verdict
-> CLEAN | NEEDS_FIXES (count: <N blocking>, <M advisory>)
+> CLEAN | NEEDS_FIXES (truth: <N>, editorial: <M>, advisory: <K>)
 > ```
 
 ### Main-agent loop
 
 1. **Receive the verification report.**
 2. **If verdict is CLEAN** → proceed to Phase 5.
-3. **If verdict is NEEDS_FIXES** — for each blocking finding (Broken URLs, Generic URLs, Mismatched citation, Hallucinated fact, Missing citation), apply one of these remediations in priority order:
-    - **Replace the URL** with a specific article URL fetched fresh now (re-do the primary-source pivot from Phase 1 — `WebFetch` / `WebSearch` until you have a real specific URL on the same publisher or a corroborating one).
-    - **Replace the claim** with a narrower claim the linked source actually supports.
-    - **Drop the claim or the entire item** if neither replacement is achievable inside the wall-clock budget. Items dropped here are logged in § 8 as `verification: <item title> dropped — <reason>`.
-   Apply fixes via `Edit` calls on the brief file; do not rewrite untouched sections. Advisory findings (less-is-more flags) may be addressed if cheap; if not, leave them.
+3. **If verdict is NEEDS_FIXES** — apply remediation per finding type, in priority order:
+
+    | Finding type | Remediation |
+    |---|---|
+    | Broken / unreachable URL | Replace with a specific article URL fetched fresh now (re-do the primary-source pivot from Phase 1 — `WebFetch` / `WebSearch` / `tools/fetch_source.py` until you have a real specific URL on the same publisher or a corroborating one). |
+    | Generic / oversight URL | Same as above. If no specific URL exists after a fair attempt, drop the item. |
+    | Citation does not support claim | Replace the claim with a narrower one the linked source actually supports, or replace the citation with a source that does support the claim. |
+    | Unsupported / hallucinated fact | Drop the fact (and the claim it props up). |
+    | Missing inline citation | Add a citation; if no source can be found, rewrite the sentence to drop the unsourced fact. |
+    | **Strengthen primary source** | Re-pivot via `WebSearch` / `WebFetch` to the vendor PSIRT advisory or vendor research blog. Promote that to first source; demote NVD/CERT to `Additional source:`. |
+    | **Drop** | `Edit` the brief to remove the H3 item entirely. Log the drop in § 8: `verification: <item title> dropped — <reason>`. Remove the matching `appearances[]` entry for today from `state/covered_items.json`. |
+    | **Needs more research** | **Spawn ≤3 follow-up research sub-agents in parallel**, each scoped to one specific question with the suggested source / search angle. Wait for their returns (~5 min wall-clock cap). Re-`Edit` the affected item with the new findings; if no new findings clear the bar, drop the item and log in § 8. |
+    | **Surface contradiction** | Add an explicit § 8 entry: `Contradiction: <topic> — A says X; B says Y. Brief reports <chosen framing> on the basis of <reasoning>.` Don't silently pick a side. |
+    | **Missed angles** | Spawn one targeted research sub-agent if the angle is likely to clear the inclusion gate; else log as `Coverage gap: <angle> — not pursued in this run, candidate for next` in § 8. |
+    | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave. |
+
+   Apply edits via `Edit` calls on the brief file; do not rewrite untouched sections.
+
 4. **Re-spawn a fresh verification sub-agent** against the updated brief (iteration N+1). The new agent must not see the prior verification's findings — it reads the brief cold.
-5. **Loop until verdict CLEAN, with a hard cap of three iterations.** If iteration 3 still returns NEEDS_FIXES, drop the remaining unverifiable items, append a § 8 line `verification: published with N residual findings unresolved after 3 iterations: <one-line summary per>`, and proceed to Phase 5. **Never block the publish for unresolved verification** — the operator-visible CRITICAL header at the top of this prompt always wins over the verification gate; verification removes bad content but never prevents the brief from being written.
+5. **Loop until verdict CLEAN, with a hard cap of three iterations.** If iteration 3 still returns NEEDS_FIXES, drop the remaining unverifiable / off-audience items, append a § 8 line `verification: published with N residual findings unresolved after 3 iterations: <one-line summary per>`, and proceed to Phase 5. **Never block the publish for unresolved verification** — the CRITICAL header at the top of this prompt always wins.
 
 ### Hard rules for this phase
 
 - The verification agent **reads only**; it never writes to the brief or to state files. The main agent owns all edits.
 - Each iteration spawns a **fresh** verification sub-agent — no shared memory between iterations. The agent reads the file from disk each time.
 - Iteration cap is **3**. After three iterations the brief publishes with residual findings noted in § 8.
-- Track verification iterations in the run log (`state/run_log.json` field `verification_iterations: N`, `verification_residual_count: N`).
+- **Follow-up research sub-agents** spawned in response to `Needs more research` / `Missed angles` are capped at **3 per iteration** and have the same ~5-min wall-clock budget as Phase 1.
+- Track verification iterations in the run log: `state/run_log.json` fields `verification_iterations: N`, `verification_residual_count: N`. The Ops dashboard reads these.
 - If the verification sub-agent itself fails (timeout, no return), proceed with publication and note `verification: sub-agent did not return — published without final verification` in § 8.
 
 ### What this phase fixes
 
-This loop catches: invented URLs the writer wrote without fetching; URLs that 404 between research and compose; advisory IDs whose canonical URL the writer guessed wrong; claims attached to the wrong source link; named entities (CVEs, actors, campaigns) that drifted into the prose without source support; aggregate numbers ("508 instances") that are not in any linked source; deep-dive paragraphs whose technical detail goes beyond what the linked source actually states. Anything the verification agent flags is, by definition, content the operator could not verify either — fix or drop.
+This loop catches: invented URLs the writer wrote without fetching; URLs that 404 between research and compose; advisory IDs whose canonical URL the writer guessed wrong; claims attached to the wrong source link; named entities (CVEs, actors, campaigns) that drifted into the prose without source support; aggregate numbers ("508 instances") that are not in any linked source; deep-dive paragraphs whose technical detail goes beyond what the linked source actually states; **plus** items that are mechanically clean but editorially weak — low relevance, NVD/CERT cited as sole primary, vendor marketing dressed as research, generic defender takeaways, missed angles a senior reader would expect. Anything the verification agent flags is, by definition, content the operator could not verify either — fix, deepen, or drop.
 
 ---
 
@@ -668,52 +789,98 @@ State transitions (all autonomous):
 
 If a deep dive was selected this run, append `{ "date": "YYYY-MM-DD", "topic": "Short title", "category": "<category from PD-3 list>" }`. Cap the file at the most recent 30 entries. If no deep dive, do not append.
 
-### `state/run_log.json`
+### `state/run_log.json` — feeds the Ops dashboard at `/ops/`
 
-Append one record per run, capped at the most recent 90 days:
+The Operations dashboard renders this file directly: per-run sub-agent allocation, fetch failures, items published, deep-dive slug, verification-loop counters. **A sparse run_log record produces a sparse Ops dashboard** — empty `sub_agents` blocks render as `—` cells; missing `fetch_failures` hides source-rotation health from the operator; missing `items_published` makes the run look like it didn't happen.
+
+Append one record per run, then trim to the most recent 90 entries. **Every key is required every run, no exceptions:**
 
 ```jsonc
 {
   "date": "YYYY-MM-DD",
   "model": "claude-sonnet-4-6 | claude-opus-4-7 | claude-haiku-4-5 | other",
+  "prompt_version": "vN.M",                                  // matches the brief's footer badge
   "sub_agents": {
     "S1": { "sources_attempted": ["id", ...], "sources_used": ["id", ...], "items_returned": N, "returned": true },
-    "S2": { ... }, "S3": { ... }, "S4": { ... }
+    "S2": { "sources_attempted": [...],       "sources_used": [...],       "items_returned": N, "returned": true },
+    "S3": { "sources_attempted": [...],       "sources_used": [...],       "items_returned": N, "returned": true },
+    "S4": { "sources_attempted": [...],       "sources_used": [...],       "items_returned": N, "returned": true }
   },
-  "fetch_failures": [ { "id": "talos", "code": "403" }, ... ],
+  "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
   "duration_seconds": 0,
-  "items_published": N,
+  "items_published": N,                                       // total H3 items in the brief
+  "items_dropped_by_verification": N,                         // from Phase 4.5 Drop / hallucination drops
   "deep_dive": "topic-slug or null",
-  "verification_iterations": N,
-  "verification_residual_count": N
+  "verification_iterations": N,                               // Phase 4.5 rounds run (1 if first verifier returned CLEAN; ≤3)
+  "verification_residual_count": N                            // findings left unresolved after the iteration cap
 }
 ```
 
-`sources_attempted` lists IDs each sub-agent's spawn message named explicitly; `sources_used` is the subset whose content actually contributed. `verification_iterations` is the number of Phase 4.5 verification rounds run (1 if the first verifier returned CLEAN; up to 3 if fixes were applied between rounds). `verification_residual_count` is the number of issues left unresolved after the iteration cap (0 on a clean publish). The site renders this as the Operations dashboard at `/ops/`.
+**Population rules — do not skip any:**
+
+- `sources_attempted` for each sub-agent: every source id you put in that sub-agent's spawn message (i.e. every `sources.json` entry you handed it). **Do not write `[]`** unless the sub-agent was explicitly skipped.
+- `sources_used` for each sub-agent: the subset whose content actually contributed at least one citation to the brief. The Ops dashboard renders `items (used/attempted src)` — both numbers must reflect reality.
+- `returned: false`: only when the sub-agent stalled past its 10-min budget. Stalled sub-agents render as a `stalled` badge so the operator can see coverage gaps.
+- `fetch_failures`: every transport error you encountered, with the source id and HTTP code. Empty array `[]` when there were none — the dashboard renders `0` for an empty list and a yellow badge for non-empty.
+- `prompt_version`: read from the most recent heading in `prompts/CHANGELOG.md`. The dashboard joins this against the brief's footer to surface prompt-version drift.
+- `verification_iterations`: 1 if the first Phase 4.5 verifier returned CLEAN; up to 3 if fixes were applied between rounds.
+- `verification_residual_count`: 0 on a clean publish; > 0 only when the iteration cap was reached with unresolved findings.
+
+**Sparse-record consequence:** the dashboard's "Failures", "Items", and per-sub-agent cells all read directly from these fields. If any cell on `/ops/` reads `—` for today's run, Phase 5 bookkeeping was skipped — Phase 5.5's self-check script catches this and FAILs the commit.
 
 ---
 
-## Phase 5.5 — Self-check gate (sequential, after all of Phase 5)
+## Phase 5.5 — Self-check gate (institutionalised script)
 
-Before commit, run a short consistency check. **Abort the commit on any failure** — emit `state: drift — <reason>` and stop.
+Phase 5.5 is **a single command** — every consistency check the prompt previously listed inline is bundled inside [`tools/check_brief.py`](../tools/check_brief.py), version-controlled in this repo. Run it after Phase 5, read the output, fix every `FAIL` it reports, and re-run until the exit code is 0. Only the agent (you) can fix the underlying drift; the script just reports it.
 
-1. **State JSON parses cleanly.**
-   ```bash
-   python3 -c "import json; [json.load(open(f)) for f in ['state/covered_items.json','state/cves_seen.json','sources/sources.json','state/deep_dive_history.json','state/run_log.json']]" || echo "drift: state file fails to parse"
-   ```
-2. **Every CVE in the brief is in `state/cves_seen.json`.**
-   ```bash
-   grep -oE 'CVE-[0-9]{4}-[0-9]{4,7}' briefs/YYYY-MM-DD.md | sort -u > /tmp/brief_cves
-   python3 -c "import json; print('\n'.join(c['id'] for c in json.load(open('state/cves_seen.json'))['cves']))" | sort -u > /tmp/seen_cves
-   missing=$(comm -23 /tmp/brief_cves /tmp/seen_cves)
-   if [ -n "$missing" ]; then echo "drift: CVEs in brief missing from cves_seen.json: $missing"; fi
-   ```
-3. **Every H3 item in §§ 2–4 has a matching `appearance` for today in `covered_items.json`** (items in §§ 1, 5, 6, 7, 8 are not required to be there). Heuristic: count H3 in §§ 2–4; count records in `covered_items.json` whose `appearances[].date == today` and `section in {active_threats, trending_vulns, research}`. Differ by more than 1 → surface `drift: covered_items.json is stale relative to brief sections 2–4` (signal, not hard fail).
-4. **Every § 5 UPDATE block carries at least one inline `[label](url)` citation.** Extract § 5, split on `> **UPDATE` boundaries, verify each non-empty UPDATE paragraph contains at least one `[…](http…)` link. UPDATE without a citation is a PD-2 violation. **Abort the commit** with `drift: § 5 UPDATE without inline citation: <quoted UPDATE preamble>`. Re-run the Edit to add the missing source link before commit.
-5. **Every H3 item in §§ 1, 2, 3, 4, 5, 6, 7 carries a v2 metadata footer** (last non-empty line of the item matching `^\s*[—-]\s*\*Source:\s*.+\*\s*$`). § 5 UPDATE blockquotes carry the footer indented with `> ` inside the blockquote. Missing or malformed footer is a build failure — abort and re-Edit.
-6. **Every footer's tags / regions / vectors / auth / statuses are values from `site/taxonomy.yaml`.** The site build runs the same check and aborts on any unknown value.
+```bash
+python3 tools/check_brief.py
+```
 
-If all checks pass, proceed to Phase 6.
+(Optional: `python3 tools/check_brief.py 2026-05-08` to re-run against a specific brief.)
+
+The script bundles every Phase 5.5 mechanical check **plus** the build-side smoke tests (`site/test_build.py`):
+
+1. **State JSON parses** — every file in `state/` and `sources/sources.json` parses cleanly.
+2. **Taxonomy loads** — `site/taxonomy.yaml` parses with every required key.
+3. **Brief structure** — `active-threats`, `trending-vulnerabilities`, `research` sections are present and either carry ≥1 H3 item *or* an explicit `intentionally left empty` / `no qualifying items in window` stub.
+4. **AI-content notice** present at the top of the brief.
+5. **IOC heuristic scan** — SHA-256/SHA-1/MD5 hashes and routable IPv4 addresses (with version-string false-positive suppression). Hits are FAIL — confirm before publishing.
+6. **CVE sync** — every `CVE-YYYY-NNNNN` in the brief is in `state/cves_seen.json`.
+7. **UPDATE citations** — every UPDATE block carries at least one inline `[label](url)`.
+8. **Footer presence** — every H3 in `immediate-actions / active-threats / trending-vulnerabilities / research / updates / deep-dive / action-items` ends with a v2 metadata footer.
+9. **Footer fields** — every footer carries Source (≥1 link), Tags, and Region. CVE-typed entries in `trending-vulnerabilities` additionally carry CVE / Vector / Auth / Status.
+10. **Footer taxonomy** — every Tag / Region / Sector / Vector / Auth / Status value is in `site/taxonomy.yaml`.
+11. **Multi-CVE hygiene** — when an item lists multiple CVEs, CVSS must either be a single shared value or carry per-CVE breakdown (`9.1 / 7.2` or `9.1 (CVE-2026-5787), 7.2 (CVE-2026-6973)`).
+12. **Primary-source quality** (WARN) — flags items whose only source is NVD/MITRE or a national CERT/NCSC. Editorial rule: vendor advisories / research blogs / regulator filings / victim statements are preferred as the primary; CERT/NVD belong as additional sources.
+13. **`tools/fetch_source.py` for known-403 hosts** — when the brief cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids that wasn't mitigated via the Python bridge, the script FAILs.
+14. **`covered_items.json` appearances** — H3 count in core sections matches `appearances[].date == today` count within tolerance 1 (heuristic; warns).
+15. **`run_log.json` fully populated for today** — every key the Ops dashboard renders (`sub_agents.{S1..S4}.{sources_attempted, sources_used, items_returned, returned}`, `fetch_failures`, `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count`).
+16. **`sources/sources.json` bookkeeping** — at least one source has `last_successful_fetch == today` (else Phase 5 source bookkeeping was skipped).
+17. **`site/test_build.py`** — build-side smoke tests pass (footer parser round-trip, taxonomy validation, Markdown renderer, URL allowlist).
+
+**How to fix common FAILs:**
+
+| FAIL | Fix |
+|---|---|
+| `cve-sync: missing from cves_seen.json: [...]` | Append the listed CVE entries under § Phase 5 / `state/cves_seen.json` (historical-context CVEs and deferred CVEs count too — anything with a `CVE-…` token in the brief). |
+| `footer-presence: items without v2 footer` | Re-`Edit` the affected H3 to append a `— *Source: [Title](URL) · Tags: … · Region: …*` line. |
+| `run-log-fields: ... missing keys` | Rewrite today's record in `state/run_log.json` to match the v2.28 schema (see Phase 5 below — `sub_agents`, `fetch_failures`, `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count` are all required). |
+| `run-log-subagents: sub-agent records incomplete` | Each of S1, S2, S3, S4 must have `{sources_attempted: [...], sources_used: [...], items_returned: N, returned: true|false}`. Empty arrays are fine on a stalled sub-agent (`returned: false`). |
+| `sources-touched: no source has last_successful_fetch == today` | Update `last_successful_fetch` on every source you actually fetched today. |
+| `footer-taxonomy: unknown ...` | Either correct the footer or extend `site/taxonomy.yaml` in the same commit. |
+| `fetch-source-403: 403/429 on known-403 hosts not mitigated` | Re-run the affected URL via `python3 tools/fetch_source.py …` and update the source bookkeeping. |
+| `multi-cve-cvss: N CVEs but single CVSS` | Either confirm both CVEs share that CVSS (single value is fine) or write per-CVE: `CVSS: 9.1 / 7.2` or `CVSS: 9.1 (CVE-…), 7.2 (CVE-…)`. |
+
+**WARNs are not blocking** — they are editorial signal. Note them in § 8 and consider acting on them. Specifically:
+
+- `primary-source-quality` WARNs name items whose first source is NVD or a CERT/NCSC. Re-pivot to the vendor advisory / research-lab post / vendor blog and put NVD or the CERT as `Additional source:` instead.
+- `covered-items` WARNs surface `covered_items.json` drift relative to the brief — the next run rebuilds from the brief, so this is observability, not a hard block.
+
+A non-zero exit aborts the commit. Do not push a brief whose self-check failed. The script is read-only by design — drift is what *you* fix; the script just surfaces it. Maintaining `tools/check_brief.py` is part of the agent's self-evolution authority — when a new check would catch a class of drift slipping through, add it in the same run as the brief.
+
+If `tools/check_brief.py` itself fails to start (`SystemExit 2`, import error, missing taxonomy), proceed to Phase 6 anyway and log the script-level error in § 8 — never let tooling block the brief. The CRITICAL anti-crash header at the top of this prompt always wins.
 
 ---
 
@@ -784,7 +951,11 @@ fi
 - [ ] § 8 lists drops, single-source items, contradictions, sub-agents that didn't return, reduced-confidence items, and parseable `Coverage gaps:`.
 - [ ] No content from training data.
 - [ ] **Phase 4.5 verification ran**, the final verification sub-agent returned `CLEAN` (or three iterations were exhausted with residuals logged in § 8); `verification_iterations` and `verification_residual_count` are set in `state/run_log.json`.
+- [ ] Verification covered **both** axes — URL truth (every link fetched, every claim grounded) **and** editorial quality (relevance to a Swiss / EU public-sector SOC, NVD/CERT not cited as sole primary, no padding).
 - [ ] **Less is more applied** — every item passes the daily relevance bar; sections without qualifying content carry the explicit `*intentionally left empty*` stub (except § 1, which is omitted entirely).
+- [ ] **`run_log.json` record for today is fully populated** — model, prompt_version, every sub-agent's `sources_attempted` / `sources_used` / `items_returned` / `returned`, `fetch_failures` (list, may be empty), `items_published`, `deep_dive`, `verification_iterations`, `verification_residual_count`. Empty fields produce empty Ops dashboard cells.
+- [ ] **`tools/fetch_source.py` was used for CISA + NCSC.ch** every run (KEV catalog + NCSC-CSH listing); `fetch_failures` does not contain unmitigated 403/429 on these source ids.
+- [ ] **`python3 tools/check_brief.py` exits 0** — no FAILs (WARNs are tolerated and logged).
 - [ ] **The brief file exists at `briefs/YYYY-MM-DD.md`** — even on a quiet day, even with sub-agent failures.
 
 ---
@@ -817,9 +988,12 @@ This prompt is committed to the same repository it operates on. **The agent has 
 7. Always produce a brief; never block on a single sub-agent.
 8. No workflow-internal language in the brief itself.
 9. The two-stage publishing chain (direct push to `main`, fallback to feature branch + auto-merge Action).
-10. Phase 5.5 self-check gate before commit.
-11. Per-item metadata footer using taxonomy values from `site/taxonomy.yaml`.
-12. Strict CSP and vendored-library SHA-256 integrity check in the build (see `site/build.py`).
+10. Phase 4.5 verification sub-agent loop (URL truth + editorial quality, ≤3 iterations, may spawn ≤3 follow-up research sub-agents per iteration).
+11. Phase 5.5 self-check gate via `python3 tools/check_brief.py` (exits 0 — no FAILs) before commit.
+12. Per-item metadata footer using taxonomy values from `site/taxonomy.yaml`.
+13. Strict CSP and vendored-library SHA-256 integrity check in the build (see `site/build.py`).
+14. `tools/fetch_source.py` is the bridge for CISA + NCSC.ch every run; never let 403/429 on these hosts go un-mitigated.
+15. `state/run_log.json` populated every run with the full per-sub-agent allocation block + verification counters — the Ops dashboard depends on it.
 
 ### Encouraged self-edits
 

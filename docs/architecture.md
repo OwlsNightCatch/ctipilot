@@ -26,8 +26,10 @@ debugging an unexpected commit or onboarding a new operator, start here.
          │                           └ run_log.json                 │
          │                          sources/                        │
          │  briefs/                  └ sources.json                 │
-         │   ├ YYYY-MM-DD.md                                        │
-         │   └ weekly/YYYY-Www.md   docs/                           │
+         │   ├ YYYY-MM-DD.md        tools/                          │
+         │   └ weekly/YYYY-Www.md    ├ check_brief.py (Phase 5.5)   │
+         │                           └ fetch_source.py              │
+         │                          docs/                           │
          │                          ├ workflow.md                   │
          │                          ├ verification.md               │
          │                          ├ routine-setup.md              │
@@ -129,10 +131,24 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   User-Agent. Solves the recurring 403 / 302-to-login that the routine
   container hits on a handful of high-signal publishers (CISA pages, the
   Swiss NCSC Cyber Security Hub) where the upstream WAF is filtering
-  the agent's default UA. Read-only by design: no auth, no JS execution,
-  no third-party deps, host allow-list enforced. Surfaced to the agent
-  in the daily prompt's Phase 1 research-methodology section as the
-  documented fallback whenever a `WebFetch` comes back blocked.
+  the agent's default UA. **Mandatory every run for CISA + NCSC.ch** —
+  do not even attempt `WebFetch` on those hosts; go straight to the
+  bridge. Read-only by design: no auth, no JS execution, no third-party
+  deps, host allow-list enforced.
+- [`tools/check_brief.py`](../tools/check_brief.py) — the institutionalised
+  Phase 5.5 self-check gate. Stdlib-only Python script that bundles every
+  pre-commit consistency check (state JSON parses, CVE sync, H3 footer
+  presence and field completeness, taxonomy validation, UPDATE
+  citations, multi-CVE / multi-source / primary-source-quality checks,
+  `tools/fetch_source.py`-for-CISA/NCSC.ch enforcement,
+  `covered_items.json` appearance heuristic, `run_log.json`
+  Ops-dashboard population, `sources.json` last-fetched bookkeeping,
+  IOC heuristic scan with version-string suppression) **plus** runs the
+  build-side smoke tests in `site/test_build.py`. Imports the footer
+  parser + taxonomy loader from `site/build.py` so script and build agree
+  on parsing rules. Read-only — the agent fixes drift, the script
+  reports it. Non-zero exit aborts the commit. Maintained as part of
+  the agent's self-evolution authority.
 
 ### `docs/` — operator-facing documentation
 
@@ -222,21 +238,58 @@ refuses any post-cut-over item using a value not in this file.
  │ (with prompt-version badge)  │         │
  └──────────┬───────────────────┘         │
             ▼                             │
+ ┌──────────────────────────────┐         │
+ │ Phase 4.5 — verification     │         │
+ │ sub-agent loop (≤3 iters):   │         │
+ │  truth gate                  │         │
+ │   ─ every URL fetched        │         │
+ │   ─ every claim grounded     │         │
+ │  editorial-quality gate      │         │
+ │   ─ relevance to CH/EU SOC   │         │
+ │   ─ vendor advisory ≻ NVD/   │         │
+ │     CERT as primary          │         │
+ │   ─ drop low-relevance       │         │
+ │   ─ deepen unclear items     │         │
+ │     (≤3 follow-up subagents) │         │
+ │   ─ surface contradictions   │         │
+ │   ─ pursue missed angles     │         │
+ │ ship at iter cap; residuals  │         │
+ │ logged in § Verification     │         │
+ └──────────┬───────────────────┘         │
+            ▼                             │
  ┌──────────────────────────────────────────────────────────────┐
  │ Update state/covered_items.json, state/cves_seen.json,       │
- │ state/deep_dive_history.json, state/run_log.json,            │
- │ sources/sources.json (last-seen, demotions, candidates)      │
+ │ state/deep_dive_history.json, state/run_log.json (full       │
+ │ sub-agent allocation + fetch_failures + verification_         │
+ │ iterations + verification_residual_count — Ops dashboard      │
+ │ depends on this), sources/sources.json (last-seen, demotions, │
+ │ candidates)                                                  │
  └──────────┬───────────────────────────────────────────────────┘
             ▼
  ┌──────────────────────────────┐
- │ Phase 5.5 — self-check gate  │  ─ JSON parses
- │                              │  ─ every brief CVE is in cves_seen
- │                              │  ─ every § 2–4 item has appearance
- │                              │    today in covered_items
- │                              │  ─ every § 5 UPDATE has an inline cite
- │                              │  ─ every H3 in §§ 1–7 has a v2 footer
- │                              │  ─ every footer value is in taxonomy
- │  drift → abort commit;       │
+ │ Phase 5.5 — self-check gate  │  python3 tools/check_brief.py
+ │ (institutionalised script):  │   ─ state JSON parses
+ │                              │   ─ every brief CVE in cves_seen
+ │                              │   ─ core sections vs covered appear-
+ │                              │     ances heuristic                  
+ │                              │   ─ every UPDATE has inline cite     
+ │                              │   ─ every H3 has a v2 footer         
+ │                              │     (Source ≥1 link + Tags + Region) 
+ │                              │   ─ CVE entries carry CVE / Vector / 
+ │                              │     Auth / Status                    
+ │                              │   ─ multi-CVE: shared CVSS or per-   
+ │                              │     CVE breakdown                    
+ │                              │   ─ primary-source quality (NVD /    
+ │                              │     CERT as sole primary → WARN)     
+ │                              │   ─ tools/fetch_source.py used for   
+ │                              │     CISA + NCSC.ch when 403 hit      
+ │                              │   ─ run_log.json today fully         
+ │                              │     populated (Ops dashboard)        
+ │                              │   ─ ≥1 source fetched today          
+ │                              │   ─ heuristic IOC scan               
+ │                              │   ─ taxonomy validation              
+ │                              │   ─ site/test_build.py passes        
+ │  exit != 0 → abort commit;   │
  │  brief stays on disk; next   │
  │  run rebuilds state from it  │
  └──────────┬───────────────────┘
