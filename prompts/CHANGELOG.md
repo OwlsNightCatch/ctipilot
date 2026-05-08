@@ -4,6 +4,72 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.31 — 2026-05-08 (neutralise vendor / product / actor / CVE biases in worked examples)
+
+### Why
+Operator audit of `prompts/daily-cti-brief.md` and `prompts/weekly-summary.md` found that worked examples and illustrative fragments throughout both prompts named specific vendors, products, actor clusters, advisory IDs, and CVE IDs. Earlier versions used these as concrete pedagogy ("a freshly-disclosed pre-auth RCE on Citrix NetScaler / Ivanti Connect Secure / Fortinet SSL-VPN", "named campaigns / clusters when available (`UNC5337`, `Storm-2077`, `CL-STA-1132`, `RomCom`, `Akira`, `Fog`)", "Ivanti EPMM CVE-2026-5787 → CVE-2026-6973"). The same pattern appeared in the discovery-trace examples (named Ivanti EPMM URLs verbatim), the URL-pattern do/don't table (named Microsoft / Palo Alto / Ivanti vendor PSIRT roots as the "good" example), the news-to-primary pivot guidance (BleepingComputer / Mandiant / CrowdStrike / Heise / CERT-FR), the Phase 4.5 verifier's example findings (`APT28 active against EU governments`, `CVE-2023-35078 was exploited by APT29`), and the worked-good § 2 fragment (Google Chrome cookie paths + Cloudflare Workers DoH resolver).
+
+These specifics created two distinct biases in the agent:
+
+1. **Topic bias toward the named vendors / products / actors / CVEs.** When a prompt example names "Ivanti EPMM CVE-2026-6973", the agent is more likely to over-cover Ivanti EPMM stories and CVEs in that ID neighbourhood — even when Phase 1 sub-agents surface a more relevant story elsewhere.
+2. **Anchor bias for nexus tags.** Footer template examples consistently used `china-nexus`. Without intent, this biased the rendered footers' nexus tag toward China-attributed activity when other nexus tags (or no nexus tag) was the correct call.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+Worked examples rewritten as **structural pattern descriptions** rather than topic picks. The pedagogical value is preserved (the agent still sees what the example is teaching) but the names that biased topic selection are replaced with placeholders:
+
+- **Audience description.** Removed the named research-lab list (Mandiant / GTIG / Volexity / Talos / Unit 42 / Project Zero) and the explicit red-team-tooling roll-call (BloodHound / Mythic / Sliver / KrbRelayUp / etc.). Replaced with a description of the *technique classes* the audience is fluent in — offensive-tooling terminology, identity-protocol abuse (Kerberos / OAuth / SAML), endpoint-evasion classes, kernel-callback-level techniques.
+- **PD-1 background-context example.** "APT28 is attributed to GRU Unit 26165" → generic "actor-to-government-unit attributions, infrastructure-to-actor mappings, multi-year campaign histories".
+- **PD-1 URL-construction example.** "Securelist post on Amazon SES BEC must live at securelist.com/amazon-ses-bec-campaign-2026/" → generic "inferring that a research lab's post about a given topic + year *must* live at `https://<lab-domain>/<topic-slug>-<year>/`".
+- **PD-8 long-running-campaign examples.** "Ivanti waves, Salt Typhoon, ransomware crew turnovers" → generic shape descriptions ("sustained edge-device exploitation waves against any vendor's product family, long-running named-cluster operations regardless of nexus, ransomware-affiliate turnovers and rebrands").
+- **PD-9 annual-reports list.** Removed the enumerated publisher list (Mandiant M-Trends, CrowdStrike Global Threat Report, Verizon DBIR, Microsoft Digital Defense, IBM X-Force, Truesec TIR, Dragos OT Year in Review, Cloudflare Cloudforce One). Replaced with a publisher-agnostic class definition.
+- **Phase 1 sub-agent template — discovery trace example.** The "Ivanti EPMM CVE first surfaced via the French national CERT and pivoted to Ivanti's PSIRT" example is now a generic "vulnerability in some enterprise edge product first surfaces via a national CERT advisory and the agent pivots to the affected vendor's own PSIRT bulletin" with `<placeholder>` URLs.
+- **Phase 1 sub-agent template — URL-construction example.** "the advisory ID is `CERTFR-2026-AVI-0551`…" → "because an advisory ID has a known format, its detail page must live at a derivable path on the issuing CERT's site".
+- **Discovery trace examples in sub-agent return format section** (lines 245–247). The three concrete trace examples (Ivanti / Heise → Spiegel / search → BleepingComputer → CCB Belgium → Ivanti) are now structural patterns with `<source-id>` and `<full URL fetched>` placeholders.
+- **News-to-primary pivot examples** (line 195). "BleepingComputer summarising Mandiant; The Record covering CrowdStrike; Heise reporting on a CERT-FR advisory" → generic "a security-news publisher summarising a vendor research lab; a regional tech outlet relaying a national-CERT advisory; a wire service rewriting a vendor PSIRT post".
+- **Forbidden-Source URL examples** (line 207). The named publisher URLs (heise.de, nos.nl, securelist.com, dragos.com, cert.ssi.gouv.fr, abw.gov.pl) are replaced with `<news-site>/news/` / `<lab-domain>/year-in-review/` / `<cert-domain>/advisories/` / `<gov-domain>/cybersecurity/` pattern descriptions.
+- **Mandatory-rules pivot example.** "→ Ivanti PSIRT → primary" → "→ <vendor> PSIRT → primary".
+- **Hard-blocked URL patterns table** (line 389). The "Good — what to use instead" column previously named `msrc.microsoft.com/update-guide/...`, `security.paloaltonetworks.com/CVE-…`, `www.ivanti.com/blog/…`. Replaced with publisher-agnostic guidance ("the disclosing vendor's PSIRT advisory page for the CVE — pivot to whichever one actually owns the disclosure"). The "Bad" column also genericised (no longer lists specific publisher domains).
+- **Phase 5.5 fabricated-URL examples.** Removed `https://securelist.com/amazon-ses-bec-campaign-2026/` and `https://www.deepinstinct.com/blog/muddywater-2026` — replaced with a description of the failure mode ("URLs the agent constructed by guessing a slug from the topic + year rather than fetching a real page").
+- **Phase 4.5 verifier flagging language.** "`Source: CERT-FR` as the **only** source" → "any single national-CERT URL as the **only** source on a CVE-typed item".
+- **Multi-CVE chain examples** (lines 410–417, 422–424). "Ivanti EPMM CVE-2026-5787 → CVE-2026-6973: cert-validation flaw chains to admin RCE" / "CERT-FR CERTFR-2026-AVI-0551 listing 7 GLPI CVEs" → generic shapes ("a vendor's monthly patch advisory disclosing a chain where one CVE prerequisites another", "a national-CERT advisory grouping multiple CVEs in a single product family"). All `CVE-2026-5787` / `CVE-2026-6973` IDs in the worked footer / breakdown examples replaced with `CVE-YYYY-NNNNN` / `CVE-YYYY-MMMMM`.
+- **Section template CVE placeholders** (lines 562, 576, 580, 614). `CVE-2026-XXXXX` (which still anchored the agent to 2026-era CVE IDs) → `CVE-YYYY-NNNNN` (the standard placeholder convention used elsewhere in the prompt).
+- **§ 1 Immediate Actions examples** (line 456). "freshly-disclosed pre-auth RCE on Citrix NetScaler / Ivanti Connect Secure / Fortinet SSL-VPN" → "freshly-disclosed pre-auth RCE on a widely-deployed internet-exposed enterprise edge appliance class (any vendor)".
+- **Technical-depth attack-surface examples** (line 486). The named-product list (`wp-login.php`, `nginx-quic`, Citrix NetScaler AAA virtual server, AD `MS-RPRN`, `dsamain.exe`, SAP `Visual Composer` MetaEditor servlet) → a publisher-agnostic enumeration of *types* of attack surface ("a specific PHP page on a CMS, a worker process inside a web server, an authentication virtual server inside an edge appliance, an RPC interface inside an OS service, an LDAP listener daemon, a specific servlet inside an enterprise application"). The rule "Use whatever the source actually states — never substitute generic phrasing" is preserved.
+- **Named-cluster examples** (line 490). The literal cluster IDs `UNC5337`, `Storm-2077`, `CL-STA-1132`, `RomCom`, `Akira`, `Fog` → publisher-agnostic naming-format hints (`UNC####`-style, `Storm-####`-style, `TA####`-style, `APT##`-style, `CL-###-####`-style).
+- **Detection / EDR product names** (line 491). "Defender for Identity / Falcon Identity Protection alert names, Velociraptor / Kape collection targets" → "identity-protection / EDR alert-name patterns, DFIR collection-target categories". Standard log-source / event-ID references (Sysmon EID 1, 4624 / 4663 / 4769, S4U2Self, ntds.dit, etc.) are kept — those are protocol- and OS-level primitives, not vendor topic bias.
+- **Stack-corroborating-primaries example** (line 519). "Mandiant blog + CISA joint advisory + Microsoft Threat Intel post" → "an independent research lab's blog, a government joint cybersecurity advisory, and a major-vendor threat-intel post".
+- **Reference template footer examples** (lines 572, 608). Default `china-nexus` tag in the worked § 2 and Deep Dive footers → `<nexus-tag-from-taxonomy-if-applicable>`. The taxonomy still defines the full nexus-tag list (`china-nexus`, `russia-nexus`, `north-korea-nexus`, `iran-nexus`, `us-nexus`, `eu-nexus`); the change just stops biasing the *example* toward one specific nexus.
+- **Phase 4.5 verifier example findings.** "Source: [NVD — CVE-…] / [CERT-FR — CERTFR-…]" → "an NVD/MITRE/cve.org per-CVE page or a national-CERT advisory page". `https://heise.de/news/` → "a homepage / category landing (no article slug)". "APT28 active against EU governments" → "<named actor> active against <victim class>". "508 EU on-premises instances internet-reachable (Censys/Shodan telemetry)" → "<specific aggregate number> on-premises instances internet-reachable (<vendor> telemetry)". "CVE-2023-35078 was exploited by APT29 within days" → "<CVE ID> was exploited by <named actor> within days".
+- **Worked-good § 2 fragment** (line 496). The supply-chain example previously named `Google Chrome` cookie paths verbatim and a `Cloudflare-Workers-hosted resolver`. Replaced with publisher-agnostic phrasing ("each browser's per-profile cookie store on disk", "an attacker-operated edge-serverless resolver"). The fictional `@org/x-cli` package, the version range, the OS-intrinsic execution methods (`osascript`, `powershell.exe -enc`), the MITRE technique mapping, and the detection / hardening guidance are kept — those are pedagogical, not topic bias. Date in the inline citation neutralised to `YYYY-MM-DD`.
+- **Phase 5.5 blocked-source-pattern enumeration** (line 896). The named-publisher domain list (heise.de variants, nos.nl variants, cert.ssi.gouv.fr, dragos.com, abw.gov.pl) replaced with shape descriptions; the **full pattern list with concrete domain examples drawn from sources in `sources.json`** continues to live at the top of `tools/check_brief.py`. The script — which the operator owns and edits to track real source-rotation patterns — is the right place for concrete domain enumeration; the prompt is the wrong place because every domain it names becomes an anchor.
+- **Phase 5.5 "How to fix" table example** (line 918). The specific Heise article URL example replaced with a structural description.
+
+The bridge-fetcher operational guidance (Phase 1 — `tools/fetch_source.py` with the explicit `cisa.gov` / `ncsc.admin.ch` / `acn.gov.it` / `ico.org.uk` / `inside-it.ch` / `prodaft.com` / `talos` host enumeration) is **kept verbatim** — those are operational facts about which specific source IDs in `sources.json` need the bridge for HTTP 403 reasons. They tell the agent *how to fetch these sources*, not *what to write about*. Replacing them with placeholders would break the bridge-mandate.
+
+The national-CERT carve-out enumeration in PD-5 (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL) is also kept — that list is the operational allow-list for the single-source verification carve-out, not topic guidance.
+
+The CVE primary-source order (vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator) is kept — it's an operational priority order for the agent to follow when selecting primaries, not a topic-selection bias.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+Same rewrites applied where the weekly carries equivalent worked examples:
+
+- **Audience description.** Same de-naming as the daily.
+- **Hard-blocked URL pattern examples** (line 258). Specific publisher URLs → shape descriptions.
+- **§ 7 long-running-campaign template footer** (line 389). Default `china-nexus` tag → `<nexus-tag-from-taxonomy-if-applicable>`.
+- **Phase 3.5 verifier example findings**. `https://heise.de/news/` → "a homepage / category landing (no article slug)".
+
+The weekly's `CVE-YYYY-NNNNN` placeholders were already in the recommended form across §§ 1, 3, 7 — no normalisation needed.
+
+### Out of scope for this version
+
+- `tools/check_brief.py` is intentionally **not edited**. The script is allowed (and expected) to enumerate concrete domain patterns drawn from `sources/sources.json` — that's where source-rotation reality is encoded. The prompt was the wrong place because it was being read by the agent as authoritative topic guidance every run.
+- `site/taxonomy.yaml` is unchanged. The full nexus-tag set (`china-nexus`, `russia-nexus`, `north-korea-nexus`, `iran-nexus`, `us-nexus`, `eu-nexus`) remains available; only the *example footers in the prompt* stopped defaulting to one specific nexus.
+- The `briefs/` archive is unchanged. Past briefs continue to ship with the names and CVEs that were live at the time.
+
+---
+
 ## 2.30 — 2026-05-08 (weekly prompt rewritten on top of the daily's institutionalised stack + new editorial intent)
 
 ### Why
