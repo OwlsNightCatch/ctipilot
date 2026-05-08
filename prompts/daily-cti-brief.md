@@ -161,6 +161,8 @@ Spawn **all four sub-agents in a single message** with parallel `Agent` tool cal
 > *Always return something, even if it is a one-line "no qualifying items in window — sources X/Y/Z fetched, all empty" explanation. Empty results are valid and expected on quiet days.*
 >
 > ***Bridge fetcher — MANDATORY for known-403 hosts.*** *A number of operationally-critical sources reliably return HTTP 403 to the routine's default `WebFetch` user agent (CISA `cisa.gov`/KEV, Swiss NCSC `ncsc.admin.ch` Cyber Security Hub, CSIRT Italia `acn.gov.it`, UK ICO `ico.org.uk`, Inside IT `inside-it.ch`, PRODAFT `prodaft.com`, occasionally Cisco Talos and others). For these hosts, do NOT call `WebFetch` first — go straight to the operator-blessed bridge: `python3 tools/fetch_source.py url <URL>` for any allow-listed host, `python3 tools/fetch_source.py cisa-kev` for the KEV JSON catalog, `python3 tools/fetch_source.py cisa page <URL>` for CISA HTML, `python3 tools/fetch_source.py ncsc-csh recent 10` (and `… post <ID>`) for the Swiss NCSC CSH dashboard. The bridge uses a normal browser UA and is read-only; per-source `notes` in `sources.json` flag which method to use. A 403 on these hosts is a **transport block**, not a source failure — never demote, never give up, just switch to the bridge. If the bridge ALSO returns 403 (e.g. CCN-CERT geo-block), surface as a coverage gap rather than retrying.*
+>
+> ***Discovery trace — always float the chain back to the main agent.*** *For every item you return, record both (a) where you **first saw** the information in this run (the curated source-id, search query, or URL that surfaced the lead) and (b) the **primary source** you tracked down afterwards (vendor advisory / regulator filing / victim disclosure / research-lab post). Put this in the mandatory `Discovery trace:` field on every item — even when the entry point and the primary are the same publisher. Example: an actively-exploited Ivanti EPMM CVE first surfaced via the French national CERT (CERTFR-2026-AVI-0552) and pivoted to Ivanti's own PSIRT bulletin → the trace reads `first seen at: anssi-fr (CERTFR-2026-AVI-0552, 2026-05-07) → vendor PSIRT (Ivanti, 2026-05-07) → primary`. The main agent uses these traces to keep rotation accounting honest, verify the citation chain went all the way to the primary, and attribute coverage credit when two sub-agents independently land on the same item from different routes. Never collapse the trace; never invent a step that did not occur in this run.*
 
 Then append: window length (`window_hours`), category-filtered subset of `sources.json`, deduplication context, rotation-priority list (filtered to your category), and the sub-agent's specific domain (below).
 
@@ -223,6 +225,8 @@ The main agent **will spot-check** a sample of returned URLs in Phase 2; items w
 - [Publisher 1, YYYY-MM-DD](url) — primary
 - [Publisher 2, YYYY-MM-DD](url) — corroborating
 
+**Discovery trace:** {first seen at: <publisher / source-id / URL where this item first surfaced in this run>} → {pivot 1: <next publisher / URL fetched>} → {primary: <vendor advisory / regulator filing / victim disclosure / research-lab post>}. Always one line, always explicit, even when the entry point and the primary are the same publisher.
+
 **Summary:** {3–8 sentences, technical, English, no IOCs, no vanity metrics}
 
 **CH/EU nexus:** {string} | **Public-sector nexus:** {string} | **Sector:** {string}
@@ -235,6 +239,14 @@ The main agent **will spot-check** a sample of returned URLs in Phase 2; items w
 
 {Optional extended notes — defender's view, related historical reporting.}
 ```
+
+**Why `Discovery trace` is mandatory:** the main agent uses it to (a) understand which curated source actually surfaced the story so rotation accounting stays honest, (b) verify that the citation chain walked all the way to the primary rather than stopping at the discovery layer, (c) attribute coverage credit correctly when two sub-agents independently surface the same item via different routes. Examples of well-formed traces:
+
+- `first seen at: anssi-fr (CERTFR-2026-AVI-0552, 2026-05-07) → vendor PSIRT (Ivanti security bulletin, 2026-05-07) → primary` — sub-agent's entry point was the French national CERT advisory; pivoted to Ivanti's own advisory which is the most primary source.
+- `first seen at: heise-sec (2026-05-07 article) → Der Spiegel investigation → primary` — German tech press relayed Der Spiegel's primary investigation; cite Der Spiegel, but record that heise was the discovery point.
+- `first seen at: WebSearch ("Ivanti EPMM CVE-2026-6973 actively exploited") → BleepingComputer (2026-05-07) → CCB Belgium advisory → vendor PSIRT → primary` — search-driven discovery, two pivots, ending at the vendor.
+
+Never collapse the trace to a single source when there were intermediates. Never invent a trace step that did not occur in this run. If the entry point WAS the primary (e.g. vendor PSIRT page surfaced directly via curated source), write: `first seen at: <source-id> → primary (no pivot needed)`.
 
 If a sub-agent finds nothing it returns an empty list with a one-line explanation. Empty days are valid.
 
