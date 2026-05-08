@@ -4,6 +4,36 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.32 — 2026-05-08 (WebFetch outbound-links discipline + sources audit cleanup)
+
+### Why
+Operator audit of the source set found that the agent's link-traversal — pivoting from a news article to the vendor PSIRT, from a national-CERT advisory to the vendor blog it cites, from a research-lab post to the GitHub commit that fixed the bug — was failing silently inside the `WebFetch` tool. `WebFetch` returns a small-model summary of the fetched HTML, and **without an explicit prompt instruction the summariser drops every URL.** Sub-agents were getting prose-only summaries, with no citation chain to follow, so they hit dead ends on the news → primary pivot mandated by Phase 1 step 2.
+
+Two empirical findings from the audit (both reproducible against current sources):
+- Listing pages (e.g. `https://krebsonsecurity.com/`, `https://www.bleepingcomputer.com/news/security/`) return article titles + entity mentions but **zero outbound links** — article bodies are not on the index. To pivot, the agent has to drill into a specific article URL.
+- Per-advisory CERT pages (e.g. `https://www.cert.ssi.gouv.fr/avis/CERTFR-YYYY-AVI-NNNN/`) return the full CVE list **and** the vendor advisory URLs in their "Documentation" / "Références" section — **but only when the prompt explicitly asks for `Outbound links`**. Same for `<content:encoded>` RSS feeds (Krebs, Schneier).
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **New mandatory clause in the sub-agent spawn template** ("`WebFetch` prompt template — every call MUST request 'Outbound links'…"): every `WebFetch` call must append an explicit instruction to enumerate every URL in the body / References / Documentation / Sources section, formatted as bullets with full absolute URLs. Without this clause the call returns a dead-end summary.
+- **New "Research methodology" item 3** with the full `WebFetch` prompt template, the two empirical rules (listing pages don't carry inline links — drill into a specific article URL; per-advisory CERT pages and `<content:encoded>` RSS preserve the citation chain), and worked examples (Krebs feed returned 13 outbound URLs from one article; CERT-FR per-advisory page returned the Ivanti vendor URLs from its References section).
+- Renumbered the methodology items (`Search topically` is now item 4, `Propose new sources` is item 5).
+- Added DataBreaches.net and NCC Group to the named-403-host list (now require `tools/fetch_source.py`).
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Same mandatory `WebFetch` prompt clause inserted into the sub-agent spawn template, with a back-pointer to `prompts/daily-cti-brief.md` § "Research methodology" item 3 for the full template.
+
+### `sources/sources.json` — comprehensive audit + dedup + add 30 sources (separate commit, v2 schema)
+- **Removed (4):** `govcert-ch` (exact-URL duplicate of `ncsc-ch-security-hub` — GovCERT was merged into NCSC.ch in 2023), `secureworks-ctu` (Sophos absorbed it; redundant with `sophos-xops`), `sec-ir-firms-edr-blogs` (techcommunity.microsoft.com now redirects to Microsoft OAuth login — unfetchable), `reddit-netsec` (WebFetch is host-blocked from reddit.com).
+- **URL corrections** for sources whose canonical home moved or whose listing was a JS-rendered shell: `kudelski-security` → `kudelskisecurity.com/research-blog`; `trustwave-spiderlabs` → `levelblue.com/blogs/spiderlabs-blog` (rebrand); `crowdstrike` → `/counter-adversary-operations/` (legacy /threat-intel-research/ now redirects); `bsi-de` → RSS (HTML is JS-rendered SPA); `darkreading` → RSS (HTML 403's WebFetch UA); `redcanary` → RSS (resource hub returns nav-only); `akamai-sirt` → FeedBurner (HTML is nav-only shell); `projectzero` → `projectzero.google` (Blogspot legacy).
+- **Added (30 sources)** spanning national CERTs (NL/IE/BE/JP/KR), vendor PSIRTs (Cisco/Apple/Oracle/Mozilla/Chrome/MSRC/GitHub), research labs (Google TAG, SentinelLabs, Team Cymru, Censys, 0patch, Snyk, Trail of Bits, ProjectDiscovery, Morphisec, KELA), regional CTI vendors (Intrinsec, Synacktiv, Lab52, Resecurity), OT/ICS specialists (Nozomi, Claroty), ransomware tracking (ransomware.live), news (Hacker News, Infosecurity Magazine, Risky Biz News), and sanctions (US Treasury OFAC).
+- **New schema fields:** per-source `fetch_method` (`webfetch` / `rss` / `bridge` / `api` / `blocked`); top-level `fetch_methods` documentation block; new categories `vendor-psirt`, `ransomware`, `sanctions`. Every source's `notes` field now records the 2026-05-08 audit verdict and concrete RSS / bridge fallback.
+- **Bridge allowlist (`tools/fetch_source.py`)** extended with `databreaches.net`, `www.nccgroup.com`, `www.dragos.com`, `www.sygnia.co`, `www.ccn-cert.cni.es` for sources where Claude Code's WebFetch UA is filtered.
+
+Total: 114 sources (up from 85), 94 active / 18 candidate / 2 demoted. Coverage: Switzerland + EU + US + UK + DACH + Nordics + Iberia + Italy + Poland + Czechia + Ireland + Netherlands + Belgium + Japan + Korea, plus all major CTI vendors with publicly-available research.
+
+---
+
 ## 2.31 — 2026-05-08 (neutralise vendor / product / actor / CVE biases in worked examples)
 
 ### Why

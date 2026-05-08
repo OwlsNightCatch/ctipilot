@@ -172,6 +172,8 @@ Spawn **two sub-agents in parallel** for forward-looking signal that the daily b
 >
 > ***For CISA + NCSC.ch URLs use `tools/fetch_source.py`, not `WebFetch`*** *— those hosts reliably 403 the default UA. The bridge is at `tools/fetch_source.py` in this repo.*
 >
+> ***Every `WebFetch` MUST request "Outbound links" in its prompt.*** *`WebFetch` summarises through a small model that drops every URL by default — without an explicit ask, you get prose with no citation chain and cannot pivot to the primary. Append to every `WebFetch` prompt: "Then list **Outbound links** — every URL in the body / References / Documentation section: vendor PSIRT, CVE/NVD pages, related CERT advisories, GitHub PoCs, news articles cited. Full absolute URLs as bullets. Say 'no outbound links surfaced' if the page does not link out, so I know it was not silently dropped." Listing pages return zero outbound links (article bodies are not on the index — drill into a specific article URL); per-advisory CERT pages return the vendor citation chain; full-content RSS (`<content:encoded>`) preserves links, teaser RSS (`<description>` only) does not. See `prompts/daily-cti-brief.md` § "Research methodology" item 3 for the full template and worked examples.*
+>
 > *Always return something, even a one-line empty-result explanation.*
 
 ### Operational guardrails
