@@ -10,8 +10,27 @@ name: Auto-merge claude/* branches to main
 # back to pushing the current `claude/...` branch as-is.
 #
 # This workflow catches that fallback case. On any push to a `claude/**`
-# branch, it fast-forwards `main` from the feature branch, then deletes
-# the feature branch. End state in all cases: the brief is on `main`.
+# branch, it merges the feature branch into `main` and deletes the
+# feature branch. End state in all cases: the brief is on `main`.
+#
+# Three cases are handled:
+#   1. Fast-forward — the feature branch is a strict descendant of main
+#      (the common case when no other work landed on main during the
+#      routine's run). Fast-forward main; delete the feature branch.
+#   2. Already merged — the feature branch is an ancestor of main
+#      (e.g. PR-merged via the GitHub UI without deleting the branch,
+#      or a re-push of work that already landed). Just delete the
+#      feature branch.
+#   3. Main advanced — main moved forward with non-conflicting work
+#      while the routine ran. Create a regular merge commit, push
+#      main; delete the feature branch.
+#
+# Conflict (a real overlap between feature branch and main) is the
+# only failure mode and surfaces as a workflow failure (`exit 1` +
+# `::error::` annotation) so the operator notices and resolves.
+# Earlier versions of this workflow exited 0 on the "main advanced"
+# path, which produced a silent skip — main never updated and the
+# Actions UI showed Success. That has been fixed.
 #
 # This workflow is shell-only — no third-party Actions — because the
 # org's policy restricts Actions to the OwlsNightCatch org. The work
@@ -93,7 +112,7 @@ jobs:
           fi
           echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
 
-      - name: Fast-forward main from feature branch
+      - name: Merge feature branch into main
         env:
           BRANCH: ${{ steps.branch.outputs.name }}
         run: |
@@ -103,18 +122,47 @@ jobs:
           # in the previous step guarantees `$BRANCH` cannot start with `-`.
           git fetch origin "$BRANCH"
 
-          # Only merge if it is a strict descendant of main.
-          # Anything else means a human pushed conflicting work to main
-          # while the routine ran; skip and let a human resolve it.
+          # Case 1 — fast-forward. Feature branch is a strict descendant
+          # of main. This is the common path when no other work landed
+          # on main during the routine's run.
           if git merge-base --is-ancestor main "origin/$BRANCH"; then
-            echo "origin/$BRANCH fast-forwards from main; merging."
+            echo "::notice::origin/$BRANCH fast-forwards from main; FF merge."
             git merge --ff-only "origin/$BRANCH"
             git push origin main
             git push origin --delete "$BRANCH" || true
-            echo "Merged $BRANCH into main and deleted the feature branch."
-          else
-            echo "origin/$BRANCH is not a strict descendant of main."
-            echo "main may have advanced since the routine started."
-            echo "Skipping auto-merge; resolve manually."
+            echo "Merged $BRANCH into main (fast-forward); deleted feature branch."
             exit 0
           fi
+
+          # Case 2 — already merged. Feature branch tip is an ancestor
+          # of main (e.g. PR-merged via the GitHub UI without deleting
+          # the branch, or a re-push of already-landed work). Just
+          # delete the feature branch.
+          if git merge-base --is-ancestor "origin/$BRANCH" main; then
+            echo "::notice::origin/$BRANCH is already in main; deleting feature branch."
+            git push origin --delete "$BRANCH" || true
+            echo "Deleted feature branch $BRANCH (already merged)."
+            exit 0
+          fi
+
+          # Case 3 — main advanced. Both branches have unique commits.
+          # Try a regular merge (creates a merge commit). Most routine
+          # runs touch disjoint paths (briefs/YYYY-MM-DD.md is unique
+          # per-day; state JSON appends are usually at non-overlapping
+          # positions), so git's auto-merge resolves cleanly.
+          echo "::warning::main advanced since $BRANCH was created; attempting merge commit."
+          if git merge --no-edit -m "Auto-merge $BRANCH into main" "origin/$BRANCH"; then
+            git push origin main
+            git push origin --delete "$BRANCH" || true
+            echo "Merged $BRANCH into main (merge commit); deleted feature branch."
+            exit 0
+          fi
+
+          # Conflict — fail loudly so the operator notices. The previous
+          # version of this workflow exited 0 here, producing a silent
+          # skip; that hid the failure from the Actions UI and let stale
+          # claude/* branches accumulate.
+          echo "::error::Merge conflict between $BRANCH and main; resolve manually."
+          git diff --name-only --diff-filter=U || true
+          git merge --abort || true
+          exit 1
