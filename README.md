@@ -42,7 +42,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ```
 .
 ├── prompts/
-│   ├── daily-cti-brief.md     # The canonical daily prompt (v2.23+ schema)
+│   ├── daily-cti-brief.md     # The canonical daily prompt
 │   ├── weekly-summary.md      # The weekly summary prompt
 │   └── CHANGELOG.md           # Editorial-policy audit trail (rendered at /about/changelog/)
 ├── sources/
@@ -58,7 +58,8 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── tools/
-│   └── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
+│   ├── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
+│   └── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe)
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
 │   ├── build.py               # SSG entrypoint — emits real HTML pages for every URL
 │   ├── taxonomy.yaml          # Controlled vocabulary (themes, regions, CVE fields, sections)
@@ -75,11 +76,12 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── verification.md        # Fake-news verification policy
 │   ├── security-review.md     # Threat model for the autonomous-agent setup
 │   ├── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
-│   ├── v2-plan.md             # Engineering scaffolding for the v2 cut-over
+│   ├── v2-plan.md             # Historical: engineering scaffolding for the v2 cut-over (now landed)
 │   └── improvements.md        # Recommended improvements (with rationale)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Routine fallback: ff-merge claude/* → main
 │   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
+├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
 
@@ -149,7 +151,7 @@ The repository is the agent's working memory. Both `sources/sources.json` and `s
 
 The agent appends new CVE IDs, bumps `last_seen` on subsequent appearances, updates `title` or `primary_source_url` when better information emerges, and **removes** entries that turn out to be invalid (e.g., a CVE ID that does not resolve on NVD/MITRE). Removals are documented in the run's commit body.
 
-The current list (~80 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
+The current list (~84 sources) covers: Swiss/EU national CERTs (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI, NCSC-UK, NCSC-NL, CERT.at, GovCERT.at, CERT-PL, AGID, CCN-CERT); Swiss security firms (Compass Security, scip AG, OneConsult, InfoGuard, Kudelski Security, PRODAFT); top-tier vendor TI (Mandiant/GTIG, Microsoft, CrowdStrike, Unit 42, Cisco Talos, Volexity, ESET, Kaspersky Securelist, Trend Micro, Check Point, Sophos X-Ops, Secureworks, Recorded Future Insikt, Sekoia, Group-IB, Elastic Security Labs, Huntress, Red Canary, The DFIR Report, Sygnia, Truesec, NCC Group, WithSecure Labs, IBM X-Force, Akamai, Cloudflare Cloudforce One, Trustwave SpiderLabs, Tenable, Rapid7); vulnerability research (CISA KEV, watchTowr Labs, Project Zero, ZDI, VulnCheck, GreyNoise, Shadowserver); OT/ICS (Dragos, SANS ICS); journalism (Krebs, Schneier, Heise Security, Inside IT, Le Monde Informatique, Malwarebytes, The Record, CyberScoop, BleepingComputer, SecurityWeek, Security Affairs, Help Net Security, SANS ISC, Dark Reading); breach trackers (SEC EDGAR 8-K, UK ICO, CNIL FR, EDPB); civil-society research (Citizen Lab); discovery (r/netsec).
 
 ## Reader engagement (privacy-by-design)
 
