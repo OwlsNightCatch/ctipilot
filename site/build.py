@@ -3440,6 +3440,22 @@ def write_robots(out_path: Path, *, sitemap_url: str) -> None:
     )
 
 
+def write_security_txt(out_path: Path, *, repo: str, expires: str) -> None:
+    """RFC 9116 security.txt. Routes reports through GitHub Private
+    Vulnerability Reporting so we never need to publish a contact email."""
+    body = (
+        f"# Report a vulnerability privately via GitHub PVR:\n"
+        f"#   https://github.com/{repo}/security/advisories/new\n"
+        f"# Repo Settings -> Code security -> Private vulnerability reporting\n"
+        f"# must be enabled for the link above to accept submissions.\n"
+        f"Contact: https://github.com/{repo}/security/advisories/new\n"
+        f"Expires: {expires}\n"
+        f"Preferred-Languages: en\n"
+        f"Canonical: https://ctipilot.ch/.well-known/security.txt\n"
+    )
+    atomic_write_text(out_path, body)
+
+
 # === SELF-CHECK =========================================================
 
 def self_check(
@@ -4007,6 +4023,11 @@ def main() -> int:
     # ---- Sitemap / robots ---------------------------------------------
     write_sitemap(sorted(sitemap, key=lambda x: x[0]), out_path=OUT / "sitemap.xml")
     write_robots(OUT / "robots.txt", sitemap_url=site_url + "sitemap.xml")
+    write_security_txt(
+        OUT / ".well-known" / "security.txt",
+        repo="OwlsNightCatch/ctipilot",
+        expires="2027-05-08T00:00:00Z",
+    )
 
     # ---- CNAME (GitHub Pages custom domain) ---------------------------
     # Routed through atomic_write_text so prune_orphans doesn't delete it.

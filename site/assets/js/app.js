@@ -258,7 +258,6 @@
         });
       });
 
-      // closing the menu when an external-link menu item is clicked
       root.querySelectorAll('a[role="menuitem"]').forEach(function (a) {
         a.addEventListener('click', function () { closeMenu(root); });
       });
