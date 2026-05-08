@@ -1444,7 +1444,27 @@ def render_region_pill(region: str, *, prefix: str = "") -> str:
 
 
 def render_cve_pill(cve: str, *, prefix: str = "") -> str:
-    return f'<a class="pill pill-cve" href="{prefix}cves/{_escape(cve)}/">{_escape(cve)}</a>'
+    """Render one or more CVE pills.
+
+    The footer's `CVE:` field is a single string that may contain a
+    comma-separated list (multi-CVE entries — e.g. an Ivanti EPMM
+    auth-bypass + admin-RCE chain reported as one item). Render one
+    clickable pill per individual CVE-YYYY-NNNNN id, otherwise the
+    pill links to a non-existent slug like `cves/CVE-A, CVE-B/` and
+    the reader hits a 404. Anything that does not match the canonical
+    CVE shape is rendered as a plain badge (no link)."""
+    pieces: list[str] = []
+    for raw in cve.split(","):
+        token = raw.strip()
+        if not token:
+            continue
+        if re.match(r"^CVE-\d{4}-\d{4,7}$", token):
+            pieces.append(
+                f'<a class="pill pill-cve" href="{prefix}cves/{_escape(token)}/">{_escape(token)}</a>'
+            )
+        else:
+            pieces.append(f'<span class="pill pill-cve">{_escape(token)}</span>')
+    return " ".join(pieces) if pieces else f'<span class="pill pill-cve">{_escape(cve)}</span>'
 
 
 def reliability_badge(r: str) -> str:
@@ -3847,13 +3867,74 @@ def main() -> int:
     )
 
     # /404.html
+    # GitHub Pages serves this for any unknown path under the project site,
+    # but the browser's URL stays at the requested deep path (e.g.
+    # `/security-newsletter/cves/CVE-A,%20CVE-B/`). That means relative asset
+    # paths in the served HTML resolve against the deep path and 404 in turn,
+    # leaving the page unstyled. To survive any depth, the 404 uses
+    # *absolute* asset paths derived from `site_url` — this is the one page
+    # in the build that needs them.
+    site_base_path = urllib.parse.urlparse(site_url).path or "/"
+    if not site_base_path.endswith("/"):
+        site_base_path += "/"
+
+    # Latest items the visitor likely meant.
+    latest_briefs_html = ""
+    if briefs:
+        recent = briefs[:5]
+        latest_briefs_html = "<ul class=\"entity-list\">" + "".join(
+            f'<li><span><a class="e-title" href="{site_base_path}briefs/{_escape(b["name"])}/">{_escape(b["title"])}</a>'
+            f'<div class="e-meta"><span class="e-tag">{_escape(b["kind"])}</span>'
+            f'<span class="muted">{b.get("items", 0)} items</span></div></span>'
+            f'<span class="mono muted">{_escape(b["name"])}</span></li>'
+            for b in recent
+        ) + "</ul>"
+
+    err_body = f"""
+<section style="max-width:62rem;margin-top:1rem">
+  <p class="mono muted" style="font-size:0.78rem;letter-spacing:0.06em;text-transform:uppercase">Error 404</p>
+  <h1 style="margin-top:0.2rem">That page is not on this site.</h1>
+  <p class="subtitle" style="margin-top:0.6rem">
+    The link you followed may be wrong, the page may have moved, or the brief that referenced it may have been corrected.
+    <strong>CVE pages take a single ID</strong> — multi-CVE links like <code>cves/CVE-X,&nbsp;CVE-Y/</code> are not valid.
+  </p>
+
+  <div class="panel" style="margin-top:1.2rem">
+    <h3 style="margin-top:0">Common ways here</h3>
+    <ul style="margin-top:0.4rem">
+      <li><strong>Renamed CVE / source / topic page.</strong> Use the search box above (also at the top of every page).</li>
+      <li><strong>Old bookmark.</strong> Indexes refresh on every brief; the canonical URLs for items are stable but listings move.</li>
+      <li><strong>Multi-CVE link from an older brief.</strong> Each CVE has its own page — use the search box or the
+        <a href="{site_base_path}cves/">full CVE list</a>.</li>
+    </ul>
+  </div>
+
+  <div class="row" style="gap:0.8rem;flex-wrap:wrap;margin-top:1.4rem">
+    <a class="cta" href="{site_base_path}">Return home</a>
+    <a class="cta cta--secondary" href="{site_base_path}briefs/">Browse briefs</a>
+    <a class="cta cta--secondary" href="{site_base_path}cves/">All CVEs</a>
+    <a class="cta cta--secondary" href="{site_base_path}topics/">Topics</a>
+    <a class="cta cta--secondary" href="{site_base_path}sources/">Sources</a>
+    <a class="cta cta--secondary" href="{site_base_path}ops/">Operations</a>
+  </div>
+
+  {f'<h2 class="section-head" style="margin-top:1.8rem">Latest briefs</h2>{latest_briefs_html}' if latest_briefs_html else ''}
+
+  <p class="muted" style="margin-top:1.6rem;font-size:0.82rem">
+    If you think this is a broken link inside the site, please open an issue at
+    <a href="https://github.com/OwlsNightCatch/security-newsletter/issues" rel="noopener noreferrer">github.com/OwlsNightCatch/security-newsletter</a>.
+  </p>
+</section>
+"""
+
     err = base_template(
-        title="404 — CTI Briefs",
-        description="Not found",
-        body="<section><h1>404 — Not found</h1><p>That page is not on this site. <a href=\"./\">Return home</a>.</p></section>",
+        title="404 — Not found · CTI Briefs",
+        description="The page you requested is not on this site. Search or use the suggested links to find what you were looking for.",
+        body=err_body,
         canonical=site_url + "404.html",
         site_url=site_url,
         cachebust=cachebust,
+        home_relative_prefix=site_base_path,
     )
     atomic_write_text(OUT / "404.html", err)
 

@@ -28,6 +28,7 @@ from build import (  # noqa: E402
     parse_brief,
     parse_footer_line,
     parse_taxonomy,
+    render_cve_pill,
     render_inline,
     render_markdown,
     render_footer_html,
@@ -581,6 +582,29 @@ assert_in("RSS body keeps the actual prose", "intro", _tags_stripped)
 # Regular paragraph italic must NOT be stripped.
 _normal = "Some line with *italic emphasis* in it.\n"
 assert_eq("italic prose unchanged", _strip_footer_metadata_in_md(_normal), _normal)
+
+
+# ---------------------------------------------------------------------
+# render_cve_pill — multi-CVE split
+# ---------------------------------------------------------------------
+print("== render_cve_pill multi-CVE split ==")
+single = render_cve_pill("CVE-2026-5787", prefix="../../")
+assert_in("single CVE pill: anchor present", '<a class="pill pill-cve"', single)
+assert_in("single CVE pill: correct slug", 'href="../../cves/CVE-2026-5787/"', single)
+
+multi = render_cve_pill("CVE-2026-5787, CVE-2026-6973", prefix="../../")
+assert_in("multi CVE pill: first link", 'href="../../cves/CVE-2026-5787/"', multi)
+assert_in("multi CVE pill: second link", 'href="../../cves/CVE-2026-6973/"', multi)
+assert_not_in(
+    "multi CVE pill: no broken comma slug",
+    'cves/CVE-2026-5787, CVE-2026-6973/',
+    multi,
+)
+
+# Boundary: junk passes through as a non-link badge instead of a 404.
+junk = render_cve_pill("not-a-cve")
+assert_in("non-CVE: rendered as plain pill", '<span class="pill pill-cve">', junk)
+assert_not_in("non-CVE: no anchor", "<a", junk)
 
 
 # ---------------------------------------------------------------------
