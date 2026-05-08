@@ -4,6 +4,31 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.27 — 2026-05-08 (final-verification sub-agent loop + less-is-more rewrite)
+
+### Why
+v2.26 hardened the *intent* around link discipline ("don't fabricate URLs") and tightened the § 1 bar. v2.27 adds the *enforcement layer* — an independent verification sub-agent that reads the finished brief end to end before publication and flags fabricated URLs, citation mismatches, and unsupported claims for the main agent to fix. The same release rewrites PD-11 around an explicit "less is more" principle so the brief stops drifting toward "fill every section" and back toward "ship only what changes a defender's day."
+
+Both changes are responses to operator review of the 2026-05-08 brief, which contained: invented blog slugs, citations that pointed to homepages, claims (notably aggregate exposure counts) that no linked source supported, and sections padded with items that did not meet the relevance bar.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **PD-11 rewritten as "Less is more — relevance over volume."** The single-line "no suppression, no padding" rule is replaced with: an explicit daily relevance bar (the four conditions an item must satisfy to qualify for the brief at all), a non-exhaustive blocklist of content the brief should drop without ceremony (vendor marketing dressed as research, recap of already-covered stories without delta, awareness-level pieces, industry surveys, conference recaps, product launches, opinion pieces, year-over-year stats without a defender takeaway), variable-size guidance (a quiet day produces a short brief, a noisy day produces a longer one — never pad to length), an empty-section policy (sections without qualifying content render the heading + an italic `*intentionally left empty*` stub), and item-level cuts (throat-clearing intros, hedge stacks, restating section context, closing flourishes, recap of prior coverage all get cut). The reader-trust framing — "the reader trusts that brevity reflects signal, not laziness" — is the operative line for the model.
+
+- **New Phase 4.5 — Final verification sub-agent (loop until clean).** Inserted between Phase 4 (compose) and Phase 5 (state update). After the brief is written to disk, a fresh `general-purpose` sub-agent is spawned with a strict verification prompt: read the brief end to end, fetch every cited URL, confirm each (a) resolves, (b) is a specific page (not homepage / category / listing), (c) actually supports the claim being cited; cross-check named entities (CVEs, actors, campaigns, victims, dates, aggregate numbers) against the linked sources and flag any without source backing; surface claims missing inline citations. The verification agent is read-only — it never edits the brief. It returns a structured Markdown report with five blocking-finding categories (broken URLs, generic / oversight URLs, citation does not support claim, unsupported / hallucinated facts, claims missing inline citation) and one advisory category (less-is-more flags), each finding numbered so the main agent can fix or drop surgically. The main agent applies fixes in priority order — replace the URL with a freshly-fetched specific URL, narrow the claim to what the source supports, or drop the claim/item — then spawns a fresh verification sub-agent against the updated brief. Loop until verdict CLEAN, with a hard cap of three iterations. After three rounds remaining issues are dropped, surviving residuals are logged in § 8 (`verification: published with N residual findings unresolved after 3 iterations`), and the brief publishes — the CRITICAL "always write the file" header always wins over the verification gate; verification removes bad content but never blocks publication.
+
+- **Run-log schema** gains `verification_iterations` (number of Phase 4.5 rounds) and `verification_residual_count` (issues unresolved after the iteration cap, 0 on a clean publish). Operations dashboard at `/ops/` will surface these.
+
+- **Quality-gates checklist** gains two entries: "Phase 4.5 verification ran, final verifier returned CLEAN (or three iterations exhausted with residuals logged in § 8); `verification_iterations` and `verification_residual_count` set in `state/run_log.json`," and "Less is more applied — every item passes the daily relevance bar; sections without qualifying content carry the explicit `*intentionally left empty*` stub (except § 1, which is omitted entirely)."
+
+### Notes for the operator
+
+The verification sub-agent costs another ~5–10 minutes of wall-clock and a non-trivial fetch budget on top of Phase 1. That is the intended price for catching hallucinated URLs and unsupported aggregate numbers before they reach the published feed. The iteration cap of 3 is the upper bound on how many rounds the loop will run — most days the first verification should return CLEAN; iteration 2 catches anything the writer-verifier disagreed about; iteration 3 is the safety floor, after which residuals are logged and the brief publishes anyway.
+
+If the verification sub-agent itself fails (timeout, no return), the main agent proceeds with publication and notes `verification: sub-agent did not return — published without final verification` in § 8 — the brief still ships.
+
+---
+
 ## 2.26 — 2026-05-08 (Immediate Actions bar + source-link discipline)
 
 ### Why
