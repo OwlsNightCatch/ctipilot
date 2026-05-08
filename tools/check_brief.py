@@ -777,10 +777,58 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
         warn("source-urls", "skipped (--no-link-check)")
         return
 
+    import ipaddress
     import urllib.request
     import urllib.error
     import socket
     import ssl
+
+    # Defence in depth: even though check_brief.py is run by the operator
+    # (not from the public web), refuse redirects that would land us on a
+    # loopback / link-local / private / cloud-metadata host. Otherwise an
+    # allowlisted publisher whose CMS is compromised — or a typo in a
+    # brief — could pivot the operator's local URL-liveness check into a
+    # request against `http://127.0.0.1:8080/` or
+    # `http://169.254.169.254/latest/meta-data/`. Liveness must not
+    # become an SSRF foothold.
+    def _ip_is_blocked_local(addr: str) -> bool:
+        try:
+            ip = ipaddress.ip_address(addr)
+        except ValueError:
+            return True
+        return bool(
+            ip.is_loopback or ip.is_link_local or ip.is_private
+            or ip.is_multicast or ip.is_reserved or ip.is_unspecified
+        )
+
+    def _host_is_blocked(host: str) -> bool:
+        try:
+            infos = socket.getaddrinfo(host, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+        except socket.gaierror:
+            return True
+        return any(_ip_is_blocked_local(s[4][0]) for s in infos)
+
+    class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+        max_redirections = 5
+
+        def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+            from urllib.parse import urlparse as _up
+            parsed = _up(newurl)
+            scheme = (parsed.scheme or "").lower()
+            host = (parsed.hostname or "").lower()
+            if scheme not in ("http", "https"):
+                raise urllib.error.HTTPError(
+                    newurl, code, f"redirect refused: scheme {scheme!r}",
+                    headers, fp,
+                )
+            if not host or _host_is_blocked(host):
+                raise urllib.error.HTTPError(
+                    newurl, code, f"redirect refused: host {host!r} resolves to disallowed address",
+                    headers, fp,
+                )
+            return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+    _safe_opener = urllib.request.build_opener(_SafeRedirectHandler())
 
     urls: dict[str, list[str]] = {}
     for sec in sections:
@@ -807,7 +855,7 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
             headers={"User-Agent": "check_brief.py probe"},
             method="HEAD",
         )
-        urllib.request.urlopen(probe, timeout=5).close()
+        _safe_opener.open(probe, timeout=5).close()
     except Exception as e:
         msg = str(e)
         if "CERTIFICATE_VERIFY_FAILED" in msg or "SSL" in msg:
@@ -841,10 +889,26 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
     }
 
     def _check_one(url: str) -> tuple[int | None, str]:
+        # Pre-flight: refuse if the initial host already resolves to a
+        # blocked address. The redirect handler covers the post-301 path.
+        try:
+            from urllib.parse import urlparse as _up
+            parsed = _up(url)
+            host0 = (parsed.hostname or "").lower()
+            if not host0 or _host_is_blocked(host0):
+                return None, "host blocked (loopback/link-local/private)"
+        except Exception:
+            pass
         for method in ("HEAD", "GET"):
             try:
                 req = urllib.request.Request(url, headers=headers, method=method)
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                with _safe_opener.open(req, timeout=timeout) as resp:
+                    # Drain a small bounded chunk so the connection closes
+                    # cleanly; we only want the status code.
+                    try:
+                        resp.read(64 * 1024)
+                    except Exception:
+                        pass
                     return resp.status, ""
             except urllib.error.HTTPError as e:
                 if e.code in (405, 501) and method == "HEAD":

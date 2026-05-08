@@ -85,6 +85,94 @@ FEED_DAILY_MAX = 30
 FEED_WEEKLY_MAX = 30
 FEED_ITEMS_MAX = 50
 
+# === RESOURCE CAPS ======================================================
+#
+# Per-file ceilings for everything the build reads from disk. A poisoned
+# state file or a runaway agent run could plant a multi-hundred-MB
+# Markdown file; the build would otherwise attempt to load and render it
+# and OOM the runner. Caps fail the build with a clear message instead.
+#
+# These ceilings are loose by design — the largest legitimate brief on
+# record is ~80 KB; the largest state file (covered_items.json) is ~40 KB.
+# We pick caps an order of magnitude above current usage so the agent has
+# room to grow but a runaway / poisoned input is still blocked.
+MAX_BRIEF_BYTES = 4 * 1024 * 1024            # 4 MB per brief / docs file
+MAX_STATE_BYTES = 16 * 1024 * 1024           # 16 MB per state file
+MAX_VENDOR_BYTES = 4 * 1024 * 1024           # 4 MB per vendored JS file
+MAX_BRIEFS_DIR_BYTES = 256 * 1024 * 1024     # 256 MB total briefs/ tree
+
+
+def _read_text_capped(path: Path, max_bytes: int, *, encoding: str = "utf-8") -> str:
+    """Read `path` as text but refuse if its on-disk size exceeds the
+    ceiling. Used at every input boundary."""
+    size = path.stat().st_size
+    if size > max_bytes:
+        raise RuntimeError(
+            f"refused: {path} is {size} bytes, exceeds cap of {max_bytes}"
+        )
+    return path.read_text(encoding=encoding)
+
+
+# === SECRET REDACTOR (write-time) =======================================
+#
+# Last-line guard against the agent accidentally pasting a credential
+# into a brief, the docs, or the search index. Runs at the emit boundary,
+# inspecting every emitted page / feed / JSON blob for known
+# secret-shaped tokens. Refuses the build (non-zero exit) if any pattern
+# hits — failing the build is preferable to silently propagating a
+# secret to the public site, RSS feeds, and gh-pages.
+#
+# This is *not* a substitute for keeping secrets out of the runner. It
+# is a defence-in-depth check for the autonomous-agent failure mode where
+# the agent paraphrases the runner's environment into prose.
+_SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("AWS access key id", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("AWS secret access key (heuristic)",
+     re.compile(r"(?i)\baws_secret_access_key\s*[:=]\s*[\"']?[A-Za-z0-9/+=]{40}[\"']?")),
+    # GitHub fine-grained PAT format: github_pat_<22 chars>_<59 chars>.
+    # `\b` is unreliable around the underscore, so we drop it and rely on
+    # the surrounding non-word context being absent of word characters.
+    ("GitHub fine-grained PAT",
+     re.compile(r"github_pat_[A-Za-z0-9]{22}_[A-Za-z0-9_]{50,}")),
+    ("GitHub classic / OAuth token",
+     re.compile(r"\b(?:ghp|gho|ghs|ghr|ghu)_[A-Za-z0-9]{36,255}\b")),
+    ("Anthropic API key",
+     re.compile(r"\bsk-ant-(?:api|admin|sid)[A-Za-z0-9]*-[A-Za-z0-9_-]{20,}\b")),
+    ("OpenAI API key",
+     re.compile(r"\bsk-(?:proj-)?[A-Za-z0-9_-]{30,255}\b")),
+    ("Slack token",
+     re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}\b")),
+    ("Stripe live key",
+     re.compile(r"\b(?:sk|pk|rk)_live_[A-Za-z0-9]{20,}\b")),
+    # Google API keys are exactly 39 chars including the AIza prefix
+    # (4 + 35 = 39). Match exactly that to avoid false-positives on
+    # arbitrary base64 substrings starting with AIza.
+    ("Google API key",
+     re.compile(r"(?<![A-Za-z0-9_-])AIza[0-9A-Za-z_-]{35}(?![A-Za-z0-9_-])")),
+    ("PEM private key block",
+     re.compile(r"-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY-----")),
+    # Real JWTs have base64url segments. Each segment is at least 6
+    # chars in practice (a header alone is ~30); we accept ≥6 to keep
+    # the test sample short while still excluding obvious non-JWT
+    # 3-segment dotted strings.
+    ("JWT (eyJ. style)",
+     re.compile(r"\beyJ[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{6,}\b")),
+]
+
+
+def scan_for_secrets(text: str) -> list[tuple[str, str]]:
+    """Return [(pattern_label, matched_excerpt), …] for any hits in `text`.
+    Empty list means clean."""
+    out: list[tuple[str, str]] = []
+    for label, pat in _SECRET_PATTERNS:
+        m = pat.search(text)
+        if m:
+            sample = m.group(0)
+            # Truncate so we don't echo the secret whole into stderr.
+            redacted = sample[:8] + "…" + sample[-4:] if len(sample) > 16 else "***"
+            out.append((label, redacted))
+    return out
+
 
 # === REGEXES ============================================================
 
@@ -232,13 +320,18 @@ def rfc822(ts: datetime) -> str:
 
 def verify_vendored_hashes() -> None:
     """Abort the build if any vendored library's bytes don't match HASHES.
-    Catches both silent on-disk tampering and accidental upgrades."""
+    Catches both silent on-disk tampering and accidental upgrades.
+
+    Verifies *both* the sha256 and sha384 lines in HASHES so a future
+    attacker cannot defeat the check by colliding only one algorithm.
+    """
     vendor = SITE / "assets" / "vendor"
     hashes_file = vendor / "HASHES"
     if not hashes_file.exists():
         print(f"warning: {hashes_file} missing; skipping integrity check", file=sys.stderr)
         return
-    expected: dict[str, str] = {}
+    # algo -> {fname -> digest}
+    expected: dict[str, dict[str, str]] = {"sha256": {}, "sha384": {}}
     for raw in hashes_file.read_text().splitlines():
         line = raw.strip()
         if not line or line.startswith("#") or line.startswith("//"):
@@ -247,17 +340,27 @@ def verify_vendored_hashes() -> None:
         if len(parts) != 3:
             continue
         algo, fname, digest = parts
-        if algo == "sha256":
-            expected[fname] = digest
+        if algo in expected:
+            expected[algo][fname] = digest
     failures: list[str] = []
-    for fname, want in expected.items():
+    files_seen = set(expected["sha256"]) | set(expected["sha384"])
+    for fname in sorted(files_seen):
         path = vendor / fname
         if not path.exists():
             failures.append(f"{fname}: missing")
             continue
-        got = hashlib.sha256(path.read_bytes()).hexdigest()
-        if got != want:
-            failures.append(f"{fname}: hash mismatch (expected {want}, got {got})")
+        body = path.read_bytes()
+        for algo in ("sha256", "sha384"):
+            want = expected[algo].get(fname)
+            if want is None:
+                # Not every file has both lines — only validate what is
+                # listed.
+                continue
+            got = hashlib.new(algo, body).hexdigest()
+            if got != want:
+                failures.append(
+                    f"{fname}: {algo} mismatch (expected {want}, got {got})"
+                )
     if failures:
         print("VENDORED LIBRARY INTEGRITY CHECK FAILED:", file=sys.stderr)
         for f in failures:
@@ -349,6 +452,20 @@ def _safe_url(url: str) -> str:
     stripped = "".join(c for c in url if ord(c) > 0x20 and c not in ("\x7f",)).strip()
     if not stripped:
         return "#"
+    # Refuse protocol-relative URLs (`//evil.example/x`) and any URL that
+    # leads with backslashes (`\\evil.example\x`, `\\\\…`). A Markdown
+    # link `[click](//evil/x)` would otherwise render as
+    # `<a href="//evil/x">` and the browser would navigate to
+    # `https://evil/x` — neither XSS nor blocked by the strict CSP, but a
+    # cross-origin redirect that brief content should never be able to
+    # cause. The legitimate Markdown shape for an external link is the
+    # explicit-scheme form, which the allowlist below admits.
+    if stripped.startswith("//") or stripped.startswith("\\"):
+        return "#"
+    # Some renderers normalise backslash in URL paths; reject any URL that
+    # starts with a `/\` or `\/` mix as well.
+    if stripped[:2] in ("/\\", "\\/"):
+        return "#"
     lower = stripped.lower()
     # Anchor-only or fragment links are safe.
     if lower.startswith("#") or lower.startswith("?"):
@@ -369,6 +486,26 @@ def _safe_url(url: str) -> str:
     return "#"
 
 
+# === INPUT SANITISATION =================================================
+
+# ASCII control chars (excluding `\t`, `\n`, `\r`) and DEL. These never
+# appear in legitimate brief / docs Markdown; they can confuse the
+# renderer's `\x00`-prefixed placeholder substitution loop and should
+# not survive into the output (the end-of-build self-check already
+# refuses output that contains `\x00`, but stripping at the input
+# boundary makes the renderer pipeline impossible to confuse in the
+# first place).
+_CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
+
+
+def _strip_controls(text: str) -> str:
+    """Strip ASCII control characters that have no place in Markdown
+    input. Tab / newline / carriage-return are preserved."""
+    if not text:
+        return text
+    return _CONTROL_CHAR_RE.sub("", text)
+
+
 def render_inline(s: str, *, base_url: str | None = None) -> str:
     """Render Markdown inline constructs to HTML.
 
@@ -376,6 +513,11 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
     self-contained (used by RSS body rendering — RSS readers don't have a
     base URL to resolve against).
     """
+    # Strip ASCII control characters at the parse boundary, same reasoning
+    # as in render_markdown. The renderer's placeholder markers all use
+    # \x00 — keeping that byte out of the input keeps the substitution
+    # loop unambiguous.
+    s = _strip_controls(s)
     # Step 1: extract code spans first so we don't re-process their bytes.
     placeholders: dict[str, str] = {}
 
@@ -448,7 +590,16 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
 
 def render_inline_no_links(s: str) -> str:
     """Inline rendering that skips link/auto-link expansion. Used inside
-    link text where nested links are illegal anyway."""
+    link text where nested links are illegal anyway.
+
+    Note: deliberately does NOT call `_strip_controls` here. This function
+    is invoked from inside `render_inline`'s link-substitution loop on
+    text that already contains the renderer's `\\x00CODE…\\x00`
+    placeholder markers; stripping at this depth would remove those
+    markers and leak placeholder digits ("CODE0") into the output. The
+    top-level entry points (`render_inline`, `render_markdown`) already
+    stripped controls at the parse boundary.
+    """
     placeholders: dict[str, str] = {}
 
     def stash_code(m: re.Match) -> str:
@@ -488,6 +639,13 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
         - pipe tables
         - inline-only fallback for everything else.
     """
+    # Strip ASCII control characters at the parse boundary. Briefs are
+    # generated by an LLM from publisher prose; legitimate output never
+    # contains \x00..\x08 / \x0B / \x0C / \x0E..\x1F / \x7F. A literal
+    # \x00 in input would otherwise collide with the renderer's
+    # `\x00CODE…\x00` / `\x00LINK…\x00` placeholder markers and could
+    # smuggle attacker text into the placeholder substitution loop.
+    md = _strip_controls(md)
     lines = md.replace("\r\n", "\n").split("\n")
     out: list[str] = []
     i = 0
@@ -925,7 +1083,7 @@ def parse_brief(path: Path) -> dict[str, Any]:
         cve_citations ({cve_id: [{label, url, host, prefix}, ...]})
         unit_data (paragraph-level link aggregations for topic citations)
     """
-    text = path.read_text(encoding="utf-8")
+    text = _read_text_capped(path, MAX_BRIEF_BYTES)
     name = path.stem
     is_weekly = path.parent.name == "weekly"
     rel = str(path.relative_to(ROOT))
@@ -1690,9 +1848,10 @@ def render_brief_page(
             f'</details>'
         )
 
+    sections_toc_html = sections_toc or '<li class="muted">—</li>'
     toc_html = (
         '<h3>On this page</h3>'
-        f'<ul class="toc-sections">{sections_toc or "<li class=\"muted\">—</li>"}</ul>'
+        f'<ul class="toc-sections">{sections_toc_html}</ul>'
         f'{filter_bar}'
         f'{refs_block}'
     )
@@ -2888,9 +3047,35 @@ def _cdata_safe(s: str) -> str:
     return s.replace("]]>", "]]]]><![CDATA[>")
 
 
+_DOCTYPE_RE = re.compile(r"<!\s*DOCTYPE\b", re.IGNORECASE)
+_ENTITY_DECL_RE = re.compile(r"<!\s*ENTITY\b", re.IGNORECASE)
+
+
 def _xml_validate(content: str) -> list[str]:
+    """Sanity-parse the build's own RSS output. The input is XML the build
+    generated from already-escaped data, but the parser is configured
+    defensively so any future change that pipes untrusted XML through this
+    function cannot trigger XXE / billion-laughs.
+
+    Defense layers:
+      1. Refuse any document that contains a `<!DOCTYPE …>` or `<!ENTITY
+         …>` declaration. The build's own RSS feeds never declare a
+         DOCTYPE, so this is a no-cost rejection that blocks both
+         billion-laughs (which requires nested entity declarations) and
+         classic XXE (which requires a DOCTYPE).
+      2. Use stdlib `xml.etree.ElementTree.fromstring` for well-formedness
+         parsing. Python 3.7.1+ stdlib does not load external DTDs by
+         default; combined with rule (1), no external entity reference
+         can be triggered.
+    """
+    if _DOCTYPE_RE.search(content) or _ENTITY_DECL_RE.search(content):
+        return ["refused: DOCTYPE / ENTITY declarations not permitted in feed XML"]
+    # The pre-filter above blocks DOCTYPE and ENTITY declarations, so the
+    # parse below cannot trigger XXE or billion-laughs. Bandit's B314
+    # rule warns about ET.fromstring on untrusted input; the input here
+    # is sanitised, so we suppress the warning.
     try:
-        ET.fromstring(content)
+        ET.fromstring(content)  # nosec B314
         return []
     except ET.ParseError as e:
         return [str(e)]
@@ -3148,7 +3333,7 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
             f"<item>"
             f"<title>{_escape(it['title'])}</title>"
             f"<link>{_escape(it['url'])}</link>"
-            f'<guid isPermaLink="true">{_escape(it['url'])}</guid>'
+            f'<guid isPermaLink="true">{_escape(it["url"])}</guid>'
             f"<pubDate>{it['publish_rfc822']}</pubDate>"
             f"<dc:date>{_escape(it['publish_iso'])}</dc:date>"
             f"{cats}"
@@ -3389,6 +3574,15 @@ def copy_assets() -> None:
             continue
         rel = src_path.relative_to(src)
         dst_path = dst / rel
+        # Belt-and-braces size cap on every asset. Vendored JS lives in
+        # site/assets/vendor/ and is also covered by the SHA-256 + SHA-384
+        # check; the size cap here is the cheaper first check.
+        size = src_path.stat().st_size
+        if src_path.parent.name == "vendor" and size > MAX_VENDOR_BYTES:
+            raise RuntimeError(
+                f"refused: vendor asset {src_path} is {size} bytes, "
+                f"exceeds cap of {MAX_VENDOR_BYTES}"
+            )
         body = src_path.read_bytes()
         if src_path.suffix == ".js" and src_path.parent.name == "vendor":
             cleaned = sourcemap_re.sub(b"", body)
@@ -3532,6 +3726,22 @@ def self_check(
         if utm_re.search(text):
             errors.append(f"UTM parameter present in URL inside {path.relative_to(OUT)}")
             break
+
+    # No known-shape secret tokens in any emitted file. Last-line guard
+    # against the autonomous agent accidentally pasting an env var or
+    # credential into a brief / docs / state file: failing the build is
+    # always preferable to silently propagating a secret to gh-pages and
+    # the RSS feeds.
+    for path in list(OUT.rglob("*.html")) + list(OUT.rglob("*.xml")) + list(OUT.rglob("*.md")) + list(OUT.rglob("*.json")) + list(OUT.rglob("*.txt")):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        hits = scan_for_secrets(text)
+        for label, sample in hits:
+            errors.append(
+                f"secret-shaped token in {path.relative_to(OUT)}: {label} ({sample})"
+            )
     return errors
 
 
@@ -3580,9 +3790,31 @@ def main() -> int:
         return 3
 
     # ---- Load supporting state ----------------------------------------
-    cves_raw = json.loads((ROOT / "state" / "cves_seen.json").read_text())
-    topics_raw = json.loads((ROOT / "state" / "covered_items.json").read_text())
-    sources_raw = json.loads((ROOT / "sources" / "sources.json").read_text())
+    # Each state file is read through `_read_text_capped` so a poisoned
+    # state JSON (e.g. an agent that wrote 200 MB of garbage) cannot
+    # OOM the build. Caps are loose vs. real on-disk sizes.
+    cves_raw = json.loads(
+        _read_text_capped(ROOT / "state" / "cves_seen.json", MAX_STATE_BYTES)
+    )
+    topics_raw = json.loads(
+        _read_text_capped(ROOT / "state" / "covered_items.json", MAX_STATE_BYTES)
+    )
+    sources_raw = json.loads(
+        _read_text_capped(ROOT / "sources" / "sources.json", MAX_STATE_BYTES)
+    )
+
+    # Total briefs/ tree size guard — defends against a flood of small
+    # poisoned files that individually pass the per-file cap.
+    if (ROOT / "briefs").exists():
+        total_briefs = sum(
+            p.stat().st_size for p in (ROOT / "briefs").rglob("*") if p.is_file()
+        )
+        if total_briefs > MAX_BRIEFS_DIR_BYTES:
+            print(
+                f"error: briefs/ tree is {total_briefs} bytes, exceeds cap of {MAX_BRIEFS_DIR_BYTES}",
+                file=sys.stderr,
+            )
+            return 5
 
     sources = annotate_sources(sources_raw, briefs)
     cves = annotate_cves(cves_raw, briefs, sources)
@@ -3874,7 +4106,11 @@ def main() -> int:
     emit_html("", home_html, lastmod=latest["publish_iso"][:10] if latest else "")
 
     # /about/ from README.md + docs index
-    readme = (ROOT / "README.md").read_text(encoding="utf-8") if (ROOT / "README.md").exists() else "# About"
+    readme = (
+        _read_text_capped(ROOT / "README.md", MAX_BRIEF_BYTES)
+        if (ROOT / "README.md").exists()
+        else "# About"
+    )
     emit_html(
         "about/",
         render_static_doc(
@@ -3895,7 +4131,7 @@ def main() -> int:
             emit_html(
                 rel_url,
                 render_static_doc(
-                    md_text=p.read_text(encoding="utf-8"),
+                    md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
                     title=p.stem.replace("-", " ").title() + " — ctipilot.ch",
                     description=p.stem.replace("-", " ").title(),
                     prefix="../../",
@@ -3910,7 +4146,7 @@ def main() -> int:
         emit_html(
             "about/changelog/",
             render_static_doc(
-                md_text=changelog.read_text(encoding="utf-8"),
+                md_text=_read_text_capped(changelog, MAX_BRIEF_BYTES),
                 title="Prompt CHANGELOG — ctipilot.ch",
                 description="Editorial-policy audit trail.",
                 prefix="../../",
@@ -4031,9 +4267,11 @@ def main() -> int:
 
     # ---- CNAME (GitHub Pages custom domain) ---------------------------
     # Routed through atomic_write_text so prune_orphans doesn't delete it.
+    # Cap at 1 KB — CNAME is a single hostname; anything larger is junk
+    # the build refuses to publish.
     cname_src = ROOT / "CNAME"
     if cname_src.exists():
-        atomic_write_text(OUT / "CNAME", cname_src.read_text())
+        atomic_write_text(OUT / "CNAME", _read_text_capped(cname_src, 1024))
 
     # ---- Manifest -----------------------------------------------------
     manifest = {

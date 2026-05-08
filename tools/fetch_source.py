@@ -41,14 +41,37 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import json
 import os
+import socket
 import ssl
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
+
+
+# === SSRF / decompression-bomb / redirect-rebinding defences =============
+#
+# Every fetch in this script (a) goes through `_check_url`, which is a
+# strict allowlist over scheme + hostname + resolved IP, and (b) is
+# attempted via an opener that re-runs `_check_url` on every redirect
+# destination. Even if a permitted publisher returns 30x to a
+# loopback / link-local / private / cloud-metadata host, the redirect is
+# refused before the next request flies.
+#
+# Body size is capped via `_read_capped`. `Accept-Encoding: identity`
+# precludes gzip / deflate inflation bombs at the wire level; the cap is
+# defence in depth in case a publisher serves an enormous identity body.
+
+DEFAULT_TIMEOUT = 30  # seconds — applies to connect + read
+MAX_REDIRECTS = 5
+# Per-call body caps. The CISA KEV JSON is legitimately large (~6 MB at the
+# time of writing); allow more headroom on JSON requests than HTML.
+MAX_BODY_BYTES_HTML = 25 * 1024 * 1024   # 25 MB
+MAX_BODY_BYTES_JSON = 64 * 1024 * 1024   # 64 MB
 
 
 def _build_ssl_context() -> ssl.SSLContext:
@@ -119,25 +142,165 @@ ALLOWED_HOSTS = frozenset({
 NCSC_CSH_BASE = "https://security-hub.ncsc.admin.ch"
 CISA_KEV_JSON = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 
-DEFAULT_TIMEOUT = 30  # seconds
+
+def _ip_is_blocked(addr: str) -> bool:
+    """True iff `addr` is loopback, link-local, private, multicast, reserved,
+    unspecified, or a known cloud-metadata endpoint. Covers IPv4 and IPv6.
+
+    The cloud-metadata endpoints worth special-casing:
+        - 169.254.169.254 (AWS / Azure / GCP / OpenStack IMDS)
+        - fd00:ec2::254  (AWS IMDS over IPv6)
+        - 100.100.100.200 (Alibaba Cloud)
+        - metadata.google.internal — handled by name-resolution path below
+    """
+    try:
+        ip = ipaddress.ip_address(addr)
+    except ValueError:
+        # Not an IP literal — caller resolves a hostname first, so this
+        # path should not be hit. Be conservative and treat as blocked.
+        return True
+    if (
+        ip.is_loopback
+        or ip.is_link_local
+        or ip.is_private
+        or ip.is_multicast
+        or ip.is_reserved
+        or ip.is_unspecified
+    ):
+        return True
+    # Explicit cloud-metadata literals that the generic `is_link_local` /
+    # `is_private` checks above DO already cover (169.254.0.0/16 is
+    # link-local; fd00::/8 is private). Belt-and-braces for clarity.
+    if str(ip) in ("169.254.169.254", "100.100.100.200"):
+        return True
+    return False
 
 
-def _check_host(url: str) -> None:
+def _resolve_and_check(host: str) -> str:
+    """Resolve `host` to an IP, refuse if any resolved address is on the
+    deny list, and return one chosen IP. Used to defend against:
+        - allow-listed publishers whose DNS now points at a private range
+        - DNS rebinding tricks where a later resolve produces a different
+          (internal) IP
+
+    The chosen IP is *not* substituted into the URL — TLS hostname
+    verification depends on the original Host header + SNI matching the
+    cert. We only use the IP for the deny-list check; the request itself
+    flies to the hostname normally. This pins the *answer* the script
+    accepts; it does not pin the *connection* (which would require a
+    custom socket wrapper). DNS rebinding mid-connection remains
+    theoretically possible but is far harder than redirect-based SSRF,
+    which the redirect handler below also blocks.
+    """
+    try:
+        infos = socket.getaddrinfo(
+            host, None, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )
+    except socket.gaierror as e:
+        raise ValueError(f"refused: cannot resolve {host!r}: {e}") from None
+    if not infos:
+        raise ValueError(f"refused: no address for {host!r}")
+    addrs = []
+    for fam, _t, _p, _c, sockaddr in infos:
+        addr = sockaddr[0]
+        if _ip_is_blocked(addr):
+            raise ValueError(
+                f"refused: host {host!r} resolves to disallowed address {addr!r}"
+            )
+        addrs.append(addr)
+    return addrs[0]
+
+
+def _check_url(url: str) -> None:
+    """Strict allowlist gate: scheme is https, host is on ALLOWED_HOSTS,
+    and the resolved IP is not loopback / link-local / private /
+    cloud-metadata. Called for the initial request AND for every redirect
+    destination (see SafeRedirectHandler below)."""
     parsed = urllib.parse.urlparse(url)
     host = (parsed.hostname or "").lower()
-    if not parsed.scheme.startswith("https"):
-        raise ValueError(f"refused: only https:// is allowed (got {parsed.scheme!r})")
+    scheme = (parsed.scheme or "").lower()
+    if scheme != "https":
+        raise ValueError(f"refused: only https:// is allowed (got {scheme!r})")
+    if not host:
+        raise ValueError("refused: no host in URL")
     if host not in ALLOWED_HOSTS:
         raise ValueError(
-            f"refused: host {host!r} is not in the allow-list "
-            f"({sorted(ALLOWED_HOSTS)}). Add it explicitly to ALLOWED_HOSTS "
-            "if you have a reason to fetch from there."
+            f"refused: host {host!r} is not in the allow-list. "
+            "Add it explicitly to ALLOWED_HOSTS if you have a reason to fetch from there."
         )
+    # Resolve and check. Even an allowlisted host with a poisoned A record
+    # pointing at 127.0.0.1 must be refused.
+    _resolve_and_check(host)
 
 
-def fetch(url: str, *, accept: str = "application/json, text/html;q=0.9, */*;q=0.5") -> tuple[int, bytes, dict[str, str]]:
-    """Plain GET with browser headers. Returns (status, body_bytes, headers)."""
-    _check_host(url)
+# Backwards-compatible shim — old callers used `_check_host`.
+def _check_host(url: str) -> None:  # pragma: no cover - thin alias
+    _check_url(url)
+
+
+class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Re-validate every redirect destination against `_check_url`.
+
+    Defeats: (a) an allowlisted publisher pivoting to an internal address
+    via 30x; (b) cross-protocol smuggling (https → http) — `_check_url`
+    refuses non-https schemes. Also caps the redirect chain to
+    `MAX_REDIRECTS`.
+    """
+
+    max_redirections = MAX_REDIRECTS
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[override]
+        # urllib normalises `newurl` against the original URL for us, so it
+        # is always absolute by the time we see it.
+        try:
+            _check_url(newurl)
+        except ValueError as e:
+            raise urllib.error.HTTPError(
+                newurl, code, f"redirect refused: {e}", headers, fp
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+# A single shared opener so every call uses the safe redirect handler and
+# the pinned SSL context. We intentionally do NOT install this globally —
+# leaving the global opener untouched lets test code mock urlopen without
+# inheriting our defences, and keeps the script's surface narrow.
+_OPENER = urllib.request.build_opener(
+    urllib.request.HTTPSHandler(context=_SSL_CTX),
+    SafeRedirectHandler(),
+)
+
+
+def _read_capped(resp, max_bytes: int) -> bytes:
+    """Read the response body in bounded chunks; abort on the first byte
+    past `max_bytes`. Defends against decompression / response-size bombs
+    even when `Content-Length` is missing or lies."""
+    buf = bytearray()
+    while True:
+        chunk = resp.read(min(64 * 1024, max_bytes - len(buf) + 1))
+        if not chunk:
+            break
+        buf.extend(chunk)
+        if len(buf) > max_bytes:
+            raise RuntimeError(
+                f"refused: response body exceeds cap of {max_bytes} bytes"
+            )
+    return bytes(buf)
+
+
+def fetch(
+    url: str,
+    *,
+    accept: str = "application/json, text/html;q=0.9, */*;q=0.5",
+    max_bytes: int = MAX_BODY_BYTES_HTML,
+) -> tuple[int, bytes, dict[str, str]]:
+    """Plain GET with browser headers. Returns (status, body_bytes, headers).
+
+    Refuses non-https URLs, hosts outside ALLOWED_HOSTS, and any redirect
+    that lands outside the same allowlist. Body size is capped at
+    `max_bytes`.
+    """
+    _check_url(url)
     req = urllib.request.Request(
         url,
         headers={
@@ -154,11 +317,16 @@ def fetch(url: str, *, accept: str = "application/json, text/html;q=0.9, */*;q=0
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT, context=_SSL_CTX) as resp:
-            return resp.status, resp.read(), dict(resp.headers)
+        with _OPENER.open(req, timeout=DEFAULT_TIMEOUT) as resp:
+            body = _read_capped(resp, max_bytes)
+            return resp.status, body, dict(resp.headers)
     except urllib.error.HTTPError as e:
         # Surface the upstream status verbatim so the agent can tell why a fetch failed.
-        return e.code, e.read() if hasattr(e, "read") else b"", dict(e.headers or {})
+        try:
+            err_body = _read_capped(e, max_bytes) if hasattr(e, "read") else b""
+        except RuntimeError:
+            err_body = b""
+        return e.code, err_body, dict(e.headers or {})
 
 
 def fetch_text(url: str, *, accept: str = "application/json, text/html;q=0.9, */*;q=0.5") -> str:
@@ -173,7 +341,18 @@ def fetch_text(url: str, *, accept: str = "application/json, text/html;q=0.9, */
 
 
 def fetch_json(url: str) -> Any:
-    return json.loads(fetch_text(url, accept="application/json, */*;q=0.5"))
+    # JSON endpoints get a higher size cap because CISA KEV is legitimately
+    # multi-MB. Re-implement the decode locally so we can pick the cap.
+    code, body, _ = fetch(
+        url, accept="application/json, */*;q=0.5", max_bytes=MAX_BODY_BYTES_JSON
+    )
+    if code != 200:
+        raise RuntimeError(f"upstream HTTP {code} for {url}")
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError:
+        text = body.decode("latin-1", errors="replace")
+    return json.loads(text)
 
 
 # ── NCSC Cyber Security Hub (CSH) — public TLP:CLEAR slice ────────────
