@@ -242,7 +242,7 @@ git commit -m "brief: YYYY-MM-DD
 git push origin main
 ```
 
-The push goes to whatever remote is configured for the repo (Path A in setup is the typical: `git@github.com:OwlsNightCatch/security-newsletter.git`). The routine never `--force`-pushes. If a push fails (transient auth or network), the commit stays local and the next run — or a manual `git push` — publishes it. There is no review branch and no human gate; the briefs are AI-content-noticed and source-linked already.
+The push goes to whatever remote is configured for the repo (Path A in setup is the typical: `git@github.com:OwlsNightCatch/ctipilot.git`). The routine never `--force`-pushes. If a push fails (transient auth or network), the commit stays local and the next run — or a manual `git push` — publishes it. There is no review branch and no human gate; the briefs are AI-content-noticed and source-linked already.
 
 ---
 

@@ -1,4 +1,4 @@
-# Security Newsletter — Daily & Weekly CTI Briefs
+# ctipilot.ch — Daily & Weekly CTI Briefs
 
 > **AI-generated content notice.** Every brief in this repository is produced autonomously by an LLM running as a [Claude Code routine](https://docs.claude.com/en/docs/claude-code/routines) on Anthropic-managed cloud infrastructure. The exact model varies based on the routine's runtime configuration; the model identifies itself in each brief's header. The agent fetches public sources, applies the verification rules in [`docs/verification.md`](docs/verification.md), and writes the Markdown briefs you see in `briefs/`. Every claim in a brief is linked inline to its source. The repository contains the prompts, source list, state files, and policy documents that govern this generation. Verify any operationally critical claim against the linked primary source before acting on it. The briefs are not professional advice and may contain errors.
 
@@ -8,7 +8,7 @@ The repository is the single source of truth for the workflow: prompts, source l
 
 ## Where to read
 
-- **Public reader:** [https://owlsnightcatch.github.io/security-newsletter/](https://owlsnightcatch.github.io/security-newsletter/) — a static GitHub Pages site. Every brief, every per-item block, every CVE / source / topic page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text autocomplete from the topbar.
+- **Public reader:** [https://ctipilot.ch/](https://ctipilot.ch/) — a static GitHub Pages site. Every brief, every per-item block, every CVE / source / topic page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text autocomplete from the topbar.
 - **GitHub:** the briefs are Markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
 
 The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for one-time enablement.
@@ -17,9 +17,9 @@ The site deploys automatically on every push to `main` that touches the brief fe
 
 | URL | Contents | Truncation |
 |-----|----------|------------|
-| [`/feed.xml`](https://owlsnightcatch.github.io/security-newsletter/feed.xml) | One item per daily brief | last 30 |
-| [`/feed-weekly.xml`](https://owlsnightcatch.github.io/security-newsletter/feed-weekly.xml) | One item per weekly summary | last 30 |
-| [`/feed-items.xml`](https://owlsnightcatch.github.io/security-newsletter/feed-items.xml) | One item per metadata-footer block (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive, Action Items) | last 50 |
+| [`/feed.xml`](https://ctipilot.ch/feed.xml) | One item per daily brief | last 30 |
+| [`/feed-weekly.xml`](https://ctipilot.ch/feed-weekly.xml) | One item per weekly summary | last 30 |
+| [`/feed-items.xml`](https://ctipilot.ch/feed-items.xml) | One item per metadata-footer block (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive, Action Items) | last 50 |
 
 `<pubDate>` is the actual git-commit moment of the brief on `main`, not midnight-of-brief-date. `<content:encoded>` carries the full brief / item rendered to HTML — no Markdown emphasis survives into the feed payload. No UTM parameters, no per-source variants — every link is plain canonical.
 
@@ -160,7 +160,7 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 - Search-string parameters are excluded from collection.
 - Block at the network layer if you don't want to be counted: `cloud.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without it.
 
-The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://owlsnightcatch.github.io/security-newsletter/about/analytics/).
+The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://ctipilot.ch/about/analytics/).
 
 The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md). Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
 

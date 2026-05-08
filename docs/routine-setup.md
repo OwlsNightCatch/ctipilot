@@ -103,7 +103,7 @@ After saving the routine, click **Run now** on its detail page once. A new sessi
 - All sub-agents return (or partial-result mode triggers — see Prime Directive 12 in the daily prompt).
 - The composition phase performs incremental writes (one `Write` for the skeleton, then one `Edit` per section).
 - Phase 6 commits and pushes. The operator output's last line should read `push: ok`.
-- Within a few minutes, the brief is visible at `https://github.com/<owner>/security-newsletter/blob/main/briefs/YYYY-MM-DD.md`.
+- Within a few minutes, the brief is visible at `https://github.com/<owner>/ctipilot/blob/main/briefs/YYYY-MM-DD.md`.
 
 If you instead see `push: failed (HTTP 403 — …)`, return to step 1 above — the credential doesn't have write access to this repo.
 

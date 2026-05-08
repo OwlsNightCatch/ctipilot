@@ -379,7 +379,7 @@ Both sub-agent spawn-prompt blocks gain explicit "take your time, persist interm
 
 ### Engineering — `site/build.py`, RSS, taxonomy
 - New SSG emits real HTML pages for every URL: home, brief, item, CVE, source, topic, tag, region, ops, about. The legacy SPA hash routes get a one-time JS bootstrap on `/` that converts indexed `#/briefs/<name>` URLs to the clean URL.
-- Three valid RSS feeds: `/feed.xml` (daily, URL preserved), `/feed-weekly.xml` (NEW), `/feed-items.xml` (NEW per-item, last 50). Closes [#2](https://github.com/OwlsNightCatch/security-newsletter/issues/2):
+- Three valid RSS feeds: `/feed.xml` (daily, URL preserved), `/feed-weekly.xml` (NEW), `/feed-items.xml` (NEW per-item, last 50). Closes [#2](https://github.com/OwlsNightCatch/ctipilot/issues/2):
   - **Defect A fixed:** Markdown emphasis / links / inline code render to HTML before the body is CDATA-wrapped. A unit test asserts no unrendered `**...**` or `[..](http..)` survives into `<content:encoded>` payloads.
   - **Defect B fixed:** `<pubDate>` is the actual git-commit moment of the brief on `main` (sourced from `git log --diff-filter=A --format=%aI -- briefs/YYYY-MM-DD.md`), falling back to file mtime — never midnight-of-brief-date.
 - Vendored library integrity check is preserved and now also covers the new `filter.min.js`.

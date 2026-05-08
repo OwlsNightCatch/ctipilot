@@ -26,7 +26,7 @@ designed to fit together.
    Vulnerabilities, Research & Investigative Reporting, and a derived-from-
    today Action Items block.
 4. Three valid RSS feeds: daily (existing URL preserved), weekly (new),
-   per-item granular (new). Close [#2](https://github.com/OwlsNightCatch/security-newsletter/issues/2).
+   per-item granular (new). Close [#2](https://github.com/OwlsNightCatch/ctipilot/issues/2).
 5. Tighten sub-agent prompts: trace primary sources, take time, persist.
 
 ## URL layout (normative — never rename, never repath)
@@ -179,7 +179,7 @@ Three feeds, all valid against the W3C feed validator:
 - `/feed-weekly.xml` — weekly summaries. Keeps last 30 items. NEW.
 - `/feed-items.xml` — granular per-item. Keeps last 50 items. NEW.
 
-Defects fixed (closes [#2](https://github.com/OwlsNightCatch/security-newsletter/issues/2)):
+Defects fixed (closes [#2](https://github.com/OwlsNightCatch/ctipilot/issues/2)):
 
 - Defect A: Markdown emphasis / links / inline code now render to HTML
   before the body is CDATA-wrapped. A unit test asserts no unrendered

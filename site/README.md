@@ -6,7 +6,7 @@ sources, and cross-links every entity to the briefs that reference it.
 Read-only: the agentic workflow (`prompts/`, `state/`, `sources/`) is the
 source of truth; this folder only **publishes** what the agent produces.
 
-The deployed site lives at <https://owlsnightcatch.github.io/security-newsletter/>.
+The deployed site lives at <https://ctipilot.ch/>.
 
 ## Architecture (v2 — static-site generator)
 
@@ -119,7 +119,7 @@ brief carry it through to the topic list, where the chip filter lets a
 SOC reviewer pull every `[SINGLE-SOURCE]` item across briefs.
 
 The deploy URL the feeds embed comes from the `SITE_URL` env var
-(`SITE_URL=https://owlsnightcatch.github.io/security-newsletter/` by
+(`SITE_URL=https://ctipilot.ch/` by
 convention; the default falls back to the same value).
 
 ## RSS feeds
