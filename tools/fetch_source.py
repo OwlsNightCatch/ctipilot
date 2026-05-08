@@ -104,6 +104,16 @@ ALLOWED_HOSTS = frozenset({
     "www.inside-it.ch", "inside-it.ch",
     # UK Information Commissioner's Office (data-breach notices)
     "ico.org.uk", "www.ico.org.uk",
+    # DataBreaches.net — independent breach tracker (403's WebFetch UA, added 2026-05-08)
+    "databreaches.net", "www.databreaches.net",
+    # NCC Group research blog (403's WebFetch UA via Akamai edge, added 2026-05-08)
+    "www.nccgroup.com", "nccgroup.com",
+    # Dragos OT/ICS research (TLS / cert handshake quirks on routine fetcher, added 2026-05-08 as fallback)
+    "www.dragos.com", "dragos.com",
+    # Sygnia IR (Cloudflare interstitial fallback, added 2026-05-08)
+    "www.sygnia.co", "sygnia.co",
+    # CCN-CERT Spain (kept in case the geo block ever lifts; currently 403 even via bridge)
+    "www.ccn-cert.cni.es", "ccn-cert.cni.es",
 })
 
 NCSC_CSH_BASE = "https://security-hub.ncsc.admin.ch"
