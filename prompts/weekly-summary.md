@@ -118,6 +118,8 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
    | 9 – 15 d | One missed week | doubled — covers two weeks | `Coverage window: catch-up of N days; previous weekly YYYY-Www` |
    | > 15 d | Major gap | cap at ~3 weeks of detail; older items as bullets | `Coverage window: major gap of N days; previous weekly YYYY-Www; older items condensed` |
 
+   The weekly covers the gap since the last *weekly* summary; the daily routine covers gaps since the last *daily* brief. The two routines run **independently** and self-coordinate via these gap-derived windows — the daily is primary operational coverage; the weekly is the consolidating view.
+
 3. List `briefs/` and read **every daily brief** whose date falls within the gap-derived window. The window may span more than 7 days when the previous weekly is overdue.
 
 4. Read `state/covered_items.json` and `state/cves_seen.json` for full coverage history (especially anything older than the window that is still active).
@@ -263,6 +265,8 @@ A single `Write` of the whole 11-section file trips `Stream idle timeout — par
 2. **`Read` the file you just wrote.**
 3. **`Edit` each section in turn**, one section per call. Replace the placeholder with the section's content per per-section guidance below.
 4. If any section is unusually long (CVE roll-up table, multi-day campaigns rollup), split that section's Edit into halves.
+
+If a placeholder leaks into a published summary because of a mid-Edit failure, that's a quality bug — § 10 should explicitly note it and the next run should re-Edit the affected section.
 
 ### Self-identification — name your actual model
 
