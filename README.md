@@ -161,7 +161,7 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 - Search-string parameters are excluded from collection.
 - Block at the network layer if you don't want to be counted: `cloud.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without it.
 
-The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://ctipilot.ch/about/analytics/).
+The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/docs/analytics/`](https://ctipilot.ch/about/docs/analytics/).
 
 The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`prompts/verification.md`](prompts/verification.md).
 

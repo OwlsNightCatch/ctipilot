@@ -5,10 +5,12 @@ policy, the operator tooling, the site, and the docs. Each open item has a
 *Why* (what failure mode or pain point it addresses) and a *How* (concrete
 shape of the change). They are **independent** — pick any subset.
 
-> **Status as of 2026-05-07.** A v2 cut-over landed in prompt v2.23 + the
-> SSG rewrite of `site/`, with prompt v2.24 tightening the prompt itself.
-> The implemented items below have one-line hooks back to where the change
-> lives. The unimplemented items are kept below in their original sections.
+> **Status as of 2026-05-09 (prompt v2.41).** The v2 cut-over landed in
+> prompt v2.23 + the SSG rewrite of `site/`. v2.38 introduced custom
+> sub-agents under `.claude/agents/`. v2.41 separated prompt-runtime
+> content into `prompts/` and reworked `docs/`. The implemented items
+> below have one-line hooks back to where the change lives. The
+> unimplemented items are kept below in their original sections.
 
 ---
 
@@ -34,9 +36,10 @@ shape of the change). They are **independent** — pick any subset.
 | **S9** | Verification-flag chip filters on the Topics page — filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, `[SINGLE-SOURCE-OTHER]`. | [`site/build.py`](../site/build.py) `annotate_topics` + `render_topic_list_page` |
 | **S10** | Brief-page filter UI — section toggles + tag chips + region chips, all merged into the aside-toc. Default = all selected = entire report visible; click a chip to negate. Multi-combo. | [`site/build.py`](../site/build.py) `render_brief_page` filter bar + [`site/assets/vendor/filter.min.js`](../site/assets/vendor/filter.min.js) |
 | **S11** | Static-site rendering — every URL is a real HTML page rendered server-side at build time. No SPA, no client-side Markdown rendering. | [`site/build.py`](../site/build.py) `base_template` + per-page renderers |
-| **D2** | `prompts/CHANGELOG.md` rendered on the About page at `/about/changelog/`. | [`site/build.py`](../site/build.py) `render_static_doc` |
+| **D2** | `prompts/CHANGELOG.md` rendered on the About page at `/about/prompts/changelog/`, with the prompts index at `/about/prompts/` listing recent version headings inline. | [`site/build.py`](../site/build.py) `render_static_doc` + the about-page emission block |
 | **D3** | Per-brief prompt-version badge linking to the matching CHANGELOG entry. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) compose template + [`site/build.py`](../site/build.py) `parse_brief` |
-| **D4** | Repo-relative links in `README.md` and `docs/*.md` rewritten to `/about/<doc>/` (or to GitHub blob URLs for non-rendered files) when emitted on About pages. Fragment identifiers preserved. | [`site/build.py`](../site/build.py) `_rewrite_about_links` |
+| **D4** | Repo-relative links in `README.md`, `docs/*.md`, and `prompts/*.md` rewritten to `/about/docs/<name>/` and `/about/prompts/<name>/` (or to GitHub blob URLs for non-rendered files) when emitted on About pages. Fragment identifiers preserved. | [`site/build.py`](../site/build.py) `_rewrite_about_links` |
+| **D5** | About page split into a Documentation section (operator-facing system docs) and a Prompts section (everything the routine `Read`s at runtime, plus the version-history changelog). | [`site/build.py`](../site/build.py) about-page emission block |
 | **SR4** | Sub-agent capability ceiling explicitly documented. | [`docs/operating.md`](operating.md#sub-agent-capability-ceiling) |
 | **SR5** | Build-side Markdown sanitisation — fixed tag + URI-scheme allowlist, no client-side renderer to bypass. Vendored marked.js + DOMPurify kept for reference but not wired into the runtime. | [`site/build.py`](../site/build.py) `render_markdown` + `render_inline` + `render_static_doc` |
 | **SR9** | Routine credential rotation cadence documented (90 days). | [`docs/operating.md`](operating.md#rotation-cadence-credentials) |

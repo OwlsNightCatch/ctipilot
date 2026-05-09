@@ -230,8 +230,9 @@ when iterating on `assets/`.
 
 The site deploys via [`.github/workflows/deploy-site.yml`](../.github/workflows/deploy-site.yml).
 It triggers on every push to `main` that touches `briefs/`, `state/`,
-`sources/`, `docs/`, `README.md`, `prompts/CHANGELOG.md`, or `site/`. The
-workflow runs `build.py` and force-pushes the result to the `gh-pages` branch.
+`sources/`, `docs/`, `prompts/`, `README.md`, or `site/` (the inputs the
+build reads). The workflow runs `build.py` and force-pushes the result to
+the `gh-pages` branch.
 
 One-time enable: GitHub repo → Settings → Pages → Build and deployment →
 Source: **Deploy from a branch** → **gh-pages** / **/ (root)**.
@@ -248,7 +249,7 @@ Source: **Deploy from a branch** → **gh-pages** / **/ (root)**.
   authoritative copy — the site is a view, not a transform. The "Raw .md"
   link on every brief page exposes the underlying file.
 - **Privacy-by-design analytics only.** Umami Cloud (no cookies, no
-  fingerprinting). Documented at `/about/analytics/`.
+  fingerprinting). Documented at `/about/docs/analytics/`.
 - **Defence in depth at the sink.** Strict CSP. Build-time Markdown
   rendering allowlists tags + URI schemes; no `<script>`, no `<iframe>`,
   no `javascript:` / `data:` URIs survive.

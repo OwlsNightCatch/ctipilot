@@ -196,7 +196,7 @@ System reference for operators, contributors, and curious readers. Pure docs —
   `sources/sources.json` (`--theirs`) on a true divergence. Deletes the
   feature branch on success. **Belongs to the publishing chain; do not edit
   unless you understand the resolution rules in
-  [`docs/operating.md`](operating.md#publishing-chain--feature-branch-only).**
+  [`docs/operating.md`](operating.md#publishing-chain-feature-branch-only).**
 - [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — triggers on
   push to `main` whenever the site inputs change. Runs `site/build.py`,
   uploads the bundle to GitHub Pages.
