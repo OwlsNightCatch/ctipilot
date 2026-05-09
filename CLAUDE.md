@@ -70,6 +70,49 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
 
 5. **Phase 7 (daily) / Phase 6 (weekly) — verify the brief actually landed.** Poll `git fetch origin main && git cat-file -e origin/main:<brief-path>` until the brief lands (10-min budget). Then poll `https://ctipilot.ch/` until the deploy-site workflow has rebuilt gh-pages. Report `publish: ok` / `main-only` / `pending (<reason>)` from the actual poll result, not from a guess. **A pushed feature branch is not a published brief** — the verification step is what confirms the auto-merge action and the deploy-site action both succeeded.
 
+   **Use `gh` if available — it is the authoritative source.** Polling main + curl-ing the site only tells you what eventually landed; it doesn't tell you *why* the auto-merge run failed when it did. If `gh` is on PATH and authenticated (`gh auth status` exits 0), use it to inspect the actual workflow run for the push you just made:
+
+   ```bash
+   if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
+       current_branch=$(git rev-parse --abbrev-ref HEAD)
+       head_sha=$(git rev-parse HEAD)
+
+       # Wait for the auto-merge run that was triggered by THIS push (matched by head SHA),
+       # not whichever run is most recent on this branch.
+       for _ in $(seq 1 30); do  # ~10 min budget at 20s interval
+           run_id=$(gh run list \
+               --workflow auto-merge-claude.yml \
+               --branch "$current_branch" \
+               --limit 5 \
+               --json databaseId,headSha,status,conclusion \
+               --jq ".[] | select(.headSha == \"$head_sha\") | .databaseId" | head -1)
+           [ -n "$run_id" ] && break
+           sleep 20
+       done
+
+       if [ -n "$run_id" ]; then
+           gh run watch "$run_id" --exit-status && \
+               echo "auto-merge: ok (run $run_id)" || \
+               { echo "auto-merge: failed — fetching logs"; gh run view "$run_id" --log-failed | tail -100; }
+       else
+           echo "auto-merge: no run found for $head_sha within budget"
+       fi
+
+       # Same pattern for deploy-site, scoped to main commits whose tree contains this push.
+       gh run list --workflow deploy-site.yml --branch main --limit 3 \
+           --json databaseId,headSha,status,conclusion,createdAt | head -50
+   else
+       echo "gh not available — falling back to git fetch + curl polling"
+   fi
+   ```
+
+   The `gh` path catches failures the polling path can't:
+   - Auto-merge ran but failed loud with `::error::` (conflict outside the auto-resolved paths) → `git fetch` will keep returning "brief not on main" without any signal *why*.
+   - Auto-merge ran successfully but deploy-site failed (vendored-library hash mismatch, taxonomy validation, smoke test) → `curl https://ctipilot.ch/` polling will time out without telling you it was the build, not the merge.
+   - The workflow didn't fire at all (unusual — concurrency conflict, GitHub Actions outage) → both polls return nothing useful.
+
+   In all three cases, `gh run view --log-failed` gives you the actual error in seconds. Always prefer `gh` over polling when it's available; fall back to polling otherwise.
+
 ## Hard "do nots"
 
 - **Never push directly to `main`.** Repo policy. The feature-branch + auto-merge chain above is the only supported path. Direct `git push origin HEAD:main` is forbidden — see daily prompt § Phase 6.
@@ -117,8 +160,38 @@ docs/check-brief-fixes.md        # how to fix common check_brief.py FAILs
 work/<run-id>/                   # gitignored intermediate state
 ```
 
+## Editing the master prompts — versioning rule (ALWAYS)
+
+Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `.claude/agents/cti-research.md`, or `.claude/agents/cti-verification.md` **must** ship with all three of these in the same commit. Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records.
+
+Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump when they materially change runtime behaviour (a new tool the prompt should mention, a new convention the prompt should enforce, a new file the prompt should commit). Pure clarifications, reformatting, and ops-doc updates do not.
+
+1. **Bump the version banner in the prompt file itself.** Both master prompts open with `> **Prompt version:** vN.M …`. Edit that string to the next version. The daily and weekly are versioned in lockstep — when one bumps, bump the other to match (even when only one was edited substantively) so the operator's `state/run_log.json.prompt_version` is unambiguous across runs.
+
+2. **Add a new top entry to [`prompts/CHANGELOG.md`](prompts/CHANGELOG.md).** Format:
+
+   ```markdown
+   ## N.M — YYYY-MM-DD (one-line headline of what changed)
+
+   ### Why
+   <1–3 sentences: what problem this edit solves, what concrete pain or incident
+   prompted it. Avoid restating what changed; that's the next section.>
+
+   ### What changed
+   <per-file bullets — name the file, name the section, name the diff in
+   plain English. Include any operator-visible behaviour changes
+   (cost shifts, new prompts, breaking config requirements).>
+
+   ### What stays
+   <one short paragraph naming the hard invariants and prior-version features
+   the edit preserves, so the diff isn't read as "everything was rewritten".>
+   ```
+
+   The CHANGELOG is the editorial-policy audit trail — every entry is the only place that explains *why* a behaviour shifted between two committed briefs. **No silent bumps.**
+
+3. **Carry the new version through the brief footer and the run log.** The next brief's `**Prompt:** vN.M` line and `state/run_log.json.prompt_version` field both read from the prompt's banner — no extra step required if step 1 is done correctly. Phase 5.5's `tools/check_brief.py` cross-checks the footer banner against `prompts/CHANGELOG.md`'s most recent heading; a mismatch FAILs the commit, which is the safety net catching skipped step-1 or step-2 edits.
+
+
 ## Self-evolution
 
-The routine has full authority to modify `prompts/`, `docs/`, `sources/sources.json`, `state/*.json`, `.claude/agents/`, `site/taxonomy.yaml`, and `tools/`. Every change appears in the commit diff for after-the-fact review. Hard invariants (AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values) **must not** be removed or weakened — surface concerns in § Verification Notes instead.
-
-When editing the master prompts, bump `prompts/CHANGELOG.md` in the same commit and carry the new version through the brief footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+The routine has full authority to modify `prompts/`, `docs/`, `sources/sources.json`, `state/*.json`, `.claude/agents/`, `.claude/memory/`, `site/taxonomy.yaml`, and `tools/`. Every change appears in the commit diff for after-the-fact review. Hard invariants (AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values) **must not** be removed or weakened — surface concerns in § Verification Notes instead.
