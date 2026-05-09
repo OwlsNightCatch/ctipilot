@@ -4,6 +4,53 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.36 — 2026-05-09 (publishing autonomy: feature-branch-only, auto-resolve conflicts, verify live site)
+
+### Why
+Operator review of the v2.35 fix revealed three further problems with the original publishing chain:
+
+1. **Direct push to `main` violates repo policy.** Branch ruleset `main-protect` (deletion + non-fast-forward block) is active, and operator intent is "no humans or routines push to main directly — only the auto-merge action promotes." The v2.35 chain still tried `git push origin HEAD:main` first, which the routine's GitHub App may or may not be allowed to do depending on bypass-actor configuration; in any case the *intent* is that only the GitHub-hosted workflow runner pushes to main.
+2. **The 2026-05-09 incident was not "main advanced during the run."** Last commit on main before the routine fired was 14 hours old; main was static the whole time the routine ran. The routine container's clone was already stale at session start — the local git proxy at `127.0.0.1:34969` mirrors github.com on a schedule, not per-pull. So `git fetch origin main` from inside the container can return a stale tip; the v2.35 sync step running against that stale tip can no-op, the push goes out, and only the auto-merge action (running on a github-hosted runner with direct github.com access) sees the real main and the real conflict.
+3. **A pushed feature branch is not a published brief.** Without explicit verification, the routine's "push: ok" report is a *hope*, not a fact. Today's brief lived as an orphan branch for hours before anyone noticed.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+**Phase 6 — Commit & sync & push (publishing chain):**
+- The direct-push-to-`main` step is **removed entirely**. The routine pushes only the feature branch.
+- Sync step now applies **auto-resolution rules** before giving up: `state/cves_seen.json` / `state/covered_items.json` / `state/run_log.json` / `state/deep_dive_history.json` resolve with `--ours` (routine has freshest state); `sources/sources.json` resolves with `--theirs` (sources are curated on main outside routines; routine writes are transient `last_successful_fetch` fields). Anything else → abort merge, push feature branch as-is, let the auto-merge action surface the conflict.
+- Feature-branch push retries up to 3 times with backoff (5s / 10s / 15s).
+- Hard rule added: never `git push origin HEAD:main`. Repo policy.
+
+**Phase 7 — Publish verification (NEW):**
+- Polls `git fetch origin main && git cat-file -e origin/main:briefs/$(date -u +%F).md` until the brief lands on main, with a 10-min budget.
+- If the brief landed, polls `curl -fsS https://ctipilot.ch/ | grep -q "$(date -u +%F)"` until the live site reflects today's date, sharing the same budget.
+- Three reportable outcomes: `publish: ok`, `publish: main-only` (deploy-site failed/slow), `publish: pending (<reason>)` (auto-merge running / conflict / push failed / unknown).
+- Hard rule: verification is read-only — never re-push, never touch the local commit on failure.
+
+**Output line:** the `push:` line now reports only `ok (feature branch)` or `failed (<reason>)`. New `publish:` line carries the verified outcome.
+
+**Hard invariant 7** rewritten to spell out the five-stage chain (commit → sync → push → wait for auto-merge → verify) and add the "no direct pushes to main" rule.
+
+**Standalone-brief invariant 9** updated to match.
+
+**Quality gate added:** "Phase 7 publish verification ran — the operator output's `publish:` line was set from the actual poll result, not assumed."
+
+**Execution-environment paragraph (line 81)** updated end-to-end: chain description, the routine's stale-clone failure mode, the workflow's auto-resolution backstop, the deploy-site → ctipilot.ch path, and the policy that direct pushes to main are forbidden.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+Phase 5 receives the same rewrite as the daily's Phase 6 (commit → sync with auto-resolution → feature-branch push with retry). New Phase 6 verifies `briefs/weekly/$(date -u +%G-W%V).md` is on main and that `https://ctipilot.ch/` reflects this week's id, with the same 10-min budget and the same outcome set. Output line, hard invariants, environment paragraph, and quality-gates list updated to match.
+
+### Workflow — `.github/workflows/auto-merge-claude.yml`
+
+Case 3 ("main advanced") now applies the same auto-resolution rules as the routine's sync step: `state/*.json` → `--ours`, `sources/sources.json` → `--theirs`. Any other conflicting path remains a loud failure (`exit 1` + `::error::` annotation). The header comment block was rewritten to document the auto-resolution policy and to note explicitly that the workflow's auto-resolution is a backstop for the case where the routine's local view of main was stale (proxy lag).
+
+### What v2.35 got right and v2.36 keeps
+- The sync step itself: still correct, still mandatory, still merges `origin/main` into the feature branch before pushing. v2.35's claim that this fixes the "silent skip" path was correct *as far as the workflow file going forward with the feature branch*; v2.36 adds the auto-resolution that v2.35 was missing.
+- No changes to phases 0–5 of either prompt.
+
+---
+
 ## 2.35 — 2026-05-09 (sync-then-publish chain — closes silent-skip on "main advanced")
 
 ### Why

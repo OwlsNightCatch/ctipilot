@@ -2,35 +2,47 @@ name: Auto-merge claude/* branches to main
 
 # Background:
 # The Claude Code routine container that runs the daily and weekly CTI
-# brief workflows always checks out a `claude/<adjective>-<name>-<id>`
-# branch on session start. The prompt's Phase 6 first attempts to push
-# the brief directly to `main` via `git push origin HEAD:main`. If that
-# is rejected (e.g., per-routine "Allow unrestricted branch pushes" is
-# off, or branch protection blocks the direct push), the prompt falls
-# back to pushing the current `claude/...` branch as-is.
+# brief workflows checks out a `claude/<adjective>-<name>-<id>` branch
+# on session start. The prompt's Phase 6 commits the brief, syncs the
+# feature branch with `origin/main` (with local auto-resolution for
+# state/* and sources/sources.json conflicts), and pushes the feature
+# branch — never directly to `main`, per repo policy.
 #
-# This workflow catches that fallback case. On any push to a `claude/**`
-# branch, it merges the feature branch into `main` and deletes the
-# feature branch. End state in all cases: the brief is on `main`.
+# This workflow is the authoritative merge gate. On every push to a
+# `claude/**` branch, it merges the feature branch into `main` (or
+# detects "already merged") and deletes the feature branch. End state:
+# the brief is on `main`, ready for `deploy-site.yml`.
 #
-# Three cases are handled:
+# Why the workflow needs its own conflict auto-resolution:
+# The routine's `git fetch origin main` may go through a stale local
+# proxy (the routine container has been observed cloning main hours
+# behind the github.com tip). The workflow runs on a github-hosted
+# runner that fetches main directly from github.com — so a conflict
+# the routine couldn't see locally still surfaces here. Without an
+# auto-resolution step, every such race becomes operator toil.
+#
+# Three cases are handled (in order):
 #   1. Fast-forward — the feature branch is a strict descendant of main
-#      (the common case when no other work landed on main during the
-#      routine's run). Fast-forward main; delete the feature branch.
-#   2. Already merged — the feature branch is an ancestor of main
-#      (e.g. PR-merged via the GitHub UI without deleting the branch,
-#      or a re-push of work that already landed). Just delete the
-#      feature branch.
-#   3. Main advanced — main moved forward with non-conflicting work
-#      while the routine ran. Create a regular merge commit, push
+#      (common case when the routine's sync step worked). Fast-forward
 #      main; delete the feature branch.
-#
-# Conflict (a real overlap between feature branch and main) is the
-# only failure mode and surfaces as a workflow failure (`exit 1` +
-# `::error::` annotation) so the operator notices and resolves.
-# Earlier versions of this workflow exited 0 on the "main advanced"
-# path, which produced a silent skip — main never updated and the
-# Actions UI showed Success. That has been fixed.
+#   2. Already merged — the feature branch is an ancestor of main.
+#      Delete the feature branch.
+#   3. Main advanced — both branches have unique commits. Try a regular
+#      merge. If git auto-resolves cleanly, push main + delete branch.
+#      If it conflicts, apply the auto-resolution rules:
+#         - state/cves_seen.json, state/covered_items.json,
+#           state/run_log.json, state/deep_dive_history.json → "ours"
+#           (the routine's version: it has the freshest state for the
+#           run that just completed; main's appended state from earlier
+#           runs is already merged in via the merge commit's other
+#           parent for non-conflicting fields)
+#         - sources/sources.json → "theirs" (main's version: sources
+#           are maintained outside routines via human-reviewed PRs;
+#           the routine only writes transient `last_successful_fetch`
+#           fields that the next run resets anyway)
+#      After auto-resolution, complete the merge, push main, delete the
+#      branch. Any remaining conflict in other paths fails loud with an
+#      `::error::` annotation so the operator notices and resolves.
 #
 # This workflow is shell-only — no third-party Actions — because the
 # org's policy restricts Actions to the OwlsNightCatch org. The work
@@ -158,11 +170,39 @@ jobs:
             exit 0
           fi
 
-          # Conflict — fail loudly so the operator notices. The previous
-          # version of this workflow exited 0 here, producing a silent
-          # skip; that hid the failure from the Actions UI and let stale
-          # claude/* branches accumulate.
-          echo "::error::Merge conflict between $BRANCH and main; resolve manually."
-          git diff --name-only --diff-filter=U || true
-          git merge --abort || true
-          exit 1
+          # Conflict — apply the auto-resolution rules described in the
+          # header. Walk every conflicted path; resolve known patterns;
+          # if anything is left unresolved, abort and fail loud.
+          UNRESOLVED=""
+          while IFS= read -r conflict_path; do
+            [ -z "$conflict_path" ] && continue
+            case "$conflict_path" in
+              state/cves_seen.json|state/covered_items.json|state/run_log.json|state/deep_dive_history.json)
+                echo "::notice::auto-resolving $conflict_path with --ours (routine's fresh state)"
+                git checkout --ours -- "$conflict_path"
+                git add -- "$conflict_path"
+                ;;
+              sources/sources.json)
+                echo "::notice::auto-resolving $conflict_path with --theirs (main's curated sources)"
+                git checkout --theirs -- "$conflict_path"
+                git add -- "$conflict_path"
+                ;;
+              *)
+                UNRESOLVED="${UNRESOLVED}${conflict_path}"$'\n'
+                ;;
+            esac
+          done < <(git diff --name-only --diff-filter=U)
+
+          if [ -n "$UNRESOLVED" ]; then
+            echo "::error::Merge conflict in paths outside the auto-resolution rules; resolve manually."
+            printf '%s' "$UNRESOLVED"
+            git merge --abort || true
+            exit 1
+          fi
+
+          # All conflicts auto-resolved — complete the merge.
+          git commit -m "Auto-merge $BRANCH into main (auto-resolved: state/* → ours, sources/sources.json → theirs)"
+          git push origin main
+          git push origin --delete "$BRANCH" || true
+          echo "Merged $BRANCH into main (merge commit + auto-resolution); deleted feature branch."
+          exit 0

@@ -26,7 +26,7 @@ Anti-crash guards (priority order):
 4. **Persist intermediate state often** under `work/<run-id>/<step>.json` (gitignored). After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume.
 5. **Drop raw HTML once extracted.** Long page text bloats context.
 6. **Bounded retries.** No `WebFetch` retried more than once. No git push retried. No subprocess retried.
-7. **Sync-then-publish chain (Phase 6) is non-negotiable.** Sync feature branch with `origin/main` first, then try direct push, then feature-branch fallback. Each push tried once.
+7. **Publishing chain (Phase 6 + 7) is non-negotiable.** Commit on feature branch → sync with `origin/main` (auto-resolve `state/*.json` → ours, `sources/sources.json` → theirs) → push feature branch (retry up to 3×) → wait for auto-merge action → verify brief on main AND site live. Direct pushes to `main` are forbidden.
 8. **Take time on quality, not retries.** A correct 25-min brief beats a 90-min retry-loop one.
 
 ---
@@ -78,7 +78,7 @@ Anti-crash guards (priority order):
 
 ## Execution environment
 
-Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost. Repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`; publishing first **syncs the feature branch with `origin/main`** (so the push is a fast-forward and the branch carries the latest workflow files), then pushes `HEAD:main` directly with fallback to feature branch + GitHub Action ff-merge. Network via internal HTTP proxy (allow-listed). Slow national-CERT pages normal. ~10-min per-sub-agent wall-clock budget. Git operations require the routine's GitHub App (see `docs/routine-setup.md`); 403 on push is permission, not transient — don't retry. **Model is configurable** (Sonnet, Opus, Haiku, other) — this prompt does not name your model; identify accurately in the AI-content notice.
+Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost. Repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Publishing chain: routine commits on the feature branch → syncs with `origin/main` (with auto-resolution for `state/*.json` and `sources/sources.json` conflicts) → pushes the feature branch (with retry-with-backoff) → `.github/workflows/auto-merge-claude.yml` promotes to `main` (it has the same auto-resolution rules as a backstop, in case the routine's local view of main was stale) → `.github/workflows/deploy-site.yml` rebuilds gh-pages → Phase 7 verifies the brief is on main AND `https://ctipilot.ch/` shows today's date. **Direct pushes to `main` are forbidden by repo policy** — only the auto-merge workflow promotes. Network via internal HTTP proxy (allow-listed); the proxy may serve a stale view of `origin/main`, which is exactly why the workflow runs the same merge logic on a github-hosted runner. Slow national-CERT pages normal. ~10-min per-sub-agent wall-clock budget. Git operations require the routine's GitHub App (see `docs/routine-setup.md`); 403 on push is permission, not transient — don't retry that. **Model is configurable** (Sonnet, Opus, Haiku, other) — this prompt does not name your model; identify accurately in the AI-content notice.
 
 Working directory:
 
@@ -513,9 +513,9 @@ Non-zero exit aborts commit. Maintaining `tools/check_brief.py` is part of self-
 
 ---
 
-## Phase 6 — Commit & push (sync-then-publish chain)
+## Phase 6 — Commit & sync & push (publishing chain)
 
-Brief lands on `main` via **sync-then-publish chain**. Five steps in order. Each push tried once.
+Brief lands on `main` exclusively via the auto-merge GitHub Action (`.github/workflows/auto-merge-claude.yml`). The routine **never pushes to `main` directly** — repo policy. The routine commits on its feature branch, syncs with `origin/main` (with auto-resolution for known conflict files), pushes the feature branch, and lets the action promote.
 
 **1. Stage and commit on the current branch:**
 
@@ -529,49 +529,123 @@ git commit -m "brief: YYYY-MM-DD
 "
 ```
 
-**2. Sync feature branch with `origin/main`.** Main may have advanced during the run (other routines, prompt edits, source-list updates). Without this, the direct push in step 3 is guaranteed to fail when anything landed on main, and the fallback feature-branch push ships an out-of-date `.github/workflows/auto-merge-claude.yml` — which is what triggered the 2026-05-09 silent skip incident.
+**2. Sync feature branch with `origin/main`.** Main may have advanced (other routines, prompt edits, source-list updates) — and the routine container's local view of `origin/main` may itself be stale (clone snapshot taken hours before the routine started). The sync attempts a merge and applies **auto-resolution rules** for known conflict files before giving up.
 
 ```bash
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+
 git fetch origin main
-if git merge --no-edit -m "sync: merge origin/main into $(git rev-parse --abbrev-ref HEAD) before publish" origin/main; then
+
+# Attempt merge. If clean → done. If conflicted → run auto-resolution.
+SYNC_OK=false
+if git merge --no-edit -m "sync: merge origin/main into ${current_branch} before publish" origin/main; then
     SYNC_OK=true
     echo "sync: merged origin/main cleanly"
 else
-    git merge --abort
-    SYNC_OK=false
-    echo "sync: conflict between brief edits and origin/main — aborting merge, will fall through to feature-branch fallback"
+    # Walk conflicted paths and apply rules:
+    #   state/*.json           → ours    (routine has freshest state)
+    #   sources/sources.json   → theirs  (main carries the curated source list)
+    #   anything else          → unresolved → abort merge
+    UNRESOLVED=""
+    while IFS= read -r p; do
+        [ -z "$p" ] && continue
+        case "$p" in
+            state/cves_seen.json|state/covered_items.json|state/run_log.json|state/deep_dive_history.json)
+                git checkout --ours -- "$p" && git add -- "$p"
+                echo "sync: auto-resolved $p with --ours"
+                ;;
+            sources/sources.json)
+                git checkout --theirs -- "$p" && git add -- "$p"
+                echo "sync: auto-resolved $p with --theirs"
+                ;;
+            *)
+                UNRESOLVED="${UNRESOLVED}${p}"$'\n'
+                ;;
+        esac
+    done < <(git diff --name-only --diff-filter=U)
+
+    if [ -z "$UNRESOLVED" ]; then
+        git commit -m "sync: merge origin/main into ${current_branch} (auto-resolved: state/* → ours, sources/sources.json → theirs)"
+        SYNC_OK=true
+        echo "sync: merge completed via auto-resolution"
+    else
+        git merge --abort
+        echo "sync: unresolved conflicts in:"
+        printf '%s' "$UNRESOLVED"
+        echo "sync: aborting — pushing feature branch as-is, auto-merge action will surface the conflict"
+    fi
 fi
 ```
 
-**3. Try direct publish to `main` (only meaningful if sync succeeded — the feature branch is now a strict descendant of main):**
+**3. Push the feature branch.** The auto-merge action takes it from there. Retry up to 3 times with backoff to ride out transient transport failures (proxy hiccup, fetch race, GITHUB_TOKEN warm-up).
 
 ```bash
-if [ "$SYNC_OK" = "true" ] && git push origin HEAD:main; then
-    echo "published: direct push to main"
-    PUBLISHED=true
-else
-    echo "direct push to main not attempted or rejected; falling back to feature branch"
-    PUBLISHED=false
+PUSH_OK=false
+for attempt in 1 2 3; do
+    if git push origin "$current_branch"; then
+        PUSH_OK=true
+        break
+    fi
+    echo "push attempt ${attempt} failed; retrying in $((attempt * 5))s"
+    sleep $((attempt * 5))
+done
+
+if [ "$PUSH_OK" != "true" ]; then
+    echo "push: feature-branch push failed after 3 attempts — local commit preserved at $(git rev-parse --short HEAD)"
 fi
 ```
 
-**4. Fallback — push the current branch so the auto-merge Action can pick it up:**
-
-```bash
-if [ "$PUBLISHED" != "true" ]; then
-    current_branch=$(git rev-parse --abbrev-ref HEAD)
-    git push origin "$current_branch"
-    echo "pushed: $current_branch — auto-merge-claude.yml will ff-merge (sync succeeded) or fail loud (sync conflict)"
-fi
-```
-
-**5. Operator output:** `push: ok (direct main)` (step 3 succeeded — common path when sync was clean); `push: ok (via auto-merge action)` (step 3 failed but step 4 succeeded; sync was clean so workflow ff-merges in seconds); `push: needs operator (sync conflict)` (sync aborted in step 2; feature branch pushed but auto-merge will fail with a conflict annotation requiring manual resolution); `push: failed (<reason>)` (both pushes failed; local commit preserved).
-
-**Hard rules:** each push tried once (403 is structural); never `--force`-push; never roll back on push failure — local commit is the operational record. **Never bypass the sync step** — it is what makes the chain robust against main advancing during the run.
+**Hard rules:** never `git push origin HEAD:main` (repo policy: no direct pushes to main); never `--force`-push; never roll back the local commit on push failure — local commit on the feature branch is the operational record. Auto-resolution only applies to the four state files and `sources/sources.json` listed above; any other conflict path must surface to the operator. Sync is mandatory — the routine's container clone of main is not guaranteed fresh, but the auto-merge action runs on a github-hosted runner with direct github.com access and will catch anything the local sync missed (it has the same auto-resolution rules as backstop).
 
 ---
 
-## Quality gates (self-check before write)
+## Phase 7 — Publish verification (the brief is not done until it is live)
+
+A pushed feature branch is not a published brief. Verify both promotion-to-main and site deploy before reporting the run as complete.
+
+**Total verification budget: 10 minutes** (auto-merge typically takes <30 s; deploy-site typically 1–3 min). If the budget elapses, report `publish: pending (<reason>)` and stop — the operator picks it up from there.
+
+```bash
+brief_path="briefs/$(date -u +%F).md"
+DEADLINE=$(($(date +%s) + 600))
+
+# 7a — Wait for the auto-merge action to land the brief on main.
+LANDED=false
+while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+    git fetch --quiet origin main
+    if git cat-file -e "origin/main:${brief_path}" 2>/dev/null; then
+        LANDED=true
+        echo "publish: brief is on origin/main at $(git rev-parse --short origin/main)"
+        break
+    fi
+    sleep 20
+done
+
+# 7b — Wait for the live site to reflect today's brief.
+SITE_LIVE=false
+if [ "$LANDED" = "true" ]; then
+    today_iso="$(date -u +%F)"
+    while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+        # ctipilot.ch index page links every published brief by date.
+        # A successful match means the deploy-site workflow has rebuilt
+        # gh-pages and Pages has served the new bundle.
+        if curl -fsS --max-time 15 https://ctipilot.ch/ | grep -q "${today_iso}"; then
+            SITE_LIVE=true
+            echo "publish: site reflects ${today_iso} at https://ctipilot.ch/"
+            break
+        fi
+        sleep 20
+    done
+fi
+```
+
+**Outcomes (report exactly one in the operator output):**
+
+- `publish: ok` — brief on main AND site references today's date (`LANDED=true && SITE_LIVE=true`).
+- `publish: main-only` — brief on main but site did not update inside the 10-min budget (`LANDED=true && SITE_LIVE=false`). Most often a deploy-site workflow failure — operator checks the Actions tab.
+- `publish: pending (<reason>)` — brief did not land on main inside the budget. `<reason>` is the most likely cause: `auto-merge running` (workflow still in flight), `auto-merge conflict` (workflow failed loud, look for `::error::` annotation), `feature-branch push failed` (sync/push step failed; commit is local-only), `unknown` (no signal — operator inspects manually).
+
+**Hard rules:** never delete the local commit or feature branch on verification failure; the local commit is the operational record. Never push or re-push during verification — verification is read-only. The operator decides whether to re-trigger the auto-merge workflow (`workflow_dispatch` with the branch name) or open a PR.
 
 - [ ] Every claim has inline link to source fetched today; brief in English; zero IOCs; zero vanity metrics; no training-data content.
 - [ ] No item from last 7 days appears unless under § 5 with delta + inline citation.
@@ -587,18 +661,20 @@ fi
 - [ ] **`tools/fetch_source.py` used for CISA + NCSC.ch** every run.
 - [ ] **`python3 tools/check_brief.py` exits 0** (no FAILs).
 - [ ] **Brief file exists at `briefs/YYYY-MM-DD.md`** — even on quiet days, even with sub-agent failures.
+- [ ] **Phase 7 publish verification ran** — the operator output's `publish:` line was set from the actual poll result (`ok` / `main-only` / `pending`), not assumed.
 
 ---
 
 ## Output
 
-Write `briefs/YYYY-MM-DD.md`, update state files, stage/commit/push. Print only:
+Write `briefs/YYYY-MM-DD.md`, update state files, stage/commit/sync/push, then verify. Print only:
 
 ```
 brief: briefs/YYYY-MM-DD.md
 items: N · ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
 commit: <short SHA or 'no-changes'>
-push: ok (direct main) | ok (via auto-merge action) | needs operator (sync conflict) | failed (<reason>)
+push: ok (feature branch) | failed (<reason>)
+publish: ok | main-only | pending (<reason>)
 ```
 
 ---
@@ -617,7 +693,7 @@ The agent has full authority to modify this prompt, source list, documentation, 
 6. English output regardless of source language.
 7. Always produce a brief; never block on a single sub-agent.
 8. No workflow-internal language in the brief.
-9. Sync-then-publish chain (sync `origin/main`, then direct push to `main`, fallback to feature branch + auto-merge Action).
+9. Publishing chain: feature-branch-only push → auto-merge action promotes to main → Phase 7 verification of main + live site. No direct pushes to main.
 10. Phase 4.5 verification sub-agent loop (URL truth + editorial quality, ≤3 iterations, ≤3 follow-up research sub-agents per iteration).
 11. Phase 5.5 self-check gate via `python3 tools/check_brief.py` (exits 0, no FAILs) before commit.
 12. Per-item metadata footer using taxonomy values from `site/taxonomy.yaml`.
