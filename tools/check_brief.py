@@ -1148,6 +1148,70 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
     else:
         ok("run-log-verification-residual", f"verification_residual_count = 0 (clean publish)")
 
+    # Per-agent model surface (v2.43+). Main agent records its own model;
+    # every sub-agent that returned should record the model it self-identified
+    # with. WARN (not FAIL) on missing fields so older runs from v2.42 still
+    # pass validation.
+    main_model = rec.get("model")
+    main_model_id = rec.get("model_id")
+    if isinstance(main_model, str) and main_model and main_model.lower() != "unknown":
+        ok("run-log-model", f"main-agent model = {main_model}"
+           + (f" ({main_model_id})" if main_model_id else ""))
+    elif main_model:
+        warn("run-log-model", f"main-agent model = {main_model!r} (consider naming the actual model)")
+    else:
+        warn("run-log-model", "main-agent model not recorded")
+
+    missing_subagent_models: list[str] = []
+    for k in sub_agent_keys:
+        a = sa.get(k)
+        if not isinstance(a, dict) or a.get("returned") is False:
+            continue
+        m = a.get("model")
+        if not isinstance(m, str) or not m.strip():
+            missing_subagent_models.append(k)
+    if missing_subagent_models:
+        warn("run-log-subagent-models",
+             f"sub-agents missing self-reported model: {missing_subagent_models} "
+             "(v2.43+ — set to 'unknown' if the **Model:** line was absent)")
+    else:
+        ok("run-log-subagent-models", "every returning sub-agent has a recorded model")
+
+    # Per-iteration verification block (v2.43+).
+    vblock = rec.get("verification")
+    if isinstance(vblock, dict) and isinstance(vblock.get("iterations"), list) and vblock["iterations"]:
+        per_iter = vblock["iterations"]
+        # Sanity-check shape — each iteration carries n, model, verdict.
+        broken = [i for i, it in enumerate(per_iter, start=1)
+                  if not isinstance(it, dict) or "model" not in it or "verdict" not in it]
+        if broken:
+            warn("run-log-verification-iterations",
+                 f"per-iteration records incomplete at positions {broken}")
+        else:
+            ok("run-log-verification-iterations",
+               f"verification.iterations[] populated ({len(per_iter)} record(s))")
+        # Iterations count should match the legacy scalar where both are present.
+        if isinstance(vi, int) and vi != len(per_iter):
+            warn("run-log-verification-iterations",
+                 f"verification_iterations ({vi}) != len(verification.iterations) ({len(per_iter)})")
+    else:
+        warn("run-log-verification-iterations",
+             "verification.iterations[] not populated (v2.43+ — record per-iteration model + verdict)")
+
+    # Wall-clock timing — drives the duration sparkline on the dashboard.
+    started = rec.get("started")
+    completed = rec.get("completed")
+    dur = rec.get("duration_seconds")
+    if isinstance(dur, (int, float)) and dur > 0:
+        ok("run-log-duration", f"duration_seconds = {int(dur)}")
+    else:
+        warn("run-log-duration",
+             "duration_seconds missing or 0 — Ops dashboard duration sparkline will be empty")
+    if started and completed:
+        ok("run-log-timestamps", "started + completed timestamps recorded")
+    else:
+        warn("run-log-timestamps", "started/completed timestamps not both recorded")
+
 
 def check_sources_touched_today(brief_date: str, sources_data: dict[str, Any] | None) -> None:
     """At least one source must have `last_successful_fetch == brief_date`.
@@ -1199,11 +1263,31 @@ def check_test_build(skip: bool) -> None:
 
 
 def check_ai_notice(brief_text: str) -> None:
-    """Hard invariant 1: every brief carries the AI-generated content notice."""
+    """Hard invariant 1: every brief carries the AI-generated content notice.
+
+    The v2.43 prompt also requires the notice to enumerate sub-agent models —
+    we WARN (not FAIL) when the sub-agent enumeration is missing so older
+    briefs from v2.42 and earlier still pass."""
     if "AI-generated content" in brief_text and "no human review" in brief_text:
         ok("ai-notice", "AI-generated content notice present")
     else:
         fail("ai-notice", "missing 'AI-generated content — no human review' notice")
+        return
+
+    # Sub-agent model surface (v2.43+). The blockquote should mention
+    # "sub-agents" and the metadata line should carry "**Sub-agents:**".
+    has_blockquote_subagents = bool(re.search(r"sub-agents?\s*\(", brief_text, re.IGNORECASE))
+    has_metadata_subagents = "**Sub-agents:**" in brief_text
+    if has_blockquote_subagents and has_metadata_subagents:
+        ok("ai-notice-subagents", "sub-agent models enumerated in notice and Generated-by line")
+    else:
+        missing = []
+        if not has_blockquote_subagents:
+            missing.append("blockquote sub-agent enumeration")
+        if not has_metadata_subagents:
+            missing.append("**Sub-agents:** metadata field")
+        warn("ai-notice-subagents",
+             f"v2.43+ surface missing: {', '.join(missing)} (older briefs ok)")
 
 
 def check_no_iocs(brief_text: str) -> None:

@@ -1,13 +1,25 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "schema": "Execution log for each daily-brief run. One entry per run.",
   "fields": {
     "run_id": "Unique run identifier (YYYY-MM-DD-NNN format)",
     "date": "Brief publication date (ISO)",
     "started": "ISO datetime when the run started",
     "completed": "ISO datetime when the run completed",
+    "duration_seconds": "Wall-clock duration in seconds (completed − started)",
     "prompt_version": "Version of prompts/daily-cti-brief.md used",
-    "model": "Model ID used",
+    "model": "Friendly name of the MAIN agent's model — verbatim from the AI-content notice; the prompt deliberately gives no example to avoid biasing self-identification",
+    "model_id": "Canonical model id of the main agent — verbatim from the backticks in the AI-content notice",
+    "sub_agents.<key>.model": "Friendly name reported by the sub-agent's **Model:** line",
+    "sub_agents.<key>.model_id": "Canonical id of the sub-agent's model; 'unknown' if absent",
+    "sub_agents.<key>.telemetry": "Optional self-reported runtime telemetry (duration_seconds, webfetch_calls, websearch_calls, bridge_fetches, tokens_in, tokens_out)",
+    "verification.iterations[].n": "Iteration number (1-based)",
+    "verification.iterations[].model": "Verifier friendly model name",
+    "verification.iterations[].model_id": "Verifier canonical model id",
+    "verification.iterations[].verdict": "'CLEAN' | 'NEEDS_FIXES'",
+    "verification.iterations[].truth": "F1-F4 finding count",
+    "verification.iterations[].editorial": "F5-F10 finding count",
+    "verification.iterations[].advisory": "F11 finding count",
     "gap_hours": "Hours since previous brief",
     "window_hours": "Recency window applied",
     "brief_path": "Path to produced brief file",
@@ -24,8 +36,10 @@
       "date": "2026-05-08",
       "started": "2026-05-08T00:00:00Z",
       "completed": "2026-05-08T02:00:00Z",
+      "duration_seconds": 7200,
       "prompt_version": "v2.25",
-      "model": "claude-sonnet-4-6",
+      "model": "unknown",
+      "model_id": "unknown",
       "gap_hours": 24,
       "window_hours": 36,
       "brief_path": "briefs/2026-05-08.md",
@@ -33,16 +47,76 @@
       "new_cves_added": 11,
       "new_items_added": 14,
       "items_updated": 2,
+      "items_published": 12,
       "sources_consulted": 22,
-      "notes": "First run using v2.25 prompt format with 9-section structure and per-item metadata footers. deep_dive_history.json and run_log.json created retroactively. CISA source persistent 403 — KEV data sourced via NVD references and secondary sources. GovCERT.ch archived (2023); CERT.at /en/warnings/ returned 404. CVE-2026-21509 dropped from §4 (January 2026 KEV entry, deadline already passed). IBM X-Force Annual Report 2026 deferred (publication date unverifiable). TCLBANKER excluded (no new development). Deep dive: Ivanti EPMM CVE-2026-5787/6973 chain (KEV deadline 2026-05-10)."
+      "fetch_failures": [
+        {"id": "cisa-kev", "code": "403", "note": "handled via known-403 allowlist"}
+      ],
+      "verification_iterations": 1,
+      "verification_residual_count": 0,
+      "verification": {
+        "iterations": [
+          {
+            "n": 1,
+            "model": "unknown",
+            "model_id": "unknown",
+            "verdict": "CLEAN",
+            "truth": 0,
+            "editorial": 0,
+            "advisory": 1
+          }
+        ]
+      },
+      "deep_dive": "Ivanti EPMM CVE-2026-5787/6973 chain (KEV deadline 2026-05-10)",
+      "sub_agents": {
+        "S1": {
+          "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
+          "sources_attempted": ["bleepingcomputer", "thehackernews", "securityaffairs", "kaspersky-securelist", "helpnetsecurity"],
+          "sources_used": ["bleepingcomputer", "thehackernews", "securityaffairs", "kaspersky-securelist"],
+          "items_returned": 7,
+          "telemetry": {"duration_seconds": 510, "webfetch_calls": 34, "websearch_calls": 3, "bridge_fetches": 2}
+        },
+        "S2": {
+          "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
+          "sources_attempted": ["ncsc-ch-security-hub", "govcert-ch", "bsi-de", "cert-pl", "anssi-fr"],
+          "sources_used": ["ncsc-ch-security-hub", "bsi-de", "anssi-fr"],
+          "items_returned": 4,
+          "telemetry": {"duration_seconds": 460, "webfetch_calls": 24, "websearch_calls": 2, "bridge_fetches": 5}
+        },
+        "S3": {
+          "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
+          "sources_attempted": ["heise", "enisa", "wiz-io", "unit42"],
+          "sources_used": ["heise", "enisa", "wiz-io"],
+          "items_returned": 3,
+          "telemetry": {"duration_seconds": 380, "webfetch_calls": 19, "websearch_calls": 4, "bridge_fetches": 0}
+        },
+        "S4": {
+          "returned": false,
+          "model": "unknown",
+          "model_id": "unknown",
+          "sources_attempted": ["therecord", "databreaches-net", "denic-blog", "abw-gov-pl"],
+          "sources_used": [],
+          "items_returned": 0,
+          "telemetry": {"duration_seconds": 600}
+        }
+      },
+      "notes": "First run using v2.25 prompt format with 9-section structure and per-item metadata footers. deep_dive_history.json and run_log.json created retroactively. CISA source persistent 403 — KEV data sourced via NVD references and secondary sources. GovCERT.ch archived (2023); CERT.at /en/warnings/ returned 404. CVE-2026-21509 dropped from §4 (January 2026 KEV entry, deadline already passed). IBM X-Force Annual Report 2026 deferred (publication date unverifiable). TCLBANKER excluded (no new development). Deep dive: Ivanti EPMM CVE-2026-5787/6973 chain (KEV deadline 2026-05-10). S4 stalled past 10-min budget — coverage gap recorded in § 7."
     },
     {
       "run_id": "2026-05-09-001",
       "date": "2026-05-09",
       "started": "2026-05-09T00:00:00Z",
       "completed": "2026-05-09T04:30:00Z",
+      "duration_seconds": 16200,
       "prompt_version": "v2.30",
-      "model": "claude-sonnet-4-6",
+      "model": "unknown",
+      "model_id": "unknown",
       "gap_hours": 24,
       "window_hours": 36,
       "developing_window_hours": 72,
@@ -65,6 +139,8 @@
       "sub_agents": {
         "S1": {
           "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
           "focus": "Active threats and trending vulnerabilities — global feed",
           "sources_attempted": [
             "kaspersky-securelist", "helpnetsecurity", "bleepingcomputer", "securityaffairs",
@@ -74,10 +150,18 @@
             "kaspersky-securelist", "helpnetsecurity", "bleepingcomputer", "securityaffairs",
             "bishopfox", "wiz-io", "msft-security-blog", "spring-io"
           ],
-          "items_returned": 8
+          "items_returned": 8,
+          "telemetry": {
+            "duration_seconds": 540,
+            "webfetch_calls": 38,
+            "websearch_calls": 4,
+            "bridge_fetches": 2
+          }
         },
         "S2": {
           "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
           "focus": "Switzerland, Europe, and public-sector focused sources",
           "sources_attempted": [
             "ncsc-ch-security-hub", "govcert-ch", "bsi-de", "anssi-fr", "cert-pl", "cert-eu"
@@ -85,10 +169,18 @@
           "sources_used": [
             "ncsc-ch-security-hub", "bsi-de", "anssi-fr", "cert-eu"
           ],
-          "items_returned": 5
+          "items_returned": 5,
+          "telemetry": {
+            "duration_seconds": 480,
+            "webfetch_calls": 27,
+            "websearch_calls": 3,
+            "bridge_fetches": 6
+          }
         },
         "S3": {
           "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
           "focus": "Research, investigative reporting, and long-form analysis",
           "sources_attempted": [
             "flare-io", "heise", "securelist", "enisa", "wiz-io", "unit42"
@@ -96,10 +188,18 @@
           "sources_used": [
             "flare-io", "heise", "enisa"
           ],
-          "items_returned": 4
+          "items_returned": 4,
+          "telemetry": {
+            "duration_seconds": 420,
+            "webfetch_calls": 22,
+            "websearch_calls": 5,
+            "bridge_fetches": 0
+          }
         },
         "S4": {
           "returned": true,
+          "model": "unknown",
+          "model_id": "unknown",
           "focus": "Incidents, disclosures, and sector-specific developments",
           "sources_attempted": [
             "bleepingcomputer", "securityaffairs", "therecord", "denic-blog",
@@ -108,8 +208,33 @@
           "sources_used": [
             "bleepingcomputer", "securityaffairs", "denic-blog", "cloudflare-blog"
           ],
-          "items_returned": 5
+          "items_returned": 5,
+          "telemetry": {
+            "duration_seconds": 510,
+            "webfetch_calls": 31,
+            "websearch_calls": 4,
+            "bridge_fetches": 1
+          }
         }
+      },
+      "verification": {
+        "iterations": [
+          {
+            "n": 1,
+            "model": "unknown",
+            "model_id": "unknown",
+            "verdict": "NEEDS_FIXES",
+            "truth": 1,
+            "editorial": 2,
+            "advisory": 0,
+            "telemetry": {
+              "duration_seconds": 320,
+              "urls_checked": 47,
+              "webfetch_calls": 41,
+              "bridge_fetches": 6
+            }
+          }
+        ]
       },
       "notes": "§1 omitted: no item met the bar (PAN-OS/Ivanti KEV deadlines are already-covered items; Dirty Frag requires local access). Dropped: GLPI CVE cluster (dedup, already 2026-05-08), cPanel CVE-2026-29201/02/03 (embargoed, gate not cleared), CloudStack CVE-2026-25077 (post-auth, no KEV/ITW), IBM/Salt Typhoon Italy (outside 72h developing window), ChipSoft (primary event outside window). NCSC-CH Security Hub URLs use API endpoint format (/api/posts/NNN/details) due to checker false-positive on SPA hash-fragment URLs. test-build FAIL is pre-existing build.py f-string syntax error (line 1698) unrelated to this run. CISA source persistent 403 — handled via known-403 path."
     }

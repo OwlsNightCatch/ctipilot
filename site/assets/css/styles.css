@@ -439,10 +439,25 @@ img, svg { max-width: 100%; height: auto; }
   }
 }
 
-/* Desktop: nav inline; no hamburger. */
-@media (min-width: 960px) {
+/* Desktop: nav inline; no hamburger.
+   Empirical content widths (measured in the live preview at 1100px):
+     brand ~236px (logo + ctipilot.ch + subtitle)
+     nav   ~458px (7 links @ 0.7rem padding, 0.88rem font)
+     search ~264px (min-width 200px, max 320px)
+     github  ~70px
+     theme    38px
+     padding 32px (1rem each side)
+     gaps     51px (4 × 0.8rem)
+   total: ~1149px — so 1100px is too tight; the grid algorithm overlaps
+   nav and search columns when the content budget exceeds the viewport.
+   Bumped to 1180px which gives a comfortable ~30px of breathing room.
+   Below 1180px the tablet hamburger handles things and search stays
+   inline.
+   `min-width: 0` on each row child plus `minmax(0, …)` track sizes
+   keeps the layout robust if a future nav item bumps the total. */
+@media (min-width: 1180px) {
   .bar-inner {
-    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-columns: auto minmax(0, auto) minmax(0, 1fr) auto auto;
     grid-template-areas: "brand nav search github theme";
     padding: 0.55rem 1rem;
     column-gap: 0.8rem;
@@ -453,10 +468,16 @@ img, svg { max-width: 100%; height: auto; }
     flex-direction: row;
     flex-wrap: wrap;
     gap: 0.2rem;
+    min-width: 0;
   }
-  .nav a { padding: 0.5rem 0.75rem; font-size: 0.9rem; }
+  .nav a { padding: 0.5rem 0.7rem; font-size: 0.88rem; }
   .nav-toggle { display: none; }
-  .searchbox { max-width: 320px; justify-self: end; width: 28vw; }
+  .searchbox {
+    max-width: 320px;
+    min-width: 200px;
+    justify-self: end;
+    width: 24vw;
+  }
   .bar-inner.is-open {
     grid-template-areas: "brand nav search github theme";
   }
@@ -760,6 +781,36 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
     grid-template-columns: minmax(0, 1fr) 240px;
     gap: 2.2rem;
   }
+}
+
+/* Brief page header: title on the left, Copy-as-Markdown split button on
+   the right. Used to live inside .brief-meta with `margin-left: auto`,
+   which made the button drop to its own line whenever the meta strip
+   wrapped — visually disconnected from the action it belonged to. The
+   header row pins the title and the action together at all widths. On
+   narrow viewports the button stacks under the title (gap controls the
+   spacing); the action wrapper aligns the button to the start so it
+   doesn't look orphaned. */
+.brief-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin: 0 0 0.4rem;
+}
+.brief-page-head h1 {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.brief-page-head__actions {
+  flex: 0 0 auto;
+  align-self: center;
+}
+@media (max-width: 540px) {
+  .brief-page-head { gap: 0.4rem; }
+  .brief-page-head__actions { align-self: flex-start; }
 }
 
 .brief-meta {
@@ -1722,3 +1773,369 @@ button.chip-section[aria-pressed="false"] {
   color: var(--text-soft);
   background: var(--bg-elev);
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Ops dashboard
+   Live agent telemetry: KPI tiles, model-distribution donut,
+   sub-agent fetch-density heatmap, per-iteration verification
+   table, recent-runs table, stale-source watchlist. Every chart
+   is inline static SVG (CSP forbids inline JS).
+   ───────────────────────────────────────────────────────────────── */
+
+.ops-section { margin: 2.2rem 0 0; }
+.ops-subtitle { font-size: 0.84rem; color: var(--text-muted); margin: 0 0 0.8rem; max-width: 60ch; }
+.ops-footnote { font-size: 0.78rem; margin-top: 1.6rem; }
+
+/* KPI grid — 7 tiles, packs into 1/2/3/4 cols by viewport. */
+.ops-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.6rem;
+  margin: 1.4rem 0 0.4rem;
+}
+.ops-kpi {
+  background: var(--bg-elev);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  position: relative;
+  overflow: hidden;
+}
+.ops-kpi--ok    { border-left: 3px solid var(--ok); }
+.ops-kpi--warn  { border-left: 3px solid var(--warn); }
+.ops-kpi--crit  { border-left: 3px solid var(--crit); }
+.ops-kpi--accent { border-left: 3px solid var(--accent); }
+.ops-kpi__label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.ops-kpi__value {
+  font-family: var(--mono);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.05;
+  word-break: break-word;
+}
+.ops-kpi__sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: -0.05rem;
+}
+.ops-kpi__delta { font-size: 0.74rem; }
+.ops-kpi__chart { margin-top: 0.45rem; }
+
+/* SVG chart primitives. */
+.ops-spark {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ops-spark--empty {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--border-soft);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  text-align: center;
+}
+
+/* Donut + legend. */
+.ops-models {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.6rem;
+}
+@media (min-width: 720px) {
+  .ops-models { grid-template-columns: 220px minmax(0, 1fr); align-items: start; }
+}
+.ops-models__chart { display: flex; justify-content: center; }
+.ops-donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.ops-donut { width: 130px; height: 130px; }
+
+.ops-legend { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.ops-legend__item {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.8rem;
+}
+.ops-legend__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  vertical-align: middle;
+  margin-right: 0.2rem;
+}
+.ops-legend__label { color: var(--text-soft); }
+.ops-legend__value { color: var(--text-muted); white-space: nowrap; font-size: 0.78rem; }
+.ops-models-table {
+  font-size: 0.82rem;
+}
+.ops-models-table th { font-weight: 600; }
+.ops-models-table td:nth-child(n+2) { text-align: right; width: 1px; padding-left: 0.6rem; padding-right: 0.6rem; }
+.ops-models-table td:first-child { white-space: nowrap; }
+
+/* Heatmap. */
+.ops-heatmap-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-elev);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.6rem;
+}
+/* The heatmap renders at its natural pixel size (cells are 14px each).
+   Without `max-width` it would still stretch to 100% on browsers that
+   ignore the SVG's `width` attribute when the element is a flex/grid
+   item; keep it pinned. */
+.ops-heatmap {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Latest-run panel. */
+.ops-latest {
+  background: var(--bg-elev);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.ops-latest__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.ops-latest__date {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-right: 0.4rem;
+}
+.ops-latest__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+}
+.ops-latest__meta .mono { font-weight: 600; }
+.ops-latest__main {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  padding: 0.4rem 0.55rem;
+  background: var(--bg-elev-2);
+  border-radius: 4px;
+}
+.ops-latest__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
+  margin-top: 0.3rem;
+}
+@media (min-width: 720px) {
+  .ops-latest__row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.ops-mini-head {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+}
+.ops-deep {
+  font-size: 0.84rem;
+  color: var(--text-soft);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Sub-agent card grid (latest-run panel). */
+.ops-sa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.55rem;
+}
+.ops-sa-card {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.83rem;
+}
+.ops-sa-card--stalled {
+  border-left: 3px solid var(--crit);
+}
+.ops-sa-card--missing {
+  border-left: 3px solid var(--text-muted);
+  opacity: 0.8;
+}
+.ops-sa-card__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.ops-sa-card__head strong {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent-soft);
+}
+.ops-sa-card__stats {
+  display: flex;
+  gap: 0.9rem;
+  font-size: 0.85rem;
+}
+.ops-sa-card__stats .mono { font-weight: 700; color: var(--text); }
+.ops-sa-card__bar {
+  height: 4px;
+  background: var(--bg);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.ops-sa-card__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  border-radius: 2px;
+}
+.ops-sa-card__tele {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  font-size: 0.74rem;
+}
+.ops-sa-card__tele-item .mono { color: var(--text); font-weight: 600; }
+.ops-sa-card__tele-empty {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Pills used throughout the dashboard. */
+.ops-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-soft);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.ops-pill--ok      { color: var(--ok);     border-color: rgba(86, 211, 100, 0.35); }
+.ops-pill--warn    { color: var(--warn);   border-color: rgba(255, 216, 102, 0.35); }
+.ops-pill--crit    { color: var(--crit);   border-color: rgba(255, 107, 107, 0.4); }
+.ops-pill--accent  { color: var(--accent-soft); border-color: rgba(232, 93, 117, 0.4); }
+.ops-pill--neutral { color: var(--text-soft); }
+
+.ops-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+/* Recent-runs table — denser than the default `.data` table to fit the
+   wider sub-agent / verification columns without horizontal scroll on
+   common laptop widths. */
+.ops-runs-table {
+  font-size: 0.82rem;
+  min-width: 720px;
+}
+.ops-runs-table th, .ops-runs-table td {
+  padding: 0.45rem 0.5rem;
+  white-space: nowrap;
+}
+.ops-runs-table td .mono { font-size: 0.78rem; }
+.ops-runs-table .ops-pill { font-size: 0.7rem; }
+
+/* ─────────────────────────────────────────────────────────────────
+   Embedded items inside CVE / Topic detail pages
+   The CVE and Topic pages used to show only a list of brief
+   appearances (date + brief title). Now we embed the full body of
+   every item whose footer matches the CVE id or whose heading/body
+   matches the topic phrase, so a reader hitting `/cves/CVE-…/`
+   sees the actual analysis without an extra hop.
+   ───────────────────────────────────────────────────────────────── */
+
+.embedded-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin-top: 0.4rem;
+}
+.embedded-item {
+  background: var(--bg-elev);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 1.1rem;
+}
+.embedded-item__head {
+  margin-bottom: 0.5rem;
+}
+.embedded-item__heading {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+.embedded-item__heading a {
+  color: var(--text);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.embedded-item__heading a:hover {
+  color: var(--accent-soft);
+  border-bottom-color: var(--accent-soft);
+  text-decoration: none;
+}
+.embedded-item__lineage {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.embedded-item__lineage a { color: var(--text-soft); }
+.embedded-item__lineage a:hover { color: var(--accent-soft); text-decoration: none; }
+.embedded-item__permalink { white-space: nowrap; }
+.embedded-item__body {
+  margin-top: 0.45rem;
+  font-size: 0.93rem;
+}
+/* Slight body-text dedensification — the parent CVE / Topic page sets a
+   smaller content width, so the standard brief-prose paragraph spacing
+   would feel airy here. */
+.embedded-item__body > p { margin: 0.55rem 0; }
+.embedded-item__body > p:first-child { margin-top: 0; }
+.embedded-item__body > p:last-child { margin-bottom: 0.4rem; }
+/* Per-item footer rendered through render_footer_html — same DOM as
+   inside a brief, but tighter top margin so it hugs the body. */
+.embedded-item .item-footer { margin-top: 0.6rem; }
+

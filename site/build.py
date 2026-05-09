@@ -19,7 +19,7 @@ Outputs (written under site/_site/):
     /briefs/YYYY-MM-DD/           single daily brief
     /briefs/weekly/YYYY-Www/      single weekly brief
     /briefs/                      brief index
-    /items/<slug>/                one page per metadata-footer item
+    /briefs/<date>/<slug>/        one page per metadata-footer item, scoped under its parent brief
     /cves/<CVE-ID>/               one page per CVE
     /sources/<id>/                one page per source
     /topics/<key>/                one page per covered topic
@@ -65,6 +65,7 @@ from __future__ import annotations
 import hashlib
 import html as html_mod
 import json
+import math
 import os
 import re
 import shutil
@@ -241,6 +242,16 @@ def slugify(text: str) -> str:
     text = re.sub(r"[^a-z0-9]+", "-", text)
     text = re.sub(r"-+", "-", text)
     return text.strip("-")
+
+
+def _brief_url_path(brief: dict[str, Any]) -> str:
+    """Path segment for a brief, relative to the site root, with trailing
+    slash. Daily: ``briefs/2026-05-09/``; weekly: ``briefs/weekly/2026-W19/``.
+    Used as the parent path for per-item permalinks
+    (``/briefs/<date>/<slug>/``) — keeping the helper in one place avoids
+    drift between the brief-detail page, the RSS item URLs, and the
+    per-item-page emit path."""
+    return ("briefs/weekly/" if brief.get("kind") == "weekly" else "briefs/") + brief["name"] + "/"
 
 
 def host_of(url: str) -> str:
@@ -1194,11 +1205,15 @@ def parse_brief(path: Path) -> dict[str, Any]:
             item_body = item_md[first_nl_i + 1 :] if first_nl_i >= 0 else ""
             item_body = item_body.strip()
             footer, stripped_body = _split_trailing_footer(item_body)
+            # Slug is the heading slug only — uniqueness comes from the
+            # parent brief in the URL (`/briefs/<date>/<slug>/`). Older
+            # builds prefixed the brief name into the slug because the
+            # item lived at `/items/<slug>/`; that prefix is now redundant.
             items.append(
                 {
                     "heading": item_heading,
                     "anchor": slugify(item_heading),
-                    "slug": f"{name}-{slugify(item_heading)}"[:80].strip("-"),
+                    "slug": slugify(item_heading)[:80].strip("-"),
                     "body_md": stripped_body,
                     "footer": footer,
                     "section_key": skey,
@@ -2010,7 +2025,7 @@ def render_brief_page(
             footer_html = render_footer_html(it["footer"], prefix=prefix) if it["footer"] else ""
             heading_html = (
                 f'<h3 id="{_escape(article_id)}">'
-                f'<a class="item-link" href="{prefix}items/{_escape(slug)}/">{_escape(it["heading"])}</a>'
+                f'<a class="item-link" href="{prefix}{_brief_url_path(brief)}{_escape(slug)}/">{_escape(it["heading"])}</a>'
                 f'</h3>'
                 if it["footer"]
                 else f'<h3 id="{_escape(article_id)}">{_escape(it["heading"])}</h3>'
@@ -2049,8 +2064,35 @@ def render_brief_page(
     items_count = brief.get("items", 0)
     raw_path = f"{prefix}briefs/{'weekly/' if brief['kind'] == 'weekly' else ''}{_escape(brief['name'])}.md"
 
+    copy_split = f"""
+<div class="md-split" data-md-split>
+  <button type="button" class="md-split__primary" data-action="copy-md" data-raw-url="{raw_path}" title="Copy the raw Markdown content">
+    {COPY_ICON_SVG}<span class="md-split__label">Copy as Markdown</span>
+  </button>
+  <button type="button" class="md-split__caret" aria-haspopup="menu" aria-expanded="false" aria-label="More copy options">
+    {CARET_DOWN_SVG}
+  </button>
+  <div class="md-split__menu" role="menu" hidden>
+    <button type="button" role="menuitem" class="md-split__item" data-action="copy-md" data-raw-url="{raw_path}">
+      <span class="md-split__item-title">Copy as Markdown</span>
+      <span class="md-split__item-sub">Copy the raw .md content</span>
+    </button>
+    <button type="button" role="menuitem" class="md-split__item" data-action="share">
+      <span class="md-split__item-title">Copy link</span>
+      <span class="md-split__item-sub">Copy permalink to this brief</span>
+    </button>
+    <a role="menuitem" class="md-split__item" href="{raw_path}" target="_blank" rel="noopener noreferrer">
+      <span class="md-split__item-title">View raw .md{EXTERNAL_LINK_SVG}</span>
+      <span class="md-split__item-sub">Open the .md file in a new tab</span>
+    </a>
+  </div>
+</div>
+"""
     body = f"""
-<h1>{_escape(brief['title'])}</h1>
+<header class="brief-page-head">
+  <h1>{_escape(brief['title'])}</h1>
+  <div class="brief-page-head__actions">{copy_split}</div>
+</header>
 <article class="brief-layout" data-brief="{_escape(brief['name'])}">
   <div>
     <div class="brief-meta">
@@ -2062,30 +2104,6 @@ def render_brief_page(
       {prompt_badge}
       <span>{items_count} item{'' if items_count == 1 else 's'}</span>
       {('<span>' + str(cve_count) + ' CVE' + ('' if cve_count == 1 else 's') + '</span>') if cve_count else ''}
-      <span class="meta-actions">
-        <div class="md-split" data-md-split>
-          <button type="button" class="md-split__primary" data-action="copy-md" data-raw-url="{raw_path}" title="Copy the raw Markdown content">
-            {COPY_ICON_SVG}<span class="md-split__label">Copy as Markdown</span>
-          </button>
-          <button type="button" class="md-split__caret" aria-haspopup="menu" aria-expanded="false" aria-label="More copy options">
-            {CARET_DOWN_SVG}
-          </button>
-          <div class="md-split__menu" role="menu" hidden>
-            <button type="button" role="menuitem" class="md-split__item" data-action="copy-md" data-raw-url="{raw_path}">
-              <span class="md-split__item-title">Copy as Markdown</span>
-              <span class="md-split__item-sub">Copy the raw .md content</span>
-            </button>
-            <button type="button" role="menuitem" class="md-split__item" data-action="share">
-              <span class="md-split__item-title">Copy link</span>
-              <span class="md-split__item-sub">Copy permalink to this brief</span>
-            </button>
-            <a role="menuitem" class="md-split__item" href="{raw_path}" target="_blank" rel="noopener noreferrer">
-              <span class="md-split__item-title">View raw .md{EXTERNAL_LINK_SVG}</span>
-              <span class="md-split__item-sub">Open the .md file in a new tab</span>
-            </a>
-          </div>
-        </div>
-      </span>
     </div>
     <details class="toc-mobile" data-filter="brief">
       <summary>On this page</summary>
@@ -2198,12 +2216,67 @@ def render_cve_list_page(
     )
 
 
+def render_embedded_items_section(
+    items: list[dict[str, Any]],
+    *,
+    heading: str,
+    empty_text: str,
+    prefix: str,
+) -> str:
+    """Render the parsed brief items that match the surrounding entity (a
+    CVE id, a topic key) as full cards — heading + brief lineage + body
+    Markdown + per-item footer. Used on the CVE and Topic detail pages
+    so the reader sees the actual analysis instead of just a list of
+    brief dates. Items are sorted by publish timestamp, newest first."""
+    if not items:
+        return f'<h2 class="section-head" style="margin-top:1.5rem">{_escape(heading)}</h2><p class="muted">{_escape(empty_text)}</p>'
+
+    # De-duplicate when an item appears multiple times in the bucket
+    # (same brief + same slug). Newer briefs first.
+    seen: set[tuple[str, str]] = set()
+    ordered = sorted(items, key=lambda r: r["brief"]["publish_ts"], reverse=True)
+    cards: list[str] = []
+    for record in ordered:
+        it = record["item"]
+        b = record["brief"]
+        slug = it["slug"]
+        key = (b["name"], slug)
+        if key in seen:
+            continue
+        seen.add(key)
+        item_url = f"{prefix}{_brief_url_path(b)}{_escape(slug)}/"
+        brief_url = f"{prefix}{_brief_url_path(b)}"
+        body_html = render_markdown(it.get("body_md") or "", base_url=item_url)
+        footer_html = render_footer_html(it["footer"], prefix=prefix) if it.get("footer") else ""
+        publish_date = (b.get("publish_iso") or "")[:10]
+        cards.append(
+            '<article class="embedded-item">'
+            '<header class="embedded-item__head">'
+            f'<h3 class="embedded-item__heading"><a href="{item_url}">{_escape(it["heading"])}</a></h3>'
+            '<p class="embedded-item__lineage muted">'
+            f'From <a href="{brief_url}">{_escape(b["title"])}</a>'
+            f' · published {_escape(publish_date)}'
+            f' · <a class="embedded-item__permalink" href="{item_url}">view item permalink &rarr;</a>'
+            '</p>'
+            '</header>'
+            f'<div class="embedded-item__body brief-prose">{body_html}</div>'
+            f'{footer_html}'
+            '</article>'
+        )
+
+    return (
+        f'<h2 class="section-head" style="margin-top:1.5rem">{_escape(heading)} ({len(cards)})</h2>'
+        f'<div class="embedded-items">{"".join(cards)}</div>'
+    )
+
+
 # === SINGLE CVE ========================================================
 
 def render_cve_page(
     cve: dict[str, Any],
     *,
     briefs_index: dict[str, dict[str, Any]],
+    matching_items: list[dict[str, Any]] | None = None,
     site_url: str,
     cachebust: str,
     prefix: str,
@@ -2299,6 +2372,16 @@ def render_cve_page(
   {citations_block}
 </div>
 
+{render_embedded_items_section(
+    matching_items or [],
+    heading=f"Items in briefs that mention {cve['id']}",
+    empty_text=(
+        "No item in any parsed brief carries this CVE in its metadata footer yet. "
+        "Once a brief surfaces this CVE in an item-level footer, the analysis will appear here in full."
+    ),
+    prefix=prefix,
+)}
+
 <h2 class="section-head" style="margin-top:1.5rem">Brief appearances</h2>
 {appearances_block}
 """
@@ -2393,6 +2476,7 @@ def render_topic_page(
     topic: dict[str, Any],
     *,
     briefs_index: dict[str, dict[str, Any]],
+    matching_items: list[dict[str, Any]] | None = None,
     site_url: str,
     cachebust: str,
     prefix: str,
@@ -2481,6 +2565,17 @@ def render_topic_page(
   </div>
   {citations_block}
 </div>
+
+{render_embedded_items_section(
+    matching_items or [],
+    heading=f"Items in briefs about {topic.get('title') or topic['key']}",
+    empty_text=(
+        "No parsed item heading or body matches this topic yet. The match rules are "
+        "an exact CVE id (for cve-typed topics) or the topic's title appearing in the "
+        "item heading or body — once that lands in a brief, the full analysis will appear here."
+    ),
+    prefix=prefix,
+)}
 
 <h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
 {timeline_block}
@@ -2981,6 +3076,264 @@ def render_static_doc(
 
 
 # === OPS DASHBOARD =====================================================
+#
+# The Ops page renders directly from state/run_log.json and sources/sources.json.
+# It is read-only — no JavaScript chart libraries — so every visualisation is
+# built as inline SVG. CSP is `script-src 'self' https://cloud.umami.is` which
+# excludes 'unsafe-inline'; charts must therefore be static SVG with no event
+# handlers.
+#
+# Every helper below returns a str of HTML (or SVG) that goes straight into
+# render_ops_page.
+
+
+def _ops_format_duration(seconds: float | int | None) -> str:
+    """Compact human-readable duration. 0 / None / negative → '—'."""
+    if not seconds or seconds <= 0:
+        return "—"
+    s = int(seconds)
+    if s < 90:
+        return f"{s}s"
+    if s < 3600:
+        return f"{s // 60}m {s % 60:02d}s"
+    h = s // 3600
+    m = (s % 3600) // 60
+    return f"{h}h {m:02d}m"
+
+
+def _ops_svg_sparkline(values: list[float], *, width: int = 220, height: int = 36,
+                       stroke: str = "var(--accent)", fill: str = "rgba(232,93,117,0.18)",
+                       label: str = "") -> str:
+    """Inline SVG line + filled-area sparkline. Empty values → placeholder."""
+    if not values or all(v <= 0 for v in values):
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    n = len(values)
+    if n == 1:
+        values = [values[0], values[0]]
+        n = 2
+    vmax = max(values) or 1.0
+    vmin = min(values)
+    span = max(vmax - vmin, 1e-9)
+    pad = 2
+    x_step = (width - 2 * pad) / max(n - 1, 1)
+    pts = []
+    for i, v in enumerate(values):
+        x = pad + i * x_step
+        # Invert Y because SVG y grows downward.
+        y = pad + (1 - (v - vmin) / span) * (height - 2 * pad)
+        pts.append((x, y))
+    line = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    area_pts = f"{pad},{height - pad} {line} {width - pad},{height - pad}"
+    last_x, last_y = pts[-1]
+    aria = _escape(label or "trend")
+    return (
+        f'<svg class="ops-spark" viewBox="0 0 {width} {height}" '
+        f'preserveAspectRatio="none" role="img" aria-label="{aria}">'
+        f'<polygon points="{area_pts}" fill="{fill}" stroke="none"/>'
+        f'<polyline points="{line}" fill="none" stroke="{stroke}" stroke-width="1.5" '
+        f'stroke-linejoin="round" stroke-linecap="round"/>'
+        f'<circle cx="{last_x:.1f}" cy="{last_y:.1f}" r="2.4" fill="{stroke}"/>'
+        f'</svg>'
+    )
+
+
+def _ops_svg_bars(values: list[float], *, width: int = 220, height: int = 56,
+                   color: str = "var(--accent-soft)", track: str = "var(--bg-elev-2)",
+                   label: str = "") -> str:
+    """Inline SVG vertical-bar chart (one bar per value)."""
+    if not values:
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    n = len(values)
+    vmax = max(max(values), 1.0)
+    pad = 1
+    bar_gap = 1
+    available = width - 2 * pad - bar_gap * (n - 1)
+    bar_w = max(available / n, 1)
+    rects: list[str] = []
+    for i, v in enumerate(values):
+        x = pad + i * (bar_w + bar_gap)
+        h = (v / vmax) * (height - 2 * pad)
+        y = height - pad - h
+        rects.append(
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{h:.1f}" '
+            f'fill="{color}" rx="1"/>'
+        )
+    aria = _escape(label or "bars")
+    return (
+        f'<svg class="ops-spark" viewBox="0 0 {width} {height}" '
+        f'preserveAspectRatio="none" role="img" aria-label="{aria}">'
+        f'<rect x="0" y="0" width="{width}" height="{height}" fill="{track}" rx="3"/>'
+        + "".join(rects)
+        + '</svg>'
+    )
+
+
+def _ops_svg_stacked_bars(stacks: list[list[tuple[float, str]]], *, width: int = 220,
+                           height: int = 56, track: str = "var(--bg-elev-2)",
+                           label: str = "") -> str:
+    """Inline SVG stacked vertical bars. Each entry in `stacks` is a list of
+    (value, color) tuples drawn from bottom to top."""
+    if not stacks:
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    n = len(stacks)
+    totals = [sum(v for v, _ in s) for s in stacks]
+    vmax = max(totals + [1.0])
+    pad = 1
+    bar_gap = 1
+    available = width - 2 * pad - bar_gap * (n - 1)
+    bar_w = max(available / n, 1)
+    rects: list[str] = []
+    for i, stack in enumerate(stacks):
+        x = pad + i * (bar_w + bar_gap)
+        cursor_y = height - pad
+        for value, color in stack:
+            if value <= 0:
+                continue
+            h = (value / vmax) * (height - 2 * pad)
+            cursor_y -= h
+            rects.append(
+                f'<rect x="{x:.1f}" y="{cursor_y:.1f}" width="{bar_w:.1f}" '
+                f'height="{h:.1f}" fill="{color}"/>'
+            )
+    aria = _escape(label or "stacked bars")
+    return (
+        f'<svg class="ops-spark" viewBox="0 0 {width} {height}" '
+        f'preserveAspectRatio="none" role="img" aria-label="{aria}">'
+        f'<rect x="0" y="0" width="{width}" height="{height}" fill="{track}" rx="3"/>'
+        + "".join(rects)
+        + '</svg>'
+    )
+
+
+def _ops_svg_donut(slices: list[tuple[str, float, str]], *, size: int = 110,
+                    hole: float = 0.55, label: str = "") -> str:
+    """Donut chart from (label, value, color) slices. Returns ``(svg, legend)``
+    bundled in a wrapping <figure>. Tiny slices collapse into 'other' visually
+    but stay listed in the legend."""
+    total = sum(v for _, v, _ in slices if v > 0)
+    if total <= 0:
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    cx = cy = size / 2
+    r_outer = size / 2 - 2
+    r_inner = r_outer * hole
+    paths: list[str] = []
+    legend_items: list[str] = []
+    angle = -90.0  # start at 12 o'clock
+    for name, value, color in slices:
+        if value <= 0:
+            continue
+        sweep = (value / total) * 360.0
+        if sweep >= 359.99:
+            # full circle — draw as ring with two arcs
+            paths.append(
+                f'<circle cx="{cx}" cy="{cy}" r="{r_outer}" fill="{color}"/>'
+                f'<circle cx="{cx}" cy="{cy}" r="{r_inner}" fill="var(--bg)"/>'
+            )
+        else:
+            a0 = math.radians(angle)
+            a1 = math.radians(angle + sweep)
+            large = 1 if sweep > 180 else 0
+            x0o = cx + r_outer * math.cos(a0)
+            y0o = cy + r_outer * math.sin(a0)
+            x1o = cx + r_outer * math.cos(a1)
+            y1o = cy + r_outer * math.sin(a1)
+            x0i = cx + r_inner * math.cos(a1)
+            y0i = cy + r_inner * math.sin(a1)
+            x1i = cx + r_inner * math.cos(a0)
+            y1i = cy + r_inner * math.sin(a0)
+            d = (
+                f"M {x0o:.2f} {y0o:.2f} "
+                f"A {r_outer} {r_outer} 0 {large} 1 {x1o:.2f} {y1o:.2f} "
+                f"L {x0i:.2f} {y0i:.2f} "
+                f"A {r_inner} {r_inner} 0 {large} 0 {x1i:.2f} {y1i:.2f} Z"
+            )
+            paths.append(f'<path d="{d}" fill="{color}"/>')
+        angle += sweep
+        pct = value / total * 100
+        legend_items.append(
+            '<li class="ops-legend__item">'
+            f'<span class="ops-legend__swatch" style="background:{color}"></span>'
+            f'<span class="ops-legend__label">{_escape(name)}</span>'
+            f'<span class="ops-legend__value mono">{int(value)} <span class="muted">({pct:.0f}%)</span></span>'
+            '</li>'
+        )
+    aria = _escape(label or "distribution")
+    svg = (
+        f'<svg class="ops-donut" viewBox="0 0 {size} {size}" '
+        f'role="img" aria-label="{aria}">' + "".join(paths) + '</svg>'
+    )
+    legend_html = f'<ul class="ops-legend">{"".join(legend_items)}</ul>' if legend_items else ""
+    return f'<div class="ops-donut-wrap">{svg}{legend_html}</div>'
+
+
+def _ops_svg_heatmap(rows: list[tuple[str, list[tuple[float, str]]]], *, cell: int = 22,
+                      gap: int = 3, label: str = "") -> str:
+    """Heatmap with row labels. Each row is (label, [(value 0–1, tooltip)]).
+    Cell colour interpolates between bg-elev-2 (0) and accent (1).
+
+    With only a few runs in the window the heatmap cells dwarf the row
+    labels visually if the cell size is small, so we default to a 22 px
+    cell — comfortable on desktop, still legible on narrow viewports
+    because the wrapping `<div class="ops-heatmap-wrap">` provides
+    horizontal scroll."""
+    if not rows:
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    max_cols = max((len(cells) for _, cells in rows), default=0)
+    if max_cols == 0:
+        return f'<div class="ops-spark ops-spark--empty" aria-label="{_escape(label)}">no data</div>'
+    label_col = 36
+    width = label_col + max_cols * cell + (max_cols - 1) * gap + 4
+    height = len(rows) * cell + (len(rows) - 1) * gap + 4
+    parts: list[str] = []
+    for ri, (rlabel, cells) in enumerate(rows):
+        y = 2 + ri * (cell + gap)
+        parts.append(
+            f'<text x="0" y="{y + cell - 6:.0f}" class="ops-heatmap__label" '
+            f'font-family="var(--mono)" font-size="11" fill="var(--text-muted)">{_escape(rlabel)}</text>'
+        )
+        for ci, (value, tip) in enumerate(cells):
+            x = label_col + ci * (cell + gap)
+            v = max(0.0, min(1.0, float(value)))
+            # Mix accent colour with elevation; alpha encodes intensity.
+            alpha = 0.18 + 0.82 * v
+            colour = f"rgba(232,93,117,{alpha:.2f})" if v > 0 else "var(--bg-elev-2)"
+            parts.append(
+                f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" '
+                f'fill="{colour}"><title>{_escape(tip)}</title></rect>'
+            )
+    aria = _escape(label or "heatmap")
+    # `width` / `height` attributes pin the natural render size — the SVG would
+    # otherwise scale to fill the parent container (CSS `width: 100%` default
+    # behaviour) and the cells become huge on desktop. We still keep viewBox
+    # so the SVG remains responsive when the parent is narrower than `width`.
+    return (
+        f'<svg class="ops-heatmap" viewBox="0 0 {width} {height}" '
+        f'width="{width}" height="{height}" '
+        f'role="img" aria-label="{aria}">{"".join(parts)}</svg>'
+    )
+
+
+_MODEL_PALETTE: list[str] = [
+    "#e85d75", "#79c0ff", "#56d364", "#ffd866", "#d2a8ff",
+    "#ff9b6b", "#56b3d3", "#bd9bff", "#9bdc4d",
+]
+
+
+def _ops_color_for_model(name: str, assigned: dict[str, str]) -> str:
+    """Stable palette assignment; 'unknown' always renders muted."""
+    key = (name or "").strip()
+    if not key or key.lower() in ("unknown", "—"):
+        return "var(--text-muted)"
+    if key in assigned:
+        return assigned[key]
+    colour = _MODEL_PALETTE[len(assigned) % len(_MODEL_PALETTE)]
+    assigned[key] = colour
+    return colour
+
+
+def _ops_pill(text: str, *, kind: str = "neutral") -> str:
+    return f'<span class="ops-pill ops-pill--{kind}">{_escape(text)}</span>'
+
 
 def render_ops_page(
     run_log: dict[str, Any] | None,
@@ -2991,10 +3344,222 @@ def render_ops_page(
     cachebust: str,
     canonical: str,
 ) -> str:
-    runs = list(reversed((run_log or {}).get("runs") or []))[:30]
+    """Operations dashboard.
 
-    # Stale active sources (>7 days since last_successful_fetch).
+    Reads from `state/run_log.json` and `sources/sources.json`. Renders KPI
+    tiles, charts (inline SVG, no JS), per-run tables, sub-agent telemetry,
+    verification breakdown, and a stale-source watch list. Every visualisation
+    degrades gracefully when the underlying data is missing — the agent's
+    sparse-record consequence is visible as "no data" rather than blank panels.
+    """
+    all_runs = list((run_log or {}).get("runs") or [])
+    # Newest first for the table; chronological for the time-series charts.
+    runs_desc = list(reversed(all_runs))[:30]
+    runs_asc = list(reversed(runs_desc))
+
+    daily_runs = [r for r in runs_desc if r.get("kind", "daily") != "weekly"]
+    weekly_runs = [r for r in runs_desc if r.get("kind") == "weekly"]
     today = datetime.now(timezone.utc).date()
+
+    # ----- KPI computation --------------------------------------------------
+    total_runs = len(all_runs)
+    last_run = all_runs[-1] if all_runs else None
+    last_run_date = last_run.get("date") if last_run else None
+    days_since_last = -1
+    if last_run_date and re.match(r"^\d{4}-\d{2}-\d{2}$", last_run_date):
+        try:
+            days_since_last = (today - datetime.strptime(last_run_date, "%Y-%m-%d").date()).days
+        except ValueError:
+            days_since_last = -1
+
+    durations = [r.get("duration_seconds") or 0 for r in runs_desc if r.get("duration_seconds")]
+    avg_duration = sum(durations) / len(durations) if durations else 0
+    items_published = [r.get("items_published") or 0 for r in runs_desc if r.get("items_published") is not None]
+    avg_items = sum(items_published) / len(items_published) if items_published else 0
+    total_items = sum(items_published)
+
+    # Verification cleanliness: iterations == 1 AND residual == 0 ⇒ clean publish.
+    clean_runs = sum(
+        1 for r in runs_desc
+        if (r.get("verification_iterations") or 0) == 1
+        and (r.get("verification_residual_count") or 0) == 0
+    )
+    rated_runs = sum(1 for r in runs_desc if r.get("verification_iterations") is not None)
+    clean_rate = (clean_runs / rated_runs * 100) if rated_runs else None
+
+    # Aggregate failure / stall counts across the window.
+    total_failures = sum(len(r.get("fetch_failures") or []) for r in runs_desc)
+    stalled_subagents = 0
+    sub_agent_returns = 0
+    for r in runs_desc:
+        for a in (r.get("sub_agents") or {}).values():
+            if not isinstance(a, dict):
+                continue
+            sub_agent_returns += 1
+            if a.get("returned") is False:
+                stalled_subagents += 1
+
+    # Distinct models across main agent + sub-agents + verifiers.
+    distinct_models: set[str] = set()
+    for r in runs_desc:
+        m = r.get("model")
+        if isinstance(m, str) and m and m.lower() != "unknown":
+            distinct_models.add(m)
+        for a in (r.get("sub_agents") or {}).values():
+            if not isinstance(a, dict):
+                continue
+            am = a.get("model")
+            if isinstance(am, str) and am and am.lower() != "unknown":
+                distinct_models.add(am)
+        for it in ((r.get("verification") or {}).get("iterations") or []):
+            if isinstance(it, dict):
+                vm = it.get("model")
+                if isinstance(vm, str) and vm and vm.lower() != "unknown":
+                    distinct_models.add(vm)
+
+    # ----- Sparkline series (chronological order) ---------------------------
+    duration_series = [r.get("duration_seconds") or 0 for r in runs_asc]
+    items_series = [r.get("items_published") or 0 for r in runs_asc]
+    failures_series = [len(r.get("fetch_failures") or []) for r in runs_asc]
+
+    # Verification stacks: clean (green) + needs_fixes (yellow) + residuals (red).
+    verification_stacks: list[list[tuple[float, str]]] = []
+    for r in runs_asc:
+        clean = 1 if (r.get("verification_iterations") or 0) == 1 and not (r.get("verification_residual_count") or 0) else 0
+        needs = max(0, (r.get("verification_iterations") or 0) - 1)
+        residuals = r.get("verification_residual_count") or 0
+        verification_stacks.append([
+            (clean, "var(--ok)"),
+            (needs, "var(--warn)"),
+            (residuals, "var(--crit)"),
+        ])
+
+    # ----- Model distribution (donut) --------------------------------------
+    model_role_counts: dict[str, dict[str, int]] = {}  # model → {main, research, verify}
+    palette: dict[str, str] = {}
+
+    def _bump(role: str, name: str | None) -> None:
+        if not name or not isinstance(name, str) or not name.strip():
+            return
+        bucket = model_role_counts.setdefault(name.strip(), {"main": 0, "research": 0, "verify": 0})
+        bucket[role] += 1
+
+    for r in runs_desc:
+        _bump("main", r.get("model"))
+        for a in (r.get("sub_agents") or {}).values():
+            if isinstance(a, dict):
+                _bump("research", a.get("model"))
+        for it in ((r.get("verification") or {}).get("iterations") or []):
+            if isinstance(it, dict):
+                _bump("verify", it.get("model"))
+
+    donut_slices: list[tuple[str, float, str]] = []
+    for name, roles in sorted(model_role_counts.items(), key=lambda kv: -sum(kv[1].values())):
+        total = sum(roles.values())
+        donut_slices.append((name, total, _ops_color_for_model(name, palette)))
+    donut_html = _ops_svg_donut(donut_slices, size=130, label="Model distribution") if donut_slices else \
+        '<p class="muted">No model data recorded yet.</p>'
+
+    role_table_rows: list[str] = []
+    for name, roles in sorted(model_role_counts.items(), key=lambda kv: -sum(kv[1].values())):
+        colour = _ops_color_for_model(name, palette)
+        total = sum(roles.values())
+        role_table_rows.append(
+            '<tr>'
+            f'<td><span class="ops-legend__swatch" style="background:{colour}"></span> {_escape(name)}</td>'
+            f'<td class="mono">{roles["main"]}</td>'
+            f'<td class="mono">{roles["research"]}</td>'
+            f'<td class="mono">{roles["verify"]}</td>'
+            f'<td class="mono"><strong>{total}</strong></td>'
+            '</tr>'
+        )
+    if role_table_rows:
+        models_table_html = (
+            '<table class="data ops-models-table">'
+            '<thead><tr><th>Model</th><th>Main</th><th>Research</th><th>Verify</th><th>Total</th></tr></thead>'
+            '<tbody>' + "".join(role_table_rows) + '</tbody></table>'
+        )
+    else:
+        models_table_html = ""
+
+    # ----- Sub-agent allocation heatmap ------------------------------------
+    sa_keys = ["S1", "S2", "S3", "S4", "W1", "W2"]
+    heatmap_rows: list[tuple[str, list[tuple[float, str]]]] = []
+    for k in sa_keys:
+        cells: list[tuple[float, str]] = []
+        present = False
+        for r in runs_asc:
+            a = (r.get("sub_agents") or {}).get(k)
+            if not isinstance(a, dict):
+                cells.append((0.0, f"{r.get('date','?')} {k}: not in this run"))
+                continue
+            present = True
+            if a.get("returned") is False:
+                cells.append((0.0, f"{r.get('date','?')} {k}: stalled"))
+                continue
+            attempted = len(a.get("sources_attempted") or [])
+            used = len(a.get("sources_used") or [])
+            ratio = (used / attempted) if attempted else 0.0
+            cells.append((ratio, f"{r.get('date','?')} {k}: {used}/{attempted} sources used, {a.get('items_returned', 0)} items"))
+        if present:
+            heatmap_rows.append((k, cells))
+    heatmap_html = _ops_svg_heatmap(heatmap_rows, cell=14, gap=2, label="Sub-agent fetch density (used/attempted)") \
+        if heatmap_rows else '<p class="muted">No sub-agent allocation recorded yet.</p>'
+
+    # ----- Latest run deep panel -------------------------------------------
+    latest_panel_html = _ops_render_latest_run_panel(last_run, palette, prefix=prefix) \
+        if last_run else '<p class="muted">No runs recorded yet.</p>'
+
+    # ----- Verification iteration timeline ---------------------------------
+    iter_rows: list[str] = []
+    for r in list(reversed(runs_desc))[-10:][::-1]:
+        iters = ((r.get("verification") or {}).get("iterations") or [])
+        if not iters:
+            continue
+        for it in iters:
+            if not isinstance(it, dict):
+                continue
+            verdict = it.get("verdict", "?")
+            kind = "ok" if verdict == "CLEAN" else ("warn" if verdict == "NEEDS_FIXES" else "neutral")
+            mname = it.get("model") or "unknown"
+            colour = _ops_color_for_model(mname, palette)
+            counts = (
+                f'truth {it.get("truth", 0)} · '
+                f'editorial {it.get("editorial", 0)} · '
+                f'advisory {it.get("advisory", 0)}'
+            )
+            tele = it.get("telemetry") or {}
+            tele_bits: list[str] = []
+            if tele.get("urls_checked"):
+                tele_bits.append(f'{tele["urls_checked"]} URLs')
+            if tele.get("duration_seconds"):
+                tele_bits.append(_ops_format_duration(tele["duration_seconds"]))
+            tele_str = " · ".join(tele_bits)
+            iter_rows.append(
+                '<tr>'
+                f'<td class="mono"><a href="{prefix}briefs/{_escape(r.get("date", ""))}/">{_escape(r.get("date", ""))}</a></td>'
+                f'<td class="mono">#{int(it.get("n", 0)) if isinstance(it.get("n"), int) else "?"}</td>'
+                f'<td>{_ops_pill(verdict, kind=kind)}</td>'
+                f'<td><span class="ops-legend__swatch" style="background:{colour}"></span>'
+                f' <span class="mono">{_escape(mname)}</span></td>'
+                f'<td class="mono muted">{_escape(counts)}</td>'
+                f'<td class="mono muted">{_escape(tele_str)}</td>'
+                '</tr>'
+            )
+    if iter_rows:
+        verif_table_html = (
+            '<div class="data-wrap"><table class="data">'
+            '<thead><tr><th>Date</th><th>Iter</th><th>Verdict</th>'
+            '<th>Verifier model</th><th>Findings</th><th>Telemetry</th></tr></thead>'
+            '<tbody>' + "".join(iter_rows) + '</tbody></table></div>'
+        )
+    else:
+        verif_table_html = '<p class="muted">No per-iteration verification records yet (v2.43+).</p>'
+
+    # ----- Recent runs table ------------------------------------------------
+    runs_table_html = _ops_render_runs_table(runs_desc, palette, prefix=prefix)
+
+    # ----- Stale active sources --------------------------------------------
     stale: list[dict[str, Any]] = []
     for s in sources or []:
         if s.get("status") != "active":
@@ -3012,55 +3577,6 @@ def render_ops_page(
             stale.append({"id": s["id"], "publisher": s.get("publisher", s["id"]), "days": -1, "last": lf})
     stale.sort(key=lambda x: -x["days"] if x["days"] >= 0 else 1 << 30, reverse=True)
 
-    if runs:
-        run_rows = []
-        for r in runs:
-            sa = r.get("sub_agents") or {}
-
-            def fmt(k: str) -> str:
-                a = sa.get(k)
-                if not a:
-                    return '<span class="muted">—</span>'
-                if a.get("returned") is False:
-                    return '<span class="badge badge--low">stalled</span>'
-                used = len(a.get("sources_used") or [])
-                attempted = len(a.get("sources_attempted") or [])
-                items = a.get("items_returned") or 0
-                return f'{items} <span class="muted">({used}/{attempted} src)</span>'
-
-            failures = len(r.get("fetch_failures") or [])
-            failures_html = (
-                f'<span class="badge badge--med">{failures}</span>'
-                if failures
-                else '<span class="muted">0</span>'
-            )
-            run_rows.append(
-                '<tr>'
-                f'<td class="mono"><a href="{prefix}briefs/{_escape(r.get("date", ""))}/">{_escape(r.get("date", ""))}</a></td>'
-                f'<td class="mono muted">{_escape(r.get("model", "") or "")}</td>'
-                f'<td>{fmt("S1")}</td>'
-                f'<td>{fmt("S2")}</td>'
-                f'<td>{fmt("S3")}</td>'
-                f'<td>{fmt("S4")}</td>'
-                f'<td>{failures_html}</td>'
-                f'<td>{_escape(str(r.get("items_published", "") or ""))}</td>'
-                f'<td class="mono muted">{_escape(r.get("deep_dive") or "—")}</td>'
-                '</tr>'
-            )
-        runs_html = (
-            '<div class="data-wrap"><table class="data">'
-            '<thead><tr><th>Date</th><th>Model</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th><th>Failures</th><th>Items</th><th>Deep dive</th></tr></thead>'
-            '<tbody>' + "".join(run_rows) + '</tbody>'
-            '</table></div>'
-        )
-    else:
-        runs_html = (
-            '<div class="empty">'
-            '<p>No <code>state/run_log.json</code> yet.</p>'
-            '<p class="muted">The agent populates this file at the end of every run (Phase 5). The first scheduled run after the v2 prompt change will create it.</p>'
-            '</div>'
-        )
-
     if stale:
         stale_lis = "".join(
             '<li><span>'
@@ -3076,28 +3592,375 @@ def render_ops_page(
     else:
         stale_html = '<p class="muted">No active source has been silent for more than a week.</p>'
 
+    # ----- KPI tiles --------------------------------------------------------
+    last_run_label = _escape(last_run_date or "—")
+    if days_since_last >= 0:
+        last_run_label += f' <span class="muted ops-kpi__delta">({days_since_last}d ago)</span>'
+    clean_rate_str = f"{clean_rate:.0f}%" if clean_rate is not None else "—"
+    clean_rate_sub = f"{clean_runs}/{rated_runs} clean publish" if rated_runs else "no telemetry yet"
+    distinct_models_str = str(len(distinct_models)) if distinct_models else "—"
+    distinct_models_sub = ", ".join(sorted(distinct_models)[:3]) if distinct_models else "no model recorded"
+
+    kpi_tiles = (
+        '<div class="ops-kpi-grid">'
+        + _ops_kpi_tile("Total runs (window)", str(min(total_runs, len(runs_desc))),
+                        sub=f"{len(daily_runs)} daily · {len(weekly_runs)} weekly",
+                        chart=_ops_svg_bars([1] * len(runs_desc) if runs_desc else [],
+                                              width=140, height=28,
+                                              color="var(--accent)", track="var(--bg)",
+                                              label="Run cadence"))
+        + _ops_kpi_tile("Avg duration",
+                        _ops_format_duration(avg_duration),
+                        sub=f"min {_ops_format_duration(min(durations) if durations else 0)} · "
+                            f"max {_ops_format_duration(max(durations) if durations else 0)}",
+                        chart=_ops_svg_sparkline(duration_series, width=140, height=28,
+                                                  stroke="var(--info)", fill="rgba(121,192,255,0.2)",
+                                                  label="Run duration over time"))
+        + _ops_kpi_tile("Items published",
+                        str(total_items),
+                        sub=f"avg {avg_items:.1f} per run",
+                        chart=_ops_svg_bars(items_series, width=140, height=28,
+                                              color="var(--ok)",
+                                              label="Items per run"))
+        + _ops_kpi_tile("Verification clean-rate", clean_rate_str, sub=clean_rate_sub,
+                        chart=_ops_svg_stacked_bars(verification_stacks, width=140, height=28,
+                                                      label="Verification verdicts"))
+        + _ops_kpi_tile("Sub-agent stalls", str(stalled_subagents),
+                        sub=f"out of {sub_agent_returns} returns",
+                        kind=("crit" if stalled_subagents > 0 else "ok"),
+                        chart=_ops_svg_bars(failures_series, width=140, height=28,
+                                              color="var(--warn)",
+                                              label="Fetch failures over time"))
+        + _ops_kpi_tile("Last run", last_run_label,
+                        sub=f"{total_failures} fetch failure{'s' if total_failures != 1 else ''} in window",
+                        kind=("warn" if days_since_last > 1 else "neutral"))
+        + _ops_kpi_tile("Distinct models", distinct_models_str, sub=distinct_models_sub)
+        + '</div>'
+    )
+
     body = f"""
 <h1>Operations</h1>
-<p class="subtitle">Run log and source-rotation health. Sourced from <code>state/run_log.json</code> (per-run sub-agent allocation) and <code>sources/sources.json</code> (last-successful-fetch timestamps).</p>
+<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, wall-clock duration) and <code>sources/sources.json</code> (last-successful-fetch timestamps). Last {len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'} shown.</p>
 
-<h2 class="section-head">Recent runs</h2>
-{runs_html}
+{kpi_tiles}
 
-<h2 class="section-head" style="margin-top:1.8rem">Stale active sources (&gt;7 days since last successful fetch)</h2>
-{stale_html}
+<section class="ops-section">
+  <h2 class="section-head">Latest run</h2>
+  {latest_panel_html}
+</section>
 
-<p class="muted" style="font-size:0.78rem; margin-top:1rem">
-  See <a href="{prefix}about/docs/architecture/">Architecture</a> for how the run log is produced.
+<section class="ops-section">
+  <h2 class="section-head">Models in use</h2>
+  <p class="subtitle ops-subtitle">Distinct Claude models that signed work in this window — main agent, research sub-agents, verification sub-agents. Tracking the split lets you spot runs where the runtime config changed and runs where a sub-agent forgot to self-identify.</p>
+  <div class="ops-models">
+    <div class="ops-models__chart">{donut_html}</div>
+    <div class="ops-models__table">{models_table_html}</div>
+  </div>
+</section>
+
+<section class="ops-section">
+  <h2 class="section-head">Sub-agent fetch density</h2>
+  <p class="subtitle ops-subtitle">Each cell is one run × one sub-agent. Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
+  <div class="ops-heatmap-wrap">{heatmap_html}</div>
+</section>
+
+<section class="ops-section">
+  <h2 class="section-head">Verification iterations</h2>
+  <p class="subtitle ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded the v2.43+ <code>verification.iterations[]</code> block. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
+  {verif_table_html}
+</section>
+
+<section class="ops-section">
+  <h2 class="section-head">Recent runs</h2>
+  {runs_table_html}
+</section>
+
+<section class="ops-section">
+  <h2 class="section-head">Stale active sources (&gt;7 days since last successful fetch)</h2>
+  {stale_html}
+</section>
+
+<p class="muted ops-footnote">
+  See <a href="{prefix}about/docs/architecture/">Architecture</a> for how the run log is produced. Per-agent self-identification is documented in <a href="{prefix}about/prompts/daily-cti-brief/">prompts/daily-cti-brief.md</a> § Self-identification.
 </p>
 """
     return base_template(
         title="Operations dashboard — ctipilot.ch",
-        description="Recent runs, sub-agent allocation, and source maintenance signals.",
+        description="Live agent telemetry: run cadence, durations, model split, sub-agent allocation, verification verdicts, fetch failures, source-rotation health.",
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+    )
+
+
+def _ops_kpi_tile(label: str, value: str, *, sub: str = "", kind: str = "neutral",
+                   chart: str = "") -> str:
+    """One KPI tile. `value` may contain HTML (e.g. embedded muted span)."""
+    sub_html = f'<div class="ops-kpi__sub">{_escape(sub)}</div>' if sub else ""
+    chart_html = f'<div class="ops-kpi__chart">{chart}</div>' if chart else ""
+    return (
+        f'<div class="ops-kpi ops-kpi--{kind}">'
+        f'<div class="ops-kpi__label">{_escape(label)}</div>'
+        f'<div class="ops-kpi__value">{value}</div>'
+        f'{sub_html}'
+        f'{chart_html}'
+        f'</div>'
+    )
+
+
+def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *,
+                                   prefix: str) -> str:
+    """Detailed panel for the most recent run — main-agent model, every
+    sub-agent's contribution + telemetry, verification roll-up. The 'one
+    glance, full picture' card."""
+    date = run.get("date") or "?"
+    kind = run.get("kind", "daily")
+    main_name = run.get("model") or "unknown"
+    main_id = run.get("model_id") or ""
+    main_colour = _ops_color_for_model(main_name, palette)
+    pv = (run.get("prompt_version") or "?").lstrip("v")
+    duration = _ops_format_duration(run.get("duration_seconds"))
+    items_pub = run.get("items_published")
+    items_pub_str = str(items_pub) if items_pub is not None else "—"
+    deep_dive = run.get("deep_dive") or "—"
+    failures = run.get("fetch_failures") or []
+
+    # Sub-agent cards.
+    sub_keys_for_kind = ("W1", "W2") if kind == "weekly" else ("S1", "S2", "S3", "S4")
+    sa_cards: list[str] = []
+    for k in sub_keys_for_kind:
+        a = (run.get("sub_agents") or {}).get(k) or {}
+        sa_cards.append(_ops_render_subagent_card(k, a, palette))
+    sa_grid = f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
+
+    # Failures.
+    if failures:
+        chips = "".join(
+            f'<span class="ops-pill ops-pill--warn">{_escape(f.get("id", "?"))} '
+            f'<span class="muted">{_escape(str(f.get("code", f.get("status", ""))))}</span></span>'
+            for f in failures
+        )
+        failures_html = f'<div class="ops-chip-row">{chips}</div>'
+    else:
+        failures_html = '<p class="muted">No fetch failures recorded.</p>'
+
+    # Verification summary
+    iters = ((run.get("verification") or {}).get("iterations") or [])
+    if iters:
+        v_chips = "".join(
+            f'<span class="ops-pill ops-pill--{("ok" if it.get("verdict") == "CLEAN" else "warn")}">'
+            f'#{_escape(str(it.get("n", "?")))} {_escape(it.get("verdict", "?"))} '
+            f'<span class="muted">· {_escape(it.get("model", "unknown"))}</span>'
+            '</span>'
+            for it in iters if isinstance(it, dict)
+        )
+        verif_html = f'<div class="ops-chip-row">{v_chips}</div>'
+    else:
+        vi = run.get("verification_iterations")
+        vr = run.get("verification_residual_count")
+        if vi is not None:
+            verif_html = (
+                f'<p class="muted">{vi} iteration{"s" if (vi or 0) != 1 else ""} · '
+                f'{vr or 0} residual{"s" if (vr or 0) != 1 else ""} '
+                '(legacy scalar — per-iteration breakdown not recorded)</p>'
+            )
+        else:
+            verif_html = '<p class="muted">No verification telemetry recorded.</p>'
+
+    return f"""
+<div class="ops-latest">
+  <div class="ops-latest__head">
+    <div>
+      <a class="ops-latest__date mono" href="{prefix}briefs/{_escape(date)}/">{_escape(date)}</a>
+      <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span>
+      <span class="ops-pill ops-pill--accent">prompt v{_escape(pv)}</span>
+    </div>
+    <div class="ops-latest__meta">
+      <span class="mono">{_escape(duration)}</span>
+      <span class="muted">duration</span>
+      <span class="mono">{_escape(items_pub_str)}</span>
+      <span class="muted">items</span>
+    </div>
+  </div>
+  <div class="ops-latest__main">
+    <span class="ops-legend__swatch" style="background:{main_colour}"></span>
+    <span class="mono"><strong>{_escape(main_name)}</strong></span>
+    {f'<span class="mono muted">({_escape(main_id)})</span>' if main_id else ''}
+    <span class="muted">main agent</span>
+  </div>
+  {sa_grid}
+  <div class="ops-latest__row">
+    <div>
+      <h3 class="ops-mini-head">Verification</h3>
+      {verif_html}
+    </div>
+    <div>
+      <h3 class="ops-mini-head">Fetch failures</h3>
+      {failures_html}
+    </div>
+    <div>
+      <h3 class="ops-mini-head">Deep dive</h3>
+      <p class="mono ops-deep">{_escape(deep_dive)}</p>
+    </div>
+  </div>
+</div>
+"""
+
+
+def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str, str]) -> str:
+    if not data:
+        return (
+            f'<div class="ops-sa-card ops-sa-card--missing">'
+            f'<div class="ops-sa-card__head"><strong>{_escape(key)}</strong>'
+            ' <span class="ops-pill ops-pill--neutral">absent</span></div>'
+            '<p class="muted">No record for this sub-agent.</p>'
+            '</div>'
+        )
+    if data.get("returned") is False:
+        model_name = data.get("model") or "unknown"
+        return (
+            f'<div class="ops-sa-card ops-sa-card--stalled">'
+            f'<div class="ops-sa-card__head"><strong>{_escape(key)}</strong>'
+            ' <span class="ops-pill ops-pill--crit">stalled</span></div>'
+            f'<p class="muted mono">{_escape(model_name)}</p>'
+            '<p class="muted">Past 10-min wall-clock budget; abandoned.</p>'
+            '</div>'
+        )
+
+    model_name = data.get("model") or "unknown"
+    model_id = data.get("model_id") or ""
+    colour = _ops_color_for_model(model_name, palette)
+    used = len(data.get("sources_used") or [])
+    attempted = len(data.get("sources_attempted") or [])
+    items = data.get("items_returned") or 0
+    tele = data.get("telemetry") or {}
+
+    def _t(name: str) -> str:
+        v = tele.get(name)
+        if v is None or v == "":
+            return ""
+        return f'<span class="ops-sa-card__tele-item"><span class="mono">{_escape(str(v))}</span> <span class="muted">{_escape(name.replace("_", " "))}</span></span>'
+
+    tele_html = "".join(_t(n) for n in ("duration_seconds", "webfetch_calls", "websearch_calls", "bridge_fetches", "tokens_in", "tokens_out", "urls_checked"))
+    if tele_html:
+        tele_block = f'<div class="ops-sa-card__tele">{tele_html}</div>'
+    else:
+        tele_block = '<p class="muted ops-sa-card__tele-empty">No self-telemetry reported.</p>'
+
+    used_pct = int((used / attempted) * 100) if attempted else 0
+    bar = (
+        '<div class="ops-sa-card__bar">'
+        f'<div class="ops-sa-card__bar-fill" style="width:{used_pct}%"></div>'
+        '</div>'
+    )
+
+    return f"""
+<div class="ops-sa-card">
+  <div class="ops-sa-card__head">
+    <strong>{_escape(key)}</strong>
+    <span class="ops-legend__swatch" style="background:{colour}"></span>
+    <span class="mono">{_escape(model_name)}</span>
+    {f'<span class="mono muted">({_escape(model_id)})</span>' if model_id else ''}
+  </div>
+  <div class="ops-sa-card__stats">
+    <div><span class="mono">{items}</span><span class="muted"> items</span></div>
+    <div><span class="mono">{used}/{attempted}</span><span class="muted"> sources</span></div>
+  </div>
+  {bar}
+  {tele_block}
+</div>
+"""
+
+
+def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], *,
+                            prefix: str) -> str:
+    if not runs:
+        return (
+            '<div class="empty">'
+            '<p>No <code>state/run_log.json</code> yet.</p>'
+            '<p class="muted">The agent populates this file at the end of every run (Phase 5). The first scheduled run after the v2 prompt change will create it.</p>'
+            '</div>'
+        )
+
+    def _sa_cell(a: dict[str, Any] | None) -> str:
+        if not a:
+            return '<span class="muted">—</span>'
+        if a.get("returned") is False:
+            return '<span class="ops-pill ops-pill--crit">stalled</span>'
+        used = len(a.get("sources_used") or [])
+        attempted = len(a.get("sources_attempted") or [])
+        items = a.get("items_returned") or 0
+        m = a.get("model") or ""
+        colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
+        return (
+            f'<span class="ops-legend__swatch" style="background:{colour}" '
+            f'title="{_escape(m or "unknown")}"></span>'
+            f' <span class="mono">{items}</span>'
+            f'<span class="muted"> ({used}/{attempted})</span>'
+        )
+
+    rows: list[str] = []
+    for r in runs:
+        sa = r.get("sub_agents") or {}
+        kind = r.get("kind", "daily")
+        keys = ("W1", "W2") if kind == "weekly" else ("S1", "S2", "S3", "S4")
+        cells = "".join(f'<td>{_sa_cell(sa.get(k))}</td>' for k in keys)
+        # Pad weekly rows out to four sub-agent columns so columns align.
+        if kind == "weekly":
+            cells += '<td><span class="muted">—</span></td><td><span class="muted">—</span></td>'
+        failures = len(r.get("fetch_failures") or [])
+        failures_html = (
+            f'<span class="ops-pill ops-pill--warn">{failures}</span>'
+            if failures
+            else '<span class="muted">0</span>'
+        )
+        main_name = r.get("model") or "unknown"
+        main_colour = _ops_color_for_model(main_name, palette)
+        verif_iters = r.get("verification_iterations")
+        verif_residual = r.get("verification_residual_count") or 0
+        if verif_iters is None:
+            verif_html = '<span class="muted">—</span>'
+        elif verif_residual:
+            verif_html = (
+                f'<span class="ops-pill ops-pill--crit" '
+                f'title="{verif_iters} iteration(s); {verif_residual} unresolved finding(s)">'
+                f'{verif_iters}↻ · {verif_residual}r</span>'
+            )
+        elif verif_iters > 1:
+            verif_html = (
+                f'<span class="ops-pill ops-pill--warn" '
+                f'title="{verif_iters} iteration(s); cleaned up">'
+                f'{verif_iters}↻</span>'
+            )
+        else:
+            verif_html = '<span class="ops-pill ops-pill--ok">clean</span>'
+        duration = _ops_format_duration(r.get("duration_seconds"))
+        items_pub = r.get("items_published")
+        items_pub_str = str(items_pub) if items_pub is not None else "—"
+
+        rows.append(
+            '<tr>'
+            f'<td class="mono"><a href="{prefix}briefs/{_escape(r.get("date", ""))}/">{_escape(r.get("date", ""))}</a></td>'
+            f'<td><span class="ops-pill ops-pill--neutral">{_escape(kind)}</span></td>'
+            f'<td><span class="ops-legend__swatch" style="background:{main_colour}"></span>'
+            f' <span class="mono">{_escape(main_name)}</span></td>'
+            f'<td class="mono muted">v{_escape(str(r.get("prompt_version", "?")).lstrip("v"))}</td>'
+            f'<td class="mono">{_escape(duration)}</td>'
+            f'<td class="mono">{_escape(items_pub_str)}</td>'
+            f'{cells}'
+            f'<td>{failures_html}</td>'
+            f'<td>{verif_html}</td>'
+            '</tr>'
+        )
+
+    return (
+        '<div class="data-wrap"><table class="data ops-runs-table">'
+        '<thead><tr><th>Date</th><th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
+        '<th>Items</th><th>S1/W1</th><th>S2/W2</th><th>S3</th><th>S4</th>'
+        '<th>Fetch fail</th><th>Verif</th></tr></thead>'
+        '<tbody>' + "".join(rows) + '</tbody></table></div>'
     )
 
 
@@ -3348,7 +4211,7 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
                 if not it["footer"]:
                     continue
                 slug = it["slug"]
-                url = f"{site_url}items/{slug}/"
+                url = f"{site_url}{_brief_url_path(b)}{slug}/"
                 item_entries.append(
                     {
                         "url": url,
@@ -3933,7 +4796,7 @@ def main() -> int:
         for n in s.get("appearances", []):
             sources_by_brief[n].append(s)
 
-    items_index: dict[str, dict[str, Any]] = {}  # slug -> {item, brief}
+    items_index: dict[str, dict[str, Any]] = {}  # "<brief>/<slug>" -> {item, brief}
     tag_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
     region_index: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
@@ -3965,22 +4828,93 @@ def main() -> int:
                 if not it["footer"]:
                     continue
                 slug = it["slug"]
-                items_index[slug] = {"item": it, "brief": b}
+                # Key by (brief, slug). With items emitted under
+                # /briefs/<date>/<slug>/, two briefs can each carry an
+                # item whose heading slugifies the same way without
+                # colliding. The composite key keeps both reachable.
+                ib_key = f"{b['name']}/{slug}"
+                items_index[ib_key] = {"item": it, "brief": b}
+                tag_region_entry = {
+                    "slug": slug,
+                    "title": it["heading"],
+                    "brief": b["name"],
+                    "kind": b["kind"],
+                    "publish_ts": b["publish_ts"],
+                }
                 for t in it["footer"].get("tags", []):
-                    tag_index[t].append({"slug": slug, "title": it["heading"], "brief": b["name"], "publish_ts": b["publish_ts"]})
+                    tag_index[t].append(tag_region_entry)
                 for r in it["footer"].get("regions", []):
-                    region_index[r].append({"slug": slug, "title": it["heading"], "brief": b["name"], "publish_ts": b["publish_ts"]})
+                    region_index[r].append(tag_region_entry)
 
         # Also write the raw .md for any reader that wants it.
         md_dir = OUT / ("briefs/weekly/" if b["kind"] == "weekly" else "briefs/")
         atomic_write_text(md_dir / (b["name"] + ".md"), b["text"])
 
+    # ---- CVE → items + Topic → items indexes -------------------------
+    # The CVE and Topic detail pages used to be a thin appearance list.
+    # Now that we've already parsed every item from every brief, we can
+    # embed the full body of each matching item directly on the CVE /
+    # Topic page so a reader hitting `/cves/CVE-…/` sees the actual
+    # writeups instead of just a list of brief dates. The match rules:
+    # CVE — split the item footer's `cve` field on commas and bucket the
+    # item under every CVE id it covers.  Topic — for each topic, build
+    # a phrase from the topic's title (its first segment before " — " /
+    # " – " / ": "), case-fold both heading and topic phrase, and match
+    # when the phrase is in the item's heading; CVE-typed topics also
+    # match when the topic's key equals one of the item's footer CVEs.
+    # An item may match multiple CVEs and/or multiple topics.
+    items_by_cve: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    items_by_topic: dict[str, list[dict[str, Any]]] = defaultdict(list)
+
+    topic_match_specs: list[dict[str, Any]] = []
+    for tp in topics["items"]:
+        ttype = (tp.get("type") or "").lower()
+        title = (tp.get("title") or "").strip()
+        for sep in (" — ", " – ", ": "):
+            if sep in title:
+                title = title.split(sep, 1)[0]
+                break
+        phrase = title.strip().lower()
+        topic_match_specs.append({
+            "key": tp["key"],
+            "phrase": phrase,
+            "cve_id": tp["key"].upper() if ttype == "cve" else None,
+        })
+
+    for ib_key, entry in items_index.items():
+        it = entry["item"]
+        item_record = {"item": it, "brief": entry["brief"]}
+        cve_field = (it.get("footer") or {}).get("cve") or ""
+        item_cves = {
+            cve_token.strip().upper()
+            for cve_token in cve_field.split(",")
+            if cve_token.strip() and CVE_RE.fullmatch(cve_token.strip())
+        }
+        for cve_id in item_cves:
+            items_by_cve[cve_id].append(item_record)
+        heading_lower = (it.get("heading") or "").lower()
+        body_lower = (it.get("body_md") or "").lower()
+        for spec in topic_match_specs:
+            if spec["cve_id"] and spec["cve_id"] in item_cves:
+                items_by_topic[spec["key"]].append(item_record)
+                continue
+            phrase = spec["phrase"]
+            if phrase and len(phrase) >= 4 and (phrase in heading_lower or phrase in body_lower):
+                items_by_topic[spec["key"]].append(item_record)
+
     # ---- Per-item pages -----------------------------------------------
-    for slug, entry in items_index.items():
+    # Items live at /briefs/<date>/<slug>/ (or /briefs/weekly/<date>/<slug>/
+    # for weekly summaries) so the URL itself reflects the parent brief —
+    # readers can edit the URL in the address bar to jump back up the
+    # hierarchy. Older builds emitted /items/<slug>/ which forced the
+    # date prefix into the slug to keep slugs unique; the date is now in
+    # the URL path, so the slug is just slugify(item_heading).
+    for ib_key, entry in items_index.items():
+        slug = entry["item"]["slug"]
         if not is_safe_path_segment(slug):
             print(f"warning: skipping item with unsafe slug {slug!r}", file=sys.stderr)
             continue
-        rel_url = f"items/{slug}/"
+        rel_url = _brief_url_path(entry["brief"]) + slug + "/"
         prefix = "../" * rel_url.count("/")
         canonical = site_url + rel_url
         html = render_item_page(
@@ -4008,6 +4942,7 @@ def main() -> int:
         html = render_cve_page(
             c,
             briefs_index=briefs_by_name,
+            matching_items=items_by_cve.get(c["id"], []),
             site_url=site_url,
             cachebust=cachebust,
             prefix=prefix,
@@ -4050,6 +4985,7 @@ def main() -> int:
         html = render_topic_page(
             t,
             briefs_index=briefs_by_name,
+            matching_items=items_by_topic.get(t["key"], []),
             site_url=site_url,
             cachebust=cachebust,
             prefix=prefix,
@@ -4066,7 +5002,7 @@ def main() -> int:
         items = [
             (
                 e["title"],
-                f"{prefix}items/{e['slug']}/",
+                f"{prefix}{('briefs/weekly/' if e.get('kind') == 'weekly' else 'briefs/')}{e['brief']}/{e['slug']}/",
                 f"in {e['brief']}",
             )
             for e in entries

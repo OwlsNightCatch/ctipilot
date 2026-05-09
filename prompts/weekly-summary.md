@@ -1,8 +1,8 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.42 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.43 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
-> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. **Recommended model split:** main agent on Opus (large context, composes the summary, owns the publishing chain); sub-agents on Sonnet (parallel horizon research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
+> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
 > **Version log:** `prompts/CHANGELOG.md`. Bump the version when you edit this prompt.
 
@@ -79,7 +79,7 @@ Claude Code routine on Anthropic-managed cloud infrastructure. Each fire starts 
 - Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Phases 5 + 6 publish via the same chain as daily — commit on feature branch → sync with `origin/main` (auto-resolve `state/*.json` → ours, `sources/sources.json` → theirs) → push feature branch (retry up to 3×) → auto-merge action promotes to `main` → deploy-site rebuilds gh-pages → verify `https://ctipilot.ch/` reflects this week. **Direct pushes to `main` are forbidden by repo policy.**
 - Network via internal HTTP proxy with allow-list. Soft 10-min per-sub-agent budget.
 - Git operations require routine's GitHub App (see `docs/operating.md`). 403 is structural — don't retry.
-- **Model is configurable** (Sonnet / Opus / Haiku / other). This prompt does not name your model — identify yourself accurately when composing the AI-content notice.
+- **Model is configurable by the runtime.** This prompt deliberately gives no example model name to avoid biasing your self-identification — reason about your own identity from your runtime context and name yourself accurately when composing the AI-content notice.
 
 Working directory layout:
 
@@ -175,7 +175,14 @@ Build six working lists from the week's daily briefs. The first five carry forwa
 
 ## Phase 2 — Horizon research (two parallel sub-agents, ~10 min)
 
-Spawn **two sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), Sonnet, isolated context — same definition the daily routine uses). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
+Spawn **two sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
+
+**Capture each sub-agent's reported model.** The first non-blank line of every research return is `**Model:** <friendly name> (`<model-id>`)`. Parse it and stash:
+
+- `state/run_log.json.sub_agents.<W1|W2>.model` = the friendly-name string.
+- `state/run_log.json.sub_agents.<W1|W2>.model_id` = the canonical model id from the backticks.
+- If the sub-agent included a `**Self-telemetry:**` line, parse the `key=value` pairs into `sub_agents.<key>.telemetry`.
+- Missing line → record `model: "unknown"` (the dashboard surfaces a yellow warning). Do not invent a model.
 
 ### What each spawn message must contain
 
@@ -313,14 +320,29 @@ A single `Write` of the whole 11-section file trips `Stream idle timeout — par
 
 If a placeholder leaks into a published summary because of a mid-Edit failure, that's a quality bug — § 10 should explicitly note it and the next run should re-Edit the affected section.
 
-### Self-identification — name your actual model
+### Self-identification — name your actual model AND every sub-agent's model
 
-Runtime config decides which model runs today. Identify yourself accurately in two places:
+Runtime config decides which model runs each role today, and the main agent + sub-agents may run on **different** models. The summary must identify **all** models actually involved.
 
-1. The **AI-generated content notice** blockquote.
-2. The **`Generated by:` metadata line**. Append `· **Prompt:** vN.M` (read from `prompts/CHANGELOG.md`).
+**Reason about your own identity, do not pattern-match a placeholder.** This prompt deliberately names no example model — including a sample like "Claude Whatever 4.x" would bias every routine into self-identifying as that one regardless of which model actually ran. Determine yours from your runtime context (the model id your harness identifies you by); use the friendly form (the human-facing name) plus the canonical id in backticks.
 
-If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)`.
+Three places, one source of truth:
+
+1. **AI-generated content notice (blockquote at the top of the summary).** Name the **main agent** (you) plus the **distinct set of sub-agent models** that returned this run:
+
+   > **AI-generated content notice.** This weekly summary was produced autonomously by an LLM ({your friendly model name}, model ID `{your canonical model-id}`) with parallel research and verification by sub-agents ({comma-separated friendly names of the distinct sub-agent models that returned this run — verbatim from each return's `**Model:**` line}) executing the prompt at `prompts/weekly-summary.md` as a Claude Code routine on Anthropic-managed cloud infrastructure. All facts are linked inline to public sources or to the underlying daily briefs in this repository. Verify any operationally critical claim against the linked primary source before acting.
+
+2. **`Generated by:` metadata line.** Same structured shape as the daily brief — list the main agent first, then a `**Sub-agents:**` block with `W1:`, `W2:`, `verify:` per-role models, then the standard fields:
+
+   ```
+   **Generated by:** {main-agent friendly name} (`{model-id}`) · **Sub-agents:** W1: {friendly} · W2: {friendly} · verify: {friendly}[, ...] · **Audience:** SOC management, IR, Threat Hunting · **Classification:** TLP:CLEAR · **Language:** English · **Prompt:** vN.M
+   ```
+
+   `unknown` for any sub-agent that didn't self-identify.
+
+3. **`state/run_log.json`** — Phase 4 records the same data structurally (see § Phase 4 below).
+
+If you cannot determine your own model precisely, write `Anthropic Claude (specific model not determined)` everywhere your model would appear and record `unknown` in `run_log.json`. Don't invent a model id.
 
 ### Per-section guidance
 
@@ -408,7 +430,7 @@ After Phase 3 has written the summary to disk, **before** state update or commit
 
 ### Spawn — verification sub-agent
 
-Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), Sonnet, isolated context, **read-only** tools — main agent owns all edits). The sub-agent's system prompt embeds the full check list: truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10 (relevance, primary-source kind, vendor-marketing tells, fake-news patterns, contradictions, clarity), whole-brief checks 11–13 (coverage shape — including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon* — style discipline, missed angles), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line.
+Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), isolated context, **read-only** tools — main agent owns all edits). The sub-agent's system prompt embeds the full check list: truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10 (relevance, primary-source kind, vendor-marketing tells, fake-news patterns, contradictions, clarity), whole-brief checks 11–13 (coverage shape — including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon* — style discipline, missed angles), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line.
 
 The spawn message is short:
 
@@ -436,6 +458,8 @@ Read the verification sub-agent's response and act on each finding type:
 | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave. |
 
 After remediation, a **fresh `cti-verification` sub-agent** is spawned (no shared memory) against the updated summary. The loop runs until verdict `CLEAN` or until the iteration cap (3) is reached. After the cap, the summary publishes regardless, with unresolved findings logged in § 10.
+
+**Capture the verifier's model on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model and the finding-count breakdown.
 
 **Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with the same ~5-min wall-clock budget as Phase 2. **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
 
@@ -477,22 +501,47 @@ Append a per-run record. **Every key required every run** — a sparse record pr
   "date": "YYYY-MM-DD",                                       // run date (publish date, not the ISO-week start)
   "iso_week": "YYYY-Www",                                     // weekly identifier
   "kind": "weekly",
-  "model": "claude-sonnet-4-6 | claude-opus-4-7 | claude-haiku-4-5 | other",
+  "started": "YYYY-MM-DDTHH:MM:SSZ",
+  "completed": "YYYY-MM-DDTHH:MM:SSZ",
+  "duration_seconds": 0,                                      // completed − started, integer seconds
+  "model": "<your friendly model name>",                      // friendly name of the MAIN agent (you) — verbatim from the AI-content notice
+  "model_id": "<your canonical model-id>",                    // canonical id of the main agent — verbatim from the backticks
   "prompt_version": "vN.M",
   "sub_agents": {
-    "W1": { "sources_attempted": ["id", ...], "sources_used": ["id", ...], "items_returned": N, "returned": true },
-    "W2": { "sources_attempted": [...],       "sources_used": [...],       "items_returned": N, "returned": true }
+    "W1": {
+      "model": "<W1's friendly name>",                        // verbatim from W1's **Model:** line
+      "model_id": "<W1's canonical model-id>",                // verbatim from the backticks; "unknown" if absent
+      "sources_attempted": ["id", ...],
+      "sources_used": ["id", ...],
+      "items_returned": N,
+      "returned": true,
+      "telemetry": { "duration_seconds": NN, "webfetch_calls": NN }
+    },
+    "W2": { /* same shape as W1 */ }
   },
   "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
-  "duration_seconds": 0,
   "items_published": N,                                       // total H3 items in the summary
   "items_dropped_by_verification": N,                         // from Phase 3.5 Drop / hallucination drops
-  "verification_iterations": N,                               // ≤3
-  "verification_residual_count": N                            // 0 on a clean publish
+  "verification_iterations": N,                               // ≤3 (legacy scalar, still required)
+  "verification_residual_count": N,                           // 0 on a clean publish
+  "verification": {                                           // per-iteration breakdown (NEW in v2.43)
+    "iterations": [
+      {
+        "n": 1,
+        "model": "<verifier's friendly name>",
+        "model_id": "<verifier's canonical model-id>",
+        "verdict": "CLEAN | NEEDS_FIXES",
+        "truth": 0,
+        "editorial": 0,
+        "advisory": 0,
+        "telemetry": { /* pass through */ }
+      }
+    ]
+  }
 }
 ```
 
-Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap; `fetch_failures` = `[]` when none.
+Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap; `fetch_failures` = `[]` when none. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. Don't invent.
 
 ---
 

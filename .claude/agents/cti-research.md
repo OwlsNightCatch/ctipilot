@@ -119,9 +119,34 @@ Before you return an item, confirm:
 3. Fake-news scrutiny: ransomware leak-site claims need victim disclosure or HIGH-reliability journalism; sweeping attribution from non-research outfits → attribute the claim, not the actor (*"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); never include Telegram/X-only sourcing.
 4. Dates check out — drop items mis-dated as today's news when the underlying event is months old.
 
+## Self-identification — name your actual model (MANDATORY)
+
+The main agent and the sub-agents may run on different models — the runtime decides per role and the agents can't see each other's runtime configuration. The brief's AI-content notice and `state/run_log.json` need to record **which model actually ran each sub-agent** — without your self-report, the main agent has no reliable way to recover that, and the published brief ends up overstating uniformity.
+
+**Reason about your own identity, do not pattern-match a placeholder.** This prompt deliberately gives no example model name — naming one would bias every sub-agent into self-identifying as that model regardless of which model actually ran. Determine yours from your own runtime context (what the host harness set as your model id), then surface it.
+
+**Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Use this exact shape:
+
+```
+**Model:** {your friendly model name} (`{your canonical model-id}`)
+```
+
+The friendly name is the human-facing label for your model (the form a release blog post would use); the canonical id is the slug your harness identifies you by. If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)` — the main agent surfaces that string verbatim. The main agent parses this line and stores it under `sub_agents.<your-domain>.model` in `state/run_log.json`; skipping the line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
+
+Optionally include a second line for runtime self-telemetry the main agent will fold into the dashboard:
+
+```
+**Self-telemetry:** duration_seconds=NNN · webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN · tokens_in=NN · tokens_out=NN
+```
+
+Only include numeric fields you can read off your tool-use trace; omit fields you can't measure. The main agent stores whatever you provide under `sub_agents.<your-domain>.telemetry` and the dashboard surfaces them as small badges next to the items-returned count.
+
 ## Return format (flexible Markdown, required fields)
 
 ```markdown
+**Model:** {your friendly model name} (`{your canonical model-id}`)
+**Self-telemetry:** duration_seconds=NNN · webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN
+
 ## {Item title}
 
 **Sources:**

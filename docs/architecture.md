@@ -87,15 +87,18 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
 
 ### `.claude/agents/` — custom sub-agent definitions
 
-- [`cti-research.md`](../.claude/agents/cti-research.md) — Sonnet-backed,
-  isolated context. Phase 1 (daily) / Phase 2 (weekly) parallel research
-  workers; also reused for verification follow-ups (max 3 per iteration).
-  Embeds the `WebFetch` outbound-links template, the `tools/fetch_source.py`
-  contract for known-403 hosts, and the discovery-trace return format.
-- [`cti-verification.md`](../.claude/agents/cti-verification.md) — Sonnet-
-  backed, read-only, isolated context. Phase 4.5 (daily) / Phase 3.5
-  (weekly) cold-reader verifier, looped iteratively (cap 3, fresh spawn
-  each time, no shared memory).
+- [`cti-research.md`](../.claude/agents/cti-research.md) — isolated context,
+  per-role model bound by the agent definition's YAML frontmatter (operator
+  rebindable). Phase 1 (daily) / Phase 2 (weekly) parallel research workers;
+  also reused for verification follow-ups (max 3 per iteration). Embeds the
+  `WebFetch` outbound-links template, the `tools/fetch_source.py` contract
+  for known-403 hosts, the discovery-trace return format, and the mandatory
+  `**Model:**` self-identification line.
+- [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
+  isolated context, per-role model bound by the agent definition's frontmatter.
+  Phase 4.5 (daily) / Phase 3.5 (weekly) cold-reader verifier, looped
+  iteratively (cap 3, fresh spawn each time, no shared memory). Same
+  self-identification contract.
 
 ### `briefs/` — the canonical output
 

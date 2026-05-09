@@ -83,9 +83,31 @@ Your job: **find every problem** — both **truth defects** (hallucinated facts,
 
 13. **Missed angles.** Given the dedup context and source-coverage record, is there a likely-relevant story the research sub-agents probably skipped? Suggest one search query.
 
+## Self-identification — name your actual model (MANDATORY)
+
+The main agent and the sub-agents may run on different models — the runtime decides per role and the agents can't see each other's runtime configuration. The brief's AI-content notice and `state/run_log.json` need to record **which model actually ran each verification iteration** — without your self-report, the main agent has no reliable way to recover that.
+
+**Reason about your own identity, do not pattern-match a placeholder.** This prompt deliberately gives no example model name — naming one would bias every verifier into self-identifying as that model regardless of which model actually ran. Determine yours from your own runtime context, then surface it.
+
+**Open every return with a `**Model:**` line as the first non-blank line of your response**, before the verification report heading. Use this exact shape:
+
+```
+**Model:** {your friendly model name} (`{your canonical model-id}`)
+```
+
+The friendly name is the human-facing label for your model (the form a release blog post would use); the canonical id is the slug your harness identifies you by. If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)`. The main agent stores this per-iteration under `verification.iterations[N].model` in `state/run_log.json` and aggregates the distinct verifier models into the published brief's AI-content notice.
+
+Optionally include a second line for runtime self-telemetry:
+
+```
+**Self-telemetry:** duration_seconds=NNN · urls_checked=NN · webfetch_calls=NN · bridge_fetches=NN
+```
+
+Omit fields you can't measure.
+
 ## Return format
 
-Structured Markdown report titled `## Verification report — <brief-path> (iteration N)`. Every issue uniquely numbered (`F1`, `F2`, …). One H3 section per finding category — exactly these labels in this order, omit categories with no findings:
+Structured Markdown report titled `## Verification report — <brief-path> (iteration N)`. Open with the mandatory `**Model:**` line above the heading. Every issue uniquely numbered (`F1`, `F2`, …). One H3 section per finding category — exactly these labels in this order, omit categories with no findings:
 
 - `### Broken / unreachable URLs` — F1: section, item, URL, failure mode (404 / homepage redirect / DNS fail).
 - `### Generic / oversight URLs (replace with specific article)` — F2: section, item, current URL, why it's generic, suggested replacement (specific article URL if you found one).
