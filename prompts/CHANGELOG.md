@@ -4,6 +4,68 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.38 — 2026-05-09 (custom sub-agents: `cti-research` + `cti-verification`, model split Opus main / Sonnet workers, root CLAUDE.md)
+
+### Why
+The daily and weekly routines previously spawned every sub-agent as `subagent_type: general-purpose` and prepended a verbatim ~30-line spawn template from `docs/spawn-templates.md` to every spawn message. Three problems with that pattern:
+
+1. **Token waste.** The spawn template was re-injected into every parallel sub-agent's input on every run — four times per daily Phase 1, twice per weekly Phase 2, plus once per verification iteration. Sub-agent system prompts can be loaded once by the harness and reused — `general-purpose` couldn't take advantage of that.
+2. **No model isolation.** With `general-purpose`, every sub-agent inherited the main agent's model. When the routine ran on Opus, the four parallel research workers each consumed an Opus context — bumping cost and tightening the per-agent context budget. The right split is: Opus for the main agent (large context, owns composition + publishing chain), Sonnet for the workers (parallel research + cold-reader verification with isolated 1M-token context windows each).
+3. **No tool-set enforcement.** The verifier was specified as "reads only" in prose but had every tool the main agent had. A bug or a misread instruction could have let it `Edit` the brief mid-verification, bypassing the iteration loop. With a custom sub-agent definition, the read-only constraint is enforced by the harness via the `tools:` frontmatter.
+
+A second-order ask: a root `CLAUDE.md` to give an interactive operator (debugging a brief, investigating a state-file inconsistency, looking at the build) the same project-wide guardrails the routine has — without requiring them to read the master prompts first.
+
+### New files
+
+**`.claude/agents/cti-research.md`** — Sonnet, isolated context, color blue. Tools: `Read`, `WebFetch`, `WebSearch`, `Bash`, `Write`, `Edit`, `Grep`, `Glob`. The full operational system prompt — defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template + the two empirical findings (listing-page outbound-link loss; per-advisory CERT-page citation pattern), Discovery-trace requirements, return format, operational guardrails, candidate-source surfacing, "what you do NOT do" (composition / state / commit / nest sub-agents). Used by both daily Phase 1 (S1–S4) and weekly Phase 2 (W1–W2); domain is passed in the spawn message.
+
+**`.claude/agents/cti-verification.md`** — Sonnet, isolated context, color red. Tools: `Read`, `WebFetch`, `WebSearch`, `Bash`, `Grep`, `Glob` (no `Edit` / `Write` — read-only constraint enforced by the harness). The full check list: truth checks 1–4, editorial-quality checks 5–10, whole-brief checks 11–13 (W-PD-1 included for the weekly), return format with finding categories F1–F11, verdict line. Used by both daily Phase 4.5 and weekly Phase 3.5; the iteration loop runs in the main agent (re-spawn fresh each iteration, no shared memory, cap 3).
+
+**`CLAUDE.md`** at repo root — short project-wide guardrails for any Claude Code session in this repo: what the repo is, the two custom sub-agents, the hard "do nots" (no direct push to main, no IOCs, no `WebFetch` of CISA / NCSC.ch, no `WebFetch` without the outbound-links template, no homepage / NVD-per-CVE / news-category Source URLs, never skip `tools/check_brief.py`, never block on a sub-agent), the operational guardrails (Skeleton-then-Edit, persist intermediate state, one new candidate per run, verification loop is non-negotiable but never blocks publish), where things live, self-evolution authority. Loaded into every session.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+**Header banner.** Bumped to `v2.38` and added the recommended-model-split note (Opus main / Sonnet sub-agents).
+
+**Tools line.** Now references `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` as the canonical sub-agent definitions.
+
+**Phase 1 — Parallel research.** Replaced the "Sub-agent spawn template — read `docs/spawn-templates.md`" / "Passed verbatim — do not paraphrase" pattern with `subagent_type: cti-research` and an explicit "What each spawn message must contain" list (run id, window_hours, domain, source-list slice, dedup context, rotation-priority list, today's ISO date). Reinforced rules for the main agent kept (with the `WebFetch` outbound-links pointer now pointing at the `.claude/agents/cti-research.md` definition rather than `docs/spawn-templates.md`). Removed the now-redundant duplication of operational guardrails the sub-agent definition already covers.
+
+**Phase 4.5 — Final verification sub-agent.** Replaced the "spawn template lives in `docs/spawn-templates.md`" pattern with `subagent_type: cti-verification` and an explicit short spawn-message list (brief path, iteration number, dedup context, run-log slice). Iteration loop unchanged — still cap 3, still fresh spawn each iteration, still allows ≤3 follow-up `cti-research` sub-agents per iteration for `Needs more research` / `Missed angles`. Hard rules updated: read-only is now enforced by the sub-agent's tool set, not just by prose. Added: "At least one verification iteration is mandatory — never commit without a `cti-verification` return on file."
+
+**Quality gates.** Updated the Phase 4.5 quality-gate item to specify "ran via the `cti-verification` sub-agent at least once … re-spawn was a fresh sub-agent every iteration, not a continuation."
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+**Header banner.** Added an explicit `**Prompt version:** v2.38` line (parity with the daily prompt) plus the recommended-model-split note.
+
+**Tools line.** References the same two sub-agent definitions as the daily prompt — explicitly noting that one definition backs both routines and the domain (W1 / W2 vs S1–S4) is passed in the spawn message.
+
+**Phase 2 — Horizon research.** Same refactor as daily Phase 1: switched from `subagent_type: general-purpose` + verbatim template prepend to `subagent_type: cti-research` + thin per-domain envelope. Reinforced rules kept; redundant operational guardrails removed (covered in the sub-agent definition). The W1 (long-horizon ongoing developments) and W2 (strategic & policy horizon) sections themselves are unchanged.
+
+**Phase 3.5 — Final verification.** Same refactor as daily Phase 4.5: switched to `subagent_type: cti-verification`, short spawn-message list (now explicitly carries `kind: weekly` so the verifier applies W-PD-1 in check 11), iteration loop unchanged. Added: "At least one verification iteration is mandatory."
+
+**Quality gates.** Updated the Phase 3.5 quality-gate item to mirror the daily ("ran via the `cti-verification` sub-agent at least once … fresh sub-agent every iteration").
+
+### Replaced — `docs/spawn-templates.md`
+
+Trimmed from a ~140-line verbatim spawn-template repository to a ~50-line pointer at `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md`. The previous content (defender-vantage opener, link-discipline, bridge-fetcher rules, `WebFetch` outbound-links template, empirical findings, Discovery-trace requirements, return formats, operational guardrails, finding-category list F1–F11) all moved into the canonical sub-agent definitions. The pointer file documents what the main agent passes per spawn (so the daily and weekly prompts don't need to repeat it) and lists the hard invariants that must never be removed from the sub-agent definitions.
+
+### What v2.37 keeps
+
+- Section numbering 0–7, Immediate Actions callout, UPDATE blockquote shape, footer parser fix, version banner.
+- Phase 6 publishing chain (commit → sync → push → auto-merge → verify), Phase 7 publish verification, hard invariants 7 + 9.
+- All editorial gates, prime directives, state-update rules, the Phase 5.5 self-check gate via `tools/check_brief.py`.
+- All build-side smoke tests, taxonomy validation, URL allowlist, vendored-library SHA-256 integrity.
+
+### Operator-visible changes
+
+- Per-run cost should drop noticeably when the routine runs on Opus, since the four parallel research workers and the verification sub-agent now run on Sonnet via the `model: sonnet` frontmatter in the sub-agent definitions. The main agent stays on whatever model the routine config specifies (recommended: Opus).
+- Read-only enforcement on the verifier is now mechanical — the verifier sub-agent simply does not have `Edit` or `Write` tools available. A bug in the iteration loop can no longer let it modify the brief.
+- Interactive sessions in this repo now have a root `CLAUDE.md` covering the same project-wide guardrails the routine has — easier for an operator to debug a brief or investigate a state-file inconsistency without first reading the master prompts.
+
+---
+
 ## 2.37 — 2026-05-09 (rendering fixes: section numbering, Immediate Actions callout, UPDATE blockquote, footer parser, version banner)
 
 ### Why
