@@ -85,9 +85,7 @@ _site/
 │   ├── verification/index.html
 │   ├── analytics/index.html              # what we measure / what we don't
 │   ├── routine-setup/index.html
-│   ├── security-review/index.html
 │   ├── improvements/index.html
-│   ├── v2-plan/index.html                # engineering scaffolding for the v2 cut-over
 │   └── changelog/index.html              # mirror of prompts/CHANGELOG.md
 └── data/
     ├── build_manifest.json               # content-hashed manifest (self-check substrate)

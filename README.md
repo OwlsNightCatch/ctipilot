@@ -74,14 +74,11 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── workflow.md            # End-to-end daily & weekly agent process
 │   ├── routine-setup.md       # One-time Claude Code routine + Pages setup
 │   ├── verification.md        # Fake-news verification policy
-│   ├── security-review.md     # Threat model for the autonomous-agent setup
 │   ├── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
-│   ├── v2-plan.md             # Historical: engineering scaffolding for the v2 cut-over (now landed)
 │   └── improvements.md        # Recommended improvements (with rationale)
 ├── .github/workflows/
-│   ├── auto-merge-claude.yml  # Routine fallback: ff-merge claude/* → main
+│   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
 │   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
-├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
 
@@ -164,11 +161,11 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 
 The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://ctipilot.ch/about/analytics/).
 
-The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md). Full posture in [`docs/security-review.md`](docs/security-review.md) § 4.
+The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md).
 
 ## Security posture
 
-This is a fully autonomous, self-evolving system: the agent edits its own prompts, mutates its own state, and pushes directly to `main`. The defensive frame is "detect and correct", not "prevent at all costs". Threat model and current controls are documented in [`docs/security-review.md`](docs/security-review.md). Highlights:
+This is a fully autonomous, self-evolving system: the agent edits its own prompts, mutates its own state, and publishes via the feature-branch + auto-merge chain. The defensive frame is "detect and correct", not "prevent at all costs". Highlights:
 
 - **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 2–4 item has a `covered_items.json` appearance for today, every § 5 UPDATE carries an inline citation, every H3 in §§ 1–7 carries a v2 metadata footer, every footer value is in `site/taxonomy.yaml`, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).

@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.39 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.40 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. **Recommended model split:** main agent on Opus (large context, composes the brief, owns the publishing chain); sub-agents on Sonnet (parallel research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -725,7 +725,7 @@ The agent has full authority to modify this prompt, source list, documentation, 
 
 ### Encouraged self-edits
 
-Source list curation (promote candidates ≥3 runs, demote dead/paywalled/aggregator-only, add discoveries). Sub-agent structure (split overloaded, merge overlapping; four-agent layout is starting point, not contract). Prompt clarity (tighten verbose sections, fix ambiguities, add concrete examples). Section ordering/naming (reorganise if better; bump version, document in CHANGELOG). Taxonomy (extend `site/taxonomy.yaml` only when a real item needs a value). Documentation — keep current: `docs/architecture.md`, `workflow.md`, `verification.md`, `routine-setup.md`, `security-review.md`, `analytics.md`, `brief-template.md`, `check-brief-fixes.md`, `spawn-templates.md`, `README.md`, `briefs/README.md`, `site/README.md`.
+Source list curation (promote candidates ≥3 runs, demote dead/paywalled/aggregator-only, add discoveries). Sub-agent structure (split overloaded, merge overlapping; four-agent layout is starting point, not contract). Prompt clarity (tighten verbose sections, fix ambiguities, add concrete examples). Section ordering/naming (reorganise if better; bump version, document in CHANGELOG). Taxonomy (extend `site/taxonomy.yaml` only when a real item needs a value). Documentation — keep current: `docs/architecture.md`, `workflow.md`, `verification.md`, `routine-setup.md`, `analytics.md`, `brief-template.md`, `check-brief-fixes.md`, `spawn-templates.md`, `README.md`, `briefs/README.md`, `site/README.md`.
 
 ### Process for self-edits
 

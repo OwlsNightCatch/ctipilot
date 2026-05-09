@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.40 — 2026-05-09 (docs cleanup: drop superseded historical/duplicate docs from prompt's keep-current list)
+
+### Why
+The operator removed four files that no longer reflect the current system: `CNAME` (custom-domain marker — managed elsewhere), `SECURITY_REVIEW.md` (root duplicate of `docs/security-review.md`), `docs/security-review.md` (point-in-time threat-model snapshot — the actionable carry-over already lives in `docs/improvements.md` § "Open — security & autonomy hardening"), and `docs/v2-plan.md` (historical implementation plan; every item shipped in v2.23). The daily prompt's "keep current" doc list still listed `security-review.md`, which would push the routine to recreate the deleted file on its next self-edit pass. Bumping to v2.40 syncs the list with on-disk reality.
+
+### What changed
+
+**`prompts/daily-cti-brief.md`** — "Encouraged self-edits" → "Documentation — keep current" list: dropped `security-review.md`. The remaining list (`architecture.md`, `workflow.md`, `verification.md`, `routine-setup.md`, `analytics.md`, `brief-template.md`, `check-brief-fixes.md`, `spawn-templates.md`, `README.md`, `briefs/README.md`, `site/README.md`) matches what's on disk after the cleanup. Header banner bumped to v2.40.
+
+**`prompts/weekly-summary.md`** — Header banner bumped to v2.40 in lockstep (no other content change).
+
+**`README.md`, `site/README.md`, `docs/improvements.md`, `docs/routine-setup.md`** — Removed broken links / tree entries pointing at the deleted files. The "Reader engagement" → "Full posture in security-review.md § 4" line and the "Security posture" → "Threat model and current controls are documented in security-review.md" line in `README.md` are gone; the section keeps its substantive content (CSP, Markdown sanitisation, vendored-library hash pinning, Phase 5.5 self-check) and now reads standalone. `routine-setup.md`'s sub-agent capability ceiling section drops the parenthetical security-review.md cross-reference; the runbook content (allowed/forbidden tools per sub-agent) is unchanged.
+
+**`.gitignore`** — Added `.claude/worktrees/` so Claude Code-created feature-branch worktrees stop showing up as untracked in `git status`.
+
+### What stays
+All hard invariants are unchanged: AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain via `.github/workflows/auto-merge-claude.yml`, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values. No phase order change. No source-list policy change. No fetch-budget change. The cleanup only removes dead files and the prompt's stale references to them.
+
+---
+
 ## 2.39 — 2026-05-09 (version-controlled auto-memory: `.claude/memory/` + SessionStart symlink hook)
 
 ### Why

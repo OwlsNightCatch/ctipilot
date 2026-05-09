@@ -114,7 +114,7 @@ For now the github.com repo-blob views are the only available signal.
 
 ## Open — security & autonomy hardening (need external CI, not landed)
 
-These are referenced in [`docs/security-review.md`](security-review.md) by the threat IDs T1–T9. The realistic landing path for most of them is a single editorial-invariant CI workflow.
+These are the autonomy / self-evolution hardening items. The realistic landing path for most of them is a single editorial-invariant CI workflow.
 
 ### SR1 — Editorial-invariant CI workflow (T1, T2)
 

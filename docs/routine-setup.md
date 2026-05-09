@@ -149,10 +149,9 @@ nothing reads it.
 
 The four research sub-agents the daily routine spawns are the single
 most dangerous configuration surface: a sub-agent that follows an
-injection-laced page could perform writes the parent never intended
-([`docs/security-review.md`](security-review.md) § 2.4 / T4). When
-configuring the routine in claude.ai, restrict the sub-agent toolset
-to **read-only** operations:
+injection-laced page could perform writes the parent never intended.
+When configuring the routine in claude.ai, restrict the sub-agent
+toolset to **read-only** operations:
 
 | Allowed for sub-agents | `Read`, `Grep`, `Glob`, `WebFetch`, `WebSearch` |
 | Forbidden for sub-agents | `Write`, `Edit`, `Bash`, `Task`, `NotebookEdit` |
