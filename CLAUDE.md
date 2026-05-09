@@ -8,6 +8,21 @@ Autonomous CTI newsletter for a Swiss federal SOC. A scheduled Claude Code routi
 
 Audience is Tier 2/3 IR, threat hunters, detection engineers — assume MITRE ATT&CK fluency, no executive hedging, no IOCs, no vanity metrics.
 
+## Project memory — version-controlled auto-memory
+
+Auto-memory is **enabled** (`autoMemoryEnabled: true` in [`.claude/settings.json`](.claude/settings.json)) and **redirected to a repo-local directory** so memory persists across cloud routine fires (fresh container each run), across local Claude Code sessions on different machines, and across worktrees.
+
+How it works:
+
+- **Storage:** `.claude/memory/` in the repo (committed to git). [`.claude/memory/MEMORY.md`](.claude/memory/MEMORY.md) is the index — auto-loaded into every session by Claude Code's auto-memory feature (first 200 lines / 25 KB). Topic files in the same directory load on demand.
+- **Redirect mechanism:** [`.claude/hooks/setup-memory.sh`](.claude/hooks/setup-memory.sh) runs on `SessionStart`. It computes the project hash the same way Claude Code does (replace `/`, `_`, `.` in `$PWD` with `-`) and symlinks `~/.claude/projects/<project-hash>/memory` → `<repo>/.claude/memory`. Idempotent; logs to stderr only on the first run.
+- **First local run:** Claude Code prompts to approve the hook. Approve once — the approval persists for that machine. Existing local-only memory files (from before the symlink) are migrated into `.claude/memory/` automatically and the original directory is moved aside as `*.local-backup-<timestamp>`.
+- **Cloud routine:** the hook runs in the routine container the same way. Memory writes land in the cloned repo. Phase 5 (daily) / Phase 4 (weekly) commits `.claude/memory/` alongside `state/` files. The next routine fire — fresh container, fresh symlink, repo cloned fresh from `main` — sees the accumulated memory.
+- **Use it normally:** the `/memory` command, "remember that..." prompts, and Claude's automatic note-taking all work as documented. The only difference is *where* the files live.
+- **Fallback if the hook fails:** if the symlink doesn't get created (Claude Code version mismatch, hook approval declined, container restriction), Claude can still read and write `.claude/memory/` directly using `Read` / `Write` / `Edit`. Memory persistence still works; only the `/memory` command and the auto-loading behaviour are lost.
+
+Commit the memory dir alongside other state. The daily prompt's Phase 5 git-add and the weekly prompt's Phase 4 git-add both include `.claude/memory/`.
+
 ## Custom sub-agents (`.claude/agents/`)
 
 The routine delegates to two custom sub-agents — both Sonnet, isolated context, clear remits:
@@ -80,6 +95,9 @@ prompts/weekly-summary.md        # weekly routine master prompt
 prompts/CHANGELOG.md             # editorial-policy audit trail (bump version on every edit)
 .claude/agents/cti-research.md   # research sub-agent definition (Sonnet)
 .claude/agents/cti-verification.md  # verification sub-agent definition (Sonnet)
+.claude/memory/                  # version-controlled auto-memory (MEMORY.md + topic files)
+.claude/hooks/setup-memory.sh    # SessionStart hook — symlinks system auto-memory dir to .claude/memory/
+.claude/settings.json            # project settings: autoMemoryEnabled, SessionStart hook
 sources/sources.json             # ~80 curated CTI sources (autonomous lifecycle)
 state/covered_items.json         # rolling coverage log
 state/cves_seen.json             # flat CVE index

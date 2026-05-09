@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.38 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.39 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. **Recommended model split:** main agent on Opus (large context, composes the brief, owns the publishing chain); sub-agents on Sonnet (parallel research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -542,7 +542,7 @@ Brief lands on `main` exclusively via the auto-merge GitHub Action (`.github/wor
 **1. Stage and commit on the current branch:**
 
 ```bash
-git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json state/deep_dive_history.json state/run_log.json sources/sources.json
+git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json state/deep_dive_history.json state/run_log.json sources/sources.json .claude/memory/
 git commit -m "brief: YYYY-MM-DD
 
 - ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>

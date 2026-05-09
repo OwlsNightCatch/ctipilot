@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.38 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.39 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. **Recommended model split:** main agent on Opus (large context, composes the summary, owns the publishing chain); sub-agents on Sonnet (parallel horizon research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -536,7 +536,7 @@ The summary lands on `main` exclusively via the auto-merge GitHub Action (`.gith
 **1. Stage and commit:**
 
 ```bash
-git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json state/run_log.json sources/sources.json
+git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json state/run_log.json sources/sources.json .claude/memory/
 git commit -m "weekly: YYYY-Www summary
 
 - top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N

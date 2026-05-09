@@ -4,6 +4,41 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.39 — 2026-05-09 (version-controlled auto-memory: `.claude/memory/` + SessionStart symlink hook)
+
+### Why
+Claude Code's built-in auto-memory writes to `~/.claude/projects/<project-hash>/memory/` — a machine-local directory that's invisible to other operators, doesn't survive a fresh cloud-routine container, and produces a different directory per worktree (Claude Code derives the hash from `$PWD`, not from the git repo root). For an autonomous CTI routine where the operator wants Claude to accumulate learnings across runs (recurring source-fetch failure modes, publisher quirks, `WebFetch` workarounds, deep-dive rotation patterns), machine-local storage is the wrong default — every fresh fire forgets everything.
+
+### How
+Three new files redirect auto-memory into a version-controlled, repo-local directory:
+
+- **`.claude/memory/MEMORY.md`** — seed index file. The auto-memory feature loads the first 200 lines / 25 KB of this file into every session. Topic files in the same directory load on demand.
+- **`.claude/hooks/setup-memory.sh`** — SessionStart hook. Computes the project hash the same way Claude Code does (`tr '/_.' '---'` against `$PWD`) and symlinks `~/.claude/projects/<project-hash>/memory` → `<repo>/.claude/memory/`. Idempotent. On first run with pre-existing local memory files, migrates them into the repo and moves the original aside as `*.local-backup-<timestamp>`. Best-effort: failures log to stderr but never block the session.
+- **`.claude/settings.json`** — `autoMemoryEnabled: true` (explicit, the default), `SessionStart` hook config.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+**Phase 6 git-add** now includes `.claude/memory/` so memory writes from this session are committed alongside `state/*.json` and `sources/sources.json`. The next routine fire (or a local session) sees the accumulated memory.
+
+**Header banner** bumped to v2.39.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+Same change to the Phase 5 git-add. Header bumped to v2.39.
+
+### `CLAUDE.md`
+
+New "Project memory" section explaining the redirect mechanism, first-run approval flow, cloud-routine behaviour, fallback if the hook fails (Claude can still `Read` / `Write` `.claude/memory/` directly), and where the files live. Updated the "Where things live" tree.
+
+### Operator-visible changes
+
+- `/memory` command in interactive sessions now lists files in `<repo>/.claude/memory/` instead of `~/.claude/projects/<hash>/memory/`. "Remember that X" prompts persist into the repo.
+- Cloud routine memory survives across fires. Each fire reads the committed `MEMORY.md`, may write new topic files, commits the diff in Phase 6.
+- First local session per machine: Claude Code prompts to approve the `SessionStart` hook. Approve once. Pre-existing local memory files (e.g., from before this commit) are migrated into the repo automatically.
+- Worktrees: each worktree's hook symlinks to *that worktree's* `.claude/memory/`. Since the directory is committed, all worktrees see the same content via git.
+
+---
+
 ## 2.38 — 2026-05-09 (custom sub-agents: `cti-research` + `cti-verification`, model split Opus main / Sonnet workers, root CLAUDE.md)
 
 ### Why
