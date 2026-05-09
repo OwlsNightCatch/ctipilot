@@ -728,8 +728,38 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
             while i < n and (lines[i].lstrip().startswith(">") or (buf2 and not is_blank(lines[i]))):
                 buf2.append(re.sub(r"^\s*>\s?", "", lines[i]))
                 i += 1
+            # UPDATE-block extension: when an item opens with the
+            # `> **UPDATE (originally covered ...):**` callout, the agent
+            # routinely writes the body that follows as plain paragraphs
+            # rather than as `> `-prefixed lines, so the rendered HTML
+            # closes the blockquote after the label and leaves the
+            # update content visually outside the callout. Detect that
+            # shape and absorb the following paragraphs into the same
+            # blockquote until we hit a heading, HR, fenced code,
+            # another blockquote, or a metadata-footer line.
+            extras_class = ""
+            if buf2 and re.search(r"\*\*UPDATE\b", buf2[0]):
+                extras_class = ' class="callout-update"'
+                while i < n:
+                    la = lines[i]
+                    stripped = la.lstrip()
+                    if not stripped:
+                        buf2.append("")
+                        i += 1
+                        continue
+                    if (stripped.startswith("#")
+                            or stripped.startswith("```")
+                            or re.match(r"^\s*([-*_])\s*\1\s*\1\s*$", la)
+                            or re.match(r"^---+$", stripped)
+                            or re.match(r"^[—-]\s*\*", stripped)
+                            or stripped.startswith(">")):
+                        break
+                    buf2.append(la)
+                    i += 1
+                while buf2 and not buf2[-1].strip():
+                    buf2.pop()
             inner = render_markdown("\n".join(buf2), base_url=base_url)
-            out.append(f"<blockquote>{inner}</blockquote>")
+            out.append(f"<blockquote{extras_class}>{inner}</blockquote>")
             continue
         # Unordered list
         if re.match(r"^[-*]\s+\S", line.lstrip()):
@@ -1053,16 +1083,30 @@ def _is_skippable_trailer(s: str) -> bool:
 def _split_trailing_footer(body: str) -> tuple[dict[str, Any] | None, str]:
     """If the trailing line of `body` (after stripping blanks and
     horizontal rules) is a metadata footer, return `(parsed, body
-    without footer line)`. Otherwise return `(None, body unchanged)`."""
+    without footer line)`. Otherwise return `(None, body unchanged)`.
+
+    Scans backwards through the body so an item whose tail carries an
+    aggregation (e.g. a § 3 CVE Summary Table appended after the per-CVE
+    H3's footer) still surfaces the footer pills — the table stays in
+    the body, only the footer line is lifted out."""
     lines = body.splitlines()
     while lines and _is_skippable_trailer(lines[-1]):
         lines.pop()
     if not lines:
         return None, body
+    # Fast path: the footer is the trailing line.
     fm = parse_footer_line(lines[-1])
-    if not fm:
-        return None, body
-    return fm, "\n".join(lines[:-1]).rstrip()
+    if fm:
+        return fm, "\n".join(lines[:-1]).rstrip()
+    # Fallback: scan backwards for the most-recent footer-shaped line.
+    # Anything between that line and the end of the body is preserved
+    # in-place — we only lift the footer itself out.
+    for j in range(len(lines) - 2, -1, -1):
+        fm = parse_footer_line(lines[j])
+        if fm:
+            stripped = "\n".join(lines[:j] + lines[j + 1:]).strip("\n")
+            return fm, stripped
+    return None, body
 
 
 def parse_brief(path: Path) -> dict[str, Any]:
@@ -1934,6 +1978,12 @@ def render_brief_page(
         preamble_md,
         flags=re.MULTILINE,
     )
+    # Drop the trailing horizontal rule that the prompt convention places
+    # between the metadata block and the first H2 — once the metadata line
+    # has been stripped above, the lone `---` becomes a stray <hr/> that
+    # introduces an empty band of whitespace before § 0.
+    preamble_md = re.sub(r"\n\s*-{3,}\s*\n*\Z", "\n", preamble_md)
+    preamble_md = preamble_md.rstrip() + "\n" if preamble_md.strip() else ""
     preamble_html = render_markdown(preamble_md, base_url=md_anchor_base) if preamble_md.strip() else ""
 
     sections_html: list[str] = []

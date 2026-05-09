@@ -6,9 +6,9 @@ The substantive editorial / verification / state-update / publishing rules live 
 
 ---
 
-## Worked-good § 2 fragment (illustrative, not topic guidance)
+## Worked-good § 1 fragment (illustrative, not topic guidance)
 
-This is the level of technical specificity every § 2 item must carry where the source supports it — exact vulnerable component path, technique class with MITRE ATT&CK IDs, exploitation prerequisites, affected and patched versions to vendor-stated precision, named campaign clusters, behavioural detection and hardening tied to the specificity (no IOCs, no rule code).
+This is the level of technical specificity every § 1 item must carry where the source supports it — exact vulnerable component path, technique class with MITRE ATT&CK IDs, exploitation prerequisites, affected and patched versions to vendor-stated precision, named campaign clusters, behavioural detection and hardening tied to the specificity (no IOCs, no rule code).
 
 > A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DNS-over-HTTPS traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). Mapped to `T1195.002 Supply Chain Compromise: Compromise Software Supply Chain` and `T1071.004 Application Layer Protocol: DNS`. Detection concepts: alert on unsigned `osascript` / `powershell.exe -enc` invocations from `node` / `npm` / `npx` parent-process trees (Sysmon EID 1 + parent-image filter); inventory installed `@org/*` package versions across developer endpoints; block egress DoH resolvers other than the corporate ones at the firewall / SWG. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed npm packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
 
@@ -28,17 +28,13 @@ The example is purely illustrative — the actual item depth is whatever the lin
 ## 0. TL;DR
 - {bullet with inline source link} (up to 5 bullets; six on a catch-up day)
 
-## 1. Immediate Actions
-(Render ONLY when an item meets criteria. On quiet days OMIT entirely — no heading.)
+> **Immediate Action — {short imperative title}.** {2–4 sentences: what is happening, why it is critical *right now*, what specific defender action is time-critical (emergency patch, isolation, credential rotation, emergency detection rule). Inline-link the primary source.}
+>
+> — *Source: [Primary source title](URL) · Tags: actively-exploited, zero-click, rce · Region: global · CVE: CVE-YYYY-NNNNN · Vector: zero-click · Auth: pre-auth · Status: exploited*
 
-### {Short imperative title}
-{2–4 sentence summary: what is happening and why it is critical right now.}
-**What to do now:**
-- {specific concrete action}
+(Most days: omit the Immediate Action callout entirely. The TL;DR ends with its bullet list. The callout is for "stop reading and act now" items only — see prompt for the bar.)
 
-— *Source: [Primary source title](URL) · Tags: actively-exploited, zero-click, rce · Region: global · CVE: CVE-YYYY-NNNNN*
-
-## 2. Active Threats, Trending Actors, Notable Incidents & Disclosures
+## 1. Active Threats, Trending Actors, Notable Incidents & Disclosures
 
 ### {Active threat or incident headline}
 {3–6 sentence summary with inline source link(s) at point of claim.}
@@ -46,33 +42,39 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Primary report](URL) · Additional source: [Corroborating publication](URL) · Tags: nation-state, espionage, supply-chain, <nexus-tag-from-taxonomy-if-applicable> · Region: europe, switzerland · Sector: public-sector, finance*
 
-## 3. Trending Vulnerabilities
+## 2. Trending Vulnerabilities
 
 ### CVE-YYYY-NNNNN — {Vendor} {Product}: {one-line description}
 {2–4 sentence summary: what it is, prerequisites, exploitation status, who it affects, what to do.}
 
 — *Source: [Primary advisory](URL) · Tags: rce, zero-click, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, no-patch*
 
+#### CVE Summary Table
+
 | CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source |
 |---|---|---|---|---|---|---|---|
 | CVE-YYYY-NNNNN | … | … | … | … | … | … | [Link](url) |
 
-## 4. Research & Investigative Reporting
+## 3. Research & Investigative Reporting
 
 ### {Substantive primary report headline}
 {One paragraph with inline link.}
 
 — *Source: [Primary report](URL) · Tags: nation-state, espionage, identity, ai-abuse · Region: global*
 
-## 5. Updates to Prior Coverage
+## 4. Updates to Prior Coverage
 
-> **UPDATE (originally YYYY-MM-DD):** {delta only — at least one inline source link.}
+### UPDATE: {short story title — what changed}
+
+> **UPDATE (originally covered YYYY-MM-DD):** {first paragraph — the delta in one or two sentences, inline-link the primary source.}
 >
-> — *Source: [The new publication](URL) · Tags: ransomware, data-breach · Region: europe*
+> {Second paragraph if needed — additional new facts, named victims, deadlines, attribution.}
+>
+> — *Source: [The new publication](URL) · Tags: ransomware, data-breach · Region: europe · CVE: CVE-YYYY-NNNNN · Status: exploited, cisa-kev*
 
 (or: *No updates this run.*)
 
-## 6. Deep Dive — {topic}
+## 5. Deep Dive — {topic}
 
 **Background.** {3–5 sentences if PD-10 applies, with inline links.}
 
@@ -80,7 +82,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Primary report](URL) · Additional source: [Corroborating advisory](URL) · Tags: rce, actively-exploited, nation-state, <nexus-tag-from-taxonomy-if-applicable> · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.3 · Vector: user-interaction · Auth: pre-auth · Status: exploited, cisa-kev*
 
-## 7. Action Items
+## 6. Action Items
 
 (Derived from this brief's content only. Generic advice does not belong here.)
 
@@ -89,9 +91,9 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: {primary advisory or research} · Tags: actively-exploited, rce · Region: global*
 
-## 8. Verification Notes
+## 7. Verification Notes
 
-- Items dropped: {list with reason — including CVEs that didn't clear § 3}.
+- Items dropped: {list with reason — including CVEs that didn't clear § 2}.
 - Single-source items: {list, with the source named}.
 - Items included with reduced confidence (only aggregator source available): {list}.
 - Contradictions: {list}.
