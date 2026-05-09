@@ -4754,11 +4754,21 @@ def main() -> int:
 
     def emit_html(rel_url: str, html: str, *, lastmod: str = "") -> None:
         """`rel_url` looks like 'briefs/2026-05-07/' or '' for home. The
-        path on disk becomes `<rel_url>index.html`."""
+        path on disk becomes `<rel_url>index.html`, with percent-encoded
+        characters decoded back to their literal form (so a URL like
+        `/topics/incident%3Afoo/` is served from `topics/incident:foo/`,
+        not from a directory whose name literally contains `%3A`).
+        GitHub Pages decodes `%3A` → `:` before file lookup, so the disk
+        layout MUST use the decoded form or every topic page 404s."""
         rel_path = rel_url + "index.html" if rel_url.endswith("/") or rel_url == "" else rel_url
         if rel_url == "":
             rel_path = "index.html"
-        out_path = OUT / rel_path
+        # Decode the URL form for the filesystem. is_safe_path_segment
+        # already restricts raw IDs to alnum + `:._-`, so the only
+        # `%`-encodings that survive `urllib.parse.quote(safe='')` are
+        # for `:` (→ `%3A`); decoding can never reintroduce `/` or `..`.
+        fs_path = urllib.parse.unquote(rel_path)
+        out_path = OUT / fs_path
         # Defence-in-depth: refuse any rel_path that resolves outside OUT.
         # All ID-bearing call sites already validate via is_safe_path_segment,
         # but keep this last-line check so future call sites can't regress.
@@ -4776,7 +4786,7 @@ def main() -> int:
             raise RuntimeError(f"refused: cannot resolve {rel_url!r}: {e}")
         atomic_write_text(out_path, html)
         h = hashlib.sha256(html.encode("utf-8")).hexdigest()
-        manifest_pages[rel_url or "/"] = {"path": rel_path, "hash": h}
+        manifest_pages[rel_url or "/"] = {"path": fs_path, "hash": h}
         sitemap.append((site_url + rel_url, lastmod))
 
     # ---- Per-brief auxiliary indexes ----------------------------------

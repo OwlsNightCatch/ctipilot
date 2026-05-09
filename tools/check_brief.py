@@ -675,11 +675,23 @@ BLOCKED_LANDING_PATTERNS: list[tuple[str, str, str]] = [
 
 def _host_path(url: str) -> tuple[str, str]:
     """Return (lowercased host, path-or-'/') for a URL. Tolerates malformed
-    input by returning empty strings."""
+    input by returning empty strings.
+
+    SPA hash-router carve-out: when the actual URL path is empty/root and
+    the fragment looks like a route (starts with `/`), treat the fragment
+    as the meaningful path. NCSC-CH's Cyber Security Hub is the canonical
+    case — `tools/fetch_source.py` synthesises citation URLs of the form
+    `https://security-hub.ncsc.admin.ch/#/posts/12551` because that is the
+    public, human-readable post page; the JSON-only `/api/posts/.../details`
+    endpoint is the fetch URL, not the citation. Without this carve-out the
+    homepage regex `^/?$` for `ncsc.admin.ch` flags every Hub citation."""
     try:
         from urllib.parse import urlsplit
         u = urlsplit(url)
-        return u.netloc.lower(), u.path or "/"
+        path = u.path or "/"
+        if path in ("", "/") and u.fragment.startswith("/"):
+            path = u.fragment
+        return u.netloc.lower(), path
     except Exception:
         return "", ""
 
