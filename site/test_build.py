@@ -23,7 +23,9 @@ sys.path.insert(0, str(SITE))
 from build import (  # noqa: E402
     _cdata_safe,
     _safe_url,
+    _strip_controls,
     _strip_footer_metadata_in_md,
+    _xml_validate,
     is_safe_path_segment,
     parse_brief,
     parse_footer_line,
@@ -32,6 +34,7 @@ from build import (  # noqa: E402
     render_inline,
     render_markdown,
     render_footer_html,
+    scan_for_secrets,
     section_key_for,
     validate_footer,
 )
@@ -614,6 +617,112 @@ assert_not_in(
 junk = render_cve_pill("not-a-cve")
 assert_in("non-CVE: rendered as plain pill", '<span class="pill pill-cve">', junk)
 assert_not_in("non-CVE: no anchor", "<a", junk)
+
+
+# ---------------------------------------------------------------------
+# Security: protocol-relative URLs must be neutered (not handed to the
+# browser as cross-origin redirects). [click](//evil.example/x) used to
+# render as <a href="//evil.example/x">; the strict CSP blocks scripts
+# from there but it would still navigate the visitor.
+# ---------------------------------------------------------------------
+print("== _safe_url protocol-relative defence ==")
+for hostile in (
+    "//evil.example/x",
+    "//evil.example.com/path?q=1",
+    "\\\\evil.example\\x",
+    "/\\evil.example/x",
+    "\\/evil.example/x",
+):
+    assert_eq(f"protocol-relative {hostile!r} → #", _safe_url(hostile), "#")
+
+# Embedded in Markdown — the rendered href must be `#`.
+hostile_md = "click [here](//evil.example/x)"
+out = render_inline(hostile_md)
+assert_in("protocol-relative neutered in render_inline", 'href="#"', out)
+assert_not_in("no //evil.example in output", "//evil.example", out)
+
+
+# ---------------------------------------------------------------------
+# Security: control characters in input must not survive renderer's
+# placeholder substitution path. The renderer uses \x00 as an internal
+# placeholder marker; legitimate input never contains it.
+# ---------------------------------------------------------------------
+print("== _strip_controls ==")
+assert_eq("strip NUL", _strip_controls("a\x00b"), "ab")
+assert_eq("strip DEL", _strip_controls("a\x7fb"), "ab")
+assert_eq("strip ESC", _strip_controls("a\x1bb"), "ab")
+assert_eq("strip BEL", _strip_controls("a\x07b"), "ab")
+assert_eq("preserve newline", _strip_controls("a\nb"), "a\nb")
+assert_eq("preserve tab",     _strip_controls("a\tb"), "a\tb")
+assert_eq("preserve CR",      _strip_controls("a\rb"), "a\rb")
+assert_eq("empty unchanged",  _strip_controls(""), "")
+
+# Renderer must drop control chars at the parse boundary even if the
+# input contains a literal placeholder lookalike.
+hostile = "look at \x00LINK0\x00 right here"
+rendered = render_inline(hostile)
+assert_not_in("renderer drops literal NUL", "\x00", rendered)
+assert_in("placeholder lookalike text survives as plain text", "LINK0", rendered)
+
+
+# ---------------------------------------------------------------------
+# Security: write-time secret scan refuses common credential shapes
+# ---------------------------------------------------------------------
+print("== scan_for_secrets ==")
+# Clean text — no hits.
+assert_eq("clean text empty hits", scan_for_secrets("Just regular brief prose."), [])
+
+# Each pattern should fire on a representative example.
+for label, sample in (
+    ("AWS key id", "AKIAIOSFODNN7EXAMPLE"),
+    ("GitHub PAT", "ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789"),
+    # github_pat_<22 chars>_<≥50 chars>
+    ("GitHub fine-grained PAT",
+     "github_pat_AAAAAAAAAAAAAAAAAAAAAA_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"),
+    ("Anthropic key", "sk-ant-api03-aBcDeFgHiJkLmNoPqRsTuVwXyZ"),
+    # AIza + 35 chars = 39 chars total. Sample below is exactly 39 chars.
+    ("Google API key", "AIzaSyAaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQ"),
+    ("PEM key block", "-----BEGIN RSA PRIVATE KEY-----"),
+    ("JWT", "eyJhbGciAB.eyJzdWIiCD.AbCdEfGh"),
+):
+    hits = scan_for_secrets(f"prefix {sample} suffix")
+    if not hits:
+        FAILURES.append(f"scan_for_secrets missed {label}: {sample[:8]}…")
+        print(f"  FAIL {label}: not detected")
+    else:
+        print(f"  ok  {label} flagged as {hits[0][0]}")
+
+
+# ---------------------------------------------------------------------
+# Security: XML validator refuses DTD / entity declarations.
+# The build only validates its OWN generated RSS feeds, but a defensive
+# parser configuration ensures a future change that pipes untrusted XML
+# through this function cannot trigger XXE or billion-laughs.
+# ---------------------------------------------------------------------
+print("== _xml_validate DTD/entity refusal ==")
+clean = '<?xml version="1.0" encoding="UTF-8"?><rss><channel><title>x</title></channel></rss>'
+assert_eq("clean XML accepted", _xml_validate(clean), [])
+
+xxe_billion_laughs = (
+    '<?xml version="1.0"?>'
+    '<!DOCTYPE lolz ['
+    '  <!ENTITY lol "lol">'
+    '  <!ENTITY lol1 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">'
+    ']>'
+    '<rss><channel><title>&lol1;</title></channel></rss>'
+)
+errs = _xml_validate(xxe_billion_laughs)
+assert errs, "XML validator must refuse DTD with entity declarations"
+print("  ok  billion-laughs XML rejected with:", errs[0][:60])
+
+xxe_external = (
+    '<?xml version="1.0"?>'
+    '<!DOCTYPE foo SYSTEM "file:///etc/passwd">'
+    '<rss/>'
+)
+errs = _xml_validate(xxe_external)
+assert errs, "XML validator must refuse external DTD reference"
+print("  ok  external-DTD XML rejected with:", errs[0][:60])
 
 
 # ---------------------------------------------------------------------

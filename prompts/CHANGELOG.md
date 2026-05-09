@@ -4,6 +4,194 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.34 — 2026-05-08 (weekly prompt brought up to daily quality bar — knowledge transfer)
+
+### Why
+The v2.33 compression aligned daily and weekly on the same docs (spawn-templates.md, brief-template.md, check-brief-fixes.md), but the weekly prompt itself was still thinner than the daily on several editorial-quality and operational-discipline sections. Operator and audit feedback called for the weekly to publish at the same technical / editorial bar as the daily — not a softer, "summary-grade" version. This release transfers the daily's load-bearing operational sections into the weekly so the weekly stands alone with the same rigour.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+**Phase 0 — Preflight:** added explicit construction of the **deduplication context** (CVE IDs from `cves_seen.json`; named actors / campaigns / incidents / annual reports from `covered_items.json`; headlines and key paragraphs from each daily brief in the gap window; previous weekly's "Looking ahead" items as first-priority status-update candidates) and the **source rotation list** (parsed from `Coverage gaps:` lines in daily § 8 and prior weekly § 10; rotation-priority sources passed to W1 and W2, filtered by category — W1 → research/news/discovery/active-breaking; W2 → gov/policy/regulatory). The weekly previously assumed the daily provided this; now it builds its own.
+
+**Phase 2 — Reinforced rules for the main agent:** new section mirroring the daily's. Carries the seven operational discipline points (drill into curated sources; `tools/fetch_source.py` MANDATORY for CISA + NCSC.ch with all five `python3 tools/fetch_source.py {ncsc-csh recent 10 | ncsc-csh post <ID> | cisa-kev | cisa page <URL> | url <full-URL>}` invocation forms; pivot from news to primary; `WebFetch` outbound-links template not optional; search topically — especially for previous weekly's "in motion" items where this week's status delta is the value-add; propose new sources at most one per run; full source-link discipline). Previously the weekly assumed the agent would re-derive these from the spawn template — now they're explicit for the consolidate / verify phases too.
+
+**Phase 3 — Per-item metadata footer:** the **hard-blocked URL patterns table** is now inline (8 rows: NVD/MITRE/cve.org per-CVE; news-site landings; broadcaster namespace roots; national-CERT advisory indexes; CISA-catalog roots; research-lab marketing landings; gov cybersecurity-section landings; bare publisher/news/blog with no slug). Previously the weekly cross-referenced the daily; now it stands alone. Added the "Rule of thumb: if removing the trailing path component still resolves to a meaningful page, the URL is too generic" guidance and the live HEAD/GET 404 enforcement note.
+
+**Phase 3 — Source-link discipline (numbered):** new explicit 6-point numbered list — only fetched URLs, specific page never landing, drill to primary keep secondaries, news-only fallback acceptable when explicit, verify before publishing, drop if unsure.
+
+**Phase 3 — Multi-CVE breakdown:** expanded with the full footer example block and per-field breakdown rules (CVSS slash-separated or per-CVE explicit; Vector/Auth shared or per-CVE; Status comma-separated or per-CVE-scoped). Was previously one line.
+
+**Phase 3 — Technical depth section:** new section ported from the daily, adapted for weekly. Carries the six bullet points — exact vulnerable component, MITRE ATT&CK technique IDs (with the daily's `T1190` / `T1059.001` / `T1505.003` / `T1557.001` / `T1068` / `T1078.004` / `T1556.006` / `T1611` example list), exploitation prerequisites (NTLM relay / OAuth device-code / SAML response forgery / S4U2Self), affected/patched versions to vendor-stated precision, observed exploitation status with named clusters (UNC / Storm / TA / APT / CL-STA), concrete defender takeaway with detection events (`Sysmon EID 1`, `4624 Logon Type 9`, `4663` on `ntds.dit`, `4769`), affected sectors and regions in footer fields. Cross-references the worked-good fragment in `docs/brief-template.md`. Includes the "weekly's consolidating role does NOT lower the technical bar — items get more synthesis context, not less specificity" framing.
+
+**Phase 3 — Item granularity section:** new — one story per item, with weekly-specific framing on when consolidation is allowed (multiple daily items into one weekly item only when they truly are one story).
+
+**Phase 3 — Citation strategy section:** new — primary source as substance, news as via, stack primary sources, always link primary AND originating daily brief (week → day → original primary walk), don't cite roll-up in place of primary (with the explicit reminder that the weekly summary IS itself a roll-up so it must cite the primaries underneath).
+
+**Prime directives expanded:** the eight existing PDs were highlights of the daily's PDs; added four more for completeness as standalone weekly directives — fake-news guard (full text with all the daily's leak-site / hallucinated-CVE / blogspam / months-old-news / sweeping-attribution / Telegram-X-only specifics), no-IOCs (with MISP pointer), no-vanity-metrics, less-is-more (with the weekly-specific "bar is higher than the daily's because every item must additionally answer W-PD-1" framing, drop-without-ceremony list, variable-size rule, empty-section stub format).
+
+**Phase 4.5 — Self-check checks expanded:** added two checks the daily's check_brief.py runs that the weekly was missing — `covered_items.json` appearances (every § 1 / § 2 / § 7 H3 with a key matching covered_items.json has a `weekly_summary` appearances[] record for today, warns) and Daily-brief link integrity (every `briefs/YYYY-MM-DD.md` link points to a file in the gap window, warns; surfaces file-rename drift). Brings weekly check count from 17 to 19, matching the daily.
+
+### Net effect
+- Weekly prompt now stands alone with the same operational rigour as the daily — no implicit cross-references for load-bearing rules.
+- Every published weekly item carries the same technical-depth bar, citation discipline, and verification gating as a daily item, plus the weekly's W-PD-1 framing on top.
+- File still fits in a single Read (~17K tokens, well under the 25K limit).
+
+### Compatibility
+- No changes to `tools/check_brief.py` itself — the two new weekly checks (covered_items appearances, daily-brief link integrity) need to be added to the script in a follow-up commit if they aren't already covered by the existing daily-mode checks. Output artefacts and footer format unchanged.
+- Hard invariants list is unchanged (15 items + W-INV-1 / W-INV-2).
+
+---
+
+## 2.33 — 2026-05-08 (single-Read prompt fit for Sonnet 4.6 + spawn templates / reference template / FAIL-fix table extracted to docs)
+
+### Why
+The daily and weekly master prompts were the agent's first-step `Read`. Both had grown to the point where a single default `Read` failed (`File content (NN tokens) exceeds maximum allowed tokens (25000)`) — the daily was ~45K tokens, the weekly ~17K. Forcing the agent to do offset/limit reads at startup is a structural failure mode: the routine should never start in a degraded state. Target model is **Claude Sonnet 4.6**, which can handle dense / terse prose without the lengthy reinforcement that earlier prompt versions used.
+
+### Goal
+Both prompts must fit in **one** `Read` (≤25K tokens) so the agent can load the master prompt at the start of the run with a single tool call. **No operational content lost** — every rule, schema, command, empirical finding (Krebs feed test, CERT-FR per-advisory shape, `<content:encoded>` vs `<description>` RSS, listing-page outbound-link drop), bridge-fetcher invocation, hard-blocked URL pattern, inclusion gate, hard invariant, anti-crash guard, and verification check must remain operational.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+- **All operational content preserved**: 12 prime directives, 8 anti-crash guards, 4-class recency-window table, 4 sub-agents (S1–S4), § 1 do/do-not shape catalog, § 3 inclusion gates, hard-blocked URL patterns table, 19 Phase 5.5 checks, two-stage push chain, 15 hard invariants, every empirical finding from the operator's WebFetch audit, every fetch_source.py invocation form, the discovery-trace rationale + 3 example shapes + 6 mandatory rules, the worked-good fragment (now in `docs/brief-template.md`), the "What this phase fixes" Phase 4.5 catalog.
+- **Externalised** to keep the master prompt under the Read limit:
+  - **Reference template** for the rendered brief → `docs/brief-template.md` (also adds the worked-good § 2 fragment for technical-depth pedagogy).
+  - **Sub-agent + verifier spawn templates** (the verbatim quoted blocks passed to spawned agents) → `docs/spawn-templates.md`. The agent reads this file once during Phase 1 (research sub-agents) and Phase 4.5 (verifier sub-agent) and passes the contents verbatim. Empirical findings (Krebs / CERT-FR / RSS shapes / listing-page drop), bridge-fetcher hostnames, WebFetch outbound-links template, Discovery-trace requirements, return format, operational guardrails all live there.
+  - **Phase 5.5 FAIL-fix recipes** → `docs/check-brief-fixes.md` (cve-sync, footer-presence, run-log-fields, run-log-subagents, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source NVD/news, source-urls 404).
+- **Prose tightened** throughout (audience description, execution environment, Phase 5 sources/sources.json bookkeeping, META section) without removing rules or examples — terser sentences, fewer redundant repetitions of already-stated rules.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Same externalisation pattern: research-sub-agent and verifier spawn templates → `docs/spawn-templates.md`; reference template → `docs/brief-template.md` (under the "Weekly summary reference template" heading); FAIL-fix recipes → `docs/check-brief-fixes.md`.
+- W-PD-1 weekly-editorial-framing rule, six Phase 1 working lists (with the inaction-=-incident list as the editorial centre), 11-section output structure, weekly-specific § 1 framing, all 15 hard invariants + 2 W-INV addenda preserved verbatim.
+- The verifier check 11 in the shared spawn template now carries the weekly-specific W-PD-1 question; the F7 finding category in the shared spawn template now covers the weekly-specific drop case for "pure one-to-one daily-brief summary".
+
+### `docs/spawn-templates.md` (NEW)
+Single canonical home for both spawn templates:
+1. **Research sub-agent spawn template** — passed verbatim by both daily Phase 1 and weekly Phase 2. Contains the full operational guidance the sub-agent depends on: defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts (CISA, NCSC.ch, CSIRT Italia, UK ICO, Inside IT, PRODAFT, DataBreaches, NCC Group, Cisco Talos), `WebFetch` outbound-links prompt template, both empirical rules (Krebs feed 13-outbound-links test; CERT-FR per-advisory carries vendor citations from "Documentation"/"Références"), the BSI WID-SEC / NCSC-NL / NCSC-CH CSH / ENISA EUVD same-shape note, `<content:encoded>` vs `<description>` RSS distinction, "silent loss of outbound links is the failure mode that turns a brief into a dead-end stub" warning, Discovery-trace requirements + 3 example shapes + 6 mandatory rules, sub-agent return format with all required fields, operational guardrails.
+2. **Verifier sub-agent spawn template** — passed verbatim by both daily Phase 4.5 and weekly Phase 3.5. Truth checks 1–4, editorial-quality checks 5–10, whole-brief checks 11–13 (check 11 carries the weekly-specific W-PD-1 question), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line.
+3. **"What this verification phase fixes"** catalog of editorial defects the loop catches.
+
+### `docs/brief-template.md` (NEW)
+Single canonical home for the rendered output skeletons:
+- **Daily brief reference template** — exact heading hierarchy (§§ 0–8), AI-content-notice text, `Generated by:` metadata line, footer placement per section, § 3 vulnerability secondary-aggregation table.
+- **Weekly summary reference template** — exact heading hierarchy (§§ 0–10), AI-content-notice text, `Generated by:` metadata line, footer placement per section, § 3 vulnerability roll-up table.
+- **Worked-good § 2 fragment** — illustrative npm supply-chain compromise showing the technical-depth bar (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
+
+### `docs/check-brief-fixes.md` (NEW)
+Operator playbook of FAIL-message → fix-action mappings for the most common `tools/check_brief.py` failures, plus WARN-level signal explanations.
+
+### Net effect
+- Daily master prompt: ~45K → ~24K tokens, fits in a single default `Read` call.
+- Weekly master prompt: ~17K → ~14K tokens, fits in a single default `Read` call.
+- No operational content lost; ALL schemas, commands, empirical findings, and rules preserved either in the master prompts or in the externalised docs.
+
+### Routine integration
+- Daily Phase 1 reads `docs/spawn-templates.md` once before spawning S1–S4 in parallel; uses the verbatim research-sub-agent template per spawn.
+- Daily Phase 4 reads `docs/brief-template.md` once before composing.
+- Daily Phase 4.5 reads `docs/spawn-templates.md` once before spawning the verifier (already in context if read in Phase 1; the agent can re-use the loaded copy or re-Read for a fresh copy of the verifier-template section).
+- Weekly Phase 2 / Phase 3 / Phase 3.5 follow the same pattern.
+
+### Compatibility
+- Output artefacts (daily brief, weekly summary, state JSON, footer format, taxonomy) are unchanged.
+- `tools/check_brief.py` and `site/test_build.py` continue to enforce the same checks unchanged.
+- Hard invariants list is unchanged (15 items + W-INV-1 / W-INV-2).
+
+---
+
+## 2.32 — 2026-05-08 (WebFetch outbound-links discipline + sources audit cleanup)
+
+### Why
+Operator audit of the source set found that the agent's link-traversal — pivoting from a news article to the vendor PSIRT, from a national-CERT advisory to the vendor blog it cites, from a research-lab post to the GitHub commit that fixed the bug — was failing silently inside the `WebFetch` tool. `WebFetch` returns a small-model summary of the fetched HTML, and **without an explicit prompt instruction the summariser drops every URL.** Sub-agents were getting prose-only summaries, with no citation chain to follow, so they hit dead ends on the news → primary pivot mandated by Phase 1 step 2.
+
+Two empirical findings from the audit (both reproducible against current sources):
+- Listing pages (e.g. `https://krebsonsecurity.com/`, `https://www.bleepingcomputer.com/news/security/`) return article titles + entity mentions but **zero outbound links** — article bodies are not on the index. To pivot, the agent has to drill into a specific article URL.
+- Per-advisory CERT pages (e.g. `https://www.cert.ssi.gouv.fr/avis/CERTFR-YYYY-AVI-NNNN/`) return the full CVE list **and** the vendor advisory URLs in their "Documentation" / "Références" section — **but only when the prompt explicitly asks for `Outbound links`**. Same for `<content:encoded>` RSS feeds (Krebs, Schneier).
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+- **New mandatory clause in the sub-agent spawn template** ("`WebFetch` prompt template — every call MUST request 'Outbound links'…"): every `WebFetch` call must append an explicit instruction to enumerate every URL in the body / References / Documentation / Sources section, formatted as bullets with full absolute URLs. Without this clause the call returns a dead-end summary.
+- **New "Research methodology" item 3** with the full `WebFetch` prompt template, the two empirical rules (listing pages don't carry inline links — drill into a specific article URL; per-advisory CERT pages and `<content:encoded>` RSS preserve the citation chain), and worked examples (Krebs feed returned 13 outbound URLs from one article; CERT-FR per-advisory page returned the Ivanti vendor URLs from its References section).
+- Renumbered the methodology items (`Search topically` is now item 4, `Propose new sources` is item 5).
+- Added DataBreaches.net and NCC Group to the named-403-host list (now require `tools/fetch_source.py`).
+
+### Weekly prompt — `prompts/weekly-summary.md`
+- Same mandatory `WebFetch` prompt clause inserted into the sub-agent spawn template, with a back-pointer to `prompts/daily-cti-brief.md` § "Research methodology" item 3 for the full template.
+
+### `sources/sources.json` — comprehensive audit + dedup + add 30 sources (separate commit, v2 schema)
+- **Removed (4):** `govcert-ch` (exact-URL duplicate of `ncsc-ch-security-hub` — GovCERT was merged into NCSC.ch in 2023), `secureworks-ctu` (Sophos absorbed it; redundant with `sophos-xops`), `sec-ir-firms-edr-blogs` (techcommunity.microsoft.com now redirects to Microsoft OAuth login — unfetchable), `reddit-netsec` (WebFetch is host-blocked from reddit.com).
+- **URL corrections** for sources whose canonical home moved or whose listing was a JS-rendered shell: `kudelski-security` → `kudelskisecurity.com/research-blog`; `trustwave-spiderlabs` → `levelblue.com/blogs/spiderlabs-blog` (rebrand); `crowdstrike` → `/counter-adversary-operations/` (legacy /threat-intel-research/ now redirects); `bsi-de` → RSS (HTML is JS-rendered SPA); `darkreading` → RSS (HTML 403's WebFetch UA); `redcanary` → RSS (resource hub returns nav-only); `akamai-sirt` → FeedBurner (HTML is nav-only shell); `projectzero` → `projectzero.google` (Blogspot legacy).
+- **Added (30 sources)** spanning national CERTs (NL/IE/BE/JP/KR), vendor PSIRTs (Cisco/Apple/Oracle/Mozilla/Chrome/MSRC/GitHub), research labs (Google TAG, SentinelLabs, Team Cymru, Censys, 0patch, Snyk, Trail of Bits, ProjectDiscovery, Morphisec, KELA), regional CTI vendors (Intrinsec, Synacktiv, Lab52, Resecurity), OT/ICS specialists (Nozomi, Claroty), ransomware tracking (ransomware.live), news (Hacker News, Infosecurity Magazine, Risky Biz News), and sanctions (US Treasury OFAC).
+- **New schema fields:** per-source `fetch_method` (`webfetch` / `rss` / `bridge` / `api` / `blocked`); top-level `fetch_methods` documentation block; new categories `vendor-psirt`, `ransomware`, `sanctions`. Every source's `notes` field now records the 2026-05-08 audit verdict and concrete RSS / bridge fallback.
+- **Bridge allowlist (`tools/fetch_source.py`)** extended with `databreaches.net`, `www.nccgroup.com`, `www.dragos.com`, `www.sygnia.co`, `www.ccn-cert.cni.es` for sources where Claude Code's WebFetch UA is filtered.
+
+Total: 114 sources (up from 85), 94 active / 18 candidate / 2 demoted. Coverage: Switzerland + EU + US + UK + DACH + Nordics + Iberia + Italy + Poland + Czechia + Ireland + Netherlands + Belgium + Japan + Korea, plus all major CTI vendors with publicly-available research.
+
+---
+
+## 2.31 — 2026-05-08 (neutralise vendor / product / actor / CVE biases in worked examples)
+
+### Why
+Operator audit of `prompts/daily-cti-brief.md` and `prompts/weekly-summary.md` found that worked examples and illustrative fragments throughout both prompts named specific vendors, products, actor clusters, advisory IDs, and CVE IDs. Earlier versions used these as concrete pedagogy ("a freshly-disclosed pre-auth RCE on Citrix NetScaler / Ivanti Connect Secure / Fortinet SSL-VPN", "named campaigns / clusters when available (`UNC5337`, `Storm-2077`, `CL-STA-1132`, `RomCom`, `Akira`, `Fog`)", "Ivanti EPMM CVE-2026-5787 → CVE-2026-6973"). The same pattern appeared in the discovery-trace examples (named Ivanti EPMM URLs verbatim), the URL-pattern do/don't table (named Microsoft / Palo Alto / Ivanti vendor PSIRT roots as the "good" example), the news-to-primary pivot guidance (BleepingComputer / Mandiant / CrowdStrike / Heise / CERT-FR), the Phase 4.5 verifier's example findings (`APT28 active against EU governments`, `CVE-2023-35078 was exploited by APT29`), and the worked-good § 2 fragment (Google Chrome cookie paths + Cloudflare Workers DoH resolver).
+
+These specifics created two distinct biases in the agent:
+
+1. **Topic bias toward the named vendors / products / actors / CVEs.** When a prompt example names "Ivanti EPMM CVE-2026-6973", the agent is more likely to over-cover Ivanti EPMM stories and CVEs in that ID neighbourhood — even when Phase 1 sub-agents surface a more relevant story elsewhere.
+2. **Anchor bias for nexus tags.** Footer template examples consistently used `china-nexus`. Without intent, this biased the rendered footers' nexus tag toward China-attributed activity when other nexus tags (or no nexus tag) was the correct call.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+Worked examples rewritten as **structural pattern descriptions** rather than topic picks. The pedagogical value is preserved (the agent still sees what the example is teaching) but the names that biased topic selection are replaced with placeholders:
+
+- **Audience description.** Removed the named research-lab list (Mandiant / GTIG / Volexity / Talos / Unit 42 / Project Zero) and the explicit red-team-tooling roll-call (BloodHound / Mythic / Sliver / KrbRelayUp / etc.). Replaced with a description of the *technique classes* the audience is fluent in — offensive-tooling terminology, identity-protocol abuse (Kerberos / OAuth / SAML), endpoint-evasion classes, kernel-callback-level techniques.
+- **PD-1 background-context example.** "APT28 is attributed to GRU Unit 26165" → generic "actor-to-government-unit attributions, infrastructure-to-actor mappings, multi-year campaign histories".
+- **PD-1 URL-construction example.** "Securelist post on Amazon SES BEC must live at securelist.com/amazon-ses-bec-campaign-2026/" → generic "inferring that a research lab's post about a given topic + year *must* live at `https://<lab-domain>/<topic-slug>-<year>/`".
+- **PD-8 long-running-campaign examples.** "Ivanti waves, Salt Typhoon, ransomware crew turnovers" → generic shape descriptions ("sustained edge-device exploitation waves against any vendor's product family, long-running named-cluster operations regardless of nexus, ransomware-affiliate turnovers and rebrands").
+- **PD-9 annual-reports list.** Removed the enumerated publisher list (Mandiant M-Trends, CrowdStrike Global Threat Report, Verizon DBIR, Microsoft Digital Defense, IBM X-Force, Truesec TIR, Dragos OT Year in Review, Cloudflare Cloudforce One). Replaced with a publisher-agnostic class definition.
+- **Phase 1 sub-agent template — discovery trace example.** The "Ivanti EPMM CVE first surfaced via the French national CERT and pivoted to Ivanti's PSIRT" example is now a generic "vulnerability in some enterprise edge product first surfaces via a national CERT advisory and the agent pivots to the affected vendor's own PSIRT bulletin" with `<placeholder>` URLs.
+- **Phase 1 sub-agent template — URL-construction example.** "the advisory ID is `CERTFR-2026-AVI-0551`…" → "because an advisory ID has a known format, its detail page must live at a derivable path on the issuing CERT's site".
+- **Discovery trace examples in sub-agent return format section** (lines 245–247). The three concrete trace examples (Ivanti / Heise → Spiegel / search → BleepingComputer → CCB Belgium → Ivanti) are now structural patterns with `<source-id>` and `<full URL fetched>` placeholders.
+- **News-to-primary pivot examples** (line 195). "BleepingComputer summarising Mandiant; The Record covering CrowdStrike; Heise reporting on a CERT-FR advisory" → generic "a security-news publisher summarising a vendor research lab; a regional tech outlet relaying a national-CERT advisory; a wire service rewriting a vendor PSIRT post".
+- **Forbidden-Source URL examples** (line 207). The named publisher URLs (heise.de, nos.nl, securelist.com, dragos.com, cert.ssi.gouv.fr, abw.gov.pl) are replaced with `<news-site>/news/` / `<lab-domain>/year-in-review/` / `<cert-domain>/advisories/` / `<gov-domain>/cybersecurity/` pattern descriptions.
+- **Mandatory-rules pivot example.** "→ Ivanti PSIRT → primary" → "→ <vendor> PSIRT → primary".
+- **Hard-blocked URL patterns table** (line 389). The "Good — what to use instead" column previously named `msrc.microsoft.com/update-guide/...`, `security.paloaltonetworks.com/CVE-…`, `www.ivanti.com/blog/…`. Replaced with publisher-agnostic guidance ("the disclosing vendor's PSIRT advisory page for the CVE — pivot to whichever one actually owns the disclosure"). The "Bad" column also genericised (no longer lists specific publisher domains).
+- **Phase 5.5 fabricated-URL examples.** Removed `https://securelist.com/amazon-ses-bec-campaign-2026/` and `https://www.deepinstinct.com/blog/muddywater-2026` — replaced with a description of the failure mode ("URLs the agent constructed by guessing a slug from the topic + year rather than fetching a real page").
+- **Phase 4.5 verifier flagging language.** "`Source: CERT-FR` as the **only** source" → "any single national-CERT URL as the **only** source on a CVE-typed item".
+- **Multi-CVE chain examples** (lines 410–417, 422–424). "Ivanti EPMM CVE-2026-5787 → CVE-2026-6973: cert-validation flaw chains to admin RCE" / "CERT-FR CERTFR-2026-AVI-0551 listing 7 GLPI CVEs" → generic shapes ("a vendor's monthly patch advisory disclosing a chain where one CVE prerequisites another", "a national-CERT advisory grouping multiple CVEs in a single product family"). All `CVE-2026-5787` / `CVE-2026-6973` IDs in the worked footer / breakdown examples replaced with `CVE-YYYY-NNNNN` / `CVE-YYYY-MMMMM`.
+- **Section template CVE placeholders** (lines 562, 576, 580, 614). `CVE-2026-XXXXX` (which still anchored the agent to 2026-era CVE IDs) → `CVE-YYYY-NNNNN` (the standard placeholder convention used elsewhere in the prompt).
+- **§ 1 Immediate Actions examples** (line 456). "freshly-disclosed pre-auth RCE on Citrix NetScaler / Ivanti Connect Secure / Fortinet SSL-VPN" → "freshly-disclosed pre-auth RCE on a widely-deployed internet-exposed enterprise edge appliance class (any vendor)".
+- **Technical-depth attack-surface examples** (line 486). The named-product list (`wp-login.php`, `nginx-quic`, Citrix NetScaler AAA virtual server, AD `MS-RPRN`, `dsamain.exe`, SAP `Visual Composer` MetaEditor servlet) → a publisher-agnostic enumeration of *types* of attack surface ("a specific PHP page on a CMS, a worker process inside a web server, an authentication virtual server inside an edge appliance, an RPC interface inside an OS service, an LDAP listener daemon, a specific servlet inside an enterprise application"). The rule "Use whatever the source actually states — never substitute generic phrasing" is preserved.
+- **Named-cluster examples** (line 490). The literal cluster IDs `UNC5337`, `Storm-2077`, `CL-STA-1132`, `RomCom`, `Akira`, `Fog` → publisher-agnostic naming-format hints (`UNC####`-style, `Storm-####`-style, `TA####`-style, `APT##`-style, `CL-###-####`-style).
+- **Detection / EDR product names** (line 491). "Defender for Identity / Falcon Identity Protection alert names, Velociraptor / Kape collection targets" → "identity-protection / EDR alert-name patterns, DFIR collection-target categories". Standard log-source / event-ID references (Sysmon EID 1, 4624 / 4663 / 4769, S4U2Self, ntds.dit, etc.) are kept — those are protocol- and OS-level primitives, not vendor topic bias.
+- **Stack-corroborating-primaries example** (line 519). "Mandiant blog + CISA joint advisory + Microsoft Threat Intel post" → "an independent research lab's blog, a government joint cybersecurity advisory, and a major-vendor threat-intel post".
+- **Reference template footer examples** (lines 572, 608). Default `china-nexus` tag in the worked § 2 and Deep Dive footers → `<nexus-tag-from-taxonomy-if-applicable>`. The taxonomy still defines the full nexus-tag list (`china-nexus`, `russia-nexus`, `north-korea-nexus`, `iran-nexus`, `us-nexus`, `eu-nexus`); the change just stops biasing the *example* toward one specific nexus.
+- **Phase 4.5 verifier example findings.** "Source: [NVD — CVE-…] / [CERT-FR — CERTFR-…]" → "an NVD/MITRE/cve.org per-CVE page or a national-CERT advisory page". `https://heise.de/news/` → "a homepage / category landing (no article slug)". "APT28 active against EU governments" → "<named actor> active against <victim class>". "508 EU on-premises instances internet-reachable (Censys/Shodan telemetry)" → "<specific aggregate number> on-premises instances internet-reachable (<vendor> telemetry)". "CVE-2023-35078 was exploited by APT29 within days" → "<CVE ID> was exploited by <named actor> within days".
+- **Worked-good § 2 fragment** (line 496). The supply-chain example previously named `Google Chrome` cookie paths verbatim and a `Cloudflare-Workers-hosted resolver`. Replaced with publisher-agnostic phrasing ("each browser's per-profile cookie store on disk", "an attacker-operated edge-serverless resolver"). The fictional `@org/x-cli` package, the version range, the OS-intrinsic execution methods (`osascript`, `powershell.exe -enc`), the MITRE technique mapping, and the detection / hardening guidance are kept — those are pedagogical, not topic bias. Date in the inline citation neutralised to `YYYY-MM-DD`.
+- **Phase 5.5 blocked-source-pattern enumeration** (line 896). The named-publisher domain list (heise.de variants, nos.nl variants, cert.ssi.gouv.fr, dragos.com, abw.gov.pl) replaced with shape descriptions; the **full pattern list with concrete domain examples drawn from sources in `sources.json`** continues to live at the top of `tools/check_brief.py`. The script — which the operator owns and edits to track real source-rotation patterns — is the right place for concrete domain enumeration; the prompt is the wrong place because every domain it names becomes an anchor.
+- **Phase 5.5 "How to fix" table example** (line 918). The specific Heise article URL example replaced with a structural description.
+
+The bridge-fetcher operational guidance (Phase 1 — `tools/fetch_source.py` with the explicit `cisa.gov` / `ncsc.admin.ch` / `acn.gov.it` / `ico.org.uk` / `inside-it.ch` / `prodaft.com` / `talos` host enumeration) is **kept verbatim** — those are operational facts about which specific source IDs in `sources.json` need the bridge for HTTP 403 reasons. They tell the agent *how to fetch these sources*, not *what to write about*. Replacing them with placeholders would break the bridge-mandate.
+
+The national-CERT carve-out enumeration in PD-5 (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL) is also kept — that list is the operational allow-list for the single-source verification carve-out, not topic guidance.
+
+The CVE primary-source order (vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator) is kept — it's an operational priority order for the agent to follow when selecting primaries, not a topic-selection bias.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+Same rewrites applied where the weekly carries equivalent worked examples:
+
+- **Audience description.** Same de-naming as the daily.
+- **Hard-blocked URL pattern examples** (line 258). Specific publisher URLs → shape descriptions.
+- **§ 7 long-running-campaign template footer** (line 389). Default `china-nexus` tag → `<nexus-tag-from-taxonomy-if-applicable>`.
+- **Phase 3.5 verifier example findings**. `https://heise.de/news/` → "a homepage / category landing (no article slug)".
+
+The weekly's `CVE-YYYY-NNNNN` placeholders were already in the recommended form across §§ 1, 3, 7 — no normalisation needed.
+
+### Out of scope for this version
+
+- `tools/check_brief.py` is intentionally **not edited**. The script is allowed (and expected) to enumerate concrete domain patterns drawn from `sources/sources.json` — that's where source-rotation reality is encoded. The prompt was the wrong place because it was being read by the agent as authoritative topic guidance every run.
+- `site/taxonomy.yaml` is unchanged. The full nexus-tag set (`china-nexus`, `russia-nexus`, `north-korea-nexus`, `iran-nexus`, `us-nexus`, `eu-nexus`) remains available; only the *example footers in the prompt* stopped defaulting to one specific nexus.
+- The `briefs/` archive is unchanged. Past briefs continue to ship with the names and CVEs that were live at the time.
+
+---
+
 ## 2.30 — 2026-05-08 (weekly prompt rewritten on top of the daily's institutionalised stack + new editorial intent)
 
 ### Why
