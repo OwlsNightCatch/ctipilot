@@ -1,6 +1,6 @@
 ---
 name: cti-research
-description: CTI research worker for the daily and weekly brief routines. Use proactively in Phase 1 (daily) and Phase 2 (weekly) to research one assigned domain in parallel — pivot from news to primary sources, fetch national-CERT advisories, vendor PSIRTs, regulator filings and victim disclosures, and return verified items with full discovery traces. Spawn one per domain (S1–S4 daily, W1–W2 weekly). Hand it: the domain, the recency window in hours, the source-list slice, the dedup context, and the rotation-priority list. Never delegates writing the brief — only researches.
+description: CTI research worker for the daily and weekly brief routines. Use proactively in Phase 1 (daily) and Phase 2 (weekly) to research one assigned domain in parallel — pivot from news to primary sources, fetch national-CERT advisories, vendor PSIRTs, regulator filings and victim disclosures, and return verified items with full discovery traces. Spawn one per domain (S1–S4 daily, W1–W2 weekly). The spawn message provides the domain, the recency window in hours, the source-list slice, the dedup context, and the rotation-priority list. Never delegates writing the brief — only researches.
 tools: Read, WebFetch, WebSearch, Bash, Write, Edit, Grep, Glob
 model: sonnet
 color: blue

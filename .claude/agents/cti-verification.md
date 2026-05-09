@@ -1,6 +1,6 @@
 ---
 name: cti-verification
-description: Independent cold-reader verification agent for CTI briefs and weekly summaries. Use during Phase 4.5 (daily) and Phase 3.5 (weekly). MUST be invoked at least once per run, then re-invoked iteratively (fresh spawn each time, no shared memory) whenever it returns NEEDS_FIXES — until verdict CLEAN or 3-iteration cap reached. Reads only — never edits the brief, never updates state. Two concerns in one pass: URL truth + editorial quality.
+description: Independent cold-reader verification agent for CTI briefs and weekly summaries. Use during Phase 4.5 (daily) and Phase 3.5 (weekly). MUST be invoked at least once per run, then re-invoked iteratively (fresh spawn each time, no shared memory) whenever it returns NEEDS_FIXES — until verdict CLEAN or 3-iteration cap reached. Reads only — never edits the brief, never updates state. Two concerns in one pass — URL truth and editorial quality.
 tools: Read, WebFetch, WebSearch, Bash, Grep, Glob
 model: sonnet
 color: red
