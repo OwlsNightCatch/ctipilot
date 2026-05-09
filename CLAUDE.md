@@ -54,13 +54,26 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
    git add <specific files — never `git add -A`>
    git commit -m "<descriptive message>"
    git fetch origin main && git merge --no-edit origin/main # second sync — main may have advanced
+
+   PUSH_OK=false
    for attempt in 1 2 3; do
-       git push origin "$current_branch" && break
+       if git push origin "$current_branch"; then
+           PUSH_OK=true
+           echo "push: ok (feature branch)"
+           break
+       fi
+       echo "push attempt ${attempt} failed; retrying in $((attempt * 5))s"
        sleep $((attempt * 5))
    done
+   if [ "$PUSH_OK" = "true" ]; then
+       :  # success path — script exits 0 from the no-op
+   else
+       echo "push: feature-branch push failed after 3 attempts"
+       exit 1
+   fi
    ```
 
-   Push the **feature branch only**. Retry up to 3× with backoff for transient transport failures.
+   Push the **feature branch only**. Retry up to 3× with backoff for transient transport failures. The `if/else` ending matters: a tail like `[ "$PUSH_OK" != "true" ] && echo "..."` exits 1 in the success case (the test "true != true" is false → exit 1, and `&&` propagates that), which makes the harness flag a successful push as a failed background task. Use the explicit `if/else` shape above.
 
 4. **Auto-merge takes it from there.** Every push to a `claude/**` branch fires [`.github/workflows/auto-merge-claude.yml`](.github/workflows/auto-merge-claude.yml) on a github-hosted runner, which:
    - Fast-forwards `main` if the feature branch is a strict descendant (common case when step 1's sync was clean).
@@ -68,18 +81,23 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
    - On a true divergence, attempts a regular merge and applies the **same auto-resolution rules** as the routine (state/* → `--ours`, `sources/sources.json` → `--theirs`) before pushing `main`. The workflow runs against the live github.com tip, so it catches any race the routine's local clone missed.
    - Deletes the feature branch on success. Any remaining conflict outside the auto-resolved paths fails loud with an `::error::` annotation in the workflow logs so the operator notices.
 
-5. **Phase 7 (daily) / Phase 6 (weekly) — verify the brief actually landed.** Poll `git fetch origin main && git cat-file -e origin/main:<brief-path>` until the brief lands (10-min budget). Then poll `https://ctipilot.ch/` until the deploy-site workflow has rebuilt gh-pages. Report `publish: ok` / `main-only` / `pending (<reason>)` from the actual poll result, not from a guess. **A pushed feature branch is not a published brief** — the verification step is what confirms the auto-merge action and the deploy-site action both succeeded.
+5. **Phase 7 (daily) / Phase 6 (weekly) — verify the brief actually landed.** Poll `git fetch origin main && git cat-file -e origin/main:<brief-path>` until the brief lands (10-min budget). Then poll `https://ctipilot.ch/` until the deploy-site workflow has rebuilt gh-pages. Report `publish: ok` / `main-only` / `pending (<reason>)` from the actual poll result, not from a guess. **A pushed feature branch is not a published brief** — the verification step is what confirms the auto-merge action and the deploy-site action both succeeded. The polling path is the **only** verification path the routine and Claude Code on the Web have available — see the next paragraph.
 
-   **Use `gh` if available — it is the authoritative source.** Polling main + curl-ing the site only tells you what eventually landed; it doesn't tell you *why* the auto-merge run failed when it did. If `gh` is on PATH and authenticated (`gh auth status` exits 0), use it to inspect the actual workflow run for the push you just made:
+   **`gh` is for local interactive sessions only.** The Anthropic-managed cloud routine container and Claude Code on the Web do **not** ship `gh` and have no GitHub credentials configured. **The cloud routine and Claude Code on the Web MUST use the polling path above and MUST NOT attempt `gh`** — there is no fallback path that magically works there; `gh` will fail or exit 127 (command not found). The routine relies on `git cat-file` for "did the brief land on main" and `curl https://ctipilot.ch/` for "did the site rebuild". That's the contract.
+
+   In a **local interactive session** where `gh` is on PATH **and** authenticated (`gh auth status` exits 0), it gives you the *why* when polling can't. Use it as a diagnostic supplement, not a replacement, after the polling path has signalled `main-only` or `pending (<reason>)`:
 
    ```bash
-   if command -v gh >/dev/null && gh auth status >/dev/null 2>&1; then
+   # ONLY run this in a local interactive session that you know has gh authenticated.
+   # The cloud routine and Claude Code on the Web must skip this entire block.
+   if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
        current_branch=$(git rev-parse --abbrev-ref HEAD)
        head_sha=$(git rev-parse HEAD)
 
        # Wait for the auto-merge run that was triggered by THIS push (matched by head SHA),
-       # not whichever run is most recent on this branch.
-       for _ in $(seq 1 30); do  # ~10 min budget at 20s interval
+       # not whichever run is most recent on the branch — concurrent pushes race.
+       run_id=""
+       for _ in $(seq 1 30); do                # ~10 min budget at 20 s interval
            run_id=$(gh run list \
                --workflow auto-merge-claude.yml \
                --branch "$current_branch" \
@@ -91,27 +109,28 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
        done
 
        if [ -n "$run_id" ]; then
-           gh run watch "$run_id" --exit-status && \
-               echo "auto-merge: ok (run $run_id)" || \
-               { echo "auto-merge: failed — fetching logs"; gh run view "$run_id" --log-failed | tail -100; }
+           if gh run watch "$run_id" --exit-status; then
+               echo "auto-merge: ok (run $run_id)"
+           else
+               echo "auto-merge: failed — fetching logs"
+               gh run view "$run_id" --log-failed | tail -100
+           fi
        else
            echo "auto-merge: no run found for $head_sha within budget"
        fi
 
-       # Same pattern for deploy-site, scoped to main commits whose tree contains this push.
+       # Recent deploy-site runs on main, for diagnosing site staleness.
        gh run list --workflow deploy-site.yml --branch main --limit 3 \
            --json databaseId,headSha,status,conclusion,createdAt | head -50
-   else
-       echo "gh not available — falling back to git fetch + curl polling"
    fi
    ```
 
-   The `gh` path catches failures the polling path can't:
-   - Auto-merge ran but failed loud with `::error::` (conflict outside the auto-resolved paths) → `git fetch` will keep returning "brief not on main" without any signal *why*.
-   - Auto-merge ran successfully but deploy-site failed (vendored-library hash mismatch, taxonomy validation, smoke test) → `curl https://ctipilot.ch/` polling will time out without telling you it was the build, not the merge.
-   - The workflow didn't fire at all (unusual — concurrency conflict, GitHub Actions outage) → both polls return nothing useful.
+   The `gh` path surfaces three failure modes the polling path can't distinguish:
+   - Auto-merge ran but failed loud with `::error::` (conflict outside the auto-resolved paths) → `git fetch` keeps returning "brief not on main" without any signal *why*.
+   - Auto-merge succeeded but deploy-site failed (vendored-library hash mismatch, taxonomy validation, smoke test) → `curl https://ctipilot.ch/` polling will time out without telling you it was the build, not the merge.
+   - The workflow didn't fire at all (concurrency conflict, GitHub Actions outage) → both polls return nothing useful.
 
-   In all three cases, `gh run view --log-failed` gives you the actual error in seconds. Always prefer `gh` over polling when it's available; fall back to polling otherwise.
+   `gh run view --log-failed` gives the actual error in seconds. Use it whenever you have it locally.
 
 ## Hard "do nots"
 
