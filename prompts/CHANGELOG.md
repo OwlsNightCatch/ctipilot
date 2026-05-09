@@ -4,6 +4,39 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.35 — 2026-05-09 (sync-then-publish chain — closes silent-skip on "main advanced")
+
+### Why
+On 2026-05-09 the daily routine published its brief to `claude/festive-mendel-dtucc` but the brief never reached `main`. Seven commits had landed on `main` while the routine was running — including the auto-merge fix `29685aa`. The routine pushed its feature branch unchanged, so the auto-merge workflow ran the *old* workflow file from the feature branch's tree (which still had the pre-`29685aa` "Skipping auto-merge; resolve manually" silent-skip path) and exited 0. The brief was orphaned. Operator had to manually merge `origin/main` into the feature branch (resolving a `sources/sources.json` conflict) and re-push so the workflow could ff-merge.
+
+Root cause is structural: `on: push` workflows always run the workflow file from the pushed ref's tree. Any fix to `auto-merge-claude.yml` is invisible to a routine whose base predates the fix. The durable mitigation is to have **the routine itself sync `origin/main` into its feature branch before pushing**, which both (a) makes the direct push to `main` a fast-forward when branch protection allows and (b) ensures the feature branch carries the latest workflow file when the fallback path runs.
+
+### Daily prompt — `prompts/daily-cti-brief.md`
+
+**Phase 6 renamed two-stage chain → sync-then-publish chain.** Now five steps:
+
+1. Stage and commit (unchanged).
+2. **NEW — Sync.** `git fetch origin main` then `git merge --no-edit origin/main`. On clean merge → `SYNC_OK=true`. On conflict → `git merge --abort`, `SYNC_OK=false`, fall through.
+3. Direct push to `main` — guarded on `$SYNC_OK=true` (only meaningful when feature branch is a strict descendant of main).
+4. Fallback — push the feature branch.
+5. Operator output — adds `push: needs operator (sync conflict)` for the rare case where step 2 aborted (the auto-merge workflow now fails loud with a conflict annotation in this case).
+
+**Hard rule** added: "Never bypass the sync step — it is what makes the chain robust against main advancing during the run."
+
+**Execution-environment paragraph (line 81)** updated to mention the sync step in the publishing-chain description.
+
+**Hard invariants** point 7 ("Two-stage publishing chain") renamed to "Sync-then-publish chain" with the order spelled out. Point 9 in the standalone-brief checklist renamed similarly.
+
+### Weekly prompt — `prompts/weekly-summary.md`
+
+Phase 5 receives the same five-step rewrite as the daily's Phase 6, with the same operator-output set, the same hard rule about not bypassing sync, and the same environment-paragraph update. The weekly references a "summary edits" conflict path (vs. the daily's "brief edits") but otherwise mirrors the daily.
+
+### What did NOT change
+- `.github/workflows/auto-merge-claude.yml` is correct as of `29685aa`. The bug was the gap between routines that predate the fix and the workflow itself, not the workflow's logic.
+- The publishing chain still tries direct push to `main` first (now usually succeeding because of the sync) and still falls back to the feature-branch + auto-merge Action path. The only difference is that the fallback now ships a feature branch that is a strict descendant of main, so case 1 (fast-forward) of the workflow always applies — case 3 (main advanced + merge commit) becomes unreachable from a properly-syncing routine.
+
+---
+
 ## 2.34 — 2026-05-08 (weekly prompt brought up to daily quality bar — knowledge transfer)
 
 ### Why

@@ -74,7 +74,7 @@ The weekly **may** repeat material from the daily briefs — the daily's PD-8 (n
 Claude Code routine on Anthropic-managed cloud infrastructure. Each fire starts a fresh container.
 
 - Container is **ephemeral**. Anything not committed and pushed is lost.
-- Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Phase 5 publishes via the same two-stage chain as daily.
+- Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Phase 5 publishes via the same sync-then-publish chain as daily — feature branch is merged with `origin/main` before push so the direct push is a fast-forward and the fallback feature-branch push carries the latest workflow file.
 - Network via internal HTTP proxy with allow-list. Soft 10-min per-sub-agent budget.
 - Git operations require routine's GitHub App (see `docs/routine-setup.md`). 403 is structural — don't retry.
 - **Model is configurable** (Sonnet / Opus / Haiku / other). This prompt does not name your model — identify yourself accurately when composing the AI-content notice.
@@ -522,9 +522,9 @@ If `tools/check_brief.py` itself fails to start, proceed to Phase 5 anyway and l
 
 ---
 
-## Phase 5 — Commit & push (two-stage publishing chain)
+## Phase 5 — Commit & push (sync-then-publish chain)
 
-The summary lands on `main` via the same two-stage chain the daily uses. Run all four steps in order. Try each push exactly once.
+The summary lands on `main` via the same sync-then-publish chain the daily uses. Run all five steps in order. Try each push exactly once.
 
 **1. Stage and commit:**
 
@@ -539,31 +539,45 @@ git commit -m "weekly: YYYY-Www summary
 "
 ```
 
-**2. Try direct publish to `main`:**
+**2. Sync feature branch with `origin/main`.** Main may have advanced during the run (daily routines, prompt edits, source-list updates). Without this, the direct push in step 3 is guaranteed to fail when anything landed on main, and the fallback feature-branch push ships an out-of-date `.github/workflows/auto-merge-claude.yml`.
 
 ```bash
-if git push origin HEAD:main; then
+git fetch origin main
+if git merge --no-edit -m "sync: merge origin/main into $(git rev-parse --abbrev-ref HEAD) before publish" origin/main; then
+    SYNC_OK=true
+    echo "sync: merged origin/main cleanly"
+else
+    git merge --abort
+    SYNC_OK=false
+    echo "sync: conflict between summary edits and origin/main — aborting merge, will fall through to feature-branch fallback"
+fi
+```
+
+**3. Try direct publish to `main` (only meaningful if sync succeeded):**
+
+```bash
+if [ "$SYNC_OK" = "true" ] && git push origin HEAD:main; then
     echo "published: direct push to main"
     PUBLISHED=true
 else
-    echo "direct push to main rejected; falling back to feature branch"
+    echo "direct push to main not attempted or rejected; falling back to feature branch"
     PUBLISHED=false
 fi
 ```
 
-**3. Fallback — push the current branch so the auto-merge Action can pick it up:**
+**4. Fallback — push the current branch so the auto-merge Action can pick it up:**
 
 ```bash
 if [ "$PUBLISHED" != "true" ]; then
     current_branch=$(git rev-parse --abbrev-ref HEAD)
     git push origin "$current_branch"
-    echo "pushed: $current_branch — auto-merge-claude.yml will fast-forward main"
+    echo "pushed: $current_branch — auto-merge-claude.yml will ff-merge (sync succeeded) or fail loud (sync conflict)"
 fi
 ```
 
-**4. Operator output:** `push: ok (direct main)` (stage 2 succeeded); `push: ok (via auto-merge action)` (stage 2 failed but stage 3 succeeded); `push: failed (<reason>)` (both failed).
+**5. Operator output:** `push: ok (direct main)` (step 3 succeeded); `push: ok (via auto-merge action)` (step 3 failed but step 4 succeeded; sync was clean); `push: needs operator (sync conflict)` (sync aborted in step 2; auto-merge will fail with a conflict annotation requiring manual resolution); `push: failed (<reason>)` (both pushes failed).
 
-**Hard rules:** each push tried once (403 is structural); never `--force`-push; never roll back the commit on push failure.
+**Hard rules:** each push tried once (403 is structural); never `--force`-push; never roll back the commit on push failure. **Never bypass the sync step** — it is what makes the chain robust against main advancing during the run.
 
 ---
 
@@ -589,14 +603,14 @@ fi
 
 ## Output
 
-Write `briefs/weekly/YYYY-Www.md`. Update state files. Stage, commit, push (two-stage chain). Print only:
+Write `briefs/weekly/YYYY-Www.md`. Update state files. Stage, commit, sync-then-publish. Print only:
 
 ```
 weekly: briefs/weekly/YYYY-Www.md
 top: N · chains: N · cves: N · incidents: N · annual-reports: N · inaction-incidents: N
 verification: iterations=N · residuals=N
 commit: <short SHA or 'no-changes'>
-push: ok (direct main) | ok (via auto-merge action) | failed (<reason>)
+push: ok (direct main) | ok (via auto-merge action) | needs operator (sync conflict) | failed (<reason>)
 ```
 
 ---
@@ -615,7 +629,7 @@ The weekly summary inherits the daily prompt's self-evolution authority and hard
 6. English output regardless of source language.
 7. Always produce a summary; never block on a single sub-agent.
 8. No workflow-internal language in the summary itself.
-9. The two-stage publishing chain.
+9. The sync-then-publish chain (sync `origin/main` before push; never bypass).
 10. Phase 3.5 verification sub-agent loop (URL truth + editorial quality, ≤3 iterations, may spawn ≤3 follow-up research sub-agents per iteration).
 11. Phase 4.5 self-check gate via `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` (exits 0 — no FAILs) before commit.
 12. Per-item metadata footer using taxonomy values from `site/taxonomy.yaml`.
