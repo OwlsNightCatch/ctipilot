@@ -20,4 +20,4 @@ The first 200 lines or 25 KB of this file are loaded into every session by the a
 
 ## Index
 
-_(no topic files yet — Claude populates this directory as work progresses)_
+- [Auto-commit/push/deploy for routine fixes](auto-publish-routine-fixes.md) — go end-to-end through commit→push→auto-merge→deploy-site→live URL without pausing for confirmation
