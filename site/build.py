@@ -9,8 +9,10 @@ Inputs (read-only):
     state/run_log.json            ops dashboard data (optional)
     sources/sources.json          curated source list
     site/taxonomy.yaml            controlled vocabulary
-    README.md, docs/*.md          rendered into /about/
-    prompts/CHANGELOG.md          rendered into /about/changelog
+    README.md                     landing page at /about/
+    docs/*.md                     rendered into /about/docs/<name>/
+    prompts/*.md                  rendered into /about/prompts/<name>/
+    prompts/CHANGELOG.md          rendered into /about/prompts/changelog/
 
 Outputs (written under site/_site/):
     /                             home (latest brief preview)
@@ -24,7 +26,12 @@ Outputs (written under site/_site/):
     /tags/<tag>/                  index of items with this tag
     /regions/<region>/            index of items with this region
     /ops/                         operations dashboard
-    /about/                       about / docs / changelog
+    /about/                       landing page (Documentation + Prompts sections)
+    /about/docs/                  documentation index
+    /about/docs/<name>/           one page per docs/*.md
+    /about/prompts/               prompts index + recent CHANGELOG headings
+    /about/prompts/<name>/        one page per prompts/*.md (excl. CHANGELOG)
+    /about/prompts/changelog/     full prompt CHANGELOG
     /feed.xml                     daily RSS (URL preserved)
     /feed-weekly.xml              weekly RSS (NEW)
     /feed-items.xml               per-item RSS (NEW)
@@ -1940,7 +1947,7 @@ def render_brief_page(
     prompt_badge = ""
     if brief.get("prompt_version"):
         prompt_badge = (
-            f'<a class="badge badge--accent" href="{prefix}about/changelog/" '
+            f'<a class="badge badge--accent" href="{prefix}about/prompts/changelog/" '
             f'title="Editorial-policy version that produced this brief">'
             f'prompt v{_escape(brief["prompt_version"])}'
             f'</a>'
@@ -2870,21 +2877,23 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
     """Rewrite relative repo paths in rendered Markdown to URLs that
     actually resolve on the deployed static site.
 
-    Inputs are README.md / docs/*.md / prompts/CHANGELOG.md, all of which
-    use relative links like `[`docs/verification.md`](docs/verification.md)`
+    Inputs are README.md / docs/*.md / prompts/*.md (including CHANGELOG),
+    all of which use relative links like `[`prompts/verification.md`](prompts/verification.md)`
     or `[briefs](briefs/)`. Those resolve correctly on github.com but
     404 on the deployed Pages site (everything is rendered into
-    /about/<doc>/, not /about/docs/<doc>.md).
+    /about/docs/<name>/ or /about/prompts/<name>/, not the original .md path).
 
     Mapping rules:
-        docs/<name>.md            → <prefix>about/<name>/
-        docs/                     → <prefix>about/
-        briefs/                   → <prefix>briefs/
-        briefs/<name>.md          → <prefix>briefs/<name>/   (only daily / weekly)
-        briefs/weekly/<name>.md   → <prefix>briefs/weekly/<name>/
-        prompts/CHANGELOG.md      → <prefix>about/changelog/
-        anything else relative    → https://github.com/<repo>/blob/main/<path>
-                                    (state files, source list, scripts, etc.)
+        docs/<name>.md             → <prefix>about/docs/<name>/
+        docs/                      → <prefix>about/docs/
+        prompts/CHANGELOG.md       → <prefix>about/prompts/changelog/
+        prompts/<name>.md          → <prefix>about/prompts/<name>/
+        prompts/                   → <prefix>about/prompts/
+        briefs/                    → <prefix>briefs/
+        briefs/<name>.md           → <prefix>briefs/<name>/   (only daily / weekly)
+        briefs/weekly/<name>.md    → <prefix>briefs/weekly/<name>/
+        anything else relative     → https://github.com/<repo>/blob/main/<path>
+                                     (state files, source list, scripts, etc.)
     """
     repo = os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO)
     repo_blob = f"https://github.com/{repo}/blob/main/"
@@ -2897,16 +2906,23 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         if "#" in p:
             p, frag = p.split("#", 1)
             frag = "#" + frag
-        # docs/<name>.md → about/<name>/
+        # docs/<name>.md → about/docs/<name>/
         m = re.match(r"^docs/([^/]+)\.md$", p)
         if m:
-            return prefix + f"about/{m.group(1)}/" + frag
-        # docs/ index → about/ (the README is at /about/)
+            return prefix + f"about/docs/{m.group(1)}/" + frag
+        # docs/ index → about/docs/
         if p == "docs/" or p == "docs":
-            return prefix + "about/" + frag
-        # prompts/CHANGELOG.md → about/changelog/
+            return prefix + "about/docs/" + frag
+        # prompts/CHANGELOG.md → about/prompts/changelog/
         if p == "prompts/CHANGELOG.md":
-            return prefix + "about/changelog/" + frag
+            return prefix + "about/prompts/changelog/" + frag
+        # prompts/<name>.md → about/prompts/<name>/
+        m = re.match(r"^prompts/([^/]+)\.md$", p)
+        if m:
+            return prefix + f"about/prompts/{m.group(1)}/" + frag
+        # prompts/ index → about/prompts/
+        if p == "prompts/" or p == "prompts":
+            return prefix + "about/prompts/" + frag
         # briefs/<YYYY-MM-DD>.md → briefs/<YYYY-MM-DD>/
         m = re.match(r"^briefs/(\d{4}-\d{2}-\d{2})\.md$", p)
         if m:
@@ -2942,8 +2958,8 @@ def render_static_doc(
     site_url: str, cachebust: str, subtitle: str | None = None,
 ) -> str:
     # No base_url here — we want relative repo paths like
-    # `docs/verification.md` to stay relative so _rewrite_about_links
-    # can route them to /about/verification/ instead of letting urljoin
+    # `prompts/verification.md` to stay relative so _rewrite_about_links
+    # can route them to /about/prompts/verification/ instead of letting urljoin
     # resolve them against the canonical URL (which would 404).
     rendered = render_markdown(md_text)
     rendered = _rewrite_about_links(rendered, prefix=prefix)
@@ -3071,7 +3087,7 @@ def render_ops_page(
 {stale_html}
 
 <p class="muted" style="font-size:0.78rem; margin-top:1rem">
-  See <a href="{prefix}about/architecture/">Architecture</a> for how the run log is produced.
+  See <a href="{prefix}about/docs/architecture/">Architecture</a> for how the run log is produced.
 </p>
 """
     return base_template(
@@ -4155,16 +4171,38 @@ def main() -> int:
     )
     emit_html("", home_html, lastmod=latest["publish_iso"][:10] if latest else "")
 
-    # /about/ from README.md + docs index
+    # /about/ — landing page with two clear sections (Documentation + Prompts).
+    # Built from README.md plus a generated section-nav block prepended at the
+    # top so the reader sees the two-column layout before scrolling into the
+    # README content.
     readme = (
         _read_text_capped(ROOT / "README.md", MAX_BRIEF_BYTES)
         if (ROOT / "README.md").exists()
         else "# About"
     )
+    docs_dir = ROOT / "docs"
+    prompts_dir = ROOT / "prompts"
+    docs_files = sorted(docs_dir.glob("*.md")) if docs_dir.exists() else []
+    prompt_files = sorted(p for p in prompts_dir.glob("*.md") if p.name != "CHANGELOG.md") if prompts_dir.exists() else []
+    about_landing_md = "# About\n\n"
+    about_landing_md += "Two reading paths into how this project works.\n\n"
+    about_landing_md += "## [Documentation](docs/)\n\n"
+    about_landing_md += "System reference for operators, contributors, and curious readers. End-to-end map, runbook, privacy disclosure, open backlog.\n\n"
+    for p in docs_files:
+        title = p.stem.replace("-", " ").capitalize()
+        about_landing_md += f"- [{title}](docs/{p.stem}.md)\n"
+    about_landing_md += "\n## [Prompts](prompts/)\n\n"
+    about_landing_md += "Everything the routine loads at runtime — the full text of the master prompts, the verification policy, the brief template, the check-brief fix recipes, and the version-history changelog.\n\n"
+    for p in prompt_files:
+        title = p.stem.replace("-", " ").capitalize()
+        about_landing_md += f"- [{title}](prompts/{p.stem}.md)\n"
+    about_landing_md += "- [Prompt CHANGELOG](prompts/CHANGELOG.md) — version-by-version evolution\n\n"
+    about_landing_md += "---\n\n## README\n\n"
+    about_landing_md += readme
     emit_html(
         "about/",
         render_static_doc(
-            md_text=readme,
+            md_text=about_landing_md,
             title="About — ctipilot.ch",
             description="What this project is, how the briefs are produced, and how to read them.",
             prefix="../",
@@ -4173,38 +4211,102 @@ def main() -> int:
             cachebust=cachebust,
         ),
     )
-    # Mirror the docs/ folder under /about/<doc>/
-    docs_dir = ROOT / "docs"
-    if docs_dir.exists():
-        for p in sorted(docs_dir.glob("*.md")):
-            rel_url = f"about/{p.stem}/"
+
+    # /about/docs/ — index page listing every doc.
+    if docs_files:
+        docs_index_md = "# Documentation\n\nSystem reference for operators, contributors, and curious readers. Pure docs — none of the files here are loaded by the prompt at runtime (that material lives under [`prompts/`](../prompts/)).\n\n"
+        for p in docs_files:
+            title = p.stem.replace("-", " ").capitalize()
+            docs_index_md += f"- [**{title}**](../docs/{p.stem}.md)\n"
+        emit_html(
+            "about/docs/",
+            render_static_doc(
+                md_text=docs_index_md,
+                title="Documentation — ctipilot.ch",
+                description="System reference: architecture, operating, analytics, improvements.",
+                prefix="../../",
+                canonical=site_url + "about/docs/",
+                site_url=site_url,
+                cachebust=cachebust,
+            ),
+        )
+        # /about/docs/<name>/ — each doc.
+        for p in docs_files:
+            rel_url = f"about/docs/{p.stem}/"
+            title = p.stem.replace("-", " ").capitalize()
             emit_html(
                 rel_url,
                 render_static_doc(
                     md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
-                    title=p.stem.replace("-", " ").title() + " — ctipilot.ch",
-                    description=p.stem.replace("-", " ").title(),
-                    prefix="../../",
+                    title=f"{title} — ctipilot.ch",
+                    description=f"{title} — system documentation.",
+                    prefix="../../../",
                     canonical=site_url + rel_url,
                     site_url=site_url,
                     cachebust=cachebust,
                 ),
             )
-    # Changelog
-    changelog = (ROOT / "prompts" / "CHANGELOG.md")
-    if changelog.exists():
+
+    # /about/prompts/ — index page listing every prompt + recent CHANGELOG headings.
+    changelog_path = ROOT / "prompts" / "CHANGELOG.md"
+    if prompt_files or changelog_path.exists():
+        prompts_index_md = "# Prompts\n\nEverything the routine loads at runtime. The two master prompts (`daily-cti-brief.md`, `weekly-summary.md`) drive every run; the supporting files (`verification.md`, `brief-template.md`, `check-brief-fixes.md`) are read by the prompts at runtime as policy, template, and remediation guide.\n\n"
+        if prompt_files:
+            prompts_index_md += "## Prompts and runtime policies\n\n"
+            for p in prompt_files:
+                title = p.stem.replace("-", " ").capitalize()
+                prompts_index_md += f"- [**{title}**](../prompts/{p.stem}.md)\n"
+            prompts_index_md += "\n"
+        prompts_index_md += "## Version history\n\n"
+        prompts_index_md += "Every substantive prompt edit ships with a [CHANGELOG](../prompts/CHANGELOG.md) entry explaining *why* the editorial policy shifted between two committed briefs. Recent versions:\n\n"
+        if changelog_path.exists():
+            cl_text = changelog_path.read_text(encoding="utf-8", errors="replace")
+            version_headings = re.findall(r"^## (\d+\.\d+ — \d{4}-\d{2}-\d{2}.*)$", cl_text, re.MULTILINE)
+            for h in version_headings[:10]:
+                prompts_index_md += f"- {h}\n"
+            prompts_index_md += "\n[Full version history →](../prompts/CHANGELOG.md)\n"
         emit_html(
-            "about/changelog/",
+            "about/prompts/",
             render_static_doc(
-                md_text=_read_text_capped(changelog, MAX_BRIEF_BYTES),
-                title="Prompt CHANGELOG — ctipilot.ch",
-                description="Editorial-policy audit trail.",
+                md_text=prompts_index_md,
+                title="Prompts — ctipilot.ch",
+                description="The prompts the routine loads at runtime, plus their version-history changelog.",
                 prefix="../../",
-                canonical=site_url + "about/changelog/",
+                canonical=site_url + "about/prompts/",
                 site_url=site_url,
                 cachebust=cachebust,
             ),
         )
+        # /about/prompts/<name>/ — each prompt file.
+        for p in prompt_files:
+            rel_url = f"about/prompts/{p.stem}/"
+            title = p.stem.replace("-", " ").capitalize()
+            emit_html(
+                rel_url,
+                render_static_doc(
+                    md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
+                    title=f"{title} — ctipilot.ch",
+                    description=f"{title} — runtime prompt / policy.",
+                    prefix="../../../",
+                    canonical=site_url + rel_url,
+                    site_url=site_url,
+                    cachebust=cachebust,
+                ),
+            )
+        # /about/prompts/changelog/ — full version history.
+        if changelog_path.exists():
+            emit_html(
+                "about/prompts/changelog/",
+                render_static_doc(
+                    md_text=_read_text_capped(changelog_path, MAX_BRIEF_BYTES),
+                    title="Prompt CHANGELOG — ctipilot.ch",
+                    description="Editorial-policy audit trail — every prompt-version change explained.",
+                    prefix="../../../",
+                    canonical=site_url + "about/prompts/changelog/",
+                    site_url=site_url,
+                    cachebust=cachebust,
+                ),
+            )
 
     # /ops/
     run_log = None

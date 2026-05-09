@@ -4,6 +4,77 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.41 — 2026-05-09 (separation of concerns: prompt-runtime files moved into `prompts/`, `docs/` reworked, About page split into Documentation + Prompts)
+
+### Why
+Mixing prompt-runtime content (verification policy, brief template, check-brief fix recipes — all `Read` by the master prompt at runtime) with operator-facing system documentation in the same `docs/` directory was confusing. A new operator reading `docs/` couldn't tell which files were policy the routine enforces versus reference material for them. Worse, `docs/workflow.md` and `docs/routine-setup.md` carried stale content from the pre-v2.36 direct-push-to-`main` model and didn't match what the prompts actually do anymore.
+
+This release is a single conceptual cut: anything the routine `Read`s at runtime moves to `prompts/`; `docs/` becomes pure operator-facing documentation.
+
+### What changed
+
+**Files moved (`git mv`, history preserved)**
+
+- `docs/verification.md` → [`prompts/verification.md`](verification.md)
+- `docs/brief-template.md` → [`prompts/brief-template.md`](brief-template.md)
+- `docs/check-brief-fixes.md` → [`prompts/check-brief-fixes.md`](check-brief-fixes.md)
+
+**Files deleted**
+
+- `docs/spawn-templates.md` — pure pointer doc; superseded by [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) and [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) which carry the canonical sub-agent system prompts.
+- `docs/workflow.md` — duplicated the prompts themselves (the prompts ARE the workflow contract). Phase narrative now lives in the daily / weekly prompts; structural map in `docs/architecture.md`.
+- `docs/routine-setup.md` — replaced by `docs/operating.md` (rewritten for the current feature-branch + auto-merge model; the old doc still described the forbidden direct-push pattern).
+
+**Files created**
+
+- [`docs/operating.md`](../docs/operating.md) — operator runbook covering: publishing chain (feature branch only), one-time setup (Claude GitHub App, workflow permissions, Pages enablement, routine creation), operations dashboard signals to watch, sub-agent capability ceiling, credential rotation cadence, troubleshooting matrix.
+
+**Daily prompt — `prompts/daily-cti-brief.md`**
+
+- All `docs/verification.md` / `docs/brief-template.md` / `docs/check-brief-fixes.md` references updated to the new `prompts/`-rooted paths (intra-prompts links use bare filenames since the prompts directory is the link root).
+- "Where things live" tree updated to list the runtime-policy files under `prompts/` and to describe `docs/` as operator-facing only.
+- "Documentation — keep current" list rewritten to match the new layout: `docs/architecture.md`, `docs/operating.md`, `docs/analytics.md`, `docs/improvements.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`.
+- `docs/routine-setup.md` references replaced with `docs/operating.md`.
+- Header banner bumped to v2.41.
+
+**Weekly prompt — `prompts/weekly-summary.md`**
+
+- Same path updates applied; header bumped to v2.41 in lockstep (no other content change).
+
+**`CLAUDE.md`**
+
+- "Where things live" tree updated to reflect the moves.
+- Prompt-versioning rule extended: edits to `prompts/verification.md`, `prompts/brief-template.md`, and `prompts/check-brief-fixes.md` now also require a CHANGELOG entry + version bump (these files are loaded by the prompts at runtime, so a silent edit produces the same drift between rendered brief and committed policy as a silent prompt edit).
+- New "Skeleton-then-Edit (operational guardrail)" reminder added to the operational-guardrails section, explaining why a single large `Write` trips `Stream idle timeout` and what shape of edit dodges it (this rule was previously folded into a one-liner; now expanded with the empirical signal that prompted it).
+
+**`README.md`, `docs/architecture.md`, `docs/improvements.md`**
+
+- All `docs/verification.md` / `docs/workflow.md` / `docs/routine-setup.md` references updated to either the new `prompts/`-rooted path or to `docs/operating.md`.
+- README's "Phase 6" bullet rewritten to describe the actual feature-branch + auto-merge chain (the old wording said "push directly to `main` — every brief is published the moment it is generated", which contradicts repo policy).
+- README tree updated to show the new `prompts/` and `docs/` layouts side-by-side.
+
+**`site/build.py`, `site/test_build.py`, `site/README.md`**
+
+- About-page generator restructured. Old layout: flat `/about/<doc>/` for every `docs/*.md` plus `/about/changelog/`. New layout:
+  - `/about/` — landing page with two clear sections (Documentation + Prompts), prepended to the README content.
+  - `/about/docs/` — documentation index linking each doc.
+  - `/about/docs/<name>/` — one page per `docs/*.md`.
+  - `/about/prompts/` — prompts index listing each prompt + the last 10 CHANGELOG version headings (so the version evolution is visible without leaving the index).
+  - `/about/prompts/<name>/` — one page per `prompts/*.md` (excl. CHANGELOG).
+  - `/about/prompts/changelog/` — full prompt CHANGELOG.
+- Link-rewriter (`_rewrite_about_links`) extended with `prompts/<name>.md` → `about/prompts/<name>/` and `prompts/CHANGELOG.md` → `about/prompts/changelog/` mappings.
+- Brief-page prompt-version badge updated to point at `about/prompts/changelog/`.
+- Ops dashboard "Architecture" link updated to `about/docs/architecture/`.
+- `test_build.py` reference updated.
+- `site/README.md` output-tree and URL-table updated.
+
+### What stays
+All hard invariants are unchanged: AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain via `.github/workflows/auto-merge-claude.yml`, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values. No phase order change. No source-list policy change. No fetch-budget change. The verification policy text in `prompts/verification.md` is byte-identical to the previous `docs/verification.md`. Same for `brief-template.md` and `check-brief-fixes.md` — only the path changed.
+
+CNAME (`ctipilot.ch`) restored at the repo root after being mistakenly grouped into the v2.40 deletions; the build still copies it to gh-pages and the custom domain is unaffected.
+
+---
+
 ## 2.40 — 2026-05-09 (docs cleanup: drop superseded historical/duplicate docs from prompt's keep-current list)
 
 ### Why

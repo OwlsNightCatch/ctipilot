@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.40 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.41 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. **Recommended model split:** main agent on Opus (large context, composes the summary, owns the publishing chain); sub-agents on Sonnet (parallel horizon research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -60,7 +60,7 @@ The weekly inherits every prime directive from `prompts/daily-cti-brief.md`. Hig
 6. **Weekly editorial framing (W-PD-1).** Every item answers one of three questions: (a) *what would be on fire if no one acted on the daily?*, (b) *what cross-day pattern emerged that no single daily could surface?*, (c) *what strategic / horizon shift happened that changes defender obligations going forward?*. Items that answer none of these three get dropped — even if they were prominent in a daily.
 7. **Annual / periodic reports** get fuller distillation in the weekly than the daily, since the weekly's audience expects horizon framing.
 8. **`tools/fetch_source.py` is mandatory for CISA + NCSC.ch every run** — never `WebFetch` those hosts directly. Same rule as daily.
-9. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `docs/verification.md`.
+9. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `prompts/verification.md`.
 10. **No IOCs.** No file hashes (MD5/SHA-1/SHA-256/imphash), no IPs, no attacker-controlled domains/URL paths, no YARA/Sigma/Suricata. The weekly is *knowledge* — TTPs, campaigns, actors, vulnerabilities, targeting, sectors, detection concepts. IOC distribution belongs elsewhere (MISP). When a source emphasises IOCs, summarise the *behaviour*, not the indicator.
 11. **No vanity metrics.** Skip vendor-marketing numbers — median dwell time, breakout time, YoY %, "X new adversaries tracked", "$Y billion damage", "Z% of CISOs say". Operational scoring (CVSS, EPSS, CISA KEV, vendor severity, exploitation status) is fine.
 12. **Less is more — relevance over volume.** Every item costs reader attention. Ship fewer, sharper items. The weekly's bar is **higher than the daily's** because every item must additionally answer W-PD-1 — items that are interesting in isolation but don't meet inaction-=-incident / cross-day-pattern / horizon-shift get dropped. Drop without ceremony: vendor marketing dressed as research; commentary on already-covered stories without material delta; awareness pieces; industry surveys; conference recaps; product launches; YoY statistics without defender takeaway.
@@ -78,7 +78,7 @@ Claude Code routine on Anthropic-managed cloud infrastructure. Each fire starts 
 - Container is **ephemeral**. Anything not committed and pushed is lost.
 - Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Phases 5 + 6 publish via the same chain as daily — commit on feature branch → sync with `origin/main` (auto-resolve `state/*.json` → ours, `sources/sources.json` → theirs) → push feature branch (retry up to 3×) → auto-merge action promotes to `main` → deploy-site rebuilds gh-pages → verify `https://ctipilot.ch/` reflects this week. **Direct pushes to `main` are forbidden by repo policy.**
 - Network via internal HTTP proxy with allow-list. Soft 10-min per-sub-agent budget.
-- Git operations require routine's GitHub App (see `docs/routine-setup.md`). 403 is structural — don't retry.
+- Git operations require routine's GitHub App (see `docs/operating.md`). 403 is structural — don't retry.
 - **Model is configurable** (Sonnet / Opus / Haiku / other). This prompt does not name your model — identify yourself accurately when composing the AI-content notice.
 
 Working directory layout:
@@ -94,7 +94,10 @@ state/deep_dive_history.json       # rolling 30-day deep-dive picks
 state/run_log.json                 # per-run telemetry (Ops dashboard)
 briefs/YYYY-MM-DD.md               # daily inputs
 briefs/weekly/YYYY-Www.md          # weekly output
-docs/                              # workflow + verification policy + spawn-templates + brief-template + check-brief-fixes
+prompts/verification.md            # verification policy (the prompt enforces it)
+prompts/brief-template.md          # canonical Markdown skeleton for the rendered brief / weekly
+prompts/check-brief-fixes.md       # how to fix common check_brief.py FAILs
+docs/                              # architecture + operating + analytics + improvements (operator-facing)
 site/taxonomy.yaml                 # controlled vocabulary for metadata footers
 site/test_build.py                 # build-side smoke tests
 tools/check_brief.py               # institutionalised Phase 4.5 self-check; bundles every gate + test_build.py
@@ -363,7 +366,7 @@ For every item, where the source supports:
 - **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts.
 - **Affected sectors and regions** in footer's `Tags` / `Region` / `Sector` fields, not filler prose.
 
-A worked-good fragment showing this depth lives in [`docs/brief-template.md`](../docs/brief-template.md) (illustrative npm supply-chain compromise with osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics). Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
+A worked-good fragment showing this depth lives in [`prompts/brief-template.md`](brief-template.md) (illustrative npm supply-chain compromise with osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics). Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
 
 ### Item granularity — one story per item
 
@@ -380,7 +383,7 @@ Each distinct finding gets its own item with its own primary source(s). Distinct
 
 ### Reference template
 
-The canonical Markdown skeleton for the rendered weekly summary lives in [`docs/brief-template.md`](../docs/brief-template.md) (under the "Weekly summary reference template" heading). `Read` it once during Phase 3 before composing — it contains the exact heading hierarchy, AI-content-notice text, `Generated by:` line, footer placement per section, and the § 3 vulnerability roll-up table.
+The canonical Markdown skeleton for the rendered weekly summary lives in [`prompts/brief-template.md`](brief-template.md) (under the "Weekly summary reference template" heading). `Read` it once during Phase 3 before composing — it contains the exact heading hierarchy, AI-content-notice text, `Generated by:` line, footer placement per section, and the § 3 vulnerability roll-up table.
 
 ### Style rules
 
@@ -523,7 +526,7 @@ Bundles every Phase 4.5 mechanical check **plus** build-side smoke tests (`site/
 18. **Daily-brief link integrity** — every `briefs/YYYY-MM-DD.md` link in the summary points to a file that exists in the gap window (warns; surfaces file-rename drift between daily and weekly routines).
 19. `site/test_build.py` exits 0.
 
-WARNs are tolerated and logged in § 10; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`docs/check-brief-fixes.md`](../docs/check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
+WARNs are tolerated and logged in § 10; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`prompts/check-brief-fixes.md`](check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
 
 If `tools/check_brief.py` itself fails to start, proceed to Phase 5 anyway and log the script-level error in § 10 — never let tooling block the summary.
 

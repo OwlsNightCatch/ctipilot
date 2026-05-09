@@ -22,41 +22,48 @@ debugging an unexpected commit or onboarding a new operator, start here.
          │  prompts/                state/                          │
          │   ├ daily-cti-brief.md    ├ covered_items.json           │
          │   ├ weekly-summary.md     ├ cves_seen.json               │
-         │   └ CHANGELOG.md          ├ deep_dive_history.json       │
-         │                           └ run_log.json                 │
-         │                          sources/                        │
-         │  briefs/                  └ sources.json                 │
-         │   ├ YYYY-MM-DD.md        tools/                          │
-         │   └ weekly/YYYY-Www.md    ├ check_brief.py (Phase 5.5)   │
-         │                           └ fetch_source.py              │
-         │                          docs/                           │
-         │                          ├ workflow.md                   │
-         │                          ├ verification.md               │
-         │                          ├ routine-setup.md              │
+         │   ├ CHANGELOG.md          ├ deep_dive_history.json       │
+         │   ├ verification.md       └ run_log.json                 │
+         │   ├ brief-template.md    sources/                        │
+         │   └ check-brief-fixes.md  └ sources.json                 │
+         │                          tools/                          │
+         │  briefs/                  ├ check_brief.py (Phase 5.5)   │
+         │   ├ YYYY-MM-DD.md         └ fetch_source.py              │
+         │   └ weekly/YYYY-Www.md   docs/                           │
          │                          ├ architecture.md (this file)   │
-         │                          └ improvements.md               │
-         └──────────────┬─────────────────────────────────┬─────────┘
-                        │                                 │
-        push to claude/**│ (fallback)              push to main │
-                        ▼                                 ▼
-                 ┌──────────────┐                ┌──────────────────┐
-                 │ auto-merge   │ ff-merges      │ deploy-site.yml  │
-                 │ workflow     │───────────────▶│ runs build.py    │
-                 └──────────────┘  to main       │ uploads to Pages │
-                                                 └────────┬─────────┘
-                                                          │
-                                                          ▼
-                                              GitHub Pages reader
-                                              (real HTML pages emitted
-                                              by site/build.py — no SPA)
+         │  .claude/agents/         ├ operating.md                  │
+         │   ├ cti-research.md      ├ analytics.md                  │
+         │   └ cti-verification.md  └ improvements.md               │
+         └──────────────────────────────┬───────────────────────────┘
+                                        │
+                                        │ git push (claude/** branches only)
+                                        ▼
+                           ┌────────────────────────────┐
+                           │ auto-merge-claude.yml      │
+                           │  ff-merges (or merges with │
+                           │  state/* → ours,           │
+                           │  sources.json → theirs)    │
+                           └────────────┬───────────────┘
+                                        ▼
+                                      main
+                                        │
+                                        ▼ workflow_run (success only)
+                           ┌────────────────────────────┐
+                           │ deploy-site.yml            │
+                           │  runs site/build.py        │
+                           │  force-pushes to gh-pages  │
+                           └────────────┬───────────────┘
+                                        ▼
+                              GitHub Pages reader
+                              (real HTML pages emitted
+                              by site/build.py — no SPA)
 ```
 
 ## Components
 
-### `prompts/` — the agent's instructions
+### `prompts/` — everything the routine loads at runtime
 
-Two prompts. Each is the *entire* runtime contract for a routine; the routine
-is invoked with a one-line wrapper ("Read this prompt and execute it").
+The two master prompts plus the runtime-policy / template / debug docs they reference. Each master prompt is the *entire* runtime contract for a routine; the routine is invoked with a one-line wrapper ("Read this prompt and execute it"). The supporting files are also under `prompts/` because the master prompts `Read` them at runtime — they are part of the prompt machinery, not operator-facing documentation.
 
 - [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) — the daily
   brief. Phases 0–6 + a 5.5 self-check gate (preflight → parallel research →
@@ -67,7 +74,28 @@ is invoked with a one-line wrapper ("Read this prompt and execute it").
   long-horizon sub-agents (W1 long-running campaigns + annual reports;
   W2 policy + regulatory).
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
-  the prompt itself. Treat as the audit trail for editorial-policy changes.
+  the prompts. Treat as the audit trail for editorial-policy changes.
+- [`prompts/verification.md`](../prompts/verification.md) — the editorial /
+  fake-news verification policy. The agent's quality gates are derived from
+  this; the prompt's Phase 2 references it by name.
+- [`prompts/brief-template.md`](../prompts/brief-template.md) — the canonical
+  Markdown skeleton for the rendered brief / weekly. The prompt's Phase 4
+  `Read`s it before composing.
+- [`prompts/check-brief-fixes.md`](../prompts/check-brief-fixes.md) — fix
+  recipes for common `tools/check_brief.py` FAILs. The prompt's Phase 5.5
+  references it for remediation.
+
+### `.claude/agents/` — custom sub-agent definitions
+
+- [`cti-research.md`](../.claude/agents/cti-research.md) — Sonnet-backed,
+  isolated context. Phase 1 (daily) / Phase 2 (weekly) parallel research
+  workers; also reused for verification follow-ups (max 3 per iteration).
+  Embeds the `WebFetch` outbound-links template, the `tools/fetch_source.py`
+  contract for known-403 hosts, and the discovery-trace return format.
+- [`cti-verification.md`](../.claude/agents/cti-verification.md) — Sonnet-
+  backed, read-only, isolated context. Phase 4.5 (daily) / Phase 3.5
+  (weekly) cold-reader verifier, looped iteratively (cap 3, fresh spawn
+  each time, no shared memory).
 
 ### `briefs/` — the canonical output
 
@@ -152,23 +180,23 @@ The agent maintains this file autonomously per the lifecycle in the top-level
 
 ### `docs/` — operator-facing documentation
 
-- [`docs/workflow.md`](workflow.md) — phase-by-phase execution of both
-  routines.
-- [`docs/verification.md`](verification.md) — the editorial / fake-news
-  defence policy. The agent's quality gates are derived from this.
-- [`docs/routine-setup.md`](routine-setup.md) — one-time GitHub App / Pages
-  / branch-permission setup.
-- [`docs/architecture.md`](architecture.md) — this file.
-- [`docs/improvements.md`](improvements.md) — recommended improvements to
-  the agentic workflow and the site, with rationale.
+System reference for operators, contributors, and curious readers. Pure docs — nothing here is loaded by the prompt at runtime (that material lives under `prompts/`).
+
+- [`docs/architecture.md`](architecture.md) — this file. End-to-end map of every component.
+- [`docs/operating.md`](operating.md) — operator runbook: GitHub App setup, Pages enablement, ops dashboard, sub-agent capability ceiling, troubleshooting.
+- [`docs/analytics.md`](analytics.md) — public-facing privacy disclosure (what we measure, what we don't).
+- [`docs/improvements.md`](improvements.md) — open backlog, with rationale.
 
 ### `.github/workflows/` — CI
 
 - [`auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) —
-  triggers on push to `claude/**`. Fast-forwards `main` from the feature
-  branch and deletes the branch. **Belongs to the agent's publish chain;
-  do not edit unless you understand the publishing fallback in
-  [`docs/routine-setup.md`](routine-setup.md).**
+  triggers on push to `claude/**`. The **only** path commits land on `main`;
+  fast-forwards when the feature branch is a strict descendant, falls back
+  to a regular merge with auto-resolution for `state/*.json` (`--ours`) and
+  `sources/sources.json` (`--theirs`) on a true divergence. Deletes the
+  feature branch on success. **Belongs to the publishing chain; do not edit
+  unless you understand the resolution rules in
+  [`docs/operating.md`](operating.md#publishing-chain--feature-branch-only).**
 - [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — triggers on
   push to `main` whenever the site inputs change. Runs `site/build.py`,
   uploads the bundle to GitHub Pages.
@@ -189,7 +217,7 @@ for the internal layout. The site is read-only with respect to the rest
 of the repo:
 
 - It only **reads** `briefs/`, `state/`, `sources/`, `README.md`,
-  `docs/*.md`, `prompts/CHANGELOG.md`, and `site/taxonomy.yaml`.
+  `docs/*.md`, `prompts/*.md` (including `CHANGELOG.md`), and `site/taxonomy.yaml`.
 - It writes nothing back — its build artifact lives entirely under
   `site/_site/` (gitignored locally; force-pushed to the `gh-pages` branch
   by the CI workflow).
@@ -294,9 +322,10 @@ refuses any post-cut-over item using a value not in this file.
  │  run rebuilds state from it  │
  └──────────┬───────────────────┘
             ▼
- ┌──────────────────────────────┐  one of:
- │ git commit + push            │  ① push origin HEAD:main
- │                              │  ② push claude/<name>; CI ff
+ ┌──────────────────────────────┐
+ │ git commit + push            │ push to claude/<name> branch only;
+ │                              │ auto-merge-claude.yml promotes to main;
+ │                              │ deploy-site.yml rebuilds gh-pages.
  └──────────────────────────────┘
 ```
 

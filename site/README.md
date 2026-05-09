@@ -78,15 +78,22 @@ _site/
 ├── tags/<tag>/index.html                 # items by theme tag
 ├── regions/<region>/index.html           # items by region
 ├── ops/index.html                        # operations dashboard
-├── about/                                # README + every doc + changelog
-│   ├── index.html
-│   ├── architecture/index.html
-│   ├── workflow/index.html
-│   ├── verification/index.html
-│   ├── analytics/index.html              # what we measure / what we don't
-│   ├── routine-setup/index.html
-│   ├── improvements/index.html
-│   └── changelog/index.html              # mirror of prompts/CHANGELOG.md
+├── about/                                # landing page + Documentation + Prompts sections
+│   ├── index.html                        # landing (README + section nav)
+│   ├── docs/                             # operator-facing system documentation
+│   │   ├── index.html                    # documentation index
+│   │   ├── architecture/index.html
+│   │   ├── operating/index.html          # operator runbook (setup, ops dashboard, troubleshooting)
+│   │   ├── analytics/index.html          # what we measure / what we don't
+│   │   └── improvements/index.html
+│   └── prompts/                          # everything the routine loads at runtime
+│       ├── index.html                    # prompts index + recent CHANGELOG headings
+│       ├── daily-cti-brief/index.html
+│       ├── weekly-summary/index.html
+│       ├── verification/index.html       # verification policy (the prompt enforces it)
+│       ├── brief-template/index.html     # canonical Markdown skeleton
+│       ├── check-brief-fixes/index.html  # how to fix common check_brief.py FAILs
+│       └── changelog/index.html          # full prompts/CHANGELOG.md
 └── data/
     ├── build_manifest.json               # content-hashed manifest (self-check substrate)
     ├── search.json                       # flat unified search index
@@ -163,9 +170,12 @@ source shows the content.
 | `/tags/<tag>/`                     | Items by theme tag                                          |
 | `/regions/<region>/`               | Items by region                                             |
 | `/ops/`                            | Run log + stale active sources                              |
-| `/about/`                          | Project README                                              |
-| `/about/<doc>/`                    | One page per `docs/<name>.md`                               |
-| `/about/changelog/`                | `prompts/CHANGELOG.md`                                      |
+| `/about/`                          | Landing page (Documentation + Prompts sections, plus README) |
+| `/about/docs/`                     | Documentation index                                         |
+| `/about/docs/<name>/`              | One page per `docs/<name>.md`                               |
+| `/about/prompts/`                  | Prompts index + recent CHANGELOG headings                   |
+| `/about/prompts/<name>/`           | One page per `prompts/<name>.md` (excl. CHANGELOG)          |
+| `/about/prompts/changelog/`        | Full `prompts/CHANGELOG.md`                                 |
 | `/feed.xml`, `/feed-weekly.xml`, `/feed-items.xml` | RSS                                       |
 
 ## Unified search

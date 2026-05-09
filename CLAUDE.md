@@ -144,7 +144,7 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
 
 ## Operational guardrails
 
-- **Skeleton-then-Edit.** A single `Write` of the whole brief trips `Stream idle timeout — partial response received`. `Write` skeleton with `_(no content yet)_` placeholders → `Read` it back → `Edit` each section in turn (one Edit per section). Split long sections into halves.
+- **Skeleton-then-Edit (also applies to docs / prompts / build code, not just briefs).** A single `Write` of any large file — or a long sequence of large `Edit`s in one assistant turn — trips `Stream idle timeout — partial response received` and silently drops the rest of the turn. **Empirical limit: anywhere past ~6–8 substantial `Edit` calls in a single response is risky; a single `Write` of >300 lines is risky.** Two shapes that work: (1) for new files, `Write` a placeholder skeleton (`_(no content yet)_`) → `Read` it back → `Edit` each section in turn (one Edit per section, split long sections in half); (2) for refactors that touch many files, batch ~5 small `Edit`s per turn, then yield with a one-sentence progress update before the next batch. The user can interrupt; a stream-idle timeout cannot be recovered from.
 - **Persist intermediate state often** under `work/<run-id>/<step>.json` (gitignored). After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume.
 - **One new candidate source per run, maximum.** Sub-agents surface candidates; the main agent writes them as `status: "candidate"` in `sources/sources.json` during Phase 5.
 - **Verification loop is non-negotiable but never blocks publish.** Phase 4.5 (daily) / Phase 3.5 (weekly) spawns `cti-verification`. Iteration 1 always runs. If verdict NEEDS_FIXES, apply remediations and re-spawn fresh (no shared memory). Hard cap 3 iterations. Iteration 3 still NEEDS_FIXES → publish anyway with residuals logged in § Verification Notes.
@@ -155,6 +155,9 @@ Every Claude Code session in this repo (interactive or routine) operates on a `c
 prompts/daily-cti-brief.md       # daily routine master prompt
 prompts/weekly-summary.md        # weekly routine master prompt
 prompts/CHANGELOG.md             # editorial-policy audit trail (bump version on every edit)
+prompts/verification.md          # fake-news / two-source verification policy (the prompt enforces it)
+prompts/brief-template.md        # canonical Markdown skeleton for the rendered brief / weekly
+prompts/check-brief-fixes.md     # how to fix common check_brief.py FAILs
 .claude/agents/cti-research.md   # research sub-agent definition (Sonnet)
 .claude/agents/cti-verification.md  # verification sub-agent definition (Sonnet)
 .claude/memory/                  # version-controlled auto-memory (MEMORY.md + topic files)
@@ -172,16 +175,15 @@ tools/check_brief.py             # institutionalised self-check (single command,
 site/                            # static-site generator + assets (stdlib-only)
 site/taxonomy.yaml               # controlled vocabulary for footers (build refuses unknown values)
 docs/architecture.md             # end-to-end map of what reads/writes what
-docs/workflow.md                 # daily + weekly agent process
-docs/verification.md             # fake-news verification policy
-docs/brief-template.md           # canonical Markdown skeleton for the rendered brief
-docs/check-brief-fixes.md        # how to fix common check_brief.py FAILs
+docs/operating.md                # operator runbook (setup, ops dashboard, troubleshooting)
+docs/analytics.md                # public-facing privacy disclosure
+docs/improvements.md             # open backlog
 work/<run-id>/                   # gitignored intermediate state
 ```
 
 ## Editing the master prompts — versioning rule (ALWAYS)
 
-Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `.claude/agents/cti-research.md`, or `.claude/agents/cti-verification.md` **must** ship with all three of these in the same commit. Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records.
+Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `.claude/agents/cti-research.md`, or `.claude/agents/cti-verification.md` **must** ship with all three of these in the same commit (banner bump + CHANGELOG entry + the file edit itself). Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records.
 
 Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump when they materially change runtime behaviour (a new tool the prompt should mention, a new convention the prompt should enforce, a new file the prompt should commit). Pure clarifications, reformatting, and ops-doc updates do not.
 

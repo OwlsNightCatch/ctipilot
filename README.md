@@ -1,6 +1,6 @@
 # ctipilot.ch — Daily & Weekly CTI Briefs
 
-> **AI-generated content notice.** Every brief in this repository is produced autonomously by an LLM running as a [Claude Code routine](https://docs.claude.com/en/docs/claude-code/routines) on Anthropic-managed cloud infrastructure. The exact model varies based on the routine's runtime configuration; the model identifies itself in each brief's header. The agent fetches public sources, applies the verification rules in [`docs/verification.md`](docs/verification.md), and writes the Markdown briefs you see in `briefs/`. Every claim in a brief is linked inline to its source. The repository contains the prompts, source list, state files, and policy documents that govern this generation. Verify any operationally critical claim against the linked primary source before acting on it. The briefs are not professional advice and may contain errors.
+> **AI-generated content notice.** Every brief in this repository is produced autonomously by an LLM running as a [Claude Code routine](https://docs.claude.com/en/docs/claude-code/routines) on Anthropic-managed cloud infrastructure. The exact model varies based on the routine's runtime configuration; the model identifies itself in each brief's header. The agent fetches public sources, applies the verification rules in [`prompts/verification.md`](prompts/verification.md), and writes the Markdown briefs you see in `briefs/`. Every claim in a brief is linked inline to its source. The repository contains the prompts, source list, state files, and policy documents that govern this generation. Verify any operationally critical claim against the linked primary source before acting on it. The briefs are not professional advice and may contain errors.
 
 A daily Cyber Threat Intelligence brief covering cyber threats targeting Switzerland and Europe with a public-sector focus (national/cantonal/federal administration, regulators, critical infrastructure, healthcare, education, public-sector technology suppliers), plus a once-a-week consolidating summary. Audience: Tier 2/3 incident responders, threat hunters, detection engineers. Output: one Markdown file per day under `briefs/` and one per ISO week under `briefs/weekly/`. Output is **always in English**.
 
@@ -11,7 +11,7 @@ The repository is the single source of truth for the workflow: prompts, source l
 - **Public reader:** [https://ctipilot.ch/](https://ctipilot.ch/) — a static GitHub Pages site. Every brief, every per-item block, every CVE / source / topic page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text autocomplete from the topbar.
 - **GitHub:** the briefs are Markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
 
-The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/routine-setup.md`](docs/routine-setup.md#enable-github-pages) for one-time enablement.
+The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/operating.md`](docs/operating.md#3-enable-github-pages) for one-time enablement.
 
 ## RSS — three feeds
 
@@ -41,10 +41,13 @@ The site deploys automatically on every push to `main` that touches the brief fe
 
 ```
 .
-├── prompts/
+├── prompts/                   # Everything the routine loads at runtime
 │   ├── daily-cti-brief.md     # The canonical daily prompt
 │   ├── weekly-summary.md      # The weekly summary prompt
-│   └── CHANGELOG.md           # Editorial-policy audit trail (rendered at /about/changelog/)
+│   ├── CHANGELOG.md           # Editorial-policy audit trail (rendered at /about/prompts/changelog/)
+│   ├── verification.md        # Fake-news / two-source verification policy
+│   ├── brief-template.md      # Canonical Markdown skeleton for the rendered brief / weekly
+│   └── check-brief-fixes.md   # How to fix common check_brief.py FAILs
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
@@ -69,16 +72,15 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │       ├── css/styles.css     # Dark-first stylesheet (light/dark/system, print)
 │       ├── js/                # theme.js, search.js, app.js (progressive enhancement only)
 │       └── vendor/            # marked.min.js, purify.min.js, filter.min.js + HASHES
-├── docs/
+├── docs/                      # Operator-facing documentation (pure docs)
 │   ├── architecture.md        # End-to-end map: what reads/writes what
-│   ├── workflow.md            # End-to-end daily & weekly agent process
-│   ├── routine-setup.md       # One-time Claude Code routine + Pages setup
-│   ├── verification.md        # Fake-news verification policy
+│   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
 │   ├── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
-│   └── improvements.md        # Recommended improvements (with rationale)
+│   └── improvements.md        # Open backlog (with rationale)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
 │   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
+├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
 
@@ -109,7 +111,7 @@ A scheduled Claude Code routine fires on whatever cadence the operator configure
 
 The recency window is **derived from `briefs/`, not from a hardcoded schedule** (Prime Directive 7). Every run computes the gap since the last brief on disk and covers the entire gap plus a 12-hour safety overlap. This makes the system **self-healing** for missed runs — if Tuesday's run fails, Wednesday's run sees a ~48 h gap and naturally extends its window — and **schedule-agnostic** — the operator can change cron times, days, or even routines without touching the prompt. The brief that lands always covers everything since the previous published brief.
 
-> **One-time setup** required for the routine to publish back to this repo: install the Claude GitHub App on the repo, and (optionally) enable **Allow unrestricted branch pushes** in the routine's permissions for direct-to-`main` publishing. Full instructions: [`docs/routine-setup.md`](docs/routine-setup.md).
+> **One-time setup** required for the routine to publish back to this repo: install the Claude GitHub App on the repo, leave **Allow unrestricted branch pushes** *off* (the routine pushes to `claude/**` only — the auto-merge workflow promotes), and enable Pages. Full instructions: [`docs/operating.md`](docs/operating.md).
 
 The agent walks through:
 
@@ -120,9 +122,9 @@ The agent walks through:
 5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–8 (TL;DR; Immediate Actions, often absent; Active Threats / Trending Actors / Notable Incidents & Disclosures; Trending Vulnerabilities; Research & Investigative Reporting; Updates to Prior Coverage; Deep Dive; Action Items; Verification Notes). Each H3 item carries a v2 metadata footer (`— *Source: … · Tags: … · Region: … [· CVE: …] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*`) parseable by the build.
 6. **Phase 5 — State update.** Append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose at most one new source as `candidate`; append to `deep_dive_history.json` if a deep dive was selected; append a record to `run_log.json`.
 7. **Phase 5.5 — Self-check gate.** Verify state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
-8. **Phase 6 — Commit & push to `origin/main`** — every brief is published the moment it is generated. No review branch, no staging gate.
+8. **Phase 6 — Commit & push the feature branch** — `auto-merge-claude.yml` promotes to `main` (with the same auto-resolution rules as the routine for `state/*.json` and `sources/sources.json` conflicts), then `deploy-site.yml` rebuilds gh-pages. **Phase 7** polls `git fetch origin main` and `https://ctipilot.ch/` to confirm both legs of the chain landed. Direct push to `main` is forbidden by repo policy.
 
-Full walkthrough: [`docs/workflow.md`](docs/workflow.md).
+Full walkthrough lives in the prompts themselves ([`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md), [`prompts/weekly-summary.md`](prompts/weekly-summary.md)). Architecture map: [`docs/architecture.md`](docs/architecture.md). Operator runbook: [`docs/operating.md`](docs/operating.md).
 
 ## Weekly routine
 
@@ -161,7 +163,7 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 
 The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/analytics/`](https://ctipilot.ch/about/analytics/).
 
-The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`docs/verification.md`](docs/verification.md).
+The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`prompts/verification.md`](prompts/verification.md).
 
 ## Security posture
 
@@ -177,7 +179,7 @@ This is a fully autonomous, self-evolving system: the agent edits its own prompt
 
 Briefs explicitly defend against fake-news patterns common in CTI feeds: ransomware leak-site theatrics, hallucinated CVE numbers, AI-generated security blogspam, vendor PR dressed as research, re-runs of months-old news, sweeping unbacked attribution, and Telegram/X-only sourcing.
 
-See [`docs/verification.md`](docs/verification.md) for the full checklist.
+See [`prompts/verification.md`](prompts/verification.md) for the full checklist.
 
 ## License / classification
 

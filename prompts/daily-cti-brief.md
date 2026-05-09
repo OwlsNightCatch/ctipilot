@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.40 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.41 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. **Recommended model split:** main agent on Opus (large context, composes the brief, owns the publishing chain); sub-agents on Sonnet (parallel research + cold-reader verification, defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window).
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -44,7 +44,7 @@ Anti-crash guards (priority order):
 
 5. **Two-source verification, with national-CERT carve-out.** Default: ≥2 independent reputable sources. If only one, mark `[SINGLE-SOURCE]` and name it. **Carve-out:** a HIGH-reliability national CERT / government cybersecurity authority (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL) acting as **primary disclosing party for its own jurisdiction or an advisory it owns** — single-source acceptable. Their *commentary on others' disclosures* still requires the standard rule. Surface contradictions in § 7.
 
-6. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `docs/verification.md`.
+6. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `prompts/verification.md`.
 
 7. **Recency — gap-derived, schedule-agnostic, self-healing.** From `briefs/` contents: `latest_brief = max(briefs/*.md by lex sort)`; `gap_hours = (today − latest_brief_date) × 24` (empty `briefs/` → 24h); `window_hours = max(24, gap_hours + 12)` (12h safety overlap); `developing_window_hours = max(72, gap_hours + 24)`. Pass `window_hours` to every sub-agent. Self-healing: a missed Tuesday means Wednesday sees ~48h gap and naturally extends. **Schedule-agnostic** — operator can change cron times without touching the prompt.
 
@@ -79,7 +79,7 @@ Anti-crash guards (priority order):
 
 ## Execution environment
 
-Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost. Repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Publishing chain: routine commits on the feature branch → syncs with `origin/main` (with auto-resolution for `state/*.json` and `sources/sources.json` conflicts) → pushes the feature branch (with retry-with-backoff) → `.github/workflows/auto-merge-claude.yml` promotes to `main` (it has the same auto-resolution rules as a backstop, in case the routine's local view of main was stale) → `.github/workflows/deploy-site.yml` rebuilds gh-pages → Phase 7 verifies the brief is on main AND `https://ctipilot.ch/` shows today's date. **Direct pushes to `main` are forbidden by repo policy** — only the auto-merge workflow promotes. Network via internal HTTP proxy (allow-listed); the proxy may serve a stale view of `origin/main`, which is exactly why the workflow runs the same merge logic on a github-hosted runner. Slow national-CERT pages normal. ~10-min per-sub-agent wall-clock budget. Git operations require the routine's GitHub App (see `docs/routine-setup.md`); 403 on push is permission, not transient — don't retry that. **Model is configurable** (Sonnet, Opus, Haiku, other) — this prompt does not name your model; identify accurately in the AI-content notice.
+Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost. Repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Publishing chain: routine commits on the feature branch → syncs with `origin/main` (with auto-resolution for `state/*.json` and `sources/sources.json` conflicts) → pushes the feature branch (with retry-with-backoff) → `.github/workflows/auto-merge-claude.yml` promotes to `main` (it has the same auto-resolution rules as a backstop, in case the routine's local view of main was stale) → `.github/workflows/deploy-site.yml` rebuilds gh-pages → Phase 7 verifies the brief is on main AND `https://ctipilot.ch/` shows today's date. **Direct pushes to `main` are forbidden by repo policy** — only the auto-merge workflow promotes. Network via internal HTTP proxy (allow-listed); the proxy may serve a stale view of `origin/main`, which is exactly why the workflow runs the same merge logic on a github-hosted runner. Slow national-CERT pages normal. ~10-min per-sub-agent wall-clock budget. Git operations require the routine's GitHub App (see `docs/operating.md`); 403 on push is permission, not transient — don't retry that. **Model is configurable** (Sonnet, Opus, Haiku, other) — this prompt does not name your model; identify accurately in the AI-content notice.
 
 Working directory:
 
@@ -94,7 +94,10 @@ state/deep_dive_history.json       # last 30 days of deep-dive picks
 state/run_log.json                 # per-run telemetry (Ops dashboard)
 briefs/YYYY-MM-DD.md               # daily output
 briefs/weekly/YYYY-Www.md          # weekly output
-docs/                              # workflow + verification policy + reference templates + check-brief-fixes
+prompts/verification.md            # verification policy (the prompt enforces it)
+prompts/brief-template.md          # canonical Markdown skeleton for the rendered brief / weekly
+prompts/check-brief-fixes.md       # how to fix common check_brief.py FAILs
+docs/                              # architecture + operating + analytics + improvements (operator-facing)
 site/taxonomy.yaml                 # controlled vocabulary for footers
 site/test_build.py                 # build-side smoke tests
 tools/check_brief.py               # Phase 5.5 self-check; bundles every gate + test_build.py
@@ -341,7 +344,7 @@ For every item, where the source supports:
 - **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts.
 - **Affected sectors and regions** in footer's `Tags` / `Region` / `Sector` fields, not filler prose.
 
-A worked-good fragment showing this depth for a § 1 item lives in [`docs/brief-template.md`](../docs/brief-template.md) — illustrative npm supply-chain compromise (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
+A worked-good fragment showing this depth for a § 1 item lives in [`prompts/brief-template.md`](brief-template.md) — illustrative npm supply-chain compromise (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
 
 Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
 
@@ -363,7 +366,7 @@ Runtime config decides which model runs today. **Identify accurately** in two pl
 
 ### Reference template
 
-The canonical Markdown skeleton for the rendered brief lives in [`docs/brief-template.md`](../docs/brief-template.md). `Read` it once during Phase 4 before composing — it contains the exact heading hierarchy, AI-content-notice text, `Generated by:` line, footer placement per section, and the § 2 secondary aggregation table.
+The canonical Markdown skeleton for the rendered brief lives in [`prompts/brief-template.md`](brief-template.md). `Read` it once during Phase 4 before composing — it contains the exact heading hierarchy, AI-content-notice text, `Generated by:` line, footer placement per section, and the § 2 secondary aggregation table.
 
 ### Style rules
 
@@ -529,7 +532,7 @@ Bundles every check **plus** build-side smoke tests (`site/test_build.py`). Cate
 - **Telemetry (FAIL)**: `run_log.json` fully populated for today (every Ops dashboard key); ≥1 source has `last_successful_fetch == today`; `site/test_build.py` smoke tests pass (footer parser round-trip, taxonomy validation, Markdown renderer, URL allowlist, multi-CVE pill split, external-link target).
 - **Editorial (WARN, not blocking)**: items whose only source is a national CERT/NCSC; H3 count in core sections matches `covered_items.json` `appearances[].date == today` within tolerance 1.
 
-**How to fix common FAILs** (concrete fix recipes for `cve-sync`, `footer-presence`, `run-log-fields`/`-subagents`, `sources-touched`, `footer-taxonomy`, `fetch-source-403`, `multi-cve-cvss`, `blocked-source`, `source-urls` 404): see [`docs/check-brief-fixes.md`](../docs/check-brief-fixes.md). For WARNs: `primary-source-quality` → re-pivot to vendor advisory/research-lab/vendor blog, demote NVD/CERT to `Additional source:`; `covered-items` drift → observability only; next run rebuilds.
+**How to fix common FAILs** (concrete fix recipes for `cve-sync`, `footer-presence`, `run-log-fields`/`-subagents`, `sources-touched`, `footer-taxonomy`, `fetch-source-403`, `multi-cve-cvss`, `blocked-source`, `source-urls` 404): see [`prompts/check-brief-fixes.md`](check-brief-fixes.md). For WARNs: `primary-source-quality` → re-pivot to vendor advisory/research-lab/vendor blog, demote NVD/CERT to `Additional source:`; `covered-items` drift → observability only; next run rebuilds.
 
 Non-zero exit aborts commit. Maintaining `tools/check_brief.py` is part of self-evolution authority — when a new check would catch a class of drift, add it in the same run. If the script itself fails to start, proceed to Phase 6 anyway and log the script-level error in § 7 — never let tooling block the brief.
 
@@ -725,7 +728,7 @@ The agent has full authority to modify this prompt, source list, documentation, 
 
 ### Encouraged self-edits
 
-Source list curation (promote candidates ≥3 runs, demote dead/paywalled/aggregator-only, add discoveries). Sub-agent structure (split overloaded, merge overlapping; four-agent layout is starting point, not contract). Prompt clarity (tighten verbose sections, fix ambiguities, add concrete examples). Section ordering/naming (reorganise if better; bump version, document in CHANGELOG). Taxonomy (extend `site/taxonomy.yaml` only when a real item needs a value). Documentation — keep current: `docs/architecture.md`, `workflow.md`, `verification.md`, `routine-setup.md`, `analytics.md`, `brief-template.md`, `check-brief-fixes.md`, `spawn-templates.md`, `README.md`, `briefs/README.md`, `site/README.md`.
+Source list curation (promote candidates ≥3 runs, demote dead/paywalled/aggregator-only, add discoveries). Sub-agent structure (split overloaded, merge overlapping; four-agent layout is starting point, not contract). Prompt clarity (tighten verbose sections, fix ambiguities, add concrete examples). Section ordering/naming (reorganise if better; bump version, document in CHANGELOG). Taxonomy (extend `site/taxonomy.yaml` only when a real item needs a value). Documentation — keep current: `docs/architecture.md`, `docs/operating.md`, `docs/analytics.md`, `docs/improvements.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `README.md`, `briefs/README.md`, `site/README.md`.
 
 ### Process for self-edits
 

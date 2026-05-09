@@ -37,9 +37,9 @@ shape of the change). They are **independent** — pick any subset.
 | **D2** | `prompts/CHANGELOG.md` rendered on the About page at `/about/changelog/`. | [`site/build.py`](../site/build.py) `render_static_doc` |
 | **D3** | Per-brief prompt-version badge linking to the matching CHANGELOG entry. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) compose template + [`site/build.py`](../site/build.py) `parse_brief` |
 | **D4** | Repo-relative links in `README.md` and `docs/*.md` rewritten to `/about/<doc>/` (or to GitHub blob URLs for non-rendered files) when emitted on About pages. Fragment identifiers preserved. | [`site/build.py`](../site/build.py) `_rewrite_about_links` |
-| **SR4** | Sub-agent capability ceiling explicitly documented. | [`docs/routine-setup.md`](routine-setup.md) |
+| **SR4** | Sub-agent capability ceiling explicitly documented. | [`docs/operating.md`](operating.md#sub-agent-capability-ceiling) |
 | **SR5** | Build-side Markdown sanitisation — fixed tag + URI-scheme allowlist, no client-side renderer to bypass. Vendored marked.js + DOMPurify kept for reference but not wired into the runtime. | [`site/build.py`](../site/build.py) `render_markdown` + `render_inline` + `render_static_doc` |
-| **SR9** | Routine credential rotation cadence documented (90 days). | [`docs/routine-setup.md`](routine-setup.md) |
+| **SR9** | Routine credential rotation cadence documented (90 days). | [`docs/operating.md`](operating.md#rotation-cadence-credentials) |
 | **SR10** | One new candidate source per run, maximum. Overflow goes to § 8. | [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) Phase 5 |
 
 ---
@@ -158,7 +158,7 @@ These are the autonomy / self-evolution hardening items. The realistic landing p
 
 ### D1 — A "first run" walkthrough
 
-**Why.** [`docs/routine-setup.md`](routine-setup.md) covers steps; a narrative walkthrough with screenshots of the routine UI would be faster to follow for a first-time operator.
+**Why.** [`docs/operating.md`](operating.md) covers steps; a narrative walkthrough with screenshots of the routine UI would be faster to follow for a first-time operator.
 
 **How.** Add `docs/first-run.md` and link from the README.
 
