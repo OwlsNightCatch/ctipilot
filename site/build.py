@@ -2566,19 +2566,22 @@ def render_topic_page(
   {citations_block}
 </div>
 
+<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
+{timeline_block}
+
 {render_embedded_items_section(
     matching_items or [],
     heading=f"Items in briefs about {topic.get('title') or topic['key']}",
     empty_text=(
-        "No parsed item heading or body matches this topic yet. The match rules are "
-        "an exact CVE id (for cve-typed topics) or the topic's title appearing in the "
-        "item heading or body — once that lands in a brief, the full analysis will appear here."
+        "No parsed item heading or body matches this topic yet. Items match by "
+        "exact CVE id (for cve-typed topics), by lead-segment substring of the "
+        "topic title in the item heading or body, or by a distinctive anchor "
+        "token from the title appearing in the item heading. Coverage that lives "
+        "inside a broader section (no per-item heading) is captured by the Story "
+        "timeline above instead."
     ),
     prefix=prefix,
 )}
-
-<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
-{timeline_block}
 """
     return base_template(
         title=f"{topic.get('title') or topic['key']} — Topic",
@@ -4879,15 +4882,51 @@ def main() -> int:
     topic_match_specs: list[dict[str, Any]] = []
     for tp in topics["items"]:
         ttype = (tp.get("type") or "").lower()
-        title = (tp.get("title") or "").strip()
+        raw_title = (tp.get("title") or "").strip()
+        # Lead segment before " — " / " – " / ": " — drops the trailing
+        # qualifier ("data breach — student and educator data" loses the
+        # second clause).
+        lead = raw_title
         for sep in (" — ", " – ", ": "):
-            if sep in title:
-                title = title.split(sep, 1)[0]
+            if sep in lead:
+                lead = lead.split(sep, 1)[0]
                 break
-        phrase = title.strip().lower()
+        lead = lead.strip()
+        # Build candidate phrases. The current item-headline phrasing
+        # routinely diverges from the canonical topic title — e.g., topic
+        # "Instructure (Canvas LMS) data breach" appears in briefs as
+        # "Canvas/Instructure extortion" or "Instructure/Canvas extortion".
+        # We accept (a) the lead segment verbatim, (b) the lead with any
+        # parenthetical clarification stripped ("Instructure data breach"),
+        # and (c) each parenthetical's inner text on its own ("Canvas LMS").
+        phrases: set[str] = set()
+        if lead:
+            phrases.add(lead.lower())
+        no_paren = re.sub(r"\s*\([^)]*\)\s*", " ", lead).strip()
+        no_paren = re.sub(r"\s+", " ", no_paren)
+        if no_paren:
+            phrases.add(no_paren.lower())
+        for m in re.finditer(r"\(([^)]+)\)", lead):
+            inner = m.group(1).strip().lower()
+            if len(inner) >= 4:
+                phrases.add(inner)
+        phrases = {p for p in phrases if len(p) >= 4}
+        # Anchor token: first proper-noun-ish token (initial uppercase OR
+        # all-caps acronym, length >= 5) in the original title. The brief's
+        # editorial style consistently leads each item heading with the
+        # company / product / actor / agency name, so anchor-in-heading
+        # tolerates every reordering / slash-join / paren-strip the agent
+        # uses while staying distinctive enough not to collide across
+        # unrelated topics. Only used as a fallback when no phrase matched.
+        anchor: str | None = None
+        for tok in re.findall(r"[A-Za-z][A-Za-z0-9]+", raw_title):
+            if len(tok) >= 5 and (tok[0].isupper() or tok.isupper()):
+                anchor = tok.lower()
+                break
         topic_match_specs.append({
             "key": tp["key"],
-            "phrase": phrase,
+            "phrases": phrases,
+            "anchor": anchor,
             "cve_id": tp["key"].upper() if ttype == "cve" else None,
         })
 
@@ -4908,8 +4947,15 @@ def main() -> int:
             if spec["cve_id"] and spec["cve_id"] in item_cves:
                 items_by_topic[spec["key"]].append(item_record)
                 continue
-            phrase = spec["phrase"]
-            if phrase and len(phrase) >= 4 and (phrase in heading_lower or phrase in body_lower):
+            matched = any(
+                p in heading_lower or p in body_lower for p in spec["phrases"]
+            )
+            # Anchor-token fallback: heading-only (body is too lax — an item
+            # mentioning "Instructure" in passing shouldn't get cross-listed
+            # under the Instructure topic).
+            if not matched and spec["anchor"] and spec["anchor"] in heading_lower:
+                matched = True
+            if matched:
                 items_by_topic[spec["key"]].append(item_record)
 
     # ---- Per-item pages -----------------------------------------------
