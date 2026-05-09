@@ -177,7 +177,6 @@ site/taxonomy.yaml               # controlled vocabulary for footers (build refu
 docs/architecture.md             # end-to-end map of what reads/writes what
 docs/operating.md                # operator runbook (setup, ops dashboard, troubleshooting)
 docs/analytics.md                # public-facing privacy disclosure
-docs/improvements.md             # open backlog
 work/<run-id>/                   # gitignored intermediate state
 ```
 

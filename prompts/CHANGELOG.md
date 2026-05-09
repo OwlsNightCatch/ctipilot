@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.42 — 2026-05-09 (drop `docs/improvements.md` from the keep-current doc list)
+
+### Why
+Operator deleted `docs/improvements.md` — the backlog file mixed shipped items with open ones, and the open items were drifting (some referenced threat IDs from the deleted `security-review.md`, others were minor enough to belong in commit messages instead of a parallel tracker). With the file gone, the daily prompt's "Documentation — keep current" list still named it, which would push the routine to recreate the deleted file on its next self-edit pass. Bumping to v2.42 syncs the list with on-disk reality.
+
+### What changed
+
+**`prompts/daily-cti-brief.md`** — "Documentation — keep current" list: dropped `docs/improvements.md`. Header banner bumped to v2.42.
+
+**`prompts/weekly-summary.md`** — Header banner bumped to v2.42 in lockstep (no other content change).
+
+**`README.md`, `docs/architecture.md`, `CLAUDE.md`** — Removed tree entries and links pointing at `docs/improvements.md`. The README's "where to find more" footer paragraph now points to `docs/operating.md` for runbook content. The architecture doc's "Adding a new component" footer now instructs operators to write reasoning into the commit message and bump the prompt version with a CHANGELOG entry, rather than into a separate backlog file.
+
+### What stays
+All hard invariants are unchanged: AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain via `.github/workflows/auto-merge-claude.yml`, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values. No phase order change. No source-list policy change. No fetch-budget change. The remaining four `docs/` files (`architecture.md`, `operating.md`, `analytics.md`) and three runtime-policy files in `prompts/` (`verification.md`, `brief-template.md`, `check-brief-fixes.md`) carry the load that was previously split between docs and a separate backlog.
+
+---
+
 ## 2.41 — 2026-05-09 (separation of concerns: prompt-runtime files moved into `prompts/`, `docs/` reworked, About page split into Documentation + Prompts)
 
 ### Why

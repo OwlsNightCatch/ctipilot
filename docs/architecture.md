@@ -32,8 +32,8 @@ debugging an unexpected commit or onboarding a new operator, start here.
          │   └ weekly/YYYY-Www.md   docs/                           │
          │                          ├ architecture.md (this file)   │
          │  .claude/agents/         ├ operating.md                  │
-         │   ├ cti-research.md      ├ analytics.md                  │
-         │   └ cti-verification.md  └ improvements.md               │
+         │   ├ cti-research.md      └ analytics.md                  │
+         │   └ cti-verification.md                                  │
          └──────────────────────────────┬───────────────────────────┘
                                         │
                                         │ git push (claude/** branches only)
@@ -185,7 +185,6 @@ System reference for operators, contributors, and curious readers. Pure docs —
 - [`docs/architecture.md`](architecture.md) — this file. End-to-end map of every component.
 - [`docs/operating.md`](operating.md) — operator runbook: GitHub App setup, Pages enablement, ops dashboard, sub-agent capability ceiling, troubleshooting.
 - [`docs/analytics.md`](analytics.md) — public-facing privacy disclosure (what we measure, what we don't).
-- [`docs/improvements.md`](improvements.md) — open backlog, with rationale.
 
 ### `.github/workflows/` — CI
 
@@ -353,6 +352,7 @@ A safe pattern for extending the system without affecting the agent:
    workflow in `.github/workflows/` if you want CI to react to its output.
 
 Anything more invasive (new state file, new repo layout) — write down the
-reasoning in [`docs/improvements.md`](improvements.md) before making the
-change. The agent's prompts are the load-bearing part of the system; small
-contract changes are easy to ship by accident and hard to roll back.
+reasoning in the commit message and bump the prompt version with a
+CHANGELOG entry explaining the *why* before making the change. The agent's
+prompts are the load-bearing part of the system; small contract changes
+are easy to ship by accident and hard to roll back.

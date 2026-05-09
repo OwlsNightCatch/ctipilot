@@ -75,8 +75,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ├── docs/                      # Operator-facing documentation (pure docs)
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
-│   ├── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
-│   └── improvements.md        # Open backlog (with rationale)
+│   └── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
 │   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
@@ -84,7 +83,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 └── .gitignore
 ```
 
-For an end-to-end map of how every piece reads and writes data, see [`docs/architecture.md`](docs/architecture.md). For improvements identified but not yet implemented, see [`docs/improvements.md`](docs/improvements.md).
+For an end-to-end map of how every piece reads and writes data, see [`docs/architecture.md`](docs/architecture.md). For operator setup and the runbook, see [`docs/operating.md`](docs/operating.md).
 
 ## Operating principles (non-negotiable)
 
