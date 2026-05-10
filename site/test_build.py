@@ -602,14 +602,17 @@ assert_eq("italic prose unchanged", _strip_footer_metadata_in_md(_normal), _norm
 print("== render_cve_pill multi-CVE split ==")
 single = render_cve_pill("CVE-2026-5787", prefix="../../")
 assert_in("single CVE pill: anchor present", '<a class="pill pill-cve"', single)
-assert_in("single CVE pill: correct slug", 'href="../../cves/CVE-2026-5787/"', single)
+# CVE pills now point at the unified entity URL space — `/entities/<id>/`
+# is the canonical home for every entity (CVE, actor, campaign, …).
+# The legacy `/cves/<id>/` URL still works as an HTML meta-refresh stub.
+assert_in("single CVE pill: correct slug", 'href="../../entities/CVE-2026-5787/"', single)
 
 multi = render_cve_pill("CVE-2026-5787, CVE-2026-6973", prefix="../../")
-assert_in("multi CVE pill: first link", 'href="../../cves/CVE-2026-5787/"', multi)
-assert_in("multi CVE pill: second link", 'href="../../cves/CVE-2026-6973/"', multi)
+assert_in("multi CVE pill: first link", 'href="../../entities/CVE-2026-5787/"', multi)
+assert_in("multi CVE pill: second link", 'href="../../entities/CVE-2026-6973/"', multi)
 assert_not_in(
     "multi CVE pill: no broken comma slug",
-    'cves/CVE-2026-5787, CVE-2026-6973/',
+    'entities/CVE-2026-5787, CVE-2026-6973/',
     multi,
 )
 
