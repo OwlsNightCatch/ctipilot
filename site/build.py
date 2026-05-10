@@ -2173,7 +2173,11 @@ def render_item_page(
     )
 
 
-# === CVE LIST ==========================================================
+# === CVE LIST (filtered view of /entities/) ===========================
+# CVE detail lives in `render_entity_page` (one renderer for every entity
+# type). This section only owns the type-filtered listing page at
+# /cves/. The legacy /cves/<id>/ URLs are HTML meta-refresh stubs to
+# /entities/CVE-<id>/, emitted by `render_redirect_page`.
 
 def render_cve_list_page(
     cves: list[dict[str, Any]],
@@ -2286,133 +2290,11 @@ def render_embedded_items_section(
     )
 
 
-# === SINGLE CVE ========================================================
-
-def render_cve_page(
-    cve: dict[str, Any],
-    *,
-    briefs_index: dict[str, dict[str, Any]],
-    matching_items: list[dict[str, Any]] | None = None,
-    site_url: str,
-    cachebust: str,
-    prefix: str,
-    canonical: str,
-) -> str:
-    citations = cve.get("citations", []) or []
-    primary_host = host_of(cve.get("primary_source_url", "") or "")
-
-    # Group by host so same-publisher rows cluster, primary-source host first.
-    grouped: dict[str, list[dict[str, Any]]] = {}
-    for cite in citations:
-        key = cite.get("host") or cite.get("url") or ""
-        grouped.setdefault(key, []).append(cite)
-    sorted_hosts = sorted(grouped.keys(), key=lambda h: (h != primary_host, h))
-
-    cite_items: list[str] = []
-    for h in sorted_hosts:
-        cites_here = grouped[h]
-        is_primary = h == primary_host and primary_host
-        for c in cites_here:
-            briefs_set = sorted({n for n in (c.get("briefs") or [])}, reverse=True)
-            brief_links = ", ".join(
-                f'<a href="{prefix}briefs/{_escape(n)}/" class="mono">{_escape(n)}</a>'
-                for n in briefs_set
-            )
-            source_id = c.get("source_id")
-            cite_url = _safe_url(c.get("url", ""))
-            cite_items.append(
-                '<li class="cite">'
-                f'<a class="cite-link" href="{_escape(cite_url)}" target="_blank" rel="noopener noreferrer" title="Open the article in a new tab">'
-                f'<span class="cite-host">{_escape(h)}</span>'
-                + ('<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>' if is_primary else '')
-                + f'<span class="cite-label">{_escape(c.get("label") or c.get("url",""))}</span>'
-                f'<span class="cite-url muted">{_escape(c.get("url", ""))}</span>'
-                '</a>'
-                '<div class="cite-meta muted">'
-                + (f'<a href="{prefix}sources/{urllib.parse.quote(source_id, safe="")}/" title="Source profile">source profile</a> · ' if source_id else '')
-                + 'cited in ' + (brief_links or '<span class="muted">—</span>')
-                + '</div>'
-                '</li>'
-            )
-
-    citations_block = ""
-    if cite_items:
-        citations_block = (
-            f'<h3 style="margin-top:1.2rem">All cited sources for this CVE ({len(citations)})</h3>'
-            f'<ul class="cite-list">{"".join(cite_items)}</ul>'
-        )
-
-    appearances = cve.get("appearances", []) or []
-    if appearances:
-        app_lis = []
-        for n in appearances:
-            b = briefs_index.get(n)
-            title = b["title"] if b else n
-            meta = ""
-            if b:
-                meta = f'<div class="e-meta"><span class="e-tag">{_escape(b["kind"])}</span><span>{b.get("items", 0)} items</span></div>'
-            app_lis.append(
-                f'<li><span><a class="e-title" href="{prefix}briefs/{_escape(n)}/">{_escape(title)}</a>{meta}</span><span class="mono muted">{_escape(n)}</span></li>'
-            )
-        appearances_block = f'<ul class="entity-list">{"".join(app_lis)}</ul>'
-    else:
-        appearances_block = '<p class="muted">No briefs reference this CVE yet.</p>'
-
-    body = f"""
-<h1 class="mono">{_escape(cve['id'])}</h1>
-<p class="subtitle">{_escape(cve.get('title', '') or 'No title recorded.')}</p>
-
-<div class="panel">
-  <div class="row" style="justify-content:space-between">
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">First seen</div>
-      <div class="mono">{_escape(cve.get('first_seen', '') or '—')}</div>
-    </div>
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">Last seen</div>
-      <div class="mono">{_escape(cve.get('last_seen', '') or '—')}</div>
-    </div>
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">Appearances</div>
-      <div class="mono">{len(appearances)}</div>
-    </div>
-  </div>
-
-  <h3 style="margin-top:1.2rem">External references</h3>
-  <p>
-    <a href="https://nvd.nist.gov/vuln/detail/{_escape(cve['id'])}" target="_blank" rel="noopener noreferrer">NVD</a> ·
-    <a href="https://www.cve.org/CVERecord?id={_escape(cve['id'])}" target="_blank" rel="noopener noreferrer">cve.org</a> ·
-    <a href="{_escape(cisa_kev_search_url(cve['id']))}" target="_blank" rel="noopener noreferrer" title="CISA KEV catalog filtered to this CVE">CISA KEV</a>
-  </p>
-
-  {citations_block}
-</div>
-
-{render_embedded_items_section(
-    matching_items or [],
-    heading=f"Items in briefs that mention {cve['id']}",
-    empty_text=(
-        "No item in any parsed brief carries this CVE in its metadata footer yet. "
-        "Once a brief surfaces this CVE in an item-level footer, the analysis will appear here in full."
-    ),
-    prefix=prefix,
-)}
-
-<h2 class="section-head" style="margin-top:1.5rem">Brief appearances</h2>
-{appearances_block}
-"""
-    return base_template(
-        title=f"{cve['id']} — ctipilot.ch",
-        description=cve.get("title", "") or f"{cve['id']} — appearances across CTI briefs",
-        body=body,
-        canonical=canonical,
-        site_url=site_url,
-        cachebust=cachebust,
-        home_relative_prefix=prefix,
-    )
-
-
-# === TOPIC LIST + DETAIL ===============================================
+# === TOPIC LIST (filtered view of /entities/) =========================
+# Topic detail lives in `render_entity_page` (one renderer for every
+# entity type). This section only owns the type-filtered listing page
+# at /topics/. The legacy /topics/<key>/ URLs are HTML meta-refresh
+# stubs to /entities/<key>/, emitted by `render_redirect_page`.
 
 def render_topic_list_page(
     topics: list[dict[str, Any]],
@@ -2483,128 +2365,6 @@ def render_topic_list_page(
     return base_template(
         title="Topics — ctipilot.ch",
         description=f"{len(topics)} tracked topics — CVEs, actors, campaigns, incidents, tools.",
-        body=body,
-        canonical=canonical,
-        site_url=site_url,
-        cachebust=cachebust,
-        home_relative_prefix=prefix,
-    )
-
-
-def render_topic_page(
-    topic: dict[str, Any],
-    *,
-    briefs_index: dict[str, dict[str, Any]],
-    matching_items: list[dict[str, Any]] | None = None,
-    site_url: str,
-    cachebust: str,
-    prefix: str,
-    canonical: str,
-) -> str:
-    apps = sorted(topic.get("appearances", []) or [], key=lambda a: a.get("date") or "", reverse=True)
-    citations = topic.get("citations", []) or []
-
-    # Citation rendering — same DOM as the CVE page.
-    primary_host = host_of(topic.get("primary_source_url", "") or "")
-    grouped: dict[str, list[dict[str, Any]]] = {}
-    for cite in citations:
-        key = cite.get("host") or cite.get("url") or ""
-        grouped.setdefault(key, []).append(cite)
-    sorted_hosts = sorted(grouped.keys(), key=lambda h: (h != primary_host, h))
-    cite_items = []
-    for h in sorted_hosts:
-        is_primary = h == primary_host and primary_host
-        for c in grouped[h]:
-            briefs_set = sorted({n for n in (c.get("briefs") or [])}, reverse=True)
-            brief_links = ", ".join(
-                f'<a href="{prefix}briefs/{_escape(n)}/" class="mono">{_escape(n)}</a>'
-                for n in briefs_set
-            )
-            source_id = c.get("source_id")
-            cite_url = _safe_url(c.get("url", ""))
-            cite_items.append(
-                '<li class="cite">'
-                f'<a class="cite-link" href="{_escape(cite_url)}" target="_blank" rel="noopener noreferrer">'
-                f'<span class="cite-host">{_escape(h)}</span>'
-                + ('<span class="badge badge--accent" title="Primary source recorded by the agent">primary</span>' if is_primary else '')
-                + f'<span class="cite-label">{_escape(c.get("label") or c.get("url",""))}</span>'
-                f'<span class="cite-url muted">{_escape(c.get("url", ""))}</span>'
-                '</a>'
-                '<div class="cite-meta muted">'
-                + (f'<a href="{prefix}sources/{urllib.parse.quote(source_id, safe="")}/">source profile</a> · ' if source_id else '')
-                + 'cited in ' + (brief_links or '<span class="muted">—</span>')
-                + '</div>'
-                '</li>'
-            )
-    citations_block = ""
-    if cite_items:
-        citations_block = (
-            f'<h3 style="margin-top:1.2rem">All cited sources for this topic ({len(citations)})</h3>'
-            f'<ul class="cite-list">{"".join(cite_items)}</ul>'
-        )
-
-    timeline_lis = []
-    for a in apps:
-        bp = a.get("brief_path", "")
-        m = re.search(r"(\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})", bp)
-        name = m.group(1) if m else ""
-        b = briefs_index.get(name)
-        b_title = b["title"] if b else (name or "?")
-        timeline_lis.append(
-            '<li><span>'
-            f'<span class="mono" style="margin-right:0.6rem">{_escape(a.get("date", "") or name)}</span>'
-            f'<a href="{prefix}briefs/{_escape(name)}/">{_escape(b_title)}</a>'
-            '<div class="e-meta" style="margin-top:0.2rem">'
-            f'<span class="e-tag">{_escape(a.get("section", "") or "—")}</span>'
-            + (f'<span class="muted">{_escape(a["delta_summary"])}</span>' if a.get("delta_summary") else '')
-            + '</div></span></li>'
-        )
-    timeline_block = (
-        f'<ol class="entity-list" style="list-style:none">{"".join(timeline_lis)}</ol>'
-    ) if timeline_lis else '<p class="muted">No recorded appearances.</p>'
-
-    body = f"""
-<h1>{_escape(topic.get('title') or topic['key'])}</h1>
-<p class="subtitle"><span class="badge badge--accent">{_escape(topic.get('type', '') or '—')}</span> · <span class="mono">{_escape(topic['key'])}</span></p>
-
-<div class="panel">
-  <div class="row" style="justify-content:space-between">
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">First covered</div>
-      <div class="mono">{_escape(topic.get('first_covered', '') or '—')}</div>
-    </div>
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">Last covered</div>
-      <div class="mono">{_escape(topic.get('last_covered', '') or '—')}</div>
-    </div>
-    <div>
-      <div class="muted" style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.06em">Appearances</div>
-      <div class="mono">{len(apps)}</div>
-    </div>
-  </div>
-  {citations_block}
-</div>
-
-<h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
-{timeline_block}
-
-{render_embedded_items_section(
-    matching_items or [],
-    heading=f"Items in briefs about {topic.get('title') or topic['key']}",
-    empty_text=(
-        "No parsed item heading or body matches this topic yet. Items match by "
-        "exact CVE id (for cve-typed topics), by lead-segment substring of the "
-        "topic title in the item heading or body, or by a distinctive anchor "
-        "token from the title appearing in the item heading. Coverage that lives "
-        "inside a broader section (no per-item heading) is captured by the Story "
-        "timeline above instead."
-    ),
-    prefix=prefix,
-)}
-"""
-    return base_template(
-        title=f"{topic.get('title') or topic['key']} — Topic",
-        description=topic.get("title") or topic["key"],
         body=body,
         canonical=canonical,
         site_url=site_url,

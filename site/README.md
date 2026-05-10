@@ -1,8 +1,10 @@
 # site/ — public reader for the brief feed
 
 A static, dependency-free GitHub Pages site that renders the daily and weekly
-Markdown briefs server-side, exposes searchable indexes of CVEs / topics /
-sources, and cross-links every entity to the briefs that reference it.
+Markdown briefs server-side, exposes a unified searchable index of every
+**entity** referenced across briefs (CVEs, actors, campaigns, incidents,
+tools, advisories, annual reports, research, techniques) plus the source
+list, and cross-links every entity to the briefs that reference it.
 Read-only: the agentic workflow (`prompts/`, `state/`, `sources/`) is the
 source of truth; this folder only **publishes** what the agent produces.
 
@@ -66,15 +68,25 @@ _site/
 │       ├── YYYY-Www.md                   # raw Markdown
 │       └── YYYY-Www/index.html           # rendered weekly summary
 ├── items/<slug>/index.html               # one page per metadata-footer item
+├── entities/
+│   ├── index.html                        # unified entity index — KPIs + type-distribution
+│   │                                     #   donut + recent-coverage sparkline + filter chips
+│   └── <key>/index.html                  # canonical entity detail (CVE / actor / campaign /
+│                                         #   incident / tool / advisory / annual-report /
+│                                         #   research / technique). Story timeline + KPI
+│                                         #   tile grid (sparkline embedded) + section-
+│                                         #   distribution bars + source-host donut + related-
+│                                         #   entities co-occurrence list + grouped citations
+│                                         #   (paragraph + item-footer origins)
 ├── cves/
-│   ├── index.html                        # all CVEs (filterable)
-│   └── <CVE-ID>/index.html               # CVE detail (appearances + grouped citations)
+│   ├── index.html                        # type-filtered view of /entities/ (type=cve)
+│   └── <CVE-ID>/index.html               # HTML meta-refresh stub → /entities/CVE-<ID>/
 ├── sources/
 │   ├── index.html                        # source list (filterable by category + status)
 │   └── <id>/index.html                   # source detail
 ├── topics/
-│   ├── index.html                        # topics (filterable by type + verification flag)
-│   └── <key>/index.html                  # topic timeline
+│   ├── index.html                        # type-filtered view of /entities/ (type≠cve)
+│   └── <key>/index.html                  # HTML meta-refresh stub → /entities/<key>/
 ├── tags/<tag>/index.html                 # items by theme tag
 ├── regions/<region>/index.html           # items by region
 ├── ops/index.html                        # operations dashboard
@@ -107,20 +119,31 @@ the home page that converts indexed hash URLs to the clean URL.
 ## Cross-references
 
 The cross-references between entities and briefs are computed once at build
-time, by walking the briefs and joining against state files:
+time, by walking the briefs and joining against state files. Every entity
+flows through one annotator (`annotate_entities`) and one renderer
+(`render_entity_page`); the `type` field distinguishes a CVE from an actor,
+campaign, incident, tool, advisory, annual report, research item, or
+technique.
 
 | Entity   | Joined to brief by                                                  |
 |----------|---------------------------------------------------------------------|
-| CVE      | regex match on `CVE-YYYY-NNNNN` in the brief markdown               |
-| Topic    | `appearances[].brief_path` already in `covered_items.json`          |
+| Entity   | `appearances[].brief_path` from `covered_items.json` (structured), or for CVE-only entries the brief-name list synthesised from `cves_seen.json` |
 | Source   | longest-prefix URL match between `sources.json#url` and brief links |
 | Tag      | `Tags:` field in the per-item metadata footer (taxonomy-validated)  |
 | Region   | `Region:` field in the per-item metadata footer                     |
 | Item     | per-H3 split + metadata-footer parse                                |
 
+Per-entity inline links come from two sources, deduped and origin-tagged
+on the page: every paragraph (unit) that mentions the entity contributes
+its inline `[label](url)` links (matched by CVE id, title-phrase, or
+anchor token; the legacy >3-CVE filter is dropped for the broader set),
+and every matched item's footer Source / Additional source URLs are
+registered with `origin: "item-footer"` so the curated set is visually
+distinguished from inline chatter.
+
 Multi-appearance items get a "story timeline" badge (`×N appearances`)
 everywhere they show up. Topics tagged with a verification flag in any
-brief carry it through to the topic list, where the chip filter lets a
+brief carry it through to the listings, where the chip filter lets a
 SOC reviewer pull every `[SINGLE-SOURCE]` item across briefs.
 
 The deploy URL the feeds embed comes from the `SITE_URL` env var
@@ -161,10 +184,12 @@ source shows the content.
 | `/briefs/weekly/`                  | Weekly summaries list                                       |
 | `/briefs/weekly/<YYYY-Www>/`       | Single weekly summary                                       |
 | `/items/<slug>/`                   | One page per metadata-footer item                           |
-| `/cves/`                           | All CVEs ever referenced                                    |
-| `/cves/<CVE-ID>/`                  | One CVE + appearance trail + grouped citations              |
-| `/topics/`                         | Covered items; flag chip filters single-source              |
-| `/topics/<key>/`                   | Topic timeline                                              |
+| `/entities/`                       | Unified entity index — every CVE / actor / campaign / incident / tool / advisory / annual report / research / technique. KPI strip, type-distribution donut, recent-coverage sparkline, filter chips |
+| `/entities/<key>/`                 | Canonical entity detail. Story timeline + KPI tiles + section-distribution bars + source-host donut + co-occurring entities + grouped citations + embedded brief items |
+| `/cves/`                           | Type-filtered view of `/entities/` (type=cve) — same CVE table as before, with the entity KPI strip + by-year bars on top |
+| `/cves/<CVE-ID>/`                  | HTML meta-refresh stub → `/entities/CVE-<ID>/` (`noindex`)  |
+| `/topics/`                         | Type-filtered view of `/entities/` (type≠cve) — same topic listing with verification-flag chips, KPI strip + type donut on top |
+| `/topics/<key>/`                   | HTML meta-refresh stub → `/entities/<key>/` (`noindex`)     |
 | `/sources/`                        | Source list                                                 |
 | `/sources/<id>/`                   | Source detail + briefs that cite it                         |
 | `/tags/<tag>/`                     | Items by theme tag                                          |
@@ -184,7 +209,8 @@ source shows the content.
 `search.json` index built by `build.py`. Tokens are AND-combined; CVE ids
 match as a single token regardless of the surrounding query. The top-bar
 autocomplete returns the top 10 across all kinds; `Enter` navigates to the
-top match.
+top match. Search results route to the canonical `/entities/<key>/` URL
+for both CVE and non-CVE hits.
 
 The search data is loaded on demand the first time the user types, then
 cached for the session.

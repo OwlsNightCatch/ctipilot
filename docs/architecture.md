@@ -120,8 +120,13 @@ The agent re-reads these every run before writing.
 
 - [`state/covered_items.json`](../state/covered_items.json) — full coverage
   records for every CVE / actor / campaign / incident / tool / annual report
-  ever referenced. Each item has an `appearances[]` array — the site uses this
-  to render the "story timeline" on each topic page.
+  ever referenced. Each item has a structured `appearances[]` array
+  (`{date, section, brief_path, delta_summary}`) — the site uses this
+  to render the **Story timeline** on each `/entities/<key>/` page.
+  CVE-only entries (in `cves_seen.json` but not yet promoted to a topic)
+  synthesise a stub timeline from their flat brief-name list so every
+  entity has a coverage timeline regardless of which state file
+  carries it.
 - [`state/cves_seen.json`](../state/cves_seen.json) — flat fast-lookup CVE
   index for sub-agent dedup. A subset of `covered_items.json` (CVEs only)
   with a tighter schema.
@@ -210,7 +215,9 @@ output and never writes back.
 
 A stdlib-only Python static-site generator (`site/build.py`) emits a real
 HTML page for every URL — home, every brief, every per-item block, every
-CVE / source / topic page, every tag and region index, the operations
+**entity** page (CVE, actor, campaign, incident, tool, advisory, annual
+report, research, technique — all rendered through one `render_entity_page`
+function), every source page, every tag and region index, the operations
 dashboard, the about pages. JavaScript only enhances (topbar search
 autocomplete via `data/search.json`, GitHub-stars badge, brief-page filter
 chips, theme cycle, copy-link, SPA-redirect bootstrap on `/`). With JS
@@ -223,14 +230,26 @@ of the repo:
 - It writes nothing back — its build artifact lives entirely under
   `site/_site/` (gitignored locally; force-pushed to the `gh-pages` branch
   by the CI workflow).
+- Every entity is canonical at `/entities/<key>/`. The legacy
+  `/cves/<id>/` and `/topics/<key>/` URLs are HTML meta-refresh
+  redirect stubs — they still resolve, search engines see the
+  canonical, and internal links (CVE pills, brief-page reference
+  blocks, search results) point at the canonical directly without a
+  redirect hop. Type-filtered overviews live at `/cves/` (type=cve)
+  and `/topics/` (type≠cve); the unified overview at `/entities/`
+  has the same Ops-style KPI strip + type-distribution donut +
+  recent-coverage sparkline as every entity page.
 - It emits **three RSS feeds**: `/feed.xml` (daily, last 30), `/feed-weekly.xml`
   (weekly, last 30), `/feed-items.xml` (per-item granular, last 50). All
   three use the actual git-commit timestamp of the underlying brief as
   `<pubDate>` (not midnight-of-brief-date).
 - The unified search index at `_site/data/search.json` covers briefs,
-  CVEs, topics, and sources.
+  entities (every type), and sources.
 - The operations dashboard at `/ops/` is rendered server-side from
-  `state/run_log.json` at build time.
+  `state/run_log.json` at build time. The same SVG chart primitives
+  (`_ops_svg_sparkline` / `_ops_svg_bars` / `_ops_svg_donut` /
+  `_ops_svg_heatmap` / `_ops_kpi_tile`) power the entity pages and
+  the CVE / topic / entity overview KPI strips.
 
 [`site/taxonomy.yaml`](../site/taxonomy.yaml) is the controlled vocabulary
 for every metadata-footer value (themes / sectors / regions / nexus /

@@ -8,7 +8,7 @@ The repository is the single source of truth for the workflow: prompts, source l
 
 ## Where to read
 
-- **Public reader:** [https://ctipilot.ch/](https://ctipilot.ch/) — a static GitHub Pages site. Every brief, every per-item block, every CVE / source / topic page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, CVEs, topics, and sources, with full-text autocomplete from the topbar.
+- **Public reader:** [https://ctipilot.ch/](https://ctipilot.ch/) — a static GitHub Pages site. Every brief, every per-item block, every entity page (CVEs, actors, campaigns, incidents, tools, advisories, annual reports, research, techniques — all canonical at `/entities/<key>/`), every source page, and every tag / region index is a real HTML page rendered at build time. Home shows a preview of the latest daily brief; click through for the full text. Cross-links span briefs, entities, and sources, with full-text autocomplete from the topbar.
 - **GitHub:** the briefs are Markdown files under [`briefs/`](briefs/). Each brief is a self-contained operational report that reads natively on GitHub.
 
 The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/operating.md`](docs/operating.md#3-enable-github-pages) for one-time enablement.
@@ -26,11 +26,12 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ## Reader features
 
 - **Static HTML.** Every page contains its full content on first paint. View source on a brief and you can read it. JavaScript only enhances: search autocomplete, list-page filter chips, the brief-page tag/region/section toggles, theme cycle, copy-link button.
-- **Cross-linked entities.** Every CVE, source, and topic page lists the briefs that mention it; every brief lists the CVEs, topics, and sources it cites; every metadata footer's tag and region link to a per-tag / per-region index of every item carrying that label.
+- **Unified entity model.** Every CVE, actor, campaign, incident, tool, advisory, annual report, research item, and technique is a first-class entity at `/entities/<key>/`. One renderer, one data shape — distinguished by a `type` field. Each entity page carries a Story timeline, KPI tile grid (sparkline embedded), section-distribution bars, source-host donut, related-entities co-occurrence list, and grouped citations marked by origin (paragraph vs item-footer).
+- **Cross-linked entities.** Every entity page lists the briefs that mention it; every brief lists the entities and sources it cites; every metadata footer's tag and region link to a per-tag / per-region index of every item carrying that label.
 - **Per-item permalinks.** Every Immediate Action, Active Threat, Trending Vulnerability, Research item, Update, Deep Dive, and Action Item gets its own stable `/items/<slug>/` URL.
-- **Topbar search.** Token-prefix scoring across briefs, sections, CVEs, topics, and sources. Press `/` anywhere on the site to focus. CVE ids match as a single token.
-- **Verification filters.** The Topics page can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
-- **Operations dashboard** at `/ops/` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). Useful for spotting rotation bias or a quietly broken source.
+- **Topbar search.** Token-prefix scoring across briefs, sections, entities (every type), and sources. Press `/` anywhere on the site to focus. CVE ids match as a single token. Search results route to the canonical `/entities/<key>/` URL.
+- **Verification filters.** The Entities and Topics overviews can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
+- **Operations dashboard** at `/ops/` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). The same SVG chart primitives drive entity pages and the operations dashboard.
 - **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
 - **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
 - **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
