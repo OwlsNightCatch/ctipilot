@@ -1,6 +1,6 @@
 # `tools/check_brief.py` — common FAILs and how to fix them
 
-Phase 5.5 of the daily and weekly Claude Code routines runs `python3 tools/check_brief.py` as a non-negotiable gate before commit. The script is read-only — it surfaces drift, you fix it. Below is the operator playbook for the common FAIL patterns the script emits.
+Phase 5.5 (daily) / Phase 4.5 (weekly) of the Claude Code routines runs `python3 tools/check_brief.py` as a non-negotiable gate **before** the verification sub-agent (Phase 5.7 daily / Phase 4.7 weekly) and again between every verification fix iteration. The script is read-only — it surfaces drift, you fix it. Below is the operator playbook for the common FAIL patterns the script emits.
 
 The full check list (1–19) lives inline in `prompts/daily-cti-brief.md` § Phase 5.5; this doc is the remediation handbook.
 

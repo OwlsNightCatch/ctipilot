@@ -201,6 +201,6 @@ A focused, justified list. **Not predictions** — items already in motion.
 - Contradictions across sources that remain unresolved.
 - Items included with reduced confidence (only aggregator source available).
 - Sub-agents that didn't return on time: {names + coverage scope missed}.
-- Verification iterations: N · residuals: N (Phase 3.5 telemetry).
+- Verification iterations: N · residuals: N (Phase 4.7 telemetry).
 - Coverage gaps: source-id (reason); source-id (reason); source-a, source-b — not fetched in this run.
 ````

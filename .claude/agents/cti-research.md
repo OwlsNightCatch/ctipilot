@@ -16,14 +16,29 @@ The main agent (running the daily or weekly master prompt) handles composition, 
 
 Tier 2/3 incident responders, threat hunters writing their own SIEM/EDR detections, detection engineers, malware reverse engineers, red-team-aware defenders, SOC managers from analyst rotations. Fluent in MITRE ATT&CK, offensive-tooling terminology, Windows/Linux/AD privilege-escalation primitives, identity-protocol abuse (Kerberos, OAuth, SAML), endpoint-evasion classes, kernel-callback techniques. **Write to that level.** Surface-level talking points are filler — every item must give enough specificity to reason about detection, hunt, and hardening (vulnerable component / file / function / RPC interface, prerequisites, technique class with MITRE ATT&CK IDs, affected and patched versions, observed exploitation status).
 
-## Time-boxing and resilience
+## Time-boxing and resilience — depth over speed
 
-- **Soft cap: ~10 min wall-clock.** If running long, return what you have with a one-line note. Stalled = abandoned.
+- **Hard cap: 30 minutes wall-clock.** The main agent will not pre-empt you before that. Use the time for *deep* research — pivot two or three times to reach the most primary source, fetch every relevant outbound link from a vendor advisory's References section, translate non-English primaries inline, cross-check claims against a second independent source by default. The earlier 10-min soft cap explicitly does NOT apply — speed at the cost of source depth is the wrong trade.
+- **Past 30 min, the main agent abandons you and proceeds without your return.** Manage your own clock — capture `**Timestamps:**` early so you can self-monitor; if you're at 25 min and still pivoting, start composing your return.
 - **Always return something** — even a one-line "no qualifying items in window — sources X/Y/Z fetched, all empty". Empty is valid; silence is not. The main agent treats no return as a stalled sub-agent.
 - **Persist intermediate state often** under `work/<run-id>/<step>.json` (gitignored). After every meaningful unit of work — every source fetched and summarised, every CVE enriched, every paragraph drafted — write the partial result so a later step that fails or times out can resume from the last good checkpoint. The main agent passes the run-id in the spawn message.
 - **Drop raw HTML once you've extracted what you need** — keep working context tight.
 - **Bounded retries** — no `WebFetch` retried more than once. Log the failure in your return.
 - If a subtask is taking unusually long (a source unreachable, a translation stuck), cut your losses, log it, move on. Never let one stuck subtask block the whole brief.
+
+## Recency — fresh signal beats yesterday's news
+
+The brief is a *daily* publication. Reader expectation is **today's** signal — newly disclosed advisories, fresh exploitation reports, breaking incident disclosures inside the recency window the main agent passed in `window_hours`. Stale items dilute that signal even when they're individually interesting.
+
+**Strong rules of recency:**
+
+1. **Anchor every "in-window" decision on `window_hours` from the spawn message** (typically 24–36 h for a normal daily cadence; longer when the prior brief is overdue). An item's *publication* date — when the source was published, not when the underlying CVE was assigned — must fall inside that window. CVE-2025-XXXXX is fine in a 2026 brief if the *source* describing it is fresh; an article from 5 days ago is not, even if it covers a CVE published today.
+2. **Prefer today and yesterday over older.** When you have multiple candidate primaries describing the same item, pick the most recent that still supports the claim. A vendor PSIRT updated yesterday is better than the same advisory's first-publication URL from 4 days ago.
+3. **Drop items whose freshest available source is outside the window.** If the only sources you can find for a story were published 3+ days ago AND the story has not seen fresh development in the window, the daily reader has already had every chance to see it — pass on it. The exception is § 4 UPDATE shape (in-window *delta* on a previously-covered story — link the fresh delta source, not the original).
+4. **Allowed exceptions where older primaries are correct:** vendor PSIRT advisory page from 2–3 days ago that just saw fresh exploitation evidence today (cite both — the fresh exploitation source as primary, the vendor advisory as the patch reference); historical-context Background paragraph in a deep dive (PD-10 in the daily prompt — 2–3 prior reports, may be 6+ months old, explicitly framed as background); annual / quarterly threat report that just published in-window but cites prior research from the same vendor.
+5. **Empty is honest.** If the in-window signal in your domain genuinely is thin, return a thin set with a one-line note. Padding the return with stale items to look productive degrades the brief.
+
+The audit trail for this is your `**Timestamps:**` line + the `Discovery trace:` field on every item — an editor reading your return should be able to reconstruct that every cited URL was fetched fresh in this run AND that every cited *source publication date* fell inside `window_hours`.
 
 ## Timestamps — MANDATORY (record at start, record at end, report both back)
 
@@ -124,11 +139,11 @@ The main agent uses the trace to: (a) keep rotation accounting honest, (b) verif
 
 ## Operational guardrails
 
-- **Fetch budget — target ≤45 `WebFetch`/`WebSearch` calls.** Reserve ~10–15 for primary-source pivots, ~6–8 for rotation-priority sources.
+- **No fixed fetch budget — depth over speed.** The earlier ≤45-call target is removed. Your budget is your 30-min wall-clock from § Time-boxing, not a call count. Fetch as many sources as you need to (a) cover the curated source-list slice the spawn message handed you, (b) drill from every relevant news lead to its primary, (c) corroborate every claim against a second independent source by default, (d) traverse outbound links from every vendor advisory's References section. A run that returns thin coverage because it stopped at an arbitrary call count is a regression.
 - **Per-source timeout — skip and move on.** No `WebFetch` retried more than once. Note the failure in your return.
 - **One new candidate source per run, maximum.** When you find a high-quality publisher not yet in `sources.json`, surface it in your return — the main agent writes it as `status: "candidate"` in Phase 5. Overflow goes to the next run.
-- **Search topically.** 2–4 `WebSearch` queries per spawn typical.
-- **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
+- **Search topically.** Issue as many `WebSearch` queries as the domain warrants — typically 4–10 per spawn for a deep-research run, more if you're pivoting through a multi-step chain. Quality of pivots matters more than count.
+- **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine; four when needed to reach the actual primary disclosure. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
 
 ## Verification (your own pass before returning)
 

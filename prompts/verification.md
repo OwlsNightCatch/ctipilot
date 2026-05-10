@@ -90,8 +90,8 @@ In every case the brief states the original date so the reader is not misled.
 - [ ] State files updated (`state/covered_items.json`, `sources/sources.json`).
 - [ ] Verification Notes section lists drops, single-source items, and contradictions.
 - [ ] No content from training data — only from today's fetches.
-- [ ] **Phase 4.5 verification subagent ran** (see below) covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤3 iterations or residual findings logged in § 8.
-- [ ] **`python3 tools/check_brief.py` exits 0** — every mechanical consistency check passes.
+- [ ] **`python3 tools/check_brief.py` exits 0 BEFORE the verification sub-agent is spawned** — every mechanical consistency check passes first; the verifier reads a brief whose URL allowlist / footer taxonomy / CVE-sync / run-log shape is already clean.
+- [ ] **Phase 5.7 (daily) / Phase 4.7 (weekly) verification subagent ran** (see below) covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in § 8.
 - [ ] CVE entries do not lean on a national CERT/NCSC as the *only* primary source — the disclosing vendor's PSIRT advisory or research-lab post is preferred.
 - [ ] **No `Source:` URL is on the hard-blocked allowlist** (NVD/MITRE/cve.org per-CVE pages, Heise homepage / `/news/` / `/security`, NOS homepage / `/artikel/`, CERT-FR `/avis/` or `/actualite/` indexes, CISA news-events root, Dragos year-in-review marketing landing, ABW cybersecurity category landing). The full list is enforced by `tools/check_brief.py` and lives at the top of the script.
 - [ ] **Every `Source:` URL returns HTTP 200 on a live HEAD/GET** at commit time (`tools/check_brief.py` validates). 404s are typically fabricated URLs that look plausible — re-pivot to a real one or drop the item.
@@ -99,9 +99,9 @@ In every case the brief states the original date so the reader is not misled.
 
 ---
 
-## Phase 4.5 — Final verification sub-agent (URL truth + editorial quality)
+## Phase 5.7 (daily) / Phase 4.7 (weekly) — Final verification sub-agent (URL truth + editorial quality)
 
-After Phase 4 has written the brief to disk, an independent verification sub-agent reads the brief end to end. The verifier does not see the research transcript and reads the publication as a hostile, technically-fluent SOC reader would. **Two distinct concerns are checked in the same pass:**
+After Phase 4 has written the brief, Phase 5 has updated state, and Phase 5.5 has run `tools/check_brief.py` to exit 0 (the cheap mechanical gate runs first), an independent verification sub-agent reads the brief end to end. The verifier does not see the research transcript and reads the publication as a hostile, technically-fluent SOC reader would. **The verifier's CLEAN verdict is the gate to publish** — no commit until CLEAN, except via the iteration-cap fail-open at iteration 5. **Two distinct concerns are checked in the same pass:**
 
 **Truth gate.** Every URL fetched, every claim cross-checked against its linked source, every named entity (CVE / actor / campaign / version / date / number) traced back to a source the verifier could read. Catches: hallucinated URLs, generic landing pages cited as sources, claims attached to the wrong source, named entities that drifted into prose without source backing, aggregate numbers not in any linked source.
 
@@ -116,7 +116,7 @@ After Phase 4 has written the brief to disk, an independent verification sub-age
 
 The verifier returns structured Markdown with sections `Broken / unreachable URLs`, `Generic / oversight URLs`, `Citation does not support the claim`, `Unsupported / hallucinated facts`, `Claims missing inline citation`, `Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`, `Editorial / less-is-more flags`, and a `Verdict: CLEAN | NEEDS_FIXES`.
 
-### Iterative refinement loop (cap: 3 iterations)
+### Iterative refinement loop (cap: 5 iterations — fail-open safety valve, not goal)
 
 The main agent reads the verification report and remediates per finding type:
 
@@ -133,9 +133,9 @@ The main agent reads the verification report and remediates per finding type:
 | **Missed angles** | Spawn one targeted research sub-agent if the angle would clear the inclusion gate; else log as a coverage gap. |
 | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave. |
 
-After remediation, a **fresh** verification sub-agent is spawned (no shared memory) against the updated brief. The loop runs until verdict `CLEAN` or until the iteration cap (3) is reached. After the cap, the brief publishes regardless, with unresolved findings logged in § 8 — the prime directive (the brief must publish) wins.
+After remediation, the main agent **re-runs `python3 tools/check_brief.py`** to confirm the fixes did not introduce mechanical drift, then a **fresh** verification sub-agent is spawned (no shared memory) against the updated brief. The loop runs until verdict `CLEAN` or until the iteration cap (5) is reached. After the cap, the brief publishes regardless as a fail-open safety valve, with unresolved findings logged in § 8 — the prime directive (the brief must publish) wins. **The cap is a safety net, not the goal** — a brief that needs 5 iterations is a quality regression and gets reviewed after-the-fact.
 
-**The main agent may spawn up to 3 follow-up research sub-agents per iteration**, each scoped to one specific question with a suggested source / search angle from the verifier. These sub-agents share the Phase 1 patience clause and ~5-min wall-clock budget.
+**The main agent may spawn up to 3 follow-up research sub-agents per iteration**, each scoped to one specific question with a suggested source / search angle from the verifier. These sub-agents share the Phase 1 patience clause and 30-min wall-clock budget.
 
 The verification sub-agent's iteration count and residual-finding count are written to `state/run_log.json` (`verification_iterations`, `verification_residual_count`) so the Operations dashboard at `/ops/` surfaces editorial signal across runs.
 

@@ -1180,13 +1180,13 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
     else:
         ok("run-log-items", f"items_published = {rec.get('items_published')}")
 
-    # Verification sub-agent loop fields (Phase 4.5).
+    # Verification sub-agent loop fields (Phase 5.7 daily / Phase 4.7 weekly).
     vi = rec.get("verification_iterations")
     vr = rec.get("verification_residual_count")
     if not isinstance(vi, int) or vi < 1:
         fail("run-log-verification", f"verification_iterations should be ≥ 1 (got {vi!r})")
-    elif vi > 3:
-        warn("run-log-verification", f"verification_iterations = {vi} exceeds the v2.27 cap of 3")
+    elif vi > 5:
+        warn("run-log-verification", f"verification_iterations = {vi} exceeds the v2.46 cap of 5")
     else:
         ok("run-log-verification", f"verification_iterations = {vi}")
     if not isinstance(vr, int) or vr < 0:

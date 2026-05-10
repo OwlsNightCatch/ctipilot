@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.45 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.46 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -37,14 +37,14 @@ The single most important property is that **every fire ends with a written, com
 Anti-crash guards (same as daily prompt):
 
 1. **Always write the file.** Even if both horizon sub-agents return nothing, even if half the daily briefs failed to load, the summary file is created with the AI-content notice, metadata strip, a stub "Week at a glance", and § 10 explaining what failed.
-2. **Time-box every sub-agent at ~10 min wall-clock.** Stalled sub-agents abandoned — proceed without them, log the gap.
+2. **Hard-cap every sub-agent at 30 min wall-clock; do not pre-empt before that.** Past 30 min, abandon and proceed without the sub-agent; log the gap in § 10. Same cap applies to Phase 4.7 verification sub-agent and follow-up research sub-agents.
 3. **Skeleton-then-Edit.** A single `Write` of the whole file trips `Stream idle timeout`. `Write` skeleton → `Read` → `Edit` per section.
 4. **Persist intermediate state often** under `work/<run-id>/` (gitignored).
 5. **Drop raw HTML once extracted.**
 6. **Bounded retries.** No `WebFetch` retried more than once. No git push retried.
 7. **Two-stage publishing chain (Phase 5) is non-negotiable.** Each push tried once.
 8. **Take time on quality, not retries.**
-9. **Phase 3.5 verification + Phase 4.5 self-check are non-negotiable, but never block the publish.** Both gates run; if a gate cannot conclude inside its budget, ship what you have and log the unresolved finding in § 10. The CRITICAL header always wins.
+9. **Phase 4.7 verification + Phase 4.5 self-check are non-negotiable, but never block the publish.** Both gates run; if a gate cannot conclude inside its budget, ship what you have and log the unresolved finding in § 10. The CRITICAL header always wins.
 
 ---
 
@@ -56,7 +56,7 @@ The weekly inherits every prime directive from `prompts/daily-cti-brief.md`. Hig
 2. **Inline links at the point of claim.** No bibliography. No footnotes.
 3. **No IOCs. No vanity metrics. Always English.**
 4. **Two-source verification with national-CERT carve-out.** Items marked `[SINGLE-SOURCE]` in the daily briefs remain marked here unless new corroboration emerged this week.
-5. **Trace to the most primary source.** News articles are discovery; vendor blogs / CERT advisories / research-lab posts / regulator filings / victim disclosures are the substance. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primaries over English aggregators.
+5. **Trace to the most primary source.** News articles are discovery; vendor blogs / CERT advisories / research-lab posts / regulator filings / victim disclosures are the substance. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primaries over English aggregators. **Sources must fall inside the gap-derived window** — items whose freshest available source is outside `window_days` AND that have not seen fresh in-window development drop to § 10 unless they are explicit horizon / status-update content (W1 long-running campaign updates, § 6 annual-report retrospective, § 9 looking-ahead). Stale-source drift (sources lagging the summary by 3+ days) drains weekly signal even more than daily.
 6. **Weekly editorial framing (W-PD-1).** Every item answers one of three questions: (a) *what would be on fire if no one acted on the daily?*, (b) *what cross-day pattern emerged that no single daily could surface?*, (c) *what strategic / horizon shift happened that changes defender obligations going forward?*. Items that answer none of these three get dropped — even if they were prominent in a daily.
 7. **Annual / periodic reports** get fuller distillation in the weekly than the daily, since the weekly's audience expects horizon framing.
 8. **`tools/fetch_source.py` is mandatory for CISA + NCSC.ch every run** — never `WebFetch` those hosts directly. Same rule as daily.
@@ -106,7 +106,7 @@ tools/fetch_source.py              # HTTP bridge for sources that 403 the routin
 work/<run-id>/                     # gitignored intermediate state
 ```
 
-Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoWrite`. Sub-agents have **no token cap** and run in their own isolated context windows — see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) and [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) for the canonical sub-agent definitions used in Phase 2 and Phase 3.5. The same definitions back the daily routine — domain (W1 / W2 vs S1–S4) is passed in the spawn message.
+Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoWrite`. Sub-agents have **no token cap** and run in their own isolated context windows — see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) and [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) for the canonical sub-agent definitions used in Phase 2 and Phase 4.7. The same definitions back the daily routine — domain (W1 / W2 vs S1–S4) is passed in the spawn message.
 
 ---
 
@@ -179,7 +179,7 @@ Build six working lists from the week's daily briefs. The first five carry forwa
 
 ---
 
-## Phase 2 — Horizon research (two parallel sub-agents, ~10 min)
+## Phase 2 — Horizon research (two parallel sub-agents, up to 30 min wall-clock each)
 
 Spawn **two sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
 
@@ -212,7 +212,7 @@ Per `Agent` call, the prompt is a thin per-domain envelope:
 6. **Rotation-priority list** — sources flagged by Phase 0 step 7 as gaps in 2+ daily briefs in the window, filtered to this sub-agent's category.
 7. **Today's ISO date** + **ISO week** so the sub-agent has anchors for "in-window" decisions.
 
-### Reinforced rules for the main agent (same rules in Phase 3 compose / Phase 3.5 verification)
+### Reinforced rules for the main agent (same rules in Phase 3 compose / Phase 4.7 verification)
 
 The sub-agents follow these rules from their system prompt; the main agent applies the same rules when consolidating daily-brief content into the weekly and when re-fetching during verification:
 
@@ -309,7 +309,7 @@ Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 
 | Government cybersecurity-section landing (`…/cybersecurity/`, `…/cyber/`) | Specific advisory page |
 | `<publisher>/`, `<publisher>/news/`, `<publisher>/blog/` with no slug | Specific article URL |
 
-**Rule of thumb:** if removing the trailing path component still resolves to a meaningful page, the URL is too generic. Script also runs **live HEAD/GET on every Source URL**, FAILs on 404 (catches fabricated URLs). Phase 3.5's verifier WARNs any single national-CERT URL as the **only** source on a CVE-typed item.
+**Rule of thumb:** if removing the trailing path component still resolves to a meaningful page, the URL is too generic. Script also runs **live HEAD/GET on every Source URL**, FAILs on 404 (catches fabricated URLs). Phase 4.7's verifier WARNs any single national-CERT URL as the **only** source on a CVE-typed item.
 
 **Source-link discipline (numbered).** (1) Only fetched URLs — every URL must have been opened by `WebFetch` or `tools/fetch_source.py` in this run, resolving to content matching the claim. Never construct a URL from a pattern (advisory ID, CVE ID, blog-slug guess) without verifying. (2) Specific page, never the landing — see hard-blocked patterns above. (3) Drill to primary, keep secondaries — first link most primary; include every other URL where you read the claim as `· Additional source:`. (4) News-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 10). (5) Verify before publishing — re-confirm doubt cases; if a URL 404s, redirects to homepage, or shows unrelated content, replace or drop. (6) If unsure: drop the item.
 
@@ -435,55 +435,9 @@ The canonical Markdown skeleton for the rendered weekly summary lives in [`promp
 
 ---
 
-## Phase 3.5 — Final verification sub-agent (URL truth + editorial quality, loop until clean)
-
-After Phase 3 has written the summary to disk, **before** state update or commit, the summary goes through an independent verification sub-agent. Verifier reads cold as a hostile, technically-fluent SOC reader. Two distinct concerns in same pass:
-
-- **Truth gate** — every URL fetched, every claim cross-checked against linked source, every named entity (CVE / actor / campaign / version / date / number) traced back to a source the verifier could read.
-- **Editorial-quality gate** — every item assessed for relevance to a Swiss / EU public-sector SOC, primary-source strength, signal-to-noise, vendor-marketing tells, missed angles, **and weekly-specific framing**: does each item answer one of W-PD-1's three questions (inaction = incident / cross-day pattern / strategic horizon)? Items that don't are flagged for drop or re-framing.
-
-**Non-negotiable**: do not skip, short-circuit, or commit while pending. Verification removes bad and irrelevant content; it never prevents the summary from being written (the CRITICAL header always wins).
-
-### Spawn — verification sub-agent
-
-Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), isolated context, **read-only** tools — main agent owns all edits). The sub-agent's system prompt embeds the full check list: truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10 (relevance, primary-source kind, vendor-marketing tells, fake-news patterns, contradictions, clarity), whole-brief checks 11–13 (coverage shape — including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon* — style discipline, missed angles), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line.
-
-The spawn message is short:
-
-1. **Summary path** — `briefs/weekly/YYYY-Www.md`.
-2. **Iteration number** (`1`, `2`, `3`) so the verifier titles its report correctly. Each iteration spawns a **fresh** sub-agent — no shared memory across iterations, the verifier reads the summary from disk every time.
-3. **Run kind** — explicitly state `kind: weekly` so the verifier applies W-PD-1 in check 11.
-4. **Dedup context** built in Phase 0 (gap-window dailies + last 2 weekly summaries + `cves_seen.json` + `covered_items.json`).
-5. **Relevant slice of `state/run_log.json`** — today's `sub_agents`, `fetch_failures`, `items_published`.
-
-### Iterative refinement loop (cap: 3 iterations)
-
-Read the verification sub-agent's response and act on each finding type:
-
-| Finding | Main-agent response |
-|---|---|
-| Broken / generic URL | Replace with a specific article URL fetched fresh now (`WebFetch` / `WebSearch` / `tools/fetch_source.py`). |
-| Citation does not support claim | Replace the claim with a narrower one the source supports, or replace the citation. |
-| Unsupported / hallucinated fact | Drop the fact and the claim it props up. |
-| Missing inline citation | Add the citation, or rewrite the sentence to drop the unsourced fact. |
-| **Strengthen primary source** | Re-pivot via `WebSearch` / `WebFetch` to the vendor PSIRT advisory or vendor research blog. Promote that to first source; demote NVD/CERT to `Additional source:`. |
-| **Drop** (low relevance / not weekly content) | Remove the H3 from the summary; log in § 10. Items that are pure one-to-one daily summaries belong in the dailies, not here. |
-| **Needs more research** | Spawn ≤3 follow-up `cti-research` sub-agents in parallel; re-Edit the affected item with new findings, or drop. |
-| **Surface contradiction** | Add an explicit § 10 contradiction line. |
-| **Missed angles** | Spawn one targeted `cti-research` sub-agent if the angle is likely to clear the inclusion gate; else log as a coverage gap in § 10. |
-| Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave. |
-
-After remediation, a **fresh `cti-verification` sub-agent** is spawned (no shared memory) against the updated summary. The loop runs until verdict `CLEAN` or until the iteration cap (3) is reached. After the cap, the summary publishes regardless, with unresolved findings logged in § 10.
-
-**Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
-
-**Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with the same ~5-min wall-clock budget as Phase 2. **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
-
-Track verification iterations in the run log: `state/run_log.json` fields `verification_iterations`, `verification_residual_count`. The Ops dashboard reads these.
-
----
-
 ## Phase 4 — State update
+
+State is updated **before** the mechanical gate (Phase 4.5) and the verification sub-agent (Phase 4.7) — both phases read state files, and the script's CVE-sync / covered-items / run-log checks would FAIL on a fresh summary whose state hasn't been updated yet. If Phase 4.7 later flags an item to drop, re-update state in the same iteration before re-running the script.
 
 ### `state/covered_items.json`
 
@@ -548,7 +502,7 @@ Append a per-run record. **Every key required every run** — a sparse record pr
   },
   "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
   "items_published": N,                                       // total H3 items in the summary
-  "items_dropped_by_verification": N,                         // from Phase 3.5 Drop / hallucination drops
+  "items_dropped_by_verification": N,                         // from Phase 4.7 Drop / hallucination drops
   "verification_iterations": N,                               // ≤3 (legacy scalar, still required)
   "verification_residual_count": N,                           // 0 on a clean publish
   "verification": {                                           // per-iteration breakdown (NEW in v2.43)
@@ -607,7 +561,60 @@ Bundles every Phase 4.5 mechanical check **plus** build-side smoke tests (`site/
 
 WARNs are tolerated and logged in § 10; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`prompts/check-brief-fixes.md`](check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
 
-If `tools/check_brief.py` itself fails to start, proceed to Phase 5 anyway and log the script-level error in § 10 — never let tooling block the summary.
+Non-zero exit aborts the rest of the run (no Phase 4.7 verification, no commit) until you've fixed the FAILs. If the script itself fails to start (Python crash, not a real FAIL), proceed to Phase 4.7 anyway and log the script-level error in § 10 — never let tooling block the summary.
+
+The mechanical gate runs **before** Phase 4.7's verification sub-agent because (a) the script is dramatically cheaper than spawning a verifier — fix mechanical drift on the cheap path before paying for editorial review, (b) editorial fixes in Phase 4.7 may themselves introduce mechanical drift (a footer rewrite that drops a required field, an item-drop that orphans a `covered_items.json` appearance), so each Phase 4.7 iteration re-runs `check_brief.py` before re-spawning the verifier.
+
+---
+
+## Phase 4.7 — Final verification sub-agent (URL truth + editorial quality, loop until CLEAN)
+
+After Phase 4.5 has exited 0 (mechanical gate passed), the summary goes through an independent verification sub-agent. Verifier reads cold as a hostile, technically-fluent SOC reader. Two distinct concerns in same pass:
+
+- **Truth gate** — every URL fetched, every claim cross-checked against linked source, every named entity (CVE / actor / campaign / version / date / number) traced back to a source the verifier could read.
+- **Editorial-quality gate** — every item assessed for relevance to a Swiss / EU public-sector SOC, primary-source strength, signal-to-noise, vendor-marketing tells, missed angles, **and weekly-specific framing**: does each item answer one of W-PD-1's three questions (inaction = incident / cross-day pattern / strategic horizon)? Items that don't are flagged for drop or re-framing.
+
+**The verifier's CLEAN verdict is the gate to publish.** No commit, no push, no Phase 6 verification until verdict CLEAN — except via the iteration-cap fail-open at iteration 5 (below). The reordering moved cheap mechanical checks (Phase 4.5) ahead of the expensive editorial review (Phase 4.7) so each verifier iteration starts from a summary whose structure / footers / URL allowlist already pass; Phase 4.7 spends its budget exclusively on what the script can't catch.
+
+**Non-negotiable**: do not skip, short-circuit, or commit while pending. Verification removes bad and irrelevant content; it never prevents the summary from being *written* (the file already exists from Phase 3 — verification only blocks publish until CLEAN or cap). The CRITICAL header always wins.
+
+### Spawn — verification sub-agent
+
+Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), isolated context, **read-only** tools — main agent owns all edits). The sub-agent's system prompt embeds the full check list: gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10 (relevance, primary-source kind, vendor-marketing tells, fake-news patterns, contradictions, clarity), whole-brief checks 11–13 (coverage shape — including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon* — style discipline, missed angles), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap.
+
+The spawn message is short:
+
+1. **Summary path** — `briefs/weekly/YYYY-Www.md`.
+2. **Iteration number** (`1` through `5`) so the verifier titles its report correctly. Each iteration spawns a **fresh** sub-agent — no shared memory across iterations, the verifier reads the summary from disk every time.
+3. **Run kind** — explicitly state `kind: weekly` so the verifier applies W-PD-1 in check 11.
+4. **Dedup context** built in Phase 0 (gap-window dailies + last 2 weekly summaries + `cves_seen.json` + `covered_items.json`).
+5. **Relevant slice of `state/run_log.json`** — today's `sub_agents`, `fetch_failures`, `items_published`.
+6. **Confirmation that Phase 4.5 passed** — one line stating `mechanical gate (check_brief.py) exited 0 in iteration N pre-spawn` so the verifier knows mechanical defects are out of scope.
+
+### Iterative refinement loop (cap: 5 iterations)
+
+Read the verification sub-agent's response and act on each finding type:
+
+| Finding | Main-agent response |
+|---|---|
+| Broken / generic URL | Replace with a specific article URL fetched fresh now (`WebFetch` / `WebSearch` / `tools/fetch_source.py`). |
+| Citation does not support claim | Replace the claim with a narrower one the source supports, or replace the citation. |
+| Unsupported / hallucinated fact | Drop the fact and the claim it props up. |
+| Missing inline citation | Add the citation, or rewrite the sentence to drop the unsourced fact. |
+| **Strengthen primary source** | Re-pivot via `WebSearch` / `WebFetch` to the vendor PSIRT advisory or vendor research blog. Promote that to first source; demote NVD/CERT to `Additional source:`. |
+| **Drop** (low relevance / not weekly content) | Remove the H3 from the summary; log in § 10. **Re-update state**: remove the matching `weekly_summary` `appearances[]` entry from `covered_items.json`; remove dropped CVEs from `cves_seen.json` if today was their only `last_seen`. Items that are pure one-to-one daily summaries belong in the dailies, not here. |
+| **Needs more research** | Spawn ≤3 follow-up `cti-research` sub-agents in parallel; 30-min wall-clock per sub-agent (same as Phase 2). Re-Edit the affected item with new findings, or drop. |
+| **Surface contradiction** | Add an explicit § 10 contradiction line. |
+| **Missed angles** | Spawn one targeted `cti-research` sub-agent if the angle is likely to clear the inclusion gate; else log as a coverage gap in § 10. |
+| Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave — F11 advisory items alone never block CLEAN. |
+
+After remediation, **re-run `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md`** to confirm the fixes did not introduce mechanical drift; fix every FAIL before re-spawning the verifier. Then a **fresh `cti-verification` sub-agent** is spawned (no shared memory) against the updated summary. The loop runs until verdict `CLEAN` or until the iteration cap (5) is reached. After the cap, the summary publishes regardless as a fail-open safety valve, with unresolved findings logged in § 10 along with `verification: 5 iterations exhausted, verifier was not satisfied at cap`. **The cap is a safety valve, not the goal** — every cap-breach is reviewed after-the-fact for whether the verifier was finding real defects or chasing fabricated ones.
+
+**Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
+
+**Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with 30-min wall-clock budget (same as Phase 2). **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
+
+Track verification iterations in the run log: `state/run_log.json` fields `verification_iterations`, `verification_residual_count`. The Ops dashboard reads these.
 
 ---
 
@@ -746,14 +753,14 @@ fi
 - [ ] § 6 annual-report findings deduplicate against earlier daily-brief coverage (synthesis only, no recap).
 - [ ] § 9 "Looking ahead" lists items in motion, not speculation.
 - [ ] Every H3 item in §§ 1–8 ends with a v2 metadata footer using only taxonomy values.
-- [ ] **Phase 3.5 verification ran via the `cti-verification` sub-agent** at least once, covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤3 iterations or residual findings logged in § 10. Re-spawn was a fresh sub-agent every iteration, not a continuation.
+- [ ] **`python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` exits 0 BEFORE the first Phase 4.7 verification spawn** (mechanical gate runs first; verifier then handles editorial + truth). Re-runs after every Phase 4.7 fix iteration.
+- [ ] **Phase 4.7 verification ran via the `cti-verification` sub-agent** at least once, covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in § 10. Re-spawn was a fresh sub-agent every iteration, not a continuation.
 - [ ] CVE entries do not lean on NVD/MITRE/cve.org per-CVE pages (script-blocked) or on a national CERT/NCSC as the *only* primary source.
 - [ ] Multi-CVE items carry per-CVE breakdown for fields whose value differs.
 - [ ] `tools/fetch_source.py` was used for CISA + NCSC.ch every run.
 - [ ] `run_log.json` record for today fully populated (model, prompt_version, both sub-agents' allocation, fetch_failures, items_published, verification counters).
 - [ ] § 10 lists single-source items, drops, contradictions, reduced-confidence items, sub-agents that didn't return, parseable `Coverage gaps:`.
 - [ ] State files updated. No content from training data.
-- [ ] **`python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` exits 0** — no FAILs.
 - [ ] **Summary file exists at `briefs/weekly/YYYY-Www.md`** — even on a quiet week, even with sub-agent failures.
 - [ ] **Phase 6 publish verification ran** — the operator output's `publish:` line was set from the actual poll result (`ok` / `main-only` / `pending`), not assumed.
 
@@ -789,8 +796,8 @@ The weekly summary inherits the daily prompt's self-evolution authority and hard
 7. Always produce a summary; never block on a single sub-agent.
 8. No workflow-internal language in the summary itself.
 9. The publishing chain: feature-branch-only push → auto-merge action promotes to main → Phase 6 verification of main + live site. No direct pushes to main.
-10. Phase 3.5 verification sub-agent loop (URL truth + editorial quality, ≤3 iterations, may spawn ≤3 follow-up research sub-agents per iteration).
-11. Phase 4.5 self-check gate via `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` (exits 0 — no FAILs) before commit.
+10. Phase 4.5 mechanical self-check gate via `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` (exits 0 — no FAILs) **before** Phase 4.7 spawns the verifier and again between every Phase 4.7 fix iteration.
+11. Phase 4.7 verification sub-agent loop (URL truth + editorial quality, ≤5 iterations, may spawn ≤3 follow-up research sub-agents per iteration; cap is fail-open safety valve, not goal).
 12. Per-item metadata footer using taxonomy values from `site/taxonomy.yaml`.
 13. Strict CSP and vendored-library SHA-256 integrity check in the build (see `site/build.py`).
 14. `tools/fetch_source.py` is the bridge for CISA + NCSC.ch every run; never let 403/429 on these hosts go un-mitigated.

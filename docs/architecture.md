@@ -95,10 +95,13 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   for known-403 hosts, the discovery-trace return format, and the mandatory
   `**Model:**` self-identification line.
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
-  isolated context, per-role model bound by the agent definition's frontmatter.
-  Phase 4.5 (daily) / Phase 3.5 (weekly) cold-reader verifier, looped
-  iteratively (cap 3, fresh spawn each time, no shared memory). Same
-  self-identification contract.
+  isolated context, per-role model bound by the agent definition's frontmatter
+  (Opus by default since v2.46 — gatekeeper of the publish gate).
+  Phase 5.7 (daily) / Phase 4.7 (weekly) cold-reader verifier, runs AFTER
+  `tools/check_brief.py` exits 0 (cheap mechanical gate first), looped
+  iteratively (cap 5, fresh spawn each time, no shared memory; each iteration
+  re-runs `check_brief.py` between fix and re-spawn). Same self-identification
+  contract.
 
 ### `briefs/` — the canonical output
 
@@ -287,28 +290,9 @@ refuses any post-cut-over item using a value not in this file.
  │ (with prompt-version badge)  │         │
  └──────────┬───────────────────┘         │
             ▼                             │
- ┌──────────────────────────────┐         │
- │ Phase 4.5 — verification     │         │
- │ sub-agent loop (≤3 iters):   │         │
- │  truth gate                  │         │
- │   ─ every URL fetched        │         │
- │   ─ every claim grounded     │         │
- │  editorial-quality gate      │         │
- │   ─ relevance to CH/EU SOC   │         │
- │   ─ vendor advisory ≻ NVD/   │         │
- │     CERT as primary          │         │
- │   ─ drop low-relevance       │         │
- │   ─ deepen unclear items     │         │
- │     (≤3 follow-up subagents) │         │
- │   ─ surface contradictions   │         │
- │   ─ pursue missed angles     │         │
- │ ship at iter cap; residuals  │         │
- │ logged in § Verification     │         │
- └──────────┬───────────────────┘         │
-            ▼                             │
  ┌──────────────────────────────────────────────────────────────┐
- │ Update state/covered_items.json, state/cves_seen.json,       │
- │ state/deep_dive_history.json, state/run_log.json (full       │
+ │ Phase 5 — Update state/covered_items.json, state/cves_seen.  │
+ │ json, state/deep_dive_history.json, state/run_log.json (full │
  │ sub-agent allocation + fetch_failures + verification_         │
  │ iterations + verification_residual_count — Ops dashboard      │
  │ depends on this), sources/sources.json (last-seen, demotions, │
@@ -338,9 +322,28 @@ refuses any post-cut-over item using a value not in this file.
  │                              │   ─ heuristic IOC scan               
  │                              │   ─ taxonomy validation              
  │                              │   ─ site/test_build.py passes        
- │  exit != 0 → abort commit;   │
- │  brief stays on disk; next   │
- │  run rebuilds state from it  │
+ │  exit != 0 → abort the rest  │
+ │  of the run; brief stays on  │
+ │  disk; next run rebuilds     │
+ └──────────┬───────────────────┘
+            ▼
+ ┌──────────────────────────────┐
+ │ Phase 5.7 — verification     │  cti-verification (Opus) loop
+ │ sub-agent loop (≤5 iters):   │  ─ runs only after Phase 5.5 = 0
+ │  truth gate                  │  ─ each iteration: receive report,
+ │   ─ every URL fetched        │    apply fixes, re-update state,
+ │   ─ every claim grounded     │    re-run check_brief.py, then
+ │  editorial-quality gate      │    re-spawn fresh verifier
+ │   ─ relevance to CH/EU SOC   │  ─ CLEAN verdict ⇒ proceed to commit
+ │   ─ vendor advisory ≻ NVD/   │  ─ iteration 5 NEEDS_FIXES ⇒
+ │     CERT as primary          │    fail-open, residuals logged
+ │   ─ drop low-relevance       │
+ │   ─ deepen unclear items     │
+ │     (≤3 follow-up subagents) │
+ │   ─ surface contradictions   │
+ │   ─ pursue missed angles     │
+ │ gate to publish; cap is      │
+ │ safety valve, not goal       │
  └──────────┬───────────────────┘
             ▼
  ┌──────────────────────────────┐
@@ -351,9 +354,11 @@ refuses any post-cut-over item using a value not in this file.
 ```
 
 The agent never bypasses any of these phases — Phase 0 is a hard prerequisite
-for Phase 1, Phase 5 (state update) is a hard prerequisite for Phase 6
-(commit). If a phase fails, the prompt instructs the agent to stop and
-surface the error rather than silently continuing.
+for Phase 1, Phase 5 (state update) is a hard prerequisite for Phase 5.5
+(self-check gate), which is a hard prerequisite for Phase 5.7 (verification
+sub-agent), which is a hard prerequisite for Phase 6 (commit). If a phase
+fails, the prompt instructs the agent to stop and surface the error rather
+than silently continuing.
 
 ## Adding a new component
 
