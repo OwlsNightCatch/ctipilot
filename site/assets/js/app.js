@@ -302,6 +302,7 @@
         var scope = facet.startsWith('brief-') ? 'briefs'
                   : facet.startsWith('topic-') ? 'topics'
                   : facet.startsWith('source-') ? 'sources'
+                  : facet.startsWith('entity-') ? 'entities'
                   : null;
         if (scope) applyFilters(scope);
       });
@@ -357,6 +358,15 @@
         var hay = tr.textContent.toLowerCase();
         var matchText = !q || hay.indexOf(q) >= 0;
         tr.style.display = (matchCat && matchStat && matchText) ? '' : 'none';
+      });
+    } else if (scope === 'entities') {
+      var etype = chipValue('entity-type');
+      document.querySelectorAll('[data-filter-list="entities"] li').forEach(function (li) {
+        var typ = li.dataset.entityType || '';
+        var matchType = etype === 'all' || typ === etype;
+        var hay = li.textContent.toLowerCase();
+        var matchText = !q || hay.indexOf(q) >= 0;
+        li.style.display = (matchType && matchText) ? '' : 'none';
       });
     }
   }
