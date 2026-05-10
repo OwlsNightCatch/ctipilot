@@ -3983,18 +3983,11 @@ def render_ops_page(
 
     # ----- (v2.48) Stale-active-sources MOVED TO /sources/ ----------------
     # The "Stale active sources" panel that previously lived here is now
-    # rendered on /sources/ — alongside the source's reliability, status,
-    # category tags, and lifecycle counters (consecutive_quiet_periods,
-    # consecutive_fetch_failures). One source-of-truth surface; the Ops
-    # dashboard links into it.
-    stale_count = sum(
-        1 for s in (sources or [])
-        if s.get("status") == "active" and (
-            (lf := s.get("last_successful_fetch")) is None
-            or not re.match(r"^\d{4}-\d{2}-\d{2}$", str(lf or ""))
-            or (today - datetime.strptime(lf, "%Y-%m-%d").date()).days > 7  # type: ignore[arg-type]
-        )
-    )
+    # rendered exclusively on /sources/ — alongside the source's
+    # reliability, status, category tags, and lifecycle counters
+    # (consecutive_quiet_periods, consecutive_fetch_failures). The Ops
+    # dashboard no longer surfaces it at all (v2.48 follow-up: the
+    # placeholder block was confusing — the operator just wants it gone).
 
     # ----- KPI tiles --------------------------------------------------------
     last_run_label = _escape(last_run_date or "—")
@@ -4077,13 +4070,6 @@ def render_ops_page(
 <section class="ops-section">
   <h2 class="section-head">Recent runs</h2>
   {runs_table_html}
-</section>
-
-<section class="ops-section">
-  <h2 class="section-head">Stale active sources</h2>
-  <p class="muted">
-    Moved to the <a href="{prefix}sources/">Sources</a> page in v2.48 — alongside reliability, status, and source-lifecycle counters. {stale_count} active source{'' if stale_count == 1 else 's'} currently silent &gt; 7 days. Use the "Stale only" filter chip on /sources/ to drill in.
-  </p>
 </section>
 
 <p class="muted ops-footnote">
