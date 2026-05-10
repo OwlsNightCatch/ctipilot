@@ -894,6 +894,16 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     s = line.strip()
     if not s:
         return None
+    # § 4 Updates (and Phase-0 Immediate-Action callouts) wrap the whole
+    # item in a Markdown blockquote, so the footer line arrives prefixed
+    # with `> ` (or `>`). Strip any blockquote markers — possibly
+    # repeated, possibly with interior whitespace — before matching the
+    # footer regex. Without this every UPDATE entry's footer returns
+    # `None` and its tag / region / sector chips never render.
+    while s.startswith(">"):
+        s = s[1:].lstrip()
+    if not s:
+        return None
     # Match the italic footer line. Source: prefix is no longer required —
     # the TL;DR section emits an aggregate `— *Tags: ... · Region: ...*`
     # tail line that has no Source. We still validate downstream that the
