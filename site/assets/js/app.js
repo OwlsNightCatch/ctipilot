@@ -293,11 +293,22 @@
     document.querySelectorAll('[data-filter-chip]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         var facet = chip.dataset.filterChip;
-        // toggle: only one chip per facet active.
-        document.querySelectorAll('[data-filter-chip="' + facet + '"]').forEach(function (c) {
-          c.classList.remove('active');
+        var siblings = document.querySelectorAll('[data-filter-chip="' + facet + '"]');
+        // Boolean-flag facets (no "All" companion in the sibling set) act as
+        // toggle-on / toggle-off — clicking the active chip again clears it.
+        // Multi-value facets (cat / status / kind) still behave as a radio:
+        // exactly one chip per facet is active at all times.
+        var hasAllCompanion = false;
+        siblings.forEach(function (c) {
+          if (c.dataset.value === 'all') hasAllCompanion = true;
         });
-        chip.classList.add('active');
+        if (!hasAllCompanion) {
+          // Toggle this chip on/off without disturbing siblings.
+          chip.classList.toggle('active');
+        } else {
+          siblings.forEach(function (c) { c.classList.remove('active'); });
+          chip.classList.add('active');
+        }
         // Determine the parent table/list scope from facet prefix:
         var scope = facet.startsWith('brief-') ? 'briefs'
                   : facet.startsWith('topic-') ? 'topics'
@@ -350,14 +361,20 @@
     } else if (scope === 'sources') {
       var cat = chipValue('source-cat');
       var stat = chipValue('source-status');
+      // Boolean-flag chip (toggle on/off, no "All" companion). Active =
+      // show only stale-active rows; inactive = show every row.
+      var staleChip = document.querySelector('[data-filter-chip="source-stale"].active');
+      var staleOnly = !!staleChip;
       document.querySelectorAll('[data-filter-table="sources"] tbody tr').forEach(function (tr) {
         var cats = (tr.dataset.sourceCats || '').split(',').filter(Boolean);
         var st = tr.dataset.sourceStatus || '';
+        var stale = tr.dataset.sourceStale || 'no';
         var matchCat = cat === 'all' || cats.indexOf(cat) >= 0;
         var matchStat = stat === 'all' || st === stat;
+        var matchStale = !staleOnly || stale === 'yes';
         var hay = tr.textContent.toLowerCase();
         var matchText = !q || hay.indexOf(q) >= 0;
-        tr.style.display = (matchCat && matchStat && matchText) ? '' : 'none';
+        tr.style.display = (matchCat && matchStat && matchStale && matchText) ? '' : 'none';
       });
     } else if (scope === 'entities') {
       var etype = chipValue('entity-type');

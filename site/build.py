@@ -4369,20 +4369,27 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     <span class="muted">main agent</span>
   </div>
   {sa_grid}
-  <div class="ops-latest__row">
+  <!-- Verification + Deep-dive share a 2-column row at desktop; on phone
+       they stack. Each is short text/chips, so two columns is plenty. -->
+  <div class="ops-latest__row ops-latest__row--summary">
     <div>
       <h3 class="ops-mini-head">Verification</h3>
       {verif_html}
-    </div>
-    <div>
-      <h3 class="ops-mini-head">Fetch failures</h3>
-      {failures_html}
     </div>
     <div>
       <h3 class="ops-mini-head">Deep dive</h3>
       <p class="mono ops-deep">{_escape(deep_dive)}</p>
     </div>
   </div>
+</div>
+
+<!-- Fetch failures table escapes the .ops-latest card so the 6-column
+     debug table can use the FULL main column width (~1280px) rather than
+     being squeezed into a 1/3-column slot. The .data-wrap inside scrolls
+     horizontally on narrow viewports; on desktop the columns breathe. -->
+<div class="ops-latest__failures">
+  <h3 class="ops-mini-head">Fetch failures (latest run)</h3>
+  {failures_html}
 </div>
 """
 
