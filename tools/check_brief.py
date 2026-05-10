@@ -1263,14 +1263,56 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
         ok("source-urls", f"all {checked} source URL(s) returned HTTP 200 (or UA-blocked allowlisted)")
 
 
+# v2.48 — full bridge-allowlist source-id matchers. Source ids in
+# sources.json are stable strings; here we list the substrings that
+# identify a bridge-allowlisted source (case-insensitive substring match
+# against the lowered source id).
+BRIDGE_REQUIRED_SOURCE_IDS = frozenset({
+    "cisa-kev", "cisa-advisories", "cisa-news", "cisa-directives",
+    "ncsc-ch-security-hub", "ncsc-ch-incidents", "ncsc-ch-focus",
+    "enisa-euvd",
+    "bsi-de", "wid.cert-bund.de", "cert-bund",
+    "advisories-ncsc-nl", "ncsc-nl",
+    "anssi-fr", "cert.ssi.gouv.fr",
+    "cert-eu", "cert-pl", "ncsc-uk",
+    "databreaches-net", "ico-uk",
+    "nccgroup", "ncc-research",
+    "dragos", "sygnia", "ccn-cert-es", "ccn-cert",
+    "talos", "prodaft", "inside-it-ch", "acn", "csirt-acn-it",
+})
+
+# v2.48 — required keys in the rich `fetch_failures` entry shape.
+RICH_FAILURE_REQUIRED_KEYS = (
+    "id", "url_tried", "fetch_method", "status_code",
+    "error_class", "attempted_methods", "mitigation_applied",
+    "covered_anyway",
+)
+
+
+def _failure_id_is_bridge_allowlisted(sid: str) -> bool:
+    """True iff this source id should be fetched via the bridge."""
+    s = (sid or "").lower()
+    return any(needle in s for needle in BRIDGE_REQUIRED_SOURCE_IDS)
+
+
 def check_fetch_source_for_known_403(brief_text: str,
                                       run_log: dict[str, Any] | None,
                                       brief_date: str) -> None:
-    """CISA + NCSC.ch (and a handful of other known-403 publishers) must be
-    fetched via `tools/fetch_source.py`. The Bash invocations live in the run
-    log's `tool_calls` if the agent recorded them, but at minimum: if the
-    brief mentions a CISA / NCSC.ch URL and the run record reports a 403 for
-    that source without a fetch_source.py mitigation, warn the operator."""
+    """CISA + NCSC.ch + every bridge-allowlisted host (v2.48 expanded) must
+    be fetched via `tools/fetch_source.py`. Phase 5.5 surfaces three signals:
+
+    1. **Bridge-required FAIL** (`fetch-failure-bridge-required`) — a
+       fetch_failures entry whose `id` matches a bridge-allowlisted source
+       AND whose `attempted_methods` does NOT contain a `bridge:*` method.
+       The agent went direct on a host where the bridge was the right
+       first move.
+    2. **Legacy 403 FAIL** — preserved for back-compat with v2.47-shape
+       entries (`{id, code: "403"}` without `attempted_methods`): a 403/429
+       on a known-403 source id is treated as unhandled.
+    3. **Rich-shape WARN** (`fetch-failure-detail`) — entry missing one of
+       the v2.48 required keys → flag for upgrade. Legacy entries pass via
+       a back-compat path; new entries that drop a required key fail this.
+    """
     KNOWN_403_HOSTS = ("www.cisa.gov", "cisa.gov", "ncsc.admin.ch", "ncsc.ch")
 
     cited_hosts: set[str] = set()
@@ -1282,8 +1324,6 @@ def check_fetch_source_for_known_403(brief_text: str,
                 cited_hosts.add(k)
                 break
 
-    # Any 403 in fetch_failures whose id maps to a known-403 host is a
-    # transport problem the agent should have handled with fetch_source.py.
     if not run_log:
         if cited_hosts:
             warn("fetch-source-403", f"brief cites {sorted(cited_hosts)}; cannot verify fetch_source.py was used (run_log unavailable)")
@@ -1291,27 +1331,104 @@ def check_fetch_source_for_known_403(brief_text: str,
             ok("fetch-source-403", "no CISA/NCSC.ch URLs cited; nothing to verify")
         return
 
-    # Check today's run for unhandled 403s on known-403 hosts.
     today_runs = [r for r in (run_log.get("runs") or []) if r.get("date") == brief_date]
     if not today_runs:
         warn("fetch-source-403", f"no run_log entry for {brief_date}; cannot verify")
         return
     rec = today_runs[-1]
     failures = rec.get("fetch_failures") or []
-    unhandled: list[str] = []
+
+    # ── 1. Legacy 403 unhandled-on-known-host check ──────────────────────
+    # Back-compat: legacy v2.43–v2.47 entries used `{id, code|status, note:
+    # "handled via bridge fetch_source.py; ..."}`. The `note` substring is
+    # the legacy mitigation marker. v2.48 entries use the rich shape with
+    # `attempted_methods` instead — we accept either as proof the bridge
+    # was used.
+    LEGACY_HANDLED_RE = re.compile(
+        r"handled\s+via|bridge|fetch[_-]?source\.py|mitigated|recovered",
+        re.IGNORECASE,
+    )
+    unhandled_legacy: list[str] = []
     for f in failures:
+        if not isinstance(f, dict):
+            continue
         sid = (f.get("id") or "").lower()
-        code = str(f.get("code") or "")
-        if code in ("403", "429") and any(k.replace(".", "-") in sid or k.split(".")[0] in sid
-                                             for k in KNOWN_403_HOSTS):
-            unhandled.append(f"{sid} ({code})")
-    if unhandled:
+        code = str(f.get("code") or f.get("status_code") or f.get("status") or "")
+        attempted = [m for m in (f.get("attempted_methods") or []) if isinstance(m, str)]
+        note = f.get("note") or ""
+        # Treat as handled if (a) attempted_methods carries a bridge:* call,
+        # OR (b) the legacy `note` explicitly says it was handled / bridged.
+        bridge_handled = (
+            any(m.startswith("bridge:") for m in attempted)
+            or bool(LEGACY_HANDLED_RE.search(note))
+        )
+        if (
+            code in ("403", "429")
+            and not bridge_handled
+            and any(k.replace(".", "-") in sid or k.split(".")[0] in sid for k in KNOWN_403_HOSTS)
+        ):
+            unhandled_legacy.append(f"{sid} ({code})")
+    if unhandled_legacy:
         fail("fetch-source-403",
-             f"403/429 on known-403 hosts not mitigated via tools/fetch_source.py: {unhandled}")
+             f"403/429 on known-403 hosts (CISA/NCSC.ch) not mitigated via tools/fetch_source.py: {unhandled_legacy}")
     elif cited_hosts:
-        ok("fetch-source-403", f"CISA/NCSC.ch cited and no unhandled 403/429 in run_log")
+        ok("fetch-source-403", "CISA/NCSC.ch cited and no unhandled 403/429 in run_log")
     else:
         ok("fetch-source-403", "no CISA/NCSC.ch URLs cited; nothing to verify")
+
+    # ── 2. v2.48 — bridge-required FAIL across the FULL allowlist ────────
+    bridge_skipped: list[str] = []
+    for f in failures:
+        if not isinstance(f, dict):
+            continue
+        sid = (f.get("id") or "").lower()
+        if not _failure_id_is_bridge_allowlisted(sid):
+            continue
+        attempted = [m for m in (f.get("attempted_methods") or []) if isinstance(m, str)]
+        if not attempted:
+            # Legacy entry — treated by the legacy path above; don't double-flag.
+            continue
+        if not any(m.startswith("bridge:") for m in attempted):
+            bridge_skipped.append(
+                f"{sid} (attempted_methods={attempted}, no bridge:* present)"
+            )
+    if bridge_skipped:
+        fail(
+            "fetch-failure-bridge-required",
+            f"v2.48: bridge subcommand not attempted for bridge-allowlisted source(s): {bridge_skipped}. "
+            "These hosts must be fetched via `python3 tools/fetch_source.py …` first; see "
+            "prompts/daily-cti-brief.md § Reinforced rules ¶2 for the per-source subcommand table.",
+        )
+    elif failures:
+        ok("fetch-failure-bridge-required",
+           f"every fetch_failures entry on the bridge allowlist used a bridge:* method")
+
+    # ── 3. v2.48 — rich-shape detail WARN ────────────────────────────────
+    thin_entries: list[str] = []
+    for f in failures:
+        if not isinstance(f, dict):
+            thin_entries.append("non-dict entry")
+            continue
+        # Legacy {id, code} entries are back-compat — flag once per run.
+        is_legacy = "code" in f and "url_tried" not in f and "attempted_methods" not in f
+        if is_legacy:
+            thin_entries.append(f"legacy {{id, code}} for {f.get('id', '?')}")
+            continue
+        missing = [k for k in RICH_FAILURE_REQUIRED_KEYS if k not in f]
+        if missing:
+            thin_entries.append(f"{f.get('id', '?')} missing {missing}")
+    if thin_entries:
+        warn(
+            "fetch-failure-detail",
+            f"v2.48: {len(thin_entries)} fetch_failures entr{'y' if len(thin_entries) == 1 else 'ies'} "
+            f"missing rich-shape detail (sample: {thin_entries[:3]}). "
+            "The Ops dashboard renders these as yellow 'needs-detail' rows. "
+            "Sub-agents must include url_tried, fetch_method, status_code, error_class, attempted_methods, "
+            "mitigation_applied, covered_anyway — see .claude/agents/cti-research.md § fetch_failures.",
+        )
+    elif failures:
+        ok("fetch-failure-detail",
+           f"all {len(failures)} fetch_failures entr{'y' if len(failures) == 1 else 'ies'} carry the v2.48 rich shape")
 
 
 def check_covered_items_appearances(brief_date: str,
@@ -1546,6 +1663,28 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                 f"safety valve, not on a CLEAN verdict. Surface to the Ops dashboard's 7-day "
                 f"rolling cap-breach count.",
             )
+            # v2.48 — cap-breach iteration MUST carry per-finding detail
+            # so the operator can debug WHAT was unresolved. Legacy
+            # iterations (v2.43-v2.47) didn't record this; warn so the
+            # next run captures it. Today's run with no findings[] on
+            # a NEEDS_FIXES iteration is the highest-priority drift to
+            # fix because the dashboard otherwise shows truth=4
+            # editorial=3 advisory=3 with zero context.
+            findings = final_iter.get("findings")
+            if not isinstance(findings, list) or not findings:
+                warn(
+                    "verification-finding-detail",
+                    f"v2.48: cap-breach iteration {final_iter.get('n', vi)} has empty / missing "
+                    "findings[] — the Ops dashboard cannot render WHAT the verifier flagged. "
+                    "The verifier's `### Findings summary (machine-readable)` YAML block must "
+                    "be parsed into iteration.findings[] (one record per F-finding). See "
+                    ".claude/agents/cti-verification.md § Findings summary.",
+                )
+            else:
+                ok(
+                    "verification-finding-detail",
+                    f"cap-breach iteration {final_iter.get('n', vi)} carries {len(findings)} per-finding record(s)",
+                )
 
     # Per-agent model surface (v2.43+). Main agent records its own model;
     # every sub-agent that returned should record the model it self-identified

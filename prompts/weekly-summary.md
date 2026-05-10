@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.47 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.48 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -226,7 +226,7 @@ Per `Agent` call, the prompt is a thin per-domain envelope:
 The sub-agents follow these rules from their system prompt; the main agent applies the same rules when consolidating daily-brief content into the weekly and when re-fetching during verification:
 
 1. **Drill into curated sources.** Index pages, dashboards, listings are routing — citation always points to per-article / per-advisory detail URL. SPA dashboards (e.g. NCSC.ch CSH) need underlying JSON API endpoints fetched per-advisory; cite the canonical SPA detail URL the human would open.
-2. **`tools/fetch_source.py` MANDATORY for CISA + NCSC.ch every run** (KEV catalog + NCSC-CSH listing — skipping means missing both). Phase 4.5 FAILs the commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use. Commands: `python3 tools/fetch_source.py {ncsc-csh recent 10 | ncsc-csh post <ID> | cisa-kev | cisa page <URL> | url <full-URL>}`. 403 on these hosts is **transport-side**, never demotes the source.
+2. **`tools/fetch_source.py` MANDATORY for every host on the bridge allowlist** (v2.48 expanded; same table as the daily prompt — cisa-kev / cisa-{advisories,news,directives} / ncsc-ch-security-hub / enisa-euvd / bsi-de / advisories-ncsc-nl / anssi-fr / cert-eu / cert-pl / ncsc-uk / databreaches-net / ico-uk / nccgroup / dragos / sygnia / ccn-cert-es / talos / prodaft / inside-it-ch / acn.gov.it). Phase 4.5 FAILs the commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use, or an SPA-empty 200 on an SPA-only source without the structured-endpoint subcommand. **403 / SPA-empty on these hosts is transport-side, never demotes the source.**
 3. **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
 4. **`WebFetch` outbound-links template** (in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md)) **not optional** — without the explicit "Outbound links" ask, `WebFetch` returns prose-only and the news → primary pivot collapses.
 5. **Source-link discipline** — only fetched URLs; specific page never landing; first link most primary, include every other URL as `· Additional source:`; news-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 10); if unsure, drop.
@@ -512,7 +512,19 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
     },
     "W2": { /* same shape as W1 */ }
   },
-  "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
+  "fetch_failures": [                                         // v2.48 — RICH SHAPE; legacy `{id, code}` still parses but the dashboard renders it as a yellow "needs-detail" row
+    {
+      "id": "cisa-kev",
+      "url_tried": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "fetch_method": "webfetch",
+      "status_code": 403,
+      "error_class": "transport-403",
+      "error_message": "WebFetch returned HTTP 403 ...",
+      "attempted_methods": ["webfetch", "bridge:cisa-kev"],
+      "mitigation_applied": "bridge:cisa-kev → 200 OK",
+      "covered_anyway": true
+    }
+  ],
   "items_published": N,                                       // total H3 items in the summary
   "items_dropped_by_verification": N,                         // from Phase 4.7 Drop / hallucination drops
   "verification_iterations": N,                               // ≤5 (legacy scalar, still required)

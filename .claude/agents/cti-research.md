@@ -113,23 +113,43 @@ printf '%s\t%s\t%s\n' "<url>" "<status_code>" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 
 The Phase 5.5 `tools/check_brief.py` URL-liveness check reads this ledger and trusts its records: any URL the ledger lists as `200` (or `2xx`) within this run skips the script's own HEAD/GET re-fetch. This kills SSL-cert / anti-bot 403 noise on URLs you've already verified live, without weakening the gate (URLs not in the ledger are still re-fetched fresh).
 
-## Bridge fetcher — MANDATORY for known-403 hosts
+## Bridge fetcher — MANDATORY for known-403 / SPA-only hosts (v2.48 expanded)
 
-CISA `cisa.gov`/KEV, Swiss NCSC `ncsc.admin.ch` Cyber Security Hub, CSIRT Italia `acn.gov.it`, UK ICO `ico.org.uk`, Inside IT `inside-it.ch`, PRODAFT `prodaft.com`, DataBreaches.net, NCC Group, occasionally Cisco Talos and others reliably 403 the default UA. Per-source `fetch_method` and `notes` in `sources.json` flag which method to use.
+The full bridge allowlist is in [`tools/fetch_source.py`](../../tools/fetch_source.py); these hosts either 403 the default UA, return an empty SPA shell, or need a structured-endpoint fetch the bridge can do:
 
-For these hosts: **do NOT call `WebFetch` first** — go straight to the bridge:
+| Source / source-id | Bridge subcommand (use this FIRST — do NOT try `WebFetch` first) |
+|---|---|
+| `cisa-kev` (KEV catalog) | `python3 tools/fetch_source.py cisa-kev` |
+| `cisa-advisories` / `cisa-news` / `cisa-directives` | `python3 tools/fetch_source.py cisa page <URL>` |
+| `ncsc-ch-security-hub` | `python3 tools/fetch_source.py ncsc-csh recent 10` then `ncsc-csh post <ID>` |
+| `enisa-euvd` (v2.48) | `python3 tools/fetch_source.py enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` |
+| `bsi-de` / `wid.cert-bund.de` (v2.48) | `python3 tools/fetch_source.py bsi-rss` then `url <per-advisory URL>` |
+| `advisories-ncsc-nl` (v2.48) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN> [version]` |
+| `anssi-fr` / `cert.ssi.gouv.fr` (v2.48) | `python3 tools/fetch_source.py url <per-advisory URL>` |
+| `cert-eu` / `cert-pl` / `ncsc-uk` (v2.48) | `python3 tools/fetch_source.py url <URL>` |
+| `databreaches-net`, `ico-uk`, `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `prodaft`, `inside-it-ch`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` |
 
-```bash
-python3 tools/fetch_source.py url <URL>           # any allow-listed host
-python3 tools/fetch_source.py cisa-kev            # CISA KEV JSON
-python3 tools/fetch_source.py cisa page <URL>     # CISA HTML
-python3 tools/fetch_source.py ncsc-csh recent 10  # Swiss NCSC dashboard listing
-python3 tools/fetch_source.py ncsc-csh post <ID>  # individual NCSC-CSH post
+**Bridge-first rule** — for any host on the table above, your **first attempt** is the bridge subcommand, not `WebFetch`. The bridge enforces a host allow-list and forwards a desktop-Chrome UA, read-only. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the bridge ALSO fails (e.g. CCN-CERT geo-block, ENISA EUVD API outage), you've hit a real coverage gap — record it in `fetch_failures` per the schema below.
+
+## fetch_failures reporting — MANDATORY rich-shape entry per failure (v2.48)
+
+When you fetch a source and the result is a transport error, an SPA-empty body, a paywall HTML, or any other unusable outcome — **even if you recovered via the bridge** — you MUST report it back to the main agent so the entry lands in `state/run_log.json.fetch_failures` and surfaces on the Ops dashboard. Don't drop entries when you recovered: the recovery itself is the audit trail. An empty `fetch_failures[]` only means **no source was ever non-200 in this run**, which is rare in practice.
+
+For every failure include — verbatim — the following fields in your return (a `## Fetch failures` section at the bottom of your sub-agent return is the canonical place):
+
+```
+- id: <source id from sources.json>
+  url_tried: <exact URL the agent attempted, verbatim>
+  fetch_method: webfetch | websearch | bridge:cisa-kev | bridge:url | bridge:ncsc-csh.recent | bridge:enisa-euvd.recent | bridge:bsi-rss | bridge:ncsc-nl.csaf | …
+  status_code: <HTTP status — 200 if a body returned but unusable>
+  error_class: transport-403 | transport-429 | transport-5xx | transport-tls | transport-dns | transport-timeout | spa-empty-body | paywall | robots-blocked | geo-blocked | rate-limited | other
+  error_message: <verbatim error text, truncated to ~200 chars>
+  attempted_methods: [webfetch, bridge:cisa-kev]   # ordered list of every method tried for this source in this run
+  mitigation_applied: <the recovery the agent performed, e.g. "bridge:cisa-kev → 200 OK", or "none" if uncovered>
+  covered_anyway: true | false
 ```
 
-The bridge enforces a host allow-list and forwards a desktop-Chrome UA, read-only. **403 on these hosts is transport-side**, never demotes the source. If the bridge ALSO 403s (e.g. CCN-CERT geo-block), surface as a coverage gap.
-
-Use the bridge for any allow-listed host the moment its `WebFetch` returns 403.
+The main agent parses this section and writes the entries to `run_log.json.fetch_failures`. Phase 5.5 `tools/check_brief.py` validates the rich shape (back-compat WARN on legacy `{id, code}` entries) and FAILs the commit when an `id` on the bridge allowlist appears with `attempted_methods` that do NOT contain a `bridge:*` method. Sub-agents that omit the section land in the dashboard as a yellow "thin failure record" badge — the operator can't debug what they don't see.
 
 ## Discovery trace — MANDATORY for every item
 

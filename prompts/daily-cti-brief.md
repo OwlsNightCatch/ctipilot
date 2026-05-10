@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.47 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.48 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -195,7 +195,21 @@ Keep the spawn message tight — the sub-agent's system prompt already covers *h
 The sub-agents follow these rules from their system prompt; the main agent applies the same rules when consolidating sub-agent returns and when re-fetching during verification:
 
 1. **Drill into curated sources.** Index pages, dashboards, listings are routing — citation always points to per-article / per-advisory detail URL. SPA dashboards (e.g. NCSC.ch CSH) need underlying JSON API endpoints fetched per-advisory; cite the canonical SPA detail URL.
-2. **`tools/fetch_source.py` MANDATORY for CISA + NCSC.ch every run** (KEV catalog + NCSC-CSH listing — skipping means missing both). Phase 5.5 FAILs commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use. Commands: `python3 tools/fetch_source.py {ncsc-csh recent 10 | ncsc-csh post <ID> | cisa-kev | cisa page <URL> | url <full-URL>}`. 403 on these hosts is **transport-side**, never demotes the source.
+2. **`tools/fetch_source.py` MANDATORY for every host on the bridge allowlist** (v2.48 expanded). Phase 5.5 FAILs commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use; v2.48 also FAILs when an SPA-only host (ENISA EUVD, advisories.ncsc.nl, wid.cert-bund.de) recorded a `code:200 + reason:"empty body"` failure without the agent attempting the bridge's structured endpoint. Always-mandatory list of bridge subcommands a daily run should attempt:
+
+   | Source / source-id | Bridge subcommand | Why WebFetch fails |
+   |---|---|---|
+   | `cisa-kev` (KEV catalog) | `python3 tools/fetch_source.py cisa-kev` | 403 on default UA |
+   | `cisa-advisories` / `cisa-news` / `cisa-directives` | `python3 tools/fetch_source.py cisa page <URL>` | 403 on default UA |
+   | `ncsc-ch-security-hub` | `python3 tools/fetch_source.py ncsc-csh recent 10` then `ncsc-csh post <ID>` | SPA shell only |
+   | `enisa-euvd` (v2.48) | `python3 tools/fetch_source.py enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` | SPA shell only |
+   | `bsi-de` (WID-SEC) (v2.48) | `python3 tools/fetch_source.py bsi-rss` then `url <per-advisory URL>` | per-advisory HTML needs browser UA |
+   | `advisories-ncsc-nl` (v2.48) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN> [version]` | CSAF JSON only — listing is SPA |
+   | `anssi-fr` (CERT-FR) (v2.48) | `python3 tools/fetch_source.py url https://www.cert.ssi.gouv.fr/avis/CERTFR-...` | per-advisory HTML needs browser UA |
+   | `cert-eu`, `cert-pl`, `ncsc-uk` (v2.48) | `python3 tools/fetch_source.py url <URL>` | listing returns empty without browser UA |
+   | `databreaches-net`, `ico-uk`, `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `prodaft`, `inside-it-ch`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` | various 403 / Cloudflare / TLS quirks |
+
+   **403 on these hosts is transport-side, never demotes the source.** A 403 / 429 / SPA-empty `WebFetch` outcome on any bridge-allowlisted host where the bridge subcommand was NOT attempted is a Phase 5.5 FAIL (`fetch-source-403`). The agent's first try on these hosts must be the bridge — no `WebFetch` first.
 3. **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources are discovery only — follow the links, cite the primaries.
 4. **`WebFetch` outbound-links template** (in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md)) **not optional** — without the explicit "Outbound links" ask, `WebFetch` returns prose-only and the news → primary pivot collapses.
 5. **Source-link discipline** — only fetched URLs; specific page never landing; first link most primary, include every other URL as `· Additional source:`; news-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 7); if unsure, drop.
@@ -540,7 +554,30 @@ Append one record per run, then trim to 90 most recent. **`run_id` is mandatory 
     "S3": { /* same shape as S1 */ },
     "S4": { /* same shape as S1 */ }
   },
-  "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
+  "fetch_failures": [                                         // v2.48 — RICH SHAPE; legacy `{id, code}` still parses but the dashboard renders it as a yellow "needs-detail" row
+    {
+      "id": "cisa-kev",                                       // source id from sources.json (REQUIRED)
+      "url_tried": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",  // exact URL the agent attempted (REQUIRED — verbatim, not a homepage)
+      "fetch_method": "webfetch",                             // "webfetch" | "websearch" | "bridge:cisa-kev" | "bridge:url" | "bridge:ncsc-csh.recent" | "bridge:enisa-euvd.recent" | "bridge:bsi-rss" | "bridge:ncsc-nl.csaf" | etc. (REQUIRED)
+      "status_code": 403,                                     // HTTP status; 200 if body returned but unusable (SPA empty, paywall HTML)
+      "error_class": "transport-403",                         // "transport-403" | "transport-429" | "transport-5xx" | "transport-tls" | "transport-dns" | "transport-timeout" | "spa-empty-body" | "paywall" | "robots-blocked" | "geo-blocked" | "rate-limited" | "other"
+      "error_message": "WebFetch returned HTTP 403 ...",      // the actual error text the tool returned (truncated to ~200 chars)
+      "attempted_methods": ["webfetch", "bridge:cisa-kev"],   // ordered list of every method tried for this source in this run
+      "mitigation_applied": "bridge:cisa-kev → 200 OK",       // what the agent did to recover, or "none" if the source ended up uncovered for the run
+      "covered_anyway": true                                  // true if the recovery succeeded and the source contributed content; false if the source was a coverage gap for this run
+    },
+    {
+      "id": "enisa-euvd",
+      "url_tried": "https://euvd.enisa.europa.eu/",
+      "fetch_method": "webfetch",
+      "status_code": 200,
+      "error_class": "spa-empty-body",
+      "error_message": "WebFetch returned HTML shell only; SPA renders client-side",
+      "attempted_methods": ["webfetch", "bridge:enisa-euvd.recent"],
+      "mitigation_applied": "bridge:enisa-euvd.recent → fetched 50 entries",
+      "covered_anyway": true
+    }
+  ],
   "items_published": N,                                       // total H3 items in the brief
   "items_dropped_by_verification": N,                         // from Phase 5.7 Drop / hallucination drops
   "deep_dive": "topic-slug or null",
@@ -572,7 +609,7 @@ Append one record per run, then trim to 90 most recent. **`run_id` is mandatory 
 - `verification_residual_count` = `0` when the final iteration's `verdict` is `CLEAN`; `(final_iter.truth + final_iter.editorial)` when the final iteration's `verdict` is `NEEDS_FIXES` (cap reached without CLEAN). Advisory (F11) is excluded — F11 alone never blocks CLEAN. **Never `0` when the final verdict was `NEEDS_FIXES`.** `tools/check_brief.py` `run-log-verification-residual` cross-checks this against the per-iteration block and FAILs on a mismatch.
 - `sources_attempted` = every source id put in the sub-agent's spawn message (don't write `[]` unless sub-agent explicitly skipped). `sources_used` = subset that contributed ≥1 citation.
 - `returned: false` only when stalled past 10-min budget (renders as `stalled` badge).
-- `fetch_failures` = every transport error with source id + HTTP code; `[]` when none (dashboard renders `0` for empty, yellow badge for non-empty).
+- `fetch_failures` (v2.48 rich shape) = every transport / SPA-empty / paywall / unusable-body outcome you encountered for any active source in this run, regardless of whether you recovered. **Every entry must carry `id`, `url_tried` (verbatim), `fetch_method`, `status_code`, `error_class`, `error_message`, `attempted_methods` (ordered), `mitigation_applied`, `covered_anyway`.** Don't drop entries when you recovered via the bridge — the recovery itself is the audit trail; an empty `fetch_failures` only means **no source was ever non-200 in this run**, which is rare. The Ops dashboard renders one row per entry with the URL, the mitigation chain, and the recovery outcome — that's how you debug a recurring failure.
 - `prompt_version` from most recent heading in `prompts/CHANGELOG.md` (dashboard surfaces prompt-version drift against the brief's footer).
 - `model` / `model_id` for the **main agent** record YOUR model — the friendly name you wrote in the AI-content notice and the canonical id you wrote in backticks. **Don't guess** — if you cannot pin your model, write `unknown` and the dashboard surfaces a warning.
 - `model` / `model_id` per sub-agent come **verbatim** from the sub-agent's `**Model:**` line, not inferred. Missing line → `unknown`. The dashboard's per-run "models used" set distinguishes runs where the operator changed the runtime config from runs where one sub-agent forgot to self-identify.
@@ -670,7 +707,40 @@ The spawn message is short:
 - Iteration cap **5**. Each iteration spawns a **fresh** `cti-verification` sub-agent (no shared memory; reads the brief from disk).
 - **Run `tools/check_brief.py` between iterations** — non-zero exit blocks the next verifier spawn until fixed.
 - **Follow-up `cti-research` sub-agents** for `Needs more research` / `Missed angles` capped at **3 per iteration**, 30-min wall-clock per sub-agent (same as Phase 1).
-- **Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
+- **Capture the verifier's model, timestamps, AND the actual findings on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`, then the `### F1 …` / `### F2 …` numbered finding sections. Append a record to `state/run_log.json.verification.iterations[]` for every iteration:
+
+  ```jsonc
+  {
+    "n": N,
+    "model": "<friendly>",
+    "model_id": "<model-id>",
+    "started_at": "<UTC ISO 8601>",
+    "ended_at": "<UTC ISO 8601>",
+    "duration_seconds": N,
+    "verdict": "CLEAN | NEEDS_FIXES",
+    "truth": N,                                              // F1–F4 count
+    "editorial": N,                                          // F5–F10 + F12 count
+    "advisory": N,                                           // F11 count
+    "findings": [                                            // v2.48 — RICH per-finding records (REQUIRED on every iteration)
+      {
+        "code": "F1",                                        // F1..F12
+        "category": "broken-url",                            // human-readable category slug
+        "section": "active-threats",                         // brief section the finding lives in
+        "item": "Groupe 3R Akira ransomware — 48 GB ...",   // first ~80 chars of the H3 heading (or the TL;DR bullet text)
+        "url_or_quote": "https://www.example.com/missing",   // the URL flagged, or the verbatim quote (truncated ~120 chars)
+        "summary": "404 — page redirects to homepage",       // the verifier's one-line reasoning
+        "remediation_applied": "replaced with vendor PSIRT URL https://...",  // what the main agent did about it (or "deferred to next iteration", or "kept in § 7 as residual")
+        "remediation_outcome": "fixed-clean"                 // "fixed-clean" | "fixed-degraded" | "dropped-item" | "deferred" | "residual-at-cap"
+      }
+      // one entry per numbered finding the verifier returned. Iterations
+      // that returned CLEAN have findings: []. **Last iteration's findings[]
+      // is the cap-breach detail the operator needs on /ops/.**
+    ],
+    "telemetry": { /* ... when reported ... */ }
+  }
+  ```
+
+  The Ops dashboard renders one row per iteration with the verifier model, duration, and **per-finding details for the final iteration** (the cap-breach signal). Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`. Missing `findings[]` (legacy v2.43–v2.47 records) → empty array; the dashboard renders the legacy `truth/editorial/advisory` scalars in that case but flags the iteration with a yellow "no per-finding detail recorded" badge.
 - Track in `state/run_log.json`: `verification_iterations`, `verification_residual_count`, **`verification.iterations[]`** (per-iteration breakdown; the legacy two scalar fields stay for back-compat with older briefs). **`verification_residual_count` semantics (corrected v2.47):** when the **final** iteration's verdict is `CLEAN`, `verification_residual_count = 0`. When the final iteration's verdict is `NEEDS_FIXES` (cap reached without CLEAN), `verification_residual_count = (final_iter.truth + final_iter.editorial)` — F11 advisory excluded because F11 alone never blocks CLEAN. **Counting it 0 on a NEEDS_FIXES final iteration silently absorbs an editorial-quality drift the gatekeeper was supposed to catch — that mistake is what the v2.47 cap-breach yellow signal corrects.** The `tools/check_brief.py` `cap-breach` WARN reads this field and surfaces the cap-breach to the operator's Ops dashboard.
 - If verifier itself fails (timeout past 30 min, no return), publish anyway and note in § 7.
 - **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.

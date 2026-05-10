@@ -170,6 +170,26 @@ End with a `### Verdict` block:
 - `CLEAN` — no findings, or only F11 advisory items the main agent can leave. **This is the verdict that lets the brief publish.** Issue it the moment the brief is genuinely ready — don't manufacture findings just to look thorough; a CLEAN verdict on a defect-free brief is the success outcome, not a sign you weren't critical enough.
 - `NEEDS_FIXES (truth: <N>, editorial: <M>, advisory: <K>)` — counts of F1–F4 (truth), F5–F10 + F12 (editorial), F11 (advisory). F12 is editorial: an unflagged single-source item is an editorial-quality drift the reader should see flagged, not a truth defect. Every count must correspond to a numbered finding above with quoted evidence. Padded counts inflate iteration cost without improving the brief.
 
+**v2.48 — `findings[]` machine-readable summary (mandatory below the human report).** After the human-readable F1…Fn sections and the verdict line, append a fenced YAML block titled `### Findings summary (machine-readable)` that lists one record per numbered finding with the fields the main agent stamps into `state/run_log.json.verification.iterations[<n>].findings[]`:
+
+```yaml
+# Findings summary (machine-readable) — v2.48
+- code: F1
+  category: broken-url
+  section: active-threats
+  item: "Groupe 3R Akira ransomware — 48 GB ..."
+  url_or_quote: "https://www.example.com/missing"
+  summary: "404 — page redirects to homepage"
+- code: F6
+  category: strengthen-primary-source
+  section: trending-vulnerabilities
+  item: "CVE-2026-XXXXX — VendorX ProductY"
+  url_or_quote: "https://nvd.nist.gov/vuln/detail/CVE-2026-XXXXX"
+  summary: "only NVD cited; vendor PSIRT exists at https://psirt.vendor.com/CVE-2026-XXXXX"
+```
+
+`category` slugs match the F-code labels: `broken-url` (F1), `generic-url` (F2), `claim-not-supported` (F3), `hallucinated-fact` (F4), `missing-citation` (F5), `strengthen-primary-source` (F6), `drop` (F7), `needs-more-research` (F8), `surface-contradiction` (F9), `missed-angle` (F10), `editorial-advisory` (F11), `single-source-flag-missing` (F12). The block is empty (`[]`) on a CLEAN verdict. The main agent appends each record to `findings[]` and adds `remediation_applied` + `remediation_outcome` after acting on it. **The cap-breach iteration's `findings[]` is what the operator sees on the Ops dashboard** — without it the operator can't debug WHAT the verifier flagged in the iteration that pushed the brief through the safety valve.
+
 The main agent loops: receives your report → applies remediations per finding category → re-runs `python3 tools/check_brief.py` to confirm the mechanical gate still passes → re-spawns a **fresh** verifier (you again, but new instance with no memory of this iteration) → reads cold from disk → repeats. **Hard cap 5 iterations.** Iteration 5 still NEEDS_FIXES → publish anyway as a fail-open safety valve, with your unresolved findings logged in § Verification Notes and a `verification: 5 iterations exhausted, residual count N` line in the run log. Reaching iteration 5 is a quality regression for both the brief AND for you — every cap-breach is reviewed after-the-fact for whether the verifier was finding real defects or chasing fabricated ones.
 
 ## Hard rules

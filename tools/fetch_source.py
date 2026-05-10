@@ -24,17 +24,25 @@ The script will NEVER:
 - Run third-party JS or load any other origin.
 
 Usage:
-    python3 tools/fetch_source.py url <URL>             # plain GET with browser UA, prints body
-    python3 tools/fetch_source.py ncsc-csh list [N]     # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
-    python3 tools/fetch_source.py ncsc-csh post <ID>    # one TLP:CLEAR post (Markdown body + metadata)
-    python3 tools/fetch_source.py ncsc-csh recent [N]   # combined: list + each post's full content (default 10)
-    python3 tools/fetch_source.py cisa-kev              # full CISA KEV JSON catalog
-    python3 tools/fetch_source.py cisa page <URL>       # CISA HTML advisory / news page (browser UA)
+    python3 tools/fetch_source.py url <URL>                          # plain GET with browser UA, prints body
+    python3 tools/fetch_source.py ncsc-csh list [N]                  # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
+    python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
+    python3 tools/fetch_source.py ncsc-csh recent [N]                # combined: list + each post's full content (default 10)
+    python3 tools/fetch_source.py cisa-kev                           # full CISA KEV JSON catalog
+    python3 tools/fetch_source.py cisa page <URL>                    # CISA HTML advisory / news page (browser UA)
+    # v2.48 — additional bridge endpoints for known-403 / SPA-only sources
+    python3 tools/fetch_source.py enisa-euvd recent [KIND]           # KIND ∈ lastvulnerabilities (default) | criticals | exploited
+    python3 tools/fetch_source.py enisa-euvd advisory <ID>           # one EUVD advisory by id (e.g. EUVD-2025-12345)
+    python3 tools/fetch_source.py bsi-rss                            # BSI cert-bund WID-SEC RSS feed (XML)
+    python3 tools/fetch_source.py ncsc-nl csaf <ID> [VERSION]        # Dutch NCSC CSAF advisory (e.g. NCSC-2025-0432, default v1)
 
 Examples:
     python3 tools/fetch_source.py ncsc-csh recent 5
     python3 tools/fetch_source.py ncsc-csh post 12542
     python3 tools/fetch_source.py cisa-kev | jq '.vulnerabilities | length'
+    python3 tools/fetch_source.py enisa-euvd recent criticals | jq '. | length'
+    python3 tools/fetch_source.py bsi-rss | grep -c '<item>'
+    python3 tools/fetch_source.py ncsc-nl csaf NCSC-2025-0432 1
     python3 tools/fetch_source.py url https://www.cisa.gov/news-events/cybersecurity-advisories
 """
 
@@ -125,7 +133,8 @@ ALLOWED_HOSTS = frozenset({
     "www.prodaft.com", "prodaft.com",
     # Inside-IT Switzerland (Swiss IT industry news)
     "www.inside-it.ch", "inside-it.ch",
-    # UK Information Commissioner's Office (data-breach notices)
+    # UK Information Commissioner's Office (data-breach notices) — JS-rendered listing,
+    # but per-incident /action-weve-taken/<slug>/ pages render server-side
     "ico.org.uk", "www.ico.org.uk",
     # DataBreaches.net — independent breach tracker (403's WebFetch UA, added 2026-05-08)
     "databreaches.net", "www.databreaches.net",
@@ -137,6 +146,31 @@ ALLOWED_HOSTS = frozenset({
     "www.sygnia.co", "sygnia.co",
     # CCN-CERT Spain (kept in case the geo block ever lifts; currently 403 even via bridge)
     "www.ccn-cert.cni.es", "ccn-cert.cni.es",
+    # ─── v2.48 expansion (added 2026-05-10) ───────────────────────────
+    # ENISA EUVD — SPA dashboard, but exposes a JSON REST API at
+    # /enisaeuvd/api/criticals + /api/exploited + per-CVE /api/vulnerability/<id>.
+    # The bridge fetches the JSON directly; the SPA dashboard URL is
+    # what the brief cites for the human-reader landing.
+    "euvd.enisa.europa.eu",
+    # BSI cert-bund — RSS feed at /content/public/securityAdvisory/rss
+    # works; the per-advisory HTML pages return empty without browser
+    # rendering. Bridge supports the RSS feed and per-WID-SEC pages.
+    "wid.cert-bund.de",
+    # Dutch NCSC — CSAF advisories. The /advisories/ listing is an SPA
+    # but per-advisory CSAF JSON at /advisory/<id>/v<n>/<id>.json is
+    # plain JSON. Bridge fetches the CSAF JSON directly.
+    "advisories.ncsc.nl", "www.ncsc.nl", "ncsc.nl",
+    # CERT-FR France — /avis/ index is RSS-only; per-advisory pages need
+    # a browser UA. Bridge handles both.
+    "www.cert.ssi.gouv.fr", "cert.ssi.gouv.fr",
+    # CERT-EU — security advisories index is RSS-only; per-advisory pages
+    # need the browser UA.
+    "cert.europa.eu", "www.cert.europa.eu",
+    # NCSC-NL — main site (separate from CSAF advisories above).
+    # CERT-PL — /en/news/ listing returns empty without browser UA.
+    "cert.pl", "www.cert.pl",
+    # NCSC-UK — /section/keep-up-to-date/reports-advisories
+    "www.ncsc.gov.uk", "ncsc.gov.uk",
 })
 
 NCSC_CSH_BASE = "https://security-hub.ncsc.admin.ch"
@@ -420,6 +454,69 @@ def cisa_kev() -> Any:
     return fetch_json(CISA_KEV_JSON)
 
 
+# ── ENISA EUVD helpers (v2.48 — added 2026-05-10) ─────────────────────
+#
+# The ENISA EU Vulnerability Database SPA at https://euvd.enisa.europa.eu/
+# returns an empty <noscript> shell to WebFetch. The underlying REST API
+# is plain JSON and works fine with the bridge's UA. Useful endpoints
+# (verified 2026-05-10):
+#   /enisaeuvd/api/criticals             — CVSS 9.0–10.0 entries
+#   /enisaeuvd/api/exploited             — exploited=true entries
+#   /enisaeuvd/api/vulnerability/<id>    — single advisory
+#   /enisaeuvd/api/lastvulnerabilities   — most recent N
+#
+# Brief citations should always point at the SPA detail URL
+# (https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/<id>) —
+# the bridge gives the agent the data, not the citation.
+ENISA_EUVD_BASE = "https://euvd.enisa.europa.eu"
+
+
+def enisa_euvd_recent(kind: str = "lastvulnerabilities") -> Any:
+    """Fetch one of the EUVD listing endpoints. `kind` ∈
+    {`lastvulnerabilities`, `criticals`, `exploited`}."""
+    if kind not in ("lastvulnerabilities", "criticals", "exploited"):
+        raise ValueError(f"unknown EUVD kind: {kind!r}")
+    return fetch_json(f"{ENISA_EUVD_BASE}/enisaeuvd/api/{kind}")
+
+
+def enisa_euvd_advisory(advisory_id: str) -> Any:
+    """Fetch one EUVD entry by advisory id (e.g. `EUVD-2025-12345`)."""
+    if not re.match(r"^[A-Za-z0-9-]+$", advisory_id):
+        raise ValueError(f"refused: invalid advisory id {advisory_id!r}")
+    return fetch_json(f"{ENISA_EUVD_BASE}/enisaeuvd/api/vulnerability/{advisory_id}")
+
+
+# ── BSI cert-bund (Germany) ──────────────────────────────────────────
+#
+# The BSI WID-SEC RSS feed at /content/public/securityAdvisory/rss is
+# stable and the only reliable way to enumerate recent advisories;
+# per-advisory HTML pages need browser rendering. The bridge can fetch
+# both, and the agent cites the advisory page.
+BSI_RSS_URL = "https://wid.cert-bund.de/content/public/securityAdvisory/rss"
+
+
+def bsi_rss() -> str:
+    return fetch_text(BSI_RSS_URL, accept="application/rss+xml, application/xml, */*;q=0.5")
+
+
+# ── Dutch NCSC (advisories.ncsc.nl) ──────────────────────────────────
+#
+# The /advisories/ listing is an SPA, but each advisory exposes a CSAF
+# JSON document at:
+#   https://advisories.ncsc.nl/advisory/<id>/v<version>/<id>.json
+# (the version typically starts at 1 and increments on revisions). The
+# bridge fetches the CSAF JSON; the agent cites the SPA detail URL.
+def ncsc_nl_csaf(advisory_id: str, version: int = 1) -> Any:
+    """Fetch the CSAF JSON for a Dutch-NCSC advisory by id + version.
+    Advisory id format: `NCSC-YYYY-NNNN` (e.g. `NCSC-2025-0432`)."""
+    if not re.match(r"^[A-Z0-9-]+$", advisory_id):
+        raise ValueError(f"refused: invalid advisory id {advisory_id!r}")
+    if not isinstance(version, int) or version < 1 or version > 99:
+        raise ValueError(f"refused: invalid version {version!r}")
+    url = f"https://advisories.ncsc.nl/advisory/{advisory_id}/v{version}/{advisory_id}.json"
+    return fetch_json(url)
+
+
 # ── CLI ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str]) -> int:
@@ -444,6 +541,22 @@ def main(argv: list[str]) -> int:
     cisa_sub = p_cisa_page.add_subparsers(dest="cisa_cmd", required=True)
     p_cisa_html = cisa_sub.add_parser("page", help="HTML page with browser UA")
     p_cisa_html.add_argument("url")
+
+    # v2.48 — additional bridge endpoints for known-403 / SPA-only sources.
+    p_euvd = sub.add_parser("enisa-euvd", help="ENISA EU Vulnerability Database (JSON)")
+    euvd_sub = p_euvd.add_subparsers(dest="euvd_cmd", required=True)
+    p_euvd_recent = euvd_sub.add_parser("recent", help="recent / criticals / exploited listings")
+    p_euvd_recent.add_argument("kind", choices=["lastvulnerabilities", "criticals", "exploited"], nargs="?", default="lastvulnerabilities")
+    p_euvd_one = euvd_sub.add_parser("advisory", help="single EUVD advisory by id (e.g. EUVD-2025-12345)")
+    p_euvd_one.add_argument("id")
+
+    p_bsi = sub.add_parser("bsi-rss", help="BSI cert-bund WID-SEC RSS feed (XML)")
+
+    p_ncscnl = sub.add_parser("ncsc-nl", help="Dutch NCSC CSAF advisories (JSON)")
+    ncscnl_sub = p_ncscnl.add_subparsers(dest="ncscnl_cmd", required=True)
+    p_ncscnl_csaf = ncscnl_sub.add_parser("csaf", help="one NCSC-NL advisory CSAF JSON")
+    p_ncscnl_csaf.add_argument("id", help="advisory id, e.g. NCSC-2025-0432")
+    p_ncscnl_csaf.add_argument("version", type=int, nargs="?", default=1, help="CSAF revision (default 1)")
 
     args = p.parse_args(argv)
 
@@ -471,6 +584,21 @@ def main(argv: list[str]) -> int:
                     return 2
                 sys.stdout.write(fetch_text(args.url))
                 return 0
+        if args.cmd == "enisa-euvd":
+            if args.euvd_cmd == "recent":
+                json.dump(enisa_euvd_recent(args.kind), sys.stdout, indent=2)
+            elif args.euvd_cmd == "advisory":
+                json.dump(enisa_euvd_advisory(args.id), sys.stdout, indent=2)
+            sys.stdout.write("\n")
+            return 0
+        if args.cmd == "bsi-rss":
+            sys.stdout.write(bsi_rss())
+            return 0
+        if args.cmd == "ncsc-nl":
+            if args.ncscnl_cmd == "csaf":
+                json.dump(ncsc_nl_csaf(args.id, args.version), sys.stdout, indent=2)
+                sys.stdout.write("\n")
+            return 0
     except (RuntimeError, ValueError) as e:
         print(f"fetch_source: {e}", file=sys.stderr)
         return 1

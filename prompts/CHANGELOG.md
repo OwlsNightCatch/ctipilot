@@ -4,6 +4,32 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.48 — 2026-05-10 (bridge fetcher expanded to all known-403 / SPA-only sources, rich `fetch_failures` schema, per-finding verification detail, /sources/ owns stale-source surface)
+
+### Why
+Operator review of the v2.47 2026-05-10 run flagged seven sources where the routine recorded `fetch_failures` but the entries were too thin to debug — `cisa-kev 403`, `ncsc-ch-security-hub 403`, `enisa-euvd 200` (SPA empty), `wid.cert-bund.de 200` (RSS-only), `advisories.ncsc.nl 200` (CSAF SPA), `databreaches-net 403`, `ico-uk` — and noted that the agents should be using the bridge fetcher for most of them but weren't. The verification-iteration records also lacked per-finding detail, so the operator couldn't see WHAT the verifier flagged in the cap-breach iteration without reading the brief's § 7. And the Ops dashboard's "Stale active sources (>7 days since last successful fetch)" panel duplicated information already on /sources/ — the operator wanted it consolidated alongside reliability and status. v2.48 fixes all four.
+
+### What changed
+
+**`tools/fetch_source.py`** — `ALLOWED_HOSTS` expanded with eight new hosts: `euvd.enisa.europa.eu` (ENISA EUVD SPA), `wid.cert-bund.de` (BSI cert-bund), `advisories.ncsc.nl` + `www.ncsc.nl` + `ncsc.nl` (Dutch NCSC), `www.cert.ssi.gouv.fr` + `cert.ssi.gouv.fr` (CERT-FR — per-advisory pages need browser UA), `cert.europa.eu` + `www.cert.europa.eu` (CERT-EU), `cert.pl` + `www.cert.pl` (CERT-PL), `www.ncsc.gov.uk` + `ncsc.gov.uk` (NCSC-UK). Three new structured-endpoint subcommands so the bridge fetches the underlying JSON / RSS rather than the SPA shell:
+- `enisa-euvd recent {lastvulnerabilities|criticals|exploited}` and `enisa-euvd advisory <id>` against `/enisaeuvd/api/...`
+- `bsi-rss` against `/content/public/securityAdvisory/rss`
+- `ncsc-nl csaf <NCSC-YYYY-NNNN> [version]` against `/advisory/<id>/v<n>/<id>.json`
+
+**`prompts/daily-cti-brief.md`** + **`prompts/weekly-summary.md`** — Banner v2.47 → **v2.48**. The "MANDATORY for CISA + NCSC.ch" rule extended to the full bridge allowlist with an explicit table of subcommands per source. **`fetch_failures` schema rewritten as a rich shape**: `{id, url_tried, fetch_method, status_code, error_class, error_message, attempted_methods, mitigation_applied, covered_anyway}` per entry — the legacy `{id, code}` shape still parses but the dashboard renders it as a yellow "needs-detail" row. Sub-agents are now required to record EVERY transport / SPA-empty / paywall / unusable-body outcome regardless of whether they recovered, so the audit trail captures the recovery chain itself. **`verification.iterations[]` schema gains `findings[]` array** (per-finding records: code, category, section, item, url_or_quote, summary, remediation_applied, remediation_outcome) so the cap-breach iteration shows on /ops/ exactly what the verifier flagged and what the main agent did about it (or didn't).
+
+**`tools/check_brief.py`** — three new validation rules on the rich shapes (back-compat WARN on legacy v2.47 entries):
+- `fetch-failure-detail` (WARN) — `fetch_failures[]` entry missing one of `url_tried`, `fetch_method`, `error_class`, `attempted_methods`, `mitigation_applied`, `covered_anyway` → flag for upgrade.
+- `fetch-failure-bridge-required` (FAIL) — entry whose `id` matches a bridge-allowlisted source AND whose `attempted_methods` does NOT contain a `bridge:*` method.
+- `verification-finding-detail` (WARN) — final-iteration `verdict: NEEDS_FIXES` without a populated `findings[]` array.
+
+**`site/build.py`** — Ops dashboard rewrite of the latest-run + recent-runs sections to render the rich `fetch_failures` shape (one row per entry showing url_tried, the method chain, error_class + error_message, mitigation, recovery outcome) and the per-finding detail of the FINAL verifier iteration (the cap-breach signal). The "Stale active sources (>7 days since last successful fetch)" panel **REMOVED from /ops/** and reborn as a dedicated section on `/sources/` alongside reliability and status — same data, but co-located with the source-lifecycle context (status: active/candidate/demoted, reliability: HIGH/MEDIUM/LOW, last_successful_fetch, consecutive_quiet_periods, consecutive_fetch_failures). The `/sources/` filter chips gain a "Stale" toggle that filters to sources >7 days silent.
+
+### What stays
+Every v2.47 invariant. Every PD-1 → PD-13 prime directive. The dual-gate model (Phase 5.5 mechanical → Phase 5.7 verifier-as-gatekeeper). The 5-iteration verifier cap with model rotation. The 30-min hard cap on sub-agents. CSP, vendored-library SHA-256 integrity, no IOCs, no vanity metrics, English output. The feature-branch-only publishing chain. The repo-resident `.claude/memory/`. The eleven-feed RSS surface and the /trends/, /feeds/, editorial-choices, per-item-delta, actor-timeline site additions from v2.47. The `/ops/` dashboard's KPI tiles, models donut, sub-agent heatmap, verification-iteration timeline, recent-runs table.
+
+---
+
 ## 2.47 — 2026-05-10 (cap-breach yellow signal + residual-count semantics, prior-coverage records to sub-agents, env-var self-identification, deterministic run_id, URL-liveness cache, verifier model rotation, F12 single-source-flag finding, three new mechanical checks, dropped-items-end site rendering, per-item delta site rendering, /trends/ dashboard, actor-timeline strips, sector-RSS slices, source-candidate + source-health tooling)
 
 ### Why

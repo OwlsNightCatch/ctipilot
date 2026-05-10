@@ -2524,6 +2524,20 @@ def render_topic_list_page(
 
 # === SOURCE LIST + DETAIL ==============================================
 
+def _stale_days_for_source(s: dict[str, Any], today: date) -> int:
+    """v2.48 — days since `last_successful_fetch`. Returns -1 if the source
+    has never been successfully fetched (or the field is malformed). Caller
+    decides whether to flag negative as 'never fetched' or 'stale forever'."""
+    lf = s.get("last_successful_fetch")
+    if not lf or not re.match(r"^\d{4}-\d{2}-\d{2}$", str(lf)):
+        return -1
+    try:
+        dt = datetime.strptime(lf, "%Y-%m-%d").date()
+        return (today - dt).days
+    except ValueError:
+        return -1
+
+
 def render_source_list_page(
     sources: list[dict[str, Any]],
     *,
@@ -2535,6 +2549,7 @@ def render_source_list_page(
 ) -> str:
     cats = sorted({c for s in sources for c in (s.get("category") or [])})
     stats = sorted({s.get("status") or "" for s in sources if s.get("status")})
+    today = datetime.now(timezone.utc).date()
 
     cat_chips = "".join(
         f'<span class="chip" data-filter-chip="source-cat" data-value="{_escape(c)}">{_escape(c)}</span>'
@@ -2544,6 +2559,74 @@ def render_source_list_page(
         f'<span class="chip" data-filter-chip="source-status" data-value="{_escape(s)}">{_escape(s)}</span>'
         for s in stats
     )
+
+    # v2.48 — Stale active sources, moved here from /ops/. Co-located with
+    # status + reliability + the curated source-lifecycle context. Active
+    # sources whose last_successful_fetch is more than 7 days old, OR
+    # never recorded, are listed in a dedicated section above the main
+    # table; the main table's "Stale" filter chip toggles to that subset.
+    stale_records: list[dict[str, Any]] = []
+    for s in sources:
+        if s.get("status") != "active":
+            continue
+        days = _stale_days_for_source(s, today)
+        if days == -1:
+            stale_records.append({
+                "id": s["id"],
+                "publisher": s.get("publisher", s["id"]),
+                "reliability": s.get("reliability") or "",
+                "days": -1,
+                "last": s.get("last_successful_fetch") or "",
+                "consecutive_quiet_periods": s.get("consecutive_quiet_periods"),
+                "consecutive_fetch_failures": s.get("consecutive_fetch_failures"),
+                "notes": s.get("notes") or "",
+            })
+        elif days > 7:
+            stale_records.append({
+                "id": s["id"],
+                "publisher": s.get("publisher", s["id"]),
+                "reliability": s.get("reliability") or "",
+                "days": days,
+                "last": s.get("last_successful_fetch") or "",
+                "consecutive_quiet_periods": s.get("consecutive_quiet_periods"),
+                "consecutive_fetch_failures": s.get("consecutive_fetch_failures"),
+                "notes": s.get("notes") or "",
+            })
+    # Order: never-fetched first (most urgent), then by days descending.
+    stale_records.sort(key=lambda r: (-(1 << 30) if r["days"] < 0 else -r["days"]))
+    if stale_records:
+        stale_rows = "".join(
+            '<tr>'
+            f'<td><a href="{prefix}sources/{urllib.parse.quote(r["id"], safe="")}/"><strong>{_escape(r["publisher"])}</strong></a>'
+            f'<div class="muted mono" style="font-size:0.75rem">{_escape(r["id"])}</div></td>'
+            f'<td>{reliability_badge(r["reliability"])}</td>'
+            f'<td><span class="e-tag">{("never fetched" if r["days"] < 0 else (str(r["days"]) + " d"))}</span></td>'
+            + (f'<td class="mono muted">{_escape(r["last"]) if r["last"] else "—"}</td>')
+            + (
+                '<td class="muted">'
+                + (f'<span class="e-tag">quiet: {r["consecutive_quiet_periods"]}</span> ' if isinstance(r.get("consecutive_quiet_periods"), int) else '')
+                + (f'<span class="e-tag">fail: {r["consecutive_fetch_failures"]}</span>' if isinstance(r.get("consecutive_fetch_failures"), int) else '')
+                + '</td>'
+            )
+            + '</tr>'
+            for r in stale_records[:50]
+        )
+        stale_extra = (
+            f'<p class="muted" style="margin-top:0.4rem">+ {len(stale_records) - 50} more stale source(s) — '
+            'use the table filter below for the full list.</p>'
+        ) if len(stale_records) > 50 else ''
+        stale_section = (
+            '<section style="margin-top:1.4rem">'
+            f'<h2 class="section-head">Stale active sources <span class="muted">({len(stale_records)} silent &gt; 7 days)</span></h2>'
+            '<p class="subtitle muted">Active sources whose last successful fetch is older than a week (or never recorded). v2.48: moved here from /ops/ so reliability + status + lifecycle counters live in one place. Same data; richer context.</p>'
+            '<div class="data-wrap"><table class="data">'
+            '<thead><tr><th>Publisher</th><th>Reliability</th><th>Stale since</th><th>Last fetch</th><th>Lifecycle counters</th></tr></thead>'
+            f'<tbody>{stale_rows}</tbody></table></div>'
+            f'{stale_extra}'
+            '</section>'
+        )
+    else:
+        stale_section = ''
 
     rows = []
     for s in sources:
@@ -2558,9 +2641,15 @@ def render_source_list_page(
             f'<span class="e-tag">{_escape(c)}</span>'
             for c in (s.get("category") or [])
         )
+        # v2.48 — stale data attribute so the "Stale" filter chip can
+        # toggle the table to silent-active sources only.
+        days = _stale_days_for_source(s, today)
+        is_stale_active = (s.get("status") == "active") and (days == -1 or days > 7)
+        stale_attr = "yes" if is_stale_active else "no"
         rows.append(
             f'<tr data-source-cats="{_escape(",".join(s.get("category") or []))}" '
-            f'data-source-status="{_escape(s.get("status") or "")}">'
+            f'data-source-status="{_escape(s.get("status") or "")}" '
+            f'data-source-stale="{stale_attr}">'
             f'<td>'
             f'<a href="{prefix}sources/{urllib.parse.quote(s["id"], safe="")}/"><strong>{_escape(s.get("publisher") or s["id"])}</strong></a>'
             f'<div class="muted mono" style="font-size:0.75rem">{_escape(s["id"])}</div>'
@@ -2586,6 +2675,8 @@ def render_source_list_page(
 
 {chart_block}
 
+{stale_section}
+
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="sources-q" type="search" placeholder="Filter by name, id, notes, URL…" autocomplete="off" spellcheck="false" data-filter-input="sources" />
   <span class="chip active" data-filter-chip="source-cat" data-value="all">All categories</span>
@@ -2594,6 +2685,7 @@ def render_source_list_page(
 <div class="toolbar" style="margin-top:-0.5rem">
   <span class="chip active" data-filter-chip="source-status" data-value="all">All statuses</span>
   {status_chips}
+  <span class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago (v2.48)">Stale only</span>
 </div>
 
 {table}
@@ -3889,38 +3981,20 @@ def render_ops_page(
     # ----- Recent runs table ------------------------------------------------
     runs_table_html = _ops_render_runs_table(runs_desc, palette, prefix=prefix)
 
-    # ----- Stale active sources --------------------------------------------
-    stale: list[dict[str, Any]] = []
-    for s in sources or []:
-        if s.get("status") != "active":
-            continue
-        lf = s.get("last_successful_fetch")
-        if not lf or not re.match(r"^\d{4}-\d{2}-\d{2}$", lf):
-            stale.append({"id": s["id"], "publisher": s.get("publisher", s["id"]), "days": -1, "last": lf or ""})
-            continue
-        try:
-            dt = datetime.strptime(lf, "%Y-%m-%d").date()
-            days = (today - dt).days
-            if days > 7:
-                stale.append({"id": s["id"], "publisher": s.get("publisher", s["id"]), "days": days, "last": lf})
-        except ValueError:
-            stale.append({"id": s["id"], "publisher": s.get("publisher", s["id"]), "days": -1, "last": lf})
-    stale.sort(key=lambda x: -x["days"] if x["days"] >= 0 else 1 << 30, reverse=True)
-
-    if stale:
-        stale_lis = "".join(
-            '<li><span>'
-            f'<a class="e-title" href="{prefix}sources/{urllib.parse.quote(s["id"], safe="")}/">{_escape(s["publisher"])}</a>'
-            '<div class="e-meta">'
-            f'<span class="e-tag">{("never fetched" if s["days"] < 0 else (str(s["days"]) + " days"))}</span>'
-            + (f'<span class="muted">last: {_escape(s["last"])}</span>' if s.get("last") else '')
-            + '</div></span>'
-            f'<span class="mono muted">{_escape(s["id"])}</span></li>'
-            for s in stale
+    # ----- (v2.48) Stale-active-sources MOVED TO /sources/ ----------------
+    # The "Stale active sources" panel that previously lived here is now
+    # rendered on /sources/ — alongside the source's reliability, status,
+    # category tags, and lifecycle counters (consecutive_quiet_periods,
+    # consecutive_fetch_failures). One source-of-truth surface; the Ops
+    # dashboard links into it.
+    stale_count = sum(
+        1 for s in (sources or [])
+        if s.get("status") == "active" and (
+            (lf := s.get("last_successful_fetch")) is None
+            or not re.match(r"^\d{4}-\d{2}-\d{2}$", str(lf or ""))
+            or (today - datetime.strptime(lf, "%Y-%m-%d").date()).days > 7  # type: ignore[arg-type]
         )
-        stale_html = f'<ul class="entity-list">{stale_lis}</ul>'
-    else:
-        stale_html = '<p class="muted">No active source has been silent for more than a week.</p>'
+    )
 
     # ----- KPI tiles --------------------------------------------------------
     last_run_label = _escape(last_run_date or "—")
@@ -4006,8 +4080,10 @@ def render_ops_page(
 </section>
 
 <section class="ops-section">
-  <h2 class="section-head">Stale active sources (&gt;7 days since last successful fetch)</h2>
-  {stale_html}
+  <h2 class="section-head">Stale active sources</h2>
+  <p class="muted">
+    Moved to the <a href="{prefix}sources/">Sources</a> page in v2.48 — alongside reliability, status, and source-lifecycle counters. {stale_count} active source{'' if stale_count == 1 else 's'} currently silent &gt; 7 days. Use the "Stale only" filter chip on /sources/ to drill in.
+  </p>
 </section>
 
 <p class="muted ops-footnote">
@@ -4040,6 +4116,209 @@ def _ops_kpi_tile(label: str, value: str, *, sub: str = "", kind: str = "neutral
     )
 
 
+# v2.48 — error-class → CSS-modifier mapping for the rich fetch_failures table.
+_FETCH_FAILURE_CLASS_KIND: dict[str, str] = {
+    "transport-403": "warn",
+    "transport-429": "warn",
+    "transport-5xx": "crit",
+    "transport-tls": "crit",
+    "transport-dns": "crit",
+    "transport-timeout": "warn",
+    "spa-empty-body": "warn",
+    "paywall": "warn",
+    "robots-blocked": "warn",
+    "geo-blocked": "warn",
+    "rate-limited": "warn",
+    "other": "neutral",
+}
+
+
+def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -> str:
+    """v2.48 — render the rich fetch_failures shape as a table. Each row is
+    debug-actionable: id + url_tried + method chain + error class +
+    mitigation + recovery outcome. Legacy v2.47 entries render as a single
+    yellow row so the operator notices the schema gap."""
+    if not failures:
+        return '<p class="muted">No fetch failures recorded — every active source returned 2xx on first attempt.</p>'
+
+    rows: list[str] = []
+    for f in failures:
+        if not isinstance(f, dict):
+            rows.append('<tr><td colspan="6" class="muted">malformed fetch_failures entry (not a dict)</td></tr>')
+            continue
+        sid = f.get("id") or "?"
+        # Legacy back-compat: {id, code|status, note}.
+        is_legacy = "url_tried" not in f and "attempted_methods" not in f
+        url_tried = f.get("url_tried") or ""
+        fetch_method = f.get("fetch_method") or ""
+        status_code = f.get("status_code", f.get("code", f.get("status", "")))
+        error_class = f.get("error_class") or ("legacy-shape" if is_legacy else "other")
+        error_message = f.get("error_message") or f.get("note") or ""
+        attempted = f.get("attempted_methods") or []
+        mitigation = f.get("mitigation_applied") or ""
+        covered_anyway = f.get("covered_anyway")
+        kind = _FETCH_FAILURE_CLASS_KIND.get(error_class, "warn" if is_legacy else "neutral")
+
+        method_chain_html = ""
+        if attempted:
+            method_chain_html = " → ".join(
+                f'<span class="ops-pill ops-pill--{("ok" if m.startswith("bridge:") else "warn")}">{_escape(m)}</span>'
+                for m in attempted if isinstance(m, str)
+            )
+        elif fetch_method:
+            method_chain_html = f'<span class="ops-pill ops-pill--neutral">{_escape(fetch_method)}</span>'
+        else:
+            method_chain_html = '<span class="muted mono">—</span>'
+
+        url_html = (
+            f'<a class="mono" href="{_escape(_safe_url(url_tried))}" target="_blank" rel="noopener noreferrer">{_escape(url_tried[:80])}</a>'
+            if url_tried.startswith(("http://", "https://"))
+            else f'<span class="mono muted">{_escape(url_tried[:80] or "—")}</span>'
+        )
+        outcome_html = ""
+        if covered_anyway is True:
+            outcome_html = '<span class="ops-pill ops-pill--ok">covered</span>'
+        elif covered_anyway is False:
+            outcome_html = '<span class="ops-pill ops-pill--crit">coverage gap</span>'
+        else:
+            outcome_html = '<span class="ops-pill ops-pill--neutral">unknown</span>'
+        mitigation_html = (
+            f'<span class="mono">{_escape(mitigation[:120])}</span>'
+            if mitigation else '<span class="muted">none</span>'
+        )
+
+        rows.append(
+            '<tr>'
+            f'<td><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/" class="mono"><strong>{_escape(sid)}</strong></a>'
+            + (f'<div class="muted" style="font-size:0.72rem">legacy v2.47 shape — needs detail</div>' if is_legacy else '')
+            + '</td>'
+            f'<td>{url_html}</td>'
+            f'<td>{method_chain_html}</td>'
+            f'<td>{_ops_pill(str(status_code) if status_code != "" else "—", kind=kind)}'
+            + (f' <span class="muted mono">{_escape(error_class)}</span>' if error_class != "other" else '')
+            + (f'<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{_escape(error_message[:160])}</div>' if error_message else '')
+            + '</td>'
+            f'<td>{mitigation_html}</td>'
+            f'<td>{outcome_html}</td>'
+            '</tr>'
+        )
+    return (
+        '<div class="data-wrap"><table class="data ops-fetch-failures">'
+        '<thead><tr>'
+        '<th>Source</th><th>URL tried</th><th>Method chain</th>'
+        '<th>Status / class / error</th><th>Mitigation</th><th>Outcome</th>'
+        '</tr></thead>'
+        '<tbody>' + "".join(rows) + '</tbody></table></div>'
+    )
+
+
+_F_CODE_LABEL: dict[str, str] = {
+    "F1": "broken-url", "F2": "generic-url", "F3": "claim-not-supported",
+    "F4": "hallucinated-fact", "F5": "missing-citation",
+    "F6": "strengthen-primary-source", "F7": "drop",
+    "F8": "needs-more-research", "F9": "surface-contradiction",
+    "F10": "missed-angle", "F11": "editorial-advisory",
+    "F12": "single-source-flag-missing",
+}
+
+
+def _ops_render_verification_iterations(
+    iters: list[Any], *,
+    legacy_count: int | None,
+    legacy_residual: int | None,
+) -> str:
+    """v2.48 — render the verification iteration timeline with per-finding
+    detail for the FINAL iteration (the cap-breach signal). Earlier
+    iterations get a single chip; the final iteration shows its findings[]
+    inline so the operator can debug WHAT the verifier flagged."""
+    if not iters:
+        if legacy_count is not None:
+            return (
+                f'<p class="muted">{legacy_count} iteration{"s" if (legacy_count or 0) != 1 else ""} · '
+                f'{legacy_residual or 0} residual{"s" if (legacy_residual or 0) != 1 else ""} '
+                '(legacy scalar — per-iteration breakdown not recorded)</p>'
+            )
+        return '<p class="muted">No verification telemetry recorded.</p>'
+
+    final_idx = len(iters) - 1
+    chip_blocks: list[str] = []
+    for i, it in enumerate(iters):
+        if not isinstance(it, dict):
+            continue
+        verdict = it.get("verdict", "?")
+        kind = "ok" if verdict == "CLEAN" else "warn"
+        n = it.get("n", "?")
+        model = it.get("model", "unknown")
+        t = it.get("truth", 0)
+        e = it.get("editorial", 0)
+        a = it.get("advisory", 0)
+        chip_blocks.append(
+            f'<span class="ops-pill ops-pill--{kind}">'
+            f'#{_escape(str(n))} {_escape(verdict)} '
+            f'<span class="muted">· {_escape(model)} · t={t} e={e} a={a}</span>'
+            '</span>'
+        )
+    chips_html = '<div class="ops-chip-row">' + " ".join(chip_blocks) + '</div>'
+
+    # Per-finding detail for the FINAL iteration. CLEAN final → just the
+    # chip row above is enough. NEEDS_FIXES final → render the findings[]
+    # inline so the cap-breach is debuggable.
+    final_iter = iters[final_idx] if isinstance(iters[final_idx], dict) else None
+    final_block = ""
+    if final_iter and (final_iter.get("verdict") or "").upper() == "NEEDS_FIXES":
+        findings = final_iter.get("findings") or []
+        if findings:
+            f_rows: list[str] = []
+            for fd in findings:
+                if not isinstance(fd, dict):
+                    continue
+                code = fd.get("code") or "?"
+                category = fd.get("category") or _F_CODE_LABEL.get(code, "?")
+                section = fd.get("section") or "—"
+                item = (fd.get("item") or "")[:80]
+                url_or_quote = (fd.get("url_or_quote") or "")[:120]
+                summary = (fd.get("summary") or "")[:200]
+                rem = (fd.get("remediation_applied") or "")[:160]
+                outcome = (fd.get("remediation_outcome") or "")
+                outcome_kind = {
+                    "fixed-clean": "ok", "fixed-degraded": "warn",
+                    "dropped-item": "neutral", "deferred": "warn",
+                    "residual-at-cap": "crit",
+                }.get(outcome, "neutral")
+                url_html = (
+                    f'<a class="mono" href="{_escape(_safe_url(url_or_quote))}" target="_blank" rel="noopener noreferrer">{_escape(url_or_quote)}</a>'
+                    if url_or_quote.startswith(("http://", "https://"))
+                    else f'<span class="muted mono">{_escape(url_or_quote)}</span>' if url_or_quote else ''
+                )
+                f_rows.append(
+                    '<tr>'
+                    f'<td><span class="mono"><strong>{_escape(code)}</strong></span><div class="muted mono" style="font-size:0.72rem">{_escape(category)}</div></td>'
+                    f'<td><span class="e-tag">{_escape(section)}</span></td>'
+                    f'<td>{_escape(item)}<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{url_html}</div></td>'
+                    f'<td>{_escape(summary)}</td>'
+                    f'<td><span class="mono">{_escape(rem) or "—"}</span>{(" " + _ops_pill(outcome, kind=outcome_kind)) if outcome else ""}</td>'
+                    '</tr>'
+                )
+            final_block = (
+                '<div class="ops-final-iter">'
+                f'<h3 class="ops-mini-head">Final iteration #{_escape(str(final_iter.get("n", "?")))} — {len(findings)} finding{"s" if len(findings) != 1 else ""} flagged</h3>'
+                '<p class="muted" style="font-size:0.82rem">Cap-breach iteration. Each row is what the verifier flagged + what the main agent did about it. Use to debug WHY the brief published at the safety valve.</p>'
+                '<div class="data-wrap"><table class="data ops-final-iter__table">'
+                '<thead><tr><th>F-code</th><th>Section</th><th>Item · URL/quote</th><th>Verifier summary</th><th>Remediation · outcome</th></tr></thead>'
+                f'<tbody>{"".join(f_rows)}</tbody></table></div>'
+                '</div>'
+            )
+        else:
+            final_block = (
+                '<p class="ops-final-iter ops-final-iter--empty muted">'
+                f'Cap-breach iteration #{_escape(str(final_iter.get("n", "?")))} did NOT record per-finding detail '
+                '(legacy v2.47 shape). The Ops dashboard cannot render WHAT the verifier flagged. '
+                'See <code>.claude/agents/cti-verification.md</code> § Findings summary for the v2.48 contract.'
+                '</p>'
+            )
+    return chips_html + final_block
+
+
 def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *,
                                    prefix: str) -> str:
     """Detailed panel for the most recent run — main-agent model, every
@@ -4065,39 +4344,22 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         sa_cards.append(_ops_render_subagent_card(k, a, palette))
     sa_grid = f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
 
-    # Failures.
-    if failures:
-        chips = "".join(
-            f'<span class="ops-pill ops-pill--warn">{_escape(f.get("id", "?"))} '
-            f'<span class="muted">{_escape(str(f.get("code", f.get("status", ""))))}</span></span>'
-            for f in failures
-        )
-        failures_html = f'<div class="ops-chip-row">{chips}</div>'
-    else:
-        failures_html = '<p class="muted">No fetch failures recorded.</p>'
+    # v2.48 — rich fetch_failures table. Each row carries id, url_tried,
+    # method chain, error_class + error_message, mitigation, recovery
+    # outcome. Legacy {id, code} entries render as a single yellow
+    # "needs-detail" row so the operator sees the gap.
+    failures_html = _ops_render_fetch_failures(failures, prefix=prefix)
 
-    # Verification summary
+    # v2.48 — verification iteration roll-up + per-finding detail for the
+    # FINAL iteration (the cap-breach signal). Earlier iterations get a
+    # one-line chip; the final iteration shows its findings[] inline so
+    # the operator can debug what the verifier flagged.
     iters = ((run.get("verification") or {}).get("iterations") or [])
-    if iters:
-        v_chips = "".join(
-            f'<span class="ops-pill ops-pill--{("ok" if it.get("verdict") == "CLEAN" else "warn")}">'
-            f'#{_escape(str(it.get("n", "?")))} {_escape(it.get("verdict", "?"))} '
-            f'<span class="muted">· {_escape(it.get("model", "unknown"))}</span>'
-            '</span>'
-            for it in iters if isinstance(it, dict)
-        )
-        verif_html = f'<div class="ops-chip-row">{v_chips}</div>'
-    else:
-        vi = run.get("verification_iterations")
-        vr = run.get("verification_residual_count")
-        if vi is not None:
-            verif_html = (
-                f'<p class="muted">{vi} iteration{"s" if (vi or 0) != 1 else ""} · '
-                f'{vr or 0} residual{"s" if (vr or 0) != 1 else ""} '
-                '(legacy scalar — per-iteration breakdown not recorded)</p>'
-            )
-        else:
-            verif_html = '<p class="muted">No verification telemetry recorded.</p>'
+    verif_html = _ops_render_verification_iterations(
+        iters,
+        legacy_count=run.get("verification_iterations"),
+        legacy_residual=run.get("verification_residual_count"),
+    )
 
     return f"""
 <div class="ops-latest">
