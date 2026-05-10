@@ -42,12 +42,13 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 
 ## Custom sub-agents (`.claude/agents/`)
 
-Two named sub-agents — both isolated context, model bound by their YAML frontmatter (operator-rebindable):
+Three named sub-agents — all isolated context, model bound by their YAML frontmatter (operator-rebindable):
 
 - **`cti-research`** — Phase 1 (daily) / Phase 2 (weekly) parallel research workers. One per domain (S1–S4 daily, W1–W2 weekly). Pivots from news to primary sources, returns verified items with full discovery traces. Opens its return with a mandatory `**Model:**` self-identification line. Definition: [.claude/agents/cti-research.md](.claude/agents/cti-research.md).
-- **`cti-verification`** — Phase 4.5 (daily) / Phase 3.5 (weekly) cold-reader verifier. Read-only — main agent owns all edits. Looped iteratively, fresh spawn each iteration (no shared memory) until verdict CLEAN or 3-iteration cap. Same self-identification contract. Definition: [.claude/agents/cti-verification.md](.claude/agents/cti-verification.md).
+- **`cti-verification`** — Phase 5.7 (daily) / Phase 4.7 (weekly) cold-reader verifier. **Opus default.** Read-only — main agent owns all edits. Looped iteratively, fresh spawn each iteration (no shared memory) until verdict CLEAN or 5-iteration cap. Same self-identification contract. Definition: [.claude/agents/cti-verification.md](.claude/agents/cti-verification.md).
+- **`cti-verification-alt`** — model-rotation variant of `cti-verification`. **Sonnet default.** Identical operational system prompt (gatekeeper framing, F1–F12 finding categories, return contract, 30-min cap). Only the YAML frontmatter differs. The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations** (iter 2, iter 4) so model-specific blind spots are caught when the next iteration runs on a different model. Definition: [.claude/agents/cti-verification-alt.md](.claude/agents/cti-verification-alt.md). **When you edit one verifier definition, you MUST edit the other in the same commit** — the bodies are kept byte-equivalent so rotation only changes the runtime, not the contract.
 
-The main agent does composition, state update, commit, sync, push, publish-verification. Main agent and sub-agents may run on different models — the runtime decides per role and every agent self-identifies in its output. The prompts deliberately give no example model name so the agents reason about their own identity instead of pattern-matching a placeholder. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents so the operator gets the right tool set + model binding.
+The main agent does composition, state update, commit, sync, push, publish-verification. Main agent and sub-agents may run on different models — the runtime decides per role and every agent self-identifies in its output. **Self-identification primary source: harness env vars `CLAUDE_FRIENDLY_NAME` and `CLAUDE_MODEL_ID`** (v2.47). The operator sets these in the routine container; sub-agents read them via Bash (`echo $CLAUDE_FRIENDLY_NAME`) and emit them verbatim in the `**Model:**` line. Falling back to "reason about your identity" is the v2.46 behaviour and is preserved when the env vars are unset, but it has demonstrably drifted (sub-agents pattern-matched stale training-data names). Set the env vars in the routine config to make the AI-content notice on every brief precisely correct. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents so the operator gets the right tool set + model binding.
 
 ## Branching and publishing — feature branch only
 
@@ -103,7 +104,7 @@ The explicit `if/else` matters: the tail shape `[ "$PUSH_OK" != "true" ] && echo
 - **Skeleton-then-Edit (applies to docs / prompts / build code, not just briefs).** A single `Write` of any large file — or a long sequence of large `Edit`s in one assistant turn — trips `Stream idle timeout — partial response received` and silently drops the rest of the turn. Empirical limit: past ~6–8 substantial `Edit` calls in a single response is risky; a single `Write` of >300 lines is risky. Two shapes that work: (1) for new files, `Write` a placeholder skeleton (`_(no content yet)_`) → `Read` it back → `Edit` each section in turn; (2) for refactors that touch many files, batch ~5 small `Edit`s per turn, then yield with a one-sentence progress update before the next batch. A stream-idle timeout cannot be recovered from — the user can interrupt; that hang cannot.
 - **Persist intermediate state often** under `work/<run-id>/<step>.json` (gitignored). After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume.
 - **One new candidate source per run, maximum.** Sub-agents surface candidates; the main agent writes them as `status: "candidate"` in `sources/sources.json` during Phase 5.
-- **Verification loop is non-negotiable but never blocks publish.** Phase 4.5 (daily) / Phase 3.5 (weekly) spawns `cti-verification`. Iteration 1 always runs. NEEDS_FIXES → apply remediations and re-spawn fresh. Cap 3 iterations. Iteration 3 still NEEDS_FIXES → publish anyway with residuals logged in § Verification Notes.
+- **Verification loop is non-negotiable but never blocks publish.** Phase 5.7 (daily) / Phase 4.7 (weekly) spawns the verifier. Iteration 1 always runs. NEEDS_FIXES → apply remediations and re-spawn fresh. **Cap 5 iterations** (v2.46), with **model rotation across iterations** (v2.47): odd iterations spawn `cti-verification` (Opus), even iterations spawn `cti-verification-alt` (Sonnet). Iteration 5 still NEEDS_FIXES → publish anyway with residuals logged in § Verification Notes; `verification_residual_count` records `(truth + editorial)` of the final iteration so the cap-breach surfaces on the Ops dashboard (v2.47 — **never 0 on a NEEDS_FIXES final iteration**).
 
 ## Where things live
 
@@ -115,7 +116,8 @@ prompts/verification.md            # fake-news / two-source verification policy
 prompts/brief-template.md          # canonical Markdown skeleton for the rendered brief / weekly
 prompts/check-brief-fixes.md       # how to fix common check_brief.py FAILs
 .claude/agents/cti-research.md     # research sub-agent definition
-.claude/agents/cti-verification.md # verification sub-agent definition
+.claude/agents/cti-verification.md  # verification sub-agent (Opus default)
+.claude/agents/cti-verification-alt.md # rotation variant (Sonnet default; identical body)
 .claude/memory/                    # version-controlled auto-memory — MUST be committed when touched
 .claude/hooks/setup-memory.sh      # SessionStart hook — symlinks system auto-memory dir
 .claude/settings.json              # autoMemoryEnabled, SessionStart hook
@@ -128,16 +130,24 @@ briefs/YYYY-MM-DD.md               # daily output
 briefs/weekly/YYYY-Www.md          # weekly output
 tools/fetch_source.py              # bridge fetcher for known-403 hosts
 tools/check_brief.py               # institutionalised self-check (single command, must exit 0)
+tools/source_candidates.py         # v2.47 § 3.6 — surface "sources we should add" (cited-but-not-in-sources.json)
+tools/source_health.py             # v2.47 § 3.7 — independent weekly source-health snapshot (run by GH Actions)
+.github/workflows/source-health.yml # v2.47 § 3.7 — weekly cron firing source_health.py
+state/source_health.json            # v2.47 § 3.7 — bounded health-snapshot history (Ops dashboard reads this)
 site/build.py                      # static-site generator (stdlib-only)
 site/taxonomy.yaml                 # controlled vocabulary for footers (build refuses unknown values)
+site/_site/trends/                 # v2.47 § 4.1 — cross-brief threat-class trend dashboard (built from briefs)
+site/_site/feed-{public-sector,healthcare,finance,energy,ot-ics,defense,telco,education}.xml  # v2.47 § 4.3 — sector-specific RSS slices
 docs/architecture.md               # end-to-end map of what reads/writes what
 docs/operating.md                  # operator runbook
 work/<run-id>/                     # gitignored intermediate state
+work/<run-id>/url-liveness.tsv     # v2.47 § 3.4 — sub-agents append `<url>\t<status>\t<fetched_at>` per fetch; check_brief.py reads this
+work/<run-id>/prior_coverage.json  # v2.47 § 2.2 — Phase 0 builds this; sub-agents read it for fetch-time dedup
 ```
 
 ## Editing the master prompts — versioning rule (ALWAYS)
 
-Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `.claude/agents/cti-research.md`, or `.claude/agents/cti-verification.md` MUST ship all three of these in the same commit (banner bump + CHANGELOG entry + the file edit itself). Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records.
+Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `.claude/agents/cti-research.md`, `.claude/agents/cti-verification.md`, or `.claude/agents/cti-verification-alt.md` MUST ship all three of these in the same commit (banner bump + CHANGELOG entry + the file edit itself). Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records. **Both verifier definitions move in lockstep** — when you edit one, edit the other to keep their bodies byte-equivalent (only the `model:` frontmatter differs).
 
 Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump when they materially change runtime behaviour. Pure clarifications, reformatting, and ops-doc updates do not.
 

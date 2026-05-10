@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.46 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.47 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -120,12 +120,23 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 
 ## Phase 0 — Preflight (sequential, ~1 min)
 
-0. **Capture main-agent start timestamp (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and persist it to the run-id checkpoint dir:
+0. **Capture main-agent start timestamp + compute deterministic run_id (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and derive a deterministic `run_id`:
    ```bash
-   mkdir -p work/<run-id>
-   date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.started_at
+   STARTED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+   BRIEF_PATH="briefs/$(date -u +%F).md"
+   # Deterministic run_id: <YYYY-MM-DD>-<sha8 of brief_path|started_minute>.
+   # Truncating to minute precision means a same-prompt retry inside the
+   # same minute computes the same run_id — Phase 5 then refuses to write
+   # a duplicate run_log entry. Different minute → different run_id, which
+   # is the right behaviour for a genuine re-run.
+   STARTED_MIN="${STARTED%:*}Z"  # truncate seconds, keep YYYY-MM-DDTHH:MM Z
+   RUN_ID="$(date -u +%F)-$(printf '%s|%s' "$BRIEF_PATH" "$STARTED_MIN" | sha256sum | cut -c1-8)"
+   mkdir -p "work/${RUN_ID}"
+   echo "$STARTED" | tee "work/${RUN_ID}/main.started_at"
+   echo "$RUN_ID" | tee "work/${RUN_ID}/run_id"
+   : > "work/${RUN_ID}/url-liveness.tsv"   # pre-create empty ledger
    ```
-   The `<run-id>` is `YYYY-MM-DD-HHMM` derived from this timestamp; it is the same id you pass to every Phase 1 sub-agent so they checkpoint into the same dir. Phase 5 reads `main.started_at` to populate `run_log.json.started`. **If you skip this step, `started` falls back to "unknown" and the Ops dashboard cannot chart this run's duration.** A symmetric end-timestamp capture happens at Phase 5.
+   The `<run-id>` is the same id you pass to every Phase 1 sub-agent so they checkpoint into the same dir. Phase 5 reads `main.started_at` to populate `run_log.json.started` and refuses to append a `runs[]` entry whose `run_id` already exists in the file (idempotent retry). The `url-liveness.tsv` is the empty ledger every sub-agent appends to in Phase 1; Phase 5.5's `tools/check_brief.py` reads it. **If you skip this step, `started` falls back to "unknown", `run_id` falls back to a non-deterministic value, and the URL-liveness cache is bypassed (every URL re-fetched). A symmetric end-timestamp capture happens at Phase 5.**
 1. `Read sources/sources.json` — only `status: "active"` sources feed sub-agents.
 2. List `briefs/`; read every brief from **last 7 calendar days** in date order. Read most recent weekly at `briefs/weekly/YYYY-Www.md` for current and prior ISO weeks.
 3. `Read state/covered_items.json`, `state/cves_seen.json`, `state/deep_dive_history.json` (if present).
@@ -133,6 +144,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 5. Establish today's ISO date.
 6. **Compute gap-derived recency window** (PD-7). Pass `window_hours` to every Phase 1 sub-agent. Surface in § 7 if `gap_hours > 30`.
 7. Initialise `TodoWrite` plan.
+7a. **Generate `work/<run-id>/prior_coverage.json` from the last 7 daily briefs.** Walk every H3 in §§ 0–6 of each brief, extract `{key: <CVE|actor|campaign|incident|tool|advisory key from item heading or footer.cve>, title: <H3 heading>, tldr_one_line: <first sentence of item body>, primary_source_url: <first Source URL from footer>, date: <brief date>, brief_path: <relative path>, section: <section key>}`. Write the array of records as `work/<run-id>/prior_coverage.json`. Pass the path + record count to every Phase 1 sub-agent so they can dedup against full records before fetching, not just headlines (PD-8 enforcement at fetch time, not just at main-agent Phase 2 dedup time).
 
 If any read fails, surface and stop.
 
@@ -167,13 +179,14 @@ Parse both and stash:
 
 Per `Agent` call, the prompt is short — a thin per-domain envelope around the sub-agent definition's system prompt:
 
-1. **Run identifier** — `Run id: <YYYY-MM-DD-HHMM>` so the sub-agent knows which `work/<run-id>/` directory to checkpoint into.
+1. **Run identifier** — `Run id: <YYYY-MM-DD>-<sha8>` (the deterministic run_id from Phase 0 step 0; see § Phase 0 below) so the sub-agent knows which `work/<run-id>/` directory to checkpoint into. Pre-create the directory before spawning.
 2. **Recency window** — `window_hours: <N>` from Phase 0 step 6.
 3. **Domain** — one of S1 / S2 / S3 / S4 with the source-filter table below.
 4. **Source-list slice** — the subset of `sources/sources.json` (status: active) whose `category` matches the sub-agent's filter, passed inline so the sub-agent doesn't need to re-derive it.
-5. **Dedup context** — CVE IDs from `cves_seen.json`, named entities from `covered_items.json`, headlines / first paragraphs of last-7-days briefs, the most recent weekly's top stories.
+5. **Dedup context** — CVE IDs from `cves_seen.json`, named entities from `covered_items.json`, headlines / first paragraphs of last-7-days briefs, the most recent weekly's top stories. **Plus** `prior_coverage_records: <count>` and the path `work/<run-id>/prior_coverage.json` — the structured per-H3 records (key, title, one-line tl;dr, primary-source URL, date) for every item in the last 7 daily briefs. The file is generated by Phase 0 step 7a; sub-agents read it before fetching so they can dedup against full records, not just headlines. **PD-8 enforcement at fetch time, not just at main-agent Phase 2 dedup time.**
 6. **Rotation-priority list** — sources marked rotation-priority by Phase 0 step 7, filtered to this sub-agent's category. The sub-agent reserves fetch budget for these.
 7. **Today's ISO date** so the sub-agent has an anchor for "in-window" decisions.
+8. **URL-liveness ledger path** — `work/<run-id>/url-liveness.tsv` (pre-created empty by Phase 0). Every sub-agent appends one tab-separated line `<url>\t<status>\t<fetched_at_iso>` after every successful WebFetch / bridge fetch of a Source URL it cites. Phase 5.5's `tools/check_brief.py` reads this ledger and trusts its records over re-fetching every Source URL itself, which kills SSL-cert / anti-bot 403 noise on URLs the agent has already verified live.
 
 Keep the spawn message tight — the sub-agent's system prompt already covers *how* to research; the spawn message tells it *what* to research today.
 
@@ -492,10 +505,13 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.ended_at
 
 Use the contents of `work/<run-id>/main.started_at` (Phase 0 step 0) and `work/<run-id>/main.ended_at` (now) to populate the record's `started` / `completed` fields. `duration_seconds` is integer `completed − started`. If either file is missing (Phase 0 step 0 was skipped, or the Bash capture above failed), record `"unknown"` for that field and `null` for `duration_seconds` — never invent a timestamp.
 
-Append one record per run, then trim to 90 most recent. **Every key required:**
+Append one record per run, then trim to 90 most recent. **`run_id` is mandatory and idempotent (v2.47):** the deterministic id you computed in Phase 0 step 0 (`<YYYY-MM-DD>-<sha8 of brief_path|started_minute>`). Before appending, scan `runs[].run_id` — if an entry with this `run_id` already exists, **do not append a duplicate**; instead, update the existing record in place (this is what makes a Phase-6-retry safe). The `tools/check_brief.py` `run-log-fields` check will FAIL on a missing `run_id` field and FAIL on a duplicate `run_id` across runs.
+
+**Every key required:**
 
 ```jsonc
 {
+  "run_id": "<YYYY-MM-DD>-<sha8>",                            // deterministic, computed in Phase 0 step 0; key to idempotent retry
   "date": "YYYY-MM-DD",
   "started": "YYYY-MM-DDTHH:MM:SSZ",                          // wall-clock start of Phase 0
   "completed": "YYYY-MM-DDTHH:MM:SSZ",                        // wall-clock end of Phase 5 (after state writes, before commit)
@@ -528,8 +544,8 @@ Append one record per run, then trim to 90 most recent. **Every key required:**
   "items_published": N,                                       // total H3 items in the brief
   "items_dropped_by_verification": N,                         // from Phase 5.7 Drop / hallucination drops
   "deep_dive": "topic-slug or null",
-  "verification_iterations": N,                               // 1 if first verifier returned CLEAN; ≤3 (legacy scalar, still required)
-  "verification_residual_count": N,                           // 0 on clean publish; >0 only when iteration cap reached
+  "verification_iterations": N,                               // 1 if first verifier returned CLEAN; ≤5 (legacy scalar, still required)
+  "verification_residual_count": N,                           // 0 on clean publish; equals (truth + editorial) of the FINAL iteration if its verdict is NEEDS_FIXES (cap-breach yellow signal — Ops dashboard charts this). Never 0 when the final iteration was NEEDS_FIXES — counting it 0 silently absorbs an editorial-quality drift the gatekeeper was supposed to catch. Advisory (F11) is excluded — F11 alone never blocks CLEAN, so it doesn't count as residual.
   "verification": {                                           // per-iteration breakdown (NEW in v2.43)
     "iterations": [
       {
@@ -552,6 +568,8 @@ Append one record per run, then trim to 90 most recent. **Every key required:**
 ```
 
 **Population rules:**
+- `run_id` = the deterministic id from Phase 0 step 0 (verbatim from `work/<run-id>/run_id`). **Idempotent retry:** if `runs[].run_id` already contains this value, update the existing record in place; otherwise append.
+- `verification_residual_count` = `0` when the final iteration's `verdict` is `CLEAN`; `(final_iter.truth + final_iter.editorial)` when the final iteration's `verdict` is `NEEDS_FIXES` (cap reached without CLEAN). Advisory (F11) is excluded — F11 alone never blocks CLEAN. **Never `0` when the final verdict was `NEEDS_FIXES`.** `tools/check_brief.py` `run-log-verification-residual` cross-checks this against the per-iteration block and FAILs on a mismatch.
 - `sources_attempted` = every source id put in the sub-agent's spawn message (don't write `[]` unless sub-agent explicitly skipped). `sources_used` = subset that contributed ≥1 citation.
 - `returned: false` only when stalled past 10-min budget (renders as `stalled` badge).
 - `fetch_failures` = every transport error with source id + HTTP code; `[]` when none (dashboard renders `0` for empty, yellow badge for non-empty).
@@ -603,9 +621,16 @@ After Phase 5.5 has exited 0 (mechanical gate passed), the brief goes through an
 
 **Non-negotiable** — do not skip, short-circuit, or commit while pending. Verification removes bad / irrelevant content; never blocks the brief from being *written* (the file already exists from Phase 4 — verification only blocks publish until CLEAN or cap).
 
-### Spawn — verification sub-agent
+### Spawn — verification sub-agent (with model rotation across iterations)
 
-Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), isolated context, **read-only** tools — main agent owns all edits). The sub-agent definition embeds the full operational system prompt: gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4, editorial-quality checks 5–10, whole-brief checks 11–13 (including the W-PD-1 weekly check the weekly routine reuses), return format with finding categories F1–F11, verdict line, the same `WebFetch` outbound-links template the research agent uses, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap.
+Spawn a single `Agent` call. **Rotate the sub-agent type per iteration** to vary the verifier model — model-specific blind spots are caught when the next iteration runs on a different model.
+
+| Iteration | `subagent_type` | Model (per the agent definition's YAML frontmatter) |
+|---|---|---|
+| 1, 3, 5 | `cti-verification` | `opus` |
+| 2, 4 | `cti-verification-alt` | `sonnet` |
+
+Both agent definitions ([`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md)) carry the **identical operational system prompt** — gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4, editorial-quality checks 5–10, whole-brief checks 11–13 (including the W-PD-1 weekly check the weekly routine reuses), return format with finding categories F1–F12, verdict line, the same `WebFetch` outbound-links template the research agent uses, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap. The only difference is the model frontmatter pins. Both run with **read-only** tools — main agent owns all edits.
 
 The spawn message is short:
 
@@ -646,7 +671,7 @@ The spawn message is short:
 - **Run `tools/check_brief.py` between iterations** — non-zero exit blocks the next verifier spawn until fixed.
 - **Follow-up `cti-research` sub-agents** for `Needs more research` / `Missed angles` capped at **3 per iteration**, 30-min wall-clock per sub-agent (same as Phase 1).
 - **Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
-- Track in `state/run_log.json`: `verification_iterations`, `verification_residual_count`, **`verification.iterations[]`** (per-iteration breakdown; the legacy two scalar fields stay for back-compat with older briefs).
+- Track in `state/run_log.json`: `verification_iterations`, `verification_residual_count`, **`verification.iterations[]`** (per-iteration breakdown; the legacy two scalar fields stay for back-compat with older briefs). **`verification_residual_count` semantics (corrected v2.47):** when the **final** iteration's verdict is `CLEAN`, `verification_residual_count = 0`. When the final iteration's verdict is `NEEDS_FIXES` (cap reached without CLEAN), `verification_residual_count = (final_iter.truth + final_iter.editorial)` — F11 advisory excluded because F11 alone never blocks CLEAN. **Counting it 0 on a NEEDS_FIXES final iteration silently absorbs an editorial-quality drift the gatekeeper was supposed to catch — that mistake is what the v2.47 cap-breach yellow signal corrects.** The `tools/check_brief.py` `cap-breach` WARN reads this field and surfaces the cap-breach to the operator's Ops dashboard.
 - If verifier itself fails (timeout past 30 min, no return), publish anyway and note in § 7.
 - **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
 

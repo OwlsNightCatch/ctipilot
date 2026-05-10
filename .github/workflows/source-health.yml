@@ -1,0 +1,86 @@
+name: Weekly source-health snapshot
+
+# v2.47 § 3.7 — independent weekly health-check of every active source.
+#
+# Runs `tools/source_health.py` on a weekly cron (and manual
+# workflow_dispatch). HEAD-only against every `status: active` source in
+# `sources/sources.json`, records `(id, status_code, latency_ms,
+# fetched_at, class)` per source into `state/source_health.json` (bounded
+# history), then commits + pushes the file directly to `main`.
+#
+# The Ops dashboard at /ops/ reads `state/source_health.json` and
+# surfaces consistently-failing sources separately from intermittently-
+# failing ones, so the daily routine's source-demotion logic can key off
+# a stable pattern instead of the day-of-week luck of its single fire.
+#
+# Shell-only (no third-party Actions) per the repo's policy. The push
+# uses the same conservative pattern as auto-merge-claude.yml — clone,
+# fetch, commit, push directly to main using GITHUB_TOKEN. The state
+# file is in the auto-resolution allowlist of auto-merge-claude.yml
+# (state/* → ours), so a concurrent claude/* push will not race.
+
+on:
+  schedule:
+    # Sundays at 04:30 UTC — quiet window before the routine's daily
+    # fire on Sunday. Adjust if your routine runs at this hour.
+    - cron: "30 4 * * 0"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: source-health
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git fetch --no-tags --depth=1 origin main
+          git checkout -B main origin/main
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run source-health snapshot
+        run: |
+          set -euo pipefail
+          mkdir -p state
+          python3 tools/source_health.py --timeout 12
+
+      - name: Commit + push if source_health.json changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- state/source_health.json; then
+            echo "no change to state/source_health.json — nothing to commit"
+            exit 0
+          fi
+          git add state/source_health.json
+          git commit -m "source-health: weekly snapshot $(date -u +%F)"
+          # Push to main directly. state/* is on the auto-merge auto-
+          # resolution allowlist, so a concurrent claude/* push will
+          # rebase cleanly. Up to 3 retries to ride out a fetch race
+          # against the routine's own state-file commit.
+          for attempt in 1 2 3; do
+            if git push origin main; then
+              echo "pushed source_health.json to main on attempt ${attempt}"
+              exit 0
+            fi
+            echo "push attempt ${attempt} failed; refetching + retrying"
+            git fetch --no-tags --depth=1 origin main
+            git rebase --autostash origin/main || true
+            sleep $((attempt * 5))
+          done
+          echo "ERROR: push failed after 3 attempts" >&2
+          exit 1

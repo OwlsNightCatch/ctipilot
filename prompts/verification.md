@@ -114,7 +114,9 @@ After Phase 4 has written the brief, Phase 5 has updated state, and Phase 5.5 ha
 5. **Contradictions** between sources cited for the same item.
 6. **Clarity** — is anything under-explained to the point that a Tier 2 responder could not act on it without further research?
 
-The verifier returns structured Markdown with sections `Broken / unreachable URLs`, `Generic / oversight URLs`, `Citation does not support the claim`, `Unsupported / hallucinated facts`, `Claims missing inline citation`, `Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`, `Editorial / less-is-more flags`, and a `Verdict: CLEAN | NEEDS_FIXES`.
+The verifier returns structured Markdown with sections `Broken / unreachable URLs`, `Generic / oversight URLs`, `Citation does not support the claim`, `Unsupported / hallucinated facts`, `Claims missing inline citation`, `Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`, `Editorial / less-is-more flags`, **`Single-source items missing [SINGLE-SOURCE] flag`** (F12 — promoted from "the gatekeeper sometimes catches" to a numbered finding in v2.47), and a `Verdict: CLEAN | NEEDS_FIXES`.
+
+**Verifier-model rotation (v2.47):** the main agent rotates between two verifier sub-agent definitions across iterations — odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). The two definitions carry the byte-identical operational system prompt; only the YAML model frontmatter differs. This rotation catches model-specific blind spots that would otherwise silently inherit when every iteration runs on the same model.
 
 ### Iterative refinement loop (cap: 5 iterations — fail-open safety valve, not goal)
 

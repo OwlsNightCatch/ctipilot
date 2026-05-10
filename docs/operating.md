@@ -87,8 +87,31 @@ In <https://claude.ai/code/routines>:
 3. **Prompt** — exactly one line: `Read prompts/daily-cti-brief.md and execute it.` (Or `prompts/weekly-summary.md` for the weekly routine.)
 4. **Permissions** — leave **Allow unrestricted branch pushes** *off*. The routine pushes to `claude/**` only; the auto-merge workflow promotes.
 5. **Sub-agent capability ceiling** — see § [Sub-agent capability ceiling](#sub-agent-capability-ceiling) below; restrict to read-only tools.
+6. **(v2.47) Environment variables for self-identification** — set both env vars in the routine container so every agent (main + sub-agents + verifier) emits a precise `**Model:**` line in its return:
+   - `CLAUDE_FRIENDLY_NAME` — the human-facing name (e.g. `Claude Opus 4.7`, `Claude Sonnet 4.6`). Should match the friendly name a release blog post would use.
+   - `CLAUDE_MODEL_ID` — the canonical model id the harness identifies the agent by (e.g. `claude-opus-4-7`, `claude-sonnet-4-6`).
+   When unset, the agents fall back to "reason about your identity from runtime context" — workable but demonstrably drift-prone (sub-agents have pattern-matched stale training-data names like `Claude Sonnet 4.5` with model id `claude-sonnet-4-6`). Setting these env vars is the single highest-confidence way to make every brief's AI-content notice precisely correct.
+7. **(v2.47) Allow the `cti-verification-alt` sub-agent type** — Phase 5.7 / Phase 4.7 rotates verifier per iteration: odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). Both definitions live under `.claude/agents/`; if the routine needs an explicit allow-list, include both names.
 
 ---
+
+## Source-health snapshot (v2.47 § 3.7)
+
+[`tools/source_health.py`](../tools/source_health.py) is an independent weekly health-check of every `status: active` source. HEAD-only against each source URL, records `(id, status_code, latency_ms, fetched_at, class)` per source into `state/source_health.json` (bounded history, 12 runs ≈ 3 months at weekly cadence). Runs as the [`weekly-source-health`](../.github/workflows/source-health.yml) GitHub Action on Sundays at 04:30 UTC, and on manual `workflow_dispatch`.
+
+The Ops dashboard surfaces this once `state/source_health.json` exists. The signal you're looking for is the **stable** failing pattern (a source that's been unreachable for the last 3+ snapshots) versus the day-of-week luck of the routine's daily fire (a one-off 503 on the day the routine ran). Use it to decide which sources to demote in `sources/sources.json` versus which to leave alone because they recovered.
+
+To run manually: `python3 tools/source_health.py --dry-run --timeout 12`.
+
+## Source candidates (v2.47 § 3.6)
+
+[`tools/source_candidates.py`](../tools/source_candidates.py) walks the last 30 days of briefs, counts every outbound link host, subtracts hosts already in `sources/sources.json` and the news-aggregator allowlist, and outputs the top-N missing-but-cited domains. Operator runs manually (or as a weekly cron) to spot publishers worth promoting to `status: candidate`. Pure post-hoc analytics; no runtime cost on the brief routine.
+
+```sh
+python3 tools/source_candidates.py                # last 30 days, top 20
+python3 tools/source_candidates.py --window-days 14 --top 30
+python3 tools/source_candidates.py --json         # machine-readable
+```
 
 ## Operations dashboard
 
@@ -102,7 +125,8 @@ Operator-side signals to watch:
 | Signal | What it usually means |
 |---|---|
 | Same source on the stale list for >14 days | The source is dead, blocked, or its canonical URL changed. Open it manually; if the publisher restructured, update `url` in `sources/sources.json` and let the agent recover; if the publisher is gone, demote it. |
-| `verification_residual_count` non-zero on consecutive runs | Verifier is finding the same residual issue repeatedly. Check § Verification Notes in the brief; if a check needs adjusting, edit the relevant agent definition (`.claude/agents/cti-verification.md`) and bump the prompt version. |
+| `verification_residual_count` non-zero on consecutive runs | Verifier is finding the same residual issue repeatedly. Check § Verification Notes in the brief; if a check needs adjusting, edit the relevant agent definition (`.claude/agents/cti-verification.md` AND `cti-verification-alt.md` together — both verifier definitions move in lockstep) and bump the prompt version. |
+| `cap-breach` warning on `tools/check_brief.py` (v2.47) | Verifier's final iteration returned `NEEDS_FIXES` — the brief published at the safety-valve cap, not on a CLEAN verdict. Three or more cap-breaches in a 7-day window is the threshold to investigate prompt drift; the verifier is either finding real defects (signal: research sub-agent quality regression) or chasing fabricated ones (signal: verifier prompt regression). |
 | `fetch_failures` spike on one sub-agent | Either a publisher block (frequent on CISA / NCSC.ch — already routed via [`tools/fetch_source.py`](../tools/fetch_source.py)) or a transient network event. If it persists across runs for the same host, add the host to the bridge fetcher. |
 | Prompt version not bumped after a prompt edit | `tools/check_brief.py` cross-checks; this should never happen in production. If it does, the prompt-versioning rule (CLAUDE.md) was skipped — restore the bump. |
 

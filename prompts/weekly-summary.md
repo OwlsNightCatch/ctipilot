@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.46 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.47 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -112,12 +112,19 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
 ## Phase 0 — Preflight (sequential, ~1 min)
 
-0. **Capture main-agent start timestamp (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and persist it to the run-id checkpoint dir:
+0. **Capture main-agent start timestamp + compute deterministic run_id (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and derive a deterministic `run_id`:
    ```bash
-   mkdir -p work/<run-id>
-   date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.started_at
+   STARTED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+   ISO_WEEK=$(date -u +%G-W%V)
+   BRIEF_PATH="briefs/weekly/${ISO_WEEK}.md"
+   STARTED_MIN="${STARTED%:*}Z"
+   RUN_ID="${ISO_WEEK}-$(printf '%s|%s' "$BRIEF_PATH" "$STARTED_MIN" | sha256sum | cut -c1-8)"
+   mkdir -p "work/${RUN_ID}"
+   echo "$STARTED" | tee "work/${RUN_ID}/main.started_at"
+   echo "$RUN_ID" | tee "work/${RUN_ID}/run_id"
+   : > "work/${RUN_ID}/url-liveness.tsv"   # pre-create empty ledger
    ```
-   The `<run-id>` is `YYYY-MM-DD-HHMM` derived from this timestamp; it is the same id you pass to every Phase 2 sub-agent. Phase 4 reads `main.started_at` to populate `run_log.json.started`. **If you skip this step, `started` falls back to "unknown" and the Ops dashboard cannot chart this run's duration.** A symmetric end-timestamp capture happens at Phase 4.
+   The `<run-id>` is the same id you pass to every Phase 2 sub-agent. Phase 4 reads `main.started_at` to populate `run_log.json.started` and refuses to append a `runs[]` entry whose `run_id` already exists in the file (idempotent retry). The `url-liveness.tsv` is the empty ledger every sub-agent appends to in Phase 2; Phase 4.5's `tools/check_brief.py` reads it. **If you skip this step, `started` falls back to "unknown", `run_id` falls back to a non-deterministic value, and the URL-liveness cache is bypassed.** A symmetric end-timestamp capture happens at Phase 4.
 1. Compute today's ISO week (`YYYY-Www`, e.g., `2026-W19`). Output filename `briefs/weekly/<this-iso-week>.md`. If a file with that name already exists from a previous run today, treat as re-run and overwrite cleanly.
 
 2. **Compute the gap-derived window from `briefs/weekly/`.** Same self-healing rule the daily uses, applied to the weekly cadence:
@@ -151,6 +158,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 8. Read the previous weekly summary (latest file in `briefs/weekly/`) for continuity. Note campaigns / actors / CVEs whose status the previous weekly described as "in motion" — those are first-priority candidates for this week's status update.
 
 9. Initialise a `TodoWrite` plan for the phases.
+9a. **Generate `work/<run-id>/prior_coverage.json` from every daily brief in the gap window + the previous weekly.** Walk every H3 in §§ 0–6 of each daily and §§ 0–9 of the previous weekly, extract `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}`. Pass the path + record count to W1/W2 so they dedup against full records before fetching, not just headlines (PD-8 enforcement at fetch time, not just at main-agent dedup time).
 
 If reads fail, surface the error and stop.
 
@@ -204,13 +212,14 @@ Parse both and stash:
 
 Per `Agent` call, the prompt is a thin per-domain envelope:
 
-1. **Run identifier** — `Run id: <YYYY-MM-DD-HHMM>` so the sub-agent knows which `work/<run-id>/` directory to checkpoint into.
+1. **Run identifier** — `Run id: <YYYY-Www>-<sha8>` (the deterministic run_id from Phase 0 step 0). The sub-agent checkpoints into `work/<run-id>/`. Pre-create the directory before spawning.
 2. **Recency window** — `window_days: <N>` from Phase 0 step 2 (convert to `window_hours` if helpful: `N * 24`).
 3. **Domain** — W1 (long-horizon ongoing developments) or W2 (strategic & policy horizon), with the source-filter hint below.
 4. **Source-list slice** — the subset of `sources/sources.json` (status: active) whose `category` matches the sub-agent's filter.
-5. **Dedup context** — CVE IDs from `cves_seen.json`, named entities from `covered_items.json`, headlines from each daily brief in the gap window, the previous weekly's "Looking ahead" items (these are first-priority candidates for status updates).
+5. **Dedup context** — CVE IDs from `cves_seen.json`, named entities from `covered_items.json`, headlines from each daily brief in the gap window, the previous weekly's "Looking ahead" items (these are first-priority candidates for status updates). **Plus** `prior_coverage_records: <count>` and the path `work/<run-id>/prior_coverage.json` — the structured per-H3 records (key, title, one-line tl;dr, primary-source URL, date) for every item in every daily brief inside the gap window. Sub-agents read it before fetching so they can dedup against full records, not just headlines.
 6. **Rotation-priority list** — sources flagged by Phase 0 step 7 as gaps in 2+ daily briefs in the window, filtered to this sub-agent's category.
 7. **Today's ISO date** + **ISO week** so the sub-agent has anchors for "in-window" decisions.
+8. **URL-liveness ledger path** — `work/<run-id>/url-liveness.tsv` (pre-created empty by Phase 0). Every sub-agent appends one tab-separated line `<url>\t<status>\t<fetched_at_iso>` after every successful WebFetch / bridge fetch of a Source URL it cites. Phase 4.5's `tools/check_brief.py` reads this ledger and trusts its records over re-fetching every Source URL itself.
 
 ### Reinforced rules for the main agent (same rules in Phase 3 compose / Phase 4.7 verification)
 
@@ -472,10 +481,13 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.ended_at
 
 Use the contents of `work/<run-id>/main.started_at` (Phase 0 step 0) and `work/<run-id>/main.ended_at` (now) to populate the record's `started` / `completed` fields. `duration_seconds` is integer `completed − started`. If either file is missing, record `"unknown"` for that field and `null` for `duration_seconds` — never invent a timestamp.
 
-Append a per-run record. **Every key required every run** — a sparse record produces an empty Ops dashboard cell:
+Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the deterministic id you computed in Phase 0 step 0 (`<YYYY-Www>-<sha8 of brief_path|started_minute>`). Before appending, scan `runs[].run_id` — if an entry with this `run_id` already exists, **do not append a duplicate**; instead, update the existing record in place (this makes a Phase-5-retry safe). The `tools/check_brief.py` `run-log-fields` check FAILs on a missing or duplicate `run_id`.
+
+**Every key required every run** — a sparse record produces an empty Ops dashboard cell:
 
 ```jsonc
 {
+  "run_id": "<YYYY-Www>-<sha8>",                              // deterministic, computed in Phase 0 step 0
   "date": "YYYY-MM-DD",                                       // run date (publish date, not the ISO-week start)
   "iso_week": "YYYY-Www",                                     // weekly identifier
   "kind": "weekly",
@@ -503,8 +515,8 @@ Append a per-run record. **Every key required every run** — a sparse record pr
   "fetch_failures": [ { "id": "cisa-kev", "code": "403" }, { "id": "talos", "code": "403" } ],
   "items_published": N,                                       // total H3 items in the summary
   "items_dropped_by_verification": N,                         // from Phase 4.7 Drop / hallucination drops
-  "verification_iterations": N,                               // ≤3 (legacy scalar, still required)
-  "verification_residual_count": N,                           // 0 on a clean publish
+  "verification_iterations": N,                               // ≤5 (legacy scalar, still required)
+  "verification_residual_count": N,                           // 0 on a clean publish; equals (truth + editorial) of the FINAL iteration if its verdict is NEEDS_FIXES (cap-breach signal)
   "verification": {                                           // per-iteration breakdown (NEW in v2.43)
     "iterations": [
       {
@@ -578,9 +590,16 @@ After Phase 4.5 has exited 0 (mechanical gate passed), the summary goes through 
 
 **Non-negotiable**: do not skip, short-circuit, or commit while pending. Verification removes bad and irrelevant content; it never prevents the summary from being *written* (the file already exists from Phase 3 — verification only blocks publish until CLEAN or cap). The CRITICAL header always wins.
 
-### Spawn — verification sub-agent
+### Spawn — verification sub-agent (with model rotation across iterations)
 
-Spawn a single `Agent` call with `subagent_type: cti-verification` (defined at [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), isolated context, **read-only** tools — main agent owns all edits). The sub-agent's system prompt embeds the full check list: gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10 (relevance, primary-source kind, vendor-marketing tells, fake-news patterns, contradictions, clarity), whole-brief checks 11–13 (coverage shape — including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon* — style discipline, missed angles), return format with finding categories F1–F11 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries), verdict line, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap.
+Spawn a single `Agent` call. **Rotate the sub-agent type per iteration** to vary the verifier model — model-specific blind spots are caught when the next iteration runs on a different model.
+
+| Iteration | `subagent_type` | Model |
+|---|---|---|
+| 1, 3, 5 | `cti-verification` | `opus` |
+| 2, 4 | `cti-verification-alt` | `sonnet` |
+
+Both agent definitions ([`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md)) carry the **identical operational system prompt** — gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10, whole-brief checks 11–13 (including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon*), return format with finding categories F1–F12 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries; F12 is single-source missing-flag), verdict line, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap. The only difference is the model frontmatter pins.
 
 The spawn message is short:
 
@@ -614,7 +633,7 @@ After remediation, **re-run `python3 tools/check_brief.py briefs/weekly/YYYY-Www
 
 **Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with 30-min wall-clock budget (same as Phase 2). **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
 
-Track verification iterations in the run log: `state/run_log.json` fields `verification_iterations`, `verification_residual_count`. The Ops dashboard reads these.
+Track verification iterations in the run log: `state/run_log.json` fields `verification_iterations`, `verification_residual_count`. The Ops dashboard reads these. **`verification_residual_count` semantics (corrected v2.47):** `0` when the final iteration's verdict is `CLEAN`; `(final_iter.truth + final_iter.editorial)` when the final iteration's verdict is `NEEDS_FIXES` (cap reached). Advisory (F11) excluded — F11 alone never blocks CLEAN. **Never `0` on a NEEDS_FIXES final iteration.** `tools/check_brief.py`'s `cap-breach` WARN reads this and surfaces to the Ops dashboard.
 
 ---
 

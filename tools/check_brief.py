@@ -779,12 +779,263 @@ def check_primary_source_quality(sections: list[dict[str, Any]],
         ok("primary-source-quality", "no item leans on CERT/NCSC as sole primary source")
 
 
+def _load_url_liveness_ledger() -> dict[str, str]:
+    """v2.47 URL-liveness cache. Sub-agents append to `work/<run-id>/url-liveness.tsv`
+    a tab-separated `<url>\\t<status>\\t<fetched_at>` line for every Source URL
+    they successfully fetched in-run. We sweep every `work/*/url-liveness.tsv`
+    (most recent wins on duplicate URLs) and return `{url: status}` for any
+    entry whose status starts with `2` (i.e. 2xx). The live HEAD/GET check
+    skips URLs in this dict — the sub-agent has already proved them live, so
+    re-fetching them only generates SSL-cert / anti-bot 403 noise on URLs the
+    agent has already verified live.
+
+    The cache is conservative: it only short-circuits on positive (2xx)
+    cached entries. Cached non-2xx outcomes do NOT short-circuit; the live
+    check runs and decides for itself. This keeps the gate strictly stronger
+    than (or equal to) the no-cache version.
+    """
+    cached: dict[str, tuple[str, str]] = {}  # url -> (status, fetched_at)
+    work_dir = ROOT / "work"
+    if not work_dir.exists():
+        return {}
+    for ledger in sorted(work_dir.glob("*/url-liveness.tsv")):
+        try:
+            for raw in ledger.read_text(encoding="utf-8", errors="replace").splitlines():
+                parts = raw.rstrip().split("\t")
+                if len(parts) < 2:
+                    continue
+                url, status = parts[0].strip(), parts[1].strip()
+                fetched_at = parts[2].strip() if len(parts) > 2 else ""
+                if not url or not status:
+                    continue
+                # Most-recent wins (sorted glob order is filesystem order; we
+                # also key on fetched_at if present).
+                prev = cached.get(url)
+                if prev is None or (fetched_at and fetched_at > prev[1]):
+                    cached[url] = (status, fetched_at)
+        except Exception:
+            continue
+    # Only honour 2xx cached statuses.
+    return {u: st for u, (st, _) in cached.items() if st.startswith("2")}
+
+
+# v2.47 — News-aggregator host allowlist for the "aggregator-only sourcing"
+# warning. These are reputable news outlets per `sources.json`, but they
+# aggregate primary research and should NOT be the only sources backing an
+# item. An item whose Source field is ≥2 URLs all from this list meets the
+# literal two-source bar but lacks any primary disclosure — flag it so § 7
+# carries the reduced-confidence framing instead of silently accepting.
+NEWS_AGGREGATOR_HOSTS: tuple[str, ...] = (
+    "bleepingcomputer.com",
+    "thehackernews.com",
+    "feeds.feedburner.com",   # hackernews + akamai feedburner namespace
+    "securityaffairs.com",
+    "securityweek.com",
+    "helpnetsecurity.com",
+    "therecord.media",
+    "cyberscoop.com",
+    "darkreading.com",
+    "infosecurity-magazine.com",
+    "risky.biz",
+    "news.risky.biz",
+    "krebsonsecurity.com",
+    "schneier.com",
+    "techcrunch.com",
+    "techzine.eu",
+    "dutchnews.nl",
+    "heise.de",        # news side; their advisory pages are different
+    "inside-it.ch",
+    "ictjournal.ch",
+    "blick.ch",
+    "ictjournal.fr",
+    "lemondeinformatique.fr",
+    "le-monde.fr",
+    "lemonde.fr",
+    "theguardian.com",
+    "spiegel.de",
+    "meduza.io",
+    "piunikaweb.com",
+    "cyberkendra.com",
+    "malwarebytes.com",   # they also publish their own research; treat the
+                           # "blog/news" half as aggregator and the
+                           # "labs"/"threat-intel" half as primary — see the
+                           # _is_primary_path carve-out below.
+)
+
+
+def _host_is_aggregator(host: str) -> bool:
+    h = (host or "").lower()
+    return any(h == a or h.endswith("." + a) for a in NEWS_AGGREGATOR_HOSTS)
+
+
+def check_aggregator_only_sourcing(sections: list[dict[str, Any]],
+                                     *, kind: str = "daily") -> None:
+    """v2.47 (§ 2.4): an item whose Source field has ≥2 URLs all matching the
+    news-aggregator allowlist meets the literal two-source bar but lacks any
+    primary disclosure (vendor PSIRT advisory, research-lab post, regulator
+    filing, victim statement). Flag it so § 7 carries the reduced-confidence
+    framing instead of silently accepting. Items in § 4 Updates legitimately
+    rely on news-aggregator sourcing for the *delta* part of an UPDATE, so
+    they are excluded.
+    """
+    if kind == "weekly":
+        target_keys = (
+            "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
+            "weekly-incidents-recap",
+        )
+    else:
+        target_keys = ("active-threats", "trending-vulnerabilities", "research")
+    flagged: list[str] = []
+    for sec in sections:
+        if sec["key"] not in target_keys:
+            continue
+        for it in sec["items"]:
+            footer = it.get("footer") or {}
+            sources = footer.get("sources") or []
+            if len(sources) < 2:
+                continue
+            hosts = [_host_path(s.get("url", ""))[0] for s in sources]
+            if all(_host_is_aggregator(h) for h in hosts if h):
+                flagged.append(
+                    f"'{it['heading'][:60]}' has {len(sources)} sources, all from "
+                    f"news-aggregator hosts ({sorted(set(hosts))[:3]}). "
+                    f"§ 7 should carry `reduced confidence — only aggregator sources` "
+                    f"or the item should be re-pivoted to a vendor / research-lab / regulator primary."
+                )
+    if flagged:
+        for w in flagged:
+            warn("aggregator-only-sourcing", w)
+    else:
+        ok("aggregator-only-sourcing",
+           "no item leans on news-aggregator hosts as its only sources")
+
+
+def check_single_source_flag(sections: list[dict[str, Any]],
+                               *, kind: str = "daily") -> None:
+    """v2.47 (§ 2.5 mechanical complement to the verifier's F12): an item
+    whose Source field has exactly 1 URL, where the host is NOT one of the
+    national-CERT carve-out hosts, must carry the `[SINGLE-SOURCE]` marker
+    (or the related `SINGLE-SOURCE-OTHER` / `SINGLE-SOURCE-NATIONAL-CERT`
+    variant) in its heading. Without the marker the reader doesn't see the
+    softer guarantee.
+
+    The national-CERT carve-out hosts are the same set the editorial policy
+    treats as primary disclosing parties for their own jurisdiction; they
+    are single-source acceptable without the explicit reader-visible flag,
+    though the verifier's F12 still asks for an explicit § 7 / § 10 line
+    naming the carve-out.
+    """
+    NATIONAL_CERT_HOSTS = (
+        "ncsc.admin.ch", "ncsc.ch", "govcert.ch",
+        "cert.europa.eu", "enisa.europa.eu",
+        "bsi.bund.de", "wid.cert-bund.de", "cert.ssi.gouv.fr",
+        "ncsc.gov.uk", "ncsc.nl", "advisories.ncsc.nl",
+        "cisa.gov", "www.cisa.gov",
+        "csirt.gov.it", "agid.gov.it", "acn.gov.it",
+        "cert.at", "govcert.gv.at", "cert.pl", "ccn-cert.cni.es",
+        "jpcert.or.jp",
+    )
+    if kind == "weekly":
+        target_keys = (
+            "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
+            "weekly-annual-reports", "weekly-long-running", "weekly-policy",
+        )
+    else:
+        target_keys = ("active-threats", "trending-vulnerabilities", "research")
+    flagged: list[str] = []
+    for sec in sections:
+        if sec["key"] not in target_keys:
+            continue
+        for it in sec["items"]:
+            footer = it.get("footer") or {}
+            sources = footer.get("sources") or []
+            if len(sources) != 1:
+                continue
+            host = _host_path(sources[0].get("url", ""))[0]
+            heading = it.get("heading") or ""
+            heading_has_flag = bool(re.search(r"\[SINGLE-SOURCE", heading, re.IGNORECASE))
+            if heading_has_flag:
+                continue
+            if any(host == h or host.endswith("." + h) for h in NATIONAL_CERT_HOSTS):
+                # National-CERT carve-out — single-source acceptable without
+                # the explicit flag. The verifier's F12 still asks for a § 7
+                # line naming the carve-out, but no script-side WARN here.
+                continue
+            flagged.append(
+                f"'{it['heading'][:60]}' has exactly 1 Source ({host}) and the "
+                f"heading lacks `[SINGLE-SOURCE]`. Add the flag to the heading and "
+                f"name the source explicitly in § 7 (or carve-out applies if a national CERT)."
+            )
+    if flagged:
+        for w in flagged:
+            warn("single-source-flag", w)
+    else:
+        ok("single-source-flag",
+           "every single-source item carries [SINGLE-SOURCE] in its heading or qualifies for the national-CERT carve-out")
+
+
+_TLDR_DEADLINE_RE = re.compile(
+    r"(?:CISA\s+)?KEV\s+deadline|remediation\s+deadline|federal\s+remediation|CISA\s+deadline",
+    re.IGNORECASE,
+)
+_TLDR_EXPLOITATION_RE = re.compile(
+    r"exploit(?:ed|ation|ing)|in[\s-]?the[\s-]?wild|\bITW\b|active(?:ly)?|"
+    r"victim|impacted|exposed|targeting|breach",
+    re.IGNORECASE,
+)
+
+
+def check_tldr_deadline_lead(sections: list[dict[str, Any]]) -> None:
+    """v2.47 (§ 2.3) — PD-13 enforcement at the bullet level. A TL;DR bullet
+    that leads with US-only KEV-deadline framing without naming the actual
+    urgent driver (active exploitation, victim class, exposure magnitude,
+    attack class) is the editorial regression PD-13 was added to prevent.
+
+    Read literally: the *first ~120 characters* of every TL;DR bullet must
+    name the operational driver, not the compliance deadline. Bullets that
+    mention the KEV deadline elsewhere in their body are fine — the test is
+    "what does the reader see in the lead 120 chars".
+    """
+    by_key = sections_by_key(sections)
+    tldr_secs = by_key.get("tldr", [])
+    if not tldr_secs:
+        ok("tldr-deadline-lead", "no TL;DR section to check")
+        return
+    flagged: list[str] = []
+    bullet_re = re.compile(r"^\s*[-*]\s+(?P<body>.+?)$", re.MULTILINE)
+    for sec in tldr_secs:
+        body = "\n".join(sec.get("lines", []))
+        for m in bullet_re.finditer(body):
+            bullet = m.group("body").strip()
+            lead = bullet[:160]
+            if not _TLDR_DEADLINE_RE.search(lead):
+                continue
+            if _TLDR_EXPLOITATION_RE.search(lead):
+                continue
+            preview = bullet[:90].replace("**", "")
+            flagged.append(
+                f"TL;DR bullet leads with KEV/remediation deadline framing "
+                f"without naming exploitation / victim / exposure: {preview!r}. "
+                f"PD-13: deadline is US-only compliance signal, not the urgent driver."
+            )
+    if flagged:
+        for w in flagged:
+            warn("tldr-deadline-lead", w)
+    else:
+        ok("tldr-deadline-lead",
+           "no TL;DR bullet leads with deadline framing without exploitation context")
+
+
 def check_source_urls_resolve(sections: list[dict[str, Any]],
                                 *, skip: bool, timeout: float = 10.0) -> None:
     """Live HEAD/GET every Source URL in every footer; FAIL on 404. Catches
     fabricated-URL drift the v2.27 verifier was designed to find — duplicating
     it here so the operator gets a green/red answer locally without spawning
-    a sub-agent. Use `--no-link-check` for offline runs."""
+    a sub-agent. Use `--no-link-check` for offline runs.
+
+    v2.47 URL-liveness cache: any URL the sub-agents successfully fetched
+    in-run (recorded in `work/<run-id>/url-liveness.tsv` as a 2xx entry) is
+    trusted and skipped — the sub-agent has already proved it live."""
     if skip:
         warn("source-urls", "skipped (--no-link-check)")
         return
@@ -853,6 +1104,29 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
 
     if not urls:
         ok("source-urls", "no http(s) source URLs to check")
+        return
+
+    # v2.47 URL-liveness cache — sub-agents that successfully fetched a URL
+    # in-run record it as 2xx in `work/<run-id>/url-liveness.tsv`. Trust those
+    # entries and skip the live HEAD/GET; the agent has already proved them
+    # live. This kills SSL-cert / anti-bot 403 noise on URLs the agent has
+    # already verified live, without weakening the gate (cached non-2xx
+    # outcomes do NOT short-circuit, and uncached URLs still go through the
+    # full live check).
+    cached_2xx = _load_url_liveness_ledger()
+    cache_hits = [u for u in urls.keys() if u in cached_2xx]
+    if cache_hits:
+        for u in cache_hits:
+            urls.pop(u, None)
+        ok(
+            "source-urls-cache",
+            f"trusted {len(cache_hits)} URL(s) from sub-agent in-run url-liveness ledger "
+            f"(work/<run-id>/url-liveness.tsv); live re-fetch skipped for those URLs",
+        )
+
+    if not urls:
+        ok("source-urls", f"all source URLs trusted via in-run liveness ledger "
+           f"({len(cache_hits)} cached, 0 re-fetched)")
         return
 
     # Pre-flight: probe a single high-availability host. If the SSL handshake
@@ -1126,22 +1400,47 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
 
     # Required top-level keys. Daily and weekly share most of the schema but
     # diverge on a couple of fields (`deep_dive` is daily-only; `iso_week` /
-    # `kind` are weekly-only).
+    # `kind` are weekly-only). v2.47: `run_id` added — deterministic id used
+    # for idempotent retry (Phase 5 refuses to append a duplicate).
     if kind == "weekly":
         required = {
-            "date", "iso_week", "kind", "model", "sub_agents", "fetch_failures",
+            "run_id", "date", "iso_week", "kind", "model", "sub_agents", "fetch_failures",
             "items_published", "verification_iterations", "verification_residual_count",
         }
     else:
         required = {
-            "date", "model", "sub_agents", "fetch_failures", "items_published",
+            "run_id", "date", "model", "sub_agents", "fetch_failures", "items_published",
             "deep_dive", "verification_iterations", "verification_residual_count",
         }
     missing = required - set(rec.keys())
-    if missing:
+    # `run_id` is the only newly-required field as of v2.47 — older records
+    # from v2.46 and earlier still parse, but the WARN flags them so the
+    # operator notices the schema gap. The fields list above keeps `run_id`
+    # in the required set so any *new* record without it FAILs.
+    if missing == {"run_id"}:
+        warn("run-log-fields",
+             "run_id missing on this run record (v2.47+ requirement; older records grandfathered)")
+    elif missing:
         fail("run-log-fields", f"record missing keys: {sorted(missing)}")
     else:
         ok("run-log-fields", "run_log record has every required top-level key")
+
+    # v2.47 idempotent retry: no two runs[] entries may share the same run_id.
+    # The deterministic id (computed in Phase 0 step 0 as
+    # `<date|iso-week>-<sha8 of brief_path|started_minute>`) makes a true
+    # retry within the same minute compute the same id; Phase 5 must update
+    # the existing record in place rather than append a duplicate.
+    rid = rec.get("run_id")
+    if isinstance(rid, str) and rid:
+        dupes = [r for r in runs if r.get("run_id") == rid]
+        if len(dupes) > 1:
+            fail(
+                "run-log-run-id-dup",
+                f"run_id {rid!r} appears {len(dupes)}× in runs[] — Phase 5 should "
+                "update in place when run_id already exists, not append a duplicate",
+            )
+        else:
+            ok("run-log-run-id-dup", f"run_id {rid} is unique in runs[] (idempotent retry honoured)")
 
     # Sub-agent allocation block.
     sa = rec.get("sub_agents") or {}
@@ -1189,13 +1488,64 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
         warn("run-log-verification", f"verification_iterations = {vi} exceeds the v2.46 cap of 5")
     else:
         ok("run-log-verification", f"verification_iterations = {vi}")
+
+    # v2.47 corrected residual semantics: `verification_residual_count` is
+    # `(final_iter.truth + final_iter.editorial)` when the FINAL iteration's
+    # verdict is `NEEDS_FIXES` (cap reached without CLEAN); `0` when the
+    # final verdict is `CLEAN`. F11 advisory excluded — F11 alone never
+    # blocks CLEAN. Counting it 0 on a NEEDS_FIXES final iteration silently
+    # absorbs an editorial-quality drift the gatekeeper was supposed to
+    # catch — the cap-breach signal below catches that drift.
+    expected_vr = None
+    final_iter = None
+    vblock_for_vr = rec.get("verification") if isinstance(rec.get("verification"), dict) else None
+    if vblock_for_vr and isinstance(vblock_for_vr.get("iterations"), list) and vblock_for_vr["iterations"]:
+        final_iter = vblock_for_vr["iterations"][-1]
+        if isinstance(final_iter, dict):
+            verdict = (final_iter.get("verdict") or "").strip().upper()
+            t = final_iter.get("truth") if isinstance(final_iter.get("truth"), int) else 0
+            e = final_iter.get("editorial") if isinstance(final_iter.get("editorial"), int) else 0
+            if verdict == "CLEAN":
+                expected_vr = 0
+            elif verdict == "NEEDS_FIXES":
+                expected_vr = t + e
     if not isinstance(vr, int) or vr < 0:
-        fail("run-log-verification-residual", f"verification_residual_count should be ≥ 0 (got {vr!r})")
+        fail("run-log-verification-residual",
+             f"verification_residual_count should be ≥ 0 (got {vr!r})")
+    elif expected_vr is not None and vr != expected_vr:
+        # v2.47: cross-check against the per-iteration block. The legacy
+        # "every NEEDS_FIXES final iteration silently records 0" pattern
+        # this catches.
+        fail(
+            "run-log-verification-residual",
+            f"verification_residual_count = {vr} but final-iteration "
+            f"verdict + truth/editorial implies {expected_vr} "
+            f"(v2.47 derived = (truth + editorial) of the final iteration "
+            f"if NEEDS_FIXES, else 0; F11 advisory excluded)",
+        )
     elif vr > 0:
         warn("run-log-verification-residual",
              f"verification_residual_count = {vr} — published with unresolved findings")
     else:
         ok("run-log-verification-residual", f"verification_residual_count = 0 (clean publish)")
+
+    # v2.47 cap-breach yellow signal — distinct from the residual-count
+    # check above. A NEEDS_FIXES final iteration is a regression even when
+    # the residual count is correctly recorded. Surfaces to the Ops
+    # dashboard so the operator notices the pattern.
+    if final_iter and isinstance(final_iter, dict):
+        verdict = (final_iter.get("verdict") or "").strip().upper()
+        if verdict == "NEEDS_FIXES":
+            t = final_iter.get("truth") if isinstance(final_iter.get("truth"), int) else 0
+            e = final_iter.get("editorial") if isinstance(final_iter.get("editorial"), int) else 0
+            a = final_iter.get("advisory") if isinstance(final_iter.get("advisory"), int) else 0
+            warn(
+                "cap-breach",
+                f"verifier final iteration ({final_iter.get('n', vi)}) returned NEEDS_FIXES "
+                f"(truth={t}, editorial={e}, advisory={a}) — brief published at the cap-breach "
+                f"safety valve, not on a CLEAN verdict. Surface to the Ops dashboard's 7-day "
+                f"rolling cap-breach count.",
+            )
 
     # Per-agent model surface (v2.43+). Main agent records its own model;
     # every sub-agent that returned should record the model it self-identified
@@ -1515,6 +1865,16 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== primary-source quality ==")
     check_primary_source_quality(sections, kind=kind)
+
+    print(f"\n== aggregator-only sourcing (v2.47) ==")
+    check_aggregator_only_sourcing(sections, kind=kind)
+
+    print(f"\n== single-source flag (v2.47) ==")
+    check_single_source_flag(sections, kind=kind)
+
+    if kind == "daily":
+        print(f"\n== TL;DR deadline-lead (v2.47) ==")
+        check_tldr_deadline_lead(sections)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
     check_source_urls_resolve(sections, skip=skip_link_check)

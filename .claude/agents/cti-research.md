@@ -100,6 +100,19 @@ Two empirical rules from auditing the tool — **preserve verbatim**:
 
 **When traversal fails — listing returned no links, RSS was teaser-only, the article you drilled into has no references — say so explicitly in your return so a follow-up fetch can be made.** Silent loss of outbound links is the failure mode that turns a brief into a dead-end stub.
 
+## URL-liveness ledger — MANDATORY append per successful Source fetch (v2.47)
+
+The main agent's spawn message gives you a `url-liveness.tsv` path under `work/<run-id>/` (pre-created empty by the main agent in Phase 0). **Every time you successfully fetch a URL you intend to cite as a Source** (via `WebFetch` or `python3 tools/fetch_source.py`), append one tab-separated line to that file:
+
+```bash
+printf '%s\t%s\t%s\n' "<url>" "<status_code>" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  >> "work/<run-id>/url-liveness.tsv"
+```
+
+`<status_code>` is the HTTP status the fetch resolved with (`200` for normal `WebFetch` success; for the bridge fetcher use `200` when the body returns; if the bridge reports 403/429 in its output, use that). Do not append entries for URLs you did not actually fetch. Do not append entries for URLs that returned errors (4xx / 5xx with no body) — only successful fetches.
+
+The Phase 5.5 `tools/check_brief.py` URL-liveness check reads this ledger and trusts its records: any URL the ledger lists as `200` (or `2xx`) within this run skips the script's own HEAD/GET re-fetch. This kills SSL-cert / anti-bot 403 noise on URLs you've already verified live, without weakening the gate (URLs not in the ledger are still re-fetched fresh).
+
 ## Bridge fetcher — MANDATORY for known-403 hosts
 
 CISA `cisa.gov`/KEV, Swiss NCSC `ncsc.admin.ch` Cyber Security Hub, CSIRT Italia `acn.gov.it`, UK ICO `ico.org.uk`, Inside IT `inside-it.ch`, PRODAFT `prodaft.com`, DataBreaches.net, NCC Group, occasionally Cisco Talos and others reliably 403 the default UA. Per-source `fetch_method` and `notes` in `sources.json` flag which method to use.
@@ -145,6 +158,16 @@ The main agent uses the trace to: (a) keep rotation accounting honest, (b) verif
 - **Search topically.** Issue as many `WebSearch` queries as the domain warrants — typically 4–10 per spawn for a deep-research run, more if you're pivoting through a multi-step chain. Quality of pivots matters more than count.
 - **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine; four when needed to reach the actual primary disclosure. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
 
+## Prior coverage — dedup BEFORE you fetch (v2.47)
+
+The main agent's spawn message includes `prior_coverage_records: <count>` and the path `work/<run-id>/prior_coverage.json` — structured per-H3 records (key, title, one-line tl;dr, primary-source URL, date, brief_path, section) for every item in the last 7 daily briefs (or the gap-window dailies + previous weekly, when invoked from the weekly routine). **`Read` this file at the top of your run, before any `WebFetch` / `WebSearch`.** When you find a candidate item, scan for matches before fetching:
+
+- **Exact CVE / actor / campaign / incident key match** → it's already covered. Don't fetch it. Only surface it if your candidate is a *material new development* on the prior story (UPDATE shape — link the fresh delta source, not the prior). The main agent will route this through § 4 Updates.
+- **Title near-match (substring or phrase containment)** → it's almost certainly the same story. Inspect the prior `tldr_one_line` and `primary_source_url` to confirm. Drop unless you have a genuine delta.
+- **No match** → it's new. Fetch normally, return per the standard format.
+
+This is **PD-8 enforcement at fetch time** — applying it before you spend wall-clock fetching items the main agent will later drop saves your 30-min budget for genuinely new items. The main agent's Phase 2 dedup re-check is a backstop, not the primary gate.
+
 ## Verification (your own pass before returning)
 
 Before you return an item, confirm:
@@ -158,7 +181,15 @@ Before you return an item, confirm:
 
 The main agent and the sub-agents may run on different models — the runtime decides per role and the agents can't see each other's runtime configuration. The brief's AI-content notice and `state/run_log.json` need to record **which model actually ran each sub-agent** — without your self-report, the main agent has no reliable way to recover that, and the published brief ends up overstating uniformity.
 
-**Reason about your own identity, do not pattern-match a placeholder.** This prompt deliberately gives no example model name — naming one would bias every sub-agent into self-identifying as that model regardless of which model actually ran. Determine yours from your own runtime context (what the host harness set as your model id), then surface it.
+**Authoritative source: the harness env vars `CLAUDE_FRIENDLY_NAME` and `CLAUDE_MODEL_ID`** (v2.47). The operator sets these in the routine container so every agent picks them up; they're more reliable than asking the model to reason about its own identity (sub-agents have demonstrably pattern-matched stale training-data names — e.g. "Claude Sonnet 4.5" with model id `claude-sonnet-4-6` — when left to derive their own friendly name). **Read both env vars via Bash as your very first identity action and use them verbatim**:
+
+```bash
+CLAUDE_FRIENDLY_NAME="${CLAUDE_FRIENDLY_NAME:-}"
+CLAUDE_MODEL_ID="${CLAUDE_MODEL_ID:-}"
+echo "friendly=${CLAUDE_FRIENDLY_NAME} id=${CLAUDE_MODEL_ID}"
+```
+
+**Fallback (env vars unset):** reason about your own identity from your runtime context (what the host harness set as your model id) and surface that. Do not pattern-match a placeholder name from training data — when in doubt, write `Anthropic Claude (specific model not determined)` and the main agent will surface that string verbatim.
 
 **Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Immediately follow with a **mandatory `**Timestamps:**` line** carrying the start + end UTC ISO 8601 stamps you captured in § Timestamps above. Use this exact shape:
 
@@ -167,7 +198,7 @@ The main agent and the sub-agents may run on different models — the runtime de
 **Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
 ```
 
-The friendly name is the human-facing label for your model (the form a release blog post would use); the canonical id is the slug your harness identifies you by. If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)` — the main agent surfaces that string verbatim. The main agent parses these two lines and stores them under `sub_agents.<your-domain>.model` / `.started_at` / `.ended_at` / `.duration_seconds` in `state/run_log.json`; skipping either line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
+The friendly name is the human-facing label for your model (the form a release blog post would use; the env var `CLAUDE_FRIENDLY_NAME` carries this verbatim when set); the canonical id is the slug your harness identifies you by (env var `CLAUDE_MODEL_ID`). The main agent parses these two lines and stores them under `sub_agents.<your-domain>.model` / `.started_at` / `.ended_at` / `.duration_seconds` in `state/run_log.json`; skipping either line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
 
 `duration_seconds` is integer seconds derived from `ended_at − started_at`; if either timestamp is `unknown`, write `unknown` here too. Never invent values.
 

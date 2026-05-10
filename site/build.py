@@ -77,7 +77,7 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -1669,6 +1669,7 @@ def base_template(
       <a href="{pfx}briefs/">Briefs</a>
       <a href="{pfx}entities/">Entities</a>
       <a href="{pfx}sources/">Sources</a>
+      <a href="{pfx}trends/">Trends</a>
       <a href="{pfx}ops/">Ops</a>
       <a href="{pfx}about/">About</a>
     </nav>
@@ -1813,6 +1814,144 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "", sources_only
 
 # === BRIEF DETAIL ======================================================
 
+def _editorial_choices_block(brief: dict[str, Any], *, prefix: str) -> str:
+    """v2.7 (§ 2.7) — render an "Editorial choices" collapsed `<details>`
+    block at the bottom of the brief page. Pulls items the editorial flagged
+    as dropped or held back from the verification-notes section, surfaces
+    them as a discoverable but distinct block. Not in the TL;DR, not in the
+    body — visible only after the editorial signal the brief was choosing.
+
+    Looks for H3 sub-sections in § 7 / § 10 whose heading matches a "dropped"
+    pattern: 'Items dropped or held back', 'Items dropped from Phase 2',
+    'Items Dropped', 'Items dropped'. The body of the matching H3 is
+    rendered as plain Markdown inside the collapsed `<details>`.
+    """
+    drop_re = re.compile(
+        r"items?\s+dropped|held\s+back|dropped\s+from\s+phase|drop(?:ped)?\s+candidates?",
+        re.IGNORECASE,
+    )
+    matches: list[tuple[str, str]] = []
+    for sec in brief.get("sections", []):
+        if sec.get("key") not in ("verification-notes",):
+            continue
+        for it in sec.get("items", []):
+            heading = it.get("heading") or ""
+            if drop_re.search(heading):
+                matches.append((heading, (it.get("body_md") or "").strip()))
+    if not matches:
+        return ""
+    inner_blocks: list[str] = []
+    for heading, body_md in matches:
+        if not body_md:
+            continue
+        body_html = render_markdown(body_md, base_url=None)
+        inner_blocks.append(
+            f'<section class="editorial-choices__entry">'
+            f'<h4 class="editorial-choices__heading">{_escape(heading)}</h4>'
+            f'<div class="editorial-choices__body">{body_html}</div>'
+            f'</section>'
+        )
+    if not inner_blocks:
+        return ""
+    n = len(matches)
+    return (
+        '<details class="editorial-choices" data-editorial="dropped-items">'
+        '<summary>'
+        f'<span class="editorial-choices__title">Editorial choices — {n} item{"s" if n != 1 else ""} considered and not included</span>'
+        '<span class="editorial-choices__hint muted"> (the editor\'s drop reasoning, normally only in § 7)</span>'
+        '</summary>'
+        '<div class="editorial-choices__inner">'
+        + "".join(inner_blocks)
+        + '</div>'
+        '</details>'
+    )
+
+
+def _per_item_delta_block(item: dict[str, Any], *,
+                           brief_name: str,
+                           appearances_index: dict[str, list[dict[str, Any]]] | None,
+                           prefix: str) -> str:
+    """v2.7 (§ 3.5) — render a per-item "Changes since first coverage" inline
+    `<details>` block for items whose CVE / topic key has more than one
+    `appearances[]` record in `covered_items.json`. The block lists each
+    prior appearance's `delta_summary` + date + brief link.
+
+    The block renders only if there is ≥1 prior appearance (an entity whose
+    only appearance is today's brief shows nothing — there's no delta yet).
+    """
+    if not appearances_index:
+        return ""
+    candidate_keys: set[str] = set()
+    footer = item.get("footer") or {}
+    cve_field = (footer.get("cve") or "")
+    for cve_token in cve_field.split(","):
+        ct = cve_token.strip().upper()
+        if ct and CVE_RE.fullmatch(ct):
+            candidate_keys.add(ct)
+    heading_lower = (item.get("heading") or "").lower()
+    # Best-effort topic-key match: substring of heading against any non-CVE
+    # key in the appearances index. Cheap; the appearances_index keys are
+    # already filtered to entities with len(appearances) > 1, so the loop
+    # is small.
+    for k in appearances_index.keys():
+        if not k or k.upper() in candidate_keys:
+            continue
+        if k.lower().startswith("cve-"):
+            continue
+        # Use the entity title for matching when present; the appearances
+        # records carry the canonical title.
+        first_app = appearances_index[k][0] if appearances_index[k] else None
+        title_raw = (first_app or {}).get("entity_title") or k
+        # Drop the "type:" prefix many keys carry (e.g. "actor:ScarCruft").
+        title_pure = title_raw.split(":", 1)[-1].strip().lower()
+        if title_pure and (title_pure in heading_lower or title_pure in (item.get("body_md") or "").lower()):
+            candidate_keys.add(k)
+    deltas: list[dict[str, Any]] = []
+    seen_apps: set[tuple[str, str]] = set()
+    for key in candidate_keys:
+        for app in appearances_index.get(key, []):
+            bp = app.get("brief_path") or ""
+            # Skip the current brief — we only want PRIOR appearances.
+            if brief_name and brief_name in bp:
+                continue
+            akey = (bp, app.get("date") or "")
+            if akey in seen_apps:
+                continue
+            seen_apps.add(akey)
+            deltas.append(app)
+    if not deltas:
+        return ""
+    deltas.sort(key=lambda a: a.get("date") or "", reverse=True)
+    rows: list[str] = []
+    for app in deltas:
+        date = app.get("date") or ""
+        bp = app.get("brief_path") or ""
+        m = re.search(r"(\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})", bp)
+        bn = m.group(1) if m else ""
+        is_weekly = "weekly" in bp
+        link = (
+            f'{prefix}briefs/{"weekly/" if is_weekly else ""}{_escape(bn)}/'
+            if bn else "#"
+        )
+        delta = app.get("delta_summary") or ""
+        rows.append(
+            '<li class="item-deltas__row">'
+            f'<span class="mono item-deltas__date">{_escape(date)}</span>'
+            f'<a class="item-deltas__brief" href="{link}">{_escape(bn or "?")}</a>'
+            + (f'<span class="item-deltas__delta">{_escape(delta)}</span>' if delta else '')
+            + '</li>'
+        )
+    return (
+        '<details class="item-deltas" data-item-deltas>'
+        '<summary>'
+        f'<span class="item-deltas__title">Changes since first coverage</span>'
+        f'<span class="item-deltas__count muted">({len(deltas)} prior appearance{"s" if len(deltas) != 1 else ""})</span>'
+        '</summary>'
+        f'<ol class="item-deltas__list">{"".join(rows)}</ol>'
+        '</details>'
+    )
+
+
 def render_brief_page(
     brief: dict[str, Any],
     *,
@@ -1823,6 +1962,7 @@ def render_brief_page(
     cachebust: str,
     prefix: str,
     canonical: str,
+    appearances_index: dict[str, list[dict[str, Any]]] | None = None,
 ) -> str:
     """Render a daily / weekly brief page. Layout is two-column on desktop
     (content + aside-toc), single-column on mobile with a collapsible
@@ -2039,6 +2179,12 @@ def render_brief_page(
                 if it["footer"]
                 else f'<h3 id="{_escape(article_id)}">{_escape(it["heading"])}</h3>'
             )
+            delta_html = _per_item_delta_block(
+                it,
+                brief_name=brief.get("name", ""),
+                appearances_index=appearances_index,
+                prefix=prefix,
+            )
             inner.append(
                 f'<article class="brief-item" '
                 f'data-tags="{_escape(tags_attr)}" '
@@ -2046,6 +2192,7 @@ def render_brief_page(
                 f'data-section="{_escape(skey)}">'
                 f'{heading_html}'
                 f'{item_body_html}'
+                f'{delta_html}'
                 f'{footer_html}'
                 f'</article>'
             )
@@ -2097,6 +2244,7 @@ def render_brief_page(
   </div>
 </div>
 """
+    editorial_choices_html = _editorial_choices_block(brief, prefix=prefix)
     body = f"""
 <header class="brief-page-head">
   <h1>{_escape(brief['title'])}</h1>
@@ -2120,6 +2268,7 @@ def render_brief_page(
     </details>
     <div class="brief-prose">{body_html}</div>
     {cited_footer}
+    {editorial_choices_html}
   </div>
   <aside class="aside-toc aside-toc--desktop" aria-label="In this brief" data-filter="brief">
     {toc_html}
@@ -2773,6 +2922,280 @@ def render_home_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix="",
+    )
+
+
+# === TRENDS DASHBOARD (v2.47 § 4.1) ====================================
+
+# Trend "cohorts" — each tile on /trends/ aggregates by week the count of
+# items whose footer carries any of the listed taxonomy values. Cohorts
+# match the audience's mental model (a SOC manager skimming the site
+# monthly) rather than every taxonomy value verbatim. Add cohorts here
+# as the brief's coverage shifts; never silently rename one (entity URLs
+# don't move, but the trend chart's labels do).
+TREND_COHORTS: list[dict[str, Any]] = [
+    {
+        "key": "ransomware",
+        "title": "Ransomware items / week",
+        "tags": ("ransomware",),
+        "sectors": (),
+        "regions": (),
+        "match": "any",
+    },
+    {
+        "key": "actively-exploited",
+        "title": "Actively-exploited vulnerabilities / week",
+        "tags": ("actively-exploited", "vulnerabilities"),
+        "sectors": (),
+        "regions": (),
+        "match": "all",
+    },
+    {
+        "key": "public-sector",
+        "title": "Public-sector items / week",
+        "tags": (),
+        "sectors": ("public-sector",),
+        "regions": (),
+        "match": "any",
+    },
+    {
+        "key": "ot-ics",
+        "title": "OT / ICS items / week",
+        "tags": ("ot-ics",),
+        "sectors": ("energy", "water", "manufacturing", "transport"),
+        "regions": (),
+        "match": "any",
+    },
+    {
+        "key": "supply-chain",
+        "title": "Supply-chain items / week",
+        "tags": ("supply-chain",),
+        "sectors": (),
+        "regions": (),
+        "match": "any",
+    },
+    {
+        "key": "ai-abuse",
+        "title": "AI-abuse items / week",
+        "tags": ("ai-abuse",),
+        "sectors": (),
+        "regions": (),
+        "match": "any",
+    },
+    {
+        "key": "ch-eu",
+        "title": "Switzerland + Europe items / week",
+        "tags": (),
+        "sectors": (),
+        "regions": ("switzerland", "dach", "europe"),
+        "match": "any",
+    },
+    {
+        "key": "nation-state",
+        "title": "Nation-state items / week",
+        "tags": ("nation-state", "espionage",
+                 "china-nexus", "russia-nexus",
+                 "north-korea-nexus", "iran-nexus"),
+        "sectors": (),
+        "regions": (),
+        "match": "any",
+    },
+]
+
+
+def _iso_week_str(date_iso: str) -> str | None:
+    """`YYYY-MM-DD` → `YYYY-Www`. Used to bucket items into ISO weeks for
+    the trends sparkline. Returns None on parse failure (item is then
+    silently skipped from the cohort)."""
+    try:
+        y, m, d = (int(x) for x in date_iso[:10].split("-"))
+    except Exception:
+        return None
+    try:
+        iso = date(y, m, d).isocalendar()
+    except Exception:
+        return None
+    return f"{iso[0]:04d}-W{iso[1]:02d}"
+
+
+def _item_matches_cohort(footer: dict[str, Any], cohort: dict[str, Any]) -> bool:
+    """Returns True when a parsed footer dict matches the cohort spec.
+    Cohort match modes: `any` — at least one of the listed tags / sectors /
+    regions appears in the footer. `all` — every listed tag must be in the
+    footer's tags (sectors / regions ignored)."""
+    tags = set(footer.get("tags") or [])
+    sectors = set(footer.get("sectors") or [])
+    regions = set(footer.get("regions") or [])
+    want_tags = set(cohort.get("tags") or [])
+    want_sectors = set(cohort.get("sectors") or [])
+    want_regions = set(cohort.get("regions") or [])
+    if cohort.get("match") == "all":
+        return bool(want_tags and want_tags.issubset(tags))
+    # `any` (default)
+    return bool(
+        (want_tags and tags & want_tags)
+        or (want_sectors and sectors & want_sectors)
+        or (want_regions and regions & want_regions)
+    )
+
+
+def render_trends_page(briefs: list[dict[str, Any]], *,
+                        site_url: str, cachebust: str,
+                        prefix: str, canonical: str) -> str:
+    """v2.47 § 4.1 — cross-brief threat-class trend dashboard at /trends/.
+    Buckets every brief footer's tags + sectors + regions by ISO week and
+    renders one sparkline per TREND_COHORT. Pure post-hoc analytics; the
+    data comes entirely from already-parsed brief footers, no new state."""
+    daily_briefs = [b for b in briefs if b.get("kind") == "daily"]
+    if not daily_briefs:
+        body = (
+            '<h1>Trends</h1>'
+            '<p class="muted">No briefs yet — trend dashboard is empty.</p>'
+        )
+        return base_template(
+            title="Trends — ctipilot.ch",
+            description="Weekly trend dashboard across all CTI briefs.",
+            body=body,
+            canonical=canonical, site_url=site_url, cachebust=cachebust,
+            home_relative_prefix=prefix,
+        )
+
+    # Build per-cohort weekly counts.
+    week_buckets: dict[str, dict[str, int]] = {c["key"]: {} for c in TREND_COHORTS}
+    week_set: set[str] = set()
+    for b in daily_briefs:
+        week = _iso_week_str(b.get("publish_iso") or "") or "unknown"
+        week_set.add(week)
+        for sec in b.get("sections") or []:
+            for it in sec.get("items") or []:
+                footer = it.get("footer") or {}
+                if not footer:
+                    continue
+                for cohort in TREND_COHORTS:
+                    if _item_matches_cohort(footer, cohort):
+                        bucket = week_buckets[cohort["key"]]
+                        bucket[week] = bucket.get(week, 0) + 1
+
+    # Trim to the most recent ~16 weeks for a digestible sparkline.
+    weeks_sorted = sorted(week_set)[-16:]
+    if not weeks_sorted:
+        body = '<h1>Trends</h1><p class="muted">No weekly buckets yet.</p>'
+        return base_template(
+            title="Trends — ctipilot.ch",
+            description="Weekly trend dashboard across all CTI briefs.",
+            body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
+            home_relative_prefix=prefix,
+        )
+
+    cards: list[str] = []
+    for cohort in TREND_COHORTS:
+        bucket = week_buckets[cohort["key"]]
+        values = [float(bucket.get(w, 0)) for w in weeks_sorted]
+        total_recent = int(sum(values))
+        last_week_count = int(values[-1]) if values else 0
+        delta = ""
+        if len(values) >= 2:
+            prev = values[-2]
+            now = values[-1]
+            if prev == 0 and now == 0:
+                delta = "no change"
+            elif prev == 0 and now > 0:
+                delta = f"new this week (was 0)"
+            else:
+                pct = (now - prev) / prev * 100 if prev else 0
+                arrow = "▲" if now > prev else ("▼" if now < prev else "→")
+                delta = f"{arrow} {pct:+.0f}% vs prior week"
+        spark_html = _ops_svg_sparkline(
+            values,
+            label=f"{cohort['title']} (last {len(weeks_sorted)} weeks)",
+            width=240, height=44,
+        )
+        cards.append(
+            '<div class="trends-card">'
+            f'<p class="trends-card__title">{_escape(cohort["title"])}</p>'
+            f'<p class="trends-card__value">{last_week_count}</p>'
+            f'<p class="trends-card__sub">{_escape(delta)} · {total_recent} over last {len(weeks_sorted)} wk</p>'
+            f'{spark_html}'
+            '</div>'
+        )
+
+    weeks_label = f"{weeks_sorted[0]} → {weeks_sorted[-1]}"
+    body = f"""
+<header>
+  <h1>Trends</h1>
+  <p class="subtitle muted">Weekly counts of items by threat class, across {len(daily_briefs)} daily briefs ({weeks_label}). Pure post-hoc analytics from brief metadata footers.</p>
+</header>
+<section>
+  <div class="trends-grid">{''.join(cards)}</div>
+</section>
+<section style="margin-top:1.5rem">
+  <h2 class="section-head">How to read this</h2>
+  <p>Each tile counts items whose footer carries the relevant taxonomy values. Tiles aggregate over the week the brief was published — a brief on a Tuesday contributes to that ISO week's bucket. The "vs prior week" delta is week-over-week.</p>
+  <p>The cohorts are coarse on purpose: they're the questions a Swiss / EU public-sector SOC manager would ask scanning the site monthly ("are we seeing more ransomware?", "is OT/ICS escalating?", "did public-sector targeting move?"). For finer slicing, use the per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>
+</section>
+"""
+    return base_template(
+        title="Trends — ctipilot.ch",
+        description="Weekly trend dashboard across all CTI briefs — ransomware, actively-exploited vulnerabilities, public-sector, OT/ICS, supply-chain, AI-abuse, Switzerland + Europe, nation-state.",
+        body=body,
+        canonical=canonical, site_url=site_url, cachebust=cachebust,
+        home_relative_prefix=prefix,
+    )
+
+
+# === ACTOR-TIMELINE STRIP (v2.47 § 4.2) =================================
+
+def _actor_timeline_strip(entity: dict[str, Any]) -> str:
+    """v2.47 § 4.2 — horizontal timeline strip for actor / campaign /
+    incident / tool entity pages. Marker dot per appearance between the
+    first and last coverage dates. Hover tooltip names the brief. Renders
+    above the existing Story timeline; falls back to empty string for
+    entity types where the strip would add no signal (CVE, vulnerability-
+    trend — those use a different sparkline shape already)."""
+    etype = (entity.get("type") or "").lower()
+    if etype not in ("actor", "campaign", "incident", "tool", "annual-report"):
+        return ""
+    apps = sorted(entity.get("appearances", []) or [],
+                  key=lambda a: a.get("date") or "")
+    if len(apps) < 2:
+        return ""
+    first_iso = apps[0].get("date") or ""
+    last_iso = apps[-1].get("date") or ""
+    try:
+        y0, m0, d0 = (int(x) for x in first_iso[:10].split("-"))
+        y1, m1, d1 = (int(x) for x in last_iso[:10].split("-"))
+        first = date(y0, m0, d0)
+        last = date(y1, m1, d1)
+    except Exception:
+        return ""
+    span_days = max((last - first).days, 1)
+    dots: list[str] = []
+    for a in apps:
+        d_iso = a.get("date") or ""
+        try:
+            y, m, d = (int(x) for x in d_iso[:10].split("-"))
+            here = date(y, m, d)
+        except Exception:
+            continue
+        offset_pct = max(0.0, min(100.0, (here - first).days / span_days * 100.0))
+        bp = a.get("brief_path") or ""
+        title = (a.get("delta_summary") or "").strip()
+        title_full = f"{d_iso}" + (f" — {title}" if title else "")
+        dots.append(
+            f'<span class="actor-timeline__dot" style="left:{offset_pct:.2f}%" title="{_escape(title_full)}"></span>'
+        )
+    return (
+        '<section class="actor-timeline" aria-label="Coverage timeline">'
+        '<div class="actor-timeline__strip">'
+        '<div class="actor-timeline__line"></div>'
+        + "".join(dots)
+        + '</div>'
+        '<div class="actor-timeline__ends">'
+        f'<span class="mono">{_escape(first_iso)}</span>'
+        f'<span class="mono muted">{len(apps)} appearance{"s" if len(apps) != 1 else ""}</span>'
+        f'<span class="mono">{_escape(last_iso)}</span>'
+        '</div>'
+        '</section>'
     )
 
 
@@ -4097,6 +4520,150 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
         items_xml="".join(items_xml),
     )
     return feed, most_recent
+
+
+# === SECTOR-SPECIFIC RSS FEED SLICES (v2.47 § 4.3) ======================
+#
+# One feed per audience sector. Each is a filtered slice of build_items_feed
+# (per-H3 entries) where the item's footer Sector / Tags carry the relevant
+# value. Subscribers filter at the feed layer instead of trying to parse the
+# brief.
+#
+# (sector_filename, [accept_sectors], [accept_tags], title_suffix, description)
+SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = [
+    (
+        "feed-public-sector.xml",
+        ("public-sector",),
+        (),
+        "Public sector",
+        "Items affecting public-sector environments (national / cantonal / federal administration, regulators, public-sector technology suppliers).",
+    ),
+    (
+        "feed-healthcare.xml",
+        ("healthcare",),
+        (),
+        "Healthcare",
+        "Items affecting healthcare providers, hospitals, public health, medical devices.",
+    ),
+    (
+        "feed-finance.xml",
+        ("finance",),
+        (),
+        "Finance",
+        "Items affecting financial services, banks, insurance, fintech.",
+    ),
+    (
+        "feed-energy.xml",
+        ("energy",),
+        (),
+        "Energy",
+        "Items affecting energy operators, utilities, grid infrastructure.",
+    ),
+    (
+        "feed-ot-ics.xml",
+        ("energy", "water", "manufacturing", "transport"),
+        ("ot-ics",),
+        "OT / ICS",
+        "Items affecting operational-technology / industrial-control-system environments — energy, water, manufacturing, transport, and any item tagged ot-ics.",
+    ),
+    (
+        "feed-defense.xml",
+        ("defense",),
+        (),
+        "Defense",
+        "Items affecting defense, intelligence, military supply chain.",
+    ),
+    (
+        "feed-telco.xml",
+        ("telco",),
+        (),
+        "Telecommunications",
+        "Items affecting telecommunications operators and infrastructure.",
+    ),
+    (
+        "feed-education.xml",
+        ("education",),
+        (),
+        "Education",
+        "Items affecting education institutions, ed-tech platforms, research universities.",
+    ),
+]
+
+
+def build_sector_feeds(briefs: list[dict[str, Any]],
+                        *, site_url: str) -> list[tuple[str, str, datetime]]:
+    """v2.47 § 4.3 — emit one RSS feed per audience sector. Each feed is the
+    per-item feed filtered by Sector / Tags so subscribers can subscribe to
+    the slice they care about (`/feed-healthcare.xml`, `/feed-public-sector.xml`,
+    `/feed-ot-ics.xml`, …) instead of parsing every per-item entry.
+    Returns `[(filename, xml, most_recent_ts), …]`."""
+    out: list[tuple[str, str, datetime]] = []
+    for fname, accept_sectors, accept_tags, title_suffix, description in SECTOR_FEED_SLICES:
+        accept_sectors_set = set(accept_sectors)
+        accept_tags_set = set(accept_tags)
+        items_xml: list[str] = []
+        most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
+        # Walk every parsed brief item, same shape as build_items_feed but
+        # filtered.
+        candidates: list[dict[str, Any]] = []
+        for b in briefs:
+            for sec in b.get("sections") or []:
+                if sec["key"] in ("tldr", "verification-notes"):
+                    continue
+                for it in sec.get("items") or []:
+                    footer = it.get("footer")
+                    if not footer:
+                        continue
+                    sectors = set(footer.get("sectors") or [])
+                    tags = set(footer.get("tags") or [])
+                    if not (sectors & accept_sectors_set) and not (tags & accept_tags_set):
+                        continue
+                    slug = it["slug"]
+                    url = f"{site_url}{_brief_url_path(b)}{slug}/"
+                    candidates.append({
+                        "url": url,
+                        "title": it["heading"],
+                        "publish_ts": b["publish_ts"],
+                        "publish_rfc822": b["publish_rfc822"],
+                        "publish_iso": b["publish_iso"],
+                        "body_md": it["body_md"],
+                        "footer": footer,
+                        "section_key": sec["key"],
+                    })
+        candidates.sort(key=lambda x: x["publish_ts"], reverse=True)
+        candidates = candidates[:FEED_ITEMS_MAX]
+        for it in candidates:
+            body_html = render_markdown(it["body_md"], base_url=it["url"]) + render_footer_html(it["footer"], prefix=site_url, sources_only=True)
+            cat_parts = list(it["footer"].get("tags", [])) + list(it["footer"].get("regions", [])) + list(it["footer"].get("status", []))
+            if it["footer"].get("cve"):
+                cat_parts.append(it["footer"]["cve"])
+            cats = "".join(f"<category>{_escape(c)}</category>" for c in cat_parts[:16])
+            desc_md = it["body_md"].split("\n\n", 1)[0] if it["body_md"] else ""
+            desc_html = render_markdown(desc_md, base_url=it["url"])
+            items_xml.append(
+                f"<item>"
+                f"<title>{_escape(it['title'])}</title>"
+                f"<link>{_escape(it['url'])}</link>"
+                f'<guid isPermaLink="true">{_escape(it["url"])}</guid>'
+                f"<pubDate>{it['publish_rfc822']}</pubDate>"
+                f"<dc:date>{_escape(it['publish_iso'])}</dc:date>"
+                f"{cats}"
+                f"<description><![CDATA[{_cdata_safe(desc_html)}]]></description>"
+                f"<content:encoded><![CDATA[{_cdata_safe(body_html)}]]></content:encoded>"
+                f"</item>"
+            )
+            if it["publish_ts"] > most_recent:
+                most_recent = it["publish_ts"]
+        feed = _channel_rss(
+            title=f"ctipilot.ch — {title_suffix}",
+            link=site_url,
+            self_link=site_url + fname,
+            description=description,
+            last_build=rfc822(most_recent if candidates else _fallback_lastbuild(briefs)),
+            items_xml="".join(items_xml),
+        )
+        out.append((fname, feed, most_recent))
+    return out
 
 
 # === SOURCE / CVE / TOPIC ANNOTATION ===================================
@@ -5437,6 +6004,8 @@ def render_entity_page(
         for f in (entity.get("flags") or [])
     )
 
+    actor_timeline_html = _actor_timeline_strip(entity)
+
     body = f"""
 <h1{' class="mono"' if etype == 'cve' else ''}>{_escape(title)}</h1>
 <p class="subtitle">
@@ -5446,6 +6015,8 @@ def render_entity_page(
 </p>
 
 {kpi_html}
+
+{actor_timeline_html}
 
 <h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
 {timeline_block}
@@ -5792,6 +6363,57 @@ def main() -> int:
             )
             return 5
 
+    # v2.47 § 3.5: per-item "Changes since first coverage" lookup. Build a
+    # quick index keyed by entity key (CVE id or topic key) → sorted list of
+    # appearance records, but only for entities with len(appearances) > 1
+    # (no delta to show on a brand-new entity). The lookup is consulted at
+    # brief-render time inside `_per_item_delta_block`.
+    appearances_index_for_deltas: dict[str, list[dict[str, Any]]] = {}
+    for tp in topics_raw.get("items", []) or []:
+        apps = tp.get("appearances") or []
+        if len(apps) <= 1:
+            continue
+        title = tp.get("title") or tp.get("key") or ""
+        records = [
+            {
+                "date": a.get("date"),
+                "section": a.get("section"),
+                "brief_path": a.get("brief_path"),
+                "delta_summary": a.get("delta_summary") or "",
+                "entity_title": title,
+                "entity_key": tp.get("key", ""),
+            }
+            for a in apps
+        ]
+        records.sort(key=lambda r: r.get("date") or "", reverse=True)
+        appearances_index_for_deltas[tp.get("key") or ""] = records
+    for c in cves_raw.get("cves", []) or []:
+        # CVEs aren't in topics_raw, but they may appear across multiple
+        # briefs via the brief-level `cves` list. We approximate by
+        # collecting every brief that mentions this CVE and recording its
+        # date, with no per-brief delta_summary (CVEs without a covered
+        # _items entry don't carry per-appearance deltas). If the CVE also
+        # has a covered_items entry by id, that wins via the topic loop above.
+        cve_id = c.get("id", "")
+        if not cve_id or cve_id in appearances_index_for_deltas:
+            continue
+        cve_briefs = [b for b in briefs if cve_id in (b.get("cves") or [])]
+        if len(cve_briefs) <= 1:
+            continue
+        records = [
+            {
+                "date": b["publish_iso"][:10],
+                "section": "",
+                "brief_path": b.get("path") or "",
+                "delta_summary": "",
+                "entity_title": c.get("title") or cve_id,
+                "entity_key": cve_id,
+            }
+            for b in cve_briefs
+        ]
+        records.sort(key=lambda r: r.get("date") or "", reverse=True)
+        appearances_index_for_deltas[cve_id] = records
+
     sources = annotate_sources(sources_raw, briefs)
     # Single unified entity model — supersedes the parallel cve / topic
     # annotation paths. `cves` and `topics` are kept as type-filtered
@@ -5889,6 +6511,7 @@ def main() -> int:
             cachebust=cachebust,
             prefix=prefix,
             canonical=canonical,
+            appearances_index=appearances_index_for_deltas,
         )
         emit_html(rel_url, html, lastmod=b["publish_iso"][:10])
 
@@ -6430,6 +7053,19 @@ def main() -> int:
         ),
     )
 
+    # /trends/ — v2.47 § 4.1 cross-brief threat-class trend dashboard.
+    emit_html(
+        "trends/",
+        render_trends_page(
+            briefs,
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix="../",
+            canonical=site_url + "trends/",
+        ),
+        lastmod=latest["publish_iso"][:10] if latest else "",
+    )
+
     # /404.html
     # GitHub Pages serves this for any unknown path under the site, but the
     # browser's URL stays at the requested deep path (e.g.
@@ -6508,6 +7144,12 @@ def main() -> int:
     atomic_write_text(OUT / "feed.xml", daily_xml)
     atomic_write_text(OUT / "feed-weekly.xml", weekly_xml)
     atomic_write_text(OUT / "feed-items.xml", items_xml)
+    # v2.47 § 4.3 — sector-specific feed slices.
+    sector_feed_results = build_sector_feeds(briefs, site_url=site_url)
+    sector_feed_hashes: dict[str, str] = {}
+    for fname, xml, _ts in sector_feed_results:
+        atomic_write_text(OUT / fname, xml)
+        sector_feed_hashes[fname] = hashlib.sha256(xml.encode("utf-8")).hexdigest()
 
     # ---- Sitemap / robots ---------------------------------------------
     write_sitemap(sorted(sitemap, key=lambda x: x[0]), out_path=OUT / "sitemap.xml")
@@ -6535,6 +7177,7 @@ def main() -> int:
             "feed.xml": hashlib.sha256(daily_xml.encode("utf-8")).hexdigest(),
             "feed-weekly.xml": hashlib.sha256(weekly_xml.encode("utf-8")).hexdigest(),
             "feed-items.xml": hashlib.sha256(items_xml.encode("utf-8")).hexdigest(),
+            **sector_feed_hashes,
         },
         "pages": manifest_pages,
         "counts": dict(counts, items=len(items_index), tags=len(tag_index), regions=len(region_index)),
@@ -6609,7 +7252,9 @@ def main() -> int:
     # quality drift — they print but don't abort, because the deploy-site
     # workflow blocking on a sub-agent quoting `**Model:**` inside a
     # `<code>` block (2026-05-10 incident) was a self-inflicted outage.
-    feed_files = [OUT / "feed.xml", OUT / "feed-weekly.xml", OUT / "feed-items.xml"]
+    feed_files = [OUT / "feed.xml", OUT / "feed-weekly.xml", OUT / "feed-items.xml"] + [
+        OUT / fname for fname, _xml, _ts in sector_feed_results
+    ]
     errors, warnings = self_check(manifest=manifest, feed_files=feed_files, site_url=site_url)
     if warnings:
         print("SELF-CHECK WARNINGS (non-blocking):", file=sys.stderr)
