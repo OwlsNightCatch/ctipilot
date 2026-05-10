@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.44 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.45 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -112,6 +112,12 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
 ## Phase 0 — Preflight (sequential, ~1 min)
 
+0. **Capture main-agent start timestamp (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and persist it to the run-id checkpoint dir:
+   ```bash
+   mkdir -p work/<run-id>
+   date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.started_at
+   ```
+   The `<run-id>` is `YYYY-MM-DD-HHMM` derived from this timestamp; it is the same id you pass to every Phase 2 sub-agent. Phase 4 reads `main.started_at` to populate `run_log.json.started`. **If you skip this step, `started` falls back to "unknown" and the Ops dashboard cannot chart this run's duration.** A symmetric end-timestamp capture happens at Phase 4.
 1. Compute today's ISO week (`YYYY-Www`, e.g., `2026-W19`). Output filename `briefs/weekly/<this-iso-week>.md`. If a file with that name already exists from a previous run today, treat as re-run and overwrite cleanly.
 
 2. **Compute the gap-derived window from `briefs/weekly/`.** Same self-healing rule the daily uses, applied to the weekly cadence:
@@ -177,12 +183,22 @@ Build six working lists from the week's daily briefs. The first five carry forwa
 
 Spawn **two sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
 
-**Capture each sub-agent's reported model.** The first non-blank line of every research return is `**Model:** <friendly name> (`<model-id>`)`. Parse it and stash:
+**Capture each sub-agent's reported model AND its start/end timestamps.** Every research return opens with two mandatory lines (in this order):
+
+```
+**Model:** <friendly name> (`<model-id>`)
+**Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
+```
+
+Parse both and stash:
 
 - `state/run_log.json.sub_agents.<W1|W2>.model` = the friendly-name string.
 - `state/run_log.json.sub_agents.<W1|W2>.model_id` = the canonical model id from the backticks.
-- If the sub-agent included a `**Self-telemetry:**` line, parse the `key=value` pairs into `sub_agents.<key>.telemetry`.
-- Missing line → record `model: "unknown"` (the dashboard surfaces a yellow warning). Do not invent a model.
+- `state/run_log.json.sub_agents.<W1|W2>.started_at` = the `started_at=` UTC ISO 8601 string (verbatim).
+- `state/run_log.json.sub_agents.<W1|W2>.ended_at` = the `ended_at=` UTC ISO 8601 string (verbatim).
+- `state/run_log.json.sub_agents.<W1|W2>.duration_seconds` = the `duration_seconds=` integer; if absent, compute `ended_at − started_at` yourself; if either timestamp is `unknown`, record `null`.
+- If the sub-agent included a `**Self-telemetry:**` line, parse the `key=value` pairs into `sub_agents.<key>.telemetry` (`webfetch_calls`, `websearch_calls`, `bridge_fetches` — `duration_seconds` lives at the top level of the sub-agent record, not inside `telemetry`).
+- Missing `**Model:**` line → `model: "unknown"`. Missing `**Timestamps:**` line → `started_at: "unknown"`, `ended_at: "unknown"`, `duration_seconds: null`. The dashboard surfaces a yellow warning for either gap. Do not invent values.
 
 ### What each spawn message must contain
 
@@ -459,7 +475,7 @@ Read the verification sub-agent's response and act on each finding type:
 
 After remediation, a **fresh `cti-verification` sub-agent** is spawned (no shared memory) against the updated summary. The loop runs until verdict `CLEAN` or until the iteration cap (3) is reached. After the cap, the summary publishes regardless, with unresolved findings logged in § 10.
 
-**Capture the verifier's model on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model and the finding-count breakdown.
+**Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
 
 **Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with the same ~5-min wall-clock budget as Phase 2. **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
 
@@ -494,6 +510,14 @@ Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` 
 
 ### `state/run_log.json` — feeds the Ops dashboard at `/ops/`
 
+**Capture main-agent end timestamp now (MANDATORY, symmetric with Phase 0 step 0).** Before writing the record, capture an UTC ISO 8601 end timestamp for the main agent and persist it alongside the start stamp:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.ended_at
+```
+
+Use the contents of `work/<run-id>/main.started_at` (Phase 0 step 0) and `work/<run-id>/main.ended_at` (now) to populate the record's `started` / `completed` fields. `duration_seconds` is integer `completed − started`. If either file is missing, record `"unknown"` for that field and `null` for `duration_seconds` — never invent a timestamp.
+
 Append a per-run record. **Every key required every run** — a sparse record produces an empty Ops dashboard cell:
 
 ```jsonc
@@ -511,11 +535,14 @@ Append a per-run record. **Every key required every run** — a sparse record pr
     "W1": {
       "model": "<W1's friendly name>",                        // verbatim from W1's **Model:** line
       "model_id": "<W1's canonical model-id>",                // verbatim from the backticks; "unknown" if absent
+      "started_at": "YYYY-MM-DDTHH:MM:SSZ",                   // verbatim from W1's **Timestamps:** line; "unknown" if absent
+      "ended_at": "YYYY-MM-DDTHH:MM:SSZ",                     // verbatim from W1's **Timestamps:** line; "unknown" if absent
+      "duration_seconds": NN,                                 // integer; null if either timestamp unknown
       "sources_attempted": ["id", ...],
       "sources_used": ["id", ...],
       "items_returned": N,
       "returned": true,
-      "telemetry": { "duration_seconds": NN, "webfetch_calls": NN }
+      "telemetry": { "webfetch_calls": NN, "websearch_calls": NN, "bridge_fetches": NN }
     },
     "W2": { /* same shape as W1 */ }
   },
@@ -530,6 +557,9 @@ Append a per-run record. **Every key required every run** — a sparse record pr
         "n": 1,
         "model": "<verifier's friendly name>",
         "model_id": "<verifier's canonical model-id>",
+        "started_at": "YYYY-MM-DDTHH:MM:SSZ",                 // verbatim from the verifier's **Timestamps:** line; "unknown" if absent
+        "ended_at": "YYYY-MM-DDTHH:MM:SSZ",                   // verbatim from the verifier's **Timestamps:** line; "unknown" if absent
+        "duration_seconds": NN,                               // integer; null if either timestamp unknown
         "verdict": "CLEAN | NEEDS_FIXES",
         "truth": 0,
         "editorial": 0,
@@ -541,7 +571,7 @@ Append a per-run record. **Every key required every run** — a sparse record pr
 }
 ```
 
-Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap; `fetch_failures` = `[]` when none. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. Don't invent.
+Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap; `fetch_failures` = `[]` when none. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
 
 ---
 

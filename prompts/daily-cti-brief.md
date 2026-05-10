@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.44 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.45 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -118,6 +118,12 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 
 ## Phase 0 — Preflight (sequential, ~1 min)
 
+0. **Capture main-agent start timestamp (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and persist it to the run-id checkpoint dir:
+   ```bash
+   mkdir -p work/<run-id>
+   date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.started_at
+   ```
+   The `<run-id>` is `YYYY-MM-DD-HHMM` derived from this timestamp; it is the same id you pass to every Phase 1 sub-agent so they checkpoint into the same dir. Phase 5 reads `main.started_at` to populate `run_log.json.started`. **If you skip this step, `started` falls back to "unknown" and the Ops dashboard cannot chart this run's duration.** A symmetric end-timestamp capture happens at Phase 5.
 1. `Read sources/sources.json` — only `status: "active"` sources feed sub-agents.
 2. List `briefs/`; read every brief from **last 7 calendar days** in date order. Read most recent weekly at `briefs/weekly/YYYY-Www.md` for current and prior ISO weeks.
 3. `Read state/covered_items.json`, `state/cves_seen.json`, `state/deep_dive_history.json` (if present).
@@ -138,12 +144,22 @@ Build **source rotation list** by parsing `Coverage gaps:` from § 7 of each las
 
 Spawn **all four sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent definition embeds the full operational system prompt — defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
 
-**Capture each sub-agent's reported model.** The first non-blank line of every research return is `**Model:** <friendly name> (`<model-id>`)`. Parse it and stash:
+**Capture each sub-agent's reported model AND its start/end timestamps.** Every research return opens with two mandatory lines (in this order):
+
+```
+**Model:** <friendly name> (`<model-id>`)
+**Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
+```
+
+Parse both and stash:
 
 - `state/run_log.json.sub_agents.<S1|S2|S3|S4>.model` = the friendly-name string the sub-agent wrote (verbatim).
 - `state/run_log.json.sub_agents.<S1|S2|S3|S4>.model_id` = the canonical model id from the backticks (verbatim).
-- If the sub-agent included a `**Self-telemetry:**` line, parse the `key=value` pairs and stash under `sub_agents.<key>.telemetry` (any of `duration_seconds`, `webfetch_calls`, `websearch_calls`, `bridge_fetches`, `tokens_in`, `tokens_out` — pass through whatever was reported, keep numeric).
-- If the line is absent (sub-agent forgot, or only a stalled return), record `model: "unknown"` and the Ops dashboard renders a yellow warning. Do **not** invent a model — the only honest fallback is `unknown`.
+- `state/run_log.json.sub_agents.<S1|S2|S3|S4>.started_at` = the `started_at=` UTC ISO 8601 string from the `**Timestamps:**` line (verbatim).
+- `state/run_log.json.sub_agents.<S1|S2|S3|S4>.ended_at` = the `ended_at=` UTC ISO 8601 string (verbatim).
+- `state/run_log.json.sub_agents.<S1|S2|S3|S4>.duration_seconds` = the `duration_seconds=` integer; if absent, compute `ended_at − started_at` yourself; if either timestamp is `unknown`, record `null`.
+- If the sub-agent included a `**Self-telemetry:**` line, parse the `key=value` pairs and stash under `sub_agents.<key>.telemetry` (any of `webfetch_calls`, `websearch_calls`, `bridge_fetches`, `tokens_in`, `tokens_out` — pass through whatever was reported, keep numeric). `duration_seconds` lives at the top level of the sub-agent record, not inside `telemetry`.
+- If the `**Model:**` line is absent (sub-agent forgot, or only a stalled return), record `model: "unknown"`. If the `**Timestamps:**` line is absent, record `started_at: "unknown"`, `ended_at: "unknown"`, `duration_seconds: null`. The Ops dashboard renders a yellow warning for either gap. Do **not** invent values — the only honest fallback is `unknown`.
 
 ### What each spawn message must contain
 
@@ -464,7 +480,7 @@ The spawn message is short:
 - Verifier **reads only** (its tool set excludes `Edit` / `Write`); main agent owns all edits.
 - Iteration cap **3**. Each iteration spawns a **fresh** `cti-verification` sub-agent (no shared memory; reads the brief from disk).
 - **Follow-up `cti-research` sub-agents** for `Needs more research` / `Missed angles` capped at **3 per iteration**, ~5-min budget.
-- **Capture the verifier's model on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model and the finding-count breakdown.
+- **Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
 - Track in `state/run_log.json`: `verification_iterations`, `verification_residual_count`, **`verification.iterations[]`** (per-iteration breakdown; the legacy two scalar fields stay for back-compat with older briefs).
 - If verifier itself fails (timeout, no return), publish anyway and note in § 7.
 - **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
@@ -523,6 +539,14 @@ If deep dive selected, append `{ "date": "YYYY-MM-DD", "topic": "Short title", "
 
 Renders directly: per-run sub-agent allocation, fetch failures, items published, deep-dive slug, verification counters. **A sparse record → sparse dashboard** (empty `sub_agents` → `—` cells; missing `fetch_failures` hides source-rotation health; missing `items_published` makes the run look skipped).
 
+**Capture main-agent end timestamp now (MANDATORY, symmetric with Phase 0 step 0).** Before writing the record, capture an UTC ISO 8601 end timestamp for the main agent and persist it alongside the start stamp:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/main.ended_at
+```
+
+Use the contents of `work/<run-id>/main.started_at` (Phase 0 step 0) and `work/<run-id>/main.ended_at` (now) to populate the record's `started` / `completed` fields. `duration_seconds` is integer `completed − started`. If either file is missing (Phase 0 step 0 was skipped, or the Bash capture above failed), record `"unknown"` for that field and `null` for `duration_seconds` — never invent a timestamp.
+
 Append one record per run, then trim to 90 most recent. **Every key required:**
 
 ```jsonc
@@ -538,12 +562,14 @@ Append one record per run, then trim to 90 most recent. **Every key required:**
     "S1": {
       "model": "<S1's friendly name>",                        // verbatim from S1's **Model:** line
       "model_id": "<S1's canonical model-id>",                // verbatim from the backticks; "unknown" if absent
+      "started_at": "YYYY-MM-DDTHH:MM:SSZ",                   // verbatim from S1's **Timestamps:** line; "unknown" if absent
+      "ended_at": "YYYY-MM-DDTHH:MM:SSZ",                     // verbatim from S1's **Timestamps:** line; "unknown" if absent
+      "duration_seconds": NN,                                 // integer; null if either timestamp unknown
       "sources_attempted": ["id", ...],
       "sources_used": ["id", ...],
       "items_returned": N,
       "returned": true,
       "telemetry": {                                          // optional — pass through whatever the sub-agent reported in **Self-telemetry:**
-        "duration_seconds": NN,
         "webfetch_calls": NN,
         "websearch_calls": NN,
         "bridge_fetches": NN
@@ -565,6 +591,9 @@ Append one record per run, then trim to 90 most recent. **Every key required:**
         "n": 1,
         "model": "<verifier's friendly name>",                // verbatim from the verifier's **Model:** line
         "model_id": "<verifier's canonical model-id>",
+        "started_at": "YYYY-MM-DDTHH:MM:SSZ",                 // verbatim from the verifier's **Timestamps:** line; "unknown" if absent
+        "ended_at": "YYYY-MM-DDTHH:MM:SSZ",                   // verbatim from the verifier's **Timestamps:** line; "unknown" if absent
+        "duration_seconds": NN,                               // integer; null if either timestamp unknown
         "verdict": "CLEAN | NEEDS_FIXES",
         "truth": 0,                                           // F1–F4 count
         "editorial": 0,                                       // F5–F10 count
@@ -584,7 +613,8 @@ Append one record per run, then trim to 90 most recent. **Every key required:**
 - `prompt_version` from most recent heading in `prompts/CHANGELOG.md` (dashboard surfaces prompt-version drift against the brief's footer).
 - `model` / `model_id` for the **main agent** record YOUR model — the friendly name you wrote in the AI-content notice and the canonical id you wrote in backticks. **Don't guess** — if you cannot pin your model, write `unknown` and the dashboard surfaces a warning.
 - `model` / `model_id` per sub-agent come **verbatim** from the sub-agent's `**Model:**` line, not inferred. Missing line → `unknown`. The dashboard's per-run "models used" set distinguishes runs where the operator changed the runtime config from runs where one sub-agent forgot to self-identify.
-- `started` / `completed` / `duration_seconds` — wall-clock from Phase 0 start to Phase 5 end. Integer seconds. The dashboard plots a sparkline of `duration_seconds` over the last 30 runs.
+- `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line. Missing line → both `"unknown"` and `duration_seconds: null`. The dashboard plots per-sub-agent durations from these fields.
+- `started` / `completed` / `duration_seconds` for the main agent — wall-clock from Phase 0 step 0 (`work/<run-id>/main.started_at`) to the symmetric capture above. Integer seconds. The dashboard plots a sparkline of `duration_seconds` over the last 30 runs.
 
 **Sparse-record consequence:** `/ops/` cells read directly. Phase 5.5 catches missing keys and FAILs the commit.
 

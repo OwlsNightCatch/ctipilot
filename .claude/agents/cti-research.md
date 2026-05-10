@@ -25,6 +25,26 @@ Tier 2/3 incident responders, threat hunters writing their own SIEM/EDR detectio
 - **Bounded retries** — no `WebFetch` retried more than once. Log the failure in your return.
 - If a subtask is taking unusually long (a source unreachable, a translation stuck), cut your losses, log it, move on. Never let one stuck subtask block the whole brief.
 
+## Timestamps — MANDATORY (record at start, record at end, report both back)
+
+**As your very first action**, before any `WebFetch` / `WebSearch` / `Read` / `Grep`, capture an UTC ISO 8601 start timestamp and persist it to your checkpoint dir so it survives a crash:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.started_at
+```
+
+Substitute `<your-domain>` with the domain id from your spawn message (e.g. `S1`, `S2`, `W1`). The main agent passes the `<run-id>` in the spawn message and pre-creates `work/<run-id>/`.
+
+**As your very last action**, before composing your return, capture an UTC ISO 8601 end timestamp the same way:
+
+```bash
+date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.ended_at
+```
+
+**Report both timestamps back to the main agent in a mandatory `**Timestamps:**` line** at the top of your return (placement specified in § Self-identification below). The main agent stashes both into `state/run_log.json.sub_agents.<your-domain>.started_at` / `.ended_at` and computes `duration_seconds` from the pair. The Ops dashboard at `/ops/` plots per-sub-agent durations from these fields.
+
+If you cannot capture a timestamp (Bash tool unavailable in your environment, clock skew detected, the very first or very last action of your turn was forced into a different shape), write `unknown` for that field and the main agent records it verbatim — never invent a timestamp.
+
 ## Source-link discipline (MANDATORY — read twice)
 
 Every URL you cite is **one you actually fetched in this run** that resolved to content matching the claim.
@@ -125,27 +145,31 @@ The main agent and the sub-agents may run on different models — the runtime de
 
 **Reason about your own identity, do not pattern-match a placeholder.** This prompt deliberately gives no example model name — naming one would bias every sub-agent into self-identifying as that model regardless of which model actually ran. Determine yours from your own runtime context (what the host harness set as your model id), then surface it.
 
-**Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Use this exact shape:
+**Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Immediately follow with a **mandatory `**Timestamps:**` line** carrying the start + end UTC ISO 8601 stamps you captured in § Timestamps above. Use this exact shape:
 
 ```
 **Model:** {your friendly model name} (`{your canonical model-id}`)
+**Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
 ```
 
-The friendly name is the human-facing label for your model (the form a release blog post would use); the canonical id is the slug your harness identifies you by. If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)` — the main agent surfaces that string verbatim. The main agent parses this line and stores it under `sub_agents.<your-domain>.model` in `state/run_log.json`; skipping the line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
+The friendly name is the human-facing label for your model (the form a release blog post would use); the canonical id is the slug your harness identifies you by. If you cannot determine your model precisely, write `Anthropic Claude (specific model not determined)` — the main agent surfaces that string verbatim. The main agent parses these two lines and stores them under `sub_agents.<your-domain>.model` / `.started_at` / `.ended_at` / `.duration_seconds` in `state/run_log.json`; skipping either line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
 
-Optionally include a second line for runtime self-telemetry the main agent will fold into the dashboard:
+`duration_seconds` is integer seconds derived from `ended_at − started_at`; if either timestamp is `unknown`, write `unknown` here too. Never invent values.
+
+Optionally include a third line for runtime self-telemetry the main agent will fold into the dashboard:
 
 ```
-**Self-telemetry:** duration_seconds=NNN · webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN · tokens_in=NN · tokens_out=NN
+**Self-telemetry:** webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN · tokens_in=NN · tokens_out=NN
 ```
 
-Only include numeric fields you can read off your tool-use trace; omit fields you can't measure. The main agent stores whatever you provide under `sub_agents.<your-domain>.telemetry` and the dashboard surfaces them as small badges next to the items-returned count.
+Only include numeric fields you can read off your tool-use trace; omit fields you can't measure. The main agent stores whatever you provide under `sub_agents.<your-domain>.telemetry` and the dashboard surfaces them as small badges next to the items-returned count. (`duration_seconds` lives on the `**Timestamps:**` line, not here.)
 
 ## Return format (flexible Markdown, required fields)
 
 ```markdown
 **Model:** {your friendly model name} (`{your canonical model-id}`)
-**Self-telemetry:** duration_seconds=NNN · webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN
+**Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
+**Self-telemetry:** webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN
 
 ## {Item title}
 

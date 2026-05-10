@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.45 — 2026-05-10 (per-agent start/end timestamps — every agent records its own wall-clock and reports it back)
+
+### Why
+The v2.43 self-identification rework gave every sub-agent a `**Model:**` self-report line plus an *optional* `**Self-telemetry:** duration_seconds=…` line, but two gaps remained: (1) `duration_seconds` was an opaque scalar with no underlying start / end timestamps, so an operator couldn't tell from a run record whether two sub-agents ran concurrently or serially, when in wall-clock terms a stall happened, or how long elapsed between the main agent's last sub-agent return and Phase 5; (2) the field was optional, so most actual returns omitted it and the Ops dashboard's per-sub-agent duration sparkline stayed empty. The main agent already recorded its own `started` / `completed` / `duration_seconds` in `state/run_log.json` (added in v2.43), but the sub-agents had no symmetric contract — and crucially, no instruction to capture a stamp at the very *start* of their turn before any tool call. Operator asked for symmetry: every agent (main + each research sub-agent + each verification iteration) records its own start timestamp at the beginning and end timestamp at the end, and sub-agents report both back so the main agent can stash them in the run log.
+
+### What changed
+
+**`.claude/agents/cti-research.md`** — New "Timestamps — MANDATORY" section (above Self-identification) requiring the sub-agent's first action to be `date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.started_at` and its last action to be the symmetric `*.ended_at` capture. Self-identification block updated: the existing optional `**Self-telemetry:**` line is split — start / end / duration move to a new **mandatory** `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…` line right under `**Model:**`; `**Self-telemetry:**` keeps fetch / token counters and stays optional. Return-format example updated. `unknown` is the only honest fallback when capture fails — never invent.
+
+**`.claude/agents/cti-verification.md`** — Same Self-identification change (mandatory `**Timestamps:**` line under `**Model:**`) plus a parallel "Timestamps — MANDATORY" section using `work/<run-id>/verify.iter<N>.started_at` / `.ended_at` so each iteration's timing is preserved across the 3-iteration loop.
+
+**`prompts/daily-cti-brief.md`** — Banner bumped to v2.45. New **Phase 0 step 0** added before the existing step 1: main agent captures its start timestamp into `work/<run-id>/main.started_at` as its very first action. Phase 1 capture block extended: parses the new `**Timestamps:**` line from each research return and stashes `started_at` / `ended_at` / `duration_seconds` into `state/run_log.json.sub_agents.<S1..S4>` (top-level, not inside `telemetry`); missing line → `"unknown"` and `null`. Phase 4.5 verifier capture block similarly extended for `verification.iterations[N].started_at` / `.ended_at` / `.duration_seconds`. Phase 5 opens with a symmetric main-agent end-stamp capture (`work/<run-id>/main.ended_at`) used to populate `started` / `completed`. The `run_log.json` schema example gains six new fields (3 per sub-agent × 4 + 3 per verification iteration). Population rules updated.
+
+**`prompts/weekly-summary.md`** — Banner bumped to v2.45 in lockstep. Same updates as daily, scoped to W1 / W2 sub-agents and Phase 3.5 verification, with Phase 4 carrying the symmetric end-stamp capture.
+
+### What stays
+All hard invariants are unchanged: AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values, memory commits. The existing `**Model:**` self-identification contract (v2.43) is unchanged — `**Timestamps:**` is a new required line below it, not a replacement. The `state/run_log.json` schema is **additive** — every existing field stays, the new `started_at` / `ended_at` / `duration_seconds` per sub-agent and per verification iteration sit alongside what was already there, and `tools/check_brief.py`'s existing `check_run_log_for_today` keeps working without modification (the new fields are not yet enforced; that can come in a later WARN-level check). The `**Self-telemetry:**` line stays optional, just narrower in scope (fetch / token counters only — duration moves to the mandatory `**Timestamps:**` line). Older briefs from v2.42–v2.44 still pass every existing gate.
+
+---
+
 ## 2.44 — 2026-05-10 (CISA KEV remediation deadlines de-emphasised — US-FCEB only, not operational signal for CH/EU audience)
 
 ### Why
