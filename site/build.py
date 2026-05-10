@@ -4636,11 +4636,19 @@ def self_check(
         # bodies.
         for m in re.finditer(r"<content:encoded><!\[CDATA\[(.+?)\]\]></content:encoded>", text, re.DOTALL):
             payload = m.group(1)
+            # `**...**` and `[..](http..)` inside <code>/<pre> are literal text
+            # correctly rendered from backtick-quoted markdown — not unrendered
+            # emphasis/link tokens. Strip those spans before scanning so the
+            # check only flags genuinely-leaked markdown (e.g. an item body
+            # discussing a sub-agent's verbatim `**Model:**` self-id string is
+            # rendered as <code>**Model:**</code> and must not false-positive).
+            scrub = re.sub(r"<code\b[^>]*>.*?</code>", "", payload, flags=re.DOTALL)
+            scrub = re.sub(r"<pre\b[^>]*>.*?</pre>", "", scrub, flags=re.DOTALL)
             # Markdown emphasis tokens that should have rendered to HTML
-            if re.search(r"\*\*[^\n*]{1,80}\*\*", payload):
+            if re.search(r"\*\*[^\n*]{1,80}\*\*", scrub):
                 errors.append(f"feed {fp.name}: unrendered Markdown `**...**` in content:encoded")
                 break
-            if re.search(r"\[[^\]\n]{1,80}\]\((https?://)", payload):
+            if re.search(r"\[[^\]\n]{1,80}\]\((https?://)", scrub):
                 errors.append(f"feed {fp.name}: unrendered Markdown `[..](http..)` in content:encoded")
                 break
     # All three feeds parse as valid XML.
