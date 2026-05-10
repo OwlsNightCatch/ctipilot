@@ -1649,7 +1649,7 @@ def base_template(
       <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
     </form>
 
-    <a class="github-link" id="github-link" href="https://github.com/{DEFAULT_GITHUB_REPO}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">
+    <a class="github-link" id="github-link" href="https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">
       {GH_ICON_SVG}
       <span class="github-stars" id="github-stars" hidden></span>
     </a>
@@ -1683,7 +1683,7 @@ def base_template(
       Every brief is produced autonomously by an LLM running as a Claude Code routine; every claim links to a primary source. <a href="{pfx}about/">How this works →</a>
     </p>
     <p class="meta" id="footer-meta">
-      <a href="{pfx}feed.xml">RSS — daily</a> · <a href="{pfx}feed-weekly.xml">weekly</a> · <a href="{pfx}feed-items.xml">per item</a>
+      <a href="{pfx}feeds/">RSS feeds — daily, weekly, per item, 8 sector slices</a>
     </p>
   </div>
 </footer>
@@ -2773,9 +2773,6 @@ def render_briefs_list_page(
   <span class="chip active" data-filter-chip="brief-kind" data-value="all">All</span>
   <span class="chip" data-filter-chip="brief-kind" data-value="daily">Daily</span>
   <span class="chip" data-filter-chip="brief-kind" data-value="weekly">Weekly</span>
-  <a class="chip" href="{prefix}feed.xml" target="_blank" rel="noopener noreferrer" title="Daily RSS feed">RSS · daily</a>
-  <a class="chip" href="{prefix}feed-weekly.xml" target="_blank" rel="noopener noreferrer" title="Weekly RSS feed">RSS · weekly</a>
-  <a class="chip" href="{prefix}feed-items.xml" target="_blank" rel="noopener noreferrer" title="Per-item RSS feed">RSS · per item</a>
 </div>
 {''.join(section_html) or '<div class="empty">No briefs published yet.</div>'}
 """
@@ -3036,6 +3033,100 @@ def _item_matches_cohort(footer: dict[str, Any], cohort: dict[str, Any]) -> bool
         (want_tags and tags & want_tags)
         or (want_sectors and sectors & want_sectors)
         or (want_regions and regions & want_regions)
+    )
+
+
+def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
+    """v2.47 polish — best-effort fetch of `https://api.github.com/repos/<repo>`
+    so the topbar can render a live star count. Returns `{url, stars,
+    full_name}` on success; empty dict on any failure (network down, rate
+    limited, parse error, blocked address). The build never fails on this —
+    the topbar gracefully degrades to icon-only when stars are absent."""
+    if not repo or "/" not in repo:
+        return {}
+    api = f"https://api.github.com/repos/{repo}"
+    try:
+        import urllib.request, urllib.error
+        req = urllib.request.Request(
+            api,
+            headers={
+                "User-Agent": f"ctipilot.ch site build (github.com/{repo})",
+                "Accept": "application/vnd.github+json",
+            },
+            method="GET",
+        )
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            if resp.status != 200:
+                return {}
+            data = json.loads(resp.read(64 * 1024).decode("utf-8", errors="replace"))
+            return {
+                "url": data.get("html_url") or f"https://github.com/{repo}",
+                "stars": int(data.get("stargazers_count") or 0),
+                "full_name": data.get("full_name") or repo,
+            }
+    except Exception:
+        return {}
+
+
+def render_feeds_page(*, site_url: str, cachebust: str,
+                       prefix: str, canonical: str) -> str:
+    """v2.47 polish — single discovery page for all 11 RSS feeds (3 main +
+    8 sector slices). The topbar/footer link to this page; the brief-list
+    page no longer carries chip-style per-feed links. `<head>` rel=alternate
+    autodiscovery for the three main feeds is unchanged."""
+    main_feeds: list[tuple[str, str, str]] = [
+        ("feed.xml", "Daily — every brief, last 30",
+         "One item per daily brief. Full content rendered to HTML in <code>&lt;content:encoded&gt;</code>. Categories carry the brief's CVEs."),
+        ("feed-weekly.xml", "Weekly — every weekly summary, last 30",
+         "One item per weekly summary. Same shape as daily."),
+        ("feed-items.xml", "Per item — every metadata-footer block, last 50",
+         "One item per H3 block in any brief (Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive, Action Items, Immediate Actions). Categories carry tags + regions + status flags + CVE id."),
+    ]
+    sector_feeds: list[tuple[str, str, str]] = [
+        (fname, f"Sector — {title}", description)
+        for fname, _accept_sectors, _accept_tags, title, description
+        in SECTOR_FEED_SLICES
+    ]
+
+    def _row(fname: str, title: str, description: str) -> str:
+        return (
+            '<li class="feeds-row">'
+            f'<div class="feeds-row__head">'
+            f'<a class="feeds-row__title" href="{prefix}{fname}">{_escape(title)}</a>'
+            f'<a class="feeds-row__url mono" href="{prefix}{fname}">/{fname}</a>'
+            f'</div>'
+            f'<p class="feeds-row__desc">{description}</p>'
+            '</li>'
+        )
+
+    body = f"""
+<header>
+  <h1>RSS feeds</h1>
+  <p class="subtitle">Eleven feeds in total. The three main feeds carry every brief; the eight sector slices filter the per-item feed to the audience you care about. <code>&lt;pubDate&gt;</code> is the actual git-commit moment of the brief on <code>main</code>, not midnight-of-brief-date. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants — every link is plain canonical.</p>
+</header>
+
+<section style="margin-top:1.4rem">
+  <h2 class="section-head">Main feeds</h2>
+  <ul class="feeds-list">{''.join(_row(f, t, d) for f, t, d in main_feeds)}</ul>
+</section>
+
+<section style="margin-top:1.6rem">
+  <h2 class="section-head">Sector slices (v2.47)</h2>
+  <p class="muted" style="margin:0 0 0.6rem">Per-sector filtered slices of <a href="{prefix}feed-items.xml" class="mono">feed-items.xml</a>. Subscribe to the slice you care about instead of parsing every per-item entry.</p>
+  <ul class="feeds-list">{''.join(_row(f, t, d) for f, t, d in sector_feeds)}</ul>
+</section>
+
+<section style="margin-top:1.6rem">
+  <h2 class="section-head">Autodiscovery</h2>
+  <p>Every page on this site advertises the three main feeds via <code>&lt;link rel="alternate" type="application/rss+xml"&gt;</code> in the document head, so any feed reader pointed at the homepage finds them automatically. The eight sector slices are accessible through this page.</p>
+</section>
+"""
+    return base_template(
+        title="RSS feeds — ctipilot.ch",
+        description="All RSS feeds — daily, weekly, per item, plus eight sector-specific slices (public sector, healthcare, finance, energy, OT/ICS, defense, telco, education).",
+        body=body,
+        canonical=canonical, site_url=site_url, cachebust=cachebust,
+        home_relative_prefix=prefix,
     )
 
 
@@ -7066,6 +7157,18 @@ def main() -> int:
         lastmod=latest["publish_iso"][:10] if latest else "",
     )
 
+    # /feeds/ — v2.47 polish single discovery page for all 11 RSS feeds.
+    emit_html(
+        "feeds/",
+        render_feeds_page(
+            site_url=site_url,
+            cachebust=cachebust,
+            prefix="../",
+            canonical=site_url + "feeds/",
+        ),
+        lastmod=latest["publish_iso"][:10] if latest else "",
+    )
+
     # /404.html
     # GitHub Pages serves this for any unknown path under the site, but the
     # browser's URL stays at the requested deep path (e.g.
@@ -7232,11 +7335,17 @@ def main() -> int:
     atomic_write_text(OUT / "data" / "search.json", json.dumps(search_idx))
 
     # site.json (deterministic — no now())
+    # v2.47 polish: include live GitHub star count when reachable. The
+    # topbar's `wireGithubBadge()` (assets/js/app.js) consumes
+    # `github.{url,stars}`. Best-effort fetch; build never fails on this.
+    repo = os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO)
+    github_meta = fetch_github_metadata(repo)
     site_meta = {
         "site_url": site_url,
         "cachebust": cachebust,
         "latest_brief": briefs[0]["publish_iso"] if briefs else None,
         "counts": manifest["counts"],
+        "github": github_meta or {"url": f"https://github.com/{repo}"},
     }
     atomic_write_text(OUT / "data" / "site.json", json.dumps(site_meta, indent=2, sort_keys=True))
 

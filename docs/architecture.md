@@ -92,8 +92,15 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   rebindable). Phase 1 (daily) / Phase 2 (weekly) parallel research workers;
   also reused for verification follow-ups (max 3 per iteration). Embeds the
   `WebFetch` outbound-links template, the `tools/fetch_source.py` contract
-  for known-403 hosts, the discovery-trace return format, and the mandatory
-  `**Model:**` self-identification line.
+  for known-403 hosts, the discovery-trace return format, the mandatory
+  `**Model:**` self-identification line. **v2.47 additions**: env-var
+  self-identification (reads `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID`
+  set by the harness, falls back to runtime-context reasoning), prior-
+  coverage dedup at fetch time (reads `work/<run-id>/prior_coverage.json`
+  before fetching to avoid spending wall-clock on already-covered items),
+  URL-liveness ledger append (one TSV line per successful Source fetch
+  to `work/<run-id>/url-liveness.tsv` so `tools/check_brief.py` can skip
+  redundant HEAD/GET).
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
   isolated context, per-role model bound by the agent definition's frontmatter
   (Opus by default since v2.46 — gatekeeper of the publish gate).
@@ -101,7 +108,16 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   `tools/check_brief.py` exits 0 (cheap mechanical gate first), looped
   iteratively (cap 5, fresh spawn each time, no shared memory; each iteration
   re-runs `check_brief.py` between fix and re-spawn). Same self-identification
-  contract.
+  contract. **v2.47 additions**: F12 single-source-flag finding category
+  promoted to numbered finding; iteration-rotation note (don't assume
+  same model as prior iteration); env-var self-identification.
+- [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) — **v2.47**
+  Sonnet-pinned variant of `cti-verification`. Byte-identical operational system
+  prompt; only the YAML `model:` frontmatter differs (`sonnet` vs `opus`).
+  The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations**
+  (iter 2, iter 4) so model-specific blind spots are caught when the next
+  iteration runs on a different model. The two verifier definitions move
+  in lockstep — when you edit one, edit the other.
 
 ### `briefs/` — the canonical output
 
@@ -135,10 +151,22 @@ The agent re-reads these every run before writing.
   with a tighter schema.
 - `state/deep_dive_history.json` — rolling 30-day list of `{date, topic, category}`
   entries used by Phase 3 to apply the deep-dive category-rotation rule.
-- `state/run_log.json` — rolling 90-day per-run record: model, sub-agent
-  source allocation (`sources_attempted` / `sources_used` / `items_returned`
-  per S1–S4), `fetch_failures`, `items_published`, `deep_dive`. Surfaced
+- `state/run_log.json` — rolling 90-day per-run record: `run_id` (v2.47:
+  deterministic `<YYYY-MM-DD>-<sha8 of brief_path|started_minute>` —
+  idempotent retry), model, sub-agent source allocation (`sources_attempted`
+  / `sources_used` / `items_returned` per S1–S4), `fetch_failures`,
+  `items_published`, `deep_dive`, `verification.iterations[]` (per-iteration
+  model + verdict + truth/editorial/advisory finding counts),
+  `verification_iterations`, `verification_residual_count` (v2.47: derived
+  from final-iteration `truth + editorial` when verdict is NEEDS_FIXES;
+  `0` when CLEAN — the v2.47 cap-breach signal builds on this). Surfaced
   on the operations dashboard at `/ops/`.
+- `state/source_health.json` — **v2.47**, written by [`tools/source_health.py`](../tools/source_health.py)
+  on a weekly GitHub Actions cron. Bounded history (12 runs ≈ 3 months
+  at weekly cadence) of `(id, status_code, latency_ms, fetched_at, class)`
+  per active source. Lets the daily routine's source-demotion logic key off
+  a stable failing pattern instead of the day-of-week luck of its single
+  fire. Surfaced on `/ops/` once it exists.
 
 ### `sources/` — the curated source list
 
@@ -187,7 +215,27 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   parser + taxonomy loader from `site/build.py` so script and build agree
   on parsing rules. Read-only — the agent fixes drift, the script
   reports it. Non-zero exit aborts the commit. Maintained as part of
-  the agent's self-evolution authority.
+  the agent's self-evolution authority. **v2.47 additions**: `cap-breach`
+  WARN (final-iteration `NEEDS_FIXES`); `verification_residual_count`
+  derived from final iteration's `truth + editorial`; deterministic
+  `run_id` field required + idempotent (no duplicate runs[] entries);
+  `tldr-deadline-lead` WARN (PD-13 enforcement at the bullet level);
+  `aggregator-only-sourcing` WARN (≥2 Sources all from news aggregators);
+  `single-source-flag` WARN (single Source missing `[SINGLE-SOURCE]`);
+  URL-liveness cache (skip live HEAD/GET on URLs the sub-agents already
+  verified live in `work/<run-id>/url-liveness.tsv`).
+- [`tools/source_candidates.py`](../tools/source_candidates.py) — **v2.47**.
+  Walks last 30 days of briefs, counts every outbound-link host, subtracts
+  hosts already in `sources.json` and the news-aggregator allowlist, outputs
+  the top-N missing-but-cited domains with citation counts and brief samples.
+  Operator runs manually to spot publishers worth promoting to
+  `status: candidate`. Pure post-hoc analytics; no runtime cost.
+- [`tools/source_health.py`](../tools/source_health.py) — **v2.47**.
+  Independent weekly health-check of every `status: active` source.
+  HEAD-only, records `(id, status_code, latency_ms, fetched_at, class)` to
+  `state/source_health.json` (12-run bounded history). Run by the
+  [`source-health.yml`](../.github/workflows/source-health.yml) GitHub
+  Action on Sundays at 04:30 UTC and on `workflow_dispatch`.
 
 ### `docs/` — operator-facing documentation
 
@@ -210,8 +258,14 @@ System reference for operators, contributors, and curious readers. Pure docs —
 - [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — triggers on
   push to `main` whenever the site inputs change. Runs `site/build.py`,
   uploads the bundle to GitHub Pages.
+- [`source-health.yml`](../.github/workflows/source-health.yml) — **v2.47**.
+  Weekly cron (Sundays 04:30 UTC) + `workflow_dispatch`. Runs
+  [`tools/source_health.py`](../tools/source_health.py) HEAD-only against
+  every active source, commits `state/source_health.json` directly to
+  `main` (state/* sits in the auto-merge auto-resolution allowlist, so a
+  concurrent claude/* push won't race). Independent of the daily routine.
 
-The two workflows are independent. The site is a *consumer* of the agent's
+The three workflows are independent. The site is a *consumer* of the agent's
 output and never writes back.
 
 ### `site/` — the public reader
@@ -242,10 +296,16 @@ of the repo:
   and `/topics/` (type≠cve); the unified overview at `/entities/`
   has the same Ops-style KPI strip + type-distribution donut +
   recent-coverage sparkline as every entity page.
-- It emits **three RSS feeds**: `/feed.xml` (daily, last 30), `/feed-weekly.xml`
-  (weekly, last 30), `/feed-items.xml` (per-item granular, last 50). All
-  three use the actual git-commit timestamp of the underlying brief as
-  `<pubDate>` (not midnight-of-brief-date).
+- It emits **eleven RSS feeds**: three main feeds (`/feed.xml`, daily,
+  last 30; `/feed-weekly.xml`, weekly, last 30; `/feed-items.xml`,
+  per-item granular, last 50) plus **eight sector slices** (v2.47):
+  `/feed-public-sector.xml`, `/feed-healthcare.xml`, `/feed-finance.xml`,
+  `/feed-energy.xml`, `/feed-ot-ics.xml`, `/feed-defense.xml`,
+  `/feed-telco.xml`, `/feed-education.xml`. Each slice is the per-item
+  feed filtered by the relevant Sector / Tags so subscribers can subscribe
+  to the slice they care about. All eleven use the actual git-commit
+  timestamp of the underlying brief as `<pubDate>` (not midnight-of-brief-date).
+  All eleven listed on `/feeds/`.
 - The unified search index at `_site/data/search.json` covers briefs,
   entities (every type), and sources.
 - The operations dashboard at `/ops/` is rendered server-side from
@@ -253,6 +313,21 @@ of the repo:
   (`_ops_svg_sparkline` / `_ops_svg_bars` / `_ops_svg_donut` /
   `_ops_svg_heatmap` / `_ops_kpi_tile`) power the entity pages and
   the CVE / topic / entity overview KPI strips.
+- **v2.47** — `/trends/` cross-brief threat-class trend dashboard
+  (8 cohort sparklines bucketed by ISO week — ransomware, actively-
+  exploited vulnerabilities, public-sector, OT/ICS, supply-chain,
+  AI-abuse, Switzerland+Europe, nation-state); `/feeds/` single
+  discovery page for all 11 RSS feeds; per-item delta `<details>` block
+  inside each brief item whose CVE / topic key has more than one
+  appearance in `covered_items.json`; "Editorial choices" `<details>`
+  block at the bottom of each daily brief surfacing items dropped from
+  § 7 Verification Notes; horizontal actor-timeline strip on entity
+  pages of type actor / campaign / incident / tool / annual-report.
+- **v2.47** — `data/site.json.github.{url,stars}` populated at build time
+  via best-effort GitHub API fetch; the topbar's `wireGithubBadge()` in
+  `assets/js/app.js` consumes it to render a live star count next to
+  the GitHub icon. Build never fails on the fetch (silently degrades to
+  icon-only when unreachable / rate-limited).
 
 [`site/taxonomy.yaml`](../site/taxonomy.yaml) is the controlled vocabulary
 for every metadata-footer value (themes / sectors / regions / nexus /

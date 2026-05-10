@@ -13,13 +13,23 @@ The repository is the single source of truth for the workflow: prompts, source l
 
 The site deploys automatically on every push to `main` that touches the brief feed. See [`site/README.md`](site/README.md) for internals and [`docs/operating.md`](docs/operating.md#3-enable-github-pages) for one-time enablement.
 
-## RSS — three feeds
+## RSS — eleven feeds
+
+[`/feeds/`](https://ctipilot.ch/feeds/) is the single discovery page; every page in the site advertises the three main feeds via `<link rel="alternate" type="application/rss+xml">` autodiscovery.
 
 | URL | Contents | Truncation |
 |-----|----------|------------|
 | [`/feed.xml`](https://ctipilot.ch/feed.xml) | One item per daily brief | last 30 |
 | [`/feed-weekly.xml`](https://ctipilot.ch/feed-weekly.xml) | One item per weekly summary | last 30 |
 | [`/feed-items.xml`](https://ctipilot.ch/feed-items.xml) | One item per metadata-footer block (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive, Action Items) | last 50 |
+| [`/feed-public-sector.xml`](https://ctipilot.ch/feed-public-sector.xml) | Per-item slice — Sector: public-sector | last 50 |
+| [`/feed-healthcare.xml`](https://ctipilot.ch/feed-healthcare.xml) | Per-item slice — Sector: healthcare | last 50 |
+| [`/feed-finance.xml`](https://ctipilot.ch/feed-finance.xml) | Per-item slice — Sector: finance | last 50 |
+| [`/feed-energy.xml`](https://ctipilot.ch/feed-energy.xml) | Per-item slice — Sector: energy | last 50 |
+| [`/feed-ot-ics.xml`](https://ctipilot.ch/feed-ot-ics.xml) | Per-item slice — energy / water / manufacturing / transport / `ot-ics` tag | last 50 |
+| [`/feed-defense.xml`](https://ctipilot.ch/feed-defense.xml) | Per-item slice — Sector: defense | last 50 |
+| [`/feed-telco.xml`](https://ctipilot.ch/feed-telco.xml) | Per-item slice — Sector: telco | last 50 |
+| [`/feed-education.xml`](https://ctipilot.ch/feed-education.xml) | Per-item slice — Sector: education | last 50 |
 
 `<pubDate>` is the actual git-commit moment of the brief on `main`, not midnight-of-brief-date. `<content:encoded>` carries the full brief / item rendered to HTML — no Markdown emphasis survives into the feed payload. No UTM parameters, no per-source variants — every link is plain canonical.
 
@@ -32,6 +42,10 @@ The site deploys automatically on every push to `main` that touches the brief fe
 - **Topbar search.** Token-prefix scoring across briefs, sections, entities (every type), and sources. Press `/` anywhere on the site to focus. CVE ids match as a single token. Search results route to the canonical `/entities/<key>/` URL.
 - **Verification filters.** The Entities and Topics overviews can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
 - **Operations dashboard** at `/ops/` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). The same SVG chart primitives drive entity pages and the operations dashboard.
+- **Trends dashboard** at [`/trends/`](https://ctipilot.ch/trends/) (v2.47) — weekly-bucketed sparklines across eight cohorts (ransomware, actively-exploited vulnerabilities, public-sector, OT/ICS, supply-chain, AI-abuse, Switzerland+Europe, nation-state). Pure post-hoc analytics from brief-footer metadata.
+- **Editorial-choices block** (v2.47) — every daily brief renders an "Editorial choices — N items considered and not included" collapsed `<details>` block at the bottom of the page. The brief routine's drop reasoning, normally only in § 7's prose, surfaces as a discoverable, distinct block under the brief body.
+- **Per-item delta block** (v2.47) — items whose CVE / topic key has more than one appearance in `state/covered_items.json` render an inline "Changes since first coverage" `<details>` listing prior `delta_summary` entries with dates and brief links.
+- **Actor-timeline strip** (v2.47) — entity pages of type `actor`, `campaign`, `incident`, `tool`, and `annual-report` carry a horizontal timeline strip showing first-coverage → last-coverage with a marker dot per appearance.
 - **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
 - **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
 - **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
@@ -63,7 +77,9 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── tools/
 │   ├── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
-│   └── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe)
+│   ├── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe, v2.47 cap-breach + tldr-deadline-lead + aggregator-only-sourcing + single-source-flag + URL-liveness cache)
+│   ├── source_candidates.py   # v2.47 — surface "sources we should add" (cited-but-not-in-sources.json domains, top-N)
+│   └── source_health.py       # v2.47 — independent weekly source-health snapshot (HEAD-only every active source; writes state/source_health.json)
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
 │   ├── build.py               # SSG entrypoint — emits real HTML pages for every URL
 │   ├── taxonomy.yaml          # Controlled vocabulary (themes, regions, CVE fields, sections)
@@ -79,7 +95,12 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   └── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
-│   └── deploy-site.yml        # Build + deploy site/ to GitHub Pages
+│   ├── deploy-site.yml        # Build + deploy site/ to GitHub Pages
+│   └── source-health.yml      # v2.47 — weekly cron firing tools/source_health.py
+├── .claude/agents/
+│   ├── cti-research.md        # Phase 1 / Phase 2 parallel research worker (env-var self-id, prior_coverage dedup, URL-liveness ledger)
+│   ├── cti-verification.md    # Phase 5.7 / Phase 4.7 cold-reader verifier (Opus default; gatekeeper; F1–F12 finding categories)
+│   └── cti-verification-alt.md # v2.47 — Sonnet rotation variant of cti-verification (byte-identical body, only model: differs)
 ├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
@@ -121,8 +142,9 @@ The agent walks through:
 4. **Phase 3 — Deep-dive selection.** At most 1–2 items, with the category-rotation rule applied.
 5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–8 (TL;DR; Immediate Actions, often absent; Active Threats / Trending Actors / Notable Incidents & Disclosures; Trending Vulnerabilities; Research & Investigative Reporting; Updates to Prior Coverage; Deep Dive; Action Items; Verification Notes). Each H3 item carries a v2 metadata footer (`— *Source: … · Tags: … · Region: … [· CVE: …] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*`) parseable by the build.
 6. **Phase 5 — State update.** Append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose at most one new source as `candidate`; append to `deep_dive_history.json` if a deep dive was selected; append a record to `run_log.json`.
-7. **Phase 5.5 — Self-check gate.** Verify state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
-8. **Phase 6 — Commit & push the feature branch** — `auto-merge-claude.yml` promotes to `main` (with the same auto-resolution rules as the routine for `state/*.json` and `sources/sources.json` conflicts), then `deploy-site.yml` rebuilds gh-pages. **Phase 7** polls `git fetch origin main` and `https://ctipilot.ch/` to confirm both legs of the chain landed. Direct push to `main` is forbidden by repo policy.
+7. **Phase 5.5 — Self-check gate.** [`tools/check_brief.py`](tools/check_brief.py) verifies state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. v2.47 adds: `cap-breach` WARN (final-iteration `NEEDS_FIXES` surfaces to Ops dashboard); `tldr-deadline-lead` WARN (PD-13 enforcement at the bullet level); `aggregator-only-sourcing` WARN (≥2 Sources all from news aggregators); `single-source-flag` WARN (single Source missing the `[SINGLE-SOURCE]` marker); `verification_residual_count` derived from the final iteration's `truth + editorial` (was silently 0 before); `run_id` deterministic + idempotent (no duplicate runs[] entries); URL-liveness cache (skip live HEAD/GET on URLs sub-agents already verified live in `work/<run-id>/url-liveness.tsv`). If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
+8. **Phase 5.7 — Verifier loop (gatekeeper).** [`cti-verification`](.claude/agents/cti-verification.md) (Opus) reads the brief cold; CLEAN gates publish. NEEDS_FIXES → main agent applies remediations + re-runs Phase 5.5 + re-spawns. **5-iteration cap with model rotation** (v2.47): odd iterations spawn `cti-verification` (Opus), even iterations spawn [`cti-verification-alt`](.claude/agents/cti-verification-alt.md) (Sonnet — byte-identical body) so model-specific blind spots are caught across iterations. F1–F12 finding categories include the new F12 single-source-flag.
+9. **Phase 6 — Commit & push the feature branch** — `auto-merge-claude.yml` promotes to `main` (with the same auto-resolution rules as the routine for `state/*.json` and `sources/sources.json` conflicts), then `deploy-site.yml` rebuilds gh-pages. **Phase 7** polls `git fetch origin main` and `https://ctipilot.ch/` to confirm both legs of the chain landed. Direct push to `main` is forbidden by repo policy.
 
 Full walkthrough lives in the prompts themselves ([`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md), [`prompts/weekly-summary.md`](prompts/weekly-summary.md)). Architecture map: [`docs/architecture.md`](docs/architecture.md). Operator runbook: [`docs/operating.md`](docs/operating.md).
 
