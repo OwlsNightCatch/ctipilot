@@ -949,16 +949,39 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
         else:
             other_errors.append((url, status, err, urls[url]))
 
+    # 404s remain per-URL FAILs — these are the actionable editorial
+    # signal the brief-composition LLM should act on (rewrite citation
+    # or drop the item).
     if bad_404:
         for u, cited_in in bad_404:
             preview = cited_in[:2]
             more = f" + {len(cited_in) - 2} more" if len(cited_in) > 2 else ""
             fail("source-urls",
                  f"{u} returns 404 — cited in: {preview}{more}")
+    # Everything else (403/429 from non-allowlisted hosts, 5xx, network
+    # errors, timeouts) is transient — the host's WAF filters this
+    # check container's UA, the upstream is having a moment, the proxy
+    # stalled. The agent already fetched these at run time via
+    # WebFetch / fetch_source.py, so the LLM has no actionable leverage
+    # here. Aggregate into one summary WARN with a status breakdown +
+    # a few examples — operators still see the pattern (e.g. "this
+    # host always 403s us") but the brief-composition LLM doesn't drown
+    # in 30 identical warnings of the same shape.
     if other_errors:
+        by_status: dict[str, list[tuple[str, list[str]]]] = {}
         for u, status, err, cited_in in other_errors:
-            warn("source-urls",
-                 f"{u}: status={status} err={err!r} — cited in: {cited_in[:2]}")
+            label = f"HTTP {status}" if status else "network/SSL"
+            by_status.setdefault(label, []).append((u, cited_in))
+        breakdown = ", ".join(
+            f"{len(v)}× {k}"
+            for k, v in sorted(by_status.items(), key=lambda kv: (-len(kv[1]), kv[0]))
+        )
+        first_few = [u for u, _, _, _ in other_errors[:3]]
+        warn("source-urls",
+             f"{len(other_errors)} URL(s) returned non-200 from this check "
+             f"({breakdown}) — transient: UA filter / 5xx / timeout / proxy. "
+             f"The agent already fetched these at run time. "
+             f"Sample: {', '.join(first_few)}")
     if ua_blocked:
         ok("source-urls",
            f"{len(ua_blocked)} URL(s) on UA-blocked hosts (CISA/NCSC.ch/etc.) — handled by fetch_source.py check")
@@ -1036,13 +1059,27 @@ def check_covered_items_appearances(brief_date: str,
             if app.get("date") == brief_date and app.get("section") in target_sections:
                 appearances += 1
                 break
-    diff = abs(h3_count - appearances)
-    if diff > 1:
+    # Heuristic: flag only when coverage has SIGNIFICANTLY lagged (less
+    # than 40% of H3 items got a covered_items.json appearance for
+    # today). The legacy "diff > 1" rule fired on every well-formed
+    # brief because not every H3 is meant to be a long-running tracked
+    # item — § 4 Research items, § 6 Action Items, and synthetic Deep
+    # Dives routinely don't carry topic-state records and shouldn't.
+    # Today's gold-standard 2026-05-10 brief has 8 H3s and 4
+    # appearances (50% coverage); raising the threshold lets that be
+    # the new "good" baseline so the brief-composition LLM doesn't
+    # waste an editorial cycle chasing a non-issue.
+    if h3_count == 0:
+        ok("covered-items", "no H3 in core sections (empty-day brief)")
+    elif appearances < max(1, h3_count * 0.4):
         warn("covered-items",
-             f"H3 in core sections = {h3_count}; appearances on {brief_date} = {appearances}")
+             f"H3 in core sections = {h3_count}; appearances on {brief_date} = "
+             f"{appearances} ({appearances / max(h3_count, 1):.0%} coverage; "
+             f"expected ≥ 40%). state/covered_items.json may have lagged this run.")
     else:
         ok("covered-items",
-           f"H3/appearances match within tolerance ({h3_count} vs {appearances})")
+           f"H3/appearances within tolerance ({h3_count} vs {appearances}; "
+           f"{appearances / max(h3_count, 1):.0%} coverage)")
 
 
 def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,

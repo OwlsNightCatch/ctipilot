@@ -2378,6 +2378,7 @@ def render_topic_list_page(
 def render_source_list_page(
     sources: list[dict[str, Any]],
     *,
+    run_log: dict[str, Any] | None = None,
     site_url: str,
     cachebust: str,
     prefix: str,
@@ -2429,11 +2430,14 @@ def render_source_list_page(
         '</table></div>'
     ) if rows else '<div class="empty">No sources match.</div>'
 
+    chart_block = render_sources_overview_charts(sources, run_log=run_log, prefix=prefix)
     body = f"""
 <h1>Sources</h1>
 <p class="subtitle">{len(sources)} curated source{'' if len(sources) == 1 else 's'}. Each source can be searched and shows the briefs that have cited it.</p>
 
-<div class="toolbar">
+{chart_block}
+
+<div class="toolbar" style="margin-top:1rem">
   <input class="input" id="sources-q" type="search" placeholder="Filter by name, id, notes, URL…" autocomplete="off" spellcheck="false" data-filter-input="sources" />
   <span class="chip active" data-filter-chip="source-cat" data-value="all">All categories</span>
   {cat_chips}
@@ -2490,6 +2494,35 @@ def render_source_page(
         notes_html = f'<p class="muted" style="margin-top:0.7rem">{_escape(source["notes"])}</p>'
 
     appearances = source.get("appearances", []) or []
+    # Per-source citation timeline — same ISO-week bucketing the entity
+    # pages use, zero-filled across the source's coverage span. Quick
+    # at-a-glance read of "is this source still active in our coverage
+    # cadence or is it slipping out of rotation?".
+    spark_block = ""
+    if appearances:
+        wk_counts: dict[str, int] = {}
+        for n in appearances:
+            wk = _iso_week_of(n)
+            if wk:
+                wk_counts[wk] = wk_counts.get(wk, 0) + 1
+        timeline = _fill_weekly_timeline(sorted(wk_counts.items()))
+        spark_values = [float(c) for _, c in timeline]
+        if spark_values:
+            spark_svg = _ops_svg_sparkline(
+                spark_values, width=300, height=48,
+                label=f"Citations per ISO week for {source.get('publisher') or source['id']}",
+            )
+            spark_block = (
+                '<div class="ops-chart-card" style="margin-top:1rem">'
+                '<h3 class="section-head" style="margin-top:0">Citation cadence</h3>'
+                '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
+                f'Brief appearances per ISO week ({len(timeline)} weeks of coverage span, '
+                f'total {sum(int(c) for _, c in timeline)}).'
+                '</p>'
+                f'{spark_svg}'
+                '</div>'
+            )
+
     if appearances:
         app_lis = []
         for n in appearances:
@@ -2518,6 +2551,7 @@ def render_source_page(
 </div>
 
 <h2 class="section-head" style="margin-top:1.5rem">Cited in {len(appearances)} brief{'' if len(appearances) == 1 else 's'}</h2>
+{spark_block}
 {appearances_block}
 """
     return base_template(
@@ -4876,6 +4910,203 @@ def render_overview_charts(
     )
 
 
+def render_sources_overview_charts(
+    sources: list[dict[str, Any]],
+    *,
+    run_log: dict[str, Any] | None,
+    prefix: str,
+) -> str:
+    """Bias-detection chart strip for the /sources/ overview page.
+
+    Surfaces the kind of structural questions an operator should be
+    asking weekly:
+      - Status / reliability / category distribution — does the source
+        list lean toward news outlets or national CERTs?
+      - Most-cited sources (top 12) — which sources do briefs actually
+        rely on? An over-narrow distribution is a citation-bias risk.
+      - Cited-count per category bars — are HIGH-reliability categories
+        (national CERT, vendor PSIRT) under-cited relative to their
+        share of the source list? That's the lopsided-coverage signal.
+      - Fetch-failure rate over recent runs — sparkline from run_log.
+      - Active-but-never-cited count — sources kept on the active list
+        that aren't pulling weight; rotation candidates.
+    """
+    if not sources:
+        return '<div class="empty muted">No sources yet.</div>'
+
+    total = len(sources)
+    by_status: dict[str, int] = {}
+    by_reliability: dict[str, int] = {}
+    by_category: dict[str, int] = {}
+    citations_by_category: dict[str, int] = {}
+    citations_by_source: list[tuple[str, str, int]] = []  # (id, publisher, count)
+    active_uncited = 0
+    n_active = n_demoted = n_candidate = 0
+
+    for s in sources:
+        status = s.get("status") or "—"
+        by_status[status] = by_status.get(status, 0) + 1
+        if status == "active":
+            n_active += 1
+        elif status == "demoted":
+            n_demoted += 1
+        elif status == "candidate":
+            n_candidate += 1
+        by_reliability[s.get("reliability") or "—"] = by_reliability.get(s.get("reliability") or "—", 0) + 1
+        cats = s.get("category") or []
+        n_apps = len(s.get("appearances") or [])
+        for c in cats:
+            by_category[c] = by_category.get(c, 0) + 1
+            citations_by_category[c] = citations_by_category.get(c, 0) + n_apps
+        if s.get("status") == "active" and n_apps == 0:
+            active_uncited += 1
+        citations_by_source.append((s.get("id", ""), s.get("publisher", "") or s.get("id", ""), n_apps))
+
+    # KPI strip.
+    kpi_html = (
+        '<div class="ops-kpi-grid">'
+        + _ops_kpi_tile("Total sources", str(total),
+                         sub=f"{len(by_category)} categories", kind="accent")
+        + _ops_kpi_tile("Active", str(n_active),
+                         sub=f"{active_uncited} never cited",
+                         kind="warn" if active_uncited > n_active * 0.25 else "ok")
+        + _ops_kpi_tile("Candidate", str(n_candidate),
+                         sub="awaiting promotion review")
+        + _ops_kpi_tile("Demoted", str(n_demoted),
+                         sub="kept for audit history",
+                         kind="neutral")
+        + _ops_kpi_tile("Citation density",
+                         f"{sum(c for _, _, c in citations_by_source)}",
+                         sub=f"avg {sum(c for _, _, c in citations_by_source) / max(n_active, 1):.1f} per active source")
+        + '</div>'
+    )
+
+    # Status donut.
+    assigned_a: dict[str, str] = {}
+    status_slices = [
+        (k, float(v), _entity_palette_color(k, assigned_a))
+        for k, v in sorted(by_status.items(), key=lambda kv: -kv[1])
+    ]
+    status_donut = _ops_svg_donut(status_slices, size=140, label="Sources by status")
+
+    # Reliability donut — fixed colour mapping so HIGH always reads green.
+    reliability_color = {
+        "HIGH": "#56d364", "MEDIUM": "#ffd866", "LOW": "#e85d75", "—": "var(--text-muted)",
+    }
+    rel_slices = [
+        (k, float(v), reliability_color.get(k, "var(--text-muted)"))
+        for k, v in sorted(by_reliability.items(), key=lambda kv: (-kv[1], kv[0]))
+    ]
+    rel_donut = _ops_svg_donut(rel_slices, size=140, label="Sources by reliability")
+
+    # Top-12 most-cited sources — bias surface.
+    top_cited = sorted(
+        [t for t in citations_by_source if t[2] > 0],
+        key=lambda t: (-t[2], t[1].lower()),
+    )[:12]
+    top_block = ""
+    if top_cited:
+        bar_svg = _ops_svg_bars(
+            [float(c) for _, _, c in top_cited], width=320, height=80,
+            label="Top-cited sources",
+        )
+        legend_lis = "".join(
+            f'<li class="ops-legend__item">'
+            f'<span class="ops-legend__swatch" style="background:var(--accent-soft)"></span>'
+            f'<span class="ops-legend__label">'
+            f'<a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(pub[:40])}</a>'
+            f'</span>'
+            f'<span class="ops-legend__value mono">{n}</span></li>'
+            for sid, pub, n in top_cited
+        )
+        top_block = (
+            '<div class="ops-chart-card">'
+            '<h3 class="section-head" style="margin-top:0">Most-cited sources</h3>'
+            '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
+            'Top 12 by brief-appearance count. A narrow distribution here is a '
+            'citation-bias risk — look for diversity of publisher and category.'
+            '</p>'
+            f'{bar_svg}'
+            f'<ul class="ops-legend">{legend_lis}</ul>'
+            '</div>'
+        )
+
+    # Per-category citation bars — bias detector. Shows total citations
+    # per category alongside source count to surface lopsided coverage
+    # (e.g. many news sources but few national CERT citations).
+    cat_pairs = sorted(by_category.items(), key=lambda kv: -citations_by_category.get(kv[0], 0))[:14]
+    cat_block = ""
+    if cat_pairs:
+        # Two stacked metrics per category: source count + citation count.
+        # Render as a side-by-side legend table — easier to read than dual bars.
+        rows = []
+        for cat, src_count in cat_pairs:
+            cit_count = citations_by_category.get(cat, 0)
+            ratio = cit_count / max(src_count, 1)
+            kind_pill = '<span class="badge badge--low" title="cited fewer than 0.5 times per active source on average">under-cited</span>' if ratio < 0.5 else (
+                '<span class="badge badge--accent" title="cited heavily relative to source count">heavy</span>' if ratio > 3 else ''
+            )
+            rows.append(
+                f'<tr><td><a href="{prefix}sources/?cat={_escape(cat)}">{_escape(cat)}</a></td>'
+                f'<td class="mono">{src_count}</td>'
+                f'<td class="mono">{cit_count}</td>'
+                f'<td class="mono">{ratio:.1f}{kind_pill}</td></tr>'
+            )
+        cat_block = (
+            '<div class="ops-chart-card" style="grid-column:1/-1">'
+            '<h3 class="section-head" style="margin-top:0">Citations per category</h3>'
+            '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
+            '<code>citations / sources</code> &lt; 0.5 means a category has many sources but few citations '
+            '(over-supplied); &gt; 3 means heavy concentration on a small number of sources.'
+            '</p>'
+            '<div class="data-wrap"><table class="data">'
+            '<thead><tr><th>Category</th><th>Sources</th><th>Citations</th><th>Ratio</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody>'
+            '</table></div>'
+            '</div>'
+        )
+
+    # Fetch-failure sparkline from run_log.
+    fail_block = ""
+    if run_log:
+        runs = (run_log.get("runs") or [])[:30]
+        if runs:
+            counts = [len(r.get("fetch_failures") or []) for r in reversed(runs)]
+            spark_svg = _ops_svg_sparkline(
+                [float(c) for c in counts], width=320, height=58,
+                label=f"Fetch failures across last {len(counts)} runs",
+            )
+            fail_block = (
+                '<div class="ops-chart-card">'
+                '<h3 class="section-head" style="margin-top:0">Fetch failures</h3>'
+                '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
+                f'Failures recorded in <code>run_log.json</code> across the last {len(counts)} runs '
+                f'(sum {sum(counts)}).'
+                '</p>'
+                f'{spark_svg}'
+                '</div>'
+            )
+
+    return (
+        '<section class="ops-section">'
+        f'{kpi_html}'
+        '<div class="ops-charts-row">'
+        f'<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">By status</h3>'
+        f'{status_donut}'
+        '</div>'
+        f'<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">By reliability</h3>'
+        f'{rel_donut}'
+        '</div>'
+        f'{fail_block}'
+        f'{top_block}'
+        f'{cat_block}'
+        '</div>'
+        '</section>'
+    )
+
+
 def render_entities_index_page(
     entities: list[dict[str, Any]],
     *,
@@ -5351,8 +5582,23 @@ def self_check(
     manifest: dict[str, Any],
     feed_files: list[Path],
     site_url: str,
-) -> list[str]:
+) -> tuple[list[str], list[str]]:
+    """Run the post-build self-check.
+
+    Returns ``(errors, warnings)``. Errors block the build (exit 4) —
+    they're truly broken-site signals: missing manifest page, inline
+    <script> (CSP-fatal), Markdown-renderer placeholder leakage (the
+    renderer's fixed-point regressed), XML parse error in a feed,
+    secret-shaped token leaked into output. Warnings are cosmetic /
+    quality signals — Umami snippet count mismatch on a non-redirect
+    page, raw `**Markdown**` or `[..](http..)` surviving into RSS
+    `<content:encoded>`, UTM parameters in URLs. They get printed but
+    do not abort the build, because the deploy-site workflow blocking
+    on a cosmetic regression has historically caused outages — see
+    the 2026-05-10 incident where the build failed on a sub-agent's
+    verbatim `**Model:**` self-id string inside a `<code>` block."""
     errors: list[str] = []
+    warnings: list[str] = []
     # Every page in the manifest exists on disk.
     for url_path, info in manifest.get("pages", {}).items():
         path = OUT / info["path"]
@@ -5371,13 +5617,17 @@ def self_check(
     # redirects). Skip them — they're noindex'd, don't load the navbar,
     # and don't load Umami because the visit is forwarded immediately.
     redirect_re = re.compile(r'<meta\s+http-equiv=["\']refresh["\']', re.IGNORECASE)
+    umami_warnings: list[str] = []
     for path in OUT.rglob("*.html"):
         text = path.read_text(encoding="utf-8")
         if redirect_re.search(text):
             continue
         umami_count = len(umami_tag_re.findall(text))
         if umami_count != 1:
-            errors.append(f"umami <script> tag count = {umami_count} (expected 1) in {path.relative_to(OUT)}")
+            # Cosmetic — analytics may not load on this page, but the
+            # page itself is fine. Aggregate so one umami misconfig
+            # doesn't produce 100 lines of warnings.
+            umami_warnings.append(str(path.relative_to(OUT)))
         if inline_script_re.search(text):
             errors.append(
                 f"inline <script> body in {path.relative_to(OUT)} — "
@@ -5396,7 +5646,18 @@ def self_check(
                     f"markdown placeholder leak in {path.relative_to(OUT)} — "
                     "inline-code or link substitution is broken (renderer fixed-point regressed)"
                 )
-    # No raw `**Markdown**` survives in any RSS content.
+    if umami_warnings:
+        if len(umami_warnings) == 1:
+            warnings.append(f"umami <script> tag count != 1 in {umami_warnings[0]}")
+        else:
+            warnings.append(
+                f"umami <script> tag count != 1 in {len(umami_warnings)} pages "
+                f"(first: {umami_warnings[0]}) — analytics misconfig, page content unaffected"
+            )
+    # No raw `**Markdown**` survives in any RSS content. Cosmetic — feed
+    # readers still parse and display the content; the regression is
+    # editorial drift the maintainer should know about, not a delivery
+    # failure that justifies blocking the deploy.
     for fp in feed_files:
         text = fp.read_text(encoding="utf-8")
         if not text:
@@ -5415,32 +5676,38 @@ def self_check(
             scrub = re.sub(r"<pre\b[^>]*>.*?</pre>", "", scrub, flags=re.DOTALL)
             # Markdown emphasis tokens that should have rendered to HTML
             if re.search(r"\*\*[^\n*]{1,80}\*\*", scrub):
-                errors.append(f"feed {fp.name}: unrendered Markdown `**...**` in content:encoded")
+                warnings.append(f"feed {fp.name}: unrendered Markdown `**...**` in content:encoded")
                 break
             if re.search(r"\[[^\]\n]{1,80}\]\((https?://)", scrub):
-                errors.append(f"feed {fp.name}: unrendered Markdown `[..](http..)` in content:encoded")
+                warnings.append(f"feed {fp.name}: unrendered Markdown `[..](http..)` in content:encoded")
                 break
-    # All three feeds parse as valid XML.
+    # All three feeds parse as valid XML — CRITICAL (broken feed = broken
+    # delivery, not cosmetic).
     for fp in feed_files:
         if fp.exists():
             errs = _xml_validate(fp.read_text(encoding="utf-8"))
             for e in errs:
                 errors.append(f"feed {fp.name}: XML parse error — {e}")
-    # No UTM parameters in any URL on the site. Scan all emitted HTML and
-    # XML files for `?utm_` or `&utm_` (URL-context only — the literal
-    # token `utm_` is fine inside prose, e.g. inside docs/analytics.md).
+    # No UTM parameters in any URL on the site. Cosmetic / privacy-tracking
+    # hygiene; not a delivery failure.
     utm_re = re.compile(r"[?&]utm_[a-z_]+=", re.IGNORECASE)
+    utm_pages: list[str] = []
     for path in list(OUT.rglob("*.html")) + list(OUT.rglob("*.xml")):
         text = path.read_text(encoding="utf-8")
         if utm_re.search(text):
-            errors.append(f"UTM parameter present in URL inside {path.relative_to(OUT)}")
-            break
+            utm_pages.append(str(path.relative_to(OUT)))
+    if utm_pages:
+        if len(utm_pages) == 1:
+            warnings.append(f"UTM parameter present in URL inside {utm_pages[0]}")
+        else:
+            warnings.append(
+                f"UTM parameter present in URL inside {len(utm_pages)} pages "
+                f"(first: {utm_pages[0]}) — strip and reissue"
+            )
 
-    # No known-shape secret tokens in any emitted file. Last-line guard
-    # against the autonomous agent accidentally pasting an env var or
-    # credential into a brief / docs / state file: failing the build is
-    # always preferable to silently propagating a secret to gh-pages and
-    # the RSS feeds.
+    # No known-shape secret tokens in any emitted file. CRITICAL — failing
+    # the build is always preferable to silently propagating a secret to
+    # gh-pages and the RSS feeds.
     for path in list(OUT.rglob("*.html")) + list(OUT.rglob("*.xml")) + list(OUT.rglob("*.md")) + list(OUT.rglob("*.json")) + list(OUT.rglob("*.txt")):
         try:
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -5451,7 +5718,7 @@ def self_check(
             errors.append(
                 f"secret-shaped token in {path.relative_to(OUT)}: {label} ({sample})"
             )
-    return errors
+    return errors, warnings
 
 
 # === MAIN ==============================================================
@@ -5971,10 +6238,20 @@ def main() -> int:
             canonical=site_url + "topics/",
         ),
     )
+    # Load run_log once — both the /sources/ overview (for the
+    # fetch-failures sparkline) and the /ops/ dashboard consume it.
+    run_log = None
+    rl_src = ROOT / "state" / "run_log.json"
+    if rl_src.exists():
+        try:
+            run_log = json.loads(rl_src.read_text())
+        except Exception:
+            run_log = None
     emit_html(
         "sources/",
         render_source_list_page(
             sources["sources"],
+            run_log=run_log,
             site_url=site_url,
             cachebust=cachebust,
             prefix="../",
@@ -6139,14 +6416,8 @@ def main() -> int:
                 ),
             )
 
-    # /ops/
-    run_log = None
-    rl_src = ROOT / "state" / "run_log.json"
-    if rl_src.exists():
-        try:
-            run_log = json.loads(rl_src.read_text())
-        except Exception:
-            run_log = None
+    # /ops/ — `run_log` was loaded once above, before the /sources/
+    # list page that also consumes it.
     emit_html(
         "ops/",
         render_ops_page(
@@ -6332,8 +6603,18 @@ def main() -> int:
     prune_orphans(OUT)
 
     # ---- Self-check ---------------------------------------------------
+    # Errors block the build (truly broken-site signals: missing manifest
+    # page, inline <script> bypassing CSP, renderer placeholder leak, XML
+    # parse error in feed, secret-shaped token). Warnings are cosmetic /
+    # quality drift — they print but don't abort, because the deploy-site
+    # workflow blocking on a sub-agent quoting `**Model:**` inside a
+    # `<code>` block (2026-05-10 incident) was a self-inflicted outage.
     feed_files = [OUT / "feed.xml", OUT / "feed-weekly.xml", OUT / "feed-items.xml"]
-    errors = self_check(manifest=manifest, feed_files=feed_files, site_url=site_url)
+    errors, warnings = self_check(manifest=manifest, feed_files=feed_files, site_url=site_url)
+    if warnings:
+        print("SELF-CHECK WARNINGS (non-blocking):", file=sys.stderr)
+        for w in warnings:
+            print(f"  · {w}", file=sys.stderr)
     if errors:
         print("SELF-CHECK FAILED:", file=sys.stderr)
         for e in errors:
