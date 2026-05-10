@@ -27,7 +27,46 @@
     wireMobileNavToggle();
     wireKeyboardShortcuts();
     wireMdSplitButtons();
+    wireSectionCollapse();
     await Promise.all([wireGlobalSearch(), wireGithubBadge(), wireListFilters()]);
+  }
+
+  // ── collapsible H2 sections (brief pages) ──────────────────────────
+  // Each <section class="brief-section"> carries a chevron toggle inside
+  // its H2 with `data-section-collapse-toggle="<anchor>"`. Clicking the
+  // chevron toggles `.section-collapsed` on the section AND mirrors the
+  // state into the TOC eye toggle (`[data-section-toggle="<anchor>"]`)
+  // so both views stay in sync. The TOC eye toggle is bound by
+  // filter.min.js — its click handler already fires `applyFilters()`
+  // which sets `.section-collapsed` and updates the chevron's
+  // `aria-expanded`. This handler covers the reverse direction.
+  function wireSectionCollapse() {
+    var chevrons = document.querySelectorAll('[data-section-collapse-toggle]');
+    if (!chevrons.length) return;
+    chevrons.forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var anchor = btn.getAttribute('data-section-collapse-toggle');
+        var section = document.getElementById(anchor);
+        if (!section) return;
+        var nowCollapsed = !section.classList.contains('section-collapsed');
+        section.classList.toggle('section-collapsed', nowCollapsed);
+        btn.setAttribute('aria-expanded', nowCollapsed ? 'false' : 'true');
+        // Mirror state to every TOC eye toggle (desktop + mobile aside copies).
+        var eyeToggles = document.querySelectorAll(
+          '[data-section-toggle="' + anchor.replace(/"/g, '\\"') + '"]'
+        );
+        eyeToggles.forEach(function (eye) {
+          // eye `aria-pressed=true` means "section visible"; pressed=false means "collapsed".
+          eye.setAttribute('aria-pressed', nowCollapsed ? 'false' : 'true');
+        });
+        // Mirror the strikethrough state on the TOC row.
+        document.querySelectorAll('[data-section-row="' + anchor.replace(/"/g, '\\"') + '"]')
+          .forEach(function (row) {
+            row.classList.toggle('toc-row-hidden', nowCollapsed);
+          });
+      });
+    });
   }
 
   // ── search ──────────────────────────────────────────────────────────

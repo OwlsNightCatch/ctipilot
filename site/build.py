@@ -834,6 +834,67 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
     return "\n".join(out)
 
 
+# Callout labels we lift out of paragraph prose into a styled aside block.
+# These are conventional editorial markers in the daily/weekly brief:
+# the "Defender takeaway" line is the operationally-actionable summary
+# closing every item, "Action items" / "Detection guidance" / "Hunting
+# hints" are occasional auxiliary callouts. By promoting the leading
+# `<strong>Label:</strong>` paragraph into `<aside class="callout
+# callout--takeaway">…</aside>`, the brief reader gets a visual anchor
+# at the bottom of each item without the agent having to learn new
+# Markdown syntax.
+_CALLOUT_LABELS = {
+    "defender takeaway":  "callout--takeaway",
+    "defender note":      "callout--takeaway",
+    "defender action":    "callout--takeaway",
+    "action":             "callout--action",
+    "action item":        "callout--action",
+    "action items":       "callout--action",
+    "detection guidance": "callout--detection",
+    "detection":          "callout--detection",
+    "hunting hints":      "callout--detection",
+    "hunting hint":       "callout--detection",
+}
+_CALLOUT_LABEL_RE = re.compile(
+    r"<p>\s*<strong>\s*("
+    + "|".join(re.escape(lbl) for lbl in _CALLOUT_LABELS)
+    + r")\s*[:—–-]\s*</strong>(?P<rest>.*?)</p>",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def enhance_brief_item_html(html: str) -> str:
+    """Promote leading `**Defender takeaway:**`-style paragraphs inside
+    rendered brief items into structured callout asides.
+
+    The agent writes the operational summary at the close of each item
+    as a Markdown paragraph that opens with a bold label. The renderer
+    has already turned that into `<p><strong>Label:</strong> …</p>`.
+    Lift it into an `<aside class="callout callout--takeaway">` so the
+    stylesheet can give it dedicated visual weight (accent border, label
+    badge) without changing how the agent writes briefs.
+
+    Idempotent — calling twice has no effect because the regex requires
+    the surrounding `<p>` wrapper which only appears in fresh-rendered
+    Markdown."""
+
+    def _wrap(m: re.Match[str]) -> str:
+        raw_label = m.group(1).strip()
+        cls = _CALLOUT_LABELS.get(raw_label.lower(), "callout--takeaway")
+        # Title-case the label so "defender takeaway" → "Defender takeaway"
+        # but preserve "Defender Takeaway" if the agent already cased it.
+        display = raw_label if raw_label[:1].isupper() else raw_label.capitalize()
+        rest = m.group("rest").strip()
+        return (
+            f'<aside class="callout {cls}" role="note">'
+            f'<span class="callout__label">{_escape(display)}</span>'
+            f'<div class="callout__body">{rest}</div>'
+            f'</aside>'
+        )
+
+    return _CALLOUT_LABEL_RE.sub(_wrap, html)
+
+
 def _render_list(items: list[tuple[int, str]], *, ordered: bool, base_url: str | None) -> str:
     """Render a (flat) Markdown list. Nested lists are emitted by treating
     a deeper-indented run as a nested list inside the prior <li>."""
@@ -1638,8 +1699,14 @@ def base_template(
 <header class="topbar">
   <div class="bar-inner">
     <a class="brand" href="{pfx}" aria-label="Home — ctipilot.ch">
-      <span class="brand-mark" aria-hidden="true">CTI</span>
-      <span class="brand-text"><strong>ctipilot.ch</strong><small>Switzerland · Europe · Public sector</small></span>
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+          <path d="M3.5 12a8.5 8.5 0 0 1 17 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M7.5 12a4.5 4.5 0 0 1 9 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>
+          <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        </svg>
+      </span>
+      <span class="brand-text"><strong>ctipilot</strong><em>.ch</em></span>
     </a>
 
     <form class="searchbox" role="search" data-search-form>
@@ -1675,16 +1742,72 @@ def base_template(
     </nav>
   </div>
 </header>
+<div class="read-progress" aria-hidden="true"></div>
 <main id="main" class="main"><div class="view">{body}</div></main>
-<footer class="footer">
+<footer class="footer" role="contentinfo">
   <div class="footer-inner">
-    <p>
-      <strong>AI-generated content, no human review.</strong>
-      Every brief is produced autonomously by an LLM running as a Claude Code routine; every claim links to a primary source. <a href="{pfx}about/">How this works →</a>
-    </p>
-    <p class="meta" id="footer-meta">
-      <a href="{pfx}feeds/">RSS feeds — daily, weekly, per item, 8 sector slices</a>
-    </p>
+    <div class="footer-grid">
+      <section class="footer-brand">
+        <a class="footer-brand__home" href="{pfx}" aria-label="ctipilot.ch home">
+          <span class="footer-brand__mark" aria-hidden="true">CTI</span>
+          <span class="footer-brand__title">
+            <strong>ctipilot.ch</strong>
+            <small>Switzerland · Europe · Public sector</small>
+          </span>
+        </a>
+        <p class="footer-brand__lede">
+          Daily and weekly cyber threat intelligence for Tier 2/3 SOC, IR
+          and detection engineers. Source-linked, IOC-free, autonomously
+          generated by an LLM with parallel research and verification.
+        </p>
+        <p class="footer-brand__notice">
+          <span class="footer-brand__notice-label">AI-generated · no human review</span>
+          <a href="{pfx}about/">How this works →</a>
+        </p>
+      </section>
+
+      <nav class="footer-col" aria-label="Read">
+        <h4 class="footer-col__label">Read</h4>
+        <ul>
+          <li><a href="{pfx}">Latest brief</a></li>
+          <li><a href="{pfx}briefs/">All briefs</a></li>
+          <li><a href="{pfx}entities/">Entities</a></li>
+          <li><a href="{pfx}sources/">Sources</a></li>
+          <li><a href="{pfx}trends/">Trends</a></li>
+          <li><a href="{pfx}ops/">Operations</a></li>
+        </ul>
+      </nav>
+
+      <nav class="footer-col" aria-label="Subscribe">
+        <h4 class="footer-col__label">Subscribe</h4>
+        <ul>
+          <li><a href="{pfx}feed.xml">RSS — Daily</a></li>
+          <li><a href="{pfx}feed-weekly.xml">RSS — Weekly</a></li>
+          <li><a href="{pfx}feed-items.xml">RSS — Per item</a></li>
+          <li><a href="{pfx}feeds/">All feeds + sectors</a></li>
+        </ul>
+      </nav>
+
+      <nav class="footer-col" aria-label="About">
+        <h4 class="footer-col__label">About</h4>
+        <ul>
+          <li><a href="{pfx}about/">How this works</a></li>
+          <li><a href="{pfx}about/prompts/changelog/">Editorial policy</a></li>
+          <li><a href="{pfx}about/prompts/verification/">Verification</a></li>
+          <li><a href="https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-bottom__copy">
+        © {datetime.now(timezone.utc).year} ctipilot.ch — published under the MIT License.
+        Made in Switzerland.
+      </p>
+      <p class="footer-bottom__build" id="footer-meta">
+        <span class="mono">build {_escape(cachebust[:8])}</span>
+      </p>
+    </div>
   </div>
 </footer>
 </body>
@@ -1989,11 +2112,21 @@ def render_brief_page(
     # Sections list — each entry is BOTH a scroll-anchor link (text)
     # AND a small toggle button (visibility). The text scrolls; the
     # toggle hides/shows the section. Default state: all visible.
+    # Default-collapse the verification-notes section's TOC eye toggle to
+    # match the body section's default-collapsed state. The pressed=false
+    # state means "section is currently hidden/collapsed" per the
+    # filter.min.js contract.
+    def _toc_pressed_default(key: str) -> str:
+        return "false" if key == "verification-notes" else "true"
+
+    def _toc_row_class(key: str) -> str:
+        return "toc-row toc-row-hidden" if key == "verification-notes" else "toc-row"
+
     sections_toc = "".join(
-        '<li class="toc-row" data-section-row="' + _escape(a) + '">'
+        f'<li class="{_toc_row_class(_k)}" data-section-row="{_escape(a)}">'
         f'<a class="toc-link" href="#{_escape(a)}">{_escape(h)}</a>'
         f'<button type="button" class="toc-toggle" data-section-toggle="{_escape(a)}" '
-        f'aria-pressed="true" aria-label="Toggle section visibility" title="Hide / show section">'
+        f'aria-pressed="{_toc_pressed_default(_k)}" aria-label="Toggle section visibility" title="Hide / show section">'
         '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
         '<path class="eye-open" d="M8 3.5c-3 0-5.5 2.4-6.5 4.5 1 2.1 3.5 4.5 6.5 4.5s5.5-2.4 6.5-4.5C13.5 5.9 11 3.5 8 3.5zm0 7.2a2.7 2.7 0 1 1 0-5.4 2.7 2.7 0 0 1 0 5.4z" fill="currentColor"/>'
         '<path class="eye-shut" d="M2 3l12 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
@@ -2156,6 +2289,31 @@ def render_brief_page(
     preamble_md = re.sub(r"\n\s*-{3,}\s*\n*\Z", "\n", preamble_md)
     preamble_md = preamble_md.rstrip() + "\n" if preamble_md.strip() else ""
     preamble_html = render_markdown(preamble_md, base_url=md_anchor_base) if preamble_md.strip() else ""
+    # The brief preamble's first blockquote is the standing
+    # `> **AI-generated content — no human review.** ...` notice — every
+    # brief carries it. Promote it into a distinct
+    # `<aside class="brief-notice">` so the stylesheet can give it the
+    # correct visual weight (compact, alert-coloured strip — not a
+    # quotation block). Detect by the literal opening label phrase
+    # rather than by position so future preamble shapes don't
+    # accidentally swap the notice for an unrelated quote.
+    preamble_html = re.sub(
+        r'<blockquote>\s*<p>\s*<strong>\s*AI-generated content[^<]*</strong>(?P<rest>.*?)</p>\s*</blockquote>',
+        lambda m: (
+            '<aside class="brief-notice" role="note" aria-label="AI-generated content notice">'
+            '<span class="brief-notice__label" aria-hidden="true">'
+            '<svg viewBox="0 0 16 16" focusable="false" aria-hidden="true">'
+            '<path fill="currentColor" d="M8 1.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm0 1.5a5 5 0 1 1 0 10A5 5 0 0 1 8 3Zm-.75 2.25v3.5h1.5v-3.5h-1.5Zm0 4.5v1.5h1.5v-1.5h-1.5Z"/>'
+            '</svg>'
+            '<span>AI-generated · no human review</span>'
+            '</span>'
+            f'<div class="brief-notice__body">{m.group("rest").strip()}</div>'
+            '</aside>'
+        ),
+        preamble_html,
+        count=1,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
 
     sections_html: list[str] = []
     for sec in brief["sections"]:
@@ -2170,7 +2328,9 @@ def render_brief_page(
                 regions_attr = " ".join(it["footer"].get("regions", []))
             article_id = it["anchor"]
             slug = it["slug"]
-            item_body_html = render_markdown(it["body_md"], base_url=md_anchor_base)
+            item_body_html = enhance_brief_item_html(
+                render_markdown(it["body_md"], base_url=md_anchor_base)
+            )
             footer_html = render_footer_html(it["footer"], prefix=prefix) if it["footer"] else ""
             heading_html = (
                 f'<h3 id="{_escape(article_id)}">'
@@ -2205,12 +2365,38 @@ def render_brief_page(
             inner.append(render_markdown(sec["body_md"], base_url=md_anchor_base))
             if sec.get("section_footer"):
                 inner.append(render_footer_html(sec["section_footer"], prefix=prefix))
+        # Default-collapse the Verification Notes section — it's an
+        # accountability appendix the operator wants discoverable but
+        # folded by default. Every other section opens by default.
+        is_default_collapsed = skey == "verification-notes"
+        section_classes = "brief-section"
+        if is_default_collapsed:
+            section_classes += " section-collapsed"
+        aria_expanded = "false" if is_default_collapsed else "true"
+        chevron_svg = (
+            '<svg class="section-collapse-chevron" viewBox="0 0 20 20" '
+            'aria-hidden="true" focusable="false">'
+            '<path fill="none" stroke="currentColor" stroke-width="2" '
+            'stroke-linecap="round" stroke-linejoin="round" '
+            'd="M5 8l5 5 5-5"/></svg>'
+        )
         sections_html.append(
-            f'<section class="brief-section" '
+            f'<section class="{section_classes}" '
             f'data-section="{_escape(skey)}" '
             f'id="{_escape(sec_anchor)}">'
-            f'<h2><a class="section-anchor" href="#{_escape(sec_anchor)}">{_escape(sec["heading"])}</a></h2>'
+            f'<h2>'
+            f'<a class="section-anchor" href="#{_escape(sec_anchor)}">{_escape(sec["heading"])}</a>'
+            f'<button type="button" class="section-collapse-toggle" '
+            f'data-section-collapse-toggle="{_escape(sec_anchor)}" '
+            f'aria-expanded="{aria_expanded}" '
+            f'aria-controls="{_escape(sec_anchor)}-body" '
+            f'aria-label="Toggle {_escape(sec["heading"])} section">'
+            f'{chevron_svg}'
+            f'</button>'
+            f'</h2>'
+            f'<div class="brief-section__body" id="{_escape(sec_anchor)}-body">'
             + "".join(inner)
+            + '</div>'
             + '</section>'
         )
 
@@ -2245,23 +2431,90 @@ def render_brief_page(
 </div>
 """
     editorial_choices_html = _editorial_choices_block(brief, prefix=prefix)
+    # Two copies of the copy-as-markdown control are rendered so the
+    # mobile layout can place it AFTER the brief metadata strip while the
+    # desktop layout still anchors it above the sticky aside on the
+    # right. CSS toggles which one is visible per viewport. The
+    # JavaScript wires both via querySelectorAll('[data-md-split]') so
+    # they operate independently.
+    copy_split_desktop = copy_split.replace(
+        '<div class="md-split"',
+        '<div class="md-split" data-md-split-instance="desktop"',
+        1,
+    )
+    copy_split_mobile = copy_split.replace(
+        '<div class="md-split"',
+        '<div class="md-split" data-md-split-instance="mobile"',
+        1,
+    )
+    # Structured metadata strip — every entry is a label/value pair
+    # (mono-caps label on top, value below) so the row reads as a clean
+    # data band instead of a wrapping sentence with floating dividers.
+    # Values render in their natural style (mono for date, accent chip
+    # for classification, accent link for prompt version).
+    def _meta_item(label: str, value_html: str, *, css: str = "") -> str:
+        cls = "brief-meta__item" + (f" {css}" if css else "")
+        return (
+            f'<div class="{cls}">'
+            f'<span class="brief-meta__label">{_escape(label)}</span>'
+            f'<span class="brief-meta__value">{value_html}</span>'
+            f'</div>'
+        )
+
+    meta_items: list[str] = []
+    meta_items.append(
+        _meta_item("Type",
+                   f'<span class="brief-meta__type">{_escape(brief["kind"])}</span>',
+                   css="brief-meta__item--lead")
+    )
+    meta_items.append(
+        _meta_item("Date",
+                   f'<span class="mono">{_escape(brief["name"])}</span>')
+    )
+    if brief.get("generated_by"):
+        meta_items.append(
+            _meta_item("Generator", _escape(brief["generated_by"]))
+        )
+    if brief.get("classification"):
+        meta_items.append(
+            _meta_item("Classification",
+                       f'<span class="brief-meta__chip brief-meta__chip--class">'
+                       f'{_escape(brief["classification"])}</span>')
+        )
+    if brief.get("language"):
+        meta_items.append(_meta_item("Language", _escape(brief["language"])))
+    if brief.get("prompt_version"):
+        meta_items.append(
+            _meta_item(
+                "Prompt",
+                f'<a class="brief-meta__chip brief-meta__chip--prompt" '
+                f'href="{prefix}about/prompts/changelog/" '
+                f'title="Editorial-policy version that produced this brief">'
+                f'v{_escape(brief["prompt_version"])}</a>',
+            )
+        )
+    meta_items.append(
+        _meta_item("Items",
+                   f'<span class="brief-meta__count">{items_count}</span>',
+                   css="brief-meta__item--count")
+    )
+    if cve_count:
+        meta_items.append(
+            _meta_item("CVEs",
+                       f'<span class="brief-meta__count">{cve_count}</span>',
+                       css="brief-meta__item--count")
+        )
+    meta_strip = '<div class="brief-meta">' + "".join(meta_items) + '</div>'
+
     body = f"""
 <header class="brief-page-head">
   <h1>{_escape(brief['title'])}</h1>
-  <div class="brief-page-head__actions">{copy_split}</div>
 </header>
 <article class="brief-layout" data-brief="{_escape(brief['name'])}">
-  <div>
-    <div class="brief-meta">
-      <span><strong>{_escape(brief['kind'])}</strong></span>
-      <span class="mono">{_escape(brief['name'])}</span>
-      {('<span title="Generated by"><strong>by</strong> ' + _escape(brief['generated_by']) + '</span>') if brief.get('generated_by') else ''}
-      {('<span title="Classification" class="meta-tag">' + _escape(brief['classification']) + '</span>') if brief.get('classification') else ''}
-      {('<span title="Language">' + _escape(brief['language']) + '</span>') if brief.get('language') else ''}
-      {prompt_badge}
-      <span>{items_count} item{'' if items_count == 1 else 's'}</span>
-      {('<span>' + str(cve_count) + ' CVE' + ('' if cve_count == 1 else 's') + '</span>') if cve_count else ''}
-    </div>
+  {meta_strip}
+  <div class="brief-page-head__actions brief-page-head__actions--desktop">{copy_split_desktop}</div>
+  <div class="brief-main">
+    <div class="brief-page-head__actions brief-page-head__actions--mobile">{copy_split_mobile}</div>
     <details class="toc-mobile" data-filter="brief">
       <summary>On this page</summary>
       <div class="toc-mobile-body aside-toc">{toc_html}</div>
@@ -2298,7 +2551,9 @@ def render_item_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    body_html = render_markdown(item["body_md"], base_url=canonical)
+    body_html = enhance_brief_item_html(
+        render_markdown(item["body_md"], base_url=canonical)
+    )
     footer_html = render_footer_html(item["footer"], prefix=prefix) if item["footer"] else ""
     brief_url = f"{prefix}briefs/" + ("weekly/" if brief["kind"] == "weekly" else "") + f"{brief['name']}/"
     description = (item["heading"][:280]) if item.get("heading") else f"Item from {brief['title']}"
@@ -2560,73 +2815,11 @@ def render_source_list_page(
         for s in stats
     )
 
-    # v2.48 — Stale active sources, moved here from /ops/. Co-located with
-    # status + reliability + the curated source-lifecycle context. Active
-    # sources whose last_successful_fetch is more than 7 days old, OR
-    # never recorded, are listed in a dedicated section above the main
-    # table; the main table's "Stale" filter chip toggles to that subset.
-    stale_records: list[dict[str, Any]] = []
-    for s in sources:
-        if s.get("status") != "active":
-            continue
-        days = _stale_days_for_source(s, today)
-        if days == -1:
-            stale_records.append({
-                "id": s["id"],
-                "publisher": s.get("publisher", s["id"]),
-                "reliability": s.get("reliability") or "",
-                "days": -1,
-                "last": s.get("last_successful_fetch") or "",
-                "consecutive_quiet_periods": s.get("consecutive_quiet_periods"),
-                "consecutive_fetch_failures": s.get("consecutive_fetch_failures"),
-                "notes": s.get("notes") or "",
-            })
-        elif days > 7:
-            stale_records.append({
-                "id": s["id"],
-                "publisher": s.get("publisher", s["id"]),
-                "reliability": s.get("reliability") or "",
-                "days": days,
-                "last": s.get("last_successful_fetch") or "",
-                "consecutive_quiet_periods": s.get("consecutive_quiet_periods"),
-                "consecutive_fetch_failures": s.get("consecutive_fetch_failures"),
-                "notes": s.get("notes") or "",
-            })
-    # Order: never-fetched first (most urgent), then by days descending.
-    stale_records.sort(key=lambda r: (-(1 << 30) if r["days"] < 0 else -r["days"]))
-    if stale_records:
-        stale_rows = "".join(
-            '<tr>'
-            f'<td><a href="{prefix}sources/{urllib.parse.quote(r["id"], safe="")}/"><strong>{_escape(r["publisher"])}</strong></a>'
-            f'<div class="muted mono" style="font-size:0.75rem">{_escape(r["id"])}</div></td>'
-            f'<td>{reliability_badge(r["reliability"])}</td>'
-            f'<td><span class="e-tag">{("never fetched" if r["days"] < 0 else (str(r["days"]) + " d"))}</span></td>'
-            + (f'<td class="mono muted">{_escape(r["last"]) if r["last"] else "—"}</td>')
-            + (
-                '<td class="muted">'
-                + (f'<span class="e-tag">quiet: {r["consecutive_quiet_periods"]}</span> ' if isinstance(r.get("consecutive_quiet_periods"), int) else '')
-                + (f'<span class="e-tag">fail: {r["consecutive_fetch_failures"]}</span>' if isinstance(r.get("consecutive_fetch_failures"), int) else '')
-                + '</td>'
-            )
-            + '</tr>'
-            for r in stale_records[:50]
-        )
-        stale_extra = (
-            f'<p class="muted" style="margin-top:0.4rem">+ {len(stale_records) - 50} more stale source(s) — '
-            'use the table filter below for the full list.</p>'
-        ) if len(stale_records) > 50 else ''
-        stale_section = (
-            '<section style="margin-top:1.4rem">'
-            f'<h2 class="section-head">Stale active sources <span class="muted">({len(stale_records)} silent &gt; 7 days)</span></h2>'
-            '<p class="subtitle muted">Active sources whose last successful fetch is older than a week (or never recorded). Reliability, status, and lifecycle counters in one place.</p>'
-            '<div class="data-wrap"><table class="data">'
-            '<thead><tr><th>Publisher</th><th>Reliability</th><th>Stale since</th><th>Last fetch</th><th>Lifecycle counters</th></tr></thead>'
-            f'<tbody>{stale_rows}</tbody></table></div>'
-            f'{stale_extra}'
-            '</section>'
-        )
-    else:
-        stale_section = ''
+    # (The "Stale active sources" dedicated section was removed; the
+    # main sources table still carries a `data-source-stale` attribute
+    # per row + a "Stale only" filter chip in the toolbar that lets the
+    # reader narrow the existing table to silent-active sources without
+    # a separate block.)
 
     rows = []
     for s in sources:
@@ -2674,8 +2867,6 @@ def render_source_list_page(
 <p class="subtitle">{len(sources)} curated source{'' if len(sources) == 1 else 's'}. Each source can be searched and shows the briefs that have cited it.</p>
 
 {chart_block}
-
-{stale_section}
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="sources-q" type="search" placeholder="Filter by name, id, notes, URL…" autocomplete="off" spellcheck="false" data-filter-input="sources" />
