@@ -770,6 +770,12 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
 
 /* ── brief detail ───────────────────────────────────────────────── */
 
+/* Brief layout — single column on phone, content + 260px aside on desktop.
+   The aside width is the source of truth for the Copy-as-Markdown button
+   width on desktop (`width: var(--aside-w)`) so the button anchors
+   visually on top of the aside card as a stack. */
+:root { --aside-w: 260px; }
+
 .brief-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -778,51 +784,46 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
 }
 @media (min-width: 1000px) {
   .brief-layout {
-    grid-template-columns: minmax(0, 1fr) 240px;
-    gap: 2.2rem;
+    grid-template-columns: minmax(0, 1fr) var(--aside-w);
+    gap: 2rem;
   }
 }
 
-/* Brief page header: title on the left, Copy-as-Markdown split button on
-   the right. Used to live inside .brief-meta with `margin-left: auto`,
-   which made the button drop to its own line whenever the meta strip
-   wrapped — visually disconnected from the action it belonged to. The
-   header row pins the title and the action together at all widths. On
-   narrow viewports the button stacks under the title (gap controls the
-   spacing); the action wrapper aligns the button to the start so it
-   doesn't look orphaned. */
+/* Brief page header. Title on the left, Copy-as-Markdown split button on
+   the right. On desktop the button sits exactly above the aside column
+   (`width: var(--aside-w)`), so the visual hierarchy reads as two stacked
+   cards on the right edge — Copy button + "On this page". On mobile the
+   button stretches full-width under the title. */
 .brief-page-head {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;          /* baseline-of-title aligns with bottom of button */
   justify-content: space-between;
-  gap: 0.6rem 1rem;
-  margin: 0 0 0.4rem;
+  gap: 0.75rem 2rem;
+  margin: 0 0 0.6rem;
 }
 .brief-page-head h1 {
   margin: 0;
   flex: 1 1 auto;
   min-width: 0;
-  /* Align the title's optical baseline with the centre of the action
-     button on the right. Without this, the descender of the H1 baseline
-     leaves the action button visually high. */
-  line-height: 1.15;
+  line-height: 1.18;
+  letter-spacing: -0.01em;
 }
 .brief-page-head__actions {
   flex: 0 0 auto;
-  align-self: center;
   display: inline-flex;
   align-items: center;
 }
-@media (max-width: 540px) {
-  .brief-page-head {
-    gap: 0.55rem;
-    align-items: flex-start;
-  }
-  .brief-page-head__actions {
-    align-self: stretch;
-    width: 100%;
-  }
+/* Desktop only: pin the action area to the aside column width so the
+   Copy button visually anchors above the "On this page" card. */
+@media (min-width: 1000px) {
+  .brief-page-head__actions { width: var(--aside-w); }
+  .brief-page-head__actions .md-split { width: 100%; }
+  .brief-page-head__actions .md-split__primary { flex: 1 1 auto; justify-content: center; }
+}
+@media (max-width: 999px) {
+  .brief-page-head { align-items: stretch; gap: 0.7rem; }
+  .brief-page-head__actions { width: 100%; }
   .brief-page-head__actions .md-split { width: 100%; }
   .brief-page-head__actions .md-split__primary { flex: 1 1 auto; justify-content: center; }
 }
@@ -837,26 +838,35 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
 .brief-meta strong { color: var(--text-soft); font-weight: 500; }
 .brief-meta .meta-actions { margin-left: auto; display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
-/* GitHub-style split-button: primary action + caret that opens a menu. */
+/* GitHub-style split-button: primary action + caret that opens a menu.
+   Sized as a card (38px min-height) so it matches the aside-toc visual
+   weight on desktop, plus comfortable tap targets on mobile. */
 .md-split {
   position: relative;
   display: inline-flex;
   align-items: stretch;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
+  min-height: 38px;
+  border-radius: var(--radius);
+  /* Hide the seam between primary + caret so the pair reads as one card. */
+  isolation: isolate;
 }
 .md-split__primary,
 .md-split__caret {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 0.85rem;
   font: inherit;
+  font-weight: 500;
   color: var(--text-soft);
   background: var(--bg-elev);
   border: 1px solid var(--border);
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
+  transition: background 0.1s linear, color 0.1s linear, border-color 0.1s linear;
 }
 .md-split__primary {
   border-radius: var(--radius) 0 0 var(--radius);
@@ -864,28 +874,42 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
 .md-split__caret {
   border-left: 0;
   border-radius: 0 var(--radius) var(--radius) 0;
-  padding: 0.25rem 0.4rem;
+  padding: 0 0.6rem;
+  flex: 0 0 auto;
 }
 .md-split__primary:hover,
 .md-split__caret:hover {
   color: var(--text);
   background: var(--bg-elev-2);
+  border-color: var(--border);
   text-decoration: none;
+}
+.md-split:hover .md-split__primary,
+.md-split:hover .md-split__caret {
+  /* Synced hover so the seam doesn't visually break. */
+  background: var(--bg-elev-2);
+  color: var(--text);
 }
 .md-split__primary:focus-visible,
 .md-split__caret:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
-  z-index: 1;
+  z-index: 2;
 }
 .md-split__icon,
 .md-split__chevron {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   flex: none;
 }
 .md-split__caret[aria-expanded="true"] .md-split__chevron {
   transform: rotate(180deg);
+}
+.md-split__label {
+  /* Truncate gracefully when the button is constrained narrow. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .md-split__menu {
@@ -1065,33 +1089,64 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
   border-radius: 2px;
 }
 
-/* ── TOC sidebar — minimal, sections-only by default ───────────── */
+/* ── "On this page" sidebar (desktop) + mobile collapsible.
+   Card-style panel with three blocks separated by hairlines:
+     1. Section list (title + per-section visibility toggle)
+     2. Filter groups (tags + regions, expandable)
+     3. References (CVEs, topics, sources, expandable)
+   Typography is consistent: every block opens with a 0.7rem uppercase
+   muted label so the eye lands on the same anchor in each section.
+   Padding is generous (1rem 1.05rem) so the card reads as a discrete
+   surface, matching the Copy-as-Markdown button above it on desktop. */
 
 .aside-toc {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 0.85rem 0.95rem;
-  font-size: 0.86rem;
+  padding: 1rem 1.05rem 0.95rem;
+  font-size: 0.88rem;
   min-width: 0;
+  /* Each direct-child block (section list, filters, references) gets its
+     own dividing rule via :not(:first-child) below. */
 }
 @media (min-width: 1000px) {
   .aside-toc {
-    /* No nested scroll. Sticky-flow only: the aside scrolls with the
-       page, and on tall briefs the bottom of the aside is reached by
-       scrolling the body — never by an inner scrollbar. The previous
-       `max-height + overflow-y: auto` produced a visually-distracting
-       second scrollbar (the user's "double scroll" complaint). */
+    /* No nested scroll. Sticky-flow only: the aside scrolls with the page,
+       and on tall briefs the bottom of the aside is reached by scrolling
+       the body — never by an inner scrollbar. */
     position: sticky;
     top: calc(var(--topbar-h) + 16px);
     align-self: start;
   }
 }
-.aside-toc h3 {
-  margin: 0 0 0.5rem; font-size: 0.72rem;
-  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
-  font-weight: 600;
+
+/* Block-level dividers between the three logical blocks (sections / filters /
+   refs). The H3 "On this page" sits at the top with no top divider; every
+   subsequent block (.toc-filters, <details> for refs) gets a hairline. */
+.aside-toc > * + * {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-soft);
 }
+
+/* Block label — the 0.7rem uppercase muted anchor used by every section
+   header inside the aside (and by .toc-filters > details > summary). */
+.aside-toc h3,
+.aside-toc .aside-toc__label {
+  margin: 0 0 0.55rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  font-weight: 700;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  justify-content: space-between;
+}
+
+/* Section list — primary navigation inside the aside. Each row links to
+   an anchor and carries a small eye-toggle to hide the section. */
 .aside-toc ul.toc-sections {
   list-style: none;
   padding: 0;
@@ -1100,93 +1155,112 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
   gap: 0.05rem;
 }
 .aside-toc ul.toc-sections li { margin: 0; }
-.aside-toc ul.toc-sections a {
+.aside-toc ul.toc-sections a.toc-link {
   display: block;
-  padding: 0.32rem 0.5rem;
-  border-radius: 4px;
+  padding: 0.4rem 0.55rem;
+  border-radius: 5px;
   color: var(--text-soft);
-  font-size: 0.85rem;
-  line-height: 1.35;
+  font-size: 0.86rem;
+  line-height: 1.4;
   border-left: 2px solid transparent;
+  transition: color 0.1s linear, background 0.1s linear, border-color 0.1s linear;
 }
-.aside-toc ul.toc-sections a:hover {
+.aside-toc ul.toc-sections a.toc-link:hover {
   color: var(--text);
   background: var(--bg-elev-2);
   text-decoration: none;
   border-left-color: var(--accent);
 }
 
-.aside-toc details {
-  margin-top: 0.85rem;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 0.6rem;
+/* References block (`<details><summary>References (N)</summary>`). Same
+   uppercase summary style as the filter-group summaries so the visual
+   anchor is consistent. */
+.aside-toc details:not(.filter-group) {
+  /* The "+ *" rule above already supplies the divider + spacing. */
 }
-.aside-toc details summary {
+.aside-toc details:not(.filter-group) > summary {
   cursor: pointer;
   list-style: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
-  font-weight: 600;
-  padding: 0.15rem 0;
+  font-weight: 700;
+  padding: 0;
+  user-select: none;
 }
-.aside-toc details summary::-webkit-details-marker { display: none; }
-.aside-toc details summary::after {
+.aside-toc details:not(.filter-group) > summary::-webkit-details-marker { display: none; }
+.aside-toc details:not(.filter-group) > summary::after {
   content: '+';
   color: var(--text-muted);
   font-family: var(--mono);
-  font-weight: 400;
-  font-size: 0.95rem;
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 1;
 }
-.aside-toc details[open] summary::after { content: '−'; }
-.aside-toc details ul {
+.aside-toc details:not(.filter-group)[open] > summary::after { content: '−'; }
+.aside-toc details:not(.filter-group) ul {
   list-style: none;
-  padding: 0.4rem 0 0;
+  padding: 0.65rem 0 0;
   margin: 0;
   display: grid;
-  gap: 0.18rem;
+  gap: 0.2rem;
 }
-.aside-toc details li { margin: 0; }
-.aside-toc details a {
+.aside-toc details:not(.filter-group) li { margin: 0; }
+.aside-toc details:not(.filter-group) a {
   color: var(--text-soft);
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   display: inline-block;
-  padding: 0.1rem 0;
+  padding: 0.15rem 0;
+  word-break: break-word;
 }
-.aside-toc details a:hover { color: var(--text); text-decoration: none; }
-.aside-toc details a.mono { font-family: var(--mono); font-size: 0.78rem; }
+.aside-toc details:not(.filter-group) a:hover { color: var(--accent-soft); text-decoration: none; }
+.aside-toc details:not(.filter-group) a.mono { font-family: var(--mono); font-size: 0.78rem; }
+.aside-toc details:not(.filter-group) .badge { margin-left: 0.3rem; }
 
-/* Mobile collapsible TOC: shown above the brief body. */
+/* Mobile collapsible TOC: shown above the brief body. Same visual
+   language as the desktop aside (card, padding, divider rules) — the
+   collapsible chrome is just a comfortable summary row. */
 .toc-mobile {
   background: var(--bg-elev);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  margin-bottom: 1.1rem;
-  font-size: 0.88rem;
+  margin: 0.4rem 0 1.2rem;
+  font-size: 0.9rem;
   min-width: 0;
 }
-.toc-mobile summary {
+.toc-mobile > summary {
   cursor: pointer;
-  padding: 0.7rem 0.95rem;
+  padding: 0.85rem 1.05rem;
+  min-height: 44px;            /* tap target ≥ 44px (iOS HIG) */
   font-weight: 600;
-  color: var(--text-soft);
+  color: var(--text);
   list-style: none;
   display: flex; align-items: center; justify-content: space-between;
+  user-select: none;
 }
-.toc-mobile summary::-webkit-details-marker { display: none; }
-.toc-mobile summary::after {
-  content: '▸';
-  color: var(--text-muted);
+.toc-mobile > summary::-webkit-details-marker { display: none; }
+.toc-mobile > summary::after {
+  content: '';
+  width: 10px; height: 10px;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg) translate(-2px, -2px);
   transition: transform 0.15s ease;
 }
-.toc-mobile[open] summary::after { transform: rotate(90deg); }
+.toc-mobile[open] > summary::after { transform: rotate(225deg) translate(-2px, -2px); }
 .toc-mobile-body {
-  padding: 0.2rem 0.95rem 0.85rem;
+  padding: 0;
   border-top: 1px solid var(--border-soft);
+}
+.toc-mobile-body.aside-toc {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.5rem 0.85rem 0.95rem;
 }
 @media (min-width: 1000px) { .toc-mobile { display: none; } }
 @media (max-width: 999px)  { .aside-toc.aside-toc--desktop { display: none; } }
@@ -1526,11 +1600,13 @@ button.chip-section[aria-pressed="false"] {
 /* Section toggles inside the aside-toc — each TOC entry is a row with
    the section title (link, scrolls to anchor) and a small eye icon
    (button, toggles section visibility). Subtle by default; only the
-   "hidden" state has visual weight. */
+   "hidden" state has visual weight. The toggle pads to ≥28px on hover
+   so the cursor lands on a comfortable target without bloating the row
+   in its resting state. */
 .toc-row {
   display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
+  align-items: stretch;
+  gap: 0.3rem;
   justify-content: space-between;
 }
 .toc-row .toc-link {
@@ -1541,83 +1617,119 @@ button.chip-section[aria-pressed="false"] {
   flex: 0 0 auto;
   background: transparent;
   border: 0;
-  padding: 0.1rem 0.2rem;
+  padding: 0;
   margin: 0;
+  width: 28px;
+  height: auto;          /* stretches to row height for vertical alignment */
+  display: inline-grid;
+  place-items: center;
   cursor: pointer;
   color: var(--text-muted);
-  border-radius: 3px;
-  opacity: 0.45;
-  transition: opacity 0.1s linear, color 0.1s linear;
+  border-radius: 5px;
+  opacity: 0;            /* invisible at rest, no visual noise */
+  transition: opacity 0.12s linear, color 0.12s linear, background 0.12s linear;
   line-height: 0;
 }
-.toc-row:hover .toc-toggle { opacity: 0.85; }
-.toc-row .toc-toggle:hover { color: var(--accent); opacity: 1; }
+.toc-row:hover .toc-toggle,
+.toc-row:focus-within .toc-toggle { opacity: 0.7; }
+.toc-row .toc-toggle:hover { color: var(--accent); opacity: 1; background: var(--bg-elev-2); }
+.toc-row .toc-toggle:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .toc-row .toc-toggle svg { width: 14px; height: 14px; display: block; }
 .toc-row .toc-toggle .eye-shut { display: none; }
 .toc-row .toc-toggle[aria-pressed="false"] {
   opacity: 1;
   color: var(--accent);
 }
-.toc-row .toc-toggle[aria-pressed="false"] .eye-open {
-  opacity: 0.45;
-}
+.toc-row .toc-toggle[aria-pressed="false"] .eye-open { display: none; }
 .toc-row .toc-toggle[aria-pressed="false"] .eye-shut { display: block; }
 .toc-row.toc-row-hidden .toc-link {
   text-decoration: line-through;
   color: var(--text-muted);
 }
+/* On touch devices the eye toggle is always visible (no hover) so the
+   user can find it without a mouse. */
+@media (hover: none) {
+  .toc-row .toc-toggle { opacity: 0.45; }
+}
 
-/* Filter groups inside the aside-toc. Subtle, collapsed by default. */
+/* Filter groups inside the aside-toc. Each is a `<details>` collapsible
+   with a clean uppercase summary that matches the H3 / references-summary
+   anchors so the eye lands on the same label across every block. */
 .toc-filters {
-  margin-top: 0.9rem;
-  padding-top: 0.8rem;
-  border-top: 1px solid var(--border-soft);
+  /* Vertical rhythm — the parent ".aside-toc > * + *" rule supplies the
+     top border + spacing; this layout just stacks the sub-groups. */
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.6rem;
 }
 .toc-filters .filter-group { margin: 0; }
 .toc-filters .filter-group > summary {
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
+  font-weight: 700;
   cursor: pointer;
-  padding: 0.3rem 0;
+  padding: 0.15rem 0;
   list-style: none;
   user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .toc-filters .filter-group > summary::-webkit-details-marker { display: none; }
 .toc-filters .filter-group > summary::after {
-  content: "›";
-  float: right;
-  transform: rotate(0deg);
-  transition: transform 0.1s linear;
-  font-size: 0.9rem;
+  content: '+';
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 1rem;
   line-height: 1;
 }
-.toc-filters .filter-group[open] > summary::after { transform: rotate(90deg); }
-.toc-filters .filter-count { float: none; }
+.toc-filters .filter-group[open] > summary::after { content: '−'; }
+.toc-filters .filter-count {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-muted);
+  margin-left: 0.4rem;
+}
+
+/* Filter chip rows live inside an open <details>. Each chip is a
+   pressable pill — accent-tinted when active, dimmed + line-through when
+   the user has toggled it off. Tap target is comfortable (≥28px h with
+   the 0.32rem v padding × 2 + 14px line). */
 .filter-chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.35rem 0 0.6rem;
+  gap: 0.32rem;
+  padding: 0.55rem 0 0.15rem;
 }
 .filter-chip {
   font-family: var(--mono);
-  font-size: 0.7rem;
-  background: var(--bg-elev);
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: var(--bg-elev-2);
   border: 1px solid var(--border);
-  color: var(--text-soft);
-  padding: 0.1rem 0.5rem;
+  color: var(--text);
+  padding: 0.22rem 0.6rem;
   border-radius: 999px;
   cursor: pointer;
   line-height: 1.4;
-  transition: all 0.1s linear;
+  transition: background 0.1s linear, color 0.1s linear, border-color 0.1s linear, opacity 0.1s linear;
   white-space: nowrap;
 }
-.filter-chip:hover { border-color: var(--accent); color: var(--text); }
+.filter-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent-soft);
+  background: var(--bg-elev);
+}
 .filter-chip[aria-pressed="false"] {
   background: transparent;
   color: var(--text-muted);
@@ -1625,22 +1737,37 @@ button.chip-section[aria-pressed="false"] {
   opacity: 0.55;
   border-color: var(--border-soft);
 }
+.filter-chip[aria-pressed="false"]:hover {
+  opacity: 0.85;
+  color: var(--text-soft);
+}
+.filter-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .filter-reset {
   align-self: flex-start;
-  margin-top: 0.4rem;
+  margin-top: 0.6rem;
   font-size: 0.78rem;
+  font-weight: 500;
   background: transparent;
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
   color: var(--text-soft);
-  padding: 0.18rem 0.55rem;
-  border-radius: 4px;
+  padding: 0.32rem 0.7rem;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: color 0.1s linear, border-color 0.1s linear, background 0.1s linear;
 }
-.filter-reset:hover { color: var(--text); border-color: var(--border); }
+.filter-reset:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--bg-elev-2);
+}
 .filter-status {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin: 0.4rem 0 0;
+  margin: 0.5rem 0 0;
   font-style: italic;
 }
 
@@ -2540,3 +2667,222 @@ button.chip-section[aria-pressed="false"] {
   font-size: 0.85rem;
 }
 .ops-final-iter h3.ops-mini-head { margin-bottom: 0.2rem; }
+
+
+/* ════════════════════════════════════════════════════════════════════
+   UX polish — mobile, light mode, tap targets, focus, alignment.
+   Appended last so these rules win over earlier blocks where needed.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* iOS Safari: anything ≥16px on a form input prevents the auto-zoom on
+   focus that otherwise wrecks page layout. The .searchbox input was
+   0.85rem ≈ 13.6px and zoomed on every focus on phones. */
+@media (max-width: 639px) {
+  .searchbox input,
+  .input,
+  input[type="search"],
+  input[type="text"],
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Topbar tap targets: brand + buttons + nav rows ≥ 44px on mobile.
+   .theme-toggle / .nav-toggle are already 38px — bump to 40px on
+   touch devices so the two-finger thumb lands cleanly. The brand
+   itself stays compact; we widen its hit-target via padding. */
+@media (max-width: 1179px) {
+  .nav a {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.85rem;
+  }
+}
+@media (hover: none) {
+  .theme-toggle, .nav-toggle, .github-link {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+/* Brief-page-head: the title font scaling already uses `clamp()` so it
+   shrinks smoothly. Tighten the meta strip on phone so the date /
+   classification chips read as one line cleanly. */
+@media (max-width: 639px) {
+  .brief-page-head h1 { line-height: 1.22; }
+  .brief-meta { gap: 0.4rem 0.7rem; font-size: 0.78rem; margin-bottom: 0.85rem; }
+  .brief-meta .badge,
+  .brief-meta .meta-tag,
+  .brief-meta .mono { padding: 0.1rem 0.4rem; }
+}
+
+/* Brief prose mobile reading comfort. Slightly larger leading + a
+   touch more left/right whitespace so long sentences don't kiss the
+   viewport edge. The `.view` already pads 0.85rem horizontally on phone;
+   we just relax the prose's line-height + font. */
+@media (max-width: 639px) {
+  .brief-prose { font-size: 0.95rem; line-height: 1.65; }
+  .brief-prose h2 { font-size: 1.1rem; margin-top: 1.6rem; }
+  .brief-prose h3 { font-size: 0.98rem; margin-top: 1.3rem; }
+  .brief-prose blockquote { padding: 0.55rem 0.85rem; }
+  /* Long URLs in inline links can otherwise force horizontal overflow
+     on narrow phones; we already break at any character globally, but
+     reinforce here for safety. */
+  .brief-prose a { overflow-wrap: anywhere; word-break: break-word; }
+  /* Item-footer pills can stack onto multiple lines comfortably on
+     mobile rather than truncating with ellipsis. */
+  .pill { padding: 0.1rem 0.45rem; font-size: 0.7rem; }
+}
+
+/* TOC mobile collapsible — make the open content easy to scan. The
+   filter chips inside should wrap and stay tappable. */
+@media (max-width: 639px) {
+  .toc-mobile-body.aside-toc { padding: 0.4rem 0.85rem 0.95rem; font-size: 0.92rem; }
+  .toc-mobile-body.aside-toc .filter-chip { padding: 0.32rem 0.7rem; font-size: 0.75rem; }
+  .toc-mobile-body.aside-toc ul.toc-sections a.toc-link { padding: 0.55rem 0.55rem; min-height: 40px; }
+}
+
+/* Cited footer + editorial-choices block: comfortable padding on phone. */
+@media (max-width: 639px) {
+  .brief-cited { padding: 0.85rem 0.95rem; }
+  .editorial-choices { padding: 0.7rem 0.85rem; }
+  .editorial-choices > summary { font-size: 0.92rem; }
+  .editorial-choices__hint { display: none; }   /* keeps the summary line tidy on phone */
+}
+
+/* Per-item delta block — already padded; tighten on phone. */
+@media (max-width: 639px) {
+  .item-deltas { padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+  .item-deltas__row {
+    grid-template-columns: 5.5rem 1fr;
+    /* Date + brief link stack with the delta on its own row underneath. */
+  }
+  .item-deltas__delta { grid-column: 1 / -1; }
+}
+
+/* /trends/ tiles — single column on phone so the sparklines aren't
+   crushed by the auto-fit minmax. */
+@media (max-width: 639px) {
+  .trends-grid { grid-template-columns: 1fr; gap: 0.7rem; }
+  .trends-card { padding: 0.85rem 1rem; }
+}
+
+/* /feeds/ rows — wrap the URL onto its own line on phone and slightly
+   reduce the description font for breathing room. */
+@media (max-width: 639px) {
+  .feeds-row { padding: 0.75rem 0.95rem; }
+  .feeds-row__head { gap: 0.3rem 0.5rem; }
+  .feeds-row__url { font-size: 0.78rem; word-break: break-all; }
+  .feeds-row__desc { font-size: 0.88rem; }
+}
+
+/* Ops dashboard mobile — KPI grid drops to two columns then one. */
+@media (max-width: 639px) {
+  .ops-kpi-grid { grid-template-columns: 1fr; gap: 0.65rem; }
+  .ops-section { margin-top: 1.4rem; }
+  .ops-mini-head { font-size: 0.78rem; }
+  .ops-fetch-failures, .ops-final-iter__table {
+    /* Already wrapped in .data-wrap with overflow-x: auto. The min-width
+       declared earlier still applies — the user scrolls horizontally
+       for the table, not the page. */
+    font-size: 0.8rem;
+  }
+}
+
+/* Sources page mobile — table cells get stacked feel on narrow widths. */
+@media (max-width: 639px) {
+  table.data { font-size: 0.82rem; }
+  table.data th, table.data td { padding: 0.5rem 0.55rem; }
+}
+
+
+/* ── Light-mode polish ────────────────────────────────────────────────
+   The light palette already provides distinct surfaces (--bg #fafbfc,
+   --bg-elev #ffffff, --bg-elev-2 #f4f6f8). Issues spotted in audit:
+     • The aside-toc on light mode looks washed-out because --bg-elev is
+       pure white against a near-white --bg. Add a soft border emphasis.
+     • The .ops-pill --warn / --crit colours have low contrast on the
+       light --bg-elev. Bump their backgrounds slightly.
+     • The .filter-chip "off" state's line-through + 0.55 opacity falls
+       below the 4.5:1 AA contrast on light. Deepen the colour.
+   ─────────────────────────────────────────────────────────────────── */
+
+:root[data-theme="light"] .aside-toc,
+:root:not([data-theme="dark"]) .aside-toc,
+:root[data-theme="light"] .toc-mobile,
+:root:not([data-theme="dark"]) .toc-mobile,
+:root[data-theme="light"] .editorial-choices,
+:root:not([data-theme="dark"]) .editorial-choices,
+:root[data-theme="light"] .feeds-row,
+:root:not([data-theme="dark"]) .feeds-row,
+:root[data-theme="light"] .trends-card,
+:root:not([data-theme="dark"]) .trends-card {
+  /* Subtle inner-shadow to lift cards on light mode where pure-white
+     bg-elev otherwise blends into the near-white page bg. */
+  box-shadow: 0 1px 0 rgba(27, 31, 35, 0.04);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .filter-chip[aria-pressed="false"] {
+    opacity: 0.7;
+    color: #69707a;
+  }
+}
+:root[data-theme="light"] .filter-chip[aria-pressed="false"] {
+  opacity: 0.7;
+  color: #69707a;
+}
+
+/* Light-mode: pill-tag and pill-region default to muted neutral tones
+   that are nearly invisible on a light bg-elev. Bump the contrast. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .pill {
+    background: #f4f6f8;
+    border-color: #d8dee4;
+    color: #4d555e;
+  }
+  :root:not([data-theme="dark"]) .pill-cve {
+    background: rgba(182, 43, 70, 0.06);
+    color: #b62b46;
+    border-color: rgba(182, 43, 70, 0.4);
+  }
+}
+:root[data-theme="light"] .pill {
+  background: #f4f6f8;
+  border-color: #d8dee4;
+  color: #4d555e;
+}
+:root[data-theme="light"] .pill-cve {
+  background: rgba(182, 43, 70, 0.06);
+  color: #b62b46;
+  border-color: rgba(182, 43, 70, 0.4);
+}
+
+
+/* ── Cross-page consistency: hover transitions, focus rings, links ──── */
+
+/* Focus ring uniform across every focusable surface (button, link, chip,
+   summary, input). The .skip nav already declares its own focus state. */
+.toc-link:focus-visible,
+.filter-chip:focus-visible,
+.filter-reset:focus-visible,
+.aside-toc details > summary:focus-visible,
+.toc-filters .filter-group > summary:focus-visible,
+.editorial-choices > summary:focus-visible,
+.item-deltas > summary:focus-visible,
+.toc-mobile > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* External-link affordance — the existing builder marks every external
+   anchor; adding a subtle hover-state cohesion. */
+.brief-prose a:hover { color: var(--accent-soft); text-decoration: underline; text-underline-offset: 3px; }
+
+
+/* (An earlier draft of this block re-introduced an inner scroll on the
+    aside on desktop — intentionally removed. Sticky-flow only: tall asides
+    scroll with the body, never via a nested scrollbar. The user's earlier
+    "no double scroll" requirement remains the design rule.) */

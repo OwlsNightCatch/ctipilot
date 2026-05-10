@@ -2618,7 +2618,7 @@ def render_source_list_page(
         stale_section = (
             '<section style="margin-top:1.4rem">'
             f'<h2 class="section-head">Stale active sources <span class="muted">({len(stale_records)} silent &gt; 7 days)</span></h2>'
-            '<p class="subtitle muted">Active sources whose last successful fetch is older than a week (or never recorded). v2.48: moved here from /ops/ so reliability + status + lifecycle counters live in one place. Same data; richer context.</p>'
+            '<p class="subtitle muted">Active sources whose last successful fetch is older than a week (or never recorded). Reliability, status, and lifecycle counters in one place.</p>'
             '<div class="data-wrap"><table class="data">'
             '<thead><tr><th>Publisher</th><th>Reliability</th><th>Stale since</th><th>Last fetch</th><th>Lifecycle counters</th></tr></thead>'
             f'<tbody>{stale_rows}</tbody></table></div>'
@@ -2685,7 +2685,7 @@ def render_source_list_page(
 <div class="toolbar" style="margin-top:-0.5rem">
   <span class="chip active" data-filter-chip="source-status" data-value="all">All statuses</span>
   {status_chips}
-  <span class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago (v2.48)">Stale only</span>
+  <span class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago">Stale only</span>
 </div>
 
 {table}
@@ -3203,7 +3203,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 </section>
 
 <section style="margin-top:1.6rem">
-  <h2 class="section-head">Sector slices (v2.47)</h2>
+  <h2 class="section-head">Sector slices</h2>
   <p class="muted" style="margin:0 0 0.6rem">Per-sector filtered slices of <a href="{prefix}feed-items.xml" class="mono">feed-items.xml</a>. Subscribe to the slice you care about instead of parsing every per-item entry.</p>
   <ul class="feeds-list">{''.join(_row(f, t, d) for f, t, d in sector_feeds)}</ul>
 </section>
@@ -3976,7 +3976,7 @@ def render_ops_page(
             '<tbody>' + "".join(iter_rows) + '</tbody></table></div>'
         )
     else:
-        verif_table_html = '<p class="muted">No per-iteration verification records yet (v2.43+).</p>'
+        verif_table_html = '<p class="muted">No per-iteration verification records yet.</p>'
 
     # ----- Recent runs table ------------------------------------------------
     runs_table_html = _ops_render_runs_table(runs_desc, palette, prefix=prefix)
@@ -4063,7 +4063,7 @@ def render_ops_page(
 
 <section class="ops-section">
   <h2 class="section-head">Verification iterations</h2>
-  <p class="subtitle ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded the v2.43+ <code>verification.iterations[]</code> block. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
+  <p class="subtitle ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded a per-iteration breakdown. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
   {verif_table_html}
 </section>
 
@@ -4176,7 +4176,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         rows.append(
             '<tr>'
             f'<td><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/" class="mono"><strong>{_escape(sid)}</strong></a>'
-            + (f'<div class="muted" style="font-size:0.72rem">legacy v2.47 shape — needs detail</div>' if is_legacy else '')
+            + (f'<div class="muted" style="font-size:0.72rem">legacy shape — needs detail</div>' if is_legacy else '')
             + '</td>'
             f'<td>{url_html}</td>'
             f'<td>{method_chain_html}</td>'
@@ -4297,9 +4297,9 @@ def _ops_render_verification_iterations(
         else:
             final_block = (
                 '<p class="ops-final-iter ops-final-iter--empty muted">'
-                f'Cap-breach iteration #{_escape(str(final_iter.get("n", "?")))} did NOT record per-finding detail '
-                '(legacy v2.47 shape). The Ops dashboard cannot render WHAT the verifier flagged. '
-                'See <code>.claude/agents/cti-verification.md</code> § Findings summary for the v2.48 contract.'
+                f'Cap-breach iteration #{_escape(str(final_iter.get("n", "?")))} did NOT record per-finding detail. '
+                'The dashboard cannot render WHAT the verifier flagged. '
+                'See <code>.claude/agents/cti-verification.md</code> § Findings summary for the contract.'
                 '</p>'
             )
     return chips_html + final_block
