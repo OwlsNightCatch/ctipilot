@@ -4,6 +4,43 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.49 — 2026-05-11 (bridge-fetcher bug fixes: re-import, ENISA EUVD host correction, BSI WID full-body via CSAF, NCSC-NL CSAF distribution path correction, CF-blocked + SPA-only recipes documented)
+
+### Why
+Six defects in `tools/fetch_source.py` and the bridge-allowlist recipe table surfaced across the 2026-05-11 daily run's `fetch_failures` ledger:
+1. **NameError on `re`.** `tools/fetch_source.py` called `re.match(...)` from `ncsc_nl_csaf` and `enisa_euvd_advisory` without importing the `re` module. Both subcommands crashed with `NameError: name 're' is not defined` on every invocation — every S1 / S2 attempt to fetch a Dutch-NCSC CSAF advisory or look up a specific EUVD entry failed at the validation step.
+2. **ENISA EUVD endpoints empty.** The v2.48 paths `https://euvd.enisa.europa.eu/enisaeuvd/api/{criticals,lastvulnerabilities,exploited,vulnerability/<id>}` now route through the SPA's catch-all and return the React shell (HTTP 200, `text/html`, ~900 bytes) instead of JSON. `fetch_json` surfaced this as an unparseable body. The actual EUVD API lives on a separate publisher host, `https://euvdservices.enisa.europa.eu`, with different path names (`/api/criticalvulnerabilities`, `/api/exploitedvulnerabilities`, `/api/lastvulnerabilities`, `/api/enisaid?id=<EUVD-ID>`).
+3. **BSI WID per-advisory pages unreadable.** `wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-YYYY-NNNN` is an Angular SPA — every tool ctipilot has access to gets the empty `<app-root>` shell. The v2.48 bridge recipe `bsi-rss` then `url <per-advisory URL>` gave the agent the RSS list (title + short summary) but no advisory body. A structural gap that surfaced every time a BSI advisory was the only EU national-CERT signal on a vulnerability.
+4. **NCSC-NL CSAF URL pattern wrong.** The v2.48 bridge constructed `https://advisories.ncsc.nl/advisory/<id>/v<n>/<id>.json` — every variant 404s. Publisher's actual TLP:WHITE CSAF distribution (advertised at `/.well-known/csaf/provider-metadata.json`) serves each advisory at `https://advisories.ncsc.nl/csaf/v2/{year}/ncsc-{year}-{nnnn}.json`. The legacy `version` parameter is no longer in the URL — only the latest revision is published at the deterministic path.
+5. **inside-it.ch + databreaches.net Cloudflare Managed Challenge.** Both hosts are now behind Cloudflare's "Just a moment..." challenge that refuses every UA the bridge can construct (Chrome desktop, curl, Mozilla/5.0, Googlebot all return 403 with the challenge body). The v2.48 recipe `url <URL>` would still fail. The cloud routine container has no path to a JS-rendering shell and cannot reach `web.archive.org` (egress policy block), so there is no in-container workaround — these hosts require WebSearch fallback. Marking them explicitly stops the agent from burning fetch budget on the bridge before falling through.
+6. **prodaft `/blogs` + ico.org.uk `/action-weve-taken/enforcement/` JS-rendered listings.** Both publishers serve the listing page as a client-rendered shell but the per-item URLs (per-post for prodaft; per-action for ICO) are server-rendered, and both expose a server-rendered `sitemap.xml` that enumerates the per-item URLs. The v2.48 recipe `url <URL>` against the listing returned an empty SPA shell; the working recipe is sitemap-then-per-item, which the routine already supports via `url <sitemap>` since both hosts are on `ALLOWED_HOSTS`.
+
+### What changed
+
+**`tools/fetch_source.py`** — five hotfixes, behaviourally additive:
+- Added `import re` (the actual NameError fix).
+- `ENISA_EUVD_BASE` → `ENISA_EUVD_API_BASE` pointing at the services host `https://euvdservices.enisa.europa.eu`; `enisa_euvd_recent` maps the CLI kind vocabulary (`lastvulnerabilities`, `criticals`, `exploited` — unchanged for back-compat with prompts) to the publisher path names (`/api/lastvulnerabilities`, `/api/criticalvulnerabilities`, `/api/exploitedvulnerabilities`); `enisa_euvd_advisory` rewritten to use `/api/enisaid?id=<ID>`. New host `euvdservices.enisa.europa.eu` added to `ALLOWED_HOSTS`.
+- **NEW subcommand `bsi-csaf <WID-SEC-YYYY-NNNN>`** — fetches the per-advisory CSAF v2.0 JSON document from BSI's CSAF Trusted Provider distribution (`https://wid.cert-bund.de/.well-known/csaf/white/{YEAR}/wid-sec-w-{YEAR}-{NUM}.json`, derived from the portal-style ID). The CSAF document contains the full advisory body: title, all `notes` (Produktbeschreibung / Angriff / Maßnahmen), `product_tree`, every CVE in `vulnerabilities[]`, CVSS scores, remediations. The agent still cites the human-readable portal URL — the bridge provides the data, not the citation.
+- `ncsc_nl_csaf(advisory_id, version)` rewritten to fetch `https://advisories.ncsc.nl/csaf/v2/{year}/ncsc-{year}-{nnnn}.json` (the publisher's well-known CSAF distribution). The `version` parameter is accepted for back-compat with v2.48 recipes but ignored — the deterministic path always serves the latest revision.
+- `www.bleepingcomputer.com` / `bleepingcomputer.com` added to `ALLOWED_HOSTS` so listing-level discovery (200 on desktop UA) works through the bridge. Article-level URLs frequently 403 — the recipe documents WebSearch fallback for content. New `CLOUDFLARE_BLOCKED_HOSTS` constant flags inside-it.ch + databreaches.net so future code can branch on it; the routine prompt currently uses this only as documentation, not as a programmatic switch.
+
+**`prompts/daily-cti-brief.md`** — Banner v2.48 → **v2.49**. The "MANDATORY bridge allowlist" table:
+- BSI row: `bsi-rss` then `url <per-advisory URL>` → `bsi-rss` then `bsi-csaf <WID-SEC-YYYY-NNNN>`, with an explicit "do NOT `url` it" note.
+- NCSC-NL row: `[version]` argument removed; recipe simplified to `ncsc-nl csaf <NCSC-YYYY-NNNN>`; URL pattern documented inline.
+- New row for `ico-uk`: sitemap-then-per-action discovery recipe.
+- New row for `prodaft`: sitemap-then-per-post discovery recipe.
+- New row for `bleepingcomputer`: listing-level discovery + WebSearch fallback for content.
+- New row for `inside-it-ch` + `databreaches-net`: explicit "WebSearch fallback only" — bridge attempt records the 403 in `fetch_failures` but the host is behind Cloudflare's Managed Challenge.
+
+**`prompts/weekly-summary.md`** — Banner v2.48 → **v2.49** (lockstep). The weekly prompt references the daily table by name so no body edit was needed.
+
+**`.claude/agents/cti-research.md`** — Same row updates on the sub-agent's bridge table. The `WebFetch outbound-links template` contract, the `fetch_failures` rich-shape rules, the URL-liveness ledger, and the self-identification mechanics are all unchanged.
+
+### What stays
+Every v2.48 invariant. The bridge-first rule for known-403 / SPA-only hosts. The rich `fetch_failures` schema and Phase 5.5 / Phase 4.5 enforcement (recording the 403 / CF-challenge outcome is still mandatory — the rule shift is only that for `inside-it-ch` / `databreaches-net` the `mitigation_applied` field is `"WebSearch fallback (Cloudflare Managed Challenge — bridge cannot bypass)"` instead of an empty mitigation). The per-finding `verification.iterations[].findings[]` shape. The 5-iteration verifier cap with model rotation, the 30-min sub-agent cap, the dual-gate model (`check_brief.py` → `cti-verification`). The CLI vocabulary for `enisa-euvd recent` is preserved (`lastvulnerabilities`, `criticals`, `exploited`) so existing recipes and run-log entries keep working. Every PD-1 → PD-13 prime directive.
+
+---
+
 ## 2.48 — 2026-05-10 (bridge fetcher expanded to all known-403 / SPA-only sources, rich `fetch_failures` schema, per-finding verification detail, /sources/ owns stale-source surface)
 
 ### Why
