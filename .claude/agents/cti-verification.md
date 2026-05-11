@@ -150,7 +150,29 @@ Both stamps appear on the mandatory `**Timestamps:**` line at the top of your re
 
 ## Return format
 
-Structured Markdown report titled `## Verification report — <brief-path> (iteration N)`. Open with the mandatory `**Model:**` line + `**Timestamps:**` line above the heading. Every issue uniquely numbered (`F1`, `F2`, …). One H3 section per finding category — exactly these labels in this order, omit categories with no findings:
+**v2.50 — return contract changed for token-budget reasons.** Your full structured report is now persisted to disk and the response you return to the main agent is a **compact summary** (~500 bytes / ~150 tokens) instead of the multi-KB report. The main agent reads the disk file on-demand only when applying remediations.
+
+**Step 1 — Persist full structured report to disk.** Write `work/<run-id>/verification.iter<N>.md` (where `<run-id>` and `<N>` are passed in the spawn message). The file's structure follows the canonical template below: mandatory `**Model:**` + `**Timestamps:**` lines, the `## Verification report — <brief-path> (iteration N)` heading, every issue uniquely numbered (`F1`, `F2`, …), one H3 section per finding category in the order listed below, the `### Verdict` block, and the `### Findings summary (machine-readable)` YAML block. The fenced YAML block is the source of truth — the main agent parses it and applies one remediation per record.
+
+**Step 2 — Return a compact summary to stdout.** Your response to the spawn call is exactly the following lines (no preamble, no prose around them):
+
+```
+**Model:** <friendly name> (`<model-id>`)
+**Timestamps:** started_at=… · ended_at=… · duration_seconds=…
+**Verdict:** CLEAN
+**Counts:** truth=0 editorial=0 advisory=0
+**Report:** work/<run-id>/verification.iter<N>.md
+**Findings summary path:** work/<run-id>/verification.iter<N>.findings.yaml
+**Self-telemetry:** webfetch_calls=NN websearch_calls=NN bridge_fetches=NN urls_checked=NN
+```
+
+(Substitute `NEEDS_FIXES` and the actual counts when you find defects.) The main agent stamps these into `state/run_log.json.verification.iterations[<N>]` directly from the summary lines and only `Read`s the persisted report when applying remediations or surfacing the cap-breach iteration's `findings[]` to the Ops dashboard.
+
+**Why this matters:** with 5 iterations × ~5–8 KB of human-readable findings + per-iteration YAML, the verifier loop alone consumed ~50 K tokens of main-agent context in v2.49. Persisting the report and returning a 150-token summary cuts that to ~750 tokens for the loop, leaving the main agent room to actually apply the fixes. **The full report is still there on disk for the operator and for `state/run_log.json.verification.iterations[<n>].findings[]` ingestion** — only the main agent's transient working context is freed.
+
+### Canonical disk-report structure (write this to `work/<run-id>/verification.iter<N>.md`)
+
+Open with the mandatory `**Model:**` line + `**Timestamps:**` line above the heading. Every issue uniquely numbered (`F1`, `F2`, …). One H3 section per finding category — exactly these labels in this order, omit categories with no findings:
 
 - `### Broken / unreachable URLs` — F1: section, item, URL, failure mode (404 / homepage redirect / DNS fail).
 - `### Generic / oversight URLs (replace with specific article)` — F2: section, item, current URL, why it's generic, suggested replacement (specific article URL if you found one).
@@ -170,7 +192,7 @@ End with a `### Verdict` block:
 - `CLEAN` — no findings, or only F11 advisory items the main agent can leave. **This is the verdict that lets the brief publish.** Issue it the moment the brief is genuinely ready — don't manufacture findings just to look thorough; a CLEAN verdict on a defect-free brief is the success outcome, not a sign you weren't critical enough.
 - `NEEDS_FIXES (truth: <N>, editorial: <M>, advisory: <K>)` — counts of F1–F4 (truth), F5–F10 + F12 (editorial), F11 (advisory). F12 is editorial: an unflagged single-source item is an editorial-quality drift the reader should see flagged, not a truth defect. Every count must correspond to a numbered finding above with quoted evidence. Padded counts inflate iteration cost without improving the brief.
 
-**v2.48 — `findings[]` machine-readable summary (mandatory below the human report).** After the human-readable F1…Fn sections and the verdict line, append a fenced YAML block titled `### Findings summary (machine-readable)` that lists one record per numbered finding with the fields the main agent stamps into `state/run_log.json.verification.iterations[<n>].findings[]`:
+**v2.48 — `findings[]` machine-readable summary (mandatory).** Append a fenced YAML block titled `### Findings summary (machine-readable)` to the disk report below the verdict line, AND write the same YAML payload (without the fence) as a sibling file `work/<run-id>/verification.iter<N>.findings.yaml` so the main agent can `cat` / `yq` it as a clean parse target without ever loading the full report. Each record has the fields the main agent stamps into `state/run_log.json.verification.iterations[<n>].findings[]`:
 
 ```yaml
 # Findings summary (machine-readable) — v2.48

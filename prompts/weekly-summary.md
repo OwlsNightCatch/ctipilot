@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.49 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.50 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -135,6 +135,11 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
    window_days   = max(7, gap_days + 1)            # +1 day safety overlap
    ```
 
+   Export the result as a Bash environment variable so step 3 picks it up:
+   ```bash
+   WINDOW_DAYS=<computed-value>   # e.g. 7 for a standard week, 15 for one missed week
+   ```
+
    If `briefs/weekly/` is empty, use 7 days. Window-class table:
 
    | `gap_days` | Window class | Expected size | § 10 disclosure |
@@ -145,26 +150,40 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
    The weekly covers the gap since the last *weekly* summary; the daily routine covers gaps since the last *daily* brief. The two routines run **independently** and self-coordinate via these gap-derived windows — the daily is primary operational coverage; the weekly is the consolidating view.
 
-3. List `briefs/` and read **every daily brief** whose date falls within the gap-derived window. The window may span more than 7 days when the previous weekly is overdue.
+3. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every daily brief in full into its own context — at 50–80 KB each, five dailies plus the previous weekly run the main agent ~100 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only those:
 
-4. Read `state/covered_items.json` and `state/cves_seen.json` for full coverage history (especially anything older than the window that is still active).
+   ```bash
+   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–9 of the previous weekly.
+   python3 tools/build_prior_coverage.py "$RUN_ID" "$WINDOW_DAYS"
+   # → work/<run-id>/prior_coverage.json (~50 KB / 12 K tokens for a 7-day window)
 
-5. Read `state/run_log.json` for source-coverage signal — which sub-agents stalled this week, which sources had unmitigated 403/429, which CVEs the daily verifier dropped. The weekly should surface these as residual coverage gaps in § 10 if they look material.
+   # Compact dedup digest of state files (CVE ids + recent records, item keys + recent
+   # records, active-source ids, last-7-runs fetch-failure gaps).
+   python3 tools/run_summary.py --out "work/${RUN_ID}/state-summary.json"
+   # → work/<run-id>/state-summary.json (~40 KB / 10 K tokens, vs ~230 KB / 57 K tokens
+   #   for the four full state files)
+   ```
 
-6. Read `sources/sources.json`.
+   Token budget reduction is roughly: full-Read approach ~110 K tokens before Phase 1; script-based approach ~30 K tokens. **The full state files are still on disk** — sub-agents `Read` them directly when needed; the main agent on-demand-`Read`s a specific daily-brief body only when composing a section that quotes one.
 
-7. Read `site/taxonomy.yaml` (every metadata-footer value must come from this file).
+4. **`Read work/${RUN_ID}/prior_coverage.json`.** This is the main agent's primary view of in-window coverage — every H3 with `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}`. Use it to identify cross-day chains, multi-day campaigns, status updates, and §-1-vs-§-2 split decisions in Phase 1 *without* re-reading every daily.
 
-8. Read the previous weekly summary (latest file in `briefs/weekly/`) for continuity. Note campaigns / actors / CVEs whose status the previous weekly described as "in motion" — those are first-priority candidates for this week's status update.
+5. **`Read work/${RUN_ID}/state-summary.json`.** This is the main agent's primary view of state — `cves.ids` (all CVE ids for dedup), `cves.recent` (recent ~14-day records), `items.keys` (all entity keys), `items.recent`, `sources.active_ids`, `runs.last_run`, and `runs.fetch_gaps_in_window` (sources flagged as gaps in 2+ recent runs — already rotation-priority candidates for W1/W2).
 
-9. Initialise a `TodoWrite` plan for the phases.
-9a. **Generate `work/<run-id>/prior_coverage.json` from every daily brief in the gap window + the previous weekly.** Walk every H3 in §§ 0–6 of each daily and §§ 0–9 of the previous weekly, extract `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}`. Pass the path + record count to W1/W2 so they dedup against full records before fetching, not just headlines (PD-8 enforcement at fetch time, not just at main-agent dedup time).
+6. `Read site/taxonomy.yaml` (small; every metadata-footer value comes from here).
 
-If reads fail, surface the error and stop.
+7. **Optional on-demand reads for specific items:**
+   - When composing a §-1 / §-2 / §-7 entry that requires the full body of a specific daily, `Read` only that file.
+   - When the previous weekly's "Looking ahead" list (§ 9) drives this week's status updates, `Read` only the previous weekly's § 9 by `offset` / `limit` (search for `## 9` first to anchor the offset). Do NOT `Read` the whole previous weekly — its H3s already appear in `prior_coverage.json`.
+   - When you need the full record for an item flagged in `state-summary.json` `items.recent`, `Bash`-extract it: `jq '.items[] | select(.key == "<key>")' state/covered_items.json`.
 
-Build a **deduplication context**: CVE IDs from `cves_seen.json`; named actors / campaigns / incidents / annual reports from `covered_items.json`; headlines and key paragraphs from each daily brief in the gap window; previous weekly's "Looking ahead" items (`§ 9` of the prior weekly file) since these are first-priority candidates for status updates this run.
+8. Initialise a `TodoWrite` plan for the phases.
 
-Build a **source rotation list** by parsing `Coverage gaps:` from § 8 of each daily brief in the gap window and § 10 of the previous weekly. A source listed as a gap in **2+ of the daily briefs in the window** is **rotation-priority** for W1/W2 — the horizon sub-agents reserve fetch budget for it. Pass dedup + rotation to W1 and W2, filtering rotation by category (W1 → research/news/discovery/active-breaking; W2 → gov/policy/regulatory).
+If any script fails, surface the error and stop.
+
+Build a **deduplication context**: CVE ids from `state-summary.json.cves.ids`; named actors / campaigns / incidents / annual reports from `state-summary.json.items.keys`; H3 records (key + title + one-line tl;dr + primary URL + date) from `prior_coverage.json`; previous weekly's "Looking ahead" items via on-demand offset-`Read` of § 9 of the prior weekly file (those are first-priority candidates for status updates this run).
+
+Build a **source rotation list** by reading `state-summary.json.runs.fetch_gaps_in_window` (sources flagged as failing in ≥ 2 of the last 7 runs are pre-computed rotation-priority candidates). Filter by category before passing to W1 (research / news / discovery / active-breaking) vs W2 (gov / policy / regulatory).
 
 ---
 
@@ -622,7 +641,18 @@ The spawn message is short:
 5. **Relevant slice of `state/run_log.json`** — today's `sub_agents`, `fetch_failures`, `items_published`.
 6. **Confirmation that Phase 4.5 passed** — one line stating `mechanical gate (check_brief.py) exited 0 in iteration N pre-spawn` so the verifier knows mechanical defects are out of scope.
 
-### Iterative refinement loop (cap: 5 iterations)
+### Iterative refinement loop (cap: 5 iterations; early-exit at low-defect convergence)
+
+**v2.50 — verifier compact-summary contract.** The verifier returns a ~150-token summary block with `**Verdict:**`, `**Counts:**`, and `**Report:**` / `**Findings summary path:**` paths to disk-persisted artefacts. The main agent reads only those summary lines; when applying remediations, `Read work/<run-id>/verification.iter<N>.findings.yaml` to parse the structured findings list, and `Read work/<run-id>/verification.iter<N>.md` only for the human-readable per-finding evidence. **Never `Read` the full verifier report into the main agent's working context wholesale** — at 5 iterations × ~5–8 KB, that's ~50 K wasted tokens. The summary lines + on-demand YAML + targeted Markdown reads keep the loop under ~10 K tokens of main-agent context.
+
+**Early-exit on low-defect convergence (v2.50).** The cap remains 5 iterations as the safety valve, but the loop SHOULD exit early when the verifier returns NEEDS_FIXES with `truth + editorial ≤ 2` AND no F1 (broken URL) / F4 (hallucinated fact) finding — those low-residual NEEDS_FIXES verdicts are diminishing-returns noise (edge-case framing tweaks the verifier finds and the next iteration trades for a different edge-case) rather than real defects worth a re-spawn. Apply the residuals as best-effort remediations, then *publish* with the residuals logged in § 10 — same disposition as a cap-breach but reached on iteration 2 / 3 instead of paying for iterations 4 / 5. Empirically, runs that hit `truth+editorial=2` on iter-2 and re-spawn typically see iter-3 / 4 / 5 each return `truth+editorial∈{1,2,3}` of *different* findings without converging. Skip that thrash.
+
+Decision rules in priority order:
+1. Verdict CLEAN → publish.
+2. NEEDS_FIXES with F1 (broken URL) or F4 (hallucinated fact) → ALWAYS re-spawn (those are real defects).
+3. NEEDS_FIXES with `truth + editorial ≥ 3` → re-spawn.
+4. NEEDS_FIXES with `truth + editorial ≤ 2` AND no F1/F4 → apply remediations and publish (early-exit). Log the iteration in `verification.iterations[]` with verdict NEEDS_FIXES and set `verification_residual_count = (truth + editorial)` so the cap-breach signal still surfaces on the Ops dashboard.
+5. Iteration 5 reached without CLEAN → publish anyway (the original safety valve).
 
 Read the verification sub-agent's response and act on each finding type:
 

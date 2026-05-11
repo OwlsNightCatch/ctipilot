@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.49 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.50 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -137,20 +137,42 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
    : > "work/${RUN_ID}/url-liveness.tsv"   # pre-create empty ledger
    ```
    The `<run-id>` is the same id you pass to every Phase 1 sub-agent so they checkpoint into the same dir. Phase 5 reads `main.started_at` to populate `run_log.json.started` and refuses to append a `runs[]` entry whose `run_id` already exists in the file (idempotent retry). The `url-liveness.tsv` is the empty ledger every sub-agent appends to in Phase 1; Phase 5.5's `tools/check_brief.py` reads it. **If you skip this step, `started` falls back to "unknown", `run_id` falls back to a non-deterministic value, and the URL-liveness cache is bypassed (every URL re-fetched). A symmetric end-timestamp capture happens at Phase 5.**
-1. `Read sources/sources.json` — only `status: "active"` sources feed sub-agents.
-2. List `briefs/`; read every brief from **last 7 calendar days** in date order. Read most recent weekly at `briefs/weekly/YYYY-Www.md` for current and prior ISO weeks.
-3. `Read state/covered_items.json`, `state/cves_seen.json`, `state/deep_dive_history.json` (if present).
-4. `Read site/taxonomy.yaml` (themes / sectors / regions / nexus / cve_types / cve_vectors / cve_auth / cve_status / sections — every footer value comes from here).
-5. Establish today's ISO date.
-6. **Compute gap-derived recency window** (PD-7). Pass `window_hours` to every Phase 1 sub-agent. Surface in § 7 if `gap_hours > 30`.
-7. Initialise `TodoWrite` plan.
-7a. **Generate `work/<run-id>/prior_coverage.json` from the last 7 daily briefs.** Walk every H3 in §§ 0–6 of each brief, extract `{key: <CVE|actor|campaign|incident|tool|advisory key from item heading or footer.cve>, title: <H3 heading>, tldr_one_line: <first sentence of item body>, primary_source_url: <first Source URL from footer>, date: <brief date>, brief_path: <relative path>, section: <section key>}`. Write the array of records as `work/<run-id>/prior_coverage.json`. Pass the path + record count to every Phase 1 sub-agent so they can dedup against full records before fetching, not just headlines (PD-8 enforcement at fetch time, not just at main-agent Phase 2 dedup time).
+1. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every brief from the last 7 days into its own context — at 50–80 KB per brief, seven dailies plus the latest weekly run the main agent ~120 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only those:
 
-If any read fails, surface and stop.
+   ```bash
+   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–9 of the previous weekly.
+   python3 tools/build_prior_coverage.py "$RUN_ID" 7
+   # → work/<run-id>/prior_coverage.json (~50 KB / 12 K tokens for a 7-day window)
 
-Build **dedup context**: CVE IDs from `cves_seen.json`; named actors / campaigns / incidents / annual reports from `covered_items.json`; headlines / first paragraphs of last-7-days briefs.
+   # Compact dedup digest of state files (CVE ids + recent records, item keys + recent
+   # records, active-source ids, last-7-runs fetch-failure gaps).
+   python3 tools/run_summary.py --out "work/${RUN_ID}/state-summary.json"
+   # → work/<run-id>/state-summary.json (~40 KB / 10 K tokens, vs ~230 KB / 57 K tokens
+   #   for the four full state files)
+   ```
 
-Build **source rotation list** by parsing `Coverage gaps:` from § 7 of each last-7-days brief. A source listed as gap in **2+ of last 7 runs** is **rotation-priority** — sub-agents reserve fetch budget. Pass dedup + rotation to every sub-agent, filtering rotation by category.
+   Token-budget reduction: full-Read approach ~120 K tokens before Phase 1; script-based approach ~30 K tokens. **The full state files and brief bodies are still on disk** — sub-agents `Read` them directly when needed; the main agent on-demand-`Read`s a specific daily / weekly body only when Phase 4 composition needs to quote one.
+
+2. **`Read work/${RUN_ID}/prior_coverage.json`.** Primary view of last-7-days coverage — every H3 with `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}`. Use it to identify dedup, UPDATE candidates, deep-dive freshness in Phase 3, and §-1-vs-§-2-vs-§-3 split decisions in Phase 4 *without* re-reading every daily.
+
+3. **`Read work/${RUN_ID}/state-summary.json`.** Primary view of state — `cves.ids` (all CVE ids for dedup), `cves.recent` (recent ~14-day records), `items.keys` (all entity keys), `items.recent`, `sources.active_ids`, `runs.last_run`, and `runs.fetch_gaps_in_window` (sources flagged as gaps in 2+ recent runs — already rotation-priority candidates for Phase 1).
+
+4. `Read site/taxonomy.yaml` (small; themes / sectors / regions / nexus / cve_types / cve_vectors / cve_auth / cve_status / sections — every footer value comes from here).
+
+5. **Optional on-demand reads:**
+   - When composing a § 4 UPDATE that requires the full body of a specific prior brief, `Read` only that file by date.
+   - When you need the full record for an item flagged in `state-summary.json` `items.recent`, `Bash`-extract: `jq '.items[] | select(.key == "<key>")' state/covered_items.json`.
+   - `state/deep_dive_history.json` (if present) — small; `Read` it directly if Phase 3 needs the rotation-memory window.
+
+6. Establish today's ISO date.
+7. **Compute gap-derived recency window** (PD-7). Pass `window_hours` to every Phase 1 sub-agent. Surface in § 7 if `gap_hours > 30`.
+8. Initialise `TodoWrite` plan.
+
+If any script fails, surface the error and stop.
+
+Build **dedup context**: CVE ids from `state-summary.json.cves.ids`; named actors / campaigns / incidents / annual reports from `state-summary.json.items.keys`; H3 records (key + title + one-line tl;dr + primary URL + date) from `prior_coverage.json`.
+
+Build **source rotation list** by reading `state-summary.json.runs.fetch_gaps_in_window` (sources flagged as failing in ≥ 2 of the last 7 runs are pre-computed rotation-priority candidates). Pass dedup + rotation to every sub-agent, filtering rotation by category.
 
 ---
 
@@ -682,6 +704,17 @@ The spawn message is short:
 5. **Confirmation that Phase 5.5 passed** — one line stating `mechanical gate (check_brief.py) exited 0 in iteration N pre-spawn` so the verifier knows mechanical defects are out of scope.
 
 ### Main-agent loop
+
+**v2.50 — verifier compact-summary contract.** The verifier returns a ~150-token summary block with `**Verdict:**`, `**Counts:**`, and `**Report:**` / `**Findings summary path:**` paths to disk-persisted artefacts. The main agent reads only those summary lines; when applying remediations, `Read work/<run-id>/verification.iter<N>.findings.yaml` to parse the structured findings list, and `Read work/<run-id>/verification.iter<N>.md` only for the human-readable per-finding evidence. **Never `Read` the full verifier report into the main agent's working context wholesale** — at 5 iterations × ~5–8 KB, that's ~50 K wasted tokens. The summary lines + on-demand YAML + targeted Markdown reads keep the loop under ~10 K tokens of main-agent context.
+
+**Early-exit on low-defect convergence (v2.50).** The cap remains 5 iterations as the safety valve, but the loop SHOULD exit early when the verifier returns NEEDS_FIXES with `truth + editorial ≤ 2` AND no F1 (broken URL) / F4 (hallucinated fact) finding — those low-residual NEEDS_FIXES verdicts are diminishing-returns noise rather than real defects worth a re-spawn. Apply the residuals as best-effort remediations, then *publish* with the residuals logged in § 7 — same disposition as a cap-breach but reached on iteration 2 / 3 instead of paying for iterations 4 / 5.
+
+Decision rules in priority order:
+1. Verdict CLEAN → Phase 6.
+2. NEEDS_FIXES with F1 (broken URL) or F4 (hallucinated fact) → ALWAYS re-spawn (real defects).
+3. NEEDS_FIXES with `truth + editorial ≥ 3` → re-spawn.
+4. NEEDS_FIXES with `truth + editorial ≤ 2` AND no F1/F4 → apply remediations, publish (early-exit). Log iteration with verdict NEEDS_FIXES; set `verification_residual_count = (truth + editorial)`.
+5. Iteration 5 reached without CLEAN → publish anyway (original safety valve).
 
 1. Receive report. **CLEAN → proceed to Phase 6.** NEEDS_FIXES → apply remediation per finding type:
 

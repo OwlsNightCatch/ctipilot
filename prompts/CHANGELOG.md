@@ -4,6 +4,49 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.50 — 2026-05-11 (token-budget guards: prior-coverage + state-summary scripts, verifier compact-summary contract, early-exit on low-defect convergence)
+
+### Why
+The 2026-05-11 weekly run hit the main-agent token limit *during Phase 0* — before Phase 1 even started. Forensic measurement of that run's input footprint:
+
+- `prompts/weekly-summary.md` — 83 KB / ~32 K tokens (master prompt itself)
+- 5 daily briefs in window — ~340 KB / ~85 K tokens combined (the 2026-05-09 and 2026-05-10 dailies are individually 28 K + 29 K tokens, each above Read's 25 K limit, so each had to be re-read in chunks)
+- `state/covered_items.json` — 100 KB / ~25 K tokens (89 items, growing weekly)
+- `sources/sources.json` — 84 KB / ~21 K tokens (114 sources)
+- `state/run_log.json` — 35 KB / ~9 K tokens
+
+Total Phase 0 input: ~120 K tokens *before* dedup-context build, *before* W1/W2 spawn, *before* composing the brief skeleton. The verifier loop adds ~50 K more tokens across 5 iterations (each iteration's full report read into main context). The main agent runs out of working budget partway through the run.
+
+The user-reported diagnosis ("too many sub-agents") was wrong — the load is *all* in the main agent's reads of the prompt + dailies + state files + verifier outputs. Sub-agents have isolated context and don't compete for the main agent's budget.
+
+### What changed
+
+**NEW — `tools/build_prior_coverage.py`** — replaces the prompt's instruction "the main agent walks every H3 in §§ 0–6 of every brief in the window". Walks the gap-window dailies + previous weekly via the same Markdown structure the existing prompt assumes, emits `work/<run-id>/prior_coverage.json` with `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}` per H3. The full-record output is ~50 KB / ~12 K tokens for a 7-day window, vs ~340 KB / ~85 K tokens for full daily-brief Reads. Adds `--keys-only` mode (~12 KB / ~3 K tokens) for when even the tldrs are more than the main agent needs. Same script serves both the main agent's Phase 0 and the existing PD-8 enforcement-at-fetch-time use the prompts already mention.
+
+**NEW — `tools/run_summary.py`** — emits `work/<run-id>/state-summary.json`: `cves.{count, ids[], recent[]}`, `items.{count, keys[], recent[]}`, `sources.{active_count, active_ids[], demoted_ids[], candidate_ids[]}`, `runs.{count, last_run, fetch_gaps_in_window[]}`. Output is ~40 KB / ~10 K tokens, vs ~230 KB / ~57 K tokens for full reads of `state/covered_items.json` + `state/cves_seen.json` + `state/run_log.json` + `sources/sources.json`. Pre-computes the `fetch_gaps_in_window` list (sources flagged as failing in ≥ 2 of the last 7 runs) so the main agent doesn't manually scan run-log entries to build the rotation-priority list.
+
+**`prompts/daily-cti-brief.md` — Banner v2.49 → v2.50.** Phase 0 rewritten:
+- Old: "1. `Read sources/sources.json`. 2. List `briefs/`; read every brief from last 7 days … 3. `Read state/covered_items.json`, …, 7a. **Generate `work/<run-id>/prior_coverage.json` …** [agent walks every H3 by hand]."
+- New: "1. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** `python3 tools/build_prior_coverage.py "$RUN_ID" 7` and `python3 tools/run_summary.py --out work/$RUN_ID/state-summary.json`. 2. **`Read work/$RUN_ID/prior_coverage.json`.** 3. **`Read work/$RUN_ID/state-summary.json`.** 4. `Read site/taxonomy.yaml`. 5. **Optional on-demand reads** for specific items (Read by date for full body; `jq` for full state record)."
+- Token-budget reduction: full-Read approach ~120 K tokens before Phase 1; script-based approach ~30 K tokens. The full state files and brief bodies are still on disk for sub-agents to Read directly.
+
+**`prompts/weekly-summary.md` — Banner v2.49 → v2.50.** Phase 0 rewritten with the same shape: invoke `tools/build_prior_coverage.py "$RUN_ID" "$WINDOW_DAYS"` and `tools/run_summary.py --out work/$RUN_ID/state-summary.json` instead of "read every daily brief whose date falls within the gap-derived window" + four full-state Reads. `WINDOW_DAYS` is exported by step 2 (gap-derived window computation) so step 3 picks it up. The weekly's 7-day window with previous-weekly include emits a slightly larger `prior_coverage.json` (~88 KB / ~22 K tokens vs ~12 K for the daily) but still cuts ~80 % off the full-Read approach.
+
+**`.claude/agents/cti-verification.md` + `.claude/agents/cti-verification-alt.md` — verifier compact-summary contract.**
+- The verifier now persists its full structured report to `work/<run-id>/verification.iter<N>.md` (Markdown) and the machine-readable findings to `work/<run-id>/verification.iter<N>.findings.yaml` (sibling YAML).
+- The verifier's response to the spawn call is a compact ~150-token summary block: `**Model:**`, `**Timestamps:**`, `**Verdict:** CLEAN | NEEDS_FIXES`, `**Counts:** truth=N editorial=N advisory=N`, `**Report:** <path>`, `**Findings summary path:** <path>`, `**Self-telemetry:** …`.
+- The main agent stamps the summary lines into `state/run_log.json.verification.iterations[<N>]` directly and reads the persisted files only on-demand when applying remediations or surfacing the cap-breach iteration's `findings[]`.
+- 5 iterations × ~6 KB report = ~30 K tokens of main-agent context in v2.49 → ~750 tokens in v2.50.
+
+**Verifier loop early-exit (v2.50, both prompts).** The cap remains 5 as the safety valve, but the loop SHOULD exit early when the verifier returns NEEDS_FIXES with `truth + editorial ≤ 2` AND no F1 (broken URL) / F4 (hallucinated fact) finding. Empirically the 2026-05-10 weekly trace showed iter-1 = 17 truth + 6 editorial → iter-2 = 7 + 5 → iter-3 = 10 + 1 → iter-4 = 2 + 1 → iter-5 = 0 + 0; iter-3 onward chased edge-case URL UA-blocking and framing-precision findings rather than substantive defects. The early-exit publishes after iter-3 in that pattern, freeing iter-4 / iter-5 budget. Decision rules in priority order: CLEAN → publish; F1/F4 present → re-spawn always; truth+editorial ≥ 3 → re-spawn; truth+editorial ≤ 2 with no F1/F4 → publish with residuals logged; iter 5 → publish anyway (original safety valve).
+
+### What stays
+Every editorial invariant — AI-content notice, no IOCs, no vanity metrics, English output, two-source verification with national-CERT carve-out, feature-branch-only publishing chain, Phase 5.5 / 4.5 self-check gate, mandatory at-least-one verification iteration, per-item metadata footer using taxonomy values, memory commits — is unchanged. The verifier's gatekeeper framing, F1–F12 finding categories, 30-min hard cap, anti-hallucinated-findings clause, and read-only tool set are unchanged. The mechanical gate (`tools/check_brief.py`) runs in the same place. The fetch_failures rich shape, URL-liveness ledger, deterministic run_id, and per-agent timestamp capture are unchanged. **The full state files and brief bodies remain on disk** — sub-agents Read them directly when they need the full data; only the main agent's transient working context is freed.
+
+The 5-iteration cap stays; the early-exit is an additive shortcut that doesn't override the safety valve. F11 advisory items still don't block CLEAN.
+
+---
+
 ## 2.49 — 2026-05-11 (bridge-fetcher bug fixes: re-import, ENISA EUVD host correction, BSI WID full-body via CSAF, NCSC-NL CSAF distribution path correction, CF-blocked + SPA-only recipes documented)
 
 ### Why
