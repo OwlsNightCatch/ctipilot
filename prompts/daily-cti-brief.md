@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.48 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.49 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -203,11 +203,15 @@ The sub-agents follow these rules from their system prompt; the main agent appli
    | `cisa-advisories` / `cisa-news` / `cisa-directives` | `python3 tools/fetch_source.py cisa page <URL>` | 403 on default UA |
    | `ncsc-ch-security-hub` | `python3 tools/fetch_source.py ncsc-csh recent 10` then `ncsc-csh post <ID>` | SPA shell only |
    | `enisa-euvd` (v2.48) | `python3 tools/fetch_source.py enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` | SPA shell only |
-   | `bsi-de` (WID-SEC) (v2.48) | `python3 tools/fetch_source.py bsi-rss` then `url <per-advisory URL>` | per-advisory HTML needs browser UA |
-   | `advisories-ncsc-nl` (v2.48) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN> [version]` | CSAF JSON only — listing is SPA |
+   | `bsi-de` (WID-SEC) (v2.49) | `python3 tools/fetch_source.py bsi-rss` then `bsi-csaf <WID-SEC-YYYY-NNNN>` | per-advisory HTML is an Angular SPA — full body lives in the CSAF JSON only |
+   | `advisories-ncsc-nl` (v2.49) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN>` | CSAF JSON only — fetches `/csaf/v2/{year}/ncsc-{year}-{nnnn}.json` per publisher's well-known distribution |
    | `anssi-fr` (CERT-FR) (v2.48) | `python3 tools/fetch_source.py url https://www.cert.ssi.gouv.fr/avis/CERTFR-...` | per-advisory HTML needs browser UA |
    | `cert-eu`, `cert-pl`, `ncsc-uk` (v2.48) | `python3 tools/fetch_source.py url <URL>` | listing returns empty without browser UA |
-   | `databreaches-net`, `ico-uk`, `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `prodaft`, `inside-it-ch`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` | various 403 / Cloudflare / TLS quirks |
+   | `ico-uk` (v2.49) | `python3 tools/fetch_source.py url https://ico.org.uk/sitemap.xml` for discovery (filter `/action-weve-taken/enforcement/`), then `url <per-action URL>` | JS-rendered enforcement listing; per-action HTML is server-rendered |
+   | `prodaft` (v2.49) | `python3 tools/fetch_source.py url https://www.prodaft.com/sitemap.xml` for discovery, then `url <per-post URL>` | Next.js SPA on `/blogs` listing; per-post HTML is server-rendered |
+   | `bleepingcomputer` (v2.49) | `python3 tools/fetch_source.py url https://www.bleepingcomputer.com/news/security/` for discovery; WebSearch fallback for article content | listing 200 on desktop UA, but article-level URLs frequently 403 |
+   | `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` | various 403 / Cloudflare / TLS quirks |
+   | `inside-it-ch`, `databreaches-net` (v2.49) | **WebSearch fallback only** — bridge attempt records the 403 in `fetch_failures` but the host is behind Cloudflare's Managed Challenge and no UA the bridge can construct will pass | Cloudflare "Just a moment..." challenge; full JS execution required |
 
    **403 on these hosts is transport-side, never demotes the source.** A 403 / 429 / SPA-empty `WebFetch` outcome on any bridge-allowlisted host where the bridge subcommand was NOT attempted is a Phase 5.5 FAIL (`fetch-source-403`). The agent's first try on these hosts must be the bridge — no `WebFetch` first.
 3. **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources are discovery only — follow the links, cite the primaries.

@@ -123,11 +123,15 @@ The full bridge allowlist is in [`tools/fetch_source.py`](../../tools/fetch_sour
 | `cisa-advisories` / `cisa-news` / `cisa-directives` | `python3 tools/fetch_source.py cisa page <URL>` |
 | `ncsc-ch-security-hub` | `python3 tools/fetch_source.py ncsc-csh recent 10` then `ncsc-csh post <ID>` |
 | `enisa-euvd` (v2.48) | `python3 tools/fetch_source.py enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` |
-| `bsi-de` / `wid.cert-bund.de` (v2.48) | `python3 tools/fetch_source.py bsi-rss` then `url <per-advisory URL>` |
-| `advisories-ncsc-nl` (v2.48) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN> [version]` |
+| `bsi-de` / `wid.cert-bund.de` (v2.49) | `python3 tools/fetch_source.py bsi-rss` then `bsi-csaf <WID-SEC-YYYY-NNNN>` for full advisory body (CVE list, notes, affected products) — the per-advisory portal URL is an Angular SPA, do NOT `url` it |
+| `advisories-ncsc-nl` (v2.49) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN>` — fetches `/csaf/v2/{year}/ncsc-{year}-{nnnn}.json` (publisher's well-known CSAF distribution; the legacy `version` arg is accepted but ignored) |
 | `anssi-fr` / `cert.ssi.gouv.fr` (v2.48) | `python3 tools/fetch_source.py url <per-advisory URL>` |
 | `cert-eu` / `cert-pl` / `ncsc-uk` (v2.48) | `python3 tools/fetch_source.py url <URL>` |
-| `databreaches-net`, `ico-uk`, `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `prodaft`, `inside-it-ch`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` |
+| `ico-uk` (v2.49) | `python3 tools/fetch_source.py url https://ico.org.uk/sitemap.xml` for discovery (filter `/action-weve-taken/enforcement/`), then `url <per-action URL>` |
+| `prodaft` (v2.49) | `python3 tools/fetch_source.py url https://www.prodaft.com/sitemap.xml` for discovery, then `url <per-post URL>` |
+| `bleepingcomputer` (v2.49) | `python3 tools/fetch_source.py url https://www.bleepingcomputer.com/news/security/` for discovery; article URLs frequently 403 — WebSearch fallback |
+| `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` |
+| `inside-it-ch`, `databreaches-net` (v2.49) | **WebSearch fallback only** — Cloudflare Managed Challenge ("Just a moment...") on every UA; record the 403 in `fetch_failures` but do NOT retry the bridge |
 
 **Bridge-first rule** — for any host on the table above, your **first attempt** is the bridge subcommand, not `WebFetch`. The bridge enforces a host allow-list and forwards a desktop-Chrome UA, read-only. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the bridge ALSO fails (e.g. CCN-CERT geo-block, ENISA EUVD API outage), you've hit a real coverage gap — record it in `fetch_failures` per the schema below.
 
