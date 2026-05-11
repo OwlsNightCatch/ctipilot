@@ -3113,17 +3113,21 @@ def render_index_page(
 def render_home_page(
     latest: dict[str, Any] | None,
     recent_daily: list[dict[str, Any]],
+    latest_weekly: dict[str, Any] | None,
+    recent_weekly: list[dict[str, Any]],
     *,
     site_url: str,
     cachebust: str,
     canonical: str,
 ) -> str:
-    """Decluttered home: a hero (project name + lede), today's brief
-    (title + date + TL;DR + ONE CTA), and a list of recent daily briefs.
-    No banner gradient, no "Continue exploring" stat grid, no inline
-    build timestamp. Per-section single link to the latest brief — the
-    title isn't itself a link; the CTA below is the click target.
-    RSS feeds live in the global footer."""
+    """Decluttered home: a hero (project name + lede), then a two-column
+    feature row with today's daily brief alongside the latest weekly
+    summary (each: title + date + TL;DR + ONE CTA), and a list of recent
+    daily briefs. Weekly briefs are surfaced equally with daily — both
+    appear above the fold on desktop. On narrow viewports the columns
+    stack. Per-card single link to the brief — the title isn't itself a
+    link; the CTA below is the click target. RSS feeds live in the
+    global footer."""
     # Bootstrap that converts old SPA hash URLs (`#/briefs/<name>`) to
     # clean URLs. Loaded as an external script so the strict CSP can keep
     # `'self'` and refuse all inline scripts.
@@ -3131,7 +3135,7 @@ def render_home_page(
         f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
     )
 
-    if not latest:
+    if not latest and not latest_weekly:
         body = f"""
 <section class="home-hero">
   <h1>ctipilot.ch</h1>
@@ -3153,30 +3157,93 @@ def render_home_page(
             home_relative_prefix="",
         )
 
-    tldr_lis = "".join(
-        f'<li>{render_inline(t, base_url=canonical)}</li>'
-        for t in (latest.get("tldr") or [])[:5]
+    def _feature_card(
+        brief: dict[str, Any] | None,
+        *,
+        eyebrow: str,
+        empty_msg: str,
+        card_class: str,
+    ) -> str:
+        if not brief:
+            return (
+                f'<section class="home-today {card_class}">'
+                f'  <p class="home-today-eyebrow">{_escape(eyebrow)}</p>'
+                f'  <p class="muted">{_escape(empty_msg)}</p>'
+                f'</section>'
+            )
+        is_weekly = brief.get("kind") == "weekly"
+        href = "briefs/" + ("weekly/" if is_weekly else "") + _escape(brief["name"]) + "/"
+        tldr_lis = "".join(
+            f'<li>{render_inline(t, base_url=canonical)}</li>'
+            for t in (brief.get("tldr") or [])[:5]
+        )
+        tldr_html = (
+            f'<ul>{tldr_lis}</ul>'
+            if tldr_lis
+            else '<p class="muted">No TL;DR bullets in this brief.</p>'
+        )
+        cta_label = "Read the full weekly →" if is_weekly else "Read the full brief →"
+        return (
+            f'<section class="home-today {card_class}">'
+            f'  <p class="home-today-eyebrow">{_escape(eyebrow)}</p>'
+            f'  <h2>{_escape(brief["title"])}</h2>'
+            f'  <p class="muted">Published {_escape(brief["publish_iso"][:10])}</p>'
+            f'  {tldr_html}'
+            f'  <p class="home-today-cta"><a class="cta" href="{href}">{_escape(cta_label)}</a></p>'
+            f'</section>'
+        )
+
+    daily_card = _feature_card(
+        latest,
+        eyebrow="Today's daily brief",
+        empty_msg="No daily brief yet — the first routine run will publish one here.",
+        card_class="home-today--daily",
     )
-    tldr_html = (
-        f'<ul>{tldr_lis}</ul>' if tldr_lis else '<p class="muted">No TL;DR bullets in this brief.</p>'
+    weekly_card = _feature_card(
+        latest_weekly,
+        eyebrow="This week's summary",
+        empty_msg="No weekly summary yet — published Sundays.",
+        card_class="home-today--weekly",
     )
 
-    # Recent briefs list — exclude today's brief from the list to avoid
-    # a second link to it (the user asked for one link per section to
-    # the brief of today). Show the next ~10 daily briefs.
-    recent_lis = "".join(
+    # Recent daily briefs list — exclude today's brief from the list to
+    # avoid a duplicate link. Show up to 10 prior daily briefs.
+    recent_daily_lis = "".join(
         f'<li>'
         f'<a href="briefs/{_escape(b["name"])}/">{_escape(b["title"])}</a> '
         f'<span class="muted mono">{_escape(b["publish_iso"][:10])}</span>'
         f'</li>'
         for b in recent_daily[1:11]
     )
+    # Recent weekly briefs list — exclude the featured weekly (if any).
+    weekly_tail = recent_weekly[1:6] if latest_weekly else recent_weekly[:5]
+    recent_weekly_lis = "".join(
+        f'<li>'
+        f'<a href="briefs/weekly/{_escape(b["name"])}/">{_escape(b["title"])}</a> '
+        f'<span class="muted mono">{_escape(b["publish_iso"][:10])}</span>'
+        f'</li>'
+        for b in weekly_tail
+    )
+    recent_blocks: list[str] = []
+    if recent_daily_lis:
+        recent_blocks.append(
+            '<section class="home-recent">'
+            '<h3>Recent daily briefs</h3>'
+            f'<ul class="home-recent-list">{recent_daily_lis}</ul>'
+            '</section>'
+        )
+    if recent_weekly_lis:
+        recent_blocks.append(
+            '<section class="home-recent">'
+            '<h3>Recent weekly summaries</h3>'
+            f'<ul class="home-recent-list">{recent_weekly_lis}</ul>'
+            '</section>'
+        )
     recent_section = (
-        '<section class="home-recent">'
-        '<h3>Recent daily briefs</h3>'
-        f'<ul class="home-recent-list">{recent_lis}</ul>'
-        '</section>'
-    ) if recent_lis else ''
+        f'<div class="home-recent-grid">{"".join(recent_blocks)}</div>'
+        if recent_blocks
+        else ''
+    )
 
     body = f"""
 <section class="home-hero">
@@ -3184,12 +3251,10 @@ def render_home_page(
   <p class="lede">Daily and weekly cyber threat intelligence — Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.</p>
 </section>
 
-<section class="home-today">
-  <h2>{_escape(latest['title'])}</h2>
-  <p class="muted">Published {_escape(latest['publish_iso'][:10])}</p>
-  {tldr_html}
-  <p class="home-today-cta"><a class="cta" href="briefs/{_escape(latest['name'])}/">Read the full brief →</a></p>
-</section>
+<div class="home-today-grid">
+{daily_card}
+{weekly_card}
+</div>
 
 {recent_section}
 {redirect_js}
@@ -7421,11 +7486,13 @@ def main() -> int:
 
     # ---- Home / about / ops -------------------------------------------
     daily_briefs = [b for b in briefs if b["kind"] == "daily"]
+    weekly_briefs = [b for b in briefs if b["kind"] == "weekly"]
     latest = daily_briefs[0] if daily_briefs else (briefs[0] if briefs else None)
+    latest_weekly = weekly_briefs[0] if weekly_briefs else None
     counts = {
         "briefs": len(briefs),
         "daily": len(daily_briefs),
-        "weekly": sum(1 for b in briefs if b["kind"] == "weekly"),
+        "weekly": len(weekly_briefs),
         "cves": len(cves["cves"]),
         "topics": len(topics["items"]),
         "sources": len(sources["sources"]),
@@ -7433,11 +7500,20 @@ def main() -> int:
     home_html = render_home_page(
         latest,
         daily_briefs,
+        latest_weekly,
+        weekly_briefs,
         site_url=site_url,
         cachebust=cachebust,
         canonical=site_url,
     )
-    emit_html("", home_html, lastmod=latest["publish_iso"][:10] if latest else "")
+    # Use the most recent publish date across daily + weekly for sitemap
+    # lastmod so the homepage shows as fresh when a weekly lands on a day
+    # without a new daily.
+    home_lastmod = ""
+    candidates = [b for b in (latest, latest_weekly) if b]
+    if candidates:
+        home_lastmod = max(b["publish_iso"][:10] for b in candidates)
+    emit_html("", home_html, lastmod=home_lastmod)
 
     # /about/ — landing page with two clear sections (Documentation + Prompts).
     # Built from README.md plus a generated section-nav block prepended at the
