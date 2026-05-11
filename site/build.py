@@ -1423,9 +1423,15 @@ def parse_brief(path: Path) -> dict[str, Any]:
     # Matches the H2 heading regardless of the prefix the prompt uses for
     # section numbering (`## 1. TL;DR`, `## § 1 — TL;DR`, `## TL;DR`, etc.)
     # — anything before the literal token `TL;DR` on the heading line is
-    # absorbed.
+    # absorbed. Weekly briefs use `## 0. Week at a glance` for the same
+    # bulleted-summary slot, so the alternation accepts either token; the
+    # bullets that follow have identical shape in both kinds.
     tldr: list[str] = []
-    tldr_block = re.search(r"^##[^\n]*?TL;DR[^\n]*\n(.+?)(?=\n##\s|\Z)", text, re.DOTALL | re.IGNORECASE | re.MULTILINE)
+    tldr_block = re.search(
+        r"^##[^\n]*?(?:TL;DR|Week at a glance)[^\n]*\n(.+?)(?=\n##\s|\Z)",
+        text,
+        re.DOTALL | re.IGNORECASE | re.MULTILINE,
+    )
     if tldr_block:
         for raw in tldr_block.group(1).splitlines():
             line = raw.strip()
