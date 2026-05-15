@@ -4742,23 +4742,36 @@ def _ops_render_verification_iterations(
     iters: list[Any], *,
     legacy_count: int | None,
     legacy_residual: int | None,
-) -> str:
-    """v2.48 — render the verification iteration timeline with per-finding
-    detail for the FINAL iteration (the cap-breach signal). Earlier
-    iterations get a single chip; the final iteration shows its findings[]
-    inline so the operator can debug WHAT the verifier flagged."""
+) -> tuple[str, str]:
+    """v2.58 — return (chips_html, findings_html) instead of one combined
+    string. The chips_html is the compact iteration timeline that fits in
+    the 2-column "Verification" panel slot; the findings_html is a stack
+    of per-iteration finding tables intended to be rendered in a
+    full-width block beneath the latest-run card, like the Coverage Gaps
+    table already gets full-width treatment.
+
+    Pre-v2.58 only the FINAL iteration's findings rendered (the
+    cap-breach signal). v2.58 renders every iteration's `findings[]`
+    that is non-empty so the operator can walk the verifier's full
+    debugging trail — what did iter-1 flag, what did the main agent fix,
+    what did iter-2 then flag, etc.
+
+    The chip row remains the at-a-glance roll-up; the per-iteration
+    tables are the debug surface.
+    """
     if not iters:
         if legacy_count is not None:
-            return (
+            chip = (
                 f'<p class="muted">{legacy_count} iteration{"s" if (legacy_count or 0) != 1 else ""} · '
                 f'{legacy_residual or 0} residual{"s" if (legacy_residual or 0) != 1 else ""} '
                 '(legacy scalar — per-iteration breakdown not recorded)</p>'
             )
-        return '<p class="muted">No verification telemetry recorded.</p>'
+            return chip, ""
+        return '<p class="muted">No verification telemetry recorded.</p>', ""
 
-    final_idx = len(iters) - 1
+    # ── Chip row (compact roll-up) ────────────────────────────────────
     chip_blocks: list[str] = []
-    for i, it in enumerate(iters):
+    for it in iters:
         if not isinstance(it, dict):
             continue
         verdict = it.get("verdict", "?")
@@ -4776,63 +4789,134 @@ def _ops_render_verification_iterations(
         )
     chips_html = '<div class="ops-chip-row">' + " ".join(chip_blocks) + '</div>'
 
-    # Per-finding detail for the FINAL iteration. CLEAN final → just the
-    # chip row above is enough. NEEDS_FIXES final → render the findings[]
-    # inline so the cap-breach is debuggable.
-    final_iter = iters[final_idx] if isinstance(iters[final_idx], dict) else None
-    final_block = ""
-    if final_iter and (final_iter.get("verdict") or "").upper() == "NEEDS_FIXES":
-        findings = final_iter.get("findings") or []
-        if findings:
-            f_rows: list[str] = []
-            for fd in findings:
-                if not isinstance(fd, dict):
-                    continue
-                code = fd.get("code") or "?"
-                category = fd.get("category") or _F_CODE_LABEL.get(code, "?")
-                section = fd.get("section") or "—"
-                item = (fd.get("item") or "")[:80]
-                url_or_quote = (fd.get("url_or_quote") or "")[:120]
-                summary = (fd.get("summary") or "")[:200]
-                rem = (fd.get("remediation_applied") or "")[:160]
-                outcome = (fd.get("remediation_outcome") or "")
-                outcome_kind = {
-                    "fixed-clean": "ok", "fixed-degraded": "warn",
-                    "dropped-item": "neutral", "deferred": "warn",
-                    "residual-at-cap": "crit",
-                }.get(outcome, "neutral")
-                url_html = (
-                    f'<a class="mono" href="{_escape(_safe_url(url_or_quote))}" target="_blank" rel="noopener noreferrer">{_escape(url_or_quote)}</a>'
-                    if url_or_quote.startswith(("http://", "https://"))
-                    else f'<span class="muted mono">{_escape(url_or_quote)}</span>' if url_or_quote else ''
-                )
-                f_rows.append(
-                    '<tr>'
-                    f'<td><span class="mono"><strong>{_escape(code)}</strong></span><div class="muted mono" style="font-size:0.72rem">{_escape(category)}</div></td>'
-                    f'<td><span class="e-tag">{_escape(section)}</span></td>'
-                    f'<td>{_escape(item)}<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{url_html}</div></td>'
-                    f'<td>{_escape(summary)}</td>'
-                    f'<td><span class="mono">{_escape(rem) or "—"}</span>{(" " + _ops_pill(outcome, kind=outcome_kind)) if outcome else ""}</td>'
-                    '</tr>'
-                )
-            final_block = (
-                '<div class="ops-final-iter">'
-                f'<h3 class="ops-mini-head">Final iteration #{_escape(str(final_iter.get("n", "?")))} — {len(findings)} finding{"s" if len(findings) != 1 else ""} flagged</h3>'
-                '<p class="muted" style="font-size:0.82rem">Cap-breach iteration. Each row is what the verifier flagged + what the main agent did about it. Use to debug WHY the brief published at the safety valve.</p>'
-                '<div class="data-wrap"><table class="data ops-final-iter__table">'
-                '<thead><tr><th>F-code</th><th>Section</th><th>Item · URL/quote</th><th>Verifier summary</th><th>Remediation · outcome</th></tr></thead>'
-                f'<tbody>{"".join(f_rows)}</tbody></table></div>'
-                '</div>'
+    # ── Per-iteration findings tables (full-width, stacked) ───────────
+    final_idx = len(iters) - 1
+
+    def _render_one_iter_table(it: dict[str, Any], iter_idx: int) -> str:
+        """Render the findings table for one iteration; return '' when
+        the iteration has no findings[] or only empty entries."""
+        findings = it.get("findings") or []
+        # Filter out non-dict garbage early.
+        findings = [fd for fd in findings if isinstance(fd, dict)]
+        if not findings:
+            return ""
+
+        n = it.get("n", "?")
+        verdict = (it.get("verdict") or "").upper() or "?"
+        verdict_kind = "ok" if verdict == "CLEAN" else "warn"
+        model = it.get("model") or "unknown"
+        t_count = it.get("truth", 0)
+        e_count = it.get("editorial", 0)
+        a_count = it.get("advisory", 0)
+        dur = _ops_format_duration(it.get("duration_seconds"))
+        is_final = iter_idx == final_idx
+        cap_breach_badge = (
+            ' <span class="ops-pill ops-pill--crit" title="cap-breach safety valve fired — brief published at iteration 5 without CLEAN">cap-breach</span>'
+            if is_final and verdict == "NEEDS_FIXES" else ""
+        )
+
+        f_rows: list[str] = []
+        for fd in findings:
+            code = fd.get("code") or "?"
+            category = fd.get("category") or _F_CODE_LABEL.get(code, "?")
+            section = fd.get("section") or "—"
+            item = (fd.get("item") or "")[:80]
+            url_or_quote = (fd.get("url_or_quote") or "")[:120]
+            summary = (fd.get("summary") or "")[:200]
+            rem = (fd.get("remediation_applied") or "")[:160]
+            outcome = (fd.get("remediation_outcome") or "")
+            outcome_kind = {
+                "fixed-clean": "ok", "fixed-degraded": "warn",
+                "dropped-item": "neutral", "deferred": "warn",
+                "residual-at-cap": "crit",
+            }.get(outcome, "neutral")
+            url_html = (
+                f'<a class="mono" href="{_escape(_safe_url(url_or_quote))}" target="_blank" rel="noopener noreferrer">{_escape(url_or_quote)}</a>'
+                if url_or_quote.startswith(("http://", "https://"))
+                else f'<span class="muted mono">{_escape(url_or_quote)}</span>' if url_or_quote else ''
             )
-        else:
-            final_block = (
-                '<p class="ops-final-iter ops-final-iter--empty muted">'
-                f'Cap-breach iteration #{_escape(str(final_iter.get("n", "?")))} did NOT record per-finding detail. '
-                'The dashboard cannot render WHAT the verifier flagged. '
-                'See <code>.claude/agents/cti-verification.md</code> § Findings summary for the contract.'
-                '</p>'
+            f_rows.append(
+                '<tr>'
+                f'<td><span class="mono"><strong>{_escape(code)}</strong></span><div class="muted mono" style="font-size:0.72rem">{_escape(category)}</div></td>'
+                f'<td><span class="e-tag">{_escape(section)}</span></td>'
+                f'<td>{_escape(item)}<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{url_html}</div></td>'
+                f'<td>{_escape(summary)}</td>'
+                f'<td><span class="mono">{_escape(rem) or "—"}</span>{(" " + _ops_pill(outcome, kind=outcome_kind)) if outcome else ""}</td>'
+                '</tr>'
             )
-    return chips_html + final_block
+
+        # Heading line: iteration number, verdict pill, counts, model, duration.
+        heading = (
+            f'<h4 class="ops-iter__head">'
+            f'Iteration <span class="mono">#{_escape(str(n))}</span> '
+            f'<span class="ops-pill ops-pill--{verdict_kind}">{_escape(verdict)}</span>'
+            f'{cap_breach_badge}'
+            f' <span class="muted">— {len(findings)} finding{"s" if len(findings) != 1 else ""} '
+            f'(truth={t_count}, editorial={e_count}, advisory={a_count}) · '
+            f'<span class="mono">{_escape(model)}</span>'
+            f'{f" · {_escape(dur)}" if dur else ""}'
+            '</span>'
+            '</h4>'
+        )
+        return (
+            '<div class="ops-iter">'
+            + heading
+            + '<div class="data-wrap"><table class="data ops-iter__table">'
+            '<thead><tr><th>F-code</th><th>Section</th><th>Item · URL/quote</th>'
+            '<th>Verifier summary</th><th>Remediation · outcome</th></tr></thead>'
+            f'<tbody>{"".join(f_rows)}</tbody></table></div>'
+            '</div>'
+        )
+
+    iter_tables: list[str] = []
+    has_any_findings = False
+    cap_breach_iter = None
+    for idx, it in enumerate(iters):
+        if not isinstance(it, dict):
+            continue
+        table = _render_one_iter_table(it, idx)
+        if table:
+            iter_tables.append(table)
+            has_any_findings = True
+        if idx == final_idx and (it.get("verdict") or "").upper() == "NEEDS_FIXES":
+            cap_breach_iter = it
+
+    # If the final iteration was a NEEDS_FIXES cap-breach but recorded no
+    # findings[], note that explicitly — the operator still needs to see
+    # the cap-breach signal even when the verifier's findings array is
+    # empty (pre-v2.48 contract).
+    cap_breach_note = ""
+    if cap_breach_iter is not None and not (cap_breach_iter.get("findings") or []):
+        n = cap_breach_iter.get("n", "?")
+        cap_breach_note = (
+            '<div class="ops-iter ops-iter--no-detail">'
+            f'<h4 class="ops-iter__head">Iteration <span class="mono">#{_escape(str(n))}</span> '
+            '<span class="ops-pill ops-pill--crit">cap-breach</span></h4>'
+            '<p class="muted">Cap-breach iteration recorded no per-finding detail. '
+            'The dashboard cannot show WHAT the verifier flagged. '
+            'See <code>.claude/agents/cti-verification.md</code> § Findings summary for the contract.</p>'
+            '</div>'
+        )
+
+    findings_html = ""
+    if has_any_findings or cap_breach_note:
+        intro = (
+            '<p class="muted ops-verif-intro">'
+            'Per-iteration finding detail. Each table is one verifier pass — what was flagged, '
+            'how the main agent remediated it, and the outcome. Walking the tables top-to-bottom '
+            'shows the verifier\'s debugging trail across iterations.'
+            '</p>'
+        )
+        findings_html = (
+            '<div class="ops-latest__verification">'
+            f'<h3 class="ops-mini-head">Verification findings — all iterations</h3>'
+            + intro
+            + "".join(iter_tables)
+            + cap_breach_note
+            + '</div>'
+        )
+
+    return chips_html, findings_html
 
 
 def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *,
@@ -4871,12 +4955,15 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     # so success and failure don't share a list.
     bridge_uses_html = _ops_render_bridge_uses(run.get("bridge_uses") or [])
 
-    # v2.48 — verification iteration roll-up + per-finding detail for the
-    # FINAL iteration (the cap-breach signal). Earlier iterations get a
-    # one-line chip; the final iteration shows its findings[] inline so
-    # the operator can debug what the verifier flagged.
+    # v2.58 — verification iteration renderer now returns TWO fragments:
+    # a compact chip row (iteration timeline) for the 2-col Verification
+    # slot, and a full-width findings_html block (per-iteration finding
+    # tables for EVERY iteration with findings — not just the final one).
+    # The findings_html escapes the .ops-latest card the same way the
+    # Coverage Gaps table does, so the operator gets full-page-width to
+    # read the verifier's debugging trail across all iterations.
     iters = ((run.get("verification") or {}).get("iterations") or [])
-    verif_html = _ops_render_verification_iterations(
+    verif_chips_html, verif_findings_html = _ops_render_verification_iterations(
         iters,
         legacy_count=run.get("verification_iterations"),
         legacy_residual=run.get("verification_residual_count"),
@@ -4904,12 +4991,14 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     <span class="muted">main agent</span>
   </div>
   {sa_grid}
-  <!-- Verification + Deep-dive share a 2-column row at desktop; on phone
-       they stack. Each is short text/chips, so two columns is plenty. -->
+  <!-- Verification (chips only) + Deep-dive share a 2-column row at
+       desktop; both are short so two columns is plenty. The per-
+       iteration finding TABLES escape this row into a full-width
+       section below the Coverage Gaps table (v2.58). -->
   <div class="ops-latest__row ops-latest__row--summary">
     <div>
       <h3 class="ops-mini-head">Verification</h3>
-      {verif_html}
+      {verif_chips_html}
     </div>
     <div>
       <h3 class="ops-mini-head">Deep dive</h3>
@@ -4929,6 +5018,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
   {failures_html}
 </div>
 {bridge_uses_html}
+{verif_findings_html}
 """
 
 
