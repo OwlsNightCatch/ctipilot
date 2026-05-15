@@ -5007,6 +5007,15 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
         v = tele.get(name)
         if v in (None, ""):
             return None
+        # Coerce non-numeric strings ("not captured", "unknown", "n/a", …) to
+        # None so the card renders "not reported" instead of "not captured
+        # WebFetch". Older sub-agent prompts allowed string sentinels; the
+        # current contract says integer-or-omit.
+        if isinstance(v, str):
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return None
         return v
 
     wf = _tc("webfetch_calls")
