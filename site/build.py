@@ -316,11 +316,26 @@ def git_first_commit_ts(path: Path) -> datetime | None:
 
 def file_publish_moment(path: Path) -> datetime:
     """Best-effort UTC moment a brief became live. Tries (1) git first-commit
-    timestamp; falls back to (2) file mtime. Never falls back to
-    midnight-of-brief-date — that's Defect B in the issue tracker."""
+    timestamp; (2) filename-encoded date for brief paths; (3) file mtime.
+
+    The filename fallback exists because step (1) can return None in any
+    fresh checkout where the file's adding commit is out of history (CI
+    shallow clones, depth-limited fetches, or non-git tarball builds). In
+    that case step (3) would otherwise collapse to the checkout instant for
+    every file — identical timestamps for every brief — which breaks the
+    per-item RSS feed's stable sort (all ties → one brief's items fill the
+    50-cap, every other brief is evicted)."""
     ts = git_first_commit_ts(path)
     if ts is not None:
         return ts
+    stem = path.stem
+    if re.match(r"^\d{4}-\d{2}-\d{2}$", stem):
+        y, m, d = (int(part) for part in stem.split("-"))
+        return datetime(y, m, d, tzinfo=timezone.utc)
+    if re.match(r"^\d{4}-W\d{2}$", stem):
+        y = int(stem[:4])
+        w = int(stem[6:])
+        return datetime.fromisocalendar(y, w, 1).replace(tzinfo=timezone.utc)
     try:
         mt = path.stat().st_mtime
         return datetime.fromtimestamp(mt, tz=timezone.utc)

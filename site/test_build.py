@@ -14,12 +14,14 @@ Tests cover:
 """
 
 import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = Path(__file__).resolve().parent
 
 sys.path.insert(0, str(SITE))
+import build  # noqa: E402  -- needed for monkey-patch in fallback test
 from build import (  # noqa: E402
     _cdata_safe,
     _extract_bullets_with_footers,
@@ -27,6 +29,7 @@ from build import (  # noqa: E402
     _strip_controls,
     _strip_footer_metadata_in_md,
     _xml_validate,
+    file_publish_moment,
     is_safe_path_segment,
     parse_brief,
     parse_footer_line,
@@ -813,6 +816,49 @@ Specific, derived from today's content only.
 pre, bullets = _extract_bullets_with_footers(preamble_md)
 assert_eq("preamble preserved: bullet count", len(bullets), 1)
 assert_in("preamble preserved: preamble text", "Specific, derived", pre)
+
+
+# ---------------------------------------------------------------------
+# file_publish_moment filename-date fallback
+#
+# Regression test for the per-item RSS feed collapse: when
+# git_first_commit_ts returns None (CI shallow clone, tarball build,
+# git unavailable), file_publish_moment MUST still return distinct
+# timestamps for distinct briefs — otherwise the per-item feed's
+# stable sort lets one brief's items fill the entire 50-cap and evict
+# every other brief.
+# ---------------------------------------------------------------------
+print("\nfile_publish_moment filename fallback:")
+
+_orig_git_first_commit_ts = build.git_first_commit_ts
+build.git_first_commit_ts = lambda _p: None
+try:
+    daily_15 = file_publish_moment(Path("briefs/2026-05-15.md"))
+    daily_14 = file_publish_moment(Path("briefs/2026-05-14.md"))
+    weekly_w19 = file_publish_moment(Path("briefs/weekly/2026-W19.md"))
+finally:
+    build.git_first_commit_ts = _orig_git_first_commit_ts
+
+# Distinct briefs MUST get distinct timestamps even when git is unavailable.
+if daily_15 == daily_14:
+    FAILURES.append(f"fallback: daily 2026-05-15 == daily 2026-05-14 ({daily_15!r}) — feed will collapse")
+    print(f"  FAIL fallback: daily timestamps collapsed to {daily_15!r}")
+else:
+    print("  ok  fallback: daily briefs get distinct timestamps")
+
+if daily_15 == weekly_w19:
+    FAILURES.append(f"fallback: daily 2026-05-15 == weekly 2026-W19 ({daily_15!r}) — feed will collapse")
+    print(f"  FAIL fallback: daily-vs-weekly timestamps collapsed to {daily_15!r}")
+else:
+    print("  ok  fallback: daily vs weekly get distinct timestamps")
+
+# Daily filename date is honoured (UTC midnight of the date in the stem).
+assert_eq("fallback: daily 2026-05-15 → date", daily_15.date(), date(2026, 5, 15))
+assert_eq("fallback: daily 2026-05-15 → UTC", daily_15.tzinfo, timezone.utc)
+
+# Weekly ISO-week 19 of 2026 = Monday 2026-05-04.
+assert_eq("fallback: weekly 2026-W19 → date", weekly_w19.date(), date(2026, 5, 4))
+assert_eq("fallback: weekly 2026-W19 → UTC", weekly_w19.tzinfo, timezone.utc)
 
 
 # ---------------------------------------------------------------------

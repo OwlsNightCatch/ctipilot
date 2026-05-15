@@ -64,7 +64,13 @@ jobs:
           set -euo pipefail
           git init -q .
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
-          git fetch --no-tags --depth=1 origin main
+          # Full fetch (no --depth) — site/build.py's file_publish_moment()
+          # relies on `git log --diff-filter=A --follow` to find each brief's
+          # adding commit. A shallow clone hides those commits, the function
+          # falls back to file mtime (identical for every file in a fresh
+          # checkout), every brief ties at one timestamp, and the per-item
+          # RSS feed's stable sort lets one brief's items fill the 50-cap.
+          git fetch --no-tags origin main
           git checkout -B main origin/main
 
       - name: Build site bundle
