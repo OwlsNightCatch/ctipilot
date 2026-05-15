@@ -4,7 +4,7 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
-## 2.55 — 2026-05-15 (telemetry: `fetch_failures[]` becomes a strict "coverage gaps" log, `bridge_uses[]` tracks successful bridge calls separately, Ops dashboard sub-agent card rebuilt with labelled metrics)
+## 2.56 — 2026-05-15 (telemetry: `fetch_failures[]` becomes a strict "coverage gaps" log, `bridge_uses[]` tracks successful bridge calls separately, Ops dashboard sub-agent card rebuilt with labelled metrics)
 
 ### Why
 A review of the last 5 runs' `state/run_log.json.fetch_failures[]` arrays showed the field had become a misleading catch-all. Concretely, the 2026-05-12 daily run logged 13 "fetch failures" — but reading the entries showed:
@@ -17,12 +17,12 @@ A review of the last 5 runs' `state/run_log.json.fetch_failures[]` arrays showed
 - `ico-uk` → SPA listing returned navigation only, but structured `ico-uk enforcement` worked — **success**
 - ...and 3 actual gaps (`databreaches-net`, `inside-it-ch`, ...)
 
-The pre-v2.55 sub-agent prompt explicitly told agents to "log every transport / SPA-empty / paywall outcome, even if you recovered." That made `fetch_failures[]` a "things I tried that had a wrinkle" log, not a "things that broke" log — exactly the wrong signal for an operator scanning the Ops dashboard at 8am to spot real problems. The user-named symptom was *"no new advisories is not a fetch failure ... when the agent can fetch via the bridge that is also not a failure."*
+The pre-v2.56 sub-agent prompt explicitly told agents to "log every transport / SPA-empty / paywall outcome, even if you recovered." That made `fetch_failures[]` a "things I tried that had a wrinkle" log, not a "things that broke" log — exactly the wrong signal for an operator scanning the Ops dashboard at 8am to spot real problems. The user-named symptom was *"no new advisories is not a fetch failure ... when the agent can fetch via the bridge that is also not a failure."*
 
 Two additional usability problems surfaced in the same review:
 
 1. **Ops sub-agent telemetry was unreadable.** The card printed `"3 items / 12/18 sources / 461 duration seconds 9 webfetch calls 18 websearch calls 11 bridge fetches"` — all chips on the same line, all using the same visual weight, no labels distinguishing what was a count vs. what was a unit. The "12/18" had no tooltip explaining numerator/denominator.
-2. **`spa-empty-body` was still a documented `error_class`** even though v2.52+ ships a structured-endpoint bridge subcommand for every SPA host the brief uses — those should never appear in the log.
+2. **`spa-empty-body` was still a documented `error_class`** even though v2.53+ ships a structured-endpoint bridge subcommand for every SPA host the brief uses — those should never appear in the log.
 
 ### What changed
 
@@ -31,13 +31,13 @@ Two additional usability problems surfaced in the same review:
 The new rule, prefixed clearly at the top of the section: *log a `fetch_failures[]` entry ONLY when the source could not be retrieved at all and the recipe in `sources/sources.json` has no working alternative.* Two explicit lists follow:
 
 - **Log as a failure:** 5xx with no recovery; 403/429/TLS/DNS/timeout with bridge AND Wayback exhausted AND `covered_anyway: false`; Cloudflare Managed Challenge on hosts without Wayback coverage; bridge subcommand 404 on a *non-speculative* identifier; TollBit-style auth-gated content with no alternate.
-- **Do NOT log as a failure:** "Bridge fetched OK; no new content in window" (success); WebFetch-403 on a known-403 host where the bridge then succeeded (the bridge IS the recipe); SPA-empty landings handled by a structured-endpoint bridge subcommand; sources where `covered_anyway: true` via a deterministic alternate; NCSC-NL speculative-ID 404s (speculative enumeration was deprecated in v2.52 — use `ncsc-nl recent`).
+- **Do NOT log as a failure:** "Bridge fetched OK; no new content in window" (success); WebFetch-403 on a known-403 host where the bridge then succeeded (the bridge IS the recipe); SPA-empty landings handled by a structured-endpoint bridge subcommand; sources where `covered_anyway: true` via a deterministic alternate; NCSC-NL speculative-ID 404s (speculative enumeration was deprecated in v2.53 — use `ncsc-nl recent`).
 
 The `spa-empty-body` error class is dropped from the documented vocabulary; sub-agents that find a new SPA host with no structured-endpoint route should add a `Coverage gap: <source-id> (recipe missing)` line in § 7 rather than logging a fetch failure.
 
 **New optional `## Bridge uses` section** in the sub-agent return → `state/run_log.json.bridge_uses[]`. Each record is `{id, method, outcome}` with `outcome ∈ {ok, empty-feed, item-not-found, other}`. This captures bridge effectiveness telemetry that used to be lumped into `fetch_failures[]` as fake failures. The section is optional; omitting it means no bridge-use telemetry that run.
 
-**Daily + weekly prompt Phase 5 schema docs mirrored** to the new rule. `fetch_failures` description was rewritten to lead with "ONLY real, unrecovered failures" and to enumerate the v2.55 do-not-log cases. New `bridge_uses` field documented in the Phase 5 state-update sections.
+**Daily + weekly prompt Phase 5 schema docs mirrored** to the new rule. `fetch_failures` description was rewritten to lead with "ONLY real, unrecovered failures" and to enumerate the v2.56 do-not-log cases. New `bridge_uses` field documented in the Phase 5 state-update sections.
 
 **Ops dashboard (`site/build.py`, `site/assets/css/styles.css`) — sub-agent card rebuilt.**
 
@@ -52,26 +52,26 @@ TOOL CALLS       14 WebFetch · 8 WebSearch · 11 bridge
 
 Labels are small-caps light-weight; values are mono bold. Tool calls cluster on a single row (they're three related counters). Optional metrics (`urls_checked`, `tokens_in`, `tokens_out`) move below a hairline to an "extras" row when reported, keeping the primary card uncluttered.
 
-**Coverage-gaps table replaces "Fetch failures" table.** The table is renamed in the dashboard (`<h3>Coverage gaps (latest run)</h3>`) with an explainer line below the header stating *"Sources the brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55."* The "Outcome" column is dropped (every row is a gap by definition). A new yellow soft-signal row badge highlights any record with `covered_anyway: true` that survived from older runs — "covered via alternate — should NOT be in this list under v2.55."
+**Coverage-gaps table replaces "Fetch failures" table.** The table is renamed in the dashboard (`<h3>Coverage gaps (latest run)</h3>`) with an explainer line below the header stating *"Sources the brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.56."* The "Outcome" column is dropped (every row is a gap by definition). A new yellow soft-signal row badge highlights any record with `covered_anyway: true` that survived from older runs — "covered via alternate — should NOT be in this list under v2.56."
 
 **New "Bridge invocations" panel** renders the separate `bridge_uses[]` stream as a chip row (`12 ok`, `4 empty feed`, `1 item not found`) followed by a frequency list of bridge subcommands. This is the panel that shows "the bridge is doing its job" without conflating with the gap signal.
 
 **Runs table sub-agent cell** (`_sa_cell`) — adds explicit `items` label and a tooltip on the `sources_used / sources_attempted` ratio so the bare "12/18" can no longer be misread.
 
 ### What stays
-Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.51 META #16 / W-INV-3) unchanged. The `fetch_failures[]` record SHAPE is identical to v2.48 — `id`, `url_tried`, `fetch_method`, `status_code`, `error_class`, `error_message`, `attempted_methods`, `mitigation_applied`, `covered_anyway` are all the same fields with the same semantics. Only the **policy on when to write a record** has tightened. The dashboard's legacy back-compat for the v2.47 `{id, code, note}` shape is preserved (renders as yellow "legacy shape — needs detail" row). `tools/check_brief.py` is unchanged.
+Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.52 META #16 / W-INV-3) unchanged. The `fetch_failures[]` record SHAPE is identical to v2.48 — `id`, `url_tried`, `fetch_method`, `status_code`, `error_class`, `error_message`, `attempted_methods`, `mitigation_applied`, `covered_anyway` are all the same fields with the same semantics. Only the **policy on when to write a record** has tightened. The dashboard's legacy back-compat for the v2.47 `{id, code, note}` shape is preserved (renders as yellow "legacy shape — needs detail" row). `tools/check_brief.py` is unchanged.
 
 ### Migration note
-- Sub-agents that follow the v2.55 prompt will produce shorter `fetch_failures[]` arrays. The dashboard's "Coverage gaps (latest run)" panel will be empty on most runs — that's the new normal, not a regression.
-- Pre-v2.55 records may carry `covered_anyway: true` entries; those render with a yellow soft-signal row badge so the operator can see at a glance which runs were under the old rule.
+- Sub-agents that follow the v2.56 prompt will produce shorter `fetch_failures[]` arrays. The dashboard's "Coverage gaps (latest run)" panel will be empty on most runs — that's the new normal, not a regression.
+- Pre-v2.56 records may carry `covered_anyway: true` entries; those render with a yellow soft-signal row badge so the operator can see at a glance which runs were under the old rule.
 - `bridge_uses[]` is optional — sub-agents that don't emit a `## Bridge uses` section produce a missing field, which the dashboard renders as "no bridge invocations reported" (no panel).
 
 ---
 
-## 2.54 — 2026-05-15 (bridge fetcher: generic `feed <URL>` subcommand for any RSS/Atom, 16-source verification with per-article drilldowns, RDF/Atom parser fix, 6 new sources added)
+## 2.55 — 2026-05-15 (bridge fetcher: generic `feed <URL>` subcommand for any RSS/Atom, 16-source verification with per-article drilldowns, RDF/Atom parser fix, 6 new sources added)
 
 ### Why
-v2.53 added MSRC + MSFT Security Blog support, but a wider audit of the operator's source list surfaced **16 widely-cited CTI publishers** that the bridge could not handle uniformly: half were RSS-driven (and each would need its own subcommand under the v2.49–v2.53 pattern), two had no RSS at all (Trellix, SANS NewsBites), one had broken Atom parsing in the v2.52 helper (Schneier + heise.de — `_parse_rss` lowercased the namespace URI and so missed the case-sensitive `{http://www.w3.org/2005/Atom}feed` root), and one was anti-bot-gated (heise.de via TollBit).
+v2.54 added MSRC + MSFT Security Blog support, but a wider audit of the operator's source list surfaced **16 widely-cited CTI publishers** that the bridge could not handle uniformly: half were RSS-driven (and each would need its own subcommand under the v2.49–v2.54 pattern), two had no RSS at all (Trellix, SANS NewsBites), one had broken Atom parsing in the v2.53 helper (Schneier + heise.de — `_parse_rss` lowercased the namespace URI and so missed the case-sensitive `{http://www.w3.org/2005/Atom}feed` root), and one was anti-bot-gated (heise.de via TollBit).
 
 The 16 publishers covered in this release:
 - thedfirreport.com — DFIR Report
@@ -93,38 +93,38 @@ The 16 publishers covered in this release:
 
 ### What changed
 
-**`tools/fetch_source.py` — banner v2.53 → v2.54.**
+**`tools/fetch_source.py` — banner v2.54 → v2.55.**
 
 1. **New `feed <URL> [N]` subcommand.** Generic RSS / Atom / RDF parser that runs on any HTTPS feed URL and returns `{source, feed, count, items: [{title, link, published, summary}]}` — the same JSON shape every other listing subcommand uses. The agent's drilldown pattern (take `link` from `items[i]`, then `url <link>` for the full body) works uniformly across every publisher. Replaces dozens of per-publisher subcommands that the bridge would otherwise grow.
 
-2. **`_parse_rss` rewritten with proper namespace handling.** v2.52's parser lowercased `root.tag` before comparing to `{http://www.w3.org/2005/Atom}feed` — XML namespaces are case-sensitive per spec, so the comparison failed and any Atom feed raised `ValueError: unrecognised feed root: '{http://www.w3.org/2005/Atom}feed'`. The new parser splits the qualified tag into namespace URI + local name, lowercases only the local part, and case-insensitively compares the namespace URI. It also adds support for RSS 1.0 / RDF Site Summary feeds (`{rdf-syntax-ns#}RDF` root with `{rss/1.0/}item` children), which a small but growing minority of CMSs emit. Atom `<link>` handling now prefers `rel="alternate"` over the first link element (Atom can repeat `<link>` with different `rel`/`type`), and Atom item bodies fall back from `<summary>` to `<content>` when only the latter is present.
+2. **`_parse_rss` rewritten with proper namespace handling.** v2.53's parser lowercased `root.tag` before comparing to `{http://www.w3.org/2005/Atom}feed` — XML namespaces are case-sensitive per spec, so the comparison failed and any Atom feed raised `ValueError: unrecognised feed root: '{http://www.w3.org/2005/Atom}feed'`. The new parser splits the qualified tag into namespace URI + local name, lowercases only the local part, and case-insensitively compares the namespace URI. It also adds support for RSS 1.0 / RDF Site Summary feeds (`{rdf-syntax-ns#}RDF` root with `{rss/1.0/}item` children), which a small but growing minority of CMSs emit. Atom `<link>` handling now prefers `rel="alternate"` over the first link element (Atom can repeat `<link>` with different `rel`/`type`), and Atom item bodies fall back from `<summary>` to `<content>` when only the latter is present.
 
 3. **End-to-end verification of all 16 sources.** Every requested publisher was probed: feed-parse via `feed <URL>` then per-article drill via `url <link>`. 14 of 16 succeed cleanly (RSS feed returns titles + links + summaries, drilldown returns ≥40 KB of server-rendered HTML). 2 have no RSS feed and use a landing-scrape recipe (Trellix, SANS NewsBites — both documented in `cti-research.md`). 1 (heise.de) returns its RSS feed cleanly but per-article URLs are **TollBit-gated** — the response is a 307 redirect to `tollbit.heise.de/` or a 274-byte "you are not authorized to access this content without a valid TollBit Token" body. Documented as: use the feed's 150-char `summary` for awareness, pivot to a corroborating publisher for body.
 
-**`sources/sources.json` — 6 added + 10 updated.** New entries: `intel471`, `trellix`, `threatpost` (demoted — archive-only), `troyhunt`, `socprime`, `sans-newsbites`. Existing entries updated with an `rss_url` field on the 10 of 16 that have one: `dfirreport`, `krebs`, `compass-security`, `heise-sec`, `sans-isc`, `mandiant-gtig`, `schneier`, `wiz-blog`, `sophos-xops`, `hackernews`. Each `notes` field carries the verified recipe (`python3 tools/fetch_source.py feed <url> [N]`). `heise-sec.notes` carries the TollBit warning verbatim. Total active sources: 120 (was 114 at v2.53).
+**`sources/sources.json` — 6 added + 10 updated.** New entries: `intel471`, `trellix`, `threatpost` (demoted — archive-only), `troyhunt`, `socprime`, `sans-newsbites`. Existing entries updated with an `rss_url` field on the 10 of 16 that have one: `dfirreport`, `krebs`, `compass-security`, `heise-sec`, `sans-isc`, `mandiant-gtig`, `schneier`, `wiz-blog`, `sophos-xops`, `hackernews`. Each `notes` field carries the verified recipe (`python3 tools/fetch_source.py feed <url> [N]`). `heise-sec.notes` carries the TollBit warning verbatim. Total active sources: 120 (was 114 at v2.54).
 
 **`.claude/agents/cti-research.md` § Bridge fetcher** — three new subsections:
 
-- **"Generic RSS / Atom feeds — `feed <URL> [N]`"** — explicit listing-→-drilldown pattern, plus a 14-row reference table of every source verified in v2.54 with its canonical `rss_url`.
+- **"Generic RSS / Atom feeds — `feed <URL> [N]`"** — explicit listing-→-drilldown pattern, plus a 14-row reference table of every source verified in v2.55 with its canonical `rss_url`.
 - **"Publishers without an RSS feed — landing-scrape recipe"** — Trellix + SANS NewsBites pattern (regex over landing HTML for article hrefs, then `url <full>` per article). Also recommends sitemap probing before scraping.
 - **TollBit / anti-bot publishers note** — heise.de per-article URLs return TollBit's 307 redirect; the feed's `summary` field carries the lede + first-paragraph context (~150 chars) which is enough for awareness coverage, and pivots to corroborating outlets handle the full-body need.
 
-**Daily + weekly prompt banners — v2.53 → v2.54.** Banner-only bump.
+**Daily + weekly prompt banners — v2.54 → v2.55.** Banner-only bump.
 
 ### What stays
-Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.51 META #16 / W-INV-3) unchanged. Allowlist-removed (v2.52), keys-only digest (v2.51), tech-depth taxonomy in sub-agent (v2.51), v2.52 structured discovery feeds (cert-eu, cert-fr, ncsc-nl recent, ico-uk enforcement, sec-edgar 8k), v2.53 MSRC + MSFT Security Blog subcommands, Wayback fallback — all unchanged.
+Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.52 META #16 / W-INV-3) unchanged. Allowlist-removed (v2.53), keys-only digest (v2.52), tech-depth taxonomy in sub-agent (v2.52), v2.53 structured discovery feeds (cert-eu, cert-fr, ncsc-nl recent, ico-uk enforcement, sec-edgar 8k), v2.54 MSRC + MSFT Security Blog subcommands, Wayback fallback — all unchanged.
 
 ### Migration note for sub-agent callers
-The new `feed <URL> [N]` subcommand is the **preferred bridge entry point for any blog publisher with an RSS feed.** It replaces the v2.49–v2.53 pattern of "`url <listing>` and pray it's not an SPA." For sources in [`sources/sources.json`](../sources/sources.json), check the new `rss_url` field first: if non-null, use `feed <rss_url> N`; if null, the source needs the landing-scrape recipe documented in its `notes` field.
+The new `feed <URL> [N]` subcommand is the **preferred bridge entry point for any blog publisher with an RSS feed.** It replaces the v2.49–v2.54 pattern of "`url <listing>` and pray it's not an SPA." For sources in [`sources/sources.json`](../sources/sources.json), check the new `rss_url` field first: if non-null, use `feed <rss_url> N`; if null, the source needs the landing-scrape recipe documented in its `notes` field.
 
 For heise.de specifically: do **not** chain `feed → url <heise per-article>`. The feed gives 150-char summaries which are usable; the per-article URLs are TollBit-blocked. Pivot to a corroborating publisher for body.
 
 ---
 
-## 2.53 — 2026-05-15 (bridge fetcher: Microsoft MSRC Update Guide + Security Blog, end-to-end drilldown verification of v2.52 listings)
+## 2.54 — 2026-05-15 (bridge fetcher: Microsoft MSRC Update Guide + Security Blog, end-to-end drilldown verification of v2.53 listings)
 
 ### Why
-v2.52 added structured listing subcommands but did not formally verify that every per-article drilldown URL the listings return actually resolves to substantive content via the bridge. v2.52 also did not cover the **Microsoft MSRC Update Guide** (Angular SPA at `https://msrc.microsoft.com/update-guide/`) — every route on that domain returns a ~1 KB JavaScript shell, so without bridge support the routine cannot get Microsoft's Patch Tuesday data even though Microsoft publishes both the human-facing SPA *and* the public unauthenticated JSON APIs that back it.
+v2.53 added structured listing subcommands but did not formally verify that every per-article drilldown URL the listings return actually resolves to substantive content via the bridge. v2.53 also did not cover the **Microsoft MSRC Update Guide** (Angular SPA at `https://msrc.microsoft.com/update-guide/`) — every route on that domain returns a ~1 KB JavaScript shell, so without bridge support the routine cannot get Microsoft's Patch Tuesday data even though Microsoft publishes both the human-facing SPA *and* the public unauthenticated JSON APIs that back it.
 
 The user-named sample URLs that need to return relevant content:
 - `https://msrc.microsoft.com/update-guide/`
@@ -136,7 +136,7 @@ All three MSRC routes are SPA-only; the Security Blog landing is server-rendered
 
 ### What changed
 
-**`tools/fetch_source.py` — banner v2.52 → v2.53.**
+**`tools/fetch_source.py` — banner v2.53 → v2.54.**
 
 1. **`msrc cvrf <YYYY-Mon>`** — fetches `https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/<release>`, returns full CVRF JSON. Verified 2026-May = 494 vulnerabilities, ~4.6 MB.
 2. **`msrc cve <CVE-ID>`** — fetches `https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability/<CVE>`, returns per-CVE detail JSON with `cveNumber`, `cveTitle`, `releaseNumber`, `releaseDate`, `vulnType`, `publiclyDisclosed`, `exploited`, `baseScore`, `impact`, `description` (HTML), `cweList`, `acknowledgements`, `articles`. Verified CVE-2026-41089 = Windows Netlogon RCE CVSS 9.8.
@@ -149,7 +149,7 @@ All three MSRC routes are SPA-only; the Security Blog landing is server-rendered
 
 **MSRC OData `$orderby` constraint.** The SUG OData backend rejects multi-field sorts with HTTP 500. `msrc release` and `msrc recent` now use a single-field `$orderby=releaseDate desc` (the publisher's natural sort).
 
-**End-to-end drilldown verification.** Every v2.52 listing subcommand was re-tested against its drilldown:
+**End-to-end drilldown verification.** Every v2.53 listing subcommand was re-tested against its drilldown:
 
 | Listing → Drilldown | Verified |
 |---|---|
@@ -161,14 +161,14 @@ All three MSRC routes are SPA-only; the Security Blog landing is server-rendered
 | `msrc release` → `msrc cve <id>` | CVE-2026-41615 Authenticator, CVSS 9.6, full per-CVE detail |
 | `msft-secblog recent` → `url <link>` | 2026-05-14 Kazuar botnet writeup, 326 KB, full article body |
 
-The NCSC-NL chain confirms the v2.51 problem area (speculative advisory-ID 404s) is fully resolved: `ncsc-nl recent` returns parsed IDs from the RSS title field, the agent feeds them directly into `ncsc-nl csaf <id>` for the data.
+The NCSC-NL chain confirms the v2.52 problem area (speculative advisory-ID 404s) is fully resolved: `ncsc-nl recent` returns parsed IDs from the RSS title field, the agent feeds them directly into `ncsc-nl csaf <id>` for the data.
 
 **`.claude/agents/cti-research.md` § Bridge fetcher rewritten** — explicit "listing → drilldown" pattern for every structured subcommand, with the verified drilldown sizes and content patterns. New § "Microsoft MSRC Update Guide" documents the SPA / API mismatch and the citation rule (cite the human-facing SPA URL, fetch from the JSON API). New § "Microsoft Security Blog" notes the `msft-secblog recent` shortcut over `url`-fetching the landing page.
 
-**Daily + weekly prompt banners — v2.52 → v2.53.** Banner-only bump; the operational changes live in the sub-agent definition. Anti-fetch hard invariants (META #16 / W-INV-3) unchanged.
+**Daily + weekly prompt banners — v2.53 → v2.54.** Banner-only bump; the operational changes live in the sub-agent definition. Anti-fetch hard invariants (META #16 / W-INV-3) unchanged.
 
 ### What stays
-Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.51 META #16 / W-INV-3) unchanged — main agent still does no source fetching during Phase 1 / 2; this release improves sub-agent reach, not main-agent scope. Allowlist-removed (v2.52), keys-only digest (v2.51), tech-depth taxonomy in sub-agent (v2.51), Phase 0 token-budget guards (v2.50), verifier compact-summary contract (v2.50), early-exit on low-defect convergence (v2.50), 5-iteration verifier cap with model rotation (v2.47), URL-liveness ledger + deterministic `run_id` (v2.47) all unchanged. `tools/check_brief.py` unchanged.
+Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent anti-fetch invariants (v2.52 META #16 / W-INV-3) unchanged — main agent still does no source fetching during Phase 1 / 2; this release improves sub-agent reach, not main-agent scope. Allowlist-removed (v2.53), keys-only digest (v2.52), tech-depth taxonomy in sub-agent (v2.52), Phase 0 token-budget guards (v2.50), verifier compact-summary contract (v2.50), early-exit on low-defect convergence (v2.50), 5-iteration verifier cap with model rotation (v2.47), URL-liveness ledger + deterministic `run_id` (v2.47) all unchanged. `tools/check_brief.py` unchanged.
 
 ### Migration note for sub-agent callers
 - **MSRC Patch Tuesday coverage** now goes `msrc releases 3` (discover newest tag) → `msrc release <tag> N` (enumerate exploitation-status flags) → `msrc cve <id>` per interesting CVE. The Update Guide SPA URL remains the citation URL.
@@ -177,7 +177,7 @@ Every editorial invariant unchanged. PD-1 through PD-13 unchanged. Main-agent an
 
 ---
 
-## 2.52 — 2026-05-15 (bridge fetcher: allowlist removed, structured discovery feeds for JS-rendered listings, Wayback Machine fallback for Cloudflare-blocked hosts)
+## 2.53 — 2026-05-15 (bridge fetcher: allowlist removed, structured discovery feeds for JS-rendered listings, Wayback Machine fallback for Cloudflare-blocked hosts)
 
 ### Why
 Forensic review of the last 5 runs' `fetch_failures` ledger (47 failure records across 25 distinct sources) surfaced four recurring root causes:
@@ -189,7 +189,7 @@ Forensic review of the last 5 runs' `fetch_failures` ledger (47 failure records 
 
 ### What changed
 
-**`tools/fetch_source.py` — banner v2.49 → v2.52.**
+**`tools/fetch_source.py` — banner v2.49 → v2.53.**
 
 1. **`ALLOWED_HOSTS` removed.** The bridge no longer enforces a static host allowlist. Every HTTPS publisher is reachable. The deeper SSRF defences are unchanged and remain the gate that matters: HTTPS-only (`_check_url`), resolved-IP deny list (`_resolve_and_check` refuses loopback, link-local, private, multicast, reserved, unspecified, and cloud-metadata endpoints 169.254.169.254 / 100.100.100.200 / fd00:ec2::254), redirect re-validation (`SafeRedirectHandler` re-runs `_check_url` on every 30x destination), body-size cap (25 MB HTML / 64 MB JSON), read-only-by-design (no posts, no auth, no cookies, no JS, stdlib-only).
 
@@ -216,10 +216,10 @@ Forensic review of the last 5 runs' `fetch_failures` ledger (47 failure records 
 
 **`.claude/agents/cti-research.md` § Bridge fetcher rewritten.** New table separates structured discovery feeds (the `cert-eu recent` / `ncsc-nl recent` / `ico-uk enforcement` / `sec-edgar 8k` group) from per-host recipes. Adds explicit Wayback-fallback rows for Cloudflare-blocked hosts. Documents the empty-snapshot detection, size filter, recency caveat (Wayback snapshots may be days / weeks out-of-window — `snapshot_ts` is preserved verbatim so the agent applies PD-7 itself).
 
-**Daily + weekly prompt banners — v2.51 → v2.52.** Banner-only bump; the sub-agent definition carries the operational changes per the v2.51 "bridge table lives in the sub-agent" refactor. The anti-fetch hard invariants (META #16 / W-INV-3) are unchanged — the main agent still does no source fetching during Phase 1 / Phase 2; the bridge improvements raise sub-agent fetch quality, not main-agent fetch scope.
+**Daily + weekly prompt banners — v2.52 → v2.53.** Banner-only bump; the sub-agent definition carries the operational changes per the v2.52 "bridge table lives in the sub-agent" refactor. The anti-fetch hard invariants (META #16 / W-INV-3) are unchanged — the main agent still does no source fetching during Phase 1 / Phase 2; the bridge improvements raise sub-agent fetch quality, not main-agent fetch scope.
 
 ### What stays
-Every editorial invariant — AI-content notice, no IOCs, no vanity metrics, English output, two-source verification with national-CERT carve-out, feature-branch-only publishing chain, Phase 5.5 / 4.5 mechanical gate, mandatory at-least-one verification iteration, F1–F12 finding categories, per-item metadata footer using taxonomy values, memory commits, PD-1 through PD-13, the 5-iteration verifier cap with model rotation and early-exit on low-defect convergence. The main agent's anti-fetch invariants (v2.51 META #16 / W-INV-3) are unchanged. The fetch_failures rich shape, URL-liveness ledger, deterministic `run_id`, per-agent timestamp capture, verifier compact-summary contract are unchanged. The Phase 0 keys-only digest (v2.51) is unchanged. `tools/check_brief.py` is unchanged — the bridge improvements happen below the gate.
+Every editorial invariant — AI-content notice, no IOCs, no vanity metrics, English output, two-source verification with national-CERT carve-out, feature-branch-only publishing chain, Phase 5.5 / 4.5 mechanical gate, mandatory at-least-one verification iteration, F1–F12 finding categories, per-item metadata footer using taxonomy values, memory commits, PD-1 through PD-13, the 5-iteration verifier cap with model rotation and early-exit on low-defect convergence. The main agent's anti-fetch invariants (v2.52 META #16 / W-INV-3) are unchanged. The fetch_failures rich shape, URL-liveness ledger, deterministic `run_id`, per-agent timestamp capture, verifier compact-summary contract are unchanged. The Phase 0 keys-only digest (v2.52) is unchanged. `tools/check_brief.py` is unchanged — the bridge improvements happen below the gate.
 
 ### Migration note for sub-agent callers
 The `ncsc-nl recent` subcommand is **strongly preferred** over speculative `ncsc-nl csaf <guessed-id>` calls. The 2026-05-12 / 2026-05-13 runs wasted ~6 min total on 4 speculative IDs. Always `recent` first, then `csaf <id-from-recent>`.
@@ -228,7 +228,7 @@ The `cert-fr avis-recent` / `cert-fr actu-recent` / `cert-eu recent` / `ico-uk e
 
 ---
 
-## 2.51 — 2026-05-15 (anti-classifier-trip: forbid main-agent source fetching during Phase 1/2, move bridge table + technical-depth taxonomy into sub-agent, keys-only digest for main agent)
+## 2.52 — 2026-05-15 (anti-classifier-trip: forbid main-agent source fetching during Phase 1/2, move bridge table + technical-depth taxonomy into sub-agent, keys-only digest for main agent)
 
 ### Why
 Two consecutive routine runs (2026-05-13 daily, 2026-05-15 daily transcripts on file) died mid-Phase-2 with `API Error: ... violative cyber content ... blocked under Anthropic's Usage Policy` and **never wrote a brief** — the worst PD-1 (`Always write the file`) violation. The shared failure mode in both transcripts was identical:
@@ -266,6 +266,42 @@ The architectural defect: **the main agent was duplicating sub-agent work AND pu
 
 ### What stays
 Every editorial invariant — AI-content notice, no IOCs, no vanity metrics, English output, two-source verification with national-CERT carve-out, feature-branch-only publishing chain, Phase 5.5 / Phase 4.5 mechanical self-check gate, mandatory at-least-one verification iteration, 5-iteration verifier cap with model rotation, F1–F12 finding categories, per-item metadata footer using taxonomy values from `site/taxonomy.yaml`, memory commits, fetch_failures rich shape, URL-liveness ledger, deterministic `run_id`, per-agent timestamp capture, verifier compact-summary contract, early-exit on low-defect convergence — is unchanged. PD-1 through PD-13 unchanged. The 30-min sub-agent wall-clock cap unchanged. The sub-agent research contract unchanged (same `**Model:**` + `**Timestamps:**` self-identification, same Discovery-trace shape, same `Sources:` block, same `## Coverage gaps` and `## Fetch failures` sections, same per-CVE-table return shape for S1). `tools/check_brief.py` is unchanged — the prompts moved content around the script, not the gates the script enforces. The full `prior_coverage.json` is still on disk for the sub-agents to read; only the main agent's `Read` target changed.
+## 2.51 — 2026-05-15 (sources.json schema gate: canonical candidate shape + `tools/check_brief.py` mechanical validator)
+
+### Why
+The 2026-05-15 daily routine added a new candidate source (`depthfirst`) to `sources/sources.json` with `"category": "research"` (string) instead of `["research"]` (list). Every other entry in the file uses a list, and `site/build.py` iterates `category` everywhere it touches a source (`s.get("category") or []` patterns) — when the value is a string, Python iterates it character-by-character, producing wrong category tags or crashing the `+` between str and list. The brief itself passed `tools/check_brief.py` (the schema was never checked) and `site/build.py` (the routine doesn't run the full build pre-commit), but the `deploy-site.yml` GitHub Actions workflow that rebuilds `gh-pages` on every push to `main` then failed — the brief was on `main` but the public site at `https://ctipilot.ch/` did not rebuild. A follow-up commit patched the data (`a624ff2`) and added a defensive helper for the related run-log shape drift; this changelog entry covers the **preventive** side.
+
+The root cause is that the source-add bullet under Phase 5 → `sources/sources.json` was under-specified: it instructed the autonomous routine to "append `status: "candidate"`, `notes: "discovered YYYY-MM-DD via {source-id}"`" with no example, no field list, no shape rules. The routine pattern-matched the surrounding entries inconsistently — caught `category`, dropped from a list to a string, used `name` instead of `publisher`, omitted `reliability` / `language` / `fetch_method` / `consecutive_failures`. A clearer prompt would have prevented this regression; a mechanical gate guarantees the next drift is caught before push, not after deploy.
+
+### What changed
+
+**`tools/check_brief.py` — new `check_sources_schema()` check, wired into the Phase 5.5 gate**. Reads the parsed `sources/sources.json` from `check_state_json_valid()` and validates every source entry against an explicit schema:
+
+- **Top-level** must contain `schema_version`, `categories`, `reliability_tiers`, `statuses`, `fetch_methods`, `sources`.
+- **Every source FAILs the commit on**:
+  - missing or non-string `id`; duplicate `id`; missing or non-http(s) `url`;
+  - missing `category` **or** `category` that is not a JSON list (★ the 2026-05-15 regression);
+  - empty `category`; `category` value not in the top-level `categories` vocabulary;
+  - missing `status` or `status` not in `{active, candidate, demoted}`;
+  - missing `publisher` (including entries that wrote `name` instead — surfaced explicitly so the autonomous routine sees the rename);
+  - missing `notes`;
+  - `active` or `demoted` source missing `reliability` / `fetch_method` / `language` / `consecutive_failures`, or with unknown vocab values;
+  - `language` not a non-empty list of strings; `consecutive_failures` not an int; `last_successful_fetch` not a YYYY-MM-DD string or null.
+- **WARN-only advisory**: candidate source missing recommended `publisher` / `reliability` / `language` / `fetch_method` — the candidate is not blocking, but the prompt now describes the canonical candidate shape so this warning shouldn't fire on routine adds.
+
+The check is invoked from `run_checks()` directly after the existing `check_sources_touched_today()` so the schema gate and the bookkeeping gate share the same parsed view. Both run for daily and weekly briefs (the schema check is brief-kind-agnostic — it validates the file, not the brief).
+
+**`prompts/daily-cti-brief.md`** — Banner v2.50 → **v2.51**. Phase 5 → `sources/sources.json` rewritten: the one-line "Discovery → candidate" bullet expanded to a **canonical candidate JSON template** with every field, the documented type for each, the controlled-vocab pointer for `category` / `status` / `reliability` / `fetch_method`, and four explicit "hard shape rules" — `category` is always a list (even with one value), the field is `publisher` (never `name`), vocab values must come from the top-level dicts, every active/demoted source carries the full field set. Closes with an explicit reference to the `sources-schema` check so a reader looking for the source of truth follows the link to `tools/check_brief.py`.
+
+**`prompts/weekly-summary.md`** — Banner v2.50 → **v2.51** (lockstep). The Phase 4 `sources/sources.json` paragraph gains a pointer to the daily prompt's canonical-candidate template + the `sources-schema` check name, so a weekly-only reader doesn't miss the gate.
+
+**`sources/sources.json`** — `depthfirst` entry brought to the canonical candidate shape: renamed `name` → `publisher`, added `reliability: "MEDIUM"` (genuine but unproven), `language: ["en"]`, `fetch_method: "webfetch"`, `consecutive_failures: 0`, dropped the redundant `added` field (date is already in `notes`), kept `category: ["research"]` (the list shape patched in `a624ff2`). Now passes `sources-schema` cleanly.
+
+### What stays
+- Every existing source-lifecycle rule (one new candidate per run, append-only `notes`, `consecutive_quiet_periods` content-only demotion, transport-error 403/429/503/5xx never demotes, etc.) is unchanged. v2.51 specifies the **shape** of the entry the routine writes; the **lifecycle** of the source is the same as v2.50.
+- The four state files + `sources/sources.json` continue to auto-resolve on `origin/main` sync (`state/*` → ours, `sources/sources.json` → theirs). The schema check runs against the local merged view, so a conflict-driven shape regression on either side would be caught.
+- The verification sub-agent contract is untouched — `sources-schema` is a mechanical gate, not an editorial concern.
+
 
 ---
 

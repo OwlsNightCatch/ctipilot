@@ -1198,6 +1198,148 @@ def _split_trailing_footer(body: str) -> tuple[dict[str, Any] | None, str]:
     return None, body
 
 
+_BULLET_TOP_RE = re.compile(r"^([-*])\s+(\S.*)$")
+# Inline footer suffix split: a footer span (`— *Source: …*` or `- *Source: …*`)
+# at the END of a bullet line — separated from the prose by a space-flanked
+# em-dash or hyphen. Anchored with `\s` on the left so it does not split
+# mid-word, and with the asterisk-terminated footer body on the right.
+_BULLET_INLINE_FOOTER_RE = re.compile(
+    r"^(?P<head>.*?)\s+(?P<footer>[—-]\s*\*[^*]+\*)\s*$"
+)
+
+
+def _extract_bullets_with_footers(
+    body_md: str,
+) -> tuple[str, list[dict[str, Any]]]:
+    """Detect a section body shaped as a list of bullets each carrying its
+    own metadata footer.
+
+    Two flavours are recognised:
+      A) Block footer — a 2-space-indented `— *Source: ...*` line directly
+         below the bullet, separated by a blank line:
+
+             - **Action.** Body prose. See [§ X](#anchor).
+
+               — *Source: [...](URL) · Tags: ... · Region: ...*
+
+      B) Inline footer — a trailing `— *Source: ...*` span at the end of
+         the bullet's text on the same line:
+
+             - **Action.** Body prose. See § X — *Source: [...](URL) · Tags: ...*
+
+    Returns `(preamble_md, bullet_items)` where `bullet_items` is a list of
+    `{body_md, footer}` dicts (footer is the parsed dict from
+    `parse_footer_line`). The caller renders each bullet through
+    `render_footer_html` so Tags / Region / CVE / etc. display as pills
+    instead of italic prose.
+
+    Falls back to `(body_md, [])` when the section does not match the
+    bullet-with-footer shape — caller then renders the body as plain
+    markdown via the existing path. Requires EVERY bullet in the section
+    to have a parseable footer; a partial match is treated as no match so
+    we never silently demote a footerless action.
+    """
+    lines = body_md.replace("\r\n", "\n").split("\n")
+    i = 0
+    n = len(lines)
+    # Skip leading blanks.
+    while i < n and not lines[i].strip():
+        i += 1
+    # Gather preamble paragraphs (anything before the first bullet).
+    preamble_lines: list[str] = []
+    while i < n and not _BULLET_TOP_RE.match(lines[i]):
+        preamble_lines.append(lines[i])
+        i += 1
+    preamble_md = "\n".join(preamble_lines).strip()
+    if i >= n:
+        return body_md, []
+
+    bullets: list[dict[str, Any]] = []
+    while i < n:
+        m = _BULLET_TOP_RE.match(lines[i])
+        if not m:
+            # Non-bullet content after a bullet run — caller may want to
+            # render this as trailing prose, but the bullet-with-footer
+            # pattern is broken. Bail.
+            return body_md, []
+        bullet_body_lines: list[str] = [m.group(2)]
+        i += 1
+        # Collect continuation lines for this bullet. The bullet ends at
+        # the next top-level bullet, or at unindented non-blank content
+        # that isn't a continuation.
+        while i < n:
+            line = lines[i]
+            if not line.strip():
+                # Blank — peek ahead.
+                j = i + 1
+                while j < n and not lines[j].strip():
+                    j += 1
+                if j >= n:
+                    i = j
+                    break
+                if _BULLET_TOP_RE.match(lines[j]):
+                    i = j
+                    break
+                if lines[j].startswith("  "):
+                    # Indented paragraph below the blank belongs to this bullet.
+                    bullet_body_lines.append("")
+                    i += 1
+                    continue
+                # Non-indented non-bullet content — bullet ends, caller decides.
+                i = j
+                break
+            if _BULLET_TOP_RE.match(line):
+                break
+            if line.startswith("  "):
+                bullet_body_lines.append(line[2:])
+                i += 1
+                continue
+            # Loose continuation (no indent, no blank line above) — accept
+            # as part of the bullet so single-line bullets with no break
+            # still work.
+            bullet_body_lines.append(line)
+            i += 1
+
+        # Trim trailing blanks.
+        while bullet_body_lines and not bullet_body_lines[-1].strip():
+            bullet_body_lines.pop()
+
+        footer: dict[str, Any] | None = None
+        # Flavour A: block footer as the last line of the bullet body.
+        if bullet_body_lines:
+            block_candidate = parse_footer_line(bullet_body_lines[-1])
+            if block_candidate:
+                footer = block_candidate
+                bullet_body_lines.pop()
+                while bullet_body_lines and not bullet_body_lines[-1].strip():
+                    bullet_body_lines.pop()
+        # Flavour B: inline footer suffix on the last non-empty line.
+        if footer is None and bullet_body_lines:
+            last = bullet_body_lines[-1]
+            mi = _BULLET_INLINE_FOOTER_RE.match(last)
+            if mi:
+                inline_candidate = parse_footer_line(mi.group("footer"))
+                if inline_candidate:
+                    footer = inline_candidate
+                    bullet_body_lines[-1] = mi.group("head").rstrip()
+                    if not bullet_body_lines[-1]:
+                        bullet_body_lines.pop()
+        if footer is None:
+            # Bullet without a parseable footer — pattern doesn't hold for
+            # this section, abandon.
+            return body_md, []
+        bullets.append(
+            {
+                "body_md": "\n".join(bullet_body_lines).strip(),
+                "footer": footer,
+            }
+        )
+
+    if not bullets:
+        return body_md, []
+    return preamble_md, bullets
+
+
 def parse_brief(path: Path) -> dict[str, Any]:
     """Parse a brief Markdown file into a structured dict.
 
@@ -1298,10 +1440,20 @@ def parse_brief(path: Path) -> dict[str, Any]:
         # render as raw italic Markdown — promote them into the same
         # structured-footer path so the rendered page and the per-item
         # RSS feed see them as first-class metadata.
+        #
+        # § 6 Action Items uses a third shape: a list of bullets, each
+        # carrying its own per-bullet metadata footer (block or inline).
+        # Detect that first so each action's Tags / Region / CVE render
+        # as pill blocks underneath the bullet, not as raw italic prose.
         section_footer: dict[str, Any] | None = None
         section_body_md = body_text
+        bullet_items: list[dict[str, Any]] = []
         if not items:
-            section_footer, section_body_md = _split_trailing_footer(body_text)
+            preamble_md, bullet_items = _extract_bullets_with_footers(body_text)
+            if bullet_items:
+                section_body_md = preamble_md
+            else:
+                section_footer, section_body_md = _split_trailing_footer(body_text)
 
         sections.append(
             {
@@ -1311,6 +1463,7 @@ def parse_brief(path: Path) -> dict[str, Any]:
                 "items": items,
                 "body_md": section_body_md,
                 "section_footer": section_footer,
+                "bullet_items": bullet_items,
             }
         )
 
@@ -2369,6 +2522,29 @@ def render_brief_page(
             # been split out by parse_brief and is rendered as a
             # structured pill block below the section body.
             inner.append(render_markdown(sec["body_md"], base_url=md_anchor_base))
+            bullet_items = sec.get("bullet_items") or []
+            if bullet_items:
+                # § 6 Action Items (and any section that uses the same
+                # bullet-with-per-bullet-footer shape). Render each bullet
+                # with its Tags / Region / CVE / etc. as pill blocks,
+                # matching the per-H3-item footer styling so the metadata
+                # is visually consistent across the brief.
+                bullet_html_parts = ['<ul class="action-list">']
+                for bi in bullet_items:
+                    body_html = render_markdown(bi["body_md"], base_url=md_anchor_base)
+                    footer_html = render_footer_html(bi["footer"], prefix=prefix)
+                    tags_attr = " ".join(bi["footer"].get("tags", []))
+                    regions_attr = " ".join(bi["footer"].get("regions", []))
+                    bullet_html_parts.append(
+                        f'<li class="action-list__item" '
+                        f'data-tags="{_escape(tags_attr)}" '
+                        f'data-regions="{_escape(regions_attr)}">'
+                        f'<div class="action-list__body">{body_html}</div>'
+                        f'{footer_html}'
+                        f'</li>'
+                    )
+                bullet_html_parts.append("</ul>")
+                inner.append("".join(bullet_html_parts))
             if sec.get("section_footer"):
                 inner.append(render_footer_html(sec["section_footer"], prefix=prefix))
         # Default-collapse the Verification Notes section — it's an
@@ -4019,6 +4195,18 @@ def _ops_pill(text: str, *, kind: str = "neutral") -> str:
     return f'<span class="ops-pill ops-pill--{kind}">{_escape(text)}</span>'
 
 
+def _ops_count_sources(value: Any) -> int:
+    # Sub-agent telemetry records sources_attempted / sources_used as either a
+    # list of source IDs (pre-v2.50) or an integer count (v2.50+). Accept both.
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return max(0, value)
+    if isinstance(value, list):
+        return len(value)
+    return 0
+
+
 def render_ops_page(
     run_log: dict[str, Any] | None,
     sources: list[dict[str, Any]] | None,
@@ -4181,8 +4369,8 @@ def render_ops_page(
             if a.get("returned") is False:
                 cells.append((0.0, f"{r.get('date','?')} {k}: stalled"))
                 continue
-            attempted = len(a.get("sources_attempted") or [])
-            used = len(a.get("sources_used") or [])
+            attempted = _ops_count_sources(a.get("sources_attempted"))
+            used = _ops_count_sources(a.get("sources_used"))
             ratio = (used / attempted) if attempted else 0.0
             cells.append((ratio, f"{r.get('date','?')} {k}: {used}/{attempted} sources used, {a.get('items_returned', 0)} items"))
         if present:
@@ -4767,8 +4955,8 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     model_name = data.get("model") or "unknown"
     model_id = data.get("model_id") or ""
     colour = _ops_color_for_model(model_name, palette)
-    used = len(data.get("sources_used") or [])
-    attempted = len(data.get("sources_attempted") or [])
+    used = _ops_count_sources(data.get("sources_used"))
+    attempted = _ops_count_sources(data.get("sources_attempted"))
     items = data.get("items_returned") or 0
     tele = data.get("telemetry") or {}
 
@@ -4903,8 +5091,8 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             return '<span class="muted">—</span>'
         if a.get("returned") is False:
             return '<span class="ops-pill ops-pill--crit">stalled</span>'
-        used = len(a.get("sources_used") or [])
-        attempted = len(a.get("sources_attempted") or [])
+        used = _ops_count_sources(a.get("sources_used"))
+        attempted = _ops_count_sources(a.get("sources_attempted"))
         items = a.get("items_returned") or 0
         m = a.get("model") or ""
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
