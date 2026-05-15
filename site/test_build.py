@@ -22,6 +22,7 @@ SITE = Path(__file__).resolve().parent
 sys.path.insert(0, str(SITE))
 from build import (  # noqa: E402
     _cdata_safe,
+    _extract_bullets_with_footers,
     _safe_url,
     _strip_controls,
     _strip_footer_metadata_in_md,
@@ -726,6 +727,92 @@ xxe_external = (
 errs = _xml_validate(xxe_external)
 assert errs, "XML validator must refuse external DTD reference"
 print("  ok  external-DTD XML rejected with:", errs[0][:60])
+
+
+# ---------------------------------------------------------------------
+# _extract_bullets_with_footers — § 6 Action Items per-bullet footer
+# ---------------------------------------------------------------------
+print("== _extract_bullets_with_footers ==")
+
+block_footer_md = """
+- **Patch Cisco SD-WAN now** to a fixed release. See [§ 1](#x).
+
+  — *Source: [Cisco PSIRT](https://example.com/psirt) · Tags: actively-exploited, rce · Region: global*
+
+- **Audit NGINX configs** for vulnerable rewrite directives. See [§ 2](#y).
+
+  — *Source: [depthfirst research](https://example.com/df) · Tags: vulnerabilities, rce · Region: global*
+"""
+_, bullets = _extract_bullets_with_footers(block_footer_md)
+assert_eq("block footer flavour: bullet count", len(bullets), 2)
+if bullets:
+    assert_eq(
+        "block footer flavour: first bullet tags",
+        bullets[0]["footer"]["tags"],
+        ["actively-exploited", "rce"],
+    )
+    assert_eq(
+        "block footer flavour: first bullet region",
+        bullets[0]["footer"]["regions"],
+        ["global"],
+    )
+    assert_in(
+        "block footer flavour: first bullet body preserved",
+        "Patch Cisco SD-WAN now",
+        bullets[0]["body_md"],
+    )
+    assert_not_in(
+        "block footer flavour: footer stripped from body",
+        "Source:",
+        bullets[0]["body_md"],
+    )
+
+inline_footer_md = """
+- **Patch Fortinet** now. See § 2 — *Source: [Fortinet PSIRT](https://example.com/fortinet) · Tags: vulnerabilities, rce · Region: global*
+- **Audit npm lockfiles** for Mini Shai-Hulud. See § 5 — *Source: [StepSecurity](https://example.com/step) · Tags: supply-chain · Region: global*
+"""
+_, bullets = _extract_bullets_with_footers(inline_footer_md)
+assert_eq("inline footer flavour: bullet count", len(bullets), 2)
+if bullets:
+    assert_eq(
+        "inline footer flavour: first bullet tags",
+        bullets[0]["footer"]["tags"],
+        ["vulnerabilities", "rce"],
+    )
+    assert_in(
+        "inline footer flavour: first bullet body preserved",
+        "Patch Fortinet",
+        bullets[0]["body_md"],
+    )
+    assert_not_in(
+        "inline footer flavour: footer stripped from body",
+        "Source:",
+        bullets[0]["body_md"],
+    )
+
+# Mixed: one bullet has a footer, the other doesn't — the whole pattern
+# fails (all-or-nothing), and the caller falls back to plain rendering.
+mixed_md = """
+- **Patch Cisco** now. See § 1 — *Source: [Cisco PSIRT](https://example.com/cisco) · Tags: rce · Region: global*
+- **Generic advice** with no footer attached.
+"""
+preamble, bullets = _extract_bullets_with_footers(mixed_md)
+assert_eq("mixed pattern: returns empty list", bullets, [])
+assert_eq(
+    "mixed pattern: preamble equals original body",
+    preamble.strip(),
+    mixed_md.strip(),
+)
+
+# Preamble preserved when bullets all match.
+preamble_md = """
+Specific, derived from today's content only.
+
+- **Patch X** — *Source: [Vendor](https://example.com/v) · Tags: rce · Region: global*
+"""
+pre, bullets = _extract_bullets_with_footers(preamble_md)
+assert_eq("preamble preserved: bullet count", len(bullets), 1)
+assert_in("preamble preserved: preamble text", "Specific, derived", pre)
 
 
 # ---------------------------------------------------------------------
