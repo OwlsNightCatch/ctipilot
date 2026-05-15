@@ -4019,6 +4019,18 @@ def _ops_pill(text: str, *, kind: str = "neutral") -> str:
     return f'<span class="ops-pill ops-pill--{kind}">{_escape(text)}</span>'
 
 
+def _ops_count_sources(value: Any) -> int:
+    # Sub-agent telemetry records sources_attempted / sources_used as either a
+    # list of source IDs (pre-v2.50) or an integer count (v2.50+). Accept both.
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return max(0, value)
+    if isinstance(value, list):
+        return len(value)
+    return 0
+
+
 def render_ops_page(
     run_log: dict[str, Any] | None,
     sources: list[dict[str, Any]] | None,
@@ -4181,8 +4193,8 @@ def render_ops_page(
             if a.get("returned") is False:
                 cells.append((0.0, f"{r.get('date','?')} {k}: stalled"))
                 continue
-            attempted = len(a.get("sources_attempted") or [])
-            used = len(a.get("sources_used") or [])
+            attempted = _ops_count_sources(a.get("sources_attempted"))
+            used = _ops_count_sources(a.get("sources_used"))
             ratio = (used / attempted) if attempted else 0.0
             cells.append((ratio, f"{r.get('date','?')} {k}: {used}/{attempted} sources used, {a.get('items_returned', 0)} items"))
         if present:
@@ -4679,8 +4691,8 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     model_name = data.get("model") or "unknown"
     model_id = data.get("model_id") or ""
     colour = _ops_color_for_model(model_name, palette)
-    used = len(data.get("sources_used") or [])
-    attempted = len(data.get("sources_attempted") or [])
+    used = _ops_count_sources(data.get("sources_used"))
+    attempted = _ops_count_sources(data.get("sources_attempted"))
     items = data.get("items_returned") or 0
     tele = data.get("telemetry") or {}
 
@@ -4736,8 +4748,8 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             return '<span class="muted">—</span>'
         if a.get("returned") is False:
             return '<span class="ops-pill ops-pill--crit">stalled</span>'
-        used = len(a.get("sources_used") or [])
-        attempted = len(a.get("sources_attempted") or [])
+        used = _ops_count_sources(a.get("sources_used"))
+        attempted = _ops_count_sources(a.get("sources_attempted"))
         items = a.get("items_returned") or 0
         m = a.get("model") or ""
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
