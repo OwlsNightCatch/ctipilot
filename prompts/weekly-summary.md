@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.50 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.55 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -45,6 +45,7 @@ Anti-crash guards (same as daily prompt):
 7. **Two-stage publishing chain (Phase 5) is non-negotiable.** Each push tried once.
 8. **Take time on quality, not retries.**
 9. **Phase 4.7 verification + Phase 4.5 self-check are non-negotiable, but never block the publish.** Both gates run; if a gate cannot conclude inside its budget, ship what you have and log the unresolved finding in § 10. The CRITICAL header always wins.
+10. **Main agent does NO source fetching during Phase 2 (v2.51 — anti-classifier-trip).** While the two `cti-research` horizon sub-agents (W1 / W2) are running, the main agent MUST NOT call `WebFetch`, `WebSearch`, or `python3 tools/fetch_source.py`. Source-fetching is the sub-agents' exclusive job in Phase 2; their isolated contexts absorb the raw policy / regulator / annual-report / advisory content so the main agent's working context stays compositional rather than research-loaded. Two failure modes the rule prevents: (a) **duplicate work** — fetches the sub-agent was already going to do, wasted wall-clock and rate-limit budget; (b) **classifier trip** — accumulating raw CTI content (NCSC.ch / ICO / ANSSI / ENISA / regulator filings, breach-enforcement listings, exploit-detail vendor PSIRTs) on top of the prompt baseline + the Phase 0 digests has tripped Anthropic's "violative cyber content" classifier on past runs, killing the routine mid-Phase-3 with `API Error … Usage Policy` and **no published summary** (the worst CRITICAL violation). The only main-agent invocations of those tools are: Phase 3 verification spot-checks (per-item URL on a sub-agent's already-cited URL), Phase 4.7 verification-fix iterations (re-fetching one primary to replace a broken or generic URL the verifier flagged), and Phase 6 publish polling (`curl` on the site index — not a CTI fetch). Anything else: spawn another sub-agent. **The full bridge-fetcher recipe table lives in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher** — the sub-agents read it; the main agent does not. Hardened as W-INV-3.
 
 ---
 
@@ -150,12 +151,16 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
    The weekly covers the gap since the last *weekly* summary; the daily routine covers gaps since the last *daily* brief. The two routines run **independently** and self-coordinate via these gap-derived windows — the daily is primary operational coverage; the weekly is the consolidating view.
 
-3. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every daily brief in full into its own context — at 50–80 KB each, five dailies plus the previous weekly run the main agent ~100 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only those:
+3. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every daily brief in full into its own context — at 50–80 KB each, five dailies plus the previous weekly run the main agent ~100 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only the keys-only digest in the main agent's context:
 
    ```bash
    # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–9 of the previous weekly.
+   # Emits BOTH a full prior_coverage.json (for sub-agents to Read in their
+   # isolated contexts) AND a keys-only prior_coverage_keys.json (for the main
+   # agent — dedup index only, no titles / tldrs / URLs).
    python3 tools/build_prior_coverage.py "$RUN_ID" "$WINDOW_DAYS"
-   # → work/<run-id>/prior_coverage.json (~50 KB / 12 K tokens for a 7-day window)
+   # → work/<run-id>/prior_coverage.json       (~50 KB / 12 K tokens — full records)
+   # → work/<run-id>/prior_coverage_keys.json  (~4 KB / 1 K tokens — keys index)
 
    # Compact dedup digest of state files (CVE ids + recent records, item keys + recent
    # records, active-source ids, last-7-runs fetch-failure gaps).
@@ -164,9 +169,15 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
    #   for the four full state files)
    ```
 
-   Token budget reduction is roughly: full-Read approach ~110 K tokens before Phase 1; script-based approach ~30 K tokens. **The full state files are still on disk** — sub-agents `Read` them directly when needed; the main agent on-demand-`Read`s a specific daily-brief body only when composing a section that quotes one.
+   Token budget reduction: full-Read approach ~110 K tokens before Phase 1; v2.50 script-based approach ~30 K tokens; v2.51 keys-only-for-main-agent approach ~21 K tokens. **The full state files are still on disk** — sub-agents `Read` them directly when needed; the main agent on-demand-`Read`s a specific daily-brief body only when Phase 3 composition quotes one.
 
-4. **`Read work/${RUN_ID}/prior_coverage.json`.** This is the main agent's primary view of in-window coverage — every H3 with `{key, title, tldr_one_line, primary_source_url, date, brief_path, section}`. Use it to identify cross-day chains, multi-day campaigns, status updates, and §-1-vs-§-2 split decisions in Phase 1 *without* re-reading every daily.
+4. **`Read work/${RUN_ID}/prior_coverage_keys.json`** (v2.51 — keys-only). Dedup index for the main agent — `{key, date, brief_path, section}` per H3 with **no titles, no tldrs, no primary-source URLs**. That's all the main agent needs to answer "is this candidate already covered? yes/no" during Phase 1 list-building and §-1-vs-§-2 split decisions. Sub-agents read the full `prior_coverage.json` (with prose and URLs) in their isolated contexts. When you need the full record for a specific key (e.g. composing a § 7 status-update with the prior primary URL), `jq` the full file on-demand:
+
+   ```bash
+   jq '.records[] | select(.key == "<key>")' "work/${RUN_ID}/prior_coverage.json"
+   ```
+
+   Keeping the prose out of the main agent's working context cuts the dense-CTI baseline by ~8 K tokens and reduces cyber-content classifier risk on top of the prompt's own vocabulary load.
 
 5. **`Read work/${RUN_ID}/state-summary.json`.** This is the main agent's primary view of state — `cves.ids` (all CVE ids for dedup), `cves.recent` (recent ~14-day records), `items.keys` (all entity keys), `items.recent`, `sources.active_ids`, `runs.last_run`, and `runs.fetch_gaps_in_window` (sources flagged as gaps in 2+ recent runs — already rotation-priority candidates for W1/W2).
 
@@ -240,15 +251,16 @@ Per `Agent` call, the prompt is a thin per-domain envelope:
 7. **Today's ISO date** + **ISO week** so the sub-agent has anchors for "in-window" decisions.
 8. **URL-liveness ledger path** — `work/<run-id>/url-liveness.tsv` (pre-created empty by Phase 0). Every sub-agent appends one tab-separated line `<url>\t<status>\t<fetched_at_iso>` after every successful WebFetch / bridge fetch of a Source URL it cites. Phase 4.5's `tools/check_brief.py` reads this ledger and trusts its records over re-fetching every Source URL itself.
 
-### Reinforced rules for the main agent (same rules in Phase 3 compose / Phase 4.7 verification)
+### Reinforced rules — for the sub-agents during fetch, and for the main agent during Phase 3 spot-checks + Phase 4.7 re-fetches
 
-The sub-agents follow these rules from their system prompt; the main agent applies the same rules when consolidating daily-brief content into the weekly and when re-fetching during verification:
+**These rules belong to the `cti-research` sub-agent's operational system prompt — they govern fetching.** The full bridge-fetcher recipe table (cisa-kev / cisa-{advisories,news,directives} / ncsc-ch-security-hub / enisa-euvd / bsi-de / advisories-ncsc-nl / anssi-fr / cert-eu / cert-pl / ncsc-uk / databreaches-net / ico-uk / nccgroup / dragos / sygnia / ccn-cert-es / talos / prodaft / inside-it-ch / acn.gov.it), the `WebFetch` outbound-links template, the SPA-only-host structured-endpoint subcommands, and the discovery-trace shape all live in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) (§ Bridge fetcher, § `WebFetch`, § Source-link discipline, § Discovery trace). **The main agent does not read or follow the bridge-fetcher table** — it does no source fetching during Phase 2 (anti-crash guard #10 / W-INV-3), and during Phase 3 / Phase 4.7 single-URL spot-checks it calls `WebFetch` only on a per-article URL already in a sub-agent's `Sources:` block (the sub-agent already navigated the bridge). The main agent's only direct bridge call is the Phase 4.7 verification-fix re-fetch when the verifier flagged a broken URL — that one case uses `python3 tools/fetch_source.py url <new specific URL>`, never the listing-page subcommands.
 
-1. **Drill into curated sources.** Index pages, dashboards, listings are routing — citation always points to per-article / per-advisory detail URL. SPA dashboards (e.g. NCSC.ch CSH) need underlying JSON API endpoints fetched per-advisory; cite the canonical SPA detail URL the human would open.
-2. **`tools/fetch_source.py` MANDATORY for every host on the bridge allowlist** (v2.48 expanded; same table as the daily prompt — cisa-kev / cisa-{advisories,news,directives} / ncsc-ch-security-hub / enisa-euvd / bsi-de / advisories-ncsc-nl / anssi-fr / cert-eu / cert-pl / ncsc-uk / databreaches-net / ico-uk / nccgroup / dragos / sygnia / ccn-cert-es / talos / prodaft / inside-it-ch / acn.gov.it). Phase 4.5 FAILs the commit if `run_log.json.fetch_failures` lists 403/429 on a known-403 source id without bridge use, or an SPA-empty 200 on an SPA-only source without the structured-endpoint subcommand. **403 / SPA-empty on these hosts is transport-side, never demotes the source.**
-3. **Pivot from news to primary** until you reach vendor blog / CERT advisory / research-lab post / regulator filing. Two pivots normal; three fine. Roll-up sources (weekly handler diaries, weekly vendor digests, monthly aggregator summaries) are discovery only — follow the links, cite the primaries.
-4. **`WebFetch` outbound-links template** (in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md)) **not optional** — without the explicit "Outbound links" ask, `WebFetch` returns prose-only and the news → primary pivot collapses.
-5. **Source-link discipline** — only fetched URLs; specific page never landing; first link most primary, include every other URL as `· Additional source:`; news-only fallback acceptable when explicit (cite specific article URL, never homepage; flag in § 10); if unsure, drop.
+The two rules the main agent DOES apply when consolidating daily-brief content into the weekly and composing each section (these are about citation discipline, not fetching):
+
+1. **Drill into curated sources at citation time too.** If a sub-agent returned a homepage / listing / category-landing URL as a Source (it should not have, but happens), drop the item to § 10 rather than promoting the generic URL. Phase 4.5's `tools/check_brief.py` URL allowlist FAILs the commit on those patterns anyway — catch it before the script does.
+2. **Source-link discipline at composition time.** First link in every footer is the most primary the sub-agent returned (vendor PSIRT > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news). Include every other URL the sub-agent surfaced as `· Additional source:`. If unsure about a URL, drop the item to § 10.
+
+Phase 4.5 enforces both rules mechanically: `tools/check_brief.py` runs the URL allowlist on every footer's `Source:` and live-HEAD/GETs every URL. The main agent's job here is to not let bad URLs reach the commit, not to re-do the bridge work.
 
 ### W1 — Long-horizon ongoing developments
 
@@ -418,21 +430,23 @@ If you cannot determine your own model precisely, write `Anthropic Claude (speci
 
 **§ 10 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context.
 
-### Technical depth — what every item must include
+### Technical depth — what every item must include (sub-agent-owned vocabulary)
 
 Audience is **highly technical** (Tier 2/3 IR, threat hunters, detection engineers — same as the daily). Every item must give enough specificity to reason about detection, hunt, and hardening. **Surface-level talking points are a quality regression.** The weekly's consolidating role does NOT lower the technical bar — items get more synthesis context, not less specificity.
 
-For every item, where the source supports:
+Each item carries the technical specificity the linked source supports — at a minimum, where the source provides it:
 
-- **Exact vulnerable component / attack surface** — name the file / function / RPC interface / endpoint / config switch / handler / protocol parser / virtual server / service the source identifies. Whatever the source states; never substitute generic phrasing.
-- **Technique class with MITRE ATT&CK technique IDs** when the source provides them or mapping is unambiguous: `T1190 Exploit Public-Facing Application`, `T1059.001 PowerShell`, `T1505.003 Web Shell`, `T1557.001 LLMNR/NBT-NS Poisoning`, `T1068 Exploitation for Privilege Escalation`, `T1078.004 Cloud Accounts`, `T1556.006 MFA`, `T1611 Escape to Host`. Link to `attack.mitre.org`.
-- **Exploitation prerequisites** — auth state; default-config or only-when-X-is-enabled; prior foothold; auth scheme abused (NTLM relay, OAuth device-code, SAML response forgery, S4U2Self); privilege required.
-- **Affected and patched versions** to vendor-stated precision (`<= 14.1-12.30`, `before 2024.4`, `9.x prior to 9.6.10`, `cumulative update CU14 + KB5034762`). Don't round.
-- **Observed exploitation status** with named clusters when the source provides one (UNC####, Storm-####, TA####, APT##, CL-###-####, espionage-actor codename, ransomware-affiliate). Cite the source that named the cluster — never carry a cluster name without that source.
-- **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts.
-- **Affected sectors and regions** in footer's `Tags` / `Region` / `Sector` fields, not filler prose.
+- **Vulnerable component / attack surface** (file / function / RPC interface / endpoint / config switch the source names).
+- **Technique class with MITRE ATT&CK technique IDs** when the source provides them.
+- **Exploitation prerequisites** (auth state, default-config dependence, prior foothold, auth-scheme abuse).
+- **Affected and patched versions** to vendor-stated precision (don't round).
+- **Observed exploitation status** with the named cluster if the source provides one.
+- **Concrete defender takeaway** — behavioural detection concepts (which event ID / log source / EDR telemetry the source mentions) and hardening (which config toggle / GPO / policy / WAF rule / patch closes the path). **No IOCs.**
+- **Affected sectors and regions** in the footer's `Tags` / `Region` / `Sector` fields.
 
-A worked-good fragment showing this depth lives in [`prompts/brief-template.md`](brief-template.md) (illustrative npm supply-chain compromise with osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics). Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
+**The full taxonomy of what each of those means** — the prescriptive list of MITRE T-IDs, Sysmon / Windows / `auditd` event IDs, identity-protocol-abuse names (NTLM relay, OAuth device-code, SAML response forgery, S4U2Self), named-cluster patterns (UNC####, Storm-####, TA####, APT##, CL-###-####), affected-version phrasing — **lives in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Technical depth**. The sub-agents apply that vocabulary at research time and surface it verbatim in their returns; the main agent's job is to faithfully carry the sub-agent's specificity into the weekly, not to invent new technical detail on top.
+
+A worked-good fragment showing this depth lives in [`prompts/brief-template.md`](brief-template.md). **Don't invent technical detail the source did not state. Better to write less than to fabricate plausible-sounding specifics** (PD-1).
 
 ### Item granularity — one story per item
 
@@ -568,7 +582,7 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
 }
 ```
 
-Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap; `fetch_failures` = `[]` when none. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
+Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap. **`fetch_failures[]` (v2.55 tightened): log ONLY records where the recipe in `sources/sources.json` could not retrieve usable content AND no fallback worked AND `covered_anyway: false`.** Do NOT log successful bridge fetches that returned no in-window content (quiet days are success, not gaps); do NOT log WebFetch-403 outcomes on known-403 hosts where the documented bridge subcommand then succeeded; do NOT log SPA-empty landings handled by a structured-endpoint bridge subcommand. **`bridge_uses[]` (v2.55 — optional)** captures bridge-subcommand telemetry (`{id, method, outcome}`) so successful bridge invocations are tracked without contaminating the failure list. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
 
 ---
 
@@ -868,6 +882,7 @@ The weekly summary inherits the daily prompt's self-evolution authority and hard
 
 W-INV-1. **Every item answers W-PD-1's three questions.** Pure one-to-one daily summaries are not weekly content.
 W-INV-2. **§ 1 frames items as "what's on fire if no one acted"** — Mon-morning escalation register.
+W-INV-3. **Main agent does NO source fetching during Phase 2 (v2.51).** No `WebFetch`, no `WebSearch`, no `python3 tools/fetch_source.py`. Source-fetching is the W1 / W2 `cti-research` sub-agents' exclusive job in Phase 2 — they hold the raw policy / regulator / annual-report / advisory content in their isolated contexts so the main agent's working context stays compositional. The only main-agent invocations of those tools are: Phase 3 single-URL spot-checks on a sub-agent's already-cited URL, Phase 4.7 verification-fix re-fetches of one URL the verifier flagged, Phase 6 publish `curl` against `https://ctipilot.ch/`. Bridge-fetcher recipe table moved out of this prompt into [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher in the same release — sub-agents read it; main agent does not. This invariant exists because (a) duplicate fetches waste wall-clock + rate-limit budget, and (b) cumulative raw CTI content in main-agent context has tripped the cyber-content classifier mid-Phase-3 on past runs, killing the routine with `API Error … Usage Policy` and no published summary (the worst CRITICAL violation). The classifier reads the whole conversation — the smaller the main-agent CTI baseline, the more headroom for sub-agent returns + composition.
 
 ### Process for self-edits
 

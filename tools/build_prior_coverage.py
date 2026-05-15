@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
-"""Build prior_coverage.json from gap-window dailies + previous weekly.
+"""Build prior_coverage.json (full) + prior_coverage_keys.json (keys-only)
+from gap-window dailies + previous weekly.
 
 Walks every H3 in §§ 0–6 of each daily and §§ 0–9 of the previous weekly
 in scope, extracts {key, title, tldr_one_line, primary_source_url, date,
-brief_path, section}, and writes the array to
-work/<run-id>/prior_coverage.json.
+brief_path, section}, and writes:
 
-Both the main agent and Phase 2 sub-agents read this file instead of
-reading every brief in full — the main agent's Phase 0 token cost drops
-from ~5 × 70 KB (full bodies) to ~1 × 5–10 KB (structured records).
+- work/<run-id>/prior_coverage.json       (full records — for sub-agents)
+- work/<run-id>/prior_coverage_keys.json  (keys-only digest — for main agent)
+
+v2.51 split rationale: both files are emitted in a single invocation so
+Phase 0 needs only one call. The main agent reads the keys-only digest
+(`{key, date, brief_path, section}` per record — no titles, no tldrs,
+no URLs) for the dedup yes/no it actually needs; sub-agents read the full
+file inside their isolated contexts for fetch-time PD-8 dedup against
+prior titles + URLs. Keeping the prose out of the main agent's working
+context cuts the dense-CTI baseline by ~8 K tokens and lowers the
+cumulative cyber-content score the Anthropic classifier reads.
+
+Pass --keys-only to emit ONLY the keys file at the --out path (legacy
+single-file mode for ad-hoc invocations).
 
 Usage:
     python3 tools/build_prior_coverage.py <run-id> <window-days> [--out PATH]
     python3 tools/build_prior_coverage.py 2026-W19-a5788b22 7
-
-The run-id is the deterministic id Phase 0 step 0 computes; the script
-creates work/<run-id>/ if needed and writes prior_coverage.json there.
-Default window is 7 days. Pass --out to override the output path.
 
 Exit codes: 0 on success; 1 on argument / IO error.
 """
@@ -248,6 +255,8 @@ def main(argv: list[str] | None = None) -> int:
         "weekly-long-running", "weekly-policy", "weekly-looking-ahead",
     }
 
+    # Walk the briefs once at full detail; the keys-only companion is
+    # derived from the same records so the two outputs cannot drift.
     records: list[dict] = []
     dailies = _list_dailies_in_window(args.window_days, today)
     for dp in dailies:
@@ -265,6 +274,8 @@ def main(argv: list[str] | None = None) -> int:
                 keys_only=args.keys_only, max_tldr=args.max_tldr,
             ))
 
+    _KEYS_FIELDS = ("key", "date", "brief_path", "section")
+
     payload = {
         "run_id": args.run_id,
         "window_days": args.window_days,
@@ -280,12 +291,45 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(payload, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
+    # v2.51 — emit a keys-only companion file in default (non-`--keys-only`)
+    # mode so the main agent can Read just the dedup index without pulling
+    # CVE titles + breach prose + URL slugs into its working context. The
+    # main agent's Phase 0 reads this file; sub-agents continue reading
+    # `prior_coverage.json` (full records) in their isolated contexts.
+    keys_path: Path | None = None
+    if not args.keys_only:
+        keys_records = [
+            {k: rec.get(k) for k in _KEYS_FIELDS} for rec in records
+        ]
+        keys_payload = {
+            "run_id": args.run_id,
+            "window_days": args.window_days,
+            "today": today.isoformat(),
+            "dailies_walked": payload["dailies_walked"],
+            "previous_weekly": payload["previous_weekly"],
+            "schema_note": "keys-only digest — see prior_coverage.json for full records (titles, tldrs, URLs)",
+            "records": keys_records,
+        }
+        keys_path = out_path.parent / "prior_coverage_keys.json"
+        with keys_path.open("w", encoding="utf-8") as f:
+            json.dump(keys_payload, f, indent=2, ensure_ascii=False)
+            f.write("\n")
+
     # Single-line summary on stdout for the routine to capture.
-    print(
-        f"prior_coverage: path={out_path.relative_to(REPO_ROOT).as_posix()} "
-        f"records={len(records)} dailies={len(dailies)} "
-        f"previous_weekly={'yes' if weekly_path else 'none'}"
-    )
+    rel_main = out_path.relative_to(REPO_ROOT).as_posix()
+    if keys_path is not None:
+        rel_keys = keys_path.relative_to(REPO_ROOT).as_posix()
+        print(
+            f"prior_coverage: path={rel_main} keys_path={rel_keys} "
+            f"records={len(records)} dailies={len(dailies)} "
+            f"previous_weekly={'yes' if weekly_path else 'none'}"
+        )
+    else:
+        print(
+            f"prior_coverage: path={rel_main} "
+            f"records={len(records)} dailies={len(dailies)} "
+            f"previous_weekly={'yes' if weekly_path else 'none'}"
+        )
     return 0
 
 

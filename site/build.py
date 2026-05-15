@@ -4382,20 +4382,33 @@ _FETCH_FAILURE_CLASS_KIND: dict[str, str] = {
 
 
 def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -> str:
-    """v2.48 — render the rich fetch_failures shape as a table. Each row is
-    debug-actionable: id + url_tried + method chain + error class +
-    mitigation + recovery outcome. Legacy v2.47 entries render as a single
-    yellow row so the operator notices the schema gap."""
+    """v2.55 — render the (now-strict) fetch_failures shape as a "Coverage
+    gaps" table. Each row is a source the brief needed but couldn't get
+    via any recipe (bridge / Wayback / alternate publisher), so the row's
+    intrinsic meaning is "operator should look at this — content was
+    missing." Earlier versions of this table doubled as a bridge-use log;
+    v2.55 split that out into `bridge_uses[]` (rendered separately).
+
+    Soft-signal handling: a record with `covered_anyway: true` survived
+    in the data only because an older sub-agent prompt logged a recovered
+    fetch here — v2.55+ tells sub-agents not to do this, but the table
+    still tolerates such records and tags them yellow ("recovered — does
+    not belong here under v2.55 rules") so the operator can quickly
+    distinguish current-shape from drift.
+    """
     if not failures:
-        return '<p class="muted">No fetch failures recorded — every active source returned 2xx on first attempt.</p>'
+        return (
+            '<p class="muted">No coverage gaps in this run — every source '
+            'the brief needed returned usable content via its documented '
+            'recipe.</p>'
+        )
 
     rows: list[str] = []
     for f in failures:
         if not isinstance(f, dict):
-            rows.append('<tr><td colspan="6" class="muted">malformed fetch_failures entry (not a dict)</td></tr>')
+            rows.append('<tr><td colspan="5" class="muted">malformed entry (not a dict)</td></tr>')
             continue
         sid = f.get("id") or "?"
-        # Legacy back-compat: {id, code|status, note}.
         is_legacy = "url_tried" not in f and "attempted_methods" not in f
         url_tried = f.get("url_tried") or ""
         fetch_method = f.get("fetch_method") or ""
@@ -4406,6 +4419,10 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         mitigation = f.get("mitigation_applied") or ""
         covered_anyway = f.get("covered_anyway")
         kind = _FETCH_FAILURE_CLASS_KIND.get(error_class, "warn" if is_legacy else "neutral")
+
+        # v2.55 — yellow soft-signal flag when a recovered fetch is logged
+        # here against the new (stricter) schema rule.
+        soft_signal = (covered_anyway is True) and not is_legacy
 
         method_chain_html = ""
         if attempted:
@@ -4423,22 +4440,27 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
             if url_tried.startswith(("http://", "https://"))
             else f'<span class="mono muted">{_escape(url_tried[:80] or "—")}</span>'
         )
-        outcome_html = ""
-        if covered_anyway is True:
-            outcome_html = '<span class="ops-pill ops-pill--ok">covered</span>'
-        elif covered_anyway is False:
-            outcome_html = '<span class="ops-pill ops-pill--crit">coverage gap</span>'
-        else:
-            outcome_html = '<span class="ops-pill ops-pill--neutral">unknown</span>'
         mitigation_html = (
-            f'<span class="mono">{_escape(mitigation[:120])}</span>'
+            f'<span class="mono">{_escape(mitigation[:160])}</span>'
             if mitigation else '<span class="muted">none</span>'
         )
 
+        # Source cell — with the v2.55 soft-signal badge when applicable.
+        sid_extra = ""
+        if is_legacy:
+            sid_extra = '<div class="muted" style="font-size:0.72rem">legacy shape — needs detail</div>'
+        elif soft_signal:
+            sid_extra = (
+                '<div class="muted" style="font-size:0.72rem;color:var(--warn)">'
+                'covered via alternate — should NOT be in this list under v2.55'
+                '</div>'
+            )
+
+        row_class = ' class="ops-coverage-gaps__row--soft"' if soft_signal else ""
         rows.append(
-            '<tr>'
+            f'<tr{row_class}>'
             f'<td><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/" class="mono"><strong>{_escape(sid)}</strong></a>'
-            + (f'<div class="muted" style="font-size:0.72rem">legacy shape — needs detail</div>' if is_legacy else '')
+            + sid_extra
             + '</td>'
             f'<td>{url_html}</td>'
             f'<td>{method_chain_html}</td>'
@@ -4447,16 +4469,74 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
             + (f'<div class="muted" style="font-size:0.72rem;margin-top:0.15rem">{_escape(error_message[:160])}</div>' if error_message else '')
             + '</td>'
             f'<td>{mitigation_html}</td>'
-            f'<td>{outcome_html}</td>'
             '</tr>'
         )
     return (
-        '<div class="data-wrap"><table class="data ops-fetch-failures">'
+        '<div class="data-wrap"><table class="data ops-fetch-failures ops-coverage-gaps">'
         '<thead><tr>'
-        '<th>Source</th><th>URL tried</th><th>Method chain</th>'
-        '<th>Status / class / error</th><th>Mitigation</th><th>Outcome</th>'
+        '<th>Source (uncovered)</th><th>URL tried</th><th>Method chain</th>'
+        '<th>Status / class</th><th>What the agent did instead</th>'
         '</tr></thead>'
         '<tbody>' + "".join(rows) + '</tbody></table></div>'
+    )
+
+
+def _ops_render_bridge_uses(uses: list[dict[str, Any]] | None) -> str:
+    """v2.55 — render the optional bridge_uses[] telemetry as a compact
+    counter strip. Each entry is `{id, method, outcome}` from a sub-agent's
+    `## Bridge uses` section. Outcomes are grouped (ok / empty-feed /
+    item-not-found / other) so the operator sees bridge effectiveness at
+    a glance without the "is this a failure?" ambiguity that polluted the
+    pre-v2.55 fetch_failures table.
+    """
+    if not uses:
+        return ""
+
+    from collections import Counter
+    by_outcome: Counter[str] = Counter()
+    by_method: Counter[str] = Counter()
+    for u in uses:
+        if not isinstance(u, dict):
+            continue
+        by_outcome[u.get("outcome") or "unknown"] += 1
+        m = u.get("method") or ""
+        # Drop the source-id from bridge:url; group by subcommand only.
+        by_method[m.split(":", 1)[0] + (":" + m.split(":", 1)[1].split(" ", 1)[0] if ":" in m else "")] += 1
+
+    total = sum(by_outcome.values())
+    if total == 0:
+        return ""
+
+    outcome_chips = []
+    for outcome, label, kind in (
+        ("ok",             "ok",             "ok"),
+        ("empty-feed",     "empty feed",     "neutral"),
+        ("item-not-found", "item not found", "warn"),
+    ):
+        n = by_outcome.get(outcome, 0)
+        if n:
+            outcome_chips.append(
+                f'<span class="ops-pill ops-pill--{kind}"><span class="mono">{n}</span> {_escape(label)}</span>'
+            )
+    other = total - sum(by_outcome.get(k, 0) for k in ("ok", "empty-feed", "item-not-found"))
+    if other:
+        outcome_chips.append(
+            f'<span class="ops-pill ops-pill--neutral"><span class="mono">{other}</span> other</span>'
+        )
+
+    method_lines = [
+        f'<li><span class="mono">{_escape(method)}</span> <span class="muted">×{count}</span></li>'
+        for method, count in by_method.most_common(8)
+    ]
+
+    return (
+        '<div class="ops-bridge-uses">'
+        '<h3 class="ops-mini-head">Bridge invocations (latest run)</h3>'
+        f'<p class="muted">{total} bridge call{"s" if total != 1 else ""} this run — '
+        'these are <em>successful</em> bridge fetches (separate from "Coverage gaps" above).</p>'
+        f'<div class="ops-bridge-uses__chips">{"".join(outcome_chips)}</div>'
+        f'<ul class="ops-bridge-uses__methods">{"".join(method_lines)}</ul>'
+        '</div>'
     )
 
 
@@ -4592,11 +4672,16 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         sa_cards.append(_ops_render_subagent_card(k, a, palette))
     sa_grid = f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
 
-    # v2.48 — rich fetch_failures table. Each row carries id, url_tried,
-    # method chain, error_class + error_message, mitigation, recovery
-    # outcome. Legacy {id, code} entries render as a single yellow
-    # "needs-detail" row so the operator sees the gap.
+    # v2.55 — "Coverage gaps" table replaces the old "Fetch failures"
+    # one. Schema is the same; the rule (sub-agent prompt v2.55) is that
+    # only un-recoverable misses get logged here. Soft-signal records
+    # (covered_anyway: true that survived from the old v2.48–v2.54 rule)
+    # render with a yellow row badge.
     failures_html = _ops_render_fetch_failures(failures, prefix=prefix)
+    # v2.55 — `bridge_uses[]` is an optional sub-agent telemetry stream
+    # showing where the bridge was successfully invoked. Separate panel
+    # so success and failure don't share a list.
+    bridge_uses_html = _ops_render_bridge_uses(run.get("bridge_uses") or [])
 
     # v2.48 — verification iteration roll-up + per-finding detail for the
     # FINAL iteration (the cap-breach signal). Earlier iterations get a
@@ -4645,14 +4730,17 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
   </div>
 </div>
 
-<!-- Fetch failures table escapes the .ops-latest card so the 6-column
-     debug table can use the FULL main column width (~1280px) rather than
-     being squeezed into a 1/3-column slot. The .data-wrap inside scrolls
-     horizontally on narrow viewports; on desktop the columns breathe. -->
+<!-- v2.55 — table renamed "Coverage gaps" because that's what it
+     actually contains now (sub-agent prompt was tightened to only log
+     real, unrecovered failures). The bridge_uses panel below it tracks
+     bridge invocations separately so success and failure don't get
+     conflated in the same list. -->
 <div class="ops-latest__failures">
-  <h3 class="ops-mini-head">Fetch failures (latest run)</h3>
+  <h3 class="ops-mini-head">Coverage gaps (latest run)</h3>
+  <p class="muted ops-latest__failures-help">Sources the brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55.</p>
   {failures_html}
 </div>
+{bridge_uses_html}
 """
 
 
@@ -4684,23 +4772,100 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     items = data.get("items_returned") or 0
     tele = data.get("telemetry") or {}
 
-    def _t(name: str) -> str:
-        v = tele.get(name)
-        if v is None or v == "":
-            return ""
-        return f'<span class="ops-sa-card__tele-item"><span class="mono">{_escape(str(v))}</span> <span class="muted">{_escape(name.replace("_", " "))}</span></span>'
+    # v2.55 — labelled metric rows instead of inline-jumbled chips.
+    # The old layout printed "461 duration seconds 9 webfetch calls 18
+    # websearch calls 11 bridge fetches" on one line; with multiple metrics
+    # the operator could not scan which was which. The new layout pairs
+    # each metric with its label on a separate row + groups tool-call
+    # counts on one line because they belong together.
 
-    tele_html = "".join(_t(n) for n in ("duration_seconds", "webfetch_calls", "websearch_calls", "bridge_fetches", "tokens_in", "tokens_out", "urls_checked"))
-    if tele_html:
-        tele_block = f'<div class="ops-sa-card__tele">{tele_html}</div>'
-    else:
-        tele_block = '<p class="muted ops-sa-card__tele-empty">No self-telemetry reported.</p>'
+    def _format_duration(secs: Any) -> str | None:
+        try:
+            n = int(secs)
+        except (TypeError, ValueError):
+            return None
+        if n < 60:
+            return f"{n}s"
+        return f"{n // 60}m {n % 60:02d}s"
+
+    # Duration: prefer top-level duration_seconds (v2.47); fall back to telemetry.
+    dur_raw = data.get("duration_seconds")
+    if dur_raw in (None, ""):
+        dur_raw = tele.get("duration_seconds")
+    dur_str = _format_duration(dur_raw)
 
     used_pct = int((used / attempted) * 100) if attempted else 0
     bar = (
-        '<div class="ops-sa-card__bar">'
+        '<div class="ops-sa-card__bar" title="Sources that contributed to the brief / sources the agent was given to try">'
         f'<div class="ops-sa-card__bar-fill" style="width:{used_pct}%"></div>'
         '</div>'
+    )
+
+    # Sources line — explicit label + percentage so "12/18" is no longer ambiguous.
+    sources_line = (
+        f'<dt>Sources</dt>'
+        f'<dd><span class="mono">{used}</span><span class="muted"> of </span>'
+        f'<span class="mono">{attempted}</span>'
+        f' <span class="muted">contributed ({used_pct}%)</span></dd>'
+        if attempted
+        else f'<dt>Sources</dt><dd class="muted">none assigned</dd>'
+    )
+
+    # Items returned line.
+    items_line = (
+        f'<dt>Items returned</dt>'
+        f'<dd><span class="mono">{items}</span></dd>'
+    )
+
+    # Duration line.
+    duration_line = (
+        f'<dt>Duration</dt>'
+        f'<dd><span class="mono">{_escape(dur_str)}</span> '
+        f'<span class="muted">({dur_raw}s wall-clock)</span></dd>'
+        if dur_str else
+        '<dt>Duration</dt><dd class="muted">not reported</dd>'
+    )
+
+    # Tool calls grouped on ONE line — webfetch + websearch + bridge belong
+    # together; they're the agent's "how did I research" footprint.
+    def _tc(name: str) -> Any:
+        v = tele.get(name)
+        if v in (None, ""):
+            return None
+        return v
+
+    wf = _tc("webfetch_calls")
+    ws = _tc("websearch_calls")
+    br = _tc("bridge_fetches")
+    if wf is not None or ws is not None or br is not None:
+        tc_parts = []
+        if wf is not None:
+            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(wf))}</span> <span class="muted">WebFetch</span></span>')
+        if ws is not None:
+            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(ws))}</span> <span class="muted">WebSearch</span></span>')
+        if br is not None:
+            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(br))}</span> <span class="muted">bridge</span></span>')
+        toolcalls_line = (
+            f'<dt>Tool calls</dt>'
+            f'<dd class="ops-sa-card__toolcalls">{"".join(tc_parts)}</dd>'
+        )
+    else:
+        toolcalls_line = '<dt>Tool calls</dt><dd class="muted">no self-telemetry reported</dd>'
+
+    # Optional URL-checked / token usage if reported; render compactly below.
+    extras: list[str] = []
+    if _tc("urls_checked") is not None:
+        extras.append(f'<span class="ops-sa-card__extra"><span class="mono">{_escape(str(_tc("urls_checked")))}</span> <span class="muted">URLs checked</span></span>')
+    if _tc("tokens_in") is not None or _tc("tokens_out") is not None:
+        ti = _tc("tokens_in")
+        to = _tc("tokens_out")
+        if ti is not None:
+            extras.append(f'<span class="ops-sa-card__extra"><span class="mono">{_escape(str(ti))}</span> <span class="muted">tokens in</span></span>')
+        if to is not None:
+            extras.append(f'<span class="ops-sa-card__extra"><span class="mono">{_escape(str(to))}</span> <span class="muted">tokens out</span></span>')
+    extras_block = (
+        f'<div class="ops-sa-card__extras">{"".join(extras)}</div>'
+        if extras else ""
     )
 
     return f"""
@@ -4711,12 +4876,14 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     <span class="mono">{_escape(model_name)}</span>
     {f'<span class="mono muted">({_escape(model_id)})</span>' if model_id else ''}
   </div>
-  <div class="ops-sa-card__stats">
-    <div><span class="mono">{items}</span><span class="muted"> items</span></div>
-    <div><span class="mono">{used}/{attempted}</span><span class="muted"> sources</span></div>
-  </div>
+  <dl class="ops-sa-card__metrics">
+    {items_line}
+    {sources_line}
+    {duration_line}
+    {toolcalls_line}
+  </dl>
   {bar}
-  {tele_block}
+  {extras_block}
 </div>
 """
 
@@ -4741,11 +4908,19 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         items = a.get("items_returned") or 0
         m = a.get("model") or ""
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
+        # v2.55 — explicit `items` label + accessible tooltip on the
+        # sources ratio (the bare "12/18" used to be unlabelled in the
+        # runs table; reader couldn't tell what was numerator/denominator).
+        sources_label = (
+            f' <span class="muted" title="sources that contributed to the brief / sources the agent was given to try">'
+            f'({used}/{attempted} sources)</span>'
+        ) if attempted else ""
         return (
             f'<span class="ops-legend__swatch" style="background:{colour}" '
             f'title="{_escape(m or "unknown")}"></span>'
-            f' <span class="mono">{items}</span>'
-            f'<span class="muted"> ({used}/{attempted})</span>'
+            f' <span class="mono" title="items returned">{items}</span>'
+            f'<span class="muted" title="items returned"> items</span>'
+            + sources_label
         )
 
     rows: list[str] = []

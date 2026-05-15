@@ -113,47 +113,191 @@ printf '%s\t%s\t%s\n' "<url>" "<status_code>" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 
 The Phase 5.5 `tools/check_brief.py` URL-liveness check reads this ledger and trusts its records: any URL the ledger lists as `200` (or `2xx`) within this run skips the script's own HEAD/GET re-fetch. This kills SSL-cert / anti-bot 403 noise on URLs you've already verified live, without weakening the gate (URLs not in the ledger are still re-fetched fresh).
 
-## Bridge fetcher — MANDATORY for known-403 / SPA-only hosts (v2.48 expanded)
+## Bridge fetcher — MANDATORY for known-403 / SPA-only hosts (v2.52 — allowlist removed, structured discovery feeds added, Wayback fallback)
 
-The full bridge allowlist is in [`tools/fetch_source.py`](../../tools/fetch_source.py); these hosts either 403 the default UA, return an empty SPA shell, or need a structured-endpoint fetch the bridge can do:
+The bridge ([`tools/fetch_source.py`](../../tools/fetch_source.py)) is read-only, stdlib-only, and runs every fetch behind layer-3 SSRF defences (loopback / link-local / private / cloud-metadata IP refused; HTTPS-only; redirect re-validated; body cap 25 MB HTML / 64 MB JSON). **v2.52 removed the static host allowlist** — the bridge accepts any HTTPS publisher, so the table below is the **recommended recipe** rather than a hard ACL. Hosts that 403 the routine's default `WebFetch` UA almost all respond 200 to the bridge's desktop-Chrome UA.
 
-| Source / source-id | Bridge subcommand (use this FIRST — do NOT try `WebFetch` first) |
-|---|---|
-| `cisa-kev` (KEV catalog) | `python3 tools/fetch_source.py cisa-kev` |
-| `cisa-advisories` / `cisa-news` / `cisa-directives` | `python3 tools/fetch_source.py cisa page <URL>` |
-| `ncsc-ch-security-hub` | `python3 tools/fetch_source.py ncsc-csh recent 10` then `ncsc-csh post <ID>` |
-| `enisa-euvd` (v2.48) | `python3 tools/fetch_source.py enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` |
-| `bsi-de` / `wid.cert-bund.de` (v2.49) | `python3 tools/fetch_source.py bsi-rss` then `bsi-csaf <WID-SEC-YYYY-NNNN>` for full advisory body (CVE list, notes, affected products) — the per-advisory portal URL is an Angular SPA, do NOT `url` it |
-| `advisories-ncsc-nl` (v2.49) | `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-YYYY-NNNN>` — fetches `/csaf/v2/{year}/ncsc-{year}-{nnnn}.json` (publisher's well-known CSAF distribution; the legacy `version` arg is accepted but ignored) |
-| `anssi-fr` / `cert.ssi.gouv.fr` (v2.48) | `python3 tools/fetch_source.py url <per-advisory URL>` |
-| `cert-eu` / `cert-pl` / `ncsc-uk` (v2.48) | `python3 tools/fetch_source.py url <URL>` |
-| `ico-uk` (v2.49) | `python3 tools/fetch_source.py url https://ico.org.uk/sitemap.xml` for discovery (filter `/action-weve-taken/enforcement/`), then `url <per-action URL>` |
-| `prodaft` (v2.49) | `python3 tools/fetch_source.py url https://www.prodaft.com/sitemap.xml` for discovery, then `url <per-post URL>` |
-| `bleepingcomputer` (v2.49) | `python3 tools/fetch_source.py url https://www.bleepingcomputer.com/news/security/` for discovery; article URLs frequently 403 — WebSearch fallback |
-| `nccgroup`, `dragos`, `sygnia`, `ccn-cert-es`, `talos`, `acn.gov.it` | `python3 tools/fetch_source.py url <URL>` |
-| `inside-it-ch`, `databreaches-net` (v2.49) | **WebSearch fallback only** — Cloudflare Managed Challenge ("Just a moment...") on every UA; record the 403 in `fetch_failures` but do NOT retry the bridge |
+### Bridge-first rule
+For any host on the table below, your **first attempt** is the bridge subcommand, not `WebFetch`. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the direct bridge fails, fall through to the Wayback Machine subcommand (`wayback <URL>`); if Wayback has no usable snapshot either, that's a real coverage gap — record it in `fetch_failures` per the schema below.
 
-**Bridge-first rule** — for any host on the table above, your **first attempt** is the bridge subcommand, not `WebFetch`. The bridge enforces a host allow-list and forwards a desktop-Chrome UA, read-only. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the bridge ALSO fails (e.g. CCN-CERT geo-block, ENISA EUVD API outage), you've hit a real coverage gap — record it in `fetch_failures` per the schema below.
+### Structured discovery feeds (v2.52 + v2.53 — preferred over `url` for JS-rendered listings)
 
-## fetch_failures reporting — MANDATORY rich-shape entry per failure (v2.48)
+Many publishers serve a JS-rendered SPA on their listing page but expose a server-rendered RSS feed or structured endpoint for advisory enumeration. Use the structured subcommand **before** drilling into individual URLs — it tells you which advisories exist before you spend wall-clock fetching them.
 
-When you fetch a source and the result is a transport error, an SPA-empty body, a paywall HTML, or any other unusable outcome — **even if you recovered via the bridge** — you MUST report it back to the main agent so the entry lands in `state/run_log.json.fetch_failures` and surfaces on the Ops dashboard. Don't drop entries when you recovered: the recovery itself is the audit trail. An empty `fetch_failures[]` only means **no source was ever non-200 in this run**, which is rare in practice.
+**Two-step pattern is the normal flow:** listing subcommand returns links → `url <link>` (or the publisher-specific chain endpoint, e.g. `ncsc-nl csaf <id>` or `msrc cve <id>`) drills into per-advisory body. Both directions have been smoke-tested end-to-end.
 
-For every failure include — verbatim — the following fields in your return (a `## Fetch failures` section at the bottom of your sub-agent return is the canonical place):
+| Subcommand | Listing returns | Drill-down recipe |
+|---|---|---|
+| `cert-eu recent [N]` | last N CERT-EU advisories (title, link, date, summary) — verified 2026-05 returned 2026-006 PAN-OS / 2026-005 Copy Fail / 2026-004 SharePoint | `url <link>` → server-rendered Drupal HTML, ~20 KB per advisory with CVEs + recommendations |
+| `cert-fr avis-recent [N]` | CERTFR-YYYY-AVI-NNNN vendor advisories | `url <link>` → server-rendered HTML, ~25 KB with multi-CVE lists |
+| `cert-fr actu-recent [N]` | CERTFR-YYYY-ACT-NNNN weekly bulletins | `url <link>` same |
+| `ncsc-nl recent [N]` | NCSC-NL advisories with parsed `id` (`NCSC-YYYY-NNNN`) | `ncsc-nl csaf <id>` → full CSAF JSON. The per-advisory `link` returned by `recent` is the SPA URL `advisories.ncsc.nl/advisory?id=NCSC-YYYY-NNNN` — use it ONLY as the human citation; the CSAF route is the data route |
+| `ico-uk enforcement [N]` | top N ICO enforcement actions by sitemap.xml `lastmod` | `url <url>` → server-rendered per-action HTML, ~30 KB with full penalty / enforcement notice text |
+| `sec-edgar 8k [start] [end] [item]` | 8-K filings citing the given Item code (default 1.05 cyber-incident; default last 14 days). Each hit carries `filing_url` = `https://www.sec.gov/Archives/edgar/data/<cik>/<adsh-nodash>/` | `url <filing_url>` → filing index HTML; the actual 8-K document is one of the linked `.htm` files in the filing directory |
+| **`msrc cvrf <YYYY-Mon>`** (v2.53) | full monthly Common Vulnerability Reporting Framework JSON for the named release. Verified 2026-May = 494 vulnerabilities, ~4.6 MB JSON | rarely needed — `msrc release` is cheaper for enumeration, `msrc cve` cheaper for per-CVE detail |
+| **`msrc release <YYYY-Mon> [N]`** (v2.53) | OData-filtered list of CVEs in one Patch Tuesday release with cveNumber + title + exploited + publiclyDisclosed + baseScore + impact. Verified 2026-May = 323 CVEs total | `msrc cve <cveNumber>` for the per-CVE JSON (description HTML, CWE list, acknowledgements, articles) |
+| **`msrc cve <CVE-ID>`** (v2.53) | per-CVE detail JSON from the SUG OData service | citation URL = `https://msrc.microsoft.com/update-guide/en-US/vulnerability/<CVE-ID>` (the SPA URL — human-facing citation only; the data is what you got from this subcommand) |
+| **`msrc recent [N]`** (v2.53) | newest N CVEs across all releases, sorted by releaseDate desc | the OData feed includes Linux Mariner / Azure CVEs mixed in — filter by `releaseNumber` to scope to Patch Tuesday only |
+| **`msrc releases [N]`** (v2.53) | most-recent N monthly release tags (e.g. 2026-May, 2026-Apr, …) | discovery only — chain into `msrc release` or `msrc cvrf` |
+| **`msft-secblog recent [N] [TOPIC]`** (v2.53) | Microsoft Security Blog RSS, optionally filtered by topic slug. Topics include `threat-intelligence`, `vulnerabilities-and-exploits`, `incident-response`, `ai-and-machine-learning` | `url <link>` → full server-rendered article HTML (~250–350 KB per post, complete body) |
+| `wayback <URL> [target-ts] [min-size]` | Snapshot metadata + cleaned publisher HTML body | Fallback for hosts behind Cloudflare Managed Challenge — see § Wayback fallback below |
+
+### Microsoft MSRC Update Guide — the SPA at msrc.microsoft.com/update-guide/ (v2.53)
+
+The MSRC Update Guide UI (`https://msrc.microsoft.com/update-guide/`, `…/releaseNote/<YYYY-Mon>`, `…/en-US/vulnerability/CVE-…`) is **pure Angular SPA** — every one of those routes returns a ~1 KB JavaScript-only shell. The bridge's `url <URL>` returns the shell with no useful content. **Do not `url`-fetch any `msrc.microsoft.com/update-guide/…` page.** Instead, query the **anonymous public APIs** that back the SPA:
+
+- The CVRF v3 endpoint at `https://api.msrc.microsoft.com/cvrf/v3.0/cvrf/<YYYY-Mon>` returns the full Common Vulnerability Reporting Framework document for a monthly release. ~2–5 MB per month, ~500 vulnerabilities each.
+- The SUG v2 OData endpoint at `https://api.msrc.microsoft.com/sug/v2.0/en-US/vulnerability/<CVE>` returns the per-CVE JSON with the publisher's `description` (HTML-formatted), `baseScore`, `impact`, `exploited`, `publiclyDisclosed`, `cweList`, `articles`, etc.
+
+**Content negotiation gotcha.** The MSRC API responds with **XML** when the `Accept` header includes `*/*` and **JSON** when it's strictly `application/json`. The bridge's `msrc *` subcommands use a strict-JSON helper internally; if you call the API directly via `url <URL>`, the response will be XML (which is also valid CVRF). Prefer the `msrc *` subcommands.
+
+**Citation rule.** The brief must cite the human-facing SPA URL (`https://msrc.microsoft.com/update-guide/en-US/vulnerability/<CVE-ID>`) even when the data came from the API — that's the URL a reader can open. The API URLs are not navigable by humans without an OData client.
+
+**Typical flow for Patch Tuesday coverage:**
+
+```
+msrc releases 3                                  # find newest release tag, e.g. 2026-May
+msrc release 2026-May 100                        # list 100 newest CVEs in that release
+# Pick the operationally-interesting ones — exploited=Yes, publiclyDisclosed=Yes, baseScore >= 9.0
+msrc cve CVE-2026-41089                          # full detail for each candidate
+```
+
+### Microsoft Security Blog — `microsoft.com/en-us/security/blog/` (v2.53)
+
+The Security Blog is a Drupal-style CMS. The landing page `https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/` is **server-rendered** with browser UA and works via `url <URL>` — but the **`msft-secblog recent N threat-intelligence`** subcommand is preferred because it returns the RSS structure (title, link, date, summary) directly, saving you the HTML-parsing step. Per-article URLs (e.g. `https://www.microsoft.com/en-us/security/blog/2026/05/14/kazuar-anatomy-of-a-nation-state-botnet/`) are likewise server-rendered — `url <article URL>` returns the full body (~250–350 KB).
+
+### Generic RSS / Atom feeds — `feed <URL> [N]` (v2.54)
+
+The single most useful addition in v2.54: a **publisher-agnostic `feed <URL> [N]`** subcommand that runs the bridge's RSS / Atom parser on any HTTPS feed URL and returns `{source, feed, count, items: [{title, link, published, summary}]}` — the same JSON shape every other listing subcommand uses. The agent's drilldown pattern is always:
+
+1. `python3 tools/fetch_source.py feed <feed_url> N` → returns N items.
+2. For each interesting item, `python3 tools/fetch_source.py url <items[i].link>` → returns the full server-rendered article HTML.
+
+This replaces dozens of per-publisher subcommands the bridge would otherwise need. **Prefer `feed <URL>` over `url <URL>`** whenever the source has an RSS feed — RSS gives you titles + summaries + canonical per-article URLs without HTML scraping.
+
+Every source in [`sources/sources.json`](../../sources/sources.json) with a non-null `rss_url` field has been verified end-to-end (feed parse → drilldown → ≥40 KB article HTML). Quick reference for the v2.54-verified publishers:
+
+| Publisher (sources.json `id`) | `rss_url` to pass to `feed` | Drilldown notes |
+|---|---|---|
+| `dfirreport` | `https://thedfirreport.com/feed/` | Full DFIR Report write-ups (~130 KB per article) |
+| `krebs` | `https://krebsonsecurity.com/feed/` | RSS includes full `<content:encoded>`; drill is also free |
+| `compass-security` | `https://blog.compass-security.com/feed/` | Swiss CH-EU primary — Compass Security DFIR reports |
+| `heise-sec` | `https://www.heise.de/security/feed.xml` | **Per-article URLs are TollBit-gated (HTTP 307 → tollbit.heise.de or 274-byte "not authorized" body).** Use the feed's 150-char `summary` for awareness, pivot to a corroborating EU/global outlet (BleepingComputer, Record, THN) for full body |
+| `sans-isc` | `https://isc.sans.edu/rssfeed.xml` | InfoCON-green daily diary; titles are HTML-encoded |
+| `mandiant-gtig` | `https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v` | Mandiant / GTIG threat-intel feed (Feedburner mirror — preferred over the `cloud.google.com/blog/topics/threat-intelligence/rss/` direct route which is occasionally rate-limited) |
+| `schneier` | `https://www.schneier.com/feed/atom/` | **Atom 1.0** — handled by the parser since v2.54 |
+| `wiz-blog` | `https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml` | Wiz Cloud Threat Landscape (cloud-SaaS-targeted incidents); not the same as the general Wiz blog |
+| `sophos-xops` | `https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242` | Sophos featured-blog filter; `news.sophos.com/feed/` is an alternate for the unfiltered firehose |
+| `hackernews` | `https://feeds.feedburner.com/TheHackersNews` | THN (The Hacker News) — high-volume news roll-up |
+| `intel471` | `https://www.intel471.com/blog/feed` | Financial cybercrime / access-broker research |
+| `threatpost` | `https://threatpost.com/feed/` | **demoted** in sources.json — site stopped publishing ~2023, feed serves a ~10-item archive only |
+| `troyhunt` | `https://feeds.feedburner.com/TroyHunt` | Have-I-Been-Pwned analysis, identity / credential-stuffing |
+| `socprime` | `https://socprime.com/blog/feed/` | Sigma-rule-focused detection-engineering research |
+
+### Publishers without an RSS feed — landing-scrape recipe (v2.54)
+
+A handful of publishers have no exposed RSS feed but do server-render their listing page. Recipe: `url <landing>` → regex over the body for per-article hrefs → `url <each>` for the body.
+
+| Publisher | Landing URL | Article-URL pattern to extract | Sample drilldown |
+|---|---|---|---|
+| `trellix` | `https://www.trellix.com/blogs/` | `href="/blogs/(?:research\|perspectives\|platform)/[^"/]+/"` | ~165 KB per article |
+| `sans-newsbites` | `https://www.sans.org/newsletters/newsbites/` | `href="/newsletters/newsbites/[ivxlc]+-[0-9]+"` (sort desc) | ~440 KB per issue |
+
+When the user gives the agent a publisher landing URL that has no obvious feed, **always run a sitemap probe first** (`https://<host>/sitemap.xml`) before falling back to landing-scrape. Trellix has no sitemap; SANS has its scope-wide sitemap but no NewsBites sub-feed.
+
+### Per-host recipe table (v2.52 — Cloudflare-blocked hosts now have a Wayback fallback)
+
+| Source / source-id | First try | If that fails |
+|---|---|---|
+| `cisa-kev` (KEV catalog) | `cisa-kev` (bridge) | none — KEV is reliably reachable |
+| `cisa-advisories` / `cisa-news` / `cisa-directives` | `cisa page <URL>` (bridge) | none |
+| `ncsc-ch-security-hub` | `ncsc-csh recent 10` then `ncsc-csh post <id-from-recent>` | none — never speculate IDs beyond what `recent` returned |
+| `enisa-euvd` | `enisa-euvd recent {lastvulnerabilities\|criticals\|exploited}` then `enisa-euvd advisory <id>` | direct `url https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/<id>` (SPA — body is shell only, but the dashboard is the right citation URL) |
+| `bsi-de` / `wid.cert-bund.de` | `bsi-rss` then `bsi-csaf <WID-SEC-YYYY-NNNN>` for full body | none — portal HTML is Angular SPA only |
+| `advisories-ncsc-nl` | **v2.52 — `ncsc-nl recent N`** to enumerate IDs, then `ncsc-nl csaf <id>` for full CSAF JSON | speculative ID enumeration is now banned — always go via `recent` |
+| `anssi-fr` / `cert.ssi.gouv.fr` | **v2.52 — `cert-fr avis-recent N` / `cert-fr actu-recent N`** for listing, then `url <per-advisory URL>` for body | none |
+| `cert-eu` | **v2.52 — `cert-eu recent N`** for listing, then `url <link>` per advisory | none |
+| `cert-pl`, `ncsc-uk` | `url <per-advisory URL>` (bridge — listing pages are SPA, browse the publisher's RSS or use WebSearch for discovery) | none |
+| `ico-uk` | **v2.52 — `ico-uk enforcement N`** for sitemap-driven listing, then `url <url>` per action | none |
+| `sec-disclosures-edgar` | **v2.52 — `sec-edgar 8k [start] [end] 1.05`** to enumerate cyber-incident filings, then `url <filing_url>` for the 8-K | direct `url https://efts.sec.gov/LATEST/search-index?…` works too; the subcommand parses the JSON cleanly |
+| `prodaft` | `url https://www.prodaft.com/sitemap.xml` for discovery, then `url <per-post URL>` | none |
+| `bleepingcomputer` | `url https://www.bleepingcomputer.com/news/security/` for discovery; article URLs frequently 403 | **`wayback <article URL>`** when the article is the only source for a claim |
+| `nccgroup`, `dragos`, `sygnia`, `talos`, `acn.gov.it` | `url <URL>` (bridge) | `wayback <URL>` if Cloudflare anti-bot fires |
+| `ccn-cert-es` | `url <URL>` (geo-blocked in many cases — bridge attempt still records the failure) | `wayback <URL>` |
+| **Cloudflare Managed Challenge — `inside-it.ch`, `databreaches.net`, `www.darkreading.com`, `www.coe.int`** | direct bridge attempt fails (recorded in `fetch_failures`) | **`wayback <URL>`** — Wayback has fresh-enough snapshots for these; use this as the canonical fallback |
+| `www.group-ib.com`, `downloads.seppmail.com` | direct bridge attempt fails | Wayback has no recent coverage; **WebSearch fallback only** |
+
+### Wayback fallback — when and how (v2.52)
+
+The `wayback <URL> [target-ts] [min-size]` subcommand is the canonical fallback for Cloudflare-Managed-Challenge-protected hosts. It:
+
+1. Queries Wayback's availability API for the closest snapshot to `target-ts` (default = today).
+2. Fetches the snapshot, **rejects empty / placeholder responses** (Wayback's own "no snapshot" page can be ~9 KB of useless HTML; the subcommand detects the placeholder markers and falls through).
+3. If the availability snapshot is too small or a placeholder, walks the CDX index for the **largest snapshot in the last 180 days** (one 35-s retry on the 503 rate limit), tries them biggest-first, accepts the first one that's ≥ `min-size` (default 5000 bytes) and not a placeholder.
+4. Strips Wayback's wombat-toolbar injection + URL rewriting so the body the caller reads is close to the original publisher HTML (`<title>`, `<meta>`, `<body>` preserved; `archive.org/_static/`, `__wm.wombat`, `archive_analytics`, the trailing `PetaboxLoader3` analytics comment all removed).
+
+Result shape: JSON metadata block (`snapshot_url`, `snapshot_ts`, `original_url`, `size`, `from_strategy`) followed by `--- BODY ---` then the cleaned publisher HTML.
+
+**Recency caveats.** Wayback snapshots may be days or weeks out-of-window — the subcommand returns the *available* data, not necessarily *fresh* data. Always read `snapshot_ts` against the `window_hours` recency rule before citing the content; if the snapshot pre-dates the window, the snapshot is fine as a historical / Background-paragraph (PD-10) reference but not as a fresh in-window primary. The agent is responsible for that policy call.
+
+**When to use Wayback vs WebSearch.** WebSearch is fine when you only need to know *that* something happened (e.g. confirm a story exists). Wayback is the right call when you need to *quote* the publisher's text and the original is Cloudflare-blocked.
+
+## fetch_failures reporting — log ONLY real, unrecovered failures (v2.55 — tightened)
+
+`fetch_failures[]` is the Ops dashboard's "what genuinely broke this run" signal. Past versions of this prompt told sub-agents to log every non-200 outcome including bridge-recovered ones and SPA-empty listings that the structured-endpoint bridge handled — that produced ~10-entry "failure" lists where every entry was actually a success, and the operator could not tell which entries were real problems. **v2.55 rule: log a `fetch_failures[]` entry ONLY when the source could not be retrieved at all and the recipe documented in `sources/sources.json` has no working alternative.**
+
+### Log as a failure (`fetch_failures[]` entry)
+
+A failure is anything that **denied the brief content from a source the recipe in `sources/sources.json` says should work**, and where no fallback worked. Concretely:
+
+- HTTP 5xx (5xx-range — 500 / 502 / 503 / 504) returned by both the direct URL AND any bridge or Wayback fallback you actually tried.
+- HTTP 403 / 429 / TLS / DNS / timeout where the bridge recipe also failed AND Wayback (where applicable) had no usable snapshot AND `covered_anyway: false` (no alternate corroborating source carried the same story).
+- Cloudflare Managed Challenge on a host with no Wayback snapshot AND no working alternate (e.g. `group-ib.com`, `downloads.seppmail.com`).
+- A bridge subcommand that 404s on what should be a valid identifier (e.g. NCSC-NL CSAF speculative-ID enumeration is *not* this — see § Bridge fetcher; speculative enumeration has been deprecated and should never produce a `fetch_failures[]` entry).
+- A new host the bridge has not yet been taught to handle (post-v2.52 the bridge accepts any HTTPS host, so this should only fire on TollBit-style auth-gated content or fresh anti-bot deployments).
+
+### Do NOT log as a failure
+
+These are the cases the audit caught — none of them belong in `fetch_failures[]`:
+
+- **"Bridge fetched OK; no new content in window."** A successful 2xx bridge call that returned no fresh items is **success**. The source was reachable, the recipe worked, the in-window pickings were thin. Note it (if at all) in `## Coverage gaps` as a quiet-day observation; it is NOT a fetch failure.
+- **"WebFetch returned 403 on a known-403 host where the bridge then succeeded."** The bridge is the documented recipe for the host. The direct-WebFetch attempt is incidental; logging it as a failure double-counts the recovery the bridge already provided.
+- **SPA listing pages handled by a structured-endpoint bridge subcommand.** E.g. you fetched `https://euvd.enisa.europa.eu/` got an SPA shell, then ran `enisa-euvd recent criticals` and got JSON. The first step is part of the recipe transition, not a failure.
+- **Source where `covered_anyway: true` via a deterministic alternate** (bridge subcommand, RSS feed, Wayback snapshot, or another publisher's primary on the same story). The story reached the brief; the source-of-origin choice does not deserve a "failure" label.
+- **NCSC-NL speculative-ID 404s** — speculative enumeration is deprecated as of v2.52. If you encountered 404s by guessing IDs, the recipe is wrong, not the source. Use `ncsc-nl recent N` to enumerate IDs first; if you still 404 on a freshly-enumerated ID, *that* is loggable.
+- **Drop / scope decisions.** "Item ultimately dropped per § 7" is editorial, not a fetch failure.
+
+### Soft signal: `## Bridge uses` section (optional, v2.55)
+
+If you want the dashboard to see how many times you reached for the bridge vs. WebFetch directly (useful telemetry for the operator on bridge effectiveness), you can append a `## Bridge uses` section to your return:
+
+```
+- id: <source id>
+  method: bridge:<subcommand>
+  outcome: <ok | empty-feed | item-not-found>
+```
+
+The main agent counts these into a separate `bridge_uses[]` array on `state/run_log.json` (distinct from `fetch_failures[]`). This is optional; omitting the section costs nothing.
+
+### Failure record shape (unchanged from v2.48)
+
+For every record that DOES belong in `fetch_failures[]`, include — verbatim — these fields in a `## Fetch failures` section at the bottom of your sub-agent return:
 
 ```
 - id: <source id from sources.json>
   url_tried: <exact URL the agent attempted, verbatim>
-  fetch_method: webfetch | websearch | bridge:cisa-kev | bridge:url | bridge:ncsc-csh.recent | bridge:enisa-euvd.recent | bridge:bsi-rss | bridge:ncsc-nl.csaf | …
-  status_code: <HTTP status — 200 if a body returned but unusable>
-  error_class: transport-403 | transport-429 | transport-5xx | transport-tls | transport-dns | transport-timeout | spa-empty-body | paywall | robots-blocked | geo-blocked | rate-limited | other
+  fetch_method: webfetch | websearch | bridge:cisa-kev | bridge:url | bridge:ncsc-csh.recent | bridge:enisa-euvd.recent | bridge:bsi-rss | bridge:ncsc-nl.csaf | bridge:wayback | …
+  status_code: <HTTP status>
+  error_class: transport-403 | transport-429 | transport-5xx | transport-tls | transport-dns | transport-timeout | paywall | robots-blocked | geo-blocked | rate-limited | tollbit-gated | other
   error_message: <verbatim error text, truncated to ~200 chars>
-  attempted_methods: [webfetch, bridge:cisa-kev]   # ordered list of every method tried for this source in this run
-  mitigation_applied: <the recovery the agent performed, e.g. "bridge:cisa-kev → 200 OK", or "none" if uncovered>
-  covered_anyway: true | false
+  attempted_methods: [webfetch, bridge:cisa-kev, wayback]   # ordered list of every method tried for this source in this run
+  mitigation_applied: <the recovery the agent performed, e.g. "switched to corroborating publisher X", or "none — coverage gap" if uncovered>
+  covered_anyway: true | false      # ALWAYS log as `false` here — v2.55 only logs records that ended in a real gap
 ```
 
-The main agent parses this section and writes the entries to `run_log.json.fetch_failures`. Phase 5.5 `tools/check_brief.py` validates the rich shape (back-compat WARN on legacy `{id, code}` entries) and FAILs the commit when an `id` on the bridge allowlist appears with `attempted_methods` that do NOT contain a `bridge:*` method. Sub-agents that omit the section land in the dashboard as a yellow "thin failure record" badge — the operator can't debug what they don't see.
+**Note:** `spa-empty-body` is **no longer a valid `error_class`** — by v2.52+ the bridge has a structured-endpoint subcommand for every SPA host the brief uses, so SPA-empty on the LANDING page is expected behaviour and not loggable. If you find a new SPA host with no structured endpoint, that's a recipe gap; surface it in your return as a "Coverage gap: source-id (recipe missing)" line, not as a fetch failure.
+
+The main agent parses the `## Fetch failures` section and writes records into `run_log.json.fetch_failures`. Phase 5.5 `tools/check_brief.py` validates the rich shape. v2.55 added a script check that WARNs when a `fetch_failures[]` entry has `covered_anyway: true` (since v2.55 those are not supposed to be logged here) — the operator sees this on the dashboard as a "soft signal" badge.
 
 ## Discovery trace — MANDATORY for every item
 
@@ -266,6 +410,24 @@ For S1 (daily Active Threats & trending vulns), additionally return a Markdown t
 For new-source candidates, append a separate `## Candidate sources` section with one block per candidate: name, root URL, RSS/feed URL if any, category, why it belongs.
 
 For coverage gaps you noticed (sources you tried that 403'd / 404'd / had no in-window items), append a `## Coverage gaps` section listing source-ids and reasons.
+
+## Technical depth — what every returned item should carry (v2.51 — moved here from the daily/weekly main-agent prompts)
+
+Audience is **highly technical** (Tier 2/3 IR, threat hunters, detection engineers). Every item you return must give enough specificity for the main agent to compose a brief that lets the reader reason about detection, hunt, and hardening in their own environment. **Surface-level talking points are a quality regression.** Apply this depth at research time — the main agent composes from your returns and does NOT have this vocabulary in its prompt baseline, so if you don't surface the specifics, they don't reach the published brief.
+
+For every item, where the source supports:
+
+- **Exact vulnerable component / attack surface** — name the file / function / RPC interface / endpoint / config switch / handler / protocol parser / virtual server / service the source identifies. Whatever the source states; never substitute generic phrasing.
+- **Technique class with MITRE ATT&CK technique IDs** when the source provides them or mapping is unambiguous: `T1190 Exploit Public-Facing Application`, `T1059.001 PowerShell`, `T1505.003 Web Shell`, `T1557.001 LLMNR/NBT-NS Poisoning`, `T1068 Exploitation for Privilege Escalation`, `T1078.004 Cloud Accounts`, `T1556.006 MFA`, `T1611 Escape to Host`. Link to `attack.mitre.org`.
+- **Exploitation prerequisites** — auth state; default-config or only-when-X-is-enabled; prior foothold; auth scheme abused (NTLM relay, OAuth device-code, SAML response forgery, S4U2Self); privilege required.
+- **Affected and patched versions** to vendor-stated precision (`<= 14.1-12.30`, `before 2024.4`, `9.x prior to 9.6.10`, `cumulative update CU14 + KB5034762`). Don't round.
+- **Observed exploitation status** with named clusters when the source provides one (UNC####, Storm-####, TA####, APT##, CL-###-####, espionage-actor codename, ransomware-affiliate). Cite the source that named the cluster — never carry a cluster name without that source.
+- **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts only.
+- **Affected sectors and regions** so the main agent can populate the footer's `Tags` / `Region` / `Sector` fields, not filler prose.
+
+A worked-good fragment showing this depth lives in [`prompts/brief-template.md`](../../prompts/brief-template.md) — illustrative npm supply-chain compromise (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
+
+Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** — the main agent's Phase 5.7 verification will catch unsupported facts and either drop the item or burn iteration budget on remediation; surface only what your fetched sources actually say. PD-1 in the daily prompt is the same rule.
 
 ## What you do NOT do
 

@@ -83,7 +83,7 @@ The right shape: **every finding numbered, every claim quoted verbatim, every UR
 
 9. **Contradictions** between sources cited for the same item — surface in the verification report so the main agent can add a `Contradiction:` line in § Verification Notes, not silently resolve.
 
-10. **Clarity** — anything under-explained that a Tier 2 responder could not act on without further research? Flag as `Needs more research`.
+10. **Clarity / technical depth** — anything under-explained that a Tier 2 responder could not act on without further research? Flag as `Needs more research`. The ground-truth standard for "enough technical depth" is the per-item taxonomy in [`.claude/agents/cti-research.md`](cti-research.md) § Technical depth (vulnerable component / MITRE T-IDs / exploitation prerequisites / affected and patched versions / observed exploitation status with named cluster / behavioural detection concept with event ID or EDR-telemetry hook / hardening lever). v2.51 — that taxonomy moved out of the daily/weekly main-agent prompts so the main agent doesn't compose from it directly; sub-agents apply it at research time and the main agent carries their specificity into the brief. Flag F8 when an item's source clearly supported one of those fields and it dropped out of the brief; don't flag when the source itself doesn't carry the depth.
 
 ## Whole-brief checks
 
