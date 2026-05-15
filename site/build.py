@@ -4960,12 +4960,17 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     items = data.get("items_returned") or 0
     tele = data.get("telemetry") or {}
 
-    # v2.55 — labelled metric rows instead of inline-jumbled chips.
-    # The old layout printed "461 duration seconds 9 webfetch calls 18
-    # websearch calls 11 bridge fetches" on one line; with multiple metrics
-    # the operator could not scan which was which. The new layout pairs
-    # each metric with its label on a separate row + groups tool-call
-    # counts on one line because they belong together.
+    # v2.57 — operator feedback drove a second round of card simplification:
+    #   1. Drop the `used / attempted` progress bar entirely — it visually
+    #      implied a quality score, but a 5/63-source slice on a quiet day
+    #      is perfectly normal for S3 and 14/16 on a busy day for S1 is also
+    #      normal. Same percentage, different meanings.
+    #   2. Reorder metrics so what-the-agent-delivered is first, source
+    #      coverage (a debug signal) is last.
+    #   3. "Cited sources: 14 of 16 in slice" instead of "Sources 14 of 16
+    #      contributed (87%)" — the new phrasing tells the operator what the
+    #      denominator actually is (the spawn-message slice) without the
+    #      misleading percentage chrome.
 
     def _format_duration(secs: Any) -> str | None:
         try:
@@ -4982,40 +4987,22 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
         dur_raw = tele.get("duration_seconds")
     dur_str = _format_duration(dur_raw)
 
-    used_pct = int((used / attempted) * 100) if attempted else 0
-    bar = (
-        '<div class="ops-sa-card__bar" title="Sources that contributed to the brief / sources the agent was given to try">'
-        f'<div class="ops-sa-card__bar-fill" style="width:{used_pct}%"></div>'
-        '</div>'
-    )
-
-    # Sources line — explicit label + percentage so "12/18" is no longer ambiguous.
-    sources_line = (
-        f'<dt>Sources</dt>'
-        f'<dd><span class="mono">{used}</span><span class="muted"> of </span>'
-        f'<span class="mono">{attempted}</span>'
-        f' <span class="muted">contributed ({used_pct}%)</span></dd>'
-        if attempted
-        else f'<dt>Sources</dt><dd class="muted">none assigned</dd>'
-    )
-
-    # Items returned line.
+    # 1. Items returned — primary "did the agent deliver" signal.
     items_line = (
-        f'<dt>Items returned</dt>'
+        '<dt>Items returned</dt>'
         f'<dd><span class="mono">{items}</span></dd>'
     )
 
-    # Duration line.
-    duration_line = (
-        f'<dt>Duration</dt>'
-        f'<dd><span class="mono">{_escape(dur_str)}</span> '
-        f'<span class="muted">({dur_raw}s wall-clock)</span></dd>'
-        if dur_str else
-        '<dt>Duration</dt><dd class="muted">not reported</dd>'
-    )
+    # 2. Duration — wall-clock against the 30-min cap. Raw seconds in tooltip.
+    if dur_str:
+        duration_line = (
+            '<dt>Duration</dt>'
+            f'<dd><span class="mono" title="{dur_raw} s wall-clock; sub-agent cap is 30 min">{_escape(dur_str)}</span></dd>'
+        )
+    else:
+        duration_line = '<dt>Duration</dt><dd class="muted">not reported</dd>'
 
-    # Tool calls grouped on ONE line — webfetch + websearch + bridge belong
-    # together; they're the agent's "how did I research" footprint.
+    # 3. Tool calls — three related counters on one line.
     def _tc(name: str) -> Any:
         v = tele.get(name)
         if v in (None, ""):
@@ -5028,19 +5015,42 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     if wf is not None or ws is not None or br is not None:
         tc_parts = []
         if wf is not None:
-            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(wf))}</span> <span class="muted">WebFetch</span></span>')
+            tc_parts.append(f'<span class="ops-sa-card__tc" title="WebFetch tool calls"><span class="mono">{_escape(str(wf))}</span> <span class="muted">WebFetch</span></span>')
         if ws is not None:
-            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(ws))}</span> <span class="muted">WebSearch</span></span>')
+            tc_parts.append(f'<span class="ops-sa-card__tc" title="WebSearch tool calls"><span class="mono">{_escape(str(ws))}</span> <span class="muted">WebSearch</span></span>')
         if br is not None:
-            tc_parts.append(f'<span class="ops-sa-card__tc"><span class="mono">{_escape(str(br))}</span> <span class="muted">bridge</span></span>')
+            tc_parts.append(f'<span class="ops-sa-card__tc" title="`python3 tools/fetch_source.py` invocations"><span class="mono">{_escape(str(br))}</span> <span class="muted">bridge</span></span>')
         toolcalls_line = (
-            f'<dt>Tool calls</dt>'
+            '<dt>Tool calls</dt>'
             f'<dd class="ops-sa-card__toolcalls">{"".join(tc_parts)}</dd>'
         )
     else:
-        toolcalls_line = '<dt>Tool calls</dt><dd class="muted">no self-telemetry reported</dd>'
+        toolcalls_line = '<dt>Tool calls</dt><dd class="muted">not reported</dd>'
 
-    # Optional URL-checked / token usage if reported; render compactly below.
+    # 4. Cited sources — single number with the denominator visible inline as
+    # "of N in slice" (no percentage, no bar). Tooltip explains what the
+    # denominator IS (the spawn-message slice) so the operator doesn't read
+    # the number as a quality score.
+    sources_tooltip = (
+        f"sub-agent was given a {attempted}-source slice in its spawn message; "
+        "cited the listed N. quiet-day slices legitimately cite few — this is "
+        "coverage telemetry, not a quality score."
+    )
+    if attempted:
+        cited_line = (
+            '<dt>Cited sources</dt>'
+            f'<dd><span class="mono" title="{_escape(sources_tooltip)}">{used}</span>'
+            f' <span class="muted">of {attempted} in slice</span></dd>'
+        )
+    elif used:
+        cited_line = (
+            '<dt>Cited sources</dt>'
+            f'<dd><span class="mono">{used}</span></dd>'
+        )
+    else:
+        cited_line = '<dt>Cited sources</dt><dd class="muted">none</dd>'
+
+    # Optional extras (urls_checked, tokens_in/out) — deemphasised secondary row.
     extras: list[str] = []
     if _tc("urls_checked") is not None:
         extras.append(f'<span class="ops-sa-card__extra"><span class="mono">{_escape(str(_tc("urls_checked")))}</span> <span class="muted">URLs checked</span></span>')
@@ -5066,11 +5076,10 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
   </div>
   <dl class="ops-sa-card__metrics">
     {items_line}
-    {sources_line}
     {duration_line}
     {toolcalls_line}
+    {cited_line}
   </dl>
-  {bar}
   {extras_block}
 </div>
 """
@@ -5096,19 +5105,20 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         items = a.get("items_returned") or 0
         m = a.get("model") or ""
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
-        # v2.55 — explicit `items` label + accessible tooltip on the
-        # sources ratio (the bare "12/18" used to be unlabelled in the
-        # runs table; reader couldn't tell what was numerator/denominator).
-        sources_label = (
-            f' <span class="muted" title="sources that contributed to the brief / sources the agent was given to try">'
-            f'({used}/{attempted} sources)</span>'
-        ) if attempted else ""
+        # v2.57 — runs-table cells show the items-returned headline only;
+        # source coverage moved to a tooltip on the cell. The inline
+        # "(12/18 sources)" parenthetical was visual clutter at table
+        # density and the number-pair was ambiguous without context.
+        tooltip = (
+            f"{_escape(m or 'unknown')} · "
+            f"{used} of {attempted} sources cited (slice size = {attempted}, contributed = {used})"
+            if attempted else _escape(m or "unknown")
+        )
         return (
             f'<span class="ops-legend__swatch" style="background:{colour}" '
-            f'title="{_escape(m or "unknown")}"></span>'
-            f' <span class="mono" title="items returned">{items}</span>'
-            f'<span class="muted" title="items returned"> items</span>'
-            + sources_label
+            f'title="{tooltip}"></span>'
+            f' <span class="mono" title="{tooltip}">{items}</span>'
+            f'<span class="muted" title="{tooltip}"> items</span>'
         )
 
     rows: list[str] = []
