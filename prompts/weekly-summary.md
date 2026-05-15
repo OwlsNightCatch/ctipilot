@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.56 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.59 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -699,16 +699,21 @@ Track verification iterations in the run log: `state/run_log.json` fields `verif
 
 The summary lands on `main` exclusively via the auto-merge GitHub Action (`.github/workflows/auto-merge-claude.yml`). The routine **never pushes to `main` directly** — repo policy. The routine commits on its feature branch, syncs with `origin/main` (with auto-resolution for known conflict files), pushes the feature branch, and lets the action promote.
 
-**1. Stage and commit:**
+**1. Stage and commit.** **v2.59 mandates committing the per-run `work/<run-id>/` directory alongside the weekly** — same rationale as the daily routine: sub-agent findings YAMLs, verification iteration reports, the URL-liveness ledger, per-agent timestamp checkpoints, the prior-coverage and state-summary snapshots are all needed for post-publish forensics. See [`prompts/daily-cti-brief.md`](daily-cti-brief.md) § Phase 6 for the rationale paragraph.
 
 ```bash
-git add briefs/weekly/YYYY-Www.md state/covered_items.json state/cves_seen.json state/run_log.json sources/sources.json .claude/memory/
+git add briefs/weekly/YYYY-Www.md \
+        state/covered_items.json state/cves_seen.json state/run_log.json \
+        sources/sources.json \
+        .claude/memory/ \
+        "work/${RUN_ID}/"
 git commit -m "weekly: YYYY-Www summary
 
 - top stories: N · multi-day chains: N · CVEs: N · incidents: N · annual reports: N
 - inaction-=-incident items: N · long-running campaigns: N · policy items: N
 - sources: <one-line summary of any URL updates / demotions / candidates>
 - verification: iterations=N · residuals=N
+- work/${RUN_ID}/: N findings YAMLs · N verification iterations · url-liveness=N lines
 "
 ```
 

@@ -60,6 +60,8 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.ended_at
 
 If you cannot capture a timestamp (Bash tool unavailable in your environment, clock skew detected, the very first or very last action of your turn was forced into a different shape), write `unknown` for that field and the main agent records it verbatim — never invent a timestamp.
 
+**Writing `.ended_at` is the completion signal the main agent waits on (v2.53).** The main agent's Phase 4 compose-after-return gate blocks every `Edit` against `briefs/YYYY-MM-DD.md` until each Phase 1 sub-agent has either written `.ended_at` *or* has been running past the 30-min cap. A return that doesn't write `.ended_at` stalls Phase 4 unnecessarily and forces the main agent into the 30-min abandon-and-proceed fallback, which surfaces in § 7 Verification Notes as a coverage gap. **Always write `.ended_at`** — even if you have nothing material to return, an empty return with `.ended_at` written is operationally distinguishable from a stall.
+
 ## Source-link discipline (MANDATORY — read twice)
 
 Every URL you cite is **one you actually fetched in this run** that resolved to content matching the claim.
@@ -378,31 +380,112 @@ Optionally include a third line for runtime self-telemetry the main agent will f
 
 Only include numeric fields you can read off your tool-use trace; omit fields you can't measure. The main agent stores whatever you provide under `sub_agents.<your-domain>.telemetry` and the dashboard surfaces them as small badges next to the items-returned count. (`duration_seconds` lives on the `**Timestamps:**` line, not here.)
 
-## Return format (flexible Markdown, required fields)
+## Return format (v2.53 — findings on disk + compact summary back)
 
-```markdown
+**Why the change.** v2.50 introduced the verifier compact-summary contract to cut main-agent context cost; v2.53 extends the same pattern to research sub-agents. The 2026-05-15 trace shows two consequences of the old assistant-text-only return:
+
+1. **Context truncation.** S3 returned ~881 s into the run, *after* the conversation's auto-context-summary boundary. The main agent had to reconstruct S3's findings from `work/<run-id>/url-liveness.tsv` and a fragmentary read of the task-output file. This worked only because the operator did not strictly enforce the read-prohibition on `tool-results`. **The new contract makes the findings persist regardless of context-summarisation.**
+2. **Fabrication risk.** When the main agent waits on a slow sub-agent, the temptation to compose from "what S1 would have found" before S1 actually returns is real. With findings on disk, the gate is mechanical: no file ⇒ no content for that domain.
+
+**The shape.** You write your findings to `work/<run-id>/findings.<your-domain>.yaml` (e.g. `findings.S1.yaml`). The YAML is the structured payload; your assistant-text return is a ~150-token summary pointing the main agent at the file.
+
+### Disk-persisted findings file (write this)
+
+```yaml
+# work/<run-id>/findings.<your-domain>.yaml
+domain: S1               # S1 | S2 | S3 | S4 | W1 | W2
+run_id: <YYYY-MM-DD>-<sha8>
+model: <friendly name>
+model_id: <canonical model-id>
+started_at: 2026-05-15T08:19:01Z
+ended_at: 2026-05-15T08:26:28Z
+duration_seconds: 447
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 8
+  bridge_fetches: 4
+items:
+  - title: "Cisco Catalyst SD-WAN authentication bypass actively exploited (CVE-2026-20182)"
+    sources:
+      - { url: "https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/", publisher: "Cisco Talos", date: "2026-05-14", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/ve-cve-2026-20182-…", publisher: "Rapid7", date: "2026-05-14", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW", publisher: "Cisco PSIRT", date: "2026-05-14", role: "corroborating" }
+    discovery_trace: "cisa-kev bridge → CVE-2026-20182 newly listed → Talos primary → Rapid7 corroborating → Cisco PSIRT advisory"
+    summary: |
+      3-8 sentence technical summary, English, no IOCs, no vanity metrics.
+    ch_eu_nexus: "global; affects EU public-sector SD-WAN deployments"
+    public_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-20182]
+    actors_campaigns_malware: ["UAT-8616"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    # v2.53 — source-quote binding (Tier 1). 1–3 verbatim quotes per item,
+    # extracted during the fetch. Each `quote` is a substring of what
+    # `WebFetch` (or `tools/fetch_source.py`) returned on the matching
+    # `source_url`. `attribution` is the publisher label used in the
+    # footer's `Source:` list, so the main agent can render the footer's
+    # optional `Evidence:` field directly from this structure without
+    # re-fetching. Required on items that will end up in the § 0
+    # Immediate Action callout (where v2.53 makes Evidence mandatory);
+    # strongly encouraged on every § 1 / § 2 / § 5 item; optional on § 3 /
+    # § 4 in this rollout.
+    evidence:
+      - quote: "Cisco Talos is tracking the active exploitation of CVE-2026-20182"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/"
+      - quote: "CVSS v3.1 score of 10.0 (Critical)"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ve-cve-2026-20182-…"
+    extended_notes: |
+      Optional notes — defender vantage, related historical reporting, deep-dive angle.
+  # … one entry per item
+candidate_sources:
+  - id: depthfirst
+    publisher: "depthfirst.com (security research blog)"
+    url: "https://depthfirst.com"
+    category: research
+    why: "AI-assisted vulnerability research; primary for CVE-2026-42945 NGINX Rift."
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge; WebSearch fallback found no in-window items."
+```
+
+For S1 (daily Active Threats & trending vulns), additionally include a `cve_table:` list of records `{cve, product, cvss, epss, kev, exploited, patch, source}` so the main agent can render the § 2 secondary aggregation table without re-parsing prose.
+
+### Compact summary you return to the spawn caller
+
+Exactly these lines, no preamble, no prose around them:
+
+```
 **Model:** {your friendly model name} (`{your canonical model-id}`)
 **Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
 **Self-telemetry:** webfetch_calls=NN · websearch_calls=NN · bridge_fetches=NN
+**Findings:** N items written to work/<run-id>/findings.<your-domain>.yaml
+**Candidate sources:** N (or "none")
+**Coverage gaps:** N (or "none")
+```
+
+The main agent reads only those summary lines (~150 tokens), then `Read`s the YAML file when composing. **Do not paste the full findings list into your assistant-text return** — that defeats the token-budget purpose. If you cannot write the YAML file (Bash unavailable, disk full, permission denied), say so explicitly in the assistant-text return and fall back to the legacy Markdown shape so the run still produces a brief — `find: yaml-write-failed` is the operator signal.
+
+### Legacy Markdown shape (fallback only)
+
+When the YAML write fails, return the prior shape. The main agent parses both shapes (v2.52 and earlier briefs were produced this way):
+
+```markdown
+**Model:** … **Timestamps:** … **Self-telemetry:** …
 
 ## {Item title}
 
-**Sources:**
-- [Publisher 1, YYYY-MM-DD](url) — primary
-- [Publisher 2, YYYY-MM-DD](url) — corroborating
-
-**Discovery trace:** {first seen at: <source-id / search query>, URL <full URL>} → {pivot 1: <publisher>, URL <full URL>} → {primary: <publisher>, URL <full URL>}. Every step carries the actual full URL fetched. Original entry-point URL preserved verbatim, even when duplicated in `Sources:`. One line, every step explicit, no abbreviations like "see Sources above."
-
-**Summary:** {3–8 sentences, technical, English, no IOCs, no vanity metrics}
-
-**CH/EU nexus:** {string} | **Public-sector nexus:** {string} | **Sector:** {string}
-**CVEs:** CVE-..., CVE-...
-**Actors / campaigns / malware:** {list}
+**Sources:** [Publisher, YYYY-MM-DD](url) — primary; [Publisher2, YYYY-MM-DD](url) — corroborating
+**Discovery trace:** …
+**Summary:** …
+**CH/EU nexus:** … | **Public-sector nexus:** … | **Sector:** …
+**CVEs:** CVE-…, CVE-…
 **Verification:** MULTI-SOURCE | SINGLE-SOURCE-NATIONAL-CERT | SINGLE-SOURCE-OTHER | CONTRADICTED
 **Confidence:** HIGH / MEDIUM / LOW
 **Novelty:** new | update-to-prior:YYYY-MM-DD | duplicate
-
-{Optional extended notes — defender's view, related historical reporting, suggested deep-dive angle.}
 ```
 
 For S1 (daily Active Threats & trending vulns), additionally return a Markdown table `CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source` for every CVE clearing the § 2 inclusion gates.
@@ -411,7 +494,7 @@ For new-source candidates, append a separate `## Candidate sources` section with
 
 For coverage gaps you noticed (sources you tried that 403'd / 404'd / had no in-window items), append a `## Coverage gaps` section listing source-ids and reasons.
 
-## Technical depth — what every returned item should carry (v2.51 — moved here from the daily/weekly main-agent prompts)
+## Technical depth — what every returned item should carry (v2.52 — moved here from the daily/weekly main-agent prompts)
 
 Audience is **highly technical** (Tier 2/3 IR, threat hunters, detection engineers). Every item you return must give enough specificity for the main agent to compose a brief that lets the reader reason about detection, hunt, and hardening in their own environment. **Surface-level talking points are a quality regression.** Apply this depth at research time — the main agent composes from your returns and does NOT have this vocabulary in its prompt baseline, so if you don't surface the specifics, they don't reach the published brief.
 
@@ -428,7 +511,6 @@ For every item, where the source supports:
 A worked-good fragment showing this depth lives in [`prompts/brief-template.md`](../../prompts/brief-template.md) — illustrative npm supply-chain compromise (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
 
 Don't invent technical detail the source did not state. **Better to write less than to fabricate plausible-sounding specifics** — the main agent's Phase 5.7 verification will catch unsupported facts and either drop the item or burn iteration budget on remediation; surface only what your fetched sources actually say. PD-1 in the daily prompt is the same rule.
-
 ## What you do NOT do
 
 - You do not write the brief file. The main agent does that in Phase 4.

@@ -102,7 +102,7 @@ The explicit `if/else` matters: the tail shape `[ "$PUSH_OK" != "true" ] && echo
 ## Operational guardrails
 
 - **Skeleton-then-Edit (applies to docs / prompts / build code, not just briefs).** A single `Write` of any large file — or a long sequence of large `Edit`s in one assistant turn — trips `Stream idle timeout — partial response received` and silently drops the rest of the turn. Empirical limit: past ~6–8 substantial `Edit` calls in a single response is risky; a single `Write` of >300 lines is risky. Two shapes that work: (1) for new files, `Write` a placeholder skeleton (`_(no content yet)_`) → `Read` it back → `Edit` each section in turn; (2) for refactors that touch many files, batch ~5 small `Edit`s per turn, then yield with a one-sentence progress update before the next batch. A stream-idle timeout cannot be recovered from — the user can interrupt; that hang cannot.
-- **Persist intermediate state often** under `work/<run-id>/<step>.json` (gitignored). After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume.
+- **Persist intermediate state often** under `work/<run-id>/<step>.json`. After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume. **v2.59: `work/<run-id>/` is version-controlled** — Phase 6 (daily) / Phase 5 (weekly) commits the directory alongside the brief so sub-agent findings YAMLs, verification iteration reports, the URL-liveness ledger, and per-agent timestamp checkpoints are auditable in git history. The directory is the operator's primary forensic surface when a published brief later surfaces a defect.
 - **One new candidate source per run, maximum.** Sub-agents surface candidates; the main agent writes them as `status: "candidate"` in `sources/sources.json` during Phase 5.
 - **Verification loop is non-negotiable but never blocks publish.** Phase 5.7 (daily) / Phase 4.7 (weekly) spawns the verifier. Iteration 1 always runs. NEEDS_FIXES → apply remediations and re-spawn fresh. **Cap 5 iterations** (v2.46), with **model rotation across iterations** (v2.47): odd iterations spawn `cti-verification` (Opus), even iterations spawn `cti-verification-alt` (Sonnet). Iteration 5 still NEEDS_FIXES → publish anyway with residuals logged in § Verification Notes; `verification_residual_count` records `(truth + editorial)` of the final iteration so the cap-breach surfaces on the Ops dashboard (v2.47 — **never 0 on a NEEDS_FIXES final iteration**).
 
@@ -140,9 +140,12 @@ site/_site/trends/                 # v2.47 § 4.1 — cross-brief threat-class t
 site/_site/feed-{public-sector,healthcare,finance,energy,ot-ics,defense,telco,education}.xml  # v2.47 § 4.3 — sector-specific RSS slices
 docs/architecture.md               # end-to-end map of what reads/writes what
 docs/operating.md                  # operator runbook
-work/<run-id>/                     # gitignored intermediate state
+work/<run-id>/                     # v2.59: version-controlled per-run artefact dir — committed in Phase 6 with the brief
 work/<run-id>/url-liveness.tsv     # v2.47 § 3.4 — sub-agents append `<url>\t<status>\t<fetched_at>` per fetch; check_brief.py reads this
 work/<run-id>/prior_coverage.json  # v2.47 § 2.2 — Phase 0 builds this; sub-agents read it for fetch-time dedup
+work/<run-id>/findings.<S1|S2|S3|S4>.yaml  # v2.58 § Tier 4.3 — structured sub-agent findings; main agent reads from disk
+work/<run-id>/verification.iter<N>.md  # v2.50 § verifier compact-summary — full disk report per iteration
+work/<run-id>/verification.iter<N>.findings.yaml  # v2.48 § findings-summary — machine-readable per-iteration finding records
 ```
 
 ## Editing the master prompts — versioning rule (ALWAYS)

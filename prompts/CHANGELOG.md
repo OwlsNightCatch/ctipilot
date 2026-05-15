@@ -4,6 +4,99 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.59 — 2026-05-15 (work/<run-id>/ becomes version-controlled — every run commits the sub-agent artefact dir alongside the brief)
+
+### Why
+
+The 2026-05-15 cap-breach run made it painfully clear that the operator's primary forensic surface — *what each sub-agent actually fetched, what it wrote, what evidence quote was extracted, which verification iteration flagged what* — vanishes the moment the routine container shuts down. The brief on `main` is the only record. The `work/<run-id>/` directory that carried `findings.<domain>.yaml`, `verification.iter<N>.md`, `url-liveness.tsv`, the per-agent `.started_at` / `.ended_at` timestamps, and `prior_coverage.json` was gitignored — by design, "intermediate state, ephemeral". That design has been wrong for the entire history of the routine; we just didn't notice until v2.58's structured-findings shape made the cost visible: the v2.58 main agent reads sub-agent returns from `findings.<domain>.yaml`, and now that file is the *authoritative record of what each sub-agent surfaced*. Throwing it away post-run leaves no audit trail when the published brief later turns out to contain a fact the cited source doesn't support.
+
+User asked directly: *"commit the agent work to the git repo and publish it for each run. I would love to see the subagent findings versioned in the git. Just add the entire work/ dir to the commit with the brief."* v2.59 satisfies that request.
+
+### What changed
+
+**`.gitignore`** — `work/` removed; replaced with narrow editor/OS-chaff exclusions (`work/**/.DS_Store`, `work/**/*.swp`, `work/**/*.bak`).
+
+**`CLAUDE.md`** — "Operational guardrails" bullet on `work/<run-id>/` rewritten: "v2.59: `work/<run-id>/` is version-controlled — Phase 6 (daily) / Phase 5 (weekly) commits the directory alongside the brief so sub-agent findings YAMLs, verification iteration reports, the URL-liveness ledger, and per-agent timestamp checkpoints are auditable in git history. The directory is the operator's primary forensic surface when a published brief later surfaces a defect." The `Where things live` block expanded to enumerate the per-run files: `findings.<S1|S2|S3|S4>.yaml`, `verification.iter<N>.md`, `verification.iter<N>.findings.yaml`.
+
+**`prompts/daily-cti-brief.md`** — Phase 6 § 1 (Stage and commit) `git add` invocation extended to include `"work/${RUN_ID}/"`. The commit-message template adds a `work/${RUN_ID}/:` line summarising the artefact-dir contents. A rationale paragraph above the snippet explains why committing the dir matters and quantifies the size impact (~200-500 KB per run; ~70-180 MB cumulative over a year).
+
+**`prompts/weekly-summary.md`** — Phase 5 § 1 (Stage and commit) extended analogously; references the daily prompt's rationale paragraph to avoid duplication.
+
+### What stays
+
+- The `work/<run-id>/` directory's *contents* are unchanged — same `findings.<domain>.yaml` shape, same `verification.iter<N>.md` shape, same `url-liveness.tsv`, same `prior_coverage.json` / `prior_coverage_keys.json`, same `state-summary.json`. v2.59 changes only *what we commit*, not *what we write*.
+- The auto-merge workflow's conflict-resolution rules. `work/<run-id>/` is unique per run (the `run_id` carries the date + sha8), so concurrent routine runs never collide on the same path.
+- Size discipline: future work on a `tools/work_archive.py` (compress runs older than 30 days; delete runs older than 1 year) is deferred to v2.60+ once the actual growth rate is observed.
+
+---
+
+## 2.58 — 2026-05-15 (Tier 1 + 3 + 4 — source-quote binding, verifier convergence, workflow hardening)
+
+### Why
+
+v2.57 (Tier 2 mechanical pre-verifier checks) caught the surface defects that don't need editorial review — broken anchor links, quantifier flags, TL;DR/body drift, name-collision candidates. v2.58 lands the deeper structural changes the 2026-05-15 cap-breach run revealed:
+
+1. **The Datadog Shai-Hulud inversion almost shipped to readers.** The brief described an attacker offensive worm as if it were a Datadog defender framework and § 6 told defenders to "run the framework." The only thing that stopped publication was the verifier's truth pass on iter-1. Nothing structural prevented the inversion. **Tier 1 (source-quote binding)** addresses this by requiring sub-agents to attach a verbatim quote from a fetched source to every load-bearing claim. The inversion would have been impossible because no quote from the Datadog blog says "defender framework"; the sub-agent could not have constructed an `Evidence:` field for the inverted claim.
+
+2. **The verifier loop introduced regressions.** Iter-2 (Sonnet, reading cold) added "Hyunwoo Kim" as Fragnesia co-discoverer — a fact the cited source does not support. Iter-3 (Opus) had to revert. **Tier 3.1 (prior-iteration deltas to alternating verifiers)** addresses this by passing the previous iteration's findings + the main agent's applied remediations to the Sonnet (even-iteration) spawns only. The cold cycle (Opus, odd iterations) keeps blind-spot detection; the deltas cycle prevents regressions on the same edits.
+
+3. **The verifier prompt's truth pass was generic.** **Tier 3.2 (new finding categories F13/F14/F15)** splits the most-common truth-defect classes into named categories with explicit detection guidance: analytical-link-as-fact (F13), quantifier-without-source (F14), name-collision-unflagged (F15).
+
+4. **The main agent fabricated sub-agent returns mid-wait.** The 2026-05-15 transcript shows the main agent writing "S1 returned: …" with full invented CVE details *before any sub-agent had returned*. **Tier 4.2 (compose-after-return)** makes it mechanical: no `work/<run-id>/<S1|S2|S3|S4>.ended_at` file ⇒ no `Edit` against `briefs/YYYY-MM-DD.md`. **Tier 4.3 (findings on disk)** complements this: sub-agent returns are written to `work/<run-id>/findings.<domain>.yaml`, and the main agent reads from disk rather than parsing assistant-text.
+
+5. **The premature-commit issue.** A stop hook fired mid-verification; the main agent committed with `final_verdict: "PENDING"`. **Tier 4.1 (commit-gate)** adds a `verification-final-verdict-set` FAIL to `tools/check_brief.py`.
+
+### What changed
+
+**`tools/check_brief.py`** — **`verification-final-verdict-set`** FAIL (Tier 4.1) refuses commits when `state/run_log.json.verification.final_verdict` is in the pending-states set. **`evidence-shape`** check (Tier 1) — FAIL on malformed `Evidence:` field, WARN on attribution unbound to listed Source, PASS silently when absent. Footer parser extended (in both `site/build.py` and the check_brief fallback) to parse `Evidence:` into a structured `evidence: [{quote, attribution}]` list.
+
+**`.claude/agents/cti-research.md`** (Tier 1 + 4.3) — Return contract reshaped: sub-agents write structured findings to `work/<run-id>/findings.<domain>.yaml` and return only a ~150-token summary. The YAML carries a new `evidence: [{quote, attribution, source_url}]` list per item. Legacy Markdown return shape kept as fallback. `.ended_at` checkpoint file mandate strengthened.
+
+**`.claude/agents/cti-verification.md` + `.claude/agents/cti-verification-alt.md`** (Tier 3.1 + 3.2, lockstep) — New "What to read" bullet on the optional `Prior-iteration deltas` block. Three new finding categories: **F13 analytical-link-as-fact**, **F14 quantifier-without-source**, **F15 name-collision-unflagged** — all truth-class. YAML `category` slug list grows accordingly. Verdict-block truth count = F1–F4 + F13–F15.
+
+**`prompts/daily-cti-brief.md`** — Phase 4 Compose-after-return discipline; Phase 5.7 Prior-iteration deltas block; Phase 5.7 F13/F14/F15 remediation rows; per-item-footer `Evidence:` field documentation (mandatory on § 0 Immediate Action callout, optional elsewhere).
+
+**`prompts/brief-template.md`** — Immediate Action callout footer example shows `Evidence:` field shape.
+
+**`prompts/check-brief-fixes.md`** — Fix-recipe paragraphs for `verification-final-verdict-set`, `evidence-shape`, `evidence-binding`.
+
+### What stays
+
+- 5-iteration verifier cap, model rotation, early-exit on low-defect convergence, cap-breach safety valve.
+- Mechanical gate ↔ verifier separation.
+- Markdown fallback for sub-agent returns (parsed alongside YAML).
+- Evidence field parsed and validated but not yet rendered on the public site (reserved for v2.60+).
+
+---
+
+## 2.57 — 2026-05-15 (Tier 2 mechanical pre-verifier checks: anchor-resolution, quantifier-evidence, tldr-body-drift, name-collision)
+
+### Why
+
+The 2026-05-15 cap-breach run had iter-4 (Sonnet, 237 s) and iter-5 (Opus, 59 s) burn editorial-review budget on things `check_brief.py` should catch for free: a CVE-table-cell drift in iter-4 and five broken `[text](#slug)` anchor links in §6 Action Items in iter-5. Three other iterations spent budget flagging quantifier claims ("five unpatched zero-days", "first time ESET has documented", "10 additional clusters") and the TL;DR-vs-body region drift (`europe, switzerland` in the §6 footer after iter-1 had already removed `switzerland` from §1). The Datadog Shai-Hulud inversion (iter-1 F1) was preceded by a missed-collision signal — the name "Shai-Hulud" appeared in prior coverage as the TeamPCP attacker worm and in today's §4 UPDATE as the Datadog tool, without the main agent registering the collision.
+
+Tier 2 lands four mechanical checks that catch each defect class before the verifier ever spawns. Goal: free verifier budget for editorial judgement, drop the cap-breach rate, and surface name-collision risk explicitly so the catastrophic-inversion class is registered by the main agent at compose time rather than discovered by the verifier post-hoc.
+
+### What changed
+
+**`tools/check_brief.py`** — four new checks:
+
+- **`anchor-resolution`** (FAIL). Every `[text](#slug)` inline link must resolve to an H2/H3/H4 heading in the same brief. Slugs computed via `slugify()` imported from `site/build.py` (local fallback). Mechanical defects of this class should never reach a verifier iteration.
+- **`quantifier-evidence`** (WARN, detection-only). Surfaces phrases like "first time", "the only", "never before", numeric quantifiers ("five unpatched zero-days", "10 additional clusters"), counted-status patterns for verifier corroboration against cited sources. v2.58 upgrades the named F14 category to FAIL when paired with Evidence binding.
+- **`tldr-body-drift`** (WARN). For each TL;DR bullet naming a CVE-YYYY-NNNNN token, find the matching § 1 / § 2 body item and compare the TL;DR's regional phrasing against the body footer's `Region:` taxonomy. v2.57 ships a narrow Swiss-and-European-only phrase set — the concrete 2026-05-15 iter-1 failure mode.
+- **`name-collision`** (WARN). Reads `name_collision_candidates` from `work/<run-id>/prior_coverage.json` (new field — see below). For each H3 in today's brief, scans the body for any candidate name and WARNs if the H3 is not an `UPDATE:`-prefixed block and the body lacks a disambiguation phrase. Catches the Datadog Shai-Hulud inversion class at compose time.
+
+**`tools/build_prior_coverage.py`** — emits `name_collision_candidates` list. Three patterns extract codenames from prior-coverage titles: quoted codenames, hyphenated TitleCase, CamelCase with ≥ 2 internal capitalisations. Actor-cluster IDs (UAT-/UNC-/APT-/Storm-/CL-XXX-/TA/UAC-) deliberately excluded — stable tracking IDs, never reused for defender tooling. On the 2026-05-15 corpus: 35 candidates including Shai-Hulud, Fragnesia, Dirty Frag, NGINX Rift, YellowKey, GreenPlasma, BitLocker, TanStack, FrostyNeighbor, ShinyHunters.
+
+**`prompts/check-brief-fixes.md`** — Four new fix-recipe paragraphs, one per check.
+
+### What stays
+
+- Mechanical gate ↔ verifier separation; verifier reads the same brief shape, just with a richer pre-spawn WARN list as cross-check signal.
+- All existing checks unchanged. v2.57 is purely additive.
+
+---
+
 ## 2.56 — 2026-05-15 (telemetry: `fetch_failures[]` becomes a strict "coverage gaps" log, `bridge_uses[]` tracks successful bridge calls separately, Ops dashboard sub-agent card rebuilt with labelled metrics)
 
 ### Why

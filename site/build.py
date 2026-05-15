@@ -979,7 +979,7 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     # Sanity gate: the line must contain at least one of the footer field
     # labels somewhere in the body. Otherwise we'd treat any italic line
     # ending in `*` as a footer, which would corrupt prose paragraphs.
-    if not re.search(r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources):", body):
+    if not re.search(r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources|Evidence):", body):
         return None
 
     # Pull all `[Title](URL)` first; we'll consume them by position.
@@ -1013,12 +1013,17 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
         "vector": None,
         "auth": None,
         "status": [],
+        # v2.58 — source-quote binding. List of `{quote, attribution}` records
+        # extracted from the optional `Evidence:` field in the footer. Empty
+        # when the item has no Evidence field; renderer treats either case
+        # as valid for now.
+        "evidence": [],
     }
 
     KNOWN_TYPED_KEYS = {
         "tags", "region", "sector", "sectors", "cve", "cvss",
         "vector", "auth", "status", "additional_source", "additional_sources",
-        "source", "sources",
+        "source", "sources", "evidence",
     }
 
     def _add_source_from_placeholder(ph: str) -> None:
@@ -1061,6 +1066,23 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
                     out["auth"] = value.strip()
                 elif key == "status":
                     out["status"] = [t.strip() for t in value.split(",") if t.strip()]
+                elif key == "evidence":
+                    # v2.58 — parse `"quote 1" (Publisher A); "quote 2" (Publisher B)` into
+                    # structured records. Tolerates curly quotes and `;` or `·` as
+                    # the inter-quote separator (· is unusual; · is the field
+                    # separator and won't occur inside an Evidence value because
+                    # the split-on-· happens before this loop, but allow a
+                    # space-padded variant just in case).
+                    quote_re = re.compile(
+                        r'["“]([^"”]+?)["”]\s*(?:\(\s*(?P<attr>[^)]+?)\s*\))?'
+                    )
+                    recs: list[dict[str, str]] = []
+                    for qm in quote_re.finditer(value):
+                        q = qm.group(1).strip()
+                        a = (qm.group("attr") or "").strip()
+                        if q:
+                            recs.append({"quote": q, "attribution": a})
+                    out["evidence"] = recs
                 continue
             # Unknown typed key — fall through and try bare-link extraction.
         # Bare link(s): every link placeholder in this part becomes an

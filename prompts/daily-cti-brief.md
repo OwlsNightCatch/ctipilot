@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.56 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.59 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -295,6 +295,28 @@ Length is dictated by source material. **Do not pad; do not omit material the re
 
 Reader doesn't know about sub-agents, phases, or this prompt — never let workflow-internal language leak.
 
+### Compose-after-return discipline (v2.53 — anti-fabrication)
+
+**Do not begin Phase 4 composition until every Phase 1 sub-agent has either returned or hit the 30-min hard cap.** A sub-agent is considered returned exactly when its `.ended_at` checkpoint file exists in `work/<run-id>/`. Pseudocode for the gate at the top of Phase 4:
+
+```bash
+for k in S1 S2 S3 S4; do
+    if [ ! -f "work/${RUN_ID}/${k}.ended_at" ]; then
+        # Sub-agent has not written its end-timestamp file.
+        elapsed=$(( $(date -u +%s) - $(date -u -d "$(cat work/${RUN_ID}/${k}.started_at)" +%s) ))
+        if [ "$elapsed" -lt 1800 ]; then
+            echo "Phase 4 BLOCKED — ${k} still running (${elapsed}s elapsed, 1800s cap)"; sleep 30; continue
+        fi
+        # Past 30 min — treat as stalled, proceed without ${k}, log gap in § 7.
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "work/${RUN_ID}/${k}.ended_at.stalled"
+    fi
+done
+```
+
+The rule exists because the 2026-05-15 run trace shows the main agent fabricating "S1 returned: …" text — including invented CVE IDs and full technical detail — *before any sub-agent had actually returned*. The main agent self-corrected before composing the brief, but under different conditions those fabrications could have made it into the published Markdown. The mechanical gate makes that failure structurally impossible: no `.ended_at` file ⇒ no `Edit` against `briefs/YYYY-MM-DD.md`. The 30-min cap remains the abandon-and-proceed safety valve from the anti-crash header.
+
+**Corollary — do not pre-fill the brief skeleton with content from sub-agents whose returns you have only inferred.** Skeleton placeholders (`_(no content yet)_`) are fine; substantive prose pretending to come from a sub-agent that has not written `.ended_at` is forbidden. The skeleton-then-Edit pattern (anti-stream-timeout guard) and the compose-after-return gate are complementary, not in tension: write the skeleton with placeholders during Phase 2/3, but populate sections only from actual sub-agent returns in Phase 4.
+
 ### Section structure (NORMATIVE — exactly 8 sections in this order)
 
 | § | Title | Always present? |
@@ -321,6 +343,18 @@ Every content block — every Immediate Action, § 1 item, Trending Vulnerabilit
 ```
 
 Rules: leading `— *` and trailing `*` required; field separator is middle dot ` · ` (U+00B7 with surrounding spaces); `Source:` opens the source list, followed by ≥1 `[Title](URL)` blocks separated by ` · ` (every Source URL fetched in this run, resolving to content matching the claim); `Tags` and `Region` **always present**; `Additional source`, `CVE`, `CVSS`, `Vector`, `Auth`, `Status` only when applicable. CVE-typed entries always carry `CVE`, `Vector`, `Auth`, `Status`; `CVSS` is `n/a` when not yet assigned.
+
+**`Evidence:` field (v2.53 — optional, source-quote binding).** When the sub-agent who researched the item extracted verbatim quotes from the fetched sources, the item's footer carries an `Evidence:` field listing those quotes with attribution. Shape:
+
+```
+· Evidence: "verbatim quote 1" (Publisher A); "verbatim quote 2" (Publisher B); …
+```
+
+Each quote must be (a) a substring of the body text returned by `WebFetch` (or `tools/fetch_source.py`) on one of the URLs listed in `Source:` / `Additional source:` for this item, and (b) attributed by the publisher name of that source. The publisher attribution is what binds the quote to a fetched source the reader can verify. Use straight `"..."` quote marks; if the quoted text itself contains double quotes, use single quotes inside the verbatim quote or rely on the surrounding context to disambiguate.
+
+The build's footer parser (`site/build.py` `parse_footer_line`) parses `Evidence:` into a structured list and the `tools/check_brief.py` `evidence-shape` check validates the field's shape (parseable quotes, attributions binding to listed Sources). Items without an `Evidence:` field pass the check silently — v2.53 is a permissive rollout, not a hard mandate. v2.54+ will escalate to FAIL once historical briefs are backfilled. The structural-anti-fabrication rationale: every load-bearing claim in the brief should trace to a substring of a source the agent actually fetched in this run. The 2026-05-15 iter-1 Datadog Shai-Hulud inversion would have been impossible because no quote from the Datadog blog says "we open-sourced a defender framework" — the agent could not have constructed an `Evidence:` field for the inverted claim.
+
+**Mandatory for the Immediate Action callout in § 0.** The Immediate Actions block is the highest-trust item on the page — it tells the reader to drop everything and act. v2.53 mandates `Evidence:` on the callout's footer specifically (the only required-Evidence place in v2.53; other sections remain optional). Both quotes in the Immediate Action callout's Evidence field should come from the most operationally critical Source on the item (the vendor PSIRT or the primary ITW-confirming research blog).
 
 **Multi-source.** When >1 publisher carries substantive sourcing, list them all. Two equivalent forms (build parses both): `Source: [a](u1) · [b](u2) · [c](u3) · Tags: …` (preferred for 2–4 sources) or `Source: [a](u1) · Additional source: [b](u2) · Additional source: [c](u3) · Tags: …`. **First link is the most primary**: vendor PSIRT advisory > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news.
 
@@ -721,6 +755,16 @@ The spawn message is short:
 3. **Dedup context** — same context built in Phase 0 (last-7-days briefs, `cves_seen.json`, `covered_items.json`).
 4. **Relevant slice of `state/run_log.json`** — today's `sub_agents`, `fetch_failures`, `items_published` so the verifier can spot missed-angles given source-coverage signal.
 5. **Confirmation that Phase 5.5 passed** — one line stating `mechanical gate (check_brief.py) exited 0 in iteration N pre-spawn` so the verifier knows mechanical defects are out of scope.
+6. **(v2.53 — even iterations only)** `Prior-iteration deltas` block. **Iterations 2 and 4 (the Sonnet `cti-verification-alt` spawns) receive a structured summary of every finding the previous iteration emitted and every remediation the main agent applied since.** Odd iterations (`cti-verification` Opus) continue to read genuinely cold; the alternation preserves model-rotation blind-spot detection on the odd cycle while preventing regression introduction (Sonnet seeing what Opus already flagged) on the even cycle. The 2026-05-15 run's iter-2 → iter-3 Hyunwoo Kim flip-flop is the canonical failure this prevents: iter-2 added Kim as Fragnesia co-discoverer (a regression from iter-1's correction); iter-3 reverted. With deltas passed, iter-2 sees iter-1's `findings[]` and the corresponding `remediation_applied` text, and can verify whether the applied edit is correct rather than reading cold and risking a contradictory remediation.
+   Format the block from `state/run_log.json.verification.iterations[<N-1>].findings[]` + the main agent's per-finding remediation log. Each entry:
+   ```
+   - code: F2
+     section: § 2 CVE-2026-46300
+     summary: Fragnesia discoverer misattributed to Wiz Research; actual: William Bowling / Zellic.io
+     remediation_applied: Re-pivoted to the Zellic.io blog; updated discoverer prose; demoted Wiz to "technical writeup publisher"
+     verify_in_this_iteration: does the cited source attribute Fragnesia to Bowling (Zellic) and not to Wiz?
+   ```
+   The verifier prompt's "Iteration-context input" clause (in [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md)) tells the alt verifier how to ingest this block and where to weight its truth-pass attention. Omit the block on iteration 1 entirely (no prior iteration exists).
 
 ### Main-agent loop
 
@@ -750,6 +794,9 @@ Decision rules in priority order:
     | Surface contradiction | Add § 7 entry: `Contradiction: <topic> — A says X; B says Y. Brief reports <chosen framing> on basis of <reasoning>.` |
     | Missed angles | Spawn one targeted `cti-research` sub-agent if likely to clear inclusion gate; else log as `Coverage gap: <angle> — not pursued in this run` in § 7. |
     | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave — F11 advisory items alone never block CLEAN. |
+    | Analytical-link-as-fact (F13, v2.53) | Soften or drop the asserted connection. If a source genuinely supports the link, re-cite that source on the connection claim and rewrite the sentence so the link is presented as the source's claim, not the brief's analytical inference (e.g. "echoes the credential-leakage pattern" rather than "the same mechanism TeamPCP used"). |
+    | Quantifier without source (F14, v2.53) | Replace the quantifier with the value the source actually states, or drop it. "Five unpatched zero-days" → either "four" if the source enumerates four, or "several" if the source doesn't count, or omit if the count was load-bearing on a non-counted source. |
+    | Name-collision unflagged (F15, v2.53) | Add an explicit disambiguation phrase to the body ("named for the attacker tooling", "no relation to the X campaign", "not to be confused with"). If the H3 is actually an update to the prior coverage, restructure it as an `UPDATE:` block linking back. The Datadog Shai-Hulud inversion would have been remediated by either rewriting the §4 UPDATE to correctly describe Datadog *analysing* the leaked attacker code (which is what the source says) or, if Datadog had released a genuine same-name defender tool, by adding "named for the attacker worm Datadog Security Labs previously analysed." |
 
    Apply edits via `Edit` calls; do not rewrite untouched sections.
 
@@ -811,17 +858,24 @@ Catches: invented URLs written without fetching; URLs that 404 between research 
 
 Brief lands on `main` exclusively via the auto-merge GitHub Action (`.github/workflows/auto-merge-claude.yml`). The routine **never pushes to `main` directly** — repo policy. The routine commits on its feature branch, syncs with `origin/main` (with auto-resolution for known conflict files), pushes the feature branch, and lets the action promote.
 
-**1. Stage and commit on the current branch:**
+**1. Stage and commit on the current branch.** **v2.59 mandates committing the per-run `work/<run-id>/` directory alongside the brief** so sub-agent findings (`findings.<S1|S2|S3|S4>.yaml`), verification reports (`verification.iter<N>.md` / `.findings.yaml`), the URL-liveness ledger (`url-liveness.tsv`), per-agent timestamp checkpoints (`<domain>.started_at` / `.ended_at`), the prior-coverage snapshot (`prior_coverage.json` + `prior_coverage_keys.json`), and the state digest (`state-summary.json`) are auditable in git history. The directory is the operator's primary forensic surface when a brief surfaces a defect post-publish — without it, the question "which sub-agent fetched which URL with which evidence quote?" has no answer.
 
 ```bash
-git add briefs/YYYY-MM-DD.md state/covered_items.json state/cves_seen.json state/deep_dive_history.json state/run_log.json sources/sources.json .claude/memory/
+git add briefs/YYYY-MM-DD.md \
+        state/covered_items.json state/cves_seen.json state/deep_dive_history.json state/run_log.json \
+        sources/sources.json \
+        .claude/memory/ \
+        "work/${RUN_ID}/"
 git commit -m "brief: YYYY-MM-DD
 
 - ch-eu+pub: N · vulns: N · incidents: N · research: N · deep-dive: <topic or 'none'>
 - sources: <one-line summary of any URL updates / demotions / candidates>
 - cves: <new: N · updated: N · removed: N (with reason)>
+- work/${RUN_ID}/: N findings YAMLs · N verification iterations · url-liveness=N lines
 "
 ```
+
+The whole `work/<run-id>/` dir is committed as-is; the gitignore exempts only editor / OS chaff (`.DS_Store`, `*.swp`, `*.bak`). If a sub-agent wrote a transient scratch file you don't want versioned, the convention is to nest it under `work/<run-id>/.scratch/` and add a `.gitignore` entry — but the default is "commit everything the sub-agents wrote". A typical daily run commits ~200-500 KB of YAML / Markdown / TSV under `work/<run-id>/`; over a year the cumulative `work/` size is ~70-180 MB. The forensic value (every sub-agent's claim → quote → fetched URL trace is recoverable from git) outweighs the storage cost.
 
 **2. Sync feature branch with `origin/main`.** Main may have advanced (other routines, prompt edits, source-list updates) — and the routine container's local view of `origin/main` may itself be stale (clone snapshot taken hours before the routine started). The sync attempts a merge and applies **auto-resolution rules** for known conflict files before giving up.
 

@@ -79,12 +79,18 @@ def ok(label: str, detail: str = "") -> None:
 
 try:
     sys.path.insert(0, str(SITE_DIR))
-    from build import parse_footer_line, parse_taxonomy, validate_footer  # type: ignore
+    from build import parse_footer_line, parse_taxonomy, slugify, validate_footer  # type: ignore
     BUILD_IMPORTED = True
 except Exception as exc:  # pragma: no cover — fallback path
     BUILD_IMPORTED = False
     _print("WARN", "build-import",
            f"site/build.py unimportable ({exc!s}); falling back to local parsers")
+
+    def slugify(text: str) -> str:
+        text = text.lower()
+        text = re.sub(r"[^a-z0-9]+", "-", text)
+        text = re.sub(r"-+", "-", text)
+        return text.strip("-")
 
     _FOOTER_LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
@@ -96,7 +102,7 @@ except Exception as exc:  # pragma: no cover — fallback path
         body = m.group("body").strip()
         out: dict[str, Any] = {"sources": [], "tags": [], "regions": [], "sectors": [],
                                 "cve": None, "cvss": None, "vector": None,
-                                "auth": None, "status": []}
+                                "auth": None, "status": [], "evidence": []}
         # Replace links with placeholders so we don't trip on `· Source:` text.
         links = list(_FOOTER_LINK_RE.finditer(body))
         ph_map: dict[str, str] = {}
@@ -143,6 +149,16 @@ except Exception as exc:  # pragma: no cover — fallback path
                 out["auth"] = v.strip()
             elif k == "status":
                 out["status"] = [t.strip() for t in v.split(",") if t.strip()]
+            elif k == "evidence":
+                # v2.58 — match the build-side Evidence parser.
+                quote_re = re.compile(r'["“]([^"”]+?)["”]\s*(?:\(\s*(?P<attr>[^)]+?)\s*\))?')
+                recs: list[dict[str, str]] = []
+                for qm in quote_re.finditer(v):
+                    qtext = qm.group(1).strip()
+                    qattr = (qm.group("attr") or "").strip()
+                    if qtext:
+                        recs.append({"quote": qtext, "attribution": qattr})
+                out["evidence"] = recs
         return out
 
     def parse_taxonomy(path: Path) -> dict[str, set[str]]:
@@ -1686,6 +1702,34 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                     f"cap-breach iteration {final_iter.get('n', vi)} carries {len(findings)} per-finding record(s)",
                 )
 
+    # v2.58 — commit-gate when verifier is still in flight. The premature-commit
+    # failure mode from the 2026-05-15 run was: the routine spawned the
+    # verifier, a stop-hook fired before the verifier returned, the main
+    # agent set `verification.final_verdict: "pending"` (or PENDING), then
+    # committed. F1 (the dangerous Datadog inversion) lived on `main` for
+    # several minutes before the corrective commit landed. This check
+    # refuses the commit until the verifier outcome is recorded.
+    pending_states = {"pending", "in-flight", "in_flight", "running", "unknown", ""}
+    fv = (vblock_for_vr or {}).get("final_verdict") if isinstance(vblock_for_vr, dict) else None
+    if isinstance(fv, str) and fv.strip().lower() in pending_states:
+        fail(
+            "verification-final-verdict-set",
+            f"verification.final_verdict = {fv!r} — the verifier has not finished. "
+            f"Wait for the verification sub-agent to return and record its verdict "
+            f"(CLEAN | NEEDS_FIXES) before committing. If the verifier hard-failed "
+            f"or timed out past 30 min, record `final_verdict: \"timeout\"` with a "
+            f"§ 7 / § 10 Verification Notes line — never commit on a verdict the "
+            f"gatekeeper has not actually rendered.",
+        )
+    elif isinstance(fv, str) and fv.strip():
+        ok("verification-final-verdict-set", f"verification.final_verdict = {fv!r}")
+    elif vblock_for_vr and isinstance(vblock_for_vr.get("iterations"), list) and vblock_for_vr["iterations"]:
+        # Block exists with iterations but no final_verdict field — accept on
+        # the basis of the final iteration's verdict, since older v2.43–v2.52
+        # records may not carry the top-level field.
+        ok("verification-final-verdict-set",
+           "verification.final_verdict not explicitly set; final iteration's verdict is authoritative")
+
     # Per-agent model surface (v2.43+). Main agent records its own model;
     # every sub-agent that returned should record the model it self-identified
     # with. WARN (not FAIL) on missing fields so older runs from v2.42 still
@@ -2129,6 +2173,376 @@ def check_no_iocs(brief_text: str) -> None:
         ok("ioc-scan", "no obvious IOC patterns detected (version-string false positives skipped)")
 
 
+# --- v2.57 Tier 2 pre-verifier mechanical checks --------------------------
+#
+# These four checks land in v2.57 to catch defect classes that previously
+# burned verifier-iteration budget on mechanical issues. Each addresses a
+# specific failure mode from the 2026-05-15 cap-breach run; see
+# prompts/CHANGELOG.md entry v2.57 for the operator-facing rationale.
+
+# Matches `[text](#anchor-slug)` references with a `#`-prefixed href. Used by
+# check_anchor_resolution() to scan only intra-document anchor links and skip
+# external `http(s)://` URLs that other checks (source-urls) already validate.
+ANCHOR_LINK_RE = re.compile(r"\[(?P<text>[^\]]+)\]\(#(?P<slug>[^)]+)\)")
+
+# Matches the raw heading text after `##`, `###`, or `####`. Unlike H2_RE
+# (which strips the leading number prefix to derive canonical section keys),
+# this captures the full post-prefix string because site/build.py slugifies
+# the entire heading line — so `## 5. Deep Dive — …` becomes the slug
+# `5-deep-dive-…`, not just `deep-dive-…`.
+HEADING_RAW_RE = re.compile(r"^(?P<hashes>#{2,4})\s+(?P<title>.+?)\s*$")
+
+
+def check_anchor_resolution(brief_text: str) -> None:
+    """Every [text](#slug) in the brief must resolve to an H2/H3/H4 in the brief.
+
+    The 2026-05-15 cap-breach run found 5 broken anchor links in § 6 Action
+    Items: a stale slug from an iter-2 heading rename plus four `--` vs `-`
+    mismatches against the build's slugify (which collapses runs of
+    non-alphanumerics to a single hyphen). Mechanically detectable — should
+    never burn a verifier iteration. FAIL severity.
+
+    Slugs are computed using the same `slugify` function the static site
+    uses (imported from site/build.py at module load, with local fallback),
+    so a passing check guarantees a working link in the rendered HTML.
+    """
+    slugs: set[str] = set()
+    for line in brief_text.splitlines():
+        m = HEADING_RAW_RE.match(line)
+        if m:
+            slugs.add(slugify(m.group("title")))
+
+    broken: list[tuple[str, str]] = []
+    total = 0
+    for m in ANCHOR_LINK_RE.finditer(brief_text):
+        total += 1
+        slug = m.group("slug").strip()
+        # Tolerate trailing slashes that some Markdown renderers emit.
+        slug_norm = slug.rstrip("/")
+        if slug_norm not in slugs:
+            broken.append((m.group("text"), slug))
+
+    if broken:
+        examples = "; ".join(f"'{t}' → #{s}" for t, s in broken[:5])
+        more = f" (+{len(broken) - 5} more)" if len(broken) > 5 else ""
+        fail("anchor-resolution",
+             f"{len(broken)} of {total} internal anchor link(s) do not resolve to an H2/H3/H4 slug in the brief: {examples}{more}")
+    elif total == 0:
+        ok("anchor-resolution", "no internal anchor links to verify")
+    else:
+        ok("anchor-resolution", f"all {total} internal anchor link(s) resolve to valid H2/H3/H4 slugs")
+
+
+# Patterns that surface quantifier claims to the verifier. Each category
+# corresponds to a class of unsupported-quantifier defect the verifier
+# caught in the 2026-05-15 run (BitLocker "five unpatched", "first time
+# ESET has documented", "10 additional clusters"). Detection only —
+# the operator and the next verifier iteration use the WARN list as a
+# focus signal, not a hard-stop. Tier 1 (evidence binding, deferred)
+# will convert this to a FAIL once each claim is required to carry an
+# in-source verbatim quote.
+_QUANTIFIER_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+    ("absolute-claim",
+     re.compile(r"\b(?:first time|never before|the only|only known|the first ever|sole)\b", re.I)),
+    ("numeric-status",
+     re.compile(
+         r"\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+"
+         r"(?:unpatched|active|confirmed|distinct|named|separate|known)\s+\w+",
+         re.I)),
+    ("cluster-count",
+     re.compile(r"\b\d+\+?\s+(?:additional |new |separate |opportunistic |distinct )?clusters?\b", re.I)),
+    ("at-least-count",
+     re.compile(r"\b(?:at least|exactly|precisely)\s+\d+\b", re.I)),
+]
+
+# Sections where quantifier-flagging would surface noise rather than signal:
+# §0 TL;DR (echoes body content), §7 Verification Notes (quotes the brief's
+# own quantifiers when documenting drops).
+_QUANTIFIER_SKIP_SECTIONS = {"tldr", "verification-notes"}
+
+
+def check_quantifier_evidence(sections: list[dict[str, Any]]) -> None:
+    """Surface quantifier claims for verifier corroboration. WARN severity.
+
+    Pure detection in v2.57 — false positives expected. The output gives the
+    verifier (and the next iteration's spawn message) a focused list of claims
+    to cross-check against cited sources. Tier 1 evidence-binding will
+    upgrade this to FAIL when each claim must carry a verbatim source quote.
+    """
+    flagged: list[tuple[str, str, str, str]] = []
+    for sec in sections:
+        if sec["key"] in _QUANTIFIER_SKIP_SECTIONS:
+            continue
+        for item in sec.get("items", []):
+            body_text = "\n".join(item.get("body", []))
+            for cat, pat in _QUANTIFIER_PATTERNS:
+                for m in pat.finditer(body_text):
+                    s, e = m.span()
+                    snippet = body_text[max(0, s - 25):min(len(body_text), e + 25)]
+                    snippet = re.sub(r"\s+", " ", snippet).strip()
+                    flagged.append((sec["key"], item["heading"][:60], cat, snippet))
+
+    if flagged:
+        examples = "; ".join(
+            f"{cat} in '{h}…': '…{snip}…'" for _, h, cat, snip in flagged[:5]
+        )
+        more = f" (+{len(flagged) - 5} more)" if len(flagged) > 5 else ""
+        warn("quantifier-evidence",
+             f"{len(flagged)} quantifier claim(s) detected — verifier should corroborate against cited sources: {examples}{more}")
+    else:
+        ok("quantifier-evidence", "no quantifier-heuristic matches")
+
+
+# Regional/sector phrases in TL;DR prose that should be supported by the
+# corresponding body footer's Region: / Sector: taxonomy values. v2.52 ships
+# a narrow Switzerland/Europe set — the 2026-05-15 failure mode. Other
+# regions are reserved for future iteration once historical-brief
+# calibration confirms the noise floor.
+_TLDR_SWISS_RE = re.compile(r"\b(?:Swiss|Switzerland|CH/|/CH|EU/CH|CH government|federal Swiss)\b", re.I)
+_TLDR_EU_RE = re.compile(r"\b(?:European|EU |EU\.|EU/)\b")
+
+
+def check_tldr_body_drift(sections: list[dict[str, Any]]) -> None:
+    """Flag TL;DR bullets whose regional phrasing diverges from the body
+    footer's Region: taxonomy values for the same CVE.
+
+    The 2026-05-15 iter-1 finding F4 was: TL;DR said "EU/CH government and
+    education" but body footer was `Region: europe` (no switzerland). The
+    existing footer-taxonomy check validates taxonomy legality but not
+    TL;DR/body consistency. WARN severity.
+
+    Initial scope: switzerland and europe drift on CVE-keyed bullets. Other
+    region/sector classes can be added once the noise floor is calibrated.
+    """
+    by_key = sections_by_key(sections)
+    tldr_secs = by_key.get("tldr", [])
+    if not tldr_secs:
+        ok("tldr-body-drift", "no TL;DR section to check")
+        return
+
+    cve_to_footer: dict[str, dict[str, Any]] = {}
+    for sec in sections:
+        if sec["key"] in {"tldr", "verification-notes"}:
+            continue
+        for item in sec.get("items", []):
+            footer = item.get("footer")
+            if not footer:
+                continue
+            heading_and_body = item["heading"] + "\n" + "\n".join(item.get("body", []))
+            for cve in CVE_RE.findall(heading_and_body):
+                cve_to_footer.setdefault(cve, footer)
+
+    flagged: list[tuple[str, str, str]] = []
+    for sec in tldr_secs:
+        for line in sec.get("lines", []):
+            s = line.strip()
+            if not (s.startswith("- ") or s.startswith("* ")):
+                continue
+            cves_in_bullet = list(dict.fromkeys(CVE_RE.findall(s)))
+            if not cves_in_bullet:
+                continue
+            swiss_in_tldr = bool(_TLDR_SWISS_RE.search(s))
+            eu_in_tldr = bool(_TLDR_EU_RE.search(s))
+            for cve in cves_in_bullet:
+                footer = cve_to_footer.get(cve)
+                if footer is None:
+                    continue
+                regions = {r.strip().lower() for r in footer.get("regions", [])}
+                if swiss_in_tldr and "switzerland" not in regions:
+                    flagged.append((
+                        cve,
+                        "TL;DR mentions Swiss/Switzerland",
+                        f"body footer Region: {', '.join(footer.get('regions', [])) or '(empty)'}",
+                    ))
+                if eu_in_tldr and "europe" not in regions and "global" not in regions:
+                    flagged.append((
+                        cve,
+                        "TL;DR mentions European/EU",
+                        f"body footer Region: {', '.join(footer.get('regions', [])) or '(empty)'}",
+                    ))
+
+    if flagged:
+        examples = "; ".join(f"{cve}: {claim} but {got}" for cve, claim, got in flagged[:5])
+        more = f" (+{len(flagged) - 5} more)" if len(flagged) > 5 else ""
+        warn("tldr-body-drift",
+             f"{len(flagged)} TL;DR/body region drift item(s): {examples}{more}")
+    else:
+        ok("tldr-body-drift", "TL;DR regional phrasing consistent with body footers")
+
+
+# Disambiguation phrases that exempt an H3 from the name-collision check.
+# When an item shares a name with prior coverage and the body contains one of
+# these phrases, the main agent has registered the collision explicitly and
+# no WARN is needed.
+_DISAMBIGUATION_PHRASES = (
+    "named for",
+    "no relation to",
+    "not to be confused with",
+    "same name as",
+    "unrelated to the",
+    "different from the",
+    "shares the name",
+    "naming collision",
+    "namesake",
+)
+
+
+def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
+    """Validate the optional v2.58 `Evidence:` footer field on every item.
+
+    Source-quote binding (Tier 1, v2.58) lets each H3 carry an inline
+    `Evidence:` field in its footer — verbatim quotes from cited sources,
+    each followed by `(Publisher)` to bind it back to one of the listed
+    Sources. This check is shape-only and gentle by design:
+
+    - Items without an `Evidence:` field PASS silently (rollout).
+    - Items with an `Evidence:` field whose parsed `evidence: []` list is
+      empty (e.g. `Evidence: ` with no quotes or unparseable content) get
+      a single FAIL — the field is present but malformed.
+    - Items with quotes whose `attribution` does not match any of the
+      item's Source publisher labels get a WARN — the attribution should
+      bind the quote to a source the brief itself cites, otherwise the
+      link from quote to fetched source is lost.
+
+    Content correctness (does the source actually say the quote?) is a
+    verifier concern (F4 / F13–F15), not a mechanical concern. The future
+    `--strict-evidence` mode would re-fetch each Source URL and substring-
+    match the quote, but that adds 5–10 min to the gate and is reserved
+    for a follow-up bump.
+    """
+    malformed: list[tuple[str, str]] = []
+    unbound: list[tuple[str, str, str]] = []
+    items_with_evidence = 0
+
+    for sec in sections:
+        if sec["key"] in {"tldr", "verification-notes"}:
+            continue
+        for item in sec.get("items", []):
+            footer = item.get("footer")
+            if not footer:
+                continue
+            footer_line = item.get("footer_line") or ""
+            has_evidence_field = bool(re.search(r"\bEvidence:", footer_line))
+            evidence = footer.get("evidence") or []
+            if has_evidence_field:
+                items_with_evidence += 1
+            if has_evidence_field and not evidence:
+                malformed.append((sec["key"], item["heading"][:60]))
+                continue
+            if not evidence:
+                continue
+            publisher_labels = {
+                (s.get("label") or "").strip().lower()
+                for s in (footer.get("sources") or [])
+                if s.get("label")
+            }
+            for rec in evidence:
+                attr = (rec.get("attribution") or "").strip().lower()
+                if not attr:
+                    # Quote with no attribution — flag as unbound. The
+                    # attribution is what binds the quote to a Source.
+                    unbound.append((sec["key"], item["heading"][:60],
+                                    f"quote {rec['quote'][:40]!r} has no attribution"))
+                    continue
+                # Match if the attribution substring appears in any
+                # publisher label (covers "Talos" → "Cisco Talos, 2026-05-14").
+                if not any(attr in lbl or lbl in attr for lbl in publisher_labels):
+                    unbound.append((
+                        sec["key"], item["heading"][:60],
+                        f"attribution {rec['attribution']!r} not in any Source publisher label",
+                    ))
+
+    if malformed:
+        names = "; ".join(f"'{h}' ({k})" for k, h in malformed[:5])
+        more = f" (+{len(malformed) - 5} more)" if len(malformed) > 5 else ""
+        fail("evidence-shape",
+             f"{len(malformed)} item(s) have an `Evidence:` field but no parseable quotes "
+             f"(expected `Evidence: \"quote 1\" (Publisher A); \"quote 2\" (Publisher B)`): {names}{more}")
+    if unbound:
+        names = "; ".join(f"{k}/{h}: {reason}" for k, h, reason in unbound[:5])
+        more = f" (+{len(unbound) - 5} more)" if len(unbound) > 5 else ""
+        warn("evidence-binding",
+             f"{len(unbound)} quote(s) in Evidence fields not bound to a listed Source publisher: {names}{more}")
+    if not malformed and not unbound:
+        if items_with_evidence:
+            ok("evidence-shape",
+               f"all {items_with_evidence} item(s) with `Evidence:` carry parseable, bound quotes")
+        else:
+            ok("evidence-shape",
+               "no items carry `Evidence:` field yet (v2.58 rollout — optional)")
+
+
+def check_name_collision(sections: list[dict[str, Any]]) -> None:
+    """Flag H3 items that name an entity from prior coverage without
+    explicit disambiguation.
+
+    The 2026-05-15 iter-1 F1 (Datadog Shai-Hulud inversion) happened because
+    "Shai-Hulud" appeared in prior coverage as the attacker worm and in
+    today's § 4 UPDATE as the Datadog tool — without the main agent
+    registering the collision. WARN severity; the verifier treats flagged
+    items as priority cross-check candidates.
+
+    Reads `name_collision_candidates` from the run's prior_coverage.json
+    (the most recent file under work/*/). UPDATE-prefixed H3 items are
+    exempt (they link back explicitly), and items containing one of the
+    `_DISAMBIGUATION_PHRASES` are exempt (explicit registration).
+    """
+    candidates_file = None
+    for cand in sorted((ROOT / "work").glob("*/prior_coverage.json"), reverse=True):
+        candidates_file = cand
+        break
+    if candidates_file is None:
+        ok("name-collision", "no prior_coverage.json found — skipping")
+        return
+
+    try:
+        prior = json.loads(candidates_file.read_text(encoding="utf-8"))
+    except Exception as e:
+        warn("name-collision", f"could not parse {candidates_file.relative_to(ROOT)}: {e}")
+        return
+
+    candidates = prior.get("name_collision_candidates")
+    if not candidates:
+        ok("name-collision",
+           f"no name_collision_candidates emitted in {candidates_file.relative_to(ROOT)} "
+           f"(re-run tools/build_prior_coverage.py to populate; older files lack this field)")
+        return
+
+    # Pre-compile a single OR-regex for fast scanning. Anchored on word
+    # boundaries so partial-substring noise is suppressed.
+    safe_candidates = [re.escape(c) for c in candidates if c]
+    if not safe_candidates:
+        ok("name-collision", "candidate list empty after sanitisation")
+        return
+    candidate_re = re.compile(r"\b(?:" + "|".join(safe_candidates) + r")\b")
+
+    flagged: list[tuple[str, str]] = []
+    for sec in sections:
+        if sec["key"] in {"verification-notes", "tldr"}:
+            continue
+        for item in sec.get("items", []):
+            heading = item["heading"]
+            if heading.lstrip().upper().startswith("UPDATE:"):
+                continue
+            body_lc = " ".join(item.get("body", [])).lower()
+            if any(p in body_lc for p in _DISAMBIGUATION_PHRASES):
+                continue
+            scan_text = heading + "\n" + " ".join(item.get("body", []))
+            m = candidate_re.search(scan_text)
+            if m:
+                flagged.append((heading[:60], m.group(0)))
+
+    if flagged:
+        examples = "; ".join(f"'{h}…' shares name '{c}' with prior coverage" for h, c in flagged[:5])
+        more = f" (+{len(flagged) - 5} more)" if len(flagged) > 5 else ""
+        warn("name-collision",
+             f"{len(flagged)} H3 item(s) name an entity from prior coverage without explicit "
+             f"disambiguation (verifier should cross-check for attacker/defender inversion): {examples}{more}")
+    else:
+        ok("name-collision",
+           f"no naming collisions detected ({len(candidates)} prior-coverage candidate(s) checked)")
+
+
 # --- Driver ----------------------------------------------------------------
 
 def resolve_brief_path(arg: str | None) -> Path:
@@ -2222,6 +2636,9 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== blocked source patterns (NVD per-CVE / generic landings / indexes) ==")
     check_blocked_source_patterns(sections, kind=kind)
 
+    print(f"\n== internal anchor links (v2.57) ==")
+    check_anchor_resolution(brief_text)
+
     print(f"\n== primary-source quality ==")
     check_primary_source_quality(sections, kind=kind)
 
@@ -2234,6 +2651,18 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     if kind == "daily":
         print(f"\n== TL;DR deadline-lead (v2.47) ==")
         check_tldr_deadline_lead(sections)
+
+        print(f"\n== TL;DR / body region drift (v2.57) ==")
+        check_tldr_body_drift(sections)
+
+    print(f"\n== quantifier-evidence heuristic (v2.57) ==")
+    check_quantifier_evidence(sections)
+
+    print(f"\n== name-collision pre-check (v2.57) ==")
+    check_name_collision(sections)
+
+    print(f"\n== Evidence-field shape (v2.58) ==")
+    check_evidence_shape(sections)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
     check_source_urls_resolve(sections, skip=skip_link_check)

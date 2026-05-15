@@ -30,7 +30,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 > **Immediate Action — {short imperative title}.** {2–4 sentences: what is happening, why it is critical *right now*, what specific defender action is time-critical (emergency patch, isolation, credential rotation, emergency detection rule). Inline-link the primary source.}
 >
-> — *Source: [Primary source title](URL) · Tags: actively-exploited, zero-click, rce · Region: global · CVE: CVE-YYYY-NNNNN · Vector: zero-click · Auth: pre-auth · Status: exploited*
+> — *Source: [Primary source title](URL) · Tags: actively-exploited, zero-click, rce · Region: global · CVE: CVE-YYYY-NNNNN · Vector: zero-click · Auth: pre-auth · Status: exploited · Evidence: "verbatim quote from the primary source confirming active exploitation" (Primary publisher); "verbatim quote on the CVSS / exposure" (Same or Additional source)*
 
 (Most days: omit the Immediate Action callout entirely. The TL;DR ends with its bullet list. The callout is for "stop reading and act now" items only — see prompt for the bar.)
 
