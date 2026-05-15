@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.50 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.51 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -489,6 +489,8 @@ Update `last_seen` for any CVE referenced in this weekly summary. New IDs are ad
 ### `sources/sources.json`
 
 Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` on use; on repeated failures attempt a canonical-URL probe and update `url` in place if the publisher moved; demote (content axis only) after the documented failure thresholds (3 consecutive quiet periods + failed canonical probe, or 5 consecutive 404s); propose new sources as `candidate` (one-per-run cap); never delete. Sustained 403 / 429 / 503 / 5xx **never demotes** (transport-side, route via `tools/fetch_source.py`).
+
+**New-candidate shape: use the canonical JSON template under § "Phase 5 — Update state" → `sources/sources.json` in the daily prompt** (`prompts/daily-cti-brief.md`). Every field is required; `category` is **always** a list even with a single value; the field is `publisher`, never `name`. `tools/check_brief.py` runs a `sources-schema` shape + controlled-vocab check that FAILs the commit on any drift.
 
 ### `state/run_log.json` — feeds the Ops dashboard at `/ops/`
 

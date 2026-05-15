@@ -4,6 +4,44 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.51 — 2026-05-15 (sources.json schema gate: canonical candidate shape + `tools/check_brief.py` mechanical validator)
+
+### Why
+The 2026-05-15 daily routine added a new candidate source (`depthfirst`) to `sources/sources.json` with `"category": "research"` (string) instead of `["research"]` (list). Every other entry in the file uses a list, and `site/build.py` iterates `category` everywhere it touches a source (`s.get("category") or []` patterns) — when the value is a string, Python iterates it character-by-character, producing wrong category tags or crashing the `+` between str and list. The brief itself passed `tools/check_brief.py` (the schema was never checked) and `site/build.py` (the routine doesn't run the full build pre-commit), but the `deploy-site.yml` GitHub Actions workflow that rebuilds `gh-pages` on every push to `main` then failed — the brief was on `main` but the public site at `https://ctipilot.ch/` did not rebuild. A follow-up commit patched the data (`a624ff2`) and added a defensive helper for the related run-log shape drift; this changelog entry covers the **preventive** side.
+
+The root cause is that the source-add bullet under Phase 5 → `sources/sources.json` was under-specified: it instructed the autonomous routine to "append `status: "candidate"`, `notes: "discovered YYYY-MM-DD via {source-id}"`" with no example, no field list, no shape rules. The routine pattern-matched the surrounding entries inconsistently — caught `category`, dropped from a list to a string, used `name` instead of `publisher`, omitted `reliability` / `language` / `fetch_method` / `consecutive_failures`. A clearer prompt would have prevented this regression; a mechanical gate guarantees the next drift is caught before push, not after deploy.
+
+### What changed
+
+**`tools/check_brief.py` — new `check_sources_schema()` check, wired into the Phase 5.5 gate**. Reads the parsed `sources/sources.json` from `check_state_json_valid()` and validates every source entry against an explicit schema:
+
+- **Top-level** must contain `schema_version`, `categories`, `reliability_tiers`, `statuses`, `fetch_methods`, `sources`.
+- **Every source FAILs the commit on**:
+  - missing or non-string `id`; duplicate `id`; missing or non-http(s) `url`;
+  - missing `category` **or** `category` that is not a JSON list (★ the 2026-05-15 regression);
+  - empty `category`; `category` value not in the top-level `categories` vocabulary;
+  - missing `status` or `status` not in `{active, candidate, demoted}`;
+  - missing `publisher` (including entries that wrote `name` instead — surfaced explicitly so the autonomous routine sees the rename);
+  - missing `notes`;
+  - `active` or `demoted` source missing `reliability` / `fetch_method` / `language` / `consecutive_failures`, or with unknown vocab values;
+  - `language` not a non-empty list of strings; `consecutive_failures` not an int; `last_successful_fetch` not a YYYY-MM-DD string or null.
+- **WARN-only advisory**: candidate source missing recommended `publisher` / `reliability` / `language` / `fetch_method` — the candidate is not blocking, but the prompt now describes the canonical candidate shape so this warning shouldn't fire on routine adds.
+
+The check is invoked from `run_checks()` directly after the existing `check_sources_touched_today()` so the schema gate and the bookkeeping gate share the same parsed view. Both run for daily and weekly briefs (the schema check is brief-kind-agnostic — it validates the file, not the brief).
+
+**`prompts/daily-cti-brief.md`** — Banner v2.50 → **v2.51**. Phase 5 → `sources/sources.json` rewritten: the one-line "Discovery → candidate" bullet expanded to a **canonical candidate JSON template** with every field, the documented type for each, the controlled-vocab pointer for `category` / `status` / `reliability` / `fetch_method`, and four explicit "hard shape rules" — `category` is always a list (even with one value), the field is `publisher` (never `name`), vocab values must come from the top-level dicts, every active/demoted source carries the full field set. Closes with an explicit reference to the `sources-schema` check so a reader looking for the source of truth follows the link to `tools/check_brief.py`.
+
+**`prompts/weekly-summary.md`** — Banner v2.50 → **v2.51** (lockstep). The Phase 4 `sources/sources.json` paragraph gains a pointer to the daily prompt's canonical-candidate template + the `sources-schema` check name, so a weekly-only reader doesn't miss the gate.
+
+**`sources/sources.json`** — `depthfirst` entry brought to the canonical candidate shape: renamed `name` → `publisher`, added `reliability: "MEDIUM"` (genuine but unproven), `language: ["en"]`, `fetch_method: "webfetch"`, `consecutive_failures: 0`, dropped the redundant `added` field (date is already in `notes`), kept `category: ["research"]` (the list shape patched in `a624ff2`). Now passes `sources-schema` cleanly.
+
+### What stays
+- Every existing source-lifecycle rule (one new candidate per run, append-only `notes`, `consecutive_quiet_periods` content-only demotion, transport-error 403/429/503/5xx never demotes, etc.) is unchanged. v2.51 specifies the **shape** of the entry the routine writes; the **lifecycle** of the source is the same as v2.50.
+- The four state files + `sources/sources.json` continue to auto-resolve on `origin/main` sync (`state/*` → ours, `sources/sources.json` → theirs). The schema check runs against the local merged view, so a conflict-driven shape regression on either side would be caught.
+- The verification sub-agent contract is untouched — `sources-schema` is a mechanical gate, not an editorial concern.
+
+---
+
 ## 2.50 — 2026-05-11 (token-budget guards: prior-coverage + state-summary scripts, verifier compact-summary contract, early-exit on low-defect convergence)
 
 ### Why

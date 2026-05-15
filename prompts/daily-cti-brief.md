@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.50 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.51 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -521,11 +521,35 @@ Per-source bookkeeping each run:
 - **404 / dead host / empty body** → increment + canonical probe. If equivalent page exists, update `url` in place, reset failures, append dated `notes`.
 
 State transitions (autonomous):
-- **Discovery → candidate** — append `status: "candidate"`, `notes: "discovered YYYY-MM-DD via {source-id}"`. **Hard cap: one new candidate per run.** Overflow → § 7.
+- **Discovery → candidate** — append a new entry using the canonical candidate shape below. **Hard cap: one new candidate per run.** Overflow → § 7.
 - **Candidate → active** — after 3 distinct runs successfully fetched + contributed, flip to `status: "active"`, append dated note.
 - **Active → demoted (content axis only)** — after 3 consecutive `consecutive_quiet_periods` + failed canonical-URL probe, OR 5 consecutive `consecutive_fetch_failures` of code 404, drop `reliability` one tier (HIGH→MEDIUM→LOW), set `status: "demoted"`. **Sustained 403/429/503/5xx never demotes** — that's transport blocking, not a dead source. Record alternate-URL strategy in `notes`.
 - **Demoted → active** — only when agent finds working canonical URL that contributes content.
 - **URL update in place** — update `url`; append dated note. Source `id` stays stable so `covered_items.json` historical references remain valid.
+
+**Canonical candidate shape (NORMATIVE — `tools/check_brief.py` FAILs the commit on shape drift).** Every new candidate MUST carry every field below, with the documented types. The autonomous routine has previously dropped fields (`name` instead of `publisher`, `category` as a string instead of a list) and the brief built fine — but `site/build.py` then crashed on the next deploy and the gh-pages publish failed. The schema check is the gate that catches this **before** push.
+
+```jsonc
+{
+  "id": "short-stable-kebab",            // unique across sources[]; never reused after demotion
+  "publisher": "Display Name (Lab / Vendor)",  // ALWAYS `publisher`; NEVER `name` — the build only reads `publisher`
+  "url": "https://example.com/blog/",    // canonical entry URL (homepage / blog index for source-discovery, specific URLs cited inline in briefs)
+  "category": ["research"],              // ALWAYS a JSON list, even with one value — `["research"]` not `"research"`. Values from top-level `categories` keys only.
+  "reliability": "MEDIUM",               // HIGH | MEDIUM | LOW — start MEDIUM for unproven candidates; reserve HIGH for primary sources (vendor PSIRT, national CERT, major lab)
+  "language": ["en"],                    // ALWAYS a JSON list (e.g. ["en"], ["de","fr"]). Drives translation handling.
+  "status": "candidate",                 // active | candidate | demoted — exactly these three
+  "fetch_method": "webfetch",            // webfetch | rss | bridge | api | blocked — `webfetch` is the safe default, override only when documented
+  "last_successful_fetch": "YYYY-MM-DD", // today (the discovery fetch); null only if every probe in this run failed
+  "consecutive_failures": 0,             // integer; starts at 0
+  "notes": "Why this source — what it covers + how it was discovered (CVE / item / brief that surfaced it). Candidate — promote to active after 3 runs with content contribution."
+}
+```
+
+Hard shape rules — `tools/check_brief.py` enforces all of these and exits 1 on any:
+- `category` is **always** a list of strings, even when there is only one value. `"category": "research"` is a FAIL; `"category": ["research"]` is the only correct form.
+- The field is `publisher`, never `name`. (`name` is what an LLM produces by default; `publisher` is what the build reads.)
+- `status`, `reliability`, `fetch_method`, and every value in `category` must come from the top-level controlled vocabularies (`categories`, `reliability_tiers`, `statuses`, `fetch_methods`).
+- Every active or demoted source MUST carry `publisher`, `reliability`, `language`, `fetch_method`, and `consecutive_failures` — the shape check FAILs on a partial entry promoted out of candidate.
 
 **Hard rules:** don't delete sources (demotion is soft-removal); don't promote demoted → active without recovery event; append-only `notes`; one new candidate per run max.
 

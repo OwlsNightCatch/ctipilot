@@ -1772,6 +1772,226 @@ def check_sources_touched_today(brief_date: str, sources_data: dict[str, Any] | 
            f"{len(fetched_today)} source(s) fetched today (sample: {fetched_today[:5]})")
 
 
+def check_sources_schema(sources_data: dict[str, Any] | None) -> None:
+    """Validate the shape of every entry in `sources/sources.json`.
+
+    The autonomous source-add path (Phase 5 § sources/sources.json — autonomous
+    lifecycle) has previously produced shape drift that built fine *until* the
+    static-site deploy ran and `site/build.py` crashed on the malformed entry.
+    The 2026-05-15 regression: `"category": "research"` (string) where every
+    other entry has `["research"]` (list) — `build.py` iterates `category` and
+    treats each character as a category tag, then the gh-pages deploy fails.
+
+    Catch it at the gate. Strict on fields whose drift breaks the build or
+    contract; advisory (WARN) on fields that the build tolerates but that
+    indicate the autonomous prompt under-specified the shape.
+    """
+    if not sources_data:
+        warn("sources-schema", "sources.json unavailable (json-parse failed)")
+        return
+    if not isinstance(sources_data, dict):
+        fail("sources-schema", f"top-level must be object, got {type(sources_data).__name__}")
+        return
+
+    # Top-level controlled vocabularies — sources reference these by key.
+    valid_categories: set[str] = set((sources_data.get("categories") or {}).keys())
+    valid_statuses: set[str] = set((sources_data.get("statuses") or {}).keys())
+    valid_reliability: set[str] = set((sources_data.get("reliability_tiers") or {}).keys())
+    valid_fetch_methods: set[str] = set((sources_data.get("fetch_methods") or {}).keys())
+
+    missing_top = [
+        k for k in ("schema_version", "categories", "reliability_tiers",
+                    "statuses", "fetch_methods", "sources")
+        if k not in sources_data
+    ]
+    if missing_top:
+        fail("sources-schema", f"missing top-level key(s): {missing_top}")
+        return  # later checks would all cascade
+
+    if not valid_categories:
+        fail("sources-schema", "top-level `categories` is empty — cannot validate per-source `category`")
+        return
+
+    src_list = sources_data.get("sources")
+    if not isinstance(src_list, list):
+        fail("sources-schema", f"`sources` must be a list, got {type(src_list).__name__}")
+        return
+
+    errors: list[str] = []
+    warnings_: list[str] = []
+    seen_ids: dict[str, int] = {}
+
+    for idx, s in enumerate(src_list):
+        # Identify the entry in error messages — prefer `id`, fall back to
+        # array index.
+        if not isinstance(s, dict):
+            errors.append(f"#{idx}: entry must be object, got {type(s).__name__}")
+            continue
+        sid = s.get("id")
+        tag = f"#{idx}" if not isinstance(sid, str) or not sid else sid
+
+        # --- id (required, unique, non-empty string) ---
+        if not isinstance(sid, str) or not sid:
+            errors.append(f"{tag}: missing or non-string `id`")
+        else:
+            if sid in seen_ids:
+                errors.append(f"{tag}: duplicate `id` (also at index {seen_ids[sid]})")
+            else:
+                seen_ids[sid] = idx
+
+        # --- url (required, http/https string) ---
+        url = s.get("url")
+        if not isinstance(url, str) or not url:
+            errors.append(f"{tag}: missing or non-string `url`")
+        elif not (url.startswith("http://") or url.startswith("https://")):
+            errors.append(f"{tag}: `url` must start with http:// or https:// (got {url!r})")
+
+        # --- category (required, list[str], every value in vocabulary) ---
+        cat = s.get("category")
+        if cat is None:
+            errors.append(f"{tag}: missing `category` (required — must be a list of strings)")
+        elif not isinstance(cat, list):
+            # ★ The specific drift the 2026-05-15 deploy regression hit.
+            errors.append(
+                f"{tag}: `category` must be a list (got {type(cat).__name__}={cat!r}) — "
+                f"e.g. [\"research\"] not \"research\""
+            )
+        elif not cat:
+            errors.append(f"{tag}: `category` must contain at least one value")
+        else:
+            for c in cat:
+                if not isinstance(c, str):
+                    errors.append(f"{tag}: `category` entry must be string (got {type(c).__name__}={c!r})")
+                elif c not in valid_categories:
+                    errors.append(
+                        f"{tag}: unknown category {c!r} — must be one of "
+                        f"{sorted(valid_categories)}"
+                    )
+
+        # --- status (required, in vocabulary) ---
+        status = s.get("status")
+        if not isinstance(status, str) or not status:
+            errors.append(f"{tag}: missing or non-string `status`")
+        elif status not in valid_statuses:
+            errors.append(
+                f"{tag}: unknown status {status!r} — must be one of {sorted(valid_statuses)}"
+            )
+
+        # --- publisher (required string) ---
+        # The build renders `s.get("publisher") or s["id"]`. If a source uses
+        # `name` instead (one historical drift), the build falls back to the
+        # raw id and the source becomes harder to recognise. Require
+        # `publisher`; surface `name`-only entries explicitly.
+        publisher = s.get("publisher")
+        if not isinstance(publisher, str) or not publisher:
+            if isinstance(s.get("name"), str) and s.get("name"):
+                errors.append(
+                    f"{tag}: uses `name` instead of `publisher` — rename the field "
+                    "(the build only reads `publisher`, falling back to `id`)"
+                )
+            else:
+                errors.append(f"{tag}: missing or non-string `publisher`")
+
+        # --- notes (required string, append-only audit trail) ---
+        notes = s.get("notes")
+        if not isinstance(notes, str):
+            errors.append(f"{tag}: missing or non-string `notes`")
+
+        # --- Status-dependent requirements ---
+        # `active` and `demoted` sources participate in rotation and bookkeeping;
+        # the autonomous prompt promises specific counters and metadata for them.
+        # `candidate` sources are newly proposed and may legitimately lack some
+        # of these on first append — warn instead of fail so the one-new-
+        # candidate-per-run path stays smooth, but flag for next-run promotion.
+        is_in_rotation = status in {"active", "demoted"}
+        is_candidate = status == "candidate"
+
+        reliability = s.get("reliability")
+        if is_in_rotation:
+            if not isinstance(reliability, str) or not reliability:
+                errors.append(f"{tag}: status={status!r} requires `reliability`")
+            elif reliability not in valid_reliability:
+                errors.append(
+                    f"{tag}: unknown reliability {reliability!r} — must be one of "
+                    f"{sorted(valid_reliability)}"
+                )
+        elif reliability is not None:
+            # Candidates may carry a provisional reliability — validate the
+            # vocabulary if present.
+            if not isinstance(reliability, str) or reliability not in valid_reliability:
+                errors.append(
+                    f"{tag}: unknown reliability {reliability!r} — must be one of "
+                    f"{sorted(valid_reliability)}"
+                )
+
+        fetch_method = s.get("fetch_method")
+        if is_in_rotation:
+            if not isinstance(fetch_method, str) or not fetch_method:
+                errors.append(f"{tag}: status={status!r} requires `fetch_method`")
+            elif fetch_method not in valid_fetch_methods:
+                errors.append(
+                    f"{tag}: unknown fetch_method {fetch_method!r} — must be one of "
+                    f"{sorted(valid_fetch_methods)}"
+                )
+        elif fetch_method is not None:
+            if not isinstance(fetch_method, str) or fetch_method not in valid_fetch_methods:
+                errors.append(
+                    f"{tag}: unknown fetch_method {fetch_method!r} — must be one of "
+                    f"{sorted(valid_fetch_methods)}"
+                )
+
+        language = s.get("language")
+        if is_in_rotation:
+            if not isinstance(language, list) or not language:
+                errors.append(f"{tag}: status={status!r} requires `language` as non-empty list[str]")
+            else:
+                for lang in language:
+                    if not isinstance(lang, str) or not lang:
+                        errors.append(f"{tag}: `language` entry must be non-empty string (got {lang!r})")
+        elif language is not None and not isinstance(language, list):
+            errors.append(f"{tag}: `language` must be a list (got {type(language).__name__})")
+
+        cf = s.get("consecutive_failures")
+        if cf is not None and not isinstance(cf, int):
+            errors.append(f"{tag}: `consecutive_failures` must be int (got {type(cf).__name__}={cf!r})")
+
+        lsf = s.get("last_successful_fetch")
+        if lsf is not None and not (isinstance(lsf, str) and (lsf == "" or re.match(r"^\d{4}-\d{2}-\d{2}$", lsf))):
+            errors.append(
+                f"{tag}: `last_successful_fetch` must be YYYY-MM-DD or null (got {lsf!r})"
+            )
+
+        # --- Advisory: candidates ought to carry the same metadata so they
+        # can be promoted without a second drift round. ---
+        if is_candidate:
+            missing_advisory = [
+                k for k in ("publisher", "reliability", "language", "fetch_method")
+                if not s.get(k)
+            ]
+            if missing_advisory:
+                warnings_.append(
+                    f"{tag}: candidate missing recommended field(s) {missing_advisory} — "
+                    "fill these now so promotion to active doesn't need a follow-up edit"
+                )
+
+    if errors:
+        # Surface up to 12 lines so the agent sees the full picture without
+        # overwhelming the summary. Most schema drift cascades — fixing the
+        # first error often clears later ones.
+        head = errors[:12]
+        more = f" (+{len(errors) - 12} more)" if len(errors) > 12 else ""
+        fail("sources-schema",
+             f"{len(errors)} schema error(s) in sources/sources.json{more}: "
+             + "; ".join(head))
+    else:
+        ok("sources-schema",
+           f"{len(src_list)} source(s) — shapes valid, vocab values in range")
+
+    # Warnings flow through `warn()` so they appear in the standard summary.
+    for w in warnings_:
+        warn("sources-schema-advisory", w)
+
+
 def check_test_build(skip: bool) -> None:
     """Run site/test_build.py (the build-side smoke tests). Failure here means
     the brief will not render correctly even if its own metadata is clean."""
@@ -2030,6 +2250,9 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== sources.json bookkeeping ==")
     check_sources_touched_today(brief_date, sources_data)
+
+    print(f"\n== sources.json schema (shape + controlled-vocab) ==")
+    check_sources_schema(sources_data)
 
     print(f"\n== build-side smoke tests ==")
     check_test_build(skip_build_tests)
