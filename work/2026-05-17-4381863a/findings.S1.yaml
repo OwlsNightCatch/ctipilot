@@ -1,0 +1,144 @@
+# work/2026-05-17-4381863a/findings.S1.yaml
+domain: S1
+run_id: 2026-05-17-4381863a
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: 2026-05-17T04:07:24Z
+ended_at: 2026-05-17T05:02:00Z
+duration_seconds: 3276
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 4
+  bridge_fetches: 22
+
+items:
+  - title: "F5 BIG-IP and BIG-IQ May 2026 Quarterly Advisory — 43 CVEs, lead CVE-2026-41225 (CVSS 9.1) iControl REST authenticated RCE"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0162", publisher: "NCSC-NL", date: "2026-05-15", role: "primary" }
+      - { url: "https://www.securityweek.com/f5-patches-over-50-vulnerabilities/", publisher: "SecurityWeek", date: "2026-05-14", role: "corroborating" }
+      - { url: "https://my.f5.com/manage/s/article/K000160932", publisher: "F5 Security", date: "2026-05-14", role: "vendor-advisory" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-41225", publisher: "NVD", date: "2026-05-14", role: "cvss-reference" }
+    discovery_trace: "first seen at: ncsc-nl bridge (ncsc-nl recent), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0162 (published 2026-05-15T12:07:48Z, in window) → pivot: ncsc-nl csaf NCSC-2026-0162 for CVE list → pivot: NVD for CVE-2026-41225 description confirmation → corroborating: SecurityWeek https://www.securityweek.com/f5-patches-over-50-vulnerabilities/"
+    summary: |
+      F5 published its May 2026 Quarterly Security Notification on 14 May 2026, addressing 43 CVEs (the NCSC-NL CSAF advisory lists 43) across BIG-IP and BIG-IQ product lines including iControl REST, iControl SOAP, TMOS Shell, Traffic Management Microkernel (TMM), Configuration utility, Advanced WAF, ASM, PEM, DNS, APM, and SSL Orchestrator. The highest-severity CVE is CVE-2026-41225 (CVSS 3.1: 9.1 on the NCSC scoring; the NVD description states "A vulnerability exists in iControl REST where a highly privileged, authenticated attacker with at least the Manager role can create configuration objects that allow running arbitrary commands") — this is an authenticated RCE via iControl REST (CWE-250 / execution with unnecessary privileges) requiring the Manager RBAC role. A second cluster of CVEs scores 8.7 (CVSS 3.1), covering command injection via iControl REST (CVE-2026-42930, CVE-2026-42924, CVE-2026-42406, CVE-2026-41953), SSH password exposure in API responses and audit logs (CVE-2026-40698), and privilege escalation via misconfigured permissions (CVE-2026-40631, CVE-2026-40061, CVE-2026-34176). Exploitation of CVE-2026-41225 requires authenticated Manager-role network access to the BIG-IP management port or self-IP addresses, and can be used to escalate privileges or bypass Appliance mode restrictions. No exploitation in the wild reported as of advisory publication. Separate from this advisory, the previously-covered CVE-2026-42945 NGINX heap overflow was included in F5's quarterly scope; NGINX is not re-reported here. Detection: monitor iControl REST (`/mgmt/tm/` API endpoint) for POST/PATCH requests creating unexpected configuration objects from Manager-role principals; alert on TMSH commands executing shell subprocesses outside normal change-management windows; BIG-IP audit logs (ASM, iControl REST access log) for anomalous object-creation patterns. Hardening: restrict iControl REST access to jump hosts / management-only VLANs; rotate all Manager-role credentials; apply F5 quarterly patches; disable unused iControl SOAP endpoints.
+    ch_eu_nexus: "global; F5 BIG-IP appliances widely deployed in Swiss federal IT and European public-sector load-balancing and WAF infrastructure"
+    public_sector_nexus: "indirect — BIG-IP commonly used in public-sector web application delivery and WAF perimeters"
+    sector: "government, finance, telco, critical-infrastructure"
+    cves: [CVE-2026-41225, CVE-2026-42930, CVE-2026-42924, CVE-2026-42406, CVE-2026-41953, CVE-2026-40698, CVE-2026-40631, CVE-2026-40061, CVE-2026-34176]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability exists in iControl REST where a highly privileged, authenticated attacker with at least the Manager role can create configuration objects that allow running arbitrary commands."
+        attribution: "NVD / F5"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-41225"
+      - quote: "F5's May 2026 quarterly security notification details 51 high and medium-severity vulnerabilities impacting BIG-IP, BIG-IQ, and NGINX."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/f5-patches-over-50-vulnerabilities/"
+    extended_notes: |
+      The advisory scope (43 CVEs in CSAF, SecurityWeek reports 51 total including NGINX) makes patch prioritisation non-trivial. The key operator signal: CVE-2026-41225 and the CVSS 8.7 cluster are all post-auth, requiring at least Manager-role credentials. Compromise of a service account with iControl REST access is therefore the prerequisite attack path — initial access via credential theft or password spray against the management interface, then lateral movement through iControl REST object creation. The Appliance mode bypass angle (noted in the advisory) is relevant for environments using Appliance mode as a security boundary.
+
+  - title: "FunnelKit Funnel Builder WordPress plugin actively exploited — unauthenticated JavaScript injection into WooCommerce checkout pages enabling payment skimmer (no CVE assigned yet)"
+    sources:
+      - { url: "https://thehackernews.com/2026/05/funnel-builder-flaw-under-active.html", publisher: "The Hacker News", date: "2026-05-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/funnel-builder-wordpress-plugin-bug-exploited-to-steal-credit-cards/", publisher: "BleepingComputer", date: "2026-05-16", role: "corroborating" }
+      - { url: "https://sansec.io/", publisher: "Sansec", date: "2026-05-16", role: "original-research" }
+    discovery_trace: "first seen at: hackernews bridge (feed https://feeds.feedburner.com/TheHackersNews), URL https://thehackernews.com/2026/05/funnel-builder-flaw-under-active.html (published 2026-05-16, in window) → confirmed by WebSearch: BleepingComputer corroborating coverage → primary research by Sansec (sansec.io — article URL not directly reachable, details confirmed via THN and BleepingComputer)"
+    summary: |
+      Sansec published research on 2026-05-16 documenting active exploitation of an unauthenticated arbitrary JavaScript injection vulnerability in the FunnelKit Funnel Builder plugin for WordPress (plugin slug: funnel-builder), used on more than 40,000 WooCommerce stores. No CVE identifier has been assigned as of publication. The vulnerability resides in the plugin's publicly-exposed checkout endpoint: an incoming unauthenticated request can choose the type of internal method to invoke, including one that writes attacker-controlled content to the plugin's `External Scripts` setting under `Settings > Checkout > External Scripts`. This results in arbitrary JavaScript being injected into every WooCommerce checkout page. The observed exploitation technique is a payment skimmer chain: attackers inject a fake Google Tag Manager (GTM) loader script that loads JavaScript from an attacker-controlled remote domain; the injected code opens a WebSocket connection to a C2 endpoint (`wss://protect-wss[.]com/ws`) to retrieve a storefront-tailored payment skimmer that exfiltrates card numbers, CVVs, and billing addresses in real time. Technique class: T1190 (Exploit Public-Facing Application), T1059.007 (JavaScript injection), T1557 (Adversary-in-the-Middle — skimmer intercepts payment form), T1071 (C2 over WebSocket). Affected: all versions before 3.15.0.3. Patched: FunnelKit 3.15.0.3. Detection: audit `wp-options` for `funnel-builder` external-script entries; review WooCommerce checkout page source for unexpected `<script>` tags resembling GTM loaders (document.write or script-src pointing to non-Google domains); EDR/WAF: alert on WordPress plugin settings writes via unauthenticated POST to `wp-admin/admin-ajax.php` or REST API endpoints associated with WooCommerce checkout funnels; network: alert on WebSocket connections from end-user browsers to `wss://protect-wss[.]com` or similar non-CDN WebSocket endpoints loaded from checkout pages. Hardening: update to FunnelKit >= 3.15.0.3; review and purge External Scripts setting immediately; enable WAF rule blocking unauthenticated writes to plugin settings endpoints.
+    ch_eu_nexus: "global; Swiss and European e-commerce operators running WooCommerce at risk; particularly relevant for cantonal government e-service portals and healthcare payment systems using WordPress/WooCommerce"
+    public_sector_nexus: "indirect — public-sector e-commerce and payment collection portals using WordPress"
+    sector: "e-commerce, public-sector, healthcare, retail"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability currently does not have an official CVE identifier. It affects all versions of the plugin before 3.15.0.3 and is used in more than 40,000 WooCommerce stores."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/funnel-builder-flaw-under-active.html"
+      - quote: "Funnel Builder includes a publicly exposed checkout endpoint that allows an incoming request to choose the type of internal method to run. In at least one case, Sansec observed a payload masquerading as a Google Tag Manager (GTM) loader to launch JavaScript hosted on a remote domain. It subsequently opens a WebSocket connection to the attacker's command-and-control (C2) server to retrieve a skimmer that's tailored to the victim's storefront."
+        attribution: "The Hacker News (citing Sansec research)"
+        source_url: "https://thehackernews.com/2026/05/funnel-builder-flaw-under-active.html"
+    extended_notes: |
+      This technique — abusing a legitimate plugin's settings API without authentication to plant persistent JavaScript — is increasingly common in the Magecart / web-skimmer ecosystem. The WebSocket-delivered, storefront-tailored payload is a notable operational sophistication: the C2 endpoint customises the skimmer per site to match the checkout form structure, reducing detection by static scanning tools. The 40,000+ site footprint and lack of CVE identifier (indicating the WordPress security research pipeline is still processing this) mean defenders cannot rely on vulnerability scanner CVE matching alone — direct plugin-version and settings auditing is required.
+
+  - title: "GitLab CE/EE 18.11.3 / 18.10.6 / 18.9.7 security release — 25 CVEs including CVE-2026-7481 / CVE-2026-7377 / CVE-2026-6073 (CVSS 8.7) stored XSS enabling cross-user JavaScript execution"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161", publisher: "NCSC-NL", date: "2026-05-15", role: "primary" }
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-18-11-3-released/", publisher: "GitLab", date: "2026-05-15", role: "vendor-advisory" }
+      - { url: "https://cybersecuritynews.com/gitlab-vulnerabilities-xss-and-dos/", publisher: "CybersecurityNews", date: "2026-05-15", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl bridge (ncsc-nl recent 10), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161 (published 2026-05-15T09:27:01Z, developing window) → pivot: ncsc-nl csaf NCSC-2026-0161 for CVE list (25 CVEs) → pivot: WebSearch for top CVEs CVE-2026-7481/7377/6073 → vendor advisory at docs.gitlab.com → corroborating: CybersecurityNews"
+    summary: |
+      On 2026-05-15, GitLab released security patches for CE and EE across three versions (18.11.3, 18.10.6, 18.9.7) fixing 25 CVEs. The highest-severity cluster includes CVE-2026-7481, CVE-2026-7377, and CVE-2026-6073 (each CVSS 3.1: 8.7, vector AV:N/AC:L/PR:L/UI:R/S:C/C:H/I:H/A:N) — all stored cross-site scripting vulnerabilities that allow an authenticated user with Developer-role permissions to execute arbitrary JavaScript in other users' browsers via improper input sanitisation in Jira integration endpoints, container registry virtual registry upstreams, and analytics dashboards respectively. A second group of vulnerabilities (CVE-2026-1659, CVSS 7.5) allows unauthenticated denial-of-service via specially-crafted JSON payloads through insufficient input validation. Additional lower-severity issues include merge request approval bypass (CVE-2026-8144), container registry tag deletion by developer-role users bypassing branch protection (CVE-2026-6335), CSRF-unprotected Jira subscriptions (CVE-2026-6063), and private group member enumeration (CVE-2026-3074). Exploitation prerequisites for the XSS cluster: authenticated Developer-role account and a privileged user who interacts with a malicious artefact (stored-XSS trigger requiring victim interaction). Exploit impact: JavaScript executes in victim's browser context — attackers can exfiltrate session tokens, perform CSRF-equivalent actions, and in GitLab SaaS contexts pivot to CI/CD pipeline secrets. Affected: GitLab CE/EE from version 8.3 through 18.11.2 (varies per CVE). Patched: 18.11.3, 18.10.6, 18.9.7. Detection: Sysmon/EDR process tree monitoring for unusual network connections from GitLab runner processes; web-server access logs for GraphQL mutation endpoints called with unexpected content-type or origin headers; GitLab audit events for Developer-role creation of Jira integrations or analytics dashboard components; alert on CSRF-absent POST requests to Jira subscription API. Hardening: update to patched versions; restrict Developer-role scope in self-managed instances; enforce strict CSP on GitLab instances; audit Jira integration credentials exposed to Developer-role accounts.
+    ch_eu_nexus: "global; GitLab CE self-managed instances common in Swiss Confederation and cantonal IT, EU public-sector DevOps pipelines"
+    public_sector_nexus: "direct — many Swiss federal and cantonal agencies use self-managed GitLab for source-code and CI/CD; European research institutions and universities also heavy users"
+    sector: "government, education, research, technology"
+    cves: [CVE-2026-7481, CVE-2026-7377, CVE-2026-6073, CVE-2026-1659, CVE-2026-8144, CVE-2026-6335, CVE-2026-6063, CVE-2026-3074]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab Inc. heeft meerdere kwetsbaarheden verholpen in GitLab Community Edition (CE) en Enterprise Edition (EE) in diverse versies, met name in releases van versie 8.3 tot en met 18.11.3. De kwetsbaarheden betreffen verschillende componenten en functionaliteiten binnen GitLab, waaronder de Jira-integratie, container registry, virtual registry upstreams, merge request approval policies... Authenticeerde gebruikers kunnen merge request goedkeuringsvereisten omzeilen door het verwijderen van approval rules."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161"
+      - quote: "GitLab remediated an issue that could have allowed an authenticated user with developer-role permissions to execute arbitrary JavaScript in other users' browsers due to improper input sanitization (CVSS 8.7)."
+        attribution: "CybersecurityNews (summarising GitLab release notes)"
+        source_url: "https://cybersecuritynews.com/gitlab-vulnerabilities-xss-and-dos/"
+    extended_notes: |
+      The CVSS 8.7 vector (S:C) indicates scope change — XSS execution escapes the affected component's security boundary into the victim's browser context. In GitLab environments where CI/CD tokens and cloud-provider credentials are stored as CI/CD variables, a Developer-role XSS exploit against a Maintainer-role victim could yield pipeline secrets. The unauthenticated DoS (CVE-2026-1659, CVSS 7.5) is a separate concern for availability of GitLab API endpoints — relevant for CI/CD uptime. Operators should treat the merge-request approval bypass (CVE-2026-8144) as a supply-chain integrity risk in organisations using GitLab for regulated code review.
+
+cve_table:
+  - cve: CVE-2026-41225
+    product: "F5 BIG-IP (iControl REST)"
+    cvss: "9.1"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Apply F5 May 2026 Quarterly (K000160932)"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0162"
+  - cve: CVE-2026-7481
+    product: "GitLab CE/EE (Jira integration)"
+    cvss: "8.7"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to 18.11.3 / 18.10.6 / 18.9.7"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161"
+  - cve: CVE-2026-7377
+    product: "GitLab CE/EE (container registry)"
+    cvss: "8.7"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to 18.11.3 / 18.10.6 / 18.9.7"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161"
+  - cve: CVE-2026-6073
+    product: "GitLab CE/EE (analytics dashboards)"
+    cvss: "8.7"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to 18.11.3 / 18.10.6 / 18.9.7"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161"
+  - cve: CVE-2026-1659
+    product: "GitLab CE/EE (API input validation)"
+    cvss: "7.5"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to 18.11.3 / 18.10.6 / 18.9.7"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0161"
+
+coverage_gaps:
+  - source_id: cisco-psirt
+    reason: "PSIRT RSS feed returned 404; no new Cisco advisories found in window beyond already-covered CVE-2026-20182"
+  - source_id: bleepingcomputer
+    reason: "Funnel Builder article URL not reachable via Wayback or direct bridge; content confirmed via THN and WebSearch summaries"
+  - source_id: sansec
+    reason: "sansec.io/research.xml feed returned 404; per-article URL probes returned 404; content confirmed via THN report citing Sansec research"
+
+candidate_sources: []

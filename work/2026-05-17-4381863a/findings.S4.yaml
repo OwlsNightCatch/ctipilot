@@ -1,0 +1,215 @@
+domain: S4
+run_id: 2026-05-17-4381863a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-17T04:08:20Z
+ended_at: 2026-05-17T04:16:56Z
+duration_seconds: 516
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 18
+  bridge_fetches: 9
+
+items:
+  - title: "FunnelKit Funnel Builder WooCommerce unauthenticated skimmer injection — active exploitation across 40,000+ stores"
+    sources:
+      - url: "https://sansec.io/research/funnelkit-woocommerce-vulnerability-exploited"
+        publisher: "Sansec Forensics Team"
+        date: "2026-05-14"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/funnel-builder-wordpress-plugin-bug-exploited-to-steal-credit-cards/"
+        publisher: "BleepingComputer"
+        date: "2026-05-15"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/funnel-builder-flaw-under-active.html"
+        publisher: "The Hacker News"
+        date: "2026-05-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: BleepingComputer article, URL https://www.bleepingcomputer.com/news/security/funnel-builder-wordpress-plugin-bug-exploited-to-steal-credit-cards/ → primary: Sansec Forensics Team, URL https://sansec.io/research/funnelkit-woocommerce-vulnerability-exploited"
+    summary: |
+      Sansec Forensics Team reported on 2026-05-14 that all versions of FunnelKit's Funnel Builder plugin
+      for WordPress/WooCommerce before 3.15.0.3 expose a public checkout endpoint (wfacp-ajax-controller)
+      that accepts an unauthenticated POST request specifying which internal method to invoke.
+      The missing capability check allows an anonymous attacker to write arbitrary attacker-controlled data
+      directly into the plugin's global settings store; whatever is written into the "External Scripts"
+      setting is then rendered into every Funnel Builder checkout page without sanitisation.
+      Sansec observed in-the-wild attacks planting a fake Google Tag Manager loader that decodes a base64
+      URL and loads a payment skimmer from analytics-reports[.]com/wss/jquery-lib.js, which then opens a
+      WebSocket to wss://protect-wss[.]com/ws to receive a store-specific skimmer extracting card numbers,
+      CVVs, and billing addresses at checkout. The "GTM camouflage" technique is a recurring Magecart
+      pattern that bypasses visual review. FunnelKit shipped patch 3.15.0.3 (changeset 3530797 on
+      WordPress.org) adding a capability check and an allow-listed safe-method constraint.
+      Defenders should update immediately and audit Settings > Checkout > External Scripts for unfamiliar
+      entries; stores already compromised need to rotate payment provider API credentials and check for
+      persistent backdoors.
+    ch_eu_nexus: "Global; affects any EU/CH e-commerce operator running WooCommerce with Funnel Builder. 40,000+ active installs per WordPress.org. Common in SME and mid-market EU retail stacks."
+    public_sector_nexus: "indirect — government e-commerce portals (licensing fees, fines, municipal services) using WooCommerce checkout flows are in scope"
+    sector: "retail, e-commerce, SME, public-sector digital services"
+    cves: []
+    actors_campaigns_malware: ["Magecart"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "All versions before 3.15.0.3 let unauthenticated attackers inject arbitrary JavaScript into every checkout page on the store."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/funnelkit-woocommerce-vulnerability-exploited"
+      - quote: "Funnel Builder includes a public checkout endpoint that lets the request pick which internal method to run. Older releases never check the caller's permissions or restrict which methods are allowed."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/funnelkit-woocommerce-vulnerability-exploited"
+      - quote: "The loader opens a WebSocket to the attacker's C2 at wss://protect-wss[.]com/ws, which streams back a skimmer tailored to the victim store."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/funnelkit-woocommerce-vulnerability-exploited"
+    extended_notes: |
+      MITRE ATT&CK mapping: T1190 Exploit Public-Facing Application (unauthenticated endpoint abuse),
+      T1505.003 Web Shell (persistent script injection into plugin settings), T1056.003 Web Portal Capture
+      (skimmer harvesting form data). The attack surface is the wfacp-ajax-controller AJAX handler —
+      any WAF rule inspecting POST data to WordPress wp-admin/admin-ajax.php or REST endpoints with
+      wfacp_frontend_save_script or equivalent method parameters can surface the injection.
+      Detection via WordPress access logs: look for unauthenticated POST requests to /?wc-ajax= or
+      /wp-admin/admin-ajax.php with action=wfacp_frontend_save_script (or similar) from IPs not matching
+      known admin sessions. EDR: JavaScript loaded from analytics-reports[.]com or WebSocket connections
+      to protect-wss[.]com from web-server processes are unambiguous compromise indicators. Hardening:
+      update to 3.15.0.3, enforce Content-Security-Policy preventing execution of external scripts from
+      non-allowlisted domains, enable WooCommerce audit logging for settings changes, deploy a WAF rule
+      restricting wfacp-ajax method execution to authenticated administrator sessions.
+
+  - title: "FamousSparrow (UAT-9244) — three-wave Microsoft Exchange exploitation against Azerbaijani oil & gas; Deed RAT + TernDoor deployed; energy-sector EU nexus"
+    sources:
+      - url: "https://businessinsights.bitdefender.com/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+        publisher: "Bitdefender Labs"
+        date: "2026-05-13"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/azerbaijani-energy-firm-hit-by-repeated.html"
+        publisher: "The Hacker News"
+        date: "2026-05-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews item 'Azerbaijani Energy Firm Hit by Repeated Microsoft Exchange Exploitation' → primary: Bitdefender Labs, URL https://businessinsights.bitdefender.com/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+    summary: |
+      Bitdefender Labs published on 2026-05-13 a detailed analysis of a three-wave intrusion against an
+      unnamed Azerbaijani oil and gas company attributed with moderate-to-high confidence to FamousSparrow
+      (also tracked as UAT-9244, sharing tooling overlaps with Earth Estries and Salt Typhoon).
+      The campaign ran from late December 2025 through late February 2026. Initial access in all three
+      waves was achieved by exploiting the same vulnerable Microsoft Exchange Server — a pattern indicating
+      the victim's remediation attempts between waves were incomplete. Post-exploitation tooling shifted
+      across waves: Wave 1 deployed Deed RAT (also called Snappybee), a successor to ShadowPad used by
+      multiple China-nexus espionage groups and previously observed in telecoms targeting; Wave 2 added
+      TernDoor, a backdoor recently discovered in South American telecoms intrusions; Wave 3 combined
+      both. DLL sideloading was used for persistence. Attribution significance: Azerbaijan's role in
+      European energy security grew materially after Russia's Ukraine gas-transit agreement expired in
+      2024, making its oil and gas infrastructure an intelligence priority for Chinese state actors
+      assessing European energy dependencies. EU-nexus defenders in energy, OT/ICS, and critical
+      infrastructure should treat this as relevant pattern intelligence: repeated Exchange exploitation
+      despite incomplete remediation is a dwell-extension technique that buys actors renewed access after
+      detection events, evading SOC triage that closes the initial ticket without full attacker eviction.
+    ch_eu_nexus: "Indirect EU nexus — Azerbaijan is a primary European gas-transit alternative; espionage on Azerbaijani energy infrastructure directly affects European energy intelligence. Exchange-as-initial-vector is directly applicable to EU/CH infrastructure."
+    public_sector_nexus: "indirect — state-critical-infrastructure sector; relevant to cantonal and federal energy-sector operators with Exchange on-premises"
+    sector: "energy, oil & gas, OT/ICS"
+    cves: []
+    actors_campaigns_malware: ["FamousSparrow", "UAT-9244", "Deed RAT", "Snappybee", "TernDoor", "Earth Estries", "Salt Typhoon"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The activity has been attributed by Bitdefender with moderate-to-high confidence to a hacking group known as FamousSparrow (aka UAT-9244), which shares some level of tactical overlap with clusters tracked under the monikers Earth Estries and Salt Typhoon."
+        attribution: "Bitdefender Labs"
+        source_url: "https://businessinsights.bitdefender.com/famoussparrow-apt-targets-azerbaijani-oil-gas-industry"
+      - quote: "What's notable about the campaign is that it repeatedly leveraged the same vulnerable Microsoft Exchange Server entry point despite several remediation attempts, swapping backdoors."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/azerbaijani-energy-firm-hit-by-repeated.html"
+    extended_notes: |
+      MITRE ATT&CK: T1190 Exploit Public-Facing Application (Exchange initial access), T1574.002 DLL
+      Side-Loading (persistence), T1021 Remote Services (lateral movement via Exchange), T1071 Application
+      Layer Protocol (C2). Detection: Deed RAT / Snappybee is a known ShadowPad successor — EDR behavioural
+      signatures for ShadowPad-family process injection or named-pipe communication patterns should catch it.
+      TernDoor is newer; hunt for unsigned DLLs sideloaded by otherwise-legitimate Windows binaries in
+      Exchange server directories. The "persistent re-entry via the same unpatched vector" pattern requires
+      defenders to verify Exchange patch state at the transport-layer before closing an IR ticket — not just
+      antimalware remediation. Hunt: Exchange IIS logs for unusual w3wp.exe child processes or ASPX web shell
+      drops (T1505.003) in Exchange virtual directories; monitor for new service installs or scheduled tasks
+      immediately post-detection to catch wave-boundary re-establishment.
+
+  - title: "Pwn2Own Berlin 2026 concludes — 47 zero-days, $1.3M paid; DEVCORE chains three Exchange bugs for SYSTEM-level RCE; overflow triggers unprecedented rejected-researcher public-disclosure wave"
+    sources:
+      - url: "https://www.thezdi.com/blog/2026/5/16/pwn2own-berlin-2026-day-three-results-and-master-of-pwn"
+        publisher: "Zero Day Initiative (Trend Micro ZDI)"
+        date: "2026-05-16"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/pwn2own-day-two-hackers-demo-microsoft-exchange-windows-11-red-had-enterprise-linux-zero-days/"
+        publisher: "BleepingComputer"
+        date: "2026-05-15"
+        role: "corroborating"
+      - url: "https://hackread.com/pwn2own-berlin-2026-hits-capacity-hackers-0-days/"
+        publisher: "Hackread"
+        date: "2026-05-12"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: BleepingComputer Day 2 article, URL https://www.bleepingcomputer.com/news/security/pwn2own-day-two-hackers-demo-microsoft-exchange-windows-11-red-had-enterprise-linux-zero-days/ → primary: ZDI Day 3 results, URL https://www.thezdi.com/blog/2026/5/16/pwn2own-berlin-2026-day-three-results-and-master-of-pwn → capacity-overflow coverage: Hackread, URL https://hackread.com/pwn2own-berlin-2026-hits-capacity-hackers-0-days/"
+    summary: |
+      Pwn2Own Berlin 2026 (May 14-16, OffensiveCon) concluded with 47 unique zero-day vulnerabilities
+      demonstrated and $1,298,250 in total prize money awarded — a Pwn2Own record on both counts. DEVCORE
+      (Orange Tsai) claimed Master of Pwn with 50.5 points and $505,000 across two major demonstrations:
+      (1) Day 1 — a four-logic-vulnerability chain escaping the Microsoft Edge sandbox, earning $175,000;
+      (2) Day 2 — a three-vulnerability chain achieving unauthenticated remote code execution as SYSTEM on
+      Microsoft Exchange, earning $200,000. The Exchange chain details remain under ZDI's standard 90-day
+      vendor disclosure window; Microsoft has until approximately 2026-08-14 to patch before full technical
+      disclosure. Other notable Day 2 / Day 3 items: Windows 11 was exploited multiple times for local
+      privilege escalation; Red Hat Enterprise Linux for Workstations was compromised; AI coding agents
+      including Cursor, OpenAI Codex, and LM Studio fell to chained vulnerabilities. The event hit a
+      historic capacity ceiling for the first time in 19 years (AI-accelerated exploit research producing
+      more working chains than ZDI's contest slots could accommodate), prompting dozens of rejected
+      researchers to begin public "revenge disclosure" of zero-days targeting Firefox (full-chain RCE PoC
+      published by ggwhyp), Ollama, LM Studio, PyTorch, Linux KVM, NVIDIA, Docker, and Claude Code.
+      These parallel disclosures are outside ZDI's structured vendor-notification framework, meaning
+      vendors receive no guaranteed 90-day window before the proof-of-concept reaches defenders and attackers
+      simultaneously. Defenders should monitor ZDI's disclosure blog for patch-ready advisories as they
+      emerge over the coming weeks.
+    ch_eu_nexus: "Global but directly relevant to EU/CH enterprise environments: Microsoft Exchange on-premises, Windows 11, Red Hat Enterprise Linux, Firefox, and AI agent platforms are all widely deployed across Swiss federal and cantonal government, finance, and healthcare sectors."
+    public_sector_nexus: "direct — Exchange, Windows 11, and Firefox are Swiss federal and cantonal standard-build components; on-premises Exchange deployments in government are the specific threat surface for the Exchange RCE chain"
+    sector: "government, finance, healthcare, technology, education"
+    cves: []
+    actors_campaigns_malware: ["DEVCORE", "STARLabs SG", "Orange Tsai"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Day Three added to an already historic event, bringing the final totals to $1,298,250 awarded for 47 unique 0-day vulnerabilities across three days of competition."
+        attribution: "Zero Day Initiative (ZDI)"
+        source_url: "https://www.thezdi.com/blog/2026/5/16/pwn2own-berlin-2026-day-three-results-and-master-of-pwn"
+      - quote: "Cheng-Da Tsai (Orange Tsai) of DEVCORE Research Team earned $200,000 after chaining three bugs to gain remote code execution with SYSTEM privileges on Microsoft Exchange."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/pwn2own-day-two-hackers-demo-microsoft-exchange-windows-11-red-had-enterprise-linux-zero-days/"
+      - quote: "For the first time in 19-years, ZDI rejected dozens of working zero-day RCE submissions because organizers ran out of contest slots. Rejected hackers are now going public with PoC demos and direct vendor disclosures."
+        attribution: "Hackread"
+        source_url: "https://hackread.com/pwn2own-berlin-2026-hits-capacity-hackers-0-days/"
+    extended_notes: |
+      MITRE ATT&CK (Exchange RCE chain): T1190 Exploit Public-Facing Application (initial RCE),
+      T1068 Exploitation for Privilege Escalation (chain to SYSTEM). The specific bug classes in DEVCORE's
+      Exchange chain remain embargoed; the 90-day window expires ~2026-08-14. Precedent from DEVCORE's
+      prior Pwn2Own Exchange chains (ProxyLogon, ProxyShell, ProxyOracle): expect the chain to involve
+      server-side request forgery, deserialization, or PowerShell remoting surface.
+      Defender posture: (a) run the May 2026 Patch Tuesday Exchange CUs if not yet applied — these address
+      CVE-2026-42897 (stored XSS / spoofing, actively exploited ITW) which is a separate known issue;
+      (b) monitor ZDI's disclosure ticker at zerodayinitiative.com/advisories for Exchange-tagged advisories
+      appearing after ~2026-08-14; (c) treat rejected-researcher disclosure wave as an active zero-day
+      environment — Firefox update cadence matters for blue teams where Firefox is a standard-build browser
+      (Swiss federal workplace). Hunt: Exchange PowerShell remoting sessions (EID 4104 / 4103) from
+      unexpected source IPs; Exchange OWA logs for unusual UserAgent strings paired with web-shell drops in
+      wwwroot or ClientAccess virtual directories (T1505.003).
+      AI-agent zero-days: Cursor and OpenAI Codex both fell. Defenders integrating AI coding agents into
+      CI/CD pipelines or running them on developer workstations should treat those platforms as currently
+      unpatched surfaces and restrict their network-egress permissions (Conditional Access / host firewall)
+      until vendor patches ship.
+
+coverage_gaps:
+  - source_id: sec-disclosures-edgar
+    reason: "SEC EDGAR 8-K Item 1.05 queries for 2026-05-13 through 2026-05-17 returned zero results — no new US public-company cybersecurity incident disclosures in window. Not a fetch failure; source was reachable and returned empty."
+  - source_id: ico-uk
+    reason: "ICO enforcement sitemap shows only South Staffordshire Water (May 2026) as the most recent enforcement action — already covered 2026-05-12. No new ICO enforcement actions in window."
+  - source_id: cnil-fr
+    reason: "No new CNIL enforcement action or breach notification in-window found via WebSearch. CNIL announcements in French news were outside the 40h window."
+  - source_id: edpb
+    reason: "No new EDPB decision or binding ruling surfaced in-window via WebSearch."
+  - source_id: databreaches-net
+    reason: "No specific databreaches.net article found in-window; not attempted via bridge because no candidate story arose via WebSearch that required corroboration from that source."
+
+candidate_sources: []
