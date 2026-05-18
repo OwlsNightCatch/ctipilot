@@ -1,0 +1,135 @@
+# work/2026-05-18-2eabc1cf/findings.S1.yaml
+domain: S1
+run_id: 2026-05-18-2eabc1cf
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-18T04:05:38Z
+ended_at: 2026-05-18T04:40:00Z
+duration_seconds: 2062
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 18
+  bridge_fetches: 6
+
+items:
+  - title: "UPDATE: CVE-2026-42945 NGINX Rift — in-the-wild exploitation confirmed by VulnCheck honeypot network"
+    sources:
+      - url: "https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html"
+        publisher: "The Hacker News"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html"
+        publisher: "Security Affairs"
+        date: "2026-05-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('May 17 18 2026 cybersecurity breach vulnerability exploited new') → primary: The Hacker News article on NGINX exploitation confirmed May 17 2026, URL https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html → corroborating: Security Affairs, URL https://securityaffairs.com/192132/hacking/nginx-rift-an-18-year-old-flaw-in-the-worlds-most-deployed-web-server-just-came-to-light.html"
+    summary: |
+      CVE-2026-42945 ("NGINX Rift"), the 18-year-old heap buffer overflow in ngx_http_rewrite_module (present since NGINX 0.6.27 from 2008, affecting all versions through 1.30.0), has now been confirmed as actively exploited in the wild as of 2026-05-17 per VulnCheck honeypot telemetry. The flaw was publicly disclosed by DepthFirst AI researchers earlier in W21. The overflow is reachable via a crafted HTTP request targeting the rewrite-rule parser at the `ngx_http_script_compile()` function in `src/http/ngx_http_script.c`; exploitation reliably triggers worker-process crashes (DoS), with RCE possible on systems where ASLR is disabled. The vulnerability requires no authentication and no prior foothold — any HTTP-accessible NGINX instance with a rewrite rule in the applicable code path is in scope. Patched in NGINX 1.30.1 (open source) and NGINX Plus R34 P2. The weekly brief (2026-W21) already noted exploitation was confirmed on 2026-05-17; this is the first daily appearance with VulnCheck telemetry as primary evidence.
+    ch_eu_nexus: "global; NGINX is deployed at high density in Swiss/EU public-sector web infrastructure, reverse proxies, and WAF configurations"
+    public_sector_nexus: "high — NGINX is the dominant reverse proxy and web server in EU government and cantonal IT"
+    sector: "all sectors"
+    cves: [CVE-2026-42945]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-W21
+    evidence:
+      - quote: "CVE-2026-42945 is exploited after disclosure, impacting NGINX 0.6.27–1.30.0 and enabling crashes or RCE"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html"
+      - quote: "VulnCheck has detected exploitation attempts against its honeypot networks"
+        attribution: "The Hacker News (citing VulnCheck)"
+        source_url: "https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html"
+    extended_notes: |
+      Detection anchor: NGINX worker crash events (SIGSEGV / SIGABRT from master process respawning workers) in system logs, correlated with inbound HTTP requests carrying unusually long or deeply nested rewrite-rule match strings. Hunt query: `nginx[*]: signal 11 (SIGSEGV) received` in syslog / journald, or equivalent EDR crash-telemetry on the nginx worker process tree. Hardening: upgrade to NGINX 1.30.1 / Plus R34 P2; where immediate upgrade is impossible, review deployed rewrite rules and apply WAF rules to reject requests with pathological rewrite-match patterns. RCE only on ASLR-off configurations; ASLR-on systems face reliable DoS only.
+
+  - title: "UPDATE: CVE-2026-0300 PAN-OS — advisory revised 2026-05-16 with updated build timelines for 10.2.13-h21 and 10.2.16-h7; wave 2 still targets 2026-05-28"
+    sources:
+      - url: "https://security.paloaltonetworks.com/CVE-2026-0300"
+        publisher: "Palo Alto Networks PSIRT"
+        date: "2026-05-16"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch ('PAN-OS CVE-2026-0300 wave 2 patch status May 17 18 2026') → primary: Palo Alto Networks PSIRT advisory page (last updated May 16 for specific builds), URL https://security.paloaltonetworks.com/CVE-2026-0300"
+    summary: |
+      The Palo Alto Networks PSIRT page for CVE-2026-0300 (unauthenticated heap buffer overflow in the User-ID Authentication Portal / Captive Portal service, CVSS 9.3, pre-auth RCE with root) was updated on 2026-05-16 to revise the fix-release timeline for PAN-OS 10.2.13-h21 (updated May 16) and 10.2.16-h7 (updated May 14). The wave-2 patch target remains 2026-05-28. Devices on these two specific build streams are still mitigation-only. The advisory update is operationally relevant because both are commonly deployed LTS builds in large enterprise and government environments. No new exploitation data was disclosed in this revision; the active exploitation posture reported in prior briefs continues.
+    ch_eu_nexus: "global; affects EU and Swiss public-sector PA-Series and VM-Series perimeter devices"
+    public_sector_nexus: "high"
+    sector: "all sectors"
+    cves: [CVE-2026-0300]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-14
+    evidence:
+      - quote: "Updated the Fix release timeline for 10.2.13-h21 on May 16 and for 10.2.16-h7 on May 14"
+        attribution: "Palo Alto Networks PSIRT (advisory revision log)"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0300"
+    extended_notes: |
+      Defender action: verify current installed build against the advisory's per-version patch matrix. If running 10.2.13-h21 or 10.2.16-h7, ensure the Captive Portal / User-ID Authentication Portal mitigation (disable the feature if unused, or apply the Threat Prevention rule published in the advisory) remains active. Wave-2 patch expected 2026-05-28.
+
+  - title: "UPDATE: CVE-2026-42897 Exchange OWA XSS — Exchange Team Blog (2026-05-17) clarifies EM Service requires active connectivity to officemitigations.microsoft.com; permanent patch still pending"
+    sources:
+      - url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+        publisher: "Microsoft Exchange Team Blog"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42897"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-14"
+        role: "corroborating"
+    discovery_trace: "first seen at: MSRC bridge `msrc cve CVE-2026-42897` returning `articles` FAQ section citing Exchange Team Blog URL → primary: Exchange Team Blog post at https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498 (page modified 2026-05-17T13:57:13-07:00) → corroborating: MSRC advisory https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42897"
+    summary: |
+      The Microsoft Exchange Team Blog post for CVE-2026-42897 (OWA stored-XSS, exploited in the wild, CVSS 8.1, CWE-79) was last modified 2026-05-17, confirming an operational dependency that defenders must account for: the Exchange Emergency Mitigation Service (EM Service) which deploys the automatic URL Rewrite mitigation requires active outbound HTTPS connectivity from the Exchange server to `officemitigations.microsoft.com`. On-premises Exchange servers in segmented or fully air-gapped network configurations that block this outbound path will NOT have received the automatic mitigation and remain exposed. The vulnerability affects Exchange Server 2016, 2019, and the Subscription Edition (SE); Exchange Online is unaffected. Microsoft has not yet released a permanent cumulative update fix. Exploitation path: attacker sends a crafted email; if the recipient opens it in OWA and meets interaction conditions, arbitrary JavaScript executes in the browser context of the signed-in user — session hijacking / privilege escalation within Exchange.
+    ch_eu_nexus: "direct — Exchange Server is deployed by a significant share of EU and Swiss public-sector organisations for sovereign on-premises email"
+    public_sector_nexus: "high"
+    sector: "government, healthcare, education, finance"
+    cves: [CVE-2026-42897]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-17
+    evidence:
+      - quote: "The Exchange Emergency Mitigation Service will provide mitigation automatically, and is on by default. If it is not already enabled on your Exchange Server, you need to enable Exchange Emergency Mitigation Service."
+        attribution: "Microsoft Exchange Team Blog (CVE-2026-42897 FAQ)"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+      - quote: "We are working on developing and testing a more permanent fix which we will provide when it meets our quality standards."
+        attribution: "Microsoft Exchange Team Blog (CVE-2026-42897 FAQ)"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+    extended_notes: |
+      Detection and hunt: (1) Confirm EM Service health on each Exchange server via `Get-ExchangeDiagnosticInfo -Server <server> -Process EdgeTransport -Component EmergencyMitigation` — look for Status: Active and the URL Rewrite rule applied. (2) Check Windows Event Log (Microsoft-Windows-IIS-W3SVC-WP / Application) for failed outbound calls to officemitigations.microsoft.com. (3) In OWA access logs, hunt for responses containing `<script>` tags to `GET /owa/` endpoints — anomalous for a mail platform. Hardening: on segmented Exchange environments, verify direct HTTPS access to officemitigations.microsoft.com is permitted or apply the manual URL Rewrite mitigation documented in the blog. Exchange 2016 and 2019 without ESU enrollment become permanently exposed once Mainstream Support ends.
+
+cve_table:
+  - cve: CVE-2026-42945
+    product: "NGINX Open Source / Plus (all versions 0.6.27 through 1.30.0)"
+    cvss: "9.2 (CVSS:3.1)"
+    epss: "unknown"
+    kev: "No"
+    exploited: "Yes — VulnCheck honeypot telemetry, 2026-05-17"
+    patch: "NGINX 1.30.1 (open source); NGINX Plus R34 P2"
+    source: "https://thehackernews.com/2026/05/nginx-cve-2026-42945-exploited-in-wild.html"
+  - cve: CVE-2026-0300
+    product: "Palo Alto PAN-OS (PA-Series, VM-Series — multiple 10.2.x, 11.x, 12.1.x builds)"
+    cvss: "9.3 (CVSS:3.1)"
+    epss: "unknown"
+    kev: "Yes"
+    exploited: "Yes — active exploitation ongoing"
+    patch: "Wave 1 (2026-05-13) deployed; wave 2 targeted 2026-05-28 for remaining builds"
+    source: "https://security.paloaltonetworks.com/CVE-2026-0300"
+  - cve: CVE-2026-42897
+    product: "Microsoft Exchange Server 2016, 2019, SE (on-premises; Exchange Online unaffected)"
+    cvss: "8.1 (CVSS:3.1)"
+    epss: "unknown"
+    kev: "Yes — CISA KEV added 2026-05-15; federal deadline 2026-05-29"
+    exploited: "Yes — Microsoft confirmed active exploitation"
+    patch: "Temporary: Exchange EM Service URL Rewrite mitigation (auto-applied); permanent patch pending"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42897"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "Bridge subcommand returned no output — CISA KEV may have had no new additions in the 36h window beyond CVE-2026-20182 (May 14) and CVE-2026-42897 (May 15), both already covered. CVE-2026-20182 deadline was May 17 (within window) but the KEV addition itself was May 14."
+  - source_id: apple-security
+    reason: "May 2026 Apple security update searched — no actively exploited zero-day in the 36h window; February 2026 CVE-2026-20700 is the most recent Apple zero-day but is far outside the window. No new Apple emergency update found."
+  - source_id: chrome-releases
+    reason: "Chrome zero-days in the search results were from February and March 2026; no new Chrome emergency update found in the 36h window."
