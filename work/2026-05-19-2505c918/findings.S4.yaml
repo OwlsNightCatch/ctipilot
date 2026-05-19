@@ -1,0 +1,277 @@
+---
+# findings.S4.yaml — S4 Incidents & Disclosures sub-agent output
+domain: S4
+run_id: "2026-05-19-2505c918"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-05-19T04:05:26Z"
+ended_at: "2026-05-19T04:21:00Z"
+duration_seconds: 934
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 11
+  bridge_fetches: 9
+
+items:
+  - title: "CISA contractor (Nightwing) exposes AWS GovCloud keys and internal credentials in public GitHub repository for six months"
+    sources:
+      - url: "https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/"
+        publisher: "Krebs on Security"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://gizmodo.com/the-worst-leak-that-ive-witnessed-u-s-cybersecurity-agency-leaves-its-digital-keys-out-in-public-on-github-2000760330"
+        publisher: "Gizmodo"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: >
+      first seen at: krebs (krebs-source-id), URL https://krebsonsecurity.com/feed/ feed listing
+      → primary: Krebs on Security, URL https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/
+      → corroborating: Gizmodo, URL https://gizmodo.com/the-worst-leak-that-ive-witnessed-u-s-cybersecurity-agency-leaves-its-digital-keys-out-in-public-on-github-2000760330
+    summary: |
+      A Nightwing government contractor (Nightwing, Dulles VA) used a public GitHub repository named
+      "Private-CISA" as a personal sync mechanism between work and home machines, exposing highly
+      privileged credentials for CISA/DHS infrastructure from at least November 13, 2025 until
+      May 15, 2026 — approximately six months. The disclosure was surfaced by GitGuardian researcher
+      Guillaume Valadon on May 15, 2026, and reported by KrebsOnSecurity on May 18.
+
+      Exposed material includes: administrative credentials to three Amazon AWS GovCloud accounts;
+      plaintext usernames and passwords in a CSV file ("AWS-Workspace-Firefox-Passwords.csv") for
+      dozens of internal CISA systems; SSH keys, cloud tokens and logs; and credentials to CISA's
+      internal Artifactory code-package repository ("LZ-DSO" — Landing Zone DevSecOps). The
+      contractor had deliberately disabled GitHub's default secret-detection feature that would
+      have blocked publication of SSH keys or other secrets. Security researcher Philippe Caturegli
+      (Seralys) validated the AWS keys against live GovCloud accounts at high privilege and confirmed
+      the keys remained valid for at least 48 hours after the repository was taken offline.
+
+      Caturegli identified the Artifactory access as the highest-impact exposure: adversary access
+      to CISA's build-time package repository would enable backdoor injection into any software CISA
+      built, deployed, or distributed — a supply-chain attack vector of significant persistence.
+      CISA stated no sensitive data was confirmed compromised but acknowledged reduced workforce
+      (~one-third lost to buyouts/resignations under the Trump administration) may have degraded
+      oversight of contractor behaviour.
+
+      Technique class: T1552.001 (Credentials in Files), T1552.004 (Private Keys exposed), T1195.002
+      (Supply Chain Compromise - Build Process — if Artifactory access was used). Detection angle:
+      GitGuardian-style secret-scanning of public repositories; CI/CD artifact-repository audit logs;
+      long-lived credential rotation policy enforcement; Sysmon/endpoint monitoring for tools used to
+      disable GitHub Secrets push protection (github.com API calls to update repository settings).
+      Defender hardening: enforce organisation-level GitHub push-protection with administrator lockout;
+      mandate short-lived credentials (e.g., OIDC role assumption) for all contractor-facing dev
+      environments; implement Artifactory access-log SIEM integration with anomaly detection on
+      off-hours bulk downloads.
+    ch_eu_nexus: "US-centric but directly relevant to EU/CH government CERTs, as CISA is the US
+      counterpart to BSI, ANSSI, NCSC-CH — the same contractor-hygiene failure pattern affects any
+      national cybersecurity agency that outsources development to contractors. EU NIS2 Article 21
+      security-of-supply-chain obligations apply to equivalent national CERTs."
+    public_sector_nexus: "direct — CISA is a government cybersecurity authority"
+    sector: "government, cybersecurity"
+    cves: []
+    actors_campaigns_malware: ["Nightwing (contractor)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "one of the most egregious government data leaks in recent history"
+        attribution: "Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/"
+      - quote: "Passwords stored in plain text in a csv, backups in git, explicit commands to disable GitHub secrets detection feature"
+        attribution: "Guillaume Valadon / GitGuardian, quoted by Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/"
+      - quote: "That would be a prime place to move laterally. Backdoor in some software packages, and every time they build something new they deploy your backdoor left and right."
+        attribution: "Philippe Caturegli / Seralys, quoted by Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/"
+
+  - title: "7-Eleven confirms ShinyHunters breach of 600,000+ Salesforce franchise-application records (April 8, 2026); victim of broader Salesforce-targeting campaign"
+    sources:
+      - url: "https://www.securityweek.com/7-eleven-data-breach-confirmed-after-shinyhunters-ransom-demand/"
+        publisher: "SecurityWeek"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://securityaffairs.com/192336/data-breach/shinyhunters-hack-7-eleven-franchisee-data-and-salesforce-records-exposed.html"
+        publisher: "Security Affairs"
+        date: "2026-05-18"
+        role: "corroborating"
+      - url: "https://www.maine.gov/agviewer/content/ag/985235c7-cb95-4be2-8792-a1252b4f8318/4fe778c0-a3a9-4dbe-8e79-2c229ac5c36b.html"
+        publisher: "Maine Attorney General breach notification (7-Eleven, Inc.)"
+        date: "2026-05-01"
+        role: "primary regulator filing"
+    discovery_trace: >
+      first seen at: securityweek listing (WebFetch SecurityWeek homepage)
+      → primary: SecurityWeek, URL https://www.securityweek.com/7-eleven-data-breach-confirmed-after-shinyhunters-ransom-demand/
+      → corroborating: Security Affairs, URL https://securityaffairs.com/192336/data-breach/shinyhunters-hack-7-eleven-franchisee-data-and-salesforce-records-exposed.html
+      → regulator primary: Maine AG, URL https://www.maine.gov/agviewer/content/ag/985235c7-cb95-4be2-8792-a1252b4f8318/4fe778c0-a3a9-4dbe-8e79-2c229ac5c36b.html
+    summary: |
+      7-Eleven, Inc. confirmed on or around May 18, 2026 that a cybersecurity incident occurred
+      on April 8, 2026, in which an unauthorised third party accessed systems used to store franchisee
+      documents. The breach was claimed by ShinyHunters on approximately April 17, 2026, listing
+      over 600,000 Salesforce CRM records containing personal and corporate data from franchise
+      applications. The group initially demanded a ransom with an April 21 deadline, then shifted
+      to offering the data for sale at $250,000 on a hacker forum.
+
+      7-Eleven filed a breach notification with the Maine Attorney General (via Perkins Coie LLP)
+      dated May 1, 2026, confirming notification to affected individuals with 24 months of IDX
+      identity theft protection and CyberScan monitoring. The Maine filing lists only 2 Maine
+      residents affected, but the ShinyHunters claim covers 600,000+ records globally.
+
+      This breach is part of a documented ShinyHunters pattern of targeting Salesforce CRM instances
+      since mid-2025 via phishing, third-party integration abuse, and misconfiguration (not Salesforce
+      product vulnerabilities). Other confirmed victims in this same campaign wave include Instructure
+      (Canvas), Vimeo, Wynn Resorts (21,000 employees), Vercel, and Medtronic. The Coinbase Cartel
+      data-theft extortion group, linked to ShinyHunters, Scattered Spider and Lapsus$ lineage,
+      has listed 105 companies on its leak site since September 2025.
+
+      Defender relevance: Salesforce orgs should audit Connected App OAuth grants (particularly
+      to third-party AI SaaS integrations); review Salesforce Event Monitoring logs for bulk record
+      exports (Report Export events); enforce session security policies restricting SOQL API access
+      by IP range; implement Salesforce Shield for field-level encryption of franchise PII.
+      MITRE T1078.004 (Cloud Accounts), T1530 (Data from Cloud Storage Object), T1567.002
+      (Exfiltration to Cloud Storage).
+    ch_eu_nexus: "7-Eleven operates stores across Europe (Belgium, Norway, Sweden, Denmark, Netherlands).
+      EU GDPR notification obligations triggered if EU resident data is confirmed in the Salesforce
+      records. ShinyHunters campaign also hit Vimeo and Medtronic which have EU operations — the
+      Salesforce misconfiguration vector is highly relevant for EU organisations using Salesforce for
+      CRM or partner data."
+    public_sector_nexus: "indirect — private sector retail; Salesforce cloud-account compromise
+      pattern is directly applicable to public-sector Salesforce deployments"
+    sector: "retail, technology, healthcare (Medtronic co-victim)"
+    cves: []
+    actors_campaigns_malware: ["ShinyHunters", "Coinbase Cartel"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "7-Eleven confirmed a breach after ShinyHunters claimed theft of over 600,000 Salesforce records and franchisee data"
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/192336/data-breach/shinyhunters-hack-7-eleven-franchisee-data-and-salesforce-records-exposed.html"
+      - quote: "The intrusions resulted from phishing, abuse of third-party integrations, or misconfigurations, rather than vulnerabilities in Salesforce products"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/7-eleven-data-breach-confirmed-after-shinyhunters-ransom-demand/"
+
+  - title: "INTERPOL Operation Ramz — 201 arrests, 3,867 victims, 53 servers seized in first MENA-region cyber coordinated operation (October 2025–February 2026)"
+    sources:
+      - url: "https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region"
+        publisher: "INTERPOL"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+      - url: "https://www.infosecurity-magazine.com/news/interpol-cybercrime-crackdown-mena/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: >
+      first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews)
+      → primary: INTERPOL official press release, URL https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region
+      → corroborating: THN article, URL https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html
+      → corroborating: Infosecurity Magazine, URL https://www.infosecurity-magazine.com/news/interpol-cybercrime-crackdown-mena/
+    summary: |
+      INTERPOL announced on May 18, 2026 the completion of Operation Ramz — a 13-country cybercrime
+      operation across the Middle East and North Africa (MENA) running October 2025 through
+      February 28, 2026. The operation is described as "the first cyber operation of its scale
+      coordinated by INTERPOL in the MENA region."
+
+      Results: 201 arrests, 382 additional suspects identified, 3,867 victims identified, 53 servers
+      seized, and nearly 8,000 data and intelligence pieces disseminated among participating countries.
+      Participating countries: Algeria, Bahrain, Egypt, Iraq, Jordan, Lebanon, Libya, Morocco, Oman,
+      Palestine, Qatar, Tunisia, UAE. Private sector partners: Group-IB, Kaspersky, Shadowserver
+      Foundation, Team Cymru, TrendAI.
+
+      Cybercrime types targeted: phishing-as-a-service (PhaaS) operations including server and hard
+      drive seizures with phishing scripts; malware distribution; investment fraud platforms; and
+      human-trafficking facilitated through cyber scams (15 human trafficking victims identified in
+      Jordan tied to cyber fraud orchestration). Country-specific highlights include the first
+      documented takedown of a PhaaS server-based operation in Algeria, and a legitimate Oman server
+      in a private residence found with critical vulnerabilities and active malware infection
+      (remediated with owner's awareness).
+
+      Operational intelligence value for EU/CH: the PhaaS infrastructure takedown pattern and
+      Group-IB/Team Cymru threat-intel-sharing model established in MENA is the same playbook being
+      applied in European operations (e.g., EUROPOL-coordinated ops). The AlphV/AlphV-adjacent
+      human-trafficking-to-cyber-scam pipeline identified in Jordan reflects the same organisational
+      structure seen in Southeast Asian pig-butchering compounds. The Group-IB press release at
+      https://www.group-ib.com/media-center/press-releases/operation-ramz/ and Team Cymru BusinessWire
+      release provide technical detail on threat-intel data shared with INTERPOL.
+    ch_eu_nexus: "INTERPOL operation; intelligence feeds shared with Europol; Group-IB and Kaspersky
+      (both with EU presence) co-participant. MENA-origin PhaaS kits have targeted EU banking
+      customers. Indirect but relevant for EU threat-intel sharing context."
+    public_sector_nexus: "indirect — law enforcement operation, cybercrime disruption"
+    sector: "cross-sector, law enforcement, financial services"
+    cves: []
+    actors_campaigns_malware: ["phishing-as-a-service (PhaaS)", "Handala (Iranian-linked group, ATG context)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Operation Ramz demonstrates the effectiveness of global collaboration in combating cross-border cybercriminals"
+        attribution: "Neal Jetton, INTERPOL Cybercrime Director"
+        source_url: "https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region"
+      - quote: "201 arrests, identification of 382 additional suspects, compromise of 3,867 victims, and seizure of 53 servers"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html"
+
+  - title: "UPDATE: Grafana Labs confirms source code theft via CoinbaseCartel; no customer data or customer systems compromised; ransom rejected"
+    sources:
+      - url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"
+        publisher: "SecurityWeek"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://x.com/grafana/status/2055827123236171827"
+        publisher: "Grafana official X account"
+        date: "2026-05-18"
+        role: "victim statement"
+    discovery_trace: >
+      first seen at: SecurityWeek homepage listing (WebFetch)
+      → primary: SecurityWeek, URL https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/
+      → victim statement: Grafana X post, URL https://x.com/grafana/status/2055827123236171827
+    summary: |
+      Grafana Labs on May 18, 2026 issued an official confirmation of the CoinbaseCartel breach
+      reported on May 16 in the W21 weekly brief (prior item: "Grafana Labs / CoinbaseCartel —
+      Pwn-Request GitHub Actions breach; private codebase exfiltrated; ransom rejected").
+
+      Material new disclosures in the May 18 confirmation: Grafana explicitly stated that (1)
+      only source code was accessed — "no personal or customer information was stolen"; (2) the
+      incident has not impacted customer systems or operations; (3) the company has decided not
+      to pay the ransom. The intrusion vector was a compromised GitHub access token obtained via
+      a pull_request_target misconfiguration (Pwn-Request attack vector — T1195.001 Compromise
+      Software Supply Chain, CI/CD pipeline). CoinbaseCartel is attributed to the ShinyHunters /
+      Scattered Spider / Lapsus$ ecosystem, active since September 2025, with 105 listed victims.
+
+      Defender note: The Grafana codebase contains Grafana core, plugins, and agent source —
+      defenders should monitor for any unofficial Grafana builds or plugin updates from non-official
+      channels in the 30 days following this disclosure, as supply-chain trojanization of OSS
+      monitoring agents is a plausible follow-on. GitHub Actions CI/CD pull_request_target
+      misconfiguration (Pwn-Request) is the same class of attack used against multiple organisations
+      this cycle — audit GitHub Actions workflow permissions with `permissions: {}` defaults and
+      review `pull_request_target` trigger usage.
+    ch_eu_nexus: "Grafana is widely deployed in Swiss and EU public-sector monitoring infrastructure,
+      including cantonal IT, federal infrastructure, and EU member-state NOCs. No customer data
+      breach confirmed, but source code availability could accelerate targeted exploit development
+      against Grafana installations."
+    public_sector_nexus: "indirect — Grafana widely deployed in public-sector monitoring"
+    sector: "technology, observability, monitoring"
+    cves: []
+    actors_campaigns_malware: ["CoinbaseCartel", "ShinyHunters", "Scattered Spider"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-17"
+    evidence:
+      - quote: "no personal or customer information was stolen and the incident has not impacted customer systems or operations"
+        attribution: "Grafana Labs official statement via SecurityWeek"
+        source_url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"
+      - quote: "the attackers demanded a ransom to prevent the source code from being leaked, but it has decided not to pay up"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "HTTP 403 Forbidden on both direct bridge fetch and Wayback fallback returned empty. No usable content retrieved."
+  - source_id: darkreading
+    reason: "Dark Reading article on Iran ATG fuel tank campaign expansion (May 18) returned HTTP 403 Forbidden; Wayback fallback returned empty for target timestamp. Story covered via WebSearch summaries (CNN May 15 original + Security Magazine May 15 analyst commentary). Not included as item because freshest primary source CNN article pre-dates the window."
+  - source_id: sec-disclosures-edgar
+    reason: "SEC EDGAR 8-K search for Item 1.05 filings May 14-19 2026 returned zero results (query window open, no cyber-incident 8-K filings in the bridge data for this period)."
+  - source_id: ico-uk
+    reason: "ICO enforcement listing shows most recent action (South Staffordshire Water / Plc, May 11 2026) is outside the 36-hour window. No new ICO enforcement actions in window."
+
+candidate_sources: []

@@ -1,0 +1,154 @@
+domain: S2
+run_id: 2026-05-19-2505c918
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-19T04:04:55Z
+ended_at: 2026-05-19T04:12:57Z
+duration_seconds: 482
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 18
+  bridge_fetches: 14
+
+items:
+  - title: "Grafana Labs GitHub codebase exfiltrated via CI/CD Pwn-Request attack; CoinbaseCartel (ShinyHunters-linked) extortion refused"
+    sources:
+      - url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"
+        publisher: "SecurityWeek"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/grafana-says-stolen-github-token-let-hackers-steal-codebase/"
+        publisher: "BleepingComputer"
+        date: "2026-05-18"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/grafana-github-token-breach-led-to.html"
+        publisher: "The Hacker News"
+        date: "2026-05-17"
+        role: "corroborating"
+      - url: "https://www.theregister.com/cyber-crime/2026/05/18/grafana-labs-admits-attackers-downloaded-its-codebase-from-github/5241686"
+        publisher: "The Register"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Europe cyber incident news May 18 2026') → SecurityWeek, URL https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/ → BleepingComputer primary technical article, URL https://www.bleepingcomputer.com/news/security/grafana-says-stolen-github-token-let-hackers-steal-codebase/ → THN for technical root cause details, URL https://thehackernews.com/2026/05/grafana-github-token-breach-led-to.html"
+    summary: |
+      Grafana Labs confirmed on 2026-05-17/18 that an attacker accessed its GitHub environment using a stolen token and downloaded the full private codebase across five private repositories. The root cause was a misconfigured GitHub Actions workflow using the pull_request_target event trigger — a pattern known as a "Pwn Request" — which allowed a contributor's forked-repository pull request to run with repository-scoped production secrets in the CI context. The attacker forked a public Grafana repository, injected a malicious curl command into the forked workflow, and harvested the GitHub token during the CI run. Following exfiltration, the threat actor — claimed by CoinbaseCartel (assessed as an offshoot of ShinyHunters / Scattered Spider / LAPSUS$ ecosystems, active since September 2025) — issued an extortion demand, which Grafana flatly refused, citing FBI guidance. Grafana says no customer data or personal information was accessed. Detection was via a triggered canary token. The company immediately invalidated compromised credentials, removed the vulnerable GitHub Action, and disabled all public-repository workflows. CoinbaseCartel has claimed approximately 170 victims in healthcare, technology, transportation, manufacturing, and business services sectors. Defenders running self-hosted Grafana in SOC/NOC environments should audit GitHub Actions permissions: pull_request_target workflows must not grant write or repository-scoped tokens to untrusted (forked) code; the fix is to separate privilege-requiring steps into a second workflow triggered by workflow_run that only runs on code merged to the main branch (T1195.002 Supply-chain compromise / T1552.004 Credential in Files).
+    ch_eu_nexus: "Grafana Labs is headquartered in New York but was founded in Europe (Torkel Ödegaard, Sweden) and has a large European engineering and customer base; Grafana OSS is the de facto monitoring/observability platform for EU public-sector SOCs, NOC teams, and cloud-native government infrastructure"
+    public_sector_nexus: "indirect — Grafana is primary monitoring tooling for many EU/CH public-sector SOC and NOC environments; codebase theft may surface zero-days or internal architecture details usable by threat actors targeting those environments"
+    sector: "technology, public-sector (monitoring infrastructure), healthcare, finance"
+    cves: []
+    actors_campaigns_malware: ["CoinbaseCartel", "ShinyHunters", "Scattered Spider", "LAPSUS$"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Grafana confirmed suffering a data breach, two days after a cybercrime group listed the company on its leak website."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"
+      - quote: "The root cause was traced to a recently enabled GitHub Action that contained a 'Pwn Request' vulnerability, a misconfiguration in a workflow triggered on pull_request_target events that granted external contributors access to production secrets during CI runs."
+        attribution: "The Hacker News (via WebSearch summary)"
+        source_url: "https://thehackernews.com/2026/05/grafana-github-token-breach-led-to.html"
+      - quote: "CoinbaseCartel... is described as 'an offshoot of the ShinyHunters, Scattered Spider, and LAPSUS$ ecosystems.' It focuses exclusively on data extortion rather than traditional ransomware deployment and has accumulated approximately 170 victims."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/grafana-github-token-breach-led-to.html"
+    extended_notes: |
+      Detection path: Grafana deployed canary tokens (decoy credentials) across its infrastructure; the triggered canary immediately alerted the global security team. This is a model defender practice for early-breach detection in CI/CD environments.
+      Technique mapping: T1195.002 (Supply Chain Compromise: Compromise Software Supply Chain — CI workflow as attack surface), T1552.004 (Unsecured Credentials: Private Keys — GitHub token as credential), T1567 (Exfiltration Over Web Service — GitHub as exfil channel).
+      Detection for defenders: Monitor GitHub audit logs for anomalous clone/download events on private repositories. Alert on workflow_run for pull_request_target events where GITHUB_TOKEN has write or repo scope. GitHub Advanced Security secret scanning alerts on detected tokens. EDR: parent process chain node/npm/git pull with unusual child spawning curl commands to external hosts.
+      Hardening: Audit all pull_request_target workflows — ensure no privileged steps run on untrusted code. Use permissions: read-all at workflow level and explicitly elevate only as needed. Use actions/checkout@v4 with no --token for untrusted forks. Never pass repository secrets to workflows triggered by fork pull requests. Configure CODEOWNERS and require approval before CI runs on external PRs.
+
+  - title: "BigBlueButton < 3.0.21/3.0.23: three security flaws enable session hijacking, API checksum bypass, and SSRF in EU academic/government virtual classrooms (CVE-2026-46351, CVE-2026-46353, CVE-2026-46404)"
+    sources:
+      - url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-7959-pf2v-xc4h"
+        publisher: "BigBlueButton GitHub Security Advisory (GHSA-7959-pf2v-xc4h)"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-43hc-5g2m-cqff"
+        publisher: "BigBlueButton GitHub Security Advisory (GHSA-43hc-5g2m-cqff)"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-xqm3-6q7q-4v5h"
+        publisher: "BigBlueButton GitHub Security Advisory (GHSA-xqm3-6q7q-4v5h)"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1568"
+        publisher: "BSI WID-SEC-2026-1568"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: BSI RSS feed via bridge:bsi-rss → WID-SEC-2026-1568 (BigBlueButton, May 18) → bridge:bsi-csaf WID-SEC-2026-1568 for CVE IDs and GitHub advisory references → fetched each GitHub GHSA advisory directly"
+    summary: |
+      On 2026-05-17, BigBlueButton published three GitHub Security Advisories covering distinct vulnerability classes in its bbb-web component, all affecting releases before 3.0.21 (two CVEs) and 3.0.23 (one CVE). CVE-2026-46351 (CVSS 8.1 High, CWE-330) describes cryptographically weak session-token generation in bbb-web: the sessionToken is produced with insufficiently random values, allowing an attacker who shares or has observed a session to determine session tokens of other participants — enabling impersonation of any conference user. CVE-2026-46353 (CVSS 8.1 High, CWE-284) is an API checksum bypass in the presentationUploadExternalUrl endpoint: a low-privilege attacker can bypass checksum validation by supplying specific URL parameters, sending valid API requests to restricted endpoints without authentication verification, with high impact on confidentiality and integrity. CVE-2026-46404 (CVSS 6.8 Medium, CWE-918) is a server-side request forgery in bbb-web's presentation URL validation: insufficient redirect-following validation allows a high-privilege attacker to reach site-local and link-local addresses from the BBB server context. BSI published its WID-SEC-2026-1568 advisory on 2026-05-18 elevating defender awareness in German-speaking countries. BigBlueButton is the de facto open-source virtual classroom platform deployed across European universities, school districts, and government training infrastructure; German and Swiss universities, including deployments at cantonal and federal level, are significant user bases. All three flaws require upgrade to BBB 3.0.21 (for CVE-2026-46351 and CVE-2026-46353) and 3.0.23 (for CVE-2026-46404). MITRE: T1212 (Exploitation for Credential Access — session token prediction/reuse), T1090 (Proxy — SSRF for lateral movement to internal assets).
+    ch_eu_nexus: "BigBlueButton is the primary open-source virtual classroom platform deployed across EU/CH universities, cantonal school systems, and government training infrastructure; German and Swiss federal/cantonal deployments are in scope"
+    public_sector_nexus: "direct — academic and government e-learning infrastructure; cantonal and federal education ministries in CH; German Land ministries of education"
+    sector: "education, public-sector, government"
+    cves: ["CVE-2026-46351", "CVE-2026-46353", "CVE-2026-46404"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability betreft een cryptographic weakness where 'sessionToken generation' was not implemented using secure randomization methods, enabling attackers to 'determine the sessionTokens of other users in the session.'"
+        attribution: "GitHub Security Advisory GHSA-7959-pf2v-xc4h (CVE-2026-46351)"
+        source_url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-7959-pf2v-xc4h"
+      - quote: "The vulnerability enables attackers to bypass checksum validation by providing specific URL parameters in requests. This allows unauthorized users to send valid API requests to certain endpoints without proper authentication verification."
+        attribution: "GitHub Security Advisory GHSA-43hc-5g2m-cqff (CVE-2026-46353)"
+        source_url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-43hc-5g2m-cqff"
+      - quote: "Ein entfernter, authentisierter Angreifer kann mehrere Schwachstellen in BigBlueButton ausnutzen, um Sicherheitsvorkehrungen zu umgehen und vertrauliche Informationen offenzulegen."
+        attribution: "BSI WID-SEC-2026-1568"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1568"
+    extended_notes: |
+      CVE-2026-46351 specifics: sessionToken generation in bbb-web; CWE-330 Use of Insufficiently Random Values; auth-required (low privilege); network-based attack; no user interaction needed. Fix: upgrade to >= 3.0.21.
+      CVE-2026-46353 specifics: presentationUploadExternalUrl endpoint in bbb-web; CWE-284 Improper Access Control; auth-required (low privilege); network-based attack; high confidentiality + integrity impact. Fix: upgrade to >= 3.0.21.
+      CVE-2026-46404 specifics: presentation URL validation/redirect-following logic in bbb-web; CWE-918 SSRF; auth-required (high privilege — meeting organiser role); network-based attack. Fix: upgrade to >= 3.0.23.
+      EU deployment footprint: DFN (German research/education network), SWITCH (Swiss academic network), DigitecGalaxus (canton deployments), GÉANT pan-European R&E network all host or facilitate BBB deployments. Hunting: bbb-web application logs for anomalous joins using predicted sessionTokens; API calls to presentationUploadExternalUrl with unexpected URL parameters; egress HTTP connections from bbb-web process to RFC1918 / link-local ranges (169.254.x.x, 192.168.x.x, 10.x.x.x).
+
+  - title: "ARWINI statutory-health-insurance prescription-review body (Lower Saxony, Germany): investigators confirm data exfiltration — up to 70,000+ patient records, health and billing data"
+    sources:
+      - url: "https://www.aerzteblatt.de/news/hackerangriff-auf-rezeptprufer-c259a70c-595b-4770-9d84-87f6c8338c0c"
+        publisher: "Deutsches Ärzteblatt"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://www.heise.de/news/Niedersachsen-Datenabfluss-bei-Wirtschaftsprueferverein-im-Gesundheitswesen-11297772.html"
+        publisher: "Heise Security"
+        date: "2026-05-18"
+        role: "corroborating"
+      - url: "https://borncity.com/blog/2026/05/16/cyberangriff-auf-die-arwini-rezeptpruefung-in-niedersachsen-mit-datenabfluss/"
+        publisher: "Borns IT- und Windows-Blog (DE)"
+        date: "2026-05-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: Heise Security RSS feed (heise-sec) via bridge:feed → 'Niedersachsen: Datenabfluss bei Wirtschaftsprüferverein im Gesundheitswesen' published 2026-05-18T17:23Z → WebSearch for 'ARWINI Niedersachsen Gesundheitswesen' → Borns IT blog (2026-05-16, original breach disclosure) → Deutsches Ärzteblatt (2026-05-18, in-window investigators-confirm update, primary source)"
+    summary: |
+      German investigators from the Lower Saxony State Criminal Police Office (LKA Niedersachsen) confirmed on 2026-05-18 that a cyberattack on ARWINI — the Arbeitsgemeinschaft Wirtschaftlichkeitsprüfung Niedersachsen e.V. (Lower Saxony statutory health-insurance prescription cost-effectiveness review body) — resulted in data exfiltration. The attack was detected on 2026-05-04 when signs of intrusion were found on ARWINI's servers; all systems were immediately shut down. ARWINI reviews the cost-effectiveness of prescriptions issued by doctors in Lower Saxony for approximately 11 million statutory health-insurance patients, processing billing data from Kassenärztliche Vereinigung Niedersachsen (KVN) and from AOK and other statutory insurers. More than 70,000 patient records are potentially affected, including contact details, health data, and billing information from statutory health-insurance patients. ARWINI issued a statement acknowledging that personal and particularly sensitive data (besondere Kategorien personenbezogener Daten under GDPR Art. 9) are likely affected. The LKA recommended against responding to the attackers (i.e. not paying ransom). No threat actor or ransomware group has been named in public sources at the time of writing. The Lower Saxony data protection authority (Landesbeauftragter für Datenschutz Niedersachsen, LfD) has been notified. This is a healthcare-sector breach under Germany's KRITIS framework and NIS2 transposition (KRITIS-DachG), requiring breach notification to the BSI and sectoral regulator. Defenders in German statutory health insurance (GKV) or health service data-exchange contexts should treat third-party prescription-review bodies as part of their supply chain for data governance and incident monitoring.
+    ch_eu_nexus: "Germany (EU member state); statutory health insurance sector under KRITIS designation; GDPR Art. 9 special-category data breach; mandatory reporting to BSI and LfD Niedersachsen; transferable pattern for any EU health-sector data processor operating under NIS2"
+    public_sector_nexus: "direct — Kassenärztliche Vereinigung Niedersachsen is a statutory self-governing body; ARWINI acts as mandated prescription auditor under German SGB V; data subjects are GKV-insured patients"
+    sector: "healthcare, public-sector"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Nach dem Cyberangriff auf einen Wirtschaftsprüfverein des Gesundheitswesens bestätigen Ermittler einen Datenabfluss. Das Ausmaß ist noch unklar."
+        attribution: "Heise Security (2026-05-18)"
+        source_url: "https://www.heise.de/news/Niedersachsen-Datenabfluss-bei-Wirtschaftsprueferverein-im-Gesundheitswesen-11297772.html"
+      - quote: "Laut ARWINI ist es wahrscheinlich, dass personenbezogene und besonders schützenswerte Daten betroffen sind."
+        attribution: "Borns IT-Blog citing ARWINI statement (2026-05-16)"
+        source_url: "https://borncity.com/blog/2026/05/16/cyberangriff-auf-die-arwini-rezeptpruefung-in-niedersachsen-mit-datenabfluss/"
+      - quote: "Hackerangriff auf Rezeptprüfer"
+        attribution: "Deutsches Ärzteblatt (2026-05-18T16:35:39Z)"
+        source_url: "https://www.aerzteblatt.de/news/hackerangriff-auf-rezeptprufer-c259a70c-595b-4770-9d84-87f6c8338c0c"
+    extended_notes: |
+      Translation of key quotes (German → English): "After the cyberattack on a healthcare sector auditing association, investigators confirm data exfiltration. The extent is still unclear." (Heise, May 18). "According to ARWINI, it is likely that personal and particularly protected data are affected." (ARWINI statement, cited by Borns IT Blog).
+      GDPR and regulatory context: health data processed by ARWINI falls under Art. 9 GDPR (special categories); breach triggers 72-hour notification obligation to LfD Niedersachsen under Art. 33 GDPR. Under German KRITIS framework (BSI-KritisV) and the NIS2UmsuCG transposition, statutory health insurance is a critical sector; ARWINI as a data processor for KVN and GKV bodies may trigger additional BSI notification under §8b BSI-Gesetz or the new NIS2UmsuCG rules. Comparable to the 2025 IGJ/NMDL Dutch clinical-diagnostics ruling (covered 2026-05-14) in regulatory pattern.
+      Attribution: no actor named publicly; attack detected May 4 after server intrusion signs; LKA Niedersachsen advised against paying ransom — consistent with ransomware/data-extortion scenario but unconfirmed.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: heise-sec
+    reason: "Per-article URLs are TollBit-gated (HTTP 307 → tollbit.heise.de); used RSS feed summary for awareness and corroborated via WebSearch; no Wayback snapshot available. Heise article on ARWINI breach (May 18) and Pwn2Own results (May 18) confirmed via title/summary from RSS feed; detailed body text not retrieved."
+  - source_id: cert-eu
+    reason: "CERT-EU RSS returned only advisories through 2026-05-06; no in-window advisory published in the 36h window. Bridge:cert-eu.recent confirmed this — newest item is 2026-006 from May 6. Rotation priority: source confirmed reachable (200) but empty for this window."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis feed most recent items are from 2026-05-13; cert-fr actu feed returned items only from Sept-Oct 2025. No in-window CERT-FR content available."
+  - source_id: inside-it-ch
+    reason: "Known 403 blocking host; no bridge subcommand available; no Wayback snapshot. WebSearch used as fallback — no unique in-window items found specific to this source."

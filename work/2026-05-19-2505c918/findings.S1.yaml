@@ -1,0 +1,238 @@
+# work/2026-05-19-2505c918/findings.S1.yaml
+domain: S1
+run_id: 2026-05-19-2505c918
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-19T04:04:39Z
+ended_at: 2026-05-19T04:47:00Z
+duration_seconds: 2541
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 9
+  bridge_fetches: 9
+
+items:
+  - title: "MiniPlasma Windows zero-day: third unpatched Chaotic Eclipse LPE, cldflt.sys Cloud Filter driver on fully patched Windows 11, PoC released"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/"
+        publisher: "BleepingComputer"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/miniplasma-windows-0-day-enables-system.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → primary: BleepingComputer, URL https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/ → corroborating: THN, URL https://thehackernews.com/2026/05/miniplasma-windows-0-day-enables-system.html"
+    summary: |
+      Researcher "Chaotic Eclipse" (also publishing as "Nightmare Eclipse") released MiniPlasma on 2026-05-17 — a proof-of-concept exploit for an unpatched Windows privilege escalation zero-day affecting the Cloud Filter Mini Filter Driver (cldflt.sys), specifically the HsmOsBlockPlaceholderAccess routine. The vulnerability was originally reported to Microsoft by Google Project Zero's James Forshaw in September 2020 (Project Zero issue 42451192) and nominally patched as CVE-2020-17103 in December 2020; Chaotic Eclipse asserts the exact same code path remains exploitable on fully patched Windows 11 with May 2026 cumulative updates applied. The exploit abuses the undocumented CfAbortHydration API to create arbitrary registry keys in the .DEFAULT user hive without proper ACL checks, escalating from standard user to SYSTEM via cldflt.sys. Security researcher Will Dormann independently confirmed the PoC opens a SYSTEM cmd.exe "reliably" on Windows 11. The flaw reportedly does not work on the latest Insider Preview Canary builds, suggesting Microsoft has a fix in the pipeline but has not yet released an OOB patch. This is the third publicly-released unpatched LPE from the same researcher this month, following YellowKey (BitLocker bypass via WinRE) and GreenPlasma (CTFMON SYSTEM escalation). Exploitation of the related Chaotic Eclipse YellowKey/GreenPlasma tooling was confirmed by Huntress Labs in hands-on-keyboard attacks from April 2026 onward. ThreatLocker identified two registry key paths to monitor for exploitation: \Registry\User\Software\Policies\Microsoft\CloudFiles\BlockedApps* and \Registry\User\.DEFAULT\Volatile Environment*.
+    ch_eu_nexus: "global; Windows 11 / Server 2022/2025 deployed universally in EU/CH public sector workstations and servers"
+    public_sector_nexus: "direct — Windows LPE affects any public-sector Windows deployment; cloud-synced environments (OneDrive) may have cldflt.sys more actively exercised"
+    sector: "all sectors — Windows"
+    cves: ["CVE-2020-17103"]
+    actors_campaigns_malware: ["Chaotic Eclipse", "Nightmare Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability affects all Windows versions, and researcher Will Dormann confirmed the exploit works reliably on Windows 11 Pro with the latest May 2026 Patch Tuesday updates."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/"
+      - quote: "the flaw impacts the 'cldflt.sys' Cloud Filter driver and its 'HsmOsBlockPlaceholderAccess' routine, which was originally reported to Microsoft by Google Project Zero researcher James Forshaw in September 2020"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/miniplasma-windows-0-day-enables-system.html"
+    extended_notes: |
+      MITRE ATT&CK: T1068 Exploitation for Privilege Escalation. Detection: Monitor registry modifications to \Registry\User\.DEFAULT\Volatile Environment* and \Registry\User\Software\Policies\Microsoft\CloudFiles\BlockedApps* (ThreatLocker guidance). Sysmon EID 13 (RegistryEvent, SetValue) on the .DEFAULT hive from non-SYSTEM processes is the primary hunt pivot. Also monitor for unexpected cldflt.sys driver activity (Sysmon EID 6, driver load) and CfAbortHydration API calls via ETW API tracing. Hardening: Enable BIOS passwords and BitLocker PIN (mitigates companion YellowKey). No official patch available — interim mitigations limited. Disabling Cloud Files/OneDrive integration removes the attack surface but is not practical in most environments. PoC at https://github.com/Nightmare-Eclipse/MiniPlasma.
+
+  - title: "TeamPCP copycat proliferation: four malicious npm packages deploy Shai-Hulud clones and Phantom Bot DDoS malware"
+    sources:
+      - url: "https://www.ox.security/blog/new-actors-deploy-shai-hulud-clones-teampcp-copycats-are-here/"
+        publisher: "OX Security"
+        date: "2026-05-17"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/four-malicious-npm-packages-deliver.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → primary: OX Security blog, URL https://www.ox.security/blog/new-actors-deploy-shai-hulud-clones-teampcp-copycats-are-here/ → corroborating: THN, URL https://thehackernews.com/2026/05/four-malicious-npm-packages-deliver.html"
+    summary: |
+      Following the public leak of TeamPCP's Shai-Hulud worm source code (covered 2026-05-15), copycat operators using npm account "deadcode09284814" published four malicious packages disclosed by OX Security on 2026-05-17 and confirmed by The Hacker News on 2026-05-18. The packages — chalk-tempalte (825 downloads), @deadcode09284814/axios-util (284 downloads), axois-utils (963 downloads), and color-style-utils (934 downloads) — employ typosquatting on popular libraries (chalk, axios) with combined ~2,678 weekly downloads. chalk-tempalte is a direct, unobfuscated clone of the Shai-Hulud worm that exfiltrates credentials, SSH keys, environment variables, and cryptocurrency wallet data to a remote GitHub repository using an embedded attacker public key. axois-utils bundles "Phantom Bot," a Golang-based DDoS tool supporting HTTP/TCP/UDP/Reset flooding with Windows Startup folder and scheduled-task persistence that survives package removal. @deadcode09284814/axios-util targets cloud provider credentials (AWS, GCP, Azure). This represents the first documented copycat wave following the Shai-Hulud source-code leak, validating the forecast from Datadog Security Labs that open-sourced offensive tooling would spawn imitators. The SANS ISC published a campaign update on 2026-05-18 confirming the TeamPCP supply chain campaign remained active through 2026-05-17.
+    ch_eu_nexus: "global npm ecosystem; any CH/EU organisation using Node.js build pipelines is an indirect target"
+    public_sector_nexus: "indirect — developer toolchain attack; public sector with internal npm mirrors or external package consumption affected"
+    sector: "technology, developer toolchain, any sector with Node.js CI/CD"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "deadcode09284814", "Shai-Hulud", "Phantom Bot", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "One of the packages (chalk-tempalte) is a direct clone of the Shai-Hulud worm open-sourced by TeamPCP with modified C2 infrastructure"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/four-malicious-npm-packages-deliver.html"
+      - quote: "chalk-tempalte exfiltrates credentials, SSH keys, environment variables, crypto wallets; C2 server: 87e0bbc636999b.lhr.life; uploads stolen data to remote GitHub repositories"
+        attribution: "OX Security"
+        source_url: "https://www.ox.security/blog/new-actors-deploy-shai-hulud-clones-teampcp-copycats-are-here/"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 Compromise Software Supply Chain (Package Managers), T1552.001 Credentials In Files, T1041 Exfiltration Over C2 Channel. Detection: Monitor npm install post-install scripts spawning network processes from node/npm parent trees (Sysmon EID 1, parent image = npm.cmd or node.exe). Hunt for outbound HTTPS to *.lhr.life or *.github.com from CI/CD runner processes. Golang service binary persistence: TaskScheduler event log (EID 4698 on Windows) or /etc/systemd/ on Linux for unexpected services launched by package managers. Defenders should scan their npm lockfiles and sbom outputs against deadcode09284814 author/scope. OSS scanning: run `npm audit` against the known package names. Key C2 infrastructure: 87e0bbc636999b.lhr.life and edcf8b03c84634.lhr.life (Shai-Hulud clone C2s); 80.200.28.28:2222 (axios-util C2). No CVEs assigned — pure supply chain attack.
+
+  - title: "n8n workflow-automation platform: five chained CRITICAL CVEs (CVE-2026-42231–42232 / 44789–44791), prototype pollution to RCE via xml2js webhook handler and Git node SSH chain"
+    sources:
+      - url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+        publisher: "n8n GitHub Security Advisory"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → primary: n8n GitHub security advisories, URL https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5 → corroborating: THN, URL https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html; CCB Belgium advisory confirmed via WebSearch"
+    summary: |
+      n8n published five critical security advisories on 2026-05-18 addressing a chained vulnerability class enabling unauthenticated remote code execution on self-hosted n8n workflow automation instances. CVE-2026-42231 (CVSS 4.0: 9.4, CWE-1321) is the root cause: a prototype pollution primitive exploitable via a crafted XML payload in the xml2js library used to parse XML request bodies in n8n's webhook handler. By polluting the JavaScript object prototype, an authenticated attacker with workflow creation/modification permission can chain the pollution with n8n's Git node SSH operations (GHSA-wrwr-h859-xh2r, CVE-2026-44790) to achieve RCE on the n8n host. CVE-2026-42232 (GHSA-hqr4-h3xv-9m3r), CVE-2026-44789 (GHSA-c8xv-5998-g76h), and CVE-2026-44791 (GHSA-57g9-58c2-xjg3) are companion injection flaws in the HTTP Request Node and XML Node that amplify the pollution primitive. The Belgium CCB issued an alert calling for immediate patching. n8n is increasingly used in Swiss and EU public-sector automation, government data-pipeline, and research infrastructure. Patched versions: n8n 1.123.32, 2.17.4, and 2.18.1.
+    ch_eu_nexus: "EU/CH public sector increasingly deploys n8n as a low-code automation platform; CCB Belgium alert confirms European regulator engagement"
+    public_sector_nexus: "direct — Belgian CCB explicitly advised n8n operators; Swiss government automation pipelines increasingly use n8n"
+    sector: "public administration, technology, any sector running n8n self-hosted automation"
+    cves: ["CVE-2026-42231", "CVE-2026-42232", "CVE-2026-44789", "CVE-2026-44790", "CVE-2026-44791"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authenticated user with permission to create or modify workflows could exploit this to pollute the JavaScript object prototype and, by chaining the pollution with the Git node's SSH operations, achieve remote code execution on the n8n host. CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H = 9.4"
+        attribution: "DeXpose / n8n advisory via WebSearch"
+        source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+      - quote: "n8n addresses five critical prototype pollution and injection flaws (CVE-2026-42231/42232/44791/44789/44790, all CVSS 9.4)"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+    extended_notes: |
+      MITRE ATT&CK: T1190 Exploit Public-Facing Application (webhook handler), T1059.007 JavaScript (prototype pollution), T1068 Exploitation for Privilege Escalation (Git node SSH chain). Detection: Monitor n8n webhook HTTP requests with XML content-type containing __proto__ or constructor.prototype patterns in body (WAF signature). n8n logs: look for ssh subprocess launches from the n8n server process. For EDR: parent=n8n, child=ssh or git is anomalous. Container deployments: namespace escape via RCE deserves additional monitoring (T1611). Hardening: Update to n8n 1.123.32 / 2.17.4 / 2.18.1 immediately. Restrict workflow-creation permissions to trusted users. Disable Git node SSH if not required. Consider placing n8n webhook endpoints behind an authenticated reverse proxy if not already.
+
+  - title: "Verizon DBIR 2026 published: vulnerability exploitation now primary initial-access vector (31% of breaches), edge-device zero-day exploitation median time = 0 days, third-party breaches double to 30%"
+    sources:
+      - url: "https://www.verizon.com/business/resources/reports/dbir/"
+        publisher: "Verizon Business"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://www.brighttalk.com/webcast/15099/665415"
+        publisher: "BrightTalk / Verizon DBIR Webinar"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: prior_coverage.json noting DBIR expected 2026-05-19 → primary: Verizon DBIR landing page, URL https://www.verizon.com/business/resources/reports/dbir/ → corroborating: BrightTalk webinar URL https://www.brighttalk.com/webcast/15099/665415"
+    summary: |
+      Verizon published the 19th edition of the Data Breach Investigations Report on or around 2026-05-19, covering 22,052 incidents and 12,195 confirmed breaches (November 2024–October 2025). Key findings for European and Swiss defenders: software vulnerability exploitation is now the leading initial-access vector in 31% of breaches, overtaking stolen credentials (22%), with 20% attributable to vulnerabilities (edge-device exploitation specifically). For critical vulnerabilities in internet-facing edge devices (VPNs, firewalls, load balancers), the median time between disclosure and mass exploitation is zero days, rendering monthly patching cycles operationally irrelevant for this class. Third-party involvement now factors in 30% of all breaches — double the prior year's 15% — consistent with the ongoing TeamPCP supply chain wave and the Grafana/GitHub breach from W21. Ransomware was present in 48% of all breaches; median payout fell to $115K with 64% of victims refusing to pay; 88% of SMB breaches involved ransomware. Generative AI is accelerating approximately 15% of attack techniques according to the report's analysis. The report covers the period when several of the year's major exploited-in-the-wild CVEs occurred (PAN-OS, Exchange, Cisco SD-WAN) and provides sector-specific breakdowns including public administration, healthcare, and financial services.
+    ch_eu_nexus: "global dataset with EU and CH-relevant breakdowns; edge-device findings directly applicable to Swiss federal network perimeter and EU critical infrastructure"
+    public_sector_nexus: "direct — public administration sector covered explicitly; findings on edge-device median-time-to-exploit = 0 is operationally critical for public-sector SOC patch prioritisation"
+    sector: "all sectors"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "31% of breaches now originate from software vulnerabilities (surpassing stolen passwords); 48% of all breaches involve ransomware; third-party involvement was a factor in 30% of all breaches, up from approximately 15%"
+        attribution: "Verizon DBIR 2026 landing page"
+        source_url: "https://www.verizon.com/business/resources/reports/dbir/"
+      - quote: "for new, critical vulnerabilities affecting edge devices, the median time between the flaw's publication and its mass exploitation by attackers was zero days"
+        attribution: "Verizon DBIR 2026 webinar summary"
+        source_url: "https://www.brighttalk.com/webcast/15099/665415"
+    extended_notes: |
+      Full report PDF: https://www.verizon.com/business/resources/reports/2026-dbir-data-breach-investigations-report.pdf — gated behind registration form but PDF direct link available at /business/resources/Tfd/reports/2026-dbir-data-breach-investigations-report.pdf. Key detector takeaway: the zero-day-to-exploit-time finding for edge devices reinforces the priority order for patch-first tiering: internet-facing VPN/firewall/load-balancer > internal critical infrastructure > workstations. The 30% third-party breach figure should drive defenders to re-evaluate MSP/MSSP access scope, SaaS integration blast radius, and supply-chain monitoring maturity.
+
+  - title: "INTERPOL Operation Ramz: first-of-its-kind MENA region cybercrime operation — 201 arrests, PhaaS infrastructure and fraud networks dismantled across 13 countries"
+    sources:
+      - url: "https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region"
+        publisher: "INTERPOL"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → primary: INTERPOL press release, URL https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region → corroborating: THN, URL https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html"
+    summary: |
+      INTERPOL's Cybercrime Directorate announced Operation Ramz on 2026-05-18 — described as the first coordinated cybercrime crackdown specifically targeting the MENA region, spanning October 2025 to February 2026. Thirteen countries participated (Algeria, Bahrain, Egypt, Iraq, Jordan, Lebanon, Libya, Morocco, Oman, Palestine, Qatar, Tunisia, UAE), resulting in 201 arrests, identification of 382 further suspects, 3,867 victims, and seizure of 53 servers. The operation targeted phishing-as-a-service (PhaaS) infrastructure, malware distribution networks, banking data theft operations, and financial fraud schemes. Algerian authorities dismantled a PhaaS platform with confiscated server and associated phishing software; Moroccan police seized devices containing banking data and phishing tooling; Oman found a compromised server with active malware. Notably, Jordanian police exposed a human-trafficking-linked fraud network where 15 victims had been coerced into cybercrime operations — consistent with the "fraud compound" model documented in Southeast Asian cybercrime operations. Industry partners included Group-IB, Kaspersky, Shadowserver Foundation, Team Cymru, and TrendAI. European relevance: MENA-based phishing and fraud operations frequently target EU financial institutions and use EU payment rails; disruption of PhaaS infrastructure reduces phishing kit availability affecting European defenders.
+    ch_eu_nexus: "indirect but operational — MENA PhaaS and banking fraud operations target EU banks and payment infrastructure; operation conducted with EU-adjacent industry partners"
+    public_sector_nexus: "indirect — MENA fraud operations occasionally targeting EU government services; Shadowserver participation signals intelligence sharing with EU national CERTs"
+    sector: "financial services, any sector targeted by phishing campaigns"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "201 arrests and the identification of an additional 382 suspects. The initiative involved the efforts of 13 countries from the region between October 2025 and February 2026"
+        attribution: "INTERPOL"
+        source_url: "https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region"
+      - quote: "3,867 victims identified and 53 servers seized; Algerian authorities disrupted a phishing-as-a-service (PhaaS) operation after its server was confiscated"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/interpol-operation-ramz-disrupts-mena.html"
+
+  - title: "VMware Fusion CVE-2026-41702: TOCTOU SETUID binary race condition enables local privilege escalation to root on macOS (CVSS 7.8, no workaround)"
+    sources:
+      - url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37454"
+        publisher: "Broadcom / VMware PSIRT"
+        date: "2026-05-14"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+        publisher: "The Hacker News"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Broadcom VMSA-2026-0003, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37454 → corroborating: THN, URL https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+    summary: |
+      Broadcom released VMSA-2026-0003 on 2026-05-14 addressing CVE-2026-41702 (CVSS 7.8, CWE-367 TOCTOU Race Condition) in VMware Fusion 25H2 on macOS. The vulnerability is a time-of-check time-of-use race condition in a SETUID binary that ships with VMware Fusion, exploitable by a local non-administrative macOS user to escalate privileges to root. No authentication beyond a standard macOS user session is required. Broadcom confirmed no workaround exists — the only remediation is upgrading to VMware Fusion 26H1. Researcher Mathieu Farrell (@coiffeur0x90) disclosed the flaw privately. The vulnerability is particularly relevant in developer-workstation and research-lab environments where VMware Fusion is commonly deployed on macOS alongside other developer tools. No in-the-wild exploitation has been reported. The THN multi-vendor patch roundup on 2026-05-18 brought this to wider attention within the in-window period.
+    ch_eu_nexus: "global macOS/VMware; affects Swiss and EU organisations deploying VMware Fusion on macOS developer workstations"
+    public_sector_nexus: "indirect — relevant to IT teams using Fusion for testing/development on macOS"
+    sector: "technology, enterprise IT, research"
+    cves: ["CVE-2026-41702"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "VMware Fusion (CVE-2026-41702, CVSS 7.8) has TOCTOU vulnerability enabling privilege escalation; no workarounds exist — only remediation is patch to Fusion 26H1"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/ivanti-fortinet-sap-vmware-n8n-patch.html"
+      - quote: "The attack requires only local, non-administrative user privileges; a malicious actor already present on the machine could exploit this flaw to escalate privileges to root"
+        attribution: "Broadcom VMSA-2026-0003 (via WebSearch corroboration)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37454"
+    extended_notes: |
+      MITRE ATT&CK: T1068 Exploitation for Privilege Escalation (TOCTOU). Detection: macOS Unified Log — search for suid binary execution from non-privileged user context (log stream --predicate 'eventMessage contains "vmware"'). EDR: parent process of unexpected root-level process being a standard-user shell. Hardening: Upgrade VMware Fusion 25H2 to 26H1 immediately. No workaround available.
+
+cve_table:
+  - cve: "CVE-2026-41702"
+    product: "VMware Fusion 25H2 (macOS)"
+    cvss: "7.8"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to VMware Fusion 26H1"
+    source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37454"
+  - cve: "CVE-2026-42231"
+    product: "n8n (workflow automation) < 1.123.32 / 2.17.4 / 2.18.1"
+    cvss: "9.4"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No"
+    patch: "Upgrade to n8n 1.123.32, 2.17.4, or 2.18.1"
+    source: "https://github.com/n8n-io/n8n/security/advisories/GHSA-q5f4-99jv-pgg5"
+  - cve: "CVE-2020-17103"
+    product: "Windows (all versions, cldflt.sys — MiniPlasma)"
+    cvss: "unknown (unpatched regression)"
+    epss: "unknown"
+    kev: "No"
+    exploited: "PoC public, no confirmed ITW"
+    patch: "No OOB patch available; Insider Preview Canary build reportedly patched"
+    source: "https://www.bleepingcomputer.com/news/microsoft/new-windows-miniplasma-zero-day-exploit-gives-system-access-poc-released/"
+
+candidate_sources:
+  - id: ox-security-blog
+    publisher: "OX Security Blog"
+    url: "https://www.ox.security/blog/"
+    category: "research, supply-chain"
+    why: "Published primary research on TeamPCP copycat packages (Shai-Hulud clones) on 2026-05-17 before THN coverage; demonstrates early supply-chain-attack detection capability."
+
+coverage_gaps:
+  - source_id: bright-talk-dbir
+    reason: "BrightTalk webinar at https://www.brighttalk.com/webcast/15099/665415 returned HTTP 403; DBIR findings obtained via WebSearch aggregation and Verizon landing page instead"
+  - source_id: anssi-fr
+    reason: "CERT-FR RSS feed returned most recent advisory dated 2026-05-13 — no in-window (post 2026-05-17T16:00Z) advisories found"
+  - source_id: bsi-de
+    reason: "BSI RSS from 2026-05-18 shows only updates to existing Linux Kernel/NGINX/Mattermost advisories for items already covered — no new qualifying in-window items"
