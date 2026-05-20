@@ -1,0 +1,265 @@
+---
+# S4 — Incidents & disclosures
+domain: S4
+run_id: 2026-05-20-a0f7b07f
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-20T04:05:16Z
+ended_at: 2026-05-20T04:12:40Z
+duration_seconds: 444
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 18
+  bridge_fetches: 9
+
+items:
+
+  - title: "Microsoft DCU disrupts Fox Tempest malware-signing-as-a-service; 1,000+ fraudulent certificates revoked, ransomware pipeline to Rhysida/Akira/Qilin/Vanilla Tempest severed"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://blogs.microsoft.com/on-the-issues/2026/05/19/disrupting-fox-tempest-a-cybercrime-service/"
+        publisher: "Microsoft On the Issues"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+        publisher: "The Record / Recorded Future News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog feed, URL https://www.microsoft.com/en-us/security/blog/feed/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/ → corroborating: The Record, URL https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+    summary: |
+      Microsoft's Digital Crimes Unit (DCU), with Resecurity support, disrupted Fox Tempest — a financially
+      motivated threat actor operating a malware-signing-as-a-service (MSaaS) via the website signspace[.]cloud
+      (now seized). Fox Tempest abused Microsoft Artifact Signing (formerly Azure Trusted Signing) to generate
+      short-lived (72-hour) fraudulent code-signing certificates using stolen US and Canadian identities, creating
+      hundreds of Azure tenants and subscriptions to support operations active since at least May 2025. The
+      service charged ransomware affiliates USD $5,000–$9,000 per signing run, with a Google Form pricing sheet
+      and a Telegram channel (EV Certs for Sale by SamCodeSign). Microsoft filed a civil court action in the US
+      District Court for SDNY on May 5, obtained a court order May 8, then unsealed the case May 19; actions
+      included seizing signspace[.]cloud, disabling hundreds of Cloudzy-hosted VMs, taking down ~1,000 accounts,
+      and revoking 1,000+ certificates. The downstream impact covered healthcare, education, government, and
+      financial sectors in the US, France, India, and China. Vanilla Tempest (Rhysida affiliate) used Fox
+      Tempest to sign trojanised MSTeamsSetup.exe delivering the Oyster backdoor (also called Broomstick). Other
+      confirmed downstream consumers include Storm-0501, Storm-2561, Storm-0249, and ransomware families INC,
+      Qilin, and Akira. Malware families delivered via Fox Tempest-signed binaries include Oyster, Lumma
+      Stealer, and Vidar, all masquerading as AnyDesk, Teams, Putty, or Webex. Defender: audit Artifact
+      Signing tenant subscriptions; hunt for process trees where installer executables (Teams, AnyDesk, Webex,
+      Putty) launch Oyster/Broomstick stages (Sysmon EID 1, parent = user-download path, child = rundll32 /
+      regsvr32 loading unsigned DLL); alert on certificate issuance events from unrecognised Entra tenants in
+      Defender for Cloud Apps; block revoked certificate hashes across endpoint estate.
+    ch_eu_nexus: "Global; confirmed victims in France (EU). MSaaS model supplies ransomware affiliates (Akira, Qilin) actively targeting European sectors."
+    public_sector_nexus: "Direct — government listed as affected sector by Microsoft; Vanilla Tempest/Rhysida targets include public sector."
+    sector: "healthcare, education, government, financial, telco"
+    cves: []
+    actors_campaigns_malware:
+      - "Fox Tempest"
+      - "Vanilla Tempest"
+      - "Storm-0501"
+      - "Storm-2561"
+      - "Storm-0249"
+      - "Rhysida"
+      - "Akira"
+      - "Qilin"
+      - "INC"
+      - "Oyster/Broomstick"
+      - "Lumma Stealer"
+      - "Vidar"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Fox Tempest is a financially motivated threat actor that operates a malware-signing-as-a-service (MSaaS) used by other cybercriminals to more effectively distribute malicious code, including ransomware."
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+      - quote: "Fox Tempest has created over a thousand certificates and established hundreds of Azure tenants and subscriptions to support its operations. Microsoft has revoked over one thousand code signing certificates attributed to Fox Tempest."
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+      - quote: "The company unsealed a legal case in U.S. District Court on Tuesday detailing the disruption of Fox Tempest — a popular service that has operated since May 2025 and provides cybercriminals with code signing tools."
+        attribution: "The Record / Recorded Future News"
+        source_url: "https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+    extended_notes: |
+      MITRE ATT&CK mapping: T1553.002 (Code Signing — subvert trust controls), T1588.003 (Code Signing
+      Certificates — obtain capability), T1195.002 (Compromise Software Supply Chain — delivery mechanism).
+      For Vanilla Tempest downstream: T1204.002 (User Execution: Malicious File), T1569.002 (System Services:
+      Service Execution), T1071.001 (Application Layer Protocol: Web Protocols for C2).
+      Detection hardening: Restrict Artifact Signing tenant creation; require Conditional Access policies
+      requiring compliant device + phishing-resistant MFA before allowing Azure subscription management.
+      Monitor Azure Audit Log for rapid certificate creation from newly created tenants (AuditEvent:
+      Add-AzKeyVaultCertificate with newly enrolled identity).
+
+  - title: "Storm-2949 cloud-wide breach via SSPR social engineering: SSPR abuse → Entra ID MFA takeover → Key Vault secret theft → Azure VM compromise (Microsoft incident analysis)"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/"
+        publisher: "BleepingComputer"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog feed, URL https://www.microsoft.com/en-us/security/blog/feed/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/ → corroborating: BleepingComputer feed item (title: 'Microsoft Self-Service Password Reset abused in Azure data theft attacks'), URL https://www.bleepingcomputer.com/news/security/microsoft-self-service-password-reset-abused-in-azure-data-theft-attacks/"
+    summary: |
+      Microsoft Threat Intelligence published a detailed incident analysis of Storm-2949, a financially
+      motivated threat actor (unattributed nation-state affiliation) that executed a multi-phase cloud-wide
+      breach using no traditional malware, relying entirely on abusing legitimate Azure/M365 management features.
+      Phase 1 (Identity): Storm-2949 initiated the Microsoft SSPR (Self-Service Password Reset) flow for
+      targeted users (including IT personnel and senior leadership), then impersonated an internal IT support
+      representative to convince victims to approve spurious MFA prompts. Once approved, the actor reset
+      passwords, removed existing MFA methods (phone/email/Authenticator registrations), enrolled Microsoft
+      Authenticator on their own device, and blocked the legitimate user from signing in. This was repeated
+      across four compromised accounts. Phase 2 (M365 discovery and exfiltration): Using Microsoft Graph API
+      and custom Python scripts, Storm-2949 enumerated users, roles, applications, and service principals,
+      then exfiltrated thousands of files from OneDrive and SharePoint (targeting VPN configuration documents
+      and remote access procedures as a lateral-movement springboard). Phase 3 (Azure Key Vault and Storage):
+      The actor abused privileged custom Azure RBAC roles to invoke microsoft.Web/sites/publishxml/action on
+      secondary App Service instances (auxiliary apps for auth/internal APIs), extracting basic-auth FTP/Web
+      Deploy credentials and accessing Kudu management consoles. They then pivoted to Key Vault using the Key
+      Vault Contributor role, modified access policies, and exfiltrated dozens of secrets (database credentials,
+      connection strings). Phase 4 (Azure SQL and Storage): SQL firewall rules were modified via
+      microsoft.sql/servers/firewallrules/write, databases accessed, rules deleted (defense evasion); Storage
+      account network access modified via microsoft.storage/storageaccounts/write; SAS tokens and account
+      keys retrieved via microsoft.Storage/storageAccounts/listkeys/action; large blob downloads executed via
+      custom Python Azure SDK script over multiple days. Phase 5 (VM compromise): VMAccess extension deployed
+      to create a new local admin account; Azure Run Command used for credential harvesting and on-prem
+      domain reconnaissance. Detection: Azure Audit Log / Defender for Cloud alerts on Key Vault policy
+      changes, SQL firewall rule mutations, storage network access changes, and VM extension deployments.
+      Entra ID Sign-In Logs: hunt for SSPR flow initiations (event category: SelfServicePasswordReset)
+      followed by MFA method changes and new Authenticator device enrollment from a new IP within the same
+      session. Flag Graph API user/role/app enumeration in bulk (hundreds of requests in short window).
+      Hardening: require Phishing-Resistant MFA (FIDO2/certificate-based) for all privileged roles; restrict
+      SSPR to pre-registered recovery methods only; limit Key Vault Contributor role; enable Defender for
+      Cloud on Key Vault, App Service, Storage, and SQL.
+    ch_eu_nexus: "Global; attack pattern directly applicable to any organisation using Azure/M365. Particularly relevant to Swiss/EU public-sector entities migrating workloads to Azure Government or commercial Azure."
+    public_sector_nexus: "Direct — Microsoft notes the technique is relevant to government entities; victim profile (IT personnel, senior leadership targeted) matches public-sector patterns."
+    sector: "cross-sector (any Azure/M365 tenant), public sector, healthcare, financial"
+    cves: []
+    actors_campaigns_malware:
+      - "Storm-2949"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Storm-2949 leveraged a social engineering technique consistent with known abuses of Microsoft's Self-Service Password Reset (SSPR) process. In such attacks, a threat actor initiates the SSPR process on behalf of a targeted user and subsequently employs social engineering tactics to persuade the user to complete multifactor authentication (MFA) prompts that appear to be legitimate."
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+      - quote: "The threat actor pivoted to the organization's Azure Key Vault estate – an environment more likely to centralize sensitive secrets and offer indirect access to production systems."
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/18/storm-2949-turned-compromised-identity-into-cloud-wide-breach/"
+    extended_notes: |
+      MITRE ATT&CK mapping: T1078.004 (Valid Accounts: Cloud Accounts), T1556.006 (Modify Authentication
+      Process: Multi-Factor Authentication), T1098.005 (Account Manipulation: Device Registration),
+      T1530 (Data from Cloud Storage), T1552.001 (Credentials In Files — Key Vault secrets),
+      T1562.007 (Impair Defenses: Disable or Modify Cloud Firewall), T1021.007 (Remote Services: Cloud
+      Services — Kudu console / Run Command), T1041 (Exfiltration Over C2 Channel), T1083 (File and
+      Directory Discovery via Graph API). The absence of malware means EDR coverage of SSPR-triggered
+      events is the critical detection layer; endpoint-only coverage will miss the identity-to-cloud
+      pivot chain almost entirely.
+
+  - title: "Huawei VRP enterprise router zero-day triggered nationwide telecom outage in Luxembourg (July 2025); no CVE filed 10 months later, patch status and exposure scope unknown"
+    sources:
+      - url: "https://therecord.media/huawei-zero-day-behind-last-year-luxembourg-telecom-outage"
+        publisher: "The Record / Recorded Future News"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: The Record RSS feed (bridge subcommand), URL https://therecord.media/feed → article drilled: primary The Record, URL https://therecord.media/huawei-zero-day-behind-last-year-luxembourg-telecom-outage"
+    summary: |
+      Recorded Future News disclosed on 2026-05-19 that a zero-day vulnerability in Huawei enterprise router
+      software (VRP operating system) caused POST Luxembourg's nationwide telecom outage on 23 July 2025,
+      disrupting landline, 4G, and 5G networks for 3+ hours and triggering hundreds of calls to emergency
+      services when connectivity was restored. POST Luxembourg head of communications Paul Rausch confirmed
+      the incident "exploited a non-public, non-documented behaviour, for which no patch was available at the
+      time" and "was not related to the exploitation of any known or previously documented vulnerabilities."
+      Multiple anonymous sources described it as a zero-day attack. The attack mechanism was specially crafted
+      network traffic that sent Huawei enterprise routers into a continuous restart loop — the traffic appears
+      to have transited POST's network rather than being specifically directed at POST as a target (Luxembourg
+      prosecutors: "no evidence that an attack was specifically directed at POST Luxembourg"). Luxembourg
+      cybersecurity authorities alerted partner IR teams across Europe through government channels after the
+      incident. Critically, no CVE has been assigned in 10 months; Huawei has not publicly acknowledged the
+      vulnerability; Huawei enterprise security advisories are published through a restricted customer portal,
+      not as public CVEs. A separate, potentially unrelated Huawei DoS advisory (non-CVE) was published on
+      the restricted portal last month. Whether the flaw was patched, how many operators are exposed, and
+      whether similar Huawei enterprise routers remain vulnerable is unknown. Huawei did not respond to
+      questions for the article. Defender: operators of Huawei enterprise router fleets (common in European
+      telco and large-enterprise environments) should contact their Huawei account team and demand status on
+      the Luxembourg advisory; monitor for anomalous packet-parsing behavior causing router reboots in
+      traffic logs; apply RTBH/BPF filtering for malformed protocol traffic. The CVE disclosure gap
+      underscores the structural risk of vendor-restricted advisory portals for critical national
+      infrastructure components.
+    ch_eu_nexus: "Direct EU; Luxembourg is an EU member state. Huawei enterprise routers are deployed in Swiss, German, and EU telco/ISP environments. The 10-month disclosure gap means Swiss/EU operators cannot assess exposure through standard vulnerability management processes."
+    public_sector_nexus: "Direct — POST Luxembourg is a state-owned operator; outage disrupted government communications and emergency services."
+    sector: "telco, critical infrastructure, government"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An attack exploiting a previously unknown vulnerability in Huawei enterprise router software caused a nationwide telecoms outage in Luxembourg last year, according to multiple sources briefed on the matter, disrupting mobile, landline and emergency communications for more than three hours."
+        attribution: "The Record / Recorded Future News"
+        source_url: "https://therecord.media/huawei-zero-day-behind-last-year-luxembourg-telecom-outage"
+      - quote: "The vulnerability has never been publicly disclosed. No CVE identifier — used by cybersecurity professionals worldwide to track software flaws and protect their systems — has been filed in any public database in the ten months since the incident, and no public warning has been issued to other operators running the same equipment."
+        attribution: "The Record / Recorded Future News"
+        source_url: "https://therecord.media/huawei-zero-day-behind-last-year-luxembourg-telecom-outage"
+    extended_notes: |
+      [SINGLE-SOURCE] — The Record article cites POST Luxembourg head of communications on record plus
+      multiple anonymous government sources. Huawei did not respond. Luxembourg's High Commission for National
+      Protection spokesperson Anne Jung is named. No second independent source was reachable.
+      This is HIGH-reliability journalism (Recorded Future News) with named institutional sources. Marked
+      single-source per protocol; include with that caveat.
+      The CVE disclosure gap itself is a structural finding relevant to ENISA's CVE Root programme (previously
+      covered 2026-05-15 brief under policy:enisa-cve-root-2026) and the broader push for vendor CVE
+      accountability.
+
+  - title: "Ofcom (UK) issues final decision requiring tech firms to deploy hash-matching proactive technology to detect non-consensual intimate images and AI deepfakes"
+    sources:
+      - url: "https://therecord.media/uk-regulator-to-require-tech-firms-to-tackle-deepfakes-nudification-ai"
+        publisher: "The Record / Recorded Future News"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: The Record RSS feed (bridge subcommand), URL https://therecord.media/feed → article drilled: primary The Record, URL https://therecord.media/uk-regulator-to-require-tech-firms-to-tackle-deepfakes-nudification-ai"
+    summary: |
+      Ofcom, the UK communications regulator, announced on 2026-05-19 its final decision requiring tech
+      companies to expand use of "hash matching" proactive technology to detect and block non-consensual
+      intimate images (NCII) and AI-generated sexual deepfakes. The measure updates Ofcom's Online Safety Act
+      Illegal Harms Code of Practice; subject to a parliamentary process, requirements are expected to take
+      effect in summer/autumn 2026. Hash matching converts images to digital fingerprints stored in a
+      database to prevent future uploads of the same or similar files. Companies failing to remove NCII
+      within two days face service-blocking orders (announced by PM Starmer in February 2026). The regulatory
+      context: the UK's push followed widespread distribution of sexualised deepfakes via xAI's Grok chatbot
+      (Ofcom + ICO investigations opened February 2026). The article notes the UK's approach diverges from the
+      EU: an EU law permitting tech firms to scan communications for CSAM expired the prior month (late
+      April 2026) after a parliament privacy standoff, though tech giants said they would continue CSAM
+      scanning. The Ofcom decision has direct operational implications for platform operators serving UK users
+      on NCII detection tooling procurement and compliance engineering.
+    ch_eu_nexus: "UK domestic regulatory action; relevant to EU context given divergence from the expired EU CSAM scanning law. Swiss/EU platform operators with UK user bases face analogous compliance obligations."
+    public_sector_nexus: "Indirect — affects platform operators broadly; no direct public-sector breach or incident."
+    sector: "technology, platform, media"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Britain's top communications regulator said Monday that it will begin requiring tech companies to do more to find and remove non-consensual intimate images from their sites and to curb the spread of deepfakes created by artificial intelligence."
+        attribution: "The Record / Recorded Future News"
+        source_url: "https://therecord.media/uk-regulator-to-require-tech-firms-to-tackle-deepfakes-nudification-ai"
+    extended_notes: |
+      [SINGLE-SOURCE — HIGH-reliability journalism] This item is regulatory in nature rather than a breach
+      or incident disclosure. Main agent should determine whether it belongs in § 1 (Active Threats) or a
+      policy/regulatory section. The source (The Record) cites the Ofcom press release but that URL was
+      behind Wayback with no usable snapshot. The ITV News coverage at
+      https://www.itv.com/news/2026-05-18/ofcoms-push-to-tackle-intimate-image-abuse-falls-short-survivors-say
+      (dated 2026-05-18) provides corroboration that the Ofcom announcement is real; could be fetched for
+      second source if needed.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "Rotation-priority candidate; site is Cloudflare-gated and no usable Wayback snapshot available for in-window articles. WebSearch pivots found no direct databreaches.net articles within the 36h window (all results were aggregator summaries). No in-window content fetched from this source."
+  - source_id: inside-it-ch
+    reason: "Rotation-priority candidate; site is Cloudflare Managed Challenge gated. WebSearch found no in-window Swiss-language breach articles. No Wayback snapshot available. No in-window content fetched."
+  - source_id: sec-edgar-8k
+    reason: "SEC EDGAR 8-K Item 1.05 query for 2026-05-19 to 2026-05-20 returned 0 hits. Extended query to 2026-05-15 to 2026-05-20 also returned 0 hits. No material cybersecurity 8-K filings in window."

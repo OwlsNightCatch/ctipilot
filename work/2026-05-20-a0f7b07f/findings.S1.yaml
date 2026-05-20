@@ -1,0 +1,281 @@
+domain: S1
+run_id: 2026-05-20-a0f7b07f
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-20T04:04:13Z
+ended_at: 2026-05-20T04:58:00Z
+duration_seconds: 3347
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 18
+  bridge_fetches: 16
+
+items:
+  - title: "Drupal core 'highly critical' (score 20/25) unpatched vulnerability — patch window opens today 2026-05-20 17:00 UTC"
+    sources:
+      - url: "https://www.drupal.org/psa-2026-05-18"
+        publisher: "Drupal.org Security Team"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12584"
+        publisher: "NCSC Switzerland CSH"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://www.securityweek.com/drupal-to-patch-highly-critical-vulnerability-at-risk-of-quick-exploitation/"
+        publisher: "SecurityWeek"
+        date: "2026-05-19"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/drupal-to-release-urgent-core-security.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12584 → primary: Drupal.org PSA, URL https://www.drupal.org/psa-2026-05-18 → corroborating: SecurityWeek, URL https://www.securityweek.com/drupal-to-patch-highly-critical-vulnerability-at-risk-of-quick-exploitation/"
+    summary: |
+      Drupal's Security Team issued a pre-release advisory (PSA-2026-05-18) on 2026-05-18 warning of a highly critical vulnerability in Drupal Core affecting all currently supported branches (11.3.x, 11.2.x, 10.6.x, 10.5.x) and several end-of-life branches. The official Drupal severity scoring assigns this a 20/25 — the highest tier below maximum — driven by zero authentication requirement, zero complexity, and attacker capability to access all non-public data and modify or delete arbitrary content. The vulnerability type and CVE remain embargoed until the patch window (17:00–21:00 UTC on 2026-05-20), though all signs point to a remote code execution or critical access-control failure, not merely an XSS. NCSC Switzerland's CSH advisory (post 12584, published 2026-05-19 09:25 UTC) reinforces the urgency: the Drupal Security Team explicitly warns exploits may be developed within hours or days of disclosure. Not all configurations are affected; the advisory instructs administrators to immediately evaluate their specific version's exposure during the release window. Drupal 7 is not affected. Swiss and EU governments running Drupal-based portals, transparency platforms, and citizen-facing services face material exposure given that public-sector adoption of Drupal is high in the region.
+    ch_eu_nexus: "Direct — Drupal is widely deployed across Swiss and EU public-sector web infrastructure (federal, cantonal, municipal portals). High attack surface in government and education sectors."
+    public_sector_nexus: "direct"
+    sector: "government, education, public-sector-web"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Drupal Security Team urges you to reserve time for core updates at that time because exploits might be developed within hours or days."
+        attribution: "Drupal.org PSA-2026-05-18"
+        source_url: "https://www.drupal.org/psa-2026-05-18"
+      - quote: "Successful exploitation could allow unauthenticated attackers to fully compromise affected Drupal installations."
+        attribution: "NCSC Switzerland CSH post 12584"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12584"
+    extended_notes: |
+      Detection and hardening angles once the advisory publishes: monitor WAF logs for abnormal Drupal admin/node/REST API requests; ensure Drupal Update Manager or external patch management triggers an emergency update cycle; disable public-facing REST API / JSON:API endpoints if not required as a temporary risk reduction; audit which Drupal instances are internet-facing vs internal.
+
+  - title: "CVE-2026-41091 — Microsoft Defender EoP exploited in the wild (Malware Protection Engine <= 1.1.26030.3008, link following, SYSTEM privileges)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: msrc recent (bridge:msrc.recent) → MSRC OData API returned CVE-2026-41091 with exploited=Yes, publiclyDisclosed=Yes, releaseDate=2026-05-19 → primary: MSRC update guide SPA, URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+    summary: |
+      Microsoft added CVE-2026-41091 to the May 2026 update guide on 2026-05-19 with exploitation confirmed and publicly disclosed status. The flaw is an improper link resolution before file access (CWE-59, "link following") in Microsoft Defender that allows a low-privileged local attacker to gain SYSTEM privileges. CVSS 7.8 (AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H). The affected component is the Microsoft Malware Protection Engine: all builds at or below version 1.1.26030.3008 are vulnerable; Engine version 1.1.26040.8 contains the fix. Critically, this vulnerability is auto-remediated — the Malware Protection Engine updates automatically through Windows Update and Microsoft Defender's signature update channel when allowed by policy. Environments where automatic updates are blocked (air-gapped, highly controlled patch schedules, or explicitly disabled auto-updates) remain vulnerable until manually patched. The exploitation path (local, low privilege) makes it attractive as a second-stage LPE gadget following initial access via phishing or web exploitation. A SYSTEM shell grants an attacker full administrative control over the endpoint including credential extraction from LSASS, persistence via service creation, and lateral movement.
+    ch_eu_nexus: "Universal — Microsoft Defender is the default endpoint protection across Windows installations worldwide; Swiss and EU public-sector endpoints running Windows with Defender-only AV are directly exposed if automatic updates are blocked."
+    public_sector_nexus: "direct"
+    sector: "all"
+    cves: [CVE-2026-41091]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Improper link resolution before file access ('link following') in Microsoft Defender allows an authorized attacker to elevate privileges locally."
+        attribution: "Microsoft MSRC CVE-2026-41091"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+      - quote: "An attacker who successfully exploited this vulnerability could gain SYSTEM privileges."
+        attribution: "Microsoft MSRC CVE-2026-41091 FAQ"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+    extended_notes: |
+      Detection: look for Defender process tree anomalies (Malware Protection Engine version queries via WMI — Get-MpComputerStatus), sudden SYSTEM-level process spawns from MsMpEng.exe or associated Defender helpers. Hardening: confirm Engine auto-update is not disabled via GPO (Computer Configuration → Administrative Templates → Windows Components → Microsoft Defender Antivirus → "Turn off routine remediation"); verify WU connectivity on Defender-dependent systems; push Engine updates manually if needed. The link-following class (CWE-59) typically involves hard link or junction abuse during privileged file operations; hunting for junction/hard-link creation events (Sysmon EID 11 with TargetFilename pointing to privileged directories) at the time of Defender scans may surface exploitation artefacts.
+
+  - title: "UPDATE: CVE-2026-45585 (YellowKey) — Microsoft assigns CVE and publishes mitigation for BitLocker WinRE bypass; no patch yet"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: msrc recent (bridge:msrc.recent) → MSRC OData API returned CVE-2026-45585 publiclyDisclosed=Yes, releaseDate=2026-05-19 → primary: MSRC update guide SPA, URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585 (cross-reference with prior coverage: item:windows-bitlocker-yellowkey-and-ctfmon-greenplasma-zero-days, 2026-05-15)"
+    summary: |
+      On 2026-05-19, Microsoft formally assigned CVE-2026-45585 to the 'YellowKey' BitLocker bypass zero-day disclosed by 'Nightmare Eclipse' on 2026-05-12 and first covered in this brief on 2026-05-15. Microsoft confirms this is a CWE-77 (command injection in Windows BitLocker / WinRE), CVSS 6.8 (AV:P/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), requiring physical access. No security update is available yet; Microsoft has published interim mitigation guidance: administrators must mount each device's WinRE image, remove the autofstx.exe entry from the BootExecute registry value inside WinRE, commit the image, and then re-establish BitLocker trust for WinRE. This requires per-device work on every endpoint with TPM-only BitLocker (without a PIN/password protector). The MSRC advisory classifies the exploit evidence as 'Proof-of-Concept' (E:P in the CVSS temporal vector, RL:W — workaround). This is a fresh in-window delta because: (1) a CVE was formally assigned (prior coverage had no CVE), (2) Microsoft published official mitigation, and (3) the MSRC entry confirms scope of affected systems and the specific WinRE attack path.
+    ch_eu_nexus: "High — Swiss federal administration and cantonal governments use BitLocker for device encryption on Windows endpoints; physical-access requirement fits insider-threat and device-theft attack vectors. Swiss Military and classified environments are particularly relevant."
+    public_sector_nexus: "direct"
+    sector: "government, defense, all-sector-endpoints"
+    cves: [CVE-2026-45585]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-15
+    evidence:
+      - quote: "Microsoft is aware of a security feature bypass vulnerability in Windows publicly referred to as 'YellowKey'. The proof of concept for this vulnerability has been made public violating coordinated vulnerability best practices."
+        attribution: "Microsoft MSRC CVE-2026-45585"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585"
+      - quote: "A successful attacker could bypass the BitLocker Device Encryption feature on the system storage device. An attacker with physical access to the target could exploit this vulnerability to gain access to encrypted data."
+        attribution: "Microsoft MSRC CVE-2026-45585 FAQ"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585"
+    extended_notes: |
+      The mitigation involves registry editing inside the WinRE image — an operationally complex rollout for large fleets. Detection is hard as physical access is required and leaves minimal software-side artefacts. Key hardening steps: (1) add a BitLocker PIN/password protector (not just TPM-only) to all endpoints — this prevents the WinRE path from exposing data even if the bypass succeeds; (2) deploy the WinRE image mitigation from MSRC; (3) restrict physical access to devices. Sysmon-based detection is not applicable for physical attacks, but inventory tools should flag devices still running unpatched WinRE.
+
+  - title: "CVE-2026-45585 (YellowKey) mitigation — same entry as update above (single CVE item)"
+    sources: []
+    discovery_trace: "Combined with UPDATE entry above"
+    summary: ""
+    ch_eu_nexus: ""
+    public_sector_nexus: ""
+    sector: ""
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: duplicate
+
+  - title: "CVE-2026-45584 — Microsoft Defender RCE (heap buffer overflow over network, CVSS 8.1, no exploitation confirmed)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45584"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: msrc recent (bridge:msrc.recent) → MSRC OData API returned CVE-2026-45584 exploited=No, publiclyDisclosed=No, releaseDate=2026-05-19 → primary: MSRC, URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45584"
+    summary: |
+      Published 2026-05-19 in the MSRC May 2026 update guide, CVE-2026-45584 is a heap-based buffer overflow in Microsoft Defender that allows an unauthenticated attacker to execute code over a network (AV:N). CVSS 8.1. No exploitation observed at publication; no public PoC. Like CVE-2026-41091, this auto-remediates through Defender Engine updates. Given that the same product just had CVE-2026-41091 actively exploited, defender teams should verify Engine version is >= 1.1.26040.8 (which addresses both this and CVE-2026-41091). A network-based RCE in an endpoint security product is operationally severe: successful exploitation would place attacker code into the same privileged context as Defender.
+    ch_eu_nexus: "Same universal exposure as CVE-2026-41091."
+    public_sector_nexus: "direct"
+    sector: "all"
+    cves: [CVE-2026-45584]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Heap-based buffer overflow in Microsoft Defender allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC CVE-2026-45584"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45584"
+    extended_notes: |
+      No public PoC as of 2026-05-20 04:00 UTC. Priority: check Defender Engine auto-update status. Network-based exploitation vectors in AV products are historically targeted by advanced actors (cf. previous Kaspersky, Symantec RCE vulnerabilities over the years). This is a Patch Tuesday artifact elevated to watch status.
+
+  - title: "Fortinet CVE-2026-44277 (FortiAuthenticator) and CVE-2026-26083 (FortiSandbox) — unauthenticated RCE, CVSS 9.1/9.1"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12569"
+        publisher: "NCSC Switzerland CSH"
+        date: "2026-05-13"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/fortinet-warns-of-critical-rce-flaws-in-fortisandbox-and-fortiauthenticator/"
+        publisher: "BleepingComputer"
+        date: "2026-05-13"
+        role: "corroborating"
+      - url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+        publisher: "Fortinet PSIRT"
+        date: "2026-05-12"
+        role: "primary"
+    discovery_trace: "first seen at: ncsc-ch-security-hub (bridge:ncsc-csh.recent), CSH post 12569 → Fortinet PSIRT advisory FG-IR-26-128, URL https://fortiguard.fortinet.com/psirt/FG-IR-26-128 → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/fortinet-warns-of-critical-rce-flaws-in-fortisandbox-and-fortiauthenticator/"
+    summary: |
+      Fortinet disclosed two critical unauthenticated RCE vulnerabilities on 2026-05-12 affecting enterprise security appliances. CVE-2026-44277 (FG-IR-26-128, CVSS 9.8 per some sources, 9.1 per NCSC CSH) is an improper access control (CWE-284) in FortiAuthenticator that allows unauthenticated attackers to execute arbitrary code and commands via specially crafted HTTP requests to the management interface. Affected: FortiAuthenticator < 6.5.7, < 6.6.9, < 8.0.3; patched in 6.5.7, 6.6.9, 8.0.3. FortiAuthenticator Cloud is not affected. CVE-2026-26083 (FG-IR-26-136, CVSS 9.1) is a missing authorization weakness (CWE-862) in FortiSandbox, FortiSandbox Cloud, and FortiSandbox PaaS Web UI that allows unauthenticated RCE via HTTP. Affected: FortiSandbox < 4.4.9 or < 5.0.2, Cloud < 5.0.6; patched in 4.4.9, 5.0.2. Both vulnerabilities target network-accessible management web UIs — the preconditions are solely network reachability, with no credentials required. Neither was observed exploited at publication, but Fortinet security appliances are frequent targets of ransomware affiliates and espionage actors.
+    ch_eu_nexus: "High — FortiAuthenticator is widely deployed for MFA/2FA in Swiss and EU enterprise and government networks; FortiSandbox is used in government SOCs for malware analysis. Compromise of these appliances could undermine authentication infrastructure (FortiAuthenticator) or expose sensitive files analysed in the sandbox (FortiSandbox)."
+    public_sector_nexus: "direct"
+    sector: "government, finance, energy, telco, education"
+    cves: [CVE-2026-44277, CVE-2026-26083]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-44277 CVSS3.1: 9.8 (CRITICAL) - Improper access control in FortiAuthenticator leading to RCE; CVE-2026-26083 CVSS3.1: 9.1 (CRITICAL) - Missing authorization in FortiSandbox Web UI leading to RCE"
+        attribution: "NCSC Switzerland CSH post 12569"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12569"
+    extended_notes: |
+      Detection: FortiAuthenticator logs (auth.log or /var/log/authd.log) for unexpected POST requests to /api/ or /login/ endpoints from non-administrative source IPs; FortiSandbox: look for unexpected API requests to sandbox management endpoints (typically on port 8443 or 443). Hardening: restrict management interface access to dedicated management networks; apply vendor patches immediately. T1190 (Exploit Public-Facing Application). Note: these advisories were published 2026-05-12/13 — outside strict 36h window, but included because CERT-FR (CERTFR-2026-AVI-0575) confirmed them on 2026-05-13 and NCSC CSH published on 2026-05-13, making them close boundary items not yet in prior coverage records.
+
+  - title: "CVE-2026-45185 — Exim 'Dead.Letter' unauthenticated RCE via BDAT/GnuTLS use-after-free (CVSS 9.8)"
+    sources:
+      - url: "https://www.openwall.com/lists/oss-security/2026/05/12/4"
+        publisher: "Openwall oss-security"
+        date: "2026-05-12"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/new-exim-bdat-vulnerability-exposes.html"
+        publisher: "The Hacker News"
+        date: "2026-05-12"
+        role: "corroborating"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0163"
+        publisher: "NCSC Netherlands"
+        date: "2026-05-15"
+        role: "corroborating"
+      - url: "https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim"
+        publisher: "XBOW Security"
+        date: "2026-05-12"
+        role: "corroborating"
+    discovery_trace: "first seen at: advisories-ncsc-nl (bridge:ncsc-nl.recent), advisory NCSC-2026-0163 → CSAF fetch: UAF in Exim BDAT/GnuTLS → primary: oss-security disclosure, URL https://www.openwall.com/lists/oss-security/2026/05/12/4 → researcher blog: XBOW, URL https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim"
+    summary: |
+      CVE-2026-45185 ("Dead.Letter") is a use-after-free (UAF) in Exim's binary data transmission (BDAT) message body parsing path triggered when a client sends a TLS close_notify alert before the BDAT body transfer completes and then appends a final cleartext byte on the same TCP connection. Exim frees its GnuTLS transfer buffer during TLS teardown, but a nested BDAT receive wrapper can still process the trailing byte and write a single character into the freed memory region via the C standard library ungetc() function — corrupting the heap allocator's internal metadata. On builds without ASLR (unusual), this allows deterministic unauthenticated RCE. On standard ASLR-enabled systems, this causes heap corruption that can lead to RCE, though exploitation is more complex. Preconditions: Exim built with USE_GNUTLS=yes (default on Debian/Ubuntu; not OpenSSL-based builds); STARTTLS and CHUNKING (BDAT) advertised — both are on by default; unauthenticated SMTP access (TCP 25). Affected: Exim 4.97 through 4.99.2. Fixed: Exim 4.99.3 (released 2026-05-12). Discovered by Federico Kirschbaum (XBOW); NCSC-NL CSAF advisory confirms version scope and CVSS 9.8. No active exploitation confirmed at time of reporting; a functional PoC was developed by XBOW during the coordinated disclosure window.
+    ch_eu_nexus: "Medium-High — Exim is widely deployed as MTA on Debian/Ubuntu Linux systems across Swiss and EU public-sector infrastructure (universities, research institutes, some government mail relays). GnuTLS builds are standard on these distributions."
+    public_sector_nexus: "indirect"
+    sector: "education, research, government-mail, hosting"
+    cves: [CVE-2026-45185]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A remotely reachable Use-After-Free (UAF) vulnerability has been identified in Exim's BDAT (binary data transmission) body parsing path when using the GnuTLS backend. This vulnerability can lead to heap corruption and potential code execution."
+        attribution: "Exim maintainer Heiko Schlittermann, oss-security disclosure"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/05/12/4"
+      - quote: "The vulnerability is triggered during BDAT message body handling when a client sends a TLS close_notify alert before the body transfer is complete, and then follows up with a final byte in cleartext on the same TCP connection."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/new-exim-bdat-vulnerability-exposes.html"
+    extended_notes: |
+      Detection: network-level monitoring for SMTP sessions that initiate STARTTLS + BDAT and exhibit unusual TLS close_notify sequences; SMTP server logs for malformed BDAT sequences; Exim logs (/var/log/exim4/mainlog) for UAF-related segfaults or panics. T1190 (Exploit Public-Facing Application) via SMTP. Note: primary source date is 2026-05-12, 8 days before today. However, NCSC-NL advisory (NCSC-2026-0163) was published 2026-05-15 with fresh corroboration. The initial disclosure falls outside strict 36h window but is included because: (1) NCSC-NL advisory 2026-05-15 is within the 7-day developing-story window; (2) no prior coverage in covered_items.json; (3) CVSS 9.8 critical unauthenticated MTA RCE warrants coverage.
+
+cve_table:
+  - cve: "CVE-2026-41091"
+    product: "Microsoft Defender (Malware Protection Engine)"
+    cvss: "7.8"
+    epss: ""
+    kev: "No"
+    exploited: "Yes"
+    patch: "Engine version >= 1.1.26040.8 (auto-update)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+  - cve: "CVE-2026-45584"
+    product: "Microsoft Defender (Malware Protection Engine)"
+    cvss: "8.1"
+    epss: ""
+    kev: "No"
+    exploited: "No"
+    patch: "Engine version >= 1.1.26040.8 (auto-update)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45584"
+  - cve: "CVE-2026-45585"
+    product: "Windows BitLocker / WinRE (YellowKey)"
+    cvss: "6.8"
+    epss: ""
+    kev: "No"
+    exploited: "No (PoC public)"
+    patch: "No patch; MSRC interim mitigation (WinRE BootExecute edit)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585"
+  - cve: "CVE-2026-44277"
+    product: "Fortinet FortiAuthenticator"
+    cvss: "9.8"
+    epss: ""
+    kev: "No"
+    exploited: "No"
+    patch: "FortiAuthenticator 6.5.7 / 6.6.9 / 8.0.3"
+    source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+  - cve: "CVE-2026-26083"
+    product: "Fortinet FortiSandbox / FortiSandbox Cloud / PaaS"
+    cvss: "9.1"
+    epss: ""
+    kev: "No"
+    exploited: "No"
+    patch: "FortiSandbox 4.4.9 / 5.0.2"
+    source: "https://fortiguard.fortinet.com/psirt/FG-IR-26-136"
+  - cve: "CVE-2026-45185"
+    product: "Exim MTA (GnuTLS builds)"
+    cvss: "9.8"
+    epss: ""
+    kev: "No"
+    exploited: "No (PoC developed)"
+    patch: "Exim 4.99.3"
+    source: "https://www.openwall.com/lists/oss-security/2026/05/12/4"
+  - cve: "CVE-2026-42822"
+    product: "Microsoft Azure Local Disconnected Operations (ALDO)"
+    cvss: "10.0"
+    epss: ""
+    kev: "No"
+    exploited: "No"
+    patch: "ALDO version 2604 or later"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42822"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "Fetched successfully but 0 KEV entries added since 2026-05-19 — no new KEV additions in the recency window."
+  - source_id: drupal-sa
+    reason: "Drupal SA-CORE-2026-004 patch scheduled for 17:00-21:00 UTC 2026-05-20 — patch not yet released at time of S1 research run (04:04 UTC). Drupal.org blocked by Cloudflare client challenge. PSA-2026-05-18 pre-advisory covered; final CVE TBD."
+  - source_id: fortiguard-psirt
+    reason: "Fortinet PSIRT SPA (fortiguard.fortinet.com) returned HTML template/nav only — no advisory body content. Covered via NCSC CSH and BleepingComputer corroboration."

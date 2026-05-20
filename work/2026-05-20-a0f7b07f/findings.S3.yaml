@@ -1,0 +1,311 @@
+# work/2026-05-20-a0f7b07f/findings.S3.yaml
+domain: S3
+run_id: "2026-05-20-a0f7b07f"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-05-20T04:04:58Z"
+ended_at: "2026-05-20T04:12:30Z"
+duration_seconds: 452
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 6
+  bridge_fetches: 14
+
+items:
+  - title: "Fox Tempest malware-signing-as-a-service disrupted: Azure Artifact Signing abused to issue 1,000+ short-lived certificates to Rhysida, INC, Qilin and Akira ransomware affiliates"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+        publisher: "The Record (Recorded Future News)"
+        date: "2026-05-19"
+        role: "corroborating"
+      - url: "https://blogs.microsoft.com/on-the-issues/2026/05/19/disrupting-fox-tempest-a-cybercrime-service/"
+        publisher: "Microsoft On the Issues (DCU legal action)"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog (bridge subcommand), feed item 2026-05-19 → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/ → corroborating: The Record, URL https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+    summary: |
+      Microsoft Threat Intelligence published a full exposure of Fox Tempest on 2026-05-19, concurrent with Microsoft's Digital Crimes Unit (DCU) unsealing a U.S. District Court legal action and disrupting the actor's infrastructure. Fox Tempest operated a malware-signing-as-a-service (MSaaS) under the brand "signspace[.]cloud" since at least May 2025, abusing Microsoft Artifact Signing (formerly Azure Trusted Signing) to generate short-lived (72-hour) code-signing certificates tied to stolen US and Canadian identities. Over 1,000 certificates were issued and hundreds of Azure tenants created. Customers uploaded malicious binaries — masquerading as AnyDesk, Teams, PuTTY, Webex — and received Microsoft-signed executables that bypassed AV/EDR signing checks. In February 2026 Fox Tempest transitioned to VM-based delivery: pre-configured VMs hosted on Cloudzy's US infrastructure accepted customer uploads and returned signed binaries. Fox Tempest customers include Vanilla Tempest (deploying Rhysida ransomware), Storm-0501, Storm-2561, and Storm-0249; the downstream malware families include Oyster, Lumma Stealer, Vidar, INC, Qilin, and Akira. Microsoft revoked all 1,000+ certificates and seized the signspace[.]cloud infrastructure. Defender detections (BehaviorWin32/Fox*) and updated Artifact Signing identity-validation controls have been deployed. Detection: hunt for Microsoft-signed PE binaries with certificate validity <= 72h issued after 2025-05-01 from issuers tied to "Trusted Signing" where the signing timestamp does not match the organizational EV entity; EDR parent-process tree where Teams.exe / AnyDesk.exe spawns cmd.exe / powershell.exe without the expected Microsoft installer ancestry. Hardening: enforce WDAC/AppLocker policy requiring certificates from organisational PKI roots; monitor Conditional-Access sign-in logs for Azure app registrations in newly created tenants with Artifact-Signing scope.
+    ch_eu_nexus: "global, with confirmed UK, France impacts; European ransomware affiliates (INC, Qilin, Akira) used the service — EU public-sector targets plausible"
+    public_sector_nexus: "indirect — Fox Tempest's downstream customers hit healthcare, education, government per Microsoft"
+    sector: "ransomware ecosystem, healthcare, education, government, finance"
+    cves: []
+    actors_campaigns_malware:
+      - "Fox Tempest"
+      - "Vanilla Tempest"
+      - "Storm-0501"
+      - "Storm-2561"
+      - "Storm-0249"
+      - "Rhysida"
+      - "INC ransomware"
+      - "Qilin"
+      - "Akira"
+      - "Lumma Stealer"
+      - "Oyster"
+      - "Vidar"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Fox Tempest is a financially motivated threat actor that operates a malware-signing-as-a-service (MSaaS) used by other cybercriminals to more effectively distribute malicious code, including ransomware. The threat actor abuses Microsoft Artifact Signing to generate short-lived, fraudulent code-signing certificates"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+      - quote: "Microsoft has revoked over one thousand code signing certificates attributed to Fox Tempest"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+      - quote: "The company unsealed a legal case in U.S. District Court on Tuesday detailing the disruption of Fox Tempest — a popular service that has operated since May 2025"
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/microsoft-disrupts-fox-tempest-malware-signing-service"
+
+  - title: "SEPPmail Secure E-Mail Gateway: pre-auth RCE (CVE-2026-2743, CVSS 10.0) and unauthenticated RCE (CVE-2026-44128, CVSS 9.3) — DACH-region appliances exposed"
+    sources:
+      - url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+        publisher: "InfoGuard Labs (Swiss)"
+        date: "2026-05-18"
+        role: "primary — original vulnerability research"
+      - url: "https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+      - url: "https://cybersecuritynews.com/seppmail-gateway-flaws/"
+        publisher: "CybersecurityNews"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('SEPPmail secure email gateway RCE vulnerability May 2026') → primary: InfoGuard Labs, URL https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/ → corroborating: THN https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html"
+    summary: |
+      InfoGuard Labs (Baar, Switzerland) published on 2026-05-18 a full technical disclosure of seven vulnerabilities in SEPPmail Secure E-Mail Gateway, a virtual appliance widely deployed in DACH-region enterprises for S/MIME and PGP email encryption. SEPPmail instances are common in Swiss public administration, healthcare, and financial services. The most critical flaw, CVE-2026-2743 (CVSS 10.0), is a pre-authenticated path traversal in the Large File Transfer (LFT) back-end's /v1/file.app endpoint: the handle_request function passes a JSON-supplied filename through WebMailMessage::store_attachments without sanitisation, allowing ../ sequences to write arbitrary files as the nobody user. The nobody account has unusual write access to /etc/syslog.conf; by overwriting that file with a piped Perl reverse-shell one-liner, and triggering a newsyslog rotation (which runs every 15 minutes via cron and sends SIGHUP to syslogd), an unauthenticated attacker achieves remote code execution and full appliance compromise. This vulnerability affects only instances with the Large File Transfer license; Censys scanning indicates the majority of customers have LFT enabled (exposure detectable by HTTP status on /v1/file.app — 404 = not affected). CVE-2026-44128 (CVSS 9.3) is a second unauthenticated RCE in the GINA V2 web interface: the /api.app/template endpoint passes a user-controlled upldd parameter directly to Perl's eval() without sanitisation. Additional flaws: CVE-2026-44127 (LFI reading stored emails, LDAP databases, and cryptographic keys), CVE-2026-44129 (server-side template injection, CVSS 8.3), CVE-2026-44126 (insecure deserialization, fixed 15.0.3), CVE-2026-44125 (missing authorization in GINAv2), CVE-2026-7864 (CVSS 6.9, server environment variable exposure through unauthenticated endpoint). All vulnerabilities are patched in SEPPmail 15.0.4 (CVE-2026-44128 in 15.0.2.1, CVE-2026-44126 in 15.0.3, remainder in 15.0.4). Detection: web-server access logs for POST to /v1/file.app with ../ sequences in JSON body; unusual Perl process trees spawned by syslogd; unexplained connections from the appliance's IP outbound on high ports. Hardening: update to 15.0.4 immediately; disable GINA V2 if not in use; restrict /v1/file.app to known IP ranges at perimeter if LFT is not required.
+    ch_eu_nexus: "direct — SEPPmail is a Swiss product with primary deployment in DACH (CH, DE, AT); InfoGuard Labs is a Swiss security firm"
+    public_sector_nexus: "direct — Swiss federal agencies, cantonal governments, and healthcare institutions are common SEPPmail customers"
+    sector: "government, healthcare, finance, legal, education (DACH primary)"
+    cves:
+      - CVE-2026-2743
+      - CVE-2026-44128
+      - CVE-2026-44127
+      - CVE-2026-44129
+      - CVE-2026-44126
+      - CVE-2026-44125
+      - CVE-2026-7864
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-2743: Pre-authenticated RCE by exploiting an arbitrary file write in the Large File Transfer (LFT) component. The configuration file /etc/syslog.conf can be written to turn it into an RCE."
+        attribution: "InfoGuard Labs"
+        source_url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+      - quote: "The chain allows for a complete takeover of the SEPPmail appliance. Attackers can read all mail traffic and persist indefinitely on the gateway. On these virtual appliances the Blue Teams have usually no visibility."
+        attribution: "InfoGuard Labs"
+        source_url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+      - quote: "Seven SEPPMail Secure E-Mail Gateway flaws have been disclosed, including RCE, path traversal, authorization, deserialization, and eval injection flaws."
+        attribution: "CybersecurityNews"
+        source_url: "https://cybersecuritynews.com/seppmail-gateway-flaws/"
+
+  - title: "Drupal core highly critical (20/25 Drupal score) pre-auth vulnerability — patch scheduled today (2026-05-20 17:00–21:00 UTC), exploit expected within hours"
+    sources:
+      - url: "https://www.theregister.com/security/2026/05/19/drupal-warns-admins-to-brace-for-highly-critical-core-patch/5242728"
+        publisher: "The Register"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://www.securityweek.com/drupal-to-patch-highly-critical-vulnerability-at-risk-of-quick-exploitation/"
+        publisher: "SecurityWeek"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Drupal urgent core security update May 20 2026') → primary: PSA-2026-05-18 (drupal.org, Cloudflare-gated, Wayback no snapshot) → fallback: The Register, URL https://www.theregister.com/security/2026/05/19/drupal-warns-admins-to-brace-for-highly-critical-core-patch/5242728 → corroborating: SecurityWeek"
+    summary: |
+      Drupal published PSA-2026-05-18 on 2026-05-18 warning of a highly critical vulnerability (score 20/25 on Drupal's published scale) in Drupal core that will be patched during a window of 17:00–21:00 UTC on 2026-05-20. The advance advisory discloses no CVE or technical detail, but the Drupal Security Team's decision to pre-announce and reserve emergency out-of-band slots — including manual patch files for the long end-of-life 8.9 and 9.5 branches (not normally supported) — signals a severity level associated with unauthenticated, zero-complexity attack paths. Affected versions: 11.3.x, 11.2.x, 10.6.x, 10.5.x, plus 8.9/9.5 as manual patch files. The Security Team explicitly warns "exploits might be developed within hours or days." Drupal is deployed extensively in Swiss and European public-sector web presences (canton portals, European Commission and EU-agency sites, NGOs). Defender action (pre-patch): ensure automatic updates are configured or schedule an emergency update window aligned with the 17:00–21:00 UTC patch release; place Drupal instances behind a WAF with a virtual-patch profile; review the Drupal security advisories feed at https://www.drupal.org/security/ immediately after 17:00 UTC to obtain CVE detail and scope. Detection: Drupal access logs for unusual PHP execution paths; file integrity monitoring on sites/all/modules/ and core/. Post-patch: update to the released fix within the same business day.
+    ch_eu_nexus: "direct — Swiss federal and cantonal government portals, EU-agency sites, and many European NGO and public-institution websites run Drupal CMS"
+    public_sector_nexus: "direct — Drupal is the dominant CMS in EU/CH public-sector web"
+    sector: "government, education, NGO, public institutions"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Drupal Security Team urges administrators to reserve time for core updates at that time because exploits might be developed within hours or days."
+        attribution: "Drupal / The Register"
+        source_url: "https://www.theregister.com/security/2026/05/19/drupal-warns-admins-to-brace-for-highly-critical-core-patch/5242728"
+      - quote: "patches will also be released for Drupal 8.9 and 9.5, which must be applied manually"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/drupal-to-patch-highly-critical-vulnerability-at-risk-of-quick-exploitation/"
+
+  - title: "DirtyDecrypt (CVE-2026-31635, CVSS 7.5) — Linux kernel LPE via rxgk_decrypt_skb page-cache write, PoC published; Fedora, Arch, openSUSE Tumbleweed affected"
+    sources:
+      - url: "https://moselwal.com/blog/dirtydecrypt-linux-kernel-rxgk-cve-2026-31635"
+        publisher: "Moselwal (technical analysis)"
+        date: "2026-05-18"
+        role: "primary technical analysis"
+      - url: "https://www.bleepingcomputer.com/news/security/exploit-available-for-new-dirtydecrypt-linux-root-escalation-flaw/"
+        publisher: "BleepingComputer"
+        date: "2026-05-19"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/dirtydecrypt-poc-released-for-linux.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('CVE-2026-31635 Linux kernel DirtyDecrypt LPE PoC May 2026') → primary technical: Moselwal, URL https://moselwal.com/blog/dirtydecrypt-linux-kernel-rxgk-cve-2026-31635 → corroborating: BleepingComputer + THN"
+    summary: |
+      CVE-2026-31635 (CVSS 7.5, CWE-122 heap-based buffer overflow / missing COW guard) is a local privilege escalation in the Linux kernel's RxGK (Kerberos-for-AFS) subsystem, dubbed DirtyDecrypt by its researchers. The vulnerability is a page-cache write due to a missing copy-on-write (COW) guard in the rxgk_decrypt_skb() function in net/rxrpc/rxgk_crypt.c. The Zellic/V12 research team disclosed it on 2026-05-09; kernel maintainers noted it was a duplicate of a vulnerability patched on 2026-04-25 in the mainline. A working PoC was published by V12 on 2026-05-19 triggering immediate attention. Affected systems: only distributions compiled with CONFIG_RXGK=y — Fedora, Arch Linux, and openSUSE Tumbleweed in their standard configurations; Debian Stable, RHEL, and Ubuntu LTS build kernels without CONFIG_RXGK and are not affected. Kubernetes workers on these rolling-release distros are at risk. DirtyDecrypt is assessed as a variant of the Copy Fail family (CVE-2026-31431, CVE-2026-43284, CVE-2026-43500, CVE-2026-46300). No in-the-wild exploitation reported yet. Mitigation: apply kernel patch from 2026-04-25 (linux-stable >=6.x.y); or blacklist the rxrpc module via /etc/modprobe.d/rxgk-blacklist.conf (breaks IPsec/AFS VPN, fragile). Verify kernel build with grep RXGK /boot/config-$(uname -r). Detection: Falco/Tetragon alert on unexpected rxrpc module load; UID-change events (Sysmon-for-Linux EID 8) from unprivileged processes; unusual root process spawned from container context.
+    ch_eu_nexus: "global; affects Linux systems running rolling-release distros, relevant to CH/EU public-sector Linux desktop and container environments on Fedora/Arch/Tumbleweed"
+    public_sector_nexus: "indirect"
+    sector: "cross-sector, CI/CD, developer workstations, Linux infrastructure"
+    cves:
+      - CVE-2026-31635
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "It's a rxgk pagecache write due to missing COW [copy-on-write] guard in rxgk_decrypt_skb"
+        attribution: "Zellic/V12 via Moselwal"
+        source_url: "https://moselwal.com/blog/dirtydecrypt-linux-kernel-rxgk-cve-2026-31635"
+      - quote: "DirtyDecrypt impacts only distributions with CONFIG_RXGK enabled, such as Fedora, Arch Linux, and openSUSE Tumbleweed. The vulnerability was patched on April 25, 2026."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/exploit-available-for-new-dirtydecrypt-linux-root-escalation-flaw/"
+
+  - title: "actions-cool/issues-helper GitHub Action compromised: all 53 version tags redirected to imposter commit that reads Runner.Worker /proc/PID/mem to harvest CI/CD secrets; linked to Mini Shai-Hulud cluster"
+    sources:
+      - url: "https://www.stepsecurity.io/blog/actions-cool-issues-helper-github-action-compromised-all-tags-point-to-imposter-commit-that-exfiltrates-ci-cd-credentials"
+        publisher: "StepSecurity"
+        date: "2026-05-18"
+        role: "primary — original discovery"
+      - url: "https://cybersecuritynews.com/compromised-github-action-exfiltrates-workflow-credentials/"
+        publisher: "CybersecurityNews"
+        date: "2026-05-19"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/github-actions-supply-chain-attack.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: THN feed (bridge), item 2026-05-19 → pivot: WebSearch ('actions-cool issues-helper GitHub Action compromised tag redirect May 2026') → primary: StepSecurity, URL https://www.stepsecurity.io/blog/actions-cool-issues-helper-github-action-compromised-all-tags-point-to-imposter-commit-that-exfiltrates-ci-cd-credentials (SPA, verified by metadata) → corroborating: CybersecurityNews, THN"
+    summary: |
+      StepSecurity disclosed on 2026-05-18 that all 53 existing version tags of the popular actions-cool/issues-helper GitHub Action were moved to point to an imposter commit (identified as 1c9e803) not present in the normal branch history, along with 15 tags on the companion actions-cool/maintain-one-comment action. The malicious payload downloads the Bun JavaScript runtime to the runner environment, then spawns a Python process that reads the /proc/<PID>/mem address space of the Runner.Worker process — the GitHub Actions component that holds decrypted workflow secrets during job execution. The data is filtered using tr and grep to extract values marked isSecret: true, then exfiltrated via HTTPS to t.m-kosche[.]com. Socket confirmed the exfiltration domain overlaps with the Mini Shai-Hulud npm/PyPI supply-chain campaign, assessed as the same activity cluster. All 53 imposter commits were created within a 3-minute 16-second window. GitHub disabled the repository for terms-of-service violation. The attack window was active from 2026-05-18 UTC; teams that ran any workflow referencing actions-cool/issues-helper@v* or a mutable tag in that period should treat all CI/CD secrets (GitHub PATs, npm tokens, AWS credentials, SSH keys) as compromised and rotate immediately. Hardening: pin all Actions references to full commit SHA (e.g., uses: actions-cool/issues-helper@<sha>), not mutable tags or branch names; deploy StepSecurity Harden-Runner or equivalent to detect in-flight secret reads from non-approved process parents; restrict workflow GITHUB_TOKEN permissions to minimum.
+    ch_eu_nexus: "global CI/CD supply chain; affects any organisation using actions-cool/issues-helper in GitHub workflows — common in open-source and developer-tooling contexts including European public-sector repos"
+    public_sector_nexus: "indirect — CI/CD pipelines, developer tooling"
+    sector: "software supply chain, developer tools, technology"
+    cves: []
+    actors_campaigns_malware:
+      - "Mini Shai-Hulud"
+      - "TeamPCP (linked campaign)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Every existing tag in the repository has been moved to point to an imposter commit that does not appear in the action's normal commit history, which contains malicious code that exfiltrates credentials from CI/CD pipelines."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/actions-cool-issues-helper-github-action-compromised-all-tags-point-to-imposter-commit-that-exfiltrates-ci-cd-credentials"
+      - quote: "The payload downloads the Bun JavaScript runtime to the runner environment, then spawns a Python process that reads the memory address space of the Runner.Worker process, specifically through the /proc/<PID>/mem path where GitHub Actions stores decrypted workflow secrets."
+        attribution: "CybersecurityNews"
+        source_url: "https://cybersecuritynews.com/compromised-github-action-exfiltrates-workflow-credentials/"
+      - quote: "The exfiltration domain has been linked to the Mini Shai-Hulud campaign, with threat intelligence firm Socket confirming the overlap"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/github-actions-supply-chain-attack.html"
+
+  - title: "Nx Console 18.95.0 (VS Code extension, 2.2M installs) compromised via stolen publisher credentials — 11-minute window; multi-stage stealer harvests GitHub, npm, AWS, HashiCorp, K8s, 1Password secrets with DNS-tunnel exfiltration and macOS backdoor"
+    sources:
+      - url: "https://cybersecuritynews.com/nx-console-vs-code-extension-compromised/"
+        publisher: "CybersecurityNews"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/compromised-nx-console-18950-targeted.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: THN feed (bridge), item 2026-05-19 → WebSearch ('Nx Console 18.95.0 compromised supply chain VS Code') → primary: CybersecurityNews https://cybersecuritynews.com/nx-console-vs-code-extension-compromised/ → corroborating: THN https://thehackernews.com/2026/05/compromised-nx-console-18950-targeted.html"
+    summary: |
+      On 2026-05-18, version 18.95.0 of the Nx Console VS Code extension (nrwl.angular-console, 2.2+ million installs) was pushed to the Visual Studio Marketplace using stolen publisher credentials belonging to a compromised developer. The malicious version activated on any workspace open, fetching a 498 KB obfuscated payload from a dangling orphan commit on the official nrwl/nx GitHub repository; the injected code was 2,777 bytes inserted into the minified main.js. The payload is a multi-stage credential stealer and supply-chain poisoner: it harvests tokens from GitHub, npm, AWS, HashiCorp Vault, Kubernetes kubeconfigs, and 1Password, exfiltrating via three independent channels (HTTPS, GitHub API, DNS tunneling). On macOS it additionally installs a persistent Python backdoor using the GitHub Search API as a dead-drop for commands signed with a 4096-bit RSA key. The malicious version was live for approximately 11 minutes (12:36–12:47 UTC) before Nx team detection and removal; safe version is 18.100.0 or later. Any developer who opened a workspace during that window should rotate all credentials on that machine. Detection: VS Code extension activity logs for unexpected network calls during workspace initialization; EDR parent-process chain node.js → python spawning curl/dns; check macOS launch agents for Python persistence items; audit AWS CloudTrail / GitHub audit log for unexpected API calls from developer IPs in that 11-minute window on 2026-05-18.
+    ch_eu_nexus: "global; affects European developer organisations using Nx Console for Angular/React monorepo development"
+    public_sector_nexus: "indirect — developer tooling"
+    sector: "software supply chain, developer tools, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On May 18, 2026, version 18.95.0 of the Nx Console extension (nrwl.angular-console) was pushed to the marketplace using stolen publishing credentials. The extension has over 2.2 million installations."
+        attribution: "CybersecurityNews"
+        source_url: "https://cybersecuritynews.com/nx-console-vs-code-extension-compromised/"
+      - quote: "The malicious version was only live for roughly 11 minutes before the Nx team detected and removed it. Any developer who had version 18.95.0 installed and opened a workspace between 12:36 and 12:47 UTC on May 18 should treat all credentials on that machine as compromised."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/compromised-nx-console-18950-targeted.html"
+
+  - title: "Cisco Talos: BadIIS demo.pdb variant now a commodity MaaS IIS ISAPI backdoor — lwxat developer alias, builder tool recovered, Chinese-speaking cybercrime groups operating since 2021"
+    sources:
+      - url: "https://blog.talosintelligence.com/from-pdb-strings-to-maas-tracking-a-commodity-badiis-ecosystem/"
+        publisher: "Cisco Talos"
+        date: "2026-05-19"
+        role: "primary"
+    discovery_trace: "first seen at: talos-rss (bridge), item 2026-05-19 → primary: Cisco Talos blog, URL https://blog.talosintelligence.com/from-pdb-strings-to-maas-tracking-a-commodity-badiis-ecosystem/"
+    summary: |
+      Cisco Talos researcher Joey Chen published on 2026-05-19 the first detailed MaaS-ecosystem analysis of a BadIIS variant identifiable by embedded "demo.pdb" path strings. PDB analysis traces development to a single alias "lwxat" from at least September 2021 through January 2026, with rapid iterative updates and reactive evasion features targeting Norton AV specifically. Talos recovered a dedicated builder tool that allows threat actors to generate configuration files and inject parameters into BadIIS ISAPI DLL payloads — enabling traffic redirection to illicit sites, reverse proxying for search-engine crawler manipulation, content hijacking, and backlink injection for SEO fraud monetisation. The ISAPI DLL hooks into the Windows IIS pipeline by registering as an ISAPI filter or extension (loaded from the applicationHost.config or web.config), intercepting all HTTP requests to hosted websites and selectively modifying HTTP responses — either serving different content to web crawlers vs. human browsers, or proxying requests to attacker-controlled infrastructure. Campaign scope: over 1,800 Windows IIS servers compromised globally; focus on Thailand and Vietnam but infection confirmed in India, Pakistan, Japan. Link to the broader DragonRank SEO poisoning ecosystem previously documented by Talos. No CVE exploitation — BadIIS requires prior IIS server compromise (web shell, vulnerable CMS) to plant the DLL. Detection: check applicationHost.config and each site's web.config for unexpected IsapiFilters entries; IIS logs for response-body size anomalies on content that should be static; monitor IIS worker-process (w3wp.exe) for unexpected outbound HTTP connections; Event ID 4688 / Sysmon EID 1 for DLL loads into w3wp.exe from non-standard paths.
+    ch_eu_nexus: "global, primarily Asia-Pacific; IIS-hosting European organisations with exposed CMS (Drupal, WordPress, Joomla on IIS) are plausible secondary targets"
+    public_sector_nexus: "indirect"
+    sector: "web hosting, e-commerce, government web portals (IIS)"
+    cves: []
+    actors_campaigns_malware:
+      - "BadIIS"
+      - "UAT-8099"
+      - "DragonRank"
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Cisco Talos has uncovered a BadIIS variant — identifiable by its embedded 'demo.pdb' strings — that functions as commodity malware, likely sold or shared among multiple Chinese-speaking cyber crime groups operating under a malware-as-a-service (MaaS) model for continuous monetization."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/from-pdb-strings-to-maas-tracking-a-commodity-badiis-ecosystem/"
+
+  - title: "TeamPCP supply-chain campaign: Checkmarx Jenkins AST plugin officially confirmed compromised (third breach in three months); Mini Shai-Hulud wave signs malicious @tanstack/react-router packages with SLSA Build Level 3 provenance — provenance no longer guarantees safety"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/32994"
+        publisher: "SANS Internet Storm Center (Kenneth Hartman)"
+        date: "2026-05-18"
+        role: "primary aggregation / updated summary"
+      - url: "https://www.wiz.io/blog/mini-shai-hulud-strikes-again-tanstack-more-npm-packages-compromised"
+        publisher: "Wiz"
+        date: "2026-05-13"
+        role: "corroborating (primary on SLSA detail)"
+      - url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+        publisher: "StepSecurity"
+        date: "2026-05-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: SANS ISC RSS feed (bridge), item 2026-05-18 → primary: SANS ISC diary https://isc.sans.edu/diary/rss/32994 → referenced primaries: Wiz https://www.wiz.io/blog/mini-shai-hulud-strikes-again-tanstack-more-npm-packages-compromised; StepSecurity; Checkmarx https://checkmarx.com/blog/ongoing-security-updates/"
+    summary: |
+      SANS ISC published an aggregation diary on 2026-05-18 summarising two TeamPCP campaign developments. First, Checkmarx officially confirmed on 2026-05-11 that its Jenkins AST scanner plugin (version 2026.5.09) was trojanized — a claim first made by a single researcher on 2026-05-09. The exposure window was 2026-05-09 01:25 UTC to 2026-05-10 08:47 UTC; the malicious plugin was installed by several hundred Jenkins controllers. This is the third Checkmarx compromise in three months. Last known-good build: 2.0.13-829.vc72453fa_1c16; remediated builds: 2.0.13-848.v76e89de8a_053 or 2.0.13-847.v08c0072b_2fd5. Second, the Mini Shai-Hulud npm worm published malicious versions of 42 @tanstack npm packages (including @tanstack/react-router at ~12M weekly downloads) within six minutes on 2026-05-11, propagating to ~170 packages including Mistral AI, UiPath, OpenSearch, Guardrails AI across npm and PyPI (cumulative downloads >500M). Most critically, the malicious versions carried valid SLSA Build Level 3 provenance attestations — because the attacker compromised TanStack's release pipeline using its legitimate OIDC identity rather than stealing npm credentials. Wiz's 2026-05-13 update notes a 1-in-6 probabilistic disk-wipe payload on systems matching Israeli or Iranian locale; Expel confirmed persistence injection into .vscode/tasks.json and ~/.claude/settings.json on developer machines. CVE-2026-45321 (CVSS 9.6, GHSA-g7cv-rxg3-hmpx). Detection: Audit Jenkins for versions matching the compromised build; scan npm lockfiles for @tanstack packages published between 2026-05-11 19:20–19:26 UTC; inspect .vscode/tasks.json and ~/.claude/settings.json for unexpected entries. Note: SLSA Level 3 provenance is not a sufficient control against CI pipeline compromise — add lockfile pinning and hash verification against known-good baselines.
+    ch_eu_nexus: "global supply-chain campaign; European developer organisations and CI/CD pipelines affected directly"
+    public_sector_nexus: "indirect"
+    sector: "software supply chain, developer tools"
+    cves:
+      - CVE-2026-45321
+    actors_campaigns_malware:
+      - "TeamPCP"
+      - "Mini Shai-Hulud"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-16"
+    evidence:
+      - quote: "Two TeamPCP events broke within 48 hours of each other and doubled attention on the campaign. Checkmarx confirmed its Jenkins AST plugin was trojanized, its third compromise in three months"
+        attribution: "SANS ISC (Kenneth Hartman)"
+        source_url: "https://isc.sans.edu/diary/rss/32994"
+      - quote: "this is the first documented npm supply chain attack shipping malware with valid SLSA Build Level 3 provenance attestations. Analysts assess this is novel and material: the attacker never stole maintainer npm credentials."
+        attribution: "SANS ISC (Kenneth Hartman)"
+        source_url: "https://isc.sans.edu/diary/rss/32994"
+
+candidate_sources:
+  - id: infoguard-labs
+    publisher: "InfoGuard Labs (InfoGuard AG, Baar Switzerland)"
+    url: "https://labs.infoguard.ch"
+    rss_url: null
+    category: research
+    why: "Swiss-based offensive security and IR research lab; published first-party vulnerability research on SEPPmail (covered this run) and prior research on Swiss-relevant targets. High CH/EU nexus value."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos X-Ops featured-blog feed (blt6f15f4f7deaf4242) returned HTTP exit code 1 (feed parse failure); Sophos news.sophos.com/feed/ also returned non-zero exit. Rotation-priority candidate — no in-window Sophos content recovered this run."
+  - source_id: trendmicro-research
+    reason: "Trend Micro research feed not attempted directly; no direct bridge subcommand available. WebSearch fallback not performed due to time budget. Rotation-priority candidate."
+  - source_id: drupal-psa
+    reason: "drupal.org/psa-2026-05-18 behind Cloudflare Client Challenge; Wayback Machine returned empty; covered via The Register and SecurityWeek corroboration."
