@@ -1,0 +1,298 @@
+# work/2026-05-21-77cdc4cd/findings.S3.yaml
+domain: S3
+run_id: 2026-05-21-77cdc4cd
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-21T04:04:14Z
+ended_at: 2026-05-21T04:10:50Z
+duration_seconds: 396
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 3
+  bridge_fetches: 18
+
+items:
+  - title: "Fox Tempest malware-signing-as-a-service disrupted by Microsoft (OpFauxSign) — Rhysida, Lumma Stealer, Vidar, Oyster delivered via fraudulent Azure Artifact Signing certificates"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://blogs.microsoft.com/on-the-issues/2026/05/19/disrupting-fox-tempest-a-cybercrime-service/"
+        publisher: "Microsoft On the Issues (Steven Masada / DCU)"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/microsoft-takes-down-malware-signing.html"
+        publisher: "The Hacker News"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent feed, URL https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/ → corroborating: THN, URL https://thehackernews.com/2026/05/microsoft-takes-down-malware-signing.html → corroborating: Microsoft On the Issues, URL https://blogs.microsoft.com/on-the-issues/2026/05/19/disrupting-fox-tempest-a-cybercrime-service/"
+    summary: |
+      Microsoft's Digital Crimes Unit disrupted Fox Tempest, a financially motivated threat actor that operated a malware-signing-as-a-service (MSaaS) exploiting Microsoft's Azure Artifact Signing (formerly Azure Trusted Signing) system. Fox Tempest, active since May 2025, used stolen identities — likely from US and Canadian individuals — to pass verification checks and generate short-lived (72-hour) code-signing certificates through Microsoft's legitimate signing infrastructure. The operation, codenamed OpFauxSign, involved seizing the Fox Tempest-operated website SignSpace[.]cloud, taking down hundreds of VMs, and blocking access to the underlying code repository.
+
+      The MSaaS operated as a two-stage service: initially customers uploaded malicious files for signing; from February 2026 Fox Tempest shifted to providing Cloudzy-hosted pre-configured VMs where customers uploaded artifacts directly and received signed binaries in return. The service charged $5,000–$9,000 per engagement.
+
+      Signed malware was distributed as trojanised AnyDesk, Microsoft Teams, PuTTY, and Cisco Webex installers delivered via malicious search advertisements. Vanilla Tempest used this pipeline to distribute Oyster/Broomstick/CleanUpLoader followed by Rhysida ransomware. Connected ransomware affiliates include INC, Qilin, BlackByte, and Akira. Other malware families delivered: Lumma Stealer, Vidar. Targeted sectors: healthcare, education, government, financial services in the US, France, India, and China. The distribution TTPs map to T1553.002 (Code Signing), T1195.002 (Compromise Software Supply Chain — malvertising as initial distribution), T1036.001 (Masquerading — Renamed System Utilities). Defenders should monitor for Authenticode-signed PE files where the signing certificate was issued by Microsoft Artifact Signing / Azure Trusted Signing and the signer entity resolves to a recently-created organisation (< 30 days), combined with child process chains spawning from browser or search download paths. Microsoft's 72-hour certificate validity window is now closed; revocation of the fraudulently obtained certificates removes the signing trust for files already in the wild.
+    ch_eu_nexus: "Global; France explicitly named as a targeted country; EU healthcare/education/government sectors in scope"
+    public_sector_nexus: "direct — government sector explicitly targeted"
+    sector: "healthcare, education, government, finance"
+    cves: []
+    actors_campaigns_malware: ["Fox Tempest", "Vanilla Tempest", "Rhysida", "Oyster", "Lumma Stealer", "Vidar", "INC ransomware", "Qilin", "BlackByte", "Akira", "OpFauxSign"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Fox Tempest is a financially motivated threat actor operating a malware‑signing‑as‑a‑service (MSaaS) used by other cybercriminals, including Vanilla Tempest and Storm groups, to more effectively distribute malicious code, including ransomware."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+      - quote: "Fox Tempest is said to have leveraged this mechanism to generate short-lived, fraudulent code-signing certificates and use them to deliver trusted, signed malware and slip past security controls. The certificates were valid for only 72 hours."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/microsoft-takes-down-malware-signing.html"
+      - quote: "To obtain legitimate signed certificates through Artifact Signing, the requestor must pass detailed identity validation processes in keeping with industry standard verifiable credentials (VC), which suggests the threat actor very likely used stolen identities based in the United States and Canada"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+    extended_notes: |
+      The Artifact Signing abuse is novel because it abuses a legitimate developer-identity-validation pipeline rather than a compromised certificate authority. The 72-hour validity is likely a deliberate operational security choice to reduce exposure; post-revocation the certificates remain in signed binaries but signature verification fails. Detection surfaces: Windows Security EID 8029 / EID 8033 (code integrity events) on Authenticode violations; Sysmon EID 7 (image loaded) with 'Signed=true, SignatureStatus=Valid' but the signing certificate store entry is from an Artifact Signing OID and the issuing entity age is short. Hunt: search EDR telemetry for processes launched from download directories with valid Authenticode signatures issued by 'Microsoft Artifact Signing CA' or 'Microsoft Azure Code Signing PCA' where the certificate's Not-After timestamp is <72h after Not-Before.
+
+  - title: "ESET: Webworm APT (China-aligned) shifts focus to European government targets — new EchoCreep (Discord C2) and GraphWorm (MS Graph API / OneDrive C2) backdoors documented; Belgium, Italy, Serbia, Poland governmental victims"
+    sources:
+      - url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"
+        publisher: "ESET Research (Eric Howard)"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html"
+        publisher: "The Hacker News"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent feed (no new THN entry seen initially) → WebSearch pivot → ESET WeLiveSecurity primary, URL https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/ → THN corroborating, URL https://thehackernews.com/2026/05/webworm-deploys-echocreep-and-graphworm.html"
+    summary: |
+      ESET Research published a technical analysis of Webworm (also linked to FishMonger/Aquatic Panda, SixLittleMonkeys, Space Pirates — all China-aligned) documenting a significant 2025 campaign pivot targeting European governmental organizations in Belgium, Italy, Serbia, and Poland, plus a university in South Africa. The group has abandoned its previous primary backdoors (Trochilus RAT, McRat/9002 RAT) in favour of two new custom implants and an expanded custom proxy toolkit.
+
+      EchoCreep: Go-written backdoor (earliest Discord messages from March 21, 2024) that uses Discord as C2 channel, encoding commands with base64 + AES-CBC-128. Capabilities: file upload/download, shell command execution via cmd.exe. C2 creates per-victim Discord channels named after the victim IP address or IP+hostname. Four unique victims identified from four Discord channels in the recovered messages (433 total messages decrypted). Initial access vector unknown; post-compromise discovery uses dirsearch (web path bruteforce against 56 targets in Spain, Hungary, Belgium, Nigeria, Czechia, Serbia) and nuclei (vulnerability scanner). Technique class: T1102.002 (Web Service — Bidirectional Communication), T1059.003 (Windows Command Shell).
+
+      GraphWorm: More sophisticated Go-written backdoor using Microsoft Graph API OneDrive endpoints for C2 (/createUploadSession for large file exfiltration). Commands received from and data uploaded to dedicated per-victim OneDrive directories. Data encrypted AES-256-CBC using OpenSSL EVP calls, base64-encoded. Executes at logon via persistence mechanism. Capabilities: cmd.exe session spawning, process creation, file upload/download to/from OneDrive. Technique class: T1102.002, T1071.001 (Application Layer Protocol — Web Protocols).
+
+      Custom proxy toolkit: WormFrp (modified frp, pulls config from compromised AWS S3 bucket wamanharipethe.s3.ap-south-1.amazonaws.com), ChainWorm (multi-hop proxy chaining), SmuxProxy, WormSocket (socket.io-based proxy). Infrastructure runs on Vultr and IT7 Networks cloud servers. SharpSecretsdump (credential dumping tool mimicking Impacket secretsdump.py) uploaded to S3 in October 2025. Files exfiltrated from an Italian governmental entity (virtual machine snapshots) and a Spanish governmental entity (mRemoteNG connection config, Microsoft Visio infrastructure diagram) via the S3 bucket. Technique class: T1003.001 (OS Credential Dumping — LSASS Memory), T1557 (Adversary-in-the-Middle for proxy exfil path), T1537 (Transfer Data to Cloud Account).
+
+      Initial access probe used CVE-2017-7692 (SquirrelMail post-auth RCE) against Serbian targets, suggesting credential theft preceded exploitation. Defender detection targets: outbound HTTPS to api.discord.com or graph.microsoft.com from non-user process trees (e.g. parent process = svchost, lsass, or system processes); SoftEther VPN process execution (vpnclient.exe, vpnserver.exe) on workstations or servers; nuclei/dirsearch execution in post-exploitation context; cmd.exe spawned by processes with no interactive user context.
+    ch_eu_nexus: "Direct — Belgium, Italy, Serbia, Poland government organizations confirmed as Webworm 2025 victims; Spain governmental entity also targeted (documents exfiltrated)"
+    public_sector_nexus: "direct — governmental organizations in four EU member states are confirmed victims"
+    sector: "government, education"
+    cves: ["CVE-2017-7692"]
+    actors_campaigns_malware: ["Webworm", "EchoCreep", "GraphWorm", "WormFrp", "ChainWorm", "SmuxProxy", "WormSocket", "SharpSecretsdump", "FishMonger", "SixLittleMonkeys", "Space Pirates"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In 2025, Webworm also added two new backdoors to its toolset: EchoCreep, which uses Discord for C&C communication, and GraphWorm, which uses Microsoft Graph API for the same purpose."
+        attribution: "ESET Research (Eric Howard)"
+        source_url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"
+      - quote: "At that time, we also saw that the group started to slow down operations in Asia and shift its focus toward European countries. This trend continued in 2025, with the attacks we observed targeting governmental organizations in Belgium, Italy, Serbia, and Poland."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"
+      - quote: "The second file is a Microsoft Visio diagram detailing the infrastructure behind a domain used by this governmental entity [Spain]."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"
+
+  - title: "SEPPMail Secure E-Mail Gateway: 7 critical vulnerabilities disclosed by InfoGuard Labs (Switzerland) — unauthenticated RCE, LFI, Perl eval injection, deserialization; patched in v15.0.4"
+    sources:
+      - url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+        publisher: "InfoGuard Labs (Dario Weiss, Manuel Feifel, Olivier Becker)"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html → primary: InfoGuard Labs, URL https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+    summary: |
+      InfoGuard Labs (Swiss security firm) disclosed seven vulnerabilities in SEPPMail Secure E-Mail Gateway — a widely-deployed Swiss/EU enterprise secure email solution — with multiple reaching unauthenticated RCE. The vulnerabilities were discovered with partial assistance from LLM agents and reported to the vendor from February 2026; patches were released in versions 15.0.2.1, 15.0.3, and 15.0.4.
+
+      CVE-2026-2743 (CVSS 10.0): Path traversal in the Large File Transfer (LFT) feature of the SeppMail User Web Interface. The endpoint `/v1/file.app` accepts an unsanitized path parameter enabling arbitrary file write as the `nobody` user. Chained to RCE by overwriting `/etc/syslog.conf`, which newsyslog (cron, every 15 minutes) reloads via SIGHUP, enabling Perl reverse shell injection. Only instances with the Large File Transfer license are affected; testable by checking if `https://<gateway>/v1/file.app` returns 404 (unaffected) or another status code (potentially affected). Technique: T1190 (Exploit Public-Facing Application), T1059.006 (Python/Perl reverse shell).
+
+      CVE-2026-44128 (CVSS 9.3): Unauthenticated Perl eval() injection in `/api.app/template`. The `upldd` parameter is passed directly to Perl's `eval()` without sanitization. The endpoint entirely lacks authentication checks due to per-function (rather than centralized) access-control enforcement — the `nosession` key-value pair is specified but never evaluated for this endpoint. Silently patched before v15.0.2.1 (no release notes entry). Technique: T1059 (Command and Scripting Interpreter).
+
+      CVE-2026-44127 (CVSS 8.8): Unauthenticated path traversal in `/api.app/attachment/preview`. The `identifier` parameter accepts arbitrary filesystem paths (e.g., `/tmp/../etc/ldap.conf`), enabling read of LDAP database, user records, password hashes, and mail content. After preview, `remove_folder()` is called deleting the parent directory of the specified path (limited by `nobody` permissions). Technique: T1083 (File and Directory Discovery), T1555 (Credentials from Password Stores).
+
+      CVE-2026-44126 (CVSS 9.2): Unauthenticated deserialization of untrusted data enabling RCE via crafted serialized objects.
+
+      CVE-2026-44125 (CVSS 9.3): Missing authorization for multiple GINA v2 endpoints enabling unauthenticated access to protected functionality.
+
+      CVE-2026-7864 (CVSS 6.9): Unauthenticated env variable dump via `/api.app/hello?op=env`, leaking server environment variables including secrets.
+
+      CVE-2026-44129 (CVSS 8.3): Template engine eval injection via `/api.app/template` enabling template expression execution and potential RCE depending on enabled plugins.
+
+      Full appliance takeover via CVE-2026-2743 gives read access to ALL mail traffic and persistent access. Blue teams typically have zero visibility into SEPPMail virtual appliances. Patch path: CVE-2026-44128 fixed in v15.0.2.1; CVE-2026-44126 fixed in v15.0.3; remaining CVEs patched in v15.0.4. Also note CVE-2026-27441 (CVSS 9.5, OS command execution) patched in an earlier release.
+    ch_eu_nexus: "Direct — SEPPMail is a Swiss company (SEPPmail AG, headquartered in Switzerland); the gateway product is widely deployed in Swiss and European enterprises and public sector"
+    public_sector_nexus: "direct — secure email gateway used by Swiss federal and cantonal entities, European government organisations"
+    sector: "all sectors (email security appliance)"
+    cves: ["CVE-2026-2743", "CVE-2026-7864", "CVE-2026-44125", "CVE-2026-44126", "CVE-2026-44127", "CVE-2026-44128", "CVE-2026-44129", "CVE-2026-27441"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "These vulnerabilities could have been exploited to read all mail traffic or as an entry vector into the internal network. Blue Teams are usually blind on these virtual appliances."
+        attribution: "InfoGuard Labs (Dario Weiss, Manuel Feifel, Olivier Becker)"
+        source_url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+      - quote: "The application takes the user-supplied upldd parameter and passes it directly into a Perl eval() statement. Because the input is not sanitized or validated, any Perl code injected into this parameter is immediately executed by the server"
+        attribution: "InfoGuard Labs"
+        source_url: "https://labs.infoguard.ch/posts/seppmail_secure_e-mail_gateway_rce_vulnerabilities_cve-2026-2743_cve-2026-7864_cve-2026-44127_cve-2026-44128/"
+      - quote: "Seven SEPPMail Secure E-Mail Gateway flaws disclosed, including RCE, path traversal, authorization, deserialization, and eval injection flaws."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/seppmail-secure-e-mail-gateway.html"
+    extended_notes: |
+      The InfoGuard Labs disclosure notes the CVE-2026-44128 patch was silently applied between v15.0.0 and v15.0.2.1 with no release-notes mention — a transparency concern for organisations performing patch-gap analysis. Affected organisations on v15.0.x should check the exact build number, not just the minor version. The LFT endpoint test (HTTP status check on `/v1/file.app`) gives a quick pre-patch exposure assessment without credentials.
+
+  - title: "DirtyDecrypt (CVE-2026-31635) — Linux kernel rxgk COW guard bypass, local privilege escalation PoC public; affects Fedora, Arch, openSUSE Tumbleweed, container escape path"
+    sources:
+      - url: "https://thehackernews.com/2026/05/dirtydecrypt-poc-released-for-linux.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://github.com/v12-security/pocs/tree/main/dirtydecrypt"
+        publisher: "Zellic / V12 Security (Luna Tong)"
+        date: "2026-05-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/dirtydecrypt-poc-released-for-linux.html → pivot: NVD CVE record mentioned → corroborating: GitHub PoC repo linked in article"
+    summary: |
+      Proof-of-concept exploit code was published for CVE-2026-31635 (CVSS 7.5), a Linux kernel local privilege escalation vulnerability nicknamed DirtyDecrypt (aka DirtyCBC). Discovered and reported by Zellic/V12 Security on May 9, 2026, then found to be a duplicate of an already-patched upstream bug. The vulnerability sits in `rxgk_decrypt_skb()` — the receive-side decryption function for the RXGK Kerberos-based AFS security module. The function decrypts an incoming sk_buff without a copy-on-write (COW) guard, so write operations can bleed into the page cache of privileged processes, enabling overwrite of files such as `/etc/shadow`, `/etc/sudoers`, or SUID binaries — all paths to local root. Technique class: T1068 (Exploitation for Privilege Escalation), with container-escape vector in containerized Kubernetes environments where worker nodes run a vulnerable kernel.
+
+      Impact scope is bounded by CONFIG_RXGK=y: currently only distributions that compile this option (Fedora, Arch Linux, openSUSE Tumbleweed) are affected. The vulnerability is classified as a variant of the Copy Fail family (CVE-2026-31431 → Dirty Frag CVE-2026-43284/CVE-2026-43500 → Fragnesia CVE-2026-46300 → DirtyDecrypt CVE-2026-31635), all sharing the COW-guard-missing primitive targeting kernel page-cache write paths. The Linux kernel developer community is now evaluating a runtime "killswitch" mechanism to disable vulnerable kernel functions until patches are available.
+
+      For defenders: check if the host OS has CONFIG_RXGK enabled (`grep CONFIG_RXGK /boot/config-$(uname -r)`). In containerized environments, if the node kernel is affected, workloads with CAP_NET_RAW or the ability to create AF_RXRPC sockets have a privilege escalation path. Mitigation while patching: restrict kernel module loading, apply seccomp/AppArmor profiles preventing AF_RXRPC socket creation. Patched in mainline prior to PoC publication; distros should have kernel updates.
+    ch_eu_nexus: "Global; affects European Linux deployments with RXGK-enabled kernels (particularly Fedora/Arch-based)"
+    public_sector_nexus: "indirect — Linux servers including public sector infrastructure on affected distributions"
+    sector: "all sectors"
+    cves: ["CVE-2026-31635", "CVE-2026-31431", "CVE-2026-43284", "CVE-2026-43500", "CVE-2026-46300"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The absence of this COW guard in rxgk_decrypt_skb means that data gets written to the memory of privileged processes or, depending on the exploit path, to the page cache of privileged files, such as etc/shadow, /etc/sudoers, or a SUID binary, leading to local privilege escalation."
+        attribution: "The Hacker News (citing moselwal.com analysis)"
+        source_url: "https://thehackernews.com/2026/05/dirtydecrypt-poc-released-for-linux.html"
+      - quote: "DirtyDecrypt impacts only distributions with CONFIG_RXGK enabled, such as Fedora, Arch Linux, and openSUSE Tumbleweed. In containerized environments, worker nodes running a vulnerable version of Linux could provide a pathway to escape the pod."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/dirtydecrypt-poc-released-for-linux.html"
+
+  - title: "UPDATE: TeamPCP Mini Shai-Hulud worm claims GitHub itself as victim — 3,800+ internal repos exfiltrated via poisoned VS Code extension; durabletask PyPI package (417k monthly downloads) also compromised"
+    sources:
+      - url: "https://thehackernews.com/2026/05/github-investigating-teampcp-claimed.html"
+        publisher: "The Hacker News"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://www.wiz.io/blog/durabletask-teampcp-supply-chain-attack"
+        publisher: "Wiz Security"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/github-investigating-teampcp-claimed.html → pivot: Wiz blog on durabletask, URL https://www.wiz.io/blog/durabletask-teampcp-supply-chain-attack"
+    summary: |
+      GitHub confirmed on 2026-05-20 that a TeamPCP supply chain attack targeting a GitHub employee device led to exfiltration of approximately 3,800 internal GitHub repositories. The attack vector was a compromised Visual Studio Code extension (GitHub did not name the extension, but Nx Console 18.95.0 compromise coincided — separately disclosed). The attacker gained access through a poisoned VSCode extension, exfiltrated GitHub internal secrets, and from those had access to PyPI tokens to publish malicious packages. GitHub stated no evidence of impact to customer data stored outside GitHub's internal repos; critical secrets have been rotated.
+
+      The exfiltrated repositories include GitHub Actions, agentic workflows, Copilot internal projects, CodeQL tools, internal infrastructure, security tools, marketing materials, Codespaces, Dependabot, and a Rails controller managing organisations and pull requests. LAPSUS$ announced a joint sale with TeamPCP for $95,000, claiming no ransom intent and threatening free release if no buyer is found.
+
+      Simultaneously, TeamPCP's Mini Shai-Hulud worm compromised the `durabletask` PyPI package (Microsoft's official Python client for Durable Task workflows, ~417,000 downloads/month) via versions 1.4.1, 1.4.2, and 1.4.3. The worm propagates using tokens stolen from infected environments. The payload is a dropper fetching `rope.pyz` from `check.git-service[.]com`; the second stage is a full-featured infostealer targeting AWS credentials, 1Password and Bitwarden vaults, SSH keys, Docker credentials, VPN configs, and shell history. Container escape: on Kubernetes, propagates via `kubectl exec`; on AWS, propagates to other EC2 instances via AWS Systems Manager `SendCommand` (AWS-RunShellScript) up to 5 instances per profile. FIRESCALE backup C2 mechanism: scans GitHub public commit messages for pattern `FIRESCALE <base64_url>.<base64_signature>` to recover C2 address if primary is unreachable. The stealer contains anti-execution logic: on Israeli or Iranian systems, 1-in-6 probability of executing `rm -rf /*`. Technique class: T1195.001 (Compromise Software Dependencies — npm/PyPI), T1078.004 (Cloud Accounts — AWS SSM propagation), T1552.001 (Credentials in Files), T1570 (Lateral Tool Transfer via SSM).
+
+      Teams running durabletask 1.4.1–1.4.3 should treat the host as fully compromised. Any pipeline that imported the package during the malicious window triggered the stealer automatically with no visible error messages. Hunt via CI/CD pipeline logs for durabletask import events in the malicious version range and review IAM access logs for SSM SendCommand events that do not correspond to authorized maintenance windows.
+    ch_eu_nexus: "Global; PyPI packages affect Swiss and European development pipelines; GitHub internal code breach has supply chain ramifications for all GitHub users including public-sector developers"
+    public_sector_nexus: "indirect — public-sector developers and contractors using GitHub and PyPI may be affected"
+    sector: "technology, software development, all sectors using Python CI/CD"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud", "LAPSUS$", "rope.pyz", "durabletask", "Nx Console 18.95.0"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-16
+    evidence:
+      - quote: "GitHub on Tuesday said it's investigating unauthorized access to its internal repositories after the notorious threat actor known as TeamPCP listed the platform's source code and internal organizations for sale on a cybercrime forum."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/github-investigating-teampcp-claimed.html"
+      - quote: "In a follow-up update shared on X, GitHub said it detected and contained a compromise of an employee device involving a poisoned Microsoft Visual Studio Code extension."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/github-investigating-teampcp-claimed.html"
+      - quote: "If the machine is running inside AWS, it propagates itself to other EC2 instances using SSM. If it's inside Kubernetes, it propagates through kubectl exec"
+        attribution: "The Hacker News (citing Aikido Security)"
+        source_url: "https://thehackernews.com/2026/05/github-investigating-teampcp-claimed.html"
+
+  - title: "Drupal SA-CORE-2026-004 / CVE-2026-9082 — unauthenticated SQL injection in database abstraction API (PostgreSQL-only); 20/25 Drupal risk score, arbitrary data read/write, potential RCE"
+    sources:
+      - url: "https://www.drupal.org/psa-2026-05-18"
+        publisher: "Drupal Security Team"
+        date: "2026-05-18"
+        role: "primary"
+      - url: "https://www.cyberkendra.com/2026/05/drupal-patches-highly-critical-sql.html"
+        publisher: "Cyber Kendra"
+        date: "2026-05-20"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/drupal-to-release-urgent-core-security.html"
+        publisher: "The Hacker News"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/drupal-to-release-urgent-core-security.html → WebSearch for SA-CORE-2026-004 details → Drupal PSA primary, URL https://www.drupal.org/psa-2026-05-18 → Cyber Kendra corroborating, URL https://www.cyberkendra.com/2026/05/drupal-patches-highly-critical-sql.html"
+    summary: |
+      Drupal released SA-CORE-2026-004 on May 20, 2026, patching CVE-2026-9082 (CWE-89, Drupal risk score 20/25 — Highly Critical) — an anonymous SQL injection flaw in Drupal core's database abstraction API affecting PostgreSQL-backed installations only. Specially crafted HTTP requests can trigger arbitrary SQL injection: Access Complexity = None, Authentication Required = None (exploitable without prior authentication), full confidentiality and integrity impact. Successful exploitation can lead to information disclosure (read anything), privilege escalation, and in some configurations remote code execution or further attacks.
+
+      Affected versions: Drupal >= 8.9.0 < 10.4.10; >= 10.5.0 < 10.5.10; >= 10.6.0 < 10.6.9; >= 11.0.0 < 11.1.10; >= 11.2.0 < 11.2.12; >= 11.3.0 < 11.3.10. Patched in: 10.4.10, 10.5.10, 10.6.9, 11.1.10, 11.2.12, 11.3.10. Sites on EOL major versions (Drupal 8, 9) must apply manual patch files. The Drupal Security Team warned that exploits may be developed within hours or days of patch release. Drupal is widely deployed in EU government and university websites. Detection: web server access logs for unusual POST/GET requests containing SQL metacharacters in parameters that proxy through Drupal's database API layer; web application firewall rules for PostgreSQL-specific injection patterns (UNION, CAST, pg_sleep). Hardening: if on PostgreSQL, apply the patch immediately; MySQL/MariaDB installations are not affected by this specific CVE. Technique class: T1190 (Exploit Public-Facing Application), T1078.001 (Default Account — anonymous exploitation).
+    ch_eu_nexus: "Global; Drupal widely used by Swiss federal agencies (admin.ch, numerous cantonal sites), European government web platforms, universities"
+    public_sector_nexus: "direct — EU government and university Drupal sites are primary high-risk targets"
+    sector: "government, education, all sectors using Drupal + PostgreSQL"
+    cves: ["CVE-2026-9082"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Drupal Security Team urges you to reserve time for core updates at that time because exploits might be developed within hours or days"
+        attribution: "Drupal Security Team"
+        source_url: "https://www.drupal.org/psa-2026-05-18"
+      - quote: "The vulnerability can be exploited by anonymous users. It only affects sites using PostgreSQL."
+        attribution: "Cyber Kendra (summarising SA-CORE-2026-004)"
+        source_url: "https://www.cyberkendra.com/2026/05/drupal-patches-highly-critical-sql.html"
+
+  - title: "ANNUAL REPORT — CrowdStrike 2026 Financial Services Threat Landscape Report: DPRK adversaries steal $2.02 billion; PRESSURE CHOLLIMA executed $1.46B cryptocurrency heist via supply chain; AI-weaponised identity fraud triples STARDUST CHOLLIMA tempo"
+    sources:
+      - url: "https://www.crowdstrike.com/en-us/press-releases/crowdstrike-2026-financial-services-threat-landscape-report/"
+        publisher: "CrowdStrike"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-financial-services-threat-landscape-report/"
+        publisher: "CrowdStrike Blog"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: crowdstrike URL listing, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-financial-services-threat-landscape-report/ → press release primary, URL https://www.crowdstrike.com/en-us/press-releases/crowdstrike-2026-financial-services-threat-landscape-report/ → WebSearch for key findings"
+    summary: |
+      ANNUAL REPORT — CrowdStrike 2026 Financial Services Threat Landscape Report (published May 20, 2026). Key findings for defenders:
+
+      DPRK nexus: DPRK-nexus actors drove a 51% year-over-year increase in digital asset theft in 2025, with $2.02 billion stolen across the sector. PRESSURE CHOLLIMA executed the single largest financial heist in history: $1.46 billion in cryptocurrency via trojanized software distributed through a supply chain compromise. FAMOUS CHOLLIMA (IT worker infiltration) doubled operations using AI-generated identities to infiltrate cryptocurrency exchanges, fintech platforms, and consumer banks. STARDUST CHOLLIMA (social engineering) tripled operational tempo using AI-generated recruiter personas and synthetic video conferencing environments targeting fintechs across North America, Europe, and Asia.
+
+      China-nexus espionage: MURKY PANDA deployed an operational relay box (ORB) network across 150+ endpoints in 36 countries, targeting 340 organizations across 30+ sectors, with financial services among the most frequently targeted. This represents large-scale intelligence collection focused on financial sector data.
+
+      Intrusion surge: Hands-on-keyboard (HOK) intrusions against financial institutions spiked 43% globally and 48% in North America over the past two years. Adversaries are exploiting trusted identities and SaaS applications to evade legacy defences.
+
+      Ransomware: 423 financial services organizations appeared on dedicated leak sites (DLS) — a 27% year-over-year increase. MUTANT SPIDER (ALPHV/BlackCat successor) and SCATTERED SPIDER remain prominent against financial targets.
+
+      Defender implications: AI-generated identity fraud in hiring (FAMOUS CHOLLIMA, STARDUST CHOLLIMA) requires enhanced identity verification for remote contractors and third-party developers. ORB network detection requires analysis of network flow metadata for relay patterns rather than static IP blocking. SaaS application abuse for initial access requires Conditional Access policies enforcing phishing-resistant MFA and device compliance for financial systems. Technique classes: T1566.001 (Spearphishing Attachment — social engineering), T1195.002 (Supply Chain Compromise — PRESSURE CHOLLIMA vector), T1556.006 (Modify Authentication Process — MFA bypass), T1550.001 (Use Alternate Authentication Material).
+    ch_eu_nexus: "European financial sector in scope: STARDUST CHOLLIMA targets fintechs across North America, Europe, and Asia; MURKY PANDA ORB network touches 36 countries"
+    public_sector_nexus: "indirect — Swiss and European central banking infrastructure and financial regulators are potential intelligence collection targets"
+    sector: "finance, fintech, cryptocurrency"
+    cves: []
+    actors_campaigns_malware: ["PRESSURE CHOLLIMA", "FAMOUS CHOLLIMA", "STARDUST CHOLLIMA", "MURKY PANDA", "MUTANT SPIDER", "SCATTERED SPIDER", "GOLDEN CHOLLIMA", "HOLLOW PANDA"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "DPRK-nexus adversaries stole billions in digital assets in 2025 while industrializing cybercrime with AI-powered deception."
+        attribution: "CrowdStrike press release"
+        source_url: "https://www.crowdstrike.com/en-us/press-releases/crowdstrike-2026-financial-services-threat-landscape-report/"
+      - quote: "PRESSURE CHOLLIMA conducted the largest financial theft ever reported: $1.46 billion in cryptocurrency through trojanized software distributed via a supply chain compromise."
+        attribution: "CrowdStrike 2026 Financial Services Threat Landscape Report"
+        source_url: "https://www.crowdstrike.com/en-us/press-releases/crowdstrike-2026-financial-services-threat-landscape-report/"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Bridge returned HTTP 503 on https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 — consistent with reported 4-run failure pattern; service may have an outage or URL change. Fallback to news.sophos.com/feed/ not attempted in this run (time budget). Recommend checking alternate URL."
+  - source_id: trendmicro-research
+    reason: "Wayback had no usable snapshot for https://www.trendmicro.com/en_us/research.html (only 24B availability response). Bridge returned no body. Consistent with 2-run failure pattern. No Trend Micro content in this run."
