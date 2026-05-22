@@ -1,0 +1,217 @@
+# work/2026-05-22-5b90d5a1/findings.S3.yaml
+domain: S3
+run_id: 2026-05-22-5b90d5a1
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-22T06:10:59Z
+ended_at: 2026-05-22T06:18:26Z
+duration_seconds: 447
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 10
+  bridge_fetches: 20
+
+items:
+  - title: "Cisco Secure Workload CVSS 10.0 — unauthenticated REST API privilege escalation to Site Admin (CVE-2026-20223)"
+    sources:
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+        publisher: "Cisco PSIRT"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012"
+        publisher: "The Register"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://securityaffairs.com/192473/security/cisco-fixed-maximum-severity-flaw-cve-2026-20223-in-secure-workload.html"
+        publisher: "Security Affairs"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/cisco-patches-cvss-100-secure-workload.html"
+        publisher: "The Hacker News"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge:cert-eu recent → CERT-EU 2026-006 advisory referencing CVE-2026-20223 → pivot to Cisco PSIRT advisory cisco-sa-csw-pnbsa-g8WEnuy (primary) → The Register corroborating → SecurityAffairs corroborating"
+    summary: |
+      CVE-2026-20223 is a CVSS 10.0 (Critical) insufficient authorisation flaw in Cisco Secure Workload Cluster Software
+      affecting the product's internal REST API. An unauthenticated remote attacker who can reach the internal API
+      endpoints — with no credentials or prior foothold required — can send a crafted API request and be granted Site
+      Admin privileges. From that vantage point the attacker can read sensitive tenant data, exfiltrate configuration,
+      and make changes across tenant boundaries within the workload micro-segmentation platform. The bug affects both
+      SaaS-hosted and on-premises deployments. Cisco discovered this internally (no external researcher credit; no
+      observed exploitation). SaaS deployments have been silently patched by Cisco; on-premises operators running
+      <= 3.9 must migrate (no fix for that branch), 3.10.x must upgrade to 3.10.8.3, and 4.0.x must upgrade to 4.0.3.17.
+      The attack surface is the internal REST API, not the web management interface — network segmentation of the
+      Secure Workload management cluster is the key compensating control until patching is complete.
+      MITRE ATT&CK: T1190 Exploit Public-Facing Application.
+    ch_eu_nexus: "global; Cisco Secure Workload is deployed in enterprise data-centre and cloud environments including EU public-sector and critical infrastructure operators using micro-segmentation"
+    public_sector_nexus: "indirect"
+    sector: "enterprise, data-centre, government, critical infrastructure"
+    cves: ["CVE-2026-20223"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in Cisco Secure Workload, formerly known as Cisco Tetration, could allow an unauthenticated, remote attacker to make API requests that would be granted Site Admin privileges."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+      - quote: "Cisco has given this a maximum CVSS score of 10.0 (Critical). There are no workarounds that address this vulnerability."
+        attribution: "The Register"
+        source_url: "https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012"
+      - quote: "The vulnerability affects Secure Workload releases 3.9 and earlier (fixed release: migrate to a fixed release), releases 3.10.x (fixed release: 3.10.8.3), and releases 4.0.x (fixed release: 4.0.3.17)."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/192473/security/cisco-fixed-maximum-severity-flaw-cve-2026-20223-in-secure-workload.html"
+    extended_notes: |
+      Defender vantage: Until the on-premises fleet is patched, the primary hardening action is strict network-layer
+      isolation of the Secure Workload management cluster API endpoints — only trusted management plane hosts should
+      reach the internal REST API. Cisco does not document which specific API paths are affected, so WAF-layer
+      restriction is not viable without the vendor's endpoint inventory. For detection: monitor Secure Workload's
+      own audit log for unexpected Site Admin role grants from unfamiliar source IPs; alert on any admin-level
+      API calls from outside the expected management CIDR range. Note: this is CVE-2026-20223 (Secure Workload),
+      distinct from CVE-2026-20182 (Cisco SD-WAN) which was covered on 2026-05-20.
+
+  - title: "Showboat (Linux) + JFMBackdoor (Windows) — Calypso/Red Lamassu Chinese APT targets Middle East and Central Asian telcos"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/chinese-hackers-showboat-jfm-backdoor-telco.html"
+        publisher: "The Hacker News"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Showboat Linux JFMBackdoor telco malware 2026') → BleepingComputer May 21 article (primary) → THN May 21 (corroborating) → Lumen Black Lotus Labs blog attempt (blog.lumen.com redirected to homepage, primary blog post unreachable) → PwC Threat Intelligence named as co-researcher in both sources"
+    summary: |
+      Researchers at Lumen's Black Lotus Labs and PwC Threat Intelligence have jointly attributed a multi-year espionage
+      campaign against telecommunications operators to Calypso (also tracked as Red Lamassu or Bronze Medley), a
+      China-aligned threat actor active since at least September 2016. The campaign deploys two new purpose-built
+      implants: Showboat on Linux and JFMBackdoor on Windows. Showboat is a modular post-exploitation framework that
+      spawns a remote shell, performs file transfer and enumeration, and functions as a SOCKS5 proxy and port-forwarding
+      pivot point into the victim's internal networks. Its "hide" command retrieves a rootkit module from a Pastebin
+      dead-drop at runtime; the primary on-disk process name is "kworker", masquerading as a Linux kernel worker thread
+      (T1036.005). JFMBackdoor is delivered on Windows via DLL sideloading — a batch script drops and executes a
+      legitimate signed executable that side-loads the malicious DLL — providing a remote shell, file operations,
+      network proxy, screenshot capture, and self-removal capability. C2 infrastructure is geolocated to Chengdu,
+      Sichuan province; X.509 certificate clustering links a Middle East telecom (primary victim), an Afghanistan ISP,
+      an Azerbaijan entity, and secondary clusters in the US and Ukraine. The campaign has been active since at least
+      mid-2022. Initial access vector has not been publicly disclosed. Tooling patterns suggest possible shared
+      infrastructure or techniques across multiple China-aligned groups.
+      MITRE ATT&CK: T1071.001 (Application Layer Protocol: Web Protocols for C2), T1090.001 (Internal Proxy),
+      T1036.005 (Masquerade: Match Legitimate Name or Location — kworker), T1574.002 (Hijack Execution Flow: DLL
+      Side-Loading), T1021.004 (Remote Services: SSH), T1560 (Archive Collected Data).
+    ch_eu_nexus: "primarily Middle East and Central Asia; secondary clusters include European-adjacent entities (Azerbaijan). European telecoms in scope given actor's broad targeting of ISPs and data-transit infrastructure."
+    public_sector_nexus: "indirect"
+    sector: "telco, ISP, communications infrastructure"
+    cves: []
+    actors_campaigns_malware: ["Calypso", "Red Lamassu", "Bronze Medley", "Showboat", "JFMBackdoor"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Lumen's Black Lotus Labs and PwC Threat Intelligence have linked the campaign to Calypso, also known as Red Lamassu, a Chinese espionage group active since at least September 2016."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/"
+      - quote: "Showboat's 'hide' command downloads rootkit code from a Pastebin dead-drop; the Linux implant masquerades as a kernel worker process (kworker) to evade process-list inspection."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/"
+    extended_notes: |
+      Defender vantage for European telco/ISP SOCs: (1) Linux: hunt for "kworker" processes launched from non-kernel
+      parent-process paths (kworker legitimate instances are spawned by kthreadd [PID 2]; any kworker with a different
+      parent or user-space parent is high-confidence anomalous — Sysmon for Linux EID 1 or auditd EXECVE with parent-pid
+      check). (2) Linux: egress SOCKS5 connections from application-layer processes to non-standard ports is a pivoting
+      indicator. (3) Linux: runtime download from pastebin.com by a daemon-level process is anomalous (DNS query + HTTP
+      GET to pastebin.com from a process masquerading as a kernel thread). (4) Windows: DLL sideload delivery pattern —
+      watch for legitimate signed binaries (vendor-signed) loading DLLs from writable user-controlled paths; Sysmon
+      EID 7 (ImageLoad) with signed=true on the process binary but unsigned=true on the loaded DLL. (5) Network:
+      certificate clustering via X.509 SAN/CN patterns is the primary pivot — if your threat intel platform allows
+      cert hunting, search for infrastructure matching the Chengdu-geolocated cert pattern described by Black Lotus Labs.
+
+  - title: "Unit 42 npm ecosystem — TeamPCP Mini Shai-Hulud May 2026 wave: first SLSA-attested malicious packages + CI/CD pipeline self-propagation"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/"
+        publisher: "Unit 42 (Palo Alto Networks)"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+        publisher: "StepSecurity"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('npm supply chain attack TeamPCP SLSA May 2026') → Unit 42 article May 21 (primary) → StepSecurity blog May 21 (corroborating) → both cite TanStack CI pipeline compromise as key event"
+    summary: |
+      Unit 42 and StepSecurity have published concurrent analyses of a new wave of TeamPCP Mini Shai-Hulud supply-chain
+      attacks against the npm ecosystem in May 2026. On May 11, attackers compromised the TanStack project's GitHub
+      Actions CI/CD pipeline; within six minutes, 84 malicious @tanstack/* package artifacts were pushed to npm.
+      By end of day, 373 malicious package versions across 169 npm packages and PyPI mirrors were active. The execution
+      chain uses the Bun JavaScript runtime to execute tanstack_runner.js, which enumerates stored credentials including
+      capture of "gh auth token" (GitHub CLI token). Two novel techniques distinguish this wave from prior Mini Shai-Hulud
+      activity: (1) credential-free initial access via compromised CI pipeline — no developer credentials needed, only
+      access to the GitHub Actions runner; (2) the first observed case of malicious npm packages carrying valid SLSA
+      (Supply-chain Levels for Software Artifacts) provenance attestations, subverting a key software-supply-chain
+      integrity control. The malware is self-propagating: stolen npm tokens and GitHub PATs are used to backdoor every
+      package the victim can publish. On May 12, the attack source code was publicly released, leading to copycat
+      activity that complicates attribution and incident response. Checkmarx distribution channel tooling was also
+      weaponized in this wave.
+      MITRE ATT&CK: T1195.002 (Supply Chain Compromise: Compromise Software Supply Chain), T1552.001 (Unsecured
+      Credentials: Credentials In Files — gh auth token), T1650 (Acquire Access — stolen npm/GitHub tokens),
+      T1059.007 (Command and Scripting Interpreter: JavaScript — Bun runtime), T1546.016 (Event Triggered Execution:
+      Installer Packages — CI/CD trigger).
+    ch_eu_nexus: "global; npm and PyPI ecosystems are used universally in Swiss and EU software development and CI/CD environments. Any organisation pulling @tanstack/* dependencies (React Query, Router, Table — widely used in EU public-sector portals and SaaS platforms) is potentially affected."
+    public_sector_nexus: "indirect"
+    sector: "software supply chain, software development, CI/CD, SaaS"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On May 11, 2026, attackers compromised the TanStack GitHub Actions CI pipeline and injected 84 malicious @tanstack/* package artifacts into npm within a six-minute window."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/"
+      - quote: "This wave introduces the first observed malicious npm packages bearing valid SLSA provenance attestations, bypassing a key software supply chain integrity control."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem"
+      - quote: "The execution chain runs tanstack_runner.js under the Bun JavaScript runtime, enumerating credentials including capture of 'gh auth token'."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/"
+    extended_notes: |
+      Defender vantage for EU software-supply-chain defenders: (1) Dependency audit: if your CI pipeline pulls
+      @tanstack/* packages, audit your npm lock files for any versions published 2026-05-11 through 2026-05-13;
+      compare against the clean package hashes published by the TanStack project after remediation. (2) CI/CD hardening:
+      pin GitHub Actions to commit SHAs rather than mutable tags; use `actions/attest-build-provenance` to verify that
+      published packages were built in your own verified CI context. (3) SLSA attestation verification is now
+      insufficient as a sole gate — SLSA attests the build pipeline integrity but does not gate on the absence of
+      malicious content in the source; add runtime behavioural scanning of npm install scripts. (4) Token hygiene:
+      if any pipeline ran npm publish during 2026-05-11 to 2026-05-12, rotate npm tokens and GitHub PATs immediately;
+      audit any packages you own for unauthorised versions. (5) Bun runtime detection: in environments where Bun
+      is not an approved runtime, flag any process execution of "bun" or "bun.js" from a CI runner context
+      (Sysmon EID 1, process-name filter).
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "HTTP 503 from https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 on both direct and bridge attempts. No in-window Sophos research content retrieved."
+  - source_id: lumen-bll
+    reason: "Lumen Black Lotus Labs primary blog (blog.lumen.com) redirected to homepage; specific Showboat/JFMBackdoor article URL not directly accessible. Showboat/JFMBackdoor item covered via BleepingComputer and THN as corroborating sources that both cite Black Lotus Labs as the originating researcher."
+  - source_id: recordedfuture
+    reason: "Recorded Future RSS feed at standard endpoint returned HTTP 404. No in-window Recorded Future research content retrieved."
+
+fetch_failures:
+  - id: sophos-xops
+    url_tried: "https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242"
+    fetch_method: "bridge:feed"
+    status_code: 503
+    error_class: "transport-5xx"
+    error_message: "HTTP 503 Service Unavailable on both direct WebFetch and bridge:feed attempts"
+    attempted_methods: [webfetch, bridge:feed]
+    mitigation_applied: "none — Sophos research content not available in this run; no alternate Sophos URL found in window"
+    covered_anyway: false
+  - id: lumen-bll
+    url_tried: "https://blog.lumen.com/showboat-jfmbackdoor"
+    fetch_method: "webfetch"
+    status_code: 200
+    error_class: "other"
+    error_message: "blog.lumen.com resolved to Lumen corporate homepage rather than specific article; no article URL discoverable via search"
+    attempted_methods: [webfetch, websearch]
+    mitigation_applied: "covered via BleepingComputer (May 21) and THN (May 21) which both cite Black Lotus Labs + PwC TI as originating researchers"
+    covered_anyway: false
