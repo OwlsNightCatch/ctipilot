@@ -1,0 +1,192 @@
+domain: S2
+run_id: 2026-05-22-5b90d5a1
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-22T06:10:15Z
+ended_at: 2026-05-22T06:55:00Z
+duration_seconds: 2685
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 4
+  bridge_fetches: 14
+
+items:
+  - title: "Cisco Secure Workload CVE-2026-20223 — CVSS 10.0 unauthenticated Site Admin API access via internal REST endpoints, SaaS and on-prem; no workaround"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy", publisher: "Cisco PSIRT", date: "2026-05-20", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12588", publisher: "NCSC-CH Security Hub", date: "2026-05-21", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012", publisher: "The Register", date: "2026-05-21", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12588 → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy → corroborating: The Register, URL https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012"
+    summary: |
+      CVE-2026-20223 (CVSS 10.0 Critical) is an authentication bypass in the internal REST APIs of Cisco Secure Workload (formerly Tetration), a microsegmentation platform used in enterprise data centre and cloud environments. The flaw is rooted in insufficient validation and authentication when accessing internal REST API endpoints — Cisco's description confirms "an attacker could exploit this vulnerability if they are able to send a crafted API request to an affected endpoint." A successful exploit grants the remote unauthenticated attacker Site Admin privileges, allowing cross-tenant access, read of sensitive configuration data (including policy and workload telemetry), and modification of tenant configurations across isolated environments. The vulnerability affects both SaaS-hosted and on-premises deployments of Secure Workload Cluster Software. Attack vector is NETWORK, complexity LOW, no authentication required, no user interaction — the full CVSS 10.0 profile. There are no workarounds; Cisco remediated SaaS deployments automatically. On-prem targets must upgrade: version 4.0 → 4.0.3.17; version 3.10 → 3.10.8.3; version 3.9 and earlier must migrate to a supported release. Exploitation status is unknown as of disclosure (2026-05-20 / 2026-05-21 NCSC-CH advisory). Public-sector data-centre deployments running Secure Workload on-prem for microsegmentation should treat this as high-priority given the zero-auth, CVSS-max profile.
+    ch_eu_nexus: "global; Cisco Secure Workload is deployed in EU enterprise and public-sector data centres for microsegmentation — on-prem deployments require manual remediation"
+    public_sector_nexus: "indirect — microsegmentation platform used in critical infrastructure and large-org data centres"
+    sector: "government, finance, telco, healthcare, critical infrastructure"
+    cves: [CVE-2026-20223]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in the access validation of internal REST APIs of Cisco Secure Workload could allow an unauthenticated, remote attacker to access site resources with the privileges of the Site Admin role."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+      - quote: "Successful exploitation allows unauthenticated attackers to read sensitive information and modify tenant configurations via crafted API requests."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12588"
+
+  - title: "CVE-2026-45585 'YellowKey' — Windows BitLocker bypass via WinRE autofstx.exe; physical-access zero-day, no permanent patch yet, TPM+PIN mitigates current PoC"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585", publisher: "Microsoft MSRC", date: "2026-05-20", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12574", publisher: "NCSC-CH Security Hub", date: "2026-05-14", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0165", publisher: "NCSC-NL", date: "2026-05-20", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/05/20/yellowkey-bitlocker-mitigation-cve-2026-45585/", publisher: "Help Net Security", date: "2026-05-20", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12574 → primary: Microsoft MSRC, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585 → corroborating: NCSC-NL CSAF, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0165"
+    summary: |
+      CVE-2026-45585, publicly named YellowKey, is a BitLocker security-feature-bypass in the Windows Recovery Environment (WinRE). Disclosed by researcher Chaotic Eclipse (Nightmare-Eclipse), the vulnerability is located in the autofstx.exe component loaded by WinRE's BootExecute processing path. An attacker with physical access and the ability to boot into WinRE (or modify the EFI partition/USB) places specially crafted FsTx files, which triggers autofstx.exe to spawn a command shell with unrestricted access to the BitLocker-protected volume — without requiring the BitLocker PIN or TPM validation. The NCSC-CH advisory notes that the flaw "is not in the encryption itself, but in the recovery environment that surrounds BitLocker." A public PoC is available on GitHub (github.com/Nightmare-Eclipse/YellowKey). Affected platforms: Windows 11 24H2, 25H2, 26H1 (x64), Windows Server 2025 and Server Core 2025 — Microsoft has not released a permanent patch. Microsoft's interim remediation requires manually modifying the WinRE image on each device to remove the autofstx.exe BootExecute value, then re-sealing the image. Switching from TPM-only to TPM+PIN configuration mitigates the currently public PoC (researcher states an unpublished workaround may bypass this). Exploitation status: PoC available, no confirmed in-the-wild abuse as of disclosure. For EU public-sector environments, this is relevant to laptop deployments with encrypted drives (field staff, mobile workers, sensitive-data endpoints) where physical theft or border seizure scenarios are modelled in the threat profile.
+    ch_eu_nexus: "affects all Windows 11 and Windows Server 2025 deployments across Switzerland and the EU; particularly relevant for mobile workforce and classified-data environments where physical access threat is modelled"
+    public_sector_nexus: "direct — Windows-deployed governments, field agencies, law enforcement, defence with BitLocker-protected endpoints"
+    sector: "government, defence, finance, healthcare"
+    cves: [CVE-2026-45585]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft is tracking the YellowKey flaw under CVE-2026-45585 and shared mitigation measures to defend against potential attacks."
+        attribution: "NCSC-CH Security Hub (update 20.05.2026)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12574"
+      - quote: "De kwetsbaarheid betreft een security feature bypass in Windows, bekend als 'YellowKey'. Er is een proof of concept beschikbaar die aantoont hoe de kwetsbaarheid kan worden misbruikt. De kwetsbaarheid zit niet in de encryptie zelf, maar in de herstelomgeving die BitLocker omringt."
+        attribution: "NCSC-NL (translation: The vulnerability is a security feature bypass in Windows, known as 'YellowKey'. A PoC is available demonstrating how the vulnerability can be exploited. The flaw is not in the encryption itself, but in the recovery environment surrounding BitLocker.)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0165"
+
+  - title: "ICO fines South Staffordshire Water £963,900 — Cl0p ransomware phishing → 20-month dwell → 633,887 records exfiltrated; enforcement signals tougher UK utility cyber oversight"
+    sources:
+      - { url: "https://ico.org.uk/action-weve-taken/enforcement/2026/05/south-staffordshire-plc-and-south-staffordshire-water-plc/", publisher: "UK ICO", date: "2026-05-11", role: "primary" }
+      - { url: "https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/05/fine-of-nearly-1m-issued-against-south-staffordshire-plc-and-south-staffordshire-water-plc/", publisher: "UK ICO News", date: "2026-05-11", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/05/11/ico-south-staffordshire-cyberattack-fine/", publisher: "Help Net Security", date: "2026-05-11", role: "corroborating" }
+    discovery_trace: "first seen at: ico-uk enforcement bridge (sitemap), URL https://ico.org.uk/action-weve-taken/enforcement/2026/05/south-staffordshire-plc-and-south-staffordshire-water-plc/ → WebSearch confirmed: ICO news release URL https://ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/05/fine-of-nearly-1m-issued-against-south-staffordshire-plc-and-south-staffordshire-water-plc/ → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/05/11/ico-south-staffordshire-cyberattack-fine/"
+    summary: |
+      The UK ICO issued a £963,900 (approx. €1.1M) penalty on 7 May 2026 against South Staffordshire Plc and South Staffordshire Water Plc for infringement of Articles 5(1)(f) and 32(1) of UK GDPR, arising from a 2022 ransomware intrusion attributed to Cl0p. The attack chain began with a successful phishing email against South Staffordshire's IT infrastructure in approximately September 2020. The attacker maintained persistent access through the environment for approximately 20 months before escalating to domain administrator privileges in May 2022 and extracting the personal data of 633,887 customers. Key ICO findings documented in enforcement action: only 5% of the IT environment was monitored; active use of Windows Server 2003 (end of support since 2015); unpatched critical systems with inadequate vulnerability management; and limited privilege-separation controls that enabled the escalation to domain administrator. The breach triggered Cl0p's ransomware deployment and ultimately resulted in the data appearing on the dark web. South Staffordshire made an early admission of liability, receiving a 40% penalty reduction from the original calculated sum. This enforcement outcome is significant for EU regulators and public-sector IT defenders: it documents the full ICO evidentiary standard for inadequate monitoring coverage, legacy OS retention, and absent vulnerability management in critical national infrastructure, establishing precedent applicable to NIS2 supervisory proceedings under ENISA and EU member-state CAs.
+    ch_eu_nexus: "UK enforcement action; directly relevant to EU NIS2 enforcement framework, OFEV/ENSI Swiss critical infrastructure operators, and any water/energy utility operating under NIS2"
+    public_sector_nexus: "direct — critical national infrastructure enforcement, applicable to water, energy, and public utility operators across the EU"
+    sector: "utilities, water, critical infrastructure"
+    cves: []
+    actors_campaigns_malware: ["Cl0p"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The UK ICO fined South Staffordshire Water's parent company £963,900 after a phishing attack exposed data belonging to 633,887 people."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/05/11/ico-south-staffordshire-cyberattack-fine/"
+      - quote: "poor security left hackers inside water company network for nearly two years"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/05/11/ico-south-staffordshire-cyberattack-fine/"
+
+  - title: "TeamPCP 'Mini Shai-Hulud' npm/PyPI worm — first supply chain attack with valid SLSA Build Level 3 provenance; NHS England issues first government alert; 170+ packages, 500M+ downloads at risk"
+    sources:
+      - { url: "https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem", publisher: "StepSecurity", date: "2026-05-11", role: "primary" }
+      - { url: "https://isc.sans.edu/diary/rss/32994", publisher: "SANS ISC (Kenneth Hartman)", date: "2026-05-18", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12558", publisher: "NCSC-CH Security Hub", date: "2026-05-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12558 → primary: StepSecurity, URL https://www.stepsecurity.io/blog/mini-shai-hulud-is-back-a-self-spreading-supply-chain-attack-hits-the-npm-ecosystem → corroborating: SANS ISC, URL https://isc.sans.edu/diary/rss/32994 → corroborating: WebSearch confirmed NHS England alert at https://digital.nhs.uk/cyber-alerts/2026/cc-4781"
+    summary: |
+      Beginning 2026-05-11 at 19:20 UTC, the TeamPCP threat cluster deployed the Mini Shai-Hulud worm, publishing 84 malicious npm artifacts across 42 @tanstack packages in approximately six minutes, including @tanstack/react-router (~12M weekly downloads). The worm propagated to packages from Mistral AI, UiPath, OpenSearch, Guardrails AI, and others, reaching approximately 170 compromised npm and PyPI packages with combined cumulative downloads exceeding 500 million. This is the third TeamPCP compromise of Checkmarx in three months (Checkmarx Jenkins AST plugin version 2026.5.09, exposure window 2026-05-09 01:25 to 2026-05-10 08:47 UTC, was the concurrent campaign strand). The defining novelty of this wave is that malicious versions carried valid SLSA Build Level 3 provenance attestations — the attacker never stole npm credentials, instead hijacking TanStack's legitimate CI/CD pipeline's trusted OIDC identity mid-workflow, making the provenance attestation genuine. This invalidates "has valid provenance attestation" as a sufficient integrity check. The credential-harvesting payload targets GitHub Actions runner process memory (via /proc/{pid}/mem on Linux), AWS IMDSv2 IAM role credentials, ECS/Fargate task credentials, local HashiCorp Vault socket, over 100 file paths covering cloud credentials, SSH keys, git config, AI tool configs, crypto wallets, and VPN configs, plus all GitHub Actions workflow secrets. Persistence hooks inject into .vscode/tasks.json (folderOpen task) and .claude/settings.json (SessionStart hook). A destructive payload fires with 1-in-6 probability on systems matching Israeli or Iranian locales, performing rm -rf ~/. A dead-man switch in a monitoring service revokes GitHub tokens and triggers the wipe if tokens are revoked without first sanitising the host. CVE-2026-45321 assigned (CVSS 9.6 per THN; GHSA-g7cv-rxg3-hmpx per Snyk). NHS England issued government alert CC-4781. CISA issued no public advisory. Remediation: pin and lockfile-verify exact dependency hashes; do not rely on provenance attestation alone; audit .vscode/tasks.json and .claude/settings.json on developer endpoints.
+    ch_eu_nexus: "global supply chain attack; European development organisations, research institutions, and public-sector DevOps teams using TanStack/React, UiPath automation, or Mistral AI integrations are in scope; NHS England government alert directly relevant to EU public-sector CI/CD posture assessment"
+    public_sector_nexus: "indirect — targets developer workstations and CI/CD pipelines; public-sector development shops using affected packages at risk"
+    sector: "technology, government, healthcare, finance"
+    cves: [CVE-2026-45321]
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "this is the first documented npm supply chain attack shipping malware with valid SLSA Build Level 3 provenance attestations"
+        attribution: "SANS ISC (Kenneth Hartman, citing Wiz, StepSecurity, Snyk)"
+        source_url: "https://isc.sans.edu/diary/rss/32994"
+      - quote: "NHS England issued the campaign's first government alert; CISA stayed silent."
+        attribution: "SANS ISC (Kenneth Hartman)"
+        source_url: "https://isc.sans.edu/diary/rss/32994"
+      - quote: "a 1-in-6 chance of running a recursive wipe on systems matching Israeli or Iranian locales"
+        attribution: "SANS ISC (Kenneth Hartman, citing BleepingComputer / Bill Toulas)"
+        source_url: "https://isc.sans.edu/diary/rss/32994"
+
+  - title: "Microsoft Incident Response: HPE Operations Agent / HPOM trusted-channel intrusion — third-party IT provider compromise enabling 123-day dwell, malicious network provider DLL on DC, LSA password filter, ngrok C2"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/05/12/undermining-the-trust-boundary-investigating-a-stealthy-intrusion-through-third-party-compromise/", publisher: "Microsoft Security Blog / DART", date: "2026-05-12", role: "primary" }
+    discovery_trace: "first seen at: msft-ti (Microsoft Security Blog RSS feed, msft-secblog bridge), URL https://www.microsoft.com/en-us/security/blog/2026/05/12/undermining-the-trust-boundary-investigating-a-stealthy-intrusion-through-third-party-compromise/ → primary (no pivot needed, this is the DART incident report itself)"
+    summary: |
+      Microsoft Incident Response's DART team published a detailed anatomy of a 123-day intrusion conducted entirely through legitimate trusted channels — no exploit-based initial access, no novel malware. Initial access was via a compromised third-party IT services provider that had management delegation over the victim's HPE Operations Manager (HPOM) / HPE Operations Agent (HPE OA) infrastructure monitoring platform (MITRE ATT&CK T1199 Trusted Relationship). The threat actor executed VBScripts (abc003.vbs) through HPOM directly onto domain controllers and web servers, blending with routine automation. Key TTPs documented: (1) Credential interception — mslogon.dll registered as a Windows network provider on the domain controller by adding it to the HKLM\SYSTEM\CurrentControlSet\Control\NetworkProvider\Order Notification Package key; NPLogonNotify and NPPasswordChangeNotify APIs captured cleartext credentials during interactive sign-in and password change, writing them to C:\Users\Public\Music\abc123c.d. (2) Password filter — passms.dll registered in the LSA Notification Packages registry value; PasswordFilter() API captured all credentials during password changes at LSASS level, double-encoded (Base64 + custom), written to C:\ProgramData\WindowsUpdateService\UpdateDir\Ipd. (3) Exfiltration — msupdate.dll transferred captured credentials via SMB to remote shares (filename icon02.jpeg for stealth) and via SMTP with subject "Update Service." (4) Persistence and lateral movement — Errors.aspx and modified Signoff.aspx web shells on internet-facing web servers; ngrok tunnels deployed on internal servers with outbound internet access, exposing RDP via encrypted channels bypassing perimeter firewall. (5) Discovery — VBScripts performed AD enumeration without requiring EDR-visible process chains. Dwell: 123 days from first access to IR engagement. The victim's web servers lacked EDR, making forensic reconstruction of web shell origin uncertain. Applicable detection: hunt for unsigned DLLs in HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Notification Packages (Sysmon EID 13, registry value modification) and HKLM\SYSTEM\CurrentControlSet\Control\NetworkProvider\Order (same); alert on ngrok.exe process creation (Sysmon EID 1); alert on outbound SMB to non-domain hosts. Hardening: require signed DLLs for LSA notification packages (Credential Guard); enforce third-party management access through Privileged Access Workstations with just-in-time access rather than persistent delegation.
+    ch_eu_nexus: "global; intrusion pattern directly applicable to EU public-sector environments using outsourced IT management with HPOM/SCOM/similar enterprise monitoring platforms — a common model in Swiss federal IT, German state IT, and EU institutions"
+    public_sector_nexus: "direct — third-party IT outsourcing model is ubiquitous in EU public sector; HPE OA/HPOM is deployed across large government IT environments"
+    sector: "government, finance, critical infrastructure"
+    cves: []
+    actors_campaigns_malware: []
+    verification: "SINGLE-SOURCE — MICROSOFT-DART-INCIDENT-REPORT (national CERT / vendor primary IR disclosure carve-out applies)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The threat actor, operating HPOM, executed VBScripts on multiple servers, including the web server and a domain controller."
+        attribution: "Microsoft Incident Response (DART)"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/12/undermining-the-trust-boundary-investigating-a-stealthy-intrusion-through-third-party-compromise/"
+      - quote: "The threat actor registered a legitimate network provider named mslogon on the domain controller DC01 through the same HP OA to hijack the authentication process."
+        attribution: "Microsoft Incident Response (DART)"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/12/undermining-the-trust-boundary-investigating-a-stealthy-intrusion-through-third-party-compromise/"
+      - quote: "passms.dll, was registered in the Windows authentication process by adding it to the Local Security Authority (LSA) notification package configuration"
+        attribution: "Microsoft Incident Response (DART)"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/12/undermining-the-trust-boundary-investigating-a-stealthy-intrusion-through-third-party-compromise/"
+
+  - title: "Fortinet FortiAuthenticator CVE-2026-44277 (CVSS 9.8) and FortiSandbox CVE-2026-26083 (CVSS 9.1) — unauthenticated RCE via Web UI / API; no exploitation observed"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-128", publisher: "Fortinet PSIRT", date: "2026-05-13", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12569", publisher: "NCSC-CH Security Hub", date: "2026-05-13", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12569 → primary: Fortinet PSIRT FG-IR-26-128 at https://fortiguard.fortinet.com/psirt/FG-IR-26-128"
+    summary: |
+      Fortinet released patches on 2026-05-13 addressing two critical vulnerabilities in network security appliances widely deployed across EU public sector and financial services. CVE-2026-44277 (CVSS 9.8, CWE-284 Improper Access Control) affects FortiAuthenticator, the enterprise multi-factor authentication and identity management appliance: an unauthenticated remote attacker can exploit this via a crafted HTTP request to the management API or Web UI to execute arbitrary OS commands with the privileges of the application. CVE-2026-26083 (CVSS 9.1, CWE-306 Missing Authorization) affects FortiSandbox and FortiSandbox PaaS: the same attack pattern — unauthenticated HTTP request to the Web UI — enables arbitrary code execution. Both require only network access to the management interface; no authentication or prior foothold is needed. Exploitation status: unknown as of advisory publication. Vendor patches are available for both products; NCSC-CH and CERT-FR both published in-window advisories. Defenders should prioritise patching or restricting management interface access (firewall rules or administrative VLAN segregation) for both products, particularly for FortiAuthenticator deployments, which sit in MFA critical paths — a compromised FortiAuthenticator can be leveraged to bypass MFA enforcement entirely or generate fraudulent tokens.
+    ch_eu_nexus: "Fortinet products are heavily deployed across EU public sector, defence, banking and telecoms; FortiAuthenticator is a common MFA infrastructure component in Swiss government and EU institutions"
+    public_sector_nexus: "direct — FortiAuthenticator is used for public-sector MFA and identity management; FortiSandbox for email and file detonation"
+    sector: "government, finance, defence, telco"
+    cves: [CVE-2026-44277, CVE-2026-26083]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Unauthenticated attackers can achieve full system compromise by executing unauthorized commands via specially crafted HTTP requests to vulnerable management interfaces."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12569"
+
+  - title: "SAP May 2026 Patch Day — CVE-2026-34260 SQL injection in S/4HANA (CVSS 9.6) and CVE-2026-34263 unauthenticated RCE in Commerce Cloud (CVSS 9.6)"
+    sources:
+      - { url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/may-2026.html", publisher: "SAP Security Notes", date: "2026-05-12", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12565", publisher: "NCSC-CH Security Hub", date: "2026-05-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12565 → primary: SAP Security Notes May 2026, URL https://support.sap.com/en/my-support/knowledge-base/security-notes-news/may-2026.html"
+    summary: |
+      SAP's May 2026 Security Patch Day included two critical-severity vulnerabilities relevant to EU public-sector ERP environments. CVE-2026-34260 (CVSS 9.6) is a SQL injection in SAP S/4HANA: an authenticated attacker with basic access can inject arbitrary SQL into database queries, leading to unauthorized access to sensitive ERP data including financial records, supplier/contract data, personnel records, and procurement information. CVE-2026-34263 (CVSS 9.6) is a missing authentication check in SAP Commerce Cloud: an unauthenticated remote attacker can reach service endpoints directly and execute arbitrary server-side code — no authentication required. The NCSC-CH advisory noted that CVE-2026-34263 requires only network access to the vulnerable services. Both require vendor patches; no workarounds are specified. SAP S/4HANA is deployed extensively as the ERP backbone of Swiss federal departments, German state governments, and EU institutions; Commerce Cloud is used by government e-procurement portals and public-facing citizen service portals. Defenders in SAP environments should apply May 2026 security notes immediately, prioritising CVE-2026-34263 due to its zero-auth RCE profile.
+    ch_eu_nexus: "SAP is the dominant ERP platform for Swiss federal agencies, cantonal governments, and EU institutions; both flaws are directly relevant to public-sector ERP operators"
+    public_sector_nexus: "direct — SAP S/4HANA is deployed across Swiss and EU governments as the primary ERP/financial management system"
+    sector: "government, finance, ERP"
+    cves: [CVE-2026-34260, CVE-2026-34263]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows attackers to gain unauthorized access to sensitive database information, execute arbitrary server-side code, or compromise the availability of affected enterprise applications."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12565"
+
+candidate_sources:
+  - id: industrialcyber-co
+    publisher: "industrialcyber.co — Industrial Cyber (ICS/OT security news)"
+    url: "https://industrialcyber.co"
+    category: "ics-ot, research"
+    why: "Published in-depth analysis of the South Staffordshire ICO fine and its implications for utility cyber oversight (industrialcyber.co/utilities-energy-power-water-waste/uk-ico-fines-south-staffordshire-water-nearly-1m-over-cl0p-breach-signals-tougher-utility-cyber-defense-oversight/); regularly covers EU/UK CNI enforcement and ICS/OT vulnerability disclosures relevant to the S2 domain"
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "HTTP 403 on direct bridge fetch; Wayback Machine has no usable snapshot for inside-it.ch in last 180 days (24-byte placeholder only). 5 consecutive run failures. No corroborating source carried the same stories."
+  - source_id: cert-eu
+    reason: "CERT-EU RSS feed returned successfully via bridge (cert-eu recent 10) — source is now operational. Most recent advisory is 2026-006 (PAN-OS, 2026-05-06), outside the 36h window. No coverage gap — source is healthy but no fresh items in window."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actualite feed (cert-fr actu-recent) returned only bulletins up to CERTFR-2025-ACT-049 (November 2025) — the actualities feed appears to not have published new bulletins since late 2025. Avis (advisories) feed is operational and current."
