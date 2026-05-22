@@ -1,0 +1,295 @@
+domain: S1
+run_id: 2026-05-22-5b90d5a1
+model: "Claude Sonnet 4.6"
+model_id: claude-sonnet-4-6
+started_at: 2026-05-22T06:08:51Z
+ended_at: 2026-05-22T06:57:00Z
+duration_seconds: 2889
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 7
+  bridge_fetches: 14
+
+items:
+  - title: "CISA KEV: Langflow CORS/token-hijack chain (CVE-2025-34291) and Trend Micro Apex One directory traversal (CVE-2026-34926) added 2026-05-21 — both exploited in the wild"
+    sources:
+      - url: "https://www.cisa.gov/news-events/alerts/2026/05/21/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+        publisher: "CISA"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2025-34291"
+        publisher: "NVD/NIST"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://www.jpcert.or.jp/english/at/2026/at260014.html"
+        publisher: "JPCERT/CC"
+        date: "2026-05-22"
+        role: "corroborating"
+      - url: "https://www.hkcert.org/security-bulletin/trend-micro-apex-one-multiple-vulnerabilities_20260522"
+        publisher: "HKCERT"
+        date: "2026-05-22"
+        role: "corroborating"
+      - url: "https://success.trendmicro.com/en-US/solution/KA-0023430"
+        publisher: "Trend Micro"
+        date: "2026-05-21"
+        role: "vendor"
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (catalogVersion 2026.05.21) → CVE-2025-34291 dateAdded 2026-05-21 → NVD primary for Langflow, URL https://nvd.nist.gov/vuln/detail/CVE-2025-34291; CVE-2026-34926 dateAdded 2026-05-21 → JPCERT primary alert URL https://www.jpcert.or.jp/english/at/2026/at260014.html → HKCERT corroborating URL https://www.hkcert.org/security-bulletin/trend-micro-apex-one-multiple-vulnerabilities_20260522"
+    summary: |
+      CISA added two CVEs to its KEV catalog on 2026-05-21 with a June 4 remediation deadline for federal agencies.
+
+      CVE-2025-34291 (Langflow, CVSS 4.0: 9.4 / CVSS 3.1: 8.8): An overly permissive CORS configuration (`allow_origins='*'` with `allow_credentials=True`) combined with a `SameSite=None` refresh token cookie allows a malicious webpage to perform cross-origin requests with the authenticated user's credentials, reaching the `/api/v1/auth/refresh` endpoint and obtaining access tokens that can call all authenticated endpoints — including the code-execution functionality of the AI workflow platform. Exploitation requires only victim browser navigation to an attacker-controlled page. Active exploitation was first confirmed 2026-01-23; Trend Micro documented deployment of the Flodric botnet through compromised Langflow instances. Affected: Langflow <= 1.6.9. Fixed: Langflow 1.7.0 (default CORS policy changed) and 1.9.3 (explicit fix). Technique: `T1190 Exploit Public-Facing Application`; CORS bypass for CSRF-style token theft.
+
+      CVE-2026-34926 (Trend Micro Apex One On-Premise, CVSS 6.7 / CWE-23 directory traversal): A pre-authenticated local attacker can traverse the server's directory to modify a key table, injecting malicious code that Apex One deploys to all managed agents. Apex One On-Premise sits in a privileged position as an enterprise-wide endpoint-security management console; a compromised console propagates attacker code to the entire managed fleet via the product's own update mechanism. JPCERT/CC confirmed exploitation in the wild on 2026-05-21. Affected: Apex One 2019 (On-Premise) server and agent builds below 17079. Fixed: server/agent build 17079, per Trend Micro KA-0023430. The SaaS variant (`Apex One as a Service`) is not vulnerable to CVE-2026-34926.
+
+      Defender takeaways: (1) Langflow — block internet exposure of Langflow instances; enforce HTTPS-only + restrictive CORS; verify auto-update to >= 1.7.0 / 1.9.3; hunt for anomalous Python/subprocess execution spawned from the Langflow process tree (Sysmon EID 1, parent `langflow-backend` or `uvicorn`). (2) Trend Micro Apex One — patch On-Premise servers to build 17079 immediately; treat the Apex One server host as Tier 0 since it can push code to all agents; review Apex One audit logs for unexpected key-table modifications and agent-update dispatch events.
+    ch_eu_nexus: "Global; EU public-sector and enterprise endpoints using Trend Micro Apex One On-Premise. Langflow increasingly deployed in AI/ML research and automation pipelines within government digital-transformation initiatives."
+    public_sector_nexus: "indirect for Langflow (AI workflow automation); direct for Apex One (endpoint security platform widely used in enterprise and government)"
+    sector: "all-sectors (endpoint security, AI/ML platforms)"
+    cves: [CVE-2025-34291, CVE-2026-34926]
+    actors_campaigns_malware: ["Flodric botnet"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Langflow contains an origin validation error vulnerability in which an overly permissive CORS configuration combined with a refresh token cookie configured as SameSite=None allows a malicious webpage to perform cross-origin requests"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "Trend Micro Incorporated has reported that attacks exploiting the relative path traversal vulnerability in TrendAI Apex One(On Premise) (CVE-2026-34926) have been observed in the wild."
+        attribution: "JPCERT/CC"
+        source_url: "https://www.jpcert.or.jp/english/at/2026/at260014.html"
+      - quote: "CVE-2026-34926 is being exploited in the wild. A pre-authenticated local attacker could modify a key table on the server to inject malicious code to deploy to agents on affected installations."
+        attribution: "HKCERT"
+        source_url: "https://www.hkcert.org/security-bulletin/trend-micro-apex-one-multiple-vulnerabilities_20260522"
+
+  - title: "Cisco Secure Workload CVSS 10.0 — unauthenticated REST API allows cross-tenant Site Admin access (CVE-2026-20223)"
+    sources:
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+        publisher: "Cisco PSIRT"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/cisco-patches-cvss-100-secure-workload.html"
+        publisher: "The Hacker News"
+        date: "2026-05-22"
+        role: "corroborating"
+      - url: "https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012"
+        publisher: "The Register"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/cisco-patches-cvss-100-secure-workload.html → pivot to Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy → corroborated by The Register URL https://www.theregister.com/security/2026/05/21/cisco-serves-up-yet-another-perfect-10-bug-with-secure-workload-admin-flaw/5244012"
+    summary: |
+      Cisco disclosed CVE-2026-20223 on 2026-05-20, a CVSS 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) flaw in Cisco Secure Workload (formerly Tetration). The vulnerability is in access validation of internal REST API endpoints: insufficient validation allows an unauthenticated remote attacker to send a crafted HTTP request to an internal REST API endpoint and obtain Site Admin-level privileges. The attack requires no authentication, no user interaction, and no prior foothold — a single crafted API request is sufficient. A successful exploit allows the attacker to read sensitive data and make configuration changes across all tenant boundaries, effectively giving full visibility into and control over multi-tenant datacenter and cloud workload segmentation policy.
+
+      Cisco Secure Workload is deployed on-premises in enterprise datacenters (SaaS variant is also confirmed affected). This is not the same CVE as the previously reported Cisco Catalyst SD-WAN authentication bypass (CVE-2026-20182). Cisco stated no active exploitation was observed at disclosure. Attack surface: internal REST API endpoint reachable by network-adjacent or internet-exposed deployment.
+
+      Affected versions: Cisco Secure Workload Cluster Software 3.9.x and earlier (no fix — must migrate), 3.10.x (fix: 3.10.8.3), 4.0.x (fix: 4.0.3.17). No workaround exists; patching is the only remediation. Technique: `T1190 Exploit Public-Facing Application`.
+
+      Defender takeaways: Immediately restrict network access to the Secure Workload REST API management plane to trusted management networks; block untrusted external access to Cisco Secure Workload's management interface. Apply patches for versions 3.10 and 4.0. Migrate from 3.9 and earlier. Enumerate API access logs for unexpected calls to Site Admin-level endpoints as a hunt signal.
+    ch_eu_nexus: "Global; affects enterprises and government agencies using Cisco Secure Workload for datacenter segmentation — relevant to Swiss and EU public-sector hybrid-cloud and on-premise deployments."
+    public_sector_nexus: "indirect"
+    sector: "enterprise IT, datacenters, financial services, government"
+    cves: [CVE-2026-20223]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability is due to insufficient validation and authentication when accessing REST API endpoints. An attacker could exploit this vulnerability if they are able to send a crafted API request to an affected endpoint. A successful exploit could allow the attacker to read sensitive information and make configuration changes across tenant boundaries with the privileges of the Site Admin user."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+
+  - title: "Showboat/JFMBackdoor: Chinese espionage cluster Red Lamassu (Calypso) targeting telecoms with shared Linux/Windows implant pair since 2022 — PwC and Lumen disclosure"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/showboat-linux-malware-hits-middle-east.html"
+        publisher: "The Hacker News"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://www.darkreading.com/threat-intelligence/chinese-apts-linux-backdoor-telco-attacks"
+        publisher: "Dark Reading"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/showboat-linux-malware-hits-middle-east.html → pivot to BleepingComputer primary, URL https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/ → corroborated by Dark Reading, URL https://www.darkreading.com/threat-intelligence/chinese-apts-linux-backdoor-telco-attacks"
+    summary: |
+      PwC Threat Intelligence and Lumen Black Lotus Labs published jointly on 2026-05-21 the first full technical disclosure of Showboat and JFMBackdoor — a Linux/Windows implant pair deployed by the Chinese espionage cluster Red Lamassu (also tracked as Calypso). The campaign has targeted telecommunications providers since at least mid-2022, with confirmed victims including a Middle East ISP, an ISP in Afghanistan, and entities in Azerbaijan, the U.S., and Ukraine.
+
+      Showboat is a modular post-exploitation ELF binary (kworker masquerade) that provides: (1) remote shell (`T1059.004 Unix Shell`), (2) bidirectional file transfer, (3) SOCKS5 proxy to tunnel traffic through compromised telco infrastructure to internal network segments (`T1090.001 Internal Proxy`), and (4) a `hide` command that retrieves payloads from external sites (Pastebin, forums) as a dead-drop resolver (`T1102.001 Dead Drop Resolver`). Showboat contacts a C2 server, gathers system information, and returns it in a PNG field as Base64-encoded encrypted data to blend with image traffic (`T1001.002 Steganography` / covert channel). C2 infrastructure includes IP addresses geolocated to Chengdu, Sichuan, consistent with patterns seen in prior Red Lamassu campaigns.
+
+      JFMBackdoor (Windows counterpart) enables complementary persistence on Windows endpoints. The initial access vector was identified via an ELF binary uploaded to VirusTotal in May 2025; initial access likely via exploitation of public-facing services given the long-running nature of the campaign.
+
+      Defender takeaways: Hunt for `kworker`-masquerading ELF processes with anomalous network connections to non-local IPs; review netflow/EDR telemetry for unexpected SOCKS5 tunnel establishment from Linux telecom servers; look for processes retrieving content from Pastebin-like external sites (web proxy logs filtered to text/code-hosting sites from server processes). Correlate with any prior PlugX or ShadowPad infrastructure sightings given shared C2 node pools per the PwC/Lumen analysis.
+    ch_eu_nexus: "EU telco sector; campaign targets ISPs and carriers globally. EU telecom operators are within scope of Red Lamassu's documented targeting pattern."
+    public_sector_nexus: "indirect — national carriers and ISPs that underpin public communications infrastructure"
+    sector: "telecommunications"
+    cves: []
+    actors_campaigns_malware: ["Red Lamassu", "Calypso", "Showboat", "JFMBackdoor"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A Chinese cyber-espionage campaign has been targeting telecommunications providers with newly discovered Linux and Windows malware dubbed Showboat and JFMBackdoor, respectively."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-target-telcos-with-new-linux-windows-malware/"
+      - quote: "Showboat targets Linux telecom systems since mid-2022, enabling C2 access, proxying, and file theft across multiple countries."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/showboat-linux-malware-hits-middle-east.html"
+
+  - title: "Microsoft Defender actively exploited: CVE-2026-41091 (link-following LPE) and CVE-2026-45498 (DoS) — both confirmed exploited, out-of-band Defender engine update issued"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45498"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-19"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/microsoft-warns-of-two-actively.html"
+        publisher: "The Hacker News"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: msrc bridge (msrc release 2026-May), CVE-2026-41091 exploited=Yes, publiclyDisclosed=Yes → MSRC per-CVE detail via msrc cve CVE-2026-41091 → corroborated by THN URL https://thehackernews.com/2026/05/microsoft-warns-of-two-actively.html"
+    summary: |
+      Microsoft confirmed active exploitation of two Microsoft Defender vulnerabilities with the 2026-05-19 out-of-band Defender engine update. Both are now publicly disclosed.
+
+      CVE-2026-41091 (CVSS 7.8, CWE-59 Improper Link Resolution / Link Following): An authorized local attacker abuses Windows Defender's `MsMpEng.exe` service's improper symbolic-link resolution during file-system operations to elevate privileges locally to `NT AUTHORITY\SYSTEM`. Attack vector: `AV:L/AC:L/PR:L/UI:N` — requires local access with standard-user privileges, no UI interaction. This is a classic TOCTOU-style LPE abusing the privileged antimalware process. Technique: `T1068 Exploitation for Privilege Escalation`. Fixed in Defender Antimalware Platform version 4.18.26040.7. Last vulnerable version: 4.18.26030.3011.
+
+      CVE-2026-45498 (CVSS 4.0, no CWE assigned): A local, unauthenticated attacker (`AV:L/AC:L/PR:N/UI:N`) can cause a DoS condition in the Defender engine. Attack surface is lower-risk individually but was observed exploited alongside CVE-2026-41091. Fixed in same Defender Antimalware Platform 4.18.26040.7 update. Defender distributes engine updates via Windows Update / WSUS / Intune automatically; environments with delayed auto-update or air-gapped Defender deployments are at risk.
+
+      Defender takeaways: Verify Defender Antimalware Platform version >= 4.18.26040.7 on all endpoints via `Get-MpComputerStatus` (PowerShell) checking `AMProductVersion`. Hunt for anomalous SYSTEM-level process spawns from `MsMpEng.exe` (Sysmon EID 1, parent `MsMpEng.exe`, child token elevated). Ensure Defender definition update channels are functioning correctly (check for `4663` events on sensitive paths if SACL-enabled).
+    ch_eu_nexus: "Universal Windows endpoint coverage; affects all Windows systems with active Defender Antimalware Platform."
+    public_sector_nexus: "direct — Microsoft Defender is the default endpoint protection on all Windows systems including government endpoints"
+    sector: "all-sectors (endpoint security)"
+    cves: [CVE-2026-41091, CVE-2026-45498]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Improper link resolution before file access ('link following') in Microsoft Defender allows an authorized attacker to elevate privileges locally."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+      - quote: "Active Defender exploits hit CVE-2026-41091 and CVE-2026-45498; June 3 fixes reduce SYSTEM and DoS risk."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/microsoft-warns-of-two-actively.html"
+
+  - title: "Microsoft Entra ID / Azure CVE cluster: May 2026 Patch Tuesday includes three CVSS 10.0 cloud-service EoP/RCE CVEs (CVE-2026-42901, CVE-2026-47280, CVE-2026-23652) — already mitigated server-side, no customer action needed"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42901"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47280"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-23652"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-21"
+        role: "primary"
+    discovery_trace: "first seen at: msrc bridge (msrc release 2026-May filtered for baseScore>=9.0) → three CVSS 10.0 cloud-service CVEs added 2026-05-21 → per-CVE detail via msrc cve for each"
+    summary: |
+      The May 2026 Patch Tuesday release (published 2026-05-21) includes three CVSS 10.0 cloud-service vulnerabilities, all already mitigated server-side by Microsoft with no action required by customers:
+
+      - CVE-2026-42901 (Microsoft Entra ID Elevation of Privilege, CVSS 10.0, CWE-346 Origin Validation Error): An unauthenticated network attacker can elevate privileges in Entra ID. This is a cloud-side flaw; Microsoft has applied the remediation. Per the "Toward greater transparency: Unveiling Cloud Service CVEs" initiative, Microsoft published it to provide visibility.
+
+      - CVE-2026-47280 (Azure Resource Manager Elevation of Privilege, CVSS 10.0): No user action required; Microsoft has fully mitigated server-side.
+
+      - CVE-2026-23652 (Microsoft Power Pages Remote Code Execution, CVSS 10.0): Cloud-only, already remediated by Microsoft.
+
+      Additionally, CVE-2026-40411 (Azure Virtual Network Gateway RCE, CVSS 9.9) and CVE-2026-42823 (Azure Logic Apps EoP, CVSS 9.9) were also addressed in this release, all cloud-side with no customer action required.
+
+      Context: While CVSS 10.0 values look alarming, these cloud CVEs follow the transparent-disclosure pattern and carry no customer-side patch requirement. The practical value is awareness for organizations leveraging ENTRA/Azure RM/Power Pages in their zero-trust architecture reviews. No exploitation detected; not in CISA KEV at time of writing.
+    ch_eu_nexus: "EU cloud consumers of Microsoft Azure / Entra ID / Power Pages / Azure Resource Manager."
+    public_sector_nexus: "indirect — EU public sector increasingly reliant on Azure/M365 tenants; Entra ID is the identity plane for many government M365 deployments"
+    sector: "cloud, government, financial services"
+    cves: [CVE-2026-42901, CVE-2026-47280, CVE-2026-23652, CVE-2026-40411, CVE-2026-42823]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Origin validation error in Microsoft Entra ID allows an unauthorized attacker to elevate privileges over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42901"
+      - quote: "This vulnerability has already been fully mitigated by Microsoft. There is no action for users of this service to take."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42901"
+
+cve_table:
+  - cve: CVE-2025-34291
+    product: "Langflow AI Agent Platform"
+    cvss: "9.4 (v4.0) / 8.8 (v3.1)"
+    epss: unknown
+    kev: "Yes — added 2026-05-21"
+    exploited: "Yes"
+    patch: "Upgrade to >= 1.7.0 / 1.9.3"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2025-34291"
+  - cve: CVE-2026-34926
+    product: "Trend Micro Apex One On-Premise"
+    cvss: "6.7 (v3.1)"
+    epss: unknown
+    kev: "Yes — added 2026-05-21"
+    exploited: "Yes"
+    patch: "Upgrade to server/agent build 17079"
+    source: "https://success.trendmicro.com/en-US/solution/KA-0023430"
+  - cve: CVE-2026-20223
+    product: "Cisco Secure Workload"
+    cvss: "10.0"
+    epss: unknown
+    kev: "No"
+    exploited: "No"
+    patch: "v3.10: upgrade to 3.10.8.3; v4.0: upgrade to 4.0.3.17; v3.9 and earlier: migrate"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-csw-pnbsa-g8WEnuy"
+  - cve: CVE-2026-41091
+    product: "Microsoft Defender (Windows Antimalware Platform)"
+    cvss: "7.8"
+    epss: unknown
+    kev: "No"
+    exploited: "Yes"
+    patch: "Defender Antimalware Platform >= 4.18.26040.7 (auto-update)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41091"
+  - cve: CVE-2026-45498
+    product: "Microsoft Defender (Windows Antimalware Platform)"
+    cvss: "4.0"
+    epss: unknown
+    kev: "No"
+    exploited: "Yes"
+    patch: "Defender Antimalware Platform >= 4.18.26040.7 (auto-update)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45498"
+  - cve: CVE-2026-42901
+    product: "Microsoft Entra ID (cloud)"
+    cvss: "10.0"
+    epss: unknown
+    kev: "No"
+    exploited: "No"
+    patch: "No action required — Microsoft mitigated server-side"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-42901"
+  - cve: CVE-2026-47280
+    product: "Azure Resource Manager (cloud)"
+    cvss: "10.0"
+    epss: unknown
+    kev: "No"
+    exploited: "No"
+    patch: "No action required — Microsoft mitigated server-side"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47280"
+  - cve: CVE-2026-23652
+    product: "Microsoft Power Pages (cloud)"
+    cvss: "10.0"
+    epss: unknown
+    kev: "No"
+    exploited: "No"
+    patch: "No action required — Microsoft mitigated server-side"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-23652"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "No in-window items found for the bridge fetch during this run period; source is accessible but no new CH-specific items matched the 36-hour window."
+  - source_id: projectzero
+    reason: "No in-window posts on Google Project Zero blog during this run."
+  - source_id: watchtowr
+    reason: "No in-window posts observed via WebSearch or direct checks."
