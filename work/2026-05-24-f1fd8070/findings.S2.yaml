@@ -1,0 +1,153 @@
+domain: S2
+run_id: "2026-05-24-f1fd8070"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-05-24T04:10:02Z"
+ended_at: "2026-05-24T04:19:00Z"
+duration_seconds: 538
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 16
+  bridge_fetches: 12
+
+items:
+  - title: "Laravel-Lang PHP packages supply chain attack — 700+ tags rewritten, 233 versions compromised, cross-platform 15-module credential stealer exfils via AES-256 to external C2"
+    sources:
+      - url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+        publisher: "Aikido Security"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (THN RSS), title 'Laravel-Lang PHP Packages Compromised to Deliver Cross-Platform Credential Stealer', pub Sat 23 May 2026 → primary: Aikido Security blog, URL https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer → corroborating: THN, URL https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html"
+    summary: |
+      Between May 22 and May 23, 2026, attackers with organisation-level push access to the Laravel-Lang GitHub organisation rewrote more than 700 historical version tags across four widely-used PHP localisation packages: laravel-lang/lang (7.8k GitHub stars), laravel-lang/http-statuses, laravel-lang/attributes, and laravel-lang/actions. Rather than committing directly to the canonical repositories, the attacker exploited GitHub's ability to point version tags at commits from attacker-controlled forks, meaning the malicious code never appeared in the main repo commit history.
+
+      The injected file `src/helpers.php` was registered under `autoload.files` in each affected `composer.json`. Because every Composer-using application calls `require __DIR__.'/vendor/autoload.php'` at startup — including Laravel, Symfony, PHPUnit and most European public-administration PHP stacks — the backdoor executes automatically on every request without any further interaction. A per-host MD5 fingerprint (combining directory path, system architecture and inode) ensures the payload fires only once per machine, evading redundant-execution detection.
+
+      The dropper contacts `flipboxstudio[.]info` (no-IOC framing: do not allow-list or block based on this name alone) to retrieve a cross-platform PHP payload targeting Windows (VBScript launcher via cscript), Linux, and macOS (exec()). Aikido researcher Ilyas Makari characterised the fetched payload as a ~5,900-line PHP credential stealer organised into fifteen specialist collector modules targeting: saved passwords from 17 Chromium-based browsers; Google Cloud application default credentials; Docker auth tokens; SSH private keys; Git credentials (`.gitconfig`, `.git-credentials`, `.netrc`); shell history; database history; Kubernetes cluster configurations (`kubeconfig`); `.env` files; `wp-config.php`; `docker-compose.yml`; and VPN/browser extension wallet secrets. Results are AES-256 encrypted and exfiltrated; the stealer then self-deletes.
+
+      Packagist responded by taking down the malicious versions and temporarily unlisting affected packages. Multiple version tags were published in seconds-apart succession, consistent with automated tooling. Socket, StepSecurity, and Aikido all independently flagged the campaign within hours. The root compromise is suspected to involve organisation-level credentials, repository automation tokens, or release-pipeline secrets obtained from a prior intrusion.
+
+      EU public-sector impact: PHP/Laravel/Symfony is the predominant stack for European government-facing portals (cantonal portals in CH, DFN-hosted services in DE, French ministerial websites, EU body web infrastructure). Any automated CI/CD workflow that ran `composer install` or `composer update` between 2026-05-22 14:00 UTC and 2026-05-23 ~22:00 UTC against the affected package versions should be treated as potentially compromised. Detection: check Composer lockfiles for the four package names at affected tag versions; inspect server/CI runner credential stores for unexpected access; review DNS/outbound HTTPS logs for requests from PHP worker processes to external hosts.
+    ch_eu_nexus: "global; directly impacts European government and public-sector web infrastructure heavily dependent on PHP/Laravel/Symfony/Composer ecosystems; Swiss cantonal portal deployments, DFN/SWITCH academic environments, EU body web stacks all in-scope"
+    public_sector_nexus: "high — PHP/Composer is the dominant stack for EU government web applications"
+    sector: "public-sector, education, finance, healthcare"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The attacker added src/helpers.php to the autoload.files map in each compromised package. Because every Laravel application calls require __DIR__.'/vendor/autoload.php' on startup, and because Symfony, PHPUnit, and most other PHP frameworks do the same, the payload runs the moment any consumer of the package boots."
+        attribution: "StepSecurity (as quoted in Aikido Security blog)"
+        source_url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+      - quote: "The fetched payload is a ~5,900 line PHP credential stealer, organised into fifteen specialist collector modules. After collecting everything it can find, it encrypts the results with AES-256 and sends them to [C2]."
+        attribution: "Aikido Security (Ilyas Makari)"
+        source_url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+    extended_notes: |
+      MITRE ATT&CK mapping: T1195.002 (Compromise Software Supply Chain), T1552.001 (Credentials In Files), T1052 (Exfiltration), T1140 (Deobfuscate/Decode Files or Information — AES-256 encryption of results before exfiltration).
+      Defender action: (1) Check composer.lock for laravel-lang/lang, laravel-lang/http-statuses, laravel-lang/attributes, laravel-lang/actions at any version tagged between 2026-05-22 and 2026-05-23. (2) If affected, assume credentials in all stores accessible by the PHP worker process (cloud keys, SSH, .env, git tokens) are compromised — rotate aggressively. (3) Implement Composer package signature/provenance verification where possible (Composer 2.6+ has `--audit` flag). (4) CI/CD: audit composer.json autoload.files entries on every package update PR; flag new entries added by version-tag changes.
+
+  - title: "Packagist 8-package supply chain attack — cross-ecosystem package.json postinstall downloads gvfsd-network Linux binary, distinct from Laravel-Lang wave, same 700+ GitHub repo infrastructure"
+    sources:
+      - url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+        publisher: "Socket Security"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (THN RSS), title 'Packagist Supply Chain Attack Infects 8 Packages Using GitHub-Hosted Linux Malware', pub Sat 23 May 2026 → primary: Socket Security blog, URL https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos (fetched, published 2026-05-22T21:03:29Z) → corroborating: THN, URL https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+    summary: |
+      Socket Security disclosed a separate but concurrent Packagist supply chain campaign on 2026-05-22, distinct from the Laravel-Lang tag-rewrite attack. Eight confirmed Packagist packages — devdojo/wave, devdojo/genesis, katanaui/katana, elitedevsquad/sidecar-laravel, r2luna/brain, baskarcm/tzi-chat-ui, moritz-sauer-13/silverstripe-cms-theme, and crosiersource/crosierlib-base — had their upstream GitHub repositories modified to include a malicious `postinstall` hook in `package.json` (rather than `composer.json`), targeting PHP projects that ship JavaScript build tooling alongside their PHP code.
+
+      The attack uses deliberate cross-ecosystem placement: developers and security teams scanning PHP (Composer) dependencies typically skip `package.json` lifecycle hooks bundled within the same package. The postinstall hook downloaded a Linux binary from a GitHub Releases URL, wrote it to `/tmp/.sshd` (disguised as an SSH daemon), made it executable, and ran it in the background with TLS certificate verification suppressed and error output silenced. Socket confirmed that more than 700 GitHub repositories were tied to the same attacker-controlled infrastructure — suggesting overlap with or parallel deployment by the same threat actor behind the Laravel-Lang campaign, though the technical delivery mechanism is different.
+
+      Packagist removed the malicious versions. However, as Socket noted, development branches can still carry the infection if upstream GitHub repositories remain compromised. The attack is particularly insidious for automated build pipelines that run `npm install` or `yarn` within PHP project CI workflows.
+
+      EU/CH relevance: SilverStripe CMS (moritz-sauer-13/silverstripe-cms-theme) is widely deployed across UK and NZ government portals; CrosierSource (crosiersource/crosierlib-base) is used in Brazilian public-administration FOSS deployments. The Linux binary implant targeting `/tmp/.sshd` is designed to survive process reuse and blend with sshd daemon naming. Detection: grep `/tmp/.sshd` across all CI runners and production containers; audit `package.json` for unexpected `postinstall` or `preinstall` hooks in Composer packages.
+    ch_eu_nexus: "global; SilverStripe CMS deployment in UK government; PHP stack broadly relevant to EU/CH public-sector hosting"
+    public_sector_nexus: "indirect — SilverStripe government deployments; PHP/JS hybrid CI environments"
+    sector: "public-sector, education"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Although the affected packages were all Composer packages, the malicious code was not added to composer.json. Instead, it was inserted into package.json, targeting projects that ship JavaScript build tooling alongside PHP code."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+      - quote: "Eight PHP packages contained the same install-time command that downloaded gvfsd-network from the attacker-controlled GitHub Releases URL, wrote it to /tmp/.sshd, made it executable, and launched it in the background."
+        attribution: "The Hacker News (summarising Socket research)"
+        source_url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 (Compromise Software Supply Chain), T1059.004 (Unix Shell — postinstall hook), T1036.005 (Match Legitimate Name or Location — /tmp/.sshd masquerade), T1204.002 (User Execution: Malicious File).
+      Defender action: (1) Audit all Composer packages for `package.json` `scripts.postinstall` / `scripts.preinstall` entries — any such hook in a PHP-only package is highly suspicious. (2) Search build containers for `/tmp/.sshd` or any hidden file in `/tmp/` with execute bit set. (3) For the eight named packages, check whether the project's GitHub upstream is still under attacker control before re-installing.
+
+  - title: "CVE-2026-48172 — LiteSpeed cPanel Plugin ≤ 2.4.4: CVSS 4.0 = 10.0, incorrect privilege assignment in lsws.redisAble JSON-API endpoint allows any logged-in cPanel user to execute arbitrary scripts as root; actively exploited since May 2026"
+    sources:
+      - url: "https://github.com/advisories/GHSA-fxrh-cwjh-m33v"
+        publisher: "GitHub Advisory Database / NVD"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (THN RSS), title 'LiteSpeed cPanel Plugin CVE-2026-48172 Exploited to Run Scripts as Root', pub Sat 23 May 2026 → primary: GitHub Advisory Database GHSA-fxrh-cwjh-m33v, URL https://github.com/advisories/GHSA-fxrh-cwjh-m33v (published 2026-05-21) → corroborating: THN, URL https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+    summary: |
+      CVE-2026-48172 is a CVSS 4.0 = 10.0 (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H) privilege-escalation vulnerability in LiteSpeed's User-End cPanel Plugin versions 2.3 through 2.4.4. The flaw resides in the `lsws.redisAble` JSON-API endpoint exposed by the cPanel plugin — the endpoint that enables or disables Redis support. A logic error in the endpoint's parameter handling allows any authenticated cPanel user to invoke the function with crafted parameter values that cause arbitrary scripts to execute with root privileges on the underlying server.
+
+      Because LiteSpeed's cPanel plugin is installed on the shared-hosting servers of millions of cPanel-managed hosting accounts worldwide — including large European and Swiss hosting providers — a single compromised tenant or any low-privilege account can escalate to full server root without requiring access to WHM (cPanel administrator) credentials. The LiteSpeed WHM plugin is unaffected.
+
+      LiteSpeed confirmed active exploitation in the wild. Timeline: researcher David Strydom reported the flaw on 2026-05-19; LiteSpeed shipped cPanel plugin v2.4.6 and WHM plugin v5.3.0.0 the same day; applied for CVE on 2026-05-20; completed a full security review and shipped v2.4.7 / WHM v5.3.1.0 on 2026-05-21.
+
+      Affected versions: LiteSpeed User-End cPanel Plugin 2.3 – 2.4.4 (all versions between these inclusive).
+      Patched version: cPanel plugin ≥ 2.4.5; recommended: upgrade to WHM Plugin v5.3.1.0 bundled with cPanel plugin v2.4.7.
+
+      EU/CH relevance: cPanel/LiteSpeed is a dominant hosting stack for small-to-medium EU public-administration portals (municipal websites, cantonal services, SME government contractors). Root access on a shared hosting server enables reading HTTPS certificates, web application source code, database credentials, mail spool, and all co-hosted tenants' data.
+
+      Detection: `grep -rE "cpanel_jsonapi_func=redisAble" /var/cpanel/logs /usr/local/cpanel/logs/ 2>/dev/null` — any output indicates exploitation attempt; examine source IP addresses and correlate with server logs. EDR/SIEM: alert on processes spawned by the LiteSpeed cPanel plugin service context (`lswsctrl`, `lsphp`, `cPanel API`) with `euid=0` or `uid=0` parent chain inconsistency.
+    ch_eu_nexus: "global; cPanel/LiteSpeed widely deployed by European and Swiss shared hosting providers; directly affects government contractor and public-sector portal hosting environments"
+    public_sector_nexus: "indirect — shared hosting environments used by municipal and cantonal services"
+    sector: "public-sector, telco, hosting"
+    cves: [CVE-2026-48172]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "LiteSpeed User-End cPanel Plugin before 2.4.5 allows privilege escalation (possibly to root), as exploited in the wild in May 2026."
+        attribution: "GitHub Advisory Database (GHSA-fxrh-cwjh-m33v)"
+        source_url: "https://github.com/advisories/GHSA-fxrh-cwjh-m33v"
+      - quote: "Any cPanel user (including an attacker or a compromised account) may exploit the lsws.redisAble function to execute arbitrary scripts as root."
+        attribution: "LiteSpeed (as quoted in The Hacker News)"
+        source_url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+    extended_notes: |
+      MITRE ATT&CK: T1068 (Exploitation for Privilege Escalation), T1190 (Exploit Public-Facing Application).
+      Affected products: LiteSpeed User-End cPanel Plugin 2.3–2.4.4; LiteSpeed WHM Plugin (unaffected).
+      Patch: Upgrade to cPanel plugin v2.4.7 / WHM plugin v5.3.1.0. Intermediate mitigations: disable the cPanel plugin until patched; restrict who can call the `lsws.redisAble` API endpoint at the web-server level.
+
+candidate_sources:
+  - id: vulnerability-circl-lu
+    publisher: "vulnerability.circl.lu (CIRCL Luxembourg CVE/vulnerability lookup)"
+    url: "https://vulnerability.circl.lu/"
+    category: ch-eu
+    why: "CIRCL (Computer Incident Response Center Luxembourg) provides a public vulnerability lookup service cross-referencing CVEs with CERT advisories including CERTFR, providing EU-centric enrichment. Would complement ENISA EUVD lookups."
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge on bridge attempt; WebSearch found no in-window items specific to CH/inside-it.ch"
+  - source_id: cert-eu
+    reason: "CERT-EU feed confirmed — latest advisory is 2026-006 from May 6, no new in-window advisory published"
+  - source_id: anssi-fr
+    reason: "CERTFR avis feed checked through May 22; Stormshield advisory (CERTFR-2026-AVI-0631) is DoS-only (CVE-2025-9086), below operational threshold for S2 reporting"
+  - source_id: bsi-de
+    reason: "BSI feed checked; no new KRITIS-relevant advisories in window beyond items already covered in prior days"
+  - source_id: ncsc-ch-security-hub
+    reason: "NCSC.ch CSH checked; most recent posts (ID 12588 Cisco Secure Workload, ID 12584 Drupal) are from May 21-22 and already covered in prior briefs"

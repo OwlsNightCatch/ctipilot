@@ -1,0 +1,309 @@
+# work/2026-05-24-f1fd8070/findings.S3.yaml
+domain: S3
+run_id: 2026-05-24-f1fd8070
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-24T04:10:18Z
+ended_at: 2026-05-24T04:22:00Z
+duration_seconds: 690
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 4
+  bridge_fetches: 12
+
+items:
+  - title: "Laravel-Lang Composer packages backdoored across 700+ versions — RCE via autoloader injection, C2 flipboxstudio[.]info, targets CI/CD and cloud credentials"
+    sources:
+      - { url: "https://socket.dev/blog/laravel-lang-compromise", publisher: "Socket Research Team", date: "2026-05-23", role: "primary" }
+      - { url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer", publisher: "Aikido Security", date: "2026-05-23", role: "corroborating" }
+      - { url: "https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack", publisher: "StepSecurity", date: "2026-05-20", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html", publisher: "The Hacker News", date: "2026-05-23", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: THN article https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html → pivot: Socket primary https://socket.dev/blog/laravel-lang-compromise → corroborating: Aikido https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer + StepSecurity https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack"
+    summary: |
+      On May 22–23, 2026, an attacker with push access to the Laravel-Lang GitHub organisation
+      rewrote all version tags across four community-maintained PHP localisation packages —
+      laravel-lang/lang, laravel-lang/http-statuses, laravel-lang/attributes, and laravel-lang/actions
+      — affecting roughly 700+ historical versions. The attacker injected a malicious
+      src/helpers.php file registered under composer.json's autoload.files key; because Composer
+      evaluates autoload.files entries on every PHP request, the backdoor executes automatically
+      on application boot without any user interaction post-install. The dropper deobfuscates a C2
+      hostname (flipboxstudio[.]info) at runtime using character-code arrays (array_map('chr', [...])),
+      disables TLS certificate verification, fakes a Mozilla User-Agent, and fetches a ~5,900-line
+      PHP credential-stealer payload, which it writes to a hidden temp directory and executes via
+      exec("php ...") on Unix or a .vbs drop+cscript chain on Windows. The payload harvests cloud
+      provider credentials (AWS, GCP, Azure, DigitalOcean, Vercel, Railway, Fly.io), HashiCorp
+      Vault tokens, Kubernetes/Helm configuration, CI/CD environment variables (GitHub Actions,
+      GitLab CI, CircleCI, Jenkins, ArgoCD), SSH keys, SSH agent sockets, browser profiles,
+      cryptocurrency wallets (Electrum, Exodus, Atomic, Ledger Live, Trezor, MetaMask, Phantom,
+      Robby), password manager vaults (1Password, Bitwarden, KeePass, Dashlane),
+      VPN configuration (WireGuard, OpenVPN), messaging clients (Discord, Slack, Telegram),
+      and mail client profiles (Outlook, Thunderbird, FileZilla, WinSCP, PuTTY), encrypts
+      the bundle with AES-256, and self-deletes. The attack is structurally similar to the
+      actions-cool/issues-helper GitHub Action compromise (2026-05-18) and operates independently
+      of the TeamPCP/Shai-Hulud npm/PyPI campaign — different C2, different organisation, different
+      ecosystem and stealer payload. Packagist has removed the malicious package versions;
+      Laravel-Lang repositories have been secured but consumers who installed during the window
+      must treat all secrets on affected hosts as compromised.
+    ch_eu_nexus: |
+      Laravel is the dominant PHP framework in Switzerland and the EU public sector (cantonal government
+      portals, academic institution web applications). The affected packages are pure-dependency
+      localisation libraries with no official Laravel framework ownership, meaning dependency review
+      tools that scope only to laravel/* official packages will miss them. EU public-sector PHP
+      web applications with composer.json entries for laravel-lang/* should audit install
+      timestamps against the May 22–23 UTC window.
+    public_sector_nexus: "indirect — shared-hosting Laravel web applications used by municipal and cantonal portals"
+    sector: "public-sector, technology, education, healthcare"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A compromise affecting the community-maintained Laravel Lang project has introduced remote code execution backdoors across multiple packages in the organization, including laravel-lang/lang, laravel-lang/http-statuses, laravel-lang/attributes, and laravel-lang/actions across roughly 700+ historical versions."
+        attribution: "Socket Research Team"
+        source_url: "https://socket.dev/blog/laravel-lang-compromise"
+      - quote: "On May 22, 2026, an attacker with push access to the Laravel-Lang GitHub organization rewrote every git tag across multiple popular Composer packages within a single 15 minute window."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack"
+      - quote: "The malware dynamically builds its Command and Control (C2) hostname (flipboxstudio[.]info) at runtime using character codes (array_map('chr', [...])) to evade static string analysis."
+        attribution: "Socket Research Team"
+        source_url: "https://socket.dev/blog/laravel-lang-compromise"
+    extended_notes: |
+      Detection: (1) Scan composer.lock for versions of laravel-lang/lang, laravel-lang/http-statuses,
+      laravel-lang/attributes, laravel-lang/actions installed between 2026-05-22T00:00Z and
+      2026-05-24T00:00Z. (2) Hunt for PHP process trees spawning exec("php ...") or cscript.exe from
+      web-server worker processes — Sysmon EID 1 with parent process image matching php-fpm, php-cgi,
+      apache2, nginx child. (3) DNS/firewall egress for flipboxstudio[.]info. (4) Composer autoload
+      scan for files registered under autoload.files that do not appear in the package's official
+      upstream git history.
+      Hardening: Verify Composer package integrity with composer audit; pin dependency versions and
+      use composer.lock hash verification in CI; consider requiring explicit composer install --no-dev
+      in production deployments; review whether organisation-level GitHub token scoping allows
+      tag rewrite across all repos (admin token rotation if compromise suspected).
+      ATT&CK mapping: T1195.002 Compromise Software Supply Chain; T1059.004 Unix Shell (exec PHP);
+      T1552.001 Credentials in Files; T1083 File and Directory Discovery.
+
+  - title: "CVE-2026-48172 — LiteSpeed User-End cPanel Plugin CVSS 10.0 privilege escalation to root actively exploited; lsws.redisAble JSON-API endpoint exposed to all cPanel users"
+    sources:
+      - { url: "https://blog.litespeedtech.com/2026/05/21/security-update-for-litespeed-cpanel-plugin/", publisher: "LiteSpeed Technologies", date: "2026-05-21", role: "primary" }
+      - { url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html", publisher: "The Hacker News", date: "2026-05-23", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-fxrh-cwjh-m33v", publisher: "GitHub Advisory Database", date: "2026-05-21", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS feed https://feeds.feedburner.com/TheHackersNews → primary: LiteSpeed vendor blog https://blog.litespeedtech.com/2026/05/21/security-update-for-litespeed-cpanel-plugin/ → corroborating: GitHub Advisory https://github.com/advisories/GHSA-fxrh-cwjh-m33v"
+    summary: |
+      CVE-2026-48172 is a CVSS 10.0 incorrect privilege assignment flaw (CWE-266) in the LiteSpeed
+      User-End cPanel Plugin, versions 2.3 through 2.4.4, affecting the lsws.redisAble function
+      in the plugin's JSON-API endpoint. The endpoint is exposed to every logged-in cPanel user
+      by default (no administrator privilege required), and a single malformed API call with
+      specific parameter values is sufficient to execute arbitrary scripts as root — no race
+      condition to win, no authentication gap to bridge. Active exploitation in the wild was
+      confirmed at time of vendor disclosure on 2026-05-21; LiteSpeed reports observed post-
+      compromise use of the Mirai botnet and the Sorry ransomware strain against vulnerable hosts.
+      The root cause is a logic flaw in Redis enable/disable feature toggling (the "redisAble"
+      handler) that incorrectly elevates caller privileges to root when handling a specific JSON
+      parameter set. The vulnerability was discovered by researcher David Strydom and coordinated
+      with LiteSpeed and cPanel/WebPros; cPanel automatically removed the vulnerable plugin
+      version during its nightly update run on 2026-05-19 (prior to the CVE assignment and
+      public disclosure). The patched versions are cPanel plugin 2.4.5 (minimum) and 2.4.7
+      bundled with WHM plugin 5.3.1.0 or higher.
+    ch_eu_nexus: |
+      LiteSpeed is the third most deployed web server in Europe by market share after Apache and
+      nginx; the LiteSpeed cPanel/WHM plugin is widely installed on shared hosting infrastructure
+      servicing EU SME and public-sector web presences. Swiss hosting providers and EU public-
+      sector shared-hosting consumers are within scope.
+    public_sector_nexus: "indirect — shared hosting infrastructure used by public-sector web presences"
+    sector: "technology, public-sector, hosting"
+    cves: [CVE-2026-48172]
+    actors_campaigns_malware: ["Mirai", "Sorry ransomware"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Any cPanel user (including an attacker or a compromised account) may exploit the lsws.redisAble function to execute arbitrary scripts as root."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+      - quote: "The vulnerability was actively being exploited at time of publication."
+        attribution: "LiteSpeed Technologies"
+        source_url: "https://blog.litespeedtech.com/2026/05/21/security-update-for-litespeed-cpanel-plugin/"
+    extended_notes: |
+      Affected: LiteSpeed User-End cPanel Plugin 2.3 – 2.4.4. Patched: 2.4.5 (basic fix), 2.4.7
+      (additional hardening) bundled with WHM Plugin 5.3.1.0+.
+      Detection: grep -rE "cpanel_jsonapi_func=redisAble" /var/cpanel/logs /usr/local/cpanel/logs/ 2>/dev/null
+      Any match indicates exploitation attempt. Monitor cPanel access logs for POST requests to
+      cpanel/json-api/ containing "redisAble" from non-administrative accounts.
+      Hardening: Upgrade to cPanel plugin 2.4.7 / WHM plugin 5.3.1.0 immediately. If upgrade
+      cannot be performed, disable the LiteSpeed cPanel plugin until patched. Review hosting
+      infrastructure for signs of Mirai dropper or Sorry ransomware lateral movement.
+      ATT&CK: T1068 Exploitation for Privilege Escalation; T1190 Exploit Public-Facing Application.
+
+  - title: "Google API key deletion delayed up to 23 minutes — Gemini, BigQuery, Maps keys remain valid after deletion due to GCP eventual consistency; Google reopened as P0"
+    sources:
+      - { url: "https://www.aikido.dev/blog/google-api-keys-deletion", publisher: "Aikido Security", date: "2026-05-21", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/05/22/deleted-google-api-keys-risk/", publisher: "Help Net Security", date: "2026-05-22", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading RSS feed https://www.darkreading.com/rss.xml (item 'Google API Keys Remain Active After Deletion', date 2026-05-21) → WebSearch query 'Google API keys active after deletion 23 minutes security researcher 2026' → primary: Aikido Security https://www.aikido.dev/blog/google-api-keys-deletion → corroborating: Help Net Security https://www.helpnetsecurity.com/2026/05/22/deleted-google-api-keys-risk/"
+    summary: |
+      Aikido Security researcher Joe Leon published findings on 2026-05-21 (updated 2026-05-22)
+      showing that deleted Google Cloud API keys continue to authenticate API requests for a median
+      of 16 minutes and up to 23 minutes, measured across 10 controlled trials. The affected APIs
+      include Gemini (AI/LLM), BigQuery (data warehouse), and Maps; Google Service Account keys
+      revoke within approximately 5 seconds and Gemini-specific API keys within approximately
+      1 minute. The root technical cause is eventual consistency in GCP's IAM credential propagation
+      layer: deletion updates propagate gradually across distributed authorisation servers rather
+      than atomically, consistent with documentation at docs.cloud.google.com/iam/docs/overview#consistency.
+      An attacker holding a stolen Google API key retains a window to exfiltrate data, run
+      LLM inference charges, query BigQuery datasets, or access Maps billing even after the
+      defender has deleted the key in the GCP console. Google initially closed the Aikido report
+      as "Won't Fix (Infeasible)" with the comment that "the delay due to propagation of the deletion
+      of these keys is working as intended," but subsequently reopened it as a P0 bug on 2026-05-22
+      following public disclosure. No patch timeline has been communicated.
+    ch_eu_nexus: |
+      EU and Swiss public-sector organisations deploying Google Cloud services (Gemini API integrations,
+      BigQuery analytics, Maps API) face a systemic incident-response gap: key rotation/revocation
+      as an immediate incident-containment step does not provide the intended immediate remediation.
+      EU GDPR Art. 33 breach notification obligations and Swiss DSG Art. 24 reporting timelines both
+      assume containment actions are effective; a 23-minute revocation delay materially affects
+      IR runbooks referencing GCP key rotation as a containment step.
+    public_sector_nexus: "direct — affects IR and containment procedures for any GCP-using public-sector entity"
+    sector: "public-sector, technology, finance, healthcare"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Aikido Security's testing reveals that deleted Google API keys continue authenticating requests for up to 23 minutes across Google's infrastructure due to eventual consistency propagation delays."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/google-api-keys-deletion"
+      - quote: "Google considers this a known system property rather than a security issue and has not indicated plans to address it."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/05/22/deleted-google-api-keys-risk/"
+    extended_notes: |
+      Defender vantage: Update GCP IR runbooks to treat API key deletion as a 30-minute containment
+      action, not an immediate one. For active incident response: (1) delete the key immediately to
+      start the revocation clock; (2) monitor GCP Cloud Audit Logs for the deleted key's usage
+      in the 30-minute post-deletion window to detect ongoing exploitation; (3) if the key had
+      access to sensitive BigQuery datasets or Gemini context with PII, treat the full 30-minute
+      post-deletion window as a continued exposure window for breach notification purposes.
+      Consider switching to Google Service Account keys where operationally viable — those revoke
+      within ~5 seconds. Affected APIs: Gemini (AI), BigQuery (analytics), Maps (geospatial).
+      ATT&CK: T1550.001 Use Alternate Authentication Material: Application Access Token.
+
+  - title: "BYOVD without hardware — Atos TRC research: PnP driver AddDevice callbacks exploitable via software-emulated devices, filter restacking, and registry manipulation; hardware gate removed from large driver vulnerability class"
+    sources:
+      - { url: "https://atos.net/en/lp/cybershield/anatomy-of-access-windows-device-objects-from-a-security-perspective", publisher: "Atos TRC (Cybershield Research)", date: "2026-03-30", role: "primary" }
+      - { url: "https://thehackernews.com/2026/05/making-vulnerable-drivers-exploitable.html", publisher: "The Hacker News", date: "2026-05-22", role: "corroborating" }
+      - { url: "https://www.ndss-symposium.org/wp-content/uploads/2026-s1491-paper.pdf", publisher: "NDSS Symposium 2026", date: "2026-02", role: "primary-academic" }
+    discovery_trace: "first seen at: hackernews RSS feed https://feeds.feedburner.com/TheHackersNews → drill: THN article https://thehackernews.com/2026/05/making-vulnerable-drivers-exploitable.html → primary academic: NDSS paper https://www.ndss-symposium.org/wp-content/uploads/2026-s1491-paper.pdf (PDF, not parseable) → primary blog: Atos TRC https://atos.net/en/lp/cybershield/anatomy-of-access-windows-device-objects-from-a-security-perspective"
+    summary: |
+      Atos Trusted Research Center published research (referenced by NDSS Symposium 2026 paper
+      2026-s1491) demonstrating that a large class of Windows kernel-mode drivers previously
+      considered hardware-gated — that is, BYOVD-resistant because exploiting their IOCTLs
+      requires physical hardware to trigger the relevant code paths — can be made fully
+      exploitable in software through three complementary techniques. First, PnP-compatible
+      drivers that rely on AddDevice callbacks can be bound to software-emulated devices with
+      attacker-controlled hardware IDs created via SetupAPI or the Software Device API, removing
+      the hardware prerequisite entirely. Second, attackers can perform filter driver restacking
+      on disk or storage device stacks to bind previously unloadable drivers to attacker-controlled
+      device nodes. Third, direct registry manipulation under HKLM\SYSTEM\CurrentControlSet\Control\Class
+      can associate vulnerable drivers with existing device objects without requiring Administrator
+      privilege for the initial binding step (depending on driver and device stack security
+      descriptor configuration). The research specifically evaluated two real-world examples:
+      a Kernel Streaming thunking driver (ksthunk) and a gaming mouse filter driver (GMLXDFltr),
+      and demonstrated exploitable code paths reachable without physical hardware. The practical
+      implication for defenders is that the LOLDrivers blocklist and vulnerable-driver mitigations
+      in EDR products cannot rely solely on hardware-presence checks as a pre-exploitation gate;
+      previously "safe" driver entries may need re-evaluation under this threat model. The THN
+      article (2026-05-22) served as the in-window secondary reporting this research.
+    ch_eu_nexus: |
+      BYOVD is a class of kernel-level EDR bypass used by multiple ransomware affiliates (Qilin,
+      Akira, Black Basta) and APT groups operating against EU/CH targets. Research extending
+      exploitability to hardware-gated drivers increases the effective attack surface of the
+      LOLDrivers class. European critical-infrastructure operators running Windows Kernel Lockdown
+      policies should re-evaluate whether their vulnerable-driver blocklist assumptions hold under
+      this extended threat model.
+    public_sector_nexus: "indirect — extends BYOVD attack surface relevant to Windows hardening posture"
+    sector: "technology, critical-infrastructure, public-sector"
+    cves: []
+    actors_campaigns_malware: ["BYOVD", "Qilin", "Terminator"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "PnP-compatible drivers relying on AddDevice callbacks can be made exploitable through software-emulated devices with spoofed hardware IDs, created via SetupAPI or Software Device API."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/making-vulnerable-drivers-exploitable.html"
+      - quote: "Driver vulnerabilities previously considered hardware-gated become reachable through custom device stack construction, filter restacking on disk drives, and direct registry manipulation to bind drivers to arbitrary device nodes."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/making-vulnerable-drivers-exploitable.html"
+    extended_notes: |
+      Defender vantage: (1) Registry monitor: hunt for HKLM\SYSTEM\CurrentControlSet\Control\Class
+      modifications that bind an unexpected driver service to an existing hardware class GUID —
+      Sysmon EID 13 (registry value set) on ClassFilters or UpperFilters/LowerFilters subkeys from
+      non-SYSTEM processes. (2) Driver load events: Sysmon EID 6 for kernel driver load events;
+      cross-reference against a known-good driver inventory; any load of a driver from LOLDrivers
+      or from an unusual path (e.g., %TEMP%, user-writable directories) is high-fidelity.
+      (3) SetupAPI invocation: Sysmon EID 1 for SetupAPI-invoking processes (e.g., rundll32.exe
+      setupapi.dll,InstallHinfSection or direct API calls); Kernel Streaming (ksthunk) being
+      loaded by a non-system process is suspicious.
+      Hardening: Enforce Windows Vulnerable Driver Blocklist (WDAC policy); deploy Driver Signature
+      Enforcement (Secure Boot + HVCI/Memory Integrity); evaluate blocklist coverage against
+      Atos TRC's hardware-gate bypass techniques for all LOLDrivers entries.
+      ATT&CK: T1068 Exploitation for Privilege Escalation; T1014 Rootkit; T1562.001 Impair
+      Defenses — Disable or Modify Tools (EDR bypass via kernel driver).
+
+  - title: "npm staged publishing with mandatory 2FA gate now GA — supply-chain hardening response to Megalodon/TeamPCP/Laravel-Lang wave"
+    sources:
+      - { url: "https://github.blog/changelog/2026-05-22-staged-publishing-and-new-install-time-controls-for-npm/", publisher: "GitHub Changelog", date: "2026-05-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/05/npm-adds-2fa-gated-publishing-and.html", publisher: "The Hacker News", date: "2026-05-23", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS feed https://feeds.feedburner.com/TheHackersNews → drill: THN article https://thehackernews.com/2026/05/npm-adds-2fa-gated-publishing-and.html → primary: GitHub Changelog https://github.blog/changelog/2026-05-22-staged-publishing-and-new-install-time-controls-for-npm/"
+    summary: |
+      GitHub announced on 2026-05-22 that npm staged publishing — the feature allowing maintainers
+      to gate package availability behind a mandatory 2FA challenge — is now Generally Available.
+      Prior to this change, any npm account with publish access and a valid token could publish
+      a package version directly to the public registry; the new flow requires the maintainer to
+      execute "npm stage publish" (requiring npm CLI 11.15.0+), which uploads the package to a
+      staging queue invisible to consumers, and then separately approve the release via a 2FA
+      challenge before the package becomes installable. Additionally, three new install-source
+      restriction flags were introduced: --allow-file (controls local tarball/path installs),
+      --allow-remote (controls remote URL installs), and --allow-directory (controls local
+      directory installs), each accepting "all" (current default) or "none". These controls
+      directly address the attack class demonstrated by the Megalodon campaign (which injected
+      malicious npm packages via compromised maintainer sessions), the actions-cool/issues-helper
+      compromise, and the Nx Console VS Code extension compromise. The staged publishing 2FA gate
+      creates a human-in-the-loop approval barrier that would have blocked the automated mass-
+      publishing pattern used in those campaigns (multiple versions published in seconds).
+    ch_eu_nexus: |
+      EU public-sector development teams and Swiss government software projects using npm as
+      package manager should enforce these new controls in their CI/CD pipelines, particularly
+      the --allow-remote none flag to prevent workflows from installing packages from arbitrary
+      remote URLs (a vector used in several 2026 supply-chain campaigns).
+    public_sector_nexus: "indirect — defensive supply-chain hardening relevant to public-sector development practices"
+    sector: "technology, public-sector"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Megalodon"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Called staged publishing, the feature is now generally available on npm. It mandates that a human maintainer pass a two-factor authentication (2FA) challenge to approve a release prior to the packages becoming publicly available for installation."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/npm-adds-2fa-gated-publishing-and.html"
+    extended_notes: |
+      Adoption prerequisites: npm CLI 11.15.0+; maintainer account with 2FA enabled; publish
+      access on the relevant package. For enterprise npm users: evaluate enabling staged publishing
+      for all packages published by your organisation; evaluate enabling --allow-remote none and
+      --allow-directory none in production CI environments to reduce attack surface from URL-based
+      and local-path dependency confusion attacks.
+      ATT&CK mitigations addressed: M1016 Vulnerability Scanning (supply-chain); M1051 Update
+      Software (npm maintainer tooling).
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "HTTP 503 returned for Sophos blog feed — 6th consecutive run with this failure (rotation-priority source). No in-window items available from this source."
+  - source_id: trendmicro-research
+    reason: "HTTP 500 returned for TrendMicro research landing page — 3rd consecutive run. No in-window items available from this source."
+  - source_id: darkreading
+    reason: "HTTP 403 on per-article URLs; Wayback Machine returned only a 24B placeholder. Article-level content from Dark Reading unavailable for CVE-Google API key story and Showboat story (both covered via alternate primary sources)."
+  - source_id: cert-gov-ua
+    reason: "CERT-UA advisory page returned SPA shell only. Ghostwriter/UAC-0057 story was already covered in the 2026-05-23 brief; no additional content needed."
+
+fetch_failures: []

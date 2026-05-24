@@ -1,0 +1,294 @@
+domain: S1
+run_id: 2026-05-24-f1fd8070
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-24T04:09:46Z
+ended_at: 2026-05-24T04:40:00Z
+duration_seconds: 1814
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 7
+  bridge_fetches: 14
+
+items:
+  - title: "Unbound DNS Resolver 1.25.1 — 11 CVEs including CVSS 9.8 DNSSEC NSEC3 use-after-free (CVE-2026-33278) and heap overflow (CVE-2026-42944); no exploitation reported"
+    sources:
+      - url: "https://nlnetlabs.nl/projects/unbound/security-advisories/"
+        publisher: "NLnet Labs"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://nlnetlabs.nl/news/2026/May/20/unbound-1.25.1-released/"
+        publisher: "NLnet Labs"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://ccb.belgium.be/advisories/warning-nlnet-labs-has-addressed-multiple-vulnerabilities-unbound-dns-resolver-could"
+        publisher: "CCB Belgium"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: msrc-recent bridge subcommand (CVE-2026-42960, CVE-2026-33278 in 2026-May release list, issuingCNA=NLnet Labs) → pivot: NLnet Labs security advisories page https://nlnetlabs.nl/projects/unbound/security-advisories/ → primary: full 11-CVE release note; corroborated via CCB Belgium advisory"
+    summary: |
+      NLnet Labs released Unbound 1.25.1 on 2026-05-20, fixing 11 CVEs across its recursive DNS resolver. The highest-severity issue is CVE-2026-33278 (CVSS 3.1 9.8, CWE-416 Use-After-Free): a struct-assignment bug in the DNSSEC validator overwrites a destination pointer with the source's during deep copying of DS sub-query data structures when NSEC3 budget exhaustion causes a suspend; a remote unauthenticated attacker who controls a DNSSEC-signed domain can trigger a crash or potentially execute code. Affected versions: 1.19.1–1.25.0; fix: 1.25.1. CVE-2026-42944 (CVSS 8.6, heap buffer overflow) is triggered by DNS replies encoding multiple NSID, DNS Cookie, or EDNS Padding options simultaneously due to incorrect size arithmetic; affects 1.14.0–1.25.0 and is default-config exploitable when `answer-cookie` and `pad-responses` are enabled (both on by default). CVE-2026-42959 (CVSS 7.5, DoS) involves an incorrect counter in chase-reply message construction causing uninitialized array slot dereference — a single crafted DNSSEC query from an attacker-controlled domain crashes the daemon immediately. CVE-2026-42960 (CVSS 5.3, cache poisoning via promiscuous authority-section RRSets) is a complement fix to CVE-2025-11411; adversary-controlled authority records can inject MX or other non-NS RRsets into the cache. CVE-2026-44608 (CVSS 5.7, heap use-after-free) affects multi-threaded deployments using RPZ with rpz-nsip/rpz-nsdname triggers due to a lock inconsistency during XFR reload. All fixed in 1.25.1. No exploitation reported as of advisory publication.
+    ch_eu_nexus: "Direct: Unbound is the recursive resolver shipped in many Swiss and EU national infrastructure deployments (FreeBSD base system, many Linux distributions), ISP resolver stacks, and firewall appliances. Multiple EU national CERTs (CCB Belgium) issued advisories."
+    public_sector_nexus: "high — public-sector DNS resolvers and government ISP peering use Unbound extensively"
+    sector: "government, telco, ISP, critical-infrastructure DNS"
+    cves:
+      - CVE-2026-33278
+      - CVE-2026-42944
+      - CVE-2026-42959
+      - CVE-2026-42960
+      - CVE-2026-44608
+      - CVE-2026-32792
+      - CVE-2026-40622
+      - CVE-2026-41292
+      - CVE-2026-42534
+      - CVE-2026-42923
+      - CVE-2026-44390
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A struct-assignment bug overwrites the destination's pointer with the source's pointer during deep copying of data structures when DS sub-queries suspend due to NSEC3 budget exhaustion, enabling denial of service or remote code execution."
+        attribution: "NLnet Labs"
+        source_url: "https://nlnetlabs.nl/projects/unbound/security-advisories/"
+      - quote: "A crafted DNSSEC response can trigger access to freed memory, leading to crashes or possible remote code execution"
+        attribution: "CCB Belgium"
+        source_url: "https://ccb.belgium.be/advisories/warning-nlnet-labs-has-addressed-multiple-vulnerabilities-unbound-dns-resolver-could"
+    extended_notes: |
+      Detection: Crashes in the Unbound daemon (`named`-equivalent: `unbound`) with SIGABRT or SIGSEGV in `dnssec_*` call frames are immediate indicators. Syslog entries for the `unbound` service dying unexpectedly should be hunted. For CVE-2026-42959 specifically, a single query from an attacker-controlling a DNSSEC-signed domain suffices — no sustained traffic required. Hardening: Upgrade to Unbound 1.25.1 immediately. If patching is delayed, disabling DNSSEC validation (`val-disable: yes`) removes the CVE-2026-33278 and CVE-2026-42959 attack path, but at the cost of DNSSEC protection. Disabling `answer-cookie: no` and `pad-responses: no` mitigates CVE-2026-42944. For CVE-2026-32792 (DNSCrypt buffer underflow), only environments compiled with `--enable-dnscrypt` are affected.
+
+  - title: "ISC BIND 9 — CVE-2026-3593 (DoH use-after-free, CVSS 7.4) and CVE-2026-5946 (CLASS != IN DoS, CVSS 7.5); patches in 9.18.49 / 9.20.23"
+    sources:
+      - url: "https://kb.isc.org/docs/cve-2026-3593"
+        publisher: "ISC (Internet Systems Consortium)"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://kb.isc.org/docs/cve-2026-5946"
+        publisher: "ISC (Internet Systems Consortium)"
+        date: "2026-05-20"
+        role: "primary"
+      - url: "https://www.linuxcompatible.org/story/bind-91849-92023-and-92122-released"
+        publisher: "Linux Compatible (corroborating)"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: msrc-recent bridge subcommand (CVE-2026-3593, CVE-2026-5946, CVE-2026-5947, CVE-2026-3039 listed as 2026-May BIND releases) → pivot: WebSearch 'ISC BIND 9 CVE-2026-5946 CVE-2026-3593 advisory May 20 2026' → primary: ISC KB pages for each CVE"
+    summary: |
+      ISC released BIND 9.18.49 and 9.20.23 on 2026-05-20 addressing six CVEs. The two highest-impact issues for defenders: CVE-2026-3593 is a heap use-after-free in BIND 9's DNS-over-HTTPS (DoH) implementation (CWE-416, CVSS 3.1 7.4, `AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:H`). Crafted HTTP/2 traffic reaching a DoH endpoint can corrupt memory and potentially execute code or crash the resolver; affects BIND 9.20.0–9.20.22 and 9.21.0–9.21.21 (the newer branches that include DoH code); BIND 9.18.x is NOT affected because it does not include the DoH implementation. Workaround: disable DNS-over-HTTPS. CVE-2026-5946 is a remotely exploitable DoS (CVSS 3.1 7.5, `AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H`) caused by improper handling of DNS messages with non-Internet CLASS values (CHAOS, HESIOD) or meta-classes (ANY, NONE) in the NOTIFY, UPDATE, and recursion code paths; a single malformed query crashes named; affects 9.11.0–9.16.50, 9.18.0–9.18.48, and 9.20.0–9.20.22. Four additional CVEs (CVE-2026-3039 GSS-API memory leak, CVE-2026-3592 cache poisoning via self-pointed glue, CVE-2026-5947 SIG(0) race DoS, CVE-2026-5950 unbounded resolver loop) were also patched. No active exploitation reported.
+    ch_eu_nexus: "BIND is the dominant authoritative and recursive DNS server in EU government and public-sector environments. CVE-2026-5946 affects the very widely deployed 9.18 branch."
+    public_sector_nexus: "high"
+    sector: "government, telco, critical-infrastructure DNS"
+    cves:
+      - CVE-2026-3593
+      - CVE-2026-5946
+      - CVE-2026-3039
+      - CVE-2026-3592
+      - CVE-2026-5947
+      - CVE-2026-5950
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A heap use-after-free vulnerability in BIND 9's DNS-over-HTTPS (DoH) implementation allowing memory corruption via specially crafted HTTP/2 traffic."
+        attribution: "ISC"
+        source_url: "https://kb.isc.org/docs/cve-2026-3593"
+      - quote: "Specially crafted requests reaching the affected code paths — recursion, dynamic updates (UPDATE), zone change notifications (NOTIFY) — can trigger assertion failures, causing denial of service."
+        attribution: "ISC"
+        source_url: "https://kb.isc.org/docs/cve-2026-5946"
+    extended_notes: |
+      Detection for CVE-2026-5946: DNS query logs (BIND query log facility or passive DNS tap) showing CHAOS or HESIOD class queries (`qclass=CHAOS`, `qclass=HESIOD`) or ANY/NONE meta-class queries arriving on authoritative resolvers and resolvers configured for recursive lookups. A crash in named immediately following such a query is definitive. Detection for CVE-2026-3593: crashes in named processes with stack traces through the `http_*` or `isc_tls_*` code paths signal DoH exploitation attempts. Hardening: upgrade to 9.18.49 or 9.20.23. For CVE-2026-3593, if running 9.20.x, the interim workaround is to remove `http` listener configuration blocks entirely. For CVE-2026-5946, a stop-gap is to apply ACLs blocking queries from untrusted sources on non-recursive resolvers.
+
+  - title: "LiteSpeed cPanel Plugin CVE-2026-48172 — CVSS 10.0 privilege escalation to root via lsws.redisAble JSON API endpoint; actively exploited in wild, patch in v2.4.5"
+    sources:
+      - url: "https://cybersecuritynews.com/litespeed-cpanel-plugin-0-day-exploited/"
+        publisher: "CyberSecurityNews"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: THN RSS feed (feed subcommand), item dated 2026-05-23, title 'LiteSpeed cPanel Plugin CVE-2026-48172 Exploited to Run Scripts as Root' → WebSearch 'CVE-2026-48172 LiteSpeed cPanel plugin root exploit May 2026 advisory' → primary: CyberSecurityNews article; corroborated by THN article"
+    summary: |
+      CVE-2026-48172 (CVSS 3.1 10.0, incorrect privilege assignment, CWE-269) is a privilege escalation vulnerability in the LiteSpeed User-End cPanel Plugin that allows any authenticated cPanel user (no administrative privilege required) to execute arbitrary scripts as root. The root cause is a logic flaw in the `lsws.redisAble` JSON-API endpoint exposed by default to all logged-in cPanel users. A single malformed API call containing specific parameter values is sufficient to escalate to root — no race condition, no additional exploitation complexity. The attack affects plugin versions 2.3–2.4.4; the WHM plugin is not impacted. LiteSpeed has confirmed active exploitation and released version 2.4.5 (bundled with WHM Plugin 5.3.1.0 from cPanel plugin v2.4.7+) as the fix. The primary concern for EU web hosting infrastructure is multi-tenant shared hosting environments where cPanel is ubiquitous; any tenant escalating to root compromises all co-tenants on the server.
+    ch_eu_nexus: "LiteSpeed with cPanel is standard web hosting stack across EU shared-hosting providers. Exploitation gives root on multi-tenant servers. Relevant to Swiss web hosting SME sector."
+    public_sector_nexus: "indirect — government-linked web portals hosted on shared infrastructure may be affected"
+    sector: "hosting, web-services, e-commerce, SME"
+    cves:
+      - CVE-2026-48172
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-48172 lets cPanel users run scripts as root, affecting LiteSpeed plugin 2.3–2.4.4 and exposing servers."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/litespeed-cpanel-plugin-cve-2026-48172.html"
+      - quote: "Active exploitation attempts leave a detectable footprint within cPanel's access logs; run the command: grep -rE 'cpanel_jsonapi_func=redisAble' /var/cpanel/logs /usr/local/cpanel/logs/"
+        attribution: "CyberSecurityNews (citing LiteSpeed advisory)"
+        source_url: "https://cybersecuritynews.com/litespeed-cpanel-plugin-0-day-exploited/"
+    extended_notes: |
+      Detection: Search cPanel access logs for the string `cpanel_jsonapi_func=redisAble` — this is the vendor-confirmed log artefact for exploitation attempts. Command: `grep -rE "cpanel_jsonapi_func=redisAble" /var/cpanel/logs /usr/local/cpanel/logs/ 2>/dev/null`. Web application firewall rules blocking the `redisAble` function parameter in cPanel JSON API calls will neutralise attempts at the network layer. Hardening: Upgrade the LiteSpeed cPanel plugin to v2.4.5 or higher immediately; WHM plugin users should ensure WHM Plugin 5.3.1.0+ (shipped with cPanel plugin v2.4.7) is installed. MITRE ATT&CK: T1068 Exploitation for Privilege Escalation.
+
+  - title: "Packagist / Laravel-Lang supply chain attack — 233 compromised package versions across 700+ GitHub repos; credential stealer targeting cloud keys, SSH keys, browser credentials"
+    sources:
+      - url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+        publisher: "Aikido Security"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: THN RSS feed (feed subcommand), items dated 2026-05-23, titles 'Packagist Supply Chain Attack Infects 8 Packages' and 'Laravel-Lang PHP Packages Compromised' → WebSearch 'Packagist supply chain attack 8 packages May 23 2026 laravel' → primary: Aikido Security blog (first discloser, 2026-05-22)"
+    summary: |
+      On or around 2026-05-22, Aikido Security detected a multi-vector Packagist (PHP Composer) supply chain attack campaign. The primary strand targets the Laravel-Lang ecosystem: the packages `laravel-lang/lang`, `laravel-lang/attributes`, `laravel-lang/http-statuses`, and `laravel-lang/actions` had 233 package versions across 700+ GitHub repositories compromised by an attacker who exploited GitHub's tag system to redirect version tags to commits in a malicious fork. The injected payload — loaded automatically via Composer's autoloader — is a cross-platform credential stealer targeting AWS/GCP/Azure cloud API keys, SSH private keys, browser-stored credentials, and cryptocurrency wallet seed files. A separate but concurrent strand poisoned eight other Packagist packages (including `devdojo/wave`, `devdojo/genesis`, and `katanaui/katana`) by injecting malicious `package.json` scripts that download and execute a Linux ELF binary hosted on GitHub Releases. Packagist responded by taking down affected versions and temporarily unlisting impacted packages. The Laravel-Lang packages are widely used third-party localization libraries (not part of the official Laravel framework) deployed across European PHP web applications.
+    ch_eu_nexus: "Laravel and Packagist are the dominant PHP ecosystem in Swiss and EU public-sector web applications. Government web portals and EU education platforms using Laravel localisation libraries are in scope."
+    public_sector_nexus: "high — Laravel is common in European public-sector web application stacks"
+    sector: "web-services, government web portals, education, e-commerce"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers injected a credential stealer into 200+ versions of popular Laravel-Lang packages, delivering a credential stealer targeting cloud keys, SSH keys, browsers, crypto wallets and more."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+      - quote: "8 Packagist packages hid malicious package.json scripts, enabling Linux binary execution during installs and workflows."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+    extended_notes: |
+      Detection: In CI/CD pipelines, `composer install` or `composer update` runs that download new versions of `laravel-lang/*` packages should be re-verified. Check `composer.lock` for unexpected version pins or hash mismatches. Process telemetry: `php` or `composer` spawning child processes (especially shell commands or network connection initiation) during `autoload` execution is anomalous — Sysmon EID 1 with parent-image `php` or `composer` and a suspicious child command. For the ELF binary strand, network connections from PHP/Composer processes to `releases.github.com` or GitHub Releases CDN URLs (`objects.githubusercontent.com`) during `composer install` are suspicious. Hardening: Pin Composer dependencies with exact version constraints and verify `composer.lock` hash integrity in CI pipelines. Use tools like `composer audit` and Aikido's SCM security scanning. Review all Packagist packages listed in the IOC list published by Aikido Security. MITRE ATT&CK: T1195.002 Compromise Software Supply Chain.
+
+  - title: "NGINX Plus / Open Source CVE-2026-9256 — Medium-severity buffer overflow in ngx_http_rewrite_module; fix in 1.31.1 (mainline) and 1.30.2 (stable)"
+    sources:
+      - url: "https://nginx.org/en/security_advisories.html"
+        publisher: "NGINX (F5)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://my.f5.com/manage/s/article/K000161377"
+        publisher: "F5 / NGINX PSIRT"
+        date: "2026-05-22"
+        role: "primary"
+    discovery_trace: "first seen at: ENISA EUVD criticals endpoint (EUVD-2026-31444, datePublished May 22, 2026, aliases CVE-2026-9256) → pivot: WebSearch 'CVE-2026-9256 NGINX new vulnerability May 2026' → primary: nginx.org security advisories page confirming 'not vulnerable: 1.31.1+, 1.30.2+'"
+    summary: |
+      CVE-2026-9256 is a medium-severity heap buffer overflow in the `ngx_http_rewrite_module` in NGINX Plus and NGINX Open Source, distinct from the previously covered CVE-2026-42945 (same module, different trigger). The root cause is that when a rewrite replacement string contains no variables but references overlapping PCRE captures, the length of the allocated buffer may be smaller than the escaped replacement string, causing a heap overflow in the NGINX worker process. A remote unauthenticated attacker can trigger this by sending crafted HTTP requests meeting specific rewrite-directive conditions; on systems with ASLR disabled, code execution may be possible, but on standard Linux deployments with ASLR enabled the practical impact is a worker crash and restart. ENISA EUVD assigned CVSS 4.0 9.2 (`AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H`), reflecting that ASLR bypass raises the theoretical maximum but typical deployments without ASLR are uncommon. NGINX itself rates this as medium. Not vulnerable: 1.31.1+ (mainline), 1.30.2+ (stable). Vulnerable: 0.1.17–1.31.0. No exploitation reported.
+    ch_eu_nexus: "NGINX is ubiquitous in EU public-sector and government reverse-proxy/load-balancer stacks."
+    public_sector_nexus: "indirect"
+    sector: "web-services, telco, CDN, government web infrastructure"
+    cves:
+      - CVE-2026-9256
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Buffer overflow in the ngx_http_rewrite_module — Severity: medium — Not vulnerable: 1.31.1+, 1.30.2+ — Vulnerable: 0.1.17-1.31.0"
+        attribution: "NGINX (F5)"
+        source_url: "https://nginx.org/en/security_advisories.html"
+    extended_notes: |
+      Unlike CVE-2026-42945 (regex with overlapping multi-capture rewrite directives, ITW exploited), CVE-2026-9256 triggers via a different bug path: replacement strings with no variables but overlapping captures cause under-allocation. Detection: nginx error logs showing worker process crashes (`signal 11 (SIGSEGV)`) coinciding with rewrite-intensive request paths. Hardening: upgrade to 1.31.1 (mainline) or 1.30.2 (stable). If upgrading is delayed, auditing active rewrite rules for the vulnerable pattern (replacement string with no variables referencing multiple overlapping captures) and refactoring them provides a targeted workaround.
+
+  - title: "Stormshield Network Security (SNS) CVE-2025-9086 — Remote denial-of-service, CERT-FR advisory CERTFR-2026-AVI-0631; fix in SNS 4.3.43 / 4.8.16 / 5.0.6"
+    sources:
+      - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/"
+        publisher: "CERT-FR (ANSSI)"
+        date: "2026-05-22"
+        role: "primary"
+    discovery_trace: "first seen at: cert-fr avis-recent feed (CERTFR-2026-AVI-0631, published 22 May 2026) → primary: CERT-FR advisory page https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/ (fetched via bridge)"
+    summary: |
+      CERT-FR issued CERTFR-2026-AVI-0631 on 2026-05-22 for CVE-2025-9086, a remote denial-of-service vulnerability in Stormshield Network Security (SNS) — the dominant firewall/UTM platform in French public-sector and many EU government networks. Affected versions: SNS 4.3.x before 4.3.43, SNS 4.4.x through 4.8.x before 4.8.16, SNS 5.x before 5.0.6. The underlying Stormshield security bulletin (Stormshield 2026-010, dated 2026-05-21) is the authoritative vendor source. The advisory classifies impact as remote DoS only — no code execution pathway is described. The EU/CH public-sector nexus is direct: Stormshield is the dominant ANSSI-certified firewall for French government networks and is procured by many Swiss cantonal administrations and EU institutions under the ANSSI certification framework.
+    ch_eu_nexus: "Direct: SNS is ANSSI-certified and deployed across French government and many Swiss cantonal networks. CERT-FR advisory specifically flags this for public-sector attention."
+    public_sector_nexus: "high — ANSSI-certified product used in French and EU government networks"
+    sector: "government, defense, critical infrastructure"
+    cves:
+      - CVE-2025-9086
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Une vulnérabilité a été découverte dans Stormshield Network Security (SNS). Elle permet à un attaquant de provoquer un déni de service à distance. [Translation: A vulnerability was discovered in Stormshield Network Security. It allows an attacker to cause a remote denial of service.]"
+        attribution: "CERT-FR (ANSSI)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/"
+    extended_notes: |
+      The CVE number (CVE-2025-9086) predates 2026 but the CERT-FR advisory publication is 2026-05-22 (in-window). The Stormshield 2026-010 bulletin is the authoritative vendor source; CERT-FR cites it but the bulletin itself requires Stormshield portal access. Detection guidance depends on the specific DoS trigger, which Stormshield has not publicly described. Monitoring SNS appliances for unexpected process restarts or service unavailability, combined with reviewing Stormshield support access to 2026-010, is the recommended posture. Hardening: apply the SNS update immediately for affected version branches.
+
+cve_table:
+  - cve: CVE-2026-33278
+    product: "Unbound DNS Resolver"
+    cvss: "9.8 (v3.1)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "Unbound 1.25.1"
+    source: "https://nlnetlabs.nl/projects/unbound/security-advisories/"
+  - cve: CVE-2026-42944
+    product: "Unbound DNS Resolver"
+    cvss: "8.6 (v3.1)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "Unbound 1.25.1"
+    source: "https://nlnetlabs.nl/projects/unbound/security-advisories/"
+  - cve: CVE-2026-3593
+    product: "ISC BIND 9 (DoH implementation)"
+    cvss: "7.4 (v3.1)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "BIND 9.20.23 / 9.21.22"
+    source: "https://kb.isc.org/docs/cve-2026-3593"
+  - cve: CVE-2026-5946
+    product: "ISC BIND 9 (all versions)"
+    cvss: "7.5 (v3.1)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "BIND 9.18.49 / 9.20.23 / 9.21.22"
+    source: "https://kb.isc.org/docs/cve-2026-5946"
+  - cve: CVE-2026-48172
+    product: "LiteSpeed cPanel Plugin"
+    cvss: "10.0 (v3.1)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "Yes (ITW)"
+    patch: "LiteSpeed cPanel Plugin v2.4.5 / WHM Plugin 5.3.1.0"
+    source: "https://cybersecuritynews.com/litespeed-cpanel-plugin-0-day-exploited/"
+  - cve: CVE-2026-9256
+    product: "NGINX Plus / NGINX Open Source"
+    cvss: "9.2 (CVSS 4.0) / medium vendor"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "NGINX 1.31.1 (mainline) / 1.30.2 (stable)"
+    source: "https://nginx.org/en/security_advisories.html"
+  - cve: CVE-2025-9086
+    product: "Stormshield Network Security (SNS)"
+    cvss: "n/a"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "SNS 4.3.43 / 4.8.16 / 5.0.6"
+    source: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/"
+
+candidate_sources:
+  - id: ccb-belgium
+    publisher: "Centre for Cybersecurity Belgium (CCB)"
+    url: "https://ccb.belgium.be/advisories"
+    rss_url: null
+    category: "national-cert"
+    why: "Belgian national cybersecurity authority; issued an in-window Unbound advisory with useful technical detail not available from the NLnet Labs primary alone. Relevant for EU/Benelux coverage."
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "ncsc-csh recent 15 returned posts up to 2026-05-22; Drupal/NGINX/general advisories already covered; no new in-window items beyond already-covered Drupal CVE-2026-9082."
+  - source_id: cert-fr-actualite
+    reason: "cert-fr actu-recent feed is stale — last item was CERTFR-2025-ACT-049 (2025-11-17). Feed appears not updated since November 2025."
+  - source_id: cert-eu
+    reason: "cert-eu recent returned 10 advisories; latest is 2026-006 (May 6, 2026, PAN-OS). No new advisory published in the 36h window."
