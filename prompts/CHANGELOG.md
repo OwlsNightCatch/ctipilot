@@ -4,6 +4,41 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.60 — 2026-05-25 (weekly ISO-week anchor — most-recent-Sunday; fixes Sun→Mon-boundary duplicate weeklies)
+
+### Why
+
+Two weekly summaries were published for the **same** coverage week because the weekly routine computed its target week from the wall-clock `date -u +%G-W%V` at the moment the container fired. The primary fires Sunday night; a run that crosses the Sunday→Monday **UTC** boundary computes the *next* ISO week and writes a brand-new file for a week that has barely started:
+
+- **2026-05-18 00:02 UTC** — a Monday fire labelled its run `2026-W21` and wrote `briefs/weekly/2026-W21.md` re-summarising the just-finished W20 content (self-corrected the following Sunday when the legitimate W21 run overwrote the file).
+- **2026-05-25 00:13 UTC** — the **backup** run for the W21 weekly fired after midnight, computed `2026-W22`, found no `2026-W22.md` (the primary had correctly written `2026-W21.md` on Sunday), and generated a full second weekly — `briefs/weekly/2026-W22.md`, header *"2026-W22 (Mon 18 May – Sun 24 May)"* — a duplicate of week 21.
+
+The backup's guard prompt (*"if this week's file exists, do nothing"*) could not catch it: it computed "this week" the same wall-clock way and checked the wrong (future) week's filename.
+
+### What changed
+
+**`prompts/weekly-summary.md`** (v2.60):
+
+- **Phase 0 step 0** — `ISO_WEEK=$(date -u +%G-W%V)` replaced with an anchor to the **week ending on the most recent Sunday**:
+  ```bash
+  dow=$(date -u +%u)                                   # 1=Mon … 7=Sun
+  ISO_WEEK=$(date -u -d "$((dow % 7)) days ago" +%G-W%V)
+  ```
+  On a Sunday this equals the current ISO week; early Monday it resolves to the week that just ended — both yield the same label the Sunday primary produces. An inline comment records the why.
+- **Phase 0 step 1** — prose rewritten: the run targets the *just-completed* ISO week bound to `ISO_WEEK`, never the raw `+%G-W%V`; re-run/overwrite is scoped to "a previous run for the **same ISO week**".
+- **Phase 6** (publish verification) — the two inline `$(date -u +%G-W%V)` computations (`weekly_path`, `week_id`) now derive from the same most-recent-Sunday anchor, so a post-midnight fire polls `origin/main` and the live site for the week it actually published.
+
+**`prompts/daily-cti-brief.md`** — version banner bumped to v2.60 for lockstep only; no behavioural change (the daily is keyed per calendar day and has no ISO-week rollover).
+
+### What stays
+
+- The weekly remains cadence-agnostic; the anchor assumes the operator's Sunday-night / early-Monday cadence (a fire Sun–Wed still resolves to the correct just-completed week). A mid-week cadence change would need the anchor revisited.
+- Re-run / overwrite semantics for a same-ISO-week retry by the same role are unchanged.
+- The CRITICAL "always produce a summary" directive, the Phase 4.5 self-check gate, the Phase 4.7 verification loop, and the feature-branch publishing chain are untouched.
+- The backup execution's own stand-down guard (provided to the operator) anchors the same most-recent-Sunday way and checks `origin/main` rather than the local tree; this prompt change makes the *generation* path label correctly on the occasions the backup must run.
+
+---
+
 ## 2.59 — 2026-05-15 (work/<run-id>/ becomes version-controlled — every run commits the sub-agent artefact dir alongside the brief)
 
 ### Why

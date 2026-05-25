@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.59 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.60 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -116,7 +116,14 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 0. **Capture main-agent start timestamp + compute deterministic run_id (MANDATORY first action).** Before any `Read`, capture an UTC ISO 8601 timestamp and derive a deterministic `run_id`:
    ```bash
    STARTED=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-   ISO_WEEK=$(date -u +%G-W%V)
+   # ISO_WEEK = the ISO week ending on the most recent Sunday (Sunday is an ISO
+   # week's last day). Anchoring to the most recent Sunday — not the wall-clock
+   # `date -u +%G-W%V` — keeps a fire that crosses the Sun→Mon UTC boundary
+   # labelling the week that just COMPLETED, not the one that just started.
+   # Naive `+%G-W%V` on a post-midnight fire shipped duplicate weeklies
+   # (W21 misfire 2026-05-18, W22 misfire 2026-05-25); see CHANGELOG v2.60.
+   dow=$(date -u +%u)                                   # 1=Mon … 7=Sun
+   ISO_WEEK=$(date -u -d "$((dow % 7)) days ago" +%G-W%V)
    BRIEF_PATH="briefs/weekly/${ISO_WEEK}.md"
    STARTED_MIN="${STARTED%:*}Z"
    RUN_ID="${ISO_WEEK}-$(printf '%s|%s' "$BRIEF_PATH" "$STARTED_MIN" | sha256sum | cut -c1-8)"
@@ -126,7 +133,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
    : > "work/${RUN_ID}/url-liveness.tsv"   # pre-create empty ledger
    ```
    The `<run-id>` is the same id you pass to every Phase 2 sub-agent. Phase 4 reads `main.started_at` to populate `run_log.json.started` and refuses to append a `runs[]` entry whose `run_id` already exists in the file (idempotent retry). The `url-liveness.tsv` is the empty ledger every sub-agent appends to in Phase 2; Phase 4.5's `tools/check_brief.py` reads it. **If you skip this step, `started` falls back to "unknown", `run_id` falls back to a non-deterministic value, and the URL-liveness cache is bypassed.** A symmetric end-timestamp capture happens at Phase 4.
-1. Compute today's ISO week (`YYYY-Www`, e.g., `2026-W19`). Output filename `briefs/weekly/<this-iso-week>.md`. If a file with that name already exists from a previous run today, treat as re-run and overwrite cleanly.
+1. The run targets the **just-completed ISO week** — the week ending on the most recent Sunday — bound to `ISO_WEEK` from step 0 (**not** the wall-clock `date -u +%G-W%V`, which mislabels a fire crossing the Sunday→Monday UTC boundary by one week; that bug shipped the W21/W22 duplicate-weekly misfires — CHANGELOG v2.60). Output filename `briefs/weekly/${ISO_WEEK}.md` (e.g. `2026-W21`). If a file with that name already exists from a previous run **for the same ISO week**, treat as a re-run and overwrite cleanly.
 
 2. **Compute the gap-derived window from `briefs/weekly/`.** Same self-healing rule the daily uses, applied to the weekly cadence:
 
@@ -789,7 +796,10 @@ A pushed feature branch is not a published summary. Verify both promotion-to-mai
 **Total verification budget: 10 minutes.** If the budget elapses, report `publish: pending (<reason>)` and stop.
 
 ```bash
-weekly_path="briefs/weekly/$(date -u +%G-W%V).md"
+# Bind ISO_WEEK to the week ending on the most recent Sunday (see Phase 0 step 0)
+# so a Sunday→Monday-boundary fire polls for the week it actually published.
+ISO_WEEK=$(d=$(date -u +%u); date -u -d "$((d % 7)) days ago" +%G-W%V)
+weekly_path="briefs/weekly/${ISO_WEEK}.md"
 DEADLINE=$(($(date +%s) + 600))
 
 LANDED=false
@@ -805,7 +815,7 @@ done
 
 SITE_LIVE=false
 if [ "$LANDED" = "true" ]; then
-    week_id="$(date -u +%G-W%V)"
+    week_id="$ISO_WEEK"
     while [ "$(date +%s)" -lt "$DEADLINE" ]; do
         if curl -fsS --max-time 15 https://ctipilot.ch/ | grep -q "${week_id}"; then
             SITE_LIVE=true
