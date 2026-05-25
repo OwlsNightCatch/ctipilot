@@ -1,0 +1,205 @@
+# work/2026-05-25-d675ef38/findings.S1.yaml
+domain: S1
+run_id: 2026-05-25-d675ef38
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-25T04:09:02Z
+ended_at: 2026-05-25T04:17:06Z
+duration_seconds: 484
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 12
+
+items:
+  - title: "Ghost CMS CVE-2026-26980: blind SQL injection exploited in large-scale ClickFix campaign (700+ sites)"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/ghost-blogging-platform-hacked-to-push-clickfix-via-sql-injection/"
+        publisher: "BleepingComputer"
+        date: "2026-05-24"
+        role: "primary"
+      - url: "https://blog.xlab.qianxin.com/ghost-cms-sql-injection-clickfix/"
+        publisher: "XLab Qianxin"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://github.com/advisories/GHSA-w52v-v783-gw97"
+        publisher: "GitHub Advisory Database"
+        date: "2026-05-21"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: bleepingcomputer feed, BleepingComputer 2026-05-24 article on Ghost CMS ClickFix campaign
+      → primary: BleepingComputer article URL https://www.bleepingcomputer.com/news/security/ghost-blogging-platform-hacked-to-push-clickfix-via-sql-injection/
+      → pivot: XLab Qianxin researcher blog https://blog.xlab.qianxin.com/ghost-cms-sql-injection-clickfix/ (original discoverer)
+      → pivot: GitHub Advisory GHSA-w52v-v783-gw97 https://github.com/advisories/GHSA-w52v-v783-gw97
+    summary: |
+      Ghost CMS versions 3.24.0 through 6.19.0 contain a blind SQL injection vulnerability (CVE-2026-26980,
+      GHSA-w52v-v783-gw97, CVSS 9.4) in the Content API's `slugFilterOrder()` function. The function
+      constructs a raw SQL CASE WHEN fragment via unparameterized JavaScript string interpolation on the
+      `filter` query parameter — no authentication required. An attacker can enumerate the admin API key
+      character by character via boolean-based blind injection, then use the key to publish or modify
+      articles and inject malicious JavaScript. XLab Qianxin observed exploitation in the wild across 700+
+      Ghost-hosted sites including university portals, redirecting visitors to ClickFix social-engineering
+      lures (fake browser alerts instructing users to paste attacker-supplied PowerShell into Run dialog).
+      Fixed in Ghost v6.19.1 (patch released 2026-05-21). Self-hosted Ghost instances running any version
+      in the 3.24.0–6.19.0 range are exposed; Ghost(Pro) cloud instances were patched server-side.
+      Detection: web-server access logs showing unusual `filter` parameter values containing SQL fragments
+      (CASE, WHEN, THEN, SLEEP, IF) on `/ghost/api/content/` endpoints; monitor for unexpected article
+      modification events in Ghost admin audit logs; EDR/SIEM alert on powershell.exe launched from
+      browser child-process trees (ClickFix execution: T1204.002 User Execution — Malicious File via
+      PowerShell paste). Technique classes: T1190 Exploit Public-Facing Application, T1059.001 PowerShell,
+      T1204.002 User Execution.
+    ch_eu_nexus: "global; multiple European university portals confirmed among 700+ compromised sites; Swiss Ghost-hosted sites also at risk"
+    public_sector_nexus: "direct — university portals confirmed in scope; government/public websites using Ghost CMS at risk"
+    sector: "education, public-sector, media"
+    cves: [CVE-2026-26980]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ghost blogging platform has been hacked to push ClickFix via an unauthenticated SQL injection flaw that allowed attackers to steal admin API keys"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/ghost-blogging-platform-hacked-to-push-clickfix-via-sql-injection/"
+      - quote: "XLab tracked the campaign to 700+ Ghost sites, including university portals, all redirecting to ClickFix lures"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/ghost-blogging-platform-hacked-to-push-clickfix-via-sql-injection/"
+      - quote: "CVSS 9.4 — Unauthenticated SQL injection via the filter parameter in the Content API; fixed in 6.19.1"
+        attribution: "GitHub Advisory Database"
+        source_url: "https://github.com/advisories/GHSA-w52v-v783-gw97"
+    extended_notes: |
+      Affected component: `slugFilterOrder()` in Ghost's Content API filter parameter handler.
+      Exploitation prerequisites: none — unauthenticated, works against any Ghost instance with the Content
+      API exposed (enabled by default on self-hosted Ghost). Attack path: blind SQL injection → extract
+      admin API key → authenticated article modification → inject visitor-side JavaScript → ClickFix.
+      Affected versions: 3.24.0 – 6.19.0 (approximately 3 years of releases).
+      Patch: upgrade to Ghost v6.19.1 or later.
+      Hardening: if immediate upgrade is not possible, disable the Content API (Ghost admin → Integrations →
+      disable "Public API") or firewall-restrict `/ghost/api/content/` to trusted origins.
+      MITRE ATT&CK: T1190 (initial access), T1059.001 (ClickFix PowerShell execution), T1204.002 (user
+      execution of malicious instructions). ClickFix execution chain is independently worth hunting:
+      Sysmon EID 1 with `powershell.exe` or `cmd.exe` spawned from browser processes (chrome.exe,
+      firefox.exe, msedge.exe, brave.exe) with `-EncodedCommand` or clipboard paste context.
+
+  - title: "Laravel Lang / Packagist supply chain attack: GitHub tag-to-fork exploit plants 15-module PHP credential stealer"
+    sources:
+      - url: "https://www.aikido.dev/blog/packagist-supply-chain-attack-laravel-lang"
+        publisher: "Aikido Security"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/laravel-lang-packages-compromised-in-packagist-supply-chain-attack/"
+        publisher: "BleepingComputer"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: hackernews (THN) RSS feed → BleepingComputer feed item on Laravel Lang Packagist attack (2026-05-23T20:48Z)
+      → pivot: BleepingComputer article URL https://www.bleepingcomputer.com/news/security/laravel-lang-packages-compromised-in-packagist-supply-chain-attack/
+      → primary: Aikido Security blog post https://www.aikido.dev/blog/packagist-supply-chain-attack-laravel-lang (original discoverer and analyst)
+    summary: |
+      Four popular Laravel localisation packages on Packagist (laravel-lang/lang, laravel-lang/http-statuses,
+      laravel-lang/attributes, laravel-lang/actions) were compromised via a GitHub tag-to-fork resolution
+      exploit. Packagist resolves tagged versions against the HEAD commit of the repository associated with
+      a tag; an attacker who controls a fork can create tags that resolve to attacker-owned commits,
+      effectively injecting malicious code into 233 published versions without touching the legitimate
+      repository's default branch. The dropper was injected into `src/helpers.php` loaded automatically
+      via Composer's `autoload.files` mechanism, executing on every `composer install` or `composer update`
+      without any import statement in application code. The dropper installs a 15-module PHP credential
+      stealer targeting: AWS/GCP/Azure/DigitalOcean/Heroku/Vercel API keys, kubeconfig files, HashiCorp
+      Vault tokens, SSH private keys, shell history, `.env` files, browser password stores from 17 Chromium-
+      based browsers, Firefox and Thunderbird profiles, KeePass/1Password/Bitwarden vaults, crypto-wallet
+      seed phrases, Slack/Discord/Telegram session tokens, and VPN configuration files. Exfiltration uses
+      AES-256 encryption and the malware self-deletes after successful exfil. Aikido Security discovered
+      the attack; Packagist delisted the compromised package versions. Defender artefact that can be hunted:
+      file `<tmp>/.laravel_locale/<md5_hash>` (marker written by dropper). Detection: Sysmon EID 1 /
+      auditd `execve` showing `php` spawning from `composer` parent with child writes to `/tmp/` or `%TEMP%`
+      directories; file-integrity monitoring on Composer vendor trees for unexpected modifications to
+      `autoload.files` targets; T1195.002 Compromise Software Supply Chain, T1552.001 Credentials in Files.
+    ch_eu_nexus: "global; any Swiss/EU Laravel application that ran composer install/update pulling these versions is affected"
+    public_sector_nexus: "indirect — Laravel is widely used in public-sector web applications; supply chain risk affects any PHP project using these packages"
+    sector: "software-development, public-sector, education, finance"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Four laravel-lang packages were compromised via a GitHub tag-to-fork resolution exploit, injecting a 15-module PHP credential stealer into 233 versions"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/packagist-supply-chain-attack-laravel-lang"
+      - quote: "The dropper was placed in src/helpers.php which is automatically loaded via Composer autoload.files — no import required"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/packagist-supply-chain-attack-laravel-lang"
+      - quote: "Packagist has delisted the compromised versions; the malware self-deletes after exfiltrating credentials using AES-256 encryption"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/laravel-lang-packages-compromised-in-packagist-supply-chain-attack/"
+    extended_notes: |
+      Technique: T1195.002 Compromise Software Supply Chain (Packagist/Composer vector, GitHub tag-to-fork
+      resolution). Secondary: T1552.001 Credentials in Files (broad credential sweep), T1560.001 Archive
+      via Utility (AES-256 exfil archive).
+      Exploitation prerequisites: developer/CI system must run `composer install` or `composer update`
+      pulling any of the 233 compromised versions. No user interaction beyond normal build processes.
+      Affected packages: laravel-lang/lang, laravel-lang/http-statuses, laravel-lang/attributes,
+      laravel-lang/actions (all now delisted on Packagist for affected versions).
+      Immediate actions: (1) run `composer show laravel-lang/*` to identify installed versions; (2) if
+      any match the compromised range, treat the build environment as compromised and rotate ALL credentials
+      accessible from that environment including cloud keys, SSH keys, tokens in .env files and shell
+      history; (3) search for marker file `<tmp>/.laravel_locale/<md5_hash>` to confirm dropper execution;
+      (4) update to clean versions once Packagist re-lists sanitised packages.
+      Defender hunt: `composer.lock` audit for laravel-lang/* versions; file-integrity alert on
+      `vendor/laravel-lang/*/src/helpers.php` hash changes; EDR/SIEM on `php` process spawning network
+      connections from CI/CD build contexts.
+
+cve_table:
+  - cve: CVE-2026-26980
+    product: "Ghost CMS"
+    cvss: 9.4
+    epss: null
+    kev: false
+    exploited: true
+    patch: "v6.19.1"
+    source: "XLab Qianxin / BleepingComputer 2026-05-24"
+
+candidate_sources:
+  - id: aikido-security
+    publisher: "Aikido Security Blog"
+    url: "https://www.aikido.dev/blog"
+    rss_url: null
+    category: research
+    why: "First-discoverer on Packagist/Composer supply chain attacks; technically rigorous PHP/JS ecosystem security research. Primary source for today's Laravel Lang attack."
+
+coverage_gaps:
+  - source_id: socket-dev
+    reason: "feed.xml returned HTTP 403; individual blog post URL returned HTTP 404. Searched via WebSearch as fallback — Packagist attack story covered via Aikido Security primary."
+  - source_id: cisco-psirt
+    reason: "PSIRT RSS returned HTTP 404 (tools.cisco.com/security/center/psirtrss20.xml). No new Cisco PSIRT advisories discovered via WebSearch within the 36h window."
+  - source_id: cisa-kev
+    reason: "Most recent KEV update was 2026-05-22 (outside 36h window). No new KEV entries added 2026-05-24 or 2026-05-25."
+  - source_id: ncsc-nl
+    reason: "Most recent NCSC-NL advisories returned by ncsc-nl recent were dated 2026-05-18 (NCSC-2026-0274 NGINX) and 2026-05-19, all outside 36h window."
+  - source_id: bsi-de
+    reason: "BSI RSS returned advisories dated 2026-05-19 to 2026-05-22, all outside 36h window."
+  - source_id: cert-fr
+    reason: "cert-fr avis-recent returned advisories to 2026-05-23 but none with publication timestamps confirmed inside 36h (post 2026-05-23T16:09Z)."
+  - source_id: cert-eu
+    reason: "CERT-EU most recent advisory (2026-006, Palo Alto OS) dated 2026-05-14, well outside window. No new CERT-EU advisories in window."
+  - source_id: enisa-euvd
+    reason: "ENISA EUVD recent criticals and exploited entries last updated to items dating 2026-05-18 to 2026-05-22, all outside 36h window."
+
+fetch_failures:
+  - id: socket-dev
+    url_tried: "https://socket.dev/feed.xml"
+    fetch_method: bridge:url
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://socket.dev/feed.xml"
+    attempted_methods: [bridge:url, websearch]
+    mitigation_applied: "WebSearch fallback; Packagist attack story covered via Aikido Security primary"
+    covered_anyway: false
+  - id: cisco-psirt
+    url_tried: "https://tools.cisco.com/security/center/psirtrss20.xml"
+    fetch_method: bridge:url
+    status_code: 404
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 404 for https://tools.cisco.com/security/center/psirtrss20.xml"
+    attempted_methods: [bridge:url, websearch]
+    mitigation_applied: "WebSearch found no new Cisco PSIRT advisories in 36h window"
+    covered_anyway: false

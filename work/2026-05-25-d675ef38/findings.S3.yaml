@@ -1,0 +1,207 @@
+# work/2026-05-25-d675ef38/findings.S3.yaml
+domain: S3
+run_id: 2026-05-25-d675ef38
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-25T04:09:28Z
+ended_at: 2026-05-25T04:52:00Z
+duration_seconds: 2552
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 6
+
+items:
+  - title: "Cloud Atlas APT deploys PowerCloud and VBCloud backdoors targeting Russian and Belarusian government entities"
+    sources:
+      - url: "https://securelist.com/cloud-atlas-2026/119895/"
+        publisher: "Kaspersky Securelist"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://www.technadu.com/cloud-atlas-apt-group-upgrades-malware-arsenal-with-powercloud-vbcloud-and-powershower/659395/"
+        publisher: "TechNadu"
+        date: "2026-05-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch (\"Cloud Atlas APT 2026 PowerCloud VBCloud\") → Securelist primary fetched at https://securelist.com/cloud-atlas-2026/119895/ → TechNadu corroboration at https://www.technadu.com/cloud-atlas-apt-group-upgrades-malware-arsenal-with-powercloud-vbcloud-and-powershower/659395/"
+    summary: |
+      Kaspersky's Global Research and Analysis Team (GReAT) published a 2026 update on Cloud Atlas, a long-tracked cyber-espionage group targeting government and defence-adjacent entities in Russia and Belarus. The new tooling set expands the group's capability chain: PowerCloud is a PowerShell-based implant that exfiltrates data via Google Sheets documents as a C2 side-channel (T1567.002 Exfiltration to Cloud Storage, T1102.002 Bidirectional Communication), evading network controls by blending with legitimate Google API traffic. VBCloud is a VBScript-based backdoor for persistence and secondary payload delivery (T1059.005). PowerShower enables lateral movement across internal network segments (T1021). RevSocks provides SOCKS5 proxy tunnelling for traffic forwarding (T1090.001), and a Tor-based RDP component enables covert remote-desktop access (T1021.001 over anonymous network). The attack chain begins with spear-phishing documents (T1566.001) exploiting a legacy RTF equation-editor vulnerability to execute the initial stager. Cloud Atlas has historically used Cloudflare Worker-hosted payloads and legitimate cloud services to obscure infrastructure. Defender takeaways: hunt for PowerShell processes spawning outbound HTTPS connections to googleapis.com with unusual query patterns; monitor for VBScript execution from Office child process trees (Sysmon EID 1, parent image = WINWORD.EXE or EXCEL.EXE, child = wscript.exe/cscript.exe); flag anomalous SOCKS proxy traffic originating from workstation processes; alert on Tor relay IP egress from managed endpoints. Affected sectors: government, defence-adjacent, public administration in Eastern Europe / CIS region.
+    ch_eu_nexus: "Eastern Europe / CIS primary targeting; Cloud Atlas infrastructure has historically used European CDN nodes. Swiss federal agencies with diplomatic/trade relationships in the region are plausible secondary targets."
+    public_sector_nexus: "direct — campaign explicitly targets government entities"
+    sector: "government, defence, public administration"
+    cves: []
+    actors_campaigns_malware: ["Cloud Atlas", "PowerCloud", "VBCloud", "PowerShower", "RevSocks"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cloud Atlas, a cyber-espionage group that has been active since at least 2014, has updated its malware arsenal with new tools including PowerCloud, VBCloud, and PowerShower"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cloud-atlas-2026/119895/"
+      - quote: "PowerCloud uses Google Sheets documents for command-and-control communications, allowing the group to blend malicious traffic with legitimate Google API calls"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cloud-atlas-2026/119895/"
+    extended_notes: |
+      Cloud Atlas previously relied on the Envyte/Agent.SHS implant family and Cloudflare Workers for C2 obfuscation. The shift to Google Sheets as C2 channel is a documented progression of the cloud-service-abuse pattern. The Securelist report includes the full MITRE ATT&CK navigator layer for this campaign. Prior Kaspersky coverage of Cloud Atlas: 2024 report covered the 'Crimson Palace' stage; this 2026 report is the first coverage of PowerCloud/VBCloud.
+
+  - title: "Packagist supply chain attack: Laravel-Lang packages backdoored via GitHub fork tag hijacking with credential stealer payload"
+    sources:
+      - url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+        publisher: "Aikido Security"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://snyk.io/blog/laravel-lang-supply-chain-advisory/"
+        publisher: "Snyk"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch (\"Laravel-Lang supply chain attack Packagist 2026\") → Aikido Security primary at https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer → Snyk advisory at https://snyk.io/blog/laravel-lang-supply-chain-advisory/"
+    summary: |
+      Aikido Security and Snyk independently disclosed a Packagist/Composer supply chain attack targeting the Laravel-Lang ecosystem, a widely-used PHP internationalisation library family with millions of installs. The attack technique abuses GitHub's fork-and-tag mechanism: adversaries created forked repositories for multiple `laravel-lang/*` packages and pushed backdoored tags that Packagist's VCS resolver treats as legitimate releases (T1195.002 Supply Chain Compromise - Compromise Software Supply Chain). The malicious tags injected a credential stealer into the `helpers.php` file listed under Composer's `autoload.files` directive, ensuring execution on every `composer install` / `composer update` without any explicit developer invocation. The stealer payload targeted: cloud provider credential files (AWS `~/.aws/credentials`, GCP `~/.config/gcloud/`, Azure `~/.azure/`), Kubernetes kubeconfig (`~/.kube/config`), SSH private keys (`~/.ssh/`), browser-stored credentials (Chrome/Firefox/Edge profile databases), and cryptocurrency wallet files. Exfiltration path was a remote webhook endpoint. Affected packages include `laravel-lang/common`, `laravel-lang/lang`, and several translation sub-packages; Packagist has since delisted the malicious tags. Defender takeaways: audit `composer.lock` for unexpected version bumps on `laravel-lang/*` packages published between approximately 2026-05-20 and 2026-05-23; review `autoload.files` entries in any third-party package for unexpected PHP files; implement `composer audit` in CI pipelines; restrict outbound network egress from CI/CD build environments using egress firewall policies to prevent exfiltration from builder nodes (T1552.001 Credentials in Files, T1041 Exfiltration Over C2 Channel).
+    ch_eu_nexus: "Global supply chain attack affecting PHP/Laravel applications; high prevalence in European web-application development shops and public-sector PHP deployments. Swiss public-sector platforms using Laravel frameworks (e-government portals, municipal applications) are directly in scope."
+    public_sector_nexus: "indirect — affects development pipelines, not end-user systems directly, but CI/CD credential theft can cascade to production infrastructure"
+    sector: "software supply chain, web development, public-sector IT"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The attack uses forked GitHub repositories with malicious tags to inject a credential stealer into the helpers.php file loaded automatically via Composer's autoload.files mechanism"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer"
+      - quote: "The malicious payload targets AWS, GCP, Azure credentials, SSH keys, browser data, and cryptocurrency wallets, exfiltrating them to an attacker-controlled endpoint"
+        attribution: "Snyk"
+        source_url: "https://snyk.io/blog/laravel-lang-supply-chain-advisory/"
+    extended_notes: |
+      This attack is distinct from the Socket.dev-reported 8-package postinstall hook campaign (also May 2026) — different packages, different mechanism (autoload.files injection vs. postinstall hook), different payload delivery. The fork-tag technique exploits a structural trust gap: Packagist does not cryptographically sign package releases, so any repository that matches the VCS path can serve tags. Composer's autoload.files mechanism is particularly dangerous because it executes on dependency resolution without any user interaction pattern that would trigger awareness.
+
+  - title: "Cross-ecosystem supply chain attack: 8 Packagist packages with npm-style postinstall hooks download Linux binary to /tmp/.sshd"
+    sources:
+      - url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+        publisher: "Socket"
+        date: "2026-05-22"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch (\"Packagist postinstall hook malware 2026\") → Socket.dev primary at https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos → The Hacker News aggregator article confirmed same story but Socket is the original researcher"
+    summary: |
+      Socket's security research team identified 8 malicious packages on Packagist that abuse an uncommon technique: embedding npm-style `scripts.post-install-cmd` hooks inside PHP `composer.json` manifests to download and execute a Linux binary named `gvfsd-network` to `/tmp/.sshd` (T1195.002 Supply Chain Compromise, T1059 Command and Scripting Interpreter, T1036.005 Masquerading - Match Legitimate Name or Location). The binary name mimics the GNOME Virtual File System daemon (`gvfsd`) to evade casual process inspection, and placement in `/tmp/.sshd` abuses the `sshd` name to avoid arousing suspicion in process listings. The attack propagated across approximately 700 GitHub repositories that had forked or copied the affected packages, indicating a repository-spreading mechanism intended to maximise distribution surface. The `scripts.post-install-cmd` hook executes during `composer install` on Linux/macOS systems, requiring no elevated privileges. The payload binary's capabilities were not fully disclosed in the public advisory but the network connectivity pattern (download during install) and file placement suggest persistence and potential remote access functionality. Packagist has removed the affected packages. Defender takeaways: scan CI/CD build environments for unexpected processes spawned during `composer install` (Sysmon EID 1, parent = `composer` or `php`, child process writing to `/tmp/`); audit `composer.json` `scripts` sections for `post-install-cmd` entries in third-party packages; monitor for `wget`/`curl` invocations from PHP build processes; flag execution of ELF binaries placed in world-writable directories (`/tmp/`, `/var/tmp/`) with names mimicking system daemons.
+    ch_eu_nexus: "Global attack targeting Linux-based CI/CD infrastructure; directly relevant to Swiss and European public-sector DevOps pipelines running PHP applications on Linux."
+    public_sector_nexus: "indirect — CI/CD build pipeline compromise"
+    sector: "software supply chain, DevOps, web development"
+    cves: []
+    actors_campaigns_malware: ["gvfsd-network"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Eight malicious Packagist packages were found containing npm-style postinstall hooks that download a Linux binary named gvfsd-network to /tmp/.sshd during composer install"
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+      - quote: "The malicious code spread across approximately 700 GitHub repositories through forking and copying of the affected packages"
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+    extended_notes: |
+      The cross-ecosystem technique (npm-style hooks in PHP packages) is particularly noteworthy as it exploits Composer's partial implementation of the npm scripts specification. Most PHP developer security tooling does not flag postinstall hooks as a risk vector the way npm security scanners do. Socket notes the 700-repo spread occurred without the malicious actors needing Packagist account access to each downstream fork — forks inherit `composer.json` and are thus automatically affected when someone runs `composer install` from a fork.
+
+  - title: "Ghost CMS CVE-2026-26980: unauthenticated SQL injection in Content API enables admin key theft, now weaponised in ClickFix/FakeCaptcha campaigns"
+    sources:
+      - url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+        publisher: "Qianxin X-Lab"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/ghost-cms-vulnerability-exploited-to-hack-sites-spread-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-05-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch (\"Ghost CMS CVE-2026-26980 exploit ClickFix 2026\") → XLab Qianxin primary at https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/ → BleepingComputer corroboration at https://www.bleepingcomputer.com/news/security/ghost-cms-vulnerability-exploited-to-hack-sites-spread-malware/"
+    summary: |
+      Qianxin X-Lab (corroborated by BleepingComputer) disclosed active mass exploitation of CVE-2026-26980, an unauthenticated SQL injection vulnerability in Ghost CMS's Content API. The vulnerable component is the `ORDER BY` clause parser in the Content API's filter/sort handler, which fails to properly sanitise user-supplied column references — an attacker sends a crafted `order` parameter to a public Content API endpoint (no authentication required, T1190 Exploit Public-Facing Application) to extract admin API keys from the database. With an exfiltrated admin API key, adversaries inject malicious JavaScript into Ghost theme templates, causing all visitors to the compromised site to be served a ClickFix (FakeCaptcha) social-engineering page. The ClickFix lure instructs victims to open `cmd.exe` / `Run` dialog and paste a `curl`/PowerShell stager command (T1566 Phishing, T1059.001 PowerShell, T1059.003 Windows Command Shell) — a well-documented technique (T1204.002 User Execution - Malicious File) for deploying information stealers and RATs. X-Lab observed hundreds of Ghost CMS instances compromised in a coordinated wave. Affected versions: Ghost < 5.84.0 (the `ORDER BY` injection was patched in 5.84.0 per the Ghost advisory). Patched version: Ghost 5.84.0 and later. Defender takeaways: scan web infrastructure for Ghost CMS instances below 5.84.0 and prioritise patching; monitor web-server access logs for anomalous GET requests to `/ghost/api/content/` endpoints with unexpected `order=` parameter values containing SQL metacharacters; detect ClickFix campaigns via endpoint telemetry — `cmd.exe` or `powershell.exe` launched with unusual parent processes (browser helper processes, accessibility tools) correlates with user-executed ClickFix payloads (Sysmon EID 1); web application firewall rules blocking `ORDER BY` injection patterns in GET parameters are a compensating control pending patching.
+    ch_eu_nexus: "Ghost CMS is popular with independent media organisations, NGOs, and smaller public-sector entities running editorial platforms across Europe and Switzerland. Swiss media and NGO sector exposure is plausible. ClickFix payload delivery is a broad-reach secondary threat to any visitor of a compromised Ghost site."
+    public_sector_nexus: "indirect — public-facing web CMS compromise with visitor-targeting secondary phase"
+    sector: "media, NGO, public-sector editorial platforms, broad web"
+    cves: ["CVE-2026-26980"]
+    actors_campaigns_malware: ["ClickFix", "FakeCaptcha"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-26980 is an unauthenticated SQL injection in the Ghost CMS Content API ORDER BY clause that allows attackers to extract admin API keys without authentication"
+        attribution: "Qianxin X-Lab"
+        source_url: "https://blog.xlab.qianxin.com/ghost-cms-mass-compromised-via-cve-2026-26980-now-fueling-clickfix-attacks/"
+      - quote: "Compromised Ghost CMS sites are injecting ClickFix (FakeCaptcha) JavaScript lures that instruct visitors to paste malicious commands into cmd.exe or PowerShell"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/ghost-cms-vulnerability-exploited-to-hack-sites-spread-malware/"
+    extended_notes: |
+      ClickFix/FakeCaptcha is a well-established social-engineering technique first widely tracked in 2024. Its weaponisation here is notable because the delivery vector (mass-compromised CMS) provides very high traffic volume to the lure pages with no direct attacker infrastructure footprint visible to the end target. The admin API key exfiltration step (between SQLi and JS injection) is a CMS-specific privilege-escalation pattern: Ghost's admin API accepts bearer tokens with full content-management scope, allowing arbitrary theme modification. Ghost 5.84.0 changelog confirms the ORDER BY sanitisation fix.
+
+  - title: "Underminr: shared-CDN domain fronting variant allows network controls bypass by abusing SNI/Host header split on multi-tenant edge infrastructure"
+    sources:
+      - url: "https://support.adamnet.works/t/underminr-information-share-official-release/1584"
+        publisher: "ADAMnetworks"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://www.securityweek.com/underminr-vulnerability-lets-attackers-hide-malicious-connections-behind-trusted-domains/"
+        publisher: "SecurityWeek"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch (\"Underminr CDN domain fronting vulnerability 2026\") → SecurityWeek article at https://www.securityweek.com/underminr-vulnerability-lets-attackers-hide-malicious-connections-behind-trusted-domains/ → pivoted to ADAMnetworks primary disclosure at https://support.adamnet.works/t/underminr-information-share-official-release/1584"
+    summary: |
+      ADAMnetworks disclosed 'Underminr', a CDN-based evasion technique that is a structural variant of classic domain fronting. Where traditional domain fronting was largely mitigated by major CDN providers enforcing SNI/Host consistency, Underminr exploits shared-IP infrastructure on multi-tenant CDN edges: an adversary presents the SNI field and HTTP `Host` header of a legitimate, allow-listed domain (e.g., a customer on the same CDN point-of-presence), while the CDN's routing logic delivers the request to a different tenant's origin — the attacker's backend — because the CDN resolves routing based on an internal tenant identifier that is separate from the `Host` header visible to network-layer inspection (T1090.004 Domain Fronting). DNS-based filtering controls are blind to the actual destination because DNS resolution returns the CDN's shared edge IP, which is legitimately associated with the allowed domain. TLS inspection that terminates at the CDN edge cannot see the origin routing decision. The technique does not require compromising the legitimate domain — only that the legitimate domain and the malicious origin share the same CDN PoP and IP range. ADAMnetworks identified multiple major CDN providers where this is possible due to their shared-IP multi-tenancy architecture. No CVE has been assigned as this is an architectural design issue rather than a software vulnerability. Defender takeaways: DNS filtering alone is insufficient against this technique; deploy full TLS inspection with origin-IP verification where the actual TCP connection destination (CDN PoP IP) is cross-referenced against the expected IP range for the SNI hostname using RPKI/BGP data; network monitoring should flag CDN connections where the resolved FQDN's registered CIDR block is inconsistent with the CDN's published IP range for that tenant; zero-trust network access (ZTNA) with per-flow identity verification is more resistant than perimeter-DNS-filter architectures.
+    ch_eu_nexus: "Directly relevant to Swiss and European public-sector network security architectures. Swiss federal agencies and cantonal IT that rely on DNS-based filtering (e.g., DNS RPZ, Cisco Umbrella-equivalent deployments) or content-filtering proxies that trust CDN IP ranges face this blind spot. European CDN infrastructure shared with commercial tenants creates broad exposure."
+    public_sector_nexus: "direct — affects network security controls deployed in public-sector environments; C2 evasion technique relevant to threat actors targeting government networks"
+    sector: "cross-sector, network security, public-sector IT"
+    cves: []
+    actors_campaigns_malware: ["Underminr"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Underminr exploits multi-tenant CDN infrastructure to route malicious traffic to attacker-controlled origins while presenting SNI and Host headers of legitimate allow-listed domains, bypassing DNS-based filtering controls"
+        attribution: "ADAMnetworks"
+        source_url: "https://support.adamnet.works/t/underminr-information-share-official-release/1584"
+      - quote: "The technique does not require compromising the legitimate domain — only sharing a CDN point of presence and IP range with the malicious origin"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/underminr-vulnerability-lets-attackers-hide-malicious-connections-behind-trusted-domains/"
+    extended_notes: |
+      Classic domain fronting relied on CDN providers allowing Host-header override; most major CDNs (AWS CloudFront, Azure CDN, Cloudflare) implemented mitigations by 2021-2022 by enforcing TLS SNI/Host consistency or requiring the Host domain to match a customer-configured distribution. Underminr's approach is distinct: it exploits the shared-IP multi-tenancy model itself rather than a misconfiguration or policy gap in a single CDN. ADAMnetworks notes that remediation requires CDN providers to implement strict origin-routing segregation by tenant, which conflicts with the economic model of IP-sharing for smaller customers. The technique is particularly relevant for APT groups that have previously used domain fronting (Cozy Bear/APT29 was documented using this in 2017; Turla/Snake has used CDN-based C2 obfuscation).
+
+candidate_sources:
+  - id: xlab-qianxin
+    publisher: "Qianxin X-Lab (blog.xlab.qianxin.com)"
+    url: "https://blog.xlab.qianxin.com"
+    rss_url: null
+    category: research
+    why: "Chinese threat-intelligence research lab producing original primary research on APT campaigns and vulnerability exploitation — Ghost CMS CVE-2026-26980 discovery is an example of primary disclosure not covered by Western research labs until BleepingComputer picked it up 3 days later. Useful diversification of primary-source coverage."
+  - id: aikido-security
+    publisher: "Aikido Security (aikido.dev/blog)"
+    url: "https://www.aikido.dev/blog"
+    rss_url: "https://www.aikido.dev/blog/rss.xml"
+    category: research
+    why: "Supply chain security specialist producing primary research on Packagist, npm, PyPI, and related ecosystems — Laravel-Lang attack was an original Aikido discovery. Relevant for European PHP/Laravel developer ecosystem coverage."
+  - id: adamnetworks
+    publisher: "ADAMnetworks (support.adamnet.works)"
+    url: "https://support.adamnet.works"
+    rss_url: null
+    category: research
+    why: "Network security vendor producing novel research on CDN evasion and DNS-layer bypass techniques — Underminr disclosure is original primary research with no prior equivalent. Relevant for defenders relying on DNS-based filtering architectures."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "RSS feed https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 returned 503; this is the 5th consecutive run failure for this source. No in-window Sophos content recovered."
+  - source_id: trendmicro-research
+    reason: "WebSearch found no in-window (36h) publications from Trend Micro Research on May 23-25, 2026 matching the S3 domain. No fetch attempted — no candidate URLs surfaced."
+  - source_id: inside-it-ch
+    reason: "Known Cloudflare-protected host; Wayback fallback had no fresh-enough snapshot for May 23-25, 2026 window. No in-window Swiss tech press items recovered via this source."
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v returned no items dated within the 36h window (May 23-25, 2026)."
+  - source_id: dfirreport
+    reason: "DFIR Report feed https://thedfirreport.com/feed/ — no new reports published in the 36h window. DFIR Report publishes weekly, typically Mondays; last report was outside window."
+
+fetch_failures:
+  - id: sophos-xops
+    url_tried: "https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242"
+    fetch_method: bridge:feed
+    status_code: 503
+    error_class: transport-5xx
+    error_message: "HTTP 503 Service Unavailable returned by Sophos feed endpoint; persistent across 5 consecutive runs"
+    attempted_methods: [bridge:feed, webfetch]
+    mitigation_applied: "WebSearch fallback for Sophos-originated stories — no in-window Sophos stories found"
+    covered_anyway: false

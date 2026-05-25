@@ -1,0 +1,209 @@
+domain: S2
+run_id: 2026-05-25-d675ef38
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-25T04:09:14Z
+ended_at: 2026-05-25T04:13:57Z
+duration_seconds: 283
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 8
+  bridge_fetches: 14
+
+items:
+  - title: "Laravel-Lang / Packagist supply chain attack (May 22–23 2026): GitHub tag rewrite injects credential-stealing PHP dropper into 233+ Composer package versions"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/laravel-lang-packages-hijacked-to-deploy-credential-stealing-malware/", publisher: "BleepingComputer", date: "2026-05-23", role: "primary" }
+      - { url: "https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack", publisher: "StepSecurity", date: "2026-05-22", role: "primary" }
+      - { url: "https://www.aikido.dev/blog/supply-chain-attack-targets-laravel-lang-packages-with-credential-stealer", publisher: "Aikido Security", date: "2026-05-23", role: "corroborating" }
+      - { url: "https://snyk.io/blog/laravel-lang-supply-chain-advisory/", publisher: "Snyk", date: "2026-05-23", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews (THN RSS feed), published 2026-05-23, URL https://thehackernews.com/2026/05/laravel-lang-php-packages-compromised.html → primary: BleepingComputer article URL https://www.bleepingcomputer.com/news/security/laravel-lang-packages-hijacked-to-deploy-credential-stealing-malware/ → corroborating: StepSecurity original disclosure URL https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack"
+    summary: |
+      Between 22:32 UTC May 22 and 00:00 UTC May 24 2026, an attacker with push access to the laravel-lang GitHub
+      organisation rewrote every existing git tag across four popular Composer packages (laravel-lang/lang,
+      laravel-lang/http-statuses, laravel-lang/attributes, laravel-lang/actions) to point to commits in attacker-
+      controlled forks, without modifying any mainline branch commits. The tag-rewrite technique exploits how
+      Packagist resolves version-tagged releases from GitHub: the attacker's poisoned tags replaced 233–700 historical
+      versions (figures vary between Aikido's initial count and Socket's extended count) across the four packages.
+      Each malicious release injected a helpers.php file wired into Composer's autoload.files list, causing it to
+      execute on every PHP bootstrap. The file acts as a dropper, fetching a second-stage cross-platform credential
+      stealer from the C2 domain flipboxstudio[.]info. The payload harvests cloud credentials (AWS, GCP, Azure),
+      Kubernetes secrets, Vault tokens, Git/CI-CD tokens, SSH keys, browser-stored credentials, cryptocurrency
+      wallets, password manager vaults, .env files, and VPN configs — targeting Linux, macOS, and Windows hosts.
+      StepSecurity confirmed end-to-end exploitation in an isolated runner environment. Packagist removed the
+      malicious versions and temporarily unlisted affected packages within hours. All projects consuming laravel-lang
+      packages via composer update or fresh installs during the attack window should rotate all credentials
+      accessible from the build environment. No CVE was assigned. No attribution named. This attack is a direct
+      analogue of the TeamPCP/Mini Shai-Hulud wave and may share TTPs with the broader 2026 CI/CD credential-theft
+      campaign wave. PHP/Laravel is widely deployed across European public administration portals, university
+      platforms, and municipal web applications, making the affected packages a meaningful EU public-sector surface.
+      MITRE ATT&CK: T1195.001 (Compromise Software Dependencies and Development Tools — third-party supply chain),
+      T1059.004 (Unix Shell — dropper executes shell), T1552.001 (Credentials In Files — .env/cloud-key harvest).
+      Detection: outbound connections from PHP worker processes to flipboxstudio[.]info; unexpected PHP subprocess
+      spawning (Sysmon EID 1 on Windows; audit/execve on Linux) from web-server parent processes; anomalous SSH
+      key and cloud-credential file reads from PHP process context; new autoload.files entries referencing
+      helpers.php in vendor/laravel-lang/*/src/. Hardening: pin all Composer dependencies to exact SHAs using
+      composer.lock and verify with `composer audit`; restrict outbound network from CI runners; use `composer
+      require --no-scripts` during installs in untrusted contexts.
+    ch_eu_nexus: "Global attack; high EU public-sector relevance — PHP/Laravel used widely in French, German, Swiss, and Belgian government portals and academic platforms; Packagist is the PHP package registry without a geographic scope constraint"
+    public_sector_nexus: "direct — Laravel and laravel-lang/lang used in EU government web portals and academic platforms; attack window included active development hours in European time zones"
+    sector: "government, education, healthcare, all PHP/Composer consumers"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On May 22, 2026, an attacker with push access to the Laravel-Lang GitHub organization rewrote every git tag across multiple popular Composer packages within a single 15 minute window. Anyone running composer update or installing fresh against laravel-lang/http-statuses, laravel-lang/actions, or laravel-lang/attributes now pulls a payload that exfiltrates CI secrets to a typosquatted attacker domain."
+        attribution: "StepSecurity"
+        source_url: "https://www.stepsecurity.io/blog/laravel-lang-supply-chain-attack"
+      - quote: "A supply chain attack targeting the Laravel Lang localization packages has exposed developers to a sophisticated credential-stealing malware campaign after attackers abused GitHub version tags to distribute malicious code through Composer packages."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/laravel-lang-packages-hijacked-to-deploy-credential-stealing-malware/"
+    extended_notes: |
+      The C2 domain flipboxstudio[.]info is a typosquat on a legitimate Indonesian graphic-design studio domain
+      (flipboxstudio.com). VirusTotal analysis of the PHP payload (hash f0d912c1a72e533417d5e158bb9755f848ec678b6448ae7c8fb6e87da78a3053)
+      and the Windows executable (hash 23e779555c21beaed6ae8f1f298daf9b00d603f1a6716ce329332aadcb80fbe2) referenced
+      by BleepingComputer. This is the second Packagist supply chain incident in the same 36-hour window — THN also
+      reported a separate eight-package attack using a GitHub-hosted Linux binary injected into package.json lifecycle
+      hooks (https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html, 2026-05-23).
+
+  - title: "CVE-2026-45185 (Dead.Letter) — Exim 4.97–4.99.2 GnuTLS builds: unauthenticated BDAT use-after-free enabling heap corruption and possible RCE; NCSC-NL advisory NCSC-2026-0163"
+    sources:
+      - { url: "https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim", publisher: "XBOW (discoverer)", date: "2026-05-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/05/new-exim-bdat-vulnerability-exposes.html", publisher: "The Hacker News", date: "2026-05-15", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0163", publisher: "NCSC-NL (national CERT)", date: "2026-05-15", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl (bridge, ncsc-nl recent 10), NCSC-2026-0163 published 2026-05-15, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0163 → primary (discoverer): XBOW blog URL https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim → corroborating: THN URL https://thehackernews.com/2026/05/new-exim-bdat-vulnerability-exposes.html"
+    summary: |
+      CVE-2026-45185 — nicknamed "Dead.Letter" — is a use-after-free (CWE-416) in Exim's BDAT (binary data
+      transmission, RFC 3030 CHUNKING extension) message-body parsing path when TLS is handled by GnuTLS. During
+      SMTP session teardown following a BDAT transfer, Exim frees its TLS transfer buffer; if the client sends a
+      TLS close_notify before body completion and then delivers one additional byte in cleartext on the same TCP
+      connection, a nested BDAT receive wrapper calls ungetc() on the freed buffer region, corrupting allocator
+      metadata with a one-byte write (0x0a / newline). This heap shape corruption enables attacker-controlled
+      memory layout for potential code execution. Prerequisites: (1) Exim compiled with USE_GNUTLS=yes — the
+      default on Debian, Ubuntu, Alpine, and most EU Linux distributions; (2) STARTTLS and CHUNKING (BDAT)
+      advertised in EHLO response — standard on public-facing MX relays. OpenSSL builds are not affected.
+      Affected versions: 4.97 through 4.99.2. Fixed in 4.99.3. Exim is the default MTA on Debian-derived systems
+      and is widely deployed on self-hosted EU public-sector mail servers including government ministries,
+      university mail relays, and cantonal/regional authority mail infrastructure. No confirmed in-the-wild
+      exploitation at time of writing; scanning was observed starting shortly after May 12 disclosure. XBOW
+      (Federico Kirschbaum) discovered and reported the flaw to Exim maintainers 2026-05-01; coordinated
+      disclosure with Linux distribution CERTs; oss-security post 2026-05-12. NCSC-NL classified: probability
+      Medium, damage High (CSAF advisory NCSC-2026-0163). MITRE ATT&CK: T1190 (Exploit Public-Facing Application),
+      T1059 (Command Interpreter — if RCE achieved). Detection: SMTP connection anomalies where a GnuTLS close_notify
+      is followed by cleartext data on the same TCP session — network IDS rule on TLS alert record immediately followed
+      by non-TLS SMTP bytes on port 25/587; Exim log entries for BDAT sessions that terminate abnormally (panic.log
+      entries referencing BDAT or GnuTLS teardown). Hardening: upgrade to Exim 4.99.3; if immediate upgrade is not
+      feasible, disable the CHUNKING extension in the Exim config (chunking_advertise_hosts = \"\") to prevent BDAT
+      from being offered to connecting clients — this disables BDAT negotiation without affecting normal SMTP delivery.
+    ch_eu_nexus: "High — Exim is the default MTA on Debian/Ubuntu, which dominates Swiss and EU public-sector self-hosted mail infrastructure; affects GnuTLS builds standard on Debian derivatives"
+    public_sector_nexus: "direct — government ministries, university mail relays, cantonal authority mail infrastructure"
+    sector: "all organisations operating self-hosted Exim MTA on GnuTLS builds (government, education, healthcare)"
+    cves: [CVE-2026-45185]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "XBOW discovered CVE-2026-45185, a critical unauthenticated RCE in Exim, and used the disclosure window to test how far human and autonomous exploit development could go."
+        attribution: "XBOW (discoverer blog)"
+        source_url: "https://xbow.com/blog/dead-letter-cve-2026-45185-xbow-found-rce-exim"
+      - quote: "Exim BDAT flaw affects 4.97–4.99.2 GnuTLS builds, causing heap corruption and possible code execution."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/new-exim-bdat-vulnerability-exposes.html"
+
+  - title: "CERT-FR CERTFR-2026-AVI-0631 — Stormshield Network Security (SNS) DoS vulnerability (CVE-2025-9086); ANSSI advisory for French public-sector firewall appliance"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/", publisher: "CERT-FR / ANSSI", date: "2026-05-22", role: "primary" }
+      - { url: "https://advisories.stormshield.eu/2026-010", publisher: "Stormshield PSIRT", date: "2026-05-21", role: "primary" }
+    discovery_trace: "first seen at: cert-fr-avis (bridge, cert-fr avis-recent 40), CERTFR-2026-AVI-0631 published 2026-05-22, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/ → primary vendor advisory: Stormshield advisory 2026-010, URL https://advisories.stormshield.eu/2026-010"
+    summary: |
+      ANSSI / CERT-FR issued advisory CERTFR-2026-AVI-0631 on 2026-05-22, tracking Stormshield Security Bulletin
+      2026-010 (published 2026-05-21). The vulnerability (CVE-2025-9086) affects Stormshield Network Security (SNS)
+      — a French-made next-generation firewall appliance used extensively across French public administration,
+      defence-adjacent networks, and EU government environments with French procurement standards. The flaw enables
+      an unauthenticated remote attacker to cause a denial-of-service condition. Affected versions: SNS 4.3.x prior
+      to 4.3.43, SNS 4.4.x through 4.8.x prior to 4.8.16, SNS 5.x prior to 5.0.6. Patches are available from
+      Stormshield; CERT-FR directs affected organisations to the vendor's security bulletin for remediation.
+      No exploitation in the wild reported. The CH/EU nexus is direct: Stormshield appliances are procurement-
+      preferred in French ministries, OIV (Opérateurs d'Importance Vitale) environments, and Belgian government
+      networks; Switzerland uses Stormshield in some federal procurement environments where ANSSI certification
+      is specified. MITRE ATT&CK: T1499 (Endpoint Denial of Service). Defender action: patch SNS to the versions
+      above before public PoC development; verify SNS is not internet-exposed on management interfaces;
+      check Stormshield advisory 2026-010 for specific attack-surface details.
+    ch_eu_nexus: "Direct — Stormshield SNS is a French-made NGFW used across French and Belgian public administration and OIV networks, and in some Swiss federal procurement contexts where ANSSI certification is required"
+    public_sector_nexus: "direct"
+    sector: "government, defence-adjacent, critical infrastructure"
+    cves: [CVE-2025-9086]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Une vulnérabilité a été découverte dans Stormshield Network Security (SNS). Elle permet à un attaquant de provoquer un déni de service à distance."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-0631)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0631/"
+
+  - title: "GLPI GHSA-58j6-94cf-gcx5 / GHSA-cg63-qchq-q626 (CVE-2026-32312 / CVE-2026-42320) — arbitrary-file read by technician and unauthorised form export; CERT-FR CERTFR-2026-AVI-0609; patch to 11.0.7 / 10.0.25"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0609/", publisher: "CERT-FR / ANSSI", date: "2026-05-19", role: "primary" }
+      - { url: "https://github.com/glpi-project/glpi/security/advisories/GHSA-58j6-94cf-gcx5", publisher: "GLPI Project (GitHub Security Advisory)", date: "2026-05-18", role: "primary" }
+      - { url: "https://github.com/glpi-project/glpi/security/advisories/GHSA-cg63-qchq-q626", publisher: "GLPI Project (GitHub Security Advisory)", date: "2026-05-18", role: "corroborating" }
+    discovery_trace: "first seen at: cert-fr-avis (bridge, cert-fr avis-recent 40), CERTFR-2026-AVI-0609 published 2026-05-19, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0609/ → primary: GLPI GitHub security advisories, URL https://github.com/glpi-project/glpi/security/advisories/GHSA-58j6-94cf-gcx5"
+    summary: |
+      CERT-FR published CERTFR-2026-AVI-0609 on 2026-05-19 covering two GLPI security advisories (GHSA-58j6-94cf-gcx5
+      and GHSA-cg63-qchq-q626, published 2026-05-18) assigning CVE-2026-32312 and CVE-2026-42320 respectively.
+      GLPI (Gestionnaire Libre de Parc Informatique) is the open-source IT asset management and service-desk
+      platform deployed as a standard across French public administration (including ministries, hospitals, and
+      municipal governments), many Belgian and Swiss cantonal IT departments, and EU institutional IT teams.
+      GHSA-58j6-94cf-gcx5 (CVE-2026-42320): A technician-level authenticated user can read arbitrary files inside
+      the GLPI_DOC_DIR path — the directory where GLPI stores uploaded documents, which may include scanned ID
+      documents, contracts, and internal policies in government deployments. CVSS: 5.9 (Moderate). Affected: GLPI
+      >= 0.50 and < 11.0.7; also affects 10.x below 10.0.25. GHSA-cg63-qchq-q626 (CVE-2026-32312): An
+      authenticated user with forms READ permission can export the structure of forms they are not authorised to
+      access (information disclosure). Fixed in 11.0.7. CVSS: 5.1 (Medium). Neither flaw allows unauthenticated
+      access; both require a valid GLPI account. However, in public-sector environments where GLPI is federated
+      with Active Directory or LDAP and many users have basic technician roles, the arbitrary file read
+      (CVE-2026-42320) represents meaningful lateral-information escalation. The separate older CVE-2026-26263
+      (unauthenticated time-based blind SQL injection in GLPI 11.0.0–11.0.5 Search engine, fixed in 11.0.6,
+      CVSS 8.1 HIGH) was already patched in the March 2026 release wave. MITRE ATT&CK: T1083 (File and Directory
+      Discovery via arbitrary file read), T1213 (Data from Information Repositories — form structure export).
+      Upgrade to GLPI >= 11.0.7 or >= 10.0.25 immediately; apply access-control principle of least privilege for
+      technician-role assignments; audit GLPI_DOC_DIR contents for sensitive government documents.
+    ch_eu_nexus: "Direct — GLPI is standard French public-administration ITSM platform; widely deployed in Swiss cantons, Belgian municipalities, and EU institutions"
+    public_sector_nexus: "direct"
+    sector: "government, healthcare, education"
+    cves: [CVE-2026-32312, CVE-2026-42320]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "De multiples vulnérabilités ont été découvertes dans GLPI. Elles permettent à un attaquant de provoquer une atteinte à la confidentialité des données et un contournement de la politique de sécurité."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-0609)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0609/"
+      - quote: "A technician can read arbitrary files inside the GLPI_DOC_DIR. Fixed in 10.0.25 / 11.0.7."
+        attribution: "GLPI Project (GHSA-58j6-94cf-gcx5)"
+        source_url: "https://github.com/glpi-project/glpi/security/advisories/GHSA-58j6-94cf-gcx5"
+    extended_notes: |
+      The GLPI advisory cluster is particularly relevant given that an older critical unauthenticated SQL injection
+      (CVE-2026-26263) was patched in March 2026 and followed by this moderate-severity pair in May 2026. Security
+      teams should ensure they are fully current (11.0.7+ or 10.0.25+) given the ongoing advisory cadence in 2026.
+      CERT-FR advisory page does not cite a new GLPI blog post for these May 2026 fixes; the canonical fix reference
+      is the GitHub Security Advisories.
+
+candidate_sources:
+  - id: xbow-security
+    publisher: "XBOW (xbow.com) — autonomous offensive security research platform"
+    url: "https://xbow.com/blog"
+    category: research
+    why: "First-party vulnerability research with technical depth (CVE-2026-45185 Dead.Letter Exim RCE); appears to be publishing primary vulnerability disclosures. Relevant to CH/EU defender community."
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare 403 on direct bridge fetch; Wayback Machine returned no usable snapshot (24-byte stub only from 2026-04-19). WebSearch found no in-window items uniquely surfaced by Inside-IT. This is the fourth consecutive run failure for this source."
+  - source_id: cert-eu
+    reason: "Latest CERT-EU security advisory is 2026-006 (PAN-OS, May 6 2026) — outside the 36h window. No new advisory published in window. Source checked; no in-window items."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR Bulletins d'actualité feed (actu) returned items only through 2025-OCT — feed appears stalled since late 2025. No in-window actualité content available."
