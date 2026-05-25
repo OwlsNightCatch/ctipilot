@@ -3394,7 +3394,7 @@ def render_home_page(
         href = "briefs/" + ("weekly/" if is_weekly else "") + _escape(brief["name"]) + "/"
         tldr_lis = "".join(
             f'<li>{render_inline(t, base_url=canonical)}</li>'
-            for t in (brief.get("tldr") or [])[:5]
+            for t in (brief.get("tldr") or [])
         )
         tldr_html = (
             f'<ul>{tldr_lis}</ul>'
