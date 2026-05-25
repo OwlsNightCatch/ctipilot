@@ -1,0 +1,251 @@
+# work/2026-W22-c824ef8c/findings.W1.yaml
+domain: W1
+run_id: 2026-W22-c824ef8c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-25T00:18:39Z
+ended_at: 2026-05-25T00:55:00Z
+duration_seconds: 2181
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 28
+  bridge_fetches: 5
+
+items:
+
+  # ── Task A: Long-running campaign status updates ──
+
+  - title: "UPDATE: GitHub internal-repo breach — no fuller post-incident report published yet; original 2026-05-20 disclosure remains the only official statement"
+    sources:
+      - { url: "https://github.blog/security/investigating-unauthorized-access-to-githubs-internal-repositories/", publisher: "GitHub Security Blog", date: "2026-05-20", role: "primary" }
+      - { url: "https://www.securityweek.com/github-confirms-hack-impacting-3800-internal-repositories/", publisher: "SecurityWeek", date: "2026-05-20", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"GitHub post-incident report supply chain breach 3800 repos May 2026 fuller report\") → bridge feed: github.blog/security/feed/ confirmed only one post dated 2026-05-20 → primary: GitHub Security Blog, URL https://github.blog/security/investigating-unauthorized-access-to-githubs-internal-repositories/"
+    summary: |
+      As of 2026-05-25, GitHub has not published the fuller post-incident report promised in the 2026-05-20 initial disclosure. The GitHub Security Blog feed shows no additional post on this topic since 2026-05-20T21:07:38Z. The original statement — that investigation is ongoing, no customer-data impact found, and a full report would follow — remains the current official posture. No new technical details on the ~3,800 internal repo exfiltration or the TeamPCP / Mini Shai-Hulud attribution have been added by GitHub since initial disclosure. The missing PIR is itself operationally relevant: defenders relying on GitHub-issued artifacts for supply-chain trust have no enriched guidance on which internal tooling paths were exposed.
+    ch_eu_nexus: "global; any organisation using GitHub-hosted actions, packages, or container images relies on the integrity of the exfiltrated internal repos"
+    public_sector_nexus: "indirect — EU/CH public-sector CI/CD pipelines that consume GitHub-published artifacts"
+    sector: "software supply chain, public sector"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Shai-Hulud", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:weekly:2026-W21"
+    evidence:
+      - quote: "If any impact is discovered, customers will be notified via established incident response and notification channels."
+        attribution: "GitHub Security Blog"
+        source_url: "https://github.blog/security/investigating-unauthorized-access-to-githubs-internal-repositories/"
+    extended_notes: |
+      No wave-6 Cargo (Rust) or Maven (Java) activity confirmed in this window. The OIDC-token-reuse primitive remains npm/PyPI-centric in all published reporting. Sigstore/provenance anomalies on Cargo or Maven have not been reported by any source in the 2026-05-18 to 2026-05-25 window.
+
+  - title: "UPDATE: PAN-OS CVE-2026-0300 wave-2 patches due 2026-05-28 — not yet released as of 2026-05-25; CL-STA-1132 post-exploitation includes AD enumeration, no confirmed rogue-admin-account creation"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0300", publisher: "Palo Alto Networks PSIRT", date: "2026-05-06", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-critical-buffer-overflow-in-palo-alto-networks-pan-os-user-id-authentication-portal-cve-2026-0300/", publisher: "Rapid7", date: "2026-05-13", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"PAN-OS CVE-2026-0300 patch release wave-2 May 2026 exploitation\") → primary: Palo Alto Networks PSIRT, URL https://security.paloaltonetworks.com/CVE-2026-0300 → corroborating: Rapid7"
+    summary: |
+      As of 2026-05-25, the wave-2 patches for CVE-2026-0300 (buffer overflow in PAN-OS User-ID Authentication Portal / Captive Portal, CVSS 9.3, unauthenticated RCE with root) remain scheduled for 2026-05-28 and have not yet shipped. Affected versions include PAN-OS 12.1 prior to 12.1.4-h5/12.1.7, 11.2 prior to 11.2.4-h17/11.2.7-h13/11.2.10-h6/11.2.12, 11.1 prior to multiple hotfixes, and 10.2 prior to multiple hotfixes. The exploited attack surface is the `ngx_process_requests()` handler in the User-ID Authentication Portal nginx worker process. Post-exploitation was attributed to CL-STA-1132 (likely state-sponsored): attackers injected shellcode into an nginx worker process, cleared crash kernel messages, deleted nginx crash entries, removed crash core dumps, then four days later deployed tunneling tools and conducted Active Directory enumeration via firewall service account credentials. No sources within the window confirm creation of attacker-installed rogue admin accounts, though the post-exploitation pattern (firewall service-account AD enumeration) is consistent with that objective. Detection: monitor for unexpected outbound connections from PA-Series management interfaces and firewall service accounts performing LDAP queries outside normal operational hours.
+    ch_eu_nexus: "global; Palo Alto firewalls widely deployed in EU/CH public-sector network perimeters"
+    public_sector_nexus: "direct — PA-Series and VM-Series firewalls prevalent in EU government network borders"
+    sector: "critical infrastructure, government, enterprise"
+    cves: ["CVE-2026-0300"]
+    actors_campaigns_malware: ["CL-STA-1132"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:weekly:2026-W21"
+    evidence:
+      - quote: "Palo Alto Networks has confirmed limited exploitation in the wild targeting Authentication Portals exposed to either untrusted IP addresses or the public internet."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0300"
+
+  - title: "UPDATE: CVE-2026-45585 (YellowKey) — Microsoft has issued WinRE mitigation only; no patch as of 2026-05-25; permanent fix expected June 2026 Patch Tuesday"
+    sources:
+      - { url: "https://www.helpnetsecurity.com/2026/05/20/yellowkey-bitlocker-mitigation-cve-2026-45585/", publisher: "Help Net Security", date: "2026-05-20", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45585", publisher: "Microsoft MSRC", date: "2026-05-20", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"CVE-2026-45585 YellowKey patch released June Patch Tuesday out-of-band May 2026\") → primary: Help Net Security 2026-05-20 → corroborating: MSRC advisory"
+    summary: |
+      As of 2026-05-25, Microsoft has published only mitigation guidance for CVE-2026-45585 (BitLocker security feature bypass via Windows Recovery Environment / WinRE; CVSS 6.8; physical-access prerequisite). No out-of-band patch has shipped. The mitigation approach removes the `autofstx.exe` entry from WinRE's BootExecute registry value (`HKLM\SYSTEM\CurrentControlSet\Control\Session Manager`) and requires re-sealing the WinRE image. The underlying vulnerability is that deleting `winpeshl.ini` via Transactional NTFS (TxF) causes WinRE to launch an unrestricted shell rather than the standard recovery interface, bypassing TPM-only BitLocker protection. Enabling TPM+PIN mode is the highest-confidence hardening step — it closes the attack path regardless of the patch status. Affected: Windows 11 24H2, 25H2, 26H1 (x64) and Windows Server 2025. Permanent fix is anticipated at June 2026 Patch Tuesday (~2026-06-10). No new exploitation evidence or PoC variants observed in-window beyond the original YellowKey/GreenPlasma/MiniPlasma series.
+    ch_eu_nexus: "global; affects all Windows 11 and Server 2025 deployments in EU/CH public sector"
+    public_sector_nexus: "direct — endpoint-security concern for all Windows 11 and Server 2025 estates"
+    sector: "government, enterprise, critical infrastructure"
+    cves: ["CVE-2026-45585"]
+    actors_campaigns_malware: ["Chaotic Eclipse (researcher)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:daily:2026-05-20"
+    evidence:
+      - quote: "Microsoft has released mitigation steps for YellowKey, but no patch yet"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/05/20/yellowkey-bitlocker-mitigation-cve-2026-45585/"
+
+  - title: "UPDATE: Sparx Enterprise Architect / Pro Cloud Server — CCB Belgium now labels CVEs actively exploited; no vendor patch as of 2026-05-25; PoC public for all five CVEs"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-actively-exploited-critical-and-multiple-high-vulnerabilities-sparx-pro-cloud", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-05-20", role: "primary" }
+      - { url: "https://cert.pl/en/posts/2026/05/CVE-2026-42096/", publisher: "CERT Polska", date: "2026-05-19", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Sparx Enterprise Architect CVE-2026-42097 actively exploited May 2026\") → primary: CCB Belgium advisory page URL https://ccb.belgium.be/advisories/warning-actively-exploited-critical-and-multiple-high-vulnerabilities-sparx-pro-cloud → corroborating: CERT Polska"
+    summary: |
+      The Centre for Cybersecurity Belgium (CCB) published its advisory on 2026-05-20 explicitly titling it as covering "actively exploited" vulnerabilities in Sparx Pro Cloud Server and Enterprise Architect. The five CVEs span: CVE-2026-42097 (pre-auth SQL injection via omitted `model` query parameter, CVSS Critical), CVE-2026-42096 (broken access control allowing low-priv remote execution of arbitrary SQL), CVE-2026-42099, CVE-2026-42100 (all High in Pro Cloud Server), and CVE-2026-42098 (High in Enterprise Architect). The vulnerable code path is the binary blob POST request to the Pro Cloud Server database communication layer. No vendor patch exists for any of the five CVEs as of 2026-05-25 — Sparx Systems did not respond to disclosure with a fixed version. The last confirmed-vulnerable versions are Pro Cloud Server ≤ 6.1 build 167 and Enterprise Architect ≤ 17.1. Defenders should isolate or take offline internet-facing Pro Cloud Server instances. Enterprise Architect deployments that do not expose Pro Cloud Server externally have significantly reduced risk.
+    ch_eu_nexus: "direct EU nexus — Sparx EA is widely used in Swiss and German enterprise architecture and government ICT planning functions"
+    public_sector_nexus: "direct — EA used by many EU government bodies for ICT architecture governance"
+    sector: "government, enterprise IT"
+    cves: ["CVE-2026-42097", "CVE-2026-42096", "CVE-2026-42099", "CVE-2026-42100", "CVE-2026-42098"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:daily:2026-05-20"
+    evidence:
+      - quote: "Warning: Actively exploited critical and multiple high vulnerabilities in Sparx Pro Cloud Server and Enterprise Architect, Patch Immediately!"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-actively-exploited-critical-and-multiple-high-vulnerabilities-sparx-pro-cloud"
+
+  - title: "UPDATE: UNC6671 / BlackFile RaaS DLS shut down; no confirmed successor brand as of 2026-05-25"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation", publisher: "Google GTIG (Mandiant)", date: "2026-05-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-blackfile-extortion-gang-targets-retail-and-hospitality-orgs/", publisher: "BleepingComputer", date: "2026-05-02", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"UNC6671 BlackFile RaaS rebrand successor vishing AiTM MFA SharePoint 2026\") → primary: Google GTIG blog URL https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation → corroborating: BleepingComputer"
+    summary: |
+      The BlackFile data leak site went offline, and operators posted a shutdown message under their current name — language implying a future rebrand rather than permanent cessation. The DLS briefly returned on 2026-05-11 to post a final message before shutting down again. No successor brand has been publicly identified as of 2026-05-25. BlackFile (UNC6671 / CL-CRI-1116 / Cordial Spider) operated since January 2026 with the vishing → AiTM → device-registration → SharePoint/Salesforce exfiltration TTP set targeting retail and hospitality. The operator TTP pattern (IT helpdesk impersonation call, SSO/OAuth device-code intercept, Microsoft Entra rogue-device registration) is highly replicable under a new brand. Defenders should maintain Conditional Access policies blocking unmanaged device registration and device-code OAuth flows regardless of brand status.
+    ch_eu_nexus: "indirect — TTP pattern directly applicable to EU/CH enterprises; no confirmed EU government victims under the BlackFile brand"
+    public_sector_nexus: "indirect"
+    sector: "retail, hospitality, enterprise SaaS"
+    cves: []
+    actors_campaigns_malware: ["UNC6671", "BlackFile", "CL-CRI-1116", "Cordial Spider"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-to-prior:weekly:2026-W21"
+    evidence:
+      - quote: "The recent shutdown of the BlackFile data leak site (DLS) accompanied by the actors' own declaration that they are shutting down 'under this name' signals a possible transition phase rather than a permanent cessation"
+        attribution: "Google GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation"
+
+  - title: "UPDATE: TheGentlemen RaaS — backend 'Rocket' database breach on 2026-05-04 exposes 9 operator accounts, affiliate chat logs, and toolchain; Check Point Research analysis published 2026-05-13; Polyrack (DE) and DEVO-Tech AG (CH) among week's new victim listings"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/", publisher: "Check Point Research", date: "2026-05-13", role: "primary" }
+      - { url: "https://www.dexpose.io/thegentlemen-ransomware-group-targets-swiss-engineering-firm-devo-tech-ag/", publisher: "DeXpose", date: "2026-05-18", role: "corroborating" }
+      - { url: "https://www.dexpose.io/thegentlemen-targets-german-engineering-firm-polyrack/", publisher: "DeXpose", date: "2026-05-18", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"TheGentlemen RaaS exposed server toolkit victim credentials May 2026\") → primary: Check Point Research, URL https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/ → corroborating: DeXpose for DEVO-Tech AG and Polyrack victim listings"
+    summary: |
+      On 2026-05-04 TheGentlemen's 'Rocket' backend database was compromised by an unknown party (possibly via a 4VPS hosting provider breach) and the data briefly sold on underground forums by account 'n7778' for $10,000. The administrator (zeta88 / hastalamuerte) publicly acknowledged the breach on 2026-05-04 via underground forum posts. Check Point Research obtained partial leaked data including: the Linux `/etc/shadow` file listing 9 Unix accounts (zeta88, 3NT3R, B1d3n, C0CA, F3N1X, etc.), 8,200 lines of internal chat logs across channels INFO/general/TOOLS/PODBOR, negotiation screenshots showing a successful 190,000 USD payout, and references to active CVE tracking including CVE-2024-55591 (Fortinet), CVE-2025-32433 (Erlang SSH), and CVE-2025-33073. Initial access paths documented in the chats include Fortinet and Cisco edge appliances, NTLM relay, and OWA/M365 credential logs. The operator's TOX ID was found in 4 of 29 unique sample campaigns, suggesting the admin also conducts intrusions directly. In this week's window (2026-05-18 to 2026-05-25), new CH/DE victims include DEVO-Tech AG (Swiss engineering, Ziefen) and Polyrack Tech-Group (German electronic packaging, 500+ employees) — both listed 2026-05-18. The total victim count on the DLS has reached ~412 in approximately 8 months of operation.
+    ch_eu_nexus: "direct — DEVO-Tech AG is a Swiss victim; Polyrack is a German victim; the backend breach reveals initial-access paths directly applicable to EU/CH enterprise and public-sector environments"
+    public_sector_nexus: "indirect — no confirmed public-sector victims; TTP reuse (Fortinet/Cisco initial access, NTLM relay) is relevant to EU government network defenders"
+    sector: "manufacturing, engineering, enterprise"
+    cves: ["CVE-2024-55591", "CVE-2025-32433"]
+    actors_campaigns_malware: ["TheGentlemen", "zeta88 / hastalamuerte"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:daily:2026-05-20"
+    evidence:
+      - quote: "On May 4th, 2026, The Gentlemen RaaS administrator acknowledged on underground forums that an internal backend database (Rocket) had been leaked."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      - quote: "On May 18, 2026, the ransomware group TheGentlemen publicly claimed responsibility for a cyberattack against DEVO-Tech AG (devo-tech.ch), a Swiss engineering company."
+        attribution: "DeXpose"
+        source_url: "https://www.dexpose.io/thegentlemen-ransomware-group-targets-swiss-engineering-firm-devo-tech-ag/"
+    extended_notes: |
+      The leaked chats reference the use of SystemBC as a post-compromise C2 relay — consistent with prior CPR DFIR report findings. The NTLM relay initial-access path is a persistent concern for EU/CH organisations not enforcing SMB signing and LDAP signing.
+
+  - title: "UPDATE: Rhysida / Stuttgart — city's denial stands as of 2026-05-25; no victim disclosure or breach confirmation published in-window"
+    sources:
+      - { url: "https://www.heise.de/en/news/Cyber-gang-Rhysida-claims-data-theft-from-Stuttgart-city-11301876.html", publisher: "Heise Online (English)", date: "2026-05-22", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Rhysida Stuttgart ransomware official confirmation denial city response May 2026\") → primary: Heise Online, URL https://www.heise.de/en/news/Cyber-gang-Rhysida-claims-data-theft-from-Stuttgart-city-11301876.html"
+    summary: |
+      As of 2026-05-25, no victim disclosure, official confirmation, or forensic evidence corroborating the Rhysida claim against Landeshauptstadt Stuttgart has emerged. Stuttgart's official spokesperson statement remains: "According to the current status, the state capital of Stuttgart has no indications of a cyber incident." The DLS entry shows only heavily downscaled images of scanned documents (invoices, faxes) that do not allow inference of scope or sensitivity. The Stuttgart city website and communications infrastructure remained operational with no visible disruption. This remains an unconfirmed DLS claim; the fake-news scrutiny rule for ransomware leak-site claims without victim disclosure or HIGH-reliability journalism confirmation applies here.
+    ch_eu_nexus: "direct — Stuttgart is a major EU public-sector entity; Baden-Württemberg state capital"
+    public_sector_nexus: "direct — municipal government"
+    sector: "government"
+    cves: []
+    actors_campaigns_malware: ["Rhysida"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: "update-to-prior:daily:2026-05-23"
+    evidence:
+      - quote: "According to the current status, the state capital of Stuttgart has no indications of a cyber incident"
+        attribution: "Heise Online (Stuttgart city spokesperson)"
+        source_url: "https://www.heise.de/en/news/Cyber-gang-Rhysida-claims-data-theft-from-Stuttgart-city-11301876.html"
+    extended_notes: |
+      No update in the 2026-05-18 to 2026-05-25 window changes the status. Maintaining as a low-confidence unconfirmed claim per editorial policy.
+
+  - title: "UPDATE: WebWorm / EchoCreep / GraphWorm — no new EU government victims documented in-window; 2026-05-20 ESET disclosure remains most current primary"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/", publisher: "ESET WeLiveSecurity", date: "2026-05-20", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"WebWorm EchoCreep GraphWorm EU government targeting new victims May 2026\") → results confirmed no new post-2026-05-20 sources → primary: ESET, URL https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"
+    summary: |
+      No new EU government victims or additional TTPs beyond the original ESET 2026-05-20 disclosure have been published in the 2026-05-18 to 2026-05-25 window. The 2026-05-20 disclosure documented 50+ unique targets across Belgium, Italy, Poland, Serbia, Spain, and South Africa (one university), EchoCreep using Discord C2 with 400+ decrypted operator messages observed, and GraphWorm using Microsoft Graph / OneDrive endpoints for C2. The campaign represents the continuation of a pattern first noted in prior dailies.
+    ch_eu_nexus: "direct — Belgium, Italy, Poland, Serbia, Spain government victims confirmed by ESET"
+    public_sector_nexus: "direct"
+    sector: "government"
+    cves: []
+    actors_campaigns_malware: ["WebWorm", "EchoCreep", "GraphWorm", "FishMonger", "Aquatic Panda"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-to-prior:daily:2026-05-21"
+    extended_notes: |
+      No Cargo/Maven Shai-Hulud wave-6 activity confirmed in-window. OIDC-token-reuse primitive remains npm/PyPI-centric in all published reporting through 2026-05-25. Midnight Blizzard ROADtools: no new targeting campaigns reported post the Unit 42 analysis (2026-05-23). Screening Serpens (UNC1549): no new incidents or sector-expansion reported in the window beyond the Unit 42 2026-05-22 disclosure (campaigns running Feb-Apr 2026 against US/IL/UAE). Fox Tempest: no reconstitution activity reported post the 2026-05-19 DCU disruption; infrastructure remains seized.
+
+  # ── Task B: Annual/Periodic Threat Reports ──
+
+  - title: "ANNUAL REPORT — CERT-EU Threat Landscape Report 2025: 174 threat actors vs Union entities (+58% YoY); China-linked actors dominate exploitation and supply-chain compromise; 9 significant incidents in 2025"
+    sources:
+      - { url: "https://cert.europa.eu/blog/threat-landscape-report-2025", publisher: "CERT-EU", date: "2026-04-08", role: "primary" }
+      - { url: "https://cert.europa.eu/publications/threat-intelligence/tlr2025/pdf", publisher: "CERT-EU (full PDF)", date: "2026-04-08", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"CERT-EU threat landscape report annual 2026 published May\") → bridge fetch: https://cert.europa.eu/blog/threat-landscape-report-2025 → confirmed publication date 2026-04-08 → primary: CERT-EU blog post with full PDF linked"
+    summary: |
+      CERT-EU's annual Threat Landscape Report 2025 (published 2026-04-08, TLP:CLEAR) covers cyber threats to EU institutions, bodies, offices, and agencies and their partner ecosystem. Key findings: 174 distinct threat actors engaged in malicious activity against Union entities in 2025, up from 110 in 2024; cyberespionage and prepositioning remained the dominant motive (38%), but cybercrime grew to 30% of observations. China-linked actors had the largest share of attributable activity, primarily through broad vulnerability exploitation and supply-chain compromises; Russia-linked actors focused on Ukraine and EU countries supporting Ukrainian efforts. For the second consecutive year, internet-facing vulnerability exploitation was the highest-impact initial access vector — CERT-EU responded to 9 significant incidents (down from 15 in 2024), with vulnerability exploitation as initial access in 7 of them including 2 zero-day compromises. Edge devices (Fortinet, Ivanti, Cisco, Palo Alto) accounted for the bulk of observed attacks. Spearphishing declined from 41% to 31% of initial access while voice phishing, AiTM, ClickFix, and device-code OAuth abuse grew. Notable: a reportedly China-linked threat actor directed a jailbroken agentic AI system against 30 entities, achieving autonomous intrusion in a small number of cases. 198 software products used by Union entities were targeted/exploited in 2025 (vs 110 in 2024). Supply-chain attacks now extend beyond code dependencies into the broader SaaS integration ecosystem. For 2026, CERT-EU's top recommendation is timely patching of internet-facing systems and edge devices; secondary: phishing-resistant MFA transition; tertiary: end-to-end encryption as default for sensitive communications.
+    ch_eu_nexus: "direct — covers the entire EU institutional ecosystem and partner organisations including national CERTs and public administrations"
+    public_sector_nexus: "direct — primary audience is EU public-sector institutions and their partners"
+    sector: "government, public sector, all sectors"
+    cves: []
+    actors_campaigns_malware: ["UNC6040"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "new"
+    evidence:
+      - quote: "In 2025, we identified at least 174 distinct threat actors engaged in malicious activity against Union entities or their ecosystem, a significant increase from 110 in 2024."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/blog/threat-landscape-report-2025"
+      - quote: "For the second consecutive year, the exploitation of vulnerabilities in internet-facing software was the initial access vector with the highest impact. CERT-EU responded to nine significant incidents in 2025, down from 15 in 2024. Vulnerability exploitation was the initial access vector in seven of these, including two zero-day compromises."
+        attribution: "CERT-EU"
+        source_url: "https://cert.europa.eu/blog/threat-landscape-report-2025"
+    extended_notes: |
+      Published 47 days before the weekly window close date of 2026-05-25. While just outside the 30-day recency window for periodic reports, this is the key annual EU-institutional threat intelligence report and has not previously appeared in the W22 briefs or prior_coverage. Including as a high-value item given CERT-EU is a named source in the source-list slice for W1. The Swisscom Cybersecurity Threat Radar 2026 (published 2026-04-27, URL https://www.swisscom.ch/en/about/news/2026/04/27-cybersecurity.html) is the CH-primary equivalent, 28 days before window close — also not in prior coverage. Key themes: insecure AI as risk multiplier, software supply chain integrity, digital sovereignty, and OT security convergence.
+
+  - title: "ANNUAL REPORT — Swisscom Cybersecurity Threat Radar 2026: AI, supply-chain integrity, digital sovereignty, and OT/IT convergence as four strategic risk pillars for Swiss organisations"
+    sources:
+      - { url: "https://www.swisscom.ch/en/about/news/2026/04/27-cybersecurity.html", publisher: "Swisscom", date: "2026-04-27", role: "primary" }
+      - { url: "https://www.swissinfo.ch/eng/ai-work/swisscom-warns-of-sharp-rise-in-cyber-threats/91320395", publisher: "SWI swissinfo.ch", date: "2026-04-27", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Swisscom threat radar 2026 April published\") → bridge fetch: https://www.swisscom.ch/en/about/news/2026/04/27-cybersecurity.html confirmed date 2026-04-27 and full article body → primary: Swisscom press release → corroborating: SWI swissinfo.ch English-language coverage"
+    summary: |
+      Swisscom's annual Cybersecurity Threat Radar 2026 (published 2026-04-27) identifies four strategic risk areas for Swiss and European organisations. (1) Software supply chains: single compromised element or manipulated update process can have large-scale implications; origin, integrity, and traceability verification must be maintained — directly relevant to the Shai-Hulud/Megalodon OIDC-token-reuse campaigns observed in W22. (2) Insecure AI: uncontrolled AI systems increase attack surface; shadow AI (unauthorised tool use) on the rise; AI as a governance and compliance risk multiplier. (3) Digital sovereignty: organisations need transparency on data processing jurisdiction, provider regulatory exposure, and platform dependency — particularly important for Swiss federal ICT given cloud-migration obligations. (4) OT security: IT/OT convergence in energy, healthcare, manufacturing, and building automation now a senior-management responsibility; incidents can cause physical consequences. The report assesses that geopolitics and disruptive technologies are driving conditions worse than 2025, noting state-sponsored attack growth and hybrid influence operations (disinformation). A full PDF download is available at the Swisscom enterprise portal.
+    ch_eu_nexus: "direct — Swiss primary; published by Switzerland's largest telecom and one of the primary IT service providers to Swiss public sector"
+    public_sector_nexus: "direct — Swisscom is a major supplier to Swiss federal and cantonal bodies"
+    sector: "all sectors, Swiss public sector, critical infrastructure, OT"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "new"
+    evidence:
+      - quote: "Software supply chains remain a prominent risk – the presence of even a single compromised element or manipulated update process can have large-scale implications. The ability to verify origin, integrity and traceability must therefore be maintained."
+        attribution: "Swisscom"
+        source_url: "https://www.swisscom.ch/en/about/news/2026/04/27-cybersecurity.html"
+      - quote: "AI acts as a multiplier of risk – uncontrolled systems increase the attack surface and make governance and compliance harder to manage. Shadow AI, that is, the use of unauthorised AI tools, is also on the rise."
+        attribution: "Swisscom"
+        source_url: "https://www.swisscom.ch/en/about/news/2026/04/27-cybersecurity.html"
+
+candidate_sources:
+  - id: senthorus-ch
+    publisher: "Senthorus SOC Research Blog (senthorus.ch/blog)"
+    url: "https://blog.senthorus.ch"
+    category: research
+    why: "Swiss/EU-focused SOC and MDR provider publishing technical CVE analysis including in-window CVE-2026-42897 Exchange OWA deep dive. CH-primary source for enterprise vulnerability intelligence."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Feed 503 on rotation-priority list; no in-window bridge attempt made as W1 domain did not require Sophos-specific content"
+  - source_id: trendmicro-research
+    reason: "500 on rotation-priority list; no in-window Trendmicro-primary items identified requiring direct fetch"
+  - source_id: databreaches-net
+    reason: "403 on rotation-priority list; The Gentlemen backend breach story was covered via Check Point Research primary instead"
+  - source_id: shai-hulud-cargo-maven
+    reason: "No sources found confirming wave-6 Cargo or Maven registry compromise. OIDC-token-reuse remains npm/PyPI-centric in all published reporting through 2026-05-25."
+  - source_id: blackfile-successor-brand
+    reason: "No successor brand to BlackFile/UNC6671 confirmed in public sources through 2026-05-25."
