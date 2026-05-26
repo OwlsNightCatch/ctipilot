@@ -1,0 +1,67 @@
+domain: S2
+run_id: 2026-05-26-ae9d0d4b
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-26T04:14:34Z
+ended_at: 2026-05-26T04:26:16Z
+duration_seconds: 702
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 30
+  bridge_fetches: 8
+
+items:
+  - title: "GTIG: Chinese-language PhaaS platforms now delivering OTP-relay MFA bypass via RCS/iMessage — EU-reaching scale confirmed, Japan primary target"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/chinese-language-phishing-services/"
+        publisher: "Google Threat Intelligence Group (Mandiant)"
+        date: "2026-05-25"
+        role: "primary"
+    discovery_trace: "first seen at: mandiant-gtig feed (https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v), published 2026-05-25 → primary: GTIG blog, URL https://cloud.google.com/blog/topics/threat-intelligence/chinese-language-phishing-services/"
+    summary: |
+      Google Threat Intelligence Group published 25 May 2026 a detailed analysis of at least 13 Chinese-language phishing-as-a-service (PhaaS) platforms, with a case study on "YY Lai Yu" (YY来鱼). Core capability shared across platforms: real-time OTP relay using live admin panels that intercept one-time passcodes the victim enters and simultaneously trigger an OTP request on the attacker's device — a full adversary-in-the-middle MFA bypass without requiring a reverse-proxy infrastructure. Delivery now exploits RCS (Rich Communication Services) and iMessage because end-to-end encryption on both protocols bypasses carrier-level SMS filtering, rendering telco-level defences ineffective. AI-powered page generation (Puppeteer-driven site cloning) produces per-campaign unique HTML/JS to defeat signature-based phishing detection. The kits also support digital wallet tokenization: stolen card credentials + intercepted OTP are used to provision contactless payment tokens for high-value transactions and ATM withdrawals. Geographic targeting spans 119 countries; the Europe, Americas, Australia, and Middle East are explicitly listed as targeted regions. While primary template coverage is Japan-focused (400+ financial/rail/gaming templates), the infrastructure is generic and operators rent it to any buyer — GTIG observed capabilities being used against non-Chinese organizations globally. UNC5814 is linked to the Darcula PhaaS platform in this ecosystem. Defenders relying on TOTP/SMS-based MFA as the sole second factor are not protected against these kits; FIDO2/WebAuthn hardware tokens or phishing-resistant passkeys are the recommended countermeasure. Risk-based step-up authentication during card provisioning events and device-fingerprint checks by issuing banks reduce wallet-tokenization exposure.
+    ch_eu_nexus: "Europe explicitly listed as targeted region; infrastructure generic — any European financial, public-sector portal, or e-government service protected only by TOTP/SMS MFA is in scope"
+    public_sector_nexus: "indirect — PhaaS kits target credential+OTP for web portals; Swiss/EU e-government single sign-on portals (e.g. eIAM, AHV ID) and financial regulators are target archetypes"
+    sector: "finance, government, retail"
+    cves: []
+    actors_campaigns_malware:
+      - "UNC5814"
+      - "YY Lai Yu (YY来鱼)"
+      - "Darcula PhaaS"
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Real-time interception allows the actor to simultaneously enter the OTP into a spoof page on their device, enabling them to complete the authentication process before the OTP expires."
+        attribution: "Google Threat Intelligence Group (Mandiant)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/chinese-language-phishing-services/"
+      - quote: "Darcula PhaaS leverages RCS and iMessage to send smishing messages because end-to-end encryption prevents carrier-level filtering of content."
+        attribution: "Google Threat Intelligence Group (Mandiant)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/chinese-language-phishing-services/"
+    extended_notes: |
+      Detection angle: outbound connections from browser to unexpected domains during active authentication flows (MITM proxy C2); anomalous OTP consumption patterns (OTP used immediately after issuance, from a different ASN than the login session); contactless-payment provisioning events immediately after credential submission from an unrecognized device. Hunt: correlate OIDC/SAML session IP against prior session IP — an AiTM relay will show the victim's original IP on the phishing page but the attacker's IP on the SSO side. Hardening: FIDO2 WebAuthn removes OTP relay risk entirely; for environments that cannot deploy FIDO2, enforce session-bound MFA (login-session binding) so OTP cannot be replayed from a different IP.
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Bridge attempt via 'url' returned Cloudflare Managed Challenge (HTTP 403); Wayback fallback had no recent CH-specific article URLs to test against since no specific article URL was identified via WebSearch. No CH-specific in-window items surfaced via WebSearch as a fallback."
+  - source_id: cert-eu
+    reason: "Feed last item was 2026-005 (May 6, 2026) — no new advisory in 36h window. Latest advisory 2026-006 (PAN-OS, May 6) pre-dates window."
+  - source_id: bsi-de
+    reason: "BSI RSS items in window are all updates to previously covered CVEs (Drupal CVE-2026-9082, LiteLLM, Mattermost) — no new critical advisory in 36h window."
+  - source_id: ncsc-ch-security-hub
+    reason: "No NCSC-CH Security Hub post created or modified on or after 2026-05-24; most recent post is 12588 from 2026-05-21."
+  - source_id: anssi-fr
+    reason: "CERTFR avis-recent feed returns items last published 2026-05-19 (CERTFR-2026-AVI-0609 on GLPI). CERTFR-2026-ACT-022 weekly bulletin dated 2026-05-18. No new in-window CERT-FR advisory."
+  - source_id: ncsc-nl
+    reason: "Most recent NCSC-NL advisory is NCSC-2026-0166 on Drupal (2026-05-21), already covered. No new in-window Dutch advisory."
+
+# Signal note: The 36h window (2026-05-24T18:00 through 2026-05-26T06:14) is genuinely thin for CH/EU public-sector
+# breaking events. Multiple source sweeps across NCSC.ch, BSI, CERT-FR, CERT-EU, NCSC-NL, ICO-UK, ENISA EUVD,
+# heise.de, The Record, BleepingComputer, and WebSearch returned no CH/EU named-victim incidents, no new
+# national-CERT advisories, and no new EU regulator enforcement actions dated in-window.
+# The GTIG "2 PhaaS 2 Furious" blog (2026-05-25) is the sole in-window item with material EU/CH defender value.
+# Items found but outside window: Trellix APT28 maritime/transport campaign (Jan-Feb 2026),
+# UK NCSC APT28 "Authentic Antics" advisory (Jul 2025 + Apr 2026 router extension),
+# Latvia SAB threat assessment (Jan 2026), Sweden power-plant attribution (Apr 2026),
+# Hungary Mediaworks/World Leaks (May 4), CERT-EU Cyber Brief 26-05 (May 4),
+# CERTFR-2026-AVI-0609 GLPI (May 19), Trellix source code breach disclosure (May 7).

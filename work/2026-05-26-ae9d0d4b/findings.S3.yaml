@@ -1,0 +1,378 @@
+domain: S3
+run_id: 2026-05-26-ae9d0d4b
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-26T04:14:54Z
+ended_at: 2026-05-26T04:20:00Z
+duration_seconds: 305
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 5
+  bridge_fetches: 22
+
+items:
+  - title: "Lazarus RemotePE: three-stage DPAPI-keyed memory-only RAT targeting financial and crypto firms (Fox-IT / NCC Group)"
+    sources:
+      - url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+        publisher: "Fox-IT (NCC Group)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/lazarus-deploys-remotepe-memory-only.html"
+        publisher: "The Hacker News"
+        date: "2026-05-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: mandiant-gtig feed (feeds.feedburner.com/threatintelligence), URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → THN feed item led to primary Fox-IT blog, URL https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+    summary: |
+      Fox-IT (NCC Group subsidiary) published a detailed technical analysis on 2026-05-22 of three malware
+      families comprising the RemotePE toolset used by a Lazarus sub-cluster overlapping with AppleJeus,
+      Citrine Sleet (UNC4736), and Gleaming Pisces against financial and cryptocurrency organizations.
+      The chain is: DPAPILoader (first stage, DLL persistence under IIS via Windows Authentication Service
+      masquerade as Iassvc.dll) → RemotePELoader (second stage, applies TartarusGate syscall-unhooking and
+      ETW patching before C2 polling) → RemotePE (final-stage C++ RAT executed entirely in memory, never
+      written to disk). DPAPILoader uses the Windows Data Protection API to environmentally key its
+      payload: each victim's DPAPI keys produce a unique encrypted blob, defeating hash-based detection and
+      VirusTotal static analysis. Payload is additionally XOR'd with 0x8D. DPAPILoader was found masquerading
+      as C:\Windows\System32\Iassvc.dll (mimicking the legitimate iassvcs.dll) installed as a Windows
+      service ("Internet Authentication Service") providing automatic startup persistence. Encrypted
+      payloads are stashed in C:\ProgramData\Microsoft\Windows\DeviceMetadataStore\en-US*.* (among
+      legitimate Cabinet metadata files). RemotePELoader applies TartarusGate (HellsGate variant) to
+      dynamically resolve NtOpenSection, NtMapViewOfSection, NtUnmapViewOfSection, NtProtectVirtualMemory,
+      and NtClose syscalls, remapping DLLs from \KnownDlls to unhook all userland EDR hooks, then patches
+      EtwEventWrite() to suppress all ETW event generation. RemotePE supports shell execution, file I/O,
+      file deletion with 7-pass overwrite (pattern shared with PondRAT/POOLRAT), and C2 polling with
+      configurable sleep intervals. Fox-IT obtained four RemotePE samples compiled between July 2023 and
+      mid-2024; neither RemotePELoader nor RemotePE appeared on VirusTotal prior to publication. Defender
+      entry vector: social engineering via Telegram using fake Calendly/Picktime scheduling domains. Lazarus
+      reportedly stole $577M in cryptocurrency in the first four months of 2026.
+    ch_eu_nexus: "global; European financial institutions and crypto firms among known Lazarus target verticals"
+    public_sector_nexus: "indirect — financial sector; national financial infrastructure"
+    sector: "financial, cryptocurrency, fintech"
+    cves: []
+    actors_campaigns_malware: ["Lazarus Group", "AppleJeus", "Citrine Sleet", "UNC4736", "Gleaming Pisces", "RemotePE", "DPAPILoader", "RemotePELoader", "PondRAT", "POOLRAT", "ThemeForestRAT"]
+    mitre_ttps:
+      - "T1055 Process Injection (reflective PE loading via libpeconv)"
+      - "T1562.001 Disable or Modify Tools (ETW patching of EtwEventWrite, TartarusGate syscall unhooking)"
+      - "T1027.009 Embedded Payloads (DPAPI environmental keying)"
+      - "T1543.003 Create or Modify System Process: Windows Service (Iassvc.dll service persistence)"
+      - "T1140 Deobfuscate/Decode Files or Information (DPAPI + XOR 0x8D decryption chain)"
+      - "T1071.001 Web Protocols (C2 polling over HTTP)"
+      - "T1083 File and Directory Discovery (DeviceMetadataStore wildcard search)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "DPAPILoader decrypts and loads RemotePELoader from disk using the Windows Data Protection API (DPAPI). RemotePELoader beacons to a C2 server and waits until it receives the next stage: RemotePE, a RAT executed entirely in memory and never written to disk, leaving no filesystem artifacts."
+        attribution: "Fox-IT International blog"
+        source_url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+      - quote: "RemotePELoader applies two evasion techniques before performing any further actions. The first is HellsGate (specifically the TartarusGate variant), a technique that dynamically resolves Windows syscall numbers at runtime... The second is patching Event Tracing for Windows (ETW)... overwriting it with the following bytes [to cause EtwEventWrite to] immediately return 0, suppressing all ETW event generation."
+        attribution: "Fox-IT International blog"
+        source_url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+    extended_notes: |
+      Detection angles: (1) Windows service creation event (EID 7045) for a service DLL at
+      C:\Windows\System32\Iassvc.dll — note: legitimate IAS service DLL is iassvcs.dll (with trailing 's');
+      (2) PEB module-list traversal combined with \KnownDlls section object remapping — visible in
+      kernel-mode memory integrity callbacks or Sysmon Process Tampering events; (3) writes to
+      C:\ProgramData\Microsoft\Windows\DeviceMetadataStore\en-US with non-Cabinet file extensions (Sysmon
+      EID 11); (4) EtwEventWrite byte-patch — EDR kernel callbacks will detect this if monitoring NTDLL
+      write operations. Hardening: monitor service DLL registration against a blessed-DLL allowlist; enable
+      AMSI and Kernel DMA Protection; restrict DeviceMetadataStore writes to SYSTEM only.
+
+  - title: "TrapDoor: cross-ecosystem supply chain attack (npm / PyPI / Crates.io) deploys credential stealer targeting crypto, DeFi, AI dev; modifies CLAUDE.md via zero-width Unicode prompts"
+    sources:
+      - url: "https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"
+        publisher: "Socket"
+        date: "2026-05-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/trapdoor-supply-chain-attack-spreads.html"
+        publisher: "The Hacker News"
+        date: "2026-05-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (feeds.feedburner.com/TheHackersNews) → THN article URL https://thehackernews.com/2026/05/trapdoor-supply-chain-attack-spreads.html → Socket primary URL https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"
+    summary: |
+      Socket disclosed on 2026-05-25 the TrapDoor campaign, a coordinated cross-ecosystem software supply
+      chain attack spanning 34+ malicious packages across 384+ versions published to npm, PyPI, and Crates.io
+      starting 2026-05-22 20:20 UTC. Socket detected packages in an average of 5 minutes 56 seconds after
+      publish. The npm payload runs a shared JavaScript module (trap-core.js) via postinstall hooks that
+      scans for credentials and developer secrets, validates stolen AWS and GitHub tokens via API calls to
+      confirm value, then establishes persistence via cron jobs, systemd services, Git hooks, shell hooks,
+      and SSH-based lateral movement. Python packages auto-execute on import and download a JavaScript
+      payload from an attacker-controlled GitHub Pages domain. Rust crates (Crates.io) search for local
+      keystores (Sui/Solana/Aptos wallets), encrypt with a hardcoded XOR key, and exfiltrate to GitHub Gists.
+      Targeted data includes SSH keys, crypto wallet keystores, AWS credentials, GitHub tokens, cloud
+      provider credentials, browser login databases, crypto wallet extensions, environment variables, and
+      API keys. A defining characteristic is deliberate targeting of AI coding assistants: the packages
+      modify .cursorrules and CLAUDE.md project files using zero-width Unicode characters (U+200B family)
+      to conceal malicious prompt-injection instructions within what appear to be legitimate project config
+      files. Socket detected and removed all packages. Campaign targets crypto, DeFi, Solana, and AI
+      developer communities specifically.
+    ch_eu_nexus: "global; European developers in fintech and AI are in scope"
+    public_sector_nexus: "indirect — developer toolchain; any public-sector project using npm/PyPI/Cargo"
+    sector: "software development, fintech, crypto, AI"
+    cves: []
+    actors_campaigns_malware: ["TrapDoor"]
+    mitre_ttps:
+      - "T1195.001 Compromise Software Dependencies and Development Tools (malicious packages)"
+      - "T1059.001 PowerShell / T1059.004 Unix Shell (postinstall hooks)"
+      - "T1053.003 Scheduled Task/Job: Cron (cron persistence)"
+      - "T1543.002 Create or Modify System Process: systemd service (systemd persistence)"
+      - "T1547.004 Boot or Logon Autostart Execution: Git hooks"
+      - "T1552.001 Unsecured Credentials: Credentials in Files (SSH keys, API keys)"
+      - "T1021.004 Remote Services: SSH (lateral movement)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "TrapDoor targets developers in crypto, DeFi, Solana, and AI communities. The malicious packages are designed to steal developer secrets, crypto wallets, SSH keys, cloud credentials, browser data, and environment variables."
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"
+      - quote: "A defining characteristic of TrapDoor is its deliberate targeting of AI coding assistants via modified .cursorrules and CLAUDE.md project files, with the threat actor utilizing zero-width Unicode characters to obscure malicious prompts."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/trapdoor-supply-chain-attack-spreads.html"
+    extended_notes: |
+      Detection: hunt for postinstall lifecycle hooks in recently added npm/PyPI/Cargo packages (Sysmon
+      EID 1 with node.exe or python.exe spawning sh/bash); watch for unexpected writes to ~/.cursorrules
+      or CLAUDE.md containing zero-width Unicode (U+200B/U+FEFF/U+200C) via EDR file-write telemetry;
+      alert on systemd unit file creation or crontab writes from package-manager process trees; monitor
+      GitHub Gist POST requests from build/CI environments; audit .git/hooks directory for unexpected
+      scripts after npm install. Distinguish from Packagist attack (Socket, 2026-05-23) which used
+      package.json postinstall hooks in PHP/Composer packages to download a Linux binary (gvfsd-network)
+      from GitHub Releases — separate campaign with overlapping infrastructure pattern.
+
+  - title: "UPDATE: TeamPCP / Mini Shai-Hulud campaign escalation through 2026-05-24 — Shai-Hulud framework open-sourced on GitHub; copycat forks operational; forged Sigstore badges in npm UI"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/33016"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-05-25"
+        role: "primary"
+      - url: "https://securitylabs.datadoghq.com/articles/shai-hulud-open-source-framework-static-analysis/"
+        publisher: "Datadog Security Labs"
+        date: "2026-05-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: SANS ISC RSS feed (isc.sans.edu/rssfeed.xml), URL https://isc.sans.edu/diary/rss/33016 → primary (no further pivot needed, ISC diary is primary analysis with full source citations)"
+    summary: |
+      SANS ISC handler Kenneth Hartman published on 2026-05-25 a comprehensive update on the TeamPCP /
+      Mini Shai-Hulud supply chain campaign through 2026-05-24, documenting three material escalations.
+      First: the Shai-Hulud TypeScript/Bun framework source was published to GitHub on or around 2026-05-22
+      (confirmed by Datadog Security Labs static analysis, OX Security, and ReversingLabs); the README
+      carries "Love - TeamPCP" and "Change keys and C2 as needed," and at least three operational forks
+      had appeared within hours of publication including one adding FreeBSD support (OX Security documented
+      first observed deployments from forks). Second: in the @antv npm ecosystem wave (2026-05-19, 639
+      malicious versions / 323 packages), 42 packages displayed forged Sigstore verification badges in
+      the npm UI — paired with the previously documented valid SLSA Build Level 3 attestations produced
+      by hijacked pipelines, provenance integrity is now under simultaneous attack from both directions.
+      GitHub cleanup invalidated roughly 61,274 npm granular access tokens with write permissions and 2FA
+      bypass. Third: the TanStack-harvested OIDC credentials (May 11 wave) were used to publish the Nx
+      Console VS Code extension (v18.95.0, publisher nrwl.angular-console) that breached GitHub itself,
+      confirming a multi-stage credential-reuse chain spanning 7 days across two ecosystems. The
+      durabletask PyPI SDK trojanization (three versions 1.4.1–1.4.3) included a Linux disk wiper payload
+      per iTnews reporting. CISA did not add CVE-2026-45321 (the OIDC credential-harvest primitive) to
+      the KEV catalog in either of two W21 tranches despite the GitHub-internal breach and named AI-lab
+      downstream victims.
+    ch_eu_nexus: "global; European developer organizations and AI labs using npm/@antv ecosystem packages"
+    public_sector_nexus: "indirect — developer toolchain and cloud credential exfiltration"
+    sector: "software development, cloud infrastructure, AI"
+    cves: ["CVE-2026-45321"]
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud"]
+    mitre_ttps:
+      - "T1195.001 Compromise Software Dependencies and Development Tools"
+      - "T1553.005 Subvert Trust Controls: Mark-of-the-Web Bypass (forged Sigstore badges)"
+      - "T1078.001 Valid Accounts: Default Accounts (OIDC credential reuse)"
+      - "T1485 Data Destruction (Linux disk wiper in durabletask)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-21
+    evidence:
+      - quote: "Datadog Security Labs published a static analysis of a public GitHub repository containing what appears to be the complete TeamPCP framework: a modular TypeScript/Bun toolkit for credential harvesting, supply chain poisoning, and encrypted exfiltration. The repository README explicitly carries the strings 'Love - TeamPCP' and 'Change keys and C2 as needed.'"
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/rss/33016"
+      - quote: "42 of the malicious packages displayed forged Sigstore verification badges in the npm UI. This pairs poorly with the W20 finding that the prior wave shipped valid SLSA Build Level 3 provenance. Read together, provenance is now being attacked from two directions at once: real attestations produced by hijacked release pipelines, and fake attestations rendered by the registry UI."
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/rss/33016"
+    extended_notes: |
+      Behavioral detection indicators that remain durable post-framework-open-source:
+      writes to ~/.claude/settings.json and .vscode/tasks.json from npm install process trees;
+      large 2FA-bypassing token harvests; Session messenger exfiltration to filev2[.]getsession[.]org
+      and seed1[.]getsession[.]org (ISC diary note: these are NOT IOCs for this brief — behavioral
+      detection concepts only). Pin exact package versions and verify lockfile hashes; do not rely on
+      Sigstore verification badges in npm UI or SLSA attestations as install-time safety signals.
+      Detection pattern note: PBKDF2 salt strings and dead-drop string lineage will now also fire on
+      copycat operators with no operational connection to TeamPCP.
+
+  - title: "KnowledgeDeliver LMS CVE-2026-5426: pre-shared ASP.NET machineKey enables unauthenticated ViewState deserialization RCE; BLUEBEAM memory-only web shell deployed; watering-hole injection of LMS users"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/knowledgedeliver-viewstate-deserialization-vulnerability/"
+        publisher: "Google Cloud / Mandiant GTIG"
+        date: "2026-05-25"
+        role: "primary"
+      - url: "https://github.com/mandiant/Vulnerability-Disclosures/blob/master/2026/MNDT-2026-0009.md"
+        publisher: "Mandiant Vulnerability Disclosures (GitHub)"
+        date: "2026-05-25"
+        role: "primary"
+    discovery_trace: "first seen at: mandiant-gtig RSS feed (feeds.feedburner.com/threatintelligence), URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → article published 2026-05-25 14:00 UTC → primary: Google Cloud Blog, URL https://cloud.google.com/blog/topics/threat-intelligence/knowledgedeliver-viewstate-deserialization-vulnerability/"
+    summary: |
+      Mandiant / Google Threat Intelligence Group published on 2026-05-25 an IR investigation into a late-2025
+      compromise of a web server running KnowledgeDeliver, an ASP.NET-based Learning Management System
+      developed by Japan-based Digital Knowledge and widely deployed in Japanese enterprise and educational
+      environments. The vulnerability (CVE-2026-5426, MNDT-2026-0009) stems from identical pre-shared
+      ASP.NET machine keys (machineKey values) deployed across all customer installations by default —
+      any party who obtains the hardcoded key from one instance can forge valid ViewState serialized payloads
+      and send them to any other deployment. ViewState deserialization in ASP.NET uses ObjectStateFormatter,
+      which calls BinaryFormatter under the hood, enabling arbitrary .NET object-graph deserialization with
+      RCE. The vulnerability was exploited as a zero-day prior to 2026-02-24 (patch date). Post-exploitation:
+      the attacker deployed BLUEBEAM, a .NET-based in-memory web shell that operates entirely within the
+      IIS worker process (w3wp.exe) rather than writing a shell file to disk, receiving instructions via
+      encrypted HTTP POST. BLUEBEAM is also known as Godzilla. Beyond persistence, the attacker injected
+      malicious code into the LMS platform to perform a watering-hole attack against users visiting the
+      site. Attribution: unknown actor. Remediation: rotate ASP.NET machine keys to unique,
+      cryptographically strong values per deployment; there is no default configuration change that removes
+      the shared-key risk, it requires explicit operator action. Detection: Windows Application Log
+      Event ID 1316 (ASP.NET ViewState validation failure) may surface exploit attempts; w3wp.exe spawning
+      unexpected child processes or network connections is the primary EDR signal.
+    ch_eu_nexus: "Japan-primary; CH/EU higher-education and corporate LMS deployments that use KnowledgeDeliver may be affected"
+    public_sector_nexus: "direct — educational institutions including universities widely use this LMS"
+    sector: "education, enterprise LMS"
+    cves: ["CVE-2026-5426"]
+    actors_campaigns_malware: ["BLUEBEAM (Godzilla web shell)"]
+    mitre_ttps:
+      - "T1190 Exploit Public-Facing Application (ViewState deserialization RCE)"
+      - "T1505.003 Server Software Component: Web Shell (BLUEBEAM in-memory web shell in w3wp.exe)"
+      - "T1071.001 Web Protocols (BLUEBEAM C2 via encrypted HTTP POST)"
+      - "T1189 Drive-by Compromise (watering-hole injection targeting LMS users)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability stems from the use of identical pre-shared ASP.NET machine keys across multiple customer deployments. The vulnerability was initially exploited as a zero-day, now tracked as CVE-2026-5426."
+        attribution: "Google Cloud / Mandiant GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/knowledgedeliver-viewstate-deserialization-vulnerability/"
+      - quote: "BLUEBEAM operates entirely in memory within the IIS worker process (w3wp.exe), significantly reducing its forensic footprint. The malware communicates through encrypted HTTP POST requests."
+        attribution: "Mandiant/CSO Online (corroborating)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/knowledgedeliver-viewstate-deserialization-vulnerability/"
+    extended_notes: |
+      Detection and hunting: (1) Windows Application Log EID 1316 "State information is invalid for this
+      page and might be corrupted" — Mandiant notes that even successful BLUEBEAM payloads generated these
+      entries, so they are useful forensic signals and worth alerting on in LMS-adjacent web servers;
+      (2) w3wp.exe spawning cmd.exe, PowerShell, or WScript/CScript — Sysmon EID 1 with parent-image filter
+      on w3wp.exe; (3) w3wp.exe making outbound HTTP connections to non-expected endpoints; (4) memory
+      forensics on IIS worker processes: BLUEBEAM has no file artifact, so live-memory collection (e.g.,
+      Process Hacker, Volatility) is the only detection path post-exploitation. For Swiss/EU higher-ed
+      defenders: audit all ASP.NET deployments (not just KnowledgeDeliver) for shared/default machineKey
+      values using the machineKey rotation tooling Microsoft publishes.
+
+  - title: "Packagist supply chain attack injects postinstall hook across 8 PHP/Composer packages, 777+ GitHub repos; Linux binary retrieved from GitHub Releases (Socket, 2026-05-23)"
+    sources:
+      - url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+        publisher: "Socket"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (feeds.feedburner.com/TheHackersNews), link https://thehackernews.com/2026/05/packagist-supply-chain-attack-infects-8.html → Socket primary URL https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos (cited within THN article)"
+    summary: |
+      Socket disclosed on 2026-05-23 a supply chain attack affecting 8 Packagist (PHP/Composer) packages.
+      The malicious code was inserted not into composer.json but into package.json (JavaScript lifecycle
+      hooks bundled within the PHP packages) — a cross-ecosystem placement designed to evade PHP-focused
+      dependency scanners that check only Composer metadata. The malicious postinstall hook downloads a
+      Linux binary from a GitHub Releases URL (account parikhpreyash4/systemd-network-helper-aa5c751f,
+      now removed), saves it to /tmp/.sshd, makes it executable with chmod a+x, and runs it in the
+      background. Socket found references to the same payload in 777 GitHub files and at least two GitHub
+      Actions workflow files, suggesting broader infrastructure seeding beyond the 8 Packagist packages.
+      The binary was named gvfsd-network (mimicking the GNOME Virtual File System daemon), but the
+      GitHub account hosting it was removed before Socket could determine the second-stage payload. The
+      affected Packagist packages have been removed. The attack is notable for its cross-ecosystem
+      placement technique and its targeting of PHP/JavaScript hybrid projects.
+    ch_eu_nexus: "global; European PHP/Laravel ecosystem developers"
+    public_sector_nexus: "indirect — PHP/Laravel widely used in government portals and CMSes"
+    sector: "software development, web application"
+    cves: []
+    actors_campaigns_malware: []
+    mitre_ttps:
+      - "T1195.001 Compromise Software Dependencies and Development Tools (Packagist package tampering)"
+      - "T1059.004 Unix Shell (bash postinstall hook)"
+      - "T1036.005 Masquerading: Match Legitimate Name or Location (gvfsd-network binary name)"
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Although the affected packages were all Composer packages, the malicious code was not added to composer.json. Instead, it was inserted into package.json, targeting projects that ship JavaScript build tooling alongside PHP code."
+        attribution: "Socket"
+        source_url: "https://socket.dev/blog/malicious-postinstall-hook-found-across-700-github-repos"
+    extended_notes: |
+      The cross-ecosystem placement — malicious code in package.json within a PHP package — represents
+      a detection gap: most PHP supply chain auditing tools focus exclusively on composer.json. Defenders
+      should audit package.json postinstall hooks within PHP projects and check /tmp directories on
+      Docker build slaves for unexpected binaries after npm install. Note payload nature unknown
+      (GitHub account removed before analysis); treat as high-risk given execution model.
+
+  - title: "Anthropic Project Glasswing initial results: Claude Mythos Preview finds 10,000+ critical/high flaws in open-source software; patching bottleneck now primary constraint"
+    sources:
+      - url: "https://www.anthropic.com/glasswing"
+        publisher: "Anthropic"
+        date: "2026-05-23"
+        role: "primary"
+      - url: "https://securityaffairs.com/192576/ai/anthropics-glasswing-10000-vulnerabilities-found-in-one-month-and-the-patching-problem-has-never-been-more-obvious.html"
+        publisher: "Security Affairs"
+        date: "2026-05-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch query 'Project Glasswing Anthropic 10000 vulnerabilities Claude AI security May 2026' → Anthropic primary URL https://www.anthropic.com/glasswing → Security Affairs corroborating https://securityaffairs.com/192576/..."
+    summary: |
+      Anthropic announced on 2026-05-23 that Project Glasswing — its defensive AI vulnerability-finding
+      initiative using the unreleased Claude Mythos Preview model — has surfaced more than 10,000 high-
+      or critical-severity vulnerability candidates across over 1,000 open-source projects in its first
+      operational month. After human expert review, 1,726 candidates were confirmed real and exploitable
+      flaws, with 1,094 rated high- or critical-severity (90.6% true-positive rate among validated
+      findings). The initiative operates through approximately 50 partner organizations including Amazon
+      Web Services, Apple, Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, Linux Foundation,
+      Microsoft, NVIDIA, and Palo Alto Networks. Anthropic committed up to $100M in Mythos Preview usage
+      credits and $4M in direct donations to open-source security organizations. Notable finding called
+      out by Anthropic: CVE-2026-5194 (CVSS 9.1) in WolfSSL — a certificate-forgery flaw in the TLS
+      library embedded in IoT devices, network equipment, and industrial systems worldwide. Glasswing has
+      resulted in 97 upstream patches and 88 security advisories published. Anthropic explicitly notes
+      that no company has developed safety controls adequate to prevent Mythos-class models from being
+      weaponized offensively, which is the stated reason for restricted access. The announcement
+      reframes the industry challenge: vulnerability discovery rate is no longer the bottleneck — triage,
+      disclosure workflow, and patch velocity are. Industry partner Cloudflare identified 2,000 bugs of
+      which 400 were high/critical; Mozilla fixed 271 Firefox vulnerabilities (tenfold increase over
+      an earlier Claude model result).
+    ch_eu_nexus: "global; Swiss and EU critical-infrastructure operators using WolfSSL or affected open-source components should cross-reference CVE-2026-5194 and the 88 published advisories"
+    public_sector_nexus: "direct — IoT, network equipment, and industrial systems in public-sector infrastructure"
+    sector: "cross-sector; AI security, open-source software, IoT, industrial"
+    cves: ["CVE-2026-5194"]
+    actors_campaigns_malware: []
+    mitre_ttps: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Project Glasswing is a joint effort led by Anthropic with major tech and security firms (Amazon Web Services, Anthropic, Apple, Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, Linux Foundation, Microsoft, NVIDIA, and Palo Alto Networks) to protect critical software using advanced AI."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/192576/ai/anthropics-glasswing-10000-vulnerabilities-found-in-one-month-and-the-patching-problem-has-never-been-more-obvious.html"
+      - quote: "A critical flaw in WolfSSL (CVE-2026-5194, CVSS 9.1) that could let an attacker forge certificates and impersonate legitimate services. WolfSSL is embedded in IoT devices, network equipment, and industrial systems worldwide."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/192576/ai/anthropics-glasswing-10000-vulnerabilities-found-in-one-month-and-the-patching-problem-has-never-been-more-obvious.html"
+    extended_notes: |
+      This is not a threat-actor story but a structural shift in the vulnerability-discovery landscape
+      with direct defender implications. The constraint has moved from finding bugs to triaging and
+      patching them — Anthropic notes that the patch gap (1,726 confirmed vs 97 patches landed) means
+      thousands of confirmed critical flaws will remain unpatched for months. Defenders should: (1) check
+      CVE-2026-5194 status in WolfSSL deployments; (2) monitor the Glasswing advisory feed for advisories
+      in their software stacks; (3) treat the accelerating AI-assisted fuzzing baseline as a shift in
+      expected time-to-exploit for previously-unknown flaws in widely-used open-source components.
+
+candidate_sources:
+  - id: socket-security
+    publisher: "Socket Security (socket.dev/blog)"
+    url: "https://socket.dev/blog"
+    rss_url: "https://socket.dev/api/blog/feed.atom"
+    category: research
+    why: "Primary supply chain attack research — TrapDoor, Packagist, @antv/Shai-Hulud campaigns all surfaced here first. High signal-to-noise for npm/PyPI/Cargo ecosystem threats."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos blog feed returned HTTP 503 (rotation-priority flag confirmed). No items recovered. Tried once per protocol."
+  - source_id: trendmicro-research
+    reason: "TrendMicro research landing page serves JS-rendered SPA; no RSS feed available. SHADOW-AETHER-040/064 vibe-hacking research (2026-05-11) was out-of-window by 5+ days. No in-window TrendMicro primary found."
+  - source_id: mandiant-gtig
+    reason: "Mandiant blog URL https://www.mandiant.com/resources/blog/ returns 404; content now served exclusively via cloud.google.com/blog/topics/threat-intelligence/ which was successfully fetched."

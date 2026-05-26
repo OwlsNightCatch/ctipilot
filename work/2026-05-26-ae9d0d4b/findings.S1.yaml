@@ -1,0 +1,220 @@
+domain: S1
+run_id: "2026-05-26-ae9d0d4b"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-05-26T04:14:12Z"
+ended_at: "2026-05-26T04:21:32Z"
+duration_seconds: 440
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 14
+  bridge_fetches: 12
+
+items:
+  - title: "TrapDoor cross-ecosystem supply chain attack — 34+ malicious packages across npm, PyPI, and Crates.io steal AWS/GitHub credentials, crypto wallet keystores, and SSH keys; poison AI coding assistant context files"
+    sources:
+      - url: "https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"
+        publisher: "Socket Security"
+        date: "2026-05-24"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/trapdoor-supply-chain-attack-spreads.html"
+        publisher: "The Hacker News"
+        date: "2026-05-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item published 2026-05-25) → primary: Socket Security blog, URL https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates (published 2026-05-24)"
+    summary: |
+      TrapDoor is a coordinated cross-ecosystem supply chain campaign spanning 34+ packages and 384+ versions across npm, PyPI, and Crates.io, with earliest activity recorded 2026-05-22T20:20 UTC. The campaign targets cryptocurrency, DeFi, Solana/Sui/Aptos, and AI developer communities. Each registry uses a distinct execution path: npm packages execute a 1,149-line credential harvester (trap-core.js) via a postinstall hook; PyPI packages execute on import and delegate to remote JavaScript via `node -e`; Rust crates use build.rs scripts that XOR-encrypt and exfiltrate wallet keystores to GitHub Gists. The npm payload validates stolen AWS and GitHub tokens against live APIs before exfiltrating — only live credentials are flagged — and establishes persistence via Git hooks, systemd services, cron, and SSH-based lateral movement. A novel AI-targeting vector poisons .cursorrules and CLAUDE.md files with zero-width Unicode characters; a developer scanning those files sees clean text while AI coding tools (Cursor, Claude Code) parse hidden instructions disguised as a "security scan" directive that triggers full data exfiltration. Detection: Socket detected new versions in a median of 5m 27s; defenders should monitor for unexpected npm postinstall scripts, Python packages that call `node -e` on import, Rust build.rs network egress, and unexplained modification of .cursorrules / CLAUDE.md files in repositories. Hunt for Fernet-encrypted exfil beacons and GitHub Gist write operations from build runners. All identified accounts (ddjidd564, asdxzxc, asdmini67, dae5411) should be blocked; package names include token-usage-tracker, prompt-engineering-toolkit, llm-context-compressor, eth-security-auditor, defi-risk-scanner.
+    ch_eu_nexus: "global; European DeFi/AI developer communities affected; CI/CD pipelines in CH/EU organisations installing affected packages are exposed"
+    public_sector_nexus: "indirect — CI/CD pipelines; elevated risk for public-sector DevOps teams using open-source AI tooling"
+    sector: "technology, finance, public-sector"
+    cves: []
+    actors_campaigns_malware: ["TrapDoor"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The campaign, codenamed TrapDoor, spans more than 34 malicious packages across over 384 versions. The earliest activity was recorded on May 22, 2026, at 8:20 p.m. UTC"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/trapdoor-supply-chain-attack-spreads.html"
+      - quote: "TrapDoor establishes persistence by poisoning .cursorrules and CLAUDE.md files with zero-width Unicode characters... A developer scanning those files sees a clean document. Cursor or Claude Code reads the underlying bytes and finds hidden instructions disguised as a 'security scan' directive"
+        attribution: "Socket Security"
+        source_url: "https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"
+
+  - title: "CVE-2026-9058 — Szafir SDK (KIR) improper certificate verification allows authentication bypass in Polish public-sector e-signature infrastructure including ZUS and e-Health systems"
+    sources:
+      - url: "https://cert.pl/en/posts/2026/05/CVE-2026-9058/"
+        publisher: "CERT Polska"
+        date: "2026-05-25"
+        role: "primary"
+      - url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-31679"
+        publisher: "ENISA EUVD"
+        date: "2026-05-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd recent lastvulnerabilities, URL https://euvd.enisa.europa.eu/ → ENISA EUVD-2026-31679 (published 2026-05-25) → primary: CERT Polska CVE-2026-9058 advisory, URL https://cert.pl/en/posts/2026/05/CVE-2026-9058/ (published 2026-05-25)"
+    summary: |
+      CVE-2026-9058 (CVSS 4.0: 9.3, AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:N) is an improper certificate verification vulnerability (CWE-393 / CWE-637) in Szafir SDK, developed by Krajowa Izba Rozliczeniowa (KIR) — the Polish national payment clearinghouse. The SDK is the standard e-signature library used by Polish public-administration systems to verify qualified electronic signatures. The flaw causes the SDK to return a success result code (0, "Positively verified") from the cryptographic digital signature verification function even when the trust status of the signer's certificate is "nondetermined" (unverifiable certificate chain). Consuming applications that check only the return code treat the signature as valid, enabling authentication bypass and user impersonation without a valid certificate. Affected systems include ZUS (Zakład Ubezpieczeń Społecznych — Polish Social Security Institution), the e-Gate system at Centrum e-Zdrowia (National Centre for Health Information) used for healthcare authentication, and other public-administration portals relying on Szafir for qualified e-signature acceptance. The issue was fixed in version 463. Defenders: ensure deployed Szafir SDK instances are upgraded to ≥463; application-layer validation must verify `certificateType != "nondetermined"` in `VerifyingTaskItem/Signature/VerificationResult/SigningCertificate/@certificateType` independently of the result code; audit logs for signature verifications where result=0 but certificate status was nondetermined indicate likely abuse.
+    ch_eu_nexus: "Poland national CERT disclosure; direct impact on Polish public-sector e-government systems; broader EU relevance — Szafir SDK is used across PL government infrastructure; comparable SDK-level trust failures possible in CH/EU qualified signature frameworks"
+    public_sector_nexus: "direct — ZUS (social security), e-Health (Centrum e-Zdrowia), other PL government portals using qualified e-signatures"
+    sector: "government, healthcare, finance"
+    cves: ["CVE-2026-9058"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Szafir SDK returns a success status code from the cryptographic digital signature verification process (i.e. /VerifyingTaskItem/Signature/VerificationResult/Result/@code == 0, \"Positively verified\") even when the trust status of the signer's certificate could not be established"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/05/CVE-2026-9058/"
+      - quote: "This causes consuming applications to incorrectly treat the signature as valid despite an unverified certificate chain, enabling authentication bypass and user impersonation"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-31679"
+
+  - title: "Lazarus Group deploys RemotePE — three-stage memory-only RAT (DPAPILoader + RemotePELoader + RemotePE) using HellsGate syscalls, ETW patching, and environmental DPAPI keying against financial and crypto firms"
+    sources:
+      - url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+        publisher: "Fox-IT (NCC Group)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/lazarus-deploys-remotepe-memory-only.html"
+        publisher: "The Hacker News"
+        date: "2026-05-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews (item published 2026-05-25) → primary: Fox-IT NCC Group blog, URL https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/ (published 2026-05-22)"
+    summary: |
+      Fox-IT (NCC Group) discloses RemotePE, a three-stage memory-only RAT toolchain attributed to a Lazarus subgroup and encountered across multiple incident-response engagements at financial and cryptocurrency organisations. Stage 1 (DPAPILoader) decrypts Stage 2 from disk using Windows DPAPI with per-machine environmental keying, ensuring the loader only executes on the intended target and leaves no decryptable artefact on other systems. Stage 2 (RemotePELoader) beacons to a C2 over HTTP to retrieve Stage 3 (RemotePE) and executes it entirely in process memory using reflective PE loading, never writing the final payload to disk. RemotePE implements HellsGate/TartarusGate dynamic syscall resolution to bypass EDR user-mode hooks on NTAPI functions (e.g. NtAllocateVirtualMemory, NtCreateThreadEx) and patches Event Tracing for Windows (ETW) to suppress telemetry. The delivery vector is Telegram social engineering — attackers impersonate company employees and send scheduling links (fake Calendly/Picktime domains) to targets; Lazarus stole $577M in cryptocurrency across the first four months of 2026. Forensic implications: disk imaging will not yield RemotePE artefacts; detection requires in-memory scanning for reflective PE characteristics, monitoring for unusual DPAPI decryption calls from non-system processes (Sysmon EID 1 + process parent chain analysis), and watching for anomalous HTTPS beacons from processes with no disk-based PE at their origin. C2 domain pattern: `aes-secure[.]net` class short domains. MITRE: T1055.001 (Dynamic-link Library Injection), T1055.002 (Portable Executable Injection), T1562.006 (Indicator Blocking/ETW patching), T1480.001 (Environmental Keying), T1059 (Command and Scripting Interpreter).
+    ch_eu_nexus: "European financial institutions and crypto exchanges are likely Lazarus targets given the profile; Lazarus previously targeted Swiss banks; EU/CH financial defenders should treat Telegram-based job/scheduling lures as TTPs"
+    public_sector_nexus: "indirect — primarily targets private financial sector"
+    sector: "finance, cryptocurrency"
+    cves: []
+    actors_campaigns_malware: ["Lazarus Group", "RemotePE", "DPAPILoader", "RemotePELoader"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "DPAPILoader decrypts and loads RemotePELoader from disk using the Windows Data Protection API (DPAPI), and RemotePELoader beacons to a C2 server and waits until it receives the next stage: RemotePE, a RAT executed entirely in memory and never written to disk"
+        attribution: "Fox-IT (NCC Group)"
+        source_url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"
+      - quote: "The decrypted payload is designed to contact a remote server over HTTP, fetch the core module, and execute it in memory, but not before taking steps to evade detection using techniques like Hell's Gate and patching Event Tracing for Windows (ETW)"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/lazarus-deploys-remotepe-memory-only.html"
+
+  - title: "ACR Stealer distributed via fake Claude AI download pages — malicious Google search ads drive users to fairpoint29.com; PowerShell + obfuscated ZIP delivers credential-harvesting malware"
+    sources:
+      - url: "https://isc.sans.edu/diary/33018"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-05-26"
+        role: "primary"
+    discovery_trace: "first seen at: sans-isc feed, URL https://isc.sans.edu/rssfeed.xml (item published 2026-05-26T00:01:48Z) → primary (no pivot needed): https://isc.sans.edu/diary/33018"
+    summary: |
+      Brad Duncan (SANS ISC) documents a delivery chain for ACR Stealer that impersonates Anthropic's Claude AI assistant via counterfeit download pages hosted at fairpoint29.com, promoted through malicious Google search ads on sites.google.com. The infection chain starts with a user clicking a "Download for Windows" button on the impersonation site, which delivers a corrupted ZIP archive containing obfuscated PowerShell scripts. The PowerShell loader executes additional stages including a JPEG image file used to deliver the final stealer payload. The malware establishes C2 with yw.enhanceblabber[.]cc and exfiltrates credentials and sensitive data from compromised Windows systems. A macOS-targeted variant is implied (the threat actor offers platform-specific phishing). ACR Stealer is a commodity infostealer tracked on Malpedia. Detection: monitor for PowerShell processes spawned from browser download paths or zip-extracted files (Sysmon EID 1: `powershell.exe` with `-enc` or `-nop -w hidden` flags from user download directories); watch for connections to newly-registered domains from `powershell.exe`; hunt for `.jpg` files executed as code via PowerShell; block ads/typosquat domains impersonating Anthropic Claude.
+    ch_eu_nexus: "global; any organisation whose employees use AI tools (Claude, ChatGPT, Copilot) is in scope via malicious-ad lures; CH/EU defenders should add Anthropic impersonation to their brand-abuse monitoring"
+    public_sector_nexus: "indirect — employees searching for AI tools"
+    sector: "cross-sector"
+    cves: []
+    actors_campaigns_malware: ["ACR Stealer"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Attackers are distributing ACR Stealer malware through counterfeit Claude download pages, often promoted via malicious Google search ads hosted on sites.google.com"
+        attribution: "SANS ISC"
+        source_url: "https://isc.sans.edu/diary/33018"
+
+  - title: "UPDATE: TeamPCP / Mini Shai-Hulud supply chain worm — @antv npm ecosystem wave (639 malicious versions, 42 forged Sigstore badges), durabletask Linux disk-wiper stage, and full framework open-sourced on GitHub creating copycat wave"
+    sources:
+      - url: "https://isc.sans.edu/diary/33016"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-05-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/mini-shai-hulud-pushes-malicious-antv.html"
+        publisher: "The Hacker News"
+        date: "2026-05-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: sans-isc feed, URL https://isc.sans.edu/rssfeed.xml (item published 2026-05-25T13:26:06Z) → primary (no pivot needed): https://isc.sans.edu/diary/33016"
+    summary: |
+      SANS ISC handler Kenneth Hartman documents TeamPCP / Mini Shai-Hulud activity through 2026-05-24, adding three material new developments not present in prior coverage: (1) The @antv npm ecosystem wave pushed 639 malicious versions across 323 packages, including echarts-for-react (~1.1M weekly downloads) and size-sensor (~4.2M weekly downloads); 42 packages displayed forged Sigstore verification badges in the npm UI — undermining the supply-chain integrity mechanism. (2) Three versions of `durabletask` (1.4.1–1.4.3) on PyPI — Microsoft's official Azure Durable Functions SDK — were poisoned; the second-stage payload reportedly includes a Linux disk wiper, expanding the campaign's destructive capability beyond credential theft. (3) The complete TeamPCP framework was published to GitHub on 2026-05-22, with copycat forks appearing within hours, creating attribution noise and commoditising the attack framework. Teams attributed UNC6780 as a potential cluster designation. Defender takeaways: all echarts-for-react / size-sensor @antv builds from the affected window must be treated as compromised; Sigstore badge display should never substitute for independent SLSA provenance verification; durabletask consumers should audit pipeline logs for unexpected network outbound or wiper-class disk operations; Sysmon EID 11 for unexpected file deletion patterns, EID 3 for anomalous `node` / `python` network beacons from build workers.
+    ch_eu_nexus: "global CI/CD pipelines; European public-sector organisations using npm/@antv packages (echarts-for-react is widely used in dashboards and analytics), Azure Durable Functions users"
+    public_sector_nexus: "indirect — CI/CD pipelines including public-sector DevOps"
+    sector: "technology, public-sector, government"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud", "UNC6780"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-24"
+    evidence:
+      - quote: "TeamPCP now operates across three package ecosystems in parallel, it reached GitHub's own internal codebase, it trojanized an officially Microsoft-published Python SDK, and it appears to have open-sourced its own framework on GitHub"
+        attribution: "SANS ISC"
+        source_url: "https://isc.sans.edu/diary/33016"
+      - quote: "639 malicious versions across 323 packages, including echarts-for-react (~1.1M weekly downloads) and size-sensor (~4.2M weekly downloads). Notably, 42 packages displayed forged Sigstore verification badges in the npm UI"
+        attribution: "SANS ISC"
+        source_url: "https://isc.sans.edu/diary/33016"
+
+  - title: "UPDATE: CVE-2026-9256 (nginx-poolslip) — second NGINX ngx_http_rewrite_module heap overflow with remote ASLR bypass PoC; affects systems patched for NGINX Rift (CVE-2026-42945), patch requires upgrade to 1.30.2+ / 1.31.1+"
+    sources:
+      - url: "https://nginx.org/en/security_advisories.html"
+        publisher: "NGINX / F5"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://securityonline.info/nginx-poolslip-zero-day-aslr-bypass-remote-code-execution/"
+        publisher: "SecurityOnline / Daily CyberSecurity"
+        date: "2026-05-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: nginx-advisory page, URL https://nginx.org/en/security_advisories.html (fetched this run) showing CVE-2026-9256 advisory (F5 K000161377, published 2026-05-22) → search pivot for exploit details → securityonline.info corroboration"
+    summary: |
+      CVE-2026-9256 (CVSS v4.0: 9.2, CWE-122 Heap-based Buffer Overflow) is a distinct second heap overflow in NGINX's `ngx_http_rewrite_module`, disclosed by F5 on 2026-05-22, affecting Open Source NGINX 0.1.17–1.31.0 and NGINX Plus R32–R36. Unlike CVE-2026-42945 (NGINX Rift), which triggers when unnamed PCRE captures are used before a rewrite/if/set directive, CVE-2026-9256 (nginx-poolslip) triggers when overlapping PCRE capture groups (e.g. `^/((.*))$`) reference multiple captures (`$1$2`) in a redirect or arguments context. Both require specific rewrite configurations; default nginx deployments without complex rewrite rules are not directly exploitable for RCE. The critical distinction from NGINX Rift is the remote ASLR bypass: NebSec researchers demonstrated a PoC video showing full exploitation against a hardened NGINX 1.31.0 host using ~300 crafted HTTP requests to probe the heap layout (Heap Feng Shui) followed by precise memory-offset leakage — neutralising ASLR without local access. Patch: NGINX Open Source must be updated to ≥1.30.2 (stable) or ≥1.31.1 (mainline); NGINX Plus to R36 P5 / R32 P7 or R37.0.1.1. Sites that patched for NGINX Rift by updating to 1.31.0 are still vulnerable and must re-upgrade. Workaround: replace unnamed PCRE captures with named captures (e.g. `(?<user_id>[0-9]+)`) in all rewrite rules — eliminates the overlapping-capture trigger condition.
+    ch_eu_nexus: "global; ~5.7M internet-exposed NGINX servers; all EU/CH public-sector reverse proxies, API gateways, and web servers using NGINX with complex rewrite configurations"
+    public_sector_nexus: "indirect — NGINX widely used in public-sector web infrastructure"
+    sector: "cross-sector"
+    cves: ["CVE-2026-9256", "CVE-2026-42945"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-17"
+    evidence:
+      - quote: "Buffer overflow in the ngx_http_rewrite_module. Not vulnerable: 1.31.1+, 1.30.2+. Vulnerable: 0.1.17-1.31.0"
+        attribution: "NGINX / F5"
+        source_url: "https://nginx.org/en/security_advisories.html"
+      - quote: "What distinguishes nginx-poolslip from a conventional DoS flaw is its fully demonstrated, multi-stage remote ASLR bypass, with researchers publishing a proof-of-concept video showing exploitation against a fully hardened Linux server running NGINX 1.31.0"
+        attribution: "SecurityOnline / Daily CyberSecurity"
+        source_url: "https://securityonline.info/nginx-poolslip-zero-day-aslr-bypass-remote-code-execution/"
+
+cve_table:
+  - cve: "CVE-2026-9058"
+    product: "Szafir SDK (KIR)"
+    cvss: "9.3 (CVSS 4.0)"
+    epss: "0.0"
+    kev: "No"
+    exploited: "Not confirmed"
+    patch: "Upgrade to version 463"
+    source: "CERT Polska / ENISA EUVD"
+  - cve: "CVE-2026-9256"
+    product: "NGINX Open Source / NGINX Plus"
+    cvss: "9.2 (CVSS 4.0)"
+    epss: "unknown"
+    kev: "No"
+    exploited: "PoC demonstrated (ASLR bypass video)"
+    patch: "NGINX >= 1.30.2 (stable) or >= 1.31.1 (mainline); NGINX Plus R36 P5 / R32 P7"
+    source: "NGINX/F5 security advisories"
+  - cve: "CVE-2026-42945"
+    product: "NGINX Open Source / NGINX Plus"
+    cvss: "9.2 (CVSS 4.0)"
+    epss: "unknown"
+    kev: "No"
+    exploited: "Yes (VulnCheck honeypots, PHP webshell drops from CN IP)"
+    patch: "NGINX >= 1.30.1 or >= 1.31.0 (note: does NOT fix CVE-2026-9256)"
+    source: "NGINX/F5 advisory; Help Net Security 2026-05-18"
+
+candidate_sources:
+  - id: fox-it-blog
+    publisher: "Fox-IT International Blog (NCC Group)"
+    url: "https://blog.fox-it.com/"
+    category: research
+    why: "Fox-IT published primary RemotePE / Lazarus research that surfaced in this run. No RSS feed discovered but the WordPress blog has a /feed/ URL pattern. Would add coverage for NCC Group/Fox-IT DFIR primary disclosures."
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "SSL certificate verification failure on wbf.ti.bund.admin.ch endpoint; bridge ncsc-csh subcommand returned SSL error. Could not retrieve NCSC.ch Security Hub content this run."
+  - source_id: bsi-de
+    reason: "BSI WID RSS returned only entries dated through 2026-05-22; no items in the 36h window. New [NEU] items all dated 2026-05-22 or earlier."
+  - source_id: cert-eu
+    reason: "Most recent CERT-EU advisory is 2026-006 (PAN-OS, 2026-05-06). No new advisory in window."
