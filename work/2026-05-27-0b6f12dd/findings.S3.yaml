@@ -1,0 +1,196 @@
+---
+domain: S3
+run_id: 2026-05-27-0b6f12dd
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-27T04:12:29Z
+ended_at: 2026-05-27T04:20:40Z
+duration_seconds: 491
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 2
+  bridge_fetches: 16
+
+items:
+  - title: "Elastic Security Labs: Tycoon 2FA AiTM detection engineering — two-tier operator architecture, post-March-2026-takedown variant adoption of OAuth device-code flows"
+    sources:
+      - url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+        publisher: "Elastic Security Labs"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+        publisher: "eSentire"
+        date: "2026-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: elastic-seclabs RSS feed https://elastic.co/security-labs/feed → primary: Elastic Security Labs article, URL https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+    summary: |
+      Elastic Security Labs published on 2026-05-26 a detection engineering deep-dive on Tycoon 2FA, currently the most prolific AiTM phishing-as-a-service kit. After a March 2026 coordinated takedown (led by Microsoft and Europol, 300+ domains seized), operators adapted within weeks and by late April 2026 combined Tycoon tradecraft with OAuth Device Code phishing flows (documented by eSentire). The kit currently operates in two structural variants: a WebSocket AiTM reverse-proxy variant (the "classic" Tycoon 2FA flow that intercepts the post-MFA session cookie in real time) and a device-code-grant abuse variant (Microsoft-only) that leverages the Microsoft Authentication Broker client ID 29d9ed98-a469-4536-ade2-f981bc1d605e to obtain and replay Primary Refresh Tokens. The operator architecture splits across two distinct tiers: Tier 1 (Kit Relay) using cloud-VPS egress IPs with Node.js / Axios / undici user agents for token acquisition, and Tier 2 (Operator Console) using residential-shaped ISP egress with a fixed browser UA for post-compromise Graph API enumeration. The cross-tier durable signal is two distinct ASNs authenticating as the same principal within minutes sharing the same c_sid. Post-compromise Graph API enumeration targets transitiveRoleAssignments, tenantRelationships/getResourceTenants (cross-tenant lateral-movement prep), contact harvesting, and subscribedSkus within 30-60 seconds (20-30+ calls across 4+ recon categories). Elastic published six detection rules for Entra ID and four for Google Workspace, including an ES|QL "Microsoft Graph Multi-Category Reconnaissance Burst" rule. Critical detection gap: Entra ID Identity Protection may not flag kit infrastructure due to rotating IPs, and the risk engine has been observed marking victims as "aiConfirmedSafe" after flagging anomalousToken. Elastic Workflows response automation can disable the account, delete device principals, revoke sessions, and open a Kibana case in under 10 seconds — inside the 10-20 minute kit-to-operator handoff window.
+    ch_eu_nexus: "global; EU public-sector organisations using M365/Entra ID or Google Workspace are primary targets given Tycoon 2FA reached 500,000 organisations monthly at peak"
+    public_sector_nexus: "direct — EU government and education tenants use Entra ID; kit operators targeting high-value accounts"
+    sector: "all sectors with M365 or Google Workspace"
+    cves: []
+    actors_campaigns_malware: ["Tycoon 2FA", "Storm-1747"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Despite a coordinated takedown in March 2026 led by Microsoft and Europol, with support from Cloudflare, SpyCloud, eSentire, and other partners that seized over 300 domains, operators adapted within weeks. By late April 2026, eSentire documented campaigns combining Tycoon tradecraft with OAuth Device Code phishing flows"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+      - quote: "Two distinct ASNs (one cloud-VPS, one residential-shaped) authenticating as the same user principal within minutes. Single-ASN rules catch one tier; the cross-tier pivot is the high-confidence indicator."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+      - quote: "Identity Protection may not flag kit infrastructure due to rotating IPs; Risk engine flagged anomalousToken but later marked users as aiConfirmedSafe, creating false negatives"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+    extended_notes: |
+      Detection specifics for Entra ID: monitor Sign-in logs for 'node', 'axios', 'undici', 'node-fetch' UAs paired with Microsoft Authentication Broker (client ID 29d9ed98-a469-4536-ade2-f981bc1d605e); device-registration events using non-standard UAs (not 'Dsreg', 'DeviceRegistrationClient', 'Dalvik'); token-type progression incomingTokenType:none -> refreshToken -> primaryRefreshToken. For Google Workspace: Admin SDK login_success events within ~1 second across multiple relay IPs; OAuth token.authorize for Chrome client 77185425430.apps.googleusercontent.com followed by DEVICE_REGISTER_UNREGISTER_EVENT within 0.6-1.2s; scope https://www.google.com/accounts/OAuthLogin. Hardening: enable Microsoft Token Protection (Conditional Access); require compliant/managed devices for sensitive resource access; configure Authentication Methods policies to block OAuth Device Code flow for users who do not need it.
+
+  - title: "MuddyWater (Seedworm/MOIS) DLL side-loading campaign against industrial, public-sector and education targets across 9 countries in Q1 2026"
+    sources:
+      - url: "https://www.security.com/threat-intelligence/iran-seedworm-electronics"
+        publisher: "Symantec / Broadcom Threat Hunter Team"
+        date: "2026-05-12"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/muddywater-uses-dll-side-loading-in.html"
+        publisher: "The Hacker News"
+        date: "2026-05-26"
+        role: "corroborating"
+      - url: "https://www.huntress.com/blog/muddywater-attack-chain"
+        publisher: "Huntress"
+        date: "2026-03-06"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews(rss) feed https://feeds.feedburner.com/TheHackersNews, URL https://thehackernews.com/2026/05/muddywater-uses-dll-side-loading-in.html → primary: Symantec / Broadcom blog, URL https://www.security.com/threat-intelligence/iran-seedworm-electronics (published 2026-05-12)"
+    summary: |
+      Broadcom's Symantec Threat Hunter Team reported on 2026-05-12 a Q1 2026 MuddyWater (Seedworm, also tracked as MOIS-affiliated UNC5866, Cotton Sandstorm, Cobalt Obelisk) espionage campaign targeting at least nine organisations across nine countries and four continents, including a major South Korean electronics manufacturer, a Middle Eastern airport, Southeast Asian manufacturers, and a Latin American financial provider. Sectors: industrial and electronics manufacturing, education, public sector, financial services, professional services. The campaign weaponised two DLL side-loading pairs using legitimately signed vendor binaries: (1) fmapp.exe (Fortemedia audio driver utility) → malicious fmapp.dll; (2) sentinelmemoryscanner.exe (SentinelOne endpoint component) → malicious sentinelagentcore.dll. Both malicious DLLs loaded ChromElevator (open-source T1539 tool from github.com/xaitax/Chrome-App-Bound-Encryption-Decryption) to steal passwords, cookies, and payment card data from Chromium-based browsers by bypassing Chrome App-Bound Encryption. A Node.js-based implant orchestrated PowerShell payloads for reconnaissance, screenshot capture (T1113), SAM hive theft (T1003), access token manipulation (T1134), account discovery (T1087), and SOCKS5 reverse-proxy tunnelling (T1090) via proxychains with Axel. Data staging used the public file-transfer service sendit.sh for exfiltration. A bespoke C++ tool named FileFiend handled file collection. Campaign reflects "improved operational hygiene" per Symantec — implant-driven, low noise, week-long dwell time at the South Korean victim in February 2026.
+    ch_eu_nexus: "global; public-sector and education targets directly in scope; EU Council sanctions against three MOIS-linked entities issued March 2026 contextualise threat level for European defenders"
+    public_sector_nexus: "direct — public-sector bodies explicitly named as target sector"
+    sector: "industrial manufacturing, education, public sector, financial services"
+    cves: []
+    actors_campaigns_malware: ["MuddyWater", "Seedworm", "UNC5866", "Cotton Sandstorm", "Cobalt Obelisk", "ChromElevator", "FileFiend"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Seedworm used legitimate fmapp.exe (Fortemedia audio-driver utility) to sideload malicious fmapp.dll containing ChromElevator, described as capable of stealing passwords, cookies, and payment card data from Chromium-based browsers"
+        attribution: "Symantec / Broadcom Threat Hunter Team"
+        source_url: "https://www.security.com/threat-intelligence/iran-seedworm-electronics"
+      - quote: "The activity targeted industrial and electronics manufacturing, education and public-sector bodies, financial services, and professional services, per the Threat Hunter Team from Symantec and Carbon Black"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/muddywater-uses-dll-side-loading-in.html"
+    extended_notes: |
+      MITRE ATT&CK: T1574.002 DLL Side-Loading, T1113 Screen Capture, T1003 OS Credential Dumping, T1134 Access Token Manipulation, T1090 Proxy, T1087 Account Discovery, T1539 Steal Web Session Cookie. Detection: monitor for fmapp.exe, sentinelmemoryscanner.exe loaded from unexpected directories spawning child processes or loading unsigned DLLs (Sysmon EID 7 ImageLoad with unsigned/untrusted signers); alert on Node.js runtime (node.exe) spawning PowerShell; watch for sendit.sh or similar public file-transfer domains in proxy/DNS logs as staging destination. Hardening: block LOLBin-assisted side-loading via AppLocker/WDAC rules constraining which parent processes can load DLLs; deploy Chrome App-Bound Encryption auditing to detect bypass attempts. Note: Symantec primary published 2026-05-12 (15 days before window); THN restatement published in-window 2026-05-26; no fresh exploitation evidence in window.
+
+  - title: "UPDATE: Nimbus Manticore (UNC1549/Screening Serpens) — Check Point Research maps three 2026 campaign waves, MiniFast backdoor architecture, Zoom task-hijacking persistence, SEO-poisoning initial access"
+    sources:
+      - url: "https://research.checkpoint.com/2026/fast-and-furious-nimbus-manticore-operations-during-the-iranian-conflict/"
+        publisher: "Check Point Research"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/iranian-hackers-deploy-minifast-and.html"
+        publisher: "The Hacker News"
+        date: "2026-05-26"
+        role: "corroborating"
+      - url: "https://securityaffairs.com/192689/apt/nimbus-manticore-expanded-attacks-with-ai-assisted-malware-and-fake-zoom-installers.html"
+        publisher: "Security Affairs"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews(rss) feed https://feeds.feedburner.com/TheHackersNews, URL https://thehackernews.com/2026/05/iranian-hackers-deploy-minifast-and.html → pivot: Check Point Research feed https://research.checkpoint.com/feed → primary: Check Point Research article, URL https://research.checkpoint.com/2026/fast-and-furious-nimbus-manticore-operations-during-the-iranian-conflict/"
+    summary: |
+      Check Point Research published on 2026-05-22 a detailed analysis of three Nimbus Manticore (UNC1549 / Screening Serpens, IRGC-affiliated) campaign waves from February–April 2026, following Operation Epic Fury (US-Israeli military action, February 28, 2026). Wave 1 (February): phishing with OnlyOffice-hosted ZIP archives containing trojanized installers impersonating aviation/software job opportunities. Wave 2 (February–March, Operation Epic Fury): trojanized Zoom installers and fake airline career portals; introduced AppDomain Hijacking (T1574.008) — legitimate .NET applications' XML .config files redirected AppDomainManager to malicious DLLs; Zoom-task hijacking: malware monitored for legitimate Zoom scheduled task creation (format ZoomUpdateTaskUser-<SID>) and hijacked it for persistence (T1053.005) instead of creating suspicious new tasks. Wave 3 (April): SEO poisoning (T1598.003) via fake SQL Developer download domain ranked on Bing/DuckDuckGo through link-based reputation manipulation. MiniFast (aka MiniUpdate): 64-bit Windows PE DLL, single export CheckForUpdates, JSON-format HTTP C2 with API-style endpoints (/rg POST for handshake, /agent/init POST registration, /agent/poll?token= GET, /agent/result POST, /upload/ PUT exfil, /files/ GET download), 14 command opcodes including 0x0B DLL injection, 0xB0 UAC elevation, 0xB1 persistence via WindowsSecurityUpdate scheduled task, 0xF0 poll-interval adjustment. Chrome UA: Mozilla/5.0 (Windows NT 10.0; Win64; x64)...Chrome/146.0.0.0. String obfuscation: ROT13 + string reversal. Loader chain: InitInstall.dll/uevmonitor.dll (fake progress + real installer) → Updater.dll (validates parent=svchost.exe, process=update.exe) → MiniFast (UpdateChecker.dll). Abused code-signing certificates from "Gray Matter Software S.R.L." and "Kirubel Kerie Negeya" (both SSL.com-issued). Targets: aviation, defense, telecoms, software development; US, Europe, Middle East.
+    ch_eu_nexus: "direct — Europe explicitly named as target geography; aviation, defense, telecoms in scope for Swiss and EU operators"
+    public_sector_nexus: "indirect — aviation infrastructure (airports) and defense sectors"
+    sector: "aviation, defense, telecoms, software development"
+    cves: []
+    actors_campaigns_malware: ["Nimbus Manticore", "UNC1549", "Screening Serpens", "MiniFast", "MiniUpdate", "MiniJunk V2"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-23
+    evidence:
+      - quote: "Nimbus Manticore introduced a new backdoor named MiniFast, replacing the previously used MiniJunk malware family. The actor adopted several new techniques, including AppDomain hijacking, AI-assisted malware development, and SEO poisoning"
+        attribution: "The Hacker News (citing Check Point Research)"
+        source_url: "https://thehackernews.com/2026/05/iranian-hackers-deploy-minifast-and.html"
+      - quote: "malware monitored for legitimate Zoom scheduled task creation (format: ZoomUpdateTaskUser-<SID>), then hijacked it for persistence rather than creating suspicious new tasks"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/fast-and-furious-nimbus-manticore-operations-during-the-iranian-conflict/"
+    extended_notes: |
+      This is an UPDATE to the May 23 coverage of UNC1549/Screening Serpens by Unit 42 (AppDomainManager hijacking, 6 new RATs). Check Point Research adds material delta: MiniFast's detailed C2 protocol (API opcode table), the Zoom task-hijacking persistence technique, the three-wave campaign structure keyed to Operation Epic Fury timing, and SEO poisoning as a new delivery vector not covered in the Unit 42 analysis. MITRE ATT&CK: T1574.008 Hijacking Execution Flow (AppDomain), T1053.005 Scheduled Task, T1566.002 Phishing, T1598.003 Phishing for Information via Search Engines. Detection: monitor .config files in .NET application directories for non-default AppDomainManager values; alert on ZoomUpdateTaskUser-* scheduled task modifications by non-Zoom processes; hunt for UpdateChecker.dll in AppData\Local\Packages\ or similar; watch for HTTP POST to /rg and /agent/init endpoints with Chrome/146 UA from non-browser processes. Hardening: block execution from user-writable AppData paths via AppLocker; mark ZoomUpdateTaskUser-* task ownership as protected; enable ASR rule to block Office from creating child processes.
+
+  - title: "CVE-2026-45659 — Microsoft SharePoint Server (2016/2019/Subscription Edition): authenticated Site Member can deserialise untrusted data for RCE (CVSS 8.8, May 2026 Patch Tuesday)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-21"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/microsoft-patches-sharepoint-rce-flaw.html"
+        publisher: "The Hacker News"
+        date: "2026-05-26"
+        role: "corroborating"
+      - url: "https://www.darkreading.com/vulnerabilities-threats/microsoft-issues-sharepoint-patch"
+        publisher: "Dark Reading"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews(rss) feed https://feeds.feedburner.com/TheHackersNews, URL https://thehackernews.com/2026/05/microsoft-patches-sharepoint-rce-flaw.html → pivot: MSRC API bridge msrc cve CVE-2026-45659 → primary: Microsoft MSRC, URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659"
+    discovery_trace_note: "latestRevisionDate 2026-05-26 indicates in-window advisory update"
+    summary: |
+      CVE-2026-45659 (CWE-502 Deserialization of Untrusted Data, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H = 8.8, MSRC severity Important) is a remote code execution vulnerability in Microsoft Office SharePoint Server affecting SharePoint Server Subscription Edition, SharePoint Server 2019, and SharePoint Enterprise Server 2016. Any authenticated attacker holding minimum Site Member permissions (PR:L) can send a crafted network request that causes the server to deserialise untrusted data, resulting in code execution. No administrator or elevated privileges required; AC:L meaning no specialised prior knowledge needed. Not currently exploited in the wild; MSRC rating "Exploitation Less Likely." Patch released as part of May 2026 Patch Tuesday (KB5002863 for Subscription Edition, KB5002870 for SharePoint 2019, KB5002868 for SharePoint 2016/Enterprise 2016). No workaround available; patch is the only remediation. The MSRC advisory was revised on 2026-05-26 (latestRevisionDate), with the THN and Dark Reading coverage appearing the same day.
+    ch_eu_nexus: "direct — on-premises SharePoint Server is widely deployed in EU public-sector and cantonal administration environments"
+    public_sector_nexus: "direct — SharePoint is common document management platform in government"
+    sector: "all sectors with on-premises SharePoint Server"
+    cves: [CVE-2026-45659]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Deserialization of untrusted data in Microsoft Office SharePoint allows an authorized attacker to execute code over a network"
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659"
+      - quote: "Any authenticated attacker could trigger this vulnerability. It does not require admin or other elevated privileges. In a network-based attack, an authenticated attacker, who has a minimum of Site Member permissions (PR:L), could execute code remotely on the SharePoint Server."
+        attribution: "Microsoft MSRC FAQ"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45659"
+    extended_notes: |
+      MITRE ATT&CK: T1190 Exploit Public-Facing Application (for internet-exposed SharePoint), T1059 Command and Scripting Interpreter (post-exploit). Historical context: SharePoint RCE vulnerabilities have been weaponised extensively by nation-state actors (APT33, APT40) and ransomware affiliates; given the "Exploitation Less Likely" rating this specific CVE has not yet been weaponised, but patch urgency is high given SharePoint's role as a document and identity bridge in many organisations. Detection: application event logs on SharePoint Server for unusual w3wp.exe child-process spawning; monitor .NET serialisation exceptions; WAF rules to block serialised payloads to SharePoint endpoints. Patch via KB articles above; verify all three affected product lines are patched.
+
+  - title: "Five-year database-ransom census: 46% of 65,907 exposed databases carry ransom markers; MongoDB/MySQL hit near-universally; 62% of attacker wallets received nothing [SINGLE-SOURCE]"
+    sources:
+      - url: "https://ransomnews.com/database-ransom-economics-2026/"
+        publisher: "Ransomnews Research Team"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://securityaffairs.com/192711/cyber-crime/the-hidden-ransomware-economy-running-on-exposed-databases.html"
+        publisher: "Security Affairs"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: securityaffairs feed https://securityaffairs.com/feed, URL https://securityaffairs.com/192711/cyber-crime/the-hidden-ransomware-economy-running-on-exposed-databases.html → primary: Ransomnews Research, URL https://ransomnews.com/database-ransom-economics-2026/"
+    summary: |
+      The Ransomnews Research Team published on 2026-05-26 a five-year longitudinal census (May 2021 – May 13, 2026) of 65,907 exposed databases on the public internet across MongoDB, MySQL, Elasticsearch, Kibana, and HTTP admin panels. Key findings: 30,515 (46.3%) already carried ransom or wipe markers; 215+ billion records collectively compromised. Of 514 attacker bitcoin wallets traced on-chain, 318 (62%) received zero BTC payments; total confirmed revenue across all wallets was only 9.78 BTC (~$753K), with the top 10 wallets capturing 43% of that sum. Compromise rates are near-universal for directly exposed database services: MongoDB 99.8% (3,525/3,532), MySQL 99.96% (2,930/2,931), Elasticsearch ~98%. Attack methodology is highly automated: one wallet appeared in exactly 1,283 identical ransom notes (demand: 0.01 BTC each) across 49 countries over a 31-month run — "That's not a negotiation operation. It's a script." Geographic distribution of compromised hosts: China (11,874), United States (4,194), Germany, France, India, Singapore, South Korea. The dominant ransom note families are read_me_to_recover (17,908 systems) and btc_ransom_note (14,714 systems). Attackers delete data rather than encrypt it; payment does not restore access. The study represents operationally significant awareness for Swiss and EU public-sector entities operating self-managed database infrastructure, particularly in cantonal administration and SME cloud deployments.
+    ch_eu_nexus: "direct — Germany and France in top-5 compromised countries; EU self-hosted database exposure is significant"
+    public_sector_nexus: "indirect — self-managed database infrastructure in public-sector IT common attack surface"
+    sector: "all sectors with internet-exposed database services"
+    cves: []
+    actors_campaigns_malware: ["read_me_to_recover", "btc_ransom_note"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Mass database extortion is industrial, automated, mostly unpaid, and still doing enormous damage. Of 514 distinct attacker wallets identified, 318 (62%) received zero bitcoin payments."
+        attribution: "Ransomnews Research Team"
+        source_url: "https://ransomnews.com/database-ransom-economics-2026/"
+      - quote: "MongoDB: 3,525/3,532 (99.8%) hit; MySQL: 2,930/2,931 (99.96%) hit. Geographic distribution: China (11,874), United States (4,194), Germany, France, India, Singapore, South Korea, Russia, Hong Kong, Canada"
+        attribution: "Ransomnews Research Team (via Security Affairs)"
+        source_url: "https://securityaffairs.com/192711/cyber-crime/the-hidden-ransomware-economy-running-on-exposed-databases.html"
+    extended_notes: |
+      SINGLE-SOURCE caveat: the Ransomnews Research Team appears to be a small independent research organisation; their methodology and data have not been independently reproduced by a second organisation. Security Affairs covered the study but did not independently verify the data. Classified as MEDIUM confidence accordingly. Defender takeaway: any MongoDB, MySQL, Elasticsearch, or similar database service with a public IP is essentially certain to be ransomed if not auth-gated at the network layer. Hardening: never expose database ports (27017/TCP MongoDB, 3306/TCP MySQL, 9200/TCP Elasticsearch) to the internet; enforce VPN or private network access; enable authentication on all database services (MongoDB auth is disabled by default in many configurations); audit Shodan/Censys exposure. Detection: monitor for unexpected ransom-note files (read_me_to_recover, WARNING.txt, HACKED) appearing in database data directories.
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "503 response on bridge fetch — consistent with documented 503x6 rotation gap; no attempt to over-invest per spawn instructions"
+  - source_id: trendmicro-research
+    reason: "500 response on bridge fetch — consistent with documented 500x2 rotation gap"
+  - source_id: greynoise
+    reason: "RSS feed returned 404; GreyNoise landing page served large SPA; no structured feed available — no in-window items confirmed"
+  - source_id: volexity
+    reason: "RSS feed parse error (malformed XML); only posts from 2025 and earlier visible on landing page; no 2026 in-window items confirmed"
+  - source_id: securityweek
+    reason: "Feed returned 403; no fallback available without bridge-url; covered via THN/SecurityAffairs for same stories"
