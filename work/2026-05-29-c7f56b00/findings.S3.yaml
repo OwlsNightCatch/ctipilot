@@ -1,0 +1,256 @@
+# work/2026-05-29-c7f56b00/findings.S3.yaml
+domain: S3
+run_id: 2026-05-29-c7f56b00
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-29T04:09:11Z
+ended_at: 2026-05-29T04:22:00Z
+duration_seconds: 771
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 4
+  bridge_fetches: 18
+
+items:
+  - title: "The Gentlemen RaaS — Go encryptor with 21-technique simultaneous lateral-movement engine; Storm-2697 affiliates; Huntress + Microsoft + DFIR Report convergent coverage"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://www.huntress.com/blog/the-gentlemen-ransomware-defense-evasion-ttps"
+        publisher: "Huntress Labs"
+        date: "2026-05-21"
+        role: "corroborating"
+      - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+        publisher: "Check Point Research"
+        date: "2026-05-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent threat-intelligence feed, URL https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/ → corroborating: Huntress Labs, URL https://www.huntress.com/blog/the-gentlemen-ransomware-defense-evasion-ttps → corroborating: Check Point Research, URL https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+    summary: |
+      The Gentlemen is a Go-based ransomware-as-a-service (RaaS) platform operated by affiliates of Storm-2697 that debuted in mid-2025 and has claimed over 400 victims. The binary employs Curve25519 + XChaCha20 encryption with per-file ephemeral keys, and is compiled through Garble (Go source-code obfuscator) to strip symbol tables and frustrate static analysis. Its defining characteristic is executing 21 independent lateral-movement techniques simultaneously per target host — PsExec, WMIC, scheduled tasks, Windows services, and PowerShell remoting — maximising the probability that at least one propagation path succeeds in an enterprise network. Defense evasion is consistent across observed incidents: PowerShell disables Microsoft Defender real-time monitoring (Set-MpPreference -DisableRealtimeMonitoring), stops the WinDefend service, adds broad exclusions (Add-MpPreference -ExclusionProcess; drive-level exclusions), disables Controlled Folder Access, and clears Security/System/Application Event Logs (EID 104, EID 1102). Huntress IR documented two incidents (April + May 2026) where initial access was RDP with compromised credentials, lateral movement reached domain controllers via NETLOGON share + Configuration Manager Client (CcmExec.exe), and masqueraded process names (svchost32.exe) were used. The DFIR Report confirmed a related chain where EtherRAT (via malicious Sysinternals MSI) and TukTuk C2 (AI-generated, first noted by Evangelos G) preceded Gentleman deployment in an April 2026 intrusion. Microsoft recommends ASR rules blocking PsExec/WMI child processes (GUID d4f940ab-401b-4efc-aadc-ad5f3c50688a) and enabling EDR in block mode.
+    ch_eu_nexus: "global; affiliates active in EU; no CH-specific victims cited"
+    public_sector_nexus: "indirect — RaaS affiliate model means opportunistic targeting; no confirmed public-sector EU victim cited"
+    sector: "ransomware, cross-sector"
+    cves: []
+    actors_campaigns_malware:
+      - "Storm-2697"
+      - "The Gentlemen ransomware (RaaS)"
+      - "EtherRAT"
+      - "TukTuk C2"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Storm-2697 affiliates that combines per-file ephemeral key encryption with an aggressive self-propagation module to deploy itself across an entire network using series of simultaneous lateral movement techniques per target"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+      - quote: "Both incidents employed Scheduled Tasks and PowerShell commands to disable Microsoft Defender, add antivirus exclusions, and clear Security/System/Application Event Logs"
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/the-gentlemen-ransomware-defense-evasion-ttps"
+    extended_notes: |
+      ATT&CK mappings (Huntress): T1021.001 (RDP), T1059.001 (PowerShell), T1053.005 (Scheduled Task), T1562.001 (Impair Defenses), T1070.001 (Clear Event Logs), T1543.005 (Windows Service), T1036.005 (Masquerading). Microsoft tags: Elevation of privilege, Lateral movement, Ransomware as a service. Defender detection name: Ransom:Win64/Gentlemen.A. 21-technique propagation list per Microsoft includes PsExec, WMIC, scheduled tasks, services, PowerShell remoting — all viable pivot chains in typical enterprise AD environments. Detection hunting: watch for (a) wevtutil cl Security/System/Application chained with msconfig or sc stop WinDefend; (b) svchost32.exe spawned outside %SystemRoot%\System32; (c) CcmExec.exe launching non-Configuration-Manager payloads.
+
+  - title: "Gogs self-hosted Git service: unauthenticated-then-authenticated RCE via git rebase --exec argument injection — unpatched, Metasploit module released (CVSSv4 9.4)"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+        publisher: "Rapid7 Labs"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/critical-gogs-rce-vulnerability-lets.html"
+        publisher: "The Hacker News"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/critical-gogs-rce-vulnerability-lets.html → primary: Rapid7 Labs advisory, URL https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    summary: |
+      Rapid7 Labs disclosed a critical argument-injection vulnerability (CWE-88, CVSSv4 9.4, no CVE assigned at publication) in Gogs — a popular open-source self-hosted Git service — that allows any authenticated user to achieve remote code execution on the server. The root cause is in the Merge() function in internal/database/pull.go: when a pull request is merged using the "Rebase before merging" strategy, Gogs passes the source branch name unsanitized to process.ExecDir, bypassing the git-module library's safety wrappers. An attacker creates a branch named e.g. --exec=<command> which causes git rebase to invoke the injected command as the OS user running the Gogs process. Affected versions are Gogs 0.14.2 and 0.15.0+dev (commit b53d3162); all prior versions supporting the rebase-merge strategy are likely vulnerable. The maintainer acknowledged the disclosure (reported 2026-03-17) on 2026-03-28 but has not released a patch; Rapid7 published after the standard 90-day coordinated-disclosure window expired. Shodan identified 1,141 internet-facing instances at publication. Rapid7 also shipped a full Metasploit module (metasploit-framework PR #21515) covering Windows and Linux. Intermediate mitigations: disable user self-registration (DISABLE_REGISTRATION = true in app.ini) and repository creation (MAX_CREATION_LIMIT = 0) to limit attacker account creation; or disable "Rebase before merging" option in instance settings.
+    ch_eu_nexus: "global; Gogs is widely deployed in EU public-sector, research, and university environments as a lightweight GitHub alternative; 1,141 internet-facing instances identified globally"
+    public_sector_nexus: "high — Gogs is used as an internal code/configuration repository in CH/EU government agencies and universities"
+    sector: "cross-sector; public-sector, research, education"
+    cves:
+      - "CVE-2026-26194"
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The flaw exploits argument injection in the git rebase command during merge operations by injecting the --exec flag. No admin privileges are required; attackers only need account creation and repository access"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/critical-gogs-rce-vulnerability-lets.html"
+      - quote: "The root cause stems from the Merge() function in internal/database/pull.go bypassing the git-module library's protections by using raw process.ExecDir instead of safe APIs. No patch exists as of publication"
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    extended_notes: |
+      ATT&CK: T1190 (Exploit Public-Facing Application), T1059 (Command and Scripting Interpreter — via OS injection). Detection: git process trees spawning unexpected child processes from the Gogs process user; OS-level process monitoring for the Gogs binary spawning anything other than git sub-commands. The NVD page for CVE-2026-26194 lists prior Gogs argument-injection variants (CVE-2024-39930 / CVE-2024-39932 / CVE-2024-39933) — same class, different entry point. Hardening: if you cannot patch, restrict registration and repository creation as described; also consider network-layer access controls limiting who can submit pull requests.
+
+  - title: "JINX-0164 targets cryptocurrency firms — LinkedIn recruiter lures, AUDIOFIX macOS infostealer, MINIRAT npm supply-chain pivot; CI/CD lateral movement"
+    sources:
+      - url: "https://www.wiz.io/blog/threat-actors-target-crypto-orgs"
+        publisher: "Wiz Research / Wiz CIRT"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/jinx-0164-targets-cryptocurrency-firms.html"
+        publisher: "The Hacker News"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/jinx-0164-targets-cryptocurrency-firms.html → primary: Wiz Research, URL https://www.wiz.io/blog/threat-actors-target-crypto-orgs"
+    summary: |
+      Wiz CIRT identified and named JINX-0164, a financially motivated threat actor targeting cryptocurrency organizations since mid-2025. The group uses LinkedIn-based social engineering — fake recruiter personas — to direct developers to fraudulent videoconferencing platforms that deliver AUDIOFIX, a compiled Python binary that functions as both an infostealer and backdoor. AUDIOFIX harvests Keychain contents, browser credentials (Chrome, Firefox, Safari), SSH keys, AWS/GCP/Azure cloud provider keys, and credentials from 51 cryptocurrency wallet extensions; it achieves macOS persistence via LaunchAgent. After establishing endpoint access, JINX-0164 pivots laterally into CI/CD infrastructure using stolen developer credentials and injected poisoned commits (disguised under legitimate developer identities) into internal repositories — any team member building from the poisoned branches receives MINIRAT, a lightweight Go-based backdoor. The supply-chain escalation materialized through the @velora-dex/sdk npm package version 4.9.1 (trojanized 2026-04-07), which fetched MINIRAT via LaunchCtl-based persistence. Wiz links JINX-0164 to prior DPRK-adjacent tradecraft but does not formally attribute to a state actor; tactical overlaps with UNC1069 and Sapphire Sleet (North Korean) are noted.
+    ch_eu_nexus: "global; cryptocurrency firms including European-nexus DeFi projects; @velora-dex/sdk supply-chain reach is global"
+    public_sector_nexus: "low — primarily cryptocurrency and fintech"
+    sector: "fintech, cryptocurrency, software-supply-chain"
+    cves: []
+    actors_campaigns_malware:
+      - "JINX-0164"
+      - "AUDIOFIX"
+      - "MINIRAT"
+      - "UNC1069 (overlap)"
+      - "Sapphire Sleet (overlap)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "JINX-0164, uses LinkedIn social engineering, custom macOS malware, and CI/CD hijacking to target crypto organizations"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/threat-actors-target-crypto-orgs"
+      - quote: "JINX-0164 also distributes MiniRAT, a Go-based backdoor previously delivered via a compromised npm package (@velora-dex/sdk), enabling arbitrary command execution and payload retrieval on macOS systems"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/jinx-0164-targets-cryptocurrency-firms.html"
+    extended_notes: |
+      ATT&CK (Wiz-stated + inferred): T1566 Social Engineering, T1195.002 Compromise Software Supply Chain, T1555 Credentials from Password Stores, T1098.005 Device Registration, T1543.001 Launch Agent (macOS persistence). Detection: unusual LaunchAgent plist creation under ~/Library/LaunchAgents from non-Apple parent processes; build-pipeline tools (npm install) spawning network connections to non-CDN endpoints; unusual cross-region cloud API calls from developer workstations. Hardening: enforce Sigstore signature verification for npm/PyPI dependencies; audit and pin @velora-dex/sdk to a known-safe version; restrict CI/CD runner permissions with least-privilege service accounts.
+
+  - title: "Tycoon 2FA AiTM post-takedown revival: OAuth device-code pivot, Node.js residential-proxy tier, primaryRefreshToken persistence — Elastic detection engineering guide"
+    sources:
+      - url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+        publisher: "Elastic Security Labs"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+        publisher: "eSentire TRU"
+        date: "2026-05-12"
+        role: "corroborating"
+    discovery_trace: "first seen at: elastic-seclabs feed, URL https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering → corroborating: eSentire TRU, URL https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+    summary: |
+      Elastic Security Labs published a detection-engineering deep dive on Tycoon 2FA, the dominant AiTM phishing kit (Storm-1747), covering its post-March-2026-takedown revival. The kit's core remains a reverse proxy intercepting OAuth session tokens before they reach victim browsers, with a two-tier architecture: a cloud-VPS tier (Node.js, Alibaba Cloud AS45102) performing token acquisition, and a residential-proxy tier conducting post-compromise Microsoft Graph API reconnaissance (role discovery, cross-tenant mapping, contact harvesting). The post-takedown variant adopted OAuth Device Code flow (RFC 8628) — victims grant consent at a genuine Microsoft device-login endpoint, eliminating credential capture and allowing the kit to acquire tokens without proxying authentication at all (this was independently confirmed by eSentire TRU on 2026-05-12). Durable persistence is achieved through Entra ID device registration → primaryRefreshToken (PRT) issuance, which survives standard session revocation; standard Conditional Access session-control playbooks do not revoke PRTs unless Token Protection policies are enforced. Elastic released six open-source detection rules (linked from the article) including: Entra ID Potential AiTM Sign-In via OfficeHome (Node.js UA + OfficeHome → Graph/Exchange); multi-ASN burst enumeration via delegated Graph permissions; unusual device registration events correlated with suspicious ASN. Containment using Elastic Workflows achieves sub-10-second response by automatically revoking sessions and disabling the device upon alert. The only MFA mechanisms immune to AiTM token relay are FIDO2/passkeys; TOTP, SMS, and push-based MFA can all be proxied.
+    ch_eu_nexus: "directly relevant — Tycoon 2FA targets M365 and Google Workspace users globally; Entra ID tenants in CH and EU public sector are in scope"
+    public_sector_nexus: "high — M365/Entra ID dominates EU public-sector identity; device-code phishing frequently targets government contractor workflows"
+    sector: "cross-sector; identity, public-sector, finance"
+    cves: []
+    actors_campaigns_malware:
+      - "Storm-1747"
+      - "Tycoon 2FA (AiTM phishing kit)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The kit establishes durable persistence through device registration leading to primaryRefreshToken (PRT) issuance, which survives standard session revocation playbooks"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+      - quote: "Rather than capturing credentials, the evolved kit abuses Microsoft's legitimate device-login flow to obtain OAuth tokens without proxying authentication"
+        attribution: "eSentire TRU"
+        source_url: "https://www.esentire.com/blog/tycoon-2fa-operators-adopt-oauth-device-code-phishing"
+    extended_notes: |
+      ATT&CK: T1566.002 (Spearphishing Link), T1539 (Steal Web Session Cookie), T1078.004 (Valid Accounts: Cloud Accounts), T1098.005 (Account Manipulation: Device Registration), T1550.001 (Use Alternate Authentication Material: Application Access Token), T1087.004 (Account Discovery: Cloud Account). Six Elastic detection-rules published at github.com/elastic/detection-rules covering Entra ID AiTM flows, OAuth device-code phishing via Entra ID, Auth Broker unusual resource, device registration via unusual user agent, Graph enumeration bursts. Hardening priority order: (1) enforce Conditional Access policy blocking device-code flows for all users except approved kiosk/headless scenarios; (2) deploy Token Protection policy in Entra ID (binds tokens to device TPM); (3) migrate to FIDO2/passkeys. Detection: Entra ID sign-in logs — filter SignInActivity where UserAgent contains 'node' or 'undici' AND ResourceDisplayName in ('Microsoft Graph', 'Office 365 Exchange Online') AND cross-ASN correlation of the same user from different AS blocks within short windows.
+
+  - title: "FortiClient EMS CVE-2026-35616 active exploitation update — EKZ Infostealer delivered via fake Fortinet patch disguised as FortiEndpoint_Patch.exe (Arctic Wolf)"
+    sources:
+      - url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+        publisher: "Arctic Wolf Labs"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/threat-actors-exploit-critical.html"
+        publisher: "The Hacker News"
+        date: "2026-05-28"
+        role: "corroborating"
+      - url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+        publisher: "Fortinet PSIRT"
+        date: "2026-04-04"
+        role: "patch reference"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/threat-actors-exploit-critical.html → primary: Arctic Wolf Labs, URL https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/ → patch reference: Fortinet PSIRT FG-IR-26-099"
+    summary: |
+      Arctic Wolf Labs documented a May 2026 active exploitation campaign against unpatched FortiClient EMS deployments using CVE-2026-35616 (CVSS 9.1, CWE-284 improper access control, FortiClient EMS 7.4.5–7.4.6). Attackers exploit the API authentication bypass to modify Remote Access Profile configurations, injecting malicious PowerShell scripts signed under the fortitray.exe trusted binary that download FortiEndpoint_Patch.exe — actually the EKZ Infostealer. EKZ harvests passwords, cookies, and autofill data from Chrome, Firefox, Chromium-based browsers, and Gecko variants (LibreWolf, Waterfox, Pale Moon, Thunderbird) by directly copying itself into browser profile directories to pass elevation-validation checks, then accessing encrypted credential stores via nss3.dll. Harvested data is staged locally and exfiltrated to attacker infrastructure via HTTP POST. The campaign is particularly impactful because compromise of the EMS server propagates malicious payloads to all managed FortiClient endpoints without per-device intrusion — a single server compromise translates to a fleet-wide credential breach. CVE-2026-35616 was first exploited in the wild on 2026-03-31 (detected by watchTowr ahead of the April 4 advisory), added to CISA KEV on 2026-04-06; FortiClient EMS 7.4.7 is the permanent fix.
+    ch_eu_nexus: "directly relevant — Fortinet FortiClient EMS is widely deployed as endpoint management in CH/EU enterprise and government; CISA KEV status confirms active risk"
+    public_sector_nexus: "high — FortiClient is a common endpoint-security product in CH/EU public-sector deployments"
+    sector: "cross-sector; network-security, endpoint management"
+    cves:
+      - "CVE-2026-35616"
+    actors_campaigns_malware:
+      - "EKZ Infostealer"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The campaign abused trusted endpoint management infrastructure to deliver malware across managed endpoints. Threat actors disguised the credential stealer payload as a Fortinet endpoint"
+        attribution: "Arctic Wolf (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/05/threat-actors-exploit-critical.html"
+      - quote: "Threat actors leveraged this weakness to modify Remote Access Profile configurations and inject malicious PowerShell scripts into managed endpoints. The payload, designated EKZ Infostealer, was disguised as a legitimate Fortinet patch"
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+    extended_notes: |
+      ATT&CK: T1190 (Exploit Public-Facing Application), T1195.002 (Compromise Software Supply Chain — EMS as distribution vector), T1555.003 (Credentials from Web Browsers), T1041 (Exfiltration over C2 Channel). Affected versions: FortiClient EMS 7.4.5 and 7.4.6 only (PSIRT FG-IR-26-099). Patch: upgrade to 7.4.7 or apply the out-of-band hotfix. Detection: look for unexpected modifications to Remote Access Profile XML files via EMS console; fortitray.exe spawning PowerShell with -EncodedCommand or -enc flags; EMS service account making outbound HTTP POST connections to non-Fortinet endpoints; browser-profile-directory writes from processes other than the browser binary itself. Network-level: block EMS management ports from internet; enable EMS admin-access MFA.
+
+  - title: "Grandoreiro banking trojan resurfaces in Europe — DLL side-loading with WebSocket/STUN/ICE NAT-traversal C2; WatchGuard confirms Portugal/Spain targeting"
+    sources:
+      - url: "https://www.watchguard.com/wgrd-security-hub/secplicity-blog/grandoreiro-malware-campaign-targets-europe-and-latin-america"
+        publisher: "WatchGuard"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/grandoreiro-malware-and-btmob-rat.html"
+        publisher: "The Hacker News"
+        date: "2026-05-27"
+        role: "corroborating"
+      - url: "https://www.welivesecurity.com/en/malware/btmob-stealthy-rat-burrowing-deep-android-devices/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/05/grandoreiro-malware-and-btmob-rat.html → primary: WatchGuard, URL https://www.watchguard.com/wgrd-security-hub/secplicity-blog/grandoreiro-malware-campaign-targets-europe-and-latin-america → corroborating: ESET, URL https://www.welivesecurity.com/en/malware/btmob-stealthy-rat-burrowing-deep-android-devices/"
+    summary: |
+      WatchGuard telemetry confirmed an active 2026 Grandoreiro campaign targeting banks in Portugal and Spain, alongside Latin America, employing DLL side-loading via four abused legitimate software binaries. The campaign uses Delphi 11-compiled DLLs injected through side-loading to deploy the Grandoreiro core, which now incorporates WebSocket-based C2 communications using the sgcWebSockets library, with STUN and ICE protocols enabling NAT traversal — C2 traffic is disguised as legitimate web-conferencing data, bypassing standard protocol-inspection rules. Targeted institutions include Abanca, Banco de Portugal, BBVA PT, Caixa Geral Depositos, Santander, Revolut, and Wise. ESET separately documented the Android BTMOB RAT campaign running in parallel; BTMOB (evolved from SpySolr, distributed as malware-as-a-service at $5,000 lifetime license) spreads via phishing pages impersonating streaming or cryptocurrency platforms and exploits Android Accessibility Services for full device takeover — roughly 15 new BTMOB v2.5 samples detected in two weeks. Both campaigns target the Iberian Peninsula and LATAM but have separately been observed in broader EU engagements.
+    ch_eu_nexus: "directly relevant — Portugal and Spain named as primary European targets; Revolut and Wise targeted (used by CH/EU consumers broadly)"
+    public_sector_nexus: "low — primarily banking and fintech consumers"
+    sector: "finance, banking, retail"
+    cves: []
+    actors_campaigns_malware:
+      - "Grandoreiro"
+      - "BTMOB RAT"
+      - "SpySolr"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "WatchGuard telemetry identified a campaign associated to Grandoreiro that uses the DLL Side-Loading technique abusing four different softwares, targeting banks in Portugal"
+        attribution: "WatchGuard"
+        source_url: "https://www.watchguard.com/wgrd-security-hub/secplicity-blog/grandoreiro-malware-campaign-targets-europe-and-latin-america"
+      - quote: "Grandoreiro now employs DLL side-loading techniques leveraging Delphi 11-compiled DLLs with WebSocket and real-time communication capabilities for peer-to-peer operations"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/grandoreiro-malware-and-btmob-rat.html"
+    extended_notes: |
+      ATT&CK: T1574.002 (Hijack Execution Flow: DLL Side-Loading), T1071.001 (Application Layer Protocol: Web Protocols — WebSocket C2), T1095 (Non-Application Layer Protocol — STUN/ICE for NAT traversal), T1055 (Process Injection), T1056.001 (Input Capture: Keylogging). Detection: look for DLL loads where the parent binary is legitimate-signed software but the DLL is in an unexpected user-writable directory; WebSocket connections from non-browser processes; STUN protocol (UDP 3478) from non-VoIP/videoconferencing processes. For BTMOB: Android Accessibility Service grants to sideloaded APKs; APK installs from non-Play sources. The WebRTC/STUN NAT-traversal innovation means traditional DNS/HTTP-C2 detection rules do not catch this variant.
+
+candidate_sources:
+  - id: arctic-wolf-labs
+    publisher: "Arctic Wolf Labs (arcticwolf.com/resources/blog)"
+    url: "https://arcticwolf.com"
+    rss_url: null
+    category: research
+    why: "Published primary technical analysis of CVE-2026-35616 FortiClient EMS active exploitation campaign (EKZ Infostealer) on 2026-05-27. High-quality vendor threat research directly relevant to enterprise endpoint-management security. Not currently in sources.json."
+  - id: watchguard-secplicity
+    publisher: "WatchGuard Secplicity blog (watchguard.com/wgrd-security-hub/secplicity-blog)"
+    url: "https://www.watchguard.com/wgrd-security-hub/secplicity-blog"
+    rss_url: null
+    category: research
+    why: "Published primary analysis of Grandoreiro DLL side-loading + WebSocket/STUN C2 European banking campaign (2026-05-26). WatchGuard telemetry on EU threats is operationally valuable."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Upstream HTTP 503 on feed; flagged as rotation-priority. Searched for Sophos content via WebSearch — no qualifying in-window items identified."
+  - source_id: dragos
+    reason: "Feed returned HTTP 404; no OT/ICS items identified via WebSearch in the 36h window."
+  - source_id: shadowserver
+    reason: "Feed returned HTTP 404; no qualifying in-window items."
+  - source_id: sekoia
+    reason: "Feed returned HTTP 404; no qualifying in-window items identified."
+  - source_id: volexity
+    reason: "Feed returned HTTP 404; no qualifying in-window items identified."
+  - source_id: greynoise
+    reason: "Feed returned HTTP 404; no qualifying in-window items identified."

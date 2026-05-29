@@ -1,0 +1,475 @@
+domain: S2
+run_id: 2026-05-29-c7f56b00
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-29T04:09:00Z
+ended_at: 2026-05-29T04:14:48Z
+duration_seconds: 348
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 12
+  bridge_fetches: 10
+
+items:
+  - title: "Samba 4.22.10 / 4.23.8 / 4.24.3: two unauthenticated RCE flaws in SAMR server and printing subsystem (CVE-2026-4408, CVE-2026-4480)"
+    sources:
+      - { url: "https://www.samba.org/samba/security/CVE-2026-4408.html", publisher: "Samba Project", date: "2026-05-27", role: "primary" }
+      - { url: "https://www.samba.org/samba/security/CVE-2026-4480.html", publisher: "Samba Project", date: "2026-05-27", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/05/27/6", publisher: "oss-security", date: "2026-05-27", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0651/", publisher: "CERT-FR / ANSSI", date: "2026-05-27", role: "corroborating" }
+    discovery_trace: >
+      first seen at: bsi-de (WID-SEC-2026-1xxx batch, 2026-05-28 BSI RSS), pivoted to cert-fr avis-recent
+      listing which surfaced CERTFR-2026-AVI-0651 (2026-05-27) → fetched
+      https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0651/ → outbound links led to
+      https://www.samba.org/samba/security/CVE-2026-4408.html and CVE-2026-4480.html (primaries);
+      corroborated via https://www.openwall.com/lists/oss-security/2026/05/27/6
+    summary: |
+      Samba shipped coordinated security releases (4.22.10, 4.23.8, 4.24.3) on 2026-05-27
+      addressing six vulnerabilities, with two rated CVSS 10.0 Critical:
+
+      CVE-2026-4408: The SamValidatePasswordChange and SamValidatePasswordReset RPC handlers
+      in the Samba DCE/RPC SAMR server pass the client-controlled username to the "check
+      password script" smb.conf option via the %u substitution character without escaping
+      shell metacharacters. An unauthenticated remote attacker can inject arbitrary shell
+      commands via a crafted username. Prerequisites: (a) a "check password script" containing
+      %u must be configured in smb.conf; (b) samba-dcerpcd must be running as a system service,
+      which requires "rpc start on demand helpers = no" (non-default). Active Directory DCs are
+      unaffected. Reporters: Ron Ben Yizhak (SafeBreach) and John Walker (ZeroPath).
+
+      CVE-2026-4480: Samba's print command processing passes the client-controlled job
+      description string to the "print command" smb.conf setting via the %J substitution
+      character without sanitising shell metacharacters. An unauthenticated remote attacker
+      with print access (guest printing is on by default) can achieve RCE on the print server.
+      Prerequisites: (a) "print command" must include %J; (b) the server must NOT use CUPS or
+      iprint printing backend — raw/classic printing only. Technique: T1059 (Command Injection
+      via shell metacharacters) → T1190 (Exploit Public-Facing Application). No exploit PoC
+      confirmed public as of 2026-05-29.
+
+      Detection: Samba audit logs showing unexpected subprocess spawns from smbd/samba-dcerpcd;
+      auditd EXECVE records for child processes of smbd with attacker-controlled command strings.
+      Hardening: (1) Remove %u from check password scripts or wrap in single quotes; (2) Wrap %J
+      in single quotes or remove from print command; (3) Set "rpc start on demand helpers = yes"
+      (the default) to disable the vulnerable on-demand SAMR path; (4) Upgrade to 4.22.10, 4.23.8,
+      or 4.24.3. EU public-sector relevance: Samba is the dominant Windows-interop file-server stack
+      in Linux-based Swiss and EU government environments, often used for SYSVOL replication,
+      Active Directory member servers, and legacy print servers.
+    ch_eu_nexus: "global; heavy Samba deployment in Swiss/EU public-sector Linux file servers and member servers"
+    public_sector_nexus: "high — Samba is standard infrastructure in EU government IT"
+    sector: "government, education, healthcare, all"
+    cves: [CVE-2026-4408, CVE-2026-4480]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the client-controlled username is passed to the 'check password script' without escaping shell meta-characters"
+        attribution: "Samba Project"
+        source_url: "https://www.samba.org/samba/security/CVE-2026-4408.html"
+      - quote: "Unauthenticated Remote Code Execution in Samba printing subsystem"
+        attribution: "oss-security (Samba team)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/05/27/6"
+    extended_notes: |
+      The six-CVE batch also includes CVE-2026-3238 (High — unauthenticated DoS via NULL pointer
+      in AD DC WINS server), CVE-2026-1933 (Medium — reparse-point access-control bypass allowing
+      write to "read only = yes" shares), CVE-2026-2340 (Medium — WORM bypass via rename), and
+      CVE-2026-3012 (Medium — auto-enrolment GPO fetching CA cert over HTTP without verification).
+      Patch CERTFR-2026-AVI-0651 is the ANSSI/CERT-FR advisory for this batch.
+
+  - title: "Rancher (SUSE): critical command injection via cluster-import endpoint (CVE-2026-44939, CVSS 9.6) plus two further privilege-escalation flaws"
+    sources:
+      - { url: "https://github.com/rancher/rancher/security/advisories/GHSA-mhc6-2gfq-xx62", publisher: "SUSE Rancher (GitHub Security Advisory)", date: "2026-05-27", role: "primary" }
+      - { url: "https://github.com/rancher/rancher/security/advisories/GHSA-vx8h-4prv-g744", publisher: "SUSE Rancher (GitHub Security Advisory)", date: "2026-05-27", role: "primary" }
+      - { url: "https://github.com/rancher/rancher/security/advisories/GHSA-4j6x-2764-m8gh", publisher: "SUSE Rancher (GitHub Security Advisory)", date: "2026-05-27", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1716", publisher: "BSI CERT-Bund", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: >
+      first seen at: bsi-de (WID-SEC-2026-1716 surfaced in BSI RSS 2026-05-28) → fetched BSI
+      CSAF JSON WID-SEC-2026-1716 → three GitHub advisory URLs in References section →
+      fetched GHSA-vx8h-4prv-g744, GHSA-4j6x-2764-m8gh, GHSA-mhc6-2gfq-xx62 (primaries)
+    summary: |
+      SUSE Rancher (Kubernetes cluster management platform) shipped security fixes on 2026-05-27
+      addressing three vulnerabilities. The most critical is CVE-2026-44939 (CVSS 9.6):
+
+      CVE-2026-44939: The cluster import endpoint `/v3/import/{token}_{clusterId}.yaml` fails
+      to sanitise the `authImage` query parameter. An attacker who obtains a valid cluster
+      registration token (which may be exposed in documentation or insecure channels) can inject
+      URL-encoded newlines (%0A) into `authImage`, breaking out of the YAML `image:` field and
+      injecting arbitrary YAML keys into the cluster-import manifest. When an administrator runs
+      `kubectl apply` against the malicious manifest, attacker-controlled commands execute on
+      control-plane nodes via a deployed DaemonSet with elevated privileges. Technique:
+      T1059 (Command Injection via YAML/newline injection) → T1068 (Exploitation for Privilege
+      Escalation). Affected: 2.10.0–2.10.11, 2.11.0–2.11.13, 2.12.0–2.12.9, 2.13.0–2.13.5,
+      2.14.0–2.14.1. Patched: 2.10.12, 2.11.14, 2.12.10, 2.13.6, 2.14.2.
+
+      CVE-2026-41052 (CVSS 8.4): Project Owners can modify Pod Security Admission (PSA) labels
+      on namespaces because the `project-owner` role carries wildcard permissions including the
+      `updatepsa` verb. A Cluster Member can create a project, flip namespace PSA to "privileged"
+      mode, and deploy containers with host-level access (container escape → host). Technique:
+      T1611 (Escape to Host) / T1068. Affected: 2.12.0–2.12.9, 2.13.0–2.13.5, 2.14.0–2.14.1.
+
+      CVE-2026-41053 (CVSS 8.8): The GitHub App authentication provider incorrectly grants
+      `group principals` for every team in a GitHub organisation to any authenticated user who
+      belongs to at least one team — not just the teams the user actually belongs to. This allows
+      privilege escalation via Rancher RBAC role mappings. Technique: T1078.004 (Cloud Accounts
+      abuse). Affected: 2.13.0–2.13.5, 2.14.0–2.14.1.
+
+      Detection: Rancher audit logs for unusual kubectl apply against import manifests; cluster
+      Kubernetes event logs for unexpected DaemonSet creation; Kubernetes RBAC audit logs for
+      privilege escalation via PSA label modification (check `kubectl get events` for PSA-related
+      actions). Hardening: Upgrade to patched versions immediately; review all cluster-member
+      and project-owner role assignments; if using GitHub App auth, audit team-to-role mappings.
+    ch_eu_nexus: "global; Rancher is widely used in CH/EU public-sector on-premise Kubernetes estates"
+    public_sector_nexus: "high — Rancher/SUSE is the dominant on-premise Kubernetes management platform in European government cloud"
+    sector: "government, technology, cloud infrastructure"
+    cves: [CVE-2026-44939, CVE-2026-41052, CVE-2026-41053]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the `authImage` query parameter. Attackers can inject URL-encoded newlines to 'break out of the `image:` field to inject arbitrary YAML keys'"
+        attribution: "SUSE Rancher (GHSA-mhc6-2gfq-xx62)"
+        source_url: "https://github.com/rancher/rancher/security/advisories/GHSA-mhc6-2gfq-xx62"
+      - quote: "wildcard permissions on the `project-owner` role that included the `updatepsa` verb"
+        attribution: "SUSE Rancher (GHSA-vx8h-4prv-g744)"
+        source_url: "https://github.com/rancher/rancher/security/advisories/GHSA-vx8h-4prv-g744"
+
+  - title: "Portainer CE: two CVSS 9.4 critical authorization bypasses allow non-admin Docker users to achieve full host RCE — CCB Belgium warns 'Patch Immediately'"
+    sources:
+      - { url: "https://github.com/portainer/portainer/security/advisories/GHSA-rrmm-9v76-h3p4", publisher: "Portainer (GitHub Security Advisory)", date: "2026-05-10", role: "primary" }
+      - { url: "https://github.com/portainer/portainer/security/advisories/GHSA-5fxq-qcf3-244w", publisher: "Portainer (GitHub Security Advisory)", date: "2026-05-28", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-two-critical-vulnerabilities-portainer-allow-full-host-takeover-patch", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: >
+      first seen at: enisa-euvd recent criticals → EUVD-2026-33064 and EUVD-2026-33063 (both
+      published 2026-05-28) → GitHub advisories GHSA-rrmm-9v76-h3p4 and GHSA-5fxq-qcf3-244w
+      (primaries); corroborated by WebSearch finding CCB Belgium advisory
+      https://ccb.belgium.be/advisories/warning-two-critical-vulnerabilities-portainer-allow-full-host-takeover-patch
+    summary: |
+      Portainer Community Edition shipped patched versions (2.33.8, 2.39.2, 2.41.0) fixing two
+      critical authorization bypass flaws:
+
+      CVE-2026-44848 (CVSS:4.0 9.4): The Docker plugin management endpoints (`/plugins/*`)
+      are not registered in Portainer's proxy authorization handler map. All requests to these
+      endpoints bypass authorization checks and are forwarded directly to the Docker daemon.
+      An authenticated non-admin user with endpoint access can POST to `/plugins/pull` to install
+      any plugin from any registry, then POST to `/plugins/{name}/enable` to activate it. Docker
+      runs enabled plugins as root on the host with full declared capabilities and mounts — OS-level
+      code execution. Technique: T1611 (Escape to Host) / T1078 (Valid Accounts). Affected:
+      2.33.0–2.33.7, 2.39.0–2.39.1, 2.40.x. Patched: 2.33.8, 2.39.2, 2.41.0.
+
+      CVE-2026-44849 (CVSS:4.0 9.4): Portainer's seven EndpointSecuritySettings restrictions
+      (privileged mode, host PID namespace, device mapping, capabilities, sysctls, security-opt,
+      bind mounts) are enforced on the standard container creation path but NOT on the Docker
+      Swarm service API. POST /services/create validates only the Mounts[] field (1 of 7 checks);
+      POST /services/{id}/update performs no security checks at all. Non-admin users can submit
+      arbitrary CapabilityAdd, Sysctls, and Privileges values. A volume-driver bypass additionally
+      allows bind-mount equivalents (Type: "volume" with VolumeOptions.DriverConfig.Options{type:
+      none, o: bind}) to pass restriction checks. Technique: T1611.
+
+      Temporary mitigations: Revoke Swarm endpoint access for non-admin users via Portainer RBAC;
+      disable Docker plugin management for non-admin users. Detection: Docker daemon logs for
+      plugin install/enable operations from non-admin service accounts; Docker event stream
+      (`docker events --filter type=plugin`) for unexpected plugin lifecycle events.
+    ch_eu_nexus: "global; Portainer is widely used for on-premise container management in EU government and public-sector private cloud"
+    public_sector_nexus: "indirect — Portainer is common in self-hosted EU public-sector container platforms"
+    sector: "government, technology, healthcare"
+    cves: [CVE-2026-44848, CVE-2026-44849]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Docker plugin management endpoints (/plugins/*) were not registered with a handler, so standard users with endpoint access could call privileged plugin operations — including installing and enabling plugins — directly against the underlying Docker daemon"
+        attribution: "Portainer (GHSA-rrmm-9v76-h3p4)"
+        source_url: "https://github.com/portainer/portainer/security/advisories/GHSA-rrmm-9v76-h3p4"
+      - quote: "Warning: Two Critical Vulnerabilities in Portainer Allow Full Host Takeover, Patch Immediately!"
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-two-critical-vulnerabilities-portainer-allow-full-host-takeover-patch"
+
+  - title: "GitLab 19.0.1 / 18.11.4 / 18.10.7 patch: CVE-2026-4868 AI-workflow identity spoofing (CVSS 8.2) plus five further access-control and authorization flaws"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-1-released/", publisher: "GitLab", date: "2026-05-27", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0658/", publisher: "CERT-FR / ANSSI", date: "2026-05-28", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0168", publisher: "NCSC-NL", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: >
+      first seen at: ncsc-nl recent 10 → NCSC-2026-0168 (2026-05-28) → ncsc-nl csaf NCSC-2026-0168
+      → GitLab release URL https://about.gitlab.com/releases/2026/05/27/patch-release-gitlab-19-0-1-released/
+      (redirected to docs.gitlab.com) → fetched docs.gitlab.com release notes → corroborated by
+      cert-fr avis-recent listing CERTFR-2026-AVI-0658 (2026-05-28)
+    summary: |
+      GitLab shipped a coordinated patch release (19.0.1, 18.11.4, 18.10.7) on 2026-05-27
+      fixing six access-control and authorization vulnerabilities:
+
+      CVE-2026-4868 (CVSS 8.2, High — CWE-639): Improper user identity resolution allows an
+      authenticated user to impersonate another user when triggering Duo AI workflows. The attacker
+      causes specific Duo AI workflow runners to execute under another user's identity. Prerequisites:
+      GitLab EE with Duo AI features enabled; valid GitLab account. Affected: all EE versions
+      before 18.10.7, 18.11.4, 19.0.1. Technique: T1078 (Valid Accounts).
+
+      CVE-2026-6713 (CVSS 5.3): Unauthenticated enumeration of private projects via incorrect
+      authorization check in GitLab CE/EE 18.2–19.0.0. No authentication required — information
+      disclosure for internal project names.
+
+      CVE-2026-2601 (CVSS 4.3, CWE-862): Developer-permissioned users in GitLab EE can access
+      sensitive deployment data (pipeline environment variables, deployment keys) due to missing
+      authorization checks on deployment data APIs.
+
+      CVE-2026-5296 (CVSS 4.3, CWE-862): Developer-role users can bypass group-level flow
+      restrictions when foundational flows are enabled (GitLab EE 18.7–19.0.0).
+
+      CVE-2026-8716 (CVSS 4.3, CWE-706): Authenticated users can access CI data from unintended
+      reference types (12.7–19.0.0) via incorrect reference resolution.
+
+      CVE-2026-1402 (CVSS 6.5, CWE-770): Authenticated users can trigger DoS via insufficient
+      validation (17.1–19.0.0).
+
+      Detection: GitLab audit events for cross-user Duo AI workflow triggers; review API access
+      logs for unauthenticated project enumeration attempts (HTTP 200 on /api/v4/projects/ without
+      credentials); monitor CI pipeline access logs for cross-reference data leakage.
+      Hardening: Upgrade to 19.0.1, 18.11.4, or 18.10.7; review Duo AI feature access controls;
+      audit group-level flow restriction settings.
+    ch_eu_nexus: "global; GitLab is the dominant self-hosted DevSecOps platform in CH/EU public-sector software development"
+    public_sector_nexus: "high — GitLab self-managed is widely used for EU government software delivery pipelines"
+    sector: "government, education, technology"
+    cves: [CVE-2026-4868, CVE-2026-6713, CVE-2026-2601, CVE-2026-5296, CVE-2026-8716, CVE-2026-1402]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab addressed a vulnerability in versions 12.7 to before 18.10.7, 18.11 to before 18.11.4, and 19.0 to before 19.0.1 that allowed authenticated users to access continuous integration data from unintended reference types"
+        attribution: "NCSC-NL (NCSC-2026-0168 CSAF)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0168"
+      - quote: "GitLab EE versions prior to 18.10.7, 18.11.4, and 19.0.1 contained a vulnerability allowing authenticated users to impersonate others and trigger Duo AI workflows due to improper user identity resolution"
+        attribution: "NCSC-NL (CVE-2026-4868 CSAF)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0168"
+
+  - title: "Apereo CAS < 7.3.7.1: OpenID Connect provider vulnerability — CERT-FR advises immediate patch for EU public-sector SSO infrastructure"
+    sources:
+      - { url: "https://apereo.github.io/2026/05/27/oidc-vuln/", publisher: "Apereo (oidc-vuln disclosure)", date: "2026-05-27", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0654/", publisher: "CERT-FR / ANSSI", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cert-fr avis-recent listing → CERTFR-2026-AVI-0654 "Vulnérabilité dans
+      Apereo CAS" (2026-05-28) → fetched https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0654/
+      → outbound link https://apereo.github.io/2026/05/27/oidc-vuln/ → fetched primary disclosure
+    summary: |
+      Apereo CAS (Central Authentication Service) shipped version 7.3.7.1 on 2026-05-27
+      patching an unspecified vulnerability in its OpenID Connect identity-provider functionality.
+      Full technical details are withheld by Apereo pending expiry of the security grace window,
+      consistent with their responsible disclosure model. The reporter is Coop Switzerland (the
+      Swiss retailer, which operates Apereo CAS as an OIDC provider). Apereo confirmed the
+      vulnerability only affects deployments where CAS operates as an OpenID Connect identity
+      provider — deployments using CAS purely for Kerberos/SAML without OIDC are not affected.
+
+      Operational significance: Apereo CAS is the dominant open-source SSO/authentication
+      framework in European higher education (universities, research institutions) and is deployed
+      in Swiss federal and cantonal institutions. OIDC identity-provider misconfigurations can
+      allow token forgery, authorization bypass, or session takeover depending on the specific
+      flaw — defenders should treat this as high urgency until full details are released.
+
+      Patched version: 7.3.7.1 (CAS 7.3.x series). Hardening: Upgrade to 7.3.7.1 immediately
+      if running CAS as an OIDC provider. Until details are public, monitor OIDC token issuance
+      logs for unexpected client IDs, anomalous `sub` claim values, and token grants to
+      non-registered clients. [SINGLE-SOURCE on technical specifics — full details withheld]
+    ch_eu_nexus: "direct CH nexus (Coop Switzerland reported the vulnerability); high EU nexus (CAS dominates European academic SSO)"
+    public_sector_nexus: "high — Apereo CAS is used in Swiss federal and cantonal institutions and across EU academia"
+    sector: "education, government, healthcare"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The vulnerability only affects deployments where CAS operates as an OpenID Connect identity provider"
+        attribution: "Apereo CAS security disclosure"
+        source_url: "https://apereo.github.io/2026/05/27/oidc-vuln/"
+      - quote: "Une vulnérabilité a été découverte dans Apereo CAS. Elle permet à un attaquant de provoquer un problème de sécurité non spécifié par l'éditeur."
+        attribution: "CERT-FR CERTFR-2026-AVI-0654"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0654/"
+
+  - title: "Veeam Backup & Replication KB4852: two new flaws (CVE-2026-32996 LPE CVSS 7.3, CVE-2026-32997 arbitrary file write CVSS 8.6) patched in v13.0.2.29"
+    sources:
+      - { url: "https://www.veeam.com/kb4852", publisher: "Veeam", date: "2026-05-27", role: "primary" }
+      - { url: "https://cybersecuritynews.com/veeam-backup-replication-tool-vulnerability/", publisher: "CybersecurityNews", date: "2026-05-27", role: "corroborating" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0652/", publisher: "CERT-FR / ANSSI", date: "2026-05-27", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cert-fr avis-recent listing → CERTFR-2026-AVI-0652 "Multiples vulnérabilités
+      dans Veeam Backup & Replication" (2026-05-27) → WebSearch found Veeam KB4852 → fetched
+      https://www.veeam.com/kb4852 (primary); corroborated by CybersecurityNews article
+    summary: |
+      Veeam shipped KB4852 / Backup & Replication 13.0.2.29 on 2026-05-27 patching two
+      vulnerabilities in the backup platform, which is ubiquitous in EU enterprise and
+      government backup environments:
+
+      CVE-2026-32996 (CVSS 7.3, High): Local privilege escalation in the Veeam Agent for
+      Microsoft Windows component. An attacker with limited system access (no specifics on
+      required privilege level disclosed) can elevate permissions — enabling arbitrary command
+      execution, security-control disablement, or lateral movement. Reporter: Alibaba via
+      HackerOne. Affected: all version 13 builds before 13.0.2.29.
+
+      CVE-2026-32997 (CVSS 8.6, High): Arbitrary file write in the Veeam Software Appliance
+      (Linux-based). Requires an authenticated user with the Backup Administrator role. Can be
+      used to place attacker-controlled content at arbitrary filesystem paths on the appliance.
+      Depending on target path, potential paths to RCE or persistence (e.g. cron jobs, authorized_keys,
+      library hijacking). Reporter: Parsa via HackerOne. Affected: same version range.
+
+      No active exploitation reported. Veeam notes patch-reverse-engineering risk increases
+      exploitation probability post-disclosure. Hardening: Upgrade to 13.0.2.29; enforce
+      least-privilege access to Backup Administrator role; isolate Veeam appliance on a
+      dedicated management VLAN. Detection: Windows security logs for privilege escalation
+      events (EID 4672, 4673) originating from Veeam Agent service; Linux auditd for unexpected
+      file writes in sensitive directories on the Veeam appliance.
+    ch_eu_nexus: "global; Veeam is the dominant backup platform in EU public-sector on-premise environments"
+    public_sector_nexus: "indirect — Veeam is ubiquitous in EU government backup infrastructure"
+    sector: "government, healthcare, finance, all"
+    cves: [CVE-2026-32996, CVE-2026-32997]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "authenticated user with the Backup Administrator role to write arbitrary files"
+        attribution: "Veeam KB4852"
+        source_url: "https://www.veeam.com/kb4852"
+      - quote: "permits attackers with limited system access to escalate privileges and gain deeper access to enterprise systems"
+        attribution: "CybersecurityNews"
+        source_url: "https://cybersecuritynews.com/veeam-backup-replication-tool-vulnerability/"
+
+  - title: "IBM HTTP Server / WebSphere Application Server: CVE-2026-9170 CVSS 9.8 improper-input-validation RCE flagged by NCSC.ch (post 12601, 2026-05-28)"
+    sources:
+      - { url: "https://www.ibm.com/support/pages/node/7274065", publisher: "IBM Support", date: "2026-05-26", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12601", publisher: "NCSC.ch Security Hub", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub (ncsc-csh recent 10) → post 12601 (2026-05-28) →
+      IBM advisory URL https://www.ibm.com/support/pages/node/7274065 (primary); NCSC.ch post
+      is the corroborating CH-nexus signal
+    summary: |
+      IBM disclosed nine vulnerabilities in IBM HTTP Server (used by WebSphere Application Server)
+      on 2026-05-26, the most severe of which — CVE-2026-9170 (CVSS 9.8 Critical) — involves
+      improper input validation leading to unauthenticated remote code execution and denial of
+      service. NCSC.ch flagged this as post 12601 on 2026-05-28.
+
+      CVE-2026-9170 (CVSS 9.8): Improper input validation in IBM HTTP Server (WebSphere Application
+      Server). Allows unauthenticated attackers to trigger RCE or DoS. No exploit PoC confirmed public.
+
+      Additional high-severity CVEs in this batch:
+      - CVE-2026-8855 (CVSS 8.1): RCE in TLS mutual-authentication configurations
+      - CVE-2026-8834 (CVSS 8.0): Heap-based buffer overflow in the Administration Server
+      - CVE-2026-8856 (CVSS 7.7): DoS via uncontrolled resource consumption
+      - CVE-2026-8850 (CVSS 7.5): DoS via NULL pointer dereference in mod_ibm_upload (module must be enabled)
+      - CVE-2026-8854 (CVSS 7.5): DoS via expired pointer dereference in mod_mem_cache (module must be enabled)
+      - CVE-2026-8835 (CVSS 7.3): Sensitive information exposure via untrusted pointer dereference
+
+      IBM recommends applying interim fix APAR PH71265 or a fix pack. Optional modules
+      (mod_ibm_upload, mod_mem_cache) should be disabled if not needed to reduce attack surface.
+      IBM HTTP Server / WebSphere Application Server is deployed across European financial
+      institutions, government portals, and legacy middleware stacks.
+
+      Detection: IHS/WebSphere access logs for unexpected large/malformed HTTP requests;
+      process-monitoring for unexpected child processes from httpd; IHS error logs for
+      module-level crashes. Hardening: Apply APAR PH71265; disable unused optional modules.
+    ch_eu_nexus: "global; IBM HTTP Server / WebSphere is deployed in Swiss and EU financial-sector and government middleware"
+    public_sector_nexus: "indirect — IBM WebSphere is common in legacy EU government middleware"
+    sector: "finance, government, healthcare"
+    cves: [CVE-2026-9170, CVE-2026-8855, CVE-2026-8834, CVE-2026-8856, CVE-2026-8850]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-9170 CVSS3.1: 9.8 (CRITICAL) - Improper input validation leading to RCE and DoS"
+        attribution: "NCSC.ch Security Hub post 12601"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12601"
+
+cve_table:
+  - cve: CVE-2026-4408
+    product: "Samba (DCE/RPC SAMR server)"
+    cvss: "10.0"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.22.10 / 4.23.8 / 4.24.3"
+    source: "https://www.samba.org/samba/security/CVE-2026-4408.html"
+  - cve: CVE-2026-4480
+    product: "Samba (printing subsystem)"
+    cvss: "10.0"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "4.22.10 / 4.23.8 / 4.24.3"
+    source: "https://www.samba.org/samba/security/CVE-2026-4480.html"
+  - cve: CVE-2026-44939
+    product: "Rancher (cluster-import endpoint)"
+    cvss: "9.6"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "2.10.12 / 2.11.14 / 2.12.10 / 2.13.6 / 2.14.2"
+    source: "https://github.com/rancher/rancher/security/advisories/GHSA-mhc6-2gfq-xx62"
+  - cve: CVE-2026-44848
+    product: "Portainer CE (Docker plugin endpoints)"
+    cvss: "9.4"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "2.33.8 / 2.39.2 / 2.41.0"
+    source: "https://github.com/portainer/portainer/security/advisories/GHSA-rrmm-9v76-h3p4"
+  - cve: CVE-2026-44849
+    product: "Portainer CE (Docker Swarm security bypass)"
+    cvss: "9.4"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "2.33.8 / 2.39.2 / 2.41.0"
+    source: "https://github.com/portainer/portainer/security/advisories/GHSA-5fxq-qcf3-244w"
+  - cve: CVE-2026-9170
+    product: "IBM HTTP Server / WebSphere Application Server"
+    cvss: "9.8"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "APAR PH71265"
+    source: "https://www.ibm.com/support/pages/node/7274065"
+  - cve: CVE-2026-4868
+    product: "GitLab CE/EE (Duo AI workflow identity)"
+    cvss: "8.2"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "19.0.1 / 18.11.4 / 18.10.7"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-1-released/"
+  - cve: CVE-2026-32997
+    product: "Veeam Backup & Replication (Linux Appliance)"
+    cvss: "8.6"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "13.0.2.29"
+    source: "https://www.veeam.com/kb4852"
+  - cve: CVE-2026-41052
+    product: "Rancher (Pod Security Admission privilege escalation)"
+    cvss: "8.4"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "2.12.10 / 2.13.6 / 2.14.2"
+    source: "https://github.com/rancher/rancher/security/advisories/GHSA-vx8h-4prv-g744"
+  - cve: CVE-2026-41053
+    product: "Rancher (GitHub App auth over-inclusive team membership)"
+    cvss: "8.8"
+    epss: null
+    kev: false
+    exploited: false
+    patch: "2.13.6 / 2.14.2"
+    source: "https://github.com/rancher/rancher/security/advisories/GHSA-4j6x-2764-m8gh"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "All inside-it.ch URLs return HTTP 403 even via bridge; WebSearch found no in-window (May 27-29) Swiss-specific incidents"
+  - source_id: cert-at
+    reason: "No separate CERT.at-specific advisory feed checked; would require bridge:url for per-advisory pages"
+  - source_id: csirt-acn-it
+    reason: "Not checked in this run — CSIRT Italy / ACN feed not enumerated"
+
+fetch_failures: []

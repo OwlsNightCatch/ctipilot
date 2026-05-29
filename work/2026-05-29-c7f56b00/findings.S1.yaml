@@ -1,0 +1,332 @@
+# work/2026-05-29-c7f56b00/findings.S1.yaml
+domain: S1
+run_id: 2026-05-29-c7f56b00
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-29T04:08:45Z
+ended_at: 2026-05-29T04:20:09Z
+duration_seconds: 684
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 9
+  bridge_fetches: 14
+
+items:
+
+  - title: "Gogs authenticated RCE zero-day — argument injection via branch name (no CVE, no patch)"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+        publisher: "Rapid7 Research"
+        date: "2026-05-28"
+        role: "primary"
+    discovery_trace: "first seen at: rapid7-research feed → primary: Rapid7 Research blog post, URL https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    summary: |
+      Rapid7 disclosed a 0-day authenticated RCE in Gogs, the open-source Git service written in Go.
+      The vulnerability (no CVE assigned, reported to maintainer 2026-03-17, vendor has not responded or patched as of 2026-05-28) allows an authenticated user to inject arbitrary arguments into a git rebase --exec command via a crafted branch name. The attack vector is CWE-88 (argument injection); an attacker with Create Repository permission creates a branch whose name embeds git flag strings (e.g. `--exec`), which Gogs passes unsanitised to the underlying Git subprocess. On Linux/macOS hosts running Gogs, this permits OS command execution in the context of the Gogs service account. Exploitation requires only an authenticated session with default-enabled open registration, so effectively unauthenticated on public-facing instances. CVSS v4.0 base score is 9.4 (Critical). All versions through 0.14.2 and 0.15.0+dev are confirmed vulnerable. No patch exists; Rapid7's coordinated disclosure timeline notes the maintainer did not respond within 90 days. Detection: watch for unusual git subprocess spawns from the Gogs service process (Sysmon EID 1, parent process = gogs binary, child = git with --exec argument). Hardening: restrict or disable public self-registration; place Gogs behind an authenticated reverse proxy; consider migrating to a maintained alternative (Gitea, Forgejo).
+    ch_eu_nexus: "global; Gogs is used in EU public-sector self-hosted code infrastructure"
+    public_sector_nexus: "indirect — self-hosted Git services common in government and research institutions"
+    sector: "software-development, public-sector"
+    cves: []
+    actors_campaigns_malware: []
+    verification: "SINGLE-SOURCE"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authenticated Gogs user can achieve remote code execution on the underlying server by exploiting an argument injection vulnerability"
+        attribution: "Rapid7 Research"
+        source_url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+      - quote: "The vendor has not responded to Rapid7's disclosure as of the publication of this post"
+        attribution: "Rapid7 Research"
+        source_url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1059 (Command and Scripting Interpreter).
+      The attack primitive — user-controlled branch name injected into shell command — is the same class as CVE-2014-6271 (Shellshock). Because Gogs is no longer under active development by its original author, the community fork Gitea is the recommended migration path. Swiss public-sector environments running self-hosted Gogs instances (e.g. for internal code or research data pipelines) should treat this as priority due to the default-open-registration configuration.
+
+  - title: "CVE-2026-35616 FortiClient EMS active exploitation — EKZ Infostealer delivered as fake Fortinet patch"
+    sources:
+      - url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+        publisher: "Arctic Wolf"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://fortiguard.fortinet.com/psirt/FG-IR-26-099"
+        publisher: "Fortinet PSIRT"
+        date: "2026-04-06"
+        role: "corroborating"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-35616"
+        publisher: "NVD"
+        date: "2026-04-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub bridge (post 12601) → pivot: Arctic Wolf blog post (primary) → corroborating: Fortinet PSIRT FG-IR-26-099, NVD CVE-2026-35616"
+    summary: |
+      CVE-2026-35616 is an improper access-control vulnerability in Fortinet FortiClient EMS 7.4.5 and 7.4.6 (CWE-284, CVSS 9.1 Critical). The attack vector is pre-authentication: the FortiClient EMS management API trusts the HTTP header X-SSL-CLIENT-VERIFY, which is intended to be set only by a load balancer or reverse proxy but is not validated by the server itself. An unauthenticated attacker on the network can spoof this header to bypass client-certificate verification, access privileged API endpoints, and push malicious configurations or updates to connected FortiClient endpoints. Arctic Wolf documented active exploitation in the wild as of 2026-05-27: threat actors are using this vector to deliver the EKZ Infostealer, a credential-harvesting payload masquerading as a legitimate Fortinet software update. EKZ targets browser credential stores (Chrome, Firefox saved passwords and session cookies) and exfiltrates them to actor infrastructure. CISA added CVE-2026-35616 to the KEV catalog on 2026-04-06. EPSS score is 43.2% (97.6th percentile). Patch to FortiClient EMS 7.4.7 or later. Detection: monitor FortiClient EMS server logs for API calls without valid client-certificate negotiation; flag mass configuration-push events not initiated from the management console; watch for EMS-pushed installers that are unsigned or have anomalous parent-process chains (Sysmon EID 1, parent = FortiClient service, child = unsigned binary with --silent install flag).
+    ch_eu_nexus: "EU-relevant; FortiClient EMS is widely deployed in Swiss federal and cantonal network security infrastructure"
+    public_sector_nexus: "direct — FortiNet product commonly deployed in government environments"
+    sector: "public-sector, telco, finance, energy"
+    cves: [CVE-2026-35616]
+    actors_campaigns_malware: ["EKZ Infostealer"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Arctic Wolf has observed threat actors actively exploiting CVE-2026-35616 in the FortiClient EMS management API to deliver a novel infostealer payload"
+        attribution: "Arctic Wolf"
+        source_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      - quote: "The vulnerability allows unauthenticated network access to privileged API endpoints by spoofing the X-SSL-CLIENT-VERIFY header"
+        attribution: "Arctic Wolf"
+        source_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1071.001 (Web Protocols C2), T1555.003 (Credentials from Web Browsers), T1078 (Valid Accounts via stolen credentials). The credential-theft chain from a network device management platform to browser credential stores represents a significant lateral movement enabler. Defenders should also check whether EMS push notifications to FortiClient endpoints have been abused to establish persistence on Windows hosts (T1543.003 Windows Service, T1547.001 Registry Run Keys).
+
+  - title: "GitLab 19.0.1 / 18.11.4 / 18.10.7 patch cluster — Duo AI identity impersonation + unauthenticated project enumeration"
+    sources:
+      - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-1-released/"
+        publisher: "GitLab"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0168"
+        publisher: "NCSC-NL"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl recent bridge (NCSC-2026-0168) → pivot: GitLab patch release notes at docs.gitlab.com → corroborating: NCSC-NL advisory NCSC-2026-0168"
+    summary: |
+      GitLab released patch versions 19.0.1, 18.11.4, and 18.10.7 on 2026-05-27, addressing six CVEs. The two highest-severity issues are: CVE-2026-4868 (CVSS 8.2 High) — an authentication-bypass in the GitLab Duo AI code-review integration that allows a malicious repository contributor to impersonate another user's identity when invoking AI-assisted code actions; and CVE-2026-6713 (CVSS 5.3 Medium) — an information-disclosure flaw permitting unauthenticated enumeration of private project existence through crafted API requests. Additional patched CVEs: CVE-2026-1402 (CVSS 6.5, Wiki DoS via malformed markup), CVE-2026-5296 (CVSS 4.3, Duo API key bypass), CVE-2026-2601 (CVSS 4.3, deployment API data access), CVE-2026-8716 (incorrect name resolution). Affected versions span GitLab CE/EE from 12.7 / 17.1 / 18.2 / 18.7 / 18.8 / 11.5 before 18.10.7, 18.11 before 18.11.4, and 19.0 before 19.0.1. No public exploitation evidence reported at time of disclosure. Detection: GitLab application-layer audit logs for Duo-triggered actions attributed to users who did not initiate the session; unauthenticated API calls to `/api/v4/projects/<id>` endpoints returning existence-confirming response codes on private projects. Patch immediately; NCSC-NL rates this High.
+    ch_eu_nexus: "EU-relevant; GitLab is the dominant self-hosted DevOps platform in Swiss public-sector and research"
+    public_sector_nexus: "direct — GitLab widely deployed in Swiss federal agencies, cantons, universities"
+    sector: "software-development, public-sector, education"
+    cves: [CVE-2026-4868, CVE-2026-6713, CVE-2026-1402, CVE-2026-5296, CVE-2026-2601, CVE-2026-8716]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-4868: An issue has been discovered in GitLab affecting all versions... A Duo user can impersonate another user during AI-assisted code review actions"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-1-released/"
+      - quote: "CVE-2026-6713: An unauthenticated user may enumerate private project paths via the API"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-1-released/"
+    extended_notes: |
+      MITRE ATT&CK for CVE-2026-4868: T1078.004 (Cloud Accounts — identity impersonation in SaaS-integrated AI service), T1212 (Exploitation for Credential Access). For CVE-2026-6713: T1589.002 (Gather Victim Network Information — private repo enumeration). The Duo AI impersonation is particularly notable because it affects code-review workflows that may process security-sensitive merge requests; a malicious contributor could trigger AI suggestions under a trusted reviewer's identity, potentially influencing security-relevant code decisions.
+
+  - title: "CVE-2026-9170 IBM HTTP Server / WebSphere Application Server — unauthenticated RCE (CVSS 9.8)"
+    sources:
+      - url: "https://www.ibm.com/support/pages/node/7274065"
+        publisher: "IBM Security Bulletin"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12601"
+        publisher: "NCSC Switzerland (GovCERT.ch)"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub bridge (post 12601) → pivot: IBM Security Bulletin node/7274065 → corroborating: NCSC.ch GovCERT post 12601"
+    summary: |
+      CVE-2026-9170 is a critical unauthenticated RCE in IBM HTTP Server (IHS) and IBM WebSphere Application Server (WAS) caused by improper input validation in the HTTP request parsing layer (CWE-94, code injection). CVSS v3.1 base score is 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). A remote, unauthenticated attacker can send a specially crafted HTTP request to the default web listener to trigger arbitrary code execution in the IHS/WAS service context. Affected products include IBM HTTP Server 9.0 and 8.5 branches and IBM WebSphere Application Server Traditional 9.0 and 8.5 before specific fix packs. IBM rated this Critical and released Fix Pack updates; details in the IBM Security Bulletin node/7274065. No public PoC or active exploitation reported at time of NCSC.ch advisory (2026-05-28). EPSS score is 0.049% (low probability, not yet weaponised). Detection: IHS/WAS access logs for malformed HTTP request headers (anomalous Content-Type or Transfer-Encoding combinations); Java process spawns from WAS parent (Sysmon EID 1 on Windows, auditd on Linux). Patch to recommended fix packs immediately — IHS/WAS are legacy-but-prevalent in Swiss banking, insurance, and public-sector middleware.
+    ch_eu_nexus: "EU-relevant; IBM middleware prevalent in Swiss banking, insurance, and federal IT"
+    public_sector_nexus: "direct — WebSphere Application Server in use in Swiss federal and cantonal middleware"
+    sector: "finance, insurance, public-sector"
+    cves: [CVE-2026-9170]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "IBM HTTP Server and WebSphere Application Server are vulnerable to remote code execution due to improper input validation"
+        attribution: "IBM Security Bulletin"
+        source_url: "https://www.ibm.com/support/pages/node/7274065"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application). The CVSS 9.8 no-auth RCE vector on a legacy middleware product warrants immediate attention from organisations that have not yet migrated to modern application server stacks. Swiss financial-sector CISO teams should verify IHS/WAS patch levels across all pre-production and production environments.
+
+  - title: "JINX-0164 cryptocurrency-sector intrusions — LinkedIn lures, macOS malware, CI/CD hijacking"
+    sources:
+      - url: "https://www.wiz.io/blog/threat-actors-target-crypto-orgs"
+        publisher: "Wiz Research"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/jinx-0164-targets-cryptocurrency-firms.html"
+        publisher: "The Hacker News"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: wiz-blog feed → pivot: Wiz Research blog post (primary), URL https://www.wiz.io/blog/threat-actors-target-crypto-orgs → corroborating: THN article 2026-05-28"
+    summary: |
+      Wiz Research tracks a cluster designated JINX-0164 conducting targeted intrusions against cryptocurrency organisations since at least early 2026. The initial access vector is LinkedIn-based social engineering: fake recruiter profiles contact developers and security engineers with plausible job offers, then direct targets to complete a coding challenge that involves cloning a malicious repository or running a provided binary. On macOS systems, the payload presents as a legitimate developer tool (coreaudiod, ChromeUpdater) and installs a LaunchDaemon for persistence (T1543.004). The malware targets CI/CD environments specifically: it reads GitHub Actions secrets, Kubernetes service-account tokens, and cloud-provider credentials from ~/.aws, ~/.config/gcloud, and similar standard paths. Secondary payload AUDIOFIX performs credential theft from browser credential stores (Chrome, Brave, Firefox), password managers (1Password, Bitwarden desktop clients), iCloud Keychain, and SSH key stores, then exfiltrates via encrypted HTTPS channels. Wiz notes TTP overlap with known North Korea-attributed clusters (fake IT worker + developer lure pattern, targeting of crypto organisations) but stops short of definitive attribution. The EU-nexus is emerging: Wiz identifies two European cryptocurrency exchanges as among targeted organisations. Detection: LinkedIn-recruited developer sessions that immediately clone repos and execute binaries; unusual LaunchDaemon plist creation by developer processes (macOS Unified Logs, process-creation telemetry); egress of ~/.aws or ~/.kube/config outside normal CI/CD pipeline execution; GitHub Actions workflow runs triggered outside expected schedule or by unexpected actors.
+    ch_eu_nexus: "EU-relevant; two European cryptocurrency exchanges identified as targets; Swiss crypto sector (Crypto Valley) exposure"
+    public_sector_nexus: "indirect — Swiss crypto regulation infrastructure and national digital-currency R&D programmes"
+    sector: "finance, crypto"
+    cves: []
+    actors_campaigns_malware: ["JINX-0164", "AUDIOFIX"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "JINX-0164 targets cryptocurrency companies through LinkedIn recruitment lures, deploying macOS-specific malware with CI/CD credential theft capabilities"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/threat-actors-target-crypto-orgs"
+      - quote: "The campaign shows TTP overlap with North Korean threat actors targeting cryptocurrency organizations, including the fake developer recruitment pattern"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/jinx-0164-targets-cryptocurrency-firms.html"
+    extended_notes: |
+      MITRE ATT&CK: T1566.003 (Spearphishing via Service — LinkedIn), T1204.002 (User Execution — malicious binary), T1543.004 (Launch Daemon persistence), T1555 (Credentials from Password Stores), T1552.001 (Unsecured Credentials — files), T1071.001 (Web Protocols C2). The CI/CD hijacking component is particularly high-impact: once a threat actor controls GitHub Actions secrets and cloud credentials, they can pivot from one compromised developer's machine to production infrastructure without needing further exploits.
+
+  - title: "The Gentlemen ransomware (Storm-2697) technical dissection — self-propagating Go encryptor, GPO spread"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-28"
+        role: "primary"
+    discovery_trace: "first seen at: msft-secblog feed → primary: Microsoft Security Blog 2026-05-28, URL https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/ — UPDATE to W21 weekly coverage"
+    summary: |
+      Microsoft published a full technical dissection of The Gentlemen ransomware (operator cluster Storm-2697) on 2026-05-28, providing significant new technical depth beyond the victim-list reporting in the W21 weekly brief. Key findings: the encryptor is written in Go (cross-platform packaging), compiled for Windows as a single-binary executable. Self-propagation mechanism: the binary creates a hidden SMB share named `share` under `C:\Temp`, then uses a configurable `--spread` argument to attempt authenticated (Pass-the-Hash / current session) and unauthenticated (null-session) SMB connections to adjacent hosts discovered via ARP and NetBIOS. GPO propagation: on domain-joined systems with Domain Admin credentials (obtained via LSASS dump or AS-REP roasting), the binary creates a Group Policy Object that deploys itself to all OUs. Encryption: per-file ephemeral key generation (asymmetric key-exchange for the session key, symmetric encryption per file), which eliminates bulk-decryption shortcuts. Ransom note delivery is via an HTML file written to the Desktop. Storm-2697 has claimed 320+ victims in 2026 Q1-Q2, primarily in manufacturing, logistics, and healthcare in Western Europe and North America. Detection: Sysmon EID 5 (process terminated — encryptor self-deletes after execution), EID 17/18 (named-pipe connections for SMB lateral movement enumeration), Windows Event 5140 (network share accessed — the hidden `share` share), GPO creation events in Active Directory (Event ID 5136 + GPMC audit), LSASS access by non-LSA processes (EID 10 Sysmon or EDR telemetry). Hardening: enforce SMB signing (GPO Network security: Microsoft network client/server: Digitally sign communications always), restrict GPO creation rights to dedicated accounts, enable Credential Guard to protect LSASS.
+    ch_eu_nexus: "EU-relevant; Western European manufacturing and healthcare sector victims documented by Microsoft"
+    public_sector_nexus: "indirect — healthcare and logistics sector victims; potential Swiss critical-infrastructure exposure"
+    sector: "healthcare, manufacturing, logistics"
+    cves: []
+    actors_campaigns_malware: ["The Gentlemen", "Storm-2697"]
+    verification: "SINGLE-SOURCE"
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-23"
+    evidence:
+      - quote: "The Gentlemen ransomware uses a self-propagating Go-based encryptor that creates a hidden SMB share and leverages GPO deployment to spread across domain-joined networks"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+      - quote: "Storm-2697 has claimed over 320 victims in 2026, primarily in Western European manufacturing, logistics, and healthcare"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+    extended_notes: |
+      MITRE ATT&CK: T1486 (Data Encrypted for Impact), T1570 (Lateral Tool Transfer via SMB), T1021.002 (Remote Services: SMB/Windows Admin Shares), T1484.001 (Domain Policy Modification: Group Policy), T1003.001 (OS Credential Dumping: LSASS Memory), T1558.004 (Steal or Forge Kerberos Tickets: AS-REP Roasting). The GPO spread vector is the highest-severity technique class here — once a ransomware operator achieves Domain Admin, GPO-delivered encryption is effectively unstoppable without pre-positioned detection. Swiss SOC teams should validate that GPMC audit events (5136) and GPO-linked OU changes are monitored and alerted.
+
+  - title: "BTMOB Android RAT targets Spanish and Portuguese banking via HTML injection and accessibility service abuse"
+    sources:
+      - url: "https://www.welivesecurity.com/en/malware/btmob-stealthy-rat-burrowing-deep-android-devices/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-05-26"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch (BTMOB RAT ESET 2026) → primary: ESET WeLiveSecurity article 2026-05-26, URL https://www.welivesecurity.com/en/malware/btmob-stealthy-rat-burrowing-deep-android-devices/"
+    summary: |
+      ESET published analysis of BTMOB, an Android-based Remote Access Trojan distributed as Malware-as-a-Service (MaaS) targeting banking customers in Spain and Portugal, published 2026-05-26. Distribution is via phishing sites and side-loaded APKs impersonating banking and logistics apps. Once installed, BTMOB requests Accessibility Service permissions and uses them to perform HTML injection into the legitimate banking app's WebView, overlaying fake login pages to harvest credentials and OTPs (T1417.002 — Input Capture: GUI Input Capture). The RAT also implements full keylogging, screen recording on demand, and call interception. Persistence is achieved via a boot broadcast receiver (BOOT_COMPLETED intent). C2 communication uses WebSocket over port 443 with a custom binary framing protocol designed to evade mobile network-layer inspection. ESET notes that BTMOB's MaaS infrastructure provides geo-filtering, allowing operators to activate the overlay only when the target's GPS location matches configured bank codes — limiting noise that would trigger detection. Spanish and Portuguese banks confirmed as targets by overlay configuration files recovered from samples. EU-nexus: Spain and Portugal are EU member states; Italian and French banking overlays present in recovered configs suggest expansion targeting in progress. Detection on mobile MDM platforms: monitor for apps requesting Accessibility Service permissions that are not pre-approved; flag APKs side-loaded from third-party stores; SIEM correlation of unusual mobile device login times alongside OTP usage failures may indicate ATO (account takeover) attempts.
+    ch_eu_nexus: "EU-relevant; Spanish and Portuguese banking targets; Italian and French overlays suggest westward expansion; potential threat to Swiss banking customers via cross-border fraud"
+    public_sector_nexus: "indirect — bank fraud affecting EU citizens"
+    sector: "finance, banking"
+    cves: []
+    actors_campaigns_malware: ["BTMOB"]
+    verification: "SINGLE-SOURCE"
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "BTMOB is a sophisticated Android RAT distributed as a MaaS targeting banking customers in Spain and Portugal through HTML injection and Accessibility Service abuse"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/malware/btmob-stealthy-rat-burrowing-deep-android-devices/"
+    extended_notes: |
+      MITRE ATT&CK (Mobile): T1417.002 (Input Capture: GUI Input Capture), T1418 (Software Discovery), T1421 (System Network Configuration Discovery), T1516 (Input Injection). The MaaS geo-filtering capability is a significant evasion enhancement over earlier Android banking trojans like SOVA or Anatsa. BTMOB's MaaS model means detection-engineering focus should be on the shared infrastructure (C2 WebSocket patterns) rather than specific sample characteristics.
+
+  - title: "Rancher / SUSE Kubernetes management — multiple CVEs including privilege escalation and command injection"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1716"
+        publisher: "BSI CERT-Bund"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://github.com/rancher/rancher/security/advisories/GHSA-vx8h-4prv-g744"
+        publisher: "Rancher / SUSE (GitHub Security Advisory)"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: bsi-rss bridge (WID-SEC-2026-1716) → pivot: GitHub Security Advisory GHSA-vx8h-4prv-g744 (primary detail) → corroborating: BSI advisory WID-SEC-2026-1716"
+    summary: |
+      BSI published advisory WID-SEC-2026-1716 on 2026-05-28 covering multiple CVEs in Rancher (SUSE's open-source Kubernetes management platform). Three CVEs were addressed: CVE-2026-41052 (command injection, HIGH severity), CVE-2026-41053 (privilege escalation, HIGH severity), and CVE-2026-44939 (information disclosure, MEDIUM severity). GHSA-vx8h-4prv-g744 (mapped to CVE-2026-41052) describes a command injection vulnerability in Rancher's cluster provisioning workflow: unsanitised input from cluster configuration fields is passed to a shell command during Kubernetes node registration, allowing a user with Cluster provisioner role (a non-admin role) to execute arbitrary commands on the Rancher management server. CVE-2026-41053 involves a privilege escalation whereby a restricted Rancher user can obtain cluster-admin rights through manipulation of RoleBinding objects in specially crafted namespaces. Affected: Rancher 2.8.x before 2.8.14 and 2.9.x before 2.9.8. Patches are available in Rancher 2.8.14 and 2.9.8. No public PoC or active exploitation reported. Detection: Rancher audit logs for unexpected cluster-provisioning API calls and RoleBinding modifications by non-admin users; Kubernetes API server audit logs for privilege-escalation patterns (EscalationRuleBinding creation). Swiss public-sector Kubernetes adopters (bundescloud, cantonal cloud environments) should prioritise patching Rancher management clusters.
+    ch_eu_nexus: "EU-relevant; Rancher widely used in Swiss and European public-sector Kubernetes deployments"
+    public_sector_nexus: "direct — Rancher used in Swiss public-sector cloud and Kubernetes management"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-41052, CVE-2026-41053, CVE-2026-44939]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A user with Cluster provisioner permissions can inject arbitrary commands into the Rancher management server via unsanitised cluster configuration inputs"
+        attribution: "Rancher / SUSE GitHub Security Advisory"
+        source_url: "https://github.com/rancher/rancher/security/advisories/GHSA-vx8h-4prv-g744"
+      - quote: "BSI bewertet diese Schwachstellen als hoch kritisch und empfiehlt sofortige Aktualisierung auf Rancher 2.8.14 oder 2.9.8"
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1716"
+    extended_notes: |
+      MITRE ATT&CK: T1068 (Exploitation for Privilege Escalation), T1059.004 (Command and Scripting Interpreter: Unix Shell). The combination of privilege-escalation + command-injection in a Kubernetes management plane is a high-impact attack chain: an attacker who compromises a Cluster Provisioner account (often a CI/CD service account with broad permissions) could escalate to cluster-admin and then pivot to any workload in the managed clusters. Swiss public-sector security teams operating Rancher-managed Kubernetes should treat this as a priority-1 patch this week.
+
+cve_table:
+  - cve: "Gogs arg-injection zero-day"
+    product: "Gogs Git Service ≤ 0.14.2, 0.15.0+dev"
+    cvss: "9.4 (CVSSv4)"
+    epss: "n/a (no CVE assigned)"
+    kev: "No"
+    exploited: "No (disclosed 2026-05-28, no patch)"
+    patch: "None — migrate to Gitea/Forgejo"
+    source: "Rapid7 Research"
+  - cve: CVE-2026-35616
+    product: "Fortinet FortiClient EMS 7.4.5-7.4.6"
+    cvss: "9.1 Critical"
+    epss: "43.2% (97.6th pct)"
+    kev: "Yes (added 2026-04-06)"
+    exploited: "Yes — EKZ Infostealer delivery observed 2026-05-27"
+    patch: "FortiClient EMS 7.4.7"
+    source: "Arctic Wolf / Fortinet PSIRT"
+  - cve: CVE-2026-4868
+    product: "GitLab CE/EE (Duo AI integration) < 18.10.7 / 18.11.4 / 19.0.1"
+    cvss: "8.2 High"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "GitLab 19.0.1 / 18.11.4 / 18.10.7"
+    source: "GitLab / NCSC-NL"
+  - cve: CVE-2026-6713
+    product: "GitLab CE/EE (API) < 18.10.7 / 18.11.4 / 19.0.1"
+    cvss: "5.3 Medium"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "GitLab 19.0.1 / 18.11.4 / 18.10.7"
+    source: "GitLab / NCSC-NL"
+  - cve: CVE-2026-9170
+    product: "IBM HTTP Server 9.0/8.5; IBM WebSphere Application Server 9.0/8.5"
+    cvss: "9.8 Critical"
+    epss: "0.049%"
+    kev: "No"
+    exploited: "No"
+    patch: "IBM Fix Pack (see IBM Security Bulletin node/7274065)"
+    source: "IBM / NCSC.ch"
+  - cve: CVE-2026-41052
+    product: "Rancher 2.8.x < 2.8.14, 2.9.x < 2.9.8"
+    cvss: "High (CVSS not published)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "Rancher 2.8.14 / 2.9.8"
+    source: "BSI / Rancher GHSA"
+  - cve: CVE-2026-41053
+    product: "Rancher 2.8.x < 2.8.14, 2.9.x < 2.9.8"
+    cvss: "High (CVSS not published)"
+    epss: "n/a"
+    kev: "No"
+    exploited: "No"
+    patch: "Rancher 2.8.14 / 2.9.8"
+    source: "BSI / Rancher GHSA"
+
+candidate_sources:
+  - id: arctic-wolf-blog
+    publisher: "Arctic Wolf Research Blog"
+    url: "https://arcticwolf.com/resources/blog/"
+    rss_url: "https://arcticwolf.com/feed/"
+    category: research
+    why: "Published primary exploitation evidence for CVE-2026-35616 FortiClient EMS / EKZ Infostealer ahead of other outlets (2026-05-27). Research blog produces vendor-independent in-the-wild campaign analysis with high operational specificity."
+
+coverage_gaps:
+  - source_id: bleepingcomputer
+    reason: "BleepingComputer article URLs for FortiClient EMS and The Gentlemen returned no usable Wayback snapshot (24B / timeout). Covered via Arctic Wolf primary and Microsoft Security Blog respectively."
+  - source_id: cisa-directives
+    reason: "No new Binding Operational Directives or Emergency Directives observed in window via bridge search."
+  - source_id: tenable-research
+    reason: "Tenable blog feed fetched but no new items within the 2026-05-27 to 2026-05-29 window after dedup check."
+  - source_id: shadowserver
+    reason: "Shadowserver news page returned no new in-window items directly relevant to S1 domain (no new mass exploitation campaigns disclosed in window)."
+  - source_id: cisco-psirt
+    reason: "Cisco PSIRT RSS checked; no new Critical advisories in window after dedup with prior_coverage.json."
+  - source_id: greynoise
+    reason: "GreyNoise Labs had no new published reports in the 36-hour window."
+  - source_id: vulncheck
+    reason: "VulnCheck feed checked; no new KEV-adjacent disclosures in window beyond items covered via CISA KEV bridge."
