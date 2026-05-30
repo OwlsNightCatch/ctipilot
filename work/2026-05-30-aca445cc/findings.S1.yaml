@@ -1,0 +1,210 @@
+domain: S1
+run_id: 2026-05-30-aca445cc
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-30T04:11:48Z
+ended_at: 2026-05-30T04:20:26Z
+duration_seconds: 518
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 18
+  bridge_fetches: 9
+
+items:
+  - title: "CVE-2026-0257 — PAN-OS GlobalProtect authentication bypass actively exploited; CISA KEV added 2026-05-29 with 3-day federal deadline"
+    sources:
+      - url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+        publisher: "Palo Alto Networks PSIRT"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+        publisher: "Rapid7"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → pivot: Palo Alto Networks PSIRT, URL https://security.paloaltonetworks.com/CVE-2026-0257 → corroborating: Rapid7 ETR, URL https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/
+    summary: |
+      CVE-2026-0257 is an authentication bypass (CWE-565: Reliance on Cookies without Validation and Integrity Checking) in the GlobalProtect portal and gateway of Palo Alto Networks PAN-OS. The root cause is that when GlobalProtect authentication override cookies are enabled and the portal/gateway certificate is shared with another feature (such as the HTTPS service), an unauthenticated attacker can extract the certificate's public key from the HTTPS service and use it to forge valid authentication override cookies. This results in full VPN authentication bypass — the attacker establishes an unauthorised GlobalProtect VPN session gaining network-level access to whatever network segment the VPN serves. CVSS 4.0 = 7.8 HIGH (Exploit Maturity: ATTACKED). Palo Alto Networks confirmed limited exploitation of unpatched appliances. Rapid7 MDR observed two waves: Wave 1 on 2026-05-18 from Vultr-hosted infrastructure, Wave 2 on 2026-05-21 from Dromatics Systems IP space; both waves shared a spoofed MAC address (aa:bb:cc:dd:ee:ff) and used machine names GP-CLIENT (Linux) and DESKTOP-GP01 (Windows) — consistent MAC suggests the same actor. Rapid7 confirmed successful exploitation but no observed lateral movement. A public PoC is available (github.com/sfewer-r7/CVE-2026-0257). CISA added the CVE to KEV on 2026-05-29 with a three-day remediation deadline (2026-06-01) for FCEB agencies. Affected versions span PAN-OS 10.2.x, 11.1.x, 11.2.x, and 12.1.x; Prisma Access 10.2 and 11.2; Panorama and Cloud NGFW are NOT affected. Patches are available. The vulnerability is only exploitable when authentication override cookies are enabled AND the same certificate is reused with another feature (non-default but operationally common). Detection: look for GlobalProtect VPN sessions authenticating without prior web-based MFA interaction, unusual source IPs in GlobalProtect connection logs, and cookie-based auth-override events in pan-gp logs. Hardening: immediately upgrade to fixed versions; if patching is delayed, disable authentication override cookies or generate a dedicated certificate solely for this feature.
+    ch_eu_nexus: "Global; PAN-OS GlobalProtect is widely deployed across European enterprise and public-sector perimeters. CERT-EU 2026-006 (PAN-OS) referenced earlier PAN-OS advisories — operations here are independent but share the same product surface."
+    public_sector_nexus: "direct — perimeter VPN for government and cantonal networks"
+    sector: "all, government, critical-infrastructure"
+    cves: ["CVE-2026-0257"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Palo Alto Networks has become aware of limited exploit attempts on unpatched PAN-OS devices without mitigations applied."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+      - quote: "Rapid7 MDR observed a second wave of exploitation on May 21st, and due to consistent MAC address, they believe both waves of exploitation are likely from the same threat actor."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+
+  - title: "CVE-2026-48710 'BadHost' — Starlette/FastAPI host-header auth bypass hits AI/ML serving infrastructure (vLLM, LiteLLM, MCP servers); NCSC-NL advisory 2026-05-29"
+    sources:
+      - url: "https://badhost.org/"
+        publisher: "X41 D-Sec / Persistent Security (badhost.org)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://ostif.org/disclosing-the-badhost-vulnerability-in-starlette/"
+        publisher: "OSTIF.org"
+        date: "2026-05-22"
+        role: "corroborating"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0171"
+        publisher: "NCSC-NL"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://github.com/Kludex/starlette/security/advisories/GHSA-86qp-5c8j-p5mr"
+        publisher: "GitHub Advisory Database"
+        date: "2026-05-22"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: ncsc-nl recent listing, item NCSC-2026-0171 published 2026-05-29T19:08Z → pivot: NCSC-NL CSAF NCSC-2026-0171, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0171 (reference: badhost.org) → primary: X41 D-Sec advisory, URL https://badhost.org/ → corroborating: OSTIF, URL https://ostif.org/disclosing-the-badhost-vulnerability-in-starlette/
+    summary: |
+      CVE-2026-48710 ("BadHost") is a critical authentication bypass in the Starlette Python ASGI framework (all versions < 1.0.1), which underpins FastAPI, vLLM, LiteLLM, Google ADK-Python, BentoML, Gradio, Langflow, Dify, CrewAI, Open WebUI, and the Python MCP SDK. The root cause (CWE-444: Inconsistent Interpretation of HTTP Requests) is that Starlette reconstructs `request.url` by concatenating the `Host` header with the request path and re-parsing the composite URL; the parts are validated separately under different rules. A Host header containing `/`, `?`, or `#` shifts where Starlette believes the path begins, so `request.url.path` reports a different path than the ASGI server actually routed. Middleware and endpoints that apply access-control decisions via `request.url.path` can be bypassed: the attacker sends `GET /admin` with a Host header of `example.com/health?x=` and Starlette reports the path as `/health` while routing to `/admin`. No auth, no privileges required — a single malformed HTTP header character achieves the bypass. Three populations are most exposed: FastAPI/Starlette apps on an application server with no compliant reverse proxy (nginx, Caddy, Traefik, HAProxy, Cloudflare all strip/reject malformed Host headers and are protective); model proxies such as LiteLLM or vLLM exposed directly; and applications where access-control code reads `request.url.path` rather than `scope["path"]`. Starlette has roughly 325 million downloads/week and 400,000+ GitHub dependents. The patch shipped as Starlette 1.0.1 on 2026-05-21, one day before disclosure (effectively zero lead time). X41 D-Sec discovered the flaw in January 2026 during an OSTIF-sponsored audit of vLLM. NCSC-NL issued advisory NCSC-2026-0171 on 2026-05-29 in-window. Fix: upgrade Starlette to ≥ 1.0.1; downstream frameworks (FastAPI etc.) require a dependency update to pull the fixed Starlette. If upgrading is not immediately possible, place a compliant reverse proxy in front of the application and configure it to validate or strip malformed Host headers. Detection: parse web-server access logs for Host header values containing `/`, `?`, or `#` characters followed by path components — that pattern is the exploit fingerprint.
+    ch_eu_nexus: "Relevant wherever AI/ML inference infrastructure (vLLM, LiteLLM, FastAPI-based model proxies, MCP servers) is deployed in Swiss or European research, government, or enterprise environments — particularly cantonal AI pilots and university research clusters."
+    public_sector_nexus: "indirect — AI serving infrastructure in public-sector deployments"
+    sector: "technology, research, public-sector AI"
+    cves: ["CVE-2026-48710"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A Host header containing a slash, question mark or hash character shifts where the path begins, so the path Starlette reports no longer matches the one the server actually received and routed against."
+        attribution: "X41 D-Sec / badhost.org"
+        source_url: "https://badhost.org/"
+      - quote: "Starlette receives roughly 325 million downloads per week and serves as the routing foundation for FastAPI, vLLM, LiteLLM, Text Generation Inference, OpenAI-compatible API proxies, MCP servers, and a sprawling ecosystem of AI agent frameworks."
+        attribution: "OSTIF.org"
+        source_url: "https://ostif.org/disclosing-the-badhost-vulnerability-in-starlette/"
+
+  - title: "GreyVibe — Russia-nexus threat cluster targeting Ukraine with AI-assisted tooling (ChatGPT/Gemini/Ideogram) across five attack chains; custom PowerShell RATs and Android spyware"
+    sources:
+      - url: "https://labs.withsecure.com/publications/greyvibe"
+        publisher: "WithSecure Labs"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/greyvibe-hackers-use-chatgpt-gemini-to-power-cyberattacks/"
+        publisher: "BleepingComputer"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: BleepingComputer RSS feed, item published 2026-05-28T18:24Z, URL https://www.bleepingcomputer.com/news/security/greyvibe-hackers-use-chatgpt-gemini-to-power-cyberattacks/ → primary: WithSecure Labs publication, URL https://labs.withsecure.com/publications/greyvibe
+    summary: |
+      WithSecure Labs published their GREYVIBE research on 2026-05-28, documenting a previously-unnamed Russia-nexus threat cluster active since at least August 2025 and targeting Ukrainian military, government, civilian, and business entities. WithSecure describes GreyVibe as low-to-moderately sophisticated but notable for systematic, integrated use of generative AI across the full attack lifecycle — including ChatGPT, Google Gemini, and Ideogram AI — for lure generation, obfuscator development, and malware coding (likely with LLM-assistance). The group operates five distinct attack chains: PhantomMail (spear-phishing with ZIP/RAR archives via Google Drive and 4sync), PhantomClick (fake CAPTCHA/ClickFix pages impersonating Zoom and LAPAS), PrincessClub (fake adult/dating sites with live WebRTC calls for social engineering), DroneLink (counterfeit Ukrainian military charity sites), and Nebo (fake Russian military communications login portals). Core malware includes LegionRelay (PowerShell RAT: file theft, screenshots, credential harvesting, RDP access) and PhantomRelay (PowerShell RAT: system fingerprinting, dynamic script loading), plus FallSpy (Android spyware for contact/call log/location extraction). Four custom obfuscators are used: LOOKVALPS, LOOKVALJS, DAYLIGHT, TEASOUP. Attribution evidence: Russian-language malware panels and code comments, C2 servers set to UTC+3 (Moscow time), operational security blunders including uploading samples to public scanning platforms, cryptocurrency mining as side activity. WithSecure notes possible links to UAC-0098 (former TrickBot associates). MITRE ATT&CK: T1566.001/T1566.002 (Phishing), T1059.001 (PowerShell), T1005 (Data from Local System), T1204.001 (User Execution: Malicious Link), T1133 (External Remote Services/RDP). Detection: process chains spawning PowerShell from browser processes (CAPTCHA/ClickFix delivery), outbound connections to newly-registered domains from `powershell.exe`, Android APK side-loading patterns, AI-image metadata (LLM artifact markers). WithSecure IoCs available at github.com/WithSecureLabs/iocs/blob/master/GREYVIBE/greyvibe_iocs.csv.
+    ch_eu_nexus: "Ukraine-focused campaign with European adjacency — Ukraine-supporting European institutions and NGOs are within the targeting scope. Phishing lure impersonation of European platforms (Zoom) relevant for Swiss/EU defenders."
+    public_sector_nexus: "indirect — government and NGO targeting against Ukraine-aligned organisations"
+    sector: "government, defence, NGO"
+    cves: []
+    actors_campaigns_malware: ["GreyVibe", "LegionRelay", "PhantomRelay", "FallSpy", "LOOKVALPS", "LOOKVALJS", "DAYLIGHT", "TEASOUP"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GreyVibe is a low-to-moderately sophisticated group that suffers from operational security blunders while employing AI-assisted tooling to augment malware development efforts."
+        attribution: "WithSecure (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/greyvibe-hackers-use-chatgpt-gemini-to-power-cyberattacks/"
+      - quote: "AI tools, including ChatGPT, Ideogram AI, and Google Gemini, to generate detailed and realistic content... custom obfuscators LOOKVALPS, LOOKVALJS, DAYLIGHT, and TEASOUP were likely developed with LLM assistance, as well as LegionRelay, a PowerShell-based remote access trojan."
+        attribution: "WithSecure Labs"
+        source_url: "https://labs.withsecure.com/publications/greyvibe"
+
+  - title: "'LLMShare' malvertising campaign abuses ChatGPT share-link feature to render fake outage pages and serve infostealer downloads via Google Ads"
+    sources:
+      - url: "https://pushsecurity.com/blog/llmshare-malvertising-campaign"
+        publisher: "Push Security"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/chatgpt-share-links-abused-to-host-fake-outage-pages-to-deliver-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: BleepingComputer RSS feed, item published 2026-05-29T14:21Z, URL https://www.bleepingcomputer.com/news/security/chatgpt-share-links-abused-to-host-fake-outage-pages-to-deliver-malware/ → primary: Push Security research, URL https://pushsecurity.com/blog/llmshare-malvertising-campaign
+    summary: |
+      Push Security (dubbed the campaign "LLMShare") documented a novel malvertising technique exploiting ChatGPT's content-sharing feature in which attackers place Google ads targeting ChatGPT-related searches ("ChatGPT", "ChatGPT desktop app", "ChatGPT download"). Victims clicking ads land on legitimate `chatgpt.com/s/[unique-id]` share URLs — owned by OpenAI — that render attacker-controlled HTML via ChatGPT's shared-conversation capability, displaying a fake high-traffic outage page with a "Download our desktop app to continue" button. Because the serving domain is `chatgpt.com`, enterprise web-filtering rules and firewall URL blocks do not trigger. The download button redirects to an external domain (`openew[.]app`) impersonating OpenAI's download portal; the site uses cloaking so security scanners see a harmless AR/VR company website instead of the malicious payload. Windows users receive an infostealer (Beagle malware) with VM-detection commands; macOS users receive a separate infostealer payload. The campaign is similar to an earlier Claude.ai Artifacts abuse pattern. No CVEs. MITRE ATT&CK: T1566.002 (Spearphishing Link), T1204.001 (Malicious Link), T1036 (Masquerading as ChatGPT), T1027 (Obfuscation/Cloaking). Detection: monitor for process execution chains spawning from browser-downloaded applications from chatgpt.com domains — the masquerade as an app download is unusual for that domain. EDR parent-child: browser spawning a newly-downloaded unsigned or oddly-signed executable. User awareness note: legitimate ChatGPT desktop app downloads are hosted only on openai.com, not on OpenAI-impersonating third-party domains. Defender action: update web-proxy/email security to flag/block `openew[.]app` class of look-alike domains at the network perimeter.
+    ch_eu_nexus: "Global campaign; relevant wherever enterprise users search for AI tools via Google — Swiss and European knowledge-worker populations are targeted."
+    public_sector_nexus: "indirect — targets any user searching for AI productivity tools"
+    sector: "all, technology"
+    cves: []
+    actors_campaigns_malware: ["LLMShare", "Beagle"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The LLMShare campaign works by abusing the share features of popular LLM chatbots like ChatGPT. The attackers render a custom HTML layout directly on the legitimate domain to display a fake system maintenance message."
+        attribution: "Push Security"
+        source_url: "https://pushsecurity.com/blog/llmshare-malvertising-campaign"
+      - quote: "Because the domain belongs to OpenAI, web filter rules and firewall blocks do not trigger."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/chatgpt-share-links-abused-to-host-fake-outage-pages-to-deliver-malware/"
+
+  - title: "UPDATE: Nightmare Eclipse zero-day escalation — Microsoft calls uncoordinated releases 'never justifiable'; researcher threatens July 14 drop of additional Windows LPEs (GreenPlasma / MiniPlasma still unpatched)"
+    sources:
+      - url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+        publisher: "The Record (Recorded Future News)"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: The Record RSS feed, item published 2026-05-29T13:33Z, URL https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more → corroborating: Microsoft MSRC advisory for YellowKey/CVE-2026-45585, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585
+    summary: |
+      The Record published a 2026-05-29 article covering fresh escalation in the Nightmare Eclipse / Chaotic Eclipse zero-day campaign. The pseudonymous researcher has now released six Windows vulnerabilities since early April 2026 (BlueHammer/CVE-2026-33825, UnDefend/CVE-2026-45498, RedSun/CVE-2026-41091 in April — all now patched; YellowKey/CVE-2026-45585 BitLocker bypass, GreenPlasma LPE, and MiniPlasma LPE in May — GreenPlasma and MiniPlasma remain unpatched as of 2026-05-29). Microsoft issued a formal public statement calling uncoordinated disclosures "never justifiable" and inviting vulnerability submissions. The researcher responded by threatening to "shatter bones" with a new release on July 14 (the next Patch Tuesday). MiniPlasma (unpatched): abuse of the Windows Cloud Files Mini Filter Driver (`cldflt.sys`); a low-privileged user runs the PoC and gets a SYSTEM shell on fully-patched Windows 11 — confirmed by BleepingComputer. Root cause: a variant of CVE-2020-17103 in the cloud-sync subsystem that was not fully remediated when originally patched in 2020. GreenPlasma: also unpatched; LPE class. This is an UPDATE to prior coverage of the Chaotic Eclipse campaign (covered in brief 2026-W21). The new in-window information is: Microsoft's formal public response, the July 14 deadline threat, and confirmation that GreenPlasma and MiniPlasma remain without a Microsoft patch going into June. Defenders with unmanaged Windows 11 estates should monitor for `cldflt.sys`-related anomalies and consider AppLocker/WDAC policies to block unsigned executables from running as low-privileged users while patches are pending.
+    ch_eu_nexus: "Global — MiniPlasma and GreenPlasma affect all supported Windows 11 and Windows 10 versions in Swiss and European public-sector environments."
+    public_sector_nexus: "direct — Windows LPE on government workstations"
+    sector: "all, government"
+    cves: ["CVE-2026-45585"]
+    actors_campaigns_malware: ["Nightmare Eclipse", "Chaotic Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-W21"
+    evidence:
+      - quote: "Microsoft stated that uncoordinated disclosures are 'never justifiable' and warned the Digital Crimes Unit would pursue cases against those enabling cybercrime."
+        attribution: "The Record"
+        source_url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+      - quote: "The researcher threatened another release on July 14 (Patch Tuesday), stating they would 'make sure your bones are shattered that day.'"
+        attribution: "The Record"
+        source_url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+
+cve_table:
+  - cve: CVE-2026-0257
+    product: "Palo Alto PAN-OS (GlobalProtect portal/gateway)"
+    cvss: "7.8 (CVSS 4.0 HIGH)"
+    epss: "unknown"
+    kev: "yes — added 2026-05-29, due 2026-06-01"
+    exploited: "yes — limited in-the-wild exploitation confirmed"
+    patch: "PAN-OS 10.2.7-h34+, 10.2.10-h36+, 10.2.13-h21+, 10.2.16-h7+, 10.2.18-h6+; 11.1.4-h33+, 11.1.6-h32+, 11.1.7-h6+, 11.1.10-h25+, 11.1.13-h5+, 11.1.15+; 11.2.4-h17+, 11.2.7-h14+, 11.2.10-h7+, 11.2.12+; 12.1.4-h6+, 12.1.7+"
+    source: "https://security.paloaltonetworks.com/CVE-2026-0257"
+  - cve: CVE-2026-48710
+    product: "Starlette (FastAPI, vLLM, LiteLLM, MCP SDK)"
+    cvss: "critical (exact score not published by NVD in window)"
+    epss: "unknown"
+    kev: "no"
+    exploited: "no confirmed exploitation"
+    patch: "Starlette >= 1.0.1"
+    source: "https://github.com/Kludex/starlette/security/advisories/GHSA-86qp-5c8j-p5mr"
+  - cve: CVE-2026-45585
+    product: "Windows (YellowKey BitLocker bypass, all supported versions)"
+    cvss: "unspecified (unpatched zero-day)"
+    epss: "unknown"
+    kev: "no"
+    exploited: "public PoC available; no confirmed in-the-wild exploitation beyond PoC testing"
+    patch: "none as of 2026-05-30 — next Patch Tuesday 2026-06-10"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Bridge ncsc-csh succeeded — no new advisory in window beyond Veeam (CVE-2026-32996/32997) already covered in 2026-05-29 brief. Ivanti SAC CVE-2026-8992 update on 2026-05-29 is an update to a post outside the window origin."
+  - source_id: cert-fr-avis
+    reason: "Latest CERT-FR avis in feed are from 2026-05-22, outside the 36-hour window. No fresh CERTFR advisory in window."
+  - source_id: cert-eu
+    reason: "Latest CERT-EU advisory is 2026-006 (PAN-OS, published 2026-05-06), outside the 36-hour window."

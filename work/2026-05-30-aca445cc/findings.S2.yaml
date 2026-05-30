@@ -1,0 +1,213 @@
+domain: S2
+run_id: 2026-05-30-aca445cc
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-30T04:12:04Z
+ended_at: 2026-05-30T04:20:08Z
+duration_seconds: 484
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 10
+  bridge_fetches: 9
+
+items:
+  - title: "CVE-2026-48710 (BadHost) — Starlette/FastAPI Host-header auth bypass exposes AI-agent infrastructure, Python LLM gateways and MCP servers; CCB Belgium issues Patch Immediately advisory"
+    sources:
+      - url: "https://www.x41-dsec.de/lab/advisories/x41-2026-002-starlette"
+        publisher: "X41 D-Sec"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://github.com/Kludex/starlette/security/advisories/GHSA-86qp-5c8j-p5mr"
+        publisher: "GitHub Security Advisory (Starlette)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0171"
+        publisher: "NCSC-NL"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://www.csoonline.com/article/4177711/fastapi-based-ai-tools-exposed-to-authentication-bypass-by-flaw-in-starlette-framework.html"
+        publisher: "CSO Online"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://ccb.belgium.be/advisories/warning-vulnerability-starlette-framework-and-related-frameworks-fastapi-exposes"
+        publisher: "Centre for Cybersecurity Belgium (CCB)"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl (bridge), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0171 → pivot: X41 D-Sec advisory https://www.x41-dsec.de/lab/advisories/x41-2026-002-starlette → corroborating: GHSA-86qp-5c8j-p5mr → corroborating: CCB Belgium advisory"
+    summary: |
+      X41 D-Sec discovered CVE-2026-48710 (internally named BadHost) in January 2026 while auditing vLLM under an OSTIF grant, coordinating disclosure with the Starlette maintainer through February–May 2026. The flaw lives in Starlette's URL reconstruction logic: the framework concatenates the HTTP Host header with the request path to build `request.url` using the template `f"{scheme}://{host_header}{path}"`, but validates only the path against routing rules. When the Host header contains an RFC 3986-illegal character such as `/`, `?`, or `#`, the subsequent URL parse shifts path, query, and fragment boundaries. The result is that `request.url.path` — the value middleware uses for access control — diverges from the actual route path the handler receives, silently bypassing path-based authentication middleware. X41 demonstrated the bypass with a single-character injection: `curl -H 'Host: foo?' localhost:8000/admin` returns HTTP 200 instead of 403. The vulnerability is tracked under CWE-444 (Inconsistent Interpretation of HTTP Requests) and scored CVSS 4.0 at 7.0 (High) by X41 (`CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:N/VI:N/VA:N/SC:H/SI:H/SA:N`); the official GitHub advisory assigns CVSS 3.1 6.5 (Moderate). Affected versions: Starlette ≥0.8.3, <1.0.1; patch is 1.0.1 (released 2026-05-21). Downstream projects with confirmed exposure include FastAPI, vLLM, LiteLLM, Model Context Protocol (MCP) servers, OpenAI-compatible API proxies, and LLM inference dashboards. Starlette receives approximately 325 million downloads per week. Nginx and Apache HTTP Server correctly reject malformed Host headers before the request reaches the application layer, so deployments behind these reverse proxies are protected. Direct-listen Python servers — common in research, R&D, and evaluation environments — are fully exposed. The Centre for Cybersecurity Belgium (CCB) issued a "Patch Immediately" advisory. NCSC-NL classified the advisory as severity High/Medium (likelihood high). No active exploitation confirmed; proof-of-concept is public. Detection: proxy access logs and WAF rules should alert on Host header values containing `/`, `?`, or `#`. EDR parent-process monitoring for Python ASGI servers (`uvicorn`, `hypercorn`, `gunicorn`) may help baseline legitimate traffic patterns.
+    ch_eu_nexus: "EU-wide; CCB Belgium national CERT advisory; NCSC-NL advisory 29 May; affects any EU public-sector or research organisation running FastAPI, LiteLLM or vLLM without a reverse proxy"
+    public_sector_nexus: "direct — government AI platforms, university research APIs, national health LLM deployments using FastAPI are exposed if not proxied"
+    sector: "technology, public-sector, healthcare, education, research"
+    cves: [CVE-2026-48710]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Starlette versions before 1.0.1 did not validate the HTTP Host header when reconstructing request URLs, allowing attackers to inject paths and potentially bypass authentication based on the reconstructed URL path."
+        attribution: "GitHub Security Advisory GHSA-86qp-5c8j-p5mr"
+        source_url: "https://github.com/Kludex/starlette/security/advisories/GHSA-86qp-5c8j-p5mr"
+      - quote: "The flaw exists in how Starlette reconstructs incoming request URLs. The framework joins the Host header with the requested path to form a complete URL, but parses them using different validation rules. When a Host header contains a slash, question mark, or hash character, 'the path Starlette reports no longer matches the one the server actually received.'"
+        attribution: "CSO Online"
+        source_url: "https://www.csoonline.com/article/4177711/fastapi-based-ai-tools-exposed-to-authentication-bypass-by-flaw-in-starlette-framework.html"
+      - quote: "Example Attack: A malformed header like `Host: example.com/abc?bar=` transforms the path from `/foo` to `/abc`, bypassing path-based security checks."
+        attribution: "X41 D-Sec Advisory x41-2026-002"
+        source_url: "https://www.x41-dsec.de/lab/advisories/x41-2026-002-starlette"
+    extended_notes: |
+      The risk is amplified by AI-deployment patterns: MCP servers, LiteLLM proxies, and vLLM model-serving dashboards are frequently deployed with a single Python process listening directly on a high port, exposed internally to the developer subnet or externally for remote model access. These deployments often rely on path-based authentication (`/v1/admin`, `/api/management`) implemented in middleware rather than WAF rules. A defender hunt should enumerate Python ASGI processes and validate whether a reverse proxy (nginx, caddy, traefik) sits in front. For organisations running Kubernetes, check Service type (ClusterIP vs NodePort/LoadBalancer) and ingress controller configuration. Ingress controllers based on nginx (most common in EU public-sector Kubernetes) would block malformed Host headers by default.
+
+  - title: "ENISA NIS360 2026 — public administrations, health, maritime and space sector remain in the NIS2 'risk zone'; space joins highest-criticality tier"
+    sources:
+      - url: "https://www.enisa.europa.eu/news/nis360-the-bigger-picture-on-maturity-and-criticality-of-nis-critical-sectors"
+        publisher: "ENISA"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://ieu-monitoring.com/editorial/enisa-eu-critical-sectors-improve-cybersecurity-maturity-under-nis2/1242399"
+        publisher: "INSIGHT EU MONITORING"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://www.heise.de/news/Cybersicherheit-Kritische-Infrastrukturen-holen-auf-doch-Risiko-Zone-waechst-11312014.html"
+        publisher: "heise Security (DE)"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: heise-sec (RSS feed), URL https://www.heise.de/news/Cybersicherheit-Kritische-Infrastrukturen-holen-auf-doch-Risiko-Zone-waechst-11312014.html → pivot: ENISA primary news page https://www.enisa.europa.eu/news/nis360-the-bigger-picture-on-maturity-and-criticality-of-nis-critical-sectors → corroborating: INSIGHT EU Monitoring article"
+    summary: |
+      ENISA published the third edition of NIS360 on 28 May 2026, its annual maturity-and-criticality assessment of all sectors covered by NIS2 Annex I. The report introduces a structural risk concept: a "risk zone" of sectors where operational criticality exceeds cybersecurity maturity, leaving them structurally under-defended relative to their systemic importance. In 2026 the risk-zone sectors are public administrations, health, maritime, ICT management services, railway, drinking water, and waste water. Space joins the highest-criticality tier for the first time, reflecting growing societal and cross-sector dependency on satellite and space-based services. Three sectors advanced to high maturity since last year: trust services, aviation, and financial market infrastructures. Gas began exiting the risk zone. The NIS360 maturity score integrates four dimensions: legislation effectiveness, company preparedness, national-authority institutional capacity, and sectoral ecosystem structures. For defenders in NIS2-scope public administrations (which remain in the risk zone), the report highlights that the gap between criticality and maturity is not primarily a technology gap but a governance gap: incident-reporting obligations and risk-management measures are unevenly implemented. Switzerland is not in scope for NIS2 but the bilateral framing of the EU-Switzerland Digital Access Act (in negotiation) means the maturity benchmarks have direct policy resonance for Swiss public-sector CISO offices. ENISA's full PDF is available at `https://www.enisa.europa.eu/sites/default/files/2026-05/ENISA%20NIS360%202026.pdf`. Defenders in risk-zone sectors should benchmark against the NIS360 maturity indicators: test incident-reporting timelines against the 24/72-hour NIS2 notification clock, validate risk-management documentation against Article 21 requirements, and verify supply-chain risk assessments particularly for ICT-managed-service dependencies (NIS2 Annex I, key sector).
+    ch_eu_nexus: "EU-wide; Switzerland bilateral relevance; specific sectors named are public administrations, health, maritime, space — all present in CH/EU public-sector estate"
+    public_sector_nexus: "direct — public administrations explicitly named as in the risk zone"
+    sector: "public-sector, healthcare, maritime, transport, energy, space"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Public administrations remain in the risk zone, indicating cybersecurity maturity gaps despite operational criticality. The report emphasizes 'improved information sharing, stronger collaboration, and better implementation of risk management measures' drive maturity gains."
+        attribution: "INSIGHT EU MONITORING"
+        source_url: "https://ieu-monitoring.com/editorial/enisa-eu-critical-sectors-improve-cybersecurity-maturity-under-nis2/1242399"
+      - quote: "Space has joined this year's group of most critical sectors, reflecting its growing role in society and across other sectors, which increases dependency, impact, and time criticality."
+        attribution: "ENISA NIS360 2026"
+        source_url: "https://www.enisa.europa.eu/news/nis360-the-bigger-picture-on-maturity-and-criticality-of-nis-critical-sectors"
+
+  - title: "UPDATE: Nightmare Eclipse / Chaotic Eclipse — Microsoft's Digital Crimes Unit threatens criminal action; three actively exploited Windows zero-days patched, three (YellowKey, GreenPlasma, MiniPlasma) remain unpatched; researcher promises another July 14 release"
+    sources:
+      - url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+        publisher: "The Record (Recorded Future News)"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.heise.de/en/news/Too-many-zero-days-Microsoft-threatens-legal-action-11310736.html"
+        publisher: "heise Security (EN)"
+        date: "2026-05-28"
+        role: "corroborating"
+      - url: "https://www.theregister.com/security/2026/05/28/microsoft-0-day-feud-escalates-as-researcher-threatens-another-windows-exploit-dump/5248085"
+        publisher: "The Register"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: heise-sec (RSS feed), URL https://www.heise.de/news/Zu-viele-Zero-Days-Microsoft-droht-mit-Gericht-11310723.html → pivot: The Record primary article https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more → corroborating: The Register"
+    summary: |
+      On 28–29 May 2026 the dispute between pseudonymous researcher Nightmare Eclipse (also operating as Chaotic Eclipse) and Microsoft reached a new escalation: Microsoft's Digital Crimes Unit issued a formal threat of criminal action against the researcher, stating that uncoordinated zero-day releases are "never justifiable" and that its DCU would "continue bringing cases against these actors and those that enable their criminal activity." The researcher countered that Microsoft deleted their MSRC reporting account, withheld bounty payments, and removed attribution from published advisories. The dispute involves six Windows LPE/bypass vulnerabilities released publicly over six weeks: BlueHammer (CVE-2026-33825), UnDefend (CVE-2026-45498), and RedSun (CVE-2026-41091) were all subsequently patched by Microsoft and saw active exploitation in the wild shortly after public PoC release; YellowKey (CVE-2026-45585, BitLocker bypass via WinRE requiring physical access), GreenPlasma, and MiniPlasma remain unpatched as of 30 May 2026. The researcher's GitHub and GitLab accounts were banned after hosting the PoC code; BlueHammer, RedSun, and UnDefend saw real-world exploitation within days of publication. The researcher announced a "July 14" release date for additional unspecified Windows vulnerabilities. Microsoft's legal threat drew sharp criticism from the wider security community: former Tenable CEO Amit Yoran's prior criticism of Microsoft's vulnerability-disclosure practices was widely recirculated; Trend Micro cited analogous non-responsiveness in 2024; Katie Moussouris warned that vendor legal threats drive researchers toward full non-disclosure. The three unpatched vulnerabilities (YellowKey, GreenPlasma, MiniPlasma) have no vendor-issued mitigations beyond BitLocker PIN policy (for YellowKey). Defenders should monitor for Windows Recovery Environment (`winre.wim`) tampering (Sysmon EID 11 on WinRE path), process lineage from `reagentc.exe`, and unusual `bcdboot.exe` or `bcdedit.exe` execution (Sysmon EID 1 with parent-image checks). The July 14 release should be treated as a hard deadline for patching any outstanding Windows LPE chain gaps.
+    ch_eu_nexus: "global; directly relevant to CH/EU public-sector Windows estates running BitLocker + TPM-only configuration (unmitigated YellowKey exposure)"
+    public_sector_nexus: "direct — government Windows estates with BitLocker TPM-only configs are exposed to YellowKey"
+    sector: "all, public-sector, technology"
+    cves: [CVE-2026-45585, CVE-2026-33825, CVE-2026-45498, CVE-2026-41091]
+    actors_campaigns_malware: ["Nightmare Eclipse", "Chaotic Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-W21
+    evidence:
+      - quote: "Microsoft stated that uncoordinated disclosures are 'never justifiable' and warned its Digital Crimes Unit would pursue 'cases against these actors and those that enable their criminal activity.'"
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+      - quote: "Attackers began hammering three of the six — BlueHammer, RedSun, and UnDefend — soon after Nightmare published working proof-of-concept exploit code for each on now-banned GitHub and GitLab accounts."
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+
+  - title: "Ghost Stadium PhaaS — 300+ FIFA domain clones impersonating World Cup SSO, targeting UK/Germany/Portugal/Spain fan base ahead of June 2026 kickoff; FBI IC3 PSA 260527"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/fbi-warns-of-fake-fifa-websites-running-world-cup-fraud-schemes/"
+        publisher: "BleepingComputer"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://www.ic3.gov/PSA/2026/PSA260527"
+        publisher: "FBI IC3"
+        date: "2026-05-27"
+        role: "primary"
+    discovery_trace: "first seen at: heise-sec (RSS feed), URL https://www.heise.de/news/Warnung-vor-gefaelschten-FIFA-Webseiten-vor-der-Fussball-WM-2026-11309777.html → pivot: FBI IC3 primary PSA https://www.ic3.gov/PSA/2026/PSA260527 → corroborating: BleepingComputer https://www.bleepingcomputer.com/news/security/fbi-warns-of-fake-fifa-websites-running-world-cup-fraud-schemes/"
+    summary: |
+      The FBI issued Public Service Announcement PSA260527 on 27 May 2026 warning that a sophisticated Chinese-speaking, financially-motivated threat actor tracked by Group-IB as Ghost Stadium has deployed more than 300 phishing site clones impersonating the official FIFA website (fifa.com) ahead of the 2026 FIFA World Cup (tournament begins 11 June in the USA, Canada and Mexico). Ghost Stadium's infrastructure reproduces the FIFA site pixel-for-pixel including a fake single-sign-on authentication flow supporting 11 languages, directly targeting European fan demographics (UK, Portugal, Spain, Germany explicitly named by FBI). Typosquatting variants registered include alternative TLDs (.org, .xyz, .live, .sale) and domain typos (e.g. fiffa[.com]); additional fake employment portals (jobs-fifa[.com], fifa-hiring[.com]) impersonate FIFA HR functions. Criminal objectives span: credential and financial-data theft via fake SSO; counterfeit ticket and hospitality-package sales; fake merchandise and streaming-rights fraud. Multi-language support in 11 languages significantly lowers the language-barrier for deceiving European fans purchasing tickets. For defenders and SOC managers at organisations with significant employee populations likely to purchase World Cup tickets (large enterprise, government, telecom): this is a phishing-training and awareness moment. Browser-based security posture (Google Safe Browsing, Microsoft SmartScreen) will not catch fresh domain registrations before abuse is reported. Users should be advised to bookmark `https://www.fifa.com` directly rather than relying on search engines (sponsored results have been weaponised). DMARC/DKIM email-authentication controls do not directly mitigate this vector but help verify legitimate FIFA communications against impersonation. The July 14 final is the likely high-intensity fraud window.
+    ch_eu_nexus: "direct — Germany, UK, Portugal, Spain named as target regions; Swiss fans travelling to North America are within the SSO credential-theft scope; German-language FIFA clone confirmed by Group-IB"
+    public_sector_nexus: "indirect — employees of public-sector organisations purchasing tickets are personal targets; identity theft from SSO phishing could enable secondary credential attacks on work accounts if password reuse occurs"
+    sector: "all, consumer"
+    cves: []
+    actors_campaigns_malware: ["Ghost Stadium"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ghost Stadium – a Chinese-speaking, financially motivated operator said to be running a sophisticated phishing campaign across more than 300 domains, having built an exact replica of the official FIFA website down to the pixel, including a fake single sign-on (SSO) authentication flow and multi-language support in 11 languages."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/fbi-warns-of-fake-fifa-websites-running-world-cup-fraud-schemes/"
+
+  - title: "UPDATE: Ivanti Secure Access Client — NCSC.ch adds CVE-2026-8992 (local privilege escalation, CVSS 7.8) to ongoing Ivanti May advisory on 29 May 2026"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12548"
+        publisher: "NCSC Switzerland (GovCERT.ch Security Hub)"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/ivanti-epmm-cve-2026-6973-rce-under.html"
+        publisher: "The Hacker News"
+        date: "2026-05-08"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub (bridge ncsc-csh), URL https://security-hub.ncsc.admin.ch/#/posts/12548 → advisory updated 29.05.2026 adding CVE-2026-8992 for Ivanti Secure Access Client"
+    summary: |
+      NCSC Switzerland updated its Ivanti May 2026 advisory (post ID 12548) on 29 May 2026 to add CVE-2026-8992, a local privilege escalation (LPE) in Ivanti Secure Access Client (SAC) that Ivanti itself patched on 22 May 2026 in all SAC client versions released on or after 12 May 2026. CVSS 3.1 score is 7.8 HIGH. The vulnerability allows a locally-authenticated attacker on a managed endpoint running the Ivanti SAC client to escalate privileges. The Ivanti vendor advisory covers CVE-2026-7431 and CVE-2026-7432 in the same SAC advisory bundle; CVE-2026-8992 was added retroactively to the May 2026 release. This is a secondary item in the context of the actively exploited CVE-2026-6973 (EPMM RCE, CISA KEV, admin-authenticated), which remains the highest-severity Ivanti item this cycle. The LPE risk from CVE-2026-8992 is relevant for organisations with SAC deployed on privileged-user workstations where a local attacker (insider threat or post-exploitation foothold) could use the LPE to escalate from a standard Windows user session to local admin. Detection: Windows Privilege Escalation events (Windows EID 4672, 4673 — special privileges assigned, sensitive privilege use) combined with Ivanti SAC process lineage from `ivanti-vpn.exe` or `Ivanti Secure Access Client.exe` parent processes. Hardening: ensure SAC client is updated to any release from 12 May 2026 or later; verify via installed-software inventory (Sysmon EID 19 or endpoint management console).
+    ch_eu_nexus: "direct CH relevance — NCSC Switzerland (GovCERT.ch) issued the update; Ivanti EPMM and SAC are widely deployed in Swiss federal IT and cantonal administrations"
+    public_sector_nexus: "direct — Ivanti EPMM is deployed across government MDM estates; SAC is the VPN client used by EPMM-managed devices"
+    sector: "public-sector, all"
+    cves: [CVE-2026-8992]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-08
+
+cve_table:
+  - cve: CVE-2026-48710
+    product: "Starlette (Python ASGI framework)"
+    cvss: "6.5 (CVSS 3.1) / 7.0 (X41 CVSS 4.0)"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Starlette 1.0.1"
+    source: "https://github.com/Kludex/starlette/security/advisories/GHSA-86qp-5c8j-p5mr"
+  - cve: CVE-2026-8992
+    product: "Ivanti Secure Access Client (SAC)"
+    cvss: "7.8 (CVSS 3.1)"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "SAC client released >= 2026-05-12"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12548"
+  - cve: CVE-2026-45585
+    product: "Windows 11 / Windows Server (BitLocker WinRE)"
+    cvss: unknown
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "No vendor patch as of 2026-05-30"
+    source: "https://therecord.media/microsoft-calls-zero-day-releases-never-justifiable-as-researcher-threatens-more"
+
+candidate_sources:
+  - id: badhost-org
+    publisher: "BadHost.org (X41 D-Sec project site for CVE-2026-48710)"
+    url: "https://badhost.org/"
+    category: research
+    why: "Dedicated scanner and research page for Starlette host-header bypass; X41 D-Sec is a Swiss-affiliated pen-testing firm with high-quality primary research relevance for CH/EU audiences. One-time item page, not a recurring feed."
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge; bridge returned HTTP 403; Wayback fallback not attempted as no specific article URL to try; no in-window items discovered via alternate route"
+  - source_id: ncsc-ch-incidents
+    reason: "NCSC.ch Aktuelle Vorfaelle page is a listing page — no specific new incidents appeared in the ncsc-csh recent bridge output for 29-30 May beyond already-covered advisories"
+  - source_id: ccb-belgium-starlette-advisory
+    reason: "CCB Belgium advisory URL returned HTTP 503 on both direct WebFetch and bridge fetch; item content obtained from search results and secondary sources; advisory date and content confirmed via CCB search result snippets"

@@ -1,0 +1,302 @@
+# work/2026-05-30-aca445cc/findings.S3.yaml
+domain: S3
+run_id: 2026-05-30-aca445cc
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-30T04:12:20Z
+ended_at: ~
+duration_seconds: ~
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 8
+  bridge_fetches: 10
+
+items:
+  - title: "GREYVIBE — Russia-nexus threat group uses generative AI across five parallel Ukraine attack chains"
+    sources:
+      - url: "https://labs.withsecure.com/publications/greyvibe"
+        publisher: "WithSecure Labs"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.securityweek.com/russia-linked-greyvibe-attackers-use-ai-to-supercharge-cyberattacks/"
+        publisher: "SecurityWeek"
+        date: "2026-05-28"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/05/new-russian-linked-greyvibe-targets.html"
+        publisher: "The Hacker News"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: THN article https://thehackernews.com/2026/05/new-russian-linked-greyvibe-targets.html → pivot: SecurityWeek https://www.securityweek.com/russia-linked-greyvibe-attackers-use-ai-to-supercharge-cyberattacks/ → primary: WithSecure Labs https://labs.withsecure.com/publications/greyvibe"
+    summary: |
+      WithSecure's threat intelligence team disclosed GREYVIBE, a previously undocumented Russia-nexus group targeting Ukrainian military, government, civilian, and business entities since at least August 2025. The group operates five parallel attack chains: PhantomMail (spear-phishing delivering ZIP/RAR archives hosted on Google Drive and 4sync), PhantomClick (fake CAPTCHA pages impersonating Zoom and LAPAS), PrincessClub (fraudulent adult-club websites serving Android malware via WebRTC), DroneLink (fraudulent Ukrainian Armed Forces charity sites), and Nebo (malware mimicking Russian military login interfaces). GREYVIBE's malware includes PhantomRelay and PhantomRelayV1 (PowerShell RATs with watchdog persistence), LegionRelay (lightweight PowerShell RAT), and FallSpy (Android spyware). The group uses ChatGPT, Google Gemini, and Ideogram AI to generate lure imagery, develop and obfuscate loader scripts, build backend infrastructure, and draft post-compromise command sequences. AI usage is assessed to bridge gaps in technical expertise — code artifacts show design flaws typical of LLM-generated output (e.g. variable-naming artefacts, internet-slang handles like 'letsrollboyos', 'totallyunsus'). The group's ISO builder shares artefacts with the TrickBot ecosystem and UAC-0098 cluster. FallSpy targets Android devices via fake adult-club registration flows exploiting WebRTC permission prompts. GREYVIBE is assessed as low-to-moderately sophisticated; AI usage enables operational ambition exceeding technical skill. Detection: monitor for PowerShell execution spawning from browser-downloaded archives (Sysmon EID 1, parent process patterns matching archive extraction utilities); hunt for scheduled tasks created by PowerShell scripts that beacon to dynamic DNS; Android MDM telemetry for sideloaded APKs accessing microphone/camera.
+    ch_eu_nexus: "Targets Ukrainian entities; Russian state-aligned group relevant to EU member states supporting Ukraine. European organisations aiding Ukraine are plausible secondary targets."
+    public_sector_nexus: "direct — military, government, and civilian targets"
+    sector: "government, military, defence"
+    cves: []
+    actors_campaigns_malware:
+      - "GREYVIBE"
+      - "UAC-0098"
+      - "TrickBot ecosystem"
+      - "PhantomRelay"
+      - "LegionRelay"
+      - "FallSpy"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GREYVIBE, per WithSecure, is assessed to be a Russian-speaking group operating broadly in the Russian time zone, with the activities aligning with Kremlin state interests"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/new-russian-linked-greyvibe-targets.html"
+      - quote: "What sets GREYVIBE apart is not raw technical skill, but operational ambition powered by AI"
+        attribution: "SecurityWeek (quoting WithSecure researcher Mohammad Kazem Hassan Nejad)"
+        source_url: "https://www.securityweek.com/russia-linked-greyvibe-attackers-use-ai-to-supercharge-cyberattacks/"
+      - quote: "LLM-generated code contained mistakes typical of non-elite operators"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/russia-linked-greyvibe-attackers-use-ai-to-supercharge-cyberattacks/"
+
+  - title: "Sysdig TRT: first observed LLM-agent-driven intrusion — CVE-2026-39987 (Marimo RCE) to internal database exfiltration in 4 pivots under 1 hour"
+    sources:
+      - url: "https://www.sysdig.com/blog/ai-agent-at-the-wheel-how-an-attacker-used-llms-to-move-from-a-cve-to-an-internal-database-in-4-pivots"
+        publisher: "Sysdig TRT"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/attackers-use-llm-agent-for-post.html"
+        publisher: "The Hacker News"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/05/attackers-use-llm-agent-for-post.html → primary: Sysdig TRT blog https://www.sysdig.com/blog/ai-agent-at-the-wheel-how-an-attacker-used-llms-to-move-from-a-cve-to-an-internal-database-in-4-pivots"
+    summary: |
+      Sysdig's Threat Research Team documented what they assess as the first observed LLM-agent-driven intrusion in the wild. On 2026-05-10, an unknown threat actor exploited CVE-2026-39987, a pre-auth RCE in Marimo notebook (all versions < 0.20.4; patched in 0.23.0), to gain initial execution on an internet-accessible notebook instance (T1190 Exploit Public-Facing Application). From that foothold, an AI agent drove four subsequent pivots: (1) extracted two cloud credentials from the host filesystem (T1552.001 Credentials In Files); (2) replayed them through a Cloudflare Workers egress pool to call AWS Secrets Manager APIs and retrieve an SSH private key (T1555 Credentials from Password Stores); (3) executed eight parallel SSH sessions against a downstream bastion server using the retrieved key (T1021.004 SSH); (4) exfiltrated the full schema and contents of a downstream PostgreSQL database within two minutes (T1048 Exfiltration Over Alternative Protocol). Sysdig identified four indicators of LLM agent involvement: improvised database schema discovery without prior environmental knowledge; a Chinese-language planning comment in the command stream ("看还能做什么" — "See what else we can do"); machine-optimised command formatting (delimiter-separated commands, bounded output caps, stderr discarded, `less` disabled); and sequential value hand-offs from prior outputs into subsequent commands. The egress pool used Cloudflare Workers to obscure the attacker's origin IP. No attribution was made. Defender countermeasures: update Marimo to >= 0.23.0; audit internet-accessible notebook deployments; monitor AWS CloudTrail for Secrets Manager:GetSecretValue calls from unexpected IPs; restrict SSH bastion access to known IP ranges; use Sysdig/Falco behavioural rules for anomalous process chains spawned from notebook kernels.
+    ch_eu_nexus: "global; any internet-exposed Marimo notebook is at risk; cloud-heavy EU public-sector environments running AI development toolchains are directly in scope"
+    public_sector_nexus: "indirect — toolchain risk"
+    sector: "technology, cloud, AI infrastructure"
+    cves: ["CVE-2026-39987"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A Sysdig TRT investigation reveals their first seen LLM-agent-driven intrusion: from CVE-2026-39987 to internal database exfiltration in under one hour."
+        attribution: "Sysdig TRT"
+        source_url: "https://www.sysdig.com/blog/ai-agent-at-the-wheel-how-an-attacker-used-llms-to-move-from-a-cve-to-an-internal-database-in-4-pivots"
+      - quote: "A Chinese-language planning comment, '看还能做什么' translating to 'See what else we can do' leaked directly in the command stream when executing a credential search"
+        attribution: "The Hacker News / Sysdig"
+        source_url: "https://thehackernews.com/2026/05/attackers-use-llm-agent-for-post.html"
+
+  - title: "Dutch police and NCSC-NL dismantle Asocks residential-proxy botnet of 17 million infected devices — 200 servers seized"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/dutch-govt-disrupts-malware-botnet-with-17-million-infected-devices/"
+        publisher: "BleepingComputer"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.helpnetsecurity.com/2026/05/29/dutch-police-disrupts-botnet-composed-of-17-million-devices/"
+        publisher: "Help Net Security"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://news.risky.biz/risky-bulletin-dutch-police-take-down-giant-botnet-of-17-million-devices/"
+        publisher: "Risky Business News"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: risky-biz-news RSS feed URL https://news.risky.biz/rss/ → drill: https://news.risky.biz/risky-bulletin-dutch-police-take-down-giant-botnet-of-17-million-devices/ → BleepingComputer primary https://www.bleepingcomputer.com/news/security/dutch-govt-disrupts-malware-botnet-with-17-million-infected-devices/ → corroborating: HelpNetSecurity https://www.helpnetsecurity.com/2026/05/29/dutch-police-disrupts-botnet-composed-of-17-million-devices/"
+    summary: |
+      Dutch National Police and NCSC-NL executed a takedown of infrastructure supporting the Asocks commercial residential proxy service, which operators had weaponised as a botnet of approximately 17 million infected consumer devices including computers, mobile phones, routers, smart cameras, and other IoT devices. After a tip from a security researcher at NCSC-NL, police seized 200 servers physically located in the Netherlands from a hosting provider; the provider then took remaining infrastructure offline upon discovering the criminal use. Asocks generated revenue by renting access to the infected devices' IP addresses, enabling cybercriminals to route DDoS attack traffic, spam, credential-stuffing, brute-force, click-fraud, and SMS-pumping campaigns through trusted residential IPs that are substantially harder to block than known datacenter ranges. Device compromise occurred through bundled software installers (PUP model) and malware. Asocks shares infrastructure and operational DNA with previously disrupted residential proxy networks 5socks, Anyproxy, and SocksEscort. HUMAN Security's Satori team and Sekoia.io are cited as prior researchers into this ecosystem. Defender recommendation: block commercial residential-proxy IP ranges at perimeter; monitor for outbound SOCKS5 proxy establishment from endpoint telemetry; treat unusual volume spikes in authentication logs from consumer-ISP address space as a credential-stuffing indicator.
+    ch_eu_nexus: "EU law-enforcement operation; residential proxy infrastructure used in campaigns targeting EU organisations; NCSC-NL primary authority"
+    public_sector_nexus: "indirect — infrastructure used to attack public-sector targets"
+    sector: "cross-sector; criminal infrastructure"
+    cves: []
+    actors_campaigns_malware:
+      - "Asocks (residential proxy botnet)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Dutch authorities have taken offline a massive botnet of 17 million devices and seized more than 200 servers at a local provider that supported the operation."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/dutch-govt-disrupts-malware-botnet-with-17-million-infected-devices/"
+      - quote: "residential proxies use real, trusted IP addresses, malicious use of them is much more difficult to detect or block"
+        attribution: "Help Net Security (quoting NCSC-NL)"
+        source_url: "https://www.helpnetsecurity.com/2026/05/29/dutch-police-disrupts-botnet-composed-of-17-million-devices/"
+
+  - title: "ChatGPhish: Permiso Security discloses ChatGPT Markdown-rendering flaw enabling prompt injection and web-page-as-phishing-payload attacks"
+    sources:
+      - url: "https://permiso.io/blog/chatgpt-markdown-rendering-vulnerability"
+        publisher: "Permiso Security (P0 Labs)"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/05/chatgphish-vulnerability-turns-chatgpt.html"
+        publisher: "The Hacker News"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/05/chatgphish-vulnerability-turns-chatgpt.html → primary: Permiso P0 Labs https://permiso.io/blog/chatgpt-markdown-rendering-vulnerability"
+    summary: |
+      Permiso Security's P0 Labs (researcher Andi Ahmeti) publicly disclosed ChatGPhish, a vulnerability class in ChatGPT's web summarisation feature. The chatgpt.com response renderer unconditionally trusts Markdown links and image URLs extracted from third-party pages it summarises, rendering them as live, clickable elements and auto-fetching inline images inside the trusted assistant UI. An attacker can embed a small Markdown payload on any web page (GitHub README, SaaS dashboard, documentation portal, blog). When a victim asks ChatGPT to summarise the page, the payload executes silently and can: (1) exfiltrate the victim's IP address, User-Agent, and Referer via attacker-hosted image fetch; (2) render malicious links styled identically to genuine ChatGPT output, enabling targeted phishing; (3) inject fake system-style security alerts; (4) serve QR codes from attacker-controlled S3 buckets, bypassing desktop URL filters and enterprise security controls by moving the click action to the victim's mobile device. Permiso submitted the report to OpenAI via Bugcrowd on 2026-04-29 under the title "Untrusted Markdown Rendering Leads to XSS, Phishing, and Data Exfiltration"; after follow-up on 2026-05-07, OpenAI marked it as not reproducible then as a duplicate without resolution. Research was published on 2026-05-29. No CVE has been assigned. Defenders using ChatGPT in enterprise workflows should educate users that any AI-summarised page can carry attacker instructions; restrict ChatGPT's access to internal documentation portals; consider proxy-based content-security-policy (CSP) enforcement on the ChatGPT SaaS endpoint.
+    ch_eu_nexus: "global; direct risk to any enterprise workforce using ChatGPT for document summarisation, including Swiss public-sector users of AI productivity tools"
+    public_sector_nexus: "indirect — AI productivity workflow risk"
+    sector: "cross-sector; AI/SaaS"
+    cves: []
+    actors_campaigns_malware:
+      - "ChatGPhish"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The chatgpt.com response renderer trusts Markdown links and Markdown image URLs that originated from a third-party page the assistant has just summarized."
+        attribution: "The Hacker News (quoting Permiso researcher Andi Ahmeti)"
+        source_url: "https://thehackernews.com/2026/05/chatgphish-vulnerability-turns-chatgpt.html"
+      - quote: "Simply summarizing a page during normal browsing activity can introduce attacker-controlled instructions into the model context and ultimately into the rendered response."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/chatgphish-vulnerability-turns-chatgpt.html"
+
+  - title: "ESET APT Activity Report Q4 2025–Q1 2026: Sandworm wiper targeting Polish energy (NATO), Lazarus targeting European drone manufacturers, UNC5221 exploiting Ivanti VPN with SPAWN toolset"
+    sources:
+      - url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q4-2025-q1-2026/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-05-28"
+        role: "primary"
+      - url: "https://www.infosecurity-magazine.com/news/chinese-hackers-exploit-iran-war/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: infosecurity-magazine RSS https://www.infosecurity-magazine.com/rss/news/ → article https://www.infosecurity-magazine.com/news/chinese-hackers-exploit-iran-war/ → primary: ESET WeLiveSecurity report https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q4-2025-q1-2026/"
+    summary: |
+      ESET published its APT Activity Report covering October 2025 through March 2026 on 2026-05-28. Key European-relevant findings: Sandworm (Russia/GRU) intensified destructive winter operations in Ukraine, deploying multiple novel wiper variants, and targeted a Polish energy company (December 2025) — a NATO member state attack on critical infrastructure, attributed with medium confidence. Sednit (APT28) deployed Covenant and BeardShell implants against Ukrainian military, drone manufacturers, and logistics companies. Lazarus Group (North Korea) ran Operation DreamJob, targeting European drone manufacturers in what ESET assesses as technology acquisition for weapons-programme support. Operation DangerousPassword compromised the axios JavaScript library (100+ million weekly npm downloads), injecting trojanised code — a broad supply-chain risk. Andariel (North Korea) reemerged in South Korea, deploying TigerRAT and attempting Rook ransomware propagation in an engineering company handling liquid hydrogen equipment. UNC5221 (China-nexus) deployed PhiliKit, a new implant for the SPAWN toolset, specifically targeting Ivanti VPN appliances — organisations running Ivanti Connect Secure or Policy Secure should audit for SPAWN toolset indicators. China-linked FamousSparrow targeted Venezuelan maritime government entities; SteppeDriver targeted Syrian government networks; NegativeGlimmer compromised Cambodian and Panamanian governmental entities and a South Korean AI/robotics company. Report PDF available at https://web-assets.esetstatic.com/wls/en/papers/threat-reports/eset-apt-activity-report-q4-2025-q1-2026.pdf
+    ch_eu_nexus: "high relevance: Sandworm targeting NATO energy infrastructure (Poland), Lazarus targeting European drone manufacturers, Ivanti VPN exploitation relevant to EU public sector"
+    public_sector_nexus: "direct — government, energy, military, defence"
+    sector: "energy, defence, government, technology"
+    cves: []
+    actors_campaigns_malware:
+      - "Sandworm"
+      - "Sednit / APT28"
+      - "Lazarus"
+      - "Andariel"
+      - "Operation DreamJob"
+      - "Operation DangerousPassword"
+      - "UNC5221"
+      - "PhiliKit"
+      - "BeardShell"
+      - "TigerRAT"
+      - "Rook ransomware"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sandworm intensified destructive winter operations, deploying multiple new wipers in Ukraine and targeting a Polish energy company (December 2025) with medium-confidence attribution"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q4-2025-q1-2026/"
+      - quote: "UNC5221 deployed PhiliKit implant targeting Ivanti VPN appliances as part of the SPAWN toolset"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q4-2025-q1-2026/"
+
+  - title: "Kimsuky (Velvet Chollima) deploys HTTPSpy RAT and HelloDoor (Rust-based PebbleDash variant) with VS Code Remote Tunnel and Cloudflare tunnel C2 evasion"
+    sources:
+      - url: "https://thehackernews.com/2026/05/kimsuky-deploys-httpspy-expands-arsenal.html"
+        publisher: "The Hacker News"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.enki.co.kr/en/media-center/blog/kimsuky-s-advanced-attack-techniques-jsonping-webex-spoofing-and-a-new-httpspy-variant"
+        publisher: "ENKI WhiteHat"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/05/kimsuky-deploys-httpspy-expands-arsenal.html → corroborating: ENKI primary blog https://www.enki.co.kr/en/media-center/blog/kimsuky-s-advanced-attack-techniques-jsonping-webex-spoofing-and-a-new-httpspy-variant (Framer SPA — text not extractable)"
+    summary: |
+      Kimsuky (aka Velvet Chollima, North Korea nexus) ran campaigns targeting South Korean military personnel and corporate entities in March and April 2026. March campaign: malicious executables "nos-setup.exe" and "astx-setup.exe" masquerade as nProtect Online Security and AhnLab Safe Transaction installers; they launch MemLoader.dll via regsvcs.exe, which then downloads and executes HTTPSpy. April campaign: fake Webex meeting page directs victims to download encrypted JavaScript files ("fix-camera.jse"), which deploy an intermediate PowerShell downloader, ultimately installing HTTPSpy. HTTPSpy (first observed 2022, previously used against a German defence manufacturer from May–September 2024) is a full-capability RAT supporting: shell command execution, file upload/download, screenshot capture, process injection, and self-deletion. It uses RC4 encryption for C2 communication. HelloDoor is a Rust-based PebbleDash variant first identified in August 2025, likely LLM-assisted development per ENKI assessment; it supports basic command execution, directory traversal, and configurable sleep intervals. Kimsuky's C2 evasion now abuses legitimate infrastructure: Visual Studio Code Remote Tunneling (authenticated via GitHub OAuth) and Cloudflare Quick Tunnels eliminate traditional C2 channels — network defenders cannot block these by IP/domain without blocking Microsoft and Cloudflare services. The JSONPing technique uses a locally-running web server to verify infection status via real-time GET request polling, reducing exposure of C2 endpoints. Selective payload delivery based on C2-side monitoring of GET requests further limits detection opportunities. Detection: hunt for regsvcs.exe as a parent process of DLL loads; monitor for VS Code Remote Tunnel process spawns from non-developer endpoints (VSCode CLI arguments --tunnel --name <random>); audit GitHub OAuth application grants for unknown VS Code tunnel registrations; monitor Cloudflare Tunnel (cloudflared.exe) processes on managed endpoints.
+    ch_eu_nexus: "European drone manufacturers and defence sector cited in ESET report; German defence manufacturer previously targeted by HTTPSpy (May–Sep 2024)"
+    public_sector_nexus: "indirect — military and defence sector primary targets"
+    sector: "defence, military, corporate"
+    cves: []
+    actors_campaigns_malware:
+      - "Kimsuky / Velvet Chollima"
+      - "HTTPSpy"
+      - "HelloDoor"
+      - "PebbleDash"
+      - "AppleSeed"
+      - "HttpMalice"
+      - "HttpTroy"
+      - "HappyDoor"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Kimsuky abuses legitimate Microsoft Visual Studio Code Remote Tunneling and Cloudflare Quick Tunnels for covert remote access, eliminating traditional C2 channel requirements"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/kimsuky-deploys-httpspy-expands-arsenal.html"
+      - quote: "HTTPSpy is a Remote access trojan first observed in 2022; previously deployed against German defense manufacturer (May 2024-September 2024)"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/05/kimsuky-deploys-httpspy-expands-arsenal.html"
+
+  - title: "Red Canary primer: detecting privilege escalation and persistence via autonomous AI agents in Microsoft Entra Agent ID"
+    sources:
+      - url: "https://redcanary.com/blog/threat-detection/entra-id-ai-workflows/"
+        publisher: "Red Canary"
+        date: "2026-05-27"
+        role: "primary"
+    discovery_trace: "first seen at: redcanary RSS feed https://redcanary.com/feed/ → article https://redcanary.com/blog/threat-detection/entra-id-ai-workflows/"
+    summary: |
+      Red Canary published a detection-engineering primer on the new Entra Agent ID identity class — autonomous apps that perform actions in a tenant without human interaction. The primer demonstrates how a misconfigured or adversary-controlled agent identity can be assigned the AgentIdentityBlueprint.AddRemoveCreds.All role, enabling it to add client secrets to any agent blueprint, authenticate as any agent identity in the tenant, and persist access after legitimate credential rotation. Privilege escalation path: agent app → malicious role assignment → credential injection → authenticate as high-privilege agent identity → pivot to downstream resources. Key log sources for detection: AuditLogs (look for "Update application – Certificates and secrets management" with non-human InitiatedBy.app.servicePrincipalId); MicrosoftGraphActivityLogs (Graph API calls from agent service principals, IP and UserAgent fields); AADServicePrincipalSignInLogs (filter on Agent.agentType: agenticAppInstance). Correlation: match SignInActivityId from Graph logs to UniqueTokenIdentifier in sign-in logs to reconstruct credential-add-to-authentication chains. Defenders should establish baselines for each agent identity's normal API scope, alert on credential additions to blueprints by any identity other than the provisioning pipeline, and audit which agents hold dangerous app roles. MITRE ATT&CK relevant techniques: T1098 Account Manipulation, T1078.004 Valid Accounts: Cloud Accounts (implied).
+    ch_eu_nexus: "global; Microsoft Entra is the dominant identity platform in Swiss public-sector organisations; EU government adoption of AI agents in productivity suites is accelerating"
+    public_sector_nexus: "direct — Entra is the identity backbone of most public-sector M365 deployments"
+    sector: "cross-sector; identity; cloud"
+    cves: []
+    actors_campaigns_malware: []
+    verification: "[SINGLE-SOURCE] Red Canary is a HIGH-reliability research publisher; no threat actor involvement — this is a detection primer on a new identity class"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An agent identity was assigned AgentIdentityBlueprint.AddRemoveCreds.All—a privileged role that should only go to identities with the Agent ID Administrator role"
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-detection/entra-id-ai-workflows/"
+      - quote: "AuditLogs – captures credential additions with operation name 'Update application – Certificates and secrets management'"
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-detection/entra-id-ai-workflows/"
+
+  - title: "Silent Ransom Group (Luna Moth) escalates to in-person IT impersonation targeting US law firms — FBI Flash Alert"
+    sources:
+      - url: "https://www.ic3.gov/CSA/2026/260526.pdf"
+        publisher: "FBI (IC3)"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://www.infosecurity-magazine.com/news/silent-ransom-group-it/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-05-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: infosecurity-magazine RSS https://www.infosecurity-magazine.com/rss/news/ → article https://www.infosecurity-magazine.com/news/silent-ransom-group-it/ → primary: FBI Flash Alert https://www.ic3.gov/CSA/2026/260526.pdf (referenced in article)"
+    summary: |
+      The FBI issued a Flash Alert on 2026-05-26 (CSA/2026/260526) warning that Silent Ransom Group (SRG, aka Luna Moth, UNC3753, Chatty Spider) has escalated its social engineering campaigns against US law firms to include physical-world impersonation of IT support personnel. Since 2023, SRG has combined phishing emails with callback-phishing (vishing) calls, directing victims to permit remote desktop access; in cases where remote access attempts fail, SRG operators now physically attend target premises claiming to image devices or create backups, and insert USB or external storage devices into victim computers for on-site exfiltration. Remote exfiltration uses WinSCP and Rclone (often renamed to evade detection) to move data to Google Drive, OneDrive, or external hard drives. The group deliberately avoids encryption or privilege escalation — they exfiltrate data directly and extort victims with threatened publication. Targeted sectors: law firms (primary), insurance, finance, healthcare. Detection: monitor WinSCP/Rclone process launches from endpoints; hunt for renamed Rclone binaries (common pattern: generic executable name wrapping rclone config parsing); audit USB/external storage device mount events (Event ID 6416 Device Service State Change) in environments where USB storage is restricted; physical security: verify IT staff identity through independent channels before permitting physical device access.
+    ch_eu_nexus: "US-focused but tactic is transferable; European professional-services sector (law, finance) at risk; Swiss legal and financial service firms should review callback-phishing and physical-access security"
+    public_sector_nexus: "indirect — professional services sector; data exfiltration of legal privileged information"
+    sector: "legal, financial services, healthcare"
+    cves: []
+    actors_campaigns_malware:
+      - "Silent Ransom Group"
+      - "Luna Moth"
+      - "UNC3753"
+      - "Chatty Spider"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "If a threat actor is sent in-person SRG actors exfiltrate data to an external hard drive or USB drive."
+        attribution: "Infosecurity Magazine (quoting FBI Flash Alert)"
+        source_url: "https://www.infosecurity-magazine.com/news/silent-ransom-group-it/"
+      - quote: "Threat actors from the Silent Ransom Group are escalating attacks by impersonating IT staff in phone calls and even showing up in person to gain direct access to victim systems"
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/silent-ransom-group-it/"
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos blog feed returned HTTP 503 on both primary and alternate feed URLs; no articles retrievable"
+  - source_id: withsecure-labs
+    reason: "labs.withsecure.com is SPA (Dynatrace-instrumented); no Wayback snapshot available for GREYVIBE primary; content extracted via SecurityWeek and THN corroborating sources"
+
+candidate_sources: []
+
+fetch_failures:
+  - id: sophos-xops
+    url_tried: "https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242"
+    fetch_method: "bridge:feed"
+    status_code: 503
+    error_class: transport-5xx
+    error_message: "upstream HTTP 503"
+    attempted_methods: ["bridge:feed", "bridge:feed(alternate)"]
+    mitigation_applied: "none — no in-window Sophos articles found via WebSearch fallback"
+    covered_anyway: false
