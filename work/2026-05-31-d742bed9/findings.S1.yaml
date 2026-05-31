@@ -1,0 +1,321 @@
+domain: S1
+run_id: 2026-05-31-d742bed9
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-31T04:11:55Z
+ended_at: 2026-05-31T04:14:53Z
+duration_seconds: 178
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 8
+  bridge_fetches: 12
+
+items:
+  # ─────────────────────────────────────────────────────────────────────────
+  # ITEM 1 — CVE-2026-0257 PAN-OS GlobalProtect ACTIVE EXPLOITATION UPDATE
+  # (Previously covered 2026-05-30 — fresh ITW exploitation report from
+  #  Rapid7 dated 2026-05-29 and NCSC-NL advisory published 2026-05-30
+  #  constitute an in-window UPDATE delta with new technical detail)
+  # ─────────────────────────────────────────────────────────────────────────
+  - title: "UPDATE: CVE-2026-0257 PAN-OS GlobalProtect — Rapid7 documents two ITW exploitation waves (Vultr / Dromatics infrastructure) targeting local admin via forged auth-override cookies; NCSC-NL expects scale to increase"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+        publisher: "Rapid7"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172"
+        publisher: "NCSC-NL"
+        date: "2026-05-30"
+        role: "primary"
+      - url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+        publisher: "Palo Alto Networks PSIRT"
+        date: "2026-05-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl bridge (ncsc-nl recent), NCSC-2026-0172 published 2026-05-30 → primary: Rapid7 ETR published 2026-05-29, URL https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/ → corroborating: Palo Alto PSIRT URL https://security.paloaltonetworks.com/CVE-2026-0257"
+    summary: |
+      CVE-2026-0257 is a CWE-565 (Reliance on Cookies Without Validation) authentication bypass in PAN-OS
+      GlobalProtect portal and gateway components. The vulnerability arises when the same X.509 certificate
+      is reused for both the HTTPS service and the authentication-override-cookie encryption/decryption
+      function: an unauthenticated attacker who retrieves the public certificate from the portal/gateway
+      TLS handshake can fabricate a valid override cookie for any user (including local-admin), forge it
+      with the public key, and achieve full authentication bypass — no password required.
+
+      Rapid7 developed a proof-of-concept and published their ETR on 2026-05-29. They first observed
+      in-the-wild exploitation on 2026-05-18 from Vultr-hosted infrastructure targeting the local
+      administrator account; a second wave was detected on 2026-05-21 originating from Dromatics Systems
+      infrastructure. CISA added CVE-2026-0257 to the KEV catalog on 2026-05-29 with a 3-day federal
+      remediation deadline (due 2026-06-01). NCSC-NL published NCSC-2026-0172 on 2026-05-30, assessing
+      high probability of continued growth in exploitation given the PoC and the attacker interest in
+      edge-device initial access.
+
+      Prerequisites: GlobalProtect portal or gateway must have "Generate cookie for authentication
+      override" or "Accept cookie for authentication override" enabled, AND must reuse the same
+      certificate for the HTTPS service and the override cookie encryption. Both conditions are
+      required; environments using a dedicated certificate solely for override cookies are not vulnerable.
+
+      Affected: PAN-OS 10.x, 11.x, 12.x on PA-Series and VM-Series firewalls running GlobalProtect.
+      Prisma Access and Cloud NGFW are not affected. Patched versions were shipped in two staggered
+      waves (2026-05-13 and 2026-05-28).
+
+      Defender detection: web-server access logs on the GlobalProtect portal/gateway for forged cookie
+      values authenticating as privileged accounts (e.g. local admin) from unexpected source IPs;
+      authentication events without preceding credential-based login; GlobalProtect authentication
+      success for the local administrator account from internet IPs. Hunt for authentication override
+      cookies whose subject CN does not match any active user session. MITRE ATT&CK: T1190 (Exploit
+      Public-Facing Application), T1078 (Valid Accounts — post-cookie-forge). Hardening: isolate the
+      override-cookie certificate from the HTTPS service certificate, or disable the authentication
+      override feature entirely if not operationally required.
+    ch_eu_nexus: "Global; CH/EU public-sector environments running GlobalProtect for remote access are directly affected — GlobalProtect is one of the most widely deployed enterprise VPN stacks in Swiss federal and cantonal government"
+    public_sector_nexus: "direct"
+    sector: "government, critical infrastructure, education, healthcare"
+    cves: [CVE-2026-0257]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-30
+    evidence:
+      - quote: "Rapid7 developed a proof-of-concept exploit that demonstrates how an attacker can retrieve the public certificates exposed by a GlobalProtect portal or gateway, generate a forged authentication override cookie for an arbitrary user, and authenticate without knowing valid credentials."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+      - quote: "Beveiligingsbedrijf Rapid7 meldt dat de kwetsbaarheid actief wordt misbruikt. Gegeven de beschikbaarheid van de PoC-code, de algemene interesse van kwaadwillenden in edge-devices en de toegang die kwaadwillenden via deze kwetsbaarheid verkrijgen, verwacht het NCSC dat de schaal van misbruik de komende tijd toeneemt."
+        attribution: "NCSC-NL (NCSC-2026-0172, 2026-05-30)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # ITEM 2 — NGINX CVE-2026-9256 "nginx-poolslip" — NEW
+  # Pre-auth heap buffer overflow in ngx_http_rewrite_module, actively
+  # exploited, breaks organisations that patched Rift (CVE-2026-42945) only
+  # ─────────────────────────────────────────────────────────────────────────
+  - title: "CVE-2026-9256 NGINX 'nginx-poolslip' — pre-auth heap buffer overflow in ngx_http_rewrite_module under active exploitation; organisations patched for NGINX Rift (CVE-2026-42945) remain exposed"
+    sources:
+      - url: "https://nginx.org/en/security_advisories.html"
+        publisher: "NGINX (F5)"
+        date: "2026-05-22"
+        role: "primary"
+      - url: "https://www.indusface.com/blog/nginx-cve-2026-42945-and-cve-2026-9256/"
+        publisher: "Indusface"
+        date: "2026-05-27"
+        role: "corroborating"
+      - url: "https://securityboulevard.com/2026/05/nginx-under-active-attack-cve-2026-42945-and-cve-2026-9256-put-your-infrastructure-at-risk/"
+        publisher: "Security Boulevard"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: NCSC-NL bridge (ncsc-nl recent NCSC-2026-0164, mentions NGINX exploitation), WebSearch 'NGINX CVE-2026-9256 active exploitation May 2026' → primary: nginx.org security advisories page URL https://nginx.org/en/security_advisories.html → corroborating: Indusface URL https://www.indusface.com/blog/nginx-cve-2026-42945-and-cve-2026-9256/"
+    summary: |
+      CVE-2026-9256 (nicknamed "nginx-poolslip", CVSS v3.1 8.1 / CVSS v4.0 9.2) is a heap buffer overflow
+      in NGINX's ngx_http_rewrite_module (`src/http/ngx_http_script.c`). The bug is triggered when a
+      `rewrite` directive uses a PCRE regex with overlapping nested captures (e.g. `^/((.*))$`) and a
+      replacement string referencing multiple captures (`$1$2`) in a redirect or arguments context: NGINX
+      underestimates the post-escaping output length and writes out-of-bounds within the worker process
+      memory pool.
+
+      Exploitation is pre-authentication: a remote attacker sends a crafted HTTP GET request — no
+      credentials, session, or prior foothold required. The minimum impact is a DoS (worker restart);
+      on systems with ASLR disabled (common in lightweight container distros and some embedded/IoT
+      deployments) unauthenticated RCE is achievable. VulnCheck's canary systems flagged active
+      exploitation attempts beginning 2026-05-16, three days after CVE-2026-42945 (NGINX Rift) was
+      published and while most operators were still patching for Rift.
+
+      Critical upgrade trap: NGINX 1.31.0 and 1.30.1 patched CVE-2026-42945 (Rift) only. Organisations
+      that upgraded to these versions in the emergency Rift cycle remain fully exposed to poolslip. The
+      fixes for CVE-2026-9256 ship only in 1.31.1 (mainline) and 1.30.2 (stable). NGINX Plus: R37+
+      fixes both. Also affected: NGINX Instance Manager 2.16.0–2.21.1, F5 WAF for NGINX 5.9.0–5.12.1,
+      NGINX App Protect WAF 4.9.0–4.16.0 and 5.1.0–5.8.0, NGINX Gateway Fabric 1.3.0–1.6.2 and
+      2.0.0–2.5.1, NGINX Ingress Controller 3.5.0–3.7.2 / 4.0.0–4.0.1 / 5.0.0–5.4.1.
+
+      Vulnerable range: NGINX Open Source 0.1.17 through 1.31.0. Patched: 1.31.1+, 1.30.2+.
+      Not in CISA KEV as of the window close (2026-05-31), but active exploitation is confirmed.
+
+      Defender detection: NGINX worker process restart without admin action; Sysmon EID 1 with parent
+      `nginx` spawning unexpected children; unexpected `core` files in the NGINX working directory;
+      anomalous HTTP requests with deeply nested regex-match paths. Monitor for `nginx: worker process is
+      shutting down` / `nginx: worker process with pid X exited on signal 6` in error.log. Check for
+      ASLR status (`cat /proc/sys/kernel/randomize_va_space` should be 2) — value 0 elevates the severity
+      from DoS to likely RCE. MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1499.004
+      (Application/System Exploitation for DoS). Hardening: upgrade to 1.31.1 or 1.30.2; verify ASLR
+      is enabled (`sysctl -w kernel.randomize_va_space=2`); audit `rewrite` directives for overlapping
+      PCRE captures.
+    ch_eu_nexus: "Global; NGINX is the most widely deployed web server and reverse proxy in CH/EU public-sector, cloud, and hybrid environments. Kubernetes ingress controllers (NGINX Ingress Controller) and API gateways are a primary affected surface in Swiss federal IT and EU agency deployments."
+    public_sector_nexus: "direct"
+    sector: "government, technology, critical infrastructure, cloud"
+    cves: [CVE-2026-9256]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Buffer overflow in the ngx_http_rewrite_module ... Not vulnerable: 1.31.1+, 1.30.2+ ... Vulnerable: 0.1.17-1.31.0"
+        attribution: "NGINX (F5) security advisories"
+        source_url: "https://nginx.org/en/security_advisories.html"
+      - quote: "Both CVE-2026-42945 (NGINX Rift) and CVE-2026-9256 (nginx-poolslip) are under active exploitation."
+        attribution: "Indusface, 2026-05-27"
+        source_url: "https://www.indusface.com/blog/nginx-cve-2026-42945-and-cve-2026-9256/"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # ITEM 3 — CVE-2026-42897 Microsoft Exchange OWA XSS zero-day — no patch,
+  # CISA KEV, MSERT mitigation, exploit via crafted email — NEW
+  # ─────────────────────────────────────────────────────────────────────────
+  - title: "CVE-2026-42897 Microsoft Exchange OWA XSS zero-day — no permanent patch available, CISA KEV listed, temporary EM-Service mitigation deployed but known gaps; patch expected June 10"
+    sources:
+      - url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+        publisher: "Microsoft Exchange Team Blog"
+        date: "2026-05-15"
+        role: "primary"
+      - url: "https://www.securityweek.com/microsoft-warns-of-exchange-server-zero-day-exploited-in-the-wild/"
+        publisher: "SecurityWeek"
+        date: "2026-05-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch 'new vulnerability zero-day exploitation May 29 30 31 2026 CERT advisory', SecurityWeek article → primary: Microsoft Exchange Team Blog on TechCommunity URL https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498 → corroborating: SecurityWeek URL https://www.securityweek.com/microsoft-warns-of-exchange-server-zero-day-exploited-in-the-wild/"
+    summary: |
+      CVE-2026-42897 (CVSS 8.1) is a reflected/stored cross-site scripting vulnerability in the Outlook
+      Web Access (OWA) component of on-premises Microsoft Exchange Server 2016, 2019, and Subscription
+      Edition. No authentication is required from the attacker; exploitation path is a specially crafted
+      email — if the recipient opens it in OWA, arbitrary JavaScript executes in the authenticated
+      browser session, enabling session token theft, mailbox impersonation, email rule manipulation
+      (persistence), and lateral pivot to other Exchange features without the attacker touching the
+      server directly.
+
+      Exchange Online is not affected. The vulnerability was disclosed and CISA added it to the KEV
+      catalog on 2026-05-15; federal agencies faced a remediation deadline of 2026-05-29 (that deadline
+      has now passed). Microsoft deployed an automatic emergency mitigation via the Exchange Emergency
+      Mitigation Service (EEMS) on 2026-05-14. Known side-effects of the mitigation: OWA Print Calendar
+      functionality may fail; inline images may not display correctly in the OWA reading pane.
+
+      No permanent security update has been released as of 2026-05-31. Based on Microsoft's standard
+      monthly cadence, the next Patch Tuesday is 2026-06-10 and is expected to carry the permanent fix.
+      Exchange Server 2016 and 2019 will only receive the permanent patch through Microsoft's Period 2
+      Extended Security Update (ESU) programme.
+
+      Post-exploitation TTPs observed: JavaScript-level session token harvesting from OWA cookie/local-
+      storage, automated mailbox rule creation (`Inbox Rules` API), forwarding rule injection to external
+      attacker-controlled addresses. MITRE ATT&CK: T1566.001 (Spearphishing Attachment / Email-as-
+      delivery vector), T1059.007 (JavaScript execution in browser), T1114.003 (Email Forwarding Rule),
+      T1539 (Steal Web Session Cookie).
+
+      Defender detection: Exchange EMS mitigation logs at `%ExchangeInstallPath%\Logging\MitigationService`;
+      OWA activity logs for JavaScript execution or unusual API calls shortly after a user opens a specific
+      email; new Inbox/forwarding rules created via OWA by users who have never created rules (4625/4626
+      equivalent Exchange audit log events); SIEM alert on new email forwarding rules to external domains.
+      Hardening: verify EEMS is running and the mitigation has applied (`Get-Mitigation` cmdlet shows
+      CVE-2026-42897 mitigation active); enforce "No OWA from untrusted networks" Conditional Access where
+      possible; await June 10 Patch Tuesday and apply immediately.
+    ch_eu_nexus: "Direct CH/EU public-sector relevance: on-premises Exchange Server is still deployed across Swiss federal departments, cantonal administrations, courts, universities, and EU institutions. Spoofing via legitimate mailbox in a compromised Exchange environment has cascading implications for phishing trust within the administrative domain."
+    public_sector_nexus: "direct"
+    sector: "government, education, healthcare, finance"
+    cves: [CVE-2026-42897]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft is working to patch CVE-2026-42897, an Exchange Server zero-day vulnerability that has been exploited in attacks."
+        attribution: "SecurityWeek (Eduard Kovacs), 2026-05-15"
+        source_url: "https://www.securityweek.com/microsoft-warns-of-exchange-server-zero-day-exploited-in-the-wild/"
+      - quote: "No permanent patch exists. Microsoft says this mitigation is a temporary measure while a permanent fix is being prepared."
+        attribution: "Search-result synthesis from Microsoft TechCommunity blog / TechTimes, confirmed as of 2026-05-31"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # ITEM 4 — CVE-2026-20182 Cisco Catalyst SD-WAN UPDATE
+  # Tenable publishes CISA Emergency Directive 26-03 detail + UAT-8616
+  # post-exploitation persistence chain — in-window delta on prior coverage
+  # ─────────────────────────────────────────────────────────────────────────
+  - title: "UPDATE: CVE-2026-20182 Cisco Catalyst SD-WAN — Tenable documents UAT-8616 post-exploitation persistence: SSH key injection, NETCONF manipulation, version downgrade to expose CVE-2022-20775 for root, then restore version to hide attack path"
+    sources:
+      - url: "https://www.tenable.com/blog/faq-about-the-continued-exploitation-of-cisco-catalyst-sd-wan-vulnerabilities-uat-8616"
+        publisher: "Tenable Research"
+        date: "2026-05-14"
+        role: "primary"
+      - url: "https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/"
+        publisher: "Cisco Talos"
+        date: "2026-05-14"
+        role: "corroborating"
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW"
+        publisher: "Cisco PSIRT"
+        date: "2026-05-14"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-csh bridge post 12579 (NCSC.ch SD-WAN advisory), WebSearch 'Cisco SD-WAN CVE-2026-20182 UAT-8616 update post-exploitation' → primary: Tenable Research FAQ blog URL https://www.tenable.com/blog/faq-about-the-continued-exploitation-of-cisco-catalyst-sd-wan-vulnerabilities-uat-8616 → corroborating: Talos URL https://blog.talosintelligence.com/sd-wan-ongoing-exploitation/"
+    summary: |
+      CVE-2026-20182 (CVSS 10.0, CWE-287) is an authentication bypass in Cisco Catalyst SD-WAN Controller
+      (formerly vSmart) and SD-WAN Manager (formerly vManage) peering mechanism. An unauthenticated
+      attacker with network access to the controller's control-connection peering interfaces can establish
+      an unauthorised peer connection masquerading as a trusted SD-WAN router and obtain high-privileged
+      account access.
+
+      Tenable's 2026-05-14 FAQ and Cisco Talos' parallel "ongoing exploitation" post (same date) provide
+      the most complete technical treatment. The new in-window detail from the Tenable/Talos publications
+      covers the full UAT-8616 post-exploitation persistence chain — a notably sophisticated evasion
+      sequence that clears forensic evidence:
+
+      1. Initial access: CVE-2026-20182 or CVE-2026-20127 (earlier Cisco SD-WAN auth bypass, KEV)
+      2. NETCONF configuration manipulation and malicious account creation
+      3. For CVE-2026-20127 exploitation path: software version downgrade to expose CVE-2022-20775
+         (privilege escalation to root); after achieving root, the actor restores the original software
+         version to conceal the exploitation chain
+      4. SSH key injection into `authorized_keys`; `PermitRootLogin yes` added to sshd config
+      5. Log destruction: syslog, wtmp, lastlog, bash_history, cli-history all cleared
+
+      UAT-8616's infrastructure overlaps with monitored Operational Relay Box (ORB) networks. At least
+      10 additional threat clusters began exploiting multiple SD-WAN CVEs after the public PoC became
+      available. CISA issued Emergency Directive 26-03 mandating federal agency remediation by 2026-05-17.
+      Patches are available for all supported Cisco Catalyst SD-WAN releases.
+
+      Defender detection: SSH key additions to `~/.ssh/authorized_keys` on SD-WAN controllers; unexpected
+      `PermitRootLogin` changes in sshd_config; NETCONF configuration sessions from unexpected sources
+      (TCP/830 or TCP/22); version downgrades in system logs; absence of expected log files post-incident
+      (wtmp/lastlog truncation — forensic indicator). MITRE ATT&CK: T1190 (Exploit Public-Facing
+      Application), T1098.004 (SSH Authorized Keys), T1027.005 (Indicator Removal from Tools via version
+      restore), T1070.003 (Clear Command History). Hardening: restrict SD-WAN controller peering
+      interfaces to management network; apply available patches; audit authorized_keys on all controllers.
+    ch_eu_nexus: "Cisco Catalyst SD-WAN is deployed across European telecom carriers, ISPs, and large enterprise/government WAN fabrics. Swiss federal and cantonal network backbones using SD-WAN overlays are in scope."
+    public_sector_nexus: "indirect"
+    sector: "telco, government, critical infrastructure"
+    cves: [CVE-2026-20182]
+    actors_campaigns_malware: ["UAT-8616"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-W21
+
+cve_table:
+  - cve: CVE-2026-0257
+    product: "Palo Alto PAN-OS GlobalProtect"
+    cvss: "7.8 (CVSS:4.0 — ENISA EUVD)"
+    epss: "41.51%"
+    kev: "Yes (added 2026-05-29)"
+    exploited: "Yes — two waves observed by Rapid7 (2026-05-18, 2026-05-21)"
+    patch: "PAN-OS 10.x/11.x/12.x — patches shipped 2026-05-13 and 2026-05-28"
+    source: "https://security.paloaltonetworks.com/CVE-2026-0257"
+  - cve: CVE-2026-9256
+    product: "NGINX Open Source 0.1.17–1.31.0 / NGINX Plus R32–R36"
+    cvss: "8.1 (CVSS v3.1) / 9.2 (CVSS v4.0)"
+    epss: "N/A (not in CISA KEV)"
+    kev: "No"
+    exploited: "Yes — VulnCheck canary systems detected exploitation from 2026-05-16"
+    patch: "NGINX OSS 1.31.1 or 1.30.2; NGINX Plus R37+"
+    source: "https://nginx.org/en/security_advisories.html"
+  - cve: CVE-2026-42897
+    product: "Microsoft Exchange Server 2016/2019/SE (OWA)"
+    cvss: "8.1"
+    epss: "N/A"
+    kev: "Yes (added 2026-05-15)"
+    exploited: "Yes — exploited in the wild via crafted email"
+    patch: "No permanent patch; temporary EEMS mitigation deployed 2026-05-14; patch expected June 10 Patch Tuesday"
+    source: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498"
+  - cve: CVE-2026-20182
+    product: "Cisco Catalyst SD-WAN Controller and Manager"
+    cvss: "10.0"
+    epss: "N/A"
+    kev: "Yes (added 2026-05-14)"
+    exploited: "Yes — UAT-8616 (critical infrastructure targeting)"
+    patch: "All supported Cisco Catalyst SD-WAN releases patched"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-rpa2-v69WY2SW"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: chrome-releases
+    reason: "No new Chrome security releases observed in the window; BSI RSS confirms no new Chrome/Edge advisory in last 48h beyond WID-SEC-2026-1733 (published 2026-05-29, same day)."
+  - source_id: watchtowr
+    reason: "WebFetch returned SPA shell; no bridge subcommand available for watchtowr; no in-window items surfaced via WebSearch."
+  - source_id: projectzero
+    reason: "No new Project Zero publications in the 36h window confirmed via WebSearch."

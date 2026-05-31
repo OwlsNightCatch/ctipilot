@@ -1,0 +1,127 @@
+domain: S2
+run_id: 2026-05-31-d742bed9
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-05-31T04:12:11Z
+ended_at: 2026-05-31T04:19:35Z
+duration_seconds: 444
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 12
+  bridge_fetches: 16
+
+items:
+  - title: "UPDATE: CVE-2026-0257 — PAN-OS GlobalProtect authentication-bypass exploitation confirmed by NCSC-NL (May 30) and Palo Alto advisory update (May 29)"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172", publisher: "NCSC-NL", date: "2026-05-30", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/", publisher: "Rapid7", date: "2026-05-29", role: "corroborating" }
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0257", publisher: "Palo Alto Networks PSIRT", date: "2026-05-13 (updated 2026-05-29)", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl bridge subcommand (NCSC-2026-0172), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172 → CSAF detail fetched via ncsc-nl csaf NCSC-2026-0172 → references: Rapid7 exploitation report https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/ + Palo Alto PSIRT https://security.paloaltonetworks.com/CVE-2026-0257"
+    summary: |
+      UPDATE (originally covered 2026-05-30): On 30 May 2026 NCSC-NL issued advisory NCSC-2026-0172 confirming active exploitation of CVE-2026-0257, the authentication bypass in PAN-OS GlobalProtect portal and gateway components. The flaw arises from CWE-565 (Reliance on Cookies without Validation and Integrity Checking): when the HTTPS certificate for the portal or gateway is reused for the authentication override cookie encryption, an unauthenticated attacker can derive the public key from the certificate, forge and encrypt arbitrary authentication override cookies, and have them accepted server-side — bypassing authentication and establishing an unauthorised VPN connection. NCSC-NL rates probability High / damage High and explicitly warns that with a public PoC now available, scale of abuse is expected to increase in the near term. Palo Alto updated its advisory on 29 May confirming limited exploitation of unpatched appliances. Rapid7 first observed exploitation from 17 May 2026, with two distinct waves from Vultr-hosted and Dromatics Systems infrastructure, via analysis of Cloud Authentication Service (CAS) disablement and forged authentication-override cookies in PAN-OS tech-support files.
+      Prerequisite: GlobalProtect portal or gateway must have authentication override cookies enabled ("Generate cookie for authentication override" or "Accept cookie for authentication override") AND the certificate used for cookie encryption must be shared with the HTTPS service (the default/common misconfiguration). Attack surface: GlobalProtect portal and gateway endpoints on internet-facing PAN-OS appliances; Panorama and Cloud NGFW are not affected. Patched versions: per Palo Alto advisory; no patch-date specified in the NCSC-NL CSAF. Mitigation: disable authentication override cookies or generate a dedicated certificate used exclusively for the override feature; apply available vendor updates.
+      Detection: Log 4776 or equivalent session-creation events from GlobalProtect with no corresponding MFA event; monitor for VPN session establishment from unexpected source IPs with Authentication Override Cookie method; look for CAS (Cloud Authentication Service) disabled state in PAN-OS audit logs; Sysmon/endpoint telemetry showing VPN client spawning processes or lateral movement from a new VPN-sourced subnet where the connecting certificate fingerprint does not match corporate CA chains.
+    ch_eu_nexus: "global; PAN-OS GlobalProtect is widely deployed in Swiss public administration, financial sector, and EU government networks as a perimeter VPN"
+    public_sector_nexus: "direct — VPN edge devices are primary perimeter for government remote access"
+    sector: "government, finance, energy, all sectors using PAN-OS GlobalProtect"
+    cves: [CVE-2026-0257]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-30"
+    evidence:
+      - quote: "Beveiligingsbedrijf Rapid7 meldt dat de kwetsbaarheid actief wordt misbruikt. Daarnaast is voor de kwetsbaarheid proof-of-conceptcode (PoC-code) publiekelijk beschikbaar. Gegeven de beschikbaarheid van de PoC-code, de algemene interesse van kwaadwillenden in edge-devices en de toegang die kwaadwillenden via deze kwetsbaarheid verkrijgen, verwacht het NCSC dat de schaal van misbruik de komende tijd toeneemt."
+        attribution: "NCSC-NL (NCSC-2026-0172)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172"
+      - quote: "CWE-565: Reliance on Cookies without Validation and Integrity Checking"
+        attribution: "NCSC-NL CSAF"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172"
+    extended_notes: |
+      ENISA EUVD EUVD-2026-30104 updated 30 May 2026 now shows exploitedSince=2026-05-29 and EPSS=41.51 (very high probability). This is one of the most exploited edge-device vulnerabilities currently in the wild. Public sector SOC managers should treat this as a Patch Tuesday priority item and verify no internet-facing PAN-OS appliances have authentication override cookies enabled with a shared certificate.
+
+  - title: "Mautic open-source marketing automation: 7 CVEs in 7.1.2 / 6.0.9 security releases — SQL injection, SSRF, stored XSS, path traversal (BSI WID-SEC-2026-1724, May 29)"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1724", publisher: "BSI CERT-Bund", date: "2026-05-29", role: "primary" }
+      - { url: "https://github.com/mautic/mautic/security/advisories/GHSA-fcmw-wx57-9p75", publisher: "Mautic Project (GitHub Advisory)", date: "2026-05-28", role: "corroborating" }
+      - { url: "https://mautic.org/releases/", publisher: "Mautic.org", date: "2026-05-29", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-rss feed (item title '[NEU] [hoch] Mautic: Mehrere Schwachstellen', pub Fri 29 May 2026), URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1724 → fetched BSI CSAF WID-SEC-2026-1724 via bridge bsi-csaf subcommand → references: GitHub security advisories GHSA-fcmw-wx57-9p75, GHSA-5hvg-w58j-545m etc published 2026-05-28/29 → mautic.org releases page confirming 7.1.2/6.0.9"
+    summary: |
+      On 28–29 May 2026, the Mautic project published releases 7.1.2 and 6.0.9 addressing seven vulnerabilities in this widely-used open-source marketing automation platform. BSI CERT-Bund issued advisory WID-SEC-2026-1724 on 29 May with severity "hoch" (HIGH) covering all seven CVEs. Exploitation status is unknown (no in-the-wild evidence). The full set: CVE-2026-4776 (SQL injection in API Contact Filtering — authenticated required); CVE-2026-9557 (SSRF in the Mautic Focus component — allows authenticated user to read internal resources and local files); CVE-2026-9558, CVE-2026-9559, CVE-2026-9808, CVE-2026-9809, CVE-2026-9811 (stored XSS, file inclusion/path traversal, JavaScript code injection via browser of other users, manipulation of files outside intended directories — all authenticated). Affected operating systems: Linux and Unix. The SSRF vector (CVE-2026-9557) allows an authenticated Mautic user with access to the Focus campaign builder to make the server issue HTTP requests to internal network resources — a significant risk in environments where Mautic runs with access to an internal network segment or AWS/Azure metadata endpoints.
+      Mautic is deployed by European public-sector communications teams, NGOs, political parties, universities, and healthcare providers for email campaign management. An attacker with a Mautic user account (e.g. via stolen credentials, compromised newsletter editor account) can pivot to internal network reconnaissance via SSRF (T1090.002), execute stored XSS attacks against administrative users (T1059.007), or extract credentials from internal services accessible to the Mautic server. Patched versions: 7.1.2 and 6.0.9 (released 2026-05-28/29). Earlier branches affected but no separate patch; Mautic 5.x / 4.x end-of-life branches not evaluated. Hardening: restrict Mautic server network access via egress filtering (block metadata endpoints and internal subnets); review Mautic user accounts and apply least-privilege; apply content-security-policy headers on the admin interface; upgrade to patched versions immediately.
+    ch_eu_nexus: "Europe-wide; Mautic is widely used across European organisations including universities, cantonal administrations, and public-interest bodies for GDPR-compliant email campaign management"
+    public_sector_nexus: "indirect — open-source marketing platform used by public-sector communications and outreach teams"
+    sector: "public administration, education, healthcare, NGO"
+    cves: [CVE-2026-4776, CVE-2026-9557, CVE-2026-9558, CVE-2026-9559, CVE-2026-9808, CVE-2026-9809, CVE-2026-9811]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ein entfernter, authentisierter Angreifer kann mehrere Schwachstellen in Mautic ausnutzen, um SQL-Injection- und Server-Side Request Forgery (SSRF)-Angriffe durchzuführen und um Informationen offenzulegen, beliebigen JavaScript-Code im Browser anderer Benutzer auszuführen, Dateien außerhalb vorgesehener Verzeichnisse einzubinden oder zu manipulieren sowie unter Umständen beliebigen Code auf dem Server auszuführen."
+        attribution: "BSI CERT-Bund WID-SEC-2026-1724"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1724"
+
+  - title: "CERT Polska: QuickCMS (OpenSolution) CVE-2026-33384 (session fixation) + CVE-2026-33386 (MITM-XSS via plugin fetch over HTTP) — patched in v6.8 (2026-05-15), disclosure 2026-05-29"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/05/CVE-2026-33384/", publisher: "CERT Polska", date: "2026-05-29", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd bridge subcommand (recent lastvulnerabilities), items EUVD-2026-33338 and EUVD-2026-33339 both published 29 May 2026, assigner CERT-PL → reference https://cert.pl/posts/2026/05/CVE-2026-33384/ → fetched primary via bridge url https://cert.pl/en/posts/2026/05/CVE-2026-33384/"
+    summary: |
+      On 29 May 2026 CERT Polska disclosed two vulnerabilities in QuickCMS, the PHP-based content management system developed by Polish vendor OpenSolution, version 6.8 and earlier. CVE-2026-33384 (CVSS 4.0 score 4.8 / CVSS vector AV:L/AC:L/AT:N/PR:N/UI:P/VC:L/VI:L/VA:N) is a session fixation flaw: the application allows the session identifier to be set before authentication, and the session ID is not rotated after successful login, enabling an attacker to pre-seed a session token in the victim's browser (via a crafted URL or link), wait for the victim to authenticate, and then use the pre-seeded token to impersonate the authenticated session without knowing the victim's password (CWE-384 Session Fixation). CVE-2026-33386 (CVSS 4.0 score 2.3 / AV:A/AC:L/AT:P/PR:N/UI:N) is an MITM-exploitable XSS: QuickCMS fetches its plugin list from a fixed HTTP (non-TLS) endpoint at opensolution.org; an attacker in a position to intercept the connection can inject arbitrary HTML/JavaScript that is rendered unescaped in the admin panel. Both issues were patched in QuickCMS 6.8 released 15 May 2026; CERT Polska coordinated disclosure.
+      QuickCMS is deployed in Polish public-sector websites, municipal portals, small-business and NGO sites across Poland and Central/Eastern Europe. The session fixation vector is particularly relevant for government portals that share a session cookie domain across multiple services — a pre-seeded session from one endpoint may be valid on another. Defender takeaways: force session regeneration (`session_regenerate_id(true)`) post-authentication in custom deployments; configure HTTPS-only cookie flags (`Secure`, `HttpOnly`, `SameSite=Strict`); migrate plugin update mechanisms to HTTPS; upgrade to QuickCMS 6.8 or later.
+    ch_eu_nexus: "Poland / Central-Eastern Europe; Polish public-sector web infrastructure"
+    public_sector_nexus: "direct — deployed in Polish municipal and government portals"
+    sector: "government, public administration"
+    cves: [CVE-2026-33384, CVE-2026-33386]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "QuickCMS allows a user's session identifier to be set before authentication. The value of this session ID stays the same after authentication. This behaviour enables an attacker to fix a session ID for a victim and later hijack the authenticated session."
+        attribution: "CERT Polska (ENISA EUVD EUVD-2026-33338)"
+        source_url: "https://cert.pl/en/posts/2026/05/CVE-2026-33384/"
+      - quote: "QuickCMS is vulnerable to Cross-Site Scripting (XSS) through its insecure HTTP-based plugin-fetching mechanism. A malicious attacker can perform a Man-in-the-Middle (MITM) attack by impersonating the opensolution.org server and serving arbitrary HTML or JavaScript at the plugin list endpoint."
+        attribution: "CERT Polska (ENISA EUVD EUVD-2026-33339)"
+        source_url: "https://cert.pl/en/posts/2026/05/CVE-2026-33384/"
+
+  - title: "GCHQ Director speech (27 May): Russia conducting daily hybrid attacks on UK and European critical infrastructure — energy, subsea cables, supply chains, democratic processes"
+    sources:
+      - { url: "https://www.euronews.com/my-europe/2026/05/27/uk-cyberspy-chief-calls-ai-unstoppable-force-and-warns-about-threats-from-russia", publisher: "Euronews", date: "2026-05-27", role: "primary" }
+      - { url: "https://therecord.media/russia-conducting-attacks-on-uk-gchq-briefing", publisher: "The Record (Recorded Future News)", date: "2026-05-28", role: "corroborating" }
+      - { url: "https://www.cnn.com/2026/05/27/europe/gchq-russia-relentlessly-targeting-uk-intl", publisher: "CNN", date: "2026-05-27", role: "corroborating" }
+    discovery_trace: "first seen at: therecord.media feed (item 'Russia conducting daily attacks on UK from seabed to cyberspace, spy chief warns', pub Thu 28 May 2026), URL https://therecord.media/russia-conducting-attacks-on-uk-gchq-briefing → fetched article body → WebSearch for additional sources → Euronews primary https://www.euronews.com/my-europe/2026/05/27/uk-cyberspy-chief-calls-ai-unstoppable-force-and-warns-about-threats-from-russia fetched → CNN corroborating https://www.cnn.com/2026/05/27/europe/gchq-russia-relentlessly-targeting-uk-intl fetched"
+    summary: |
+      On 27 May 2026, GCHQ Director Anne Keast-Butler delivered the inaugural GCHQ Annual Lecture at Bletchley Park, warning that Russia is "relentlessly targeting critical infrastructure, democratic processes, supply chains and public trust" across the UK and Europe, and is scaling up "daily hybrid activity against the UK and Europe, stretching from the seabed to cyberspace." She named energy infrastructure (power plants, dams) and subsea cables and energy pipelines in British waters as a "sharp focus" for GCHQ defensive operations, with specific reference to "exposing Russia's intent, motive and underwater capabilities." Keast-Butler framed the current period as "a space between peace and war," and cited recent confirmed attacks in Sweden, Poland, Denmark, and Norway targeting critical infrastructure. She identified China as a second key threat (cyberspace, economic espionage) and described AI as an "unstoppable force" with dual-use implications for both defence and offensive operations.
+      Operational relevance for CH/EU defenders: The speech represents official UK government attribution of an ongoing Russia-state hybrid campaign targeting European energy and communications infrastructure. It reinforces the threat picture from the ESET APT report (covered 2026-05-30) and from the Amazon/Sandworm disclosures documenting sustained GRU targeting of Western energy sector via misconfigured edge devices. Swiss critical infrastructure operators (energy, water, transport, telecoms) should review their exposure of management interfaces on internet-facing routers, VPN concentrators, and network appliances; ensure subsea and terrestrial cable-landing and amplifier-station systems are segmented from general IT networks; and validate that all edge devices are fully patched for known VPN/remote-access CVEs (including CVE-2026-0257, CVE-2026-6973, and the Exim/Samba set from prior advisories). The public attribution naming Sweden, Poland, Denmark, and Norway as recent victims elevates the plausibility of similar attacks against Swiss and other EU member-state infrastructure.
+      Note: GCHQ did not publish a formal advisory or technical report with the speech; the speech itself is the primary open-source intelligence item. Source date is 27 May 2026 — within the 72h developing_window but outside the 36h primary window. Included as geopolitical threat context for the developing_window.
+    ch_eu_nexus: "direct — UK GCHQ explicitly names UK and Europe as targets; names Sweden, Poland, Denmark, Norway as recent victims; energy, subsea cables, democratic processes as targeted sectors"
+    public_sector_nexus: "direct — government and critical infrastructure operators named as primary targets"
+    sector: "energy, government, telecoms, defense"
+    cves: []
+    actors_campaigns_malware: ["Russia GRU", "Russia FSB", "Sandworm", "Unit 29155"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Russia is scaling up its daily hybrid activity against the UK and Europe, stretching from the seabed to cyberspace."
+        attribution: "Anne Keast-Butler, GCHQ Director (as reported by Euronews, 2026-05-27)"
+        source_url: "https://www.euronews.com/my-europe/2026/05/27/uk-cyberspy-chief-calls-ai-unstoppable-force-and-warns-about-threats-from-russia"
+      - quote: "One area in sharp focus for us is protecting the data and energy flowing through the critical cables and pipelines in and around British waters."
+        attribution: "Anne Keast-Butler, GCHQ Director (as reported by Euronews, 2026-05-27)"
+        source_url: "https://www.euronews.com/my-europe/2026/05/27/uk-cyberspy-chief-calls-ai-unstoppable-force-and-warns-about-threats-from-russia"
+    extended_notes: |
+      GCHQ does not publish a formal advisory or slide deck with this annual lecture; the record-of-statements is through the press. The speech is consistent with the ESET APT Q4-2025/Q1-2026 report (covered 2026-05-30) which documented Sandworm striking NATO energy sector. The developing-window flag allows inclusion of material published up to 72h ago for active campaigns; this qualifies as geopolitical context for ongoing Russia hybrid campaign.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Bridge returned HTTP 403; Wayback Machine has no usable snapshot (0 candidates ≥5000 bytes in last 180 days). Coverage gap confirmed."
+  - source_id: cert-fr-avis
+    reason: "Feed returns items only through 22 May 2026 — no new advisories in the 36h window visible via the RSS feed. CERT-FR is likely publishing but RSS is lagging."
+  - source_id: anssi-fr
+    reason: "No direct feed available; not fetched this run — covered by cert-fr-avis which is ANSSI's operational arm."
+  - source_id: cert-eu
+    reason: "Latest advisory is 2026-006 from 6 May 2026; no new advisory published in the 36h window per the RSS."
+  - source_id: sekoia
+    reason: "Feed URL https://www.sekoia.io/blog/feed/ returned HTTP 404."
