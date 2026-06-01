@@ -1,0 +1,417 @@
+domain: S3
+run_id: 2026-06-01-7f55e064
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-01T04:11:13Z
+ended_at: 2026-06-01T04:15:58Z
+duration_seconds: 285
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 5
+  bridge_fetches: 14
+
+items:
+  - title: "Elastic Security Labs maps Tycoon 2FA AiTM two-tier infrastructure post-March-2026 takedown — device-PRT persistence survives revokeSignInSessions, cross-ASN detection beats both tiers"
+    sources:
+      - url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+        publisher: "Elastic Security Labs"
+        date: "2026-05-26"
+        role: "primary"
+    discovery_trace: >
+      first seen at: elastic-seclabs RSS feed (https://www.elastic.co/security-labs/rss/feed.xml),
+      item title 'Detecting Tycoon 2FA AiTM attacks across Entra ID and Google Workspace' dated
+      2026-05-26 → primary: Elastic Security Labs article at
+      https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering (no pivot needed —
+      research lab is the originating publisher). Corroborated: Microsoft Threat Intelligence attribution
+      of Tycoon 2FA to Storm-1747 cited inside primary; March 2026 takedown by Microsoft/Europol
+      confirmed by Microsoft Security Blog email-threat-landscape Q1 2026 at
+      https://www.microsoft.com/en-us/security/blog/2026/04/30/email-threat-landscape-q1-2026-trends-and-insights/
+    summary: |
+      Elastic Security Labs (Samir Bousseaden, Terrance DeJesus) published a full detection-engineering
+      breakdown of Tycoon 2FA, the dominant adversary-in-the-middle PhaaS kit (attributed to Storm-1747
+      by Microsoft Threat Intelligence), which resumed operations within weeks of the March 2026
+      Microsoft/Europol takedown that seized 300+ domains. The post maps a two-tier operational
+      architecture defenders must cover independently: Tier 1 (Kit Relay) operates from cheap-VPS
+      cloud ASNs (Alibaba Cloud, similar) using Node.js UA strings (axios/1.15.2, node-fetch/1.0,
+      undici) and Microsoft Authentication Broker client_id 29d9ed98-a469-4536-ade2-f981bc1d605e to
+      progress from refreshToken through Device Registration Service to a primaryRefreshToken (PRT);
+      Tier 2 (Operator Console) arrives 10–20 minutes later from residential-shaped proxy IPs, sharing
+      a single c_sid in Graph Activity Logs across the cluster while hitting tenant-recon Graph API
+      endpoints (transitiveRoleAssignments, tenantRelationships/getResourceTenants, me/mailboxSettings,
+      me/contactFolders/contacts?$top=1000, subscribedSkus). The critical defensive finding: the
+      standard IR playbook of revokeSignInSessions + password reset does NOT break the device-PRT chain
+      — the kit registers a device via DRS (POST to EnrollmentServer/device with a PKCS#10 CSR),
+      earning a device certificate that can generate PRT assertions signed RS256, which remain valid
+      because the device is a separate principal from the user. Correct remediation requires enumerating
+      and deleting registered devices before revoking sessions. Additional detection caveats: Microsoft
+      Identity Protection may not flag kit IPs (aggressive ASN rotation); c_sid in Graph Activity Logs
+      is a session/security-context ID, not the user object ID (filtering by c_sid == user_object_id
+      yields empty results); ASN is the only reliable enrichment. For Google Workspace the single-tier
+      relay consistently authorises client_id 77185425430 (Google Chrome) and OAuthLogin scope within
+      a sub-second timing window — the <1 s login_success → token:authorize compression is the
+      detection signal. The kit's evasion stack includes IP-based researcher filtering via api.ipapi.is,
+      debugger-trap setInterval running every 100 ms, DOM vanishing post-execution, and per-victim
+      Caesar+XOR cipher seeded server-side per session. Tycoon 2FA currently integrates an OAuth
+      Device Code flow variant (device-code-grant abuse) documented by eSentire post-takedown.
+    ch_eu_nexus: >
+      Direct: Microsoft 365 and Google Workspace accounts in EU/Swiss public-sector tenants are the
+      primary target class. The kit reached 500,000+ organisations monthly at peak; EU public sector
+      tenants are within scope. Tycoon 2FA's integration with device-code phishing (documented by
+      eSentire late April 2026) aligns with the OAuth Device Code abuse pattern observed in multiple
+      EU-focused campaigns.
+    public_sector_nexus: "direct — identity-provider account takeover targeting Microsoft 365 / Google Workspace tenants"
+    sector: "public-sector, finance, all sectors using M365/Google Workspace"
+    cves: []
+    actors_campaigns_malware: ["Tycoon 2FA", "Storm-1747"]
+    mitre_ttps:
+      - "T1557 Adversary-in-the-Middle"
+      - "T1539 Steal Web Session Cookie"
+      - "T1528 Steal Application Access Token"
+      - "T1098.005 Account Manipulation: Device Registration"
+      - "T1071.001 Application Layer Protocol: Web Protocols"
+      - "T1078.004 Valid Accounts: Cloud Accounts"
+    verification: "SINGLE-SOURCE (detection-engineering deep dive; primary publisher is the originating research lab — Elastic Security Labs; Storm-1747 attribution corroborated by Microsoft Threat Intelligence citation inside article)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: >
+          "Despite a coordinated takedown in March 2026 led by Microsoft and Europol, with support from
+          Cloudflare, SpyCloud, eSentire, and other partners that seized over 300 domains, operators
+          adapted within weeks."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+      - quote: >
+          "When a defender fires revokeSignInSessions (which invalidates all user-level tokens and
+          refresh tokens), the device PRT remains valid because the device is a separate principal in
+          Entra ID. Defenders must enumerate and delete registered devices before revoking sessions to
+          break the device-PRT chain atomically."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+      - quote: >
+          "Two distinct ASNs (one cloud-VPS, one residential-shaped) authenticating as the same user
+          principal within minutes. Single-ASN rules catch one tier; the cross-tier pivot is the
+          high-confidence indicator."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/tycoon-2fa-aitm-detection-engineering"
+    extended_notes: |
+      Detection engineering summary for hunt teams:
+      ENTRA ID:
+      - Tier 1 signal: non-interactive sign-ins with Node.js UA strings (axios/x.x, node-fetch/1.0,
+        undici) against client_id 29d9ed98-a469-4536-ade2-f981bc1d605e (MAB); token-type progression
+        none → refreshToken → incomingTokenType:primaryRefreshToken in sign-in logs.
+      - Tier 2 signal: residential-ASN browser interactive sign-ins to portal.office.com / myprofile
+        / approvalmanagement 10–20 min after Tier 1; same c_sid shared across multiple source IPs
+        within a single /24; Graph Activity Logs burst of 20–30 GET/POST calls in 30–60 s to beta
+        endpoints (transitiveRoleAssignments, tenantRelationships/getResourceTenants).
+      - High-confidence: two distinct ASNs authenticating the same UPN within minutes.
+      - Device-PRT hunt: look for DRS enrollment (POST to EnrollmentServer/device) from cloud-VPS ASN;
+        look for urn:ms-drs:enterpriseregistration.windows.net audience in token issuance.
+      - Hardening: require compliant/Hybrid-AAD-joined device as a Conditional Access condition;
+        use Microsoft Entra's Continuous Access Evaluation to revoke PRT on suspicious device;
+        consider restricting Device Registration Service to managed devices.
+      GOOGLE WORKSPACE:
+      - Kit relay signal: multiple IPs (cheap-VPS ASNs) authenticating same user within <1 s;
+        client_id 77185425430.apps.googleusercontent.com (Chrome), scope OAuthLogin, method_name
+        authorize, device_type WINDOWS.
+      - New device registration (DEVICE_REGISTER_UNREGISTER_EVENT) within ~0.6–1.2 s of auth
+        completion.
+      - Hardening: Context-Aware Access policy requiring managed-device or verified context for
+        high-sensitivity apps; alert on DEVICE_REGISTER events from new VPS-ASN sources.
+
+  - title: "Red Canary Intelligence Insights May 2026: ClearFake reaches #1 on threat rankings, GraphRunner debuts in top 10 alongside ACR Stealer — both linked to OAuth Device Code abuse"
+    sources:
+      - url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-may-2026/"
+        publisher: "Red Canary"
+        date: "2026-05-26"
+        role: "primary"
+    discovery_trace: >
+      first seen at: redcanary RSS feed https://redcanary.com/feed/, item 'Intelligence Insights:
+      May 2026' published 2026-05-26 → primary: Red Canary article at
+      https://redcanary.com/blog/threat-intelligence/intelligence-insights-may-2026/ (no pivot needed
+      — Red Canary is the originating publisher of its own monthly intelligence report).
+      ClearFake/GraphRunner/ACR Stealer context corroborated via WebSearch confirming Red Canary is
+      the only publisher of this monthly ranking.
+    summary: |
+      Red Canary's May 2026 monthly threat rankings show ClearFake claiming the #1 position for the
+      first time, ACR Stealer and GraphRunner both debuting in the top 10 (tied 6th), and continued
+      dominance of paste-and-run / ClickFix as the initial execution technique class of the month.
+      ClearFake is a JavaScript-injection activity cluster that compromises websites to deliver
+      drive-by malware via fake CAPTCHA and paste-and-run lures (T1059.001, T1204.001); it has stayed
+      in the top three since its February 2026 debut, with the May peak attributed to consistent
+      delivery of ACR Stealer. ACR Stealer (MaaS, C++, active since 2024) debuted via ClearFake
+      campaigns using fake Claude Code GitLab pages as lures in an April 2026 campaign observed by Red
+      Canary, aligning it with the broader AI-tooling-as-lure class documented across multiple sources
+      this window. GraphRunner, a post-exploitation toolkit using Microsoft Graph API (T1087.004
+      Account Discovery: Cloud Account, T1530 Data from Cloud Storage, T1114.002 Email Collection:
+      Remote Email Collection), debuted in the top 10 in a tie with ACR Stealer; Red Canary tied its
+      emergence to a surge in OAuth Device Code phishing flows where adversaries abuse legitimate login
+      portals and then use GraphRunner to conduct post-compromise tenant reconnaissance across Outlook,
+      SharePoint, OneDrive, and Teams. This corroborates the device-code-grant abuse variant of
+      Tycoon 2FA documented by Elastic Security Labs (see item above) and the Sekoia EvilTokens
+      research from March/April 2026, establishing OAuth Device Code abuse as the dominant
+      post-phishing persistence mechanism of Q2 2026.
+    ch_eu_nexus: >
+      ClearFake campaigns target end users globally; paste-and-run lures are language-agnostic and
+      have been observed targeting German-, French-, and Italian-language browser sessions. GraphRunner
+      abuse against M365 tenants directly threatens Swiss and EU public-sector organisations. ACR
+      Stealer via Claude Code impersonation lures targets developers using AI tooling — a growing
+      segment in CH/EU public administrations.
+    public_sector_nexus: "indirect — ClearFake targets end-users; GraphRunner targets M365 tenants including public sector"
+    sector: "all sectors, developer environments, public-sector (M365)"
+    cves: []
+    actors_campaigns_malware: ["ClearFake", "ACR Stealer", "GraphRunner"]
+    mitre_ttps:
+      - "T1059.001 Command and Scripting Interpreter: PowerShell"
+      - "T1204.001 User Execution: Malicious Link"
+      - "T1204.002 User Execution: Malicious File"
+      - "T1087.004 Account Discovery: Cloud Account"
+      - "T1530 Data from Cloud Storage Object"
+      - "T1114.002 Email Collection: Remote Email Collection"
+      - "T1528 Steal Application Access Token"
+    verification: "SINGLE-SOURCE (Red Canary publishes this monthly ranking; no competing source carries identical threat-ranking data; corroborating context for individual techniques from Elastic/Sekoia/SANS ISC in same window)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: >
+          "ClearFake is in command and ACR Stealer and GraphRunner debut in this month's edition of
+          Intelligence Insights"
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-may-2026/"
+      - quote: >
+          "ClearFake has delivered ACR Stealer most recently, which debuts in this month's top 10.
+          ACR Stealer has been delivered via ClearFake campaigns leveraging paste and run for initial
+          execution since at least March 2025, with one campaign observed in April 2026 using fake
+          Claude Code GitLab pages to trick users into following malicious copy and paste instructions."
+        attribution: "Red Canary (via WebSearch summary of article)"
+        source_url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-may-2026/"
+      - quote: >
+          "researchers seeing a recent surge in OAuth device code abuse where adversaries use tools
+          including GraphRunner to exploit legitimate login portals"
+        attribution: "Red Canary (via WebSearch summary of article)"
+        source_url: "https://redcanary.com/blog/threat-intelligence/intelligence-insights-may-2026/"
+    extended_notes: |
+      Detection for ClearFake paste-and-run delivery: Sysmon EID 1 with parent process
+      browser (chrome.exe / msedge.exe / firefox.exe) spawning wscript.exe, mshta.exe,
+      powershell.exe -e, or cmd.exe /c. EDR: browser → script-interpreter parent-child pair.
+      Hardening: disable mshta.exe via AppLocker / WDAC; Software Restriction Policies on
+      wscript.exe from user-writeable paths; MDE ASR rule 'Block execution of potentially obfuscated
+      scripts' (GUID d3e037e1-3eb8-44c8-a917-57927947596d).
+      Detection for GraphRunner post-exploitation: Graph Activity Logs burst of 20–30 calls in 60 s
+      to /beta/ endpoints from a single access token; mixed HTTP methods GET/POST; $top=999 / $select
+      / $count=true query params from non-portal user agents; focus on mailFolder/messages and
+      drives/root/children for data-staging signals (T1530, T1114.002). Alert on first-use of
+      Graph tokens from a device with empty C_DeviceId.
+
+  - title: "Microsoft and Sonatype document concurrent npm dependency-confusion campaigns targeting internal enterprise package namespaces across 9+ corporate scopes — reconnaissance payload with CI/CD detection and two-phase attack design"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/29/33-malicious-npm-packages-abuse-dependency-confusion-profile-developer-environments/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-05-30"
+        role: "primary"
+      - url: "https://www.sonatype.com/blog/inside-a-176-package-npm-campaign-built-to-beat-your-internal-dependencies"
+        publisher: "Sonatype"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: >
+      first seen at: msft-secblog recent feed (bridge subcommand), item 'Malicious npm packages
+      abuse dependency confusion to profile developer environments' dated 2026-05-30 →
+      primary: Microsoft Security Blog at
+      https://www.microsoft.com/en-us/security/blog/2026/05/29/33-malicious-npm-packages-abuse-dependency-confusion-profile-developer-environments/.
+      Second campaign (176 packages) found via WebSearch pivot → Sonatype primary at
+      https://www.sonatype.com/blog/inside-a-176-package-npm-campaign-built-to-beat-your-internal-dependencies
+      (2026-05-28). Both campaigns distinct from the previously-covered Mini Shai-Hulud /
+      TrapDoor typosquat activity.
+    summary: |
+      Two independent research groups documented coordinated npm dependency-confusion attacks
+      during the window, both distinct from the typosquatting / Mini Shai-Hulud activity already
+      covered in prior briefs. Microsoft Threat Intelligence (published 2026-05-30) documented 33
+      malicious packages published across two bursts on 2026-05-28/29 by three maintainer aliases
+      (mr.4nd3r50n, ce-rwb, t-in-one), targeting nine different organisational scopes that mirror
+      real internal corporate package namespaces. The attack vector is dependency confusion:
+      packages published to the public npm registry under high version numbers (100.100.100,
+      3.5.22, or inflated semver) win npm's version-resolution race against private-registry
+      equivalents when the consuming project's .npmrc is not scope-locked. Package.json fields
+      (homepage, repository, bugs) spoof internal enterprise infrastructure URLs — GitHub
+      Enterprise, Jira, documentation portals — to pass a manual review. The May 29 stager
+      contains a three-layer-obfuscator.io-obfuscated postinstall (~13 KB), adds a kill switch
+      (T_IN_ONE_NO_TELEMETRY env var), and creates a run-once marker at
+      ~/.cache/._t-in-one_init/ to evade repeated-execution monitoring. The postinstall executes
+      automatically at npm install and downloads a second-stage reconnaissance payload from a
+      C2 server, platform-detecting for Windows / macOS / Linux and detecting CI/CD environments
+      specifically (likely to flag high-value build-system targets for later exploitation). All
+      33 packages were removed within hours of identification. Separately, Sonatype (2026-05-28)
+      documented a larger 176-package dependency-confusion campaign (tracked Sonatype-2026-003429)
+      using version 99.99.99 to beat private-registry precedence; Sonatype researchers found
+      Russian-language comments in the codebase and coordinated infrastructure, suggesting
+      adversarial nation-state adjacent activity rather than opportunistic research. The 176-
+      package campaign's postinstall scripts similarly targeted developer and CI/CD environments.
+      Both campaigns represent the reconnaissance / staging phase of a two-stage attack design —
+      the initial payload profiles the environment before any credential-theft or persistence is
+      deployed, complicating detection based on malicious-payload signatures alone.
+    ch_eu_nexus: >
+      Dependency confusion attacks target any organisation that: (a) uses private npm packages
+      in internal development, and (b) has not scope-locked .npmrc to route scoped packages
+      exclusively to their private registry. Swiss and EU government software factories, public-
+      sector DevOps platforms, and research institutions maintaining internal Node.js tooling are
+      all within scope. The CI/CD detection capability of the second-stage payload specifically
+      targets build pipelines, which are common in CH/EU eGovernment development environments.
+    public_sector_nexus: "indirect — targets developer/CI-CD environments in any organisation using internal npm packages"
+    sector: "all sectors with internal npm development, software-supply-chain"
+    cves: []
+    actors_campaigns_malware: ["Sonatype-2026-003429"]
+    mitre_ttps:
+      - "T1195.002 Supply Chain Compromise: Compromise Software Supply Chain"
+      - "T1059.004 Command and Scripting Interpreter: Unix Shell"
+      - "T1059.001 Command and Scripting Interpreter: PowerShell"
+      - "T1082 System Information Discovery"
+      - "T1083 File and Directory Discovery"
+      - "T1012 Query Registry"
+      - "T1614 System Location Discovery"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: >
+          "A dependency confusion campaign leveraged 33 malicious npm packages to collect
+          reconnaissance data from developer and build environments. This report details the attack
+          chain, observed tradecraft, and detection opportunities to help organizations identify and
+          disrupt related activity."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/29/33-malicious-npm-packages-abuse-dependency-confusion-profile-developer-environments/"
+      - quote: >
+          "The packages impersonate internal corporate packages across nine different organizational
+          scopes using a dependency confusion technique, and several spoof internal enterprise
+          infrastructure URLs in their package.json to appear legitimate."
+        attribution: "Microsoft Threat Intelligence (via WebSearch summary)"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/29/33-malicious-npm-packages-abuse-dependency-confusion-profile-developer-environments/"
+      - quote: >
+          "Sonatype is tracking this activity as Sonatype-2026-003429, and researchers observed
+          Russian-language comments embedded within the codebase and coordinated infrastructure
+          patterns across the malicious packages."
+        attribution: "Sonatype"
+        source_url: "https://www.sonatype.com/blog/inside-a-176-package-npm-campaign-built-to-beat-your-internal-dependencies"
+    extended_notes: |
+      Detection guidance:
+      - npm audit + package-lock.json inspection for unexpected high-version semver on internal
+        package names (100.100.100 / 99.99.99 are trivially grep-able).
+      - Egress monitoring from build agents: unexpected outbound connections at npm install time
+        to non-registry IPs (T1071.001); baseline approved npm registry FQDNs and alert on
+        deviations.
+      - Process monitoring on CI/CD agents: postinstall scripts spawning node.exe / sh / bash
+        with outbound connections should fire Sysmon EID 1 / EID 3 (parent: node.exe spawning
+        child with network activity).
+      - EDR: node.exe spawning shell interpreters (bash, sh, cmd.exe) from %APPDATA%/npm or
+        ~/.npm/_npx/ paths — common postinstall execution path.
+      Hardening:
+      - Scope-lock .npmrc: configure 'registry=https://<internal-registry>' for all
+        @<scope> packages used internally; prevents public-registry resolution for scoped names.
+      - Run 'npm install --ignore-scripts' in CI/CD pipelines to disable lifecycle hooks; use
+        a dedicated allowlist-based approach for packages that legitimately need postinstall.
+      - Rotate any secrets that were present in environment variables of a developer machine or
+        CI/CD agent that installed packages from these aliases.
+
+  - title: "SmartApeSG ClickFix campaign delivers unidentified staging RAT that pivots to NetSupport Manager RAT — two-stage install via processor.vbs → token.bat → CAB-packaged NetSupport"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/33034"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-06-01"
+        role: "primary"
+    discovery_trace: >
+      first seen at: SANS ISC RSS feed (https://isc.sans.edu/rssfeed.xml), item 'Unidentified RAT
+      pushes NetSupport RAT' dated 2026-06-01 by Brad Duncan → primary:
+      https://isc.sans.edu/diary/rss/33034 (no pivot needed — SANS ISC is the originating
+      publisher, analyst is the diary author).
+    summary: |
+      SANS ISC handler Brad Duncan published a same-day forensic diary (2026-06-01) documenting
+      an observed infection chain from 2026-05-27 that originated from the SmartApeSG ClickFix
+      campaign. SmartApeSG serves fake browser-verification lures (fake CAPTCHA / "Press Win+R"
+      ClickFix) from attacker-controlled domains. The initial execution of the ClickFix PowerShell
+      / MSHTA payload drops a ZIP archive containing an unidentified staging RAT (no public name
+      assigned by Brad Duncan) that communicates over TCP port 443 using a custom encoded (non-TLS)
+      protocol to its C2 — the RAT has been generating this traffic continuously since at least
+      April 2026. In the documented intrusion, this staging RAT was then used as a delivery
+      mechanism to push a full NetSupport Manager RAT package, delivered as a Microsoft Cabinet
+      (.cab) archive (setup.cab, ~17 MB) containing a complete malicious NetSupport installation.
+      The install chain uses: processor.vbs (109-byte VBScript launcher in C:\ProgramData\) →
+      token.bat (8 KB BAT that extracts setup.cab into C:\ProgramData\UpdateInstaller\ and
+      establishes persistence, then self-deletes all three dropper components) → NetSupport RAT
+      C2 over HTTP port 443. NetSupport Manager (T1219 Remote Access Software) is a legitimate
+      commercial remote-access tool frequently weaponised as a RAT implant; its C2 traffic
+      mimics legitimate commercial telemetry making network detection non-trivial.
+    ch_eu_nexus: >
+      SmartApeSG campaigns are geographically broad and have been documented in European environments.
+      NetSupport Manager RAT is a persistent threat in European public-sector compromise chains.
+      ClickFix / paste-and-run delivery technique is language-agnostic and effective against German-,
+      French-, and Italian-language browsing contexts.
+    public_sector_nexus: "indirect — SmartApeSG targets any Windows user visiting compromised web pages"
+    sector: "all sectors, end-user endpoints"
+    cves: []
+    actors_campaigns_malware: ["SmartApeSG", "NetSupport Manager RAT"]
+    mitre_ttps:
+      - "T1204.001 User Execution: Malicious Link"
+      - "T1059.005 Command and Scripting Interpreter: Visual Basic"
+      - "T1059.003 Command and Scripting Interpreter: Windows Command Shell"
+      - "T1219 Remote Access Software"
+      - "T1547.001 Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder"
+      - "T1070.004 Indicator Removal: File Deletion"
+    verification: "SINGLE-SOURCE (SANS ISC handler diary; single-day forensic observation; no independent corroboration of same infection chain within window. IOC details omitted per brief policy.)"
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: >
+          "This diary provides indicators from an unidentified RAT infection on Wednesday 2026-05-27
+          that was followed by a malicious NetSupport Manager RAT package. This originated from the
+          SmartApeSG ClickFix campaign."
+        attribution: "SANS ISC / Brad Duncan"
+        source_url: "https://isc.sans.edu/diary/rss/33034"
+      - quote: >
+          "it has consistently been generating encoded (not HTTPS/SSL/TLS) traffic to a command and
+          control (C2) server over TCP port 443 since I first noticed it sometime in April 2026"
+        attribution: "SANS ISC / Brad Duncan"
+        source_url: "https://isc.sans.edu/diary/rss/33034"
+      - quote: >
+          "processor.vbs, token.bat, and setup.cab are all deleted by the token.bat script after it
+          installs the malicious NetSupport RAT package and makes it persistent on the infected
+          Windows host"
+        attribution: "SANS ISC / Brad Duncan"
+        source_url: "https://isc.sans.edu/diary/rss/33034"
+    extended_notes: |
+      Detection guidance (behavioural — no IOCs per brief policy):
+      - Browser → wscript.exe / mshta.exe parent-child (T1059.005, T1204.001): Sysmon EID 1 /
+        EDR process-creation with browser parent-image.
+      - C:\ProgramData\ processor.vbs / token.bat creation: Sysmon EID 11 (file-create) in
+        ProgramData path for .vbs / .bat; low-confidence but worth alerting for short-lived
+        dropper files.
+      - CAB extraction via expand.exe or wusa.exe from ProgramData: Sysmon EID 1 with
+        expand.exe / wusa.exe parent or child from C:\ProgramData\.
+      - NetSupport Manager RAT persistence: look for registry Run-key entries pointing to
+        C:\ProgramData\UpdateInstaller\ or similar non-standard NetSupport install paths;
+        NetSupport's legitimate path is typically C:\Program Files\NetSupport\.
+      - NetSupport C2 over port 443 with non-TLS payload: network inspection via SSL/TLS
+        inspection proxy should show unencrypted payload on port 443 from NetSupport process.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: >
+      Both the priority feed URL (https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242)
+      and the alternate (https://news.sophos.com/feed/) returned no output. Bridge attempt silent
+      failure. No in-window items confirmed for this source. Status matches rotation-priority
+      note of 'failed 3 of last runs, last status 503'.
+  - source_id: dragos
+    reason: >
+      Dragos blog (https://www.dragos.com/blog/) served SPA-heavy JS-rendered page with no
+      article body or listing; no RSS feed identified. No in-window OT/ICS research items surfaced
+      from Dragos within the 36-hour window.
+  - source_id: recordedfuture-insikt
+    reason: >
+      Recorded Future Insikt Group RSS (https://www.recordedfuture.com/blog/rss.xml) returned
+      no output; bridge attempt silent failure. No in-window items confirmed.
+  - source_id: volexity
+    reason: >
+      Volexity blog feed returned no output. No in-window items confirmed.
+  - source_id: sekoia
+    reason: >
+      Sekoia blog feed fetched successfully; most recent in-window item was outside the 36-hour
+      window (last post 2026-04-23). No qualifying items in window.

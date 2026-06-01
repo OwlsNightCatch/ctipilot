@@ -1,0 +1,229 @@
+# work/2026-06-01-7f55e064/findings.S1.yaml
+domain: S1
+run_id: 2026-06-01-7f55e064
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-01T04:10:49Z
+ended_at: 2026-06-01T04:19:20Z
+duration_seconds: 511
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 10
+  bridge_fetches: 15
+
+items:
+  - title: "PAN-OS GlobalProtect CVE-2026-0257 authentication bypass — CISA KEV deadline today, active exploitation chains webshell via secondary zero-day (UPDATE)"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+        publisher: "Rapid7"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+        publisher: "Palo Alto Networks PSIRT"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0172"
+        publisher: "NCSC-NL"
+        date: "2026-05-30"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge → CVE-2026-0257 in KEV catalog (deadline 2026-06-01) → Rapid7 ETR primary (2026-05-29) → PAN PSIRT advisory (updated 2026-05-29) → NCSC-NL NCSC-2026-0172 (2026-05-30)"
+    summary: |
+      Rapid7 published a detailed reverse-engineering ETR on 2026-05-29 documenting the authentication bypass in PAN-OS
+      GlobalProtect (CVE-2026-0257, CVSS 4.0: 7.8 HIGH). The vulnerable function is `main_DecryptAppAuthCookie` in the
+      `gpsvc` binary: it applies RSA decrypt + base64 decode to `portal-userauthcookie` / `portal-prelogonuserauthcookie`
+      values submitted via POST to `/ssl-vpn/login.esp`, but performs no signature verification on the decrypted payload.
+      Exploitation requires GlobalProtect portal or gateway configured with authentication override cookies enabled, and
+      the portal/gateway HTTPS certificate must differ from the certificate used to encrypt the cookies (the default
+      split-cert configuration). Two discrete exploitation waves were observed: May 18 (Vultr infrastructure) and May 21
+      (Dromatics Systems). GreyNoise additionally observed threat actors chaining this bug with a secondary zero-day to
+      push a webshell onto the PAN-OS management plane. The CISA KEV remediation deadline is 2026-06-01 (today).
+      PAN-OS 11.2.x, 11.1.x, 10.2.x, and 12.1.x prior to specific hotfix versions are affected; Prisma Access 10.2.x
+      prior to 10.2.10-h36 and 11.2.x prior to 11.2.7-h13 also affected.
+    ch_eu_nexus: "Global; PAN-OS GlobalProtect widely deployed in CH/EU public-sector and critical infrastructure. NCSC-NL issued advisory. CISA KEV deadline today."
+    public_sector_nexus: "direct"
+    sector: "government, critical-infrastructure, finance, telco"
+    cves: ["CVE-2026-0257"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-26
+    evidence:
+      - quote: "The vulnerability exists because main_DecryptAppAuthCookie in gpsvc does not verify the integrity of the decrypted cookie value"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+      - quote: "Rapid7 observed exploitation in the wild as early as May 18, 2026 from Vultr infrastructure, and again on May 21, 2026 from Dromatics Systems"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+      - quote: "GreyNoise has observed threat actors chaining CVE-2026-0257 with a secondary zero-day vulnerability to deploy a webshell on the management plane"
+        attribution: "Rapid7 (citing GreyNoise)"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+    extended_notes: |
+      Detection: Monitor `/ssl-vpn/login.esp` POST requests with anomalous `portal-userauthcookie` or
+      `portal-prelogonuserauthcookie` form values in the GlobalProtect gateway/portal web-server access logs.
+      Sysmon EID 1 chains from `gpsvc` spawning unexpected child processes (webshell indicator). EDR telemetry:
+      look for unexpected processes spawned from PAN-OS management plane services.
+      Hardening: Apply vendor-specified hotfixes. If immediate patching is not feasible, disable authentication
+      override cookies (set "Allow Authentication Override" to off in GP portal/gateway config).
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts), T1505.003 (Web Shell).
+      Affected versions: PAN-OS 10.2.x (multiple hotfixes), 11.1.x (multiple hotfixes), 11.2.x (multiple hotfixes),
+      12.1.x prior to 12.1.4-h6 / 12.1.7; Prisma Access 10.2.0 < 10.2.10-h36, 11.2.0 < 11.2.7-h13.
+
+  - title: "Oracle May 2026 CPU — E-Business Suite 12 patches including unauthenticated RCE, Oracle Public Sector Financials International affected"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+        publisher: "NCSC-NL"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.oracle.com/security-alerts/cpumay2026.html"
+        publisher: "Oracle"
+        date: "2026-05-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl bridge (ncsc-nl recent 20) → NCSC-2026-0170 published 2026-05-29T12:26:42Z → ncsc-nl csaf NCSC-2026-0170 → Oracle May 2026 CPU security alerts page"
+    summary: |
+      Oracle's May 2026 Critical Patch Update included 12 patches for Oracle E-Business Suite affecting versions
+      12.2.3 through 12.2.15. Three of the 12 EBS patches are remotely exploitable without authentication (network
+      vector, no privileges required). The patched products include Oracle Public Sector Financials International,
+      which is a direct concern for CH/EU public-sector financial systems. NCSC-NL published advisory NCSC-2026-0170
+      on 2026-05-29 with CVSS scores ranging up to 9.8. The CSAF advisory identifies CVE-2026-46817 through
+      CVE-2026-46821 among the critical EBS CVEs, with CWEs including integer overflow (CWE-190), code injection
+      (CWE-94), out-of-bounds read (CWE-125), credential exposure (CWE-522), improper type validation (CWE-1287),
+      path traversal (CWE-22), and XSS (CWE-79). Oracle recommends applying the CPU patches immediately; the
+      quarterly patch cycle means EBS installations lagging one or more quarters face multiple accumulating
+      unauthenticated attack vectors.
+    ch_eu_nexus: "Direct — Oracle E-Business Suite is deployed in CH/EU public-sector financial agencies; Oracle Public Sector Financials International is explicitly an affected product"
+    public_sector_nexus: "direct"
+    sector: "government, finance, public-administration"
+    cves: ["CVE-2026-46817", "CVE-2026-46818", "CVE-2026-46819", "CVE-2026-46820", "CVE-2026-46821"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Oracle E-Business Suite: 12 patches, of which 3 are remotely exploitable without authentication"
+        attribution: "NCSC-NL NCSC-2026-0170"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+      - quote: "Affected: Oracle Public Sector Financials International, versions 12.2.3 through 12.2.15"
+        attribution: "NCSC-NL NCSC-2026-0170 (CSAF product tree)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+    extended_notes: |
+      Detection: EBS application access logs for unexpected POST requests to EBS UI components, especially
+      from external IPs. Monitor for privilege-escalation events in Oracle database audit logs following
+      unauthenticated inbound requests. T1190 (Exploit Public-Facing Application).
+      Hardening: Apply Oracle May 2026 CPU. EBS patches are cumulative — sites on old quarters face
+      additional risk surface. Prioritise the three unauthenticated network-vector patches first.
+      No observed exploitation in the wild reported at time of advisory publication.
+
+  - title: "Zimbra Collaboration Suite — multiple vulnerabilities (XSS, information disclosure, security bypass) — BSI advisory WID-SEC-2026-1735"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1735"
+        publisher: "BSI / CERT-Bund"
+        date: "2026-05-29"
+        role: "primary"
+    discovery_trace: "first seen at: bsi-de bridge (bsi-rss) → WID-SEC-2026-1735 published 2026-05-29 → bsi-csaf WID-SEC-2026-1735 for structured detail"
+    summary: |
+      BSI published advisory WID-SEC-2026-1735 on 2026-05-29 covering multiple vulnerabilities in Zimbra
+      Collaboration Suite on Linux/UNIX platforms. The advisory cites Zimbra Security Advisories from 2026-05-28.
+      Vulnerability classes include cross-site scripting (XSS), information disclosure, and security bypass.
+      Zimbra is widely deployed in EU public-sector email infrastructure. CVE identifiers were not confirmed
+      from the BSI CSAF structured data for this advisory; the Zimbra vendor security advisories page was
+      not directly reachable during this run. Defenders running Zimbra should consult the vendor's advisory
+      portal directly and apply available patches. No confirmed exploitation in the wild was reported at time
+      of advisory publication.
+    ch_eu_nexus: "Direct — Zimbra is used by multiple EU public-sector and municipal mail deployments. BSI (German federal authority) issued advisory."
+    public_sector_nexus: "direct"
+    sector: "government, public-administration"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Zimbra Collaboration Suite: Multiple vulnerabilities including XSS, information disclosure, and security bypass on Linux/UNIX"
+        attribution: "BSI WID-SEC-2026-1735"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1735"
+    extended_notes: |
+      CVE IDs not confirmed from structured sources. BSI CSAF for this advisory lacked numeric CVE fields.
+      WebSearch returns appeared to surface AI-speculative CVE numbers not verified on NVD.
+      Defenders should check https://wiki.zimbra.com/wiki/Zimbra_Security_Advisories directly.
+      Detection: Zimbra web UI access logs for XSS injection attempts; abnormal information-disclosure
+      responses (verbose error pages). T1059.007 (JavaScript), T1185 (Browser Session Hijacking for XSS class).
+
+cve_table:
+  - cve: CVE-2026-0257
+    product: "PAN-OS GlobalProtect portal/gateway (gpsvc)"
+    cvss: "7.8 (CVSS 4.0 HIGH)"
+    epss: "unknown"
+    kev: "YES — deadline 2026-06-01"
+    exploited: "YES — two waves (May 18 Vultr, May 21 Dromatics); webshell chain via secondary 0day"
+    patch: "10.2.x multiple hotfixes; 11.1.x multiple hotfixes; 11.2.x multiple hotfixes; 12.1.x < 12.1.4-h6/12.1.7; Prisma Access 10.2.x < 10.2.10-h36, 11.2.x < 11.2.7-h13"
+    source: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+  - cve: CVE-2026-46817
+    product: "Oracle E-Business Suite (Public Sector Financials International) 12.2.3–12.2.15"
+    cvss: "up to 9.8 (Critical)"
+    epss: "unknown"
+    kev: "NO"
+    exploited: "NO (no observed in-wild exploitation at publication)"
+    patch: "Oracle May 2026 CPU"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+  - cve: CVE-2026-46818
+    product: "Oracle E-Business Suite 12.2.3–12.2.15"
+    cvss: "up to 9.8 (Critical)"
+    epss: "unknown"
+    kev: "NO"
+    exploited: "NO"
+    patch: "Oracle May 2026 CPU"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+  - cve: CVE-2026-46819
+    product: "Oracle E-Business Suite 12.2.3–12.2.15"
+    cvss: "up to 9.8 (Critical)"
+    epss: "unknown"
+    kev: "NO"
+    exploited: "NO"
+    patch: "Oracle May 2026 CPU"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+  - cve: CVE-2026-46820
+    product: "Oracle E-Business Suite 12.2.3–12.2.15"
+    cvss: "up to 9.8 (Critical)"
+    epss: "unknown"
+    kev: "NO"
+    exploited: "NO"
+    patch: "Oracle May 2026 CPU"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+  - cve: CVE-2026-46821
+    product: "Oracle E-Business Suite 12.2.3–12.2.15"
+    cvss: "up to 9.8 (Critical)"
+    epss: "unknown"
+    kev: "NO"
+    exploited: "NO"
+    patch: "Oracle May 2026 CPU"
+    source: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0170"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-fr
+    reason: "CERT-FR avis-recent returned only items from May 21-22 2026 — outside the 36h window. No in-window items."
+  - source_id: cert-eu
+    reason: "CERT-EU most recent advisory was 2026-006 (May 6 PAN-OS) — well outside the 36h window. No in-window items."
+  - source_id: zimbra-vendor
+    reason: "Zimbra vendor security advisories page unreachable during run. BSI WID-SEC-2026-1735 cited Zimbra advisories from 2026-05-28 but CVE IDs could not be confirmed from structured sources."
+
+fetch_failures:
+  - id: rapid7-research
+    url_tried: "https://www.rapid7.com/blog/post/ve-cve-2026-0257-palo-alto-globalprotect-auth-bypass/"
+    fetch_method: bridge:url
+    status_code: 404
+    error_class: transport-404
+    error_message: "HTTP 404 Not Found — URL slug incorrect"
+    attempted_methods: [bridge:url]
+    mitigation_applied: "WebSearch found correct URL: https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+    covered_anyway: false
+  - id: oracle-blog
+    url_tried: "https://blogs.oracle.com/security/may-2026-critical-security-patch-update-released"
+    fetch_method: bridge:url
+    status_code: 403
+    error_class: transport-403
+    error_message: "HTTP 403 Forbidden"
+    attempted_methods: [bridge:url]
+    mitigation_applied: "Pivoted to NCSC-NL NCSC-2026-0170 CSAF advisory as primary source"
+    covered_anyway: false
