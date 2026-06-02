@@ -1,0 +1,193 @@
+domain: S1
+run_id: 2026-06-02-8af85d01
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-02T04:11:20Z
+ended_at: 2026-06-02T04:35:00Z
+duration_seconds: 1420
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 9
+  bridge_fetches: 12
+
+items:
+  - title: "Miasma supply-chain attack compromises 32 Red Hat @redhat-cloud-services npm packages with self-propagating Shai-Hulud credential worm"
+    sources:
+      - url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"
+        publisher: "Wiz Research"
+        date: "2026-06-01"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/red-hat-npm-packages-compromised-to-steal-developer-credentials/"
+        publisher: "BleepingComputer"
+        date: "2026-06-01"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/miasma-supply-chain-attack-compromises.html"
+        publisher: "The Hacker News"
+        date: "2026-06-01"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, item https://thehackernews.com/2026/06/miasma-supply-chain-attack-compromises.html → primary: Wiz Research, URL https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/red-hat-npm-packages-compromised-to-steal-developer-credentials/"
+    summary: |
+      On 2026-06-01 Wiz Research identified a supply-chain compromise affecting 96 versions across 32 packages in the @redhat-cloud-services npm namespace, collectively downloaded ~116,991 times per week. The attack is a variant of the open-sourced Mini Shai-Hulud malware, themed after Greek mythology (dubbed "Miasma") rather than Dune, but functionally identical. Attackers exploited a structural GitHub Actions trust-boundary weakness: a pull_request_target Pwn-Request misconfiguration in Red Hat's own repositories allowed them to poison the Actions cache across the fork↔base trust boundary and extract the OIDC token at runtime, minting provenance-attested package publishes without modifying any workflow file.
+
+      The attack surface is the npm `preinstall` lifecycle hook — exploitation fires at `npm install` time before any code is imported. Each tarball ships a 4.1 MB obfuscated JS file in `package.json`'s preinstall hook, which runs a Bun-executed multi-stage credential-stealer targeting AWS, Azure, GCP, HashiCorp Vault, Kubernetes service-account tokens, GitHub Actions OIDC tokens, npm tokens, Bitwarden and 1Password. The worm component attempts to propagate by poisoning local npm caches and registered scoped-registry entries. Mapped to T1195.002 (Compromise Software Supply Chain), T1552.001 (Credentials in Files), T1071.001 (Application Layer Protocol: Web Protocols) for exfiltration.
+
+      For defenders: npm audit does not catch this because the package signatures are valid (provenance-attested). Detection requires monitoring child-process spawns from `npm`/`node` parent trees for `bun` execution or unusual outbound HTTPS at install time; EDR parent-chain rules on `bun.exe` / `bun` spawned from `node_modules/.bin`; blocking or alerting on `preinstall`/`postinstall` hooks in CI pipelines (e.g., using `npm install --ignore-scripts` in production pipelines, or enforcing `--omit=optional` combined with policy engines like Socket or Aikido). Affected orgs should rotate all cloud credentials accessible from the build environment.
+    ch_eu_nexus: "global; affects any developer or CI/CD pipeline installing @redhat-cloud-services npm packages — OpenShift and Red Hat cloud-services users directly impacted, including EU public-sector organisations using OpenShift Container Platform"
+    public_sector_nexus: "indirect — EU public-sector orgs using Red Hat OpenShift or cloud-services npm tooling are directly exposed"
+    sector: "technology, public-sector, cloud"
+    cves: []
+    actors_campaigns_malware: ["Miasma", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On 1 June 2026, Wiz Research identified a supply chain compromise affecting multiple packages published under the @redhat-cloud-services npm namespace, with at least 32 package releases containing unauthorized modifications. In total, 96 versions across 32 packages have been compromised, cumulatively downloaded 116,991 times per week."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"
+      - quote: "More than 30 npm packages under Red Hat's '@redhat-cloud-services' namespace were compromised in a supply-chain attack that distributed a new variant of the Shai-Hulud credential-stealing malware, dubbed 'Miasma.'"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/red-hat-npm-packages-compromised-to-steal-developer-credentials/"
+      - quote: "Each tarball ships a 4.1 MB obfuscated JavaScript file added to package.json as a preinstall hook. The hook runs a multi-stage loader that ends in a Bun-executed credential stealer hitting AWS, Azure, GCP, HashiCorp Vault, Kubernetes, GitHub Actions OIDC, npm, Bitwarden, and 1Password."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/miasma-supply-chain-attack-compromises.html"
+    extended_notes: |
+      The underlying GitHub Actions chain — pull_request_target Pwn-Request + Actions cache poisoning across fork/base trust boundary + OIDC token extraction from the runner process — is the same three-step class previously documented by StepSecurity for the TanStack compromise (CVE-2026-45321, already in prior coverage). The Red Hat packages were not previously seen as compromised; this is a new compromise event using the same techniques. Defenders should treat any GitHub Actions-backed package namespace as a potential target for this attack class and enforce branch-protection rules that prevent fork-based PRs from accessing trusted OIDC issuers.
+
+  - title: "CVE-2026-8732 — WP Maps Pro <= 6.1.0: unauthenticated administrator account creation via publicly disclosed nonce (CVSS 9.8, active exploitation)"
+    sources:
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8732"
+        publisher: "NVD/NIST"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/wp-maps-pro-bug-exploited-to-create-admin-accounts-on-wordpress-sites/"
+        publisher: "BleepingComputer"
+        date: "2026-05-31"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/critical-wp-maps-pro-flaw-actively.html"
+        publisher: "The Hacker News"
+        date: "2026-06-01"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, item https://thehackernews.com/2026/06/critical-wp-maps-pro-flaw-actively.html → NVD primary, URL https://nvd.nist.gov/vuln/detail/CVE-2026-8732 → corroborating BleepingComputer, URL https://www.bleepingcomputer.com/news/security/wp-maps-pro-bug-exploited-to-create-admin-accounts-on-wordpress-sites/"
+    summary: |
+      CVE-2026-8732 is a privilege-escalation-via-administrator-account-creation vulnerability in the WP Maps Pro plugin for WordPress (all versions ≤ 6.1.0, patched in 6.1.1 released 2026-05-20). CVSS 3.1 score: 9.8 (Critical). Exploitation is unauthenticated and has been actively observed.
+
+      The root cause is a "temporary access" support feature: the AJAX action `wpgmp_temp_access_ajax` is registered with WordPress's `wp_ajax_nopriv_` hook (which accepts unauthenticated requests) and is "protected" only by a nonce that is publicly embedded in every frontend page via `wp_localize_script` as the `nonce` field of the `wpgmp_local` JavaScript object. An unauthenticated caller invokes the `wpgmp_temp_access_support` handler with `check_temp=false`; the handler then unconditionally calls `wp_insert_user()` with the hardcoded role of `administrator`, and returns a magic login URL that calls `wp_set_auth_cookie()` to authenticate the attacker as the newly created admin. The endpoint is also notable for having the vendor's own hardcoded support email in the code. Mapped to T1190 (Exploit Public-Facing Application), T1078.001 (Valid Accounts: Default Accounts).
+
+      Wordfence blocked 2,858–3,600 attack attempts within 24 hours of public disclosure (reported 2026-05-31). Detection: WordPress access logs for POST requests to `wp-admin/admin-ajax.php` with `action=wpgmp_temp_access_ajax` and `check_temp=false`; new WordPress administrator account creation events in WP audit logs (`wp_user_register` action with role=administrator). Hardening: update to version 6.1.1 immediately; if unable to patch, disable the plugin or block the AJAX action via WAF rule.
+    ch_eu_nexus: "global; WordPress is widespread across public-sector and municipal websites in CH/EU"
+    public_sector_nexus: "indirect — public-sector municipalities and cantonal/federal information portals running WordPress with this plugin are at risk"
+    sector: "government, public-sector, SME"
+    cves: ["CVE-2026-8732"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The WP Maps Pro plugin for WordPress is vulnerable to Privilege Escalation via Administrator Account Creation in all versions up to, and including, 6.1.0. This is due to the wpgmp_temp_access_ajax AJAX action being registered with wp_ajax_nopriv_ and protected only by a nonce check using the fc-call-nonce nonce, which is publicly embedded into every frontend page via wp_localize_script as the nonce field of the wpgmp_local JavaScript object, rendering the check ineffective as an access control mechanism."
+        attribution: "NVD/NIST (CNA: Wordfence)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8732"
+      - quote: "Defiant blocked more than 3,600 exploit attempts in the last 24 hours."
+        attribution: "The Hacker News (citing Wordfence/Defiant)"
+        source_url: "https://thehackernews.com/2026/06/critical-wp-maps-pro-flaw-actively.html"
+
+  - title: "CVE-2024-21182 — Oracle WebLogic Server Core: unauthenticated data access via T3/IIOP added to CISA KEV 2026-06-01"
+    sources:
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV"
+        date: "2026-06-01"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2024-21182"
+        publisher: "NVD/NIST"
+        date: "2024-07-16"
+        role: "corroborating"
+      - url: "https://www.oracle.com/security-alerts/cpujul2024.html"
+        publisher: "Oracle PSIRT"
+        date: "2024-07-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge → CVE-2024-21182 newly listed dateAdded=2026-06-01 → NVD primary, URL https://nvd.nist.gov/vuln/detail/CVE-2024-21182 → Oracle PSIRT advisory, URL https://www.oracle.com/security-alerts/cpujul2024.html"
+    summary: |
+      CISA added CVE-2024-21182 to the KEV catalog on 2026-06-01 with a Federal BOD 22-01 remediation due date of 2026-06-04. The vulnerability affects Oracle WebLogic Server in the Core component in versions 12.2.1.4.0 and 14.1.1.0.0. CVSS 3.1 score: 7.5 (High). Oracle classifies it as "easily exploitable" — no authentication and no user interaction required, network-accessible via T3 and IIOP protocols.
+
+      Successful exploitation allows an unauthenticated attacker to gain unauthorised read access to all data accessible by the WebLogic Server process. Three public proof-of-concept exploits are available on GitHub. The CISA KEV listing confirms in-the-wild exploitation. The attack surface is the WebLogic T3/IIOP listener (default port 7001/7002); disabling T3 and IIOP in the WebLogic console if not required, or restricting the listener to trusted CIDRs via a WebLogic connection filter, is the primary hardening measure when patching is deferred. Patched in Oracle CPU July 2024. Mapped to T1190 (Exploit Public-Facing Application), T1530 (Data from Cloud Storage) in cloud-hosted configurations.
+
+      For defenders: network telemetry for T3/IIOP traffic originating from unknown sources to WebLogic listener ports; WebLogic Access Log for abnormal protocol handshakes; SIEM alerting on `T3 ACCEPT` from external addresses.
+    ch_eu_nexus: "global; Oracle WebLogic Server is widely deployed in EU financial, insurance, telecommunications, and public-sector enterprise environments"
+    public_sector_nexus: "indirect"
+    sector: "finance, insurance, telco, public-sector"
+    cves: ["CVE-2024-21182"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Oracle WebLogic contains an unspecified vulnerability that could allow an unauthenticated attacker with network access via T3, IIOP to compromise Oracle WebLogic Server. Successful attacks of this vulnerability can result in unauthorized access to critical data or complete access to all Oracle WebLogic Server accessible data."
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "Easily exploitable vulnerability allows unauthenticated attacker with network access via T3, IIOP to compromise Oracle WebLogic Server. CVSS 3.1 Base Score 7.5 (Confidentiality impacts)."
+        attribution: "NVD/NIST"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2024-21182"
+
+  - title: "Operation Dragon Weave — China-linked espionage campaign targets Czech Republic and Taiwan government/research sectors via RUSTCLOAK loader and AZUREVEIL AdaptixC2 over Azure Blob Storage C2"
+    sources:
+      - url: "https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/"
+        publisher: "Seqrite Labs"
+        date: "2026-05-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html"
+        publisher: "The Hacker News"
+        date: "2026-06-01"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, item https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html → primary: Seqrite Labs, URL https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/"
+    summary: |
+      Seqrite Labs (published 2026-05-29) documented Operation Dragon Weave, a China-linked espionage campaign active since 2025 and most recently reported targeting government, research, academic, technology, and financial-services sectors in the Czech Republic and Taiwan. The campaign was attributed with moderate confidence to a China-based threat actor based on TTPs, tooling, and targeting patterns.
+
+      Initial access is via spear-phishing emails carrying ZIP archives containing either (a) a Windows shortcut (LNK) masquerading as a PDF, or (b) an executable masquerading as a legitimate file. A script-based dropper chain (Stage 2) decrypts and executes RUSTCLOAK, a Rust-compiled loader (Stage 3), which decrypts and runs the final payload: an AdaptixC2 agent dubbed AZUREVEIL. AZUREVEIL is distinctive in routing its C2 traffic through Microsoft Azure Blob Storage (dead-drop C2 channel), blending attacker communications with legitimate cloud-service traffic. In a January 2026 iteration, the campaign swapped AdaptixC2 for Cobalt Strike and expanded geographically to Cambodia and South Korea.
+
+      MITRE ATT&CK mapping: T1566.001 (Spearphishing Attachment), T1204.002 (User Execution: Malicious File), T1027 (Obfuscated Files), T1105 (Ingress Tool Transfer), T1071.002 (Application Layer Protocol: File Transfer Protocols, for Azure Blob Storage dead-drop), T1583.006 (Acquire Infrastructure: Web Services — Azure Blob Storage). Detection: EDR parent-process chains showing LNK → cmd/wscript → Rust executable; Azure audit logs for blob storage containers accessed from endpoints that don't normally use Azure Storage APIs; network proxy/firewall telemetry for unusual polling patterns to `*.blob.core.windows.net` endpoints from workstations.
+    ch_eu_nexus: "direct CH/EU nexus — Czech Republic is a direct target; campaign TTPs are applicable to neighbouring EU member states; Switzerland's government and research institutions are in a comparable profile"
+    public_sector_nexus: "direct"
+    sector: "government, research, academic, technology, finance"
+    cves: []
+    actors_campaigns_malware: ["Operation Dragon Weave", "RUSTCLOAK", "AZUREVEIL", "AdaptixC2", "Cobalt Strike"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A new cyber espionage campaign codenamed Operation Dragon Weave has been observed targeting officials and citizens in the Czech Republic and Taiwan to deliver an AdaptixC2 agent. According to Seqrite Labs, targets of the campaign include government, research, academic, technology, and financial services sectors."
+        attribution: "The Hacker News (citing Seqrite Labs)"
+        source_url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html"
+      - quote: "One of the unique aspects of this campaign is its use of Microsoft Azure Blob Storage as a dead-drop C2 channel. Instead of talking to a normal C2 server, the malware blends its traffic with regular cloud activity, which makes it much harder to notice."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/"
+    extended_notes: |
+      Attribution confidence stated as "moderate" by Seqrite Labs; not yet publicly corroborated by a major Western threat-intelligence vendor (MSTIC, Mandiant, Crowdstrike, Recorded Future). Treat the China-alignment as a working hypothesis pending additional independent corroboration. The AdaptixC2 framework is an open-source C2 that has been used by multiple groups, so tooling alone is not sufficient for attribution. The dead-drop Azure Blob Storage C2 technique was also observed in the HAFNIUM cluster and STORM-0558 and represents a growing evasion trend where C2 traffic is laundered through legitimate cloud infrastructure.
+
+cve_table:
+  - cve: "CVE-2026-8732"
+    product: "WP Maps Pro WordPress Plugin <= 6.1.0"
+    cvss: "9.8 (CVSS 3.1)"
+    epss: "not-yet-assigned"
+    kev: "No"
+    exploited: "Yes — Wordfence blocked 3,600+ attempts in 24h"
+    patch: "6.1.1 (2026-05-20)"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2026-8732"
+  - cve: "CVE-2024-21182"
+    product: "Oracle WebLogic Server 12.2.1.4.0 and 14.1.1.0.0 (Core/T3/IIOP)"
+    cvss: "7.5 (CVSS 3.1)"
+    epss: "not-retrieved"
+    kev: "Yes — added 2026-06-01, due 2026-06-04"
+    exploited: "Yes (CISA KEV)"
+    patch: "Oracle CPU July 2024"
+    source: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+coverage_gaps:
+  - source_id: rapid7-research
+    reason: "rapid7.com/blog returned usable content but no new unique items in window beyond prior-covered CVE-2026-0257 ETR"
+  - source_id: watchtowr
+    reason: "No new in-window publications found via WebSearch; last post was outside 36h window"
+  - source_id: projectzero
+    reason: "No new in-window publications found; feed is low volume"
+  - source_id: shadowserver
+    reason: "No specific advisories fetched; primary items came from CISA/ENISA/national CERTs"
+  - source_id: vulncheck
+    reason: "Only EUVD criticals feed returned a VulnCheck-assigned entry (CVE-2018-25427 Arm Whois) which does not meet editorial criteria (2018 CVE, niche tool)"

@@ -1,0 +1,216 @@
+# work/2026-06-02-8af85d01/findings.S3.yaml
+domain: S3
+run_id: 2026-06-02-8af85d01
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-02T04:11:46Z
+ended_at: 2026-06-02T04:15:55Z
+duration_seconds: 249
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 4
+  bridge_fetches: 14
+
+items:
+  - title: "Miasma supply-chain worm compromises 32 Red Hat Cloud Services npm packages via CI/CD OIDC token abuse — new Mini Shai-Hulud variant targets GCP and Azure identities"
+    sources:
+      - { url: "https://www.aikido.dev/blog/red-hat-npm-packages-compromised-credential-stealing-worm", publisher: "Aikido Security", date: "2026-06-01", role: "primary" }
+      - { url: "https://socket.dev/blog/mini-shai-hulud-campaign-hits-red-hat-cloud-services-npm-packages", publisher: "Socket", date: "2026-06-01", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/red-hat-npm-packages-compromised-to-steal-developer-credentials/", publisher: "BleepingComputer", date: "2026-06-01", role: "corroborating" }
+      - { url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages", publisher: "Wiz", date: "2026-06-01", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed item (THN RSS, 2026-06-01) 'Miasma Supply Chain Attack Compromises Red Hat npm Packages' → primary: Aikido Security, URL https://www.aikido.dev/blog/red-hat-npm-packages-compromised-credential-stealing-worm → corroborating: Socket, URL https://socket.dev/blog/mini-shai-hulud-campaign-hits-red-hat-cloud-services-npm-packages → corroborating: Wiz URL https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"
+    summary: |
+      On June 1, 2026, threat actor group TeamPCP used a compromised Red Hat employee GitHub account to inject malicious CI/CD workflows into 32 packages under the @redhat-cloud-services npm namespace, poisoning 96 package releases cumulatively downloaded ~80,000 times weekly. The attack exploited GitHub Actions OIDC trusted publishing — the CI/CD pipeline itself was compromised, not individual developer accounts directly — to publish backdoored packages containing obfuscated preinstall hooks. The 4.2 MB malicious payload (Miasma, a new Mini Shai-Hulud variant) performs a broad credential sweep: GitHub Actions secrets, npm tokens, AWS keys, GCP and Azure identity tokens, SSH keys, HashiCorp Vault tokens, Kubernetes cluster credentials, Docker daemon socket secrets, and Bitwarden vault tokens are all harvested via enumerate-all-cloud-providers logic. New additions in this Miasma variant include dedicated collectors for GCP service-account and Azure managed-identity tokens, signalling an attacker pivot from developer machine compromise toward cloud-account takeover. Exfiltration uses encrypted channels to attacker-controlled endpoints; the worm component attempts to propagate by weaponizing stolen npm and GitHub tokens to further infect dependent packages. IDE hooks targeting Claude Code and VS Code establish persistence across interactive developer sessions. Detection: `preinstall` scripts in package.json that spawn `node -e <obfuscated-base64>` chains; `child_process.exec` calls reaching out to non-npm infrastructure; unexpected `GITHUB_TOKEN` reads in CI logs; new OIDC token grants to packages not previously publishing via Actions.
+    ch_eu_nexus: "global; Red Hat packages have broad Swiss and European public-sector DevOps footprint (OpenShift, OpenStack tooling); any European government or enterprise using @redhat-cloud-services npm packages in CI/CD is directly exposed"
+    public_sector_nexus: "direct — Red Hat OpenShift widely deployed in EU public-sector Kubernetes estates"
+    sector: "all sectors with developer / CI/CD pipelines; government, cloud, finance"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Miasma", "Mini Shai-Hulud", "Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "attackers compromised a specific Red Hat employee GitHub account and used it to inject malicious CI/CD workflows that leveraged GitHub Actions OIDC trusted publishing to republish backdoored packages"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/red-hat-npm-packages-compromised-credential-stealing-worm"
+      - quote: "the attack demonstrates how open-sourcing attack tooling enables multiple threat actors to replicate and adapt supply chain campaigns at scale"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/red-hat-npm-packages-compromised-credential-stealing-worm"
+      - quote: "One of the main changes in this new variant is the addition of new data collectors focused on cloud identities. Specifically, collectors for GCP and Azure identities were added"
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"
+
+  - title: "CVE-2026-41089 — Windows Netlogon stack-based buffer overflow RCE (CVSS 9.8) now actively exploited: domain controllers at risk"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41089", publisher: "Microsoft MSRC", date: "2026-05-12", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-06-01", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/", publisher: "Help Net Security", date: "2026-06-01", role: "corroborating" }
+      - { url: "https://ccb.belgium.be/advisories/warning-microsoft-patch-tuesday-may-2026-patches-118-vulnerabilities-16-critical-102", publisher: "Centre for Cybersecurity Belgium", date: "2026-05-30", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer feed, URL https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/ → primary: MSRC advisory, URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41089 → corroborating: CCB Belgium advisory"
+    summary: |
+      CVE-2026-41089 is a stack-based buffer overflow (CWE-121) in the Windows Netlogon service (lsass.exe / netlogon.dll) that allows an unauthenticated attacker to send a specially crafted network request to a domain controller and achieve remote code execution at SYSTEM level. CVSS 9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). Microsoft credited its Windows Attack Research & Protection (WARP) team with internal discovery; the CVE was patched in May 2026 Patch Tuesday. At time of patch Microsoft assessed exploitation as "Less Likely"; the Centre for Cybersecurity Belgium (CCB) issued an urgent advisory on 30 May 2026 flagging the flaw for immediate patching, and BleepingComputer / Help Net Security reported active exploitation by June 1. All currently supported Windows Server versions including Windows Server 2025 are affected. Attack path: Netlogon port (TCP/445 or TCP/135 via MS-NRPC) reachable from network → crafted RPC request → stack overflow → SYSTEM code execution on the DC — no prior authentication required, no user interaction needed. Defender priorities: apply May Patch Tuesday cumulative updates immediately; enforce Netlogon firewall rules to restrict MS-NRPC (port 49152-65535 or named pipe \PIPE\NETLOGON) to trusted DC-to-DC and domain-member traffic only; monitor 4769/4776 authentication events for anomalous source IPs; check for unexpected LSASS child processes (Sysmon EID 1 / Windows EID 4688 with `ParentProcessName=lsass.exe`).
+    ch_eu_nexus: "global Windows Server; every CH/EU Active Directory domain controller is affected — highest-priority patch for any Swiss federal or cantonal LDAP estate"
+    public_sector_nexus: "direct — domain controllers are the backbone of Swiss federal and cantonal Windows infrastructure"
+    sector: "all sectors running Active Directory on Windows Server"
+    cves: [CVE-2026-41089]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Stack-based buffer overflow in Windows Netlogon allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41089"
+      - quote: "CVE-2026-41089, a critical Windows Netlogon RCE flaw that allows remote code execution, is now actively exploited in the wild"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/"
+
+  - title: "Operation Dragon Weave — China-linked espionage campaign uses Rust dropper + AdaptixC2/AZUREVEIL agent with Azure Blob Storage dead-drop C2 against Czech Republic and Taiwan government/academic sectors"
+    sources:
+      - { url: "https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/", publisher: "Seqrite Labs", date: "2026-06-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html", publisher: "The Hacker News", date: "2026-06-01", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed RSS (2026-06-01) → primary: Seqrite Labs, URL https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/"
+    summary: |
+      Seqrite Labs disclosed Operation Dragon Weave on June 1, 2026: a China-linked espionage campaign delivering spearphishing ZIP attachments with two infection chains targeting government, research, academic, technology and financial-services organisations in the Czech Republic and Taiwan. Chain 1 executes a malicious LNK disguised as a PDF via PowerShell; chain 2 drops and executes a binary directly. In both cases a Rust-based dropper (RUSTCLOAK) DLL-side-loads a malicious library that deploys the final payload AZUREVEIL — an AdaptixC2 (open-source C2 framework) agent compiled with 36 post-exploitation commands covering file operations, shell execution, process management, and BOF injection. The dead-drop C2 pattern routes all operator commands through Microsoft Azure Blob Storage, blending malicious traffic with legitimate Azure traffic — standard HTTPS to *.blob.core.windows.net. Attribution is to a China-based cluster; the report links tooling overlaps to prior SteppeDriver and UNC5221 activity documented by Cato Networks and ESET. MITRE technique highlights: T1566.001 (Spearphishing Attachment), T1059.001 (PowerShell), T1574.002 (DLL Side-Loading), T1102.001 (Dead Drop Resolver via Azure Blob), T1071.001 (Web Protocols for C2). Detection: PowerShell spawning from non-standard parent processes; `RUSTCLOAK`-pattern Rust PE headers; outbound HTTPS to `*.blob.core.windows.net` from non-Azure-native hosts; `AdaptixC2` beacon patterns in network captures.
+    ch_eu_nexus: "direct EU nexus — Czech Republic government and academic institutions explicitly targeted; technique set applicable against any EU government or research entity with Azure infrastructure"
+    public_sector_nexus: "direct — Czech government ministries, research institutions and universities named as targets"
+    sector: "government, academia, technology, finance"
+    cves: []
+    actors_campaigns_malware: ["Dragon Weave", "RUSTCLOAK", "AZUREVEIL", "AdaptixC2", "SteppeDriver", "UNC5221"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "targets of the campaign include government, research, academic, technology, and financial services sectors. The activity entails distributing spear-phishing emails containing ZIP attachments"
+        attribution: "The Hacker News (citing Seqrite Labs)"
+        source_url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html"
+      - quote: "One unique aspect of the campaign is its use of Microsoft Azure Blob Storage as a dead-drop C2 channel, where the malware blends its traffic with regular cloud activity"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html"
+
+  - title: "Gamaredon (FSB / UAC-0010) deploys GammaPhish and GammaWorm — unified nomenclature for novel USB+network worm chain abusing NTFS Alternate Data Streams and Telegram/Cloudflare dead-drop C2"
+    sources:
+      - { url: "https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/", publisher: "Sekoia TDR", date: "2026-06-01", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/gamaredon-worm-ntfs-data-streams/", publisher: "Infosecurity Magazine", date: "2026-06-01", role: "corroborating" }
+    discovery_trace: "first seen at: sekoia feed, URL https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/ (2026-06-01) → primary: same URL → corroborating: WebSearch confirmed Infosecurity Magazine reporting"
+    summary: |
+      Sekoia's Threat Detection & Research team published part 1 of a three-part Gamaredon (ACTINIUM / UAC-0010) series on June 1, 2026, describing a January 2026 campaign against Ukrainian government and military entities. The report introduces unified naming for two new capability clusters: GammaPhish (the infection funnel from spearphishing through GammaLoad deployment) and GammaWorm (the propagation layer, subsuming what was previously called LitterDrifter, PteroLNK and PterodoUSB). The infection chain begins with weaponised xHTML files exploiting CVE-2025-8088 (WinRAR path-traversal) to drop HTA payloads into Windows Startup directories via mshta.exe — no user interaction beyond opening the archive. GammaWorm is a 20,000+ line VBScript worm that: (1) achieves persistence via scheduled tasks (`HKCU\Software\Microsoft\Windows NT\CurrentVersion\Windows\RunOnce` and `\Microsoft\Windows\CurrentVersion\Run`) and NTFS Alternate Data Streams (Zone.Identifier streams on legitimate files); (2) enumerates and propagates across USB drives and mapped network shares using Ukrainian-language social-engineering lures; (3) communicates C2 via Dead Drop Resolvers on Telegram (channel scraping), Telegra.ph, Teletype.in, Supabase and Cloudflare Workers — embedding victim fingerprints in randomised HTTP headers. Real-time file monitoring harvests and exfiltrates documents to S3-compatible cloud storage. Key defender telemetry: `mshta.exe` with HTA argument spawning wscript; `wscript.exe` executing >5,000-line obfuscated VBScript from AppData; scheduled tasks pointing into %APPDATA% with randomised GUID names; ADS presence on %TEMP% / %APPDATA% files; outbound HTTPS to Telegra.ph / Supabase / Workers endpoints; drive enumeration by a script process (Sysmon EID 11 flood on removable media).
+    ch_eu_nexus: "Ukraine primary target; relevant to any EU government entity with Ukrainian staff or Ukrainian-language document workflows; technique set (HTA delivery, ADS evasion, Telegram DDR) relevant to EU defender estate broadly"
+    public_sector_nexus: "direct — targeting Ukrainian government and military; technique transfer risk to NATO/EU public-sector environments"
+    sector: "government, military, critical infrastructure"
+    cves: [CVE-2025-8088]
+    actors_campaigns_malware: ["Gamaredon", "GammaPhish", "GammaWorm", "GammaLoad", "GammaSteel", "LitterDrifter", "PteroLNK", "UAC-0010", "ACTINIUM"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GammaWorm is a highly obfuscated 20,000+ line VBScript worm, establishes persistence via scheduled tasks and NTFS Alternate Data Streams (ADS), propagating across USB and network drives using social engineering lures in Ukrainian"
+        attribution: "Sekoia TDR"
+        source_url: "https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/"
+      - quote: "GammaPhish covers all stages from the initial phishing email up to the deployment of GammaLoad"
+        attribution: "Sekoia TDR"
+        source_url: "https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/"
+
+  - title: "PHANTOMPULSE: Elastic Security Labs documents hijackable blockchain-C2 RAT delivered to crypto sector by DPRK-linked REF6598 — defender can sinkhole all implants with one blockchain transaction"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/blockchain-c2-phantompulse-rat-sinkhole", publisher: "Elastic Security Labs", date: "2026-05-22", role: "primary" }
+    discovery_trace: "first seen at: Elastic Security Labs RSS feed, URL https://www.elastic.co/security-labs/rss/feed.xml item 'PHANTOMPULSE: anatomy of a hijackable blockchain-C2 RAT' (2026-05-22) → primary: Elastic Security Labs article URL same as above — single-source primary (high-reliability research lab)"
+    summary: |
+      Elastic Security Labs published on May 22, 2026 a deep reverse-engineering analysis of PHANTOMPULSE, a RAT delivered by the DPRK-aligned REF6598 intrusion set against cryptocurrency-sector targets. The malware implements three distinct process-injection chains (PhantomInject using debug API state machines, DbgNexum via hardware breakpoint VEH, and ManualMap PE manual mapping), AMSI/WLDP/ETW bypass, UAC bypass via IElevatedFactoryServer COM interface (schuac), and four-layer XOR obfuscation. Command-and-control relies entirely on blockchain resolution: the implant queries Ethereum/Base/Optimism smart contracts for the current C2 URL, encoding the owner's address in a contract parameter. The critical defensive insight: because the blockchain C2 resolver has no sender-address verification, a defender with one blockchain transaction can overwrite the C2 URL for every active PHANTOMPULSE implant globally, effectively sinkholing the entire botnet. MITRE techniques: T1055 (Process Injection), T1548.002 (UAC Bypass), T1574.002 (DLL Side-Loading), T1547.001 (Registry Autostart), T1573 (Encrypted Channel), T1102 (Web Service — blockchain). Detection: YARA rule `Windows_Trojan_PhantomPulse.yar` released by Elastic at https://github.com/elastic/protections-artifacts/blob/main/yara/rules/Windows_Trojan_PhantomPulse.yar; behavioural: LZNT1-compressed PE blobs injected via suspended-thread resume; `wscript.exe` or `msiexec.exe` spawning unexpected child processes with direct syscall patterns; outbound HTTPS to `*.blockscout.com` or direct Ethereum RPC endpoints from non-crypto-native host processes. The report also flags strong AI-assisted code generation fingerprints in the binary — structured step numbering and verbose diagnostic logging patterns consistent with LLM-assisted development.
+    ch_eu_nexus: "global; DPRK-linked REF6598 has previously targeted EU cryptocurrency exchanges and fintech; technique set (blockchain C2) novel across the threat landscape"
+    public_sector_nexus: "indirect — cryptocurrency sector target; technique set has no direct public-sector nexus but blockchain C2 evasion is a detection-engineering challenge for any SOC"
+    sector: "finance, cryptocurrency, technology"
+    cves: []
+    actors_campaigns_malware: ["REF6598", "PHANTOMPULSE", "PHANTOMPULL", "BlueNoroff", "Lazarus Group"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The blockchain C2 resolver has no sender verification, allowing a defender to override the C2 URL for every implant by posting a single transaction"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/blockchain-c2-phantompulse-rat-sinkhole"
+      - quote: "identifies strong AI-assisted development fingerprints throughout the binary, including structured step numbering and verbose diagnostic logging patterns typical of LLM-generated code"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/blockchain-c2-phantompulse-rat-sinkhole"
+
+  - title: "QUARTERLY REPORT — Check Point AI Threat Landscape Digest March-April 2026: AI moves from development aid to live attack component across criminal and state-sponsored campaigns"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/ai-threat-landscape-digest-march-april-2026/", publisher: "Check Point Research", date: "2026-05-26", role: "primary" }
+      - { url: "https://thedfirreport.com/2026/04/22/bissa-scanner-exposed-ai-assisted-mass-exploitation-and-credential-harvesting/", publisher: "DFIR Report", date: "2026-04-22", role: "corroborating" }
+    discovery_trace: "first seen at: Check Point Research RSS feed https://research.checkpoint.com/feed/ item 'AI Threat Landscape Digest March-April 2026' (2026-05-26) → primary: Check Point Research article URL same → corroborating: DFIR Report Bissa Scanner article cited by primary"
+    summary: |
+      Check Point Research published its quarterly AI Threat Landscape Digest for March–April 2026 on May 26, documenting a qualitative shift: AI models now operate as live attack components in autonomous intrusion campaigns, not merely as development accelerants. Three cases anchor the analysis. First, a single criminal operator compromised nine Mexican government agencies using Claude Code and GPT-4.1 for live orchestration, extracting and correlating data across databases without prior coding expertise — full technical report published by Anthropic and Gambit Security. Second, Bissa Scanner (documented by DFIR Report, April 22): an exposed attacker server showed Claude Code and OpenClaw embedded in the operator's daily workflow supporting an automated platform that harvested 30,000+ `.env` files containing AI provider credentials — a feedback loop where AI credentials fuel further AI-assisted attacks. Third, EvilTokens (Sekoia, March 30 + April 7): a Phishing-as-a-Service platform using Microsoft OAuth 2.0 device-code flow to automate BEC fraud, with AI-generated lure content and automated token weaponisation. CPR also documents AI-assisted vulnerability discovery: CVE-2025-59536 (Claude Code Hooks RCE via `settings.json` hooks field — arbitrary command execution on developer machines) and CVE-2026-21852 (Claude Code `ANTHROPIC_BASE_URL` redirection allowing SSRF/credential exfiltration). The report warns of emerging frontier models (Anthropic Mythos) that may eliminate the remaining human bottleneck in multi-stage campaigns. Defender priorities: treat AI API credentials (Claude, OpenAI, Groq, Hugging Face) as equivalent to cloud-provider keys; audit CI/CD for Claude Code / Cursor / Windsurf config files (`settings.json`, `.claude/`) that contain hooks fields; monitor for anomalous device-code authentication flows in Entra ID (event `DeviceCodeSignin` with non-standard app registration IDs).
+    ch_eu_nexus: "global; EvilTokens PhaaS has targeted EU financial and logistics organisations; AI-assisted attack tooling is available to any threat actor globally"
+    public_sector_nexus: "indirect — Mexico government breach is a state-targeting template; EU public-sector M365 estates are directly exposed to EvilTokens device-code phishing"
+    sector: "all sectors; government, finance, technology, cloud"
+    cves: [CVE-2025-59536, CVE-2026-21852]
+    actors_campaigns_malware: ["Bissa Scanner", "EvilTokens", "GTG-1002"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "AI now operates as an attack component, not just as a development aid, with agentic configuration files weaponized as persistent jailbreak vectors and AI provider credentials becoming high-value targets"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/ai-threat-landscape-digest-march-april-2026/"
+      - quote: "Artifacts on the host showed that Claude Code and OpenClaw were embedded in the operator's day-to-day workflow, supporting troubleshooting, orchestration, and refinement of the collection pipeline"
+        attribution: "DFIR Report"
+        source_url: "https://thedfirreport.com/2026/04/22/bissa-scanner-exposed-ai-assisted-mass-exploitation-and-credential-harvesting/"
+
+  - title: "CIFSwitch (CVE-2026-46243) — 19-year-old Linux kernel CIFS LPE: forged cifs.spnego key requests allow unprivileged user to load malicious NSS modules and gain root on RHEL 9-family, SLES 15 SP7, Linux Mint, Kali"
+    sources:
+      - { url: "https://heyitsas.im/posts/cifswitch/", publisher: "Asim Viladi Oglu Manizada (SpaceX security engineer)", date: "2026-05-27", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-cifswitch-linux-flaw-gives-root-on-multiple-distributions/", publisher: "BleepingComputer", date: "2026-05-30", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed item 'New CIFSwitch Linux flaw gives root on multiple distributions' (2026-05-30) → primary: researcher blog, URL https://heyitsas.im/posts/cifswitch/ → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-cifswitch-linux-flaw-gives-root-on-multiple-distributions/"
+    summary: |
+      SpaceX security engineer Asim Viladi Oglu Manizada disclosed CVE-2026-46243 (CIFSwitch) on May 27, 2026: a local privilege escalation in the Linux kernel's CIFS/SMB client introduced approximately 19 years ago. The root cause is that the kernel fails to verify whether `cifs.spnego` key requests originate from a legitimate kernel CIFS client — an unprivileged user in a user namespace can forge these requests to trigger the SPNEGO Kerberos authentication workflow, loading an attacker-controlled NSS module that executes arbitrary code in a SYSTEM context, yielding root. Exploitation requires: (1) a kernel version including vulnerable `cifs.spnego.c` logic, (2) `cifs-utils` package installed, and (3) user namespaces enabled (default on most distributions). Confirmed affected: Linux Mint 21.3/22.3, CentOS Stream 9, Rocky Linux 9, AlmaLinux 9, Kali Linux, SLES 15 SP7. Ubuntu and Debian are NOT vulnerable in default configurations due to differing user-namespace policy. PoC available at https://github.com/manizada/CIFSwitch. The upstream kernel fix is commit 3da1fdf4efbc490041eb4f836bf596201203f8f2 in `fs/smb/client/cifs_spnego.c`. Detection: unexpected `spnego_key_init`/`cifs_spnego_key_get` calls from non-CIFS-mount contexts; unexpected NSS module loads (monitor `/etc/nsswitch.conf` modifications and `dlopen()` calls to non-standard paths from low-privileged processes via `auditd` or eBPF); `keyctl` invocations with `cifs.spnego` key type by non-root UIDs. Hardening: update `cifs-utils` and kernel to patched versions; restrict user namespaces via `sysctl kernel.unprivileged_userns_clone=0` where operationally feasible; audit systems running RHEL 9 derivatives or openSUSE SLES 15.
+    ch_eu_nexus: "global; SLES 15 SP7 (SUSE) and RHEL 9 derivatives are widely deployed in Swiss and German public-sector server infrastructure"
+    public_sector_nexus: "direct — SLES 15 and CentOS Stream 9 / Rocky Linux 9 broadly deployed across Swiss federal and cantonal IT"
+    sector: "all sectors running Linux server infrastructure"
+    cves: [CVE-2026-46243]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The flaw was introduced 19 years ago and stems from the kernel's failure to verify that cifs.spnego key requests originate from legitimate kernel CIFS clients"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-cifswitch-linux-flaw-gives-root-on-multiple-distributions/"
+      - quote: "Unprivileged users can forge cifs.spnego requests to trigger authentication workflows, allowing them to load malicious NSS modules and achieve root code execution"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-cifswitch-linux-flaw-gives-root-on-multiple-distributions/"
+
+  - title: "WordPress malware abuses Steam Community profile comments as C2 via Unicode steganography — ~2,000 sites compromised (GoDaddy Security)"
+    sources:
+      - { url: "https://www.godaddy.com/resources/news/malware-targeting-wordpress-abuses-steam-community-profiles", publisher: "GoDaddy Security", date: "2026-05-28", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/wordpress-malware-campaign-hides-payloads-in-steam-profiles/", publisher: "BleepingComputer", date: "2026-06-01", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer feed item 'WordPress malware campaign hides payloads in Steam profiles' (2026-06-01) → primary: GoDaddy Security, URL https://www.godaddy.com/resources/news/malware-targeting-wordpress-abuses-steam-community-profiles"
+    summary: |
+      GoDaddy Security (researcher Krasimir Konov, May 28, 2026) documented a novel C2 evasion technique in a WordPress malware campaign affecting approximately 1,980 compromised sites: the malware encodes C2 payload URLs using six invisible Unicode characters (zero-width non-joiner U+200C, joiner U+200D, function application U+2061, invisible times U+2062, invisible separator U+2063, invisible plus U+2064) embedded in benign-looking profile comments on Steam Community pages. The first-stage PHP backdoor on compromised WordPress installations fetches the specific Steam profile, extracts and decodes the Unicode-steganographic content to reconstruct a URL pointing to a malicious JavaScript file disguised as a legitimate library (e.g., jquery.min.js). A second-stage PHP backdoor accepts base64-encoded PHP payloads via HTTP POST authenticated by a specific cookie value, providing persistent arbitrary code execution on the server. Initial access vectors identified: stolen FTP/SFTP credentials, vulnerable plugins or themes, supply-chain compromise. The Steam Community service serves as an unblockable legitimate domain for C2 resolution — most web application firewalls and proxy filters allowlist *.steampowered.com by default. Detection: JavaScript tags in WordPress pages loading from unexpected paths or domains; PHP files in wp-content/uploads with `@eval(base64_decode(...))`; outbound HTTPS GET requests from the web server to `steamcommunity.com` profile pages; unexpected `Content-Type: application/x-www-form-urlencoded` POST traffic to `.php` files with cookie-based auth tokens.
+    ch_eu_nexus: "global; affects any Swiss/EU WordPress deployment — government websites, municipal portals, cantonal information sites are common WordPress users"
+    public_sector_nexus: "indirect — WordPress widely used in Swiss municipal and cantonal public communications infrastructure"
+    sector: "all sectors using WordPress; government, education, media"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The threat actors encoded payloads using six invisible Unicode characters embedded within benign-looking comments on Steam Community profile pages"
+        attribution: "GoDaddy Security (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/wordpress-malware-campaign-hides-payloads-in-steam-profiles/"
+      - quote: "A final-stage backdoor accepts base64-encoded PHP code via POST requests authenticated with a specific cookie, allowing remote code execution"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/wordpress-malware-campaign-hides-payloads-in-steam-profiles/"
+
+candidate_sources:
+  - id: seqrite-labs
+    publisher: "Seqrite Labs (Quick Heal Technologies research arm)"
+    url: "https://www.seqrite.com/blog/"
+    category: research
+    why: "First-to-publish on Operation Dragon Weave China-linked espionage against EU (Czech Republic) and Taiwan government sectors — original primary research not restatement; fills India/APAC/EU gap in current source list"
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos feed returned HTTP 503 on both the featured blog feed and the news firehose — rotation-priority source unreachable this run; content not recovered via Wayback (time-boxed). No Sophos-originated items in this brief."
+  - source_id: therecord
+    reason: "therecord.media/feed/atom.xml returned HTTP 404; landing page is SPA. No feed alternative found in time allocation. Coverage partially recovered via BleepingComputer and WebSearch."
