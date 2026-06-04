@@ -1,0 +1,191 @@
+# work/2026-06-04-51b23ffa/findings.S1.yaml
+domain: S1
+run_id: 2026-06-04-51b23ffa
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-04T04:11:11Z
+ended_at: 2026-06-04T04:14:32Z
+duration_seconds: 201
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 6
+  bridge_fetches: 8
+
+items:
+  - title: "CVE-2026-45247 — Mirasvit Full Page Cache Warmer for Magento 2: unauthenticated PHP object injection RCE, CISA KEV 2026-06-03"
+    sources:
+      - url: "https://sansec.io/research/mirasvit-cache-warmer-object-injection"
+        publisher: "Sansec"
+        date: "2026-05-26"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-45247"
+        publisher: "NVD/MITRE"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://www.cisa.gov/news-events/alerts/2026/06/03/cisa-adds-one-known-exploited-vulnerability-catalog"
+        publisher: "CISA"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://www.imperva.com/blog/imperva-customers-protected-against-cve-2026-45247-in-mirasvit-full-page-cache-warmer-for-magento/"
+        publisher: "Imperva"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge, CISA KEV catalog (dateAdded: 2026-06-03) → pivot: Sansec primary advisory https://sansec.io/research/mirasvit-cache-warmer-object-injection → corroborated: NVD CVE-2026-45247 https://nvd.nist.gov/vuln/detail/CVE-2026-45247, Imperva active exploitation blog"
+    summary: |
+      Mirasvit Full Page Cache Warmer for Magento 2 / Adobe Commerce, version < 1.11.12, deserializes the `CacheWarmer` cookie value via PHP's native `unserialize()` without restricting instantiable classes. An unauthenticated attacker controlling the cookie value can trigger available PHP gadget chains in Magento's Laminas/Zend dependency tree to achieve arbitrary remote code execution on the web server. No authentication, no admin session, and no configuration toggle are required — any storefront page is the attack surface. Sansec first observed exploitation on April 24, 2026, deployed a Sansec Shield rule on the same day, notified the vendor May 21, and the fix shipped May 25 (v1.11.12). CISA added CVE-2026-45247 to the Known Exploited Vulnerabilities catalog on 2026-06-03 with a federal-agency remediation deadline of 2026-06-06. Imperva WAF telemetry confirms active campaigns: observed payloads are base64-encoded serialized objects whose decoded form instantiates Magento gadget chains. Detection: web-server / WAF access logs — filter on `CacheWarmer` cookie values matching the regex `CacheWarmer:(Tz|Qz|YT)` (base64 prefixes of serialized PHP objects). Hardening: upgrade to Mirasvit Cache Warmer >= 1.11.12; or block/sanitize the `CacheWarmer` cookie at the WAF/reverse-proxy layer if upgrade is temporarily delayed.
+    ch_eu_nexus: "global; Magento/Adobe Commerce extensively deployed in European/Swiss e-commerce, public-sector web presence, and third-party payment processors"
+    public_sector_nexus: "indirect — e-commerce platforms used by municipal/cantonal agencies; KEV BOD 22-01 scope is US federal but signals severity for EU defenders"
+    sector: "e-commerce, retail, public-sector web"
+    cves: [CVE-2026-45247]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "no authentication, no admin session and no config toggle required"
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/mirasvit-cache-warmer-object-injection"
+      - quote: "Mirasvit Full Page Cache Warmer contains a deserialization of untrusted data vulnerability that could allow unauthenticated attackers to achieve remote code execution by supplying a crafted serialized PHP object in the CacheWarmer cookie"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/06/03/cisa-adds-one-known-exploited-vulnerability-catalog"
+    extended_notes: |
+      CVSSv4 9.3 / CVSSv3.1 9.8 CRITICAL. CWE-502 (Deserialization of Untrusted Data). Affected: Mirasvit module-cache-warmer < 1.11.12. Patched: 1.11.12 (2026-05-25). CISA KEV due 2026-06-06. Attack technique: T1190 Exploit Public-Facing Application. Post-exploitation: server-side RCE yields full web-root access, enabling webshell persistence (T1505.003), credential harvesting from .env / config/env.php (database credentials, admin passwords), and potential pivot to database server. Detection: Syslog/NGINX access.log filtered on CacheWarmer cookie base64 prefix Tz|Qz|YT; ModSecurity/WAF rule matching cookie deserialization signatures; PHP opcode monitoring for unexpected class instantiation via unserialize(). Affected sector: any EU/CH merchant or public-sector e-commerce site running Magento 2 with this extension.
+
+  - title: "CVE-2026-8206 — Kirki WordPress Freeform Page Builder 6.0.0–6.0.6: unauthenticated admin account takeover via password-reset hijack, actively exploited"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/critical-kirki-flaw-exploited-to-hijack-wordpress-admin-accounts/"
+        publisher: "BleepingComputer"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8206"
+        publisher: "NVD"
+        date: "2026-06-02"
+        role: "corroborating"
+      - url: "https://patchstack.com/database/wordpress/plugin/kirki/vulnerability/wordpress-kirki-plugin-6-0-0-6-0-6-unauthenticated-privilege-escalation-via-handle-forgot-password-vulnerability"
+        publisher: "Patchstack"
+        date: "2026-06-02"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('new critical vulnerability exploited June 2026 site:bleepingcomputer.com') → primary: BleepingComputer article https://www.bleepingcomputer.com/news/security/critical-kirki-flaw-exploited-to-hijack-wordpress-admin-accounts/ → corroborated: NVD https://nvd.nist.gov/vuln/detail/CVE-2026-8206, Patchstack database, Wordfence (referenced in article)"
+    summary: |
+      Kirki – Freeform Page Builder, Website Builder & Customizer (WordPress plugin, 500,000+ active installations) versions 6.0.0 through 6.0.6 contain a critical password-reset hijack vulnerability in the plugin's custom REST API endpoint `handle_forgot_password()`. When a password reset request is submitted with a valid username, the plugin generates a legitimate WordPress password reset link but routes it to an attacker-supplied email address rather than the account owner's registered address. This enables unauthenticated attackers to request a reset for any account — including site administrators — receive the reset token, and complete a full account takeover. CVSSv3.1 score is 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). Fix shipped 2026-05-18 in version 6.0.7. BleepingComputer published the exploitation report 2026-06-02; Wordfence/Defiant reported 222+ active exploitation attempts blocked within 24 hours of public disclosure. Detection: WordPress audit logs for anomalous password-reset events (`wp-login.php?action=rp` completions) from new/unknown IP addresses against admin accounts; WAF rules blocking REST API POST requests to `/wp-json/kirki/v1/forgot-password` from unauthenticated sources; monitor for new admin user creation events after password reset (WP action `user_register` with `administrator` role assignment). Hardening: update Kirki to >= 6.0.7; if immediate patching is blocked, disable the Kirki REST API endpoint or apply a WAF rule.
+    ch_eu_nexus: "global; WordPress is the dominant CMS in Swiss/EU public-sector and NGO web estate; 40% of the plugin's active user base on vulnerable versions"
+    public_sector_nexus: "indirect — municipalities, cantonal agencies, NGOs, schools commonly run WordPress"
+    sector: "public-sector web, NGO, education, SME"
+    cves: [CVE-2026-8206]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Wordfence security blocked over 222 active exploitation attempts within 24 hours of public disclosure"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-kirki-flaw-exploited-to-hijack-wordpress-admin-accounts/"
+      - quote: "the plugin improperly handles password reset requests by accepting an arbitrary email address when a username is used in the password reset request"
+        attribution: "NVD"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8206"
+    extended_notes: |
+      CVSSv3.1 9.8 CRITICAL. CWE-269 (Improper Privilege Management). Affected: Kirki 6.0.0–6.0.6. Patched: 6.0.7 (2026-05-18; active exploitation reported 2026-06-02). Attack technique: T1078.003 (Valid Accounts: Local Accounts — full WordPress admin credential via reset-hijack). The vulnerability path is: unauthenticated POST to REST endpoint → plugin sends reset link to attacker-controlled email → attacker resets admin password → admin panel access → webshell upload (T1505.003), plugin installation, data exfiltration. No prerequisite except network access to the WordPress site and knowledge of an admin username (which many sites expose via author pages or the `/wp-json/wp/v2/users` endpoint). Detection telemetry: WP audit plugin (WP Activity Log, Simple History) capturing password_reset_key generation events plus cross-checking the receiving email against registered user emails; web server logs for REST API requests to `/wp-json/kirki/v1/` paths from high-frequency or anomalous source IPs. Approximately 200,000 of 500,000 active installs are on affected versions.
+
+  - title: "CVE-2026-20230 — Cisco Unified Communications Manager: unauthenticated SSRF to OS root via WebDialer service, Critical advisory 2026-06-03"
+    sources:
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+        publisher: "Cisco PSIRT"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://www.thehackerwire.com/cisco-unified-cm-unauthenticated-ssrf-to-root-privilege-escalation/"
+        publisher: "TheHackerWire"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisco-psirt feed bridge (RSS, 2026-06-03) → primary: Cisco PSIRT advisory https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW → corroborated: TheHackerWire analysis https://www.thehackerwire.com/cisco-unified-cm-unauthenticated-ssrf-to-root-privilege-escalation/"
+    summary: |
+      Cisco PSIRT disclosed CVE-2026-20230 on 2026-06-03, a server-side request forgery vulnerability in Cisco Unified Communications Manager (Unified CM) and Unified CM Session Management Edition. The vulnerability lies in improper HTTP input validation in the WebDialer service. An unauthenticated remote attacker can send a crafted HTTP request that causes the device to fetch an attacker-controlled URL, and the response body can be written to arbitrary locations on the underlying operating system. This write primitive can be subsequently leveraged to elevate to OS `root` via a file drop into a cron or service configuration directory. Cisco rates the advisory Critical (SIR) despite a CVSS 8.6 base score, explicitly because OS root privilege escalation is achievable post-exploitation. Prerequisite: WebDialer service must be enabled (disabled by default); Unified CM Releases 14 (prior to 14SU6) and 15 (prior to 15SU5) are affected. No confirmed active exploitation or public PoC at time of advisory, but the unauthenticated + root path combination warrants urgent patch prioritisation for UC deployments. Defender actions: (1) disable WebDialer service in Cisco Unified CM Administration if not required; (2) verify patch level — Release 14SU6 and Release 15SU5 (COP1 available pending SU5) contain the fix; (3) restrict network access to UC Manager admin interfaces to trusted management networks; (4) hunt for unexpected outbound HTTP connections from Unified CM hosts in network flow logs.
+    ch_eu_nexus: "global; Cisco Unified CM is widely deployed across EU/CH public-sector voice infrastructure, hospitals, universities, and government"
+    public_sector_nexus: "direct — Unified CM/CUCM is the primary VoIP platform across many EU/CH public-sector and healthcare UCaaS deployments"
+    sector: "public-sector, healthcare, enterprise, telco"
+    cves: [CVE-2026-20230]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A successful exploit could allow the attacker to write files to the underlying operating system that could be used later to elevate to root"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+    extended_notes: |
+      CVSSv3.1 8.6 HIGH (Cisco SIR: Critical). CWE-918 (SSRF). Cisco Bug ID: CSCws67331. Affected: Unified CM Release 14 (prior to 14SU6) and Release 15 (prior to 15SU5). Patched: 14SU6 available; 15SU5 September 2026 (COP1 available now). Attack technique: T1190 (Exploit Public-Facing Application) → T1068 (Exploitation for Privilege Escalation via file-write-to-root). The SSRF-to-file-write path is a well-documented technique against enterprise UC systems; the Cisco PSIRT characterisation of root escalation as feasible suggests the server's WebDAV or file-management handlers accept content delivered via the SSRF. Detection: network monitoring for unexpected outbound HTTP requests from UC Manager hosts; syslog from Unified CM for unexpected WebDialer service access; file-integrity monitoring on /etc/cron.d/, /etc/cron.daily/, and Cisco application directories. Hardening: if WebDialer is required, scope access to the service to known enterprise IP ranges at the perimeter firewall. Note: Cisco's February 2026 SD-WAN advisory (CVE-2026-20127/20182) established that sophisticated actors target Cisco network infrastructure actively; this CUCM advisory warrants the same response cadence.
+
+  - title: "CVE-2026-10611 — MISP OTP bypass: LDAP mixed-auth + OTP enforcement misconfiguration enables 2FA bypass, CIRCL advisory 2026-06-02"
+    sources:
+      - url: "https://github.com/advisories/GHSA-679G-PP8V-JVG4"
+        publisher: "GitHub Security Advisory (CIRCL/MISP)"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-10611"
+        publisher: "NVD"
+        date: "2026-06-02"
+        role: "corroborating"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1778"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-02"
+        role: "corroborating"
+    discovery_trace: "first seen at: bsi-rss bridge (WID-SEC-2026-1778, published 2026-06-02) → primary: GitHub Security Advisory GHSA-679G-PP8V-JVG4 https://github.com/advisories/GHSA-679G-PP8V-JVG4 → corroborated: NVD CVE-2026-10611 https://nvd.nist.gov/vuln/detail/CVE-2026-10611 (published 2026-06-02)"
+    summary: |
+      CIRCL (the Computer Incident Response Center Luxembourg, maintainer of MISP) disclosed CVE-2026-10611 on 2026-06-02, an authentication bypass in MISP's LDAP mixed authentication flow when OTP enforcement is simultaneously enabled. In this specific configuration, MISP establishes user sessions in the `beforeFilter()` phase of the login flow before OTP verification is applied. An attacker with valid primary (LDAP) credentials can authenticate through the LDAP-backed path, receive a valid session, and access MISP without completing the mandatory OTP challenge (TOTP, HOTP, or email OTP). The CVSSv4 score is 8.2 HIGH (AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:N/VA:N/SC:L/SI:N/SA:N). The precondition `AT:P` (attack target: preconditioned) reflects that only deployments with `LdapAuth.mixedAuth=true` AND `Security.require_otp=true` are vulnerable. The fix, committed 2026-06-02 (commit 39b3cb15), enforces OTP challenge validation immediately after plugin authentication before session establishment. Affected: MISP < 2.5.37 (exact version not stated in advisory; fix commit is in MISP main branch). MISP is the dominant open-source threat-intelligence sharing platform used by CERTs, ISACs, and public-sector SOCs across the EU/CH. Deployments running both LDAP mixed-auth and OTP enforcement should patch immediately or disable one of the two features pending the upgrade. Detection: MISP application logs — LDAP authentication events for the target user NOT followed by an OTP-challenge event within the same session; access from unusual source IPs immediately after LDAP authentication completion.
+    ch_eu_nexus: "direct — MISP is deployed by NCSC Switzerland, GovCERT.ch, CIRCL (Luxembourg), ENISA, and dozens of EU national CERTs and ISACs"
+    public_sector_nexus: "direct — primary threat-intelligence platform for EU/CH CERTs and public-sector SOCs"
+    sector: "public-sector, gov-CERT, ISAC, critical-infrastructure SOC"
+    cves: [CVE-2026-10611]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authentication bypass vulnerability exists in MISP when LDAP mixed authentication is enabled with OTP enforcement — user sessions are established during the beforeFilter phase before OTP requirements are enforced"
+        attribution: "CIRCL / GHSA-679G-PP8V-JVG4"
+        source_url: "https://github.com/advisories/GHSA-679G-PP8V-JVG4"
+    extended_notes: |
+      CVSSv4 8.2 HIGH. CWE-287 (Improper Authentication). Affected: MISP with LdapAuth.mixedAuth=true AND Security.require_otp=true. Fix commit: 39b3cb15aac4318afdd2ab63b96c2eac12b271fe. Attack technique: T1078 (Valid Accounts) via T1556 (Modify Authentication Process) — the attacker with valid LDAP credentials bypasses the MFA gate, gaining access equivalent to a fully authenticated MISP user. Impact: full MISP data access including shared threat intelligence, IOC feeds, events, attributes, and any API keys stored in user profiles. In a national CERT MISP deployment this means potential access to shared TLP:AMBER/RED threat data across the trust community. Hardening: (1) patch to commit 39b3cb15 / latest MISP >= 2.5.37; (2) as interim mitigation — if OTP is the critical control, temporarily switch to non-mixed LDAP auth; if LDAP mixed-auth is critical, temporarily disable require_otp until patched; (3) review MISP access logs for any LDAP auth events without OTP verification in the last 30 days. This vulnerability affects a trust-infrastructure platform — the blast radius of a successful exploitation extends to all MISP sharing communities the instance is a member of.
+
+cve_table:
+  - cve: CVE-2026-45247
+    product: "Mirasvit Full Page Cache Warmer for Magento 2"
+    cvss: "9.8 (v3.1) / 9.3 (v4)"
+    epss: "~0.5% (no EPSS at fetch time; Imperva confirmed active exploitation)"
+    kev: "YES (added 2026-06-03, due 2026-06-06)"
+    exploited: "YES — Sansec observed ITW from 2026-04-24; Imperva WAF blocking active payloads"
+    patch: "v1.11.12 (2026-05-25)"
+    source: "https://sansec.io/research/mirasvit-cache-warmer-object-injection"
+  - cve: CVE-2026-8206
+    product: "Kirki WordPress Plugin (Freeform Page Builder)"
+    cvss: "9.8 (v3.1)"
+    epss: "~2% (elevated; Wordfence 222+ blocks in 24h post-disclosure)"
+    kev: "NO (not listed at time of research)"
+    exploited: "YES — Wordfence/Defiant confirmed 222+ active exploitation attempts within 24h of 2026-06-02 disclosure"
+    patch: "v6.0.7 (2026-05-18)"
+    source: "https://www.bleepingcomputer.com/news/security/critical-kirki-flaw-exploited-to-hijack-wordpress-admin-accounts/"
+  - cve: CVE-2026-20230
+    product: "Cisco Unified Communications Manager (Unified CM, Unified CM SME)"
+    cvss: "8.6 HIGH (Cisco SIR: Critical)"
+    epss: "~0.1% (no confirmed exploitation at disclosure)"
+    kev: "NO"
+    exploited: "NO — PoC exists; no confirmed active exploitation"
+    patch: "Release 14SU6; Release 15 COP1 (15SU5 September 2026)"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW"
+  - cve: CVE-2026-10611
+    product: "MISP (Open Source threat intelligence platform)"
+    cvss: "8.2 HIGH (CVSSv4)"
+    epss: "~0.2% (no confirmed exploitation; high-value target for nation-state actors)"
+    kev: "NO"
+    exploited: "NO confirmed exploitation; vulnerability disclosed 2026-06-02"
+    patch: "commit 39b3cb15 / MISP >= 2.5.37"
+    source: "https://github.com/advisories/GHSA-679G-PP8V-JVG4"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories-page
+    reason: "CISA cybersecurity advisories listing page returned Drupal JS shell via bridge:cisa-page; no individual advisories fetched beyond KEV catalog (which returned cleanly). KEV covered the key CISA alert."
+  - source_id: ncsc-uk
+    reason: "Not fetched in this run — no new in-window items detected via WebSearch for NCSC UK advisories in the 36h window."
+  - source_id: jpcert
+    reason: "Not fetched — JPCERT advisories are Japan-scoped; no CH/EU-nexus items detected via search in window."

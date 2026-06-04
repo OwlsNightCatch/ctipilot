@@ -1,0 +1,190 @@
+domain: S3
+run_id: 2026-06-04-51b23ffa
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-04T04:11:28Z
+ended_at: 2026-06-04T04:16:36Z
+duration_seconds: 308
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 8
+  bridge_fetches: 12
+items:
+  - title: "HTTP/2 Bomb (CVE-2026-49975): HPACK-amplification + Slowloris composite exhausts 32 GB in 10 s against nginx, Apache, IIS, Envoy and Cloudflare Pingora"
+    sources:
+      - { url: "https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb", publisher: "Calif (Codex research team)", date: "2026-06-02", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/06/03/3", publisher: "oss-security mailing list (Alan Coopersmith / Oracle)", date: "2026-06-03", role: "primary" }
+      - { url: "https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/", publisher: "SecurityWeek", date: "2026-06-03", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-03 → drill: WebSearch → primary: blog.calif.io/p/codex-discovered-a-hidden-http2-bomb; oss-security mailing list cross-reference; SecurityWeek corroboration"
+    summary: |
+      Researcher Quang Luong (Codex) published HTTP/2 Bomb, a remote DoS exploit assigned CVE-2026-49975 that combines two well-known but separately documented HTTP/2 primitives: (1) HPACK dynamic-table amplification, seeding the server's header-compression table with one large entry and then referencing it thousands of times via single-byte back-references, forcing per-request memory reconstruction; (2) Slowloris-style connection hold, keeping streams open via continuous WINDOW_UPDATE frames to pin every allocated byte indefinitely. A single residential connection can exhaust 32 GB of server memory on Envoy in approximately 10 seconds. The vulnerability affects nginx (fixed in 1.29.8 via new max_headers directive), Apache httpd (fixed in mod_http2 v2.0.41, not yet in a 2.4.x release), and remains unpatched in Microsoft IIS, Envoy, and Cloudflare Pingora at time of disclosure. The attack surfaces through any HTTP/2 termination point in its default configuration; no authentication is required. The disclosure was timed after nginx shipped its fix, but the researcher's assessment that any capable AI model can turn the Apache/nginx commit diffs into a working IIS/Envoy exploit caused immediate public release to allow defenders to apply mitigations. Technical root cause: RFC 7541 section 7.3 bounds dynamic-table memory via SETTINGS_HEADER_TABLE_SIZE but never caps the number of cookie-crumb references per request independently of total size, and per-stream memory lifetime is unbounded while WINDOW_UPDATE activity continues.
+    ch_eu_nexus: "Global; any organisation running internet-exposed nginx, Apache, IIS, Envoy, or Cloudflare Pingora on default HTTP/2 configuration is vulnerable — including Swiss and EU public-sector web infrastructure"
+    public_sector_nexus: "direct — government web portals, citizen-facing services, e-government, reverse-proxy infrastructure"
+    sector: "all"
+    cves: [CVE-2026-49975]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We're publishing HTTP/2 Bomb, a remote denial-of-service exploit against most major web servers, including: nginx, Apache httpd, Microsoft IIS, Envoy, Cloudflare Pingora. The vulnerable behavior exists in each server's default HTTP/2 configuration."
+        attribution: "Calif (Codex research team)"
+        source_url: "https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb"
+      - quote: "nginx: Upgrade to 1.29.8+, which adds the max_headers directive with a default of 1000. Apache httpd: The fix is in mod_http2 v2.0.41... Microsoft IIS, Envoy, Cloudflare Pingora: No patch available at the time of writing."
+        attribution: "oss-security mailing list (Alan Coopersmith / Oracle)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/06/03/3"
+    extended_notes: |
+      Defender mitigations: nginx — upgrade to 1.29.8+ or set `http2 off;` in nginx.conf. Apache — apply mod_http2 v2.0.41 standalone release; set `Protocols http/1.1` as interim; lowering LimitRequestFields is NOT effective here (cookie crumbs never count against it), only LimitRequestFieldSize reduces blast radius per stream. IIS/Envoy/Pingora — disable HTTP/2 at the edge where possible; apply per-worker memory limits via cgroups/ulimit -v so a bombed worker gets OOM-killed before exhausting the host. Shodan count at disclosure: 880,000+ public-facing servers with HTTP/2 enabled on affected software. Detection: spike in short HTTP/2 requests from a single IP with high memory consumption per worker process; connection count stays low relative to memory pressure; look for WINDOW_UPDATE frames keeping connections alive with no DATA frames.
+
+  - title: "SafeBreach: Gemini Android Utilities agent hijacked by WhatsApp/Slack/SMS notifications via 'Fake Context Alignment' indirect prompt injection (patched Nov 2025, publicly disclosed June 3 2026)"
+    sources:
+      - { url: "https://www.safebreach.com/blog/gemini-voice-assistant-prompt-injection-exploit", publisher: "SafeBreach Labs", date: "2026-06-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/whatsapp-slack-notifications-could.html", publisher: "The Hacker News", date: "2026-06-04", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-04 → pivot: WebSearch → primary: safebreach.com blog post (published 2026-06-03)"
+    summary: |
+      SafeBreach Labs researcher Or Yair published a new attack class against Google Gemini's Android voice assistant that bypasses the classifier-based mitigations Google deployed after the lab's earlier "Invitation Is All You Need" Calendar-injection research. The attack abuses the Gemini Utilities agent — the component that reads and responds to Android notifications from third-party apps. Because the Utilities agent processes untrusted notification text without sufficient boundary enforcement, an attacker can embed hidden instructions inside a crafted WhatsApp, Slack, SMS, Signal, Instagram, or Messenger message. The novel bypass technique, called "Fake Context Alignment," hides malicious payloads in foreign-language text or muted hyperlinks to evade Google's updated content classifiers. A secondary bypass, "Delayed Tool Invocation" (technique originally by Johann Rehberger), delays execution: the injected instruction activates only after the user next sends a benign trigger word such as "Thanks," making the attack harder to attribute. Demonstrated actions include: triggering Google Home smart-home device commands, initiating Zoom calls, forging messages from trusted contacts, and poisoning Gemini's long-term memory for persistent access. Disclosure timeline: SafeBreach submitted to Google VRP on 2025-08-17; Google confirmed classifier fix on 2025-11-14. Full public write-up published 2026-06-03 — in-window.
+    ch_eu_nexus: "Global; any organisation whose users run Gemini with Utilities enabled on Android devices is exposed to legacy versions; patched in Nov 2025, so risk is residual on unupdated devices"
+    public_sector_nexus: "indirect — government users on Android with Gemini Utilities enabled"
+    sector: "all, enterprise, government"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SafeBreach Labs researchers discovered a new security vulnerability that allows attackers to exploit Google Gemini through notification-based indirect prompt injections from messaging apps like WhatsApp, Slack, and SMS. By bypassing Google's previous defenses using a novel technique called 'Fake Context Alignment,' researchers demonstrated how an attacker can manipulate conversational context silently—hiding malicious instructions in foreign languages or muted hyperlinks—to force the assistant into executing unauthorized actions."
+        attribution: "SafeBreach Labs"
+        source_url: "https://www.safebreach.com/blog/gemini-voice-assistant-prompt-injection-exploit"
+    extended_notes: |
+      Attack surface: Gemini Utilities agent on Android only (not iOS/web). Prerequisite: Gemini installed with Utilities feature enabled; attacker can deliver payload via any messaging app the victim uses that allows rich-text content. Detection: essentially no host-based telemetry as the attack is entirely in-model context; organisation-level control is managing Gemini app permissions via MDM — revoke notification access for Gemini Utilities if not operationally needed. MITRE: T1059 (indirect via AI agent), analogous to T1557 (adversary-in-the-middle of conversation context).
+
+  - title: "FlagLeft: Microsoft 365 Android SDK debug flag left in production enables silent OAuth token theft from Word, PowerPoint, Excel, Copilot, Loop, OneNote (CVE-2026-41100/41101/41102/42832, patched May 2026)"
+    sources:
+      - { url: "https://www.securityweek.com/exclusive-how-one-line-of-code-put-billions-of-microsoft-android-app-downloads-at-risk/", publisher: "SecurityWeek (exclusive, Enclave researchers Yanir Tsarimi and Ofek Levin)", date: "2026-06-02", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/microsoft-365-android-apps-let-any-app.html", publisher: "The Hacker News", date: "2026-06-03", role: "corroborating" }
+      - { url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41101", publisher: "Microsoft MSRC", date: "2026-05-12", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-03 → pivot: WebSearch → primary: SecurityWeek exclusive (published 2026-06-02) by Enclave researchers Yanir Tsarimi and Ofek Levin"
+    summary: |
+      Researchers Yanir Tsarimi and Ofek Levin at Enclave discovered that a shared Android SDK used across six Microsoft 365 applications shipped a debug flag setIsDebugMode(true) active in production builds. This flag disables the authorization check that normally restricts account-token sharing to trusted Microsoft apps via the AccountManager. With the flag active, any third-party app installed on the same Android device can silently request and receive long-lived OAuth tokens for the signed-in Microsoft identity with no user prompt, permission dialog, or notification. Affected apps: Microsoft Word (CVE-2026-41101, CVSS 7.1), PowerPoint (CVE-2026-41102, CVSS 7.1), Microsoft 365 Copilot (CVE-2026-41100, CVSS 4.4), Excel (CVE-2026-42832, CVSS 7.7), Microsoft Loop, and OneNote — collectively billions of Android installs. Microsoft Teams was not affected because its developers had correctly set the flag to false. Microsoft patched all six apps in the May 12, 2026 Patch Tuesday cycle (CWE-284 Improper Access Control). No exploitation in the wild was reported prior to the patch. Enclave used AI-assisted variant analysis to rapidly map the full scope across the portfolio. Tokens obtained via this path grant read/write access to the victim's Exchange mail, OneDrive files, and Calendar.
+    ch_eu_nexus: "Global; highly relevant to any organisation with BYOD Android users or mobile workforce using Microsoft 365 — including Swiss federal administration and EU public-sector M365 tenants"
+    public_sector_nexus: "direct — public sector M365 and government Android BYOD fleets"
+    sector: "all"
+    cves: [CVE-2026-41100, CVE-2026-41101, CVE-2026-41102, CVE-2026-42832]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The root cause was a single line of debug code, setIsDebugMode(true), that had been left enabled in production builds, which turned off the authorization check designed to ensure that only trusted Microsoft apps could request account tokens from other Microsoft apps on the same device."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/exclusive-how-one-line-of-code-put-billions-of-microsoft-android-app-downloads-at-risk/"
+    extended_notes: |
+      Defender action: Enforce Microsoft 365 Android app updates via MDM/Intune; verify all six affected apps are patched (check app version post-May 12 2026). On Android, verify via Settings > Apps > [app name] > version. For MDM-managed deployments, deploy app compliance policy requiring minimum version. Detection for historical exposure: AccountManager token requests from non-Microsoft package names on Android enterprise devices (Android Enterprise audit logs, if available through Intune/JAMF logs). No evidence of exploitation prior to disclosure.
+
+  - title: "1-Click GitHub OAuth token theft via github.dev VSCode postMessage boundary flaw — Ammar Askar full-disclosure (no CVE, no patch at disclosure time)"
+    sources:
+      - { url: "https://blog.ammaraskar.com/github-token-stealing/", publisher: "Ammar Askar (independent researcher)", date: "2026-06-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/vs-code-zero-day-lets-hackers-steal-github-tokens-in-one-click/", publisher: "BleepingComputer", date: "2026-06-03", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-03 → primary: blog.ammaraskar.com/github-token-stealing (published 2026-06-02)"
+    summary: |
+      Researcher Ammar Askar published full technical details (including PoC) of an unpatched 1-click attack against GitHub's browser-based editor github.dev that extracts the victim's full-scope GitHub OAuth token — which has read/write access to all repositories including private ones. The attack exploits a boundary weakness in VSCode's webview security model as deployed on github.dev: VSCode webviews run in cross-origin iframes and communicate with the main window via Window.postMessage(). The fix for "keyboard shortcuts should work inside webviews" implemented a key-event forwarding mechanism that uses window.addEventListener('message') on the webview side without validating the message origin. A malicious VSCode extension can post a crafted message into the webview, trigger VSCode's own keyboard-shortcut handling code, and use the result to exfiltrate the OAuth token passed from github.com to github.dev. Askar notified GitHub on June 2, 2026, one hour before publishing — citing prior negative experience with Microsoft's security response (silent fix without credit) as the reason for immediate full disclosure alongside a working PoC. The disclosure prompted significant community attention on Microsoft's vulnerability handling practices. Exploitation requires the victim to click a link that opens a specially crafted github.dev page with a malicious extension active, hence "1-click."
+    ch_eu_nexus: "Global; affects every GitHub user who uses github.dev — particularly relevant to open-source maintainers, developer teams, and CI/CD pipelines relying on GitHub"
+    public_sector_nexus: "indirect — public sector development teams using GitHub"
+    sector: "technology, software development"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Just by clicking a link, it's possible for an attacker to steal a GitHub token that can read and write to your repos, including private ones. The token is not scoped to the particular repo you interacted with, meaning it has full access to every other repo that you have access to."
+        attribution: "Ammar Askar (researcher)"
+        source_url: "https://blog.ammaraskar.com/github-token-stealing/"
+    extended_notes: |
+      Immediate mitigation: Avoid using github.dev with untrusted VSCode extensions installed. GitHub/Microsoft has not shipped a fix as of disclosure date (2026-06-02). Detection: monitor GitHub audit log for token usage from unexpected IP addresses or user-agents; consider rotating GitHub OAuth tokens periodically. MITRE: T1528 (Steal Application Access Token). Note: researcher chose immediate full disclosure citing MSRC's track record of silent fixes; the PoC is public.
+
+  - title: "DesckVB RAT delivery chain: HTML malspam routes through Google DoubleClick for reputation laundering, then process-hollow .NET RAT with AMSI/ETW patching (Huntress, June 2026)"
+    sources:
+      - { url: "https://www.huntress.com/blog/malspam-to-deskcvb-rat-delivery-chain-analysis", publisher: "Huntress Labs", date: "2026-06-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/google-doubleclick-abused-in-new.html", publisher: "The Hacker News", date: "2026-06-03", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-03 → pivot: WebSearch → primary: huntress.com blog (Huntress SOC incident response analysis)"
+    summary: |
+      Huntress SOC documented a DesckVB RAT infection chain encountered during a May 2026 incident-response engagement. The campaign is notable for abusing Google DoubleClick Campaign Manager click-tracking infrastructure for reputation laundering: the malspam attachment is an HTML file (filename "Bestellung_2026.html" — German for "purchase order") containing a zero-second meta-refresh redirect to a Google DoubleClick Campaign Manager URL. Because ad.doubleclick.net is high-reputation, email security gateways and web proxies that allowlist Google domains pass the redirect transparently. The DoubleClick URL Base64-decodes the victim's email address and steers to a landing page with a "Download PDF" button. Clicking delivers a ZIP containing a JavaScript loader. The loader verifies sandbox evasion, then retrieves and runs a .NET assembly via process hollowing. Before execution, the RAT patches AMSI (Antimalware Scan Interface) and ETW (Event Tracing for Windows) at the native API level to blind Windows telemetry. Persistence is established before C2 contact. C2 operates over raw TCP sockets. DesckVB has been active throughout 2026. The use of German-language purchase-order lures and the observed Bestellung filename pattern suggest the campaign targets German-speaking regions, with relevance to DACH enterprise environments.
+    ch_eu_nexus: "Direct — German-language purchase-order lures suggest targeting of DACH-region enterprises; Switzerland is plausibly in-scope"
+    public_sector_nexus: "indirect — any organisation in DACH region receiving German-language purchasing correspondence"
+    sector: "finance, manufacturing, enterprise"
+    cves: []
+    actors_campaigns_malware: ["DesckVB RAT"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Before the victim ever reaches attacker-controlled infrastructure, the lure routes through DoubleClick, a legitimate Google-owned domain that many security tools are less likely to treat as suspicious. The loader verifies it's not being analyzed, neutralizes the machine's security controls, sets up persistence, and ultimately downloads and runs the RAT payload using process hollowing... patches Antimalware Scan Interface (AMSI) and Event Tracing for Windows (ETW) at the native API level."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/malspam-to-deskcvb-rat-delivery-chain-analysis"
+    extended_notes: |
+      Detection opportunities: (1) HTML meta-refresh redirect in email attachment to doubleclick.net — flag HTML attachments with meta-refresh targeting ad-network domains; (2) AMSI/ETW patching: Sysmon EID 10 (process access) to amsi.dll or ntdll.dll from suspicious parent processes; EDR alerts on memory-patching of AmsiScanBuffer export; (3) Process hollowing: Sysmon EID 1 with parent process mismatch, or EID 8 (CreateRemoteThread); (4) Raw TCP outbound on non-standard ports post-hollowing. MITRE: T1566.001 (spear-phishing attachment), T1055.012 (process hollowing), T1562.001 (AMSI/ETW patching = Impair Defenses), T1071 (C2 over raw TCP). Defender hardening: block HTML email attachments at the gateway; apply Windows Defender Application Control (WDAC) to restrict .NET execution from user-writeable paths; instrument AMSI by monitoring AmsiScanBuffer for runtime patching.
+
+  - title: "Operation Dragon Weave: China-aligned spear-phishing uses Rust loader and AZUREVEIL AdaptixC2 agent via Azure Blob Storage dead-drop C2 against Czech and Taiwanese government, research, finance"
+    sources:
+      - { url: "https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/", publisher: "Seqrite Labs", date: "2026-06-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/china-aligned-groups-ramp-up-attacks.html", publisher: "The Hacker News", date: "2026-06-01", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-01 → pivot: WebSearch → primary: seqrite.com blog (Seqrite Labs threat analysis)"
+    summary: |
+      Seqrite Labs attributed Operation Dragon Weave to a China-aligned threat actor targeting government, research, academic, technology, and financial services organisations in the Czech Republic and Taiwan. Initial access is via spear-phishing ZIP archives containing LNK files; decoy documents mimic official Czech government scheduling communications (observed decoy references a March 16, 2026 appointment for a person named Zuzana Košková, consistent with fabricated Czech official correspondence). The infection chain uses a Rust-based loader to drop the final payload: AZUREVEIL, a full-featured AdaptixC2 (open-source C2 framework) agent with 36 post-exploitation commands including in-memory BOF execution. The key evasion technique is using Microsoft Azure Blob Storage as the C2 channel — the malware blends its beacon traffic with legitimate Azure cloud API calls, making network-layer detection based on domain reputation or TLS SNI filtering ineffective against standard deny-lists. The Czech Republic targeting has direct EU nexus; Czech government and NATO-adjacent research institutions are the stated scope. Attribution is assessed China-aligned based on tooling, targeting pattern, and decoy content but no specific actor cluster is named.
+    ch_eu_nexus: "Direct EU nexus — Czech Republic government and research institutions explicitly targeted; Taiwan is a common co-target in China-aligned espionage campaigns. Switzerland's role as a European diplomatic hub and home to international organisations makes it a plausible secondary target."
+    public_sector_nexus: "direct — government, public research, academic institutions"
+    sector: "government, research, academia, finance, technology"
+    cves: []
+    actors_campaigns_malware: ["AZUREVEIL", "AdaptixC2", "Operation Dragon Weave"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Operation Dragon Weave is a targeted espionage campaign. One of the unique aspects of this campaign is its use of Microsoft Azure Blob Storage as a dead-drop C2 channel. Instead of talking to a normal C2 server, the malware blends its traffic with regular cloud activity, which makes it much harder to notice. The final payload, AZUREVEIL, is a fully featured Adaptix C2 agent with 36 post exploitation commands."
+        attribution: "Seqrite Labs"
+        source_url: "https://www.seqrite.com/blog/operation-dragon-weave-uncovering-a-china-linked-campaign-targeting-czech-republic-and-taiwan-using-azure-cloud-c2/"
+    extended_notes: |
+      Detection: (1) LNK files in ZIP email attachments — flag cmd.exe/powershell.exe spawned from explorer.exe executing an LNK from a temp or download directory (Sysmon EID 1, parent explorer.exe, command line contains .lnk path); (2) Rust loader — unusual unsigned PE writing or spawning processes; (3) Azure Blob Storage C2 — network monitoring for blob.core.windows.net access from endpoint processes that should not be making Azure API calls; anomalous GET/PUT patterns to *.blob.core.windows.net from endpoints without known Azure integrations; (4) BOF execution — memory-only shellcode execution, look for RWX memory allocations in non-standard processes (ETW-TI). Hardening: block LNK execution in macro-free email contexts; enforce conditional-access policies restricting access to Azure Storage from non-managed endpoints. MITRE: T1566.001 (spear-phishing), T1027 (obfuscated Rust loader), T1102.002 (web service C2 via Azure Blob), T1059 (BOF in-memory execution).
+
+  - title: "Huntress: unpatched Windows search: URI handler leaks NTLMv2 hashes to attacker-controlled SMB server — Microsoft declined to patch"
+    sources:
+      - { url: "https://www.huntress.com/blog/unpatched-ntlm-leak-windows-search-uri-handler", publisher: "Huntress Labs", date: "2026-06-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/unpatched-windows-search-uri.html", publisher: "The Hacker News", date: "2026-06-03", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews) item published 2026-06-03 → pivot: WebSearch → primary: huntress.com blog"
+    summary: |
+      Huntress researchers published details of an unpatched NTLMv2 hash-leakage vulnerability in the Windows search: URI protocol handler. When a user clicks a specially crafted link containing a crumb=location: parameter pointing to an attacker-controlled UNC path, Windows processes the search URI and initiates an outbound SMB (TCP 445) connection to the attacker's server, exposing the user's NTLMv2 Net-NTLMv2 challenge-response hash. The attacker can then attempt offline cracking or relay the hash for authenticated access. The bug class is structurally identical to CVE-2026-33829 (Windows Snipping Tool ms-screensketch: URI handler, patched April 2026 Patch Tuesday). Huntress reported the search: URI variant to Microsoft on April 15, 2026 (one day after CVE-2026-33829 was patched), but Microsoft declined to assign a CVE or issue a patch, stating the issue "only meets Important severity" which does not meet their servicing bar. No CVE has been assigned. The issue is fully patched on the Snipping Tool variant but remains unaddressed in the search: handler as of the June 3 public disclosure.
+    ch_eu_nexus: "Global; affects all Windows versions with SMB outbound permitted; relevant to any organisation where employees receive untrusted links (email, web, document)"
+    public_sector_nexus: "direct — Windows-based government and enterprise environments"
+    sector: "all"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers can induce users to click a specially crafted link, which when processed by the search handler, can compel the computer to connect to an attacker-controlled SMB server, exposing the user's NTLMv2 hash and enabling the attacker to authenticate as the user. Microsoft has declined to assign a CVE or issue a patch."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/unpatched-ntlm-leak-windows-search-uri-handler"
+    extended_notes: |
+      Highest-value mitigation (Huntress recommendation): block outbound SMB (TCP 445 and 139) at the host firewall and network perimeter for all endpoints that do not legitimately need to access external SMB shares. This single control neutralises the entire NTLM leakage class including this and future similar URI-handler variants. Additional hardening: enable Extended Protection for Authentication (EPA) on NTLM-accepting services to block relay attacks even if the hash is captured. MITRE: T1187 (Forced Authentication), T1557.001 (LLMNR/NBT-NS Poisoning and Relay — analogous; SMB relay). Detection: Sysmon EID 3 with destination port 445 or 139 from browser or search process (SearchApp.exe, SearchProtocolHost.exe) to external IP; Windows Security event 4648 (explicit credential use) or 4776 (NTLM authentication).
+
+candidate_sources:
+  - id: calif-substack
+    publisher: "Calif (Codex security research, blog.calif.io)"
+    url: "https://blog.calif.io"
+    category: research
+    why: "Primary author of the HTTP/2 Bomb CVE-2026-49975 disclosure; AI-assisted vulnerability discovery research with high technical depth."
+  - id: safebreach-labs
+    publisher: "SafeBreach Labs"
+    url: "https://www.safebreach.com/blog"
+    category: research
+    why: "Primary source for Gemini indirect prompt injection research (June 2026) and ongoing AI agentic security research; high-reliability original research."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Both Sophos feed URLs returned empty/no-content (last_status 503, failing 4 runs per rotation-priority list). Sophos coverage from yesterday's brief (Sophos Active Adversary Report + AI-orchestrated EDR evasion) already covered. No new in-window Sophos items found via alternative routing."
+  - source_id: mandiant-gtig
+    reason: "Feedburner RSS for GTIG returned items all outside window_hours=36 (most recent was KnowledgeDeliver, 2026-05-25). No new GTIG research published in window."
+  - source_id: volexity
+    reason: "Volexity RSS feed returned items last updated December 2025 — no in-window posts."
