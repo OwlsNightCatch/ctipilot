@@ -1,0 +1,200 @@
+domain: S3
+run_id: 2026-06-05-2c6574c4
+model: "Claude Sonnet 4.6"
+model_id: claude-sonnet-4-6
+started_at: 2026-06-05T04:12:14Z
+ended_at: 2026-06-05T04:56:00Z
+duration_seconds: 2626
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 28
+
+items:
+
+  - title: "Volexity discloses VerdantBamboo (UNC5221/WARP PANDA): BRICKSTORM backdoor on firewalls, NAS and Egnyte Storage Sync, MSP supply-chain pivot, two new implants AGENTPSD and PLENET"
+    sources:
+      - url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"
+        publisher: "Volexity"
+        date: "2026-06-04"
+        role: "primary"
+    discovery_trace: "first seen at: volexity, URL https://www.volexity.com/blog/ → primary: Volexity blog post, URL https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/ (no pivot needed)"
+    summary: |
+      Volexity published on 4 June 2026 a detailed incident-response write-up identifying a China-linked threat actor it names VerdantBamboo, assessed with high confidence as UNC5221 (also tracked as WARP PANDA), as having maintained persistent access to a European victim organisation for at least 18 months. The intrusion began via the victim's MSP: VerdantBamboo had compromised the MSP's pfSense firewall with a BSD variant of the BRICKSTORM backdoor — a publicly documented Golang implant that Volexity notes overlaps with prior CISA, Google Cloud/GTIG, and NVISO reporting. The threat actor used BRICKSTORM's proxying capabilities on the Egnyte Storage Sync appliance (a Linux VM designed for cloud-syncing on-premise files) to route connections to the victim's Microsoft 365 environment through the Storage Sync system's egress IP, bypassing Conditional Access policies that would otherwise have blocked access from unrecognised IPs. After Volexity's initial remediation, VerdantBamboo re-entered by authenticating to the victim firewall with stolen administrative credentials, re-enabling SSL VPN, and deploying BRICKSTORM to a Synology NAS. The threat actor also deployed two previously undocumented implants: AGENTPSD, a PyInstaller-packaged Python reverse shell (HTTPS POST loop) described as a persistence fallback in case BRICKSTORM was removed; and PLENET (aka GRIMBOLT), an advanced backdoor compiled with .NET Native AOT, deployed on a Linux NAS. VerdantBamboo's distinguishing characteristic is deliberate avoidance of EDR coverage: all implants were placed on network-edge appliances (firewalls, NAS, Storage Sync servers) and retired VMs that do not support EDR agents. Infrastructure pivoting was tracked via Censys by keying on minimalistic Golang HTTP server TLS fingerprint + ≤4 open services per host. No vulnerability exploitation was the initial vector; the MSP's firewall breach appears to have relied on prior credential exposure or a separate unspecified access path.
+    ch_eu_nexus: "Victim is a European organisation (jurisdiction not disclosed). Threat actor targets network-edge infrastructure widely deployed across EU public and private sector. MSP supply-chain pivot is directly relevant to Swiss and EU managed-service customers."
+    public_sector_nexus: "indirect — European organisation (sector undisclosed), MSP supply-chain pathway relevant to public-sector managed-service deployments"
+    sector: "MSP/managed services, enterprise, government"
+    cves: []
+    actors_campaigns_malware: ["VerdantBamboo", "UNC5221", "WARP PANDA", "BRICKSTORM", "AGENTPSD", "PLENET", "GRIMBOLT"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Volexity's analysis revealed that a Chinese threat actor, which Volexity tracks as VerdantBamboo (WARP PANDA, UNC5221), had compromised the Storage Sync system."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"
+      - quote: "VerdantBamboo's modus operandi was to target devices that lacked EDR coverage. By deploying malware on these devices, the threat actor was able to establish proxy connections to access the victim's M365 environment. This allowed VerdantBamboo to blend in with legitimate traffic and bypass Conditional Access policies."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"
+      - quote: "VerdantBamboo had compromised the victim organization's Managed Services Provider (MSP)... Volexity found that the MSP's pfSense firewall had been compromised by VerdantBamboo with a BSD variant of BRICKSTORM. Volexity concluded that this firewall, like the victim organization's Storage Sync system, had also been compromised at least 18 months earlier."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"
+    extended_notes: |
+      Detection: Monitor outbound TLS from non-standard Linux appliances (NAS, Storage Sync servers, retired VMs) to Cloudflare-fronted infrastructure. Look for low-and-slow HTTP POST patterns from these hosts. Censys/Shodan pivot: hosts with ≤4 services + minimal Golang HTTP TLS cert = VerdantBamboo C2 fingerprint. In Microsoft 365, M365 audit logs for logins from Storage Sync appliance IP ranges are the primary visibility signal — this bypasses Entra Conditional Access because the source IP appears trusted/internal. Enforce MFA for all firewall administrative interfaces including SSL VPN. Mandate EDR coverage for all appliances and retire any appliance whose vendor prohibits root access or EDR installation.
+
+  - title: "GMO Flatt Security: prompt injection + GitHub App actor-bypass in Anthropic's claude-code-action lets one malicious issue hijack any public repo and potentially poison the upstream action (CVSS 4.0: 7.8, fixed in v1.0.94)"
+    sources:
+      - url: "https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+        publisher: "GMO Flatt Security (RyotaK)"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html"
+        publisher: "The Hacker News"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → pivot to THN article https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html → primary: Flatt Security research post https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+    summary: |
+      Researcher RyotaK of GMO Flatt Security disclosed on 4 June 2026 (reported to Anthropic in January, fixed within four days) a two-part vulnerability chain in Anthropic's claude-code-action GitHub Actions workflow (v1.0.94 remediated). The first flaw is a permission-check bypass in the `checkWritePermissions()` function (src/github/validation/permissions.ts): the function unconditionally trusts any GitHub actor whose username ends in `[bot]`, on the assumption that GitHub Apps are always administrator-installed. In reality, anyone can register a GitHub App, install it on a personal repository, and use its token to open issues or PRs on any public repository — the implicit GitHub permission model grants public-resource access with no explicit permissions required. `agent` mode lacked the secondary `checkHumanActor()` safeguard present in `tag` mode. Combined with indirect prompt injection (the attack embeds instructions inside an issue body that Claude reads during triage), the attacker can make Claude: read `/proc/self/environ` (bypassing naive file-path guards via crafted prompt phrasing), extract the CI/CD credential pair (OIDC token exchange with Anthropic's backend yields a Claude GitHub App installation token with code/issues/workflows write access), and exfiltrate those secrets to the issue comment feed — all within a legitimate Anthropic-invoked workflow run. Aimed at the `anthropics/claude-code-action` repository itself, the same chain could have poisoned the action and propagated malicious code to every downstream consumer. The second vector — exposed via Anthropic's own published example workflow which shipped `allowed_non_write_users: "*"` — allowed any external contributor to trigger Claude without write access and leak the GitHub token via the workflow's publicly visible summary panel. Both vectors are fixed in v1.0.94 (Anthropic rated 7.8 CVSS 4.0, bug bounty paid). Practical exploitation was demonstrated in researcher-owned test repositories; no confirmed exploitation against production repositories was disclosed. Prior realised attacks with the same architecture include the February Cline@2.3.0 npm-token theft and the HackerBot-Claw February/March automated GitHub Actions misconfiguration probing campaign.
+    ch_eu_nexus: "Global; directly affects any European organisation using claude-code-action in public GitHub repositories for automated triage, PR review or CI/CD. Supply-chain impact (action poisoning) is organisation-agnostic."
+    public_sector_nexus: "indirect — any public-sector DevOps team using AI-assisted GitHub Actions workflows"
+    sector: "software development, DevOps, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "I found a vulnerability that let an attacker bypass its permission controls and feed untrusted input into a workflow designed to process only trusted input. By default, the workflow has read and write access to code, issues, pull requests, discussions, and workflow files, so this bypass could be used to inject malicious code or steal sensitive information from the repository."
+        attribution: "GMO Flatt Security (RyotaK)"
+        source_url: "https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+      - quote: "The trigger check had a hole. It waved through any actor whose name ended in [bot], on the assumption that GitHub Apps are trusted things admins install. Trouble is, anyone can register a GitHub App, install it on a repo they own, and use its token to open an issue or pull request on any public repository."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 (Compromise Software Supply Chain), T1562.001 (Impair Defenses: AI-mediated prompt manipulation), T1552.004 (CI/CD secrets exfiltration from workflow env). Detection: CI/CD audit logs for claude-code-action invocations where actor username ends in `[bot]` and the triggering actor is not an expected integration; GitHub Actions workflow run summary panel write events from Claude (data-exfiltration precursor). Hardening: upgrade to claude-code-action v1.0.94+; audit all workflows using `allowed_non_write_users` for secret exposure; restrict additional permissions beyond ANTHROPIC_API_KEY and GITHUB_TOKEN; disable tools that can exfiltrate (`gh issue view` can leak data). Note: RyotaK has reported ~50 separate permission-system bypasses in Claude Code — this class of issue is not isolated.
+
+  - title: "Unit 42 Operation FlutterBridge: macOS malvertising campaign (CL-CRI-1089) delivers FlutterShell backdoor — shell command execution + Chrome hijacking via Flutter WebView/JS-to-native bridge, signed with valid Apple Developer IDs, zero VirusTotal detections at time of analysis"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/flutterbridge-new-fluttershell-backdoor/"
+        publisher: "Palo Alto Networks Unit 42"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/fluttershell-backdoor-spreads-to-macos.html"
+        publisher: "The Hacker News"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/06/fluttershell-backdoor-spreads-to-macos.html → primary: Unit 42 blog post https://unit42.paloaltonetworks.com/flutterbridge-new-fluttershell-backdoor/"
+    summary: |
+      Unit 42 published on 2 June 2026 a detailed technical analysis of Operation FlutterBridge, the evolution of activity cluster CL-CRI-1089 (previously tracked as JSCoreRunner, active since August 2025). The campaign distributes macOS backdoors disguised as legitimate productivity applications (PodcastsLounge, PDF-Brain, PDF-Ninja) through hundreds of Google Ads managed by verified shell companies (AdsParkPro LTD, Advantage Web Marketing LLC — UK/Ukraine-registered entities with minimal digital presence). All samples are signed with valid Apple Developer IDs and passed Apple notarization at submission time; zero VirusTotal detections were recorded at analysis time. The FlutterShell payload implements a WebView-based architecture where the malicious logic is hosted on attacker-controlled external websites rather than embedded in the binary — enabling real-time payload changes without recompiling the application. A JavaScript-to-native bridge translates JSON commands from the attacker's web server into native macOS system calls. Confirmed capabilities include arbitrary shell command execution, file system read/write, environment variable exfiltration, and system fingerprinting. Observed behaviour: Chrome hijacking via modification of the "Secure Preferences" file, routing all user traffic through an ad-filled attacker-controlled intermediary. The PDF-Brain and PDF-Ninja variants add AI-powered document summarisation by relaying documents through an attacker-controlled server before processing — enabling document exfiltration via a feature users actively invoke. Unit 42 identified over 4,000 file hashes across 100+ variants across the broader TamperedChef/CL-CRI-1089/CL-UNK-1090/CL-UNK-1110 clusters since 2024. Targeting was global with emphasis on Anglophone and Western European markets (US, Canada, Australia, France, Germany). Evidence of unfinished functions and Windows versions without malicious payloads suggests phased deployment and active malware-as-adware-plus-backdoor development.
+    ch_eu_nexus: "Direct: France and Germany explicitly listed as targeted Anglophone/Western European markets. Campaign distributes through EU-registered shell entities. macOS users in EU public sector and enterprises are within the targeting profile."
+    public_sector_nexus: "indirect — targets macOS users broadly including enterprises and government employees"
+    sector: "cross-sector, macOS users"
+    cves: []
+    actors_campaigns_malware: ["CL-CRI-1089", "FlutterShell", "Operation FlutterBridge", "JSCoreRunner"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "All observed samples were signed with valid Apple Developer IDs and successfully passed notarization, meaning Apple's automated security checks did not flag them as malicious at the time of submission."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/flutterbridge-new-fluttershell-backdoor/"
+      - quote: "FlutterShell employs a WebView-based architecture utilizing a JavaScript-to-native bridge... the malicious logic of FlutterShell is stored on the attackers' website and is only triggered when the application loads the specific web content."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/flutterbridge-new-fluttershell-backdoor/"
+    extended_notes: |
+      Detection: Look for macOS apps using WKWebView + custom JavaScript message handlers that invoke shell commands. Monitor for suspicious Chrome "Secure Preferences" file modifications from non-browser processes. Look for outbound connections from unexpected applications to Cloudflare-fronted CDN infrastructure. XProtect/notarization bypass is a recurring evasion class — Apple typically revokes Developer IDs within days of malware report. Hardening: macOS Gatekeeper does not catch notarization-bypassed malware; endpoint agents that monitor for process spawns from downloaded applications and suspicious WebView bridge calls are the reliable detection layer.
+
+  - title: "Proofpoint documents TA4922 (China-linked financially-motivated cybercrime cluster) expanding from Japan to UK, Germany, Italy, South Africa with Atlas RAT, RomulusLoader, SilentRunLoader, and ValleyRAT — highest observed campaign velocity of any tracked cybercrime actor"
+    sources:
+      - url: "https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html"
+        publisher: "The Hacker News"
+        date: "2026-06-04"
+        role: "primary (Proofpoint post JS-rendered, unavailable via direct fetch)"
+      - url: "https://www.proofpoint.com/us/blog/threat-insight/ta4922-suspected-chinese-crime-group-going-global"
+        publisher: "Proofpoint"
+        date: "2026-06-04"
+        role: "primary (JS-rendered — cited but body not directly fetched; corroborated by THN)"
+      - url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-use-new-atlas-rat-malware-in-european-cyberattacks/"
+        publisher: "BleepingComputer"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html → searched for primary: Proofpoint blog https://www.proofpoint.com/us/blog/threat-insight/ta4922-suspected-chinese-crime-group-going-global (JS-rendered, body unavailable); corroborated via BleepingComputer search result"
+    summary: |
+      Proofpoint published on 4 June 2026 an analysis of TA4922 (a Chinese-speaking, financially-motivated cybercrime cluster), which it assesses as now running the highest observed campaign tempo of any tracked cybercrime actor. Historically concentrated on Japanese organisations, TA4922 expanded in March–April 2026 with localised lures targeting UK, German, Italian, and South African organisations. Lures are carefully tailored: tax-authority impersonation, HR/payroll/benefits notices, and invoice themes, delivered in the target's native language. The malware toolkit comprises: Atlas RAT (aka AtlasCross RAT, a fully featured C-based RAT) and RomulusLoader (a C-based loader staging AnyDesk and SyncFuture via DLL side-loading) — both apparently new families introduced to the arsenal alongside previously known ValleyRAT (aka Winos 4.0); and SilentRunLoader, a newly documented "vibe-coded" Python-based infostealer/loader that exfiltrates Chrome-stored credentials, cookies, and browsing data. Delivery chains rely on DLL side-loading (T1574.002) from spear-phishing attachments. Proofpoint assesses TA4922 as primarily financially motivated (data theft, fraud, access resale), with surveillance capabilities that could serve espionage purposes. A notable TTP evolution is the use of out-of-band communication channels (LINE, WhatsApp, Microsoft Teams) to move conversations away from enterprise email controls and facilitate payload delivery and social engineering.
+    ch_eu_nexus: "Direct: Germany and UK are explicitly targeted markets. Italy is also targeted. The actor's rapid geographic expansion means further DACH/CH targeting is plausible."
+    public_sector_nexus: "indirect — primarily commercial targeting but HR/payroll/tax lures are applicable to public sector"
+    sector: "financial services, enterprise, cross-sector"
+    cves: []
+    actors_campaigns_malware: ["TA4922", "Atlas RAT", "AtlasCross RAT", "RomulusLoader", "SilentRunLoader", "ValleyRAT", "Winos 4.0"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In recent months, however, attacks mounted by the hacking group have relied on phishing campaigns using human resources- and business-themed lures for credential phishing, fraud, and malware delivery, including Atlas RAT, RomulusLoader, and SilentRunLoader."
+        attribution: "The Hacker News (citing Proofpoint)"
+        source_url: "https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html"
+      - quote: "While the actor is assessed to be financially motivated, the capabilities of the malware include the potential for surveillance, which could be used by or sold to espionage groups... These types of actors can quickly expand and scale their tactics to include more targets at any time."
+        attribution: "Proofpoint (quoted in The Hacker News)"
+        source_url: "https://thehackernews.com/2026/06/china-linked-ta4922-expands-phishing.html"
+    extended_notes: |
+      MITRE ATT&CK: T1566.001 (Spearphishing Attachment), T1574.002 (DLL Side-Loading), T1059.006 (Python), T1555.003 (Credentials from Web Browsers), T1056.004 (Credential API Hooking). Detection: DLL side-loading chains from known-clean binaries (AnyDesk, SyncFuture); Python scripts calling `win32api` or DPAPI functions to access Chrome credentials; outbound C2 from `anydesk.exe` to unusual IP ranges. Hardening: Disable or block DLL preloading via HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Session Manager\KnownDLLs; restrict Python execution on corporate endpoints; monitor Teams/WhatsApp for unsolicited external messages carrying links/files.
+
+  - title: "CVE-2026-23479: Redis use-after-free in unblockClientOnKey() yields authenticated RCE via GOT overwrite; Wiz/Xint Code autonomous AI discovery; 80% of cloud Redis instances potentially reachable; patched May 5"
+    sources:
+      - url: "https://www.zeroday.cloud/blog/redis-cve-2026-23479-deep-dive"
+        publisher: "Wiz / ZeroDay.cloud (Xint Code)"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/"
+        publisher: "Redis"
+        date: "2026-05-05"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html"
+        publisher: "The Hacker News"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html → pivot to Wiz/ZeroDay.cloud writeup https://www.zeroday.cloud/blog/redis-cve-2026-23479-deep-dive (primary) and Redis advisory https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/ (corroborating)"
+    summary: |
+      Wiz's autonomous AI vulnerability-discovery tool Xint Code discovered CVE-2026-23479, a use-after-free in Redis's blocking-client code path (`unblockClientOnKey()` in `src/blocked.c`). The flaw was introduced across two separate commits: PR #11012 (January 2023) and PR #11568 (March 2023), both landing in Redis 7.2-rc1 and reaching general availability in Redis 7.2.0. It persisted undetected for over two years across all maintained Redis branches. The full exploit chain is public as of the ZeroDay.Cloud 2025 conference writeup (released 2 June 2026 coinciding with patch availability). Root cause: `unblockClientOnKey()` calls `processCommandAndResetClient()` without checking whether the client was freed as a side effect of client eviction during command processing; `zfree()` does not zero memory, so the freed slot retains stale bytes and the function continues to operate on freed memory. Exploit chain (three stages): Stage 1 — leak a Lua heap pointer via `EVAL "return tostring(redis.call)" 0`; Stage 2 — memory groom via client memory limit manipulation, park a bloated client on a stream via `XREAD`, trigger eviction by dropping memory limits, reclaim freed client slot via pipelined `SET` with a fake client structure; Stage 3 — `updateClientMemoryUsage()` performs an OOB decrement against the GOT using attacker-controlled fields in the fake client, redirecting `strcasecmp()` to `system()` for arbitrary command execution. The official Redis Docker image ships with partial RELRO, leaving the GOT writable. Prerequisites: authenticated session with `@admin` + `@scripting` (`CONFIG SET`, `EVAL`) + `@stream` (`XREAD`/`XADD`) + `@read`/`@write` — all assigned to the default user in a default deployment. No in-the-wild exploitation has been reported. Patched versions: 7.2.14, 7.4.9, 8.2.6, 8.4.3, 8.6.3 (all released May 5, 2026). Wiz reports 80% of cloud environments use Redis; 85% of those are configured without a password. Redis Cloud is already patched.
+    ch_eu_nexus: "Global but broad cloud exposure relevant to Swiss and EU deployments. EU public-sector cloud databases and self-hosted Redis instances are in scope."
+    public_sector_nexus: "indirect — any organisation running Redis in cloud or on-premise"
+    sector: "cross-sector, cloud, database"
+    cves: ["CVE-2026-23479"]
+    actors_campaigns_malware: ["Xint Code (autonomous AI discovery tool)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-23479 is a use-after-free inside Redis's blocking-client code path that allows an authenticated user to execute arbitrary operating system commands on the Redis host. The use-after-free occurs in unblockClientOnKey() (src/blocked.c), where the function calls processCommandAndResetClient() without checking whether the client was freed as a side effect before continuing to access the client structure."
+        attribution: "Wiz / Xint Code (ZeroDay.cloud)"
+        source_url: "https://www.zeroday.cloud/blog/redis-cve-2026-23479-deep-dive"
+      - quote: "Wiz's analysis shows that 80% of cloud environments use Redis. Out of those Redis instances, almost 85% are configured without a password, which significantly increases the attack surface."
+        attribution: "Wiz / Xint Code (ZeroDay.cloud)"
+        source_url: "https://www.zeroday.cloud/blog/redis-cve-2026-23479-deep-dive"
+    extended_notes: |
+      MITRE ATT&CK: T1203 (Exploitation for Client Execution, server-side), T1059 (Command and Scripting Interpreter). CVSS: 8.8 (CVSS 3.1, NVD), 7.7 (CVSS 4.0, Redis). EPSS: not yet retrieved. Affected: Redis 7.2.0 through 7.2.13; 7.4.0 through 7.4.8; 8.2.0 through 8.2.5; 8.4.0 through 8.4.2; 8.6.0 through 8.6.2. Defender hardening (if cannot patch immediately): (1) deny `CONFIG` command access from application user ACLs — breaks this specific exploit chain; (2) deny `@scripting` (Lua) if not used — kills Stage 1 heap leak; (3) network-isolate Redis behind TLS + VPN, no public internet exposure; (4) enforce per-user ACL roles with least privilege, separate `@admin` from application role; (5) rotate broadly shared Redis credentials. Detection: anomalous EVAL commands followed by large output writes; rapid sequences of XADD/XREAD/CONFIG SET from a single client; Redis daemon spawning child processes; `strcasecmp` system call chain anomalies in Redis process.
+
+cve_table:
+  - cve: "CVE-2026-23479"
+    product: "Redis 7.2.0–7.2.13, 7.4.x, 8.2.x, 8.4.x, 8.6.x"
+    cvss: "8.8 (CVSS 3.1) / 7.7 (CVSS 4.0)"
+    epss: "unknown"
+    kev: false
+    exploited: false
+    patch: "7.2.14, 7.4.9, 8.2.6, 8.4.3, 8.6.3 (all 2026-05-05)"
+    source: "https://www.zeroday.cloud/blog/redis-cve-2026-23479-deep-dive"
+
+candidate_sources:
+  - id: flatt-security
+    publisher: "GMO Flatt Security Research (RyotaK)"
+    url: "https://flatt.tech/research/"
+    category: research
+    why: "High-quality AI-security and GitHub Actions security research. Published the primary disclosure of the claude-code-action prompt-injection supply-chain flaw. Demonstrates consistent depth in AI-agent security research relevant to enterprise DevOps."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "HTTP 503 returned by RSS feed https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 — matches rotation-priority warning (failed 5 of last 7 runs). No fallback worked; direct URL fetch of blog listing returned no recent articles in window."
+  - source_id: proofpoint-blog
+    reason: "Blog page is JS-rendered (Next.js SPA); no structured feed or Wayback snapshot available. THN and BleepingComputer corroboration used instead for TA4922 coverage."
+  - source_id: mandiant-gtig
+    reason: "Most recent Mandiant GTIG feed item dated 2026-05-25 (KnowledgeDeliver ViewState vuln). No items in 36h window."

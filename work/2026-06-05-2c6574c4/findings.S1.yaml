@@ -1,0 +1,204 @@
+---
+domain: S1
+run_id: 2026-06-05-2c6574c4
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-05T04:12:04Z
+ended_at: 2026-06-05T04:42:00Z
+duration_seconds: 1796
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 14
+  bridge_fetches: 10
+
+items:
+  - title: "CVE-2026-23479 — Redis use-after-free in unblockClientOnKey() enables authenticated RCE; full exploit chain now public, no in-the-wild exploitation yet"
+    sources:
+      - url: "https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html"
+        publisher: "The Hacker News"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/"
+        publisher: "Redis / Redis Ltd."
+        date: "2026-05-05"
+        role: "vendor-advisory"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-23479"
+        publisher: "NVD/MITRE"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://securityboulevard.com/2026/06/redis-use-after-free-remote-code-execution-vulnerability-cve-2026-23479/"
+        publisher: "Security Boulevard"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN), URL https://feeds.feedburner.com/TheHackersNews → primary: THN article https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html → vendor advisory https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/ → NVD https://nvd.nist.gov/vuln/detail/CVE-2026-23479"
+    summary: |
+      A use-after-free in Redis's `unblockClientOnKey()` function (`src/blocked.c`) allows an authenticated attacker with a specific ACL privilege set to achieve remote code execution. The bug was introduced in Redis 7.2.0 (a January 2023 refactor in PR #11012 added an unchecked processCommandAndResetClient() call); a March 2023 follow-on change removed the preceding NULL guard, leaving the pointer live-but-freed. The full exploit chain — discovered by Theori's autonomous AI tool "Xint Code" and demonstrated at ZeroDay.Cloud 2025 (London, December 2025) — requires: (1) EVAL to leak a heap address via a one-line Lua script; (2) grooming client memory limits, parking a bloated client on a stream (XREAD), then collapsing limits to trigger a free-then-reuse; (3) using Redis's own updateClientMemoryUsage() routine to perform an out-of-bounds decrement aimed at the Global Object Table, repointing strcasecmp() to attacker shellcode. The official Docker image ships with partial RELRO only, leaving the GOT writable; ASLR and PIE are insufficient because the write is relative to a globally-known symbol. ACL prerequisites: @admin (CONFIG SET), @scripting (EVAL), @stream (XREAD/XADD), @read/@write — the default Redis user holds all of these. NVD CVSS 3.1 score: 8.8. Redis rates it 7.7 under CVSS 4.0. Patched versions: 7.2.14, 7.4.9, 8.2.6, 8.4.3, 8.6.3 (all released 2026-05-05). Redis states no known exploitation in the wild or customer environments as of publication, but the full exploit chain is now public and Redis is ubiquitous in EU cloud environments. Immediate mitigations if patching is delayed: restrict CONFIG SET and EVAL via ACL, deny @scripting if Lua is not required, keep Redis off the public internet, rotate any broadly-shared credentials combining @admin, @scripting, and @stream.
+    ch_eu_nexus: "global; Redis is deployed across Swiss and EU public-sector cloud environments, frequently as a shared session/cache service with broadly-scoped default credentials"
+    public_sector_nexus: "indirect — Redis widely used in public-sector web and middleware stacks"
+    sector: "all sectors, cloud, web"
+    cves:
+      - CVE-2026-23479
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Redis has patched a use-after-free in its blocking-client code that lets an authenticated user run arbitrary OS commands on the machine hosting the database."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html"
+      - quote: "The flaw was introduced in Redis 7.2.0 and remained in every stable branch until the May 5 fixes, unnoticed for over two years."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html"
+      - quote: "CVE-2026-23479 was one of five RCE-class Redis flaws disclosed last month."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/autonomous-ai-tool-finds-2-year-old-rce.html"
+    extended_notes: |
+      Detection: Redis's slow log (CONFIG SET slowlog-log-slower-than 0) captures EVAL and CONFIG SET sequences. Audit ACL LIST for users holding CONFIG, EVAL, and XREAD simultaneously; no default Redis user should be left unscoped in a production deployment. EDR process telemetry: watch for redis-server spawning unexpected child processes (would indicate successful code execution). Wiz analysis confirms Redis is present in a large majority of cloud environments, with many instances running without a password — the combination of ubiquity and minimal auth makes this high-priority for asset-enumeration pass even before patching.
+
+  - title: "CVE-2026-41283 — OpenStack Mistral pre-auth arbitrary code execution (CVSS 9.9); API endpoints allow unauthenticated OS command execution via policy enforcement bypass"
+    sources:
+      - url: "https://www.openwall.com/lists/oss-security/2026/06/03/14"
+        publisher: "OpenStack Security Advisory (OSSA-2026-020) via oss-security"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-41283"
+        publisher: "NVD/MITRE"
+        date: "2026-06-04"
+        role: "corroborating"
+      - url: "https://www.thehackerwire.com/openstack-mistral-critical-rce/"
+        publisher: "TheHackerWire"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('OpenStack Mistral CVE-2026-41283 critical RCE vulnerability June 2026') → oss-security list https://www.openwall.com/lists/oss-security/2026/06/03/14 → NVD https://nvd.nist.gov/vuln/detail/CVE-2026-41283"
+    summary: |
+      OpenStack Mistral through 22.0.0 contains a critical policy-enforcement bypass that allows an unauthenticated, network-reachable attacker to execute arbitrary code and exfiltrate service credentials when the Mistral workflow-orchestration API is internet-exposed. OSSA-2026-020 (published 2026-06-03) describes the root cause as a failure to apply Oslo.policy enforcement on specific endpoints that accept and execute user-supplied workflow definitions — the workflows can invoke system actions including arbitrary shell commands. Attack vector: network (AV:N), no authentication (PR:N), no user interaction (UI:N), CVSS 3.x score reported as 9.9 Critical. Affected versions: Mistral >=20.0.0 <20.1.1, ==21.0.0, ==22.0.0 (i.e., OpenStack releases 2025.1/epoxy, 2025.2/flamingo, 2026.1/gazpacho). Patches are available via review.opendev.org for each release. NVD description: "OpenStack Mistral through 22.0.0 allows Arbitrary Remote Code Execution when the API is exposed. There are endpoints that allow code execution, which can lead to exfiltration of service credentials." No exploitation reported in the wild at time of disclosure. The Mistral workflow service is deployed by EU research institutions, cloud providers, and public-sector OpenStack operators (particularly those running open-source cloud infrastructure). The attack surface is the Mistral API endpoint — operators who have not exposed Mistral externally (typical for private-cloud deployments) carry lower risk, but Mistral's API-accessible nature in OpenStack environments means any tenant or internal threat with API access is a risk path.
+    ch_eu_nexus: "EU public-sector OpenStack cloud operators (research institutions, national cloud providers, cantonal IT operators); Switzerland's public-sector cloud infrastructure includes OpenStack deployments"
+    public_sector_nexus: "direct — OpenStack is the dominant open-source cloud platform in EU public-sector"
+    sector: "cloud, public-sector, research"
+    cves:
+      - CVE-2026-41283
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "OpenStack Mistral through 22.0.0 allows Arbitrary Remote Code Execution when the API is exposed. There are endpoints that allow code execution, which can lead to exfiltration of service credentials."
+        attribution: "NVD/MITRE"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-41283"
+      - quote: "[OSSA-2026-020] OpenStack Mistral: Mistral policy enforcement bypass allows unauthorized public resource creation and arbitrary code execution"
+        attribution: "OpenStack Security Advisory via oss-security"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/06/03/14"
+    extended_notes: |
+      Detection: Mistral API access logs — watch for POST requests to workflow-execution endpoints from non-trusted sources, especially when payload contains shell-executable action definitions. Mistral action executor logs in /var/log/mistral/ capture executed actions. Oslo.policy log records policy-check failures/bypasses. Hardening: apply patches immediately; if patching is delayed, restrict Mistral API access to trusted internal networks via firewall rules (iptables/nftables on the controller node or via OpenStack security groups); disable public API endpoint routing for Mistral in the Keystone service catalog if not externally needed.
+
+  - title: "Claude Code GitHub Actions — permission-model bypass via [bot]-suffix actor check allows unauthenticated external attackers to hijack CI/CD pipelines and inject supply-chain payloads (patched v1.0.94)"
+    sources:
+      - url: "https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+        publisher: "GMO Flatt Security (RyotaK)"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html"
+        publisher: "The Hacker News"
+        date: "2026-06-04"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/claude-code-gemini-cli-github-copilot-agents-vulnerable-to-prompt-injection-via-comments/"
+        publisher: "SecurityWeek"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN feed), URL https://feeds.feedburner.com/TheHackersNews → THN article https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html → primary research disclosure https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/ → SecurityWeek corroboration"
+    summary: |
+      Security researcher RyotaK (GMO Flatt Security) disclosed a vulnerability in Anthropic's `claude-code-action` GitHub Actions workflow that allows an unauthenticated external contributor to bypass the action's write-permission check and trigger Claude Code in agent mode. The root cause is in `checkWritePermissions()` (`src/github/validation/permissions.ts`): the function unconditionally returns `true` for any actor whose GitHub username ends in `[bot]`, on the assumption that GitHub App bot accounts are trusted. Since any GitHub user can register a GitHub App and use its bot token to open issues or PRs against any public repository, an attacker registers an app named `<anything>[bot]`, installs it on an attacker-controlled repo, and uses its token to open a malicious issue on a target repository running the vulnerable Claude Code action. The action sees a `[bot]`-suffixed actor and grants full workflow execution rights — the default workflow has read/write access to code, issues, PRs, discussions, and workflow files. A separate finding covers the example workflow in Anthropic's official documentation, which exposes `secrets.GITHUB_TOKEN` to any external contributor without the write-permission gate. Critically, Anthropic's own `claude-code-action` repository used the vulnerable `agent` mode workflow, meaning a successful exploit against it would have injected malicious code into the action's source, propagating to every downstream consumer. The variants were exploited in the wild before the article was published (the Cline supply-chain incident in February 2026 used the same class). Anthropic rate this CVSS v4.0: 7.8; bug bounty paid. Fixed in claude-code-action v1.0.94. Separately, SecurityWeek reports that Claude Code, Gemini CLI, and GitHub Copilot agents are all vulnerable to prompt injection via malicious GitHub issue/PR comments — a structural class problem across AI-in-CI/CD tooling.
+    ch_eu_nexus: "global; any EU public-sector or Swiss cantonal organisation using Claude Code GitHub Actions in their CI/CD pipelines is affected; the Anthropic action itself was a single-point-of-supply-chain-failure"
+    public_sector_nexus: "indirect — affects developer tooling and CI/CD pipelines including those in public-sector organisations using Anthropic's claude-code-action"
+    sector: "all sectors, software development, public-sector DevOps"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "I found a vulnerability that let an attacker bypass its permission controls and feed untrusted input into a workflow designed to process only trusted input. By default, the workflow has read and write access to code, issues, pull requests, discussions, and workflow files, so this bypass could be [exploited]."
+        attribution: "GMO Flatt Security (RyotaK)"
+        source_url: "https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+      - quote: "Note: Variants of the misconfiguration issues described in this article were actively exploited in the wild before this article was published."
+        attribution: "GMO Flatt Security (RyotaK)"
+        source_url: "https://flatt.tech/research/posts/poisoning-claude-code-one-github-issue-to-break-the-supply-chain/"
+      - quote: "Anthropic rated the issues 7.8 under CVSS v4.0 and paid a bug bounty."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/claude-code-github-action-flaw-let-one.html"
+    extended_notes: |
+      Defender actions: (1) Immediately update claude-code-action to v1.0.94 or later. (2) Audit all GitHub Actions workflows using `pull-request-target` or `issues` triggers with write permissions — these are structurally dangerous when combined with AI agent execution. (3) Inspect `allowed_non_write_users` configuration: never expose secrets beyond the Anthropic API key and `secrets.GITHUB_TOKEN` in such configurations. (4) Detection: GitHub Actions audit log entries (`workflow_run` events) for `[bot]`-suffixed actors triggering agent-mode Claude Code workflows; branch-protection bypass attempts. Broader class: this is a structural prompt-injection / actor-spoofing problem across AI-in-CI/CD tooling (Claude Code, Gemini CLI, GitHub Copilot Agents all affected per SecurityWeek), not a unique Anthropic issue.
+
+  - title: "UPDATE: CVE-2022-0492 — Linux kernel cgroups v1 release_agent container escape added to CISA KEV (June 2, 2026); deadline June 5 — container escape to host root via unprivileged namespace mount"
+    sources:
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV Catalog"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://windowsforum.com/threads/cisa-kev-june-2-2026-linux-cgroups-android-framework-exploits-what-to-patch.421611/"
+        publisher: "Windows Forum / Community analysis"
+        date: "2026-06-02"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → in-window KEV addition dated 2026-06-02"
+    summary: |
+      CISA added CVE-2022-0492 to the Known Exploited Vulnerabilities catalog on 2026-06-02 (deadline June 5 for federal agencies), confirming active exploitation four years after the original disclosure and patch. The vulnerability resides in `cgroup_release_agent_write()` in `kernel/cgroup/cgroup-v1.c`: an unprivileged attacker who can mount cgroupfs in a new user namespace (enabled by default on many Linux distributions) can edit the `release_agent` file, which the kernel executes as root when any process in the cgroup terminates. In containerised environments (Docker, Kubernetes on cgroups v1 hosts), this path enables a container-to-host escape — a compromised container that gains unprivileged namespace creation can elevate to node root, then laterally compromise all pods on that node. CVSS 3.x: 7.8 High. The 2026 KEV listing follows a pattern of attackers rediscovering unpatched legacy instances; cgroups v1 is still active on many Ubuntu/Debian LTS, RHEL 7/8, and enterprise Kubernetes distributions that have not pinned `kernel.unprivileged_userns_clone=0`. Mitigations: apply kernel patches (most distros shipped fixes in April 2022); set `kernel.unprivileged_userns_clone=0` (Debian/Ubuntu) or `user.max_user_namespaces=0` (RHEL); enforce Seccomp and AppArmor/SELinux on containers; in Kubernetes, use PodSecurity Admission to reject `CAP_SYS_ADMIN`-capable containers. This is a delta update — CVE-2022-0492 appeared in this publication's prior coverage last seen 2026-06-03, but the KEV listing is a fresh, high-priority action signal.
+    ch_eu_nexus: "global; EU public-sector Kubernetes and Linux infrastructure running cgroups v1 hosts is directly at risk; Swiss cantonal cloud operators with unpatched nodes"
+    public_sector_nexus: "direct — Linux is the dominant OS in EU public-sector cloud and HPC environments"
+    sector: "cloud, public-sector, infrastructure"
+    cves:
+      - CVE-2022-0492
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-03
+    evidence:
+      - quote: "Linux Kernel contains an improper authentication vulnerability which could allow for privilege escalation via the cgroups v1 release_agent feature."
+        attribution: "CISA KEV Catalog"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      Detection: monitor for mounts of cgroupfs type in new user namespaces (`unshare(CLONE_NEWUSER|CLONE_NEWNS)`), particularly from container runtimes not expected to perform such operations. Falco rule `New Mount in Container` (or Falco's built-in `CVE-2022-0492-Checker` detection rule) catches the exploit path. EDR/Linux AV: alert on `release_agent` writes not originating from the container runtime. Kubernetes: check node kernel version and cgroup driver (`cgroupfs` vs `systemd`); nodes using cgroupfs driver on unpatched kernels are at highest risk.
+
+cve_table:
+  - cve: CVE-2026-23479
+    product: "Redis 7.2.0–8.6.2"
+    cvss: "8.8 (CVSS 3.1, NVD)"
+    epss: "n/a — not yet listed"
+    kev: "No"
+    exploited: "No (no ITW reports as of publication)"
+    patch: "7.2.14 / 7.4.9 / 8.2.6 / 8.4.3 / 8.6.3 (released 2026-05-05)"
+    source: "https://redis.io/blog/security-advisory-cve202623479-cve202625243-cve-2026-25588-cve202625589-cve-2026-23631/"
+  - cve: CVE-2026-41283
+    product: "OpenStack Mistral >=20.0.0 <20.1.1, ==21.0.0, ==22.0.0"
+    cvss: "9.9 Critical (CVSS 3.x, vendor)"
+    epss: "n/a — not yet listed"
+    kev: "No"
+    exploited: "No (no ITW reports as of disclosure)"
+    patch: "Patches via review.opendev.org per release (2025.1/epoxy, 2025.2/flamingo, 2026.1/gazpacho)"
+    source: "https://www.openwall.com/lists/oss-security/2026/06/03/14"
+  - cve: CVE-2022-0492
+    product: "Linux Kernel (cgroups v1)"
+    cvss: "7.8 High (CVSS 3.1, NVD)"
+    epss: "n/a — legacy CVE"
+    kev: "Yes — CISA KEV added 2026-06-02, deadline 2026-06-05"
+    exploited: "Yes — CISA confirms active exploitation"
+    patch: "Kernel patches available since April 2022; sysctl `kernel.unprivileged_userns_clone=0` as interim mitigation"
+    source: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Bridge subcommand ncsc-csh recent returned no output — empty or API unavailable in this run"
+  - source_id: greynoise
+    reason: "WebFetch of greynoise.io/blog returned no useful in-window content; no structured feed available"
+  - source_id: apple-security
+    reason: "Apple security update page returned minimal metadata; June 2026 updates were bug fixes only (iOS 26.5.1), no CVEs published per search results"
+  - source_id: shadowserver
+    reason: "Not fetched — no in-window S1-domain items found via search; shadowserver news is not RSS-indexed for this run"
+  - source_id: projectzero
+    reason: "No in-window Google Project Zero publications found for June 4–5, 2026"
+  - source_id: jpcert
+    reason: "No JPCERT in-window advisories with EU/CH nexus found"
+  - source_id: mozilla-mfsa
+    reason: "No new Firefox MFSAs in window per search results; Firefox updates were covered in earlier briefs"
+...
