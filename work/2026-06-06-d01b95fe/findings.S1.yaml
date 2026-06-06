@@ -1,0 +1,309 @@
+domain: S1
+run_id: 2026-06-06-d01b95fe
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-06T08:01:43Z
+ended_at: 2026-06-06T08:07:08Z
+duration_seconds: 325
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 9
+  bridge_fetches: 14
+
+items:
+  - title: "Cisco Catalyst SD-WAN Manager CLI command injection actively exploited zero-day (CVE-2026-20245) — no patch available"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx", publisher: "Cisco PSIRT", date: "2026-06-05", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/cisco-sd-wan-zero-day-cve-2026-20245.html", publisher: "The Hacker News", date: "2026-06-06", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/cisco-sd-wan-manager-zero-day-cve-2026-20245-actively-exploited/", publisher: "BleepingComputer", date: "2026-06-05", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0175", publisher: "NCSC-NL", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl recent, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0175 → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+    summary: |
+      A second Cisco Catalyst SD-WAN Manager zero-day (CVE-2026-20245) has been confirmed under active exploitation, distinct from CVE-2026-20182 (covered in weekly W22). CVE-2026-20245 is a CLI command injection vulnerability in the SD-WAN Manager's diagnostic command interface, exploitable by an authenticated attacker holding netadmin-level credentials (or any privilege obtained via chaining with CVE-2026-20182). The crafted file upload path in the CLI diagnostic handler fails to sanitise shell metacharacters, allowing arbitrary OS commands to execute as root on the underlying appliance. Cisco Mandiant observed exploitation resulting in configuration changes being pushed to managed edge devices. No patch is available as of 2026-06-05; Cisco has not yet issued a scheduled advisory date. CVSS 3.1 base score 7.8 (high). Forensic indicator cited by Cisco: anomalous entries in `/var/log/scripts.log`. Attack technique: T1059.004 (Unix Shell) post-auth, chained with T1078 (Valid Accounts — netadmin creds) and T1190 for initial access via CVE-2026-20182. Detection: audit `scripts.log` for unexpected command strings; EDR process tree showing `vdaemon` or SD-WAN manager process forking a shell with privileged UID. Hardening: restrict CLI access to management VLAN; enforce multi-factor for netadmin; consider compensating control per Cisco's advisory until patch available.
+    ch_eu_nexus: "Global; public-sector SD-WAN deployments in CH/EU likely affected — CVE-2026-20182 (same product line) was previously NCSC-CH tracked"
+    public_sector_nexus: "direct — SD-WAN widely deployed in public-sector network edge"
+    sector: "public-sector, telco, critical infrastructure"
+    cves: [CVE-2026-20245]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-05-31"
+    evidence:
+      - quote: "CVE-2026-20245 allows an authenticated, local attacker to execute arbitrary commands as root via a crafted file upload to the CLI diagnostic handler"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+      - quote: "Cisco Mandiant observed limited exploitation resulting in configuration changes being propagated to managed edge devices"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/cisco-sd-wan-manager-zero-day-cve-2026-20245-actively-exploited/"
+    extended_notes: |
+      Prerequisites for exploitation: netadmin or higher credential set on the SD-WAN Manager. In observed exploitation chains, CVE-2026-20182 (pre-auth bypass, covered 2026-05-31/weekly W22) was leveraged first to establish the authenticated beachhead before CVE-2026-20245 was used for privilege escalation to root. The combination creates a two-CVE unauthenticated-to-root chain against any internet-exposed SD-WAN Manager instance. No patch is available; Cisco's advisory is marked "Workaround" status.
+
+  - title: "SolarWinds Serv-U DoS zero-day added to CISA KEV (CVE-2026-28318)"
+    sources:
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV", date: "2026-06-05", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-34268", publisher: "ENISA EUVD", date: "2026-06-05", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0176", publisher: "NCSC-NL", date: "2026-06-05", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/solarwinds-serv-u-dos-cve-2026-28318-added-to-cisa-kev/", publisher: "BleepingComputer", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge API → CISA KEV catalog listing 2026-06-05 addition → corroborating: ENISA EUVD EUVD-2026-34268 → NCSC-NL NCSC-2026-0176 → BleepingComputer article"
+    summary: |
+      CISA added CVE-2026-28318 (SolarWinds Serv-U uncontrolled resource consumption) to the KEV catalog on 2026-06-05 with remediation deadline 2026-06-19. The vulnerability allows an unauthenticated remote attacker to crash the Serv-U SFTP/FTP service by sending an HTTP POST request with `Content-Encoding: deflate` containing a crafted payload that triggers uncontrolled decompression memory exhaustion. CVSS 3.1 base score 7.5 (high). The service crashes and does not auto-restart on default configurations, causing a complete availability disruption. Fixed in Serv-U 15.5.4 Hotfix 1. Technique class: T1499.003 Application Exhaustion Flood, requiring no authentication and exploitable from the public internet against any Serv-U instance with the SFTP/HTTP interface exposed. Detection: monitor Serv-U service process restart events; watch for POST requests with unusual `Content-Encoding` values in web server access logs. SolarWinds published the fix on 2026-06-04; CISA's KEV listing the following day indicates confirmed exploitation in the wild.
+    ch_eu_nexus: "Global; Serv-U is widely deployed in European enterprise and public-sector file transfer environments"
+    public_sector_nexus: "indirect — Serv-U used for secure file transfer in government and regulated sectors"
+    sector: "public-sector, finance, healthcare"
+    cves: [CVE-2026-28318]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA has added CVE-2026-28318 to the Known Exploited Vulnerabilities Catalog with a due date of June 19, 2026"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "Unauthenticated POST with Content-Encoding: deflate causes Serv-U service crash; fixed in Serv-U 15.5.4 Hotfix 1"
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0176"
+
+  - title: "HTTP/2 HPACK compression amplification DoS (CVE-2026-49975) — nginx, Apache httpd, IIS, Envoy"
+    sources:
+      - { url: "https://blog.calif.io/http2-bomb-cve-2026-49975", publisher: "Calif Security Blog", date: "2026-06-04", role: "primary" }
+      - { url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitsberatung/DE/WID-SEC-2026-1791.html", publisher: "BSI", date: "2026-06-05", role: "corroborating" }
+      - { url: "https://www.ncsc.admin.ch/security-hub/posts/12610", publisher: "NCSC-CH", date: "2026-06-04", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-rss bridge → WID-SEC-2026-1791 listing → url fetch WID-SEC-2026-1791 CSAF → primary: Calif blog URL https://blog.calif.io/http2-bomb-cve-2026-49975 → corroborating: NCSC-CH post 12610"
+    summary: |
+      CVE-2026-49975 (named "HTTP/2 Bomb") is a newly disclosed HTTP/2 HPACK header compression amplification vulnerability affecting nginx (prior to 1.28.2), Apache httpd (prior to 2.4.65), Microsoft IIS (unpatched as of disclosure), Envoy proxy, and Cloudflare Pingora. The vulnerability allows a single unauthenticated client with a low-bandwidth connection to exhaust server RAM within seconds: the attacker sends an HTTP/2 request carrying a maximally compressed HPACK header block that decompresses into gigabytes of header data. The server's HTTP/2 HPACK dynamic table is allocated without adequate size bounds, causing uncontrolled memory growth until OOM kill or service crash. A public proof-of-concept was released alongside the Calif blog post on 2026-06-04. BSI issued advisory WID-SEC-2026-1791 on 2026-06-05; NCSC-CH flagged it the same day. Technique: T1499.002 Service Exhaustion Flood via protocol-layer amplification. Prerequisite: HTTP/2 enabled on the target (default for modern nginx/Apache/IIS configurations). Detection: watch for connections with abnormally large header section sizes before request body; monitor for rapid RSS growth in the web server process and OOM kernel events. Partial patches are available for nginx and Apache httpd; IIS patch status unknown at time of writing. Operators should consider disabling HTTP/2 on public-facing services as a compensating control until patched.
+    ch_eu_nexus: "Direct CH/EU impact — nginx and Apache httpd power the majority of CH/EU public-sector web infrastructure; BSI and NCSC-CH both flagged in-window"
+    public_sector_nexus: "direct — public web servers at risk"
+    sector: "cross-sector, public-sector, telco, healthcare, finance"
+    cves: [CVE-2026-49975]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A single HTTP/2 client can exhaust gigabytes of server RAM in under five seconds by sending a maximally-compressed HPACK header block; PoC attached"
+        attribution: "Calif Security Blog"
+        source_url: "https://blog.calif.io/http2-bomb-cve-2026-49975"
+      - quote: "Betroffen: nginx < 1.28.2, Apache httpd < 2.4.65, Microsoft IIS (keine Korrektur verfügbar), Envoy, Cloudflare Pingora"
+        attribution: "BSI WID-SEC-2026-1791"
+        source_url: "https://www.bsi.bund.de/SharedDocs/Cybersicherheitsberatung/DE/WID-SEC-2026-1791.html"
+
+  - title: "IronWorm npm supply-chain infostealer with eBPF kernel rootkit and Tor C2"
+    sources:
+      - { url: "https://jfrog.com/blog/ironworm-npm-supply-chain-attack-rust-ebpf-rootkit/", publisher: "JFrog Security Research", date: "2026-06-03", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/ironworm-npm-malware-ebpf-rootkit-tor-c2/", publisher: "BleepingComputer", date: "2026-06-04", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/06/ironworm-npm-supply-chain-rust-ebpf.html", publisher: "The Hacker News", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('npm supply chain attack June 2026 eBPF rootkit') → primary: JFrog Security Research blog URL https://jfrog.com/blog/ironworm-npm-supply-chain-attack-rust-ebpf-rootkit/ → corroborating: BleepingComputer → THN"
+    summary: |
+      JFrog Security Research published on 2026-06-03 the discovery of IronWorm, a sophisticated npm supply-chain attack campaign targeting 36-37 packages in the `asteroiddao` and WeaveDB npm ecosystems. The malicious packages deliver a Rust-compiled infostealer binary via a `preinstall` hook (T1195.002 Compromise Software Supply Chain, T1059.004 Unix Shell via npm lifecycle scripts). The binary deploys an eBPF kernel rootkit that manipulates `/proc` to hide its process ID (PID) from userland tools including `ps`, `top`, `lsof`, and EDR agents using procfs enumeration. Exfiltration targets 86 environment variables and credential paths across 20+ categories: AWS, GCP, Azure service principals, Kubernetes config files (`~/.kube/config`), npm auth tokens (`~/.npmrc`), Docker credential stores, GitHub personal access tokens, and AI platform API keys (OpenAI, Anthropic). Command-and-control uses Tor hidden services for exfiltration, complicating network-level blocking. Self-propagation occurs via stolen npm credentials: the malware publishes new malicious package versions under the victim's identity. A backdated git commit technique is used to blend malicious additions into repository history, with author set to `claude <claude@users.noreply.github.com>` to mimic automated/AI-generated commits. The campaign spans multiple ecosystems beyond npm: PyPI, Cargo (Rust), Conan (C++), and vcpkg equivalents. Detection: monitor `preinstall`/`postinstall` npm lifecycle script executions (Sysmon EID 1, parent `node`, child `sh`/`bash`); audit `~/.npmrc` for unexpected token rotation; watch for eBPF program loads from unprivileged processes (`bpf()` syscall monitoring via auditd or Sysmon-for-Linux); network telemetry for Tor exit node connections. Hardening: enforce `npm install --ignore-scripts` in CI/CD pipelines; pin package versions with lockfile integrity verification; restrict eBPF capability to privileged system processes.
+    ch_eu_nexus: "Global; affects any organisation using asteroiddao/WeaveDB npm packages; cloud and AI development teams in CH/EU directly at risk"
+    public_sector_nexus: "indirect — public-sector software supply chains and DevOps pipelines at risk"
+    sector: "software-development, cloud, cross-sector"
+    cves: []
+    actors_campaigns_malware: ["IronWorm"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "IronWorm deploys an eBPF rootkit that hides its PID from /proc and all userland enumeration tools; exfiltrates 86+ env variables and credential paths via Tor hidden service C2"
+        attribution: "JFrog Security Research"
+        source_url: "https://jfrog.com/blog/ironworm-npm-supply-chain-attack-rust-ebpf-rootkit/"
+      - quote: "Malicious commits are backdated and attributed to 'claude <claude@users.noreply.github.com>' to mimic AI-generated automation and evade manual history review"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/ironworm-npm-malware-ebpf-rootkit-tor-c2/"
+
+  - title: "Miasma supply-chain worm expands to 73 Microsoft GitHub repositories (UPDATE)"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/miasma-worm-microsoft-github-azure.html", publisher: "The Hacker News", date: "2026-06-06", role: "primary" }
+      - { url: "https://opensourcemalware.com/miasma-microsoft-github-azure-samples/", publisher: "OpenSourceMalware.com", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('Miasma worm Microsoft GitHub June 2026') → primary: THN URL https://thehackernews.com/2026/06/miasma-worm-microsoft-github-azure.html → corroborating: OpenSourceMalware.com"
+    summary: |
+      The Miasma self-replicating supply-chain worm (previously covered 2026-06-02 targeting Red Hat/TeamPCP ecosystem) has expanded its infection footprint to 73 Microsoft GitHub repositories across the Azure, Azure-Samples, Microsoft, and MicrosoftDocs GitHub organisations. GitHub has disabled access to the affected repositories pending remediation. The expansion demonstrates Miasma's self-propagation via stolen developer OAuth tokens: the worm reads GitHub auth tokens from the local credential store of any infected developer machine, uses those tokens to push malicious commits to repositories the developer has write access to, and injects its `preinstall` script payload into those repos' `package.json`. The Microsoft repository set represents a significant escalation in attack surface: Azure-Samples repositories are frequently used as reference implementations by enterprise cloud architects, meaning the infection can propagate downstream to production codebases that clone these samples. Technique: T1195.002 (Compromise Software Supply Chain), T1528 (Steal Application Access Token). Detection: audit GitHub Actions workflow logs for unexpected `npm publish` or commit pushes from known accounts at unusual hours; monitor for `preinstall` lifecycle script changes in `package.json` on any cloned Azure-Samples/Azure/Microsoft organisation repository. Hardening: rotate all GitHub PATs on developer machines that ran npm installs from infected TeamPCP packages in the past two weeks; enable GitHub push protection and secret scanning on all repos.
+    ch_eu_nexus: "Global; Microsoft/Azure-Samples repos are a reference point for Swiss and European public-sector cloud migrations — downstream compromise risk is significant"
+    public_sector_nexus: "indirect — Azure-Samples used in public-sector Azure deployments"
+    sector: "software-development, cloud, public-sector"
+    cves: []
+    actors_campaigns_malware: ["Miasma"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-02"
+    evidence:
+      - quote: "Miasma has now infected 73 repositories across Microsoft's Azure, Azure-Samples, Microsoft, and MicrosoftDocs GitHub organisations; GitHub has disabled repository access"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/miasma-worm-microsoft-github-azure.html"
+
+  - title: "Chrome 149 patches 429 vulnerabilities including CVSS 9.6 ANGLE sandbox escape (CVE-2026-10881)"
+    sources:
+      - { url: "https://www.securityweek.com/chrome-149-patches-429-vulnerabilities-record-release/", publisher: "SecurityWeek", date: "2026-06-05", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/chrome-149-cve-2026-10881-angle-sandbox-escape.html", publisher: "The Hacker News", date: "2026-06-06", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('Chrome 149 release vulnerabilities June 2026') → pivot: SecurityWeek URL https://www.securityweek.com/chrome-149-patches-429-vulnerabilities-record-release/ → corroborating: THN URL https://thehackernews.com/2026/06/chrome-149-cve-2026-10881-angle-sandbox-escape.html"
+    summary: |
+      Google Chrome 149 shipped on 2026-06-04 patching a record 429 vulnerabilities in a single release, more than 100 of which are rated critical or high. The most critical is CVE-2026-10881 (CVSS 3.1 9.6, no authentication required), an out-of-bounds read/write in the ANGLE graphics engine (the cross-platform OpenGL-ES-to-native-graphics translation layer used for GPU rendering). A crafted HTML page can trigger a type-confused GPU buffer access in ANGLE's shader compiler, enabling sandbox escape from the Chrome renderer process. Google's bug reports state no active exploitation has been observed. The unusually large patch count is attributed to AI-assisted fuzzing infrastructure Google deployed in early 2026, which accelerated crash discovery across Blink, V8, and ANGLE at scale. Technique: T1203 Exploitation for Client Execution (browser), T1068 Exploitation for Privilege Escalation (sandbox escape). Detection: enforce Chrome auto-update policies via MDM; monitor for Chrome version older than 149.0.7732.45 on managed endpoints. Hardening: update to Chrome 149.0.7732.45 or later immediately; enterprise deployments should validate MDM push succeeded within 48 hours. Edge uses the same Chromium ANGLE codebase — monitor for a parallel Microsoft Edge security update.
+    ch_eu_nexus: "Global; Chrome is the dominant browser in CH/EU public-sector environments"
+    public_sector_nexus: "direct — browser deployed on all public-sector endpoints"
+    sector: "cross-sector, public-sector"
+    cves: [CVE-2026-10881]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Chrome 149 patches a record 429 vulnerabilities; CVE-2026-10881 in ANGLE is rated CVSS 9.6 and enables sandbox escape via crafted HTML — no active exploitation observed"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/chrome-149-patches-429-vulnerabilities-record-release/"
+
+  - title: "Unauthenticated PHP eval() injection RCE in WordPress Everest Forms Pro (CVE-2026-3300)"
+    sources:
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-3300", publisher: "NVD", date: "2026-06-04", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/everest-forms-pro-wordpress-rce-cve-2026-3300.html", publisher: "The Hacker News", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('WordPress plugin RCE June 2026 actively exploited') → NVD CVE-2026-3300 → corroborating: THN URL https://thehackernews.com/2026/06/everest-forms-pro-wordpress-rce-cve-2026-3300.html"
+    summary: |
+      CVE-2026-3300 is a CVSS 9.8 critical unauthenticated remote code execution vulnerability in Everest Forms Pro (WordPress plugin), all versions through 1.9.12. The vulnerable code path is the `process_filter()` function within the Calculation Addon: user-submitted form field values are concatenated into a PHP code string and passed directly to PHP's `eval()` without sanitisation. An unauthenticated attacker can submit a crafted form value (e.g., a form accessible to anonymous visitors) that executes arbitrary PHP code in the WordPress process context, typically resulting in web shell deployment. Approximately 4,000 active WordPress installations use Everest Forms Pro with the Calculation Addon enabled; active exploitation has been observed in the wild. Technique: T1059.004 (Command and Scripting Interpreter — Unix Shell via PHP eval), T1505.003 (Server Software Component: Web Shell). Detection: WAF rules matching `eval(` in form POST parameters; web server access logs showing 500 errors or unusual POST bodies to Everest Forms endpoints; monitor WordPress `uploads/` and plugin directories for new PHP files (T1505.003 artefacts). Hardening: update to Everest Forms Pro 1.9.13 or later; disable the Calculation Addon if not in use; use a WAF with PHP injection signatures.
+    ch_eu_nexus: "Global; WordPress is widely used in CH/EU public-sector and NGO web environments"
+    public_sector_nexus: "indirect — affects any WordPress installation using this plugin"
+    sector: "cross-sector, public-sector, NGO"
+    cves: [CVE-2026-3300]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The process_filter() function in the Calculation Addon concatenates user-submitted form field values into a PHP string passed to eval() without sanitisation; CVSS 9.8, no authentication required"
+        attribution: "NVD"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-3300"
+      - quote: "Active exploitation observed; approximately 4,000 WordPress installations affected"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/everest-forms-pro-wordpress-rce-cve-2026-3300.html"
+
+  - title: "OP-512: China-linked IIS web shell cluster with timestomping evasion"
+    sources:
+      - { url: "https://www.reliaquest.com/blog/op-512-china-linked-iis-webshell-framework-timestomping/", publisher: "ReliaQuest", date: "2026-06-05", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/op-512-china-iis-webshell-timestomping.html", publisher: "The Hacker News", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('China IIS web shell June 2026 espionage') → primary: ReliaQuest blog URL https://www.reliaquest.com/blog/op-512-china-linked-iis-webshell-framework-timestomping/ → corroborating: THN URL https://thehackernews.com/2026/06/op-512-china-iis-webshell-timestomping.html"
+    summary: |
+      ReliaQuest disclosed OP-512, a China-linked threat cluster (moderate-to-high confidence attribution) operating a custom three-web-shell framework exclusively targeting Microsoft IIS servers. The cluster is espionage-focused and represents the fourth distinct China-linked group to target IIS in the past 12 months. The framework deploys three purpose-built ASPX web shells with distinct roles: initial access shell (lightweight, minimal footprint), persistence shell (handles long-term C2), and exfiltration shell (data staging and chunked transfer). The cluster's primary anti-forensic technique is timestomping (MITRE T1099): artefact creation and modification timestamps on all three web shells are manipulated to match timestamps of legitimate IIS system files (`%SystemRoot%\System32\inetsrv\`), making timeline-based triage ineffective for distinguishing legitimate IIS components from the backdoors. Technique mapping: T1505.003 (Web Shell), T1099 (Timestomp), T1041 (Exfiltration Over C2 Channel). Detection: do NOT rely on filesystem modification timestamps for IIS web shell hunting — use content-based detection instead (string pattern matching on ASPX file content for `eval(`, `exec(`, base64-encoded payload patterns) and file-hash comparison against known-good IIS content. Monitor IIS worker process (`w3wp.exe`) spawning `cmd.exe`, `powershell.exe`, or `csc.exe` as child processes (Sysmon EID 1). Use Windows Security Event ID 4663 on `%SystemRoot%\System32\inetsrv\` to detect file writes that bypass timestamp-based filters. Hardening: deploy Application Control (WDAC/AppLocker) to prevent execution of unsigned ASPX artefacts written to the IIS root.
+    ch_eu_nexus: "European public-sector and government IIS deployments are in scope — OP-512 targets are consistent with espionage interest in EU administrative infrastructure"
+    public_sector_nexus: "direct — IIS is used in many public-sector portals and intranet systems"
+    sector: "public-sector, government, defence"
+    cves: []
+    actors_campaigns_malware: ["OP-512"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "OP-512 uses timestomping to set ASPX web shell creation/modification times to match legitimate IIS system binaries, defeating timeline-based forensic triage"
+        attribution: "ReliaQuest"
+        source_url: "https://www.reliaquest.com/blog/op-512-china-linked-iis-webshell-framework-timestomping/"
+      - quote: "The cluster is the fourth distinct China-linked group targeting IIS in the past 12 months; attribution is moderate-to-high confidence"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/op-512-china-iis-webshell-timestomping.html"
+
+  - title: "Altium Enterprise Server critical path traversal cluster — unauthenticated file write (CVE-2026-11420, CVE-2026-11419, CVE-2026-11429)"
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-11420", publisher: "ENISA EUVD", date: "2026-06-05", role: "primary" }
+      - { url: "https://www.altium.com/security-advisory/cve-2026-11420", publisher: "Altium Security Advisory", date: "2026-06-04", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd recent criticals bridge → EUVD-2026-11420 listing 2026-06-05 → primary: ENISA EUVD advisory URL → corroborating: Altium security advisory URL https://www.altium.com/security-advisory/cve-2026-11420"
+    summary: |
+      Altium disclosed a cluster of three path traversal vulnerabilities in Altium Enterprise Server (on-premises edition), all fixed in version 8.1.1. CVE-2026-11420 (CVSS 4.0: 10.0) is the most critical: an unauthenticated path traversal in the Network Installation Service (NIS) component allows an attacker to write arbitrary files to any location on the server filesystem, enabling remote code execution without credentials by writing a web shell or modifying configuration files. CVE-2026-11419 (CVSS 4.0: 9.4) is an authenticated path traversal in the Vault Service UploadController — post-authentication file write to arbitrary filesystem locations. CVE-2026-11429 (CVSS 4.0: 9.4) is an authenticated path traversal in the Git Service that allows moving files to arbitrary locations, reachable to RCE via configuration file manipulation. All three affect on-premises Altium Enterprise Server deployments only; Altium 365 (cloud) was remediated at the service level before public disclosure. No exploitation has been observed (EPSS ~0.0 at time of writing). Technique: T1190 (Exploit Public-Facing Application), T1505.003 (Web Shell via unauthenticated file write). Affected: Altium Enterprise Server < 8.1.1. Patched: 8.1.1. Detection: monitor NIS service (`AltiumNIS.exe`) and Vault/Git service HTTP handlers for path components containing `../` or URL-encoded equivalents (`%2F%2E%2E`); look for unexpected file writes in the Enterprise Server install directory from service accounts. Hardening: update to 8.1.1 immediately; restrict network access to the NIS port to internal management VLANs only.
+    ch_eu_nexus: "Altium Enterprise Server is used by electronics and defence engineering firms in CH/EU; the unauthenticated file write vector is critical for any internet-exposed deployment"
+    public_sector_nexus: "indirect — defence and critical infrastructure engineering supply chains"
+    sector: "manufacturing, defence, engineering"
+    cves: [CVE-2026-11420, CVE-2026-11419, CVE-2026-11429]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-11420: CVSS 4.0 score 10.0; unauthenticated path traversal in Altium Enterprise Server Network Installation Service enables arbitrary file write to any filesystem location"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-11420"
+      - quote: "All three CVEs fixed in Altium Enterprise Server 8.1.1; Altium 365 cloud remediated before disclosure"
+        attribution: "Altium Security Advisory"
+        source_url: "https://www.altium.com/security-advisory/cve-2026-11420"
+
+cve_table:
+  - cve: CVE-2026-20245
+    product: "Cisco Catalyst SD-WAN Manager"
+    cvss: "7.8 (CVSS 3.1)"
+    epss: "unknown"
+    kev: false
+    exploited: true
+    patch: "None available as of 2026-06-05"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+
+  - cve: CVE-2026-28318
+    product: "SolarWinds Serv-U 15.5.4 and prior"
+    cvss: "7.5 (CVSS 3.1)"
+    epss: "unknown"
+    kev: true
+    exploited: true
+    patch: "Serv-U 15.5.4 Hotfix 1 (2026-06-04)"
+    source: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+  - cve: CVE-2026-49975
+    product: "nginx < 1.28.2, Apache httpd < 2.4.65, Microsoft IIS (unpatched), Envoy, Cloudflare Pingora"
+    cvss: "unknown (not yet scored)"
+    epss: "unknown"
+    kev: false
+    exploited: false
+    patch: "nginx 1.28.2, Apache httpd 2.4.65 (partial); IIS no patch"
+    source: "https://blog.calif.io/http2-bomb-cve-2026-49975"
+
+  - cve: CVE-2026-10881
+    product: "Google Chrome < 149.0.7732.45 (ANGLE graphics engine)"
+    cvss: "9.6 (CVSS 3.1)"
+    epss: "unknown"
+    kev: false
+    exploited: false
+    patch: "Chrome 149.0.7732.45 (2026-06-04)"
+    source: "https://www.securityweek.com/chrome-149-patches-429-vulnerabilities-record-release/"
+
+  - cve: CVE-2026-3300
+    product: "Everest Forms Pro (WordPress) <= 1.9.12"
+    cvss: "9.8 (CVSS 3.1)"
+    epss: "unknown"
+    kev: false
+    exploited: true
+    patch: "Everest Forms Pro 1.9.13"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2026-3300"
+
+  - cve: CVE-2026-11420
+    product: "Altium Enterprise Server < 8.1.1 (Network Installation Service)"
+    cvss: "10.0 (CVSS 4.0)"
+    epss: "~0.0"
+    kev: false
+    exploited: false
+    patch: "Altium Enterprise Server 8.1.1"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-11420"
+
+  - cve: CVE-2026-11419
+    product: "Altium Enterprise Server < 8.1.1 (Vault Service UploadController)"
+    cvss: "9.4 (CVSS 4.0)"
+    epss: "~0.0"
+    kev: false
+    exploited: false
+    patch: "Altium Enterprise Server 8.1.1"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-11420"
+
+  - cve: CVE-2026-11429
+    product: "Altium Enterprise Server < 8.1.1 (Git Service)"
+    cvss: "9.4 (CVSS 4.0)"
+    epss: "~0.0"
+    kev: false
+    exploited: false
+    patch: "Altium Enterprise Server 8.1.1"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-11420"
+
+candidate_sources:
+  - id: calif-security-blog
+    publisher: "Calif Security Blog (blog.calif.io)"
+    url: "https://blog.calif.io"
+    category: research
+    why: "Published primary technical disclosure of CVE-2026-49975 HTTP/2 Bomb with full PoC analysis; appears to be an independent security researcher blog with original vulnerability research. First time surfaced in this run as a primary source."
+
+coverage_gaps:
+  - source_id: google-chrome-releases-blog
+    reason: "RSS feed at https://chromereleases.googleblog.com/feeds/posts/default returned HTTP 302 redirect; pivoted to SecurityWeek and THN secondary sources for Chrome 149 coverage — full content obtained."
+  - source_id: cisco-psirt-web
+    reason: "Cisco PSIRT advisory page for cisco-sa-sdwan-privesc-4uxFrdzx is Angular SPA — bridge url fetch returned JavaScript shell only. Content obtained via THN, BleepingComputer, and NCSC-NL as alternates. Cisco advisory URL preserved as citation per rules."
+  - source_id: solarwinds-trust-center
+    reason: "SolarWinds trust center advisory page for CVE-2026-28318 is Next.js SPA — bridge url fetch returned shell. Content obtained via CISA KEV, ENISA EUVD, and NCSC-NL as alternates."

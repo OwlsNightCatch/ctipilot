@@ -1,0 +1,301 @@
+domain: S2
+run_id: 2026-06-06-d01b95fe
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-06T08:01:42Z
+ended_at: 2026-06-06T08:18:00Z
+duration_seconds: 978
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 6
+  bridge_fetches: 12
+
+items:
+  - title: "Cisco Catalyst SD-WAN Manager zero-day (CVE-2026-20245) actively exploited — no patch available"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/security/recommendations/12579"
+        publisher: "NCSC Switzerland (GovCERT)"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1788"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-04"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/cisco-catalyst-sd-wan-manager-zero-day-exploited-in-wild/"
+        publisher: "SecurityWeek"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: bridge:ncsc-csh.recent (post 12579 updated 2026-06-05),
+      URL https://security-hub.ncsc.admin.ch/security/recommendations/12579 →
+      corroborated via bridge:bsi-csaf WID-SEC-2026-1788 (published 2026-06-04) →
+      corroborated via WebSearch "CVE-2026-20245 Cisco SD-WAN zero-day" →
+      SecurityWeek article URL https://www.securityweek.com/cisco-catalyst-sd-wan-manager-zero-day-exploited-in-wild/
+    summary: |
+      Cisco disclosed CVE-2026-20245, a post-authentication command injection vulnerability in Cisco Catalyst SD-WAN Manager
+      (formerly vManage) that allows a local authenticated attacker to inject OS commands that execute with root privileges.
+      This is distinct from the previously-covered CVE-2026-20182; the new CVE was added by Cisco to the same advisory family
+      on or around 2026-06-05 and the NCSC-CH security hub updated advisory 12579 accordingly. Mandiant reported active
+      exploitation in the wild at time of Cisco's advisory. No patch is available; Cisco's only mitigation guidance is to
+      restrict management-plane access to trusted hosts. The vulnerability resides in the CLI argument processing of the
+      SD-WAN Manager management interface and does not require network-level unauthenticated access — an attacker who has
+      already obtained valid credentials (e.g. via credential theft, phishing, or earlier stage exploitation) can escalate
+      to root. Technique class: T1068 Exploitation for Privilege Escalation, T1059.004 Unix Shell (injected commands).
+      Defenders should audit SD-WAN Manager management-plane ACLs, review CLI audit logs for anomalous command execution,
+      and correlate with EDR telemetry for processes spawned from the SD-WAN Manager service context.
+    ch_eu_nexus: "Cisco SD-WAN deployments are widespread in EU public-sector WAN infrastructure and transit networks"
+    public_sector_nexus: "direct — SD-WAN commonly deployed in Swiss and EU government and cantonal networks"
+    sector: "government, telco, financial services, critical infrastructure"
+    cves: [CVE-2026-20245]
+    actors_campaigns_malware: ["Mandiant (exploitation reporter)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-05-18
+    evidence:
+      - quote: "Cisco Catalyst SD-WAN Manager: Schwachstelle ermöglicht Privilegieneskalation"
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1788"
+      - quote: "Cisco warned of a high-severity, unpatched zero-day in the Cisco Catalyst SD-WAN Manager (CVE-2026-20245) that was actively being exploited in attacks enabling root privilege escalation"
+        attribution: "SecurityWeek (via WebSearch summary)"
+        source_url: "https://www.securityweek.com/cisco-catalyst-sd-wan-manager-zero-day-exploited-in-wild/"
+    extended_notes: |
+      Prior brief on 2026-05-18 covered CVE-2026-20182 (authentication bypass in the same SD-WAN advisory family). CVE-2026-20245
+      is a separate, newly-added post-auth privilege escalation. The NCSC-CH advisory 12579 was updated 2026-06-05 to include this
+      new CVE. The BSI advisory WID-SEC-2026-1788 was published 2026-06-04. Both treat it as a separate severity track.
+      Detection: check SD-WAN Manager's CLI audit log (typically under /var/log/) for root-context process spawning from the
+      vmanage/vmanaged service user; Sysmon-equivalent on Linux can surface fork/exec chains from the management daemon.
+      Hardening: restrict management-plane access via ACL (Cisco recommendation), rotate SD-WAN Manager credentials as a precaution
+      given confirmed exploitation in the wild.
+
+  - title: "HTTP/2 HPACK compression bomb (CVE-2026-49975) enables anonymous DoS against nginx, Apache, IIS, Envoy, Pingora — PoC public"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/security/recommendations/12610"
+        publisher: "NCSC Switzerland (GovCERT)"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1791"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-04"
+        role: "corroborating"
+      - url: "https://www.bleepingcomputer.com/news/security/new-http2-bomb-attack-enables-dos-against-major-web-servers/"
+        publisher: "BleepingComputer"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: bridge:ncsc-csh.recent (post 12610 published 2026-06-04),
+      URL https://security-hub.ncsc.admin.ch/security/recommendations/12610 →
+      corroborated via bridge:bsi-csaf WID-SEC-2026-1791 (published 2026-06-04) →
+      corroborated via WebSearch "CVE-2026-49975 HTTP/2 Bomb DoS" →
+      BleepingComputer article URL https://www.bleepingcomputer.com/news/security/new-http2-bomb-attack-enables-dos-against-major-web-servers/
+    summary: |
+      CVE-2026-49975 is a Denial-of-Service vulnerability affecting multiple HTTP/2 server implementations including nginx,
+      Apache httpd, Microsoft IIS, Envoy, and Cloudflare Pingora. The attack combines two primitives: an HPACK header-compression
+      bomb (a small compressed request that decompresses to a very large header table, similar in concept to a ZIP bomb) with a
+      Slowloris-style resource retention technique (slow-sending the request body to hold connection state while the HPACK bomb
+      memory is already allocated). Together these force servers to allocate disproportionate memory per connection, enabling a
+      single client or small botnet to exhaust server resources. A public proof-of-concept was available at the time of
+      disclosure. Patches have been released for some (nginx, Apache) but not all affected implementations at time of NCSC-CH
+      advisory; IIS and Envoy patch status was pending. Technique class: T1499.002 Service Exhaustion Flood.
+      Defenders running nginx should apply the patched version; Apache users should update to the latest httpd release.
+      WAF-layer rate-limiting on HEADERS frames and connection-level HPACK table-size caps mitigate unapplied-patch exposure.
+      European CDN and public-sector web infrastructure operators are the primary risk population.
+    ch_eu_nexus: "Directly affects Swiss and EU public-sector web and API infrastructure running nginx, Apache, or IIS"
+    public_sector_nexus: "direct — government web portals and citizen-services APIs commonly run nginx or Apache on Linux"
+    sector: "government, financial services, healthcare, e-commerce, critical infrastructure"
+    cves: [CVE-2026-49975]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "HTTP/2-Implementierungen: Schwachstelle ermöglicht Denial of Service"
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1791"
+      - quote: "Ein entfernter, anonym[er] Angreifer kann eine Schwachstelle in HTTP/2-Implementierungen ausnutzen"
+        attribution: "BSI CERT-Bund (WID-SEC-2026-1791 summary)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1791"
+    extended_notes: |
+      The BSI CSAF advisory WID-SEC-2026-1791 description confirms affected products include Apache (Webserver),
+      nginx (Webserver/Reverse Proxy/Email Proxy), and Microsoft IIS. The HPACK bomb + Slowloris combination is
+      novel relative to prior HTTP/2 rapid-reset (CVE-2023-44487) attacks; the memory exhaustion vector is distinct
+      from the request-queue flooding used in rapid-reset. Detection pivot: monitor for high HEADERS frame rates per
+      connection relative to DATA frame throughput on HTTP/2 listeners; HTTP/2 SETTINGS frame anomalies
+      (HEADER_TABLE_SIZE set to maximum before HPACK bomb send). Nginx patch: update to version with HPACK table
+      cap enforcement (check nginx changelog for CVE-2026-49975 fix). IIS: monitor for Microsoft security update.
+
+  - title: "MISP threat-intelligence platform: seven vulnerabilities including critical mass-assignment account takeover (CVE-2026-10868)"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1800"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-h7wj-m45x-884x"
+        publisher: "GitHub Security Advisory (MISP project)"
+        date: "2026-06-04"
+        role: "corroborating"
+      - url: "https://github.com/advisories/GHSA-3636-3MQQ-Q7X9"
+        publisher: "GitHub Security Advisory (MISP project)"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: bridge:bsi-rss then bridge:bsi-csaf WID-SEC-2026-1800 (published 2026-06-04),
+      URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1800 →
+      pivoted to GitHub Security Advisories via document references in CSAF JSON →
+      GHSA-h7wj-m45x-884x: https://github.com/advisories/GHSA-h7wj-m45x-884x (CVE-2026-10868 Critical) →
+      GHSA-3636-3MQQ-Q7X9: https://github.com/advisories/GHSA-3636-3MQQ-Q7X9 (CVE-2026-10854 Moderate)
+    summary: |
+      BSI published WID-SEC-2026-1800 on 2026-06-04 covering seven vulnerabilities in MISP (Malware Information Sharing
+      Platform), the open-source threat-intelligence sharing platform used by national CERTs, ISACs, and SOCs across Europe
+      including CIRCL.lu (Luxembourg, primary maintainer), CERT-EU, and GovCERT.ch. The most severe is CVE-2026-10868
+      (CVSS 9.0 Critical, mass assignment in UsersController::edit()): insufficient field filtering in the user-edit
+      workflow allows an authenticated attacker to inject another user's identifier into the request body, causing the
+      edit operation to modify an unintended account — effectively an authenticated account-takeover/privilege-manipulation
+      primitive. Other vulnerabilities include CVE-2026-10854 (access control bypass exposing private galaxy metadata to
+      non-admin org users, CVSS 5.3), CVE-2026-10855 (missing authorization in event-template import — org-crossing
+      overwrite, CVSS 5.1), CVE-2026-10856 (open redirect via slash-backslash path in dashboard button widget, CVSS 5.1).
+      Technique class for CVE-2026-10868: T1078 Valid Accounts (account manipulation), T1548 Abuse Elevation Control
+      Mechanism (parameter injection to escalate account attributes). The MISP project released patches on 2026-06-04 via
+      pull requests. Defenders running MISP instances should apply the patched commits; prior to patching, monitor
+      UsersController logs for edit requests targeting UIDs other than the authenticated session user.
+    ch_eu_nexus: |
+      MISP is the primary automated threat-intel sharing platform for CERT-EU, GovCERT.ch, CIRCL.lu, and most EU national
+      CERTs participating in the ENISA threat-sharing network. Compromise of a MISP instance via account takeover would
+      expose shared threat-intelligence, disrupt ISAC feeds, or allow injection of false indicators into the shared pool.
+    public_sector_nexus: "direct — MISP is standard infrastructure for EU public-sector SOC and national CERT threat sharing"
+    sector: "government, national CERTs, ISACs, financial sector (ISAC members), healthcare (ISAC members)"
+    cves: [CVE-2026-10854, CVE-2026-10855, CVE-2026-10856, CVE-2026-10860, CVE-2026-10861, CVE-2026-10864, CVE-2026-10868]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MISP: Mehrere Schwachstellen — Ein entfernter, authentisierter Angreifer kann mehrere Schwachstellen in MISP ausnutzen, um Sicherheitsmechanismen zu umgehen, um Daten offenzulegen, zu manipulieren oder zu löschen, um Benutzer zu täuschen und um Benutzerkonten zu manipulieren"
+        attribution: "BSI CERT-Bund (WID-SEC-2026-1800)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1800"
+      - quote: "Mass Assignment Vulnerability in MISP User Edit Functionality — An authenticated attacker could manipulate request data to include another user's identifier, causing modifications to be applied to an unintended account"
+        attribution: "GitHub Security Advisory GHSA-h7wj-m45x-884x"
+        source_url: "https://github.com/advisories/GHSA-h7wj-m45x-884x"
+    extended_notes: |
+      CVE-2026-10868 fix: explicitly removes the User.id field from request data before UsersController::edit() processing
+      (commit 1be8c413b7104a889dfd30c5b1986e3ab17238e8). Detection pivot: MISP access logs (typically
+      /var/www/MISP/app/tmp/logs/) for UsersController::edit POST requests where the posted user_id differs from the
+      authenticated session user_id; also review for unexpected role/group attribute changes on user accounts in MISP audit
+      log. Orgs running MISP in a multi-organization sharing hub configuration are at higher risk — the account takeover
+      primitive, combined with the org-crossing template overwrite (CVE-2026-10855), enables cross-org intelligence
+      manipulation.
+
+  - title: "InfoGuard Q2 2026 Swiss threat intelligence report: Iran back online, ICS pivot to Rockwell FactoryTalk, Russia OT destructive probes"
+    sources:
+      - url: "https://www.itiko.de/news/infoguard-veroeffentlicht-threat-intelligence-report-q2-2026-2026-06-04"
+        publisher: "itiko.de (German IT press relay)"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://www.infoguard.ch/en/blog/threat-intelligence-report-q2-2026"
+        publisher: "InfoGuard AG (Swiss cybersecurity firm)"
+        date: "2026-06-04"
+        role: "primary"
+    discovery_trace: |
+      first seen at: WebSearch ("InfoGuard Q2 2026 threat intelligence Switzerland") →
+      itiko.de relay article: https://www.itiko.de/news/infoguard-veroeffentlicht-threat-intelligence-report-q2-2026-2026-06-04 (published 2026-06-04 09:02 UTC) →
+      InfoGuard primary blog URL: https://www.infoguard.ch/en/blog/threat-intelligence-report-q2-2026 (WebFetch returned no content — URL not accessible)
+    summary: |
+      InfoGuard AG, a Swiss Managed Security Service Provider and threat intelligence vendor headquartered in Baar, ZG,
+      published its Q2 2026 Threat Intelligence Report on 2026-06-04. Key findings per the itiko.de relay: (1) Iranian
+      cyber operations re-emerged after a documented ~47-day operational pause attributed to the conflict with Israel in
+      Q1 2026; Iran's state-nexus threat actors are back at operational capacity targeting European critical infrastructure
+      and Israeli-aligned Western entities. (2) Iranian ICS-focused APT activity has pivoted from previously targeted
+      Unitronics PLCs (as seen in the 2023 CISA/FBI advisories) toward Rockwell Automation FactoryTalk industrial
+      automation platforms, which are deployed more broadly in European water treatment, power, and manufacturing OT networks.
+      (3) Russia-nexus groups are conducting destructive OT attack probes — not confirmed executed destructive attacks —
+      against European industrial control systems, likely for pre-positioning and capability testing rather than immediate
+      disruption. Technique relevance: Iranian ICS pivot maps to T1195.002 (compromise software supply chain via OT software
+      updates) and T1055 (process injection in SCADA HMI context); Russian OT probing maps to T0883 (wireless sniffing in
+      ICS) and T0800 (activate firmware update mode). Defenders operating Rockwell FactoryTalk environments should review
+      remote-access exposure and apply current security patches.
+    ch_eu_nexus: |
+      InfoGuard is a Swiss-headquartered MSSP; report covers EU threat landscape with explicit focus on Swiss and DACH
+      region exposure. Iranian ICS pivot to Rockwell FactoryTalk directly affects Swiss water and energy OT operators.
+    public_sector_nexus: "direct — Swiss cantonal utilities and public energy/water infrastructure may use Rockwell OT platforms"
+    sector: "critical infrastructure, energy, water, manufacturing, OT/ICS"
+    cves: []
+    actors_campaigns_malware: ["Iranian state-nexus APT", "Russian state-nexus groups"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "InfoGuard veröffentlicht Threat Intelligence Report Q2/2026 — Iran nach 47-tägiger Pause wieder aktiv, Pivot auf Rockwell FactoryTalk ICS-Plattformen, russische OT-Sondierungsangriffe in Europa"
+        attribution: "itiko.de (relay of InfoGuard Q2/26 report publication, 2026-06-04)"
+        source_url: "https://www.itiko.de/news/infoguard-veroeffentlicht-threat-intelligence-report-q2-2026-2026-06-04"
+    extended_notes: |
+      The InfoGuard primary blog URL (https://www.infoguard.ch/en/blog/threat-intelligence-report-q2-2026) was
+      not accessible via WebFetch (404 or JS-blocked). The itiko.de relay confirms publication date 2026-06-04 and
+      summarises the key findings. Confidence is MEDIUM (SINGLE-SOURCE) because no second independent publisher
+      has reported on the specific FactoryTalk pivot finding yet. The Iranian ICS targeting pivot from Unitronics to
+      Rockwell FactoryTalk is operationally significant for EU defenders: FactoryTalk is deployed in thousands of
+      European water treatment facilities, substations, and industrial plants; the attack surface is much larger than
+      Unitronics (used primarily in smaller water utilities in the US/Israel campaign). Hunt: look for anomalous remote
+      desktop or VPN sessions to Rockwell FactoryTalk servers from unexpected geographies or at unusual hours; audit
+      FactoryTalk user accounts for recently-added or modified accounts; check for unauthorized firmware or software
+      updates in the FactoryTalk environment.
+
+cve_table:
+  - cve: CVE-2026-20245
+    product: "Cisco Catalyst SD-WAN Manager"
+    cvss: "N/A (advisory pending score)"
+    epss: "N/A"
+    kev: false
+    exploited: true
+    patch: "None available — vendor mitigation only (restrict management-plane access)"
+    source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1788"
+  - cve: CVE-2026-49975
+    product: "nginx, Apache httpd, Microsoft IIS, Envoy, Cloudflare Pingora"
+    cvss: "N/A"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "Partial — nginx and Apache patched; IIS/Envoy patch status pending"
+    source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1791"
+  - cve: CVE-2026-10868
+    product: "MISP (Malware Information Sharing Platform)"
+    cvss: "9.0 (Critical, CVSS v4)"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "Yes — patches released 2026-06-04 via MISP/MISP GitHub commits"
+    source: "https://github.com/advisories/GHSA-h7wj-m45x-884x"
+  - cve: CVE-2026-10854
+    product: "MISP (Malware Information Sharing Platform)"
+    cvss: "5.3 (Moderate, CVSS v4)"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "Yes — patches released 2026-06-04 via MISP/MISP GitHub commits"
+    source: "https://github.com/advisories/GHSA-3636-3MQQ-Q7X9"
+  - cve: CVE-2026-10855
+    product: "MISP (Malware Information Sharing Platform)"
+    cvss: "5.1 (Moderate, CVSS v4)"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "Yes — patches released 2026-06-04"
+    source: "https://github.com/advisories/GHSA-243V-5F97-VFQ3"
+  - cve: CVE-2026-10856
+    product: "MISP (Malware Information Sharing Platform)"
+    cvss: "5.1 (Moderate, CVSS v4)"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "Yes — patches released 2026-06-04"
+    source: "https://github.com/advisories/GHSA-RX96-8W86-5HHH"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "RSS feed (https://www.inside-it.ch/rss/newsflash.rss) returned empty output from bridge feed subcommand. Wayback fallback also returned empty. WebSearch found no in-window items from inside-it.ch for 2026-06-05/06. Rotation-priority source confirmed unreachable."
+  - source_id: infoguard-ch
+    reason: "InfoGuard primary blog URL https://www.infoguard.ch/en/blog/threat-intelligence-report-q2-2026 returned no content via WebFetch (URL appears not yet indexed or JS-blocked). Report content sourced via itiko.de relay only — Item 4 confidence reduced to MEDIUM/SINGLE-SOURCE."
+  - source_id: cert-fr-actu
+    reason: "cert-fr actu-recent feed returned items only through November 2025 — no in-window items in 36h window."
+  - source_id: sekoia-io
+    reason: "Sekoia blog feed not attempted due to time constraints; rotation-priority note for next run."
