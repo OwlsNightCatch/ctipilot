@@ -1,0 +1,230 @@
+domain: S1
+run_id: 2026-06-07-0885f123
+model: "Claude Sonnet 4.6"
+model_id: claude-sonnet-4-6
+started_at: 2026-06-07T04:10:34Z
+ended_at: 2026-06-07T04:40:00Z
+duration_seconds: 1766
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 12
+
+items:
+  - title: "Chrome 149 patches record 429 vulnerabilities, including USB use-after-free sandbox escape CVE-2026-11009 (CVSS 9.6)"
+    sources:
+      - url: "https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop.html"
+        publisher: "Google Chrome Releases"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://www.securityweek.com/chrome-149-patches-429-vulnerabilities/"
+        publisher: "SecurityWeek"
+        date: "2026-06-05"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+        publisher: "The Hacker News"
+        date: "2026-06-06"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd recent criticals, EUVD-2026-34458 (CVE-2026-11009, USB UAF, CVSS 9.6, Chrome prior to 149.0.7827.53) → pivot: chromereleases.googleblog.com stable-channel-update June 2026 → corroborating: SecurityWeek article 2026-06-05 → confirmed: THN 2026-06-06"
+    summary: |
+      Google released Chrome 149 (stable 149.0.7827.53/54) on 2 June 2026, patching 429 security vulnerabilities — the largest single-release patch count in Chrome's history. Twenty-two flaws are rated Critical. The highest-severity externally-reported fix is CVE-2026-11009, a use-after-free in the Chrome USB component on Windows (CVSS 3.1: 9.6, Chromium severity rated "Medium" by Chromium convention). The UAF is exploitable by a remote attacker via a crafted HTML page to achieve a sandbox escape; no user interaction beyond visiting the page is required on Windows platforms. Chrome's sandbox-escape class is the most significant for enterprise environments: a renderer compromise chained through this UAF gives the attacker code execution in the browser process (medium integrity) from which further Windows kernel privesc chains run. At least 110 of the 429 bugs are use-after-free variants, and over 100 are rated Critical or High. No in-the-wild exploitation of CVE-2026-11009 has been reported at time of writing; however, the size of the patch set and the severity of the sandbox-escape class means the update cadence must be treated as urgent for any managed Chrome fleet. Chrome updates automatically; defenders should verify deployment has reached 149.0.7827.53+ across all endpoints and validate against the Chrome version policy enforced by any MDM.
+    ch_eu_nexus: "global; all Chrome on Windows including CH/EU public-sector endpoints running older Chrome channel"
+    public_sector_nexus: "indirect — Chrome is widely deployed across CH/EU public-sector desktops"
+    sector: "all sectors"
+    cves: [CVE-2026-11009]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Use after free in USB in Google Chrome on Windows prior to 149.0.7827.53 allowed a remote attacker to potentially perform a sandbox escape via a crafted HTML page."
+        attribution: "ENISA EUVD (EUVD-2026-34458)"
+        source_url: "https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop.html"
+      - quote: "Chrome 149 was released with patches for 429 vulnerabilities, including over 100 critical and high-severity bugs."
+        attribution: "SecurityWeek, 2026-06-05"
+        source_url: "https://www.securityweek.com/chrome-149-patches-429-vulnerabilities/"
+    extended_notes: |
+      Defender vantage: Enterprise Chrome fleets typically lag the stable channel by days when using extended-stable or managed-update configurations. Verify via `google_chrome_version` in EDR/asset inventory or the ADMX-managed update policy. Detection surface: Chromium renderer parent-process tree anomalies (chrome.exe spawning unexpected children post-renderer-process isolation breach); Windows ETW for medium-integrity chrome.exe transitions to high-integrity processes. MITRE: T1203 Exploitation for Client Execution (browser rendering engine). The Chromium bug tracker entry 496233132 is still restricted.
+
+  - title: "CVE-2022-0492 — Linux kernel cgroups v1 container-escape newly added to CISA KEV, signalling active exploitation"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/cve-2022-0492-cgroups/"
+        publisher: "Palo Alto Networks Unit 42"
+        date: "2022-03-05"
+        role: "background-primary"
+      - url: "https://www.cisa.gov/news-events/alerts/2026/06/02/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+        publisher: "CISA"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://threat-modeling.com/linux-kernel-cgroups-privilege-escalation-cve-2022-0492/"
+        publisher: "Threat-Modeling.com"
+        date: "2026-06-02"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-06-02, CVE-2022-0492 Linux Kernel cgroups privesc) → pivot: CISA alert 2026-06-02 → corroborating: threat-modeling.com KEV analysis 2026-06-02 → background: Unit 42 original 2022 container-escape writeup"
+    summary: |
+      CISA added CVE-2022-0492 to the Known Exploited Vulnerabilities catalog on 2 June 2026 with a remediation deadline of 5 June 2026 for FCEB agencies. The vulnerability is a CWE-287 / CWE-862 improper authentication flaw in the `cgroup_release_agent_write` function within `kernel/cgroup/cgroup-v1.c`. Linux cgroups v1 failed to verify that the process writing to the `release_agent` file holds `CAP_SYS_ADMIN` at the host (init) namespace level rather than just within a user namespace, meaning an unprivileged process within a container (or a restricted user on a shared host) that has access to the cgroups v1 filesystem can overwrite the `release_agent` path with an attacker-controlled binary, trigger a notify-on-release event by killing all processes in a cgroup, and have the kernel execute that binary as root on the host. The CISA KEV addition in 2026 — four years after the CVE's disclosure and the mainline fix in Linux 5.17-rc3 — confirms active exploitation is now being observed, typically against containerized cloud workloads (Kubernetes nodes, container hosts) and shared Linux systems where cgroups v1 is still mounted (many distros still default to a hybrid v1/v2 hierarchy). CVSS base score 7.0 (High). The key prerequisite is that the attacker must have access to `cgroup_release_agent` write from within their container, which is blocked by Seccomp with a strict profile, AppArmor, or SELinux, and also by cgroup v2 (which has proper `CAP_SYS_ADMIN` ns check in its design). Affected versions: all mainline kernels prior to 5.17-rc3; distro backports from RHEL, Debian, Ubuntu, SUSE were shipped progressively through Q1-Q2 2022.
+    ch_eu_nexus: "European and Swiss public cloud / on-prem Linux — any unpatched or hybrid-cgroup container host is exposed"
+    public_sector_nexus: "direct — affects containerized public-sector workloads on Kubernetes and shared Linux VM hosts"
+    sector: "all sectors with Linux / container infrastructure"
+    cves: [CVE-2022-0492]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA added CVE-2022-0492 to the KEV catalog on June 2, 2026, with a remediation deadline of June 5, 2026 for Federal Civilian Executive Branch (FCEB) agencies under BOD 22-01 compliance requirements."
+        attribution: "CISA KEV catalog (dateAdded 2026-06-02)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/06/02/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      - quote: "Linux simply didn't check that the process setting the release_agent file has administrative privileges (i.e. the CAP_SYS_ADMIN capability). If you can write to the release_agent file, you can force the kernel into invoking a binary of your choosing with elevated privileges and take control of the entire machine."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2022-0492-cgroups/"
+    extended_notes: |
+      Detection: Auditd / eBPF rule on writes to `/sys/fs/cgroup/**/release_agent` from non-root processes; kernel audit event `SYSCALL` for `openat2` / `write` on that path with uid≠0. Falco rule: `proc.name = "" and fd.name contains "release_agent"`. Hardening: enforce cgroups v2 only (`systemd.unified_cgroup_hierarchy=1` kernel parameter; `cgroupns=private` in container runtimes); apply Seccomp runtime-default or AppArmor profiles to all containers (removes the `mount` syscall needed for re-mounting cgroup namespaces). MITRE: T1611 Escape to Host, T1068 Exploitation for Privilege Escalation.
+
+  - title: "CVE-2026-41096 — Windows DNS Client: unauthenticated remote heap buffer overflow RCE (CVSS 9.8), patched May 2026 Patch Tuesday"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096"
+        publisher: "Microsoft MSRC"
+        date: "2026-05-12"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0141"
+        publisher: "NCSC-NL"
+        date: "2026-06-02"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl recent (NCSC-2026-0141, Windows Patch Tuesday advisory updated 2026-06-02, explicitly flags CVE-2026-41096 as CVSS 9.8 unauthenticated RCE) → primary: MSRC msrc cve CVE-2026-41096 (May 12 2026 release) → corroborating: NCSC-NL CSAF NCSC-2026-0141"
+    summary: |
+      CVE-2026-41096 is a heap-based buffer overflow (CWE-122) in `dnsapi.dll`, the Windows DNS Client library present on every supported Windows workstation and server. The vulnerability allows an unauthenticated network-adjacent or remote attacker to trigger the overflow by sending a specially crafted DNS response to any Windows host performing a DNS lookup — no authentication, no user interaction. In configurations where a malicious actor can position themselves to serve or spoof DNS responses (a DNS-poisoning or man-in-the-middle scenario, any network with inadequate DNSSEC or where the attacker controls a rogue DNS server), this can lead to remote code execution at the privilege level of the DNS Client service. Microsoft rates this Critical, CVSS 3.1 base 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), temporal 8.5 (exploitation assessed as "Unlikely" at time of patching — no public exploit or in-wild exploitation confirmed). Patched in the 12 May 2026 Patch Tuesday cumulative update for Windows 10, Windows 11, Windows Server 2022, and Windows Server 2025. The NCSC-NL advisory (NCSC-2026-0141, updated 2 June 2026) explicitly flags this flaw as "Domain Controllers accessible from external networks face high risk" and notes active exploitation has been subsequently reported for the co-patched CVE-2026-41089 (Netlogon) in the same set — emphasising urgency for the full May CU deployment. Affected versions: all Windows prior to the May 2026 cumulative update.
+    ch_eu_nexus: "direct — affects all Windows systems including CH/EU public-sector endpoints and servers; DNS Client is non-optional on all Windows hosts"
+    public_sector_nexus: "direct — all Windows-based government endpoints and servers"
+    sector: "all sectors"
+    cves: [CVE-2026-41096]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Heap-based buffer overflow in Microsoft Windows DNS allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC (CVE-2026-41096)"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096"
+      - quote: "An attacker could exploit this vulnerability by sending a specially crafted DNS response to a vulnerable Windows system, causing the DNS Client to incorrectly process the response and corrupt memory. In certain configurations, this could allow the attacker to run code remotely on the affected system without authentication."
+        attribution: "Microsoft MSRC FAQ"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096"
+    extended_notes: |
+      Defender vantage: `dnsapi.dll` heap overflow from network. Detection: unusual DNS response lengths or malformed TXT/SRV records triggering Windows DNS Client crashes — look for `svchost.exe` (hosting `dnscache` service) Watson/WER crash reports post-update verification; network IDS rules on anomalously large or malformed DNS response payloads. Hardening: deploy May 2026 CU immediately; ensure DNSSEC validation is enabled where possible; restrict outbound DNS to trusted resolvers (prevent poisoning by blocking arbitrary DNS servers). MITRE: T1203 Exploitation for Client Execution (network service), T1190 Exploit Public-Facing Application. No PoC is publicly available. Microsoft exploitation likelihood: "Unlikely."
+
+  - title: "CVE-2026-49777 — WordPress Product Slider Pro for WooCommerce: embedded backdoor (CVSS 10.0), no clean-version signal"
+    sources:
+      - url: "https://patchstack.com/database/wordpress/plugin/woo-product-slider-pro/vulnerability/wordpress-product-slider-pro-for-woocommerce-plugin-3-5-2-backdoor-vulnerability"
+        publisher: "Patchstack"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://vulnerability.circl.lu/vuln/cve-2026-49777"
+        publisher: "CIRCL Vulnerability Lookup"
+        date: "2026-06-06"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd recent criticals (EUVD-2026-34792, CVE-2026-49777, CVSS 10.0, Patchstack, June 5 2026) → primary: Patchstack advisory for Product Slider Pro for WooCommerce → corroborating: CIRCL vulnerability.circl.lu/vuln/cve-2026-49777"
+    summary: |
+      Patchstack disclosed CVE-2026-49777 on 5 June 2026: a backdoor embedded in versions of the ShapedPlugin LLC "Product Slider Pro for WooCommerce" WordPress plugin up to 3.5.2 (CWE-1284, Improper Validation of Specified Quantity in Input, CVSS 3.1: 10.0). The backdoor constitutes "Malicious Software Implanted" (per CVSS environmental), allowing an unauthenticated remote attacker to execute arbitrary code or gain persistent control of any WordPress site running the affected plugin. The critical aggravating factor is that the vendor applied a fix to the existing release number without publishing a new version identifier: the patched code ships under the same version string as the backdoored code, making it impossible for site operators to determine from the version number alone whether they are running a clean or backdoored build. This is a supply-chain-style compromise — the affected code was distributed through the WordPress.org plugin repository. The ENISA EUVD entry (EUVD-2026-34792, updated 6 June 2026) corroborates the CVSS 10.0 score and the Patchstack finding. Any WordPress installation that pulled automatic plugin updates between the backdoor's introduction and the fix window should be treated as potentially compromised regardless of the displayed version. Forensic audit of all plugin PHP files against the Patchstack-identified clean state is required.
+    ch_eu_nexus: "global; affects any WordPress/WooCommerce site in CH/EU e-commerce, public-sector portals using the plugin"
+    public_sector_nexus: "indirect — affects e-commerce and CMS deployments including some public-sector web properties"
+    sector: "e-commerce, retail, public-sector web"
+    cves: [CVE-2026-49777]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Improper Validation of Specified Quantity in Input vulnerability in ShapedPlugin, LLC Product Slider Pro for WooCommerce allows Malicious Software Implanted. This issue affects Product Slider Pro for WooCommerce: from n/a before 3.5.3. No patched version is available — the vendor has applied a fix to an existing release without publishing a new version. While the patch provided by the vendor is valid, releasing it under the existing version number leaves users unable to reliably determine whether they are running a patched or vulnerable installation."
+        attribution: "ENISA EUVD (EUVD-2026-34792) sourced from Patchstack"
+        source_url: "https://patchstack.com/database/wordpress/plugin/woo-product-slider-pro/vulnerability/wordpress-product-slider-pro-for-woocommerce-plugin-3-5-2-backdoor-vulnerability"
+    extended_notes: |
+      Defender vantage: WordPress plugin supply-chain backdoor. Detection: file-integrity monitoring on WordPress `wp-content/plugins/woo-product-slider-pro/` directory comparing current PHP files to the Patchstack-identified clean state; Wordfence / Sucuri or equivalent plugin scanner. Look for unexpected outbound HTTP connections from `php-fpm` / Apache processes originating from the plugin directory. Hunt: `php -r` execution from the WordPress webroot (Sysmon EID 1, parent `apache2`/`nginx`/`php-fpm`, child `php`). MITRE: T1195.002 Compromise Software Supply Chain, T1505.003 Web Shell (if backdoor provides persistent shell access). Hardening: disable automatic plugin updates on production WordPress; pin to WordPress.org checksums via `wp plugin verify-checksums` or equivalent; deploy a WAF with PHP webshell ruleset. Any site running affected versions must be forensically assessed before being returned to production.
+
+  - title: "depthfirst AI agent finds 21 zero-days in FFmpeg for ~$1,000 — nine CVEs assigned (CVE-2026-39210 through -39218), heap/stack overflows in parsers up to 23 years old"
+    sources:
+      - url: "https://depthfirst.com/research/21-zero-days-in-ffmpeg"
+        publisher: "depthfirst"
+        date: "2026-06-06"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+        publisher: "The Hacker News"
+        date: "2026-06-06"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (THN 2026-06-06, 'AI Agent Uncovers 21 Zero-Days in FFmpeg; Chrome Patches Record 429 Bugs') → primary: depthfirst.com research post 2026-06-06 → corroborating: THN article 2026-06-06"
+    summary: |
+      Security startup depthfirst released a research post on 6 June 2026 documenting 21 previously unknown vulnerabilities in FFmpeg, all discovered by an autonomous AI fuzzing/analysis agent at a total cost of approximately $1,000. Nine of the bugs have been assigned CVE identifiers (CVE-2026-39210 through CVE-2026-39218); the remaining twelve are fixed but awaiting numbering. The vulnerability classes are predominantly heap and stack overflows in FFmpeg's parser and demuxer components: the TS (transport stream) demuxer, VP9 decoder, and the service-description-table (SDT) handler among others. The oldest confirmed flaw dates to 2003 — a stack overflow in the SDT code that went undetected for 23 years. FFmpeg is embedded in virtually every piece of software that handles video: browsers, media players, Zoom, Teams, VLC, OBS, and most Linux distro package sets. The defender relevance is twofold: (1) organisations processing untrusted media content (surveillance video, uploaded documents with video, streaming pipelines) should assume parser-layer memory corruption is an active research target; (2) the $1,000 / 21-zero-day cost ratio signals an inflection point in AI-assisted vulnerability discovery that will reduce the economic barrier for threat actors. Proof-of-concept reproducer inputs exist for all 21 bugs; no in-the-wild exploitation confirmed at publication.
+    ch_eu_nexus: "global; FFmpeg is present across CH/EU public-sector media processing, document-handling pipelines, broadcast, and government video infrastructure"
+    public_sector_nexus: "indirect — FFmpeg embedded in government media ingest / video conferencing stacks"
+    sector: "technology, broadcast, public-sector"
+    cves: [CVE-2026-39210, CVE-2026-39211, CVE-2026-39212, CVE-2026-39213, CVE-2026-39214, CVE-2026-39215, CVE-2026-39216, CVE-2026-39217, CVE-2026-39218]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "depthfirst's autonomous security agent scanned the project's roughly 1.5 million lines of C and produced 21 confirmed zero-days, each with a reproducible proof-of-concept input, with the company putting the cost of the run at around $1,000."
+        attribution: "The Hacker News, 2026-06-06"
+        source_url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+      - quote: "Several of the bugs had been latent for 15 to 20 years; one stack overflow in the service-description-table code dates to 2003 and sat untouched for 23 years. Most are heap or stack overflows in parsers and demuxers."
+        attribution: "The Hacker News, 2026-06-06 (sourcing depthfirst research)"
+        source_url: "https://depthfirst.com/research/21-zero-days-in-ffmpeg"
+    extended_notes: |
+      Defender vantage: patch FFmpeg to the latest release incorporating fixes for CVE-2026-39210 through -39218. Check your software inventory for bundled libavcodec / libavformat versions (many applications ship their own FFmpeg build that doesn't auto-update). Particularly relevant for: media processing pipelines that accept user-submitted video, surveillance/VMS systems with FFmpeg-based transcoding, browser-embedded ffmpeg (Electron apps, Teams). MITRE: T1203 Exploitation for Client Execution. The AI agent finding signals that similar parallel campaigns scanning other widely-embedded C libraries (libpng, zlib, libtiff, libxml2) are likely economically viable — defenders should assume parser-class findings will accelerate across the entire embedded C library ecosystem.
+
+cve_table:
+  - cve: CVE-2026-11009
+    product: "Google Chrome (Windows) USB component"
+    cvss: "9.6"
+    epss: "0.04"
+    kev: "No"
+    exploited: "No (no in-wild reports)"
+    patch: "Chrome 149.0.7827.53+"
+    source: "https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop.html"
+  - cve: CVE-2022-0492
+    product: "Linux Kernel cgroups v1 (dnsapi — note: kernel/cgroup/cgroup-v1.c)"
+    cvss: "7.0"
+    epss: "~3-5% (estimated)"
+    kev: "Yes (added 2026-06-02)"
+    exploited: "Yes (CISA confirmed)"
+    patch: "Linux kernel 5.17-rc3+; distro kernel updates shipped Q1-Q2 2022"
+    source: "https://www.cisa.gov/news-events/alerts/2026/06/02/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+  - cve: CVE-2026-41096
+    product: "Windows DNS Client (dnsapi.dll, all supported Windows)"
+    cvss: "9.8"
+    epss: "~8.5% temporal"
+    kev: "No"
+    exploited: "No (exploitation unlikely per MSRC)"
+    patch: "Windows May 2026 cumulative update (2026-05-12)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-41096"
+  - cve: CVE-2026-49777
+    product: "WordPress Product Slider Pro for WooCommerce ≤ 3.5.2"
+    cvss: "10.0"
+    epss: "0.06"
+    kev: "No"
+    exploited: "Yes (backdoor — supply-chain compromise)"
+    patch: "Force-refresh from WordPress.org; version number unchanged, verify file integrity"
+    source: "https://patchstack.com/database/wordpress/plugin/woo-product-slider-pro/vulnerability/wordpress-product-slider-pro-for-woocommerce-plugin-3-5-2-backdoor-vulnerability"
+  - cve: CVE-2026-39210
+    product: "FFmpeg (TS demuxer, heap/stack overflows across multiple components)"
+    cvss: "TBD (no NVD score yet)"
+    epss: "TBD"
+    kev: "No"
+    exploited: "No (PoC exists, not weaponised)"
+    patch: "FFmpeg latest release with fix commits per depthfirst writeup"
+    source: "https://depthfirst.com/research/21-zero-days-in-ffmpeg"
+
+candidate_sources:
+  - id: depthfirst
+    publisher: "depthfirst (security research startup)"
+    url: "https://depthfirst.com"
+    rss_url: null
+    category: "research"
+    why: "Primary source for AI-assisted vulnerability discovery research; authored the FFmpeg 21-zero-day disclosure (CVE-2026-39210 through -39218). High signal-to-noise for parser-class vulnerability findings."
+
+coverage_gaps:
+  - source_id: greynoise
+    reason: "greynoise.io blog is a Webflow SPA with no RSS feed; the listing page returns JS-rendered content. No specific in-window GreyNoise research posts were discoverable within 36h window beyond the 2026 State of the Edge report (published before window). Coverage for GreyNoise in-window scanning alerts was sparse."
+  - source_id: zdi
+    reason: "ZDI blog RSS returned 404. ZDI advisories are available via the main site but no structured feed endpoint was identified. No new ZDI research posts found in the 36h window via WebSearch."
+  - source_id: shadowserver
+    reason: "Shadowserver news listing is server-rendered but no specific in-window advisory or scanning alert was found for June 6-7. Coverage substituted by WebSearch which found the Cisco cPanel KEV scanning reference."

@@ -1,0 +1,126 @@
+domain: S3
+run_id: 2026-06-07-0885f123
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-07T04:10:44Z
+ended_at: 2026-06-07T04:18:00Z
+duration_seconds: 436
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 6
+  bridge_fetches: 14
+
+items:
+  - title: "Mandiant/GTIG UNC3753 (Luna Moth / Silent Ransom Group) campaigns against US law firms escalate to physical office intrusion"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+        publisher: "Mandiant / Google Threat Intelligence Group"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://www.theregister.com/cyber-crime/2026/06/05/if-you-dont-fall-for-these-extortionists-calls-theyll-show-up-with-usb-sticks/5251891"
+        publisher: "The Register"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: mandiant-gtig RSS feed (feeds.feedburner.com/threatintelligence/pvexyqv7v0v), item published 2026-06-05T14:00Z → primary: Mandiant/GTIG blog, URL https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/ → corroborating: WebSearch found The Register coverage at theregister.com"
+    summary: |
+      From January through May 2026, Mandiant tracked UNC3753 (also known as Luna Moth, Chatty Spider, and Silent Ransom Group) targeting dozens of professional and legal services organisations in the US. The group's playbook begins with benign invoice-themed lure emails that establish a pretext, followed by vishing calls where actors impersonate internal IT helpdesk personnel to convince targets to host screen-sharing sessions (via Zoom, Microsoft Terminal Services / Quick Assist, or Teams) and install commercial RMM agents (AnyDesk, Bomgar, Zoho Assist, SuperOps RMM, installed via cURL one-liner). Installation links are transmitted through Privnote self-destructing messages to evade endpoint browser/chat logging. Once remote access is established, actors leverage BYOD endpoints to reach corporate VDI environments through Windows 365 or Citrix clients, then enumerate local directories, OneDrive, and mapped network drives. Data staging targets iManage repositories using keyword search for W-2/W-9/1099 forms, SSNs, and client agreements, then exfiltrates via portable WinSCP/Rclone or by uploading directly from the victim's browser to actor-controlled cloud storage. New in 2026: in multiple cases, individuals posing as on-site IT technicians physically entered corporate offices and attempted to extract data via USB storage media when remote methods failed. The FBI's IC3 has issued a contemporaneous advisory (IC3 CSA 260526). The group achieves full initial-contact-to-exfiltration within a single business day; data staging observed in under one hour. Mandiant-attributed extortion claims now list data from over 38 US law firms published. Technique mapping: T1566.001 (Spearphishing Attachment - lure email), T1598.003 (Phishing for Information - vishing), T1219 (Remote Access Software - AnyDesk/Bomgar/Quick Assist), T1074.001 (Local Data Staging - iManage/Downloads), T1048.003 (Exfiltration over Alternative Protocol - Rclone/WinSCP/consumer cloud upload).
+
+      Defender detection vantage: monitor for parent-process-unusual spawns of AnyDesk.exe / BomgarRemoteSupport.exe / zohoassist.exe from cmd.exe or curl.exe (Sysmon EID 1 with parent-image filter); alert on cURL commands downloading and immediately invoking .msi installers (EID 1, command-line regex); log Privnote.com connections in web proxy; hunt for Windows 365 or Citrix Receiver processes spawning from personal-device VPN sessions where the BYOD endpoint is not enrolled in MDM; monitor iManage audit logs for keyword-search bulk downloads by accounts active in atypical hours. For physical-access threat: review physical-access badge logs against concurrent IT ticket records; require badge+CCTV correlation for on-site "helpdesk" visits.
+    ch_eu_nexus: "Campaign focuses on US law firms; professional/legal services sector in Europe and Switzerland faces the same vishing model — FBI advisory applies globally"
+    public_sector_nexus: "indirect — public-sector legal counsel and government-contracted law firms are plausible targets; tactic is sector-agnostic"
+    sector: "legal, financial services, professional services"
+    cves: []
+    actors_campaigns_malware: ["UNC3753", "Luna Moth", "Silent Ransom Group", "Chatty Spider"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "From January through May 2026, Mandiant identified a financially motivated data theft extortion campaign executed by the threat cluster UNC3753 (also tracked as \"Luna Moth,\" \"Chatty Spider,\" and \"Silent Ransom Group\") targeting dozens of organizations across professional, legal, and financial services in the United States."
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+      - quote: "In instances possibly linked to UNC3753, threat actors have accessed victims' systems in person. In these physical incidents, individuals posing as IT technicians entered corporate offices to attempt direct exfiltration of data from an endpoint using USB storage media."
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+      - quote: "UNC3753 exfiltrates the staged data using a variety of methods to bypass security controls. They frequently use portable versions of WinSCP or Rclone."
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+
+  - title: "SANS ISC: JavaScript → PowerShell → steganographic JPEG loader (MSI-branded wallpaper, round 2) abuses Cloudflare Workers and R2 for payload hosting"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/33054"
+        publisher: "SANS Internet Storm Center (Xavier Mertens)"
+        date: "2026-06-05"
+        role: "primary"
+    discovery_trace: "first seen at: sans-isc RSS feed (isc.sans.edu/rssfeed.xml), item published 2026-06-05T06:47Z → primary (no pivot needed): SANS ISC diary, URL https://isc.sans.edu/diary/rss/33054"
+    summary: |
+      SANS ISC handler Xavier Mertens documented a resurgence of a steganography-in-JPEG delivery chain first observed months prior. The initial vector is a legitimate WeTransfer link distributing a >2 MB JavaScript file ("Remittance Advice.js") bloated with junk for-loops that do nothing. Buried mid-file is the functional code, which: (1) decodes a ROT13-obfuscated payload into an environment variable named INTERNAL_DB_CACHE; (2) fetches a JPEG image from a Cloudflare Workers subdomain (*.workers.dev) that encodes the next-stage payload via steganography — Base64 with all "A" characters replaced by "#" to evade naive Base64 scanners, delimited by the strings "IN-" and "-in1"; (3) loads a decoded .NET DLL (a trojanised fork of the open-source Microsoft.Win32.TaskScheduler library) that establishes Windows Task Scheduler persistence at user logon; (4) fetches a second image from a Cloudflare R2 public bucket (*.r2.dev) that carries a further payload. The full final payload was still under analysis at publication time. The infrastructure pattern (Cloudflare Workers + R2 for payload hosting) exploits Cloudflare's reputation to bypass category-based web filtering. Technique mapping: T1027.001 (Obfuscated Files — Junk Code insertion), T1027.003 (Steganography), T1059.007 (JavaScript), T1059.001 (PowerShell), T1053.005 (Scheduled Task — persistence via Task Scheduler DLL), T1071.001 (Web Protocols — Cloudflare Workers/R2 for C2 staging).
+
+      Defender detection vantage: alert on wscript.exe/cscript.exe spawning PowerShell with base64-encoded or environment-variable-expanded payloads (Sysmon EID 1); monitor web proxy for first-seen *.workers.dev and *.r2.dev domains in combination with preceding WeTransfer downloads; hunt for scheduled tasks created by wscript/mshta parent processes; EDR rule: .NET assembly loading from a TaskScheduler-derived DLL outside the Windows Task Scheduler binary path.
+    ch_eu_nexus: "global technique; DACH lure language not confirmed in this sample (no language specified)"
+    public_sector_nexus: "indirect — commodity delivery chain; any sector"
+    sector: "all sectors"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The obfuscation technique used is ROT13, old but still very efficient. This code will fetch an MSI background JPEG file from this location: Note that the threat-actor likes to use well-known services to store his/her payloads. workers.dev is the default, free subdomain provided by Cloudflare for deploying serverless applications."
+        attribution: "SANS Internet Storm Center (Xavier Mertens)"
+        source_url: "https://isc.sans.edu/diary/rss/33054"
+      - quote: "Once decoded, the payload is a .Net DLL. It's a modified version of the Microsoft.Win32.TaskScheduler, an open-source .NET library for managing Windows Task Scheduler."
+        attribution: "SANS Internet Storm Center (Xavier Mertens)"
+        source_url: "https://isc.sans.edu/diary/rss/33054"
+
+  - title: "depthfirst autonomous AI agent finds 21 zero-days in FFmpeg (CVE-2026-39210 through CVE-2026-39218 + 12 more) for ~$1,000; Google Chrome 149 patches record 429 bugs"
+    sources:
+      - url: "https://depthfirst.com/research/21-zero-days-in-ffmpeg"
+        publisher: "depthfirst"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+        publisher: "The Hacker News"
+        date: "2026-06-06"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (feeds.feedburner.com/TheHackersNews), item published 2026-06-06T07:28Z → primary: depthfirst research blog, URL https://depthfirst.com/research/21-zero-days-in-ffmpeg → corroborating: THN article, URL https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+    summary: |
+      depthfirst, a security startup, ran an autonomous AI agent over FFmpeg's approximately 1.5 million lines of C and produced 21 confirmed, reproducible zero-days — each with a proof-of-concept input — for an estimated compute cost of ~$1,000. Nine already carry CVE identifiers: CVE-2026-39210 (heap buffer overflow in TS demuxer, introduced 2010, missing length bounds before reading two bytes), through CVE-2026-39218. A further 12 are fixed but not yet numbered. Several bugs had been latent for 15–20 years; one stack overflow in the service-description-table parser dates to 2003 (23 years undetected). Vulnerability classes are predominantly heap and stack overflows in parsers and demuxers spanning the TS demuxer, VP9 decoder, and AV1 RTP depacketizer (libavformat/rtpdec_av1.c) — the AV1/RTP overflow is network-reachable without special flags and is the most operationally critical finding. depthfirst published a PoC at github.com/DepthFirstDisclosures/ffmpeg-dfvuln127. All bugs are fixed in the upstream FFmpeg repository; patch status in downstream distributions and embedded copies varies.
+
+      Concurrently, Google shipped Chrome 149 with patches for 429 vulnerabilities — a single-release record, driven partly by AI-generated bug reports following Google's April 2026 bounty-programme overhaul. Over 100 are rated critical or high, mostly use-after-free and insufficient input validation. Update target: 149.0.7827.53 (Linux) / 149.0.7827.53/54 (Windows/macOS).
+
+      Operational significance: FFmpeg is embedded pervasively across media-processing pipelines, Python wheels, container images, and network appliances. Organisations that consume untrusted RTSP or AV1-over-RTP streams (IPTV infrastructure, surveillance platforms, media-processing microservices) should treat the AV1/RTP bug as highest priority. Patch is upstream; distribution-level security updates are the remediation path. Embedded copies in containers and appliances require explicit audit.
+
+      Defender hardening: identify FFmpeg versions via SBOM or runtime scanning (many distributions now ship ffmpeg as a transient dependency of browser/conferencing stacks); prioritise patching where FFmpeg ingests external network streams; isolate media-processing services from internal networks wherever possible. For Chrome: confirm auto-update has run to 149.x.
+    ch_eu_nexus: "global — FFmpeg embedded in Swiss public-sector video surveillance, conferencing, and media processing infrastructure; Chrome deployed universally"
+    public_sector_nexus: "indirect — FFmpeg in public-sector video processing chains; Chrome on all endpoints"
+    sector: "all sectors"
+    cves: ["CVE-2026-39210", "CVE-2026-39211", "CVE-2026-39212", "CVE-2026-39213", "CVE-2026-39214", "CVE-2026-39215", "CVE-2026-39216", "CVE-2026-39217", "CVE-2026-39218"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "depthfirst, whose autonomous security agent scanned the project's roughly 1.5 million lines of C and produced 21 confirmed zero-days, each with a reproducible proof-of-concept input. The company puts the cost of the run at around $1,000. Several of the bugs had been latent for 15 to 20 years; one stack overflow in the service-description-table code dates to 2003 and sat untouched for 23 years."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+      - quote: "Most are heap or stack overflows in parsers and demuxers, spanning components from the TS demuxer to the VP9 decoder. depthfirst says some already carry CVE identifiers; its writeup lists nine, CVE-2026-39210 through CVE-2026-39218, and notes the rest are fixed but not yet numbered. It also published a PoC."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/ai-agent-uncovers-21-zero-days-in.html"
+
+candidate_sources:
+  - id: depthfirst
+    publisher: "depthfirst (autonomous AI vulnerability research)"
+    url: "https://depthfirst.com"
+    rss_url: null
+    category: research
+    why: "Published the primary source for the FFmpeg AI zero-day discovery in this run. Autonomous-agent-driven vulnerability research publisher; high technical depth. No RSS feed detected; discovery via WebSearch and THN linkout."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "HTTP 503 on both direct feed URL and bridge attempt; 5th consecutive run failure. Covered via Sophos-sourced items in prior brief; no alternative Sophos source reachable this run."
+  - source_id: dragos
+    reason: "Dragos blog is server-rendered SPA; no RSS feed available at dragos.com/feed/; bridge `url` of /blog/ returned HTML but no in-window articles (newest blog post was from June 4 about a Phosphorus acquisition, which is a business news item not a threat-research finding). No OT/ICS research item from Dragos in the 36h window."
+  - source_id: kaspersky-securelist
+    reason: "Argamal RAT article (June 3 09:00 UTC) was outside the 36h window (window start: June 5 04:06 UTC) and also outside the 72h developing-story window (June 4 04:06 UTC). Dropped per recency rule."
+  - source_id: sans-ics
+    reason: "SANS ICS channel had no in-window publications (ICS Stormcast entries from June 5 and 4 are Stormcast digests with no OT-specific new research; no ICS-specific diary entries found in window)."

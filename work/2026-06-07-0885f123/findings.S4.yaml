@@ -1,0 +1,193 @@
+# work/2026-06-07-0885f123/findings.S4.yaml
+domain: S4
+run_id: 2026-06-07-0885f123
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-07T04:10:55Z
+ended_at: 2026-06-07T04:17:26Z
+duration_seconds: 391
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 12
+  bridge_fetches: 14
+
+items:
+
+  - title: "UNC3753 (Luna Moth / Silent Ransom Group) escalates to in-person office intrusions with USB exfiltration against US law firms — Mandiant/GTIG + FBI Flash"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms"
+        publisher: "Google Cloud / Mandiant GTIG"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://techcrunch.com/2026/06/05/google-and-fbi-warn-of-ransomware-group-that-sends-fake-it-workers-to-hack-victims-in-person/"
+        publisher: "TechCrunch"
+        date: "2026-06-05"
+        role: "corroborating"
+      - url: "https://securityaffairs.com/193215/cyber-crime/silent-ransom-group-srg-switching-to-dns-fast-flux-infrastructure.html"
+        publisher: "Security Affairs"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews), item dated 2026-06-05 → pivot: Google Cloud Blog primary at https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms (2026-06-05) → corroborating: TechCrunch https://techcrunch.com/2026/06/05/google-and-fbi-warn-of-ransomware-group-that-sends-fake-it-workers-to-hack-victims-in-person/ and Security Affairs https://securityaffairs.com/193215/cyber-crime/silent-ransom-group-srg-switching-to-dns-fast-flux-infrastructure.html"
+    summary: |
+      Mandiant and Google Threat Intelligence Group (GTIG) published a detailed report on 2026-06-05 documenting an ongoing targeted campaign by UNC3753 (aliases: Luna Moth, Chatty Spider, Silent Ransom Group) against US law firms and professional-services firms running from January through May 2026. The group's initial-access chain is vishing-only: invoice-themed pretext emails from consumer accounts followed by phone calls impersonating internal IT or helpdesk staff, directing targets to initiate screen-sharing sessions (Zoom, Microsoft Teams, Quick Assist) and install legitimate RMM tools (AnyDesk, Bomgar, Zoho Assist, SuperOps RMM). Once remote access is established, actors enumerate iManage legal document repositories with keyword searches for W-2/W-9/1099 tax forms, SSNs, corporate client agreements, M&A plans, and trade secrets; stage at Downloads/Roaming paths; and exfiltrate via WinSCP, Rclone, or direct drag-to-consumer-cloud-storage. One documented incident involved 1.7 GB via Google Drive + 14.4 GB via WinSCP. Extortion emails arrive within ~30 minutes of exfiltration with a 3-day deadline and threat to post on the LEAKEDDATA data-leak site (business-data-leaks[.]com). The Spring 2026 escalation adds a physical intrusion dimension confirmed by an FBI Cyber FLASH Alert (2026-05-26): actors now pose as IT technicians in person, gain office access, and plug USB drives directly into employee machines. Separately, Resecurity identified UNC3753 shifting to a fast-flux DNS botnet using compromised IoT routers and modems across Latin America, Eastern Europe, and Central Asia to harden its command-and-control infrastructure and leak site resilience. Named victims confirmed via corroborating journalism: Weil Gotshal & Manges (paid double-digit millions USD in suppression payment, The Insurer 2026-05-27) and Jones Day (refused $13M demand, data published). Detection: vishing-triggered RMM installs (AnyDesk, Bomgar) appearing without change management; iManage search telemetry for financial keyword bursts; WinSCP/Rclone spawned from unusual parent processes; Privnote links in browser history; unusual outbound FTP/SFTP from endpoints; screen-sharing session invites originating from unverified caller-ID.
+    ch_eu_nexus: "Law-firm and financial-services targeting is predominantly US but campaign infrastructure traverses EU jurisdictions (Bulgaria, Croatia, North Macedonia nodes); European law firms handling US-nexus M&A or litigation are credible targets; ATII confirms 38+ leaked law firm clients including at least two with European offices"
+    public_sector_nexus: "indirect — law firms doing government/regulatory advisory work are target"
+    sector: "legal, financial-services, professional-services"
+    cves: []
+    actors_campaigns_malware: ["UNC3753", "Luna Moth", "Chatty Spider", "Silent Ransom Group (SRG)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "From January through May 2026, Mandiant identified a financially motivated data theft extortion campaign executed by the threat cluster UNC3753 targeting dozens of organizations"
+        attribution: "Google Cloud / Mandiant GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms"
+      - quote: "Silent Ransom Group criminals have been walking into law firms' physical offices as recently as spring 2026, claiming to be IT support staff needing to image a device or create local backups"
+        attribution: "TechCrunch"
+        source_url: "https://techcrunch.com/2026/06/05/google-and-fbi-warn-of-ransomware-group-that-sends-fake-it-workers-to-hack-victims-in-person/"
+    extended_notes: |
+      Key defender distinction: UNC3753 deploys NO malware in the primary campaign; all tools are legitimate RMM utilities (AnyDesk, Bomgar, Zoho Assist). This means traditional AV/EDR malware-detection is ineffective. Hunting should focus on: (1) RMM installs that bypass standard software-deployment telemetry (SCCM/Intune absence), (2) screen-sharing invites from outside corporate directory, (3) Privnote.com access from corporate endpoints, (4) iManage/document-management system activity bursts outside normal hours, (5) WinSCP/Rclone child processes of explorer.exe or terminal. The in-person vector requires physical-security review of visitor-access procedures, especially IT-support cover stories.
+
+  - title: "Polyfill.io domain reactivated with HTTP 401 challenge — Toshiba and Muji issue public warnings as login-prompt credential-theft resumes across 100,000+ sites"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/suspicious-polyfill-login-prompts-pop-up-on-toshiba-muji-websites/"
+        publisher: "BleepingComputer"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://www.global.toshiba/jp/top/info-20260602.html"
+        publisher: "Toshiba (victim statement)"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "http://www.muji.com/jp/ja/notice/1676928"
+        publisher: "Muji (victim statement)"
+        date: "2026-06-02"
+        role: "primary"
+    discovery_trace: "first seen at: BleepingComputer RSS feed (https://www.bleepingcomputer.com/feed/) item dated 2026-06-05 → primary: BleepingComputer article https://www.bleepingcomputer.com/news/security/suspicious-polyfill-login-prompts-pop-up-on-toshiba-muji-websites/ → victim statements at Toshiba https://www.global.toshiba/jp/top/info-20260602.html and Muji http://www.muji.com/jp/ja/notice/1676928"
+    summary: |
+      Starting in late May 2026, the polyfill[.]io CDN domain — originally seized and weaponised by a Chinese entity in the June 2024 supply-chain attack affecting 100,000+ sites — became active again and began responding with HTTP 401 authentication challenges. Sites that had not fully removed legacy polyfill[.]io script tags (a failure documented across many organisations since 2024) began displaying browser-native credential dialog boxes to visitors. Toshiba published a warning on 2026-06-02 advising users not to enter credentials; Muji followed with a similar notice stating it had not confirmed unauthorized access or information leakage. Security researcher Pasquale Pillitteri documented that Samsung Smart TVs and additional websites also received login prompts on 2026-06-01. Japanese media (ITmedia, 2026-06-04) named additional affected organizations: Zojirushi, FiNC Technologies, Ishiyaku Publishers, and Hobonichi. No confirmed credential exfiltration has been disclosed, but both Toshiba and Muji explicitly advised users who entered credentials to change their passwords. The mechanism is that the polyfill[.]io CDN domain — not the legitimate polyfill.com or polyfill.top relaunched by creator Andrew Betts — is issuing HTTP 401 responses, which browsers interpret as authentication required and render as a native login dialog box. This is distinct from the 2024 redirect-to-malicious-JavaScript attack. T1195.002 (Compromise Software Supply Chain / CDN).
+    ch_eu_nexus: "Global impact; any European website using legacy polyfill[.]io script tags is affected. Swiss and EU public-sector websites using older CMS instances with polyfill.io CDN links should audit. Toshiba has EU operations."
+    public_sector_nexus: "indirect — public-sector websites using legacy CDN scripts are in scope"
+    sector: "technology, retail, manufacturing, media, public-sector-web"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have confirmed that some parts of our website may display a sign-in screen like the one shown below. We are currently working to eliminate this screen, but if you do see it, please select Cancel without entering any information"
+        attribution: "Toshiba (victim statement)"
+        source_url: "https://www.global.toshiba/jp/top/info-20260602.html"
+      - quote: "At this time, we have not confirmed any unauthorized access or information leakage to this site, but in order to ensure the safety of our customers, we ask that you consider your response"
+        attribution: "Muji (victim statement)"
+        source_url: "http://www.muji.com/jp/ja/notice/1676928"
+    extended_notes: |
+      Web-scanning and remediation action: grep all web-app source code, rendered HTML, and CDN inclusion lists for polyfill[.]io (with any subdomain, path variant). Replace with polyfill.com, polyfill.top, or the Fastly/Cloudflare-mirrored alternatives. Check subresource integrity (SRI) hashes on all third-party JS. Web proxy / SWG logs will show 401 responses from polyfill.io if sites are still loading scripts.
+
+  - title: "Ultrahuman smart-ring maker discloses 68-day delayed notification for March 2026 breach of customer wellness data via credential-stuffed employee account"
+    sources:
+      - url: "https://techcrunch.com/2026/06/03/ultrahuman-says-hackers-accessed-customers-wellness-data-via-internal-tool/"
+        publisher: "TechCrunch"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://www.ultrahuman.com/legal/notice-march-2026/"
+        publisher: "Ultrahuman (victim statement / privacy notice)"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://www.scworld.com/brief/ultrahuman-reports-customer-wellness-data-accessed-in-breach"
+        publisher: "SC Media"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "first seen at: privacyguides.org Data Breach Roundup May 29–June 4, URL https://www.privacyguides.org/news/2026/06/05/data-breach-roundup-may-29-june-4-2026/ → pivot: TechCrunch primary at https://techcrunch.com/2026/06/03/ultrahuman-says-hackers-accessed-customers-wellness-data-via-internal-tool/ → Ultrahuman victim notice at https://www.ultrahuman.com/legal/notice-march-2026/"
+    summary: |
+      Ultrahuman (India-based maker of the Ring Air and Ring Pro wearable health-monitoring devices) disclosed on 2026-06-03 that attackers accessed customer wellness data via an internal analytics tool on 2026-03-27, a lag of 68 days between incident and notification. The attack vector was credentials stolen from a malware-infected employee laptop (infostealer implant implied; company did not name the malware family). The attacker gained read-only access to an internal analytics system containing customer data including sleep, activity, and recovery metrics, contact details, and order/transaction history; for a smaller subset, fitness-related biometric data was also accessible. Ultrahuman estimates approximately 0.1% of its user base was affected. Passwords and payment information are explicitly stated as unaffected. CEO Mohit Kumar stated security alerting detected the incident "within hours" and the vulnerability was "closed swiftly." The 68-day notification delay — breach 2026-03-27, user notification 2026-06-03 — is notable from a GDPR Article 33/34 perspective: GDPR requires controller notification to supervisory authority within 72 hours of awareness and notification to data subjects "without undue delay" when likely to result in high risk. Ultrahuman processes sensitive biometric / wellness data likely qualifying as Special Category Data under Article 9 GDPR; their DPA jurisdiction (likely Ireland or India-based but EU data subjects covered by GDPR) should be treating this as reportable. No regulator enforcement action has been disclosed to date.
+    ch_eu_nexus: "EU data subjects (Ultrahuman Ring devices are sold in EU, Switzerland, UK); GDPR Special Category Data (health/biometric) implicated; 68-day delay raises Article 33/34 compliance questions"
+    public_sector_nexus: "none"
+    sector: "consumer health-tech, wearables"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Our security alerting systems detected the incident within hours, and we closed the vulnerability swiftly"
+        attribution: "Ultrahuman CEO Mohit Kumar (via TechCrunch)"
+        source_url: "https://techcrunch.com/2026/06/03/ultrahuman-says-hackers-accessed-customers-wellness-data-via-internal-tool/"
+    extended_notes: |
+      For EU defenders: the 68-day notification delay on Special Category / biometric data is the noteworthy compliance dimension. If your organisation partners with Ultrahuman for employee wellness programs (fitness challenges, etc.), assess whether employee biometric data may have been in scope. Broader pattern: infostealer-infected personal devices leading to corporate-credential compromise is the consistent initial-access pattern (see also Booking.com, Charter Communications in prior briefs).
+
+  - title: "Magecart variant abuses Stripe API as both payload host and data-exfiltration channel — skimmer stored in Stripe customer metadata, exfiltrated cards returned as fake Stripe customers"
+    sources:
+      - url: "https://sansec.io/research/stripe-api-skimmer-infrastructure"
+        publisher: "Sansec Forensics Team"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/credit-card-theft-campaign-abuses-stripe-to-host-stolen-payment-info/"
+        publisher: "BleepingComputer"
+        date: "2026-06-04"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer RSS feed https://www.bleepingcomputer.com/feed/ item dated 2026-06-04 → primary: Sansec Forensics Team research at https://sansec.io/research/stripe-api-skimmer-infrastructure (2026-06-04) → corroborating: BleepingComputer https://www.bleepingcomputer.com/news/security/credit-card-theft-campaign-abuses-stripe-to-host-stolen-payment-info/"
+    summary: |
+      Sansec's Forensics Team published on 2026-06-04 a technical analysis of a new Magecart family that routes both its payload delivery and stolen-data exfiltration entirely through Stripe's legitimate API infrastructure. The attack flow: the threat actor creates a Stripe customer object and stores the card-skimmer JavaScript inside the customer's metadata fields; the skimmer payload is then retrieved via api.stripe.com at checkout page load time. On execution, the skimmer captures full card number, CVV, expiration date, billing address, and order total, then writes the stolen data back to Stripe by creating new fake Stripe customer records — making both directions of malicious traffic appear as legitimate Stripe API calls. Entry point is a Google Tag Manager (GTM) container injected into checkout pages, targeting Magento/Adobe Commerce installations. The Stripe customer record hosting the skimmer was created 2024-12-24, suggesting the campaign has been operational since at least Q4 2025. The evasion advantage is significant: api.stripe.com is universally allow-listed in web-application firewall rules and content security policy headers on e-commerce sites; security tools that normally catch exfiltration to unknown endpoints see only trusted Stripe traffic. Detection: look for GTM container IDs not in the organization's approved list; monitor Stripe API calls for customer-creation events that do not map to legitimate orders; check Stripe customer metadata fields for encoded JavaScript; review CSP reports for script-src violations that resolve through GTM. Patch vector: audit GTM container contents and restrict GTM to known tag types.
+    ch_eu_nexus: "Global e-commerce / Magento-Adobe Commerce installations including EU and Swiss online retailers; any European payment-card-processing merchant is in scope"
+    public_sector_nexus: "indirect — municipal or cantonal e-services with e-commerce checkout components are credible scope"
+    sector: "e-commerce, retail, financial-services"
+    cves: []
+    actors_campaigns_malware: ["Magecart"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sansec found a Magecart family that runs its skimmer straight out of Stripe. The attacker stores the card stealer in a Stripe customer's metadata and runs it on checkout pages before writing stolen card numbers back into the same account disguised as fake customers."
+        attribution: "Sansec Forensics Team"
+        source_url: "https://sansec.io/research/stripe-api-skimmer-infrastructure"
+    extended_notes: |
+      This technique is notable because it defeats the common mitigation of blocking external script loads and monitoring for unknown CDN domains — both payload and exfiltration channel are api.stripe.com. Any Magento/Adobe Commerce merchant using Stripe as a payment processor is potentially in scope. Defenders should run server-side integrity monitoring on GTM container content rather than relying on browser-side CSP to catch this variant.
+
+  - title: "FIFA World Cup 2026 fraud ecosystem: 13,000+ spoofed domains, banking trojans in streaming apps, Ghost Stadium credential-harvesting kit — FBI and FortiGuard warn with kickoff June 11"
+    sources:
+      - url: "https://www.fortinet.com/blog/threat-research/cybercriminals-are-targeting-the-fifa-world-cup-2026"
+        publisher: "Fortinet FortiGuard Labs"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/fifa-world-cup-2026-scams-are-already.html"
+        publisher: "The Hacker News"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: THN RSS feed (https://feeds.feedburner.com/TheHackersNews), item dated 2026-06-05 → primary: FortiGuard Labs at https://www.fortinet.com/blog/threat-research/cybercriminals-are-targeting-the-fifa-world-cup-2026 (2026-06-04) → corroborating: THN https://thehackernews.com/2026/06/fifa-world-cup-2026-scams-are-already.html"
+    summary: |
+      FortiGuard Labs published on 2026-06-04 — one week before the June 11 kickoff — a threat report on FIFA World Cup 2026 fraud infrastructure. Researchers tracked 13,000+ newly registered FIFA-themed domains from January to May 2026, ~8.8% classified as malicious or suspicious. Three primary threat clusters: (1) Ghost Stadium, a Chinese-speaking financially-motivated operation running a single phishing kit across 300+ sites that pixel-perfect copies the official fifa.com login page, loading images directly from FIFA's own CDN to defeat reputation-based blocking; credentials submitted are harvested in real time. (2) Android banking trojans embedded in unofficial streaming apps masquerading as RojaDirecta (a popular Spanish-language unofficial sports-streaming brand); ThreatFabric/Kaspersky identified two malware families — Massiv and Perseus — with capabilities including SMS interception (OTP bypass for banking), contact exfiltration, and remote-control. (3) Counterfeit merchandise, hospitality-upsell, and premium-ticket fraud sites collecting passport scans and selfies under the guise of fan ID verification, enabling downstream identity theft. Group-IB estimated losses from ticket fraud alone at $71M–$474M; FBI issued PSA 2026-05-27 warning of FIFA domain spoofing. Relevance for European and Swiss defenders: both the Ghost Stadium phishing kit and the Android trojan apps are available to end-users in Europe; Swiss and EU fans attending matches in Canada, Mexico, and the US are prime targets before and during travel.
+    ch_eu_nexus: "Direct — Swiss and EU fans travelling to the US/Canada/Mexico for the tournament are targets; Android banking trojans affecting European banking apps; ghost stadium credential harvesting hits any European with a FIFA.com account"
+    public_sector_nexus: "indirect — government travel advisories should note the fraud ecosystem"
+    sector: "consumer, sports-entertainment, financial-services"
+    cves: []
+    actors_campaigns_malware: ["Ghost Stadium", "Massiv", "Perseus"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "From January to May 2026, more than 13,000 new FIFA World Cup 2026–themed domains were registered, with about 8.8% of these domains identified as malicious or suspicious"
+        attribution: "Fortinet FortiGuard Labs"
+        source_url: "https://www.fortinet.com/blog/threat-research/cybercriminals-are-targeting-the-fifa-world-cup-2026"
+    extended_notes: |
+      Actionable awareness: advise employees and citizens (especially those with FIFA.com ticketing accounts) to access the official site only via stored bookmarks or typed-direct navigation; be suspicious of SMS/email prompts to verify FIFA account details. For IT teams: mobile-device management (MDM) policies blocking sideloading of APKs from unofficial sources are the most effective mitigation against the Android banking-trojan vector. Swiss public-sector organisations sending staff to accompany federal delegations should consider BYOD restrictions for the travel period.
+
+candidate_sources:
+  - id: privacyguides-data-breach-roundup
+    publisher: "Privacy Guides — Data Breach Roundup (weekly)"
+    url: "https://www.privacyguides.org/news/"
+    category: breaches
+    why: "Published a structured weekly data-breach roundup on 2026-06-05 covering WFP, DentaQuest, Ultrahuman, Charter, Atlas Menu with outbound citation links — a useful secondary aggregator for breach discovery that is not currently in sources.json."
+
+coverage_gaps:
+  - source_id: sec-disclosures-edgar
+    reason: "EDGAR full-text-search (EFTS) endpoint returned 0 8-K Item 1.05 filings for 2026-06-05 to 2026-06-07 window. Also returned 0 for 2026-06-01 to 2026-06-07 broader range. Either no material cyber incidents were disclosed in this specific window, or the EFTS index lag is 48+ hours. Covered via WebSearch fallback — no additional 8-K disclosures surfaced."
+  - source_id: databreaches-net
+    reason: "Cloudflare Managed Challenge blocked direct bridge; Wayback fallback not attempted (source deprioritised after 5-run gap — limited additional value beyond what was captured from other sources). No unique in-window items identified in WebSearch that were exclusive to databreaches.net."
+  - source_id: inside-it-ch
+    reason: "Failed last 5 runs with transport-403; not attempted this run per instructions. No unique CH-sourced incident disclosures missed as NCSC-CH and heise-sec covered the relevant German-language items."
+  - source_id: edpb
+    reason: "EDPB news page fetched via WebFetch — most recent items dated April-May 2026 (10 items reviewed), none within the 36h window and none covering cyber incidents. Source is quiet this window."
+  - source_id: cnil-fr
+    reason: "CNIL news page fetched — most recent items are May 2026 (IQVIA fine, AI poster). No new enforcement actions or breach notifications within the 36h window."
+  - source_id: ico-uk
+    reason: "ICO enforcement sitemap fetched via bridge. The most recent entry (lastmod 2026-06-05) is 'Debbie Okparavero and Maliha Islam — Proceeds of Crime Act' — a criminal prosecution for data theft, not a data-controller enforcement penalty. Bridge returned raw HTML without useful body content; WebSearch did not surface a compelling technical incident disclosure. This entry does not meet the threshold for inclusion as a cyber-incident item."

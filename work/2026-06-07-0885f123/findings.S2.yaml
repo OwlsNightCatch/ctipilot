@@ -1,0 +1,253 @@
+domain: S2
+run_id: 2026-06-07-0885f123
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-07T04:10:32Z
+ended_at: 2026-06-07T04:26:00Z
+duration_seconds: 930
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 14
+  bridge_fetches: 14
+
+items:
+  - title: "HTTP/2 Bomb (CVE-2026-49975): unauthenticated memory-exhaustion DoS against nginx, Apache httpd, IIS, Envoy and Cloudflare Pingora — PoC public, no patch yet for IIS/Envoy/Pingora"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-04"
+        role: "primary-advisory"
+      - url: "https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb"
+        publisher: "Calif (researcher — Substack)"
+        date: "2026-06-03"
+        role: "primary-research-disclosure"
+      - url: "https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/"
+        publisher: "SecurityWeek"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://github.com/envoyproxy/envoy/security/advisories/GHSA-22m2-hvr2-xqc8"
+        publisher: "Envoy GHSA"
+        date: "2026-06-03"
+        role: "vendor-advisory"
+      - url: "https://thehackernews.com/2026/06/new-http2-bomb-vulnerability-allows.html"
+        publisher: "The Hacker News"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: ncsc-ch-security-hub bridge (ncsc-csh recent 20), URL https://security-hub.ncsc.admin.ch/#/posts/12610
+      → primary researcher disclosure: Calif blog https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb
+      → vendor advisory: Envoy GHSA https://github.com/envoyproxy/envoy/security/advisories/GHSA-22m2-hvr2-xqc8
+      → corroborating: SecurityWeek https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/ (published 2026-06-03)
+      → WebSearch confirmed THN, CybersecurityNews, Linuxiac, Imperva all cover same CVE
+    summary: |
+      Security firm Calif (using OpenAI Codex) disclosed CVE-2026-49975, the "HTTP/2 Bomb," on 2026-06-03: a client-side attack that chains HPACK compression amplification with an HTTP/2 Slowloris-style flow-control window hold to exhaust server memory within seconds. A single client on a 100 Mbps connection can hold 32 GB of server RAM within 20 seconds. Affected in default configurations: nginx (patched in 1.29.8 — max_headers directive capped at 1,000), Apache httpd (patched in mod_http2 v2.0.41 — cookie fragments now count toward request field limits), Envoy (patched per GHSA-22m2-hvr2-xqc8), Cloudflare Pingora (no patch), and Microsoft IIS (no patch). Responsible disclosure was made to Apache on 2026-05-27 with a same-day fix. NCSC-CH Security Hub issued advisory post 12610 on 2026-06-04; PoC is public at https://github.com/califio/publications/tree/main/MADBugs/http2-bomb. Exploitation requires only HTTP/2 to be enabled (the default for modern deployments) and network access to the web server port; no authentication, no credentials. Prerequisites: HTTP/2 enabled in target configuration, network access to port 80/443. Affected versions: nginx < 1.29.8; Apache httpd < mod_http2 2.0.41; Envoy < GHSA-22m2-hvr2-xqc8 fixed version; IIS and Pingora — no patch as of disclosure. MITRE ATT&CK: T1499.002 Service Exhaustion Flood.
+      Defender takeaway: patch nginx and Apache immediately; for IIS and Pingora deployments, apply WAF rules that limit the number of HPACK header entries per stream and enforce HTTP/2 flow-control window size limits. Web server access logs will show rapid connection state accumulation from a single IP; network-layer monitoring should alert on sustained high-memory conditions on web servers without corresponding CPU spikes.
+    ch_eu_nexus: "Global CVE; EU/CH nexus via NCSC-CH Security Hub advisory. HTTP/2 is the default for virtually every Swiss and EU public-sector web portal — cantonal and federal portals, e-government services, health data platforms, EU institutions. IIS-based deployments (common in public sector) remain unpatched."
+    public_sector_nexus: "direct — Swiss and EU public-sector portals widely run nginx and IIS behind reverse proxies with HTTP/2 enabled by default"
+    sector: "public-sector, government, health, telco, enterprise"
+    cves: [CVE-2026-49975]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows an unauthenticated remote attacker to cause a complete denial-of-service (DoS) condition and exhaust system memory within seconds via crafted HTTP/2 requests."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+      - quote: "The HTTP/2 Bomb exploit chains two known denial-of-service (DoS) attack techniques to knock major web servers offline."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/"
+    cve_table_entry:
+      cve: CVE-2026-49975
+      product: "nginx / Apache httpd / Microsoft IIS / Envoy / Cloudflare Pingora"
+      cvss: "TBD (CVE reserved, not yet published at time of disclosure)"
+      epss: "N/A"
+      kev: "No"
+      exploited: "PoC public"
+      patch: "nginx 1.29.8; Apache mod_http2 2.0.41; Envoy GHSA-22m2-hvr2-xqc8; IIS/Pingora: no patch"
+      source: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+
+  - title: "Keycloak 26.6.3 patches 16 CVEs including privilege escalation via token exchange (CVE-2026-9704) and SSRF via OIDC endpoint (CVE-2026-4874) — critical EU public-sector identity infrastructure"
+    sources:
+      - url: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+        publisher: "Keycloak Project"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0669/"
+        publisher: "CERT-FR (ANSSI)"
+        date: "2026-06-01"
+        role: "corroborating"
+      - url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-75p6-52g3-rqc8"
+        publisher: "Keycloak GitHub GHSA"
+        date: "2026-06-04"
+        role: "vulnerability-advisory"
+    discovery_trace: |
+      first seen at: cert-fr avis-recent feed, CERTFR-2026-AVI-0669 "Vulnérabilité dans Keycloak" published 2026-06-01
+      → pivot to primary: Keycloak release blog https://www.keycloak.org/2026/06/keycloak-2663-released (published 2026-06-04)
+      → GitHub GHSA for CVE-2026-9704: https://github.com/keycloak/keycloak/security/advisories/GHSA-75p6-52g3-rqc8
+      → WebSearch confirmed DailyCVE, Red Hat advisories
+    summary: |
+      Keycloak 26.6.3, released 2026-06-04, patches 16 security CVEs in the open-source identity and access management platform that underpins SSO, SAML and OIDC federation across the vast majority of EU public-sector deployments and EU institution infrastructure. The most operationally significant fixes are:
+      - CVE-2026-9704 (GHSA-75p6-52g3-rqc8) — Privilege escalation via silent subject_token removal in token exchange (OIDC). An attacker with a low-privilege token can silently omit the subject_token parameter in an OAuth 2.0 token exchange, causing Keycloak to use the requesting client's own identity instead, thereby escalating privileges to the impersonated service account level. Prerequisite: token exchange feature enabled.
+      - CVE-2026-4874 — SSRF via OIDC token endpoint manipulation. An attacker can coerce the Keycloak OIDC token endpoint to issue server-side HTTP requests to attacker-controlled targets, potentially reaching internal services. Prerequisite: access to the OIDC token endpoint (network-accessible).
+      - CVE-2026-8830 — Missing server-side WebAuthn credential registration validation. A malicious authenticator can supply unvalidated attestation data, potentially bypassing phishing-resistant MFA enforcement. Prerequisite: WebAuthn registration endpoint reachable.
+      - CVE-2026-9802 — Server restart resets startupTime, allowing reuse of rotated refresh tokens when revokeRefreshToken=true. Provides a post-server-restart window for replay attacks.
+      - CVE-2026-9792 — ROPC grant bypass in client policy enforcement.
+      - CVE-2026-37977 — CORS Access-Control-Allow-Origin reflected from unverified JWT azp claim on UMA endpoint. Prerequisite: Authorization Services / UMA enabled.
+      The previous release 26.6.2 (2026-05-27) already addressed SAML DoS (CVE-2026-7307). All installations should upgrade to 26.6.3 immediately. CERT-FR issued CERTFR-2026-AVI-0669 covering confidentiality breach and security-policy bypass risks.
+      Detection: monitor Keycloak server logs for unexpected token exchange requests where subject_token is absent; WebAuthn registration audit logs for attestation format anomalies; OIDC endpoint access logs for unusual outbound connection attempts from the Keycloak process.
+    ch_eu_nexus: "Direct — Keycloak is deployed across Swiss federal identity infrastructure (eIDAS, e-government portals), EU institution SSO, and is the reference IAM for Red Hat-based public-sector deployments in DACH. CERT-FR advisory confirms French ANSSI classification."
+    public_sector_nexus: "direct — EU public-sector SSO, e-government, NIS2-regulated entities"
+    sector: "public-sector, government, health, finance, education"
+    cves: [CVE-2026-9704, CVE-2026-4874, CVE-2026-8830, CVE-2026-9802, CVE-2026-9792, CVE-2026-37977, CVE-2026-8922, CVE-2026-9801, CVE-2026-9794, CVE-2026-9791, CVE-2026-7500, CVE-2026-4800, CVE-2026-42581, CVE-2026-9088, CVE-2026-9087, CVE-2026-0707]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-9704 Privilege escalation via silent subject_token removal in token exchange"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+      - quote: "CVE-2026-4874 Server-Side Request Forgery via OIDC token endpoint manipulation"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+      - quote: "Une vulnérabilité a été découverte dans Keycloak. Elle permet à un attaquant de provoquer une atteinte à la confidentialité des données et un contournement de la politique de sécurité."
+        attribution: "CERT-FR (ANSSI)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0669/"
+    cve_table_entry:
+      cve: "CVE-2026-9704 (lead); 15 additional"
+      product: "Keycloak < 26.6.3 (all editions incl. Red Hat build)"
+      cvss: "TBD (GHSA-75p6-52g3-rqc8 published, scores pending)"
+      epss: "N/A"
+      kev: "No"
+      exploited: "No reported exploitation"
+      patch: "Upgrade to Keycloak 26.6.3 (released 2026-06-04)"
+      source: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+
+  - title: "BigBlueButton CVE-2026-46351 / CVE-2026-46353: unauthenticated session hijack via predictable tokens and checksum-bypass API access in EU/DACH education platform — BSI advisory 2026-06-04"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1804"
+        publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik)"
+        date: "2026-06-04"
+        role: "primary-advisory"
+      - url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-38fw-2gq7-ccgr"
+        publisher: "BigBlueButton GitHub GHSA"
+        date: "2026-06-04"
+        role: "vendor-advisory"
+      - url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-gfv2-46v4-jvw5"
+        publisher: "BigBlueButton GitHub GHSA"
+        date: "2026-06-04"
+        role: "vendor-advisory"
+      - url: "https://www.heise.de/en/news/BigBlueButton-Multiple-security-vulnerabilities-closed-11299075.html"
+        publisher: "Heise"
+        date: "2026-05-19"
+        role: "corroborating-press"
+    discovery_trace: |
+      first seen at: bsi-rss feed, WID-SEC-2026-1804 "BigBlueButton: Mehrere Schwachstellen" (high severity, new, published 2026-06-04)
+      → BSI CSAF: https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-1804.json confirmed GHSA references
+      → Vendor GHSAs: GHSA-38fw-2gq7-ccgr (session hijack) and GHSA-gfv2-46v4-jvw5 (SQL injection), both published 2026-06-04
+      → Heise press (2026-05-19): CVE-2026-46351, CVE-2026-46353 confirmed (note: earlier reporting on same CVEs, BSI advisory is fresh)
+      → WebSearch confirmed: CVE-2026-46351 (CVSS 8.1, session-token guessing), CVE-2026-46353 (CVSS 8.1, checksum-bypass access control)
+    summary: |
+      BSI published WID-SEC-2026-1804 on 2026-06-04, the same day BigBlueButton posted two GitHub Security Advisories (GHSA-38fw-2gq7-ccgr covering unauthenticated session hijack via the exposed `/bigbluebutton/api/handleJoinExistingUser` endpoint, and GHSA-gfv2-46v4-jvw5). BigBlueButton (BBB) is an open-source web conferencing platform dominant in EU and DACH educational institutions — deployed across universities, schools and public-sector training environments with mandatory remote-teaching mandates in Germany, Austria and Switzerland. Three vulnerabilities cover the current advisory cycle:
+      - CVE-2026-46351 (CVSS 8.1): Insufficiently random user session tokens allow an attacker to predict and hijack active user sessions without authentication. API endpoint: `/bigbluebutton/api/handleJoinExistingUser` exposed without authentication guard. Prerequisite: network access to the BBB server API port.
+      - CVE-2026-46353 (CVSS 8.1): Insufficient access control allows arbitrary users to send valid API requests to checksum-bypassed endpoints. Prerequisite: network access, knowledge of the API path.
+      - CVE-2026-46404 (CVSS 6.8): SSRF vulnerability. Authenticated users who have gained API access can probe internal network services via the BBB server.
+      Patches: BBB 3.0.21 (end of January 2026 release) addresses CVE-2026-46351 and CVE-2026-46353. The BSI advisory confirms the GHSA disclosures as the public coordination. Self-hosted EU educational BBB deployments that have not upgraded since January 2026 are currently exposed to session hijacking with no credential requirement.
+      Detection: BBB server logs for unexpected calls to `/bigbluebutton/api/handleJoinExistingUser` from IPs not matching known participant sessions; API access log anomalies for requests missing valid checksums that succeed (indicating checksum bypass). BBB's built-in API request logging can be enabled with `logLevel=DEBUG` in `bigbluebutton.yml`.
+    ch_eu_nexus: "Direct — BigBlueButton is the dominant open-source video conferencing platform across German, Austrian and Swiss education systems. DACH universities and cantonal school authorities mandate BBB for remote teaching. EU-wide deployment across public-sector training environments."
+    public_sector_nexus: "direct — education sector, public-sector conferencing infrastructure"
+    sector: "education, public-sector"
+    cves: [CVE-2026-46351, CVE-2026-46353, CVE-2026-46404]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ein Angreifer kann mehrere Schwachstellen in BigBlueButton ausnutzen, um falsche Informationen darzustellen, und um einen SQL-Injection Angriff durchzuführen."
+        attribution: "BSI"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1804"
+      - quote: "Three security vulnerabilities in BigBlueButton allow attackers to probe networks or impersonate other users."
+        attribution: "Heise"
+        source_url: "https://www.heise.de/en/news/BigBlueButton-Multiple-security-vulnerabilities-closed-11299075.html"
+      - quote: "Unauthenticated Session Hijack via Exposed /bigbluebutton/api/handleJoinExistingUser"
+        attribution: "BigBlueButton GitHub GHSA"
+        source_url: "https://github.com/bigbluebutton/bigbluebutton/security/advisories/GHSA-38fw-2gq7-ccgr"
+    cve_table_entry:
+      cve: "CVE-2026-46351, CVE-2026-46353, CVE-2026-46404"
+      product: "BigBlueButton < 3.0.21"
+      cvss: "8.1 (CVE-2026-46351), 8.1 (CVE-2026-46353), 6.8 (CVE-2026-46404)"
+      epss: "N/A"
+      kev: "No"
+      exploited: "No reported exploitation"
+      patch: "Upgrade to BigBlueButton 3.0.21 (available since end January 2026)"
+      source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1804"
+
+cve_table:
+  - cve: CVE-2026-49975
+    product: "nginx / Apache httpd / IIS / Envoy / Cloudflare Pingora"
+    cvss: "TBD (CVE reserved)"
+    epss: "N/A"
+    kev: "No"
+    exploited: "PoC public"
+    patch: "nginx 1.29.8; Apache mod_http2 2.0.41; Envoy GHSA-22m2-hvr2-xqc8; IIS/Pingora: no patch"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+  - cve: CVE-2026-9704
+    product: "Keycloak < 26.6.3"
+    cvss: "TBD"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Keycloak 26.6.3"
+    source: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+  - cve: CVE-2026-4874
+    product: "Keycloak < 26.6.3"
+    cvss: "TBD"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "Keycloak 26.6.3"
+    source: "https://www.keycloak.org/2026/06/keycloak-2663-released"
+  - cve: CVE-2026-46351
+    product: "BigBlueButton < 3.0.21"
+    cvss: "8.1"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "BigBlueButton 3.0.21"
+    source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1804"
+  - cve: CVE-2026-46353
+    product: "BigBlueButton < 3.0.21"
+    cvss: "8.1"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No"
+    patch: "BigBlueButton 3.0.21"
+    source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1804"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge; bridge and Wayback both unavailable; no in-window items identified via WebSearch fallback."
+  - source_id: cert-fr-actu-recent
+    reason: "Feed returned items from October 2025 only — appears feed is not updated. Most recent French CERT advisory (CERTFR-2026-AVI-0669 on Keycloak) found via cert-fr avis-recent instead."
+  - source_id: cert-eu
+    reason: "No advisory newer than May 2026 in the RSS feed (most recent advisory 2026-006 from 6 May). No new CERT-EU advisory in window."
+  - source_id: enisa
+    reason: "ENISA news page returned Drupal HTML listing but no parseable article links; EUVD exploited list returned only items already covered (Mirasvit, SolarWinds, BeyondTrust). No new ENISA news in window."
+  - source_id: ncsc-ch-weekly
+    reason: "Week 23 report (wochenrueckblick_23.html) returned HTTP 404 — not yet published as of fetch time."
+  - source_id: csirt-acn-it
+    reason: "Not fetched directly in this run (bridge recipe applicable). No Italy-specific in-window items surfaced via WebSearch."
+
+fetch_failures:
+  - id: inside-it-ch
+    url_tried: "https://www.inside-it.ch/"
+    fetch_method: bridge:wayback
+    status_code: 404
+    error_class: transport-404
+    error_message: "fetch_source: no usable Wayback snapshot for inside-it.ch >= 5000 bytes in the last 180 days"
+    attempted_methods: [bridge:url, bridge:wayback]
+    mitigation_applied: "WebSearch fallback — no in-window items found for inside-it.ch"
+    covered_anyway: false
