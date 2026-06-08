@@ -1,0 +1,233 @@
+# work/2026-W23-9118e7bd/findings.W1.yaml
+domain: W1
+run_id: 2026-W23-9118e7bd
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-07T23:09:38Z
+ended_at: 2026-06-07T23:20:47Z
+duration_seconds: 669
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 16
+  bridge_fetches: 9
+
+items:
+  - title: "UPDATE: Cisco Catalyst SD-WAN Manager zero-day chain — CVE-2026-20245 confirmed exploited to push malicious configs to edge devices (no patch)"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12579"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+        publisher: "Cisco PSIRT"
+        date: "2026-06-05"
+        role: "corroborating"
+      - url: "https://www.helpnetsecurity.com/2026/06/05/cisco-sd-wan-cve-2026-20245-0-day-exploited/"
+        publisher: "Help Net Security"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "NCSC-CH Security Hub bridge ncsc-csh recent 8 → advisory 12579 updated 2026-06-05 adding CVE-2026-20245 to existing SD-WAN advisory → Cisco PSIRT primary advisory → Help Net Security corroboration"
+    summary: |
+      NCSC-CH updated its Cisco Catalyst SD-WAN advisory on 5 June 2026 to add CVE-2026-20245, a command-injection zero-day in Catalyst SD-WAN Manager that allows an authenticated attacker with netadmin-level privileges to upload a crafted file and execute arbitrary commands as root on the underlying OS. No patch exists. Cisco confirms the prerequisite: netadmin access, obtainable either via valid credentials or exploitation of the existing chain (CVE-2026-20182 or CVE-2026-20127). In observed limited incidents, exploitation of CVE-2026-20245 resulted in malicious configurations pushed to downstream edge devices — extending attacker impact beyond the management plane into the forwarding plane. The vulnerable pathway sits in the CLI file-upload handler; exploitation requires no interaction beyond authenticated access. Cisco recommends upgrading to the SD-WAN software versions that already remediate CVE-2026-20182 (from 14 May); those builds do not yet contain a fix for CVE-2026-20245, which will appear in a future release. The three-CVE chain (20182 → 20127 → 20245) now provides unauthenticated network access, privilege escalation, and root OS execution with edge-device configuration control.
+    ch_eu_nexus: "Global; EU and CH public-sector organisations running Cisco Catalyst SD-WAN directly affected. SD-WAN is common in public-sector wide-area networks."
+    public_sector_nexus: "direct"
+    sector: "public-sector, telco, finance, critical-infrastructure"
+    cves: [CVE-2026-20245, CVE-2026-20182, CVE-2026-20127]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-06"
+    evidence:
+      - quote: "A new actively exploited zero-day (CVE-2026-20245, HIGH) has been disclosed in Cisco Catalyst SD-WAN Manager allowing authenticated attackers to inject arbitrary commands and escalate privileges to root on the underlying operating system. Cisco has observed limited cases where the exploitation of this bug resulted in a configuration change pushed to edge devices."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12579"
+    extended_notes: |
+      The specific delta over the 2026-06-05/06 daily coverage: NCSC-CH's advisory explicitly notes the edge-device config-push impact that was absent from prior daily coverage. This makes the chain particularly dangerous for transit-mode SD-WAN deployments where edge-device compromise can cascade into routing-table manipulation, traffic interception, or service disruption. Detection vantage: Catalyst SD-WAN Manager audit logs for file-upload events on the CLI handler, combined with unexpected config-push operations to edge devices that were not scheduled through normal change-management channels. Cisco's SD-WAN Cloud Pro and Government/FedRAMP variants are both affected.
+
+  - title: "HTTP/2 Bomb (CVE-2026-49975) — HPACK amplification + Slowloris one-connection memory exhaustion: nginx patched, Apache mod_http2 patched (not yet bundled), IIS/Envoy/Pingora unpatched"
+    sources:
+      - url: "https://seclists.org/oss-sec/2026/q2/790"
+        publisher: "oss-security mailing list (Calif)"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/"
+        publisher: "SecurityWeek"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://github.com/envoyproxy/envoy/security/advisories/GHSA-22m2-hvr2-xqc8"
+        publisher: "Envoy Security Advisory (GitHub)"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "NCSC-CH Security Hub bridge → advisory 12610 (2026-06-04, CVE-2026-49975) → oss-security primary disclosure → SecurityWeek article → Envoy GitHub security advisory for GHSA-22m2-hvr2-xqc8"
+    summary: |
+      Security firm Calif disclosed CVE-2026-49975 on 3 June 2026, discovered using OpenAI's Codex assistant. The attack chains two HTTP/2 protocol weaknesses: (1) HPACK compression table amplification — seeding the server's dynamic header-compression table with a single large entry and then sending thousands of single-byte back-references to force massive decoded-size reconstruction; (2) Slowloris-style connection holding to prevent the server from freeing memory, sustaining the amplified allocation. Measured amplification ratios: Envoy ~5,700:1 (32 GB memory exhausted in ~10 s), Apache httpd ~4,000:1 (32 GB in ~18 s), nginx ~70:1, Microsoft IIS ~68:1. Researchers estimate over 880,000 public-facing servers are exposed. The Envoy advisory (GHSA-22m2-hvr2-xqc8) describes the root cause as oghttp2/quiche enforcing HPACK limits on encoded bytes without corresponding limits on decoded header size. Patch status as of 7 June: nginx — fixed in 1.29.8 (add `http2_max_field_size 4k;` or similar max_headers directive); Apache httpd — fixed in standalone mod_http2 v2.0.41 (not yet bundled into an httpd 2.4.x release — manual installation required); Microsoft IIS, Envoy, Cloudflare Pingora — no patch yet. Proof-of-concept exploit code is public. No CISA KEV listing yet, and no exploitation in the wild confirmed as of this report.
+    ch_eu_nexus: "Global; Switzerland and EU public-sector web infrastructure (nginx, Apache httpd, IIS) directly affected. NCSC-CH issued advisory within 24 hours of oss-security disclosure."
+    public_sector_nexus: "direct"
+    sector: "public-sector, IT-infrastructure, cloud"
+    cves: [CVE-2026-49975]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "HTTP/2 Bomb affects Apache httpd, nginx, envoy, & pingora. nginx: Upgrade to 1.29.8+, which adds the max_headers directive with a default ceiling. Apache httpd: The fix is in mod_http2 v2.0.41. Microsoft IIS, Envoy, Cloudflare Pingora: No patch available at the time of writing."
+        attribution: "oss-security / Calif"
+        source_url: "https://seclists.org/oss-sec/2026/q2/790"
+      - quote: "Successful exploitation allows an unauthenticated remote attacker to cause a complete denial-of-service (DoS) condition and exhaust system memory within seconds via crafted HTTP/2 requests. Proof of Concept Available."
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12610"
+    extended_notes: |
+      Detection vantage: server memory usage anomalies correlated with inbound HTTP/2 connections from a single source IP; HTTP/2 HPACK header amplification is visible in server access logs via unusually large response-time-to-request-size ratios. Network-level: anomalously high byte-count header blocks on HTTP/2 streams (stream ID variety with repeated tiny frame sizes). Hardening: enforce `http2_max_field_size` on nginx ≥1.29.8; for Apache, manually install mod_http2 v2.0.41 from the standalone releases before an httpd 2.4.x bundle appears; for IIS and Envoy, consider HTTP/2 disablement or a WAF fronting with header-count limits until patches ship. The Envoy GHSA further specifies that the fix requires enforcing limits on decoded header size, not only on encoded HPACK block size.
+
+  - title: "Ghost Stadium / GHOST STADIUM PhaaS operation: 4,300+ fraudulent FIFA domains active as World Cup kickoff (June 11) approaches"
+    sources:
+      - url: "https://www.bankinfosecurity.com/chinese-phishing-service-scams-thousands-fifa-world-cup-fans-a-31819"
+        publisher: "BankInfoSecurity / ISMG"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/fbi-warns-of-fake-fifa-websites-running-world-cup-fraud-schemes/"
+        publisher: "BleepingComputer"
+        date: "2026-05-28"
+        role: "corroborating"
+      - url: "https://www.ic3.gov/PSA/2026/PSA260527"
+        publisher: "FBI IC3 (PSA260527)"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: "WebSearch 'FIFA Ghost Stadium PhaaS June 2026' → BankInfoSecurity June 5 article (primary in-window) → BleepingComputer May 28 article → FBI IC3 PSA260527"
+    summary: |
+      A Chinese-speaking, financially motivated PhaaS operation tracked as GHOST STADIUM has built a pixel-perfect clone of the official FIFA website (including replicated PingIdentity SSO flow) and is operating it across 300+ phishing domains as the FIFA World Cup 2026 kickoff (June 11, Mexico City) approaches. Group-IB's research (published ~May 27, freshly covered by BankInfoSecurity June 5) identifies six parallel fraud schemes across four independent threat actor clusters: credential phishing, fake premium ticket sales (estimated $71M–$474M victim losses from hospitality ticket fraud alone), counterfeit merchandise storefronts, fake streaming platforms, fraudulent betting/casino sites, and infostealer-driven credential theft. The broader ecosystem has registered over 4,300 fraudulent FIFA-themed domains since August 2025, with roughly 3,800 parked and ready for activation. The GHOST STADIUM kit supports 11 languages, suggesting coordinated global targeting. The FBI IC3 issued PSA260527 warning of at least 36 confirmed fraudulent FIFA domains. Freshest pre-kickoff threat signal: Rescana assessed that active exploitation (fake ticket sites, banking malware, credential theft) was underway as of June 6, 2026. The relevant attack class for defenders of employee security and public-sector digital services is credential phishing delivered through sponsored-search-result placement pointing users to cloned SSO pages.
+    ch_eu_nexus: "Switzerland and EU citizens attending or following the World Cup (June 11 – July 19, US/Canada/Mexico). Swiss consular/embassy digital services are potential secondary targets if GHOST STADIUM pivots to government-identity phishing."
+    public_sector_nexus: "indirect"
+    sector: "public-sector, financial, general-population"
+    cves: []
+    actors_campaigns_malware: ["GHOST STADIUM", "TeamPCP (infostealer component)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A Chinese-language phishing-as-a-service platform scammed between $470 million to $1 billion from soccer fans ahead of the 2026 FIFA World Cup. The financially motivated operator, tracked as Ghost Stadium, enabled the theft of up to $10,000 per ticket from at least 47,000 victims on premium ticket sales."
+        attribution: "BankInfoSecurity"
+        source_url: "https://www.bankinfosecurity.com/chinese-phishing-service-scams-thousands-fifa-world-cup-fans-a-31819"
+      - quote: "Threat actors often create spoofed websites by slightly altering characteristics of legitimate website domains, with the purpose of gathering personally identifiable information (PII). FIFA is the target in advance of the 2026 FIFA World Cup."
+        attribution: "FBI IC3 PSA260527"
+        source_url: "https://www.ic3.gov/PSA/2026/PSA260527"
+    extended_notes: |
+      For public-sector security teams: the immediate risk vector is employees or contractors purchasing World Cup tickets or accessing streaming platforms through phishing links. The SSO-clone technique (replicating PingIdentity flows) could be used to harvest corporate SSO credentials if employees mistake the phishing portal for an enterprise login. Defenders should add FIFA-themed domain alerts to email-gateway and DNS-filtering configurations; block `fifa.com` typosquats at the proxy layer (the TLD variants and character substitutions documented by Group-IB). The GHOST STADIUM campaign's use of sponsored search results as a delivery vector means standard URL-filter-only defences are insufficient; user awareness about avoiding paid/sponsored results for sports ticket purchases is a necessary complement.
+
+  - title: "W22 LOOKING-AHEAD UPDATE: Chaotic Eclipse/Nightmare Eclipse — June 2026 Patch Tuesday (June 10) expected but not yet released; YellowKey, GreenPlasma, MiniPlasma still unpatched; researcher promises 'big surprise'"
+    sources:
+      - url: "https://www.helpnetsecurity.com/2026/06/05/june-2026-patch-tuesday-forecast/"
+        publisher: "Help Net Security"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://www.cpomagazine.com/cyber-security/microsoft-doubles-down-on-opposition-to-public-disclosure-as-chaotic-eclipse-wave-of-zero-day-vulnerabilities-continues/"
+        publisher: "CPO Magazine"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "WebSearch 'Chaotic Eclipse Nightmare Eclipse June 2026 Patch Tuesday' → Help Net Security forecast June 5 → CPO Magazine June 3 article"
+    summary: |
+      As of the close of this research window (7 June 2026), no June 2026 Patch Tuesday update has been released — it is scheduled for 10 June. The three Chaotic Eclipse zero-days (YellowKey CVE-2026-45585, GreenPlasma, MiniPlasma/CVE-2020-17103) remain unpatched. Microsoft is expected to patch some or all in the June 10 cumulative update. The researcher (Chaotic Eclipse / Nightmare Eclipse) has promised a 'big surprise' to coincide with June's Patch Tuesday, interpreted by analysts as another unpatched zero-day drop targeting the same day. Prior history: the researcher dropped YellowKey and GreenPlasma the day after May Patch Tuesday (13 May), then MiniPlasma on 17 May. CISA issued a deadline of 3 June for agencies to apply the existing mitigations for the BlueHammer, RedSun, and UnDefend Defender-evasion chain. GitHub and GitLab suspended the researcher's accounts (23 and 26 May respectively). Microsoft publicly reaffirmed opposition to public disclosure without patch coordination. No confirmed ITW exploitation of GreenPlasma or MiniPlasma specifically; BlueHammer, RedSun, and UnDefend were confirmed exploited after public disclosure. W1 note: the June 10 Patch Tuesday should be the top patching priority for this week — defenders should monitor Microsoft MSRC on 10 June for YellowKey (BitLocker bypass via WinRE autofstx.exe), GreenPlasma (CTFMON SYSTEM escalation), and MiniPlasma (cldflt.sys Cloud Filter LPE) patches. Mitigation for YellowKey (WinRE autofstx.exe removal script from Microsoft, TPM+PIN enforcement) remains recommended if patching is delayed.
+    ch_eu_nexus: "Global; all Windows 11 and Windows Server 2025 deployments, including CH/EU public-sector endpoints."
+    public_sector_nexus: "direct"
+    sector: "public-sector, IT-infrastructure, all-sectors"
+    cves: [CVE-2026-45585, CVE-2020-17103]
+    actors_campaigns_malware: ["Chaotic Eclipse", "Nightmare Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-W22"
+    evidence:
+      - quote: "The next Patch Tuesday is June 10, 2026. Microsoft promised patches for the Chaotic Eclipse cluster. The researcher made a promise of a 'big surprise' for the June 2026 Patch Tuesday."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/05/june-2026-patch-tuesday-forecast/"
+    extended_notes: |
+      Defender action ahead of June 10: verify YellowKey mitigation applied (Microsoft's WinRE autofstx.exe removal script or GPO disabling WinRE autofstx); check BitLocker policies for TPM+PIN enforcement (GPO: Computer Configuration → Administrative Templates → Windows Components → BitLocker Drive Encryption → Operating System Drives → Require additional authentication at startup — set PIN). GreenPlasma targets ctfmon.exe; detection is behavioural (child processes of ctfmon.exe with unusual privileges, anomalous token-duplication events — Sysmon EID 10 with TargetImage ctfmon.exe). MiniPlasma targets cldflt.sys (Cloud Filter driver); relevant Sysmon EID 6 (driver loaded) for cldflt.sys anomalies. If the June 10 release does not patch these, the fallback is monitoring for the researcher's promised disclosure the same day.
+
+  - title: "W22 LOOKING-AHEAD UPDATE: Ghost Stadium FIFA PhaaS — first casualties reported as ticket-sale fraud is confirmed live ahead of June 11 kickoff"
+    sources:
+      - url: "https://www.bankinfosecurity.com/chinese-phishing-service-scams-thousands-fifa-world-cup-fans-a-31819"
+        publisher: "BankInfoSecurity"
+        date: "2026-06-05"
+        role: "primary"
+    discovery_trace: "WebSearch 'FIFA Ghost Stadium PhaaS June 2026 new phishing waves' → BankInfoSecurity June 5 → confirmed active exploitation per Rescana June 6 assessment"
+    summary: |
+      Status update on the W22 looking-ahead item 'FIFA Ghost Stadium PhaaS — kickoff June 11': The phishing ecosystem is now confirmed active, with Group-IB's estimate of 47,000 victims and up to $1 billion in losses already attributed to the GHOST STADIUM operation ahead of the June 11 kickoff. See also the standalone Ghost Stadium item (above) for full technical details. This entry captures the W22 status-check specifically: the prediction that fraud would escalate as the tournament approached has been confirmed.
+    ch_eu_nexus: "Switzerland and EU public, employees"
+    public_sector_nexus: "indirect"
+    sector: "public-sector, financial, general-population"
+    cves: []
+    actors_campaigns_malware: ["GHOST STADIUM"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: "update-to-prior:2026-W22"
+    evidence:
+      - quote: "The financially motivated operator, tracked as Ghost Stadium, enabled the theft of up to $10,000 per ticket from at least 47,000 victims on premium ticket sales."
+        attribution: "BankInfoSecurity"
+        source_url: "https://www.bankinfosecurity.com/chinese-phishing-service-scams-thousands-fifa-world-cup-fans-a-31819"
+    extended_notes: |
+      This is a condensed status note — the standalone Ghost Stadium item above should be the primary W1 brief entry. This record exists to satisfy the W22 looking-ahead check for this campaign.
+
+  - title: "W22 LOOKING-AHEAD UPDATE: Shai-Hulud / Miasma supply-chain worm — Cargo (Rust) still un-hit as of window close; Miasma evolves to target AI coding agents in GitHub repos"
+    sources:
+      - url: "https://thehackernews.com/2026/06/miasma-worm-hits-73-microsoft-github.html"
+        publisher: "The Hacker News"
+        date: "2026-06-06"
+        role: "primary"
+      - url: "https://www.stepsecurity.io/blog/miasma-worm-hits-microsoft-again-azure-functions-action-and-72-other-repositories-disabled-after-supply-chain-attack-targeting-ai-coding-agents"
+        publisher: "StepSecurity"
+        date: "2026-06-06"
+        role: "corroborating"
+    discovery_trace: "WebSearch 'Shai-Hulud 3.0 Cargo Maven June 2026' → confirmed Cargo still un-hit; WebSearch 'Miasma worm GitHub Microsoft 73 repos AI coding agents June 5 2026' → The Hacker News June 6 article → StepSecurity analysis"
+    summary: |
+      W22 status check on the prediction 'Cargo (Rust) and Maven (Java) as next likely Shai-Hulud targets': Cargo remains un-hit as of 7 June 2026. Maven was previously hit via automated npm-mirror pipeline (confirmed in W22 weekly) but without independent Maven-native worm propagation. The most material new development is Miasma's June 5–6 pivot to GitHub repository persistence, specifically targeting AI coding agent configuration files. The malicious commit planted 4.6 MB payload runners wired to execute via Claude Code, Gemini CLI, Cursor, and VS Code workspace-config files — meaning the trigger is a developer opening the repository in an AI-assisted IDE, not an `npm install`. GitHub disabled 73 Microsoft repositories (Azure, Azure-Samples, Microsoft, MicrosoftDocs organizations). The Durable Task ecosystem (Azure/durabletask and siblings) and Azure Functions Action (azure-functions-action) disrupted CI/CD pipelines globally. TeamPCP's reuse of a previously compromised contributor account from the May GitHub breach suggests incomplete credential rotation after the initial incident. Key delta from prior coverage: the AI-coding-agent config injection vector is new and the Cargo prediction remains unconfirmed.
+    ch_eu_nexus: "Global; EU and CH software development pipelines using Miasma-affected GitHub Actions (azure-functions-action) may have had CI/CD disrupted."
+    public_sector_nexus: "indirect"
+    sector: "IT-infrastructure, software-development"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Miasma", "Mini Shai-Hulud"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-06"
+    evidence:
+      - quote: "The commit added no dependencies. It planted a 4.3 MB payload runner and wired it to execute automatically through five developer tools: Claude Code, Gemini CLI, Cursor, VS Code, and the npm test script. The attack detonates when a developer clones one of the affected repos and opens it in an AI coding agent."
+        attribution: "SafeDep (cited in The Hacker News)"
+        source_url: "https://thehackernews.com/2026/06/miasma-worm-hits-73-microsoft-github.html"
+    extended_notes: |
+      Detection vantage for the AI-coding-agent injection vector: monitor `.claude/commands/`, `CLAUDE.md`, `.gemini/`, `.cursor/rules`, and `.vscode/settings.json` for unexpected modifications in cloned repositories — especially when those files trigger outbound HTTP requests or spawn child processes on file-open events. In CI/CD contexts, block workspace-config files (CLAUDE.md, .cursorrules, .gemini/) from being executed as code; treat them as data-only. GitHub Actions consumers: verify azure-functions-action is restored and re-check workflows that reference the affected repositories. The 'same wound reopening' finding from StepSecurity suggests the contributor account from the May breach was never fully revoked — a credential hygiene gap that defenders should note as a model for their own post-breach token rotation processes.
+
+  - title: "W22 LOOKING-AHEAD UPDATE: Gogs argument-injection RCE — still no patch; no confirmed exploitation ITW; CISA has not yet listed the new vulnerability"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+        publisher: "Rapid7"
+        date: "2026-05-28"
+        role: "primary"
+    discovery_trace: "WebSearch 'Gogs RCE argument injection June 2026 vendor response' → Rapid7 primary (May 28, boundary of window) → CISA KEV checked — not listed for the new argument injection CVE"
+    summary: |
+      W22 status check: The Rapid7-discovered argument injection in Gogs' pull-request merge flow (Merge() in internal/database/pull.go) remains unpatched and the Gogs maintainer has provided no further response since acknowledging receipt on 28 March. A public Metasploit module is available. Shadowserver tracks over 2,400 internet-exposed Gogs instances (319 in Europe). No confirmed ITW exploitation of this specific flaw reported in the window; CISA has not added it to KEV (the prior CISA Gogs KEV entry from January 2026 covers the separate path-traversal CVE-2025-8110). Note: the Rapid7 primary source was published 28 May 2026, at the boundary of the 8-day window. The key delta for this window: no change — Gogs maintainer silence continues, and defenders should treat any internet-exposed Gogs instance with open registration as fully compromised until patched or isolated.
+    ch_eu_nexus: "319 European Gogs instances internet-exposed per Shadowserver. EU public-sector self-hosted Git infrastructure may be affected."
+    public_sector_nexus: "indirect"
+    sector: "IT-infrastructure, software-development"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: "update-to-prior:2026-W22"
+    evidence:
+      - quote: "The researcher reported the security flaw to the Gogs maintainers on March 17, but they have yet to provide a patch or respond to further requests for a status update, despite acknowledging the report on March 28."
+        attribution: "BleepingComputer (citing Rapid7)"
+        source_url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    extended_notes: |
+      Defender action: Disable open registration on internet-facing Gogs instances (Site settings → Registration → Disable self-registration). Limit 'Rebase before merging' merge strategy to trusted repository owners — the vulnerable code path only triggers when this specific merge strategy is active. Network-layer: Gogs should not be internet-exposed without authentication enforced at the perimeter. The Metasploit module availability means this will appear in opportunistic scan-and-exploit campaigns even before any specific threat actor prioritises it.
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "Cloudflare 403 — Wayback fallback attempted; no usable snapshot. No in-window items identified via WebSearch fallback."
+  - source_id: sophos-xops
+    reason: "HTTP 503 on direct fetch; no Wayback snapshot available. Sophos X-Ops blog content accessed via TheHackerNews and SecurityWeek corroborations instead."
+  - source_id: inside-it-ch
+    reason: "HTTP 404 — canonical URL probe needed. No Swiss-specific items missed; NCSC-CH Security Hub covered CH-nexus content."
+  - source_id: group-ib
+    reason: "group-ib.com Cloudflare-blocked; Wayback had no recent snapshot. Ghost Stadium content accessed via BankInfoSecurity and BleepingComputer corroborations."
