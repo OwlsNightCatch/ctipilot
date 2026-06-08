@@ -1,0 +1,210 @@
+domain: S1
+run_id: 2026-06-08-1a0ce644
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-08T04:10:05Z
+ended_at: 2026-06-08T04:18:54Z
+duration_seconds: 529
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 18
+  bridge_fetches: 9
+
+items:
+  - title: "CVE-2026-3300 — Everest Forms Pro WordPress plugin: unauthenticated PHP eval() injection actively exploited in mass campaign (29,300+ blocked attempts)"
+    sources:
+      - url: "https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/"
+        publisher: "Wordfence"
+        date: "2026-06-06"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/"
+        publisher: "BleepingComputer"
+        date: "2026-06-06"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html"
+        publisher: "The Hacker News"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer RSS feed, URL https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/ (published 2026-06-06) → primary: Wordfence, URL https://www.wordfence.com/blog/2026/06/attackers-actively-exploiting-critical-vulnerability-in-everest-forms-pro-plugin/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/06/hackers-exploit-critical-everest-forms.html"
+    summary: |
+      CVE-2026-3300 (CVSS 9.8) is a PHP code injection through `eval()` in the Calculation Addon's `process_filter()` function of Everest Forms Pro (WordPress plugin, ~4,000 active installs). The function concatenates user-submitted form field values into a PHP code string and passes them directly to `eval()` after `sanitize_text_field()`, which does not escape single quotes or PHP syntax characters. An unauthenticated attacker opens a text field, injects a single quote to close the string literal, appends a `wp_insert_user()` call to create an administrator account, and comments out the remainder with `//`. The patch (version 1.9.13) was released 18 March 2026 — the delay between patch availability and mass exploitation is the key defender concern. Wordfence telemetry records 29,300+ blocked attempts dating to 13 April 2026, with a single-day spike of 17,900 on 16 May; as of 6 June, 16 attempts in the preceding 24 hours. The observed primary payload creates an administrator account named "diksimarina". CVE prerequisite: the Calculation Addon must be present in the form. Affected versions: ≤ 1.9.12; patched: 1.9.13+. Detection: look for unexpected WordPress admin account creation events (Action: `user_register` with role `administrator`) or POST requests to `/wp-admin/admin-ajax.php` or the plugin's AJAX endpoints containing `eval`-typical single-quote patterns. Hardening: update to 1.9.13+, disable Calculation Addon if not required, enforce WAF rule blocking `eval(` in form-submission parameters.
+    ch_eu_nexus: "Global; WordPress is widely used across Swiss and EU public-sector web properties including cantonal agencies and municipal sites"
+    public_sector_nexus: "indirect — any public-sector WordPress deployment with Everest Forms Pro active is exposed"
+    sector: "public-sector, e-government, web-services"
+    cves: [CVE-2026-3300]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability is due to the Calculation Addon's process_filter() function concatenating user-submitted form field values into a PHP code string without proper escaping before passing it to eval()"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/"
+      - quote: "Wordfence observed exploitation beginning on April 13, 2026, and said more than 29,300 exploit attempts had been blocked to date"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-everest-forms-pro-flaw-exploited-to-take-over-wordpress-sites/"
+    extended_notes: |
+      The vulnerability discovery credit goes to researcher h0xilo, who submitted it through Wordfence's Bug Bounty program in February 2026. The protracted exploitation window (patch issued March 18; widespread exploitation from April 13; still ongoing June 6) illustrates the well-documented "patch lag" problem for commercial WordPress plugins, where the plugin vendor patches but a large portion of the install base does not update promptly.
+
+  - title: "C0XMO botnet (Gafgyt variant): cross-platform Mirai rival exploiting 5-year-old DD-WRT UPnP buffer overflow, 19-method DDoS, rival-killer capability"
+    sources:
+      - url: "https://www.fortinet.com/blog/threat-research/inside-cross-platform-propagation-of-new-gafgyt-variant-c0xmo"
+        publisher: "FortiGuard Labs"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/c0xmo-botnet-spreads-via-dd-wrt-router-flaw-kills-rival-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-06-07"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer RSS feed, URL https://www.bleepingcomputer.com/news/security/c0xmo-botnet-spreads-via-dd-wrt-router-flaw-kills-rival-malware/ (published 2026-06-07) → primary: FortiGuard Labs, URL https://www.fortinet.com/blog/threat-research/inside-cross-platform-propagation-of-new-gafgyt-variant-c0xmo (2026-06-03)"
+    summary: |
+      FortiGuard Labs documented C0XMO, a new cross-platform Gafgyt botnet variant exploiting CVE-2021-27137 — a stack buffer overflow in the UPnP SSDP parser of DD-WRT router firmware (all changesets before 45723). The exploit sends an oversized `ST:uuid` value in a crafted M-SEARCH UDP packet to port 1900, triggering a stack overflow and downloading the C0XMO payload directly to the device's temporary filesystem (/tmp/.sys, /var/tmp/.sys, /dev/shm/.sys). C0XMO is compiled for ARM, MIPS R3000, MC68000, PowerPC, SuperH, x86, and AMD64 — covering virtually the full range of SOHO and embedded Linux devices. Notably, it separates its propagation module into a standalone Python script (ELF/Gafgyt.C0MOX alongside Python/Gafgyt.C0MOX), enabling independent updates to scanning and exploitation code. The botnet communicates with C2 at 85.215.131.70 using a custom handshake protocol with shared secrets, and supports 19 DDoS attack methods including UDP bypass floods, TCP SYN floods, NTP/Memcached amplification, HTTP GET floods, Cloudflare bypass HTTP floods, and Discord/Valve game-server-specific floods. A competitive feature terminates rival botnet processes on the host. Persistence via cron (every 15 minutes) and shell profile modification (.bashrc, .bash_profile). FortiGuard observed the C2 originating from Germany and targeting a Japanese technology company. CVE-2021-27137 is a 5-year-old flaw; any DD-WRT deployment below changeset 45723 is exposed. Detection: Sysmon/EDR monitoring of cron modification and hidden-directory process spawning on Linux gateway devices; network IDS signatures for oversized UPnP M-SEARCH ST fields. Hardening: update DD-WRT firmware, disable UPnP/SSDP where not required, block UDP 1900 at the perimeter.
+    ch_eu_nexus: "Indirect — DD-WRT is widely used across European SME, public-sector, and home-office networks; Swiss cantonal networks with self-managed SOHO gateways are exposed"
+    public_sector_nexus: "indirect"
+    sector: "telco, SME, public-sector edge infrastructure"
+    cves: [CVE-2021-27137]
+    actors_campaigns_malware: ["C0XMO", "Gafgyt"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The threat actor delivered the malware by exploiting CVE-2021-27137, a stack buffer overflow in the UPnP service of vulnerable DD-WRT router firmware"
+        attribution: "FortiGuard Labs"
+        source_url: "https://www.fortinet.com/blog/threat-research/inside-cross-platform-propagation-of-new-gafgyt-variant-c0xmo"
+      - quote: "The botnet supports 19 DDoS attack methods and communicates with a hardcoded command-and-control server"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/c0xmo-botnet-spreads-via-dd-wrt-router-flaw-kills-rival-malware/"
+
+  - title: "Silent Ransom Group (UNC3753 / Luna Moth): vishing callback campaign targets law firms with fake IT help-desk calls, installs RMM tools, exfiltrates within 30 minutes"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/silent-ransom-group-targets-law-firms-with-fake-it-support-calls/"
+        publisher: "BleepingComputer"
+        date: "2026-06-07"
+        role: "primary"
+      - url: "https://www.darkreading.com/endpoint-security/fbi-silent-ransom-group-vishing-law-firms"
+        publisher: "Dark Reading / FBI"
+        date: "2026-06-07"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer RSS feed, URL https://www.bleepingcomputer.com/news/security/silent-ransom-group-targets-law-firms-with-fake-it-support-calls/ (published 2026-06-07) → corroborating: Dark Reading/FBI, URL https://www.darkreading.com/endpoint-security/fbi-silent-ransom-group-vishing-law-firms"
+    summary: |
+      The FBI and multiple threat-intelligence firms documented an escalating campaign by Silent Ransom Group (also tracked as UNC3753, Luna Moth, Chatty Spider) against law firms and professional-services organisations in June 2026. The attack chain does not rely on traditional malware delivery: (1) invoice-themed phishing emails arrive from consumer email accounts — no malicious links or attachments; (2) follow-up phone calls from attackers impersonating corporate IT staff instruct the target to join a remote support session via Microsoft Teams, Zoom, Quick Assist, or Microsoft Terminal Services; (3) during the session, the threat actor installs remote monitoring and management tools (AnyDesk, Zoho Assist, Bomgar, SuperOps); (4) WinSCP or Rclone exfiltrates contracts, tax records, SSNs, M&A files, and sensitive client documents; (5) ransom demand is delivered within 30 minutes of the actor's exit. DNS fast-flux infrastructure using residential proxies obscures C2. Three-day extortion deadline threatens client notification. Law firms account for ~25% of all ransomware-related incidents tracked in Q1 2026 (fourth-most-targeted sector). The group's leak site lists ~100 victim organisations as of June 2026. MITRE ATT&CK mapping: T1566 (Phishing), T1566.004 (Spearphishing Voice), T1219 (Remote Access Software), T1005 (Data from Local System), T1048 (Exfiltration Over Alternative Protocol). Detection: endpoint monitoring for unexpected installation of AnyDesk/Zoho Assist/Bomgar/SuperOps processes; EDR alert on WinSCP/Rclone spawning from user-interactive sessions; DNS anomaly detection for fast-flux resolver patterns. Hardening: application-allowlisting for RMM tools, MFA on VPN/remote desktop, user awareness training on vishing.
+    ch_eu_nexus: "High — European law firms (UK, Germany, France, etc.) are directly targeted by this actor; professional-services sector in Switzerland is also in scope based on actor's global targeting pattern"
+    public_sector_nexus: "indirect — legal firms handling government contracts or representing state entities are directly at risk"
+    sector: "legal, finance, professional-services"
+    cves: []
+    actors_campaigns_malware: ["Silent Ransom Group", "UNC3753", "Luna Moth", "Chatty Spider"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Silent Ransom Group impersonates IT help desks and convinces employees to join remote support sessions via Microsoft Teams, Zoom, Quick Assist, or Microsoft Terminal Services"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/silent-ransom-group-targets-law-firms-with-fake-it-support-calls/"
+      - quote: "data exfiltration using WinSCP or Rclone; ransom demands within 30 minutes of exit"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/silent-ransom-group-targets-law-firms-with-fake-it-support-calls/"
+
+  - title: "The Gentlemen RaaS (Storm-2697): Check Point internal-leak analysis reveals Fortinet/Cisco edge exploitation, NTLM relay, and 332 victims including French, German, UK and Italian organisations in 2026"
+    sources:
+      - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+        publisher: "Check Point Research"
+        date: "2026-05-13"
+        role: "primary"
+      - url: "https://www.levelblue.com/blogs/spiderlabs-blog/a-closer-look-at-the-gentlemens-alleged-leak"
+        publisher: "LevelBlue (TrustWave)"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Gentlemen ransomware data leak June 2026') → primary: Check Point Research, URL https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/ → corroborating: LevelBlue/TrustWave, URL https://www.levelblue.com/blogs/spiderlabs-blog/a-closer-look-at-the-gentlemens-alleged-leak"
+    summary: |
+      Check Point Research published a comprehensive analysis of The Gentlemen ransomware-as-a-service (RaaS) operation, drawing on internal data leaked in early May 2026 from the group's Rocket backend. The operator, tracked as zeta88/hastalamuerte, directly participates in intrusions rather than solely managing infrastructure, with 9 core operators and at least 8 affiliate TOX IDs. The group reached ~332 published victims in the first five months of 2026, making it the world's second-most-active RaaS program by leak-site disclosures. European victims in 2026 span France (5.4%), Italy (3.7%), Germany (3.4%), UK (3.1%), Poland (2.3%), and Czechia (2%). Documented initial-access methods: Fortinet FortiGate and Cisco appliance brute-forcing and CVE exploitation (CVE-2024-55591 FortiOS management, CVE-2025-32433 Erlang SSH, CVE-2025-33073 NTLM relay), purchased access-broker relationships, OWA/M365 credential harvesting from infostealer log markets. Post-compromise tooling: ZeroPulse, Velociraptor, NetExec, RelayKing, CertiHound, TaskHound, PrivHound, MANSPIDER, PowerZure, EDRStartupHider; SystemBC SOCKS5 proxy for C2; Cobalt Strike. EDR evasion: hardware breakpoint removal, NTDLL unhooking, ETW patching, BYOVD kernel drivers. Ransomware is custom Go-based with per-file Curve25519/XChaCha20 encryption and network self-propagation. MITRE ATT&CK mapping: T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts), T1557 (Adversary-in-the-Middle/NTLM relay), T1562.001 (Disable/Modify Tools), T1068 (Exploitation for Privilege Escalation). Detection: monitor for simultaneous NTLM relay traffic (Sysmon EID 3 outbound SMB + Event 4624 Logon Type 3 anomalies), unexpected modification of NTDLL in-process, hardware debug register manipulation, and ETW provider disable calls. Hardening: require Signed LDAP on DC, disable LLMNR/NBT-NS, enforce MFA on all edge appliances, patch Fortinet and Cisco VPN/SSL appliances promptly.
+    ch_eu_nexus: "High — French, German, UK, Italian, Polish, Czech organisations confirmed among 2026 victims; actor exploits Cisco/Fortinet edge appliances widely deployed across Swiss and EU public-sector networks"
+    public_sector_nexus: "indirect — government contractors, public utilities, and professional-services firms serving public entities are in the known victim set"
+    sector: "manufacturing, professional-services, technology, healthcare, public-sector"
+    cves: [CVE-2024-55591, CVE-2025-32433, CVE-2025-33073]
+    actors_campaigns_malware: ["The Gentlemen", "Storm-2697", "zeta88", "SystemBC", "Cobalt Strike", "ZeroPulse", "RelayKing", "EDRStartupHider"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Initial access focuses on internet-facing edge devices, particularly Fortinet FortiGate and Cisco appliances, through credential brute-forcing, vulnerability exploitation, and purchased access"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+      - quote: "France (5.4%, 19 victims), Italy (3.7%, 13 victims), Germany (3.4%, 12 victims), United Kingdom (3.1%, 11 victims), Poland (2.3%, 8 victims)"
+        attribution: "LevelBlue/TrustWave"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/a-closer-look-at-the-gentlemens-alleged-leak"
+
+  - title: "FortiClient EMS CVE-2026-35616 exploited to install EKZ infostealer masquerading as Fortinet patch via VPN scripting workflow"
+    sources:
+      - url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+        publisher: "Arctic Wolf Labs"
+        date: "2026-05-27"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-forticlient-ems-flaw-to-push-infostealer-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-05-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('FortiClient EMS EKZ infostealer June 2026') → primary: Arctic Wolf Labs, URL https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/ → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-forticlient-ems-flaw-to-push-infostealer-malware/"
+    summary: |
+      Arctic Wolf Labs documented an active campaign exploiting CVE-2026-35616 (CVSS 9.1, CWE-284 Improper Access Control) in FortiClient Endpoint Management Server (EMS) to deliver a new credential stealer they designated EKZ Infostealer. The pre-authentication API access bypass allows unauthenticated attackers to send privileged requests to the EMS API, bypassing authentication and authorization entirely. Attackers modified Remote Access Profiles in EMS to inject malicious CMD scripts containing base64-encoded PowerShell into the VPN on-connect scripting workflow; upon VPN tunnel establishment, `fortitray.exe` spawns the CMD scripts, which download `FortiEndpoint_Patch.exe` (the EKZ Infostealer) from an attacker-controlled host. EKZ extracts browser passwords and cookies from Chrome (using Chrome Elevation Service bypass to decrypt), Edge, and Firefox (dynamically loading NSS3.dll), plus autofill data (credit cards, addresses). Exfiltration is staged to `C:\ProgramData\log.txt` then POSTed to the attacker's server. Affected versions: FortiClient EMS 7.4.5 and 7.4.6; hotfixes available for both; permanent fix in 7.4.7 (not yet released at publication date). CISA added CVE-2026-35616 to KEV on 6 April 2026. MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1505 (Server Software Component), T1059.001 (PowerShell), T1555.003 (Credentials from Web Browsers). Detection: EMS logs showing "Certificate not found in request header"; unexpected Remote Access Profile modifications with script execution; PowerShell downloads spawning from `fortitray.exe` or `ipsec.exe`; HTTP POST activity to unknown hosts immediately after VPN connection. Hardening: apply FortiClient EMS 7.4.5/7.4.6 hotfix immediately; review Remote Access Profile scripts for unauthorized additions; implement application allowlisting on managed VPN endpoints.
+    ch_eu_nexus: "High — FortiClient EMS is widely deployed in Swiss and European enterprise networks for VPN management; any organisation using FortiClient EMS 7.4.5 or 7.4.6 with internet-facing API access is directly exposed"
+    public_sector_nexus: "direct — enterprise VPN management infrastructure in public-sector environments is the affected product class"
+    sector: "public-sector, enterprise, telco, technology"
+    cves: [CVE-2026-35616]
+    actors_campaigns_malware: ["EKZ Infostealer"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "attackers modified Remote Access Profiles to inject malicious scripts; upon VPN tunnel establishment, fortitray.exe launched CMD scripts containing base64-encoded PowerShell"
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+      - quote: "The credential stealer extracts credentials from Chrome, Edge, and Firefox including Chrome Elevation Service bypass to decrypt protected credentials"
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/forticlient-ems-exploited-via-cve-2026-35616-to-deliver-ekz-infostealer-disguised-as-a-fortinet-patch/"
+
+cve_table:
+  - cve: CVE-2026-3300
+    product: "Everest Forms Pro (WordPress plugin)"
+    cvss: "9.8"
+    epss: "~30%"
+    kev: "No"
+    exploited: "Yes — mass exploitation since 2026-04-13, 29,300+ attempts blocked"
+    patch: "v1.9.13 (released 2026-03-18)"
+    source: "Wordfence 2026-06-06"
+  - cve: CVE-2026-35616
+    product: "Fortinet FortiClient EMS"
+    cvss: "9.1"
+    epss: "~25%"
+    kev: "Yes (added 2026-04-06)"
+    exploited: "Yes — EKZ Infostealer delivery confirmed May 2026"
+    patch: "Hotfixes for 7.4.5 and 7.4.6; permanent fix in 7.4.7"
+    source: "Arctic Wolf Labs 2026-05-27; BleepingComputer 2026-05-27"
+  - cve: CVE-2021-27137
+    product: "DD-WRT router firmware (UPnP SSDP parser)"
+    cvss: "~9.0"
+    epss: "low"
+    kev: "No"
+    exploited: "Yes — C0XMO botnet active exploitation (FortiGuard 2026-06-03)"
+    patch: "DD-WRT changeset >= 45723"
+    source: "FortiGuard Labs 2026-06-03"
+
+candidate_sources:
+  - id: darkreading-endpoint
+    publisher: "Dark Reading — Endpoint Security"
+    url: "https://www.darkreading.com/endpoint-security/"
+    category: "active-breaking"
+    why: "Published corroborating FBI/Silent Ransom Group vishing story same day as BleepingComputer; good secondary source for law-enforcement-driven disclosures"
+
+coverage_gaps:
+  - source_id: cisco-psirt-rss
+    reason: "Cisco PSIRT RSS examined; no new June 2026 advisories beyond CVE-2026-20245 (already covered)"
+  - source_id: ncsc-nl
+    reason: "NCSC-NL recent listing returned only advisories through 2026-06-05; no in-window (Jun 7-8) advisories found"
+  - source_id: cert-fr
+    reason: "CERT-FR avis-recent listing shows newest entries at 2026-06-02; no in-window advisories"
+  - source_id: cert-eu
+    reason: "CERT-EU newest advisory is 2026-006 (May 2026 PAN-OS); no new June 7-8 advisory"
+  - source_id: cisa-kev
+    reason: "CISA KEV catalog last updated 2026-06-05 (CVE-2026-28318 SolarWinds Serv-U — already covered); no new additions in window"
+  - source_id: msrc
+    reason: "June 2026 Patch Tuesday is scheduled for 2026-06-09 (not yet released); no in-window exploited CVEs found via MSRC OData. Pre-Patch Tuesday silence is expected."
