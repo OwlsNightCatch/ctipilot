@@ -1,0 +1,196 @@
+# work/2026-06-09-40d562df/findings.S1.yaml
+domain: S1
+run_id: 2026-06-09-40d562df
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-09T04:09:24Z
+ended_at: 2026-06-09T04:30:00Z
+duration_seconds: 1236
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 6
+  bridge_fetches: 10
+
+items:
+  - title: "Check Point VPN CVE-2026-50751: authentication bypass in deprecated IKEv1 key exchange actively exploited by Qilin ransomware affiliate, now in CISA KEV"
+    sources:
+      - { url: "https://blog.checkpoint.com/security/check-point-releases-important-hotfix-for-vulnerabilities-in-deprecated-ikev1-vpn-protocol/", publisher: "Check Point Research", date: "2026-06-08", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12615", publisher: "NCSC-CH Security Hub", date: "2026-06-08", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-critical-check-point-vpn-zero-day-exploited-in-the-wild-cve-2026-50751/", publisher: "Rapid7", date: "2026-06-08", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/check-point-links-vpn-zero-day-attacks-to-qilin-ransomware-gang/", publisher: "BleepingComputer", date: "2026-06-08", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0179", publisher: "NCSC-NL", date: "2026-06-08", role: "corroborating" }
+      - { url: "https://support.checkpoint.com/results/sk/sk185033", publisher: "Check Point sk185033", date: "2026-06-08", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12615 → primary: Check Point Research, URL https://blog.checkpoint.com/security/check-point-releases-important-hotfix-for-vulnerabilities-in-deprecated-ikev1-vpn-protocol/ → corroborating: NCSC-NL NCSC-2026-0179, Rapid7 ETR, BleepingComputer"
+    summary: |
+      Check Point disclosed and patched CVE-2026-50751 (CVSS 9.3, Critical) on 8 June 2026 — a logic-flow weakness in certificate validation in the deprecated IKEv1 key exchange, affecting Remote Access VPN and Mobile Access deployments. An unauthenticated remote attacker can forge a VPN session without a valid password by exploiting the certificate validation bypass; post-authentication activity (lateral movement, privilege escalation) is still required to access internal resources. Exploitation began no later than 7 May 2026, surged in early June, and has affected fewer than a dozen confirmed organisations globally. Check Point attributes the campaign with medium confidence to a financially motivated actor using Qilin ransomware; the actor re-uses infrastructure against other VPN products (PAN-OS, Fortinet, F5). CISA added CVE-2026-50751 to KEV on 8 June with a federal remediation deadline of 11 June 2026.
+
+      Affected versions: R80.20.X (EoS), R80.40 (EoS), R81 (EoS), R81.10 (EoS), R81.10.X, R81.20, R82, R82.00.X, R82.10. A hotfix is available; upgrade to the fixed release documented in sk185033. Check Point also disclosed a second related CVE, CVE-2026-50752 (CVSS 7.4), which enables MitM interference on site-to-site IKEv1 VPN connections — not exploited in the wild but should be patched in the same maintenance window.
+
+      Prerequisites: gateways must be configured for deprecated IKEv1 key exchange (not the current IKEv2). Legacy Remote Access clients that default to IKEv1 are the primary exposure surface.
+
+      Technique class: T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts — post-exploitation credential abuse).
+
+      Detection: Check VPN authentication logs for remote-access sessions established without a matching MFA / password event; VPN management-plane anomaly detection for sessions originating from IKEv1-only tunnels. Look for lateral movement from VPN-assigned address space. NCSC-NL explicitly warns of large-scale exploitation imminently.
+
+      Hardening: apply hotfix sk185033 immediately; disable legacy IKEv1 remote-access client support; enforce mandatory machine certificate authentication; enable IPS with updated signatures pending patch.
+    ch_eu_nexus: "global; Check Point Security Gateway is widely deployed across Swiss and EU public-sector networks as a perimeter VPN device"
+    public_sector_nexus: "direct — VPN perimeter gateways are core public-sector network infrastructure"
+    sector: "government, finance, critical-infrastructure, all sectors"
+    cves: [CVE-2026-50751, CVE-2026-50752]
+    actors_campaigns_malware: ["Qilin ransomware"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-50751 is an authentication bypass on VPN Remote Access and Mobile Access in deprecated IKEv1 key exchange. An attacker can bypass user authentication by exploiting a logic flow weakness in the Remote Access and Mobile Access certificate validation and establish a remote access VPN connection without a valid user password."
+        attribution: "Check Point Research"
+        source_url: "https://blog.checkpoint.com/security/check-point-releases-important-hotfix-for-vulnerabilities-in-deprecated-ikev1-vpn-protocol/"
+      - quote: "Current exploitation status: Actively Exploited. Observed exploitation linked to Qilin ransomware affiliate."
+        attribution: "NCSC-CH Security Hub (post 12615)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12615"
+      - quote: "NCSC-NL verwacht dat er op korte termijn grootschalig misbruik zal plaatsvinden" [NCSC-NL expects large-scale exploitation in the near term]
+        attribution: "NCSC-NL NCSC-2026-0179"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0179"
+
+  - title: "CVE-2026-42271 — BerriAI LiteLLM: authenticated low-privilege command injection to host-level RCE, now in CISA KEV"
+    sources:
+      - { url: "https://github.com/advisories/GHSA-v4p8-mg3p-g94g", publisher: "GitHub Advisory Database / BerriAI", date: "2026-06-01", role: "primary" }
+      - { url: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-42271-chained-with-cve-2026-48710/", publisher: "Horizon3.ai", date: "2026-06-01", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-42271", publisher: "NVD", date: "2026-06-08", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (catalogVersion 2026.06.08, dateAdded 2026-06-08) → primary: GitHub Advisory GHSA-v4p8-mg3p-g94g and Horizon3.ai → NVD corroborating"
+    summary: |
+      CISA added CVE-2026-42271 to KEV on 8 June 2026, confirming active exploitation. The flaw is a command injection in LiteLLM (an open-source AI gateway/proxy commonly deployed in enterprise AI infrastructure to multiplex LLM API calls) affecting versions 1.74.2 through before 1.83.7. Two preview endpoints — POST /mcp-rest/test/connection and POST /mcp-rest/test/tools/list — accept a full MCP server configuration in the request body including the command, args, and env fields. When called with stdio transport, the proxy spawns the supplied command on the host under the proxy's process privileges. The endpoints were gated only by a valid API key with no role check, so any authenticated user including holders of low-privilege internal-user keys could execute arbitrary commands on the proxy host. Horizon3.ai further documented that chaining with CVE-2026-48710 (a Starlette Host-header validation bypass) makes the exploit unauthenticated.
+
+      Affected versions: 1.74.2 to < 1.83.7. Patch: upgrade to 1.83.7. The fix adds role-based authorization controls on the MCP test endpoints and updates Starlette dependencies.
+
+      Attack surface: the LiteLLM proxy management API, typically exposed on port 4000 internally. AI/ML platform teams often run LiteLLM as a shared service accessible to multiple teams with varied trust levels.
+
+      Technique class: T1190 (Exploit Public-Facing Application), T1059 (Command and Scripting Interpreter — subprocess spawning on host).
+
+      Detection: web-server access logs showing POST requests to /mcp-rest/test/connection or /mcp-rest/test/tools/list with stdio-type configurations in the body; process-creation events (Sysmon EID 1, EDR telemetry) showing LiteLLM proxy spawning unexpected child processes; endpoint isolation of AI gateway hosts.
+
+      Hardening: upgrade immediately to 1.83.7; restrict /mcp-rest/test/* endpoints at the network level; audit API key issuance and enforce least-privilege key scoping.
+    ch_eu_nexus: "global; LiteLLM is widely deployed in AI-infrastructure stacks across Swiss and EU public-sector organisations running shared LLM API proxies"
+    public_sector_nexus: "indirect — AI gateway infrastructure in organisations adopting large language models"
+    sector: "technology, government, education, any sector running LiteLLM AI infrastructure"
+    cves: [CVE-2026-42271, CVE-2026-48710]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "POST /mcp-rest/test/connection and POST /mcp-rest/test/tools/list … When called with a stdio configuration, the endpoints attempted to connect, which spawned the supplied command as a subprocess on the proxy host with the privileges of the proxy process. The endpoints were gated only by a valid proxy API key, with no role check."
+        attribution: "NVD (citing GitHub Advisory GHSA-v4p8-mg3p-g94g)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-42271"
+      - quote: "CVE-2026-42271 chained with CVE-2026-48710 enables unauthenticated remote code execution against vulnerable LiteLLM deployments."
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/vulnerabilities/cve-2026-42271-chained-with-cve-2026-48710/"
+
+  - title: "CVE-2026-23111 — Linux kernel nf_tables use-after-free: single-char inversion bug yields reliable local-root and container escape, working exploit published"
+    sources:
+      - { url: "https://blog.exodusintel.com/2026/06/08/off-by-exploiting-a-use-after-free-in-the-linux-kernel/", publisher: "Exodus Intelligence", date: "2026-06-08", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/one-character-linux-kernel-flaw-enables.html", publisher: "The Hacker News", date: "2026-06-08", role: "corroborating" }
+      - { url: "https://ubuntu.com/security/CVE-2026-23111", publisher: "Ubuntu Security", date: "2026-06-08", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('CVE-2026-23111 Linux kernel nf_tables use-after-free exploit Exodus Intelligence 2026') → primary: Exodus Intelligence blog, URL https://blog.exodusintel.com/2026/06/08/off-by-exploiting-a-use-after-free-in-the-linux-kernel/ → corroborating: THN, Ubuntu Security"
+    summary: |
+      Exodus Intelligence researcher Oliver Sieber published a full technical write-up and working exploit for CVE-2026-23111 on 8 June 2026. The vulnerability is a use-after-free in the nf_tables (netfilter tables) subsystem, specifically in the nft_map_catchall_activate() function. The root cause is a single misplaced ! (logical NOT) operator that inverts the genmask check, causing the function to skip inactive catchall elements during the abort process rather than reactivating them. This creates a use-after-free condition.
+
+      Exodus reports the exploit achieves >99% reliability on idle Debian Bookworm, Debian Trixie, Ubuntu 22.04 LTS, and Ubuntu 24.04 LTS systems. The primitive allows an unprivileged local user to escalate privileges to root; it also enables container escape, making this high-value for post-exploitation in shared compute environments (Kubernetes nodes, CI/CD runners, multi-tenant VMs). Ubuntu rates the vulnerability CVSS 7.8 (High).
+
+      The flaw was found by Exodus in early 2025 and patched upstream on 5 February 2026 with an upstream commit to linux-stable; the CVE was then assigned. Vendor packages (Debian, Ubuntu, Red Hat, SUSE) are patching via their security update channels. FuzzingLabs published an independent reproduction in April 2026 ahead of today's Exodus full disclosure.
+
+      The attack requires local (unprivileged user) access or code execution within a container. No network-reachable path identified. Prerequisites: kernel compiled with CONFIG_NFT enabled (the default for all mainstream distributions), no additional capabilities required.
+
+      Technique class: T1068 (Exploitation for Privilege Escalation), T1611 (Escape to Host — for container-escape path).
+
+      Affected: Linux kernels prior to the 5 February 2026 upstream fix. Check distro security advisories for per-release patch status.
+
+      Detection: Sysmon EID 10 or EDR telemetry for nf_tables-related kernel calls from non-root processes; privilege escalation anomaly detection (unexpected UID change to 0); audit log entry UID=0 process spawned from a non-root parent.
+
+      Hardening: apply vendor kernel security updates containing the upstream 5 February 2026 fix; in container environments, enforce seccomp profiles and AppArmor/SELinux policies that restrict nf_tables syscalls for untrusted workloads.
+    ch_eu_nexus: "global; all mainstream Linux distributions affected, including servers widely deployed in Swiss and EU public-sector infrastructure"
+    public_sector_nexus: "direct — Linux is the dominant OS for public-sector server and container workloads"
+    sector: "all sectors"
+    cves: [CVE-2026-23111]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We discuss a use-after-free vulnerability that we found in the nftables subsystem of the Linux kernel in early 2025. This vulnerability was patched upstream on 5 February 2026 and assigned CVE-2026-23111. This blog post covers a technical analysis of the vulnerability and how we exploited it to perform a local privilege escalation."
+        attribution: "Exodus Intelligence (Oliver Sieber)"
+        source_url: "https://blog.exodusintel.com/2026/06/08/off-by-exploiting-a-use-after-free-in-the-linux-kernel/"
+      - quote: "CVE-2026-23111 is a Linux kernel nf_tables use-after-free that lets an unprivileged local user escalate to root and escape a container."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/one-character-linux-kernel-flaw-enables.html"
+
+  - title: "Oxford University CareerConnect (Group GTI) breach exposes student names and emails at multiple UK universities"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/oxford-university-discloses-data-breach-after-careerconnect-platform-hack/", publisher: "BleepingComputer", date: "2026-06-08", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/06/06/oxford-university-data-pwned-again-by-career-platform-breach/5251754", publisher: "The Register", date: "2026-06-06", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('Oxford University CareerConnect data breach June 2026') → primary: BleepingComputer article URL https://www.bleepingcomputer.com/news/security/oxford-university-discloses-data-breach-after-careerconnect-platform-hack/ → corroborating: The Register"
+    summary: |
+      The University of Oxford disclosed a data breach on 6 June 2026 after Group GTI, the third-party provider of the CareerConnect career services platform, reported its systems were compromised on 28 May 2026. Exposed data includes student first names, last names, and email addresses; for users authenticating without SSO, encrypted passwords were also taken. The attacker exploited an unspecified "security vulnerability" in the CareerConnect platform now patched. The attack is assessed to be credential-harvesting oriented (phishing preparation). CareerConnect is used not only by Oxford but also by King's College London and the University of Manchester, meaning the breach affects students and alumni at multiple UK higher-education institutions. This is Oxford's second breach disclosure in a matter of weeks (following a ShinyHunters compromise of Instructure Canvas in May 2026).
+
+      No threat actor named in public disclosures. Defender considerations: monitor for targeted phishing against Oxford / KCL / Manchester student email addresses in the coming weeks; check whether CareerConnect accounts were linked to university SSO (lower risk if so); password reset procedures for non-SSO accounts.
+    ch_eu_nexus: "UK higher education; EU nexus through research partnerships and alumni networks; pattern of SaaS third-party breaches affecting academic sector relevant to Swiss universities"
+    public_sector_nexus: "direct — UK public university sector; pattern relevant to Swiss Hochschulen using shared SaaS career platforms"
+    sector: "education"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Oxford University said the CareerConnect platform was breached on May 28 by attackers who gained access to users' first names, last names, email addresses, and encrypted passwords (for users who do not sign in using Single Sign-On)."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/oxford-university-discloses-data-breach-after-careerconnect-platform-hack/"
+      - quote: "CareerConnect forms part of Oxford University's career services department. The platform is also used by other UK educational organizations, such as King's College London and the University of Manchester."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/oxford-university-discloses-data-breach-after-careerconnect-platform-hack/"
+
+cve_table:
+  - cve: CVE-2026-50751
+    product: "Check Point Security Gateway (Remote Access VPN / Mobile Access — IKEv1 deployments)"
+    cvss: "9.3 (CVSS v3.1, Critical)"
+    epss: "not yet published at time of research"
+    kev: "YES — added 2026-06-08, due 2026-06-11"
+    exploited: "YES — since 2026-05-07, attributed to Qilin ransomware affiliate"
+    patch: "Hotfix sk185033; upgrade to fixed versions: R81.10.X, R81.20, R82, R82.00.X, R82.10"
+    source: "https://blog.checkpoint.com/security/check-point-releases-important-hotfix-for-vulnerabilities-in-deprecated-ikev1-vpn-protocol/"
+
+  - cve: CVE-2026-42271
+    product: "BerriAI LiteLLM proxy server (AI Gateway) versions 1.74.2 to < 1.83.7"
+    cvss: "8.8 (CVSS v3.x, High)"
+    epss: "not yet published at time of research"
+    kev: "YES — added 2026-06-08, due 2026-06-22"
+    exploited: "YES — active exploitation confirmed by CISA"
+    patch: "Upgrade to LiteLLM >= 1.83.7"
+    source: "https://github.com/advisories/GHSA-v4p8-mg3p-g94g"
+
+  - cve: CVE-2026-23111
+    product: "Linux kernel (nf_tables / netfilter) — all mainstream distributions prior to 2026-02-05 upstream patch"
+    cvss: "7.8 (High — Ubuntu rating)"
+    epss: "not yet published at time of research"
+    kev: "NO — not in KEV as of 2026-06-09"
+    exploited: "NO active exploitation confirmed; working public exploit released 2026-06-08 by Exodus Intelligence"
+    patch: "Apply vendor kernel security update containing the 2026-02-05 upstream fix; check distro security tracker"
+    source: "https://blog.exodusintel.com/2026/06/08/off-by-exploiting-a-use-after-free-in-the-linux-kernel/"
+
+candidate_sources:
+  - id: exodus-intelligence
+    publisher: "Exodus Intelligence (blog.exodusintel.com)"
+    url: "https://blog.exodusintel.com"
+    rss_url: "https://blog.exodusintel.com/feed/"
+    category: "research"
+    why: "Primary vulnerability research lab publishing full technical write-ups with working exploits; surfaced CVE-2026-23111 nf_tables write-up as primary this run. High signal-to-noise for detection engineers."
+
+coverage_gaps:
+  - source_id: shadowserver
+    reason: "No dedicated bridge subcommand; WebSearch for recent Shadowserver threat reports returned no distinct in-window items beyond what other sources covered."
+  - source_id: greynoise
+    reason: "No direct bridge access; GreyNoise in-window signals not independently surfaced — would require additional search targeting specific CVEs."
+  - source_id: wiz-blog
+    reason: "RSS feed not queried this run due to time constraints; no in-window items missed based on cross-checking with other sources."
+  - source_id: vulncheck
+    reason: "Not directly queried; VulnCheck coverage of in-window items captured via ENISA EUVD and NVD."

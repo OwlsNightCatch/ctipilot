@@ -1,0 +1,156 @@
+domain: S3
+run_id: 2026-06-09-40d562df
+model: "Claude Sonnet 4.6"
+model_id: claude-sonnet-4-6
+started_at: 2026-06-09T04:09:32Z
+ended_at: 2026-06-09T04:17:46Z
+duration_seconds: 494
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 18
+  bridge_fetches: 9
+
+items:
+  - title: "Unit 42: Threat actors — including Cloaked Ursa (APT29) and UNC6692 — are mass-operationalising Microsoft Teams external-chat as a phishing surface, accounting for 42% of phishing alerts in Cortex in early 2026"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/microsoft-teams-phishing/"
+        publisher: "Unit 42 (Palo Alto Networks)"
+        date: "2026-06-08"
+        role: "primary"
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/unc6692-social-engineering-custom-malware"
+        publisher: "Mandiant / Google Cloud"
+        date: "2026-04-24"
+        role: "corroborating"
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/04/18/crosstenant-helpdesk-impersonation-data-exfiltration-human-operated-intrusion-playbook/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-04-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: unit42 RSS feed, URL https://unit42.paloaltonetworks.com/feed/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/microsoft-teams-phishing/"
+    summary: |
+      Unit 42 published an operational briefing (June 8, 2026) documenting the sharp rise in Microsoft Teams-based social engineering, noting that in the first four months of 2026 collaboration-platform phishing alerts reached 42% of all phishing alerts in Cortex (up from 30%). Two clusters dominate current reporting. Cloaked Ursa (APT29/Midnight Blizzard) uses previously-compromised Microsoft 365 tenants — often small-business accounts — to create domains styled as IT-support entities, then sends Teams messages requesting MFA approval or credential re-entry under the guise of account maintenance. UNC6692 (documented in Mandiant's April 2026 report) floods target inboxes to create urgency, then contacts victims via Teams posing as IT support; their attack chain delivers the SNOW malware suite — SNOWBELT (browser-extension backdoor), SNOWGLAZE (WebSocket tunneler over AWS S3/Heroku), and SNOWBASIN (persistent backdoor) — following LSASS dump via Task Manager (T1003.001) and Pass-the-Hash lateral movement (T1550.002). The attack exploits the default Teams configuration that allows external-tenant messages without restriction. Defender hardening: disable unmanaged/consumer-account external chat (Teams Admin Center → External Access), restrict federation to explicitly-allowed domains, require `externalAccessPolicy` with `EnableFederationAccess=False` for non-partners, and extend AiTM-aware Conditional Access policies to Teams sign-in contexts. Detection: Entra ID sign-in logs for logons from external M365 tenants; Teams activity logs for `ExternalUserJoined` events followed by quick file/link shares; MDI alerts for MFA anomalies following cross-tenant meeting acceptance.
+    ch_eu_nexus: "Global; Swiss and EU public-sector orgs use Teams extensively; external-access defaults are identical across tenants"
+    public_sector_nexus: "direct"
+    sector: "cross-sector, public administration, financial services"
+    cves: []
+    actors_campaigns_malware: ["Cloaked Ursa", "APT29", "Midnight Blizzard", "UNC6692", "SNOWBELT", "SNOWGLAZE", "SNOWBASIN"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "phishing alerts from collaboration tools represented 42% of all phishing alerts in Cortex in the first four months of 2026, up from 30% of all phishing alerts in the preceding four months"
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/microsoft-teams-phishing/"
+      - quote: "Threat actors like Cloaked Ursa succeed not because MS Teams is insecure, but because external communication settings are often too permissive"
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/microsoft-teams-phishing/"
+
+  - title: "Microsoft Threat Intelligence: Storm-3075 and Fox Tempest are mass-distributing Lumma Stealer and Vidar via fake AI-brand (ChatGPT, Claude, DeepSeek) sites, signed binaries from MSaaS, and fraudulent GitHub repos"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/08/ai-brands-as-bait-how-threat-actors-are-using-the-ai-hype-in-social-engineering/"
+        publisher: "Microsoft Security Blog / Microsoft Threat Intelligence"
+        date: "2026-06-08"
+        role: "primary"
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/19/exposing-fox-tempest-a-malware-signing-service-operation/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent feed (bridge subcommand), URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/feed/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/06/08/ai-brands-as-bait-how-threat-actors-are-using-the-ai-hype-in-social-engineering/"
+    summary: |
+      Microsoft Threat Intelligence (June 8, 2026) documents a campaign by Storm-3075 (initial-access broker) and Fox Tempest (malware-signing-as-a-service operator) that weaponises public enthusiasm for AI platforms. Attackers impersonate ChatGPT, Claude (Anthropic), DeepSeek, and Microsoft Copilot using SEO-poisoned results, malvertising, and multi-stage redirection chains (Rebrandly → CAPTCHA gates → credential-harvesting landing pages). Downloaded binaries are signed with certificates obtained through Fox Tempest's MSaaS operation (T1553.002), enabling near-zero-detection rates on initial delivery. Payloads include Lumma Stealer (targeting browser credentials, crypto wallets, 2FA browser extensions), Vidar infostealer, Hijack Loader, and Oyster. GitHub is abused for payload staging — fraudulent repositories hosting signed executables that pass basic file-reputation checks. The same infrastructure previously tied to Fox Tempest reached "tens of thousands" of infections. Defender hardening: Microsoft Defender SmartScreen blocks known URLs in this chain; Entra ID Identity Protection catches credential stuffing from harvested accounts; Conditional Access policies with phish-resistant MFA (FIDO2/passkeys) eliminate the downstream AiTM risk. Detection: Sysmon EID 1 for processes spawned by browser parent with Lumma-family command-line patterns; EDR process-injection alerts for Hijack Loader; Defender for Endpoint `TrojanDownloader:Win32/Hijackloader` family alerts.
+    ch_eu_nexus: "Global; EU employees searching for AI tools are equally exposed; Swiss public-sector is a relevant target population for AI-tool lures"
+    public_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    actors_campaigns_malware: ["Storm-3075", "Fox Tempest", "Lumma Stealer", "Vidar", "Hijack Loader", "Oyster"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "malware is being distributed via fraudulent GitHub repositories and signed with certificates obtained through malware-signing-as-a-service (MSaaS) operations, enabling tens of thousands of infections while evading early detection"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/08/ai-brands-as-bait-how-threat-actors-are-using-the-ai-hype-in-social-engineering/"
+      - quote: "Threat actors including Storm-3075 and Fox Tempest are leveraging the wider global interest around AI itself as a social engineering lure"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/08/ai-brands-as-bait-how-threat-actors-are-using-the-ai-hype-in-social-engineering/"
+
+  - title: "Mandiant GTIG: UNC3753 (Luna Moth / Silent Ransom Group) escalates US law-firm extortion campaign with physical office intrusions and USB data theft when vishing fails"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+        publisher: "Mandiant / Google Threat Intelligence Group"
+        date: "2026-06-05"
+        role: "primary"
+      - url: "https://securityaffairs.com/193315/cyber-crime/unc3753-escalates-from-vishing-calls-to-physical-office-intrusions-at-us-legal-and-financial-firms.html"
+        publisher: "Security Affairs"
+        date: "2026-06-08"
+        role: "corroborating"
+      - url: "https://www.ic3.gov/CSA/2026/260526.pdf"
+        publisher: "FBI (IC3)"
+        date: "2026-05-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: mandiant-gtig feed, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → primary: Mandiant/GTIG, URL https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/ → corroborating: Security Affairs, URL https://securityaffairs.com/193315/..."
+    summary: |
+      Mandiant's GTIG (June 5, 2026) and a corroborating Security Affairs writeup (June 8) document an active campaign by UNC3753 — tracked also as Luna Moth, Chatty Spider, and Silent Ransom Group, a Conti-lineage extortion cluster (overlaps with UNC2686 / BazarCall) — targeting US law, professional-services, and financial-services firms from January through May 2026. The standard kill chain: email flood creates urgency, then a vishing call posing as IT support (T1566.004, T1598) persuades the victim to install a legitimate RMM tool (AnyDesk, Bomgar, Zoho Assist, SuperOps, Quick Assist), share their screen, and hand over Windows 365 or Citrix VDI credentials. Operators then enumerate iManage DMS repositories, SharePoint, and OneDrive for high-value files (legal agreements, W-2s, SSNs, client PII), stage with WinSCP or Rclone (T1567.002), and exfiltrate to consumer cloud storage. In confirmed cases the entire chain from first contact to exfiltration occurred within a single business day; GTIG observed data theft initiated in under one hour. The key new development corroborated by the FBI Cyber FLASH Alert: when vishing fails, UNC3753 sends a physical operative to the victim's office impersonating an IT technician, inserts a USB mass-storage device, and copies data directly (T1052.001). Extortion demands carry 3-day deadlines; refusal leads to publication on the LEAKEDDATA DLS and direct contact with the firm's clients. Detection: EDR/process-tree alerts for RMM binaries spawned under unusual parent trees; Windows Event 4624 Logon Type 10 (remote interactive) from unfamiliar source IPs after RMM session; file-access storms on network shares or DMS APIs; outbound Rclone/WinSCP network signatures to cloud storage endpoints; USB device plug events (Event ID 2003 in DeviceHardwareEvents / Sysmon EID 6 + DeviceConnect). Hardening: restrict RMM installation to IT-managed deployment paths (AppLocker/WDAC); require explicit helpdesk-ticket validation before any remote-access session; block Rclone binary hashes / network destinations via WDAC; treat any unsolicited in-person IT request as a social-engineering indicator.
+    ch_eu_nexus: "US-centric campaign; methodology directly applicable to EU/Swiss law firms and professional-services sectors that use iManage or equivalent DMS platforms"
+    public_sector_nexus: "indirect (direct for legal/professional services adjacent to public sector)"
+    sector: "legal services, financial services, professional services"
+    cves: []
+    actors_campaigns_malware: ["UNC3753", "Luna Moth", "Chatty Spider", "Silent Ransom Group"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "associated threat actors have also attempted direct data theft using physical, in-person access, corroborated by a recent FBI Cyber FLASH Alert highlighting instances where Silent Ransom Group threat actors leveraged physical office access to exfiltrate corporate data via removable USB media"
+        attribution: "Mandiant / GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+      - quote: "in many Mandiant investigated incidents, the entire attack sequence — from initial target contact to data theft and extortion — occurred within a single business day, with GTIG recently observing data searches, staging, and theft initiated in under an hour"
+        attribution: "Mandiant / GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"
+
+  - title: "SANS ISC TeamPCP update: Mini Shai-Hulud framework now open-sourced, spawning copycat Miasma and Phantom Gyp campaigns; SLSA-signed provenance bypassed from within compromised build environments"
+    sources:
+      - url: "https://isc.sans.edu/diary/33060"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-06-08"
+        role: "primary"
+      - url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"
+        publisher: "Wiz"
+        date: "2026-06-06"
+        role: "corroborating"
+      - url: "https://www.cisa.gov/news-events/alerts/2026/05/28/supply-chain-compromises-impact-nx-console-and-github-repositories"
+        publisher: "CISA"
+        date: "2026-05-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: sans-isc RSS feed, URL https://isc.sans.edu/rssfeed.xml → primary: SANS ISC diary, URL https://isc.sans.edu/diary/33060"
+    summary: |
+      The June 8 SANS ISC handler diary by Kenneth Hartman updates the TeamPCP supply-chain campaign tracking through June 7 — covering the period since the prior SANS ISC update of May 24. The key operational development: TeamPCP open-sourced its Mini Shai-Hulud framework on its own Gitea instance, triggering a second wave of derivative campaigns. Two confirmed derivatives documented this run: Miasma (previously covered in briefs from June 6–7 in the Miasma/Microsoft GitHub arc) and a newly-named Phantom Gyp campaign targeting the Gyp build-system namespace. Both campaigns inject malicious CI/CD hooks into compromised npm packages, with Red Hat's @redhat-cloud-services scope among the affected repositories. CISA formally catalogued TeamPCP-affiliated vulnerabilities on May 27 and issued a standalone advisory May 28. The diary's principal detection-engineering takeaway: SLSA provenance attestations — even valid ones — do not protect against supply-chain injection when the build environment itself is subverted from the inside. Detection focus should shift from attestation-verification to build-pipeline integrity: monitor GitHub Actions runner process trees for unexpected network outbound from within the build; alert on `actions/upload-artifact` calls shipping signed-but-anomalous binaries; compare published package checksums against those in CI logs using independent ledgers (e.g. Sigstore Rekor transparency log). Swiss/EU public-sector orgs using npm-based automation pipelines or Red Hat tooling should audit CI/CD pipeline definitions for unexpected workflow-step insertions.
+    ch_eu_nexus: "Direct: Red Hat @redhat-cloud-services scope affected; EU/Swiss public-sector orgs with Red Hat or npm-based automation pipelines are within scope"
+    public_sector_nexus: "direct"
+    sector: "developer tooling, public administration, critical infrastructure (automation pipelines)"
+    cves: []
+    actors_campaigns_malware: ["TeamPCP", "Mini Shai-Hulud", "Miasma", "Phantom Gyp"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-06
+    evidence:
+      - quote: "a key finding: 'signed provenance still does not save you' when build environments are subverted from within"
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33060"
+      - quote: "the leaked framework enabled credential-stealing worms named 'Miasma' and 'Phantom Gyp' that compromised dozens of npm packages including Red Hat's @redhat-cloud-services scope, delivering valid SLSA provenance attestations despite malicious pipeline injection"
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33060"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "503 on both feed subcommand and news.sophos.com/feed/ — consistent with 4-run streak of 503s. No in-window content recoverable."
+  - source_id: elastic-seclabs
+    reason: "No in-window publications found via WebSearch or feed check; most recent content dated May 9, 2026."
+  - source_id: dfirreport
+    reason: "Most recent item (May 11, 2026) is well outside the 36h window."
+  - source_id: intel471
+    reason: "Most recent substantive item (FileFix, June 3) is outside the 36h window; not enough fresh delta to include."
+  - source_id: kaspersky-securelist
+    reason: "Most recent item (Argamal RAT, June 3) is outside the 36h window."
+  - source_id: checkpoint-research
+    reason: "TDS/click-hijacking ecosystem article published June 3 — outside the 36h window and 72h developing-story window."
