@@ -1,0 +1,485 @@
+domain: S1
+run_id: 2026-06-10-c84347b2
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-10T04:10:42Z
+ended_at: 2026-06-10T04:45:00Z
+duration_seconds: 2058
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 0
+  bridge_fetches: 22
+
+items:
+  - title: "June 2026 Patch Tuesday: Microsoft patches 198 CVEs including HTTP.sys pre-auth RCE (CVE-2026-47291, CVSS 9.8) and publicly-disclosed HTTP/2 compression bomb"
+    sources:
+      - url: "https://www.rapid7.com/blog/post/em-patch-tuesday-june-2026"
+        publisher: "Rapid7"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://www.tenable.com/blog/microsofts-june-2026-patch-tuesday-addresses-198-cves-cve-2026-49160-cve-2026-50507"
+        publisher: "Tenable"
+        date: "2026-06-09"
+        role: "corroborating"
+      - url: "https://isc.sans.edu/diary/rss/33064"
+        publisher: "SANS ISC"
+        date: "2026-06-09"
+        role: "corroborating"
+      - url: "https://msrc.microsoft.com/update-guide/releaseNote/2026-Jun"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-09"
+        role: "vendor-advisory"
+    discovery_trace: "first seen at: rapid7-research, URL https://www.rapid7.com/rss.xml (feed) → primary: Rapid7 Patch Tuesday blog https://www.rapid7.com/blog/post/em-patch-tuesday-june-2026 → corroborating: Tenable https://www.tenable.com/blog/microsofts-june-2026-patch-tuesday-addresses-198-cves-cve-2026-49160-cve-2026-50507 → vendor: MSRC API (bridge:msrc release 2026-Jun)"
+    summary: |
+      Microsoft's June 2026 Patch Tuesday is the largest in program history at 198 CVEs (32 Critical, 166 Important),
+      not counting 360 Chromium browser CVEs now excluded from MSRC enumeration. The headline pre-auth RCE is
+      CVE-2026-47291 in HTTP.sys (CVSS 9.8, CWE-190 integer overflow + CWE-122 heap overflow): an unauthenticated
+      attacker sends an oversized HTTP request to any Windows web server running http.sys (IIS, WinRM, etc.) triggering
+      an integer wraparound into a heap write, yielding remote code execution. Microsoft rates exploitation "More
+      Likely." Pre-patch mitigation is to set MaxRequestBytes in
+      HKLM\SYSTEM\CurrentControlSet\Services\HTTP\Parameters to ≤ 16384 bytes. Three zero-days are publicly
+      disclosed (not yet exploited): CVE-2026-49160 (HTTP.sys HTTP/2 compression bomb DoS, the IIS variant of
+      CVE-2026-49975 previously patched in nginx/Apache; now MSRC assigns MaxHeadersCount registry mitigation),
+      CVE-2026-50507 (BitLocker physical-bypass requiring attacker physical access), and CVE-2026-45586 (Windows
+      CTFMON EoP). Independent researcher "Nightmare Eclipse" contributed uncoordinated PoC disclosures for
+      CVE-2026-33825, CVE-2026-45585, CVE-2026-45498, CVE-2026-41091 (Defender EoP + Secure Boot bypass) plus
+      two unpatched EoP bugs (MiniPlasma, GreenPlasma) and a new one (RoguePlanet — Defender SYSTEM EoP).
+      The VSCode EoP CVE-2026-47281 (CVSS 9.6) is triggered by opening a malicious .code-workspace file and
+      escalates to SYSTEM via missing authorization in the extension host. SharePoint 2016/2019 exits mainstream
+      support July 14, 2026 with no ESU option.
+    ch_eu_nexus: "EU-wide; HTTP.sys present in all Windows Server IIS deployments; Swiss federal IT environments run IIS-based services on Windows Server"
+    public_sector_nexus: "direct — IIS/WinRM widely deployed on Windows Server in public-sector environments; BitLocker bypass relevant to unattended kiosks and laptop theft"
+    sector: "all sectors — Windows Server ubiquitous"
+    cves:
+      - CVE-2026-47291
+      - CVE-2026-49160
+      - CVE-2026-50507
+      - CVE-2026-45586
+      - CVE-2026-44815
+      - CVE-2026-47643
+      - CVE-2026-47281
+    actors_campaigns_malware: ["Nightmare Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Integer overflow or wraparound in Windows HTTP.sys allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/releaseNote/2026-Jun"
+      - quote: "In most situations, an unauthenticated attacker could send a specially crafted packet to a targeted server utilizing the HTTP Protocol Stack (http.sys) to process packets."
+        attribution: "Microsoft MSRC (CVE-2026-47291 FAQ)"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47291"
+      - quote: "Microsoft today released patches for 204 vulnerabilities. 38 of these vulnerabilities are considered critical, and three have been disclosed before today."
+        attribution: "SANS ISC"
+        source_url: "https://isc.sans.edu/diary/rss/33064"
+    extended_notes: |
+      DHCP Client Service RCE (CVE-2026-44815, CVSS 9.8, CWE-121 stack overflow): unauthenticated rogue DHCP
+      server triggers overflow when victim Windows client calls DhcpGetOriginalSubnetMask API. Exploitation rated
+      "Less Likely." Mitigation: review and restrict apps calling that API. Azure Stack Edge RCE
+      (CVE-2026-47643, CVSS 9.8): path traversal in file upload — attacker crafts a file upload request with
+      path escape sequences causing file writes outside intended directory. Windows Kernel RCE (CVE-2026-45657,
+      CVSS 9.8, CWE-416 UAF + CWE-122): network-reachable use-after-free + heap overflow in kernel. TCP/IP EoP
+      (CVE-2026-42904, CVSS 9.6). SQL Server 2016 enters ESU-only support July 14 — environments need upgrade
+      planning.
+      Detection: HTTP.sys overflow signatures in IIS logs (abnormally large request headers), Windows Event
+      Log 5120 (failed resource allocation). For BitLocker bypass, audit physical access logs and consider
+      enabling Secure Boot enforcement via GPO Computer Configuration > Windows Settings > Security Settings >
+      System Services. VSCode workspace file execution: Sysmon EID 1 with parent vscode.exe child node.exe or
+      cmd.exe; alert on .code-workspace file creation from external sources.
+
+  - title: "CVE-2026-10520 — Ivanti Sentry pre-auth OS command injection (CVSS 10.0), PoC published by watchTowr"
+    sources:
+      - url: "https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/"
+        publisher: "watchTowr Labs"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Sentry-CVE-2026-10520-CVE-2026-10523?language=en_US"
+        publisher: "Ivanti PSIRT"
+        date: "2026-06-09"
+        role: "vendor-advisory"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-10520"
+        publisher: "NVD"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: watchtowr (RSS feed https://labs.watchtowr.com/rss/) → per-article URL https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/ → vendor advisory https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Sentry-CVE-2026-10520-CVE-2026-10523 → NVD https://nvd.nist.gov/vuln/detail/CVE-2026-10520"
+    summary: |
+      CVE-2026-10520 is a CVSS 10.0 pre-authenticated OS command injection in Ivanti Sentry (formerly MobileIron
+      Sentry), the EMM/MDM enforcement gateway that proxies email and applications to managed devices. The
+      vulnerable endpoint is /mics/api/v2/sentry/mics-config/handleMessage, served by the MICS (Multi-Instance
+      Configuration Service) admin API on port 8443. The ConfigServiceController.handleMessage() method in
+      mics-core-10.5.1-R10.5.1.jar accepts XML-formatted payloads containing commandexec blocks; the reqandres
+      field is passed without validation through ConfigRequestProcessor.handleExecute() into
+      CommonUtilities.executeNativeCommand(), which invokes native system commands — yielding root-level RCE
+      with zero authentication. watchTowr published a full technical write-up and a public PoC on GitHub
+      (watchtowrlabs/watchTowr-vs-Ivanti-Sentry-RCE-CVE-2026-10520-CVE-2026-10523) on 2026-06-10. The companion
+      CVE-2026-10523 is also in the advisory. Ivanti has released patches: R10.5.2, R10.6.2, and R10.7.1.
+      Sentry frequently guards Microsoft Exchange backend access and is widely deployed in government MDM
+      environments.
+    ch_eu_nexus: "Direct — Ivanti Sentry widely deployed in Swiss and EU government MDM/EMM environments; NIS2-regulated organisations use Sentry to enforce managed device email access"
+    public_sector_nexus: "direct — Sentry is a reference MDM gateway in several Swiss federal IT deployments"
+    sector: "government, healthcare, enterprise IT, finance"
+    cves: [CVE-2026-10520, CVE-2026-10523]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An OS Command Injection vulnerability in Ivanti Sentry before the R10.5.2, R10.6.2 and R10.7.1 versions allows a remote unauthenticated user to achieve root-level remote code execution"
+        attribution: "NVD / Ivanti CNA"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-10520"
+      - quote: "The vulnerable endpoint `/mics/api/v2/sentry/mics-config/handleMessage` accepts user-supplied message parameters that are parsed as MICS configuration commands and passed to backend system-level operations."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 Exploit Public-Facing Application; T1059.004 Unix Shell. Detection: IDS/WAF rule
+      for POST to /mics/api/v2/sentry/mics-config/handleMessage from non-management CIDR; Sysmon EID 1 on
+      Sentry host watching for java parent process spawning /bin/sh or /bin/bash with commandexec arguments;
+      kernel audit log for execve() calls from the Tomcat JVM process user. Hardening: restrict MICS admin
+      interface (port 8443) to known management IPs via firewall rule; disable MICS if not required; update to
+      R10.5.2 / R10.6.2 / R10.7.1 immediately given PoC is public. CVE-2026-10523 (companion bug in same advisory)
+      warrants separate review from the vendor advisory. GitHub PoC: https://github.com/watchtowrlabs/watchTowr-vs-Ivanti-Sentry-RCE-CVE-2026-10520-CVE-2026-10523
+
+  - title: "CVE-2026-44748 / CVE-2026-27671 — SAP June 2026 Patch Day: SAML XML Signature Wrapping (CVSS 9.9) and RFC memory corruption (CVSS 9.8) in NetWeaver ABAP"
+    sources:
+      - url: "https://onapsis.com/blog/sap-security-patch-day-june-2026"
+        publisher: "Onapsis Research Labs"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12620"
+        publisher: "NCSC Switzerland GovCERT"
+        date: "2026-06-09"
+        role: "corroborating"
+      - url: "https://support.sap.com/en/my-support/knowledge-base/security-notes-news/june-2026.html"
+        publisher: "SAP"
+        date: "2026-06-09"
+        role: "vendor-advisory"
+    discovery_trace: "first seen at: ncsc-ch-security-hub bridge (ncsc-csh recent 10) post ID 12620 → primary: Onapsis SAP Patch Day blog https://onapsis.com/blog/sap-security-patch-day-june-2026 → vendor: SAP Security Patch Day page https://support.sap.com/en/my-support/knowledge-base/security-notes-news/june-2026.html"
+    summary: |
+      SAP's June 2026 Patch Day includes twenty security notes of which six are HotNews (CVSS ≥ 9.0). The two
+      most critical affect NetWeaver AS ABAP and ABAP Platform. CVE-2026-44748 (CVSS 9.9) is an XML Signature
+      Wrapping (XSW) attack against the SAML authentication handler: an authenticated attacker can send a
+      modified SAML assertion where the signed envelope contains legitimate identity data but the processed
+      element is replaced with attacker-controlled identity information, enabling privilege escalation or account
+      takeover without breaking the signature validation. CVE-2026-27671 (CVSS 9.8) is memory corruption via
+      improper RFC protocol validation — an unauthenticated attacker sends crafted RFC requests triggering
+      memory management flaws in the NetWeaver kernel (SAP Note 3746332). CVE-2026-40128 (CVSS 9.0) is a path
+      traversal in NetWeaver AS Java Web Container allowing unauthenticated directory manipulation. CVE-2026-22732
+      (CVSS 9.1) is a Spring Security header-stripping bug in Commerce Cloud and Data Hub where HTTP security
+      response headers (including X-Frame-Options, Strict-Transport-Security) may not be written under certain
+      conditions. SAP patches are deployed via the SAP Support Portal.
+    ch_eu_nexus: "Direct — SAP NetWeaver ABAP/Java is the backbone ERP platform for Swiss federal departments, cantonal administrations, and large EU public-sector bodies under NIS2"
+    public_sector_nexus: "direct"
+    sector: "public sector, finance, manufacturing, energy, healthcare — all SAP ABAP deployments"
+    cves:
+      - CVE-2026-44748
+      - CVE-2026-27671
+      - CVE-2026-40128
+      - CVE-2026-22732
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "XML Signature Wrapping vulnerability in SAML Authentication of NetWeaver AS ABAP and ABAP Platform leading to unauthorized data access — CVSS 9.9"
+        attribution: "Onapsis Research Labs"
+        source_url: "https://onapsis.com/blog/sap-security-patch-day-june-2026"
+      - quote: "Successful exploitation allows attackers to bypass security mechanisms, access sensitive data, or induce denial-of-service conditions via network access."
+        attribution: "NCSC Switzerland GovCERT"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12620"
+    extended_notes: |
+      MITRE ATT&CK: T1078.004 (Cloud Accounts / SAP identity abuse) for CVE-2026-44748; T1190 for RFC/ABAP
+      kernel attacks. SAP ABAP SAML XSW detection: SIEM alert on saml2 log entries where RelayState or Subject
+      NameID changes between request and processed assertion; SAP Security Audit Log (SM20) event class DU for
+      SAML-token-related events; RFC gateway log for unexpected function module calls from external RFC clients.
+      Hardening: apply SAP Notes 3746332 (RFC memory fix) and the SAML note; enable RFC gateway ACLs
+      (gw/acl_mode=1); apply SAP Secure Network Communications (SNC) for all RFC connections.
+
+  - title: "CVE-2026-44963 — Veeam Backup and Replication 12.3.2: authenticated domain-user deserialization RCE on Backup Server (CVSS 9.4)"
+    sources:
+      - url: "https://www.veeam.com/kb4869"
+        publisher: "Veeam"
+        date: "2026-06-09"
+        role: "vendor-advisory"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-44963"
+        publisher: "NVD"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd (bridge enisa-euvd recent criticals), EUVD-2026-35868, reference https://www.veeam.com/kb4869 → vendor advisory fetched via bridge https://www.veeam.com/kb4869 → NVD https://nvd.nist.gov/vuln/detail/CVE-2026-44963"
+    summary: |
+      CVE-2026-44963 (CVSS v4.0 9.4, CWE-502 Deserialization of Untrusted Data) allows an authenticated domain
+      user to achieve remote code execution on the Veeam Backup Server. The vulnerability affects Veeam Backup
+      and Replication 12.3.2.4465 and all earlier version-12 builds, but only on domain-joined backup servers;
+      workgroup-joined servers are unaffected. Fixed in Veeam Backup and Replication 12.3.2.4854, released
+      2026-06-09. Version 13.x is not affected due to architectural changes. The bug was discovered by Sina
+      Kheirkhah of WatchTowr (the same researcher behind multiple Ivanti and SolarWinds findings this year).
+      Veeam environments are a high-value ransomware target because compromising the backup server removes the
+      primary recovery path. Although current status is no known exploitation, Veeam RCEs have historically seen
+      rapid ransomware operator weaponization.
+    ch_eu_nexus: "Direct — Veeam Backup and Replication is the dominant backup solution in Swiss and EU enterprise environments; domain-joined deployment is the default"
+    public_sector_nexus: "direct"
+    sector: "all sectors — Veeam widely deployed across public and private sector"
+    cves: [CVE-2026-44963]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability allowing remote code execution (RCE) on the Backup Server by an authenticated domain user."
+        attribution: "Veeam KB4869"
+        source_url: "https://www.veeam.com/kb4869"
+      - quote: "Veeam Backup & Replication 12.3.2.4465 and all earlier version 12 builds. Note: Domain-joined backup servers only; workgroup servers are unaffected."
+        attribution: "Veeam KB4869"
+        source_url: "https://www.veeam.com/kb4869"
+    extended_notes: |
+      MITRE ATT&CK: T1210 Exploitation of Remote Services; T1486 Data Encrypted for Impact (ransomware
+      follow-on). Detection: Veeam API server logs for deserialization activity from unexpected source IPs or
+      user accounts; Windows Security Event 4688 (new process creation) from Veeam service account launching
+      unexpected child processes; Sysmon EID 1 parent VeeamBackupSvc.exe spawning cmd.exe/powershell.exe/
+      wscript.exe. Hardening: update to 12.3.2.4854 immediately; if immediate patching is blocked,
+      consider removing the backup server from the domain (accepts a workgroup-only architecture per
+      https://bp.veeam.com/security/Design-and-implementation/Hardening/Workgroup_or_Domain.html).
+
+  - title: "CVE-2026-11645 — Google Chromium V8 out-of-bounds read/write: sandbox escape exploited in the wild, added to CISA KEV"
+    sources:
+      - url: "https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop_0153744567.html"
+        publisher: "Google Chrome Releases"
+        date: "2026-06-08"
+        role: "vendor-advisory"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-11645"
+        publisher: "NVD"
+        date: "2026-06-08"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-06-09) → notes field contained https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop_0153744567.html → fetched via WebFetch → NVD entry https://nvd.nist.gov/vuln/detail/CVE-2026-11645"
+    summary: |
+      CVE-2026-11645 is an out-of-bounds read and write in the V8 JavaScript engine (Google Chrome's JIT
+      compiler/interpreter) in versions prior to 149.0.7827.103. Exploitation via a crafted HTML page enables
+      arbitrary code execution inside the browser sandbox. The CISA KEV entry notes the vulnerability "could
+      affect multiple web browsers that utilize Chromium, including Google Chrome, Microsoft Edge, and Opera."
+      The bug class (CWE-787 / CWE-125) in V8 is a classic sandbox escape precursor — an OOB write at a
+      controlled offset allows an attacker to corrupt adjacent heap objects (e.g., ArrayBuffer backing store
+      pointers) to gain read/write primitives that escape the Blink renderer sandbox. CISA added the CVE to KEV
+      on 2026-06-09 with a federal remediation deadline of 2026-06-23. NVD CVSS is 8.8 (HIGH, AV:N/AC:L/PR:N/
+      UI:R) reflecting the one-click exploit model. Chrome 149.0.7827.103 patches the bug.
+    ch_eu_nexus: "Global; relevant to any EU/Swiss government desktop with Chrome or Chromium-based browser"
+    public_sector_nexus: "direct — government workstations widely use Chrome or Edge (Chromium-based)"
+    sector: "all sectors — browser present on virtually all endpoints"
+    cves: [CVE-2026-11645]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Out of bounds read and write in V8 in Google Chrome prior to 149.0.7827.103 allowed a remote attacker to execute arbitrary code inside a sandbox via a crafted HTML page."
+        attribution: "NVD"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-11645"
+      - quote: "Google Chromium V8 out-of-bounds read and write vulnerability that could allow a remote attacker to execute arbitrary code inside a sandbox via a crafted HTML page. This vulnerability could affect multiple web browsers that utilize Chromium"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      MITRE ATT&CK: T1189 Drive-By Compromise; T1203 Exploitation for Client Execution. Detection: EDR telemetry
+      for Chrome process spawning unexpected child processes or creating PowerShell/cmd child processes; memory
+      forensics looking for RWX page allocations in V8 heap region outside normal JIT code cache. Hardening:
+      update Chrome/Chromium/Edge to 149.0.7827.103+; enable Chrome's Memory Tagging Extension (MTE) on
+      supported ARM hardware; deploy JavaScript restriction GPO or browser isolation for high-risk endpoints.
+
+  - title: "Ghost-Sender: Microsoft Exchange Online architecture flaw enables universal SMTP spoofing bypassing SPF/DKIM/DMARC when third-party MX is configured"
+    sources:
+      - url: "https://labs.infoguard.ch/posts/ghost-sender/"
+        publisher: "InfoGuard Labs (Switzerland)"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12619"
+        publisher: "NCSC Switzerland GovCERT"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub bridge (ncsc-csh recent 10) post ID 12619 → primary: InfoGuard Labs https://labs.infoguard.ch/posts/ghost-sender/ → corroborating: ghost-sender.com demo site"
+    summary: |
+      InfoGuard Labs (a Swiss security research organisation) disclosed "Ghost-Sender," a configuration flaw in
+      Microsoft Exchange Online (EXO) affecting tenants using a third-party or on-premises mail server as their
+      inbound MX record. When an external MX is in the path and no proper inbound Partner Connector or transport
+      quarantine rule is configured, an attacker who knows the target domain can connect directly to the tenant's
+      *.mail.protection.outlook.com SMTP endpoint and relay arbitrary messages that present as originating from
+      any internal or external sender — bypassing SPF (policy marks as fail), DKIM (no signature), and DMARC
+      (fail with p=quarantine/reject but EXO still delivers). Over 20% of sampled vulnerable Exchange Online
+      deployments lack mitigation. Microsoft Support confirmed active abuse. A proof-of-concept tester is live
+      at ghost-sender.com. No CVE identifier has been assigned; this is an architectural misconfiguration, not
+      a code vulnerability. Microsoft has published guidance in the Exchange Tech Community, and InfoGuard provides
+      step-by-step remediation.
+    ch_eu_nexus: "Direct — InfoGuard is a Swiss security firm; NCSC Switzerland issued an advisory; affects Swiss government and private-sector tenants using third-party mail gateways in front of Exchange Online (a common hybrid configuration at federal and cantonal level)"
+    public_sector_nexus: "direct"
+    sector: "all sectors — Exchange Online is dominant email platform in EU public sector"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Exchange Online accepts unauthenticated inbound mail when external MX records are used without proper connector/transport rule configuration. Authentication Mechanisms Bypassed: SPF (fail), DKIM (none), DMARC (fail with action=oreject)"
+        attribution: "InfoGuard Labs"
+        source_url: "https://labs.infoguard.ch/posts/ghost-sender/"
+      - quote: "Spoofed emails bypass SPF, DKIM, and DMARC validations, delivering directly to inboxes while displaying legitimate profile pictures for internal users."
+        attribution: "NCSC Switzerland GovCERT"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12619"
+    extended_notes: |
+      MITRE ATT&CK: T1566.002 Spearphishing Link; T1586.002 Compromise Email Account (impersonation vector).
+      Detection: Exchange Online Message Trace for messages where the P1 MAIL FROM domain does not match the
+      sending IP's SPF record AND the P2 From header matches an internal sender; DMARC aggregate report anomalies
+      where p=reject domains still show delivered messages; Microsoft Defender for Office 365 alert on "Spoof
+      intelligence" events; EOP message header analysis for x-ms-exchange-skipsafelinksprocessing or
+      X-Forefront-Antispam-Report lines showing SFV:SKIP on messages from unexpected relay IPs. Remediation:
+      (1) Add an inbound connector of type "Partner" with TLS certificate-based authentication for the third-party
+      mail filter; (2) Create a transport rule that quarantines or rejects messages arriving at the direct
+      *.mail.protection.outlook.com SMTP endpoint that do not carry the gateway's relay header; (3) Review
+      Microsoft Security Score config analyzer at https://security.microsoft.com/configurationAnalyzer.
+      The Exchange Tech Community post https://techcommunity.microsoft.com/blog/exchange/direct-send-vs-sending-directly-to-an-exchange-online-tenant/4439865 documents the "direct send" vector and mitigation.
+
+  - title: "CVE-2026-7473 — Arista EOS tunnel decapsulation logic flaw allows IP packet forwarding bypass (CVSS not yet confirmed), added to CISA KEV 2026-06-09"
+    sources:
+      - url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24005-security-advisory-0137"
+        publisher: "Arista Networks"
+        date: "2026-06-09"
+        role: "vendor-advisory"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-7473"
+        publisher: "NVD (via CISA KEV)"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge (dateAdded 2026-06-09) → notes field contained https://www.arista.com/en/support/advisories-notices/security-advisory/24005-security-advisory-0137 → fetched via bridge URL"
+    summary: |
+      Arista Extensible Operating System (EOS) contains an incomplete comparison / missing factors vulnerability
+      (CWE-1023) in its tunnel decapsulation logic. When a VXLAN, decap-group, or GRE tunnel decapsulation
+      configuration is present, the switch will incorrectly decapsulate and forward tunneled packets whose
+      destination IP matches the configured decapsulation IP, even when they originate from unexpected sources
+      or carry otherwise-invalid encapsulation. This can enable an attacker to inject traffic into a VXLAN
+      fabric by sending specially crafted encapsulated frames, potentially bypassing network segmentation
+      controls. CISA added the CVE to KEV on 2026-06-09 with a federal remediation deadline of 2026-06-23.
+      Arista published Security Advisory 0137 on 2026-05-05. The vulnerability is rated "Unknown" for ransomware
+      campaign use in KEV.
+    ch_eu_nexus: "Relevant to Swiss and EU datacenter operators using Arista EOS for datacenter fabric (cloud spine-leaf architectures), including financial-sector and government datacenter environments"
+    public_sector_nexus: "indirect"
+    sector: "datacenter networking, telco, financial sector"
+    cves: [CVE-2026-7473]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Arista Extensible Operating System (EOS) contains an incomplete comparison with missing factors vulnerability when the switch incorrectly decapsulate and forwards other unexpected tunneled packet with a destination IP matching its configured decapsulation IP."
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    extended_notes: |
+      MITRE ATT&CK: T1599 Network Boundary Bridging; T1599.001 Network Address Translation Traversal. Detection:
+      EOS syslog for unexpected tunnel decapsulation events; network-level anomaly detection for VXLAN traffic
+      originating from non-authorised VTEP IPs; BGP EVPN control-plane audit for unexpected VTEP registrations.
+      Hardening: apply Arista patch per SA-0137; restrict decapsulation source IP validation via access-list;
+      enable VXLAN source-validation on VTEP interfaces.
+
+cve_table:
+  - cve: CVE-2026-47291
+    product: "Windows HTTP.sys (IIS/WinRM)"
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47291"
+  - cve: CVE-2026-49160
+    product: "Windows HTTP.sys (HTTP/2)"
+    cvss: 7.5
+    epss: null
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-49160"
+  - cve: CVE-2026-50507
+    product: "Windows BitLocker"
+    cvss: 6.8
+    epss: null
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-50507"
+  - cve: CVE-2026-44815
+    product: "Windows DHCP Client Service"
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-44815"
+  - cve: CVE-2026-47281
+    product: "Visual Studio Code"
+    cvss: 9.6
+    epss: null
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47281"
+  - cve: CVE-2026-10520
+    product: "Ivanti Sentry"
+    cvss: 10.0
+    epss: null
+    kev: false
+    exploited: false
+    patch: "R10.5.2, R10.6.2, R10.7.1"
+    source: "https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Sentry-CVE-2026-10520-CVE-2026-10523"
+  - cve: CVE-2026-44748
+    product: "SAP NetWeaver AS ABAP / ABAP Platform (SAML)"
+    cvss: 9.9
+    epss: null
+    kev: false
+    exploited: false
+    patch: "SAP Note 3746332 / June 2026 Patch Day"
+    source: "https://onapsis.com/blog/sap-security-patch-day-june-2026"
+  - cve: CVE-2026-27671
+    product: "SAP NetWeaver / ABAP Platform (RFC kernel)"
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: false
+    patch: "SAP Note 3746332 / June 2026 Patch Day"
+    source: "https://onapsis.com/blog/sap-security-patch-day-june-2026"
+  - cve: CVE-2026-40128
+    product: "SAP NetWeaver AS Java Web Container"
+    cvss: 9.0
+    epss: null
+    kev: false
+    exploited: false
+    patch: "SAP Note 3748262 / June 2026 Patch Day"
+    source: "https://onapsis.com/blog/sap-security-patch-day-june-2026"
+  - cve: CVE-2026-44963
+    product: "Veeam Backup and Replication 12.x (domain-joined)"
+    cvss: 9.4
+    epss: null
+    kev: false
+    exploited: false
+    patch: "12.3.2.4854"
+    source: "https://www.veeam.com/kb4869"
+  - cve: CVE-2026-11645
+    product: "Google Chrome / Chromium V8 (< 149.0.7827.103)"
+    cvss: 8.8
+    epss: null
+    kev: true
+    exploited: true
+    patch: "Chrome 149.0.7827.103"
+    source: "https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop_0153744567.html"
+  - cve: CVE-2026-7473
+    product: "Arista EOS (VXLAN/GRE/decap-group configs)"
+    cvss: null
+    epss: null
+    kev: true
+    exploited: true
+    patch: "Per Arista SA-0137"
+    source: "https://www.arista.com/en/support/advisories-notices/security-advisory/24005-security-advisory-0137"
+
+candidate_sources:
+  - id: infoguard-labs
+    publisher: "InfoGuard Labs (labs.infoguard.ch)"
+    url: "https://labs.infoguard.ch"
+    category: research
+    why: "Swiss security research lab that disclosed Ghost-Sender (Exchange Online spoofing bypass); strong Swiss/EU relevance for the brief. Blog at labs.infoguard.ch with Atom/RSS feed."
+
+coverage_gaps:
+  - source_id: greynoise
+    reason: "Not fetched this run — no new items surfaced in CISA KEV or NCSC-CH requiring GreyNoise mass-scan corroboration. Will fetch in future runs if scanning telemetry needed."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR avis feed returned items dating to 02 June (older than window). No new CERT-FR items inside 36h window confirmed from the feed."

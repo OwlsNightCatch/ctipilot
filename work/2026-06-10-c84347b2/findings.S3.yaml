@@ -1,0 +1,308 @@
+domain: S3
+run_id: 2026-06-10-c84347b2
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-10T04:11:04Z
+ended_at: 2026-06-10T05:08:00Z
+duration_seconds: 3416
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 2
+  bridge_fetches: 14
+
+items:
+  - title: "Hades PyPI campaign: 19 packages poisoned with .pth startup-hook to deliver Bun-based credential stealer targeting developer cloud, AI, and VCS secrets"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/hades-pypi-attack-19-packages-poisoned.html", publisher: "The Hacker News", date: "2026-06-09", role: "primary" }
+      - { url: "https://socket.dev/blog/shai-hulud-descends-to-hades-miasma-pypi-wave", publisher: "Socket.dev", date: "2026-06-07", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS, URL https://feeds.feedburner.com/TheHackersNews → pivot: The Hacker News article https://thehackernews.com/2026/06/hades-pypi-attack-19-packages-poisoned.html → primary: Socket.dev analysis https://socket.dev/blog/shai-hulud-descends-to-hades-miasma-pypi-wave"
+    summary: |
+      The Hades campaign — a third extension of the Mini Shai-Hulud/Miasma supply-chain worm lineage — targeted PyPI with 37 malicious wheel artifacts across 19 packages. The attack exploits Python's site module startup mechanism: malicious `*-setup.pth` files execute automatically on interpreter startup without requiring any import statement. The payload downloads the Bun JavaScript runtime (v1.3.13) from GitHub and runs a triple-encrypted (AES-GCM / PBKDF2-SHA256 / gzip) JavaScript `_index.js`, which sweeps developer credentials including GitHub tokens and Actions secrets, npm/PyPI/RubyGems/JFrog credentials, AWS/GCP/Azure access keys, Kubernetes configurations, Docker configs, Vault tokens, SSH keys, `.env` files, and AI tool configurations (Claude/MCP/Cline/Aider/Copilot). A secondary cluster uses obfuscated import hooks in `__init__.py` with novel prompt-injection techniques targeting LLM-based security scanners. Exfiltration uses GitHub repository commits keyed with campaign markers. The campaign also installs backdoor configurations in AI coding-assistant workspace folders, making future AI agent sessions execute attacker instructions. Affected packages included scientific/bioinformatics packages (`napari-ufish`, `spateo-release`, `dynamo-release`, `ufish`, `coolbox`) as well as developer tooling; all have been removed. Defenders should hunt `_setup.pth` file creation events (`site-packages/**/*.pth`), Bun binary downloads from `github.com/oven-sh/bun`, and sentinel file creation at `$TMPDIR/.bun_ran` via process-creation telemetry (Sysmon EID 1 with parent `python`/`pip`).
+    ch_eu_nexus: "direct — affects European developers using PyPI; bioinformatics packages suggest academic/research institute targeting consistent with Swiss university environments; AI coding-agent config injection affects developers using Claude, Copilot, and similar tools"
+    public_sector_nexus: "indirect — developer-toolchain supply chain; research institute and university environments in scope via bioinformatics packages"
+    sector: "software supply chain, technology, research/academic"
+    cves: []
+    actors_campaigns_malware: ["Hades", "Mini Shai-Hulud", "Miasma"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Miasma supply chain campaign has sparked a fresh attack wave called Hades, this time involving 37 malicious wheel artifacts across 19 packages in the Python Package Index (PyPI) registry"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/hades-pypi-attack-19-packages-poisoned.html"
+      - quote: "Socket identified 37 malicious wheels across 19 PyPI packages that exploit Python's `.pth` startup mechanism to execute obfuscated JavaScript payloads via the Bun runtime"
+        attribution: "Socket.dev"
+        source_url: "https://socket.dev/blog/shai-hulud-descends-to-hades-miasma-pypi-wave"
+    extended_notes: |
+      Technique linkage: T1547.013 (Boot/Logon Initialization via .pth site module), T1059.007 (JavaScript via Bun), T1555 (Credentials from Password Stores), T1083 (File and Directory Discovery).
+      The bioinformatics cluster (embiggen, ensmallen, gpsea, mflux-streamlit, nhmpy, ppkt2synergy, pyphetools) specifically targets research institutions. Swiss universities running research compute environments with PyPI dependencies should audit recently installed packages.
+      The Miasma/Shai-Hulud/Hades multi-front campaign now spans npm, PyPI, and GitHub, with the same actor also targeting Microsoft GitHub repositories (73 disabled). Long-running campaign rule applies — consolidate to UPDATE if re-reporting within a week.
+
+  - title: "PAN-OS CVE-2026-0257: GlobalProtect authentication-bypass actively exploited — authentication override cookie forgery via TLS certificate public-key extraction"
+    sources:
+      - { url: "https://security.paloaltonetworks.com/CVE-2026-0257", publisher: "Palo Alto Networks PSIRT", date: "2026-05-13 (updated 2026-06-03)", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/", publisher: "Rapid7", date: "2026-05-29 (updated 2026-06-03)", role: "corroborating" }
+      - { url: "https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/", publisher: "Unit 42", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 feed, URL https://unit42.paloaltonetworks.com/feed/ → primary: Palo Alto PSIRT advisory https://security.paloaltonetworks.com/CVE-2026-0257 → corroborating: Rapid7 ETR https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+    summary: |
+      CVE-2026-0257 is an authentication bypass in PAN-OS GlobalProtect portal and gateway components rooted in reliance on cookies without integrity checking (CWE-565). When the authentication override cookie feature is enabled and the encryption certificate is shared with another function (e.g., HTTPS admin access), an attacker can extract the certificate's public key from the TLS handshake and forge valid authentication override cookies, bypassing authentication entirely and establishing VPN sessions as unauthenticated remote users. The bug requires no credentials but does require network-level access to the GlobalProtect portal/gateway and specific misconfiguration (shared certificate). Rapid7 observed successful exploitation starting May 17, 2026 from low-cost hosting provider IPs. Unit 42's June 9 update confirms a limited number of probed devices successfully established gateway-connected sessions, with hardcoded PoC-derived indicators (MAC addresses `aa:bb:cc:dd:ee:ff`, hostname `WINDOWS-LAPTOP-001`, empty domain field). CISA added to KEV on May 29, 2026. PAN-OS 10.2, 11.1, 11.2, 12.1 and Prisma Access 10.2.0/11.2.0 are affected; patched in 12.1.7+, 11.2.12+, 11.1.15+, 10.2.18-h6+, Prisma Access 10.2.10-h36+/11.2.7-h13+. Workaround: disable authentication override OR use a dedicated certificate exclusively for override cookies. Detection: GlobalProtect gateway session logs for auth-method=cookie from unexpected source IPs; IKE/SSL-VPN authentication-method anomalies; PAN-OS system logs for unusual session establishment with known PoC indicator values.
+    ch_eu_nexus: "global — affects all PAN-OS GlobalProtect deployments; EU public sector and Swiss federal infrastructure commonly use PAN-OS for remote-access VPN; CRN NCSC-CH GovCERT should be consulted for local observations"
+    public_sector_nexus: "direct — PAN-OS is widely deployed in public-sector remote access VPN stacks across CH/EU"
+    sector: "government, financial, critical infrastructure, telco"
+    cves: [CVE-2026-0257]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Authentication bypass vulnerabilities in Palo Alto Networks PAN-OS GlobalProtect portal and gateway allow attackers to bypass security controls and establish unauthorized VPN connections. ATTACKED - Limited exploit attempts observed on unpatched devices."
+        attribution: "Palo Alto Networks PSIRT"
+        source_url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+      - quote: "Rapid7 observed successful exploitation starting May 17, 2026, with attackers using low-cost hosting providers as origin points"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-observed-exploitation-of-pan-os-globalprotect-authentication-bypass-vulnerability-cve-2026-0257/"
+    extended_notes: |
+      CVSS 7.8 (HIGH) — CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:L/VI:N/VA:N/SC:H/SI:H/SA:N.
+      Post-upgrade note: after patching, users must re-authenticate once — authentication override cookies are regenerated using enhanced security methods.
+      Affected versions to vendor precision: PAN-OS 12.1 < 12.1.4-h6/<12.1.7; 11.2 < 11.2.4-h17/<11.2.7-h14/<11.2.10-h7/<11.2.12; 11.1 < 11.1.4-h33/<11.1.6-h32/<11.1.7-h6/<11.1.10-h25/<11.1.13-h5/<11.1.15; 10.2 < 10.2.7-h34/<10.2.10-h36/<10.2.13-h21/<10.2.16-h7/<10.2.18-h6.
+
+  - title: "Ivanti Sentry CVE-2026-10520 / CVE-2026-10523: pre-auth OS command injection (CVSS 10.0) and authentication bypass — watchTowr publishes full technical analysis with PoC"
+    sources:
+      - { url: "https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/", publisher: "watchTowr Labs", date: "2026-06-10", role: "primary" }
+    discovery_trace: "first seen at: watchTowr Labs RSS feed https://labs.watchtowr.com/rss/ → primary (no further pivot needed, watchTowr is the original researcher): https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/"
+    summary: |
+      watchTowr today (June 10) published a full technical analysis and PoC for two Ivanti Sentry vulnerabilities patched in R10.5.2 / R10.6.2 / R10.7.1. CVE-2026-10520 (CVSS 10.0) is a pre-authentication OS command injection in the `/mics/api/v2/sentry/mics-config/handleMessage` endpoint. The vulnerability stems from unsanitised XML input passed to the `handleExecute()` method, which processes the `reqandres` field in a `commandexec` XML block via reflection-based native command execution — achieving root-level RCE with no credentials. CVE-2026-10523 is a companion authentication bypass (CWE-288) enabling unauthenticated access to create administrative accounts. The Sentry product serves as a gateway/policy enforcement point for Ivanti UEM deployments (MobileIron/Ivanti EPMM); compromise gives an attacker network gateway-level access to managed devices. PoC code is available on GitHub at `watchtowrlabs/watchTowr-vs-Ivanti-Sentry-RCE-CVE-2026-10520-CVE-2026-10523`. No exploitation in the wild reported at time of publication, but the PoC publication dramatically shortens the window before exploitation begins — patch or restrict network access to MICS API immediately. Detection: WAF/IDS rules for POST to `/mics/api/v2/sentry/mics-config/handleMessage` from untrusted sources; Sentry application logs for unexpected `commandexec` XML payloads; EDR/SIEM for `java` spawning `bash`/`sh` processes on Sentry servers.
+    ch_eu_nexus: "global — Ivanti Sentry/MobileIron Sentry is deployed in enterprise and public-sector MDM environments across CH/EU; affects all versions before R10.5.2, R10.6.2, R10.7.1"
+    public_sector_nexus: "direct — MDM/UEM gateways are common in Swiss cantonal and federal IT for mobile device management"
+    sector: "enterprise IT, government, healthcare, education"
+    cves: [CVE-2026-10520, CVE-2026-10523]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A pre-authenticated OS command injection vulnerability exists in Ivanti Sentry's `/mics/api/v2/sentry/mics-config/handleMessage` endpoint. The vulnerability stems from unsanitized user input passed to the `handleExecute()` method"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/more-evidence-that-words-dont-mean-what-we-thought-they-meant-ivanti-sentry-pre-auth-os-command-injection-cve-2026-10520/"
+    extended_notes: |
+      [SINGLE-SOURCE] — watchTowr is the original researcher; Ivanti advisory behind Salesforce authentication wall and not independently reachable. VulnDB confirms CVE-2026-10523 (CWE-288 auth bypass in Sentry before R10.5.2/R10.6.2/R10.7.1). Source date June 10 is today — treat as breaking.
+      Affected: Ivanti Sentry all versions before R10.5.2, R10.6.2, R10.7.1.
+      Patched: R10.5.2, R10.6.2, R10.7.1.
+      PoC repository: https://github.com/watchtowrlabs/watchTowr-vs-Ivanti-Sentry-RCE-CVE-2026-10520-CVE-2026-10523
+
+  - title: "Veeam Backup & Replication CVE-2026-44963 (CVSS 9.4): authenticated domain user to RCE on backup server — watchTowr researcher, patched in 12.3.2.4854"
+    sources:
+      - { url: "https://www.veeam.com/kb4869", publisher: "Veeam KB", date: "2026-06-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html", publisher: "The Hacker News", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS, URL https://feeds.feedburner.com/TheHackersNews → primary: Veeam KB article https://www.veeam.com/kb4869 → corroborating: THN article https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html"
+    summary: |
+      Veeam patched CVE-2026-44963 (CVSS v4 9.4, Critical) in Backup & Replication on June 9, 2026, affecting all version 12 builds up to and including 12.3.2.4465. The vulnerability allows any authenticated domain user — the account does not require elevated privileges within Veeam — to execute arbitrary code remotely on the Backup Server when it is domain-joined. Researcher Sina Kheirkhah of watchTowr discovered and reported the flaw. Version 13.x is unaffected due to architectural changes. Patch is version 12.3.2.4854. No active exploitation confirmed at time of disclosure, but Veeam backup infrastructure is a perennial ransomware pre-encryption target (attackers disable or corrupt backup repositories before deploying ransomware). Detection: anomalous RPC or Veeam API calls from domain service accounts not associated with backup jobs; Veeam Backup Server process spawning unexpected child processes; network connections from backup server to unusual internal hosts. Hardening: restrict Veeam Backup Server domain membership to a dedicated OU with tightly scoped GPO; apply principle of least privilege to domain accounts with Veeam access; upgrade to 12.3.2.4854 or 13.x immediately.
+    ch_eu_nexus: "global — Veeam is the dominant backup solution for European enterprise; ransomware operations targeting EU organisations routinely target backup infrastructure first"
+    public_sector_nexus: "direct — Veeam is widely used in Swiss cantonal IT and EU public-sector backup environments"
+    sector: "all — backup infrastructure is cross-sector"
+    cves: [CVE-2026-44963]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability allowing remote code execution (RCE) on the Backup Server by an authenticated domain user. CVSS v4 score of 9.4 (Critical)"
+        attribution: "Veeam KB"
+        source_url: "https://www.veeam.com/kb4869"
+      - quote: "Veeam has released security patches to address a critical flaw in its Backup & Replication software that could result in remote code execution. Tracked as CVE-2026-44963, the vulnerability carries a CVSS score of 9.4 out of a maximum of 10.0."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html"
+    extended_notes: |
+      CVSS vector: AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H.
+      Note: v12.x is under extended support only per Veeam lifecycle; v13.x is the current mainstream release and is not affected.
+      Veeam has previously attracted high-value ransomware targeting: Akira, Black Basta, LockBit, and others have historically targeted Veeam before encryption to prevent recovery.
+
+  - title: "Windows HTTP.sys CVE-2026-47291: integer overflow to unauthenticated network RCE (CVSS 9.8, Critical) — June Patch Tuesday; registry mitigation available"
+    sources:
+      - { url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47291", publisher: "Microsoft MSRC", date: "2026-06-09", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/em-patch-tuesday-june-2026", publisher: "Rapid7", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: msrc-release bridge subcommand (June 2026 release, filtered for high-CVSS/exploited) → primary: MSRC OData API / human URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47291 → corroborating: Rapid7 Patch Tuesday analysis https://www.rapid7.com/blog/post/em-patch-tuesday-june-2026"
+    summary: |
+      CVE-2026-47291 is a critical, unauthenticated network RCE (CVSS 9.8) in the Windows HTTP Protocol Stack (HTTP.sys) caused by an integer overflow / wraparound (CWE-190) triggering a heap-based buffer overflow (CWE-122). An attacker sends a specially crafted packet to any server running HTTP.sys (IIS, WinRM, WinRM-HTTPS, WMI over HTTP, Remote Management, and many other Windows services) without any authentication. Rated "Exploitation More Likely" by Microsoft. Partial pre-patch mitigation: systems where `HKLM\SYSTEM\CurrentControlSet\Services\HTTP\Parameters\MaxRequestBytes` is at or below the default (16384 bytes / 16 KB) are not impacted; organisations that have raised this value above ~65 KB are exposed and should either patch or reset the registry value. Applies to all currently supported Windows Server and Windows Client versions. Detection: network-layer IDS/WAF for malformed HTTP/1.x packets with oversized request headers to Windows services; event log monitoring for HTTP.sys crashes (BSOD, Event ID 1001) or abnormal process spawning from `ntoskrnl.exe` / `http.sys` context. Priority patch target for any organisation hosting IIS, WinRM, or REST APIs directly on Windows Server.
+    ch_eu_nexus: "global — affects all supported Windows Server versions; EU public-sector Windows Server deployments running IIS or WinRM exposed to internal or external networks are affected"
+    public_sector_nexus: "direct — Windows Server / IIS pervasive across Swiss cantonal and EU government infrastructure"
+    sector: "all — Windows Server infrastructure"
+    cves: [CVE-2026-47291]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Integer overflow or wraparound in Windows HTTP.sys allows an unauthorized attacker to execute code over a network. Systems using the default value (16384 bytes / 16 KB) are not impacted by this vulnerability."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47291"
+      - quote: "HTTP.sys Remote Code Execution — No public disclosure; Exploitation More Likely; Critical impact on web services"
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/em-patch-tuesday-june-2026"
+    extended_notes: |
+      Registry workaround: Set `HKLM\SYSTEM\CurrentControlSet\Services\HTTP\Parameters\MaxRequestBytes` to 16384 (default) or 65534 maximum; restart HTTP service (`net stop http /y && net start http`).
+      June 2026 Patch Tuesday also includes CVE-2026-44815 (DHCP Client Service RCE, CVSS 9.8, "Less Likely") and CVE-2026-42904 (Windows TCP/IP EoP, CVSS 9.6), plus three publicly disclosed vulns: CVE-2026-50507 (BitLocker bypass, 6.8), CVE-2026-49160 (HTTP.sys DoS, 7.5, AI-discovered), and CVE-2026-45586 (CTFMON EoP, 7.8). None confirmed exploited in the wild at publication. Total release: 200 Microsoft CVEs + 360 Chromium CVEs.
+
+  - title: "Chrome V8 zero-day CVE-2026-11645 exploited in the wild — out-of-bounds memory access in V8, patched in 149.0.7827.102/103"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/chrome-v8-zero-day-cve-2026-11645.html", publisher: "The Hacker News", date: "2026-06-09", role: "primary" }
+      - { url: "https://www.malwarebytes.com/blog/bugs/2026/06/update-chrome-google-patches-actively-exploited-vulnerability-and-73-others", publisher: "Malwarebytes", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews RSS, URL https://feeds.feedburner.com/TheHackersNews → primary: THN article https://thehackernews.com/2026/06/chrome-v8-zero-day-cve-2026-11645.html → corroborating: Malwarebytes blog https://www.malwarebytes.com/blog/bugs/2026/06/update-chrome-google-patches-actively-exploited-vulnerability-and-73-others"
+    summary: |
+      Google patched CVE-2026-11645 (CVSS 8.8, High) — an out-of-bounds read and write in V8, Chrome's JavaScript and WebAssembly engine — in Chrome 149.0.7827.102/103 (Windows/macOS) and 149.0.7827.102 (Linux) released June 8/9 2026. The vulnerability allows a remote attacker to achieve code execution within the Chrome renderer sandbox via a crafted HTML page. Discovery credit to researcher "303f06e3" with a $55,000 bug bounty, confirmed exploited in the wild before patching. This is the fifth actively exploited Chrome zero-day in 2026, following CVE-2026-2441, CVE-2026-3909, CVE-2026-3910, and CVE-2026-5281. Exploit class: memory corruption in JIT compiler or optimisation pass enabling type confusion or out-of-bounds access, requiring sandbox escape for full OS compromise. Detection: EDR telemetry for `chrome.exe` or `chromium-browser` spawning unexpected child processes or loading unusual DLLs; Chrome Enterprise reporting for browser crash events in V8 context. Mitigation: update Chrome to 149.0.7827.103+; enforce Chrome version policies via enterprise update management.
+    ch_eu_nexus: "global — Chrome is dominant browser in EU public-sector and enterprise environments"
+    public_sector_nexus: "direct — browser zero-days directly affect government workstations"
+    sector: "all — end-user computing"
+    cves: [CVE-2026-11645]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Google has released security updates to address 74 vulnerabilities, including one that has come under active exploitation in the wild. The high-severity vulnerability, tracked as CVE-2026-11645 (CVSS score: 8.8), has been described as an out-of-bounds memory access in V8"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/chrome-v8-zero-day-cve-2026-11645.html"
+      - quote: "Google's latest Chrome update fixes 74 security vulnerabilities, including one under active attack."
+        attribution: "Malwarebytes"
+        source_url: "https://www.malwarebytes.com/blog/bugs/2026/06/update-chrome-google-patches-actively-exploited-vulnerability-and-73-others"
+
+  - title: "WinRAR CVE-2025-8088 path traversal via NTFS ADS still exploited by Earth Dahu (Gamaredon) and SHADOW-EARTH-066 (UAC-0226) against Ukraine — unpatched instances remain active attack surface nearly a year after fix"
+    sources:
+      - { url: "https://www.trendmicro.com/en_us/research/26/f/old-winrar-flaw-fuels-attacks-on-ukraine.html", publisher: "Trend Micro", date: "2026-06-08", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/winrar-flaw-exploited-by-russia-aligned.html", publisher: "The Hacker News", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: TrendMicro Research feed https://feeds.feedburner.com/TrendMicroResearch → primary: Trend Micro article https://www.trendmicro.com/en_us/research/26/f/old-winrar-flaw-fuels-attacks-on-ukraine.html → corroborating: THN https://thehackernews.com/2026/06/winrar-flaw-exploited-by-russia-aligned.html"
+    summary: |
+      Trend Micro documents two concurrent Russia-aligned campaigns still exploiting CVE-2025-8088 — a path traversal via NTFS Alternate Data Streams in WinRAR patched in July 2025 — nearly a year after the fix shipped. Earth Dahu (Gamaredon / UAC-0010) delivers an HTA-to-VBScript chain that drops espionage modules including GammaPhish/GammaLoad/GammaSteel. SHADOW-EARTH-066 (UAC-0226) deploys GIFTEDCROOK via crafted RAR archives with decoy PDFs and hidden ADS payloads that extract to the Startup folder, executing PowerShell in-memory DLL loaders to steal passwords, cookies, and documents from Chrome, Edge, Opera, and Firefox. Both actors have adapted C2 exfiltration away from Telegram following Russia's block in February 2026, now routing to dedicated C2 servers. The continued exploitation of a patched vulnerability underscores the scale of unmanaged WinRAR installs in Ukrainian government and defence sectors. Detection: `wscript.exe` / `mshta.exe` spawned from archive-extraction events; Startup folder (`%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup`) writes via Sysmon EID 11; PowerShell `-EncodedCommand` or in-memory reflection loading (EID 4104 script-block logging); browser credential path access anomalies.
+    ch_eu_nexus: "Ukraine primary, but Earth Dahu / Gamaredon have previously targeted European defence-industrial base and government entities; CVE-2025-8088 affects any unpatched WinRAR globally"
+    public_sector_nexus: "direct — Ukrainian government and defence primary; EU defence-adjacent environments secondary"
+    sector: "government, defence, critical infrastructure"
+    cves: [CVE-2025-8088]
+    actors_campaigns_malware: ["Earth Dahu", "Gamaredon", "UAC-0010", "SHADOW-EARTH-066", "UAC-0226", "GIFTEDCROOK", "GammaPhish", "GammaLoad", "GammaSteel"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Two separate Russia-aligned campaigns are still exploiting the WinRAR flaw CVE-2025-8088 against Ukrainian organizations nearly a year after it was patched, showing how unmanaged software keeps an exploited entry point open long after the fix ships."
+        attribution: "Trend Micro"
+        source_url: "https://www.trendmicro.com/en_us/research/26/f/old-winrar-flaw-fuels-attacks-on-ukraine.html"
+      - quote: "Two Russia-aligned cyber attack campaigns have continued to exploit a security flaw in WinRAR to target Ukrainian organisations, almost a year after patches for the vulnerability were released."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/winrar-flaw-exploited-by-russia-aligned.html"
+    extended_notes: |
+      SHADOW-EARTH-066 / UAC-0226 is separate from Gamaredon (UAC-0010). GIFTEDCROOK targets credential stores: Chrome/Edge/Opera/Firefox passwords, cookies, and browsing history. Exfiltration shift: February 2026 Russian Telegram block forced both actors to move to dedicated C2 infrastructure.
+      Trend Micro researchers: Hiroyuki Kakara, Feike Hacquebord.
+
+  - title: "Unit 42: cloud logging defense evasion — attacker techniques for blinding AWS CloudTrail and Google Cloud Logging, with concrete SIEM detection alert mappings"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/cloud-logging-defense-evasion/", publisher: "Unit 42", date: "2026-06-09", role: "primary" }
+    discovery_trace: "first seen at: unit42 RSS feed https://unit42.paloaltonetworks.com/feed/ → primary (no pivot needed): https://unit42.paloaltonetworks.com/cloud-logging-defense-evasion/"
+    summary: |
+      Unit 42 researcher Yahav Festinger catalogues seven cloud logging attack categories across AWS CloudTrail and Google Cloud Logging — five for defense evasion and two for attacker visibility. Evasion techniques include: stopping CloudTrail trails (`StopLogging` API call), deleting S3/GCS storage destinations, removing log routing sinks (GCP log routers), impairing customer-managed encryption keys (CMEK) to render logs unreadable, and log poisoning to forge benign-looking entries masking malicious activity. Visibility techniques allow adversaries to redirect logs to attacker-controlled accounts via cross-account delivery, enabling long-term reconnaissance of defender detection activity. The research maps each technique to specific Cortex XDR analytic alert names — useful as detection engineering reference for non-Cortex environments. Core hardening: enable S3 Object Lock / GCS locked log bucket retention (immutable retention); restrict `cloudtrail:StopLogging`, `cloudtrail:DeleteTrail`, `logging.sinks.delete` via IAM policies; monitor for `cloudtrail:UpdateTrail` modifying KMS key associations; alert on any modification to KMS key policies affecting CloudTrail encryption. For detection: CloudTrail Management Events for `StopLogging`, `DeleteTrail`, `UpdateTrail`; GCP `AuditLog` for `logging.sinks.delete` / `logging.sinks.update`; AWS Config change detection on Trail resources.
+    ch_eu_nexus: "global — relevant for any EU/CH organisation using AWS or Google Cloud; EU financial services and public cloud users directly in scope"
+    public_sector_nexus: "indirect — EU public sector increasingly on AWS/GCP; cloud logging integrity is a NIS2 incident-detection requirement"
+    sector: "cloud/SaaS, financial, government, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Defense evasion techniques include stopping logging, deleting storage destinations, removing log routers, impairing encryption keys, and poisoning logs. Continuous visibility attacks redirect logs to attacker-controlled accounts for reconnaissance."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cloud-logging-defense-evasion/"
+    extended_notes: |
+      [SINGLE-SOURCE — HIGH reliability vendor primary researcher, Unit 42].
+      MITRE ATT&CK mapping: T1562.008 (Impair Defenses: Disable or Modify Cloud Logs), T1070 (Indicator Removal), T1530 (Data from Cloud Storage).
+      Cortex XDR alert names provided as detection reference: "AWS-CloudTrail-has-been-stopped", "AWS-CloudTrail-modification", "GCP-logging-sink-modification", "GCP-Logging-Bucket-Deletion", "CloudTrail-logging-deletion", "GCP-logging-sink-deletion", "Logging-was-impaired-via-external-encryption-key", "Suspicious-activity-on-logging-bucket".
+
+  - title: "Red Canary: Microsoft Entra Agent ID assistive-agent abuse — OBO OAuth flow enables delegated phishing from compromised AI agent context"
+    sources:
+      - { url: "https://redcanary.com/blog/threat-detection/entra-id-ai-workflows-assistive-agents/", publisher: "Red Canary", date: "2026-06-08", role: "primary" }
+    discovery_trace: "first seen at: Red Canary RSS feed https://www.redcanary.com/feed/ → primary (no pivot needed, Red Canary is the research author): https://redcanary.com/blog/threat-detection/entra-id-ai-workflows-assistive-agents/"
+    summary: |
+      Red Canary's third article in its Entra ID AI-agent threat series examines the On-Behalf-Of (OBO) OAuth flow exploited through assistive AI agents. When an agent blueprint is configured with `access_agent` scope and granted broad permissions (Mail.Send, Mail.ReadWrite, Group.Read.All, MailboxSettings.ReadWrite), a compromised or malicious agent can send phishing emails via Microsoft Graph API with full delegated authority — appearing to originate from the impersonated legitimate user. The attack is stealthy because standard user sign-in and Exchange audit logs show the agent acting on behalf of the user, not an attacker. Three correlated log sources are required to detect it: MicrosoftGraphActivityLogs (look for `Agent.agentType = agenticAppInstance AND Agent.agentSubjectType = notAgentic`), AADNonInteractiveUserSignInLogs, and Exchange Purview audit logs. The `ClientRequestId` can be cross-correlated across Graph and Exchange logs to reconstruct the full send chain. Red Canary also notes the ConsentFix technique (localhost redirect URI exploitation for consent phishing) as a vector for initially granting overbroad permissions. Defenders should audit Entra agent blueprint permission grants for dangerous scope combinations; restrict agents to principle of least privilege; and build detection on the `Agent.*` fields now available in Entra audit logs.
+    ch_eu_nexus: "global — Microsoft 365 / Entra ID pervasive across CH and EU public sector; AI agent features are increasingly enabled in Microsoft 365 Copilot deployments"
+    public_sector_nexus: "direct — Microsoft 365 is the dominant productivity suite in Swiss cantonal and federal government"
+    sector: "government, financial, enterprise technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Key identifier: Agent.agentType == agenticAppInstance AND Agent.agentSubjectType == notAgentic indicates OBO flow activity. The case study demonstrates an agent sending phishing emails using Graph API's sendMail endpoint with delegated permissions including Mail.Send and Mail.ReadWrite scopes."
+        attribution: "Red Canary"
+        source_url: "https://redcanary.com/blog/threat-detection/entra-id-ai-workflows-assistive-agents/"
+    extended_notes: |
+      [SINGLE-SOURCE — HIGH reliability original research].
+      MITRE ATT&CK: T1199 (Trusted Relationship via agent impersonation), T1566.002 (Phishing: Spearphishing Link if payload included), T1078.004 (Cloud Accounts — OBO token abuse).
+      Detection hunt queries: MicrosoftGraphActivityLogs for `Agent.parentAppId` with dangerous scope combinations; AADNonInteractiveUserSignInLogs for `Agent.agentType = agenticAppInstance`; Exchange Purview for `POST /beta/users/[user]/microsoft.graph.sendMail` from external recipients.
+      Microsoft has blocked some dangerous permissions for agents at the platform level (`Graph permissions blocked for agents`), but custom agent blueprints with `AllPrincipals` consent type can still gain access through admin-granted consent.
+
+  - title: "Dragos Q1 2026 Industrial Ransomware Analysis: 1,020 incidents, Qilin leads with 198, manufacturing 62%, and The Gentleman RaaS surges 4x against European energy"
+    sources:
+      - { url: "https://www.dragos.com/dragos-industrial-ransomware-analysis-q1-2026", publisher: "Dragos", date: "2026-06-03", role: "primary" }
+    discovery_trace: "first seen at: risky.biz RSS feed linked reference → pivot: Dragos report page https://www.dragos.com/dragos-industrial-ransomware-analysis-q1-2026 → primary (no further pivot)"
+    summary: |
+      Dragos' Q1 2026 Industrial Ransomware Analysis (published June 3) documents 1,020 ransomware incidents against industrial organisations globally, with manufacturing at 62% of victims. The top five RaaS ecosystems by volume were Qilin (198), Akira (100), The Gentleman (83, quadrupled from Q4 2025), LockBit 5.0 (71), and Play (53). The Gentleman specifically targeted European energy infrastructure: Romanian coal producer Complexul Energetic Oltenia (December 2025), Romanian national water authority Apele Române (~1,000 systems), and Romanian oil pipeline operator Conpet (February 2026, ~1 TB alleged). Most attacks targeted enterprise IT systems adjacent to OT rather than ICS-specific malware; OT/SCADA processes remained unaffected in documented cases but operational disruption occurred in multiple instances. Dominant attack vectors: exploitation of internet-facing services, compromised credentials from infostealers, and VPN infrastructure abuse — not ICS-protocol-level attacks. Remote management tools (AnyDesk, SimpleHelp, Atera, Level, N-able, ConnectWise ScreenConnect) were abused post-compromise for persistence and lateral movement. ICS engineering firms (90 incidents) and equipment manufacturers (49 incidents) were disproportionately targeted as indirect routes to operator networks. Q1 2026 also saw a notable Iranian-linked RaaS — Pay2Key — intensify operations following the July 2025 Israel-Iran conflict resumption.
+    ch_eu_nexus: "direct EU relevance — Romanian energy infrastructure heavily targeted; European manufacturing (25% of global incidents) affected; ICS engineering firms serving Swiss/EU critical infrastructure are lateral-access targets"
+    public_sector_nexus: "direct — water utilities (6 incidents), electric utilities (15 incidents) including public operators; ICS-adjacent government engineering firms"
+    sector: "OT/ICS, manufacturing, energy, water, transportation"
+    cves: []
+    actors_campaigns_malware: ["Qilin", "Akira", "The Gentleman", "LockBit 5.0", "Play", "INC Ransom", "DragonForce", "NightSpire", "Sinobi", "Pay2Key", "Medusa", "Storm-1175"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Q1 2026 saw 1,020 ransomware incidents targeting industrial organizations globally, with manufacturing accounting for 62% of victims. Ransomware pressure remained high into Q1 2026 following 2025's record activity."
+        attribution: "Dragos"
+        source_url: "https://www.dragos.com/dragos-industrial-ransomware-analysis-q1-2026"
+    extended_notes: |
+      [SINGLE-SOURCE — HIGH reliability vendor primary researcher Dragos, OT/ICS specialist]. Published June 3, which is 7 days before today but within the 36-hour window from the last daily brief (June 9), and was not in the prior coverage JSON. Include.
+      Geographic: North America 47%, Europe 25%, Asia 13%.
+      Romania-specific energy incidents: Conpet oil pipeline (Qilin, Feb 2026), Complexul Energetic Oltenia (The Gentleman, Dec 2025), Apele Române (Dec 2025). All confirmed via The Record.
+      Pay2Key attribution: Iranian-linked RaaS intensified July 2025 onward — geopolitical nexus with Israeli-Iranian conflict.
+
+  - title: "Check Point Research: impersonation-TDS-click-hijacking ecosystem delivers SessionGate, RemusStealer, and AnimateClipper to security-tool searchers"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/impersonation-click-hijacking-and-tds-inside-a-malware-distribution-ecosystem/", publisher: "Check Point Research", date: "2026-06-03", role: "primary" }
+    discovery_trace: "first seen at: Check Point Research RSS feed https://research.checkpoint.com/feed/ → primary (no pivot needed, CPR is the research author): https://research.checkpoint.com/2026/impersonation-click-hijacking-and-tds-inside-a-malware-distribution-ecosystem/"
+    summary: |
+      Check Point Research documented a large-scale malware distribution operation that impersonates open-source security tools (Ghidra, dnSpy, ILSpy) using CloudFront-hosted JavaScript to intercept download clicks and route victims through a multi-stage Traffic Distribution System. The TDS enforces geographic, device-type, VPN-presence, and frequency-cap filtering before delivering one of three payloads: SessionGate (multi-stage loader with AES-encrypted modules and per-session payload generation), RemusStealer (infostealer targeting 20+ browsers, 220+ crypto wallet extensions, 77 password-manager extensions, and 18 2FA tools), or AnimateClipper (clipboard hijacker with BNB Smart Chain testnet on-chain C2). The operation exploits legitimate ad-tech infrastructure for traffic acquisition and enforces strict anti-analysis measures including VPN/datacenter filtering and one-time key release semantics, making sandbox analysis difficult. RemusStealer was observed advertised on Russian underground forums by "RemusStealer" in February 2026. The primary targeting is security researchers and developers who search for trusted open-source tools — a social-engineering channel that bypasses typical phishing awareness training. Detection: process-creation events showing `ghidra` / `dnspy` / `ilspy` download-then-execute chains via browser child processes; DNS lookups for CloudFront-hosted lookalike domains; clipboard API calls from unexpected processes (AnimateClipper); browser extension scanning for known wallet-stealer signatures.
+    ch_eu_nexus: "global — security researchers and developers in CH/EU targeted; Swiss security firms using Ghidra/dnSpy/ILSpy for malware analysis are in scope"
+    public_sector_nexus: "indirect — public-sector SOC analysts and malware reverse engineers use these tools"
+    sector: "security research, financial (crypto), technology"
+    cves: []
+    actors_campaigns_malware: ["SessionGate", "RemusStealer", "AnimateClipper"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Researchers documented a large-scale operation impersonating open-source tools (Ghidra, dnSpy, ILSpy) using CloudFront-hosted JavaScript to intercept download clicks and route users through a gated Traffic Distribution System."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/impersonation-click-hijacking-and-tds-inside-a-malware-distribution-ecosystem/"
+    extended_notes: |
+      [SINGLE-SOURCE — HIGH reliability CPR original research]. Published June 3, within 36-hour window from last brief (June 9 prior daily). Include.
+      Corroborating secondary reference: Fullstory blog linked in CPR article at https://www.fullstory.com/blog/inside-a-global-campaign-hijacking-open-source-project-identities/ — but not independently fetched.
+      MITRE: T1566 (impersonation sites), T1204 (user execution via click interception), T1140 (deobfuscation), T1555 (credentials from password managers), T1185 (browser info discovery), T1111 (MFA interception via 2FA extension targeting).
+
+candidate_sources:
+  - id: socket-security
+    publisher: "Socket Security Blog (socket.dev)"
+    url: "https://socket.dev/blog"
+    category: research
+    why: "Primary supply-chain malware analysis; first-to-report on Hades/Miasma PyPI wave; consistently ahead of other outlets on npm/PyPI supply-chain research. RSS possibly at https://socket.dev/blog/rss."
+
+  - id: resecurity
+    publisher: "Resecurity Blog"
+    url: "https://www.resecurity.com/blog"
+    category: research
+    why: "Published June 5 analysis of Silent Ransom Group (SRG/Luna Moth/UNC3753) DNS fast-flux infrastructure with detailed botnet characterisation. Strong on criminal-infrastructure investigations."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "HTTP 503 on both https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 and https://news.sophos.com/feed/ — consistent with prior 5-run failure pattern. No Wayback snapshot for Sophos blog feed available. Covered indirectly via THN and Risky Biz mentions."
+  - source_id: greynoise
+    reason: "No RSS feed at /blog/rss or /blog/feed; landing page is Webflow SPA. No structured bridge endpoint for GreyNoise; individual article discovery not feasible without a working feed URL. Recommend adding RSS URL to sources.json if one is available."
+  - source_id: trendmicro-research
+    reason: "Direct bridge fetch of article body returned HTML-only without article text (JavaScript-rendered CMS); FeedBurner RSS returned article metadata successfully. Article on WinRAR exploited via THN corroboration instead."
