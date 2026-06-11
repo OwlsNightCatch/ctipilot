@@ -1,0 +1,342 @@
+---
+domain: S2
+run_id: 2026-06-11-7edf1d8a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-11T04:10:52Z
+ended_at: 2026-06-11T04:14:24Z
+duration_seconds: 212
+self_telemetry:
+  webfetch_calls: 19
+  websearch_calls: 8
+  bridge_fetches: 15
+
+items:
+
+  - title: "ServiceNow zero-auth API data breach actively exploited before patch — government, healthcare and enterprise instances hit"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/servicenow-discloses-security-incident-exposing-customer-data/"
+        publisher: "BleepingComputer"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/servicenow-flaw-exploited-to-gain.html"
+        publisher: "The Hacker News"
+        date: "2026-06-09"
+        role: "corroborating"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12621"
+        publisher: "NCSC-CH GovCERT Security Hub"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge subcommand ncsc-csh recent 15 → post 12621 published 2026-06-10 → primary: BleepingComputer article 2026-06-09 → corroborating: THN 2026-06-09 and NCSC-CH post 12621"
+    summary: |
+      ServiceNow disclosed on 9 June 2026 that attackers exploited a zero-authentication flaw in the REST endpoint
+      `/api/now/related_list_edit/create`, which was configured with `requires_authentication=false` on instances
+      running the "Australia" platform release or on older releases that had applied certain configuration changes.
+      Exploitation occurred between 2 and 3 June, approximately two weeks before any public disclosure and six weeks
+      after a bug-bounty researcher submitted a confidential report on 22 April 2026. ServiceNow pushed a silent
+      server-side patch to hosted instances on 5 June. The endpoint accepted unauthenticated HTTP GET/POST queries
+      that returned arbitrary table data — effectively a full, unauthenticated GQL-style table dump. Instances
+      commonly store IT service-desk tickets containing credentials, API tokens embedded in ticket descriptions,
+      employee PII, asset inventory, security-incident records, and CMDB data. The vulnerability is particularly
+      severe for public-sector deployments because EU and Swiss government bodies widely use ServiceNow for ITSM and
+      HR workflows. NCSC-CH (post 12621, 10 June) flagged it as "Actively Exploited" and recommended reviewing
+      `/api/now/related_list_edit` access logs, rotating all credentials and tokens surfaced in support workflows,
+      and verifying that API logging is enabled. No CVE has been assigned yet; the vendor's gated advisory is
+      KB3067321 (customer login required).
+    ch_eu_nexus: "global; high EU/Swiss public-sector relevance — ServiceNow is a reference ITSM platform across Swiss Confederation, EU institutions, and cantonal administrations"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government, healthcare, enterprise"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ServiceNow is warning about a security incident after attackers exploited an unauthenticated access flaw through a vulnerable API endpoint, allowing them to query data from customer instances."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/servicenow-discloses-security-incident-exposing-customer-data/"
+      - quote: "A REST endpoint (reportedly /api/now/related_list_edit/create) was configured with requires_authentication=false, allowing unauthenticated requests to access instance data and query customer tables."
+        attribution: "NCSC-CH GovCERT Security Hub (post 12621)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12621"
+    extended_notes: |
+      Defender takeaway: Query ServiceNow access logs for requests to `/api/now/related_list_edit` (or the
+      `related_list_edit` table endpoint in general) originating from unexpected source IPs or from the Guest
+      user account. Rotate all secrets stored in or referenced by ServiceNow ticket workflows — API keys, service
+      account passwords, AWS/Azure credentials embedded in work notes. The gated nature of the vendor advisory
+      (KB3067321 requires customer login) means many organisations received no proactive notification and may
+      not know they were queried. ServiceNow's hosted SaaS patched automatically; on-premises instances need
+      manual intervention.
+
+  - title: "RoguePlanet — Nightmare Eclipse drops new Microsoft Defender TOCTOU race-condition LPE zero-day hours after Patch Tuesday, no CVE assigned"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/microsoft/microsoft-defender-rogueplanet-zero-day-grants-system-privileges/"
+        publisher: "BleepingComputer"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://www.securityweek.com/new-windows-zero-day-exploit-rogueplanet-released/"
+        publisher: "SecurityWeek"
+        date: "2026-06-10"
+        role: "corroborating"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+        publisher: "NCSC-CH GovCERT Security Hub"
+        date: "2026-06-10"
+        role: "corroborating"
+      - url: "https://www.helpnetsecurity.com/2026/06/10/microsoft-patch-tuesday-rogueplanet/"
+        publisher: "Help Net Security"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge subcommand ncsc-csh recent 15 → post 12622 published 2026-06-10 → primary: BleepingComputer 2026-06-09 → corroborating: SecurityWeek 2026-06-10, HelpNetSecurity 2026-06-10"
+    summary: |
+      On 9 June 2026 — hours after Microsoft shipped patches for two previously-disclosed Nightmare Eclipse
+      exploits ("YellowKey" CVE-2026-45585 and "GreenPlasma" CVE-2026-50507) in June Patch Tuesday —
+      the pseudonymous researcher "Nightmare Eclipse" (also tracked as "Chaotic Eclipse" / "Dead Eclipse")
+      dropped a new working PoC dubbed "RoguePlanet" targeting a Time-of-Check/Time-of-Use (TOCTOU) race
+      condition in the Microsoft Defender scan engine. The exploit redirects a file operation performed by
+      the Defender service to execute attacker-controlled code at SYSTEM privilege level. Multiple independent
+      researchers confirmed the PoC achieves local privilege escalation on fully-patched Windows 10 and 11
+      with June 2026 cumulative updates installed. No CVE has been issued and Microsoft has not yet published
+      a security advisory. The researcher was previously banned from GitHub and now hosts PoC code at
+      `git.churchofmalware.org/Nightmare_Eclipse/RoguePlanet`. NCSC-CH GovCERT tracks this as an ongoing
+      campaign of escalating disclosures (BlueHammer, RedSun, UnDefend in April; YellowKey, GreenPlasma in May;
+      RoguePlanet in June). The researcher noted that in initial testing the flaw was confirmed as a remote
+      code execution, but a May Defender update may have downgraded it to local only.
+    ch_eu_nexus: "global; directly affects every Windows endpoint in Swiss/EU public-sector environments running Microsoft Defender (the default AV on all Windows workstations and servers)"
+    public_sector_nexus: "direct"
+    sector: "all sectors — Windows endpoint universal"
+    cves: ["CVE-2026-45585", "CVE-2026-50507"]
+    actors_campaigns_malware: ["Nightmare Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A security researcher has released a new Microsoft Defender zero-day exploit named 'RoguePlanet' just hours after Microsoft fixed two previously disclosed flaws during June 2026 Patch Tuesday."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/microsoft/microsoft-defender-rogueplanet-zero-day-grants-system-privileges/"
+      - quote: "RoguePlanet... abuses a race condition in Windows Defender to spawn a command shell running with SYSTEM-level privileges. Various researchers have confirmed that the PoC exploit works to achieve local privilege escalation."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/10/microsoft-patch-tuesday-rogueplanet/"
+    extended_notes: |
+      Technique class: T1068 Exploitation for Privilege Escalation. TOCTOU race condition — attacker times a
+      file-system operation to coincide with Defender's scheduled scan pass, substituting a malicious payload
+      between check and use. Prerequisites: local code execution (standard user account sufficient);
+      Microsoft Defender running (default on all Windows 10/11 and Server 2016+).
+      Detection: Sysmon EID 1 — suspicious child process (`cmd.exe`, `powershell.exe`) spawning with
+      parent image `MsMpEng.exe` (Defender scan engine). EDR behavioral rule: process with integrity level
+      SYSTEM created from `MsMpEng.exe` parent. Windows Event Log 4688: process creation where
+      `ParentProcessName` = `%ProgramFiles%\Windows Defender\MsMpEng.exe`.
+      Hardening: Defender ASR rule `Block process creations originating from PSExec and WMI commands`
+      (rule ID `d1e49aac-8f56-4280-b9ba-993a6d77406c`) may reduce blast radius. Monitor for Defender
+      service file-write operations to temp directories.
+      This is the seventh consecutive Nightmare Eclipse disclosure; the pattern suggests the researcher
+      has a stable inventory of Defender vulnerabilities.
+
+  - title: "ShinyHunters breaches Oracle PeopleSoft servers at 100+ organizations — universities and public-sector HR/student data stolen, Nottingham University confirmed"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/oracle-peoplesoft-servers-hacked-in-shinyhunters-data-theft-attacks/"
+        publisher: "BleepingComputer"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://techcrunch.com/2026/06/10/cybercriminals-claim-breach-of-oracle-peoplesoft-servers-at-100-plus-organizations/"
+        publisher: "TechCrunch"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch 'Oracle PeopleSoft ShinyHunters data theft breach June 2026' → primary: BleepingComputer 2026-06-10 → corroborating: TechCrunch 2026-06-10"
+    summary: |
+      The ShinyHunters extortion gang claimed on 10 June 2026 to have breached Oracle PeopleSoft servers
+      at more than 100 organisations across approximately 300 instances, with the education sector bearing
+      the majority of confirmed victims. The University of Nottingham publicly confirmed a cybersecurity
+      incident; ShinyHunters stated Nottingham's data had been published on their leak site. The campaign
+      targets both cloud-hosted and on-premises PeopleSoft deployments. ShinyHunters describes exploiting
+      a "gadget chain" of combined old and zero-day vulnerabilities; their tooling attempts SSH connections
+      using common PeopleSoft/Oracle default service accounts (`psoft`, `oracle`, `linuxadm`) with
+      password and key-based fallback. Exfiltrated data types — per messages sent to victims — include
+      student records, applicant data, financial aid, immigration status, health records, and administrative
+      data. Network infrastructure used by the attackers includes a TLS certificate with CN `azurenetfiles.net`,
+      a domain previously linked to ShinyHunters operations. The original stated goal was to breach an FBI
+      PeopleSoft instance; the member stated that attempt failed. No Oracle CVE advisory has been published;
+      Oracle's Critical Patch Update schedule would not cover an emergency out-of-band situation unless Oracle
+      issues a Security Alert. The EU nexus is significant: PeopleSoft Campus Solutions and HCM are widely
+      deployed across European universities and public administrations for student records and HR.
+    ch_eu_nexus: "global; strong EU/CH nexus — PeopleSoft is a reference ERP/HR/campus-management platform at Swiss and European universities and public administrations"
+    public_sector_nexus: "direct"
+    sector: "education, public-sector, healthcare"
+    cves: []
+    actors_campaigns_malware: ["ShinyHunters"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Oracle PeopleSoft servers are being targeted in ongoing data theft attacks by the ShinyHunters extortion gang, which claims to have stolen data from over 100 organizations."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/oracle-peoplesoft-servers-hacked-in-shinyhunters-data-theft-attacks/"
+      - quote: "The ShinyHunters hacking gang claims to have compromised the Oracle PeopleSoft servers of more than 100 organizations, including many universities."
+        attribution: "TechCrunch"
+        source_url: "https://techcrunch.com/2026/06/10/cybercriminals-claim-breach-of-oracle-peoplesoft-servers-at-100-plus-organizations/"
+    extended_notes: |
+      Technique class: T1190 Exploit Public-Facing Application; T1078.004 Valid Accounts (default service
+      accounts); T1021.004 SSH lateral movement. Detection: monitor SSH authentication attempts from
+      external IPs using PeopleSoft service account names; PeopleSoft application-server logs for unusual
+      query volumes or out-of-hours bulk data retrieval; network egress anomalies (bulk data transfers to
+      non-standard destinations). Hardening: rename or disable default PeopleSoft/Oracle OS service accounts;
+      enforce SSH key-only authentication with hardware-bound keys; restrict PeopleSoft administrative
+      interfaces to jump-host access only; enable PeopleTools security audit logging.
+
+  - title: "BACS/NCSC-CH pre-event threat bulletin: DDoS and hacktivist disruption expected around G7 summit in Évian (15–17 June) — Swiss critical infrastructure and proximity to Geneva elevated-risk"
+    sources:
+      - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/massnahmen-grossanlaesse-konferenzen.html"
+        publisher: "NCSC-CH (BACS)"
+        date: "2026-06-01"
+        role: "primary"
+      - url: "https://www.swisscybersecurity.net/news/2026-06-03/bacs-warnt-vor-cyberangriffen-am-g7-gipfel"
+        publisher: "SwissCybersecurity.net"
+        date: "2026-06-03"
+        role: "corroborating"
+      - url: "https://www.netzwoche.ch/news/2026-06-03/bacs-warnt-vor-cyberangriffen-am-g7-gipfel"
+        publisher: "Netzwoche"
+        date: "2026-06-03"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-focus bridge fetch → im-fokus listing page → 'Cyberresilienz im Kontext von Grossveranstaltungen' entry dated 01.06.2026 → primary: NCSC-CH official page massnahmen-grossanlaesse-konferenzen.html → corroborating: SwissCybersecurity.net 2026-06-03, Netzwoche 2026-06-03"
+    summary: |
+      The Swiss Federal Cyber Security Office (BACS/NCSC-CH) published on 1 June 2026 a pre-event threat
+      bulletin and updated its major-events cyber-resilience guidance ahead of the G7 summit in Évian-les-Bains
+      (15–17 June 2026), organised by France near Geneva. BACS anticipates disruption attempts in cyberspace
+      directed at the summit itself, participating organisations, and Swiss critical infrastructure in the
+      Lake Geneva/Geneva corridor. The primary anticipated threat vectors are Distributed Denial-of-Service
+      (DDoS) attacks by hacktivists and politically-motivated actors seeking media visibility, alongside
+      targeted intrusion attempts against participating organisations and their digital supply chains.
+      BACS is coordinating with French organisers, Swiss critical infrastructure operators, the Federal
+      Office of Police (fedpol), the State Secretariat for Security Policy (SEPOS), the Swiss Armed Forces,
+      the Federal Intelligence Service (FIS), and the Federal Office for Customs and Border Security (FOCBS).
+      Published defensive guidance (PDF, 29 May 2026) covers DDoS mitigation, supply-chain vetting of
+      digital services used during the event, privileged-account hygiene, and segregation of event networks.
+      Comparable BACS advisories ahead of WEF 2026 (January) and UEFA EURO events have historically preceded
+      confirmed DDoS campaigns against Swiss public-sector websites.
+    ch_eu_nexus: "Switzerland/EU — direct CH national advisory; event proximity to Geneva heightens risk to cantonal administration, transport, and energy infrastructure"
+    public_sector_nexus: "direct"
+    sector: "government, critical-infrastructure, transport, energy"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Das BACS rechnet mit Störversuchen anlässlich des geplanten G7-Gipfels in Frankreich. Das Bundesamt fordert Organisatoren, Teilnehmende und Betreiber von kritischen Infrastrukturen dazu auf, grundlegende Massnahmen zur Cyberabwehr umzusetzen."
+        attribution: "SwissCybersecurity.net (translated: BACS expects disruption attempts ahead of the planned G7 summit in France. The federal office calls on organisers, participants and operators of critical infrastructure to implement fundamental cyber-defence measures.)"
+        source_url: "https://www.swisscybersecurity.net/news/2026-06-03/bacs-warnt-vor-cyberangriffen-am-g7-gipfel"
+    extended_notes: |
+      Detection/hunt: DDoS campaigns targeting Swiss public-sector sites often use booter/stresser services
+      and multi-vector UDP amplification (DNS/NTP/SSDP). Defenders should enable upstream scrubbing capacity
+      (Cloudflare, Radware, Akamai) before 15 June; confirm rate-limiting on all public-facing HTTP/S services.
+      Monitor BGP route announcements for unexpected prefix hijacks on Swiss AS space.
+      The BACS advisory links two PDFs: "Increasing cyber resilience in the context of major events" (189 kB,
+      29 May 2026) and "NCSC DDoS Attack Guidance for Exposed Events" (281 kB, 16 Jan 2026) — both available
+      from the primary URL above.
+
+  - title: "UPDATE: CVE-2026-41089 Windows Netlogon stack buffer overflow — CERT-EU issues fresh advisory; exploitation confirmed by Belgium CCB, all domain controllers from Server 2012 affected"
+    sources:
+      - url: "https://cert.europa.eu/publications/security-advisories/2026-007/"
+        publisher: "CERT-EU"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/microsoft/critical-windows-netlogon-remote-code-execution-flaw-now-exploited-in-attacks/"
+        publisher: "BleepingComputer"
+        date: "2026-06-01"
+        role: "corroborating"
+    discovery_trace: "first seen at: cert-eu bridge subcommand cert-eu recent 10 → advisory 2026-007 published 2026-06-10 → primary: CERT-EU advisory page → corroborating: BleepingComputer 2026-06-01 (exploitation confirmation)"
+    summary: |
+      CERT-EU published advisory 2026-007 on 10 June 2026 covering CVE-2026-41089, a CVSS 9.8 stack-based
+      buffer overflow in the Windows Netlogon service affecting Windows Server 2012 through 2025 in their
+      domain controller role. Microsoft patched the vulnerability in May 2026 Patch Tuesday (credited to
+      Microsoft's Windows Attack Research & Protection team). The Centre for Cybersecurity Belgium (CCB)
+      confirmed on 1 June 2026 — 20 days after patch release — that threat actors were actively exploiting
+      unpatched domain controllers in the wild. CERT-EU's advisory (v1.0, 10 June) is their first formal
+      advisory on the vulnerability and reflects the active exploitation status. The attack surface is a
+      specially crafted Netlogon network packet sent unauthenticated to TCP port 445; successful exploitation
+      achieves SYSTEM-level code execution within the LSASS context of the targeted domain controller,
+      functionally equivalent to a full Active Directory forest compromise. Affected versions: Windows Server
+      2012/2012 R2; Server 2016 (prior to 10.0.14393.9140); Server 2019 (prior to 10.0.17763.8755);
+      Server 2022 (prior to 10.0.20348.5074); Server 2022 23H2 (prior to 10.0.25398.2330); Server 2025
+      (prior to 10.0.26100.32772).
+    ch_eu_nexus: "global; strong EU public-sector nexus — every Windows domain controller in EU/CH government environments is an affected asset"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government, all sectors (universal Windows AD)"
+    cves: ["CVE-2026-41089"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-W23"
+    evidence:
+      - quote: "According to The Centre for Cybersecurity Belgium (CCB), this vulnerability is currently exploited by threat actors. It is strongly recommended updating affected Windows servers as soon as possible."
+        attribution: "CERT-EU advisory 2026-007"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-007/"
+    extended_notes: |
+      Previously covered in the 2026-W23 weekly brief (summary key: CVE-2026-41089). CERT-EU's new
+      advisory (10 June) is a material delta: it cites CCB's exploitation confirmation and provides the
+      per-version patched-build table for all affected Windows Server releases.
+      Detection: Network-based — monitor for crafted Netlogon/SAMR authentication requests to DC TCP/445
+      from unexpected source IPs or at unusual hours; SIEM correlation rule on Windows Security Event
+      4625 (failed logon) followed by SYSTEM-level process creation (4688, high privilege) within seconds.
+      Sysmon EID 3 (network connection) to port 445 from non-DC server processes.
+      Hardening: Apply May 2026 CU immediately to all DCs; consider isolating legacy Server 2012 DCs that
+      are past ESU behind a management VLAN with firewall rules blocking direct Netlogon access from
+      untrusted subnets.
+
+cve_table:
+  - cve: "CVE-2026-41089"
+    product: "Windows Server 2012–2025 (Netlogon)"
+    cvss: "9.8"
+    epss: ""
+    kev: "false"
+    exploited: "true (CCB confirmed, 2026-06-01)"
+    patch: "May 2026 Patch Tuesday; per-version builds in CERT-EU 2026-007"
+    source: "https://cert.europa.eu/publications/security-advisories/2026-007/"
+  - cve: "CVE-2026-45657"
+    product: "Windows Kernel (TCP/IP stack, all supported Windows 10/11/Server)"
+    cvss: "9.8"
+    epss: ""
+    kev: "false"
+    exploited: "false (no public exploit yet; publicly disclosed)"
+    patch: "June 2026 Patch Tuesday (KB5094126/KB5094125/KB5094128 etc.)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/advisory/CVE-2026-45657"
+  - cve: "CVE-2026-45585"
+    product: "Microsoft Windows BitLocker / YellowKey"
+    cvss: ""
+    epss: ""
+    kev: "false"
+    exploited: "true (Nightmare Eclipse PoC active)"
+    patch: "June 2026 Patch Tuesday"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585"
+  - cve: "CVE-2026-50507"
+    product: "Windows Collaborative Translation Framework (CTFMON) / GreenPlasma"
+    cvss: ""
+    epss: ""
+    kev: "false"
+    exploited: "true (Nightmare Eclipse PoC active)"
+    patch: "June 2026 Patch Tuesday"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50507"
+  - cve: "CVE-2026-44815"
+    product: "Windows DHCP Client Service (stack buffer overflow, wormable)"
+    cvss: "9.8"
+    epss: ""
+    kev: "false"
+    exploited: "false (no public exploit)"
+    patch: "June 2026 Patch Tuesday"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-44815"
+  - cve: "CVE-2026-42897"
+    product: "Microsoft Exchange Server"
+    cvss: ""
+    epss: ""
+    kev: "false"
+    exploited: "true (actively exploited, per HelpNetSecurity / ZDI)"
+    patch: "June 2026 Patch Tuesday"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge on all URL attempts; bridge wayback attempt not tried in this run due to time constraints. No in-window items identified via WebSearch corroboration."
+  - source_id: cert-fr-actu
+    reason: "Feed returns only items from 2025 (last entry 2025-12-01); CERT-FR actu feed appears to be capped at 2025 entries despite live feed URL functioning — no 2026 items returned."
+  - source_id: ncsc-ch-kw24
+    reason: "KW24 Wochenrückblick not yet published as of 2026-06-11T04:14Z (KW23 published 09.06.2026 was the latest entry on im-fokus page)."
