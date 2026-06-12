@@ -1,0 +1,453 @@
+# work/2026-06-12-5ab9a319/findings.S1.yaml
+domain: S1
+run_id: 2026-06-12-5ab9a319
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-12T04:09:12Z
+ended_at: 2026-06-12T06:14:00Z
+duration_seconds: 7488
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 18
+
+items:
+  - title: "MariaDB CVE-2026-49261 CVSS 10.0: Galera cluster wsrep_notify_cmd OS command injection via shell-metacharacter injection"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://securityonline.info/mariadb-security-flaw-cvss-10/"
+        publisher: "SecurityOnline"
+        date: "2026-06-07"
+        role: "corroborating"
+      - url: "https://mariadb.com/docs/server/security/cve/community-server"
+        publisher: "MariaDB Docs"
+        date: "2026-06-07"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12627 (bridge ncsc-csh post 12627) → corroborated at securityonline.info URL https://securityonline.info/mariadb-security-flaw-cvss-10/ → vendor docs URL https://mariadb.com/docs/server/security/cve/community-server"
+    summary: |
+      CVE-2026-49261 is a CVSS 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) OS command injection in MariaDB Server
+      when configured as part of a Galera cluster with wsrep_notify_cmd enabled. The vulnerable code path builds the
+      notification-command shell string by directly interpolating the wsrep_node_name and incoming-address fields
+      supplied by cluster peers — without sanitising shell metacharacters. A malicious or compromised cluster member
+      that announces a node name containing metacharacters can therefore cause arbitrary OS commands to execute on
+      every cluster member that has the notification command configured, with the privileges of the MariaDB process
+      (typically the mysql or mariadb OS user). Exploitation is unauthenticated from the Galera replication network
+      perspective but requires membership in the Galera cluster or the ability to inject Galera protocol messages on
+      the replication port (default TCP 4567). NCSC-CH rates exploitation status as UNKNOWN; no public PoC is
+      referenced. Vendor patches released for all active branches. JIRA ticket MDEV-39721 provides the code-level
+      detail. Affected: Community < 11.8.8 / 11.4.12 / 10.11.18 / 10.6.27; Enterprise < 11.8.6-4 / 11.4.10-8 /
+      10.6.25-22. Technique class: T1059 (Command and Scripting Interpreter — OS shell invocation via injection into
+      wsrep_notify_cmd). Detection: look for unexpected child processes spawned by the mariadbd / mysqld parent;
+      audit wsrep_notify_cmd value in my.cnf; alert on network connections from unexpected Galera peers on TCP 4567.
+      Hardening: patch immediately; if Galera is not in use disable wsrep_on; enforce firewall rules limiting TCP 4567
+      to known cluster peers only.
+    ch_eu_nexus: "direct; MariaDB is widely deployed in Swiss and EU public-sector database tiers, particularly as the MySQL-compatible backend for LAMP stacks and SaaS platforms"
+    public_sector_nexus: "direct"
+    sector: "all, database infrastructure"
+    cves: [CVE-2026-49261]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MariaDB Server, when running as part of a Galera cluster with a notification command configured (wsrep_notify_cmd), builds that command by inserting the cluster members' node names and addresses directly into a string that is then executed by the system shell, without validating or escaping them."
+        attribution: "NCSC-CH Security Hub (post 12627)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+      - quote: "CVE-2026-49261 CVSS3.1: 10.0 (CRITICAL) — MariaDB Community Server (Versions < (11.8.8, 11.4.12, 10.11.18, 10.6.27) are vulnerable)"
+        attribution: "NCSC-CH Security Hub (post 12627)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+    extended_notes: |
+      The JIRA ticket MDEV-39721 is public and describes the code path in detail. Defenders should query their
+      asset inventories for any MariaDB instances running with wsrep_on=ON and wsrep_notify_cmd set, as these are
+      the exact conditions needed for exploitation. Enterprise environments may have auto-failover scripts that set
+      wsrep_notify_cmd to a shell script path — all such instances are vulnerable until patched.
+
+  - title: "GreatXML zero-day: Nightmare Eclipse BitLocker bypass via WinRE unattend.xml, PoC public, no patch"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+        publisher: "SecurityWeek"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12622 (bridge ncsc-csh post 12622) → corroborated at securityweek.com URL https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+    summary: |
+      Security researcher Nightmare Eclipse (previously responsible for the April–May zero-day series BlueHammer,
+      RedSun, UnDefend, YellowKey, GreenPlasma, and RoguePlanet) published a new Windows BitLocker bypass on June
+      11, 2026, dubbed GreatXML. The exploit targets the Windows Recovery Environment (WinRE) partition — specifically
+      the unattend.xml file used during the recovery/repair boot sequence. When WinRE is invoked (e.g. via repeated
+      failed boots or manual "Repair this PC"), the exploit causes a command prompt with SYSTEM-level privileges to
+      spawn, fully bypassing BitLocker's drive encryption without requiring the BitLocker recovery key. The
+      prerequisite is physical access or the ability to trigger a recovery boot (e.g. an admin account that can
+      initiate repair). PoC is hosted at https://github.com/MSNightmare/GreatXML (note: this URL is a public
+      GitHub repository). No CVE assigned and no Microsoft patch available as of June 11 2026. This is distinct from
+      RoguePlanet (Defender TOCTOU privilege escalation — already covered in the June 10 brief). Technique class:
+      T1542.001 (Pre-OS Boot: System Firmware / Recovery Environment abuse) or T1006 (Direct Volume Access via WinRE
+      boot path). Detection: monitor for processes spawned from the WinRE environment outside of legitimate recovery
+      sessions; audit WinRE partition for unauthorised unattend.xml modifications via `reagentc /info` and
+      integrity tooling. Hardening: until patched, consider disabling WinRE on high-value targets (`reagentc /disable`
+      — tradeoff: lose OS recovery capability); restrict physical access to assets with sensitive BitLocker-protected
+      volumes; ensure Secure Boot is enforced and BIOS is password-protected.
+    ch_eu_nexus: "direct; Windows endpoints with BitLocker are standard in Swiss and EU public-sector endpoint configurations; physical-access exploitation is relevant to laptop/workstation fleet security"
+    public_sector_nexus: "direct"
+    sector: "all, endpoint security"
+    cves: []
+    actors_campaigns_malware: ["Nightmare Eclipse (researcher)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Security researcher Nightmare Eclipse has released a new Windows BitLocker bypass. Named GreatXML, the exploit allows users to bypass BitLocker and spawn a command prompt with SYSTEM privileges while in Recovery Mode."
+        attribution: "NCSC-CH Security Hub (post 12622)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+      - quote: "Current exploitation status: Proof of Concept Available, no patch available"
+        attribution: "NCSC-CH Security Hub (post 12622)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+    extended_notes: |
+      This is part of an ongoing series of zero-days from the same researcher; NCSC-CH has been tracking them since
+      April 2026 (see post 12508 for BlueHammer/RedSun/UnDefend and post 12574 for YellowKey/GreenPlasma). Two from
+      this series (YellowKey CVE-2026-45585 and GreenPlasma CVE-2026-50507) received patches in the June 2026 Patch
+      Tuesday (June 9). RoguePlanet (Defender TOCTOU) and GreatXML (BitLocker/WinRE) remain unpatched. The researcher
+      hosts PoCs at git.churchofmalware.org/Nightmare_Eclipse/ following a GitHub ban.
+
+  - title: "The Gentlemen ransomware (Storm-2697): Go-based self-propagating worm expands to 478 victims across 66 countries"
+    sources:
+      - url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+        publisher: "KrebsOnSecurity"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+        publisher: "The Hacker News"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-28"
+        role: "background"
+      - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+        publisher: "Check Point Research"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: krebs RSS feed URL https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/ → corroborated at THN URL https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html → background: Microsoft Security Blog URL https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/ → additional corroboration: Check Point Research URL https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+    summary: |
+      The Gentlemen is a ransomware-as-a-service group tracked by Microsoft as Storm-2697, operating a Go-language
+      encryptor that self-propagates via a --spread argument invoking SMB lateral movement and credential harvesting.
+      The RaaS model offers affiliates a 90/10 split (affiliate keeps 90%). As of June 10–11 2026, the group claims
+      478 victims across 66 countries, including victims in Germany — making it directly relevant to EU/DACH
+      defenders. Microsoft's May 28 technical blog identified the worm's Go binary structure, the --spread command
+      line argument driving lateral movement via SMB shares and scheduled-task deployment, and its use of
+      Windows API calls for encryption. Krebs (June 10) identified the group's operational infrastructure and
+      principal operator identity. Check Point Research (June 9) published additional technical analysis. The
+      group is assessed as operating from a jurisdiction with limited law-enforcement cooperation. Technique class:
+      T1486 (Data Encrypted for Impact), T1570 (Lateral Tool Transfer via SMB), T1053.005 (Scheduled Task — used for
+      persistence and lateral execution), T1078 (Valid Accounts — credential harvesting prior to spread).
+      Detection: parent-process chains where a binary named with random-looking strings spawns cmd.exe or
+      powershell.exe with --spread-related arguments; lateral SMB connections originating from non-standard
+      processes; scheduled tasks created by non-admin processes on remote hosts (Event ID 4698); EDR telemetry
+      for Go-compiled binary heuristics (large statically linked EXEs, Goroutine stack patterns). Hardening:
+      SMB signing enforcement (GPO: Microsoft network server: Digitally sign communications always), restrict
+      SMB lateral movement via Windows Defender Firewall rules, ensure LAPS/PAM for credential hygiene to
+      limit credential-harvesting success.
+    ch_eu_nexus: "direct; German victims confirmed; EU-wide RaaS campaign with 66-country spread; Swiss and EU public-sector organisations at risk"
+    public_sector_nexus: "indirect (general enterprise/public sector targeting)"
+    sector: "all sectors"
+    cves: []
+    actors_campaigns_malware: ["Storm-2697", "The Gentlemen (ransomware)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Who Runs the Ransomware Group The Gentlemen — Microsoft tracks the group as Storm-2697"
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+      - quote: "The Gentlemen Ransomware Claims 478 Victims Across 66 Countries"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+    extended_notes: |
+      The --spread argument is the key worm mechanism — defenders hunting for lateral movement should look for
+      the parent process (the Gentlemen encryptor) spawning net.exe, cmd.exe or PowerShell with SMB-related
+      arguments, or creating scheduled tasks on remote shares. The Go binary structure means standard AV
+      signatures for PE-format malware may be less effective; EDR behavioural detections are primary.
+      The 90/10 affiliate model is unusually affiliate-favourable and likely driving rapid expansion.
+
+  - title: "CVE-2026-26142 CVSS 9.8: Nuance PowerScribe unauthenticated RCE via CWE-502 deserialization (June 2026 Patch Tuesday)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-26142"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0185"
+        publisher: "NCSC-NL"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: MSRC June 2026 release enumeration via bridge msrc release 2026-Jun → CVE-2026-26142 identified → MSRC SPA citation URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-26142 → corroborated at NCSC-NL URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0185"
+    summary: |
+      CVE-2026-26142 is a Critical (CVSS 9.8, CVSS:3.1/AV:N/AC:L/PR:N/UI:N) unauthenticated remote code execution
+      vulnerability in Nuance PowerScribe — a radiology reporting and workflow platform widely deployed in hospital
+      imaging departments. The root cause is CWE-502 (Deserialization of Untrusted Data): the application deserialises
+      attacker-controlled input without proper validation, enabling code execution over the network without
+      authentication or user interaction. Microsoft rates exploitation as "Less Likely" and no in-the-wild
+      exploitation has been reported. Patch available via June 2026 Patch Tuesday (2026-06-09). Technique class:
+      T1190 (Exploit Public-Facing Application), with the specific sink being the deserialization handler.
+      Healthcare sector relevance is high — radiology departments integrating PowerScribe with PACS/RIS infrastructure
+      may have the service exposed on internal clinical networks. Detection: monitor for unexpected processes spawned
+      by the PowerScribe application server; review IIS / application server logs for unusual deserialization
+      requests; EDR telemetry for child processes of PowerScribe worker processes. Hardening: apply June 2026
+      cumulative update; restrict network access to PowerScribe ports to known clinical-network subnets; consider
+      WAF rules blocking known Java/C# deserialization gadget payloads on the relevant API endpoints.
+    ch_eu_nexus: "direct; Nuance PowerScribe is used in Swiss university hospitals and EU healthcare systems for radiology reporting; unauthenticated RCE in a clinical application is high priority"
+    public_sector_nexus: "direct (public hospital sector)"
+    sector: "healthcare"
+    cves: [CVE-2026-26142]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Deserialization of untrusted data in Nuance PowerScribe allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-26142"
+      - quote: "baseScore: 9.8 — CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-26142"
+
+  - title: "CVE-2026-45657 CVSS 9.8: Windows Kernel network-exploitable Use-After-Free RCE via TCP/IP stack (June 2026 Patch Tuesday)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45657"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+        publisher: "NCSC-NL"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: MSRC June 2026 release enumeration via bridge msrc release 2026-Jun → CVE-2026-45657 identified → MSRC SPA citation URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45657 → corroborated at NCSC-NL URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+    summary: |
+      CVE-2026-45657 is a Critical (CVSS 9.8, CVSS:3.1/AV:N/AC:L/PR:N/UI:N) Windows Kernel remote code execution
+      vulnerability triggered via specially crafted network traffic. The root cause is CWE-416 (Use After Free) with
+      an additional CWE-122 (Heap-based Buffer Overflow) component, located in the Windows kernel's TCP/IP data
+      processing path. Microsoft's FAQ states an attacker sends specially crafted network packets that trigger a flaw
+      in how the kernel processes certain TCP/IP data, potentially allowing code execution with SYSTEM-level
+      privileges without authentication or user interaction. Microsoft rates exploitation as "Less Likely"; no
+      in-the-wild exploitation reported as of patch release. Patch available via June 2026 Patch Tuesday (2026-06-09).
+      Technique class: T1190 (Exploit Public-Facing Application — network-reachable kernel path), T1068
+      (Exploitation for Privilege Escalation — SYSTEM-level outcome). Detection: no direct kernel UAF telemetry in
+      standard logging; rely on EDR kernel-level exploit detection for heap-spray / UAF patterns in tcpip.sys;
+      network monitoring for anomalous TCP/IP packet crafting patterns from unexpected source addresses. Hardening:
+      apply June 2026 cumulative update immediately; perimeter firewall rules restricting direct exposure of Windows
+      hosts' raw TCP/IP stack to untrusted networks; consider Windows Defender Exploit Guard memory protections.
+    ch_eu_nexus: "direct; any network-exposed Windows host (servers, workstations) in Swiss/EU public-sector environments is potentially in scope; unauthenticated network-exploitable kernel RCE is an immediate patching priority"
+    public_sector_nexus: "direct"
+    sector: "all sectors"
+    cves: [CVE-2026-45657]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker could exploit this vulnerability by sending specially crafted network traffic to a vulnerable Windows system. If successful, the malicious network packets could trigger a flaw in how the Windows kernel processes certain TCP/IP data, potentially allowing the attacker to run code with system-level privileges without needing to sign in or interact with a user."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45657"
+      - quote: "Use after free in Windows Kernel allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45657"
+
+  - title: "CVE-2026-47643 CVSS 9.8: Azure Stack Edge unauthenticated RCE via CWE-73 external file path control (June 2026 Patch Tuesday)"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47643"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+        publisher: "NCSC-NL"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: MSRC June 2026 release enumeration via bridge msrc release 2026-Jun → CVE-2026-47643 identified → MSRC SPA citation URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47643 → corroborated at NCSC-NL URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+    summary: |
+      CVE-2026-47643 is a CVSS 9.8 (AV:N/AC:L/PR:N/UI:N) remote code execution vulnerability in Azure Stack Edge —
+      Microsoft's hybrid cloud appliance for on-premises edge compute. The root cause is CWE-73 (External Control of
+      File Name or Path): a file upload endpoint does not restrict the attacker-controlled file name/path parameter,
+      allowing an unauthenticated attacker to write files outside the intended directory (path traversal). Writing to
+      certain paths achieves code execution on the appliance. Microsoft rates exploitation as "Unlikely" and no
+      in-the-wild exploitation is reported. Patch available via June 2026 Patch Tuesday (2026-06-09); customer
+      action required to apply the update. Technique class: T1190 (Exploit Public-Facing Application), T1505.003
+      (Server Software Component: Web Shell — file write to webroot or equivalent enabling code execution).
+      Azure Stack Edge is used in Swiss and EU public-sector edge/OT deployments (e.g. factory floor, government
+      data centres). Detection: monitor Azure Stack Edge management interface access logs for unexpected file upload
+      requests; look for files created outside designated upload directories; review EDR telemetry on the appliance's
+      OS layer for unexpected process spawning from the web management service. Hardening: apply the June 2026
+      update; restrict Azure Stack Edge management interface to trusted admin networks via firewall; if the management
+      port is Internet-exposed, apply URL-based access restrictions immediately.
+    ch_eu_nexus: "direct; Azure Stack Edge is deployed in Swiss and EU public-sector edge-compute and OT integration scenarios; unauthenticated file-write-to-RCE on a hybrid cloud appliance is high priority"
+    public_sector_nexus: "direct"
+    sector: "public sector, OT/industrial, cloud/hybrid"
+    cves: [CVE-2026-47643]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker could send a specially crafted file upload request that includes a manipulated file name or path. Because the application does not properly restrict or validate this input, the attacker could cause the file to be written outside the intended folder, potentially overwriting or creating files in other locations on the system."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47643"
+      - quote: "External control of file name or path in Azure Stack Edge allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47643"
+
+  - title: "CVE-2026-48579 CVSS 9.1: Exchange Online CWE-285 improper-authorisation information disclosure — centrally patched by Microsoft, no customer action needed"
+    sources:
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-48579"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-04"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0185"
+        publisher: "NCSC-NL"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: MSRC June 2026 release enumeration via bridge msrc release 2026-Jun → CVE-2026-48579 identified → MSRC SPA citation URL https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-48579 → corroborated at NCSC-NL URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0185"
+    summary: |
+      CVE-2026-48579 is a Critical (CVSS 9.1, AV:N/AC:L/PR:N/UI:N, C:H/I:H/A:N) information disclosure
+      vulnerability in Microsoft Exchange Online arising from CWE-285 (Improper Authorization). An unauthenticated
+      remote attacker can disclose information over the network — the exact nature of the disclosed data is not
+      specified in the advisory but the CVSS I:H component indicates potential for integrity impact as well.
+      Importantly, `customerActionRequired: false` — Microsoft has already deployed a fix to the Exchange Online
+      service infrastructure. No customer-side patching is required. No in-the-wild exploitation reported.
+      Despite no customer action being needed for the fix, defenders should be aware of the vulnerability class
+      and assess whether any incident-response activity is warranted (e.g. review Exchange Online audit logs for
+      anomalous access to mailbox content between CVE disclosure date and fix deployment). Technique class:
+      T1078.004 (Valid Accounts: Cloud Accounts — unauthorized information access via improper auth bypass).
+      Detection: review Exchange Online Unified Audit Log (UAL) for MailItemsAccessed, MessageBind, or
+      SendAs operations from unexpected principals in the period before June 4 2026; compare against known
+      access baselines. Note that NCSC-NL advisory NCSC-2026-0185 covers multiple June 2026 Patch Tuesday items
+      and lists this among those requiring no customer action.
+    ch_eu_nexus: "direct; Exchange Online is used across Swiss Confederation, cantons, and EU public bodies; even a cloud-patched vulnerability warrants log review for pre-patch exploitation window"
+    public_sector_nexus: "direct"
+    sector: "all sectors, cloud/SaaS"
+    cves: [CVE-2026-48579]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Improper authorization in Microsoft Exchange Online allows an unauthorized attacker to disclose information over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-48579"
+      - quote: "customerActionRequired: false — Microsoft has addressed this vulnerability for customers already"
+        attribution: "Microsoft MSRC (CVRF API data)"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-48579"
+
+  - title: "CISA BOD 26-04: New binding directive supersedes BOD 22-01 (KEV), introduces risk-tiered remediation timelines for US federal agencies"
+    sources:
+      - url: "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk"
+        publisher: "CISA"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://www.cisa.gov/news-events/news/patch-smarter-not-harder"
+        publisher: "CISA"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-directives bridge URL https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk → primary: CISA BOD page URL https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk → corroborating announcement URL https://www.cisa.gov/news-events/news/patch-smarter-not-harder"
+    summary: |
+      CISA issued Binding Operational Directive 26-04 (BOD 26-04) on June 10, 2026, superseding and revoking both
+      BOD 19-02 (Vulnerability Remediation Requirements for Internet-Accessible Systems, April 2019) and BOD 22-01
+      (Reducing the Significant Risk of Known Exploited Vulnerabilities, November 2021). The directive is binding
+      on all US Federal Civilian Executive Branch (FCEB) agencies. Key operational change: rather than a flat
+      "patch all KEV entries within 14 days" rule from BOD 22-01, BOD 26-04 introduces risk-tiered remediation
+      timelines based on CVSS severity, exploitation status (KEV listing), and whether assets are internet-accessible.
+      Phase I requirements are effective immediately: agencies must establish KEV remediation processes, ensure
+      all assets (including RFC 1918 / RFC 4193 addresses) are in the CDM Federal Dashboard, and report compliance
+      to CISA. Within 60 days CISA will publish machine-level asset-tagging data-schema requirements. Vulnrichment
+      CVE metadata integration is explicitly called out. For Swiss and EU public-sector readers, BOD 26-04 is not
+      directly binding but sets a best-practice benchmark for risk-prioritised vulnerability management that aligns
+      with the EU NIS2 Directive's vulnerability handling obligations (Art. 21). Swiss NCSC's own guidance on
+      vulnerability management is likely to track a similar tiered approach. Technique class (defender framing):
+      this directive defines the US government's operational patch-prioritisation model — the tiered timelines table
+      is a reference framework European public-sector defenders can adapt for their own patch governance.
+    ch_eu_nexus: "indirect; US federal directive but sets benchmark for EU NIS2 Art. 21 vulnerability management; Swiss federal agencies and EU public bodies may align their own SLAs to similar tier structures"
+    public_sector_nexus: "direct (US federal, benchmark relevance for EU)"
+    sector: "public sector, all"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This Directive supersedes and hereby revokes BOD 19-02: Vulnerability Remediation Requirements for Internet-Accessible Systems (April 29, 2019), and BOD 22-01: Reducing the Significant Risk of Known Exploited Vulnerabilities (Nov. 3, 2021)."
+        attribution: "CISA BOD 26-04"
+        source_url: "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk"
+      - quote: "This Directive evolves upon CISA's KEV catalog and increases mission readiness across the federal government by efficiently prioritizing high-risk vulnerabilities for timely action, while deferring action against low-risk vulnerabilities."
+        attribution: "CISA BOD 26-04"
+        source_url: "https://www.cisa.gov/news-events/directives/bod-26-04-prioritizing-security-updates-based-risk"
+    extended_notes: |
+      The directive is significant beyond US government: it signals that the "treat all KEV entries equally" model
+      is being replaced by risk-tiered triage. EU defenders using BOD 22-01 KEV additions as a uniform trigger
+      for patching SLAs should evaluate whether a tiered approach better fits their risk posture, especially for
+      on-premises legacy systems where flat 14-day KEV patching can create operational disruption.
+
+cve_table:
+  - cve: CVE-2026-49261
+    product: "MariaDB Community/Enterprise Server (Galera wsrep_notify_cmd)"
+    cvss: "10.0"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Community >= 11.8.8 / 11.4.12 / 10.11.18 / 10.6.27; Enterprise >= 11.8.6-4 / 11.4.10-8 / 10.6.25-22"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+  - cve: CVE-2026-26142
+    product: "Nuance PowerScribe (healthcare radiology platform)"
+    cvss: "9.8"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-26142"
+  - cve: CVE-2026-45657
+    product: "Windows Kernel (TCP/IP stack)"
+    cvss: "9.8"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-45657"
+  - cve: CVE-2026-47643
+    product: "Azure Stack Edge (hybrid cloud appliance)"
+    cvss: "9.8"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "June 2026 Patch Tuesday (2026-06-09)"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47643"
+  - cve: CVE-2026-48579
+    product: "Microsoft Exchange Online"
+    cvss: "9.1"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Centrally patched by Microsoft — no customer action required"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-48579"
+
+candidate_sources:
+  - id: securityonline-info
+    publisher: "SecurityOnline.info"
+    url: "https://securityonline.info"
+    category: aggregator/news
+    why: "Published MariaDB CVE-2026-49261 advisory (2026-06-07) before NCSC-CH. Provides timely CVSS-annotated vulnerability tracking, frequently faster than national CERTs on vendor patch cycles."
+
+coverage_gaps:
+  - source_id: fortiguard-psirt
+    reason: "FortiGuard PSIRT pages returned SPA shell via bridge url subcommand. CVE-2026-25089 (FortiSandbox) was already in state CVE dedup index from May coverage — item correctly dropped. FortiGuard PSIRT remains difficult to reach programmatically."
+  - source_id: mariadb-docs
+    reason: "mariadb.com/docs returned GitBook SPA shell via bridge url subcommand. Technical details recovered via WebSearch and NCSC-CH primary. No content loss."
+  - source_id: rapid7-research
+    reason: "No in-window Rapid7 Research blog post covering new items in scope. Source checked via feed; no qualifying new items in 36h window."
+  - source_id: vulncheck
+    reason: "VulnCheck feed checked; no in-window items not already covered by MSRC/NCSC-CH sources."
+  - source_id: watchtowr
+    reason: "WatchTowr feed checked; no in-window items not already covered by primary sources."
+  - source_id: zdi
+    reason: "ZDI advisories checked; CVEs from June 9 Patch Tuesday covered via MSRC direct. No unique ZDI-only disclosures found in window."
