@@ -1,0 +1,249 @@
+domain: S2
+run_id: 2026-06-12-5ab9a319
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-12T04:09:26Z
+ended_at: 2026-06-12T04:50:00Z
+duration_seconds: 2434
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 5
+  bridge_fetches: 8
+
+items:
+  - title: "CVE-2026-49261 — MariaDB Galera cluster wsrep_notify_cmd shell injection: CVSS 10.0, all active LTS series affected"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+        publisher: "NCSC-CH GovCERT / CSH"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://mariadb.org/mariadb-community-server-corrective-releases/"
+        publisher: "MariaDB Foundation"
+        date: "2026-06-02"
+        role: "primary"
+      - url: "https://securityonline.info/mariadb-security-flaw-cvss-10/"
+        publisher: "Security Online"
+        date: "2026-06-07"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12627 (bridge ncsc-csh recent 15) → primary: MariaDB Foundation corrective-releases post, URL https://mariadb.org/mariadb-community-server-corrective-releases/ → corroborating: Security Online, URL https://securityonline.info/mariadb-security-flaw-cvss-10/"
+    summary: |
+      CVE-2026-49261 (CVSS 3.1: 10.0 CRITICAL) is a shell-injection flaw in MariaDB's Galera cluster replication subsystem. When wsrep_notify_cmd is configured, the cluster-member notification command is built by string-concatenating peer-supplied node names (wsrep_node_name) and incoming-addresses (wsrep_node_incoming_address) directly into a shell command string without sanitisation. A malicious or compromised Galera peer that announces a node name containing shell metacharacters (e.g. `;`, `$(...)`, backticks) causes every other cluster member with wsrep_notify_cmd configured to execute attacker-controlled OS commands with the privileges of the mariadbd process (typically root or mysql). Two companion flaws CVE-2026-48165 and CVE-2026-48163 (both CVSS 8.0) add similar parameter-injection surfaces in the wsrep SST (State Snapshot Transfer) handshake. MariaDB rated exploitation prerequisites as unknown but the JIRA ticket (MDEV-39721) and CSH advisory confirm the attack path is cluster-internal, requiring no external credential. Patched in Community Server 11.8.8, 11.4.12, 10.11.18, 10.6.27 (released 2026-05-26/27) and Enterprise Server 11.8.6-4, 11.4.10-8, 10.6.25-22. NCSC-CH published its advisory on 2026-06-11, prompting immediate upgrade guidance for Swiss and EU public-sector environments running database clusters on MariaDB. Detection: monitor for unexpected child processes of the mariadbd PID (Sysmon EID 1 with parent-image filter) and for unauthorised shell spawns (bash/sh/dash) originating from the database service user. Hardening: omit wsrep_notify_cmd unless strictly needed; restrict Galera communication ports (4567/4568/4444) to trusted peer subnets; upgrade to patched versions immediately.
+    ch_eu_nexus: "MariaDB is widely deployed in Swiss cantonal and federal public-sector database clusters, EU cloud and SaaS deployments (Nextcloud, Mattermost, many LAMP-stack government portals)"
+    public_sector_nexus: "direct — shared database engine for Swiss federal and cantonal portals"
+    sector: "public-sector, technology, cloud"
+    cves: [CVE-2026-49261, CVE-2026-48165, CVE-2026-48163]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MariaDB Server, when running as part of a Galera cluster with a notification command configured (wsrep_notify_cmd), builds that command by inserting the cluster members' node names and addresses directly into a string that is then executed by the system shell, without validating or escaping them."
+        attribution: "NCSC-CH GovCERT / CSH post 12627"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+      - quote: "a perfect 10.0 CVSS score, likely enabling unauthenticated remote code execution ... Administrators must apply official vendor patches immediately"
+        attribution: "Security Online"
+        source_url: "https://securityonline.info/mariadb-security-flaw-cvss-10/"
+    extended_notes: |
+      GitHub security advisories: GHSA-3p3m-4x7c-p4pw (CVE-2026-49261), GHSA-7v3p-h23x-8hwv (CVE-2026-48165), GHSA-rpgv-q6gv-684r (CVE-2026-48163). Exploitation requires cluster membership (i.e., attacker has already compromised a Galera peer or can inject crafted SST/IST messages at the network layer). No exploitation in the wild confirmed as of 2026-06-11.
+
+  - title: "GreatXML: Nightmare Eclipse drops unpatched BitLocker bypass — systems with prior Defender Offline scan history are vulnerable"
+    sources:
+      - url: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+        publisher: "SecurityWeek"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://www.theregister.com/security/2026/06/11/nightmare-eclipse-drops-claimed-bitlocker-bypass-for-microsoft-windows/5254371"
+        publisher: "The Register"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+        publisher: "NCSC-CH GovCERT / CSH"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12622 (bridge ncsc-csh recent 15) → WebSearch 'GreatXML BitLocker bypass SYSTEM privileges Nightmare Eclipse Windows June 2026' → primary: SecurityWeek, URL https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/ → corroborating: The Register, URL https://www.theregister.com/security/2026/06/11/nightmare-eclipse-drops-claimed-bitlocker-bypass-for-microsoft-windows/5254371"
+    summary: |
+      On 11 June 2026, researcher Nightmare Eclipse (also known as Chaotic Eclipse) publicly released GreatXML, a claimed BitLocker bypass exploit that has no CVE and no vendor patch. The attack targets the Windows Recovery Environment (WinRE): it abuses Microsoft Defender Offline's behaviour of loading configuration from the recovery partition. An attacker copies a crafted unattend.xml and a Recovery directory containing a second malformed XML to the root of the recovery partition; on the next WinRE reboot, the Defender Offline scan path processes these files and reportedly spawns a SYSTEM command prompt while the volume is decrypted — bypassing BitLocker's full-volume encryption. The researcher claims all systems where a Defender Offline scan has been initiated at least once are vulnerable. Independent researcher Will Dormann noted a prerequisite not initially disclosed: triggering the initial Defender Offline scan requires local administrator credentials, which would already permit disabling BitLocker directly — raising the practical severity bar considerably. Context: GreatXML is the sixth public zero-day from this researcher since April 2026 (BlueHammer, RedSun, UnDefend, YellowKey, GreenPlasma/RoguePlanet, GreatXML); Microsoft patched YellowKey (CVE-2026-45585) on June 9 Patch Tuesday. PoC: https://github.com/MSNightmare/GreatXML. No CVE assigned; no patch available as of 2026-06-12. Detection: monitor for unusual processes spawned during WinRE / Defender Offline execution; audit recovery-partition file modifications (Event ID 4663 on the recovery partition if accessible). Hardening: enforce Secure Boot with a custom PK; require TPM + PIN for BitLocker; review recovery-partition contents; restrict administrative share access (`C$`, `D$`) on endpoints.
+    ch_eu_nexus: "global; directly relevant to Swiss/EU government endpoints and disk-encrypted workstations; Windows endpoints across EU public-sector environments"
+    public_sector_nexus: "direct — full-disk encryption bypass on Windows public-sector workstations"
+    sector: "public-sector, all sectors"
+    cves: []
+    actors_campaigns_malware: ["Nightmare Eclipse / Chaotic Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "All systems on which an offline scan was initiated at least once automatically become vulnerable."
+        attribution: "SecurityWeek (quoting Nightmare Eclipse)"
+        source_url: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+      - quote: "the writeup 'flawed,' noting that triggering a Defender Offline scan requires existing Windows login and admin credentials"
+        attribution: "The Register (quoting researcher Will Dormann)"
+        source_url: "https://www.theregister.com/security/2026/06/11/nightmare-eclipse-drops-claimed-bitlocker-bypass-for-microsoft-windows/5254371"
+    extended_notes: |
+      Prior Nightmare Eclipse disclosures in June: RoguePlanet (Defender TOCTOU SYSTEM shell, covered 2026-06-11 brief) and earlier April/May disclosures. The CSH post 12622 is the NCSC-CH aggregator tracking the full series with linked PoC repositories. Microsoft has not assigned a CVE for GreatXML as of publication. The researcher announced on their blog that additional disclosures are planned for July 14 2026.
+
+  - title: "ShinyHunters / UNC6240 exploits Oracle PeopleSoft zero-day CVE-2026-35273 (CVSS 9.8) against 100+ organisations — 68% higher education; University of Nottingham breach confirmed (455,000 records)"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/"
+        publisher: "Google Cloud / Mandiant GTIG"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/shinyhunters-exploits-oracle-peoplesoft.html"
+        publisher: "The Hacker News"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://www.oracle.com/security-alerts/alert-cve-2026-35273.html"
+        publisher: "Oracle PSIRT"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('ShinyHunters Oracle PeopleSoft zero-day CVE June 2026' via THN feed) → primary: Google Cloud / Mandiant GTIG blog, URL https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/ → corroborating: THN, URL https://thehackernews.com/2026/06/shinyhunters-exploits-oracle-peoplesoft.html → corroborating: Oracle PSIRT alert, URL https://www.oracle.com/security-alerts/alert-cve-2026-35273.html (403 — see note)"
+    summary: |
+      UNC6240 (ShinyHunters) exploited CVE-2026-35273, a pre-authentication remote code execution vulnerability (CVSS 9.8) in Oracle PeopleSoft Enterprise PeopleTools, as a zero-day from 27 May to 9 June 2026. The flaw resides in the PeopleSoft Environment Management Hub (PSEMHUB) component (PeopleTools versions 8.61 and 8.62) and requires only network reachability to the management hub endpoint — no credentials. Following exploitation, UNC6240 deployed customised MeshCentral agent binaries disguised as Microsoft Azure NetApp Files services (masquerading C2 domain: `azurenetfiles.net`, WebSocket path `wss://azurenetfiles.net:443/agent.ashx`) for persistent remote access. A lateral movement script named `[victim_abbreviation]_fanout.sh` executed SSH credential spraying across internal networks. Over 100 organisations were breached; 68% were higher education institutions. Stolen data was published to the ShinyHunters Data Leak Site on 9 June 2026; the University of Nottingham confirmed exposure of approximately 455,000 records including names, addresses, and passport data. Oracle patched the vulnerability by 11 June and issued an out-of-cycle security alert. EU/CH nexus: numerous European universities and research institutions run PeopleSoft ERP for student information systems, HR, and finance; those on 8.61/8.62 with internet-facing PSEMHUB are at direct risk. T1190 (Exploit Public-Facing Application); T1059.004 (Unix Shell); T1071.001 (Web Protocols C2). Detection: monitor PSEMHUB access logs for anomalous requests to Environment Management endpoints; alert on unexpected child processes spawned by PeopleSoft application server processes; hunt for new service registrations using Azure-themed names (azurenetfiles.net). Patch to PeopleTools 8.61.x / 8.62.x patched build or apply Oracle's out-of-cycle advisory immediately.
+    ch_eu_nexus: "University of Nottingham (UK) confirmed 455,000-record breach; European universities widely deploy PeopleSoft; PeopleSoft is used by Swiss cantonal universities and polytechnics"
+    public_sector_nexus: "direct — higher education and research public sector, EU data exfiltration"
+    sector: "education, public-sector, higher-education"
+    cves: [CVE-2026-35273]
+    actors_campaigns_malware: ["UNC6240", "ShinyHunters"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "UNC6240 (ShinyHunters) exploited CVE-2026-35273, a critical remote code execution vulnerability (CVSS 9.8) in Oracle PeopleSoft's Environment Management component, as a zero-day between May 27-June 9, 2026 ... deployed customized MeshCentral agents disguised as Azure services"
+        attribution: "Google Cloud / Mandiant GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/"
+      - quote: "resulted in data exfiltration from over 100 organizations, with 68% being higher education institutions ... University of Nottingham confirmed breach exposure of approximately 455,000 records"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/shinyhunters-exploits-oracle-peoplesoft.html"
+    extended_notes: |
+      Oracle PSIRT returned HTTP 403 to WebFetch. The Mandiant GTIG blog is the primary technical write-up. PeopleSoft PSEMHUB ports (default: 8443/9043) should be firewall-restricted to internal management networks only as an immediate mitigation pending patch. The University of Nottingham disclosure was via HaveIBeenPwned (breach registered). Active exploitation window: May 27 - June 9, 2026 (zero-day period).
+
+  - title: "The Gentlemen ransomware (Storm-2697 / Phantom Mantis / LARVA-368): self-propagating Go worm with 21 lateral-movement chains, European victims confirmed in DE, FR, UK — operator deanonymised as Alexander Andreevich Yapaev"
+    sources:
+      - url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+        publisher: "Krebs on Security"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+        publisher: "The Hacker News"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-05-28"
+        role: "corroborating"
+      - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+        publisher: "Check Point Research"
+        date: "2026-05-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('The Gentlemen ransomware Europe victims June 2026') → THN feed item https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html → Krebs primary (deanonymisation) https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/ → Microsoft Security Blog (technical dissection) https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/ → Check Point Research (OSINT + TTPs) https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"
+    summary: |
+      The Gentlemen is a rapidly ascending RaaS platform (tracked by Microsoft as Storm-2697, by PRODAFT as Phantom Mantis / LARVA-368) that has claimed 478 public victims since March 2025, making it the second-most-active ransomware group globally by victim count. On 10 June 2026, Krebs on Security published an OSINT investigation pointing to Alexander Andreevich Yapaev, a Russian citizen, as the group's administrator (aliases: hastalamuerte, zeta88) based on corroborating data from Constella Intelligence, Flashpoint, Intel 471, and KELA. European victims confirmed by the group's DLS include organisations in Germany, France, and the United Kingdom (Synergy France, UK Electronics); Germany and the UK rank among the top five most-targeted countries. The ransomware is written in Go and obfuscated with Garble; its primary differentiator is `--spread` mode enabling self-propagating worm behaviour: 21 independent lateral movement techniques spanning PsExec (via C$ admin share), WMIC, scheduled tasks (user and SYSTEM contexts), Windows services, PowerShell remoting (Invoke-Command), and WMI. Encryption uses per-file Curve25519 ECDH + XChaCha20 with a variable encryption fraction (default 27%, `--ultrafast` drops to 0.9% for speed). Initial access: exploitation of Fortinet FortiGate (CVE-2024-55591) and Cisco VPN appliances, credential brute-forcing, NTLM relay (RelayKing-Depth), and access-broker relationships. EDR evasion: ETW (Event Tracing for Windows) manipulation via Titanis, NTDLL unhooking, hardware breakpoint removal, EDRStartupHinder + gfreeze + glinker toolkit, and BYOVD. Post-compromise tools: NetExec, TaskHound, PrivHound, CertiHound, KslDump/KslKatz for credential harvesting, MANSPIDER for share discovery, and Velociraptor repurposed as C2. Detection: Sysmon EID 1 for unusual child-process trees from PsExec/WMIC parent processes; EID 4688 for scheduled-task creation (TaskHound) and service creation (SYSTEM context); EDR alert on NTDLL unhooking patterns; monitor for shadow copy deletion (`vssadmin delete shadows`); hunt for .umc16h extension on file share scan. Hardening: disable SMBv1, block lateral PsExec/WMIC via ASR rules, enforce Tamper Protection, enable Controlled Folder Access.
+    ch_eu_nexus: "Germany and France confirmed victims on DLS; UK victim (Software consultancy) credentials reused in follow-on attacks; CH not explicitly named but within scope of European targeting"
+    public_sector_nexus: "indirect — primarily private sector targets but ransomware TTPs transferable; public sector (education, healthcare, transport) explicitly listed in Microsoft's sector analysis"
+    sector: "all-sectors, education, healthcare, finance, transport"
+    cves: [CVE-2024-55591, CVE-2025-32433, CVE-2025-33073]
+    actors_campaigns_malware: ["Storm-2697", "Phantom Mantis", "LARVA-368", "The Gentlemen", "The Gentlemen ransomware"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Gentlemen has emerged as the second most active ransomware gang by victim count ... This post examines clues pointing to a real life identity for the administrator of The Gentlemen ransomware group."
+        attribution: "Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+      - quote: "Gentlemen ransomware operation (tracked as Phantom Mantis) has claimed 478 victims since March 2025 ... The ransomware, written in Go and obfuscated with Garble, features a --spread argument enabling self-propagating worm capabilities across networks."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+      - quote: "Its distinctive capability involves aggressive self-propagation utilizing 21 independent lateral movement techniques spanning PsExec, WMIC, scheduled tasks, Windows services, PowerShell remoting, and WMI"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/"
+    extended_notes: |
+      The in-window fresh signal is the Krebs deanonymisation piece (June 10) and the THN 478-victim update (June 11). The Microsoft and Check Point analyses (May 2026) provide the deep technical baseline; both are within the 72-hour developing_window allowance and flagged as background. The group's internal Rocket.Chat system was breached and leaked in May 2026, exposing affiliate TTPs and victim negotiation logs.
+
+  - title: "GitHub npm v12 (July 2026): install lifecycle scripts disabled by default — closes largest npm code-execution surface"
+    sources:
+      - url: "https://github.blog/changelog/2026-06-09-upcoming-breaking-changes-for-npm-v12/"
+        publisher: "GitHub Changelog"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/github-to-disable-npm-install-scripts.html"
+        publisher: "The Hacker News"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: inside-it-ch RSS feed (URL https://www.inside-it.ch/github-verschaerft-npm-sicherheitsstandards-20260611) → corroboration: THN feed item, URL https://thehackernews.com/2026/06/github-to-disable-npm-install-scripts.html → primary: GitHub Changelog, URL https://github.blog/changelog/2026-06-09-upcoming-breaking-changes-for-npm-v12/"
+    summary: |
+      GitHub announced on 9 June 2026 that npm v12 (expected July 2026) will disable install-time lifecycle scripts (`preinstall`, `install`, `postinstall`) by default for all transitive dependencies. This closes what GitHub describes as "the single largest code-execution surface in the npm ecosystem" — the automatic execution of arbitrary scripts from every package in a dependency tree at install time, which has been the primary attack vector for supply-chain malware families including IronWorm, Phantom Gyp, and hundreds of credential-stealer packages. Under the new model, users must explicitly run `npm approve-scripts` to whitelist packages whose scripts may execute; Git dependencies and remote URL dependencies are also blocked unless `--allow-git` / `--allow-remote` flags are set. An existing bypass where `.npmrc` configuration could override `--ignore-scripts` is also fixed. The change is a breaking change; organisations with CI/CD pipelines and private registry workflows must audit and update npm install invocations before July 2026. The inside-it.ch Swiss IT trade press covered this on the same day as THN, confirming broad visibility in the Swiss developer community. MITRE relevance: T1195.002 (Compromise Software Supply Chain / Downstream Artifacts), T1059.001 (PowerShell / Script Execution). Hardening action for CH/EU SOC and DevSecOps teams: audit CI/CD for `npm install` invocations without `--ignore-scripts`; plan migration to npm v12 approval workflow before July; review package lock files for packages with known install scripts.
+    ch_eu_nexus: "Swiss IT trade press (inside-it.ch) covered this independently; directly affects Swiss and EU developer/DevSecOps environments"
+    public_sector_nexus: "indirect — relevant to public-sector dev teams and CI/CD pipelines"
+    sector: "technology, software-supply-chain"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "\"npm install\" command previously executed scripts from all transitive dependencies automatically, creating a major attack surface—described as 'the single largest code-execution surface in the npm ecosystem.' The update requires explicit user approval via `npm approve-scripts` before scripts execute."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/github-to-disable-npm-install-scripts.html"
+
+  - title: "CVE-2026-25089 — Fortinet FortiSandbox: unauthenticated OS command injection (CVSS 9.1), CCB Belgium and NCSC-NL issue advisories"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+        publisher: "NCSC-NL"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://ccb.belgium.be/advisories/warning-fortinet-addresses-critical-command-injection-vulnerability-fortisandbox-patch"
+        publisher: "CCB Belgium"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: advisories-ncsc-nl bridge (ncsc-nl recent 10), NCSC-2026-0189 → primary: NCSC-NL advisory URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189 → corroborating: CCB Belgium advisory URL https://ccb.belgium.be/advisories/warning-fortinet-addresses-critical-command-injection-vulnerability-fortisandbox-patch"
+    summary: |
+      Fortinet patched CVE-2026-25089 (CVSS 9.1 Critical, CWE-78) in FortiSandbox on 9 June 2026 under internal reference FG-IR-26-141. The vulnerability is an OS command injection in the FortiSandbox web interface's "start VNC" feature: the VNC launch handler accepts JSON input that is passed to the underlying OS without sanitisation. A remote unauthenticated attacker can send a specially crafted HTTP request to trigger second-order command injection and execute arbitrary OS commands with the privileges of the FortiSandbox process. The flaw affects FortiSandbox 5.0.0–5.0.5, 4.4.0–4.4.8, FortiSandbox Cloud 5.0.4–5.0.5, and FortiSandbox PaaS 5.0.4–5.0.5. Patches are available in FortiSandbox 5.0.6, 4.4.9, and corresponding Cloud/PaaS versions. Both CCB Belgium and NCSC-NL published advisories on 11 June 2026, the former with "patch immediately" urgency. The webinterface is not intended for public-facing exposure; NCSC-NL notes the vulnerability's prerequisites require the management interface to be internet-accessible, which it is not in compliant deployments. EU/CH nexus: FortiSandbox is deployed widely in European enterprise and public-sector SOC environments for dynamic malware analysis; a compromised FortiSandbox gives attackers visibility into all files submitted for analysis. T1190 (Exploit Public-Facing Application); T1059.004 (Unix Shell). Detection: monitor FortiSandbox web-UI access logs for anomalous requests to VNC-management endpoints; alert on unexpected subprocess spawning from the FortiSandbox service account. Hardening: restrict management interface to internal networks only; upgrade to patched versions; apply FortiGuard IPS signatures.
+    ch_eu_nexus: "CCB Belgium and NCSC-NL both issued advisories; FortiSandbox deployed in EU/CH SOC environments for malware sandbox analysis"
+    public_sector_nexus: "direct — FortiSandbox commonly deployed in public-sector SOC and government network security stacks"
+    sector: "public-sector, technology, all-sectors"
+    cves: [CVE-2026-25089]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Niet-geauthenticeerde aanvallers willekeurige OS-commando's uitvoeren door speciaal vervaardigde HTTP-verzoeken te sturen [unauthenticated attackers can execute arbitrary OS commands by sending specially crafted HTTP requests]"
+        attribution: "NCSC-NL NCSC-2026-0189 (Dutch)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0189"
+    extended_notes: |
+      Vulnerability was discovered internally by Adham El Karn of Fortinet's Product Security team. No public PoC and no exploitation in the wild reported as of 2026-06-11. The web management interface should be placed behind a dedicated management VLAN with no internet exposure per Fortinet hardening guide.
+
+cve_table:
+  - cve: CVE-2026-49261
+    product: "MariaDB Community/Enterprise Server (Galera)"
+    cvss: "10.0"
+    epss: "unknown"
+    kev: false
+    exploited: false
+    patch: "11.8.8, 11.4.12, 10.11.18, 10.6.27 (Community); 11.8.6-4, 11.4.10-8, 10.6.25-22 (Enterprise)"
+    source: "NCSC-CH CSH 12627 + MariaDB Foundation"
+  - cve: CVE-2026-35273
+    product: "Oracle PeopleSoft Enterprise PeopleTools 8.61, 8.62"
+    cvss: "9.8"
+    epss: "unknown"
+    kev: false
+    exploited: true
+    patch: "Oracle out-of-cycle security alert 2026-06-11"
+    source: "Google Mandiant GTIG"
+  - cve: CVE-2026-25089
+    product: "Fortinet FortiSandbox 4.4.0-4.4.8, 5.0.0-5.0.5"
+    cvss: "9.1"
+    epss: "unknown"
+    kev: false
+    exploited: false
+    patch: "FortiSandbox 5.0.6, 4.4.9"
+    source: "NCSC-NL NCSC-2026-0189 + CCB Belgium"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: oracle-psirt
+    reason: "Oracle PSIRT advisory URL https://www.oracle.com/security-alerts/alert-cve-2026-35273.html returned HTTP 403; story fully covered via Mandiant GTIG and THN"
+  - source_id: anssi-fr
+    reason: "CERT-FR avis-recent feed returned items only through 2026-06-09; no in-window (June 10-12) CERTFR advisories in the recency window from this source"
+  - source_id: ncsc-ch-focus
+    reason: "No new Im-Fokus posts since NCSC week-23 weekly review (covered 2026-06-10); CSH hub used instead"
