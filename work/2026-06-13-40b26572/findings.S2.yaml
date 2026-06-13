@@ -1,0 +1,144 @@
+domain: S2
+run_id: 2026-06-13-40b26572
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-13T11:33:04Z
+ended_at: 2026-06-13T11:37:30Z
+duration_seconds: 264
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 7
+  bridge_fetches: 12
+
+items:
+  - title: "CVE-2026-49261 — MariaDB Galera Cluster: unauthenticated peer RCE via wsrep_notify_cmd shell injection (CVSS 10.0)"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://mariadb.com/docs/server/security/cve/community-server"
+        publisher: "MariaDB documentation (CVE list)"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://jira.mariadb.org/browse/MDEV-39721"
+        publisher: "MariaDB JIRA (MDEV-39721)"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12627 → primary: NCSC-CH Security Hub advisory (first disclosing party), with MariaDB documentation and MDEV-39721 JIRA corroborating the technical detail"
+    summary: |
+      CVE-2026-49261 is a CVSS 10.0 OS command injection in MariaDB Server when Galera cluster replication is configured with a notification command (wsrep_notify_cmd). The database process builds the notification shell command by directly interpolating the peer-advertised wsrep_node_name and wsrep_node_incoming_address into the command string without escaping or validating shell metacharacters. A rogue or compromised cluster peer that announces a node name or address containing metacharacters causes arbitrary OS commands to run as the database process user on every cluster member that has wsrep_notify_cmd configured. The attack surface is reachable by any Galera cluster peer — authentication to the MariaDB SQL service is not required; only cluster-port (TCP 4567/4568/4444) connectivity is needed. Affected versions span all community branches below 11.8.8, 11.4.12, 10.11.18, and 10.6.27, and Enterprise Server below 11.8.6-4, 11.4.10-8, and 10.6.25-22. Patches shipping in those fixed versions were released 2026-05-27 for community and the equivalent enterprise releases; NCSC-CH published its advisory on 11 June 2026 when the JIRA/technical details surfaced. Exploitation status is unknown but the attack is straightforward to construct against any Galera cluster whose nodes are accessible from an attacker-controlled node. Mitigation if patching is not immediately possible: disable wsrep_notify_cmd in my.cnf/galera.cnf. Detection: look for unexpected child processes of the MariaDB daemon (mysqld) in EDR process-tree telemetry (especially shell processes spawned from mysqld parent); alert on unexpected outbound connections from database hosts.
+    ch_eu_nexus: "EU-wide; MariaDB is the reference database in Swiss federal, cantonal, and EU public-sector IT deployments (alternative to Oracle), and is the default DB for many Swiss open-source e-government platforms. Galera clustering is common in HA deployments."
+    public_sector_nexus: "direct — MariaDB is default DB in Swiss e-government and EU member-state open-source stacks"
+    sector: "public-sector, government, healthcare, finance"
+    cves: [CVE-2026-49261]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MariaDB Server, when running as part of a Galera cluster with a notification command configured (wsrep_notify_cmd), builds that command by inserting the cluster members' node names and addresses directly into a string that is then executed by the system shell, without validating or escaping them."
+        attribution: "NCSC-CH Security Hub (post 12627)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+      - quote: "A cluster peer that announces a node name (wsrep_node_name) or incoming address containing shell metacharacters can therefore cause arbitrary operating-system commands to run on every cluster member that has a notification command configured, with the privileges of the database process."
+        attribution: "NCSC-CH Security Hub (post 12627)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+    extended_notes: |
+      CVSS vector: 10.0 (Critical). Exploitation does not require a valid SQL user account — only network access to the Galera communication ports (default TCP 4567 IST, 4568 SST, 4444 SST backup). In cloud/shared hosting environments where multiple customers share Galera cluster nodes, the inter-tenant blast radius is maximal. The notify-command feature is non-default and must be explicitly configured; verify wsrep_notify_cmd presence in config before elevated patching priority.
+
+  - title: "CVE-2026-6552 — GitLab EE: Group-Owner SAML account takeover via authorization bypass in Group SAML identity management (CVSS 8.7)"
+    sources:
+      - url: "https://cve.threatint.eu/CVE/CVE-2026-6552"
+        publisher: "THREATINT CVE database"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0196"
+        publisher: "NCSC-NL advisory NCSC-2026-0196"
+        date: "2026-06-12"
+        role: "corroborating"
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories → item NCSC-2026-0196 (GitLab EE multiple CVEs) → pivot to CVE search → primary: THREATINT CVE page https://cve.threatint.eu/CVE/CVE-2026-6552 (with official GitLab patch reference) and NCSC-NL CSAF advisory corroborating"
+    summary: |
+      CVE-2026-6552 (CWE-639, Authorization Bypass Through User-Controlled Key) affects GitLab Enterprise Edition from version 15.5 onward up to, but not including, 18.10.8, 18.11.5, and 19.0.2. An authenticated user holding the Group Owner role can exploit an authorization weakness in the Group SAML Identity Management API to unconditionally take over another group member's GitLab account — including accounts of users with higher site-level privileges — without requiring the victim's credentials. The attack path: a Group Owner manipulates SAML identity bindings (wsrep_node_name-analogous user-controlled key) for a target group member, reassigning the SAML NameID association to their own identity, then authenticates as the victim via the Group SAML SSO flow. Prerequisite: Group SAML SSO must be enabled on the GitLab EE group (common in enterprise/government GitLab instances using Azure AD or Okta). GitLab patched this on 10 June 2026 in versions 19.0.2, 18.11.5, and 18.10.8. No public exploit code; reported via HackerOne bug-bounty by researcher "cyberjoker" (HackerOne report #3655189). In addition to CVE-2026-6552, the 10 June release patches 11 other vulnerabilities in GitLab CE/EE including a Developer-accessible stored XSS via the Analytics Dashboard, repository-import SSRF to internal Gitaly servers (arbitrary file read), and a DoS via malformed CI/CD uploads. Detection: review GitLab audit logs (`/admin/audit_events`) for `group_saml_identity_updated` events where the actor is a Group Owner — especially where the target account is a Site Admin or has elevated privileges (T1078.001 Valid Accounts - Local Accounts, T1550.001 Application Access Token).
+    ch_eu_nexus: "EU-wide; GitLab EE is the dominant self-hosted DevSecOps platform across Swiss federal IT (Confederation), EU agencies (CERT-EU environment), and EU member-state defence/intelligence developer toolchains. SAML SSO to government IdPs is standard."
+    public_sector_nexus: "direct"
+    sector: "public-sector, technology, government"
+    cves: [CVE-2026-6552]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab has remediated an issue in GitLab EE affecting all versions from 15.5 before 18.10.8, 18.11 before 18.11.5, and 19.0 before 19.0.2 that under certain conditions could have allowed an authenticated user with group Owner role to take over another group member's GitLab account due to improper authorization in the Group SAML identity management functionality."
+        attribution: "THREATINT CVE database (CVE-2026-6552)"
+        source_url: "https://cve.threatint.eu/CVE/CVE-2026-6552"
+      - quote: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:N"
+        attribution: "THREATINT CVE database (CVE-2026-6552)"
+        source_url: "https://cve.threatint.eu/CVE/CVE-2026-6552"
+    extended_notes: |
+      The broader GitLab 10 June patch also addresses: (a) Gitaly SSRF via repository-import secondary URL validation bypass — authenticated developers can read arbitrary files on the Gitaly server and access internal network resources; (b) Group SAML group-owner group-member takeover (the lead CVE-2026-6552); (c) DoS via resource exhaustion on malformed CI/CD artifact upload. Operators running self-hosted GitLab EE (versions from 15.5 through 18.x) should treat this as urgent given the account-takeover severity and the prevalence of Group SAML in enterprise environments.
+
+  - title: "OpenSSL 9 June 2026 security advisory: heap UAF in PKCS7_verify (CVE-2026-45447, High) plus CMS AuthEnvelopedData key-equivalent oracle and QUIC DoS"
+    sources:
+      - url: "https://openssl-library.org/news/secadv/20260609.txt"
+        publisher: "OpenSSL Security Advisory"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0717/"
+        publisher: "CERT-FR advisory CERTFR-2026-AVI-0717"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: anssi-fr/cert-fr-avis-recent, URL https://www.cert.ssi.gouv.fr/avis/feed/ (item CERTFR-2026-AVI-0717, published 10 June 2026) → pivot to Documentation section → primary: OpenSSL security advisory https://openssl-library.org/news/secadv/20260609.txt"
+    summary: |
+      The OpenSSL project published a batch advisory on 9 June 2026 covering five CVEs affecting versions 1.0.2 through 4.0. The highest-severity issue is CVE-2026-45447 (High): a heap use-after-free in PKCS7_verify() triggered when a PKCS#7 or S/MIME signed message contains an empty SignedData.digestAlgorithms ASN.1 SET. OpenSSL may incorrectly free a caller-owned BIO during verification; the subsequent application use of the freed BIO causes a use-after-free that — depending on allocator behaviour and application-specific BIO usage patterns — can result in a crash or heap corruption. In some deployment contexts this may be exploitable for remote code execution. Applications using the PKCS#7 APIs (not the CMS APIs) for message verification are affected; this covers MTA-level email signature verification, document signing workflows, and PKI enrollment endpoints that accept PKCS#7 messages (common in European government e-ID and e-signature infrastructure). A second Moderate issue, CVE-2026-34182, allows an on-path attacker to achieve key-equivalent CMS decryption: they can rewrite a legitimate AES-GCM AuthEnvelopedData message to use an unauthenticated cipher mode (AES-256-OFB), and if the receiving application returns any observable success/failure indicator, use this as a decryption oracle. This is a cryptographic integrity bypass against confidential CMS-encrypted government messaging and long-term document archiving. CVE-2026-34183 is a QUIC PATH_CHALLENGE amplification DoS. CVE-2026-35188 is a double-free via malicious OCSP stapling (only affects OpenSSL 4.0 and 3.6). CVE-2026-45445 is an AES-OCB IV-reuse bug when using the EVP_Cipher() one-shot API. All five are patched in 4.0.1, 3.6.3, 3.5.7, 3.4.6, 3.0.21; legacy 1.1.1 and 1.0.2 (premium support only) are patched in 1.1.1zh and 1.0.2zq. No active exploitation observed; no CISA KEV entry as of advisory date. Detection: anomalous application crashes in MTA or PKI enrollment services after processing externally-supplied PKCS#7 messages; application-level OCSP-stapling errors (CVE-2026-35188).
+    ch_eu_nexus: "EU-wide critical; OpenSSL is the TLS/crypto foundation for Swiss e-ID (SuisseID successor), EU eIDAS signature workflows, government PKI (EJBCA-based), and essentially all Swiss federal and EU member-state TLS infrastructure."
+    public_sector_nexus: "direct — government PKI/e-signature infrastructure, government email security gateways"
+    sector: "public-sector, finance, healthcare, technology"
+    cves: [CVE-2026-45447, CVE-2026-34182, CVE-2026-34183, CVE-2026-35188, CVE-2026-45445]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A specially crafted PKCS#7 or S/MIME signed message could trigger a use-after-free during PKCS#7 signature verification. [...] In some application contexts this may potentially be exploitable for remote code execution."
+        attribution: "OpenSSL Security Advisory [9th June 2026]"
+        source_url: "https://openssl-library.org/news/secadv/20260609.txt"
+      - quote: "An on-path attacker who captures one legitimate AES-GCM AuthEnvelopedData addressed to the victim can re-emit it with the recipientInfos set left byte-for-byte intact [...] CMS_decrypt() returns success."
+        attribution: "OpenSSL Security Advisory [9th June 2026]"
+        source_url: "https://openssl-library.org/news/secadv/20260609.txt"
+      - quote: "De multiples vulnérabilités ont été découvertes dans OpenSSL. Certaines d'entre elles permettent à un attaquant de provoquer une exécution de code arbitraire à distance"
+        attribution: "CERT-FR CERTFR-2026-AVI-0717 (French national CERT advisory, 10 June 2026)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0717/"
+    extended_notes: |
+      CVE-2026-45447 was discovered and reported by Thai Duong (Calif.io in collaboration with Claude and Anthropic Research). CVE-2026-34182 was independently reported by multiple researchers including Alex Gaynor (Anthropic). CVE-2026-45445 (AES-OCB IV reuse) was reported by Alex Gaynor (Anthropic). The involvement of AI-assisted security research in finding these bugs in OpenSSL is notable context. The FIPS module boundary excludes these bugs from FIPS-validated code paths. Priority patching candidates: applications implementing PKCS#7/S/MIME signature verification (government email gateways, document signing services), OCSP stapling-enabled TLS reverse proxies, and QUIC servers. Applications using the CMS API for the same operations are not affected by CVE-2026-45447 but ARE affected by CVE-2026-34182.
+
+  - title: "CERT-EU 2026-008: Ivanti Sentry CVE-2026-10520 / CVE-2026-10523 — CERT-EU EU-institutions advisory in window"
+    sources:
+      - url: "https://cert.europa.eu/publications/security-advisories/2026-008/"
+        publisher: "CERT-EU advisory 2026-008"
+        date: "2026-06-10"
+        role: "primary"
+    discovery_trace: "first seen at: cert-eu, URL https://cert.europa.eu/publications/security-advisories-rss → item 2026-008 published 10 June 2026 → primary: CERT-EU advisory page https://cert.europa.eu/publications/security-advisories/2026-008/"
+    summary: |
+      CERT-EU published advisory 2026-008 on 10 June 2026 covering CVE-2026-10520 (CVSS 10.0, OS command injection → root RCE, unauthenticated) and CVE-2026-10523 (CVSS 9.9, authentication bypass → rogue admin account creation) in Ivanti Sentry (formerly MobileIron Sentry). This is the EU-institutions-focused advisory for these CVEs, already covered in depth in the 2026-06-10 brief from an NCSC-CH perspective. The CERT-EU advisory reflects active EU-institutions relevance — Ivanti Sentry is deployed across EU agency mobile device management environments as the EMM gateway. Patch and remediation guidance is the same as the vendor advisory: upgrade to R10.5.2, R10.6.2, or R10.7.1. CERT-EU is tracking this at the EU level. Exploitation status: PoC public (watchtowr), exploitation expected imminently on internet-facing management ports.
+    ch_eu_nexus: "EU-direct; CERT-EU advisory indicates active EU-institutions footprint of Ivanti Sentry as EMM gateway"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government"
+    cves: [CVE-2026-10520, CVE-2026-10523]
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-10
+    evidence:
+      - quote: "On 9 June 2026, Ivanti released a security advisory addressing two critical vulnerabilities in their Sentry products. An attacker could exploit those flaws to achieve unauthenticated remote code execution on the vulnerable device."
+        attribution: "CERT-EU advisory 2026-008"
+        source_url: "https://cert.europa.eu/publications/security-advisories/2026-008/"
+    extended_notes: |
+      This is the EU-institutions angle on CVEs already covered in the 2026-06-10 daily brief. The CERT-EU advisory is an UPDATE trigger: it confirms EU-institutional deployment relevance and warrants an in-brief UPDATE callout for organisations that may have deprioritised the June 10 item.
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "HTTP 403 on direct fetch; Wayback Machine returned no usable snapshot (0 candidates in last 180 days). WebSearch fallback found no specific in-window items attributable to inside-it.ch. Source remains unresolvable — recommend operator investigation of this URL."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actualite RSS feed last item is from Oct 2025 (CERTFR-2025-ACT-047) — feed appears stalled or publishing cadence changed. No weekly bulletins covering June 2026 available. CERTFR avis feed is current."
+  - source_id: google-tag
+    reason: "No new TAG blog posts surfaced in the 36-hour window relevant to S2 domain. Feed not directly enumerated but WebSearch found no in-window EU-relevant items."

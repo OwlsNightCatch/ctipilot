@@ -1,0 +1,256 @@
+domain: S1
+run_id: 2026-06-13-40b26572
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-13T11:32:44Z
+ended_at: 2026-06-13T12:05:00Z
+duration_seconds: 1936
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 12
+
+items:
+  - title: "\"Atomic Arch\" AUR supply-chain attack: 400+ Arch Linux orphaned packages hijacked to deliver Rust credential stealer and eBPF rootkit"
+    sources:
+      - { url: "https://www.sonatype.com/blog/atomic-arch-npm-campaign-adds-malicious-dependency", publisher: "Sonatype Research", date: "2026-06-11", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/over-400-arch-linux-packages-compromised-to-push-rootkit-infostealer/", publisher: "BleepingComputer", date: "2026-06-12", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/06/over-400-arch-linux-aur-packages.html", publisher: "The Hacker News", date: "2026-06-13", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Sonatype Research, URL https://www.sonatype.com/blog/atomic-arch-npm-campaign-adds-malicious-dependency → corroborating: BleepingComputer https://www.bleepingcomputer.com/news/security/over-400-arch-linux-packages-compromised-to-push-rootkit-infostealer/"
+    summary: |
+      Attackers systematically adopted orphaned AUR (Arch User Repository) packages through the AUR's standard adoption mechanism, then modified their PKGBUILD build scripts to add a malicious dependency — an npm package called `atomic-lockfile` — that deploys a Rust-compiled Linux ELF payload on any system that builds the package. The payload, a credential stealer named `deps`, harvests developer secrets (SSH keys, cloud credentials, browser-stored tokens) and, when executed with root permissions, loads an eBPF rootkit that hides its process from `ps`, `htop`, and similar tools by masquerading as a legitimate kernel thread. Sonatype tracked the campaign as Sonatype-2026-003775 (CVSS 8.7) and identified at least 400 compromised packages; Privacy Guides reported the number may reach 1,500. A second wave on June 12 shifted some packages to a Bun-based installation path alongside npm. The attack technique maps to T1195.002 (Compromise Software Supply Chain) and T1059 (Command and Scripting Interpreter via PKGBUILD install scripts). Detection: monitor package build environments for unexpected `npm install` or `bun install` calls from within PKGBUILD, and alert on newly-adopted orphaned packages (AUR `Disowned` → `Yours` state transitions). Hunt for the ELF `deps` binary in developer home directories and for eBPF program loads (`bpf()` syscall traces in auditd / Falco rules targeting `PROG_LOAD`). Hardening: restrict AUR helper usage in CI/CD; prefer signed AUR packages or direct PKGBUILD review; use container-isolated build environments.
+    ch_eu_nexus: "Global; Arch Linux is widely used by European security researchers and developers; Swiss developer community affected"
+    public_sector_nexus: "indirect — affects developer workstations in IT departments and research institutions"
+    sector: "technology, software development, security research"
+    cves: []
+    actors_campaigns_malware: ["Atomic Arch", "atomic-lockfile", "deps (eBPF rootkit/credential stealer)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers took over more than 400 packages in the Arch User Repository (AUR) this week and rewrote their build scripts to install a credential stealer on any machine that built them."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/over-400-arch-linux-aur-packages.html"
+      - quote: "Sonatype researchers uncovered Atomic Arch, a supply chain attack targeting orphaned AUR packages."
+        attribution: "Sonatype Research"
+        source_url: "https://www.sonatype.com/blog/atomic-arch-npm-campaign-adds-malicious-dependency"
+
+  - title: "Velvet Ant (China-nexus) Operation Highland: PAM and OpenSSH backdoored for nearly a decade — nine pam_unix.so variants, credential-harvesting sshd"
+    sources:
+      - { url: "https://www.sygnia.co/blog/operation-highland-velvet-ant/", publisher: "Sygnia", date: "2026-06-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/china-linked-hackers-backdoored-linux.html", publisher: "The Hacker News", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Sygnia blog, URL https://www.sygnia.co/blog/operation-highland-velvet-ant/ → corroborating: THN https://thehackernews.com/2026/06/china-linked-hackers-backdoored-linux.html"
+    summary: |
+      Sygnia's incident-response team published Operation Highland on June 12, detailing a China-nexus intrusion campaign in which Velvet Ant (previously documented targeting Cisco Nexus switches) operated undetected in an air-gapped network for nearly a decade, with the earliest traces going back to 2016. The core persistence mechanism was modification of the Linux authentication stack itself: nine distinct compiled variants of `pam_unix.so` (the primary PAM password module) were deployed, some granting access via a hardcoded magic password, others silently logging real credentials to disk. The `sshd` binary was also replaced with a backdoored copy that logged every username, password, and command typed, and included a custom flag to disable its own credential logging during attacker-managed sessions (T1556 — Modify Authentication Process; T1070.006 — Timestomp for evading forensic timeline analysis). The network had no direct internet access, so Velvet Ant first compromised internet-facing systems to lateral-move inward. Detection: compare running `pam_unix.so` and `sshd` binary hashes against known-good package manager checksums; monitor `/lib/security/pam_unix.so` and `/usr/sbin/sshd` modification timestamps (Sysmon for Linux EID 11); alert on SSH daemon binary mismatches vs package database (`rpm -V openssh-server` / `dpkg --verify openssh-server`); detect hidden credential log files in `/tmp`, `/var/tmp`, or `.` directories. Hardening: immutable OS partitions / dm-verity; AIDE or Tripwire for system binary integrity; restrict `su`/`sudo` paths to known-good interpreters.
+    ch_eu_nexus: "Global; Velvet Ant is a China-state-nexus actor; targeting of air-gapped European financial/industrial networks is consistent with known Velvet Ant TTPs"
+    public_sector_nexus: "direct — targeting of air-gapped sensitive networks aligns with government/critical-infrastructure profiles"
+    sector: "financial, critical infrastructure, government"
+    cves: []
+    actors_campaigns_malware: ["Velvet Ant", "Operation Highland"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sygnia, which tracks the group as Velvet Ant, says it backdoored the PAM and OpenSSH components that decide who is allowed to sign in, planting its access where ordinary cleanup could not reach it."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/china-linked-hackers-backdoored-linux.html"
+      - quote: "Nine distinct pam_unix.so variants were identified, each built in a separate compile environment, indicating substantial resources devoted to the operation."
+        attribution: "Sygnia (via search-derived summary)"
+        source_url: "https://www.sygnia.co/blog/operation-highland-velvet-ant/"
+
+  - title: "CVE-2026-49261 — MariaDB Galera Cluster: unauthenticated OS command injection via wsrep_notify_cmd (CVSS 10.0), all Galera deployments affected"
+    sources:
+      - { url: "https://mariadb.com/docs/server/security/cve/community-server", publisher: "MariaDB Foundation", date: "2026-06-11", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12627", publisher: "NCSC-CH Security Hub", date: "2026-06-11", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-csh bridge subcommand → post 12627, URL https://security-hub.ncsc.admin.ch/#/posts/12627 → primary: MariaDB advisory, URL https://mariadb.com/docs/server/security/cve/community-server"
+    summary: |
+      CVE-2026-49261 (CVSS 10.0) is an OS command injection in MariaDB Server's Galera cluster notification infrastructure. When `wsrep_notify_cmd` (the shell command MariaDB executes to notify administrators of Galera membership changes) is configured, the server builds the command string by directly interpolating the joining cluster member's `wsrep_node_name` and `wsrep_node_incoming_address` values — which are supplied by the joining peer over the network — without sanitizing shell metacharacters. A cluster member that announces a node name containing shell metacharacters (e.g., backtick-wrapped commands or `$(…)` injection) causes arbitrary OS commands to execute on every cluster member that has `wsrep_notify_cmd` configured, with the privileges of the database process (typically the `mysql` user, but root in some configurations). This is a pre-auth network vector: no credential compromise is required beyond joining (or appearing to join) the Galera cluster replication stream. Affected: MariaDB 10.6.1–10.6.26, 10.11.1–10.11.17, 11.4.1–11.4.11, 11.8.1–11.8.7; also Enterprise Server. Fixed: 10.6.27, 10.11.18, 11.4.12, 11.8.8, Enterprise 11.8.6-4, 11.4.10-8, 10.6.25-22. Maps to T1190 (Exploit Public-Facing Application) and T1059.004 (Unix Shell). Detection: alert on unexpected child processes spawned from `mysqld` / `mariadbd` (Sysmon for Linux EID 1, parent-process filter); review `wsrep_notify_cmd` values in `my.cnf` across all database servers. Hardening: patch immediately; if immediate patching is not possible, remove or blank `wsrep_notify_cmd` in configuration; restrict Galera replication port (default 4567/TCP) to the explicit cluster member IP whitelist.
+    ch_eu_nexus: "Direct — MariaDB is the default database server in many Swiss/EU public-sector Linux deployments (Debian/Ubuntu default); Galera clusters are common in HA government portal backends"
+    public_sector_nexus: "direct"
+    sector: "public sector, financial, technology"
+    cves: [CVE-2026-49261]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "MariaDB Server, when running as part of a Galera cluster with a notification command configured (wsrep_notify_cmd), builds that command by inserting the cluster members' node names and addresses directly into a string that is then executed by the system shell, without validating or escaping them."
+        attribution: "NCSC-CH Security Hub (post 12627)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12627"
+
+  - title: "CVE-2026-48558 — SimpleHelp RMM: OIDC authentication bypass yields unauthenticated technician session, MFA also bypassable (CVSS 9.5)"
+    sources:
+      - { url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/", publisher: "Horizon3.ai", date: "2026-06-12", role: "primary" }
+      - { url: "https://simple-help.com/security/simplehelp-security-update-2026-05", publisher: "SimpleHelp (vendor)", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd bridge criticals feed → EUVD-2026-36509, → primary: Horizon3.ai, URL https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/ → corroborating: vendor advisory https://simple-help.com/security/simplehelp-security-update-2026-05"
+    summary: |
+      CVE-2026-48558 (CVSS 4.0: 9.5) is an authentication bypass in SimpleHelp — a widely-deployed self-hosted RMM/remote-support platform used by MSPs in Europe and globally. When OIDC authentication is enabled, SimpleHelp accepts identity tokens submitted during login without verifying their cryptographic signature; any unauthenticated attacker who can craft a valid-looking (but unsigned) OIDC token gains a fully authenticated Technician session. Because the verification step is skipped, this bypass also circumvents any MFA configured on the identity provider, requiring no user interaction. Affected: versions 5.5.15 and prior, and 6.0 pre-release builds. Fixed in SimpleHelp 5.5.16 and 6.0 GA (security update 2026-05). Horizon3.ai published IOCs for detecting post-exploitation of this bug in MSP environments. Maps to T1190 (Exploit Public-Facing Application), T1078.004 (Valid Cloud/Service Accounts — attacker gains a legitimate Technician identity). Detection: SimpleHelp server access logs — look for successful Technician authentication events immediately preceded by malformed or no-signature OIDC token exchanges; monitor for unexpected remote access sessions originating from new Technician accounts. Hardening: apply patch immediately; until patched, disable OIDC authentication and require SAML or local authentication with MFA; network-restrict SimpleHelp's web interface to known IP ranges.
+    ch_eu_nexus: "Direct — SimpleHelp is a common RMM tool in EU MSP environments; exploitation of MSP tooling is a well-documented initial-access vector targeting downstream clients"
+    public_sector_nexus: "indirect — MSP tooling used to access public-sector client environments"
+    sector: "technology, MSP, managed services"
+    cves: [CVE-2026-48558]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A remote, unauthenticated attacker can submit a forged token containing arbitrary identity claims to obtain a fully authenticated technician session. In some configurations, this may also allow bypass of multi-factor authentication. No user interaction is required."
+        attribution: "ENISA EUVD (EUVD-2026-36509)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-36509"
+
+  - title: "CVE-2026-6552 — GitLab EE: Group SAML identity management allows Group Owner to hijack any group member's account (CVSS 8.7)"
+    sources:
+      - { url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-2-released/", publisher: "GitLab", date: "2026-06-10", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/gitlab-patches-high-severity-account-takeover-missing-auth-issues/", publisher: "BleepingComputer", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl recent feed → NCSC-2026-0196, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0196 → primary: GitLab release notes https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-2-released/"
+    summary: |
+      GitLab patched 12 vulnerabilities on June 10 in versions 19.0.2, 18.11.5, and 18.10.8. The highest-severity flaw, CVE-2026-6552 (CVSS 8.7, CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:N), resides in the Group SAML Identity API in GitLab Enterprise Edition: an authenticated user with the Group Owner role can, under certain conditions, hijack another group member's GitLab account entirely via improper authorization in the SAML identity management flow — without requiring the victim's credentials. The attack surfaces when the target group uses SAML SSO for authentication, which is common in enterprise SSO integrations (Okta, Entra ID, ADFS). Affected: GitLab EE 15.5 through 18.10.7, 18.11.0–18.11.4, and 19.0.0–19.0.1. Also patched: CVE-2026-10087 (stored XSS in Analytics Dashboard, CVSS 8.7) and repository-import path traversal (file read on Gitaly server). Maps to T1078 (Valid Accounts), T1136 (Create Account — account hijack), T1556.006 (Modify Authentication Process — SAML manipulation). Detection: GitLab audit logs for `group_saml_identity` modification events by group owners on accounts they do not own; alert on Technician/Admin logins from group-owner role users touching non-owned accounts. Hardening: patch to 19.0.2 / 18.11.5 / 18.10.8; review Group Owner membership and restrict SAML identity linkage to admins only.
+    ch_eu_nexus: "Direct — GitLab CE/EE is the standard DevOps platform in Swiss federal IT (e.g., gitlab.com replacements in cantonal environments) and widely deployed across EU public-sector software projects"
+    public_sector_nexus: "direct"
+    sector: "technology, public sector, software development"
+    cves: [CVE-2026-6552, CVE-2026-10087]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab has remediated an issue that under certain conditions could have allowed an authenticated user with group Owner role to take over another group member's GitLab account due to improper authorization in the Group SAML identity management functionality."
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-2-released/"
+
+  - title: "LangGraph SQLi-to-RCE chain (CVE-2025-67644 + CVE-2026-28277): SQL injection in SQLite checkpointer chains to msgpack deserialization for full server takeover"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/from-sqli-to-rce-exploiting-langgraphs-checkpointer/", publisher: "Check Point Research", date: "2026-06-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/langgraph-flaw-chain-exposes-self.html", publisher: "The Hacker News", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Check Point Research, URL https://research.checkpoint.com/2026/from-sqli-to-rce-exploiting-langgraphs-checkpointer/ → corroborating: THN https://thehackernews.com/2026/06/langgraph-flaw-chain-exposes-self.html"
+    summary: |
+      Check Point Research published a two-CVE exploit chain in LangGraph, the open-source stateful AI agent framework by LangChain used to build multi-step AI pipelines and agentic workflows. The first vulnerability, CVE-2025-67644, is a SQL injection in the `get_state_history()` function of LangGraph's SQLite checkpointer: metadata filter keys passed to this API endpoint are interpolated into the SQL query without sanitization, enabling an attacker with user-controlled input to the filter to run arbitrary SQLite queries. The second, CVE-2026-28277 (msgpack deserialization — unsafe Python object reconstruction in LangGraph checkpoint loading), chains with the SQLi: the attacker injects a crafted msgpack payload into checkpoint data via the SQLi vector; when a legitimate application loads that checkpoint, it deserializes the malicious payload and executes arbitrary Python code in the application's context, achieving full server-side RCE. Risk is highest for teams self-hosting LangGraph with the SQLite or Redis checkpointer where `get_state_history()` is exposed with user-controlled filters. Fixed: `langgraph-checkpoint-sqlite` ≥ 3.0.1, `langgraph` ≥ 1.0.10, `langgraph-checkpoint-redis` ≥ 1.0.2. Maps to T1190, T1059.006 (Python). Detection: WAF rules blocking unexpected characters in LangGraph API filter parameters; alert on Python `__reduce__` deserialization payloads in application logs.
+    ch_eu_nexus: "Global; LangGraph is increasingly deployed in Swiss/EU AI-pilot environments and government chatbot infrastructure"
+    public_sector_nexus: "indirect"
+    sector: "technology, AI/ML, software development"
+    cves: [CVE-2025-67644, CVE-2026-28277]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An SQL injection in LangGraph's function could allow an attacker to manipulate the database, which can then be chained with an unsafe deserialization vulnerability that results in remote code execution."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/langgraph-flaw-chain-exposes-self.html"
+
+  - title: "\"Agentjacking\": Tenet Security demonstrates 85% exploitation rate against AI coding agents (Claude Code, Cursor, Codex) via injected Sentry error events — Sentry declines root fix"
+    sources:
+      - { url: "https://tenetsecurity.ai/blog/agentjacking-coding-agents-with-fake-sentry-errors/", publisher: "Tenet Security", date: "2026-06-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/agentjacking-attack-tricks-ai-coding.html", publisher: "The Hacker News", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Tenet Security blog, URL https://tenetsecurity.ai/blog/agentjacking-coding-agents-with-fake-sentry-errors/ → corroborating: THN https://thehackernews.com/2026/06/agentjacking-attack-tricks-ai-coding.html"
+    summary: |
+      Tenet Security published Agentjacking on June 12 — a novel attack class exploiting the intersection of Sentry's unauthenticated-write DSN architecture and the MCP tool-call model used by AI coding agents. The attack requires only a Sentry DSN (a write-only credential commonly exposed in JavaScript bundles and GitHub repositories) and any HTTP client. The attacker injects a crafted Sentry error event carrying malicious instructions; when an AI coding agent (Claude Code, Cursor, GitHub Copilot Workspace, OpenAI Codex) retrieves pending error events via its Sentry MCP integration, it treats the injected event as a legitimate application error and executes attacker-controlled commands with the developer's own system privileges. Tenet achieved an 85% exploitation success rate across tested agents. Because the agent only executes actions it believes are authorized, the attack bypasses EDR, WAF, IAM controls, and VPN by design. Sentry's leadership acknowledged the issue but declined to fix it at the root, calling it "technically not defensible." At least 2,388 organizations had injectable Sentry DSNs discoverable at research time. Maps to T1059 (Command and Scripting Interpreter — via agent tool execution), T1195 (Supply Chain Compromise — compromising the agent's trusted-source model). Detection: monitor AI agent activity logs for Sentry MCP tool calls followed by shell execution or file writes; alert on agent processes spawning unexpected child processes. Hardening: disable Sentry MCP integration in AI coding agents until Sentry introduces event-signing; restrict Sentry DSN to server-side only (never in client-side JS bundles); audit GitHub repositories for exposed DSNs.
+    ch_eu_nexus: "Global; Agentjacking targets developer workstations; Swiss software-development organizations using Claude Code, Cursor, or Copilot in CI/CD are directly exposed"
+    public_sector_nexus: "indirect — developer toolchains in public-sector software development"
+    sector: "technology, software development"
+    cves: []
+    actors_campaigns_malware: ["Agentjacking"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Tenet Security achieved an 85% exploitation success rate across tested agents and identified at least 2,388 organizations with injectable Sentry DSNs. In tested configurations, the attack bypassed endpoint detection and response (EDR), web application firewalls, IAM controls, and VPN."
+        attribution: "The Hacker News (quoting Tenet Security research)"
+        source_url: "https://thehackernews.com/2026/06/agentjacking-attack-tricks-ai-coding.html"
+
+  - title: "UPDATE: ShinyHunters (UNC6240) Oracle PeopleSoft CVE-2026-35273 campaign — Mandiant/GTIG confirms zero-day exploitation from May 27, 100+ organizations notified, education sector 68% of victims"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/", publisher: "Google GTIG / Mandiant", date: "2026-06-11", role: "primary" }
+      - { url: "https://www.oracle.com/security-alerts/alert-cve-2026-35273.html", publisher: "Oracle PSIRT", date: "2026-06-10", role: "corroborating" }
+    discovery_trace: "first seen at: mandiant-gtig RSS feed → Google GTIG blog post, URL https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/ → corroborating: Oracle PSIRT https://www.oracle.com/security-alerts/alert-cve-2026-35273.html"
+    summary: |
+      Mandiant and Google GTIG published a comprehensive attribution report on June 11, formally attributing the Oracle PeopleSoft Environment Management Hub (PSEMHUB) exploitation campaign to UNC6240 (ShinyHunters). Activity ran from May 27 to June 9, 2026 — predating Oracle's June 10 advisory, confirming zero-day exploitation. GTIG proactively notified over 100 organizations whose IPs correlated with potentially vulnerable PSEMHUB endpoints; 68% operated in the higher education sector. The vulnerability (CVE-2026-35273, CVSS 9.8, CWE-306 Missing Authentication) allows unauthenticated RCE via the PSEMHUB HTTP endpoint at `https://<host>:8000/PSEMHUB/` — no credentials required when PSEMHUB is internet-accessible. CISA added this to KEV on June 12 with a 3-day BOD 26-04 remediation deadline (June 15). This is a material in-window update to the 2026-06-12 brief's initial coverage: GTIG's attribution, the 100+-org notification sweep, and the education-sector focus are all new information.
+    ch_eu_nexus: "Direct — Swiss universities and EU higher-education institutions running PeopleSoft ERP are squarely in the active targeting pattern"
+    public_sector_nexus: "direct"
+    sector: "education, public sector"
+    cves: [CVE-2026-35273]
+    actors_campaigns_malware: ["UNC6240", "ShinyHunters"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-12
+    evidence:
+      - quote: "Mandiant and Google Threat Intelligence Group (GTIG) have identified an active compromise and extortion campaign attributed to UNC6240 (ShinyHunters) targeting Oracle PeopleSoft application infrastructure. The activity was observed between May 27, 2026, and June 9, 2026 and is consistent with the exploitation of CVE-2026-35273... Because this activity predates Oracle's June 10, 2026 advisory, the vulnerability was exploited as a zero-day."
+        attribution: "Google GTIG / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/"
+
+cve_table:
+  - cve: CVE-2026-49261
+    product: "MariaDB Community/Enterprise Server (Galera)"
+    cvss: "10.0"
+    epss: "not yet available"
+    kev: "No"
+    exploited: "Unknown"
+    patch: "10.6.27 / 10.11.18 / 11.4.12 / 11.8.8 / Enterprise 11.8.6-4"
+    source: "https://mariadb.com/docs/server/security/cve/community-server"
+
+  - cve: CVE-2026-48558
+    product: "SimpleHelp RMM (OIDC auth)"
+    cvss: "9.5 (CVSS 4.0)"
+    epss: "0.0"
+    kev: "No"
+    exploited: "Unknown (research PoC published)"
+    patch: "SimpleHelp 5.5.16 / 6.0 GA (security update 2026-05)"
+    source: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+
+  - cve: CVE-2026-6552
+    product: "GitLab Enterprise Edition (Group SAML Identity API)"
+    cvss: "8.7"
+    epss: "not yet available"
+    kev: "No"
+    exploited: "No known ITW"
+    patch: "GitLab 19.0.2 / 18.11.5 / 18.10.8"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-0-2-released/"
+
+  - cve: CVE-2026-28277
+    product: "LangGraph (SQLite/Redis checkpointer)"
+    cvss: "6.8"
+    epss: "not yet available"
+    kev: "No"
+    exploited: "No known ITW (PoC published)"
+    patch: "langgraph >= 1.0.10; langgraph-checkpoint-sqlite >= 3.0.1"
+    source: "https://research.checkpoint.com/2026/from-sqli-to-rce-exploiting-langgraphs-checkpointer/"
+
+  - cve: CVE-2025-67644
+    product: "LangGraph SQLite checkpointer (get_state_history)"
+    cvss: "not yet public"
+    epss: "not yet available"
+    kev: "No"
+    exploited: "No known ITW (PoC published)"
+    patch: "langgraph-checkpoint-sqlite >= 3.0.1"
+    source: "https://research.checkpoint.com/2026/from-sqli-to-rce-exploiting-langgraphs-checkpointer/"
+
+  - cve: CVE-2026-35273
+    product: "Oracle PeopleSoft Enterprise PeopleTools (PSEMHUB)"
+    cvss: "9.8"
+    epss: "0.02"
+    kev: "Yes (added 2026-06-12, due 2026-06-15)"
+    exploited: "Yes — zero-day exploitation by UNC6240/ShinyHunters from 2026-05-27"
+    patch: "Oracle out-of-band patch (June 10, 2026)"
+    source: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit/"
+
+candidate_sources:
+  - id: tenet-security
+    publisher: "Tenet Security (tenetsecurity.ai)"
+    url: "https://tenetsecurity.ai/blog/"
+    category: research
+    why: "Produced the Agentjacking original research (June 2026); focused on AI agent security, a rapidly growing attack surface"
+  - id: horizon3-ai
+    publisher: "Horizon3.ai"
+    url: "https://horizon3.ai/attack-research/"
+    category: research
+    why: "Produced CVE-2026-48558 SimpleHelp original research with IOC disclosure; consistent primary-discovery vendor for RMM/enterprise tooling vulns"
+
+coverage_gaps:
+  - source_id: cisco-psirt
+    reason: "Cisco PSIRT RSS accessible; no new high-severity advisories in the 36h window beyond CVE-2026-20245 already covered June 12"
+  - source_id: watchtowr
+    reason: "watchTowr blog fetched via WebFetch; no new posts in window (last post June 10 on Ivanti Sentry already covered June 10)"
+  - source_id: sygnia-primary
+    reason: "Sygnia blog (sygnia.co) returned Imunify360 bot-protection 403; content surfaced via Wayback (no snapshot) and WebSearch corroborating. Item included with multi-source confidence from THN + WebSearch summaries."
+  - source_id: tenetsecurity-primary
+    reason: "Tenet Security blog (tenetsecurity.ai) returned Imunify360 bot-protection 403 on direct fetch; item sourced via THN and WebSearch corroboration. MULTI-SOURCE confidence maintained."
