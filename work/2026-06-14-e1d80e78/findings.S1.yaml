@@ -1,0 +1,283 @@
+# work/2026-06-14-e1d80e78/findings.S1.yaml
+domain: S1
+run_id: 2026-06-14-e1d80e78
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-14T04:08:42Z
+ended_at: 2026-06-14T05:15:00Z
+duration_seconds: 3978
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 16
+  bridge_fetches: 8
+
+items:
+  - title: "UPDATE: CVE-2026-10520 Ivanti Sentry MICS RCE — Backdoored Gateways Confirmed, CISA June 14 Patch Deadline"
+    sources:
+      - url: "https://securityaffairs.com/193530/hacking/cve-2026-10520-exploited-ivanti-sentry-gateways-compromised-shortly-after-patch-release.html"
+        publisher: "Security Affairs"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://securityaffairs.com/193557/security/u-s-cisa-adds-ivanti-sentry-flaw-to-its-known-exploited-vulnerabilities-catalog-and-urges-patching-by-june-14.html"
+        publisher: "Security Affairs"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://www.bleepingcomputer.com/news/security/cisa-gives-feds-3-days-to-patch-ivanti-flaw-exploited-in-attacks/"
+        publisher: "BleepingComputer"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://cert.europa.eu/publications/security-advisories/2026-008/"
+        publisher: "CERT-EU"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://www.helpnetsecurity.com/2026/06/10/ivanti-sentry-cve-2026-10520-cve-2026-10523/"
+        publisher: "Help Net Security"
+        date: "2026-06-10"
+        role: "background"
+    discovery_trace: "first seen at: cert-eu bridge (cert-eu recent), URL https://cert.europa.eu/publications/security-advisories/2026-008/ → pivot: Security Affairs exploitation article, URL https://securityaffairs.com/193530/hacking/cve-2026-10520-exploited-ivanti-sentry-gateways-compromised-shortly-after-patch-release.html → pivot: Security Affairs CISA KEV addition, URL https://securityaffairs.com/193557/security/u-s-cisa-adds-ivanti-sentry-flaw-to-its-known-exploited-vulnerabilities-catalog-and-urges-patching-by-june-14.html → primary: Ivanti advisory corroborated via CERT-EU 2026-008"
+    summary: |
+      CVE-2026-10520 (CVSS 10.0) is an OS command injection in Ivanti Sentry's Mobile Iron Core Services (MICS)
+      layer, reachable via unauthenticated HTTP POST to `/mics/api/v2/sentry/mics-config/handleMessage`
+      (ConfigServiceController). The vulnerability allows arbitrary command execution as root on the appliance
+      without authentication. Ivanti patched on June 10 (versions R10.5.2, R10.6.2, R10.7.1). Within 40 hours
+      of watchTowr publishing a proof-of-concept, Shadowserver Foundation confirmed active exploitation: at
+      least two of 19 then-exposed internet-facing instances had been backdoored. CISA added CVE-2026-10520 to
+      the KEV catalog on June 12 under BOD 26-04, issuing a three-day patch mandate to federal agencies
+      (deadline June 14 — today). A root-level compromise of Sentry yields unrestricted access to every
+      mailbox, calendar entry, and enterprise application the gateway brokers (Exchange ActiveSync, MobileIron,
+      etc.). CERT-EU issued advisory 2026-008 urging immediate upgrade. Technique class: T1190 Exploit
+      Public-Facing Application, T1505.003 Web Shell (post-exploitation). Affected: Sentry <= R10.5.1,
+      <= R10.6.1, <= R10.7.0; patched: R10.5.2, R10.6.2, R10.7.1. Prerequisite: network access to
+      MICS listener (TCP 443 or 8443 by default); no authentication required. Detection: web server access
+      logs on `/mics/api/v2/sentry/mics-config/handleMessage` with anomalous POST bodies; EDR alerts on
+      unexpected child processes spawned from the MICS Java process; Shadowserver exposure scanning.
+      Hardening: patch immediately; restrict MICS listener to known management IP ranges via host firewall;
+      audit for persistence artefacts (unexpected cron entries, SSH authorized_keys changes).
+    ch_eu_nexus: "direct — Ivanti Sentry is widely deployed by Swiss cantonal and federal agencies, and EU public sector as MDM gateway; CISA June 14 federal deadline; CERT-EU 2026-008"
+    public_sector_nexus: "direct"
+    sector: "government, healthcare, education, enterprise"
+    cves: [CVE-2026-10520]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-10
+    evidence:
+      - quote: "Shadowserver Foundation observed a large amount of Ivanti Sentry CVE-2026-10520 exploitation attempts based on the public PoC by watchTowr, and said that at least two of the 19 vulnerable instances they are seeing have been backdoored"
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/193530/hacking/cve-2026-10520-exploited-ivanti-sentry-gateways-compromised-shortly-after-patch-release.html"
+      - quote: "CISA adds Ivanti Sentry flaw to its Known Exploited Vulnerabilities catalog and urges patching by June 14"
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/193557/security/u-s-cisa-adds-ivanti-sentry-flaw-to-its-known-exploited-vulnerabilities-catalog-and-urges-patching-by-june-14.html"
+    extended_notes: |
+      The prior brief (2026-06-10) covered the Ivanti advisory and patch release. This is a material delta:
+      confirmed backdooring of internet-exposed gateways within 40h of PoC and the CISA KEV addition with
+      three-day mandate. CVE-2026-10523 (a second critical Sentry flaw patched the same day, CVSS 9.1,
+      auth-bypass in system API) is not KEV-listed and not separately covered here but warrants co-patching.
+
+  - title: "GreatXML Zero-Day: Nightmare Eclipse WinRE unattend.xml BitLocker Bypass — No CVE, No Patch"
+    sources:
+      - url: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+        publisher: "SecurityWeek"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://www.theregister.com/security/2026/06/11/nightmare-eclipse-drops-claimed-bitlocker-bypass-for-microsoft-windows/5254371"
+        publisher: "The Register"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/new-greatxml-exploit-bypasses-windows.html"
+        publisher: "The Hacker News"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://gbhackers.com/greatxml-zero-day-enables-bitlocker-bypass/"
+        publisher: "GBHackers"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('GreatXML BitLocker bypass Nightmare Eclipse June 2026') → primary: SecurityWeek article, URL https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/ → corroborating: The Register, URL https://www.theregister.com/security/2026/06/11/nightmare-eclipse-drops-claimed-bitlocker-bypass-for-microsoft-windows/5254371 → corroborating: The Hacker News, URL https://thehackernews.com/2026/06/new-greatxml-exploit-bypasses-windows.html"
+    summary: |
+      Nightmare Eclipse (also known as Chaotic Eclipse / MSNightmare) published a weaponised zero-day exploit
+      on June 11 dubbed GreatXML, the researcher's sixth or seventh Windows exploit release since April 2026.
+      The technique abuses a state artefact left in the Windows Recovery Environment (WinRE) partition after
+      any prior execution of Windows Defender Offline Scan. The exploit places a malicious `unattend.xml`
+      alongside a modified `Recovery\WindowsRE\ReAgent.xml` on the recovery partition; when the system next
+      boots into WinRE (e.g. via Shift+Restart), the unattended-setup interpreter runs with sufficient
+      privilege to spawn a shell that can read the BitLocker-encrypted OS volume without requiring the recovery
+      key. Prerequisite: (1) attacker has write access to the recovery partition (typically requiring prior
+      local OS-level access or physical presence), AND (2) the system must have previously run Windows Defender
+      Offline Scan (which is user-initiated or remotely triggered by an admin). This is distinct from
+      YellowKey (CVE-2026-45585, covered 2026-06-09), which used a different Defender Offline WinRE state
+      vector requiring physical access. No CVE has been assigned; Microsoft has not publicly acknowledged the
+      issue. No patch is available. Technique class: T1542.003 Bootkit (WinRE abuse), T1078.003 Local Accounts
+      (via unattended-setup shell), T1006 Direct Volume Access. Detection: Sysmon EventID 11 on write events
+      to `Recovery\WindowsRE\` and `unattend.xml`; Windows Event Log 4663 on SYSTEM writes to recovery
+      partition; EDR detections on `wpeinit.exe` / `setup.exe` spawning unexpected child processes in WinRE
+      context. Hardening: restrict write access to recovery partition from user-mode processes; audit Group
+      Policy for Defender Offline Scan enablement; consider disabling WinRE if not operationally required
+      (Manage-bde -protectors -disable or bcdedit /set {bootmgr} bootsequence off); monitor for
+      `reagentc` invocations. Affected: Windows 10 / 11 / Server 2019/2022 (unpatched).
+    ch_eu_nexus: "global; affects all Windows deployments including Swiss cantonal/federal endpoints; no patch available — direct defender relevance"
+    public_sector_nexus: "direct — Windows is the dominant endpoint OS in Swiss and EU public sector"
+    sector: "all"
+    cves: []
+    actors_campaigns_malware: ["Nightmare Eclipse", "Chaotic Eclipse"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The exploit works by replacing Recovery\\WindowsRE\\ReAgent.xml and placing unattend.xml in the WinRE partition. After rebooting to Windows Recovery Environment (WinRE) by holding Shift while clicking Restart, the result is a shell spawned with unrestricted access to the BitLocker volume"
+        attribution: "GBHackers"
+        source_url: "https://gbhackers.com/greatxml-zero-day-enables-bitlocker-bypass/"
+      - quote: "The disclosure has not yet been accompanied by an official CVE identifier or vendor advisory at the time of writing, and Microsoft has not publicly acknowledged the issue"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/new-greatxml-exploit-bypasses-windows.html"
+    extended_notes: |
+      Nightmare Eclipse has now released a series of high-impact Windows exploit disclosures since April 2026.
+      The YellowKey BitLocker bypass (CVE-2026-45585) was covered 2026-06-09. GreatXML is a separate vector
+      with no patch and no CVE — it warrants independent coverage. The Defender Offline Scan prerequisite is
+      non-trivial but realistic: domain admins commonly trigger Offline Scans on suspected endpoints,
+      and this could be weaponised post-initial-access to pre-stage for persistence or key recovery.
+
+  - title: "CVE-2026-47210: vm2 Node.js Sandbox Escape via WebAssembly JSPI Promise Species Bypass (CVSS 9.8)"
+    sources:
+      - url: "https://advisories.gitlab.com/npm/vm2/CVE-2026-47210/"
+        publisher: "GitLab Advisory Database (GLAD)"
+        date: "2026-06-12"
+        role: "primary"
+      - url: "https://github.com/patriksimek/vm2/security/advisories/GHSA-6j2x-vhqr-qr7q"
+        publisher: "GitHub Security Advisory"
+        date: "2026-05-29"
+        role: "corroborating"
+      - url: "https://www.heise.de/en/news/Node-js-Four-critical-security-gaps-with-maximum-rating-in-vm2-closed-11300471.html"
+        publisher: "Heise Security"
+        date: "2026-06-12"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('CVE-2026-47210 vm2 sandbox escape WebAssembly JSPI June 2026') → primary: GitLab Advisory Database, URL https://advisories.gitlab.com/npm/vm2/CVE-2026-47210/ → corroborating: GitHub advisory GHSA-6j2x-vhqr-qr7q"
+    summary: |
+      CVE-2026-47210 (CVSS 9.8, Critical) is a sandbox escape in the vm2 Node.js sandboxing library
+      (all versions before 3.11.4). The vulnerability exploits WebAssembly JavaScript Promise Integration
+      (JSPI): on runtimes exposing `WebAssembly.promising` / `WebAssembly.Suspending`, a JSPI-backed
+      Promise reaches `Promise.prototype.finally()` in a path that bypasses the Promise-species hardening
+      vm2 applies to prevent host-object leakage. The bypass exposes a host-originated rejection object to
+      attacker-controlled `Symbol.species` logic, which can then execute arbitrary code in the host Node.js
+      process, fully escaping the sandbox. CWE-913 (Improper Control of Dynamically-Managed Code Resources).
+      Attack path: unauthenticated if untrusted code is accepted (e.g. AI agent sandbox), no prior
+      foothold required beyond code submission. Fixed: vm2 3.11.4 (commit 6915fa4). GHSA-6j2x-vhqr-qr7q.
+      Technique: T1059.007 JavaScript, T1611 Escape to Host. Detection: monitor for vm2 < 3.11.4 in
+      software inventory / SCA scans; if vm2 is used to sandbox LLM-generated code or user-submitted scripts,
+      treat the vm2 process's host OS as potentially compromised. Hardening: upgrade to 3.11.4; consider
+      whether vm2 is architecturally appropriate as a security boundary for untrusted code (the library has
+      a long history of sandbox escapes — v8-sandbox or process-level isolation is stronger).
+    ch_eu_nexus: "global; particularly relevant for EU AI-system deployments using Node.js code-execution sandboxes; EU AI Act compliance tooling often uses vm2-class sandboxes for LLM code output evaluation"
+    public_sector_nexus: "indirect — affects public-sector development environments and AI tooling pipelines"
+    sector: "technology, AI/ML, government"
+    cves: [CVE-2026-47210]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A JSPI-backed Promise can reach Promise.prototype.finally() in a way that bypasses the expected Promise-species hardening and exposes a host-originated rejection object to attacker-controlled species logic, breaking the sandbox boundary"
+        attribution: "GitLab Advisory Database"
+        source_url: "https://advisories.gitlab.com/npm/vm2/CVE-2026-47210/"
+      - quote: "All versions before 3.11.4 — Fixed versions: 3.11.4 — CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        attribution: "GitLab Advisory Database"
+        source_url: "https://advisories.gitlab.com/npm/vm2/CVE-2026-47210/"
+    extended_notes: |
+      GitLab updated the advisory on June 12 (originally published May 29). The Heise Security piece
+      on June 12 summarises it alongside three other vm2 critical fixes in the same release cycle.
+      vm2 is particularly common in AI-agent execution environments (sandboxed LLM code evaluation).
+
+  - title: "CVE-2026-12183: BUK TS-G Gas Station Automation System Unauthenticated Admin Bypass (CVSS 9.3/9.8, OT/ICS)"
+    sources:
+      - url: "https://vulnerability.circl.lu/vuln/cve-2026-12183"
+        publisher: "CIRCL Vulnerability Lookup"
+        date: "2026-06-13"
+        role: "primary"
+      - url: "https://www.thehackerwire.com/nefteprodukttekhnika-buk-ts-g-improper-authentication-cve-2026-12183/"
+        publisher: "TheHackerWire"
+        date: "2026-06-13"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd bridge (enisa-euvd recent exploited), EUVD-2026-36653 → pivot: CIRCL Vulnerability Lookup, URL https://vulnerability.circl.lu/vuln/cve-2026-12183 → corroborating: TheHackerWire, URL https://www.thehackerwire.com/nefteprodukttekhnika-buk-ts-g-improper-authentication-cve-2026-12183/"
+    summary: |
+      CVE-2026-12183 (CVSS 4.0: 9.3 / CVSS 3.1: 9.8, Critical; CWE-287 Improper Authentication) is an
+      authentication bypass in the BUK TS-G gas station automation system by Nefteprodukttekhnika LLC,
+      affecting versions 2.9.1 through 2.10.2 on Linux. The login endpoint `/php/ajax-login.php` accepts
+      any arbitrary credentials and responds with `userid=1` (administrator role) for any HTTP POST with
+      `action=dologin&login=<any>&pwd=<any>`. Subsequent privileged endpoints `/php/ajax-main.php` and all
+      `/modules/*` paths do not validate server-side session state. An unauthenticated remote attacker can
+      therefore invoke any administrative action exposed by the configuration module — including reading and
+      modifying: fuel tank gauges and levels, fuel dispensers, relay controls, cash registers, bank
+      terminals, fuel card configurations, price and customer displays, cash collection, and pricing rules.
+      Public PoC published at github.com/ciprobe/bukts_auth_bypass. Assigned by TuranSec. No patch
+      announced as of June 14. ENISA EUVD EUVD-2026-36653. Technique: T1190 Exploit Public-Facing
+      Application, T1059.004 Unix Shell (via web API). Affected: 2.9.1 – 2.10.2 on Linux. Detection:
+      web access logs on `/php/ajax-login.php` POST requests with HTTP 200 responses from unknown source
+      IPs; OT network anomaly detection on unexpected write commands to dispensers/relays following web
+      API calls; IDS signature on `action=dologin` with any credential string. Hardening: restrict network
+      access to management interface (firewall to trusted admin subnets only); monitor for unauthorized
+      configuration changes via audit logs if available; contact vendor for patch status.
+    ch_eu_nexus: "EU/EEA energy sector — Russian-developed OT system for gas station automation; deployed across Eastern and Central Europe including EU member states; energy sector critical infrastructure"
+    public_sector_nexus: "indirect — critical infrastructure (energy/fuel sector)"
+    sector: "energy, OT/ICS"
+    cves: [CVE-2026-12183]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The /php/ajax-login.php endpoint, which responds with userid=1 (designating an administrator) to any HTTP POST request that supplies arbitrary credentials, such as action=dologin&login=&pwd="
+        attribution: "TheHackerWire"
+        source_url: "https://www.thehackerwire.com/nefteprodukttekhnika-buk-ts-g-improper-authentication-cve-2026-12183/"
+      - quote: "A remote unauthenticated attacker can invoke any administrative action exposed by the configuration module, including reading and modifying user rules, fuel tank gauges, fuel dispensers, relays, cash registers, bank terminals, fuel cards, price and customer displays, cash collection, and pricing rules"
+        attribution: "TheHackerWire"
+        source_url: "https://www.thehackerwire.com/nefteprodukttekhnika-buk-ts-g-improper-authentication-cve-2026-12183/"
+    extended_notes: |
+      ENISA EUVD lists this as EUVD-2026-36653, published 2026-06-13. The exploited flag in EUVD is
+      set (public PoC available). The assigner TuranSec is a Central Asian security firm (Uzbekistan).
+      The system is Russian-developed and may be deployed at fuel stations across CIS countries and
+      potentially EU bordering states. Confidence is MEDIUM rather than HIGH due to limited independent
+      secondary source coverage (TheHackerWire is a news aggregator with lower editorial scrutiny than
+      a CERT primary). The CIRCL Vulnerability Lookup entry corroborates the CVE metadata.
+
+cve_table:
+  - cve: CVE-2026-10520
+    product: "Ivanti Sentry (MDM gateway)"
+    cvss: "10.0"
+    epss: "N/A (KEV)"
+    kev: "YES — added 2026-06-12, deadline 2026-06-14"
+    exploited: "YES — backdoored gateways confirmed by Shadowserver"
+    patch: "R10.5.2 / R10.6.2 / R10.7.1 (2026-06-10)"
+    source: "https://securityaffairs.com/193530/hacking/cve-2026-10520-exploited-ivanti-sentry-gateways-compromised-shortly-after-patch-release.html"
+  - cve: "(no CVE — GreatXML)"
+    product: "Windows BitLocker / WinRE"
+    cvss: "N/A"
+    epss: "N/A"
+    kev: "NO"
+    exploited: "PoC public (Nightmare Eclipse)"
+    patch: "None"
+    source: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"
+  - cve: CVE-2026-47210
+    product: "vm2 Node.js sandbox (<3.11.4)"
+    cvss: "9.8"
+    epss: "N/A"
+    kev: "NO"
+    exploited: "PoC not publicly confirmed; critical severity"
+    patch: "vm2 3.11.4"
+    source: "https://advisories.gitlab.com/npm/vm2/CVE-2026-47210/"
+  - cve: CVE-2026-12183
+    product: "BUK TS-G Gas Station Automation System 2.9.1–2.10.2"
+    cvss: "9.8 (3.1) / 9.3 (4.0)"
+    epss: "N/A"
+    kev: "NO"
+    exploited: "PoC public (github.com/ciprobe/bukts_auth_bypass)"
+    patch: "None announced"
+    source: "https://vulnerability.circl.lu/vuln/cve-2026-12183"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge; bridge returned no body; WebSearch fallback used — no in-window Swiss-specific items identified beyond items already captured from primary sources"
+  - source_id: adobe-psirt
+    reason: "helpx.adobe.com/security/products/coldfusion/apsb26-64.html returned HTTP 503 on bridge and WebFetch; confirmed via WebSearch that APSB26-64 (ColdFusion, CVSS 9.6, CVE-2026-47928) was released 2026-06-09 — falls outside 36h window and was included in prior Patch Tuesday coverage (2026-06-12 brief)"
+  - source_id: cisco-psirt
+    reason: "tools.cisco.com/security/center/psirtrss20.xml returned HTTP 404; WebSearch for Cisco advisories June 13-14 found no material new items outside prior coverage"
