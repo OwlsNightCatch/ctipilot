@@ -1,0 +1,209 @@
+domain: S1
+run_id: 2026-06-15-d964affc
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: 2026-06-15T04:09:03Z
+ended_at: 2026-06-15T04:25:00Z
+duration_seconds: 957
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 12
+  bridge_fetches: 10
+
+items:
+  - title: "CVE-2026-20245 — Cisco Catalyst SD-WAN Manager: authenticated-to-root command injection actively exploited, no patch available (CISA KEV June 9)"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx", publisher: "Cisco PSIRT", date: "2026-06-04", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/06/05/cisco-sd-wan-cve-2026-20245-0-day-exploited/", publisher: "Help Net Security", date: "2026-06-05", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-20245", publisher: "NVD", date: "2026-06-04", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL (bridge output), CVE-2026-20245 added 2026-06-09 → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx → corroborating: Help Net Security, URL https://www.helpnetsecurity.com/2026/06/05/cisco-sd-wan-cve-2026-20245-0-day-exploited/"
+    summary: |
+      CVE-2026-20245 (CVSS 7.8, CWE-116) is a command-injection flaw in the CLI of Cisco Catalyst SD-WAN Manager (vManage), SD-WAN Controller (vSmart), and SD-WAN Validator (vBond). An attacker with netadmin privileges can upload a crafted file to the affected system and inject arbitrary OS commands that execute as root. No patch is available; CISA added it to the KEV catalog on June 9 with a June 23 remediation deadline. The attack chain requires initial access via netadmin credentials — obtainable either legitimately or by chaining it with two prior CVEs: CVE-2026-20182 (maximum-severity Cisco SD-WAN auth bypass, CVSS 10.0, CISA KEV) and CVE-2026-20127 (exploited since 2023). Cisco confirmed limited observed exploitation in which attackers pushed malicious configuration changes to all edge devices managed by a compromised SD-WAN Manager. The advisory instructs operators to run `request admin-tech` on all SD-WAN control components before upgrading to preserve forensic artefacts, and to treat any upgraded instance showing exploitation indicators as still compromised until TAC-guided remediation is complete. Detection focus: unusual SD-WAN CLI file-upload events, unexpected configuration distribution events from the vManage REST API (POST `/dataservice/template/config/commit`), and audit log entries showing command execution under the system-level `root` account on SD-WAN control components.
+    ch_eu_nexus: "Global; Cisco SD-WAN is widely deployed in Swiss cantonal/federal network infrastructure and across EU public-sector WAN estates; exploitation of this chain pushes malicious policy to all managed SD-WAN edge devices"
+    public_sector_nexus: "direct — SD-WAN underpins public-sector WAN infrastructure"
+    sector: "government, telco, critical infrastructure"
+    cves: [CVE-2026-20245, CVE-2026-20182, CVE-2026-20127]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker could exploit this vulnerability by uploading a crafted file to the affected system. A successful exploit could allow the attacker to perform command injection attacks on an affected system and elevate their privileges as the root user."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+      - quote: "Cisco has observed limited cases where the exploitation of this bug resulted in a configuration change pushed to edge devices."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+      - quote: "To exploit this vulnerability, the attacker must have netadmin privileges on the affected system. This would require valid credentials or exploitation of CVE-2026-20182 or CVE-2026-20127."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+
+  - title: "CVE-2026-45447 — OpenSSL heap use-after-free in PKCS7_verify() allows RCE via crafted PKCS#7/S/MIME messages"
+    sources:
+      - { url: "https://openssl-library.org/news/secadv/20260609.txt", publisher: "OpenSSL Project", date: "2026-06-09", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-45447", publisher: "NVD", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: cert-fr avis-recent bridge (CERTFR-2026-AVI-0717, Multiples vulnérabilités dans OpenSSL 10 juin 2026) → primary: OpenSSL Project security advisory, URL https://openssl-library.org/news/secadv/20260609.txt"
+    summary: |
+      CVE-2026-45447 (CVSS 8.8 HIGH per CISA-ADP, CWE-416 use-after-free) is a heap use-after-free in `PKCS7_verify()` introduced when an attacker presents a PKCS#7 or S/MIME signed message whose `SignedData.digestAlgorithms` field is an empty ASN.1 SET. OpenSSL incorrectly frees a BIO object owned by the calling application; a subsequent `BIO_free()` call from that application produces a use-after-free. Depending on allocator behaviour and how the calling application reuses heap memory, the outcome ranges from crash to heap corruption to remote code execution. Applications using the older PKCS#7 API are affected; those that have migrated to the newer CMS API are not. All major OpenSSL branches are affected: 4.0, 3.6, 3.5, 3.4, 3.0, 1.1.1, and 1.0.2. Fixes: 4.0.1, 3.6.3, 3.5.7, 3.4.6, 3.0.21, 1.1.1zh (premium support), 1.0.2zq (premium support). A second advisory-co-issue, CVE-2026-34182, is a moderate-severity CMS AuthEnvelopedData integrity-bypass. The flaw affects any application that calls PKCS7_verify() on attacker-controlled signed messages, including email gateways, document processors, VPN endpoints, and web services performing S/MIME signature validation. No public exploitation reported at time of advisory; the FIPS module boundary is not crossed, so FIPS-validated deployments are not affected by the approved-algorithm boundary, but are still affected for non-FIPS code paths. Detection: heap-allocation anomaly telemetry around OpenSSL symbol `PKCS7_verify`; crash reports from mail or document processing services; unexpected process exits in services handling S/MIME or PKCS#7.
+    ch_eu_nexus: "Global; OpenSSL is pervasive in Swiss and EU government web services, email gateways, VPN infrastructure, and document-signing workflows"
+    public_sector_nexus: "indirect — any government service processing S/MIME-signed emails or documents via the PKCS#7 API is in scope"
+    sector: "all sectors"
+    cves: [CVE-2026-45447, CVE-2026-34182]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A specially crafted PKCS#7 or S/MIME signed message could trigger a use-after-free during PKCS#7 signature verification."
+        attribution: "OpenSSL Project"
+        source_url: "https://openssl-library.org/news/secadv/20260609.txt"
+      - quote: "A use-after-free may result in process crashes, heap corruption, or potentially remote code execution."
+        attribution: "OpenSSL Project"
+        source_url: "https://openssl-library.org/news/secadv/20260609.txt"
+      - quote: "Applications using the CMS APIs for this processing are not affected."
+        attribution: "OpenSSL Project"
+        source_url: "https://openssl-library.org/news/secadv/20260609.txt"
+
+  - title: "CVE-2026-47928 — Adobe ColdFusion: unauthenticated improper input validation RCE (CVSS 9.6 Critical), no user interaction required"
+    sources:
+      - { url: "https://helpx.adobe.com/security/products/coldfusion/apsb26-64.html", publisher: "Adobe PSIRT", date: "2026-06-09", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-47928", publisher: "NVD", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: cert-fr avis-recent bridge (Multiples vulnérabilités dans les produits Adobe, 10 juin 2026) → WebSearch for CVE-2026-47928 → primary: Adobe PSIRT APSB26-64, URL https://helpx.adobe.com/security/products/coldfusion/apsb26-64.html → corroborating: NVD"
+    summary: |
+      CVE-2026-47928 (CVSS 9.6 Critical, CWE-20 Improper Input Validation, APSB26-64) is an unauthenticated remote code execution vulnerability in Adobe ColdFusion affecting versions 2023.19 and earlier, and 2025.8 and earlier. No user interaction is required; the scope change marker in the CVSS vector (S:C, AV:A) indicates exploitation can cross a security boundary — likely meaning that a successful attack on a ColdFusion server can affect the underlying host environment. Patches: ColdFusion 2023 Update 20 and ColdFusion 2025 Update 9, both released June 9, 2026. A co-disclosed path-traversal CVE-2026-47932 (CVSS 8.8) in the same advisory set allows security-feature bypass after opening a malicious file. ColdFusion is widely deployed in government and education portals across Europe; Switzerland's federal and cantonal web presence includes ColdFusion-backed services. Adobe recommends applying the June 9 updates immediately and following the guidance in the ColdFusion Update Technical Notes for hardening serial exposure (`allowedAdminHosts`, `enablerobustr` exception output, and Admin Console binding restrictions). Detection: web-server access logs for unexpected HTTP POST to ColdFusion-specific endpoints; process-tree anomalies showing ColdFusion JVM forking OS processes.
+    ch_eu_nexus: "Direct — ColdFusion used in Swiss/EU government and education portals; APSB26-64 scope-change CVSS vector indicates host-level impact"
+    public_sector_nexus: "direct — government/education sector deployments at risk"
+    sector: "government, education, healthcare"
+    cves: [CVE-2026-47928, CVE-2026-47932]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ColdFusion versions 2023.19, 2025.8 and earlier are affected by an Improper Input Validation vulnerability that could result in arbitrary code execution in the context of the current user."
+        attribution: "Adobe PSIRT (APSB26-64)"
+        source_url: "https://helpx.adobe.com/security/products/coldfusion/apsb26-64.html"
+      - quote: "CVSS 3.1 base score of 9.6 (CRITICAL) with vector: CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+        attribution: "NVD / Adobe"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-47928"
+
+  - title: "CVE-2026-6552 — GitLab EE Group SAML identity management account takeover (CVSS 8.7): Group Owner can hijack any group member's account"
+    sources:
+      - { url: "https://about.gitlab.com/releases/2026/06/10/patch-release-gitlab-19-0-2-released/", publisher: "GitLab", date: "2026-06-10", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-6552", publisher: "NVD", date: "2026-06-10", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0196", publisher: "NCSC-NL", date: "2026-06-12", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl recent bridge, NCSC-2026-0196 GitLab EE Kwetsbaarheden 12 Jun 2026 → WebSearch for CVE-2026-6552 → primary: GitLab patch release notes 19.0.2/18.11.5/18.10.8, URL https://about.gitlab.com/releases/2026/06/10/patch-release-gitlab-19-0-2-released/ → corroborating: NVD"
+    summary: |
+      CVE-2026-6552 (CVSS 8.7, CWE-284 Improper Access Control) is an improper access control flaw in GitLab Enterprise Edition's Group SAML Identity API. An authenticated user with the Group Owner role in a GitLab EE instance that uses Group SAML for identity federation can abuse authorization weaknesses in the SAML identity management workflow to fully take over any other group member's GitLab account — without requiring the victim's credentials. Affected: GitLab EE 15.5.0 through 18.10.7, 18.11.0 through 18.11.4, and 19.0.0 through 19.0.1. Fixed: 19.0.2, 18.11.5, 18.10.8 (released June 10, 2026). The same patch set fixes approximately 12 additional issues: two CVSS 8.7 issues enabling account takeover or browser-side XSS, an SSRF in repository-import URL validation that allows reading files on the Gitaly server and probing internal network resources (no CVE in this listing), and unauthenticated DoS against CI/CD and Duo Workflows APIs. Group SAML is often used by large enterprises and EU public-sector organisations to federate GitLab access through their IdP (Entra ID, Okta, etc.); a malicious Group Owner with a legitimate role — or a compromised Group Owner session — can use this to silently escalate to any member's account, including developers, pipeline runners, and maintainers with merge-request approval authority. Detection: GitLab audit events for SAML identity-link changes not initiated by the affected user; unusual admin-level activity following a Group Owner session; review `gitlab-rails` audit logs for `group_saml_identity_updated` events from unexpected actor_id values.
+    ch_eu_nexus: "Direct — GitLab is the primary DevSecOps platform in many Swiss federal and EU public-sector environments; Group SAML federation is standard for large tenants"
+    public_sector_nexus: "direct — government and education sector DevOps pipelines"
+    sector: "government, technology, education"
+    cves: [CVE-2026-6552]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authenticated user with the Group Owner role could take over another member's GitLab account by abusing authorization weaknesses in the Group SAML identity management workflow."
+        attribution: "NVD / GitLab"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-6552"
+      - quote: "CVE-2026-6552 affects GitLab EE versions 15.5.0 through 18.10.7, 18.11.0 through 18.11.4, and 19.0.0 through 19.0.1"
+        attribution: "NVD"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-6552"
+
+  - title: "UPDATE: CVE-2026-20253 — Splunk Enterprise PostgreSQL sidecar: watchTowr publishes full pre-auth RCE chain (June 13), elevating from file-write to code execution"
+    sources:
+      - { url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/", publisher: "watchTowr Labs", date: "2026-06-12", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/critical-splunk-enterprise-flaw-lets.html", publisher: "The Hacker News", date: "2026-06-13", role: "corroborating" }
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-0603", publisher: "Splunk PSIRT", date: "2026-06-10", role: "corroborating" }
+    discovery_trace: "previously covered 2026-06-14 as file-write only → fresh development: watchTowr published full RCE chain June 12 2026 → first seen in: THN feed item 'Critical Splunk Enterprise Flaw Lets Attackers Run Code Without Authentication' 13 Jun 2026 → primary: watchTowr Labs, URL https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+    summary: |
+      Splunk patched CVE-2026-20253 (CVSS 9.8, CWE-306 Missing Authentication) on June 10; the original Splunk advisory described it as unauthenticated arbitrary file creation/truncation. watchTowr Labs published a full technical analysis on June 12-13 confirming the flaw is a complete pre-authentication RCE chain. The vulnerable surface is the PostgreSQL Sidecar Service's HTTP API at `/v1/postgres/recovery/backup` and `/v1/postgres/recovery/restore`, which are exposed through Splunk Enterprise's main reverse-proxy without any authentication gate. The RCE chain: (1) use the `/backup` endpoint to dump an attacker-controlled PostgreSQL database to a path under Splunk's install directory; (2) use the `/restore` endpoint to trigger execution of attacker-controlled SQL commands via the Splunk-managed PostgreSQL binary, achieving arbitrary file writes on disk; (3) leverage the file-write primitive to plant a web shell, malicious Splunk app, or overwrite a startup script. The exposure is most severe on AWS-hosted Splunk Enterprise 10.0.0–10.0.6 and 10.2.0–10.2.3, where the PostgreSQL Sidecar is installed and enabled by default. watchTowr also released a Detection Artifact Generator (DAG) that probes whether the `/v1/postgres/recovery/backup` endpoint accepts unauthenticated requests (HTTP 400 = vulnerable; HTTP 401 = patched). Fix: upgrade to Splunk Enterprise 10.0.7 or 10.2.4. Detection beyond the DAG probe: Splunk internal audit logs for unexpected calls to the `recovery/backup` or `recovery/restore` endpoints; network-layer monitoring for unauthenticated HTTP POST to those paths from external IPs; file-system integrity monitoring for new `*.py` or `*.conf` files under `$SPLUNK_HOME/etc/apps/` introduced without a corresponding Splunk app install event.
+    ch_eu_nexus: "Direct — Splunk Enterprise is the predominant SIEM/log-analytics platform in Swiss and EU SOCs, including public-sector security operations centres"
+    public_sector_nexus: "direct — Splunk is widely deployed as the SIEM backbone in Swiss cantonal and federal SOCs"
+    sector: "government, financial, technology"
+    cves: [CVE-2026-20253]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-14"
+    evidence:
+      - quote: "The root cause lies in the PostgreSQL Sidecar Service's HTTP API endpoints specifically /v1/postgres/recovery/backup and /v1/postgres/recovery/restore which lack any authentication controls."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+      - quote: "It has everything that we love: No authentication requirements, An almost full-mark CVSS score, Claims to be a security product"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+
+  - title: "INTERPOL Operation Ramz dismantles SniperDz PhaaS — 201 arrests, administrator arrested in Algeria, Group-IB provided intelligence"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/interpol-takes-down-sniper-dz-phishing.html", publisher: "The Hacker News", date: "2026-06-12", role: "primary" }
+      - { url: "https://www.group-ib.com/media-center/press-releases/sniperdz-investigation/", publisher: "Group-IB", date: "2026-06-11", role: "primary" }
+    discovery_trace: "first seen at: THN feed item 'INTERPOL Operation Takes Down Sniper Dz Phishing Platform, Arrests Administrator' 12 Jun 2026 → WebSearch for INTERPOL SniperDz → primary: THN article + Group-IB press release"
+    summary: |
+      INTERPOL's Operation Ramz, running October 2025 to February 2026 across 13 MENA-region countries, culminated in the arrest of the primary developer and administrator of SniperDz, a phishing-as-a-service platform active since 2015 and rebranded over time as Joker Dz, Storm Dz, and Spam Dz. Results announced June 11-12: 201 arrests, 53 servers seized, 3,867 victims and 382 suspects identified across the operation. SniperDz provided 80 ready-made phishing templates for free, collected 45,000+ victim credential records, and operated across 20,000+ domains. Group-IB was a primary intelligence partner for the takedown. The platform's free-tier model lowered the barrier to credential phishing for thousands of low-sophistication threat actors, including those targeting Swiss and European financial services and government portals. The arrest in Algeria removes the platform operator; the infrastructure and templates have been seized. Defenders: check network proxy and authentication logs for SniperDz-generated phishing domains (common pattern: portal-<brand>-secure-login.<tld>); review identity-provider logs for credential-stuffing bursts correlated with SniperDz campaign dates; phishing awareness training should address brand-impersonation credential-harvest pages that bypass MFA through session-cookie theft.
+    ch_eu_nexus: "Direct — SniperDz targeted European and Swiss organisations; INTERPOL led the operation with MENA-region partners"
+    public_sector_nexus: "indirect — credential-phishing platforms target government portal users"
+    sector: "financial, government, education"
+    cves: []
+    actors_campaigns_malware: ["SniperDz", "Joker Dz", "Storm Dz", "Spam Dz"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "INTERPOL-led Operation Ramz disrupted Sniper Dz, a free phishing-as-a-service platform active since 2015 with 45,000 victim records and 20,000+ domains"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/interpol-takes-down-sniper-dz-phishing.html"
+      - quote: "Group-IB investigation helped INTERPOL and Algerian authorities dismantle SniperDz, a nine-year Phishing-as-a-Service Platform"
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/media-center/press-releases/sniperdz-investigation/"
+
+cve_table:
+  - cve: CVE-2026-20245
+    product: "Cisco Catalyst SD-WAN Manager / Controller / Validator"
+    cvss: "7.8"
+    epss: ""
+    kev: "Yes (2026-06-09)"
+    exploited: "Yes — limited confirmed cases; config push to edge devices"
+    patch: "No patch available as of 2026-06-15; collect forensics before upgrade once available"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+  - cve: CVE-2026-45447
+    product: "OpenSSL 4.0 / 3.6 / 3.5 / 3.4 / 3.0 / 1.1.1 / 1.0.2 (PKCS7 API users)"
+    cvss: "8.8"
+    epss: ""
+    kev: "No"
+    exploited: "No public exploitation reported"
+    patch: "4.0.1 / 3.6.3 / 3.5.7 / 3.4.6 / 3.0.21 / 1.1.1zh / 1.0.2zq"
+    source: "https://openssl-library.org/news/secadv/20260609.txt"
+  - cve: CVE-2026-47928
+    product: "Adobe ColdFusion 2023 ≤ 2023.19, 2025 ≤ 2025.8"
+    cvss: "9.6"
+    epss: ""
+    kev: "No"
+    exploited: "No confirmed exploitation reported"
+    patch: "ColdFusion 2023 Update 20; ColdFusion 2025 Update 9 (2026-06-09)"
+    source: "https://helpx.adobe.com/security/products/coldfusion/apsb26-64.html"
+  - cve: CVE-2026-6552
+    product: "GitLab EE 15.5.0 – 18.10.7 / 18.11.0–18.11.4 / 19.0.0–19.0.1"
+    cvss: "8.7"
+    epss: ""
+    kev: "No"
+    exploited: "No confirmed exploitation reported"
+    patch: "19.0.2 / 18.11.5 / 18.10.8 (2026-06-10)"
+    source: "https://about.gitlab.com/releases/2026/06/10/patch-release-gitlab-19-0-2-released/"
+  - cve: CVE-2026-20253
+    product: "Splunk Enterprise 10.0.0–10.0.6 / 10.2.0–10.2.3"
+    cvss: "9.8"
+    epss: ""
+    kev: "No"
+    exploited: "PoC public (watchTowr DAG + RCE chain, 2026-06-12)"
+    patch: "10.0.7 / 10.2.4 (2026-06-10)"
+    source: "https://labs.watchtowr.com/why-use-app-level-auth-when-every-database-has-auth-splunk-enterprise-cve-2026-20253-pre-auth-rce/"
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "NCSC-CH Security Hub shows no new posts since 2026-06-12; latest ID 12627 (MariaDB CVE-2026-49261) already covered in prior brief 2026-W24."
+  - source_id: cert-fr
+    reason: "CERT-FR avis feed last entry 2026-06-10; no new in-window advisories covering new CVEs not already in prior coverage."
+  - source_id: bsi-de
+    reason: "BSI WID feed last entry 2026-06-12; all items were previously covered CVEs or below coverage threshold (medium severity without exploitation)."
