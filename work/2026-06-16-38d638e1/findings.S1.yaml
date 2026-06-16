@@ -1,0 +1,261 @@
+# work/2026-06-16-38d638e1/findings.S1.yaml
+domain: S1
+run_id: 2026-06-16-38d638e1
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-16T04:07:36Z
+ended_at: 2026-06-16T04:15:25Z
+duration_seconds: 469
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 13
+  bridge_fetches: 8
+
+items:
+  - title: "CVE-2026-20262 — Cisco Catalyst SD-WAN Manager: authenticated path traversal to root-level RCE, added to CISA KEV 2026-06-15"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/", publisher: "BleepingComputer", date: "2026-06-15", role: "primary" }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ", publisher: "Cisco PSIRT", date: "2026-06-15", role: "corroborating" }
+      - { url: "https://www.theregister.com/patches/2026/06/15/cisco-sd-wan-make-me-root-bug-under-attack/5255916", publisher: "The Register", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, dateAdded=2026-06-15 → pivot: BleepingComputer article URL https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/ → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+    summary: |
+      CVE-2026-20262 (CWE-22, CVSS 6.5 per NVD but rated higher by Cisco given privilege-escalation chain) is a path traversal flaw in the Cisco Catalyst SD-WAN Manager web UI affecting all deployment types (on-premises, Cloud-Pro, Cloud Managed, FedRAMP). The vulnerable endpoint fails to validate user-supplied filenames during HTTP file upload, allowing an attacker with valid lower-privileged (single-task) credentials to create or overwrite any file on the underlying OS — including JSP/WAR files in the Tomcat deploy directory that yield a web shell or full root RCE. Cisco PSIRT confirmed active exploitation in June 2026 and recommended checking serviceproxy-access logs and vmanage-appserver logs for attempted index.jsp / .war uploads. CISA added it on 15 June with a BOD 26-04 remediation deadline of 29 June 2026. Patched versions: 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2. This is the latest in a series of Cisco SD-WAN exploited vulnerabilities traced to the UAT-8616 cluster (and other threat groups) since early 2026 — defenders should treat any SD-WAN Manager as a high-priority patching target even in environments that think initial access was contained.
+    ch_eu_nexus: "global; SD-WAN Manager is deployed in EU public-sector WAN environments and Swiss federal network infrastructure"
+    public_sector_nexus: "indirect — SD-WAN infrastructure used by public-sector ISPs and government WANs"
+    sector: "telco, public-sector, government"
+    cves: [CVE-2026-20262]
+    actors_campaigns_malware: ["UAT-8616"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cisco Catalyst SD-WAN Manager contains a directory or path traversal vulnerability that could allow an authenticated, remote attacker to create a file or overwrite any file on the filesystem of an affected system."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+      - quote: "The vulnerability stems from insufficient validation of user-supplied input during file uploads, permitting authenticated remote attackers to execute arbitrary commands with root privileges."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1505.003 (Web Shell), T1068 (Exploitation for Privilege Escalation).
+      Detection: Check vmanage-server, vmanage-appserver, and serviceproxy-access logs for POST requests uploading `.jsp` or `.war` files. EDR: look for Tomcat process spawning unexpected child processes. Network: unexpected outbound connections from the SD-WAN Manager VM.
+      Hardening: Restrict management access to the SD-WAN Manager web UI to dedicated admin networks. Apply patches immediately. Review admin account audit logs for single-task user activity.
+
+  - title: "CVE-2026-54420 — LiteSpeed cPanel Plugin: symlink following privilege escalation on shared hosting servers, CISA KEV 2026-06-15"
+    sources:
+      - { url: "https://blog.litespeedtech.com/2026/06/01/security-update-for-litespeed-cpanel-plugin-2/", publisher: "LiteSpeed Technologies", date: "2026-06-01", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-54420", publisher: "NVD/MITRE", date: "2026-06-14", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, dateAdded=2026-06-15 → pivot: LiteSpeed vendor blog, URL https://blog.litespeedtech.com/2026/06/01/security-update-for-litespeed-cpanel-plugin-2/ → NVD entry https://nvd.nist.gov/vuln/detail/CVE-2026-54420"
+    summary: |
+      CVE-2026-54420 (CWE-61, CVSS 8.5 per MITRE) affects the LiteSpeed cPanel Plugin before v2.4.8 as distributed in LiteSpeed WHM Plugin before v5.3.2.0, running on shared hosting servers with CloudLinux/CageFS isolation. When the plugin processes user-supplied symlinks created via FTP or an existing web shell, it follows them outside the CageFS jail, allowing the attacker to read or overwrite root-owned files — effectively breaking the shared-hosting isolation layer and enabling full server compromise from a single-tenant foothold. Active exploitation was observed in May 2026 (per NVD description). LiteSpeed issued the patch on 1 June, and CISA added it to KEV on 15 June with a 3-day BOD 26-04 deadline (18 June 2026). Swiss hosting providers and European shared-hosting operators running LiteSpeed on cPanel/WHM infrastructure should verify their WHM Plugin version immediately. Scope is hosting-provider shared infrastructure — not directly a public-sector IT product but affects public-facing web infrastructure of government agencies and SMEs.
+    ch_eu_nexus: "shared hosting operators across CH/EU; affects any hosting provider running LiteSpeed on cPanel/WHM with CloudLinux/CageFS"
+    public_sector_nexus: "indirect — government agency web presences on third-party shared hosting could be pivoted from"
+    sector: "hosting, web infrastructure"
+    cves: [CVE-2026-54420]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "LiteSpeed cPanel plugin before 2.4.8 (as distributed in LiteSpeed WHM PlugIn before 5.3.2.0) mishandles symlinks provided by a user with FTP or web shell access on a shared hosting server running CloudLinux/CageFS, as exploited in the wild in May 2026."
+        attribution: "NVD/MITRE"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-54420"
+      - quote: "The flaw allows users with FTP or web shell access to escalate privileges to root on shared hosting servers running CloudLinux/CageFS and is being actively exploited."
+        attribution: "LiteSpeed Technologies"
+        source_url: "https://blog.litespeedtech.com/2026/06/01/security-update-for-litespeed-cpanel-plugin-2/"
+    extended_notes: |
+      MITRE ATT&CK: T1068 (Exploitation for Privilege Escalation), T1190.
+      Detection: Audit symlink creation activity under customer FTP/web-shell directories. Look for file access events to `/etc/passwd`, `/etc/shadow`, SSH authorized_keys, or web-server config files from a uid other than root. CageFS escape detections should alert on cross-tenant file access.
+      Hardening: Upgrade WHM Plugin to 5.3.2.1 or later. If upgrade is not immediately possible, temporarily uninstall the plugin per vendor guidance.
+
+  - title: "Awesome Motive CDN supply-chain compromise — malicious JavaScript injected into OptinMonster, TrustPulse, and PushEngage plugins (1.2M+ WordPress sites)"
+    sources:
+      - { url: "https://sansec.io/research/optinmonster-supply-chain-attack", publisher: "Sansec", date: "2026-06-13", role: "primary" }
+      - { url: "https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/", publisher: "Patchstack", date: "2026-06-15", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/optinmonster-wordpress-plugin-hacked-in-cdn-supply-chain-attack/", publisher: "BleepingComputer", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('WordPress supply chain attack PushEngage OptinMonster June 15 2026') → pivot: Patchstack article https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/ → primary: Sansec https://sansec.io/research/optinmonster-supply-chain-attack"
+    summary: |
+      Attackers exploited CVE-2026-10795 (UpdraftPlus authentication bypass, CVSS 8.1) to compromise Awesome Motive's marketing website and steal CDN API keys for BunnyNet. Using these keys, they injected malicious JavaScript into five CDN-served script files backing OptinMonster, TrustPulse, and PushEngage — three plugins with a combined install base exceeding 1.2 million WordPress sites. The payload executed client-side in any logged-in WordPress administrator's browser session, harvesting authentication nonces and using them to: (a) create a hidden admin account with username prefix `dev_xxxxxx`, and (b) silently install a self-hiding backdoor plugin ("Content Delivery Helper" or "Database Optimizer") with web shell capabilities and C2 pointing to `tidio.cc` (AS214036, Ultahost). Attack window: 22:17–22:42 UTC 13 June (OptinMonster/TrustPulse) and until 19:02 UTC 14 June (PushEngage). Patchstack blocked 271 exploitation attempts across 13 sites within 36 hours. Organisations running any of these three plugins should audit WordPress admin accounts created after 13 June UTC and review installed plugins for unexpected entries.
+    ch_eu_nexus: "global impact; Swiss and EU government/municipal websites running WordPress at scale are directly at risk if using these plugins"
+    public_sector_nexus: "direct — government, municipal, and public-institution WordPress CMS deployments are common targets"
+    sector: "public-sector, media, education, web"
+    cves: [CVE-2026-10795]
+    actors_campaigns_malware: ["Content Delivery Helper (backdoor)", "Database Optimizer (backdoor)", "WPM File Manager & Shell"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers exploited a vulnerability in UpdraftPlus on OptinMonster's marketing infrastructure to obtain CDN API credentials, then injected malicious JavaScript into five vendor CDN endpoints serving over 1.2 million WordPress sites."
+        attribution: "Patchstack"
+        source_url: "https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/"
+      - quote: "The malware creates backdoor admin accounts and installs self-hiding plugins that provide remote code execution capabilities. The attack vector exploited a vulnerability in UpdraftPlus to steal CDN API credentials."
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/optinmonster-supply-chain-attack"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 (Supply Chain Compromise — Software Supply Chain), T1098.001 (Account Manipulation — Additional Cloud Credentials), T1505.003 (Web Shell), T1059.007 (JavaScript).
+      Detection: Review WordPress user accounts for `dev_` prefixed accounts created after 13 June UTC. Check installed plugins for "Content Delivery Helper" or "Database Optimizer" entries. Monitor for unauthorised plugin activations (wp-admin audit log). Review server access logs for POST requests from unfamiliar admin sessions.
+      Hardening: Update UpdraftPlus to 1.26.5+. Deactivate/remove OptinMonster, TrustPulse, or PushEngage and reinstall from WordPress.org once the vendor confirms clean versions. Enable file-integrity monitoring on wp-content/plugins/.
+
+  - title: "UNC6508 (PRC) espionage campaign: INFINITERED malware deployed via REDCap servers, Google Workspace content compliance rules abused for silent email exfiltration"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research", publisher: "Google GTIG / Mandiant", date: "2026-06-15", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/chinese-hackers-abused-google-workspace.html", publisher: "The Hacker News", date: "2026-06-15", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/chinese-hackers-breach-redcap-servers-steal-medical-research/", publisher: "BleepingComputer", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: feed TheHackersNews (2026-06-16) title 'Chinese Hackers Abused Google Workspace Rules...' → pivot: THN article https://thehackernews.com/2026/06/chinese-hackers-abused-google-workspace.html → primary: Google GTIG blog https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research"
+    summary: |
+      Google Threat Intelligence Group (GTIG) and Mandiant disclosed a multi-year espionage campaign by UNC6508, a PRC-nexus threat actor, targeting North American academic, medical, and military research institutions from at least September 2023 through November 2025. Initial access exploited externally-reachable REDCap (Research Electronic Data Capture) servers — a widely-used open-source clinical data platform. The threat actor deployed INFINITERED, a custom multi-stage malware comprising a dropper, credential harvester, and persistent backdoor that hijacks REDCap's legitimate upgrade mechanism to survive updates. After pivoting to domain admin via harvested credentials, UNC6508 abused a legitimate Google Workspace "content compliance rules" feature (T1689 — Downgrade Attack used to persist) to create a rule named "Patriot" that silently BCCs any email matching ~150 keywords (AI, uncrewed vehicle systems, cyber, medical R&D terms) to an attacker-controlled Gmail account (`BebitaBarefoot774@gmail.com`). Campaign priorities aligned with PRC strategic intelligence requirements including AI, defensive systems, and medical R&D. YARA rules and a unique database GUID (`b49e334d-9c01-463e-9bc5-00a6920fb66e`) are published for detection.
+    ch_eu_nexus: "EU/Swiss research institutions and universities using REDCap for clinical data collection are exposed; Google Workspace is pervasive across CH/EU academic and government tenants"
+    public_sector_nexus: "direct — universities, national research institutions, medical research agencies are the target class"
+    sector: "education, healthcare, defense, public-sector"
+    cves: []
+    actors_campaigns_malware: ["UNC6508", "INFINITERED"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "UNC6508 exploited externally-facing REDCap servers and deployed custom malware named INFINITERED to harvest login credentials. After remaining undetected for over a year, UNC6508 pivoted to internal systems using compromised credentials and abused Google Workspace content compliance rules to silently BCC-forward sensitive emails to a threat actor-controlled Gmail account."
+        attribution: "Google GTIG / Mandiant"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application — REDCap), T1003 (Credential Dumping), T1078 (Valid Accounts), T1566 (Phishing), T1114.003 (Email Collection — Email Forwarding Rules).
+      Detection: Hunt for Google Workspace Admin Audit Logs showing new content compliance rules creation from unrecognised admin accounts. Investigate REDCap server logs for web shell (`help.php`) activity or unexpected process spawns from the REDCap application process. YARA signatures for INFINITERED's unique GUID (`b49e334d-9c01-463e-9bc5-00a6920fb66e`) and DB prefix (`xc32038474a`) are published by GTIG.
+      Hardening: Restrict REDCap to internal networks or require VPN access. Enforce MFA on Google Workspace admin accounts. Enable Google Workspace audit alerting for compliance rule changes. Apply REDCap security patches immediately.
+
+  - title: "DPRK UNK_DeadDrop / Contagious Interview — VS Code `tasks.json` and malicious VSIX extensions deliver Overlord RAT to ~100 developer organisations"
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal", publisher: "Proofpoint", date: "2026-06-08", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/north-korean-hackers-are-turning.html", publisher: "The Hacker News", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: feed TheHackersNews (2026-06-16) title 'North Korean Hackers Are Turning Developer Tools Into Malware Delivery Channels' → pivot: THN article https://thehackernews.com/2026/06/north-korean-hackers-are-turning.html outbound links → primary: Proofpoint https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal"
+    summary: |
+      Proofpoint's June 2026 analysis of UNK_DeadDrop (assessed as a DPRK-aligned threat actor overlapping with the Contagious Interview / Famous Chollima / Void Dokkaebi cluster) documents phishing campaigns targeting ~100 developer-focused organisations across finance, crypto, education, and technology using fake GitHub repositories. The infection vector abuses VS Code `.vscode/tasks.json` `runOn: folderOpen` lifecycle hooks, which execute attacker-specified commands automatically when the project is opened — no further user interaction required. On Windows, a Node.js/Python dropper installs the Overlord framework (an open-source Go C2 implant); on macOS/Linux, cross-platform equivalents are deployed. Separately, malicious VSIX extensions masquerade as Google tools to maintain persistent access after Overlord removal. Post-compromise objectives are cryptocurrency wallet theft (MetaMask, Phantom, Ledger Live), browser credential harvesting, and API-key exfiltration. The THN June 15 synthesis article notes continued evolution: attackers now use AI-generated loaders and maintain front companies on LinkedIn for the lure infrastructure.
+    ch_eu_nexus: "global; Swiss fintech, blockchain, and tech developer communities are within the typical targeting profile of this cluster; VS Code is ubiquitous in CH/EU tech sectors"
+    public_sector_nexus: "indirect — public-sector IT departments with developer workforces; research institutions hiring developers"
+    sector: "finance, technology, education, crypto"
+    cves: []
+    actors_campaigns_malware: ["UNK_DeadDrop", "Contagious Interview", "Famous Chollima", "Void Dokkaebi", "Overlord RAT", "BeaverTail", "InvisibleFerret"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A novel technique leverages malicious VSIX extensions requiring minimal user interaction. The campaign focuses on stealing cryptocurrency wallets, browser credentials, and API tokens through fake job recruitment and code review lures."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal"
+      - quote: "VS Code projects using 'runOn: folderOpen' to trigger malicious code execution automatically when the code editor opens, requiring no user interaction."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/north-korean-hackers-are-turning.html"
+    extended_notes: |
+      MITRE ATT&CK: T1195.001 (Supply Chain Compromise — Dev Tools), T1059.007 (JavaScript), T1059.006 (Python), T1566.003 (Phishing via Service), T1003 (Credential Dumping — browser / keychain), T1539 (Steal Web Session Cookie), T1072 (Software Deployment Tools — VS Code tasks/extensions).
+      Detection: Monitor `.vscode/tasks.json` creation events across developer workstations (Sysmon EID 11 on Windows; auditd on Linux). Flag VS Code extension installations from sources other than the official Marketplace. Detect execution of shells (cmd.exe, powershell.exe, bash) spawned as children of `node.exe` or the VS Code electron binary.
+      Hardening: Enforce VS Code workspace trust prompts. Restrict VSIX extension installs to approved sources via Group Policy or MDM. Disable `tasks.json` `runOn: folderOpen` execution in shared-repo environments.
+
+  - title: "LiteLLM privilege-escalation-to-RCE chain (CVE-2026-47101 / CVE-2026-47102 / CVE-2026-40217, CVSS 9.9) — AI gateway server takeover from low-privilege user"
+    sources:
+      - { url: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce", publisher: "Obsidian Security", date: "2026-06-11", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/litellm-vulnerability-chain-lets-low.html", publisher: "The Hacker News", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: feed TheHackersNews (2026-06-16) title 'LiteLLM Vulnerability Chain Lets Low-Privilege Users Take Over AI Gateway Servers' → pivot: THN article https://thehackernews.com/2026/06/litellm-vulnerability-chain-lets-low.html outbound links → primary: Obsidian Security https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+    summary: |
+      Obsidian Security disclosed a three-vulnerability chain (combined CVSS 9.9) in LiteLLM — a widely-deployed open-source AI gateway supporting 100+ model providers (OpenAI, Anthropic Claude, Gemini, Bedrock, Azure). The chain: CVE-2026-47101 (CWE-285, authorization bypass via unvalidated `allowed_routes` field when creating API keys) → CVE-2026-47102 (CWE-269, privilege escalation through missing field-level validation on the `/user/update` endpoint allowing `user_role` to be set to `proxy_admin`) → CVE-2026-40217 (CWE-78, sandbox escape in `/guardrails/test_custom_code` endpoint where `exec()` leaves `__builtins__` available for arbitrary code execution). From a default low-privilege user account, an attacker gains admin access then achieves remote code execution on the gateway host. Post-compromise impact: all provider API keys are exposed, credential decryption salts are accessible, all LLM prompts and responses are readable, and downstream AI agents can be poisoned via response forgery. Fixed in LiteLLM v1.83.14-stable (25 April 2026); independent verification by X41 D-Sec corroborates the chain. No confirmed ITW exploitation reported at time of writing.
+    ch_eu_nexus: "global; LiteLLM is used in enterprise AI infrastructure across CH/EU, particularly in RAG deployments and internal AI chatbot platforms"
+    public_sector_nexus: "indirect — public-sector deployments of AI gateways for document processing, internal assistant tools"
+    sector: "technology, public-sector, finance"
+    cves: [CVE-2026-47101, CVE-2026-47102, CVE-2026-40217]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-47101 allows 'a default low-privilege user to mint a key with access to arbitrary routes, including admin-only ones' through unvalidated `allowed_routes` parameters."
+        attribution: "Obsidian Security"
+        source_url: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+      - quote: "A critical three-vulnerability chain (CVSS 9.9) in LiteLLM, an open-source AI gateway supporting 100+ model providers. The chain allows default low-privilege users to escalate to full admin and execute arbitrary code."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/litellm-vulnerability-chain-lets-low.html"
+    extended_notes: |
+      MITRE ATT&CK: T1068 (Exploitation for Privilege Escalation), T1190 (Exploit Public-Facing Application), T1059.006 (Python exec() abuse), T1552.001 (Credentials in Files — API keys).
+      Detection: Monitor LiteLLM API logs for `POST /user/update` requests containing `user_role: proxy_admin` from non-admin user tokens. Alert on `POST /guardrails/test_custom_code` requests from users without admin role. Audit for unexpected access to the admin `/key/generate` endpoint.
+      Hardening: Upgrade to LiteLLM v1.83.14-stable or later. Restrict the LiteLLM admin API to trusted internal networks. Do not expose `/guardrails/test_custom_code` to untrusted users.
+
+  - title: "CVE-2026-20251 — Splunk Secure Gateway: low-privilege RCE via jsonpickle deserialization of KV Store data (CVSS 8.8)"
+    sources:
+      - { url: "https://advisory.splunk.com/advisories/SVD-2026-0601", publisher: "Splunk", date: "2026-06-10", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0198", publisher: "NCSC-NL", date: "2026-06-15", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-nl recent bridge (NCSC-2026-0198, 2026-06-15) listing Splunk vulnerabilities → pivot to Splunk advisory SVD-2026-0601 https://advisory.splunk.com/advisories/SVD-2026-0601"
+    summary: |
+      CVE-2026-20251 (CVSS 8.8, CWE-502) is a deserialization vulnerability in the Splunk Secure Gateway application (shipped with Splunk Enterprise and Splunk Cloud Platform) where the App Key Value Store (KV Store) data is deserialized through the `jsonpickle` Python library without adequate object-type validation. A low-privileged user who lacks the `admin` or `power` roles can supply specially crafted JSON to the KV Store endpoint, causing `jsonpickle.decode()` to reconstruct arbitrary Python objects and achieve remote code execution on the Splunk server. No public exploit has been confirmed in the wild at time of writing. Affected: Splunk Enterprise 9.3.0–9.3.12, 9.4.0–9.4.11, 10.0.0–10.0.6, 10.2.0–10.2.3; patched in 9.3.13, 9.4.12, 10.0.7, 10.2.4, 10.4.0. Mitigation without patching: remove or disable the Splunk Secure Gateway app if Splunk Mobile / Spacebridge / Mission Control are not in use. This is operationally critical: Splunk is the SIEM/log backbone in many CH/EU SOCs; a low-privilege user gaining RCE on the SIEM host is a detection-evasion threat.
+    ch_eu_nexus: "directly relevant to CH/EU SOC environments; Splunk is a primary SIEM platform across Swiss federal agencies and EU public-sector entities"
+    public_sector_nexus: "direct — SOC teams, SIEM operators, security operations"
+    sector: "public-sector, finance, telco, security-operations"
+    cves: [CVE-2026-20251]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A low-privileged user that does not hold the 'admin' or 'power' Splunk roles could perform a Remote Code Execution (RCE) through the Splunk Secure Gateway app. The vulnerability stems from unsafe deserialization of App Key Value Store (KV Store) data through the 'jsonpickle' Python library."
+        attribution: "Splunk"
+        source_url: "https://advisory.splunk.com/advisories/SVD-2026-0601"
+
+cve_table:
+  - cve: CVE-2026-20262
+    product: "Cisco Catalyst SD-WAN Manager"
+    cvss: "6.5 (NVD) / higher per exploitation context"
+    epss: "unknown"
+    kev: "yes (2026-06-15)"
+    exploited: "yes"
+    patch: "20.9.9.2 / 20.12.7.2 / 20.15.4.5 / 20.15.5.3 / 20.18.3.1 / 26.1.1.2"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-arbfw-c2rZvQ"
+  - cve: CVE-2026-54420
+    product: "LiteSpeed cPanel Plugin / WHM Plugin"
+    cvss: "8.5"
+    epss: "unknown"
+    kev: "yes (2026-06-15)"
+    exploited: "yes (May 2026)"
+    patch: "cPanel plugin 2.4.8 / WHM Plugin 5.3.2.0"
+    source: "https://blog.litespeedtech.com/2026/06/01/security-update-for-litespeed-cpanel-plugin-2/"
+  - cve: CVE-2026-10795
+    product: "UpdraftPlus WP Backup plugin"
+    cvss: "8.1"
+    epss: "unknown"
+    kev: "no (not yet listed)"
+    exploited: "yes (exploited as part of Awesome Motive CDN supply chain attack June 13-14)"
+    patch: "1.26.5"
+    source: "https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/"
+  - cve: CVE-2026-47101
+    product: "LiteLLM (AI gateway)"
+    cvss: "9.9 (chain)"
+    epss: "unknown"
+    kev: "no"
+    exploited: "no (PoC disclosed)"
+    patch: "v1.83.14-stable"
+    source: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+  - cve: CVE-2026-47102
+    product: "LiteLLM (AI gateway)"
+    cvss: "8.8"
+    epss: "unknown"
+    kev: "no"
+    exploited: "no (PoC disclosed)"
+    patch: "v1.83.14-stable (prior to 1.83.10)"
+    source: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+  - cve: CVE-2026-40217
+    product: "LiteLLM (AI gateway)"
+    cvss: "9.9 (chain)"
+    epss: "unknown"
+    kev: "no"
+    exploited: "no (PoC disclosed)"
+    patch: "v1.83.14-stable"
+    source: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+  - cve: CVE-2026-20251
+    product: "Splunk Enterprise / Splunk Secure Gateway"
+    cvss: "8.8"
+    epss: "unknown"
+    kev: "no"
+    exploited: "no"
+    patch: "9.3.13 / 9.4.12 / 10.0.7 / 10.2.4 / 10.4.0"
+    source: "https://advisory.splunk.com/advisories/SVD-2026-0601"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-wochenbericht-24
+    reason: "NCSC-CH Week 24 wochenrueckblick page returned HTTP 404 — likely not yet published at time of fetch (2026-06-16T04:xx UTC)"
+  - source_id: cisco-psirt-direct
+    reason: "Cisco PSIRT advisory page (sec.cloudapps.cisco.com) returned exit code 2 when fetching via bridge; content was recovered from BleepingComputer and The Register corroborating articles"

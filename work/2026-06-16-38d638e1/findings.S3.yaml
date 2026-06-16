@@ -1,0 +1,519 @@
+domain: S3
+run_id: 2026-06-16-38d638e1
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-16T04:08:11Z
+ended_at: 2026-06-16T04:16:54Z
+duration_seconds: 523
+self_telemetry:
+  webfetch_calls: 17
+  websearch_calls: 8
+  bridge_fetches: 9
+
+items:
+  - title: "UNC6508 (PRC) trojanises REDCap servers with INFINITERED, then abuses Google Workspace content-compliance rules for covert email exfiltration"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research"
+        publisher: "Google Threat Intelligence Group (GTIG / Mandiant)"
+        date: "2026-06-15"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/chinese-hackers-abused-google-workspace.html"
+        publisher: "The Hacker News"
+        date: "2026-06-16"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/chinese-hackers-target-medical-military-and-ai-research-in-north-america/"
+        publisher: "SecurityWeek"
+        date: "2026-06-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: mandiant-gtig RSS feed (https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v), published 2026-06-15 → primary: GTIG blog at https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research → corroborating: THN + SecurityWeek"
+    summary: |
+      Google Threat Intelligence Group disclosed UNC6508, a PRC-nexus threat actor that
+      maintained undetected access to North American academic, medical and military health
+      networks for over a year (September 2023 through at least November 2025). Initial access
+      was via externally-facing REDCap research data management servers, where the actor deployed
+      a custom PHP backdoor named INFINITERED consisting of three components: a
+      persistence/update module that survives upgrades, a credential harvester, and a backdoor
+      shell. After escalating to domain-administrator via harvested credentials, the actor abused
+      Google Workspace's built-in "content compliance" (BCC-copy-on-rule-match) feature: they
+      created a rule named "Patroit" (deliberate misspelling) matching ~150 keywords in sent or
+      received mail and silently forwarded matching messages to an attacker-controlled Gmail
+      inbox. The technique abuses a legitimate administrative feature rather than deploying
+      separate exfiltration malware, evading many DLP controls. Collection objectives included
+      Indo-Pacific command operations, AI research, cyber offensive programs, uncrewed vehicle
+      systems, and medical research.
+    ch_eu_nexus: >
+      Direct EU relevance: REDCap is deployed across European research universities,
+      hospital networks, and clinical-trial coordinators; Swiss cantonal universities and several
+      European academic medical centres run internet-accessible REDCap instances. The Google
+      Workspace content-compliance abuse technique is vendor-agnostic and reproducible against
+      any Google Workspace tenant regardless of geography.
+    public_sector_nexus: "direct"
+    sector: "healthcare, defence, research, academic"
+    cves: []
+    actors_campaigns_malware: ["UNC6508", "INFINITERED"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GTIG has identified a sophisticated campaign attributed to UNC6508, a People's Republic of China (PRC)-nexus threat actor, targeting institutions in the North American academic, medical, and military research community. While remaining undetected for over a year, the threat actor compromised externally facing web applications, deployed bespoke malware, pivoted to sensitive internal systems, and abused enterprise administrative tools for covert data exfiltration."
+        attribution: "Google Threat Intelligence Group (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research"
+      - quote: "UNC6508 created a compliance rule named 'Patroit' (yes, they misspelled 'Patriot') to match keywords and email address patterns in sent or received emails. These messages were then silently BCC-forwarded to an attacker-controlled Gmail address."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/chinese-hackers-abused-google-workspace.html"
+    extended_notes: |
+      MITRE ATT&CK: T1505.003 (Server Software Component: Web Shell / PHP backdoor), T1114.003
+      (Email Collection: Email Forwarding Rule), T1078 (Valid Accounts — admin credential reuse
+      after harvesting), T1560 (Archive Collected Data).
+      Detection: Google Workspace admin audit logs (Audit Console → Reports → Admin → "BCC
+      rule created" event type); hunt for compliance-rule mutations with external Gmail
+      recipients; unusual outbound mail volumes from domain-admin accounts. Hardening: restrict
+      Google Workspace content-compliance rule creation to a dedicated change-management role;
+      enable Google Workspace Alert Centre for admin-rule changes; review all existing BCC-copy
+      rules for external forwarding targets. REDCap hardening: segment REDCap behind VPN/MFA,
+      monitor PHP file modifications in the application directory, integrity-check key PHP files
+      post-upgrade.
+
+  - title: "Obsidian Security: three-CVE chain in LiteLLM (CVE-2026-47101 / CVE-2026-47102 / CVE-2026-40217) — default user to proxy_admin to RCE, all AI provider keys exposed"
+    sources:
+      - url: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+        publisher: "Obsidian Security"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/litellm-vulnerability-chain-lets-low.html"
+        publisher: "The Hacker News"
+        date: "2026-06-15"
+        role: "corroborating"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-47101"
+        publisher: "NVD"
+        date: "2026-06-11"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews), published 2026-06-15 → primary: Obsidian Security blog at https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce → corroborating: NVD CVE entries"
+    summary: |
+      Obsidian Security disclosed a critical three-CVE privilege-escalation-to-RCE chain in
+      LiteLLM, the open-source AI gateway (BerriAI) that proxies calls to more than 100 LLM
+      providers behind a single OpenAI-compatible API. CVE-2026-47101 (authorization bypass) is
+      an unvalidated `allowed_routes` parameter in key-management endpoints that lets a default
+      low-privilege API user mint admin-level keys. CVE-2026-47102 (privilege escalation) is a
+      missing field-level authorization flaw on the `/user/update` endpoint: an authenticated
+      low-privilege user can POST `{"user_role": "proxy_admin"}` to self-promote to full admin.
+      CVE-2026-40217 (sandbox escape to RCE) is in the Custom Code Guardrail endpoint
+      (`/guardrails/test_custom_code`): `exec()` is called with `__builtins__` fully available,
+      giving any admin arbitrary OS-level code execution. The complete chain requires only a
+      default LiteLLM account, takes three HTTP requests, and results in full server
+      compromise — exposing all configured provider API keys (OpenAI, Anthropic, Azure, AWS
+      Bedrock, etc.), database credentials, and every transiting prompt and response. BerriAI
+      released fixes in v1.83.14-stable (May 2, 2026); deployments not yet on that version
+      remain vulnerable to all three CVEs.
+    ch_eu_nexus: >
+      LiteLLM is the most widely deployed self-hosted AI gateway in European research, financial
+      services and public-sector AI infrastructure. Swiss federal and cantonal administrations
+      trialling AI assistants and RAG pipelines frequently route through LiteLLM or similar
+      proxies. A compromise exposes every downstream service that trusts the AI gateway's
+      identity.
+    public_sector_nexus: "indirect"
+    sector: "finance, research, technology, public-sector"
+    cves: ["CVE-2026-47101", "CVE-2026-47102", "CVE-2026-40217"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-47101 allows authorization bypass via unvalidated allowed_routes parameters in key-management endpoints, letting low-privilege users mint keys with admin-level route access. CVE-2026-47102 enables privilege escalation through missing field-level authorization on user-update endpoints, allowing self-promotion to proxy_admin."
+        attribution: "Obsidian Security"
+        source_url: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+      - quote: "A server takeover exposes every provider key it holds, the secrets that let an attacker query models as the enterprise and run up their API bill — or use them as a launching pad for further attacks against downstream agents."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/litellm-vulnerability-chain-lets-low.html"
+    extended_notes: |
+      MITRE ATT&CK: T1078 (Valid Accounts — default user credential), T1548.002 (Abuse Elevation
+      Control: Bypass UAC / privilege escalation via unvalidated field), T1059.006 (Python
+      execution via exec()), T1552.001 (Credentials in Files — provider API keys stored in config).
+      Affected: LiteLLM versions < 1.83.14-stable. Fixed: v1.83.14-stable (2026-05-02).
+      Detection: API audit logs for `/user/update` calls containing `user_role` field from
+      non-admin principals; calls to `/guardrails/test_custom_code` from non-admin keys;
+      unexpected proxy_admin-level key creation events. Hardening: pin LiteLLM to ≥1.83.14;
+      enforce network-level access control on LiteLLM admin endpoints (not internet-exposed);
+      store provider API keys in a secrets manager rather than in the config file; rotate all
+      keys if running a version < 1.83.14 and the endpoint was network-reachable.
+
+  - title: "Proofpoint: UNK_DeadDrop — DPRK-nexus developer phishing via VS Code tasks.json auto-execution, Cursor IDE executes without any prompt"
+    sources:
+      - url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal"
+        publisher: "Proofpoint"
+        date: "2026-06-08"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/north-korean-hackers-are-turning.html"
+        publisher: "The Hacker News"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews), published 2026-06-16 → primary: Proofpoint blog at https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal (2026-06-08) → corroborating: THN write-up (2026-06-16)"
+    summary: |
+      Proofpoint Threat Research identified UNK_DeadDrop, a likely DPRK-aligned cluster
+      distinct from but related to Contagious Interview (Famous Chollima / Void Dokkaebi) that
+      sent 250+ phishing emails to nearly 100 organisations across finance, cryptocurrency,
+      education and technology between April and May 2026. The lure: fake developer-recruitment
+      emails pointing to actor-controlled GitHub repositories containing cross-platform payloads.
+      The infection mechanism abuses VS Code workspace files (`tasks.json` with
+      `"runOn: folderOpen"`) to execute malicious build scripts automatically when the victim
+      opens the repository in VS Code — VS Code shows a trust confirmation dialog, but
+      Cursor IDE executes silently with no prompt whatsoever. The payload drops the open-source
+      Overlord Go C2 framework (github.com/vxaboveground/Overlord), which steals browser
+      credentials, cryptocurrency wallets (MetaMask, Phantom, Exodus, Ledger Live, Monero),
+      GNOME Keyring and macOS system keychains, then beacons to an attacker-controlled C2.
+      Concurrent DPRK clusters simultaneously targeted the same developer population via
+      malicious VS Code Marketplace extensions and npm packages with Microsoft Graph API /
+      SharePoint C2.
+    ch_eu_nexus: >
+      Developer-recruitment lures are platform-agnostic and have been observed against Swiss
+      and European fintech, blockchain, and AI engineering talent. The Cursor IDE silent
+      execution is particularly relevant to any organisation that has adopted Cursor in
+      developer workflows. GitHub-hosted delivery makes URL-blocking impractical.
+    public_sector_nexus: "indirect"
+    sector: "finance, cryptocurrency, technology, education"
+    cves: []
+    actors_campaigns_malware: ["UNK_DeadDrop", "Overlord", "Contagious Interview", "Famous Chollima", "Void Dokkaebi"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "While VS Code usually prompts the user for permission, the Cursor editor executes this script silently without any interaction, instantly compromising the machine."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal"
+      - quote: "The infection chain begins with emails containing links to actor-controlled GitHub repositories hosting malicious scripts that result in the execution of cross-platform malware for macOS, Linux, and Windows, including an open-source Go framework named Overlord."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/north-korean-hackers-are-turning.html"
+    extended_notes: |
+      MITRE ATT&CK: T1566.001 (Phishing: Spearphishing Attachment via email → GitHub link),
+      T1195.001 (Supply Chain Compromise: Compromise Software Dependencies — malicious workspace
+      file in repository), T1059.004 (Unix Shell / Bash task execution), T1555.003 (Credentials
+      from Web Browsers), T1518 (Software Discovery for wallet fingerprinting).
+      Detection: Sysmon EID 1 / EID 11 — monitor for node/npm/python/bash processes spawned
+      by `cursor.exe` or `code.exe` with unusual child-process trees; EDR parent-process
+      alert on IDE spawning shell interpreters outside of build directories; alert on
+      Go binaries downloaded and executed by IDE processes. Hardening: enterprise VS Code policy
+      (workspace trust disabled by default in managed deployments via `extensions.autoUpdate`
+      and `workspace.trust.enabled` GPO); block Cursor IDE from executing shell tasks in
+      managed developer environments; review third-party GitHub repository policies before
+      permitting `folderOpen` task execution.
+
+  - title: "Varonis SearchLeak (CVE-2026-42824): one-click M365 Copilot Enterprise Search exfiltrates email, calendar, files, and TOTP codes via parameter-to-prompt injection and CSP-bypass SSRF"
+    sources:
+      - url: "https://www.varonis.com/blog/searchleak"
+        publisher: "Varonis Threat Labs"
+        date: "2026-06-15"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42824"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-15"
+        role: "corroborating"
+      - url: "https://thehackernews.com/2026/06/one-click-microsoft-365-copilot-flaw.html"
+        publisher: "The Hacker News"
+        date: "2026-06-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews), published 2026-06-15 → primary: Varonis blog at https://www.varonis.com/blog/searchleak → corroborating: MSRC advisory CVE-2026-42824"
+    summary: |
+      Varonis Threat Labs disclosed SearchLeak, a three-stage vulnerability chain in Microsoft
+      365 Copilot Enterprise Search patched under CVE-2026-42824 (Critical). Stage 1
+      (parameter-to-prompt injection): the `q` URL parameter in Copilot Enterprise Search is
+      passed directly to Copilot as an executable prompt instruction, so a crafted link causes
+      the AI to follow attacker instructions. Stage 2 (HTML rendering race condition): an
+      injected `<img>` tag in the AI response fires before the output HTML sanitiser runs,
+      enabling an exfiltration beacon. Stage 3 (CSP-bypass SSRF): Bing's image-search endpoint
+      (`bing.com`) is allowlisted in the M365 Copilot Content Security Policy; the attack routes
+      the exfiltration GET request through Bing's server-side fetch, bypassing the CSP and
+      carrying extracted email content, calendar entries, OneDrive/SharePoint files, and
+      TOTP MFA codes to an attacker-controlled domain. The entire attack chain fires from a
+      single click on a legitimate-looking `microsoft.com` URL. Microsoft patched
+      CVE-2026-42824 at the beginning of June 2026; no user action is required.
+    ch_eu_nexus: >
+      M365 Copilot Enterprise is deployed across Swiss federal agencies, cantonal
+      administrations, and European public-sector organisations in the Wave 1 and Wave 2 Copilot
+      rollouts. The attack delivers a persistent exfiltration vector via a shareable link that
+      bypasses all anti-phishing URL reputations (the link points to a real microsoft.com
+      domain). Research-grade data, TOTP seeds, and strategic communications are all at risk.
+    public_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, technology"
+    cves: ["CVE-2026-42824"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker can craft a malicious link to microsoft.com that, when clicked, instructs Copilot to extract sensitive data from a victim's mailbox, calendar, and files, then exfiltrate it via an allowlisted Bing domain."
+        attribution: "Varonis Threat Labs"
+        source_url: "https://www.varonis.com/blog/searchleak"
+      - quote: "Exfiltration targets include mailbox content, calendar events, OneDrive and SharePoint files. The victim sees only Copilot thinking - no visible data movement occurs."
+        attribution: "Varonis Threat Labs"
+        source_url: "https://www.varonis.com/blog/searchleak"
+    extended_notes: |
+      MITRE ATT&CK: T1566.002 (Phishing: Spearphishing Link — attacker-crafted microsoft.com URL),
+      T1539 (Steal Web Session Cookie — TOTP exfiltration), T1114.002 (Remote Email Collection via
+      Copilot), T1071.001 (Application Layer Protocol: Web Protocols — exfiltration via Bing SSRF).
+      Patched: CVE-2026-42824 fixed in early June 2026; no end-user action required for
+      cloud-connected M365 tenants. Detection: Microsoft Sentinel / Defender for Cloud Apps
+      "Copilot AI interaction" audit log — flag `q` parameter values containing HTML tags or
+      base64 in Copilot search requests; alert on Copilot sessions with unusual image-fetch
+      requests to non-Microsoft domains. Defender Threat Protection alert: "Copilot prompt
+      injection attempt." Related prior research: EchoLeak (CVE-2025-32711), Reprompt attack.
+
+  - title: "Awesome Motive CDN supply-chain attack backdoors 1.2M+ WordPress sites via OptinMonster, TrustPulse, PushEngage — initial access via CVE-2026-10795 UpdraftPlus"
+    sources:
+      - url: "https://sansec.io/research/optinmonster-supply-chain-attack"
+        publisher: "Sansec"
+        date: "2026-06-13"
+        role: "primary"
+      - url: "https://optinmonster.com/security-incident-tampered-script-served-via-optinmonster-and-trustpulse/"
+        publisher: "OptinMonster (Awesome Motive)"
+        date: "2026-06-14"
+        role: "primary"
+      - url: "https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/"
+        publisher: "Patchstack"
+        date: "2026-06-15"
+        role: "corroborating"
+      - url: "https://securityaffairs.com/193616/malware/supply-chain-attack-hits-popular-wordpress-plugins-through-awesome-motive-cdn.html"
+        publisher: "Security Affairs"
+        date: "2026-06-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (https://feeds.feedburner.com/TheHackersNews), published 2026-06-15 → primary: Sansec research at https://sansec.io/research/optinmonster-supply-chain-attack → vendor disclosure: OptinMonster at https://optinmonster.com/security-incident-tampered-script-served-via-optinmonster-and-trustpulse/ → technical detail: Patchstack at https://patchstack.com/articles/supply-chain-attack-on-optinmonster-trustpulse-and-pushengage-tampered-cdn-scripts-auto-creating-rogue-admins/"
+    summary: |
+      An attacker exploited CVE-2026-10795 (UpdraftPlus authentication bypass, patched June 14 —
+      already covered as a trending-vuln item) against Awesome Motive's marketing website server
+      to steal CDN API credentials. The attacker then modified five JavaScript SDK files served
+      from vendor CDNs to five OptinMonster/TrustPulse/PushEngage domains, affecting
+      approximately 1.2 million WordPress sites. The five-stage malicious payload was appended
+      to legitimate minified JavaScript: (1) anti-analysis checks (headless detection,
+      navigator.webdriver, valid admin session required); (2) WordPress nonce harvesting via
+      REST API/admin-ajax/new-user page; (3) rogue admin creation via four fallback methods
+      (REST API, admin form, AJAX, hidden iframe) using hardcoded identity `developer_api1` /
+      `customer1usx@gmail.com` or randomised `dev_xxxxxx`; (4) backdoor plugin installation
+      masquerading as "Content Delivery Helper" (v2.7.1) or "Database Optimizer" (v2.9.4),
+      concealed from WP-Admin UI; (5) XOR-encrypted (key `jX9kM2nP4qR6sT8v`) base64-encoded
+      results beaconed to `tidio.cc` via sendBeacon/fetch/XHR/image-pixel fallback. Exposure
+      window was June 12 UTC; Awesome Motive revoked CDN credentials and rotated secrets by
+      June 14.
+    ch_eu_nexus: >
+      OptinMonster, TrustPulse, and PushEngage are installed on tens of thousands of European
+      WordPress sites, including municipal governments, cantonal agencies, NGOs, and public
+      health information portals. The attack requires only a logged-in WP administrator to be
+      active during the exposure window (June 12 UTC).
+    public_sector_nexus: "indirect"
+    sector: "public-sector, non-profit, media, e-commerce"
+    cves: ["CVE-2026-10795"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sansec discovered an active supply-chain attack hitting over 1.2 million sites that use the popular OptinMonster, TrustPulse and PushEngage WordPress plugins, all operated by Awesome Motive. The malicious code was discovered on June 13 being served through CDN-hosted JavaScript files."
+        attribution: "Sansec"
+        source_url: "https://sansec.io/research/optinmonster-supply-chain-attack"
+      - quote: "An attacker exploited a vulnerability in UpdraftPlus plugin on OptinMonster's marketing website to gain server access and retrieve CDN API credentials."
+        attribution: "OptinMonster"
+        source_url: "https://optinmonster.com/security-incident-tampered-script-served-via-optinmonster-and-trustpulse/"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 (Supply Chain Compromise: Compromise Software Supply Chain — CDN
+      SDK injection), T1505.003 (Server Software Component: Web Shell — backdoor plugin),
+      T1136.001 (Create Account: Local Account — rogue admin creation), T1071.001 (Web Protocols
+      — sendBeacon exfiltration to tidio.cc).
+      Detection: WordPress integrity monitoring — compare active plugin list against expected
+      baseline; alert on creation of WordPress admin accounts matching pattern `developer_api1`
+      or `dev_[a-z0-9]{6}`; monitor outbound sendBeacon/XHR POST from wp-admin to non-site
+      domains; file integrity monitoring on wp-content/plugins/ for new entries with hidden
+      visibility flags. Hardening: review all installed plugins for CDN-hosted external scripts;
+      pin CDN URLs to SRI (Subresource Integrity) hashes; require code review for external
+      script loading; enable WP audit logging on user-account creation. Sites with
+      OptinMonster/TrustPulse/PushEngage active on June 12 UTC should audit for rogue admin
+      accounts and the two backdoor plugin names.
+
+  - title: "Pentest-Tools: phpBB CVE-2026-48611 / CVE-2026-48612 — unauthenticated authentication bypass to admin in one HTTP request, affects 10+ years of releases"
+    sources:
+      - url: "https://pentest-tools.com/research/phpbb-authentication-bypass"
+        publisher: "Pentest-Tools.com"
+        date: "2026-06-08"
+        role: "primary"
+      - url: "https://www.phpbb.com/community/viewtopic.php?p=16116763"
+        publisher: "phpBB"
+        date: "2026-06-06"
+        role: "corroborating"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-48611"
+        publisher: "NVD"
+        date: "2026-06-08"
+        role: "corroborating"
+    discovery_trace: "first seen at: heise-sec RSS feed (https://www.heise.de/security/feed.xml), 2026-06-15 item 'phpBB: Kritische Sicherheitslücke ermöglicht Kompromittierung' → primary: Pentest-Tools.com research at https://pentest-tools.com/research/phpbb-authentication-bypass → corroborating: phpBB community announcement + NVD"
+    summary: |
+      Pentest-Tools.com researcher Dan Stefan Alexandru disclosed two critical authentication
+      vulnerabilities in phpBB, the open-source forum software with millions of deployments
+      across European universities, municipalities, and community organisations. CVE-2026-48611
+      (CVSS 9.4, CWE-305: Authentication Bypass by Primary Weakness) affects all phpBB versions
+      3.1.0 through 3.3.16 and 4.0.0-alpha — a range spanning over 10 years of releases. A
+      single unauthenticated HTTP request exploiting a flaw in the OAuth integration code
+      path (reachable even when OAuth is not configured) returns a valid session for any target
+      account, requiring only the target's username (publicly visible on most phpBB installs
+      via the member list). CVE-2026-48612 (CVSS 8.3, CWE-352: CSRF) chains a CSRF weakness
+      with missing OAuth state validation for boards that have Google, Facebook, or Bitly OAuth
+      enabled, allowing session hijacking of logged-in users via a malicious link. Both issues
+      are fixed in phpBB 3.3.17 (released June 6, 2026). The 4.0.0 alpha branch has a
+      separate fix committed to its development branch.
+    ch_eu_nexus: >
+      phpBB is widely deployed by Swiss universities, cantonal community portals, European
+      public-sector departments, and civil-society organisations for structured forum
+      communications. The unauthenticated admin takeover with only a username makes
+      CVE-2026-48611 a high-priority emergency-patch item for any internet-reachable phpBB
+      instance in government or academic environments.
+    public_sector_nexus: "indirect"
+    sector: "public-sector, education, non-profit"
+    cves: ["CVE-2026-48611", "CVE-2026-48612"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-48611 (CVSS 9.4) is an unauthenticated authentication bypass affecting default installations (auth_method=db) requiring only a single HTTP request and a known username."
+        attribution: "Pentest-Tools.com"
+        source_url: "https://pentest-tools.com/research/phpbb-authentication-bypass"
+      - quote: "All versions from 3.1.0 to 3.3.16 (which covers over 10 years of phpBB releases) contain a critical vulnerability CVE-2026-48611."
+        attribution: "Pentest-Tools.com / Infosecurity Magazine search result"
+        source_url: "https://pentest-tools.com/research/phpbb-authentication-bypass"
+    extended_notes: |
+      MITRE ATT&CK: T1078.002 (Valid Accounts: Domain Accounts — authentication bypass yields
+      privileged session), T1548 (Abuse Elevation Control — unauthenticated escalation to admin).
+      Affected versions: phpBB 3.1.0–3.3.16 and 4.0.0 alpha (all auth methods; OAuth does not
+      need to be enabled). Fixed: phpBB 3.3.17 (June 6, 2026). Detection: web server access
+      logs — flag POST requests to phpBB's OAuth callback endpoint (`/ucp.php?mode=login&logintype=oauth`)
+      with forged `code` parameters from unauthenticated sessions; alert on admin-level actions
+      (settings changes, plugin installs) immediately after OAuth-path requests without a
+      prior OAuth-authorised session. Hardening: upgrade to 3.3.17 immediately; if upgrade
+      is delayed, temporarily disable the OAuth integration even if it is not in use (remove
+      the oauth-enabled config flag).
+
+  - title: "UPDATE: ShinyHunters claims 297 GB breach of Council of Europe (HR, payroll, parliamentary data) — linked to CVE-2026-35273 Oracle PeopleSoft chain"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/council-of-europe-investigates-shinyhunters-data-breach-claims/"
+        publisher: "BleepingComputer"
+        date: "2026-06-15"
+        role: "primary"
+      - url: "https://www.securityweek.com/shinyhunters-claims-council-of-europe-hack/"
+        publisher: "SecurityWeek"
+        date: "2026-06-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: securityweek RSS feed (https://www.securityweek.com/feed/), published 2026-06-15 → primary: BleepingComputer article at https://www.bleepingcomputer.com/news/security/council-of-europe-investigates-shinyhunters-data-breach-claims/ → corroborating: SecurityWeek article"
+    summary: |
+      ShinyHunters (UNC6240) claimed on June 14, 2026 to have breached the Council of Europe
+      and exfiltrated approximately 297 GB of data from multiple departments including the
+      Secretariat, HR Directorate, Parliamentary Assembly, and the EDQM (European Directorate
+      for the Quality of Medicines). The claimed dataset includes 429,000 files spanning payroll
+      records for 10,000+ employees (2011–2026), 14,000+ CVs, contracts, purchase orders,
+      and HR records containing names, dates of birth, addresses, bank account details, tax
+      and social security data, and medical records. The threat actor threatened to release
+      the data publicly on June 16 if contacted. The Council of Europe confirmed it is
+      investigating and has "no further comment." The Register reports the breach was
+      achieved via the Oracle PeopleSoft CVE-2026-35273 zero-day already exploited across
+      100+ organisations (previously covered). This is a material new development on a prior
+      story: ShinyHunters' PeopleSoft campaign now has a direct EU institution victim.
+    ch_eu_nexus: >
+      The Council of Europe (Strasbourg) represents 46 European member states, including
+      Switzerland. A confirmed breach of payroll and HR records for 10,000+ employees, including
+      medical and banking data, is a Category I personal-data breach under GDPR and the CoE's
+      own data protection convention. All 46 member states should treat relevant personnel
+      data held by the CoE as potentially compromised pending the investigation outcome.
+    public_sector_nexus: "direct"
+    sector: "public-sector, multilateral organisation"
+    cves: ["CVE-2026-35273"]
+    actors_campaigns_malware: ["ShinyHunters", "UNC6240"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: update-to-prior:2026-06-13
+    evidence:
+      - quote: "ShinyHunters claimed to have breached the Council of Europe and exfiltrated approximately 297 GB of data from multiple departments including HR, Secretariat, and Parliamentary Assembly. The group threatened data release on June 16, 2026."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/council-of-europe-investigates-shinyhunters-data-breach-claims/"
+      - quote: "The Council of Europe stated: 'We are currently investigating the matter and assessing the situation. We have no further comment to make at this stage'."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/shinyhunters-claims-council-of-europe-hack/"
+    extended_notes: |
+      Confidence is MEDIUM because the Council of Europe has not confirmed the breach, and
+      ShinyHunters claims (like all ransomware/extortion-group leak-site claims) require victim
+      or independent verification. The PeopleSoft attack vector is consistent with UNC6240's
+      confirmed 100+ victim campaign (CVE-2026-35273, covered June 12-13). Defenders at
+      organisations whose HR/payroll data is stored with the CoE should prepare for potential
+      notification. The June 16 leak deadline means confirmation or denial should be available
+      within the next brief cycle.
+
+cve_table:
+  - cve: CVE-2026-47101
+    product: "LiteLLM (BerriAI open-source AI gateway)"
+    cvss: "CVSS Critical (chained with CVE-2026-47102/CVE-2026-40217 = CVSS 9.9)"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No (PoC published by researcher)"
+    patch: "Fixed in v1.83.14-stable (2026-05-02)"
+    source: "https://www.obsidiansecurity.com/blog/litellm-privilege-escalation-rce"
+  - cve: CVE-2026-47102
+    product: "LiteLLM (BerriAI open-source AI gateway)"
+    cvss: "8.8"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No"
+    patch: "Fixed in v1.83.14-stable (2026-05-02)"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2026-47102"
+  - cve: CVE-2026-40217
+    product: "LiteLLM Custom Code Guardrail sandbox"
+    cvss: "Critical"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No"
+    patch: "Fixed in v1.83.14-stable (2026-05-02)"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2026-40217"
+  - cve: CVE-2026-42824
+    product: "Microsoft 365 Copilot Enterprise Search"
+    cvss: "Critical"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No (disclosed post-patch)"
+    patch: "Patched server-side early June 2026, no user action required"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42824"
+  - cve: CVE-2026-48611
+    product: "phpBB 3.1.0–3.3.16 and 4.0.0-alpha"
+    cvss: "9.4"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No (PoC published in research post)"
+    patch: "phpBB 3.3.17 (2026-06-06)"
+    source: "https://pentest-tools.com/research/phpbb-authentication-bypass"
+  - cve: CVE-2026-48612
+    product: "phpBB (OAuth-enabled installs)"
+    cvss: "8.3"
+    epss: "unknown"
+    kev: "No"
+    exploited: "No"
+    patch: "phpBB 3.3.17 (2026-06-06)"
+    source: "https://pentest-tools.com/research/phpbb-authentication-bypass"
+
+candidate_sources:
+  - id: sansec
+    publisher: "Sansec (sansec.io) — e-commerce security research"
+    url: "https://sansec.io"
+    rss_url: "https://sansec.io/research.xml"
+    category: research
+    why: >
+      Sansec provided the primary discovery of the Awesome Motive WordPress CDN supply-chain
+      attack (June 13, 2026) — a story that reached 1.2M sites. Sansec specialises in
+      Magecart-style skimmer and JS supply-chain research and is frequently first to detect
+      CDN compromise campaigns affecting European e-commerce and government WordPress deployments.
+      Not yet in sources.json but surfaced as a primary this run.
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: >
+      Sophos featured blog feed (https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242)
+      returns only items from June 11 and earlier (Bug bounties, SE Labs award, Workspace
+      Protection, Hola Browser June 4). No new X-Ops threat-research post in-window (June
+      14-16). Sophos X-Ops blog URL tested and returns SPA HTML (654 KB Next.js shell).
+      Rotation priority note fulfilled: blog is live but simply had no new research posts
+      in-window.
+  - source_id: rapid7-research
+    reason: >
+      Rapid7 blog RSS feed returned no parseable content (empty output from bridge). Rapid7
+      ATTACKER KNOWLEDGE BASE not surfaced. No Rapid7 research items identified in-window from
+      WebSearch either. Coverage gap on this source.
