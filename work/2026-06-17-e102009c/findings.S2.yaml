@@ -1,0 +1,243 @@
+# work/2026-06-17-e102009c/findings.S2.yaml
+domain: S2
+run_id: 2026-06-17-e102009c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-17T04:06:58Z
+ended_at: 2026-06-17T04:44:00Z
+duration_seconds: 2222
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 11
+  bridge_fetches: 14
+
+items:
+  - title: "PAN-OS GlobalProtect CVE-2026-0257 authentication bypass — active exploitation wave confirmed across Europe"
+    sources:
+      - url: "https://security.paloaltonetworks.com/CVE-2026-0257"
+        publisher: "Palo Alto Networks PSIRT"
+        date: "2026-06-03"
+        role: "primary"
+      - url: "https://unit42.paloaltonetworks.com/cve-2026-0257-globalprotect-authentication-bypass/"
+        publisher: "Unit 42 / Palo Alto Networks"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://arcticwolf.com/resources/blog/arctic-wolf-observes-increase-in-palo-alto-networks-globalprotect-authentication-bypass-exploitation-via-cve-2026-0257/"
+        publisher: "Arctic Wolf"
+        date: "2026-06-11"
+        role: "corroborating"
+      - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/globalprotect-cve-2026-0257.html"
+        publisher: "NCSC-CH / GovCERT.ch"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-csh bridge (post 12605, updated 2026-06-16) → primary: Palo Alto Networks PSIRT CVE-2026-0257, URL https://security.paloaltonetworks.com/CVE-2026-0257 → Unit42 deep-dive URL https://unit42.paloaltonetworks.com/cve-2026-0257-globalprotect-authentication-bypass/ → Arctic Wolf exploitation telemetry URL https://arcticwolf.com/resources/blog/arctic-wolf-observes-increase-in-palo-alto-networks-globalprotect-authentication-bypass-exploitation-via-cve-2026-0257/"
+    summary: |
+      CVE-2026-0257 is an authentication bypass in the PAN-OS GlobalProtect portal and gateway
+      (CWE-565, cookie reliance without integrity check) that allows unauthenticated remote attackers
+      to establish authenticated VPN sessions. Exploitation requires the "Authentication Override"
+      feature to be enabled on the target gateway. CISA added this CVE to the Known Exploited
+      Vulnerabilities catalog on May 29, 2026. Unit 42 published a threat brief on June 9 confirming
+      an active exploitation campaign running since approximately May 30. Arctic Wolf's June 11 report
+      documented post-exploitation activity consistent with Impacket tooling: SMB lateral movement,
+      anonymous NTLM logon, share enumeration, and domain user discovery — sectors targeted included
+      insurance, finance, manufacturing, education, engineering, and healthcare across North America
+      and Europe. NCSC-CH updated its Security Hub advisory on June 16 to highlight the Unit 42
+      exploitation confirmation. Affected: PAN-OS 10.2.x, 11.0.x, 11.1.x, 11.2.x, 12.0.x, 12.1.x
+      with "Authentication Override" enabled; Cloud NGFW not affected. Patches available; administrators
+      should also audit sessions established since late May for Impacket-pattern lateral movement.
+    ch_eu_nexus: "Direct — NCSC-CH advisory updated June 16; Arctic Wolf confirms European targets; CH public sector likely uses GlobalProtect VPN widely"
+    public_sector_nexus: "direct — education, government, healthcare sectors named among targets"
+    sector: "finance, insurance, manufacturing, education, healthcare, government"
+    cves: [CVE-2026-0257]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Arctic Wolf Labs has observed an increase in exploitation of CVE-2026-0257 ... post-exploitation activity included SMB lateral movement using Impacket"
+        attribution: "Arctic Wolf"
+        source_url: "https://arcticwolf.com/resources/blog/arctic-wolf-observes-increase-in-palo-alto-networks-globalprotect-authentication-bypass-exploitation-via-cve-2026-0257/"
+      - quote: "Unit 42 is tracking active exploitation of CVE-2026-0257, a medium-severity authentication bypass affecting GlobalProtect portal and gateway"
+        attribution: "Unit 42 / Palo Alto Networks"
+        source_url: "https://unit42.paloaltonetworks.com/cve-2026-0257-globalprotect-authentication-bypass/"
+      - quote: "NCSC-CH empfiehlt die sofortige Aktualisierung betroffener PAN-OS-Versionen und die Überprüfung der Authentifizierungseinstellungen"
+        attribution: "NCSC-CH / GovCERT.ch"
+        source_url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/globalprotect-cve-2026-0257.html"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts — leveraged post-auth-bypass),
+      T1021.002 (Remote Services: SMB/Windows Admin Shares), T1087.002 (Account Discovery: Domain Account).
+      Detection: monitor GlobalProtect auth logs for sessions without matching MFA events; Sysmon EID 3
+      (network connections) from lsass-adjacent processes; Windows Security EID 4624 Logon Type 3 from
+      unexpected source IPs; SMB share enumeration via EID 5140/5145; Impacket's distinctive SMB2
+      dialect negotiation pattern. Hardening: disable Authentication Override if not required; enforce
+      MFA via SAML/Okta on GlobalProtect; upgrade to fixed PAN-OS builds per vendor matrix.
+
+  - title: "CVE-2026-50751 Check Point IKEv1 auth bypass — public PoC released, exploitation risk elevated"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0179"
+        publisher: "NCSC-NL"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.helpnetsecurity.com/2026/06/12/cve-2026-50751-poc-exploit/"
+        publisher: "Help Net Security"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://labs.watchtowr.com/the-flag-the-ike-and-the-wardrobe-check-point-cve-2026-50751/"
+        publisher: "watchTowr Labs"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://blog.checkpoint.com/security/check-point-response-to-cve-2026-50751/"
+        publisher: "Check Point"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl bridge (NCSC-2026-0179, version 1.0.1 updated 2026-06-16) → primary advisory at https://advisories.ncsc.nl/advisory?id=NCSC-2026-0179 → watchTowr technical analysis URL https://labs.watchtowr.com/the-flag-the-ike-and-the-wardrobe-check-point-cve-2026-50751/ → Help Net Security coverage URL https://www.helpnetsecurity.com/2026/06/12/cve-2026-50751-poc-exploit/"
+    summary: |
+      CVE-2026-50751 is an authentication bypass (CWE-287, CVSS 9.3) in Check Point Security Gateway's
+      IKEv1 implementation. The mechanism exploited by watchTowr researchers: an attacker-controlled
+      VPNExtFeatures Vendor ID payload (recognisable by a 16-byte magic prefix) passes 4 trailing bytes
+      that are byte-swapped into the authentication flags register at state+0x4bc4. Bit 0x2 gates
+      certificate payload processing; Bit 0x4 short-circuits signature verification in verify_peer_auth().
+      This allows an unauthenticated client to impersonate any VPN identity configured to use certificate,
+      certificate-with-enrollment, or mixed authentication — but NOT username/password-only configurations.
+      Prerequisites: IKEv1 permitted on the gateway, legacy client connections allowed, no mandatory
+      machine certificate auth enforcement. NCSC-NL updated its advisory (version 1.0.1) on June 16 to note
+      publicly available PoC code, increasing exploitation probability. This item was covered in the W24
+      weekly as the original disclosure; this entry documents the June 16 in-window delta: PoC availability.
+      Defenders with Check Point gateways should apply the June 5 hotfix and, where operationally possible,
+      migrate authentication to username/password or disable IKEv1 legacy mode to eliminate the attack surface.
+    ch_eu_nexus: "Direct — Check Point gateways widely deployed in Swiss and European government; NCSC-NL advisory confirms EU national CERT coverage"
+    public_sector_nexus: "direct — VPN perimeter infrastructure, widely deployed in public-sector environments"
+    sector: "government, finance, critical infrastructure, telco"
+    cves: [CVE-2026-50751]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-W24
+    evidence:
+      - quote: "Er is inmiddels publiek beschikbare Proof-of-Concept (PoC)-code, wat de kans op misbruik vergroot"
+        attribution: "NCSC-NL (Dutch: 'There is now publicly available Proof-of-Concept code, which increases the risk of abuse')"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0179"
+      - quote: "The VPNExtFeatures Vendor ID payload ... 4 trailing bytes are byte-swapped into the authentication flags register at state+0x4bc4; Bit 0x4 short-circuits signature verification in verify_peer_auth()"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/the-flag-the-ike-and-the-wardrobe-check-point-cve-2026-50751/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1078.001 (Valid Accounts: Default Accounts),
+      T1133 (External Remote Services). Detection: IKEv1 Phase 1 negotiations from unexpected source IPs;
+      VPN session establishment without corresponding MFA/2FA event; anomalous post-VPN activity patterns
+      (new user agent, off-hours access). Hardening: apply Check Point hotfix from June 5 advisory;
+      disable IKEv1 if only IKEv2 clients are required; enforce mandatory machine certificate auth which
+      is not bypassable by this vulnerability.
+
+  - title: "CVE-2026-44963 Veeam Backup & Replication — insecure deserialization allows domain-user RCE on backup server"
+    sources:
+      - url: "https://www.veeam.com/kb4869"
+        publisher: "Veeam Software"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html"
+        publisher: "The Hacker News"
+        date: "2026-06-10"
+        role: "corroborating"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0188"
+        publisher: "NCSC-NL"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl bridge (NCSC-2026-0188, published 2026-06-10) → primary vendor advisory at https://www.veeam.com/kb4869 → The Hacker News article URL https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html"
+    summary: |
+      CVE-2026-44963 is an insecure deserialization vulnerability (CWE-502, CVSS v4 9.4) in Veeam Backup
+      & Replication that enables any authenticated domain user — not merely a Veeam-privileged account — to
+      achieve remote code execution on the backup server. Researcher Sina Kheirkhah (@SinSinology) of
+      watchTowr disclosed this on June 9, 2026 alongside a proof-of-concept exploit. The attack surface
+      is Veeam's internal .NET remoting endpoint, reachable from any domain-joined workstation.
+      Affected versions: VBR 12.3.2.4465 and all earlier v12 builds; v13.x is not vulnerable due to
+      architectural changes in the remoting layer. Patch: VBR 12.3.2.4854 (released June 9, 2026).
+      Historical precedent is severe: CVE-2024-40711 (similar Veeam RCE) was weaponised by Akira and Fog
+      ransomware operators within weeks of disclosure. EU and Swiss public-sector organisations running
+      Veeam for backup (common in government, healthcare, and education) should treat this as an urgent
+      patch-and-hunt item. NCSC-NL published its advisory NCSC-2026-0188 on June 10 confirming the
+      vulnerability, extending the advisory to European national-CERT coverage.
+    ch_eu_nexus: "Direct — Veeam widely deployed in EU/CH public-sector backup infrastructure; NCSC-NL advisory June 10; Veeam historically targeted by ransomware groups active in Europe"
+    public_sector_nexus: "direct — backup infrastructure, healthcare, education, government sectors"
+    sector: "government, healthcare, education, finance"
+    cves: [CVE-2026-44963]
+    actors_campaigns_malware: ["Akira ransomware (historical precedent)", "Fog ransomware (historical precedent)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Any authenticated domain user can achieve remote code execution on the backup server via insecure deserialization in the .NET remoting endpoint"
+        attribution: "Veeam Software (KB4869)"
+        source_url: "https://www.veeam.com/kb4869"
+      - quote: "CVE-2026-44963 allows domain users — not just Veeam admins — to execute arbitrary code, echoing the attack surface that ransomware actors abused in CVE-2024-40711"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html"
+    extended_notes: |
+      MITRE ATT&CK: T1210 (Exploitation of Remote Services), T1068 (Exploitation for Privilege Escalation),
+      T1486 (Data Encrypted for Impact — ransomware follow-on), T1490 (Inhibit System Recovery — backup deletion).
+      Detection: monitor Veeam service host (VeeamBackupSvc) for unusual child processes; .NET remoting
+      calls from non-Veeam admin accounts (Windows EID 4688 / Sysmon EID 1 with parent VeeamBackupSvc.exe);
+      unexpected PowerShell or cmd.exe processes spawned by Veeam service; EID 7045 for new service
+      installations post-Veeam compromise. Hardening: upgrade to VBR 12.3.2.4854 immediately; restrict
+      network access to Veeam backup server to management VLANs only (TCP 9392/9393 internal only);
+      ensure backup server is not domain-joined where operationally feasible, or scope domain group
+      membership tightly.
+
+  - title: "Munich city government subsidiary data breach — 120,000 student records, suspected insider threat"
+    sources:
+      - url: "https://www.heise.de/news/Datenschutzvorfall-in-Muenchen-120-000-sensible-Schuldaten-im-Darknet-11333920.html"
+        publisher: "Heise Security (DE)"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.lhm-services.de/aktuell/pressemitteilung-datenschutzvorfall"
+        publisher: "LHM-Services GmbH (Munich city subsidiary)"
+        date: "2026-06-15"
+        role: "corroborating"
+    discovery_trace: "first seen at: heise-sec RSS feed item published 2026-06-16 → primary article at https://www.heise.de/news/Datenschutzvorfall-in-Muenchen-120-000-sensible-Schuldaten-im-Darknet-11333920.html → LHM-Services press release at https://www.lhm-services.de/aktuell/pressemitteilung-datenschutzvorfall (2026-06-15)"
+    summary: |
+      LHM-Services GmbH, a subsidiary of the City of Munich (Landeshauptstadt München) that manages
+      student data for Munich schools, confirmed a data protection incident affecting approximately
+      120,000 individuals. The breached dataset contains names, addresses, dates of birth, nationalities,
+      and school assignments. Investigation centres on anomalous download behaviour by a terminated
+      former employee, pointing to an insider threat vector (T1078.001 — valid accounts misused by
+      departing employee; T1530 — data exfiltration from managed database). The data was reportedly
+      shown to media but no specialist firm confirmed the dataset is freely circulating on darknet markets
+      as of June 16. The Bavarian State Data Protection Officer (BayLDA) has been notified under
+      GDPR Article 33; a criminal complaint has been filed with Munich police; an emergency motion was
+      raised in Munich city council; Mayor Dominik Krause pledged a full investigation. This is a
+      significant public-sector incident affecting EU education data with active regulatory follow-on.
+    ch_eu_nexus: "Direct — Germany EU member; public-sector education data; GDPR Article 33 notification filed; relevant to CH cantonal authorities managing student data"
+    public_sector_nexus: "direct — city government subsidiary, student data management"
+    sector: "government, education"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Etwa 120.000 sensible Schülerdaten der Stadt München sind im Darknet aufgetaucht — die zuständige städtische Gesellschaft LHM-Services untersucht einen möglichen Insider-Fall"
+        attribution: "Heise Security (DE) — 'About 120,000 sensitive student records of the City of Munich appeared on the darknet — the responsible municipal company LHM-Services is investigating a possible insider case'"
+        source_url: "https://www.heise.de/news/Datenschutzvorfall-in-Muenchen-120-000-sensible-Schuldaten-im-Darknet-11333920.html"
+      - quote: "LHM-Services hat den Bayerischen Landesbeauftragten für den Datenschutz gemäß Art. 33 DSGVO informiert und Strafanzeige gestellt"
+        attribution: "LHM-Services GmbH press release — 'LHM-Services has informed the Bavarian State Commissioner for Data Protection under Art. 33 GDPR and filed a criminal complaint'"
+        source_url: "https://www.lhm-services.de/aktuell/pressemitteilung-datenschutzvorfall"
+    extended_notes: |
+      MITRE ATT&CK: T1078.001 (Valid Accounts — insider/terminated employee), T1530 (Data from Cloud Storage
+      or managed database), T1048 (Exfiltration Over Alternative Protocol — data download via legitimate
+      client access). Detection for defenders managing similar education data platforms: monitor bulk export
+      operations (EID 4663 object access on large datasets); alert on anomalous data volume downloads by
+      accounts marked for offboarding; enforce role-based data access with time-limited credentials for
+      departing employees; privileged-access-management (PAM) controls for database export functions.
+      Hardening: implement just-in-time access revocation on HR offboarding workflow; audit-log all
+      database export operations; enforce data classification labels preventing bulk personal-data export
+      without secondary approval; review GDPR Art. 5(1)(f) accountability chain for outsourced data
+      processors (applicable to CH cantonal authorities using third-party data processors).
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-at
+    reason: "CERT.at RSS feed returned HTTP 404 on both attempted URLs (https://cert.at/warnings/rssfeed/ and https://www.cert.at/feed.xml); no in-window items retrieved from this source."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actu-recent feed returned items only through December 2025; feed confirmed stale, no June 2026 items available."
+  - source_id: ncsc-ch-direct
+    reason: "NCSC-CH Security Hub web portal not directly WebFetch-accessible (403); accessed via bridge subcommand ncsc-csh which returned post 12605 for CVE-2026-0257. Coverage obtained for this source via bridge."

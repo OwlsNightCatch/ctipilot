@@ -1,0 +1,243 @@
+# work/2026-06-17-e102009c/findings.S3.yaml
+domain: S3
+run_id: 2026-06-17-e102009c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-17T04:07:09Z
+ended_at: 2026-06-17T04:16:58Z
+duration_seconds: 589
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 18
+  bridge_fetches: 16
+
+items:
+  - title: "ESET: FishMonger (I-SOON) ports SprySOCKS backdoor to Windows with kernel-driver rootkit — government targets in Asia and Central America"
+    sources:
+      - url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/windows-version-of-sprysocks-linux-malware-used-to-attack-govt-orgs/"
+        publisher: "BleepingComputer"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN RSS feed), URL https://feeds.feedburner.com/TheHackersNews → pivot: ESET WeLiveSecurity primary, URL https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/ → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/windows-version-of-sprysocks-linux-malware-used-to-attack-govt-orgs/"
+    summary: |
+      ESET published on June 16, 2026 two previously undiscovered Windows variants of SprySOCKS, a backdoor first attributed to FishMonger (Earth Lusca / Aquatic Panda / TAG-22 / Red Dev 10), assessed with high confidence to be operated by Chinese contractor I-SOON. SprySOCKS was previously known only as a Linux backdoor; ESET telemetry shows the Windows variants were actively deployed between 2023 and 2024 against government organisations in Taiwan, Thailand, Pakistan, and Honduras, targeting entities in foreign affairs, technology, and telecommunications.
+
+      The two variants are WIN_DRV and WIN_PLUS. WIN_PLUS is a barebones port of the Linux backdoor, supporting C2 over TCP, UDP, and WebSocket with more than 30 commands; it achieves persistence as a Windows Print Processor named VSPMsg. WIN_DRV is substantially more capable: it loads a kernel driver called DriverLoader (binary: fsdiskbit.sys, signed with a certificate from the public GitHub PastDSE leaked-cert corpus), which in turn memory-loads a second kernel driver named RawWNPF. Together these drivers provide rootkit-class stealth: process hiding via Windows API hooking, file hiding from directory listings, network-connection hiding, and registry-key concealment. WIN_DRV achieves persistence via a scheduled task and Image File Execution Options (IFEO) hijack targeting vds.exe.
+
+      The most operationally significant capability in WIN_DRV is TCP traffic diversion: the driver inspects all incoming TCP traffic and redirects specially crafted packets to the SprySOCKS backdoor's listening port, meaning the backdoor can receive operator commands through an arbitrary, non-fixed TCP port that never appears in netstat output or network-connection telemetry. The encrypted payload container for WIN_DRV is stored at %SystemRoot%\Fonts\X1B5206BDC1743DD.dat, decrypted with 128-bit AES ECB using a hardcoded key. ESET also notes limited telemetry indications of a possible UEFI bootkit component in some attack scenarios, potentially exploiting CVE-2023-24932 (Secure Boot bypass / BlackLotus-class), though this is not confirmed.
+    ch_eu_nexus: "indirect — FishMonger campaigns target government bodies in Asia; I-SOON attribution indicates PRC-directed espionage applicable to any government or critical-sector target. EU/CH government and telco defenders should verify kernel-driver integrity and scheduled-task hygiene."
+    public_sector_nexus: "direct — government organisations in foreign affairs, technology, and telecommunications sectors."
+    sector: "government, telecommunications, technology"
+    cves: ["CVE-2023-24932"]
+    actors_campaigns_malware: ["FishMonger", "Earth Lusca", "Aquatic Panda", "I-SOON", "TAG-22", "Red Dev 10", "SprySOCKS", "WIN_DRV", "WIN_PLUS", "DriverLoader", "RawWNPF"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ESET researchers have discovered SprySOCKS for Windows, FishMonger's backdoor weaponizing a kernel driver for advanced stealthiness."
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+      - quote: "The WIN_DRV version utilizes kernel drivers to hide the malware's network connections, processes, files, and registry keys, and enables TCP traffic diversion allowing the malware operators to send commands to the backdoor through a random TCP port on the victim's device without exposing the backdoor's real listening port in the network traffic."
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+      - quote: "Unlike the previously documented Linux version, the Windows variant adds kernel-level stealth capabilities allowing operators to hide malware artifacts and communicate with the backdoor through traffic redirected from arbitrary TCP ports"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/windows-version-of-sprysocks-linux-malware-used-to-attack-govt-orgs/"
+    extended_notes: |
+      Defender vantage: Detection of WIN_DRV is difficult post-deployment because the driver actively hides process, file, and registry artefacts. Pre-deployment hunting angles include: (1) Scheduled task creation events (Sysmon EID 1 / Windows EID 4698) referencing uncommon binaries in %SystemRoot%\Fonts\; (2) IFEO (Image File Execution Options) modification for vds.exe in HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options (EID 4657 or Sysmon EID 13); (3) kernel-driver load events (Sysmon EID 6 / EID 7) for unsigned or revoked-cert drivers loaded via PastDSE-derived certificates; (4) unusual files in %SystemRoot%\Fonts\ with .dat extension and anomalous size; (5) Print Processor registration under HKLM\SYSTEM\CurrentControlSet\Control\Print\Environments\Windows x64\Print Processors\ for novel entries (persistence for WIN_PLUS). TCP traffic diversion means standard netstat/Process Hacker network-tab inspection is insufficient for detection after WIN_DRV is loaded — rely on kernel-level network telemetry (e.g. ETW NT Kernel Logger network events or EDR kernel sensors) to enumerate listening sockets.
+
+  - title: "Unit 42 \"Pickle in the Middle\": Google Vertex AI SDK bucket-squatting lets cross-tenant attacker execute code inside Google's model-serving infrastructure (CVE-2026-2473, fixed)"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/"
+        publisher: "Palo Alto Networks Unit 42"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/google-vertex-ai-sdk-flaw-let-attackers.html"
+        publisher: "The Hacker News"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN RSS feed), URL https://feeds.feedburner.com/TheHackersNews → primary: Unit 42 blog, URL https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/ → corroboration: THN, URL https://thehackernews.com/2026/06/google-vertex-ai-sdk-flaw-let-attackers.html"
+    summary: |
+      Unit 42 researchers published on June 16, 2026 a disclosure of a cross-tenant remote code execution vulnerability class they named "Pickle in the Middle," affecting the Google Cloud Vertex AI SDK for Python. The root cause is in gcs_utils.py inside the stage_local_data_in_gcs() function: when a caller does not specify a custom staging bucket, the SDK constructs a predictable bucket name from the project ID and region (pattern: {project-id}-vertex-staging-{region}). Because Google Cloud Storage bucket names are globally unique and publicly claimable, an attacker who knows (or can guess) a target's project ID can preemptively register the predictable bucket name in their own project.
+
+      Attack flow: (1) attacker creates the bucket with open IAM so any authenticated GCP identity can read/write; (2) attacker deploys a Cloud Function triggered on google.storage.object.finalize for that bucket; (3) victim runs standard SDK model-upload code without specifying a bucket — SDK silently uploads to the attacker-controlled bucket; (4) the Cloud Function fires within the opportunity window, replaces the victim's model.joblib with an attacker-crafted pickle payload; (5) Vertex AI's service agent P4SA loads the swapped model, deserialising the pickle, executing arbitrary code inside Google's serving container with the platform service account's privileges. The attack exploits the fact that Python pickle and joblib serialisation formats execute arbitrary code during deserialisation, and that Vertex AI's serving infrastructure inherently deserialises uploaded model artifacts.
+
+      Unit 42 reported the vulnerability through Google's bug bounty program. Google patched in google-cloud-aiplatform SDK v1.148.0, released April 15, 2026. Affected versions: 1.139.0 through 1.147.x. CVE-2026-2473 was assigned. Google stated no exploitation in the wild was observed. Unit 42 also notes they used an LLM to accelerate the code-analysis phase of the research, significantly reducing discovery time.
+    ch_eu_nexus: "global — any Vertex AI SDK user who did not pin a staging bucket in SDK versions 1.139.0–1.147.x is/was potentially affected. EU and Swiss organisations using GCP Vertex AI for ML-pipeline automation should verify their SDK version and check whether models served via Vertex AI used the default staging path."
+    public_sector_nexus: "indirect — affects GCP Vertex AI users broadly; EU public sector increasingly uses GCP AI services."
+    sector: "cloud, AI/ML, technology"
+    cves: ["CVE-2026-2473"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The root enabler of this attack is a predictable default bucket name, combined with a missing ownership check in the SDK's staging logic. When a Vertex AI user uploads a model without specifying a custom staging bucket, the SDK constructs a bucket name using a deterministic pattern based on the project ID and region."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/"
+      - quote: "Palo Alto Networks Unit 42, which found and reported the bug through Google's bug bounty program, calls the technique 'Pickle in the Middle' and said it saw no exploitation in the wild."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/google-vertex-ai-sdk-flaw-let-attackers.html"
+      - quote: "Google completed the fixes to address this issue in v1.148.0, which was released April 15, 2026."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/"
+    extended_notes: |
+      Defender takeaway: Organisations running GCP Vertex AI pipelines should (1) upgrade google-cloud-aiplatform to >= 1.148.0 immediately; (2) audit existing Vertex AI job configurations for use of default staging_bucket; (3) use GCS bucket-level access controls (Uniform Bucket-Level Access / IAM Conditions) to restrict who can create buckets matching the predictable naming pattern in all GCP projects; (4) enable Google Cloud Audit Logs for GCS objectCreate events in staging buckets and alert on bucket ownership changing — specifically any bucket matching {project-id}-vertex-staging-{region} that is not owned by your organisation. The broader technique class (bucket squatting / predictable cloud resource naming) applies to any cloud-managed service that constructs resource names from tenant-controlled identifiers without ownership verification.
+
+  - title: "Sekoia TDR: ErrTraffic — a MaaS ClickFix distribution framework using Polygon blockchain for C2 resolution targets EU/APAC WordPress sites"
+    sources:
+      - url: "https://blog.sekoia.io/unveiling-errtraffic-inside-a-growing-clickfix-malware-distribution-framework/"
+        publisher: "Sekoia TDR"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.levelblue.com/blogs/spiderlabs-blog/err-hiding-and-seek-how-errtraffic-v3-leverages-etherhiding-in-clickfix-campaign"
+        publisher: "LevelBlue SpiderLabs"
+        date: "2026-05-01"
+        role: "corroborating (background)"
+    discovery_trace: "first seen at: Sekoia blog category listing, URL https://blog.sekoia.io/category/threat-research/ → primary: Sekoia ErrTraffic post, URL https://blog.sekoia.io/unveiling-errtraffic-inside-a-growing-clickfix-malware-distribution-framework/ (published 2026-06-16, originally distributed as private customer report 2026-06-02)"
+    summary: |
+      Sekoia's Threat Detection & Research team published on June 16, 2026 (originally as a private customer report on June 2) an in-depth analysis of ErrTraffic, a ClickFix malware distribution framework sold as a Malware-as-a-Service (MaaS) by a threat actor using the handle LenAI on the Exploit.IN Russian-language cybercrime forum and Telegram since at least December 2025. Subscriptions range from one to six months, with prices scaled by traffic volume and geography.
+
+      ErrTraffic operates as a traffic distribution system (TDS): affiliates compromise WordPress sites by (a) credential stuffing against wp-login.php using stolen credentials from infostealers, validated through a residential-proxy-based distributed validation service, then (b) deploying a PHP backdoor as a WordPress must-use (mu) plugin (session-manager.php) that injects the ErrTraffic JavaScript framework into site pages. The JavaScript uses Base64/XOR/text-encoding obfuscation, then applies the EtherHiding technique — querying Polygon blockchain smart contracts via Quicknode RPC endpoints — to dynamically resolve C2 domains, making infrastructure takedowns ineffective. RC4 encryption is used for C2 communications.
+
+      Sekoia identified two distinct ErrTraffic clusters: "Analytics" (uses a single smart contract, distributes Vidar infostealer; wallet address 0x08207B087F61d7e95E441E15fd6d40BEfd6eD308 on Polygon) and "Beer" (uses per-payload smart contracts, TLD .beer, distributes Vidar, Stealc, Remus, Salat, SmokeLoader, and undocumented families). A distinctive detection pattern for the Beer cluster is the /cf.js endpoint used by C2 scripts. Forensic analysis of a victim WordPress server confirmed initial access via stolen credentials, with a credential-stuffing event from seven geographically distributed residential IPs within an 80-second window on March 7, 2026. The operator also attempted CVE-2020-25213 (WP File Manager pre-auth RCE) as a fallback, indicating pre-built multi-vector attack chains.
+
+      Visitor-side ClickFix lures prompt PowerShell execution via fake browser-update / font-installation dialogues. A distinctive pattern in the PowerShell command is a comment block of the form <# Code Verification: 656560395146 #> at the beginning of the command string, which is a reliable hunt artefact.
+    ch_eu_nexus: "significant — ErrTraffic explicitly targets European and APAC visitors; the MaaS model means any affiliate can route EU WordPress site traffic through the framework. Swiss and EU public-sector WordPress installations used for citizen-facing portals are a plausible target surface."
+    public_sector_nexus: "indirect — public-sector WordPress portals are in scope"
+    sector: "education, government, media, SME"
+    cves: ["CVE-2020-25213"]
+    actors_campaigns_malware: ["ErrTraffic", "LenAI", "Vidar", "Stealc", "Remus", "Salat", "SmokeLoader", "EtherHiding", "ClearFake"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Since at least December 2025, the threat actor operating under the handle LenAI has advertised and sold the ErrTraffic framework under a MaaS model, on the Exploit.IN cybercrime forum and Telegram."
+        attribution: "Sekoia TDR"
+        source_url: "https://blog.sekoia.io/unveiling-errtraffic-inside-a-growing-clickfix-malware-distribution-framework/"
+      - quote: "The Beer ErrTraffic cluster interacts with the Polygon blockchain by querying various public RPC endpoints, mainly Quicknode. Several wallet addresses are used, according to the deployed ErrTraffic framework, to retrieve C2 domains predominantly characterised by the .beer TLD."
+        attribution: "Sekoia TDR"
+        source_url: "https://blog.sekoia.io/unveiling-errtraffic-inside-a-growing-clickfix-malware-distribution-framework/"
+      - quote: "The resulting PowerShell command is particularly distinctive, featuring a pattern such as <# Code Verification: 656560395146 #> at the beginning of the string, which offers an effective pattern for detection and hunting."
+        attribution: "Sekoia TDR"
+        source_url: "https://blog.sekoia.io/unveiling-errtraffic-inside-a-growing-clickfix-malware-distribution-framework/"
+    extended_notes: |
+      Detection angles: (1) PowerShell process creation events (Sysmon EID 1 / EID 4688) where the command line contains the pattern <# Code Verification: [0-9]{12} #> — this is the Sekoia-identified distinctive artefact across ErrTraffic campaigns; (2) web-server access logs for WordPress sites: POST to /wp-login.php from high numbers of distinct residential IPs within short time windows (credential stuffing), followed by creation of /wp-content/mu-plugins/session-manager.php; (3) DNS/proxy queries for domains resolving to Polygon RPC endpoints (Quicknode), particularly from WordPress server processes; (4) WordPress mu-plugin directories for unexpected new PHP files (mu-plugins are loaded automatically without activation and are a known persistence vector). Hardening: enforce WordPress logins with CAPTCHA or rate-limiting; monitor wp-login.php access patterns; restrict wp-content/mu-plugins/ to read-only except during admin update windows; block outbound web requests from the webserver process to blockchain RPC endpoints.
+
+  - title: "Huntress: Potemkin — a new ClickFix-delivered x64 DGA loader drops EtherRAT and RMMProject RAT, defeating Chromium App-Bound Encryption"
+    sources:
+      - url: "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack"
+        publisher: "Huntress"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/clickfix-campaigns-expand-malware.html"
+        publisher: "The Hacker News"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN RSS feed), URL https://feeds.feedburner.com/TheHackersNews → primary: Huntress blog, URL https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack → corroboration: THN, URL https://thehackernews.com/2026/06/clickfix-campaigns-expand-malware.html"
+    summary: |
+      Huntress researchers Anna Pham and Zach Rogers published on June 16, 2026 an analysis of a ClickFix infection chain that delivers a previously undocumented loader named Potemkin. The infection begins with a ClickFix social-engineering lure that installs an MSI package, which drops Potemkin via an HTML Application (HTA) payload. Potemkin is a custom x64 PE loader using a domain generation algorithm (DGA) to locate its C2, and reflectively loads follow-on modules entirely in memory — no disk writes for the modules themselves. Huntress assesses Potemkin has been active in the wild since at least February 2026.
+
+      Potemkin's primary payloads are EtherRAT (a Node.js-based RAT that uses the Ethereum blockchain for C2 resolution, first reported by Sysdig in December 2025 targeting Linux servers via CVE-2025-55182, with a Windows variant documented by Atos in March 2026) and RMMProject, a Lua-scriptable DLL that provides hidden remote desktop access, keylogging, and browser credential theft. Crucially, RMMProject includes a module specifically designed to defeat Chromium's App-Bound Encryption (ABE) — the credential-storage protection introduced in Chrome 127 — enabling theft of saved credentials from Chrome-family browsers. RMMProject's task dispatcher supports: file/process execution, screenshot capture, browser autofill data exfiltration, arbitrary Lua script execution, browser process termination, and dynamic module download-and-execute.
+
+      Huntress observed lateral movement across more than 11 hosts in a single intrusion, indicating that the Potemkin-RMMProject chain is intended for network-wide credential harvesting operations, not single-host compromise.
+    ch_eu_nexus: "significant — ClickFix lures target EU/global Windows users broadly; ABE bypass is relevant for any enterprise using Chrome-family browsers for SSO and web application access including Swiss federal and cantonal IT."
+    public_sector_nexus: "indirect — credential theft via browser targets any environment using Chrome-family browsers"
+    sector: "broad, cross-sector"
+    cves: ["CVE-2025-55182"]
+    actors_campaigns_malware: ["Potemkin", "EtherRAT", "RMMProject", "ClickFix"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Potemkin loader is a 'custom x64 loader that uses a domain generation algorithm to find its C2 and reflectively loads follow-on modules in memory,' according to Huntress researchers Anna Pham and Zach Rogers."
+        attribution: "Huntress (via THN)"
+        source_url: "https://thehackernews.com/2026/06/clickfix-campaigns-expand-malware.html"
+      - quote: "The loader serves as a conduit for EtherRAT and RMMProject, a Lua-scriptable DLL with modules to enable remote screen control and browser credential theft by getting around Chromium's App-Bound Encryption (ABE) protections."
+        attribution: "THN (summarising Huntress research)"
+        source_url: "https://thehackernews.com/2026/06/clickfix-campaigns-expand-malware.html"
+      - quote: "ClickFix infection drops Potemkin loader and RMMProject RAT, leading to browser theft, hidden remote desktop, and lateral movement across over 11 hosts."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/potemkin-loader-rmmproject-clickfix-attack"
+    extended_notes: |
+      Detection angles: (1) Parent process: mshta.exe spawned by msiexec.exe or cmd.exe — an unusual parent chain for HTA execution (Sysmon EID 1 / 4688, process parent filter); (2) reflective module loading: process memory anomalies detectable by EDR that monitor for executable memory regions written without a corresponding file-backed mapping (e.g. NtCreateSection(SEC_ANONYMOUS) patterns); (3) DGA-based C2 beacon: DNS queries to newly-registered, algorithmically structured domains from mshta.exe or its child processes; (4) Ethereum blockchain DNS resolution: outbound HTTPS to known blockchain RPC endpoints (Infura, Alchemy, Quicknode) from user processes other than browsers; (5) Chromium ABE bypass: EDR/AV hooks on Chrome's DPAPI/LocalState decryption calls from non-Chrome processes; (6) lateral movement: SMB/WMI/RDP connections originating from the initial compromised host to internal targets (4624 Logon Type 3 / Type 10 sourced from workstation). Hardening: block mshta.exe execution via AppLocker or WDAC; disable ClickFix by configuring browser popups to require explicit user activation.
+
+  - title: "Zimperium: Rokarolla — new Android banking trojan targets 217 financial and crypto apps with 137 commands and full device-takeover including PIN theft and call blocking"
+    sources:
+      - url: "https://zimperium.com/blog/rokarolla-android-banker-with-complete-device-takeover-capabilities"
+        publisher: "Zimperium zLabs"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/new-rokarolla-android-malware-targets-217-banking-crypto-apps/"
+        publisher: "BleepingComputer"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN RSS feed), URL https://feeds.feedburner.com/TheHackersNews → primary: Zimperium zLabs, URL https://zimperium.com/blog/rokarolla-android-banker-with-complete-device-takeover-capabilities → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-rokarolla-android-malware-targets-217-banking-crypto-apps/"
+    summary: |
+      Zimperium zLabs published on June 16, 2026 research on Rokarolla, a new Android banking trojan named after its C2 infrastructure patterns. Rokarolla distributes via malicious websites masquerading as TikTok or Google Chrome, using a dropper that impersonates Google Play Protect to install a second-stage payload. The second stage requests Accessibility Service permissions and additional SMS/notification access.
+
+      Rokarolla targets 217 banking and cryptocurrency applications, maintaining a dynamic target list fetched from a <monitored_app_full> C2 endpoint. Its 137-command framework enables near-complete operator control of the infected device: it lifts the lock-screen PIN via overlay/keylog, reads and sends SMS (intercepting OTPs), rewrites the clipboard to redirect cryptocurrency payments, disables Google Play Protect, and — most distinctively — sets itself as the default handler for calls and SMS to block incoming communications from banks (warning calls and SMS). The malware forces the device screen to remain permanently on to maintain overlay activity and prevent lock-screen timeouts during automated fraud sequences.
+
+      Infection chain: (1) dropper impersonates Google Play Protect to gain Accessibility Service permissions, sideloading second-stage APK; (2) second-stage requests SMS/notification permissions; (3) malware registers as default call/SMS handler; (4) full-screen overlay is activated during fraud sequences, suppressing legitimate device interaction. Zimperium detects Rokarolla via its on-device AI-based behavioural detection engine, flagging Accessibility Service abuse and secondary APK sideloading.
+    ch_eu_nexus: "significant — European banking apps are commonly among Android banking trojan target lists. Any EU/Swiss bank user on unmanaged Android devices is a potential target via social engineering to sideload apps."
+    public_sector_nexus: "indirect — affects citizens using Android devices for e-banking"
+    sector: "financial services, cryptocurrency"
+    cves: []
+    actors_campaigns_malware: ["Rokarolla"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The infection process begins when a dropper misleads users into installing a secondary payload containing the core malware. By masquerading as Google Play Protect, the dropper facilitates the installation of this payload."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/rokarolla-android-banker-with-complete-device-takeover-capabilities"
+      - quote: "Named Rokarolla after its command-and-control (C2) servers, the malware was detailed by zLabs, the research arm of mobile security firm Zimperium, which found it targeting 217 banking and cryptocurrency apps through a toolkit of 137 commands."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-rokarolla-android-malware-targets-217-banking-crypto-apps/"
+      - quote: "By making itself the phone's default app for texts and calls, it can also block incoming calls, so a warning call from the bank never gets through."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-rokarolla-android-malware-targets-217-banking-crypto-apps/"
+    extended_notes: |
+      Detection and hardening: Rokarolla is distributed exclusively via sideloading (malicious websites); it cannot be delivered through the Play Store under current policies. Enterprise controls: (1) enforce Android Enterprise / MDM policies disabling "Install from Unknown Sources" or "USB Debugging" on corporate devices; (2) for BYOD, use MAM (Mobile Application Management) policies that restrict corporate apps to managed containers. User-facing indicators: Google Play Protect being disabled by an app the user did not disable themselves; a new app requesting Accessibility Service access after installation from a website. Zimperium's on-device engine detects the Accessibility Service abuse + secondary APK sideloading behavioural pattern; any mobile EDR with similar hooks should fire on this pattern.
+
+cve_table:
+  - cve: "CVE-2026-2473"
+    product: "Google Cloud Vertex AI SDK for Python"
+    cvss: "not yet scored"
+    epss: "N/A"
+    kev: false
+    exploited: false
+    patch: "google-cloud-aiplatform >= 1.148.0 (released 2026-04-15)"
+    source: "https://unit42.paloaltonetworks.com/hijacking-vertex-ai-model/"
+  - cve: "CVE-2023-24932"
+    product: "Windows Boot Manager (Secure Boot)"
+    cvss: "6.7"
+    epss: "N/A"
+    kev: true
+    exploited: true
+    patch: "Microsoft KB5034441 / associated Secure Boot revocation updates"
+    source: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+
+candidate_sources:
+  - id: zimperium-zlabs
+    publisher: "Zimperium zLabs (zimperium.com/blog)"
+    url: "https://zimperium.com/blog"
+    rss_url: null
+    category: research
+    why: "First-party primary mobile threat research (Android/iOS banking trojans, mobile EDR findings). Zimperium is the leading mobile-security research firm. Published Rokarolla in-window as a new primary. Should be in sources.json for S3 mobile coverage."
+
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos blog at news.sophos.com served by Next.js SPA; article body not extractable via bridge. June 16 article 'A needle in a stack of needles: Hunting infostealers with AI' confirmed published 2026-06-16 but substantive technical content not recoverable without JS rendering."
+  - source_id: akamai-sirt
+    reason: "No in-window Akamai SIRT blog posts found via WebSearch; most recent content was February 2026."
+  - source_id: dragos
+    reason: "Dragos 2026 OT/ICS Year in Review published February 2026 — outside window. No in-window Dragos research found."
+  - source_id: sans-ics
+    reason: "No in-window SANS ICS-specific threat research found — SANS ICS Summit ran June 8–10, no published research output within window."
+  - source_id: talos
+    reason: "Most recent Talos blog post in feed is June 11, 2026 ('A tale of two eras' newsletter) — outside 36-hour window. No substantive in-window Talos technical research found."
