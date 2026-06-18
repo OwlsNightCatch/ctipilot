@@ -1,0 +1,267 @@
+# work/2026-06-18-aa7ee817/findings.S3.yaml
+domain: S3
+run_id: 2026-06-18-aa7ee817
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-18T04:06:30Z
+ended_at: 2026-06-18T04:42:00Z
+duration_seconds: 2130
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 9
+  bridge_fetches: 10
+
+items:
+  - title: "144 Mastra npm packages backdoored via hijacked contributor account — easy-day-js supply chain attack"
+    sources:
+      - url: "https://thehackernews.com/2026/06/144-mastra-npm-packages-compromised-via.html"
+        publisher: "The Hacker News"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.endorlabs.com/learn/mastra-npm-supply-chain-attack"
+        publisher: "Endor Labs"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: The Hacker News article https://thehackernews.com/2026/06/144-mastra-npm-packages-compromised-via.html → pivot: Endor Labs primary research https://www.endorlabs.com/learn/mastra-npm-supply-chain-attack"
+    summary: |
+      Attackers hijacked the npm account of a former contributor to the Mastra AI framework ("ehindero"), whose
+      maintainer access had not been revoked following their departure. Using that account, the attacker published
+      a malicious package named "easy-day-js" — a trojanised clone of the popular date-manipulation library
+      day.js — as a dependency across 144 @mastra/* scoped packages. The malicious postinstall hook in
+      easy-day-js fetched a remote payload and executed it, deploying a cross-platform infostealer with persistence
+      capability. The attack vector is T1195.001 (Compromise Software Dependencies and Development Tools),
+      with initial execution via T1059.007 (JavaScript). Persistence was established via T1547 (Boot/Logon
+      Autostart). The attack exploited a contributor access revocation failure — a systemic risk in AI-framework
+      ecosystems where contributor churn is high. Defenders maintaining CI/CD pipelines consuming @mastra/*
+      packages should audit their dependency trees for easy-day-js, monitor for postinstall hook execution
+      spawning from npm/node parent processes (Sysmon EID 1), and enforce lockfile integrity on every
+      install (--frozen-lockfile / package-lock auditing). All 144 affected packages have been removed from
+      npm registry; versions published between June 15–17 should be treated as suspect.
+    ch_eu_nexus: "global supply chain; affects any EU/CH developer or CI/CD pipeline consuming @mastra/* AI framework packages"
+    public_sector_nexus: "indirect — public-sector development teams using npm tooling"
+    sector: "software development, AI tooling, financial services (downstream)"
+    cves: []
+    actors_campaigns_malware: ["easy-day-js (malicious npm package)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "144 npm packages belonging to the popular Mastra AI framework were compromised after attackers hijacked the account of a former contributor whose access had never been revoked"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/144-mastra-npm-packages-compromised-via.html"
+      - quote: "The malicious package 'easy-day-js' was inserted as a dependency, containing a postinstall script that downloaded and executed a remote payload"
+        attribution: "Endor Labs"
+        source_url: "https://www.endorlabs.com/learn/mastra-npm-supply-chain-attack"
+    extended_notes: |
+      This attack demonstrates the contributor-offboarding gap in open-source ecosystems — access is granted
+      for active development but not automatically revoked on departure. AI framework ecosystems (LangChain,
+      Mastra, LlamaIndex) have accelerated contribution rates making this risk acute. Detection engineers
+      should consider adding npm/node parent-process tree rules for unexpected shell spawns, and package-manager
+      security tooling (Endor Labs, Socket, Snyk) all flagged this within hours of publication.
+
+  - title: "15 malicious JetBrains Marketplace plugins exfiltrate AI API keys via settings handler"
+    sources:
+      - url: "https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+        publisher: "Aikido Security"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/malicious-jetbrains-plugins-steal-ai.html"
+        publisher: "The Hacker News"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: The Hacker News article https://thehackernews.com/2026/06/malicious-jetbrains-plugins-steal-ai.html → primary: Aikido Security blog https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+    summary: |
+      Aikido Security identified 15 malicious plugins across 7 vendor accounts on the JetBrains Marketplace,
+      active since at least October 2025, that systematically exfiltrate stored AI API keys (OpenAI, Anthropic,
+      Gemini, GitHub Copilot tokens). The credential theft mechanism abuses the IDE's plugin settings persistence
+      layer: the malicious plugins register a save() settings handler that intercepts credentials at write-time
+      and exfiltrates them over plain HTTP (not HTTPS) to a Chinese-hosted IP. Stolen keys are subsequently
+      resold as "paid tier" access to AI services in underground markets. The two largest plugins — CodeGPT AI
+      Assistant (25,571 downloads) and DeepSeek AI Assist (27,727 downloads) — account for a significant
+      portion of likely victims. The attack chain maps to T1195.001 (Compromise Software Supply Chain),
+      T1552.001 (Credentials in Files/IDE storage), and T1041 (Exfiltration Over C2 Channel). JetBrains
+      removed the plugins and has suspended the associated vendor accounts. Defenders should audit all
+      installed JetBrains plugins for those published by the 7 identified vendor accounts, rotate any AI
+      API keys that may have been stored in affected IDEs, and implement network monitoring for IDE processes
+      making outbound plain HTTP connections to non-provider IP addresses.
+    ch_eu_nexus: "global; directly affects EU/CH software development organisations using JetBrains IDEs with AI integrations"
+    public_sector_nexus: "indirect — public-sector development teams using IntelliJ IDEA, PyCharm, GoLand with AI plugins"
+    sector: "software development, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We found 15 malicious plugins across 7 vendor accounts on the JetBrains Marketplace that have been stealing AI API keys since at least October 2025"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+      - quote: "The plugins abuse the IDE's settings save() handler to intercept and exfiltrate credentials over plain HTTP to a threat-actor-controlled server"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+    extended_notes: |
+      The plain-HTTP exfiltration detail is significant for detection: JetBrains IDE processes (idea64.exe,
+      pycharm64.exe, goland64.exe) making outbound port-80 connections to non-JetBrains / non-AI-provider IPs
+      is a high-fidelity hunt hypothesis. EDR network telemetry filtering on process name + destination port 80
+      + destination IP not in known-good ASN list should surface this pattern. The "paid tier resale" monetization
+      model suggests organized infrastructure behind the campaign — not opportunistic.
+
+  - title: "ScarCruft (APT37) NarwhalRAT — fake Microsoft OTP alerts deliver compiled-Python RAT with pCloud dead-drop C2"
+    sources:
+      - url: "https://www.genians.co.kr/en/blog/threat_intelligence/narwhalrat"
+        publisher: "Genians Security Center"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/fake-microsoft-alerts-used-to-deploy.html"
+        publisher: "The Hacker News"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: The Hacker News article https://thehackernews.com/2026/06/fake-microsoft-alerts-used-to-deploy.html → primary: Genians Security Center https://www.genians.co.kr/en/blog/threat_intelligence/narwhalrat"
+    summary: |
+      Genians Security Center attributed a new campaign to ScarCruft (APT37, North Korean state nexus) deploying
+      a new RAT dubbed NarwhalRAT. The attack chain begins with a spearphishing email impersonating a Microsoft
+      multi-factor authentication (OTP) security alert. The lure contains a ZIP archive holding a Windows Shortcut
+      (LNK) file; execution triggers PowerShell with -ExecutionPolicy Bypass, which uses curl to download a batch
+      script (KHjWFcsE.bat). The batch script establishes persistence via a Windows scheduled task named
+      "MicrosoftUserInterfacePicturesUpdateTackMachine" (T1053.005) with a 1-minute execution interval. The
+      payload userscreen.exe — a compiled Python binary — loads config.cat (compiled Python bytecode, obfuscated
+      via chr() sequences with string reversal) and implements a full-featured RAT with keylogging (T1056.001),
+      screenshot capture (T1113), audio recording (T1123), USB data collection, and remote command execution.
+      The C2 infrastructure uses Korean relay servers and a pCloud API dead-drop resolver (T1102.001) to receive
+      current C2 addresses, providing resilience against takedown. Detection hunting: Sysmon EID 1 for
+      schtasks.exe creating tasks with "MicrosoftUserInterface" prefix; Sysmon EID 11 for file creation under
+      C:\Users\Public\AccountPictures\; Windows EID 4698 (scheduled task created) with "UserInterfacePicture"
+      substring in task name; network telemetry for pCloud API calls from compiled-Python process images.
+    ch_eu_nexus: "North Korean APT37 campaigns target Korean diaspora and policy organisations globally; risk to EU think tanks, government advisors, Korean-community NGOs"
+    public_sector_nexus: "direct — APT37 targets government, diplomatic, and policy research sectors"
+    sector: "government, think tanks, policy research, Korean diaspora"
+    cves: []
+    actors_campaigns_malware: ["ScarCruft", "APT37", "NarwhalRAT"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ScarCruft has introduced a new piece of malware, NarwhalRAT, delivered via spearphishing emails impersonating Microsoft security alerts, with C2 resilience provided by a pCloud dead-drop resolver"
+        attribution: "Genians Security Center"
+        source_url: "https://www.genians.co.kr/en/blog/threat_intelligence/narwhalrat"
+      - quote: "The scheduled task 'MicrosoftUserInterfacePicturesUpdateTackMachine' runs at one-minute intervals, launching a compiled Python payload that performs keylogging, screenshot capture, audio recording, and USB data collection"
+        attribution: "Genians Security Center"
+        source_url: "https://www.genians.co.kr/en/blog/threat_intelligence/narwhalrat"
+    extended_notes: |
+      The pCloud dead-drop C2 pattern (T1102.001) is a recurring North Korean APT technique — using legitimate
+      cloud services to store current C2 addresses avoids hardcoded IP/domain detection. Defenders blocking
+      pCloud API endpoints at the perimeter should verify their EDR can still flag the behavioral chain
+      (scheduled task + compiled Python + pCloud network call) even without IP/domain IOCs. The "MicrosoftUserInterface"
+      prefix in the scheduled task name is a high-specificity hunt artifact.
+
+  - title: "Rust clipboard hijacker campaign abuses VirusTotal fake reputation economy — targets crypto traders with fake sniper bots"
+    sources:
+      - url: "https://research.checkpoint.com/2026/from-stars-to-upvotes-fake-reputation-fueling-a-crypto-clipboard-hijacker/"
+        publisher: "Check Point Research"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/crypto-clipper-campaign-abuses-fake.html"
+        publisher: "The Hacker News"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, URL https://feeds.feedburner.com/TheHackersNews → pivot: The Hacker News article https://thehackernews.com/2026/06/crypto-clipper-campaign-abuses-fake.html → primary: Check Point Research https://research.checkpoint.com/2026/from-stars-to-upvotes-fake-reputation-fueling-a-crypto-clipboard-hijacker/"
+    summary: |
+      Check Point Research documented a campaign distributing a Rust-based clipboard hijacker targeting
+      cryptocurrency traders and investors, distinguished by its systematic abuse of security-tool reputation
+      signals to suppress detection. The threat actor deploys a network of GitHub ghost accounts (6 accounts
+      identified), SourceForge pages (44,485 manipulated downloads reported), YouTube channels with AI-generated
+      narration and artificially inflated view counts, and Telegram channels — all advertising fake "edge" tools
+      for crypto markets: Solana/Pump.fun sniper bots, Aviator Predictor programs, and crash-game predictors.
+      Distribution vectors funnel victims through a WordPress phishing site to download the Rust binaries.
+      The VirusTotal manipulation technique is operationally significant: the threat actor submits fake benign
+      community votes and comments on VirusTotal to artificially lower the apparent threat score, making the
+      payload appear pre-vetted by the community. The payload monitors the Windows and macOS clipboard for
+      cryptocurrency wallet address patterns and silently substitutes attacker-controlled wallet addresses
+      (T1559 Inter-Process Communication — clipboard monitoring). Detection engineering pivot: EDR clipboard
+      modification alerting (hook-based) is the primary behavioural signal; process genealogy monitoring for
+      Rust binaries downloaded via browser and executed directly; VirusTotal community vote/comment signals
+      should no longer be treated as trust indicators for this malware family.
+    ch_eu_nexus: "global; crypto traders in CH/EU are direct targets; VirusTotal manipulation affects all defenders using community reputation signals"
+    public_sector_nexus: "indirect — affects any public-sector employee with personal crypto holdings targeted via these distribution channels"
+    sector: "financial services, cryptocurrency, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The attacker systematically manipulates VirusTotal community scores by submitting fake benign votes and comments, making the Rust-based clipboard hijacker appear safe to analysts who rely on community reputation signals"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/from-stars-to-upvotes-fake-reputation-fueling-a-crypto-clipboard-hijacker/"
+      - quote: "The campaign distributes fake crypto tools — Solana sniper bots, Aviator predictors — across GitHub ghost networks, SourceForge (44,485 downloads), YouTube with AI narration, and Telegram"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/from-stars-to-upvotes-fake-reputation-fueling-a-crypto-clipboard-hijacker/"
+    extended_notes: |
+      The VirusTotal community manipulation is the novel technical contribution of this research. Defenders
+      who rely on community votes/comments as a secondary trust signal (common in SOC triage workflows) should
+      treat this signal as unreliable for malware families distributed through fake-tool social engineering.
+      The cross-platform Rust payload (Windows + macOS) broadens the target surface beyond Windows-only
+      clipboard hijackers. The fake GitHub star / SourceForge download inflation is a recurring distribution
+      technique for crypto malware — detection engineers may want to build hunt queries around Rust binaries
+      executing from user Downloads/temp directories with no legitimate code-signing.
+
+  - title: "Sophos CTU: AI adoption in cybercriminal underground remains uneven — threat actors skeptical, demand for AI prompt engineers rising"
+    sources:
+      - url: "https://www.sophos.com/en-us/blog/ai-in-the-underground-curiosity-claims-and-concerns"
+        publisher: "Sophos CTU (Counter Threat Unit)"
+        date: "2026-06-17"
+        role: "primary"
+    discovery_trace: "first seen at: sophos-xops RSS feed https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 → primary: Sophos CTU blog post https://www.sophos.com/en-us/blog/ai-in-the-underground-curiosity-claims-and-concerns (published 2026-06-17)"
+    summary: |
+      Sophos CTU (Counter Threat Unit) published research based on underground forum monitoring examining
+      how cybercriminal communities are actually adopting — and resisting — AI tools. Key findings: criminal
+      actors express a mix of curiosity and skepticism toward AI, with many AI-capability claims in underground
+      markets going unvalidated or being fraudulent. Since January 1, 2026, Sophos observed a measurable
+      increase in underground job postings seeking AI prompt engineers — suggesting operationalisation is
+      beginning at the margins. The April 7, 2026 announcement of Anthropic's Project Glasswing (AI safety
+      initiative) generated significant discussion in underground forums, reflecting threat-actor awareness
+      of AI safety measures as potential barriers. The research provides useful calibration against hype:
+      widespread AI-augmented threat actor capability remains aspirational for most criminal groups, though
+      the upper tier of sophisticated actors may be further along. For EU/CH defenders, the implication is
+      that AI-enabled attacks are not yet the norm but AI-theme social engineering (fake AI tools, AI-branded
+      lures) is already prevalent and operationally demonstrated in parallel campaigns.
+    ch_eu_nexus: "global trend analysis; directly relevant to CH/EU defenders calibrating AI-threat posture"
+    public_sector_nexus: "indirect — informs threat modelling for public-sector organisations assessing AI-enabled threat escalation"
+    sector: "cross-sector (threat intelligence, SOC strategy)"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Sophos CTU observed a measurable increase in underground job postings seeking AI prompt engineers since January 1, 2026, suggesting operationalisation of AI tooling is beginning at the criminal ecosystem margins"
+        attribution: "Sophos CTU"
+        source_url: "https://www.sophos.com/en-us/blog/ai-in-the-underground-curiosity-claims-and-concerns"
+    extended_notes: |
+      Single-source item — Sophos CTU is a HIGH-reliability research lab; acceptable under the research-primary
+      carve-out. This is an awareness/trend item; no specific attack technique, CVE, or detection engineering
+      hook. Sophos-xops was flagged as rotation priority (failed 6 of last 7 runs); this run successfully
+      fetched the sophos-xops RSS feed and retrieved the in-window article. Verify the sophos-xops source
+      health record is updated after this run.
+
+candidate_sources:
+  - id: aikido-security
+    publisher: "Aikido Security (aikido.dev)"
+    url: "https://www.aikido.dev/blog"
+    rss_url: "https://www.aikido.dev/blog/feed"
+    category: research
+    why: "Aikido Security produced the primary research on the JetBrains Marketplace malicious plugins campaign. Their research is focused on software supply chain security, IDE security, and developer tooling attacks — a high-signal category for the S3 domain that is not currently covered by existing sources."
+
+coverage_gaps:
+  - source_id: elastic-seclabs
+    reason: "Elastic Security Labs feed returned items; newest in-window item was June 2 (outside 36h window). No qualifying items this run."
+  - source_id: dfirreport
+    reason: "DFIR Report feed checked; most recent in-window item was May 11. No qualifying items this run."
+  - source_id: msft-secblog
+    reason: "Microsoft Security Blog checked; newest item was June 8 (outside 36h window). No qualifying items this run."
+  - source_id: compass-security
+    reason: "Compass Security blog checked; newest item (Entra Agent ID, June 9) outside 36h window. No qualifying items this run."
+  - source_id: sophos-xops
+    reason: "Successfully fetched — sophos-xops rotation priority confirmed resolved. Two in-window articles (June 17 AI underground, June 16 item). One qualified item included."
+
+fetch_failures: []

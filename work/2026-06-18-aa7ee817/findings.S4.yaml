@@ -1,0 +1,172 @@
+domain: S4
+run_id: 2026-06-18-aa7ee817
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-18T04:06:36Z
+ended_at: 2026-06-18T05:12:00Z
+duration_seconds: 3924
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 14
+  bridge_fetches: 14
+
+items:
+  - title: "DragonForce Backdoor.Turn: first malware to abuse Microsoft Teams TURN relay as C2 — US services firm held two months undetected"
+    sources:
+      - url: "https://www.broadcom.com/support/security-center/protection-bulletin/hidden-in-teams-dragonforce-attackers-weaponize-microsoft-teams-relays-to-stay-hidden"
+        publisher: "Broadcom / Symantec Threat Intelligence"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/ransomware-gang-abuses-microsoft-teams-relays-to-hide-malicious-traffic/"
+        publisher: "BleepingComputer"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://www.helpnetsecurity.com/2026/06/16/dragonforce-microsoft-teams-malware-backdoor-turn/"
+        publisher: "Help Net Security"
+        date: "2026-06-16"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/microsoft-teams-relay-servers-abused-in-dragonforce-ransomware-attack/"
+        publisher: "SecurityWeek"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://securityaffairs.com/193801/security/dragonforce-hid-inside-microsoft-teams-and-nobody-noticed-for-two-months.html"
+        publisher: "Security Affairs"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: infosecurity-magazine feed → infosecurity-magazine article (DragonForce Ransomware Exploited Microsoft Teams) → WebSearch pivot → primary: Broadcom/Symantec, URL https://www.broadcom.com/support/security-center/protection-bulletin/hidden-in-teams-dragonforce-attackers-weaponize-microsoft-teams-relays-to-stay-hidden; BleepingComputer corroborating"
+    summary: |
+      Symantec (Broadcom) disclosed on 16 June 2026 that a DragonForce ransomware affiliate breached an unnamed major US services company and maintained covert access for approximately two months (initial compromise December 2025) by routing all command-and-control traffic through Microsoft Teams TURN relay infrastructure — the first documented malware to abuse this technique in the wild. The custom Go-based backdoor, designated Backdoor.Turn, operates by requesting an anonymous visitor token from Microsoft Teams / Skype identity services, establishing a TURN relay session (the NAT-traversal protocol normally used for peer-to-peer Teams calls), then running a QUIC session over that relay to the attacker's actual C2 server. From a network-monitoring perspective all outbound C2 traffic appeared destined for legitimate Microsoft infrastructure, rendering conventional perimeter controls blind. The initial entry vector is assessed as exploitation of an SQL/MSSQL server vulnerability or access-broker purchase; persistence was established via DLL sideloading (malicious vboxrt.dll loaded alongside a VirtualBox binary), followed by BYOVD privilege escalation using multiple signed but vulnerable kernel drivers: Huawei HWAuidoOs2Ec.sys (Havoc Process Terminator technique), Topaz Antifraud wsftprm.sys (CVE-2023-52271), Tower of Fantasy GameDriverx64.sys (CVE-2025-61155), and K7 Security K7RKScan.sys (CVE-2025-1055). A second custom driver named ABYSSWORKER — masquerading as a Palo Alto Networks certificate — was used to terminate security-product processes. Backdoor.Turn's capability set includes arbitrary command execution, process creation, network scanning, TLS certificate capture, LDAP/Active Directory enumeration, lateral movement via stolen credentials, and browser credential theft. DragonForce, a ransomware-as-a-service operation linked to the Scattered Spider cluster since at least June 2023, has accumulated 579 confirmed victims as of June 2026.
+
+      Defender takeaways: (1) Network: outbound QUIC (UDP 443) to Microsoft TURN infrastructure (relay.bandwidth.skype.com, stun.l.google.com range, 13.xxx.xxx.xxx Teams relay pool) is indistinguishable from legitimate Teams traffic at the perimeter; hunt for Teams processes or vboxrt.dll sideloaded from unusual paths making QUIC connections. (2) Endpoint: Sysmon EID 7 (ImageLoad) for kernel drivers loaded from non-standard paths matching HWAuidoOs2Ec.sys, wsftprm.sys, GameDriverx64.sys, K7RKScan.sys; EDR alert classes for BYOVD and process-kill-via-kernel-driver. (3) Identity: LDAP enumeration events (EID 4662 on domain controllers) following unusual DLL sideload activity. (4) Hardening: Restrict unsigned Teams visitor-token acquisition in conditional-access policies; enforce WDAC or driver allowlisting to block BYOVD vectors; disable legacy DbgView.exe execution paths.
+    ch_eu_nexus: "No direct EU/Swiss victim disclosed; DragonForce operates globally with European targets documented; BYOVD driver technique and Teams relay C2 are directly relevant to EU-based defenders running Teams"
+    public_sector_nexus: "indirect — DragonForce targets across sectors including healthcare and manufacturing; technique relevant to any Teams-using EU public-sector body"
+    sector: "services, healthcare, manufacturing, IT (DragonForce broad targeting)"
+    cves: [CVE-2023-52271, CVE-2025-61155, CVE-2025-1055]
+    actors_campaigns_malware: ["DragonForce", "Scattered Spider", "Backdoor.Turn", "ABYSSWORKER"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Backdoor.Turn obtains an anonymous Teams visitor token from Microsoft's Skype-backed identity services, uses a legitimate Microsoft TURN relay to set up the connection, and then runs a QUIC session to the attacker's real [C&C] server"
+        attribution: "Broadcom / Symantec"
+        source_url: "https://www.broadcom.com/support/security-center/protection-bulletin/hidden-in-teams-dragonforce-attackers-weaponize-microsoft-teams-relays-to-stay-hidden"
+      - quote: "the first time TURN relay infrastructure has been abused this way in the wild"
+        attribution: "BleepingComputer (citing Symantec)"
+        source_url: "https://www.bleepingcomputer.com/news/security/ransomware-gang-abuses-microsoft-teams-relays-to-hide-malicious-traffic/"
+    extended_notes: |
+      The Ghost Calls technique presented at Black Hat 2025 (abusing Teams/Zoom TURN relays) appears to have directly inspired this implementation — the first operational malware adaptation of that research. Teams is extremely prevalent in European public-sector and regulated-industry environments; this technique warrants a direct threat-hunt against Teams relay connection origins paired with EDR process-parent chain inspection for vboxrt.dll sideloading.
+
+  - title: "Mastra @mastra/* npm scope compromise via easy-day-js typosquat — 143 packages, 1.1M weekly downloads, cross-platform Node.js RAT with crypto-wallet targeting"
+    sources:
+      - url: "https://research.jfrog.com/post/easy-day-js/"
+        publisher: "JFrog Security Research"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/144-mastra-npm-packages-compromised-via.html"
+        publisher: "The Hacker News"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://www.stepsecurity.io/blog/mastra-npm-packages-compromised-using-easy-day-js"
+        publisher: "StepSecurity"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (feedburner.com/TheHackersNews), URL https://feeds.feedburner.com/TheHackersNews → item: 144 Mastra npm Packages Compromised → WebSearch pivot → primary: JFrog Security Research, URL https://research.jfrog.com/post/easy-day-js/"
+    summary: |
+      On 17 June 2026 JFrog Security Research disclosed a supply-chain attack against the entire @mastra npm namespace — an open-source JavaScript/TypeScript framework for building AI applications with ~1.1 million combined weekly downloads. The attacker hijacked a dormant legitimate contributor account (npm user "ehindero") whose scope access to @mastra was never revoked after the contributor left the project. At 01:01 UTC on 17 June, the attacker published easy-day-js@1.11.22 — a trojanised fork of the dayjs date library — with a malicious postinstall hook in setup.cjs. Eleven minutes later, an automated publishing wave added easy-day-js as a production dependency (range ^1.11.21, which resolves to 1.11.22 at install time) to 143 Mastra packages; the sweep completed within 88 minutes. The postinstall loader disables TLS certificate validation (NODE_TLS_REJECT_UNAUTHORIZED=0), writes two marker files to the OS temp directory (.pkg_history, .pkg_logs), downloads a second-stage Node.js payload from a C2 server, spawns it as a detached hidden process, and deletes setup.cjs to hinder static analysis. The second-stage is a cross-platform (Windows / macOS / Linux) Node.js backdoor that beacons victim identity (username, hostname, OS, Node version, installed apps, running processes, browser history hostnames, and an enumeration of crypto-wallet browser-extension IDs including MetaMask, Phantom, and ~20 others), then polls the C2 for remote module commands (shell execution, Node execution with stdout capture). Platform-specific persistence: macOS via LaunchAgent com.nvm.protocal.plist + ~/Library/NodePackages/protocal.cjs; Linux via systemd user service nvmconf.service + ~/.config/systemd/nvmconf/protocal.cjs; Windows via HKCU\Software\Microsoft\Windows\CurrentVersion\Run key NvmProtocal + C:\ProgramData\NodePackages. Socket flagged easy-day-js within 6 minutes of publication; JFrog Curation blocked within 24 hours; all malicious packages have since been removed from the npm registry.
+
+      Defender / DevSecOps takeaways: (1) Audit npm organisation membership and revoke access for former contributors — stale scope permissions are the root cause here. (2) Hunt for Node.js processes spawned from OS temp directories (Sysmon EID 1: parent = node.exe, Image path contains %TEMP% or /tmp with 24-hex-char filename). (3) Hunt for Windows Run key NvmProtocal, macOS LaunchAgent com.nvm.protocal, Linux systemd unit nvmconf.service. (4) Rotate all secrets on any system that installed affected @mastra/* package versions between 01:01 UTC 17 Jun and the npm takedown window — treat as fully compromised. (5) Run `npm ls easy-day-js` in all CI/CD workspaces and lock files.
+    ch_eu_nexus: "Global supply chain; any Swiss or EU organisation running Mastra AI framework or CI pipelines installing @mastra/* packages is directly affected"
+    public_sector_nexus: "indirect — AI framework primarily targets software development teams; Swiss public bodies modernising with AI tooling may be exposed"
+    sector: "software development, AI/ML, technology, finance (crypto-wallet targeting)"
+    cves: []
+    actors_campaigns_malware: ["easy-day-js campaign (EASY_DAY_JS_MASTRA_2026)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A supply chain campaign targeting Mastra npm packages by adding a malicious production dependency named easy-day-js. The malicious behavior was moved one level down, into a dependency that looked like a harmless date library but executed an obfuscated postinstall loader during package installation."
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/easy-day-js/"
+      - quote: "Over the next 88 minutes, 140+ packages across the entire Mastra ecosystem were republished with easy-day-js quietly added as a production dependency"
+        attribution: "The Hacker News (citing multiple researchers)"
+        source_url: "https://thehackernews.com/2026/06/144-mastra-npm-packages-compromised-via.html"
+    extended_notes: |
+      The two-stage timing (clean v1.11.21 published first so the caret range looks legitimate, malicious v1.11.22 published shortly before the mass package update) represents a deliberate attempt to defeat naive dependency-pinning checks. The wallet-extension enumeration in the initial beacon suggests the operator selectively deployed additional credential-theft modules against developer targets with crypto access.
+
+  - title: "JetBrains Marketplace: 15 coordinated malicious plugins steal AI provider API keys — 70,000+ installs, October 2025 to June 2026"
+    sources:
+      - url: "https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+        publisher: "Aikido Security"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.infosecurity-magazine.com/news/fifteen-jetbrains-marketplace/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: infosecurity-magazine RSS feed, URL https://www.infosecurity-magazine.com/rss/news/ → item: Fifteen JetBrains Marketplace Plugins Found Stealing API Keys → WebSearch pivot → primary: Aikido Security, URL https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+    summary: |
+      Aikido Security published on 16 June 2026 a coordinated malware campaign across the JetBrains Marketplace: at least 15 IDE plugins published under seven distinct vendor accounts between October 2025 and June 10 2026, posing as AI coding assistants (built on DeepSeek, OpenAI, SiliconFlow) with a combined download count of approximately 70,000. All plugins function as advertised but silently exfiltrate AI provider API keys when users enter them in plugin settings — the exfiltration triggers immediately on clicking Apply, sending credentials to a hardcoded attacker-controlled server. The two highest-download plugins are CodeGPT AI Assistant (~25,571 downloads) and DeepSeek AI Assist (~27,727 downloads). The monetisation model is API-key resale: stolen keys are redistributed to paying customers of the operator's service while the legitimate key owner pays the usage bill. JetBrains was notified and has removed the affected plugins from the marketplace.
+
+      Defender takeaways: (1) Audit all JetBrains IDE plugin installations in your developer fleet — especially any AI assistant installed since October 2025. (2) Rotate any AI provider API keys (OpenAI, DeepSeek, Anthropic, SiliconFlow) entered into a JetBrains plugin that cannot be affirmatively traced to a clean publisher. (3) Enforce IDE plugin allowlisting via JetBrains Fleet/IDE management or Group Policy where possible. (4) Review EDR telemetry for suspicious outbound HTTPS from ide.jetbrains.com-hosted processes to non-JetBrains endpoints.
+    ch_eu_nexus: "Global; developers across Swiss and EU public sector, financial services, and research institutions using JetBrains IDEs (IntelliJ, PyCharm, WebStorm, etc.) are directly affected"
+    public_sector_nexus: "direct — developers at any EU/Swiss public-sector technology agency using JetBrains tools are at risk of API key compromise"
+    sector: "technology, software development, finance (AI provider credential theft)"
+    cves: []
+    actors_campaigns_malware: ["JetBrains plugin campaign (unattributed)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A coordinated campaign of at least 15 JetBrains IDE plugins, published under seven vendor accounts, exfiltrates the AI provider API key you paste into their settings."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/multiple-jetbrains-ide-plugins-caught-stealing-ai-keys"
+    extended_notes: |
+      This campaign ran undetected for eight months (Oct 2025 – June 2026). The exfiltration model (legitimate plugin functionality plus silent credential theft on config save) is increasingly common in developer-tool supply-chain attacks and parallels the VSCode extension compromises from 2025. Any organisation that grants developers elevated privileges in production systems (DevSecOps, CI/CD admin, cloud infra access via AI tools) faces real lateral-movement risk from stolen API keys.
+
+  - title: "China arrests 67 members of Silver Fox cybercrime group (Winos / ValleyRAT) — primary targeting Chinese-speaking users, with known European targeting in recent campaigns"
+    sources:
+      - url: "https://news.risky.biz/risky-bulletin-china-arrests-members-of-silver-fox-cybercrime-group/"
+        publisher: "Risky Biz News (Catalin Cimpanu)"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.cert.org.cn/publish/main/10/2026/20260522113326926111046/20260522113326926111046_.html"
+        publisher: "China National Vulnerability Database (CNCERT/CC)"
+        date: "2026-05-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: risky-biz-news RSS feed, URL https://news.risky.biz/rss/ → item: Risky Bulletin: China arrests members of Silver Fox cybercrime group → article fetched at https://news.risky.biz/risky-bulletin-china-arrests-members-of-silver-fox-cybercrime-group/ → CNCERT/CC primary advisory from outbound links"
+    summary: |
+      Chinese police arrested 67 suspects across five provinces in a June 2026 operation targeting Silver Fox (also tracked as Void Arachne, YouSnake, UTG-Q-1000, TA4922 by Proofpoint) — assessed by Risky Biz as the largest and most active cybercrime group targeting Chinese-speaking users. The operation arrested individuals covering the full criminal supply chain: Ji Moufei (Zhejiang) — identified as the primary developer and seller of the Silver Fox/Winos trojan; Chen (Jilin) — a trojan variant developer; Yang and 15 associates (Shandong) — phishing site operators; Li and 13 associates (Guangdong) — system access and asset-theft operations; Zhou and two associates (Zhejiang) — fake app download site operators. The group used the Silver Fox trojan (tracking alias: Winos) for initial access, then deployed secondary RATs including AtlasRAT and ValleyRAT for credential theft. A CNCERT/CC security alert issued 22 May 2026 preceded the arrests. While Silver Fox's primary targeting is mainland Chinese and Chinese-diaspora users, campaigns extending to India, Japan, Taiwan, Russia, and Southeast Asia have been documented by Kaspersky, ESET, Sekoia, and Proofpoint; no EU or Swiss victim organisations are confirmed from the arrest disclosures.
+    ch_eu_nexus: "indirect — Silver Fox campaigns have targeted Chinese-diaspora communities in Europe via tax-themed phishing; no confirmed EU public-sector victims disclosed in arrest reports"
+    public_sector_nexus: "indirect"
+    sector: "financial, technology, government (Chinese-speaking victims primarily)"
+    cves: []
+    actors_campaigns_malware: ["Silver Fox", "Void Arachne", "YouSnake", "UTG-Q-1000", "TA4922", "Winos", "AtlasRAT", "ValleyRAT"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Chinese police arrested 67 suspects linked to Silver Fox, the country's largest and most active cybercrime group targeting its domestic audiences"
+        attribution: "Risky Biz News"
+        source_url: "https://news.risky.biz/risky-bulletin-china-arrests-members-of-silver-fox-cybercrime-group/"
+    extended_notes: |
+      Confidence is MEDIUM because the Risky Biz summary is based on the CNCERT/CC advisory (primary source confirmed live at time of fetch) but the underlying arrest details derive from Chinese-language law-enforcement reporting that was not independently verified against a second non-Chinese source. The primary CNCERT source URL is included. The arrest is operationally meaningful primarily as a disruption of an active group — Winos/ValleyRAT infrastructure may temporarily shift as surviving operators reconstitute.
+
+candidate_sources:
+  - id: aikido-security-blog
+    publisher: "Aikido Security Blog"
+    url: "https://www.aikido.dev/blog"
+    rss_url: "https://www.aikido.dev/blog/rss.xml"
+    category: research
+    why: "Published the primary JetBrains malicious plugin disclosure (June 2026). Aikido's real-time malware detection (intel.aikido.dev) surfaces npm/PyPI/Maven supply-chain compromises hours before major news outlets. High relevance to developer-toolchain and supply-chain coverage in S4/S3 domains."
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "HTTP 403 on direct fetch; Wayback Machine returned only a 24-byte placeholder (no usable snapshot in last 180 days). Story coverage obtained from alternative publishers."
+  - source_id: sec-disclosures-edgar
+    reason: "SEC EDGAR bridge query for Item 1.05 filings June 13-18 returned only the iRhythm filing (already covered in prior brief June 16). No new 8-K cyber disclosures in window."
+  - source_id: edpb
+    reason: "EDPB news page returned boilerplate HTML navigation with no accessible news items. No in-window EDPB enforcement notices found via WebSearch."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actualite feed returned items from October-November 2025 only — feed appears stale/not updated. No in-window items."
+  - source_id: ico-uk
+    reason: "ICO enforcement sitemap returned most recent items dated June 5, 2026 at latest — outside 36h window. No fresh in-window ICO enforcement actions."

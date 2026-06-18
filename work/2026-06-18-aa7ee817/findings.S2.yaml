@@ -1,0 +1,288 @@
+---
+# work/2026-06-18-aa7ee817/findings.S2.yaml
+domain: S2
+run_id: 2026-06-18-aa7ee817
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-18T04:06:21Z
+ended_at: 2026-06-18T04:17:16Z
+duration_seconds: 651
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 5
+  bridge_fetches: 16
+
+items:
+  - title: "Oracle June 2026 CSPU: 245 patches including CVSS 10.0 WebLogic Proxy Plugin (CVE-2026-21962)"
+    sources:
+      - url: "https://www.oracle.com/security-alerts/cspujun2026.html"
+        publisher: "Oracle PSIRT"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.securityweek.com/oracles-second-monthly-security-updates-deliver-245-patches/"
+        publisher: "SecurityWeek"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0201"
+        publisher: "NCSC-NL"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: ncsc-nl recent bridge subcommand → NCSC-2026-0201 through NCSC-2026-0207 (Oracle CSPU cluster, all published 2026-06-17) →
+      primary: Oracle PSIRT, URL https://www.oracle.com/security-alerts/cspujun2026.html →
+      corroborating: SecurityWeek article, URL https://www.securityweek.com/oracles-second-monthly-security-updates-deliver-245-patches/ →
+      CVE-2026-21962 detail: NetSPI blog https://www.netspi.com/blog/executive-blog/critical-vulnerability/oracle-weblogic-server-proxy-plugin-cve-2026-21962-overview-takeaways/
+    summary: |
+      Oracle released its June 2026 Critical Security Patch Update (CSPU) on 17 June 2026, delivering 245 security patches
+      across Communications, E-Business Suite, Enterprise Manager, Fusion Middleware, JD Edwards, MySQL, PeopleSoft, Siebel CRM,
+      Supply Chain, Systems, and Virtualization product families. The highest-severity vulnerability is CVE-2026-21962
+      (CVSS 3.1 10.0 Critical) in the Oracle HTTP Server and WebLogic Server Proxy Plugin, affecting Oracle HTTP Server /
+      Proxy Plugin for Apache HTTP Server and Microsoft IIS at versions 12.2.1.4.0, 14.1.1.0.0, and 14.1.2.0.0. The flaw
+      permits unauthenticated remote attackers to bypass security controls via crafted HTTP requests to the proxy plugin
+      endpoint, with no authentication required (network-adjacent or internet-exposed HTTP port). Successful exploitation
+      grants read/write access to all data accessible by the Oracle HTTP Server proxy and enables lateral movement into
+      backend WebLogic clusters (T1190). More than 100 of the 245 patches address Oracle Fusion Middleware, with the majority
+      rated critical or high. Oracle E-Business Suite patched products explicitly covering public-sector use cases include
+      Public Sector Financials (International), Financials for EMEA, and Public Sector Payroll (NCSC-2026-0201 advisory).
+      CVSS scores across the CSPU cluster range from 7.1 to 9.9 on E-Business Suite modules; MySQL Router versions 8.4.0
+      through 8.4.9 and 9.0.0 through 9.7.0 are included. No active exploitation of CSPU June 2026 vulnerabilities was
+      confirmed at time of publication; Oracle CVE-2024-21182 (WebLogic T3/IIOP) was added to CISA KEV earlier in June but
+      is distinct from CVE-2026-21962. Defenders should prioritise patching internet-facing Oracle HTTP Server proxy plugin
+      deployments and WebLogic clusters before internal JD Edwards / EBS instances.
+    ch_eu_nexus: "Direct — NCSC-NL issued seven advisories (NCSC-2026-0200 through 0207) on 2026-06-17; Oracle E-Business Suite modules explicitly covering EU public-sector financials and payroll"
+    public_sector_nexus: "direct"
+    sector: "public-sector, finance, manufacturing, telco"
+    cves:
+      - CVE-2026-21962
+      - CVE-2026-35273
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Oracle released 245 patches in its second monthly Critical Security Patch Update. Approximately 120 vulnerabilities received 'critical' severity ratings based on CVSS scores, with 100 flaws exploitable remotely without authentication."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/oracles-second-monthly-security-updates-deliver-245-patches/"
+      - quote: "CVE-2026-21962 is a critical flaw in Oracle WebLogic Server Proxy Plugin request handling with a CVSS 3.1 Base Score of 10.0 (Critical). The vulnerability allows unauthenticated remote attackers to bypass security controls and potentially gain unauthorized access to backend WebLogic systems."
+        attribution: "NetSPI"
+        source_url: "https://www.netspi.com/blog/executive-blog/critical-vulnerability/oracle-weblogic-server-proxy-plugin-cve-2026-21962-overview-takeaways/"
+      - quote: "kwetsbaarheden stellen een aanvaller met netwerktoegang in staat om ongeautoriseerde acties uit te voeren, waaronder het verkrijgen van volledige controle over het systeem… De CVSS 3.1 basis scores variëren van 7.1 tot 9.9"
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0201"
+    extended_notes: |
+      Detection focus: Web server access logs for unusual HTTP request patterns to Oracle HTTP Server OHS proxy
+      endpoints. CVE-2026-21962 exploits the proxy plugin's request-forwarding logic — look for unexpected
+      HTTP methods or oversized headers forwarded to WebLogic backend listeners on T3/IIOP ports (7001/7002).
+      Oracle Fusion Middleware patch bundle is the immediate hardening path; interim mitigation: restrict
+      network access to Oracle HTTP Server proxy ports from untrusted segments. VirtualBox NCSC-2026-0203
+      (max CVSS 7.5, June 17) is also part of this CSPU release but requires local access and is lower priority.
+
+  - title: "Rockwell Automation ICS cluster: unauthenticated web-server password reset on FLEX I/O adapters and CIP DoS on Logix controllers (CISA ICSA-26-167-03/04/05)"
+    sources:
+      - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-05"
+        publisher: "CISA ICS-CERT"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-03"
+        publisher: "CISA ICS-CERT"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-04"
+        publisher: "CISA ICS-CERT"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12639"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: ncsc-csh recent bridge subcommand → post 12639, published 2026-06-17T14:20:35Z →
+      primary: CISA ICS-CERT ICSA-26-167-05 (FLEX I/O) https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-05 →
+      CISA ICS-CERT ICSA-26-167-03 (Logix DoS) https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-03 →
+      CISA ICS-CERT ICSA-26-167-04 (CompactLogix CIP info-disclosure) https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-04
+    summary: |
+      Rockwell Automation disclosed five CVEs across ICS product lines on 16 June 2026, consolidated by NCSC-CH on
+      17 June 2026. The highest-severity finding is CVE-2026-0647 (CVSS 3.1 9.4 Critical) in the 1794-AENTR and
+      1794-AENTRXT FLEX I/O Dual-Port EtherNet/IP Adapters version V2.012: the adapter's embedded web server allows an
+      unauthenticated attacker to change the web interface password by sending a crafted HTTP GET request to a specific
+      endpoint with no prior authentication required (T1190, improper authentication CWE). If exploited, the attacker
+      can fully take over the adapter's web interface, disconnect the adapter from its associated I/O modules, and
+      disrupt the industrial process. A companion vulnerability CVE-2026-0646 (CVSS 7.5) on the same 1794-AENTR adapter
+      enables a separate denial-of-service through improper memory handling of CIP protocol requests, requiring a manual
+      reset to recover. Both are patched in firmware version 2.013 (Rockwell SD1775).
+      CVE-2026-11317 (CVSS 7.5) affects CompactLogix 5370 (<=34.016), Compact GuardLogix 5370 (<=35.015),
+      ControlLogix 5570 (<=35.015), and GuardLogix 5570 (36.012): a crafted CIP message causes a major nonrecoverable
+      fault (MNRF) on the PLC, requiring a full program download to recover — a high-impact denial-of-service against
+      OT infrastructure (T1499.004 Endpoint DoS). Attack prerequisite is network access to the CIP port; devices with
+      less memory are more likely to be affected. Fixed in CompactLogix 5370 firmware 34.016+, ControlLogix 5570 36.012+
+      (Rockwell SD1772). CVE-2025-11694 (CVSS 7.5) and CVE-2026-9307 (CVSS N/A, CIP Connection ID information disclosure
+      enabling DoS construction) affect CompactLogix 5370 L1/L2/L3 < V38.011 (Rockwell SD1776). CVE-2025-13036 (CVSS 7.7)
+      is an authentication bypass in FactoryTalk Historian Site Edition. Exploitation status: UNKNOWN for all CVEs.
+      Defender action: firmware updates from Rockwell vendor advisories; network segmentation to restrict CIP and HTTP/HTTPS
+      access to ICS devices from untrusted zones (follow ICS-CERT defense-in-depth guidance on OT network isolation).
+    ch_eu_nexus: "Direct — NCSC-CH issued advisory 12639 on 2026-06-17; Rockwell Automation ICS widely deployed in EU industrial/energy/manufacturing environments"
+    public_sector_nexus: "indirect"
+    sector: "energy, manufacturing, ot-ics, critical-infrastructure"
+    cves:
+      - CVE-2026-0647
+      - CVE-2026-0646
+      - CVE-2026-11317
+      - CVE-2025-11694
+      - CVE-2026-9307
+      - CVE-2025-13036
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An improper authentication security issue exists within the 1794-AENTR adapter's embedded web server. The vulnerability allows an unauthenticated attacker to change the device's web interface password by sending a crafted HTTP GET request to a specific endpoint, without any prior authentication being required."
+        attribution: "CISA ICS-CERT (ICSA-26-167-05)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-05"
+      - quote: "A denial of service security issue exists in the affected product. The security issue stems from a fault occurring when a crafted CIP message is sent. Devices with less memory are more likely to be affected. This can result in a major nonrecoverable fault (MNRF). A program download is required to recover."
+        attribution: "CISA ICS-CERT (ICSA-26-167-03)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-03"
+      - quote: "Depending on the product, successful exploitation allows unauthenticated network-based attackers to execute administrative operations, bypass login mechanisms, or crash industrial controllers."
+        attribution: "NCSC-CH Security Hub post 12639"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12639"
+    extended_notes: |
+      ICS-specific detection: OT network monitoring for unsolicited HTTP GET requests to the FLEX I/O web server
+      endpoint (port 80/443 on 1794-AENTR/AENTRXT adapters) — particularly password-change requests that don't
+      originate from the expected engineering workstation IP. CIP DoS detection: industrial protocol monitors
+      (e.g. Claroty, Nozomi) alerting on malformed CIP messages or unexpected MNR fault events on Logix controllers.
+      Rockwell SD1772 covers Logix DoS fix; SD1775 covers FLEX I/O adapter fixes; SD1776 covers CompactLogix 5370
+      CIP Connection ID exposure. Firmware update scheduling should target air-gapped ICS maintenance windows.
+      FactoryTalk Historian SE authentication bypass (CVE-2025-13036, SD1773) is an additional high-risk finding
+      for OT data historians exposed to OT/IT boundary networks.
+
+  - title: "Zammad 7.1 patches 13 security vulnerabilities across helpdesk platform — admin privilege escalation, SSRF, DoS (BSI WID-SEC-2026-1981)"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1981"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://zammad.com/en/product/releases/zammad-7-1"
+        publisher: "Zammad GmbH"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: bsi-rss bridge subcommand → WID-SEC-2026-1981 (Zammad), published 2026-06-17 →
+      primary: BSI CERT-Bund advisory, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1981 →
+      bsi-csaf WID-SEC-2026-1981 → references: 13 GitHub GHSAs (all 2026-06-16) + Zammad release notes URL →
+      corroborating: Zammad product release page https://zammad.com/en/product/releases/zammad-7-1
+    summary: |
+      Zammad, a widely-deployed open-source helpdesk and ticketing system particularly prevalent in German and Austrian
+      public-sector IT service desks, released version 7.1 on 16 June 2026 addressing 13 security vulnerabilities
+      tracked under GitHub Security Advisories (GHSA-374g-4f73-g7m7, GHSA-45cx-9mrq-mmcj, GHSA-4m54-p3mr-22g2,
+      GHSA-56jc-34c8-2xq4, GHSA-6rmm-28j9-q99q, GHSA-7fwx-3xr4-qm6w, GHSA-96hh-fmj3-h4hp, GHSA-jvcg-5539-vvc3,
+      GHSA-p3mg-2jxr-hww2, GHSA-p9xp-gx8r-4397, GHSA-pf47-8964-pp23, GHSA-pv3q-74g5-w7fv, GHSA-q3cr-3wq3-29hx).
+      BSI advisory WID-SEC-2026-1981 (published 2026-06-17) classifies aggregate severity as "hoch" (high) and
+      summarises that an attacker can exploit multiple vulnerabilities to gain administrator privileges, bypass security
+      measures, manipulate data, disclose confidential information, or cause denial-of-service. The prior April 2026
+      security release (Zammad 7.0.1) addressed server-side template injection to RCE via AI Agent and missing
+      authorization on the POST /api/v1/ai_assistance/text_tools/:id endpoint (CVE-2026-34782); the 7.1 release
+      moves all future advisories to GitHub exclusively. Specific CVE identifiers for the June 2026 GHSA set are not
+      yet individually enumerated in public CSAF/NVD records; the GHSA pages on GitHub are authentication-gated.
+      Affected versions: Zammad 7.x prior to 7.1. Patched version: 7.1. Organizations running Zammad 7.0.x or earlier
+      should upgrade to 7.1 immediately. Zammad is deployed by EU public administrations, municipalities, and
+      government IT service desks as a ticketing/helpdesk solution for internal and citizen-facing services — any
+      admin privilege escalation path in this system represents a direct risk to internal IT operations data, ticket
+      contents (potentially sensitive), and staff account credentials. Zammad instances exposed to the internet via
+      reverse proxy are at highest risk for unauthenticated attack paths in the bundle.
+    ch_eu_nexus: "Direct — BSI CERT-Bund issued WID-SEC-2026-1981 on 2026-06-17; Zammad is widely deployed across German, Austrian, and Swiss public-sector IT service desks"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government, IT services"
+    cves:
+      - CVE-2026-34719
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ein Angreifer kann mehrere Schwachstellen in Zammad ausnutzen, um Administratorrechte zu erlangen, Sicherheitsmaßnahmen zu umgehen, Daten zu manipulieren, vertrauliche Informationen offenzulegen oder einen Denial-of-Service-Zustand auszulösen."
+        attribution: "BSI CERT-Bund WID-SEC-2026-1981"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-1981"
+      - quote: "This is the last security advisory published on the Zammad website. Going forward, all advisories will be available on GitHub."
+        attribution: "Zammad GmbH (ZAA-2026-07, April 2026)"
+        source_url: "https://zammad.com/en/advisories"
+      - quote: "Zammad 7.1 is live! Turn incoming requests into structured, actionable ticket data with new AI Agents."
+        attribution: "Zammad GmbH product release page (2026-06-16)"
+        source_url: "https://zammad.com/en/product/releases/zammad-7-1"
+    extended_notes: |
+      Detection for Zammad admin privilege escalation: review Zammad audit logs for unexpected role changes
+      (admin rights granted to non-admin users) and API calls to admin endpoints (/api/v1/roles, /api/v1/users)
+      from unprivileged sessions. SSRF-class findings (GHSA-45cx-9mrq-mmcj, webhook SSRF per CVE-2026-34719)
+      can be hunted via outbound HTTP requests from the Zammad application server to internal RFC-1918 or
+      cloud metadata endpoints. Hardening: upgrade to Zammad 7.1 immediately; for internet-exposed instances,
+      consider requiring VPN/mTLS before exposing the Zammad HTTPS port. The move to GitHub-only advisories
+      means defenders should subscribe to https://github.com/zammad/zammad/security/advisories for future
+      release notification, as the zammad.com/en/advisories RSS feed will no longer carry new entries.
+
+cve_table:
+  - cve: CVE-2026-21962
+    product: "Oracle HTTP Server / WebLogic Server Proxy Plugin (Apache HTTP Server and IIS)"
+    cvss: "10.0"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Apply Oracle June 2026 CSPU; affected versions 12.2.1.4.0, 14.1.1.0.0, 14.1.2.0.0"
+    source: "https://www.oracle.com/security-alerts/cspujun2026.html"
+  - cve: CVE-2026-0647
+    product: "Rockwell Automation FLEX I/O 1794-AENTR / 1794-AENTRXT V2.012"
+    cvss: "9.4"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Update to firmware 2.013 (SD1775)"
+    source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-05"
+  - cve: CVE-2026-0646
+    product: "Rockwell Automation FLEX I/O 1794-AENTR / 1794-AENTRXT V2.012"
+    cvss: "7.5"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Update to firmware 2.013 (SD1775)"
+    source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-05"
+  - cve: CVE-2026-11317
+    product: "Rockwell CompactLogix 5370 <=34.016, Compact GuardLogix 5370 <=35.015, ControlLogix 5570 <=35.015, GuardLogix 5570 36.012"
+    cvss: "7.5"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "CompactLogix 5370: 34.016+; ControlLogix 5570: 36.012+ (SD1772)"
+    source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-167-03"
+  - cve: CVE-2025-13036
+    product: "Rockwell Automation FactoryTalk Historian Site Edition"
+    cvss: "7.7"
+    epss: unknown
+    kev: false
+    exploited: false
+    patch: "Apply Rockwell SD1773"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12639"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge on https://www.inside-it.ch/security; Wayback Machine returned no usable snapshot >= 5000 bytes in last 180 days (0 candidates). Genuine coverage gap for this rotation run — Swiss regional IT news coverage missed."
+  - source_id: enisa-news-rss
+    reason: "Feed URL https://www.enisa.europa.eu/news/enisa-news/rss returned HTTP 404. enisa-euvd EUVD bridge was used as substitute and returned no in-window critical items."
+
+fetch_failures:
+  - id: inside-it-ch
+    url_tried: "https://www.inside-it.ch/security"
+    fetch_method: bridge:wayback
+    status_code: 200
+    error_class: other
+    error_message: "no usable Wayback snapshot >= 5000 bytes; tried 0 candidate(s). Host flagged as failed 5 of last 7 runs."
+    attempted_methods: [bridge:url, bridge:wayback]
+    mitigation_applied: "none — coverage gap"
+    covered_anyway: false
+  - id: enisa-news-rss
+    url_tried: "https://www.enisa.europa.eu/news/enisa-news/rss"
+    fetch_method: webfetch
+    status_code: 404
+    error_class: other
+    error_message: "HTTP 404 Not Found"
+    attempted_methods: [webfetch]
+    mitigation_applied: "ENISA EUVD bridge (enisa-euvd recent criticals) used instead; no in-window items found there"
+    covered_anyway: false
