@@ -1,0 +1,278 @@
+# work/2026-06-19-c306b105/findings.S4.yaml
+domain: S4
+run_id: 2026-06-19-c306b105
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: 2026-06-19T04:07:09Z
+ended_at: 2026-06-19T04:13:50Z
+duration_seconds: 401
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 8
+  bridge_fetches: 6
+
+items:
+  - title: "Operation Endgame expands: TA569/SocGholish infrastructure dismantled across 14,971 WordPress sites"
+    sources:
+      - url: "https://www.helpnetsecurity.com/2026/06/18/law-enforcement-socgholish-operation-endgame/"
+        publisher: "Help Net Security"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://www.politie.nl/en/news/2026/juni/18/11-operation-endgame-expands-to-socgholish-malware.html"
+        publisher: "Dutch National Police (Politie)"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://www.proofpoint.com/us/blog/threat-insight/sayonara-socgholish-operation-endgame-expands"
+        publisher: "Proofpoint Threat Research"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('SocGholish Operation Endgame 2026-06-18') → Help Net Security article fetched (200) → pivot: Dutch Police (Politie) press release fetched via bridge url (200) → Proofpoint Sayonara SocGholish blog fetched via bridge url (200)"
+    summary: |
+      A coordinated law enforcement operation on June 18, 2026 — an expansion of the May 2024 Operation
+      Endgame — dismantled infrastructure associated with TA569 (Evil Corp affiliate, SocGholish operator).
+      Dutch National High Tech Crime Unit (NHCTU) led the effort in coordination with the RCMP, FBI, BKA,
+      and Europol. 106 command-and-control servers were taken down and 14,971 compromised WordPress sites
+      had the malicious SocGholish JavaScript loader removed.
+
+      SocGholish (tracked as FakeUpdates) operates by injecting obfuscated JavaScript into legitimate
+      WordPress sites, typically via compromised wp-admin credentials or vulnerable plugins. When a victim
+      visits an infected page, the JS fingerprints the browser and — if deemed valuable — renders a
+      convincing fake browser update dialog. Accepting triggers a drive-by download of a ZIP containing
+      a .js or .lnk stage-1 loader, which executes via wscript.exe or mshta.exe (T1059.007 JavaScript,
+      T1204.002 Malicious File). Stage-2 payloads have historically included Cobalt Strike beacons,
+      NetSupport RAT, and ransomware access passes to affiliates including Evil Corp's downstream operators.
+
+      TA569 is assessed to overlap with Evil Corp, the Russian cybercriminal group responsible for the Zeus
+      banking trojan and Dridex malware lineage. The May 2024 Operation Endgame phase targeted the
+      IcedID/BokBot, Pikabot, Bumblebee, and Smokeloader droppers; this June 2026 phase is the first
+      to directly address the SocGholish/FakeUpdates component, which has been a persistent initial-access
+      broker mechanism since approximately 2017.
+
+      Detection context: Sysmon EID 1 — wscript.exe or mshta.exe spawned from browser process (Chrome,
+      Firefox, Edge) is a high-fidelity behavioural trigger for SocGholish stage-1 execution. Network
+      defenders should correlate web proxy logs for outbound connections from browser processes to
+      WordPress-hosted URLs serving .zip files with .js payloads. WordPress administrators should audit
+      wp-admin credentials, review file integrity for injected JavaScript in theme files, and ensure
+      plugin supply-chain hygiene.
+    ch_eu_nexus: "direct — Dutch NHCTU led the operation; EU law enforcement coordination via Europol; compromised WordPress infrastructure global but likely includes EU-hosted sites"
+    public_sector_nexus: "indirect — web-inject delivery mechanism affects any organization whose users browse compromised WordPress sites; EU public sector web presence commonly runs WordPress"
+    sector: "all sectors (drive-by delivery), criminal"
+    cves: []
+    actors_campaigns_malware: ["TA569", "Evil Corp", "SocGholish", "FakeUpdates", "Operation Endgame"]
+    mitre_attack:
+      - id: "T1189"
+        name: "Drive-by Compromise"
+      - id: "T1059.007"
+        name: "Command and Scripting Interpreter: JavaScript"
+      - id: "T1204.002"
+        name: "User Execution: Malicious File"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Dutch National High Tech Crime Unit (NHCTU), in cooperation with the Royal Canadian Mounted Police (RCMP), FBI, German Federal Criminal Police (BKA) and Europol, targeted 106 servers and had malicious code removed from 14,971 websites."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/18/law-enforcement-socgholish-operation-endgame/"
+      - quote: "Operation Endgame, which began in May 2024, has been expanded to include SocGholish (also known as FakeUpdates), a JavaScript-based malware framework used as an initial access vector since approximately 2017."
+        attribution: "Dutch National Police (Politie)"
+        source_url: "https://www.politie.nl/en/news/2026/juni/18/11-operation-endgame-expands-to-socgholish-malware.html"
+
+  - title: "Icarus group exploits Klue OAuth token, bulk-exfiltrates Salesforce CRM data from multiple enterprises"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/klue-breach-icarus-group-uses-stolen-oauth-tokens-to-raid-salesforce/"
+        publisher: "BleepingComputer"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://www.reliaquest.com/blog/threat-spotlight-icarus-salesforce-oauth-extortion/"
+        publisher: "ReliaQuest"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.huntress.com/blog/klue-breach-investigation"
+        publisher: "Huntress"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Klue OAuth breach Salesforce Icarus 2026') → BleepingComputer article fetched (200) → ReliaQuest threat spotlight fetched (200) → Huntress blog fetched (200)"
+    summary: |
+      The Icarus extortion group (active since approximately April 2026) conducted a supply-chain-style
+      attack against Klue Battlecards, a competitive intelligence SaaS product that integrates with
+      Salesforce via OAuth. The attack vector was a dormant prototype-integration credential that Icarus
+      compromised through Klue's backend systems — the OAuth token was extracted via injected code in
+      Klue's application layer rather than a direct Salesforce attack.
+
+      Once Icarus held a valid OAuth access token scoped to a victim organization's Salesforce instance,
+      the group queried the Salesforce REST API directly using the token's permissions. Specific endpoints
+      included /services/data/v59.0/sobjects/ (object enumeration) and /services/data/v59.0/query
+      (SOQL query execution). This pattern abuses T1078.004 (Cloud Accounts — Valid OAuth Credentials) and
+      T1530 (Data from Cloud Storage Object) at the Salesforce layer, entirely bypassing the victim's
+      endpoint and network perimeter controls. The exfiltration window spanned approximately 24 hours per
+      victim before Salesforce detected anomalous API usage and disabled the Klue Battlecards integration.
+
+      Confirmed victim: Huntress (published its own incident disclosure June 18). Exfiltrated data
+      categories included business contact records, internal sales communications, price quotes, and
+      competitive intelligence briefs — high-value for secondary campaigns. Icarus's extortion operator
+      uses the alias "mr bean" on Session Messenger and has been observed demanding ransoms in the
+      $250K–$2M range. Salesforce's response was to disable the Klue integration at the platform level
+      pending vendor remediation.
+
+      Detection context: Salesforce API audit logs (EventMonitoring) will record the REST API calls under
+      the OAuth token's user context. Defenders should alert on: (a) SObject enumeration calls
+      (/sobjects/) from unfamiliar integration users, (b) bulk SOQL SELECT * patterns in EventMonitoring
+      ApiTotalUsage, (c) OAuth tokens granted to third-party integrations accessing records outside their
+      normal operational hours. Hardening: review all Connected App OAuth grants in Salesforce Setup,
+      revoke dormant/prototype integrations, enforce IP-range restrictions on OAuth grant policies,
+      and enable EventMonitoring export to your SIEM.
+    ch_eu_nexus: "global; Salesforce CRM is widely deployed across EU enterprises and public-sector bodies; Switzerland-based Salesforce customers using Klue Battlecards should audit OAuth grants immediately"
+    public_sector_nexus: "indirect — Salesforce is deployed in many Swiss/EU public-sector contexts; third-party SaaS integration OAuth abuse is a generalizable pattern"
+    sector: "technology, financial services, professional services"
+    cves: []
+    actors_campaigns_malware: ["Icarus"]
+    mitre_attack:
+      - id: "T1078.004"
+        name: "Valid Accounts: Cloud Accounts"
+      - id: "T1530"
+        name: "Data from Cloud Storage Object"
+      - id: "T1199"
+        name: "Trusted Relationship"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Icarus group, active since April 2026, gained access to Klue's backend systems and injected code to harvest OAuth tokens from the Battlecards integration. Using the stolen tokens, Icarus queried connected Salesforce instances via REST API for approximately 24 hours per victim."
+        attribution: "ReliaQuest"
+        source_url: "https://www.reliaquest.com/blog/threat-spotlight-icarus-salesforce-oauth-extortion/"
+      - quote: "Huntress confirmed today that internal sales data was exfiltrated from its Salesforce environment following the Klue compromise. The stolen data included contacts, email communications, and competitive pricing information. Huntress's own systems were not compromised."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/klue-breach-investigation"
+
+  - title: "ICO formal caution: London Clinic staff member in Princess of Wales medical records case"
+    sources:
+      - url: "https://www.infosecurity-magazine.com/news/ico-cautions-healthcare-worker/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://therecord.media/ico-cautions-london-clinic-worker-princess-wales-records"
+        publisher: "The Record (Recorded Future News)"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('ICO caution London Clinic Princess Wales 2026') → Infosecurity Magazine article fetched (200) → The Record article fetched (200) → attempted ico.org.uk press release URL (404) → ICO story confirmed via two journalism sources"
+    summary: |
+      The UK Information Commissioner's Office (ICO) concluded a two-year criminal investigation into
+      the deliberate misuse of Princess of Wales Catherine Middleton's medical records at The London
+      Clinic, issuing a formal caution to a former staff member under s.170(5) of the Data Protection
+      Act 2018.
+
+      The offence is s.170 DPA 2018 — "Unlawful obtaining, disclosing or procuring personal data" —
+      an offence that carries up to 2 years' imprisonment. The s.170(5) formal caution is a criminal
+      caution rather than a civil regulatory penalty; it requires an admission of guilt and is recorded
+      on the PNC (Police National Computer). The ICO can pursue it under its own criminal prosecution
+      authority (distinct from its civil enforcement powers under the UK GDPR / DPA 2018 Article 83 fine
+      regime). The investigation ran from March 2024 through June 2026 and concluded that: (a) no records
+      were confirmed to have been sold to third parties; (b) the offer to disclose for financial gain was
+      the aggravated element; (c) The London Clinic had no regulatory shortcomings warranting civil
+      enforcement action.
+
+      The incident is a canonical example of insider threat in a healthcare setting: privileged clinical
+      system access, a high-profile data subject (creating commercial incentive), and opportunistic
+      attempted monetization. Detection posture for analogous environments: audit log review for EPR
+      (Electronic Patient Record) accesses outside normal patient-care workflows — particularly access
+      to records of patients not assigned to the accessor's clinical team (RBAC policy violation detection).
+      NHS IG (Information Governance) Toolkit requirements and Care Quality Commission standards mandate
+      audit logging of access to all patient records; UK ICO enforcement demonstrates the criminal-tier
+      consequences when insiders monetize privileged access.
+    ch_eu_nexus: "UK-specific; analogous enforcement framework exists across EU under GDPR Article 84 (criminal penalties for natural persons — member-state competence); Swiss DPA 2023 Article 60 carries criminal sanctions for wilful disclosure"
+    public_sector_nexus: "direct — healthcare sector, NHS-adjacent private hospital; ICO criminal enforcement authority applicable to both public and private health data controllers"
+    sector: "healthcare"
+    cves: []
+    actors_campaigns_malware: []
+    mitre_attack:
+      - id: "T1078"
+        name: "Valid Accounts (insider abuse of legitimate clinical access)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The ICO has issued a formal caution to a former London Clinic employee under section 170(5) of the Data Protection Act 2018, following a criminal investigation into the attempted disclosure of Princess of Wales medical records for financial gain."
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/ico-cautions-healthcare-worker/"
+      - quote: "The ICO said it found no evidence the records were actually sold and assessed the caution as appropriate and proportionate. The investigation concluded the clinic's own information governance arrangements did not warrant regulatory action."
+        attribution: "The Record (Recorded Future News)"
+        source_url: "https://therecord.media/ico-cautions-london-clinic-worker-princess-wales-records"
+
+  - title: "Nintendo employee data exposed via TinyPulse (WebMD Health Services) breach; Shadowbyt3$ demands $2M"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/nintendo-confirms-data-stolen-in-webmd-subsidiary-cyberattack/"
+        publisher: "BleepingComputer"
+        date: "2026-06-18"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch ('Nintendo data breach TinyPulse 2026') → BleepingComputer article fetched (200) → Nintendo statement confirmed in article body → single source (BleepingComputer)"
+    summary: |
+      The Shadowbyt3$ extortion group disclosed a breach of TinyPulse, an employee engagement and
+      survey platform operated by WebMD Health Services (a subsidiary of WebMD parent company Internet
+      Brands). Nintendo of America confirmed that data about a subset of its employees was stolen from
+      the third-party platform; Nintendo's own systems were not compromised.
+
+      Approximately 1 GB of data was exfiltrated, spanning records from 2016 to 2026. Disclosed data
+      categories included employee names, email addresses, survey response data, bank statements, and
+      W-9 tax forms (the latter indicating the breach reached payroll-adjacent data). The ransom demand
+      was $2M. Nintendo declined to pay and published a brief statement acknowledging the third-party
+      incident and confirming no customer data or Nintendo IT systems were affected.
+
+      The attack illustrates the third-party HR-SaaS risk profile: an attacker who cannot penetrate a
+      large enterprise's hardened perimeter may instead target smaller SaaS vendors in the HR/Benefits
+      vertical that hold employee PII and financial documents for that enterprise. TinyPulse breach is
+      the initial-access vector; the extortable data (W-9 forms, bank account details) was held by the
+      SaaS vendor not the primary employer. Defender takeaway: review the data-retention and export
+      capabilities of HR/survey SaaS vendors in scope; confirm contractual data minimization; audit
+      which third-party HR platforms hold financial documents (direct deposit, W-9/W-8) for employees —
+      these represent a distinct risk tier from survey-text-only platforms.
+    ch_eu_nexus: "global; Nintendo is a multinational with employees across Europe including Switzerland; third-party HR SaaS risk applies to any organization using US-domiciled HR platforms processing EU employee data under GDPR Article 28 DPA frameworks"
+    public_sector_nexus: "indirect — third-party HR SaaS risk is a generalizable pattern for any public or private sector organization"
+    sector: "technology, entertainment"
+    cves: []
+    actors_campaigns_malware: ["Shadowbyt3$"]
+    mitre_attack:
+      - id: "T1199"
+        name: "Trusted Relationship (third-party SaaS breach)"
+      - id: "T1657"
+        name: "Financial Theft (extortion)"
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Nintendo of America has confirmed that employee data was stolen in a cyberattack on TinyPulse, a WebMD Health Services employee survey platform. The company says its own systems were not affected. The Shadowbyt3$ group claimed the attack and is demanding a $2 million ransom, having published approximately 1 GB of data including employee bank statements and W-9 forms."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/nintendo-confirms-data-stolen-in-webmd-subsidiary-cyberattack/"
+
+coverage_gaps:
+  - source_id: databreaches-net
+    reason: "HTTP 403 on bridge direct fetch; Wayback fallback returned no usable snapshot (24-byte availability response). Source unreachable this run."
+  - source_id: edpb-europa-eu
+    reason: "TLS/connection timeout on bridge fetch of https://www.edpb.europa.eu/news/news_en. No in-window items recovered."
+  - source_id: ico-uk-press
+    reason: "ico.org.uk/about-the-ico/media-centre/news-and-blogs/2026/ returned HTTP 404. ICO story covered via Infosecurity Magazine and The Record as corroborating journalism sources."
+  - source_id: sec-edgar-8k
+    reason: "Zero Item 1.05 8-K cyber-incident filings found in 2026-06-17 to 2026-06-19 window via bridge sec-edgar subcommand. Source reachable; window genuinely empty."
+  - source_id: cnil-fr
+    reason: "Most recent CNIL enforcement action found was May 26, 2026 — outside 36-hour recency window. No in-window items."
+  - source_id: inside-it-ch
+    reason: "Source flagged as 403 in prior 6 runs; not attempted this run due to time constraints after coverage of primary items."
+
+fetch_failures:
+  - id: databreaches-net
+    url_tried: "https://www.databreaches.net/"
+    fetch_method: "bridge:wayback"
+    status_code: 403
+    error_class: transport-403
+    error_message: "Bridge direct fetch 403; Wayback availability API returned 24-byte response with no usable snapshot"
+    attempted_methods: [bridge:url, bridge:wayback]
+    mitigation_applied: "none — coverage gap"
+    covered_anyway: false
+  - id: edpb-europa-eu
+    url_tried: "https://www.edpb.europa.eu/news/news_en"
+    fetch_method: bridge:url
+    status_code: 0
+    error_class: transport-timeout
+    error_message: "TLS/connection timeout on bridge url fetch"
+    attempted_methods: [bridge:url]
+    mitigation_applied: "none — coverage gap"
+    covered_anyway: false
