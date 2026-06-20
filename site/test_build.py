@@ -862,6 +862,34 @@ assert_eq("fallback: weekly 2026-W19 → UTC", weekly_w19.tzinfo, timezone.utc)
 
 
 # ---------------------------------------------------------------------
+# Umami analytics CSP — regression guard
+# ---------------------------------------------------------------------
+# The loader at UMAMI_SCRIPT_HOST POSTs pageview beacons to
+# UMAMI_BEACON_HOST/api/send. If the CSP connect-src omits the beacon host
+# (or re-lists a retired one), the browser silently blocks every beacon and
+# analytics record nothing while the script appears to load fine. This is
+# exactly the 2026-06-20 regression — it shipped from the first commit
+# because nothing tied the CSP to the loader's real beacon endpoint.
+import re  # noqa: E402  -- used for the connect-src directive match below
+
+print("== umami CSP ==")
+assert_in(
+    "snippet loads from the script host",
+    f'src="{build.UMAMI_SCRIPT_HOST}/script.js"',
+    build.UMAMI_SNIPPET,
+)
+assert_in("CSP permits the script host", build.UMAMI_SCRIPT_HOST, build.CSP_META)
+assert_in("CSP connect-src permits the beacon host", build.UMAMI_BEACON_HOST, build.CSP_META)
+assert_match(
+    "beacon host is inside connect-src (not some other directive)",
+    r"connect-src[^;]*" + re.escape(build.UMAMI_BEACON_HOST),
+    build.CSP_META,
+)
+for _retired in build.UMAMI_RETIRED_HOSTS:
+    assert_not_in(f"retired host {_retired} absent from CSP", _retired, build.CSP_META)
+
+
+# ---------------------------------------------------------------------
 # Result
 # ---------------------------------------------------------------------
 print()

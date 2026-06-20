@@ -9,6 +9,8 @@ This site uses [Umami Cloud](https://umami.is) for aggregate visitor counts. Uma
 
 Block at the network layer if you don't want to be counted: `cloud.umami.is` and `gateway.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without them.
 
+> **Maintainer note — script host ≠ beacon host.** The loader (`cloud.umami.is/script.js`) and the beacon endpoint (`gateway.umami.is/api/send`) are two *different* hosts. The CSP `connect-src` must list the beacon host, or the browser silently blocks every pageview POST — the script loads, but nothing is recorded. The original integration hard-coded the now-retired `api-gateway.umami.dev` beacon host and shipped it from the first commit; the mismatch went undetected until analytics were noticed to be empty (2026-06-20). To prevent recurrence, `site/build.py` derives both the snippet and the CSP from single-source-of-truth constants (`UMAMI_SCRIPT_HOST`, `UMAMI_BEACON_HOST`, `UMAMI_RETIRED_HOSTS`) and asserts at import time that the CSP permits the beacon host and re-lists no retired host — so a bad edit aborts `python3 site/build.py` (and the deploy) instead of silently killing analytics. `site/test_build.py` carries the same checks. Re-derive `UMAMI_BEACON_HOST` from the live script's `/api/send` default before changing it; do not trust memory for that value.
+
 ## Per-page coverage
 
 Every emitted HTML page on the site loads the Umami snippet exactly once: the home page, every brief page, every per-item page, every CVE / source / topic page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.

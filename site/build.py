@@ -1770,20 +1770,62 @@ def prune_orphans(out: Path) -> None:
 # client-side). JS still handles topbar wiring, search autocomplete,
 # list-page filter chips, and the brief-page tag/region/section toggles.
 
+# Umami analytics — single source of truth for every host that appears in
+# both the loader snippet and the CSP. UMAMI_SNIPPET and CSP_META below are
+# BUILT from these constants so the script's loader host and the CSP's
+# allowed hosts can never silently drift apart again.
+#
+# REGRESSION GUARD (2026-06-20). The loader served from UMAMI_SCRIPT_HOST
+# (`cloud.umami.is/script.js`) POSTs its pageview beacon to a *different*
+# host — `gateway.umami.is/api/send` (the script's built-in default; see the
+#   const K=`${(x||"https://gateway.umami.is").replace(/\/$/,"")}/api/send`
+# in the minified loader). The CSP `connect-src` MUST list that beacon host
+# or the browser silently blocks every beacon: the script loads fine and not
+# one pageview is recorded. The original integration hard-coded the now-RETIRED
+# `api-gateway.umami.dev` beacon host and nothing tied the CSP to the loader's
+# real endpoint, so the mismatch shipped from the very first commit and went
+# undetected until analytics were noticed to be empty. Before ever changing
+# UMAMI_BEACON_HOST, re-derive it from the live script (the `/api/send` default
+# host above) — do not trust memory/training data for this value — and never
+# reintroduce a host listed in UMAMI_RETIRED_HOSTS. The import-time assertion
+# after CSP_META enforces both rules on every build (including the deploy-site
+# CI step, which runs `python3 site/build.py`).
+UMAMI_WEBSITE_ID = "abe09860-85be-4b06-8383-002f2e598061"
+UMAMI_SCRIPT_HOST = "https://cloud.umami.is"    # serves script.js (script-src)
+UMAMI_BEACON_HOST = "https://gateway.umami.is"  # receives /api/send beacons (connect-src)
+UMAMI_RETIRED_HOSTS = ("https://api-gateway.umami.dev",)  # NEVER reintroduce
+
 UMAMI_SNIPPET = (
-    '<script defer src="https://cloud.umami.is/script.js" '
-    'data-website-id="abe09860-85be-4b06-8383-002f2e598061" '
+    f'<script defer src="{UMAMI_SCRIPT_HOST}/script.js" '
+    f'data-website-id="{UMAMI_WEBSITE_ID}" '
     'data-exclude-search="true"></script>'
 )
 
 CSP_META = (
     '<meta http-equiv="Content-Security-Policy" content='
-    "\"default-src 'self'; script-src 'self' https://cloud.umami.is; "
+    f"\"default-src 'self'; script-src 'self' {UMAMI_SCRIPT_HOST}; "
     "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-    "connect-src 'self' https://cloud.umami.is https://gateway.umami.is; "
+    f"connect-src 'self' {UMAMI_SCRIPT_HOST} {UMAMI_BEACON_HOST}; "
     "object-src 'none'; base-uri 'self'; form-action 'none'; "
     'upgrade-insecure-requests" />'
 )
+
+# Structural guard — runs at import, so a bad edit aborts `python3 site/build.py`
+# (and the deploy) with a clear message before a single page is written, rather
+# than shipping a CSP that silently blocks analytics. Deterministic: a pure
+# function of the constants above, never of brief content, so it can never
+# false-positive on editorial drift.
+assert UMAMI_SCRIPT_HOST in CSP_META, "CSP is missing the Umami script host (script-src/connect-src)"
+assert UMAMI_BEACON_HOST in CSP_META, (
+    f"CSP connect-src is missing the Umami beacon host {UMAMI_BEACON_HOST!r}; "
+    "the loader POSTs pageviews to <beacon-host>/api/send and the browser blocks "
+    "every beacon otherwise (analytics silently dead)"
+)
+for _retired_host in UMAMI_RETIRED_HOSTS:
+    assert _retired_host not in CSP_META, (
+        f"retired Umami host {_retired_host!r} reappeared in the CSP — it no longer "
+        f"receives beacons; the live host is {UMAMI_BEACON_HOST!r}. See UMAMI_RETIRED_HOSTS."
+    )
 
 GH_ICON_SVG = (
     '<svg class="github-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
