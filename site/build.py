@@ -4265,9 +4265,36 @@ _MODEL_PALETTE: list[str] = [
 ]
 
 
+def _ops_canonical_model(name: Any) -> str:
+    """Collapse a self-reported model string to a canonical family+version tag
+    for the Ops dashboard. Self-identification lives in the agents (the prompts
+    say nothing about this normalisation) — here we just fold the harmless
+    variants together so the "Models in use" view is legible:
+
+        "Claude Opus 4.8"                        → "Claude Opus 4.8"
+        "Anthropic Claude Opus 4.8"              → "Claude Opus 4.8"
+        "Claude Opus 4.8 (1M context)"           → "Claude Opus 4.8"
+        "Anthropic Claude Opus 4.8 (1M context)" → "Claude Opus 4.8"
+        "Claude Fable 5"                         → "Claude Fable 5"   (future-proof)
+
+    Anything that doesn't self-identify as `Claude <Family> <Version>` —
+    "unknown", "manual full-source audit session", "Anthropic Claude (specific
+    model not determined)", "" — folds to "unknown". No model list is hardcoded,
+    so a new family/version works without a code change."""
+    if not isinstance(name, str):
+        return "unknown"
+    s = re.sub(r"^\s*anthropic\s+", "", name.strip(), flags=re.I)  # drop vendor prefix
+    s = re.sub(r"\s*\([^)]*\)\s*", " ", s).strip()                 # drop "(1M context)" etc.
+    m = re.match(r"(?i)^claude\s+([a-z]+)\s+(\d+(?:\.\d+)?)\b", s)
+    if not m:
+        return "unknown"
+    return f"Claude {m.group(1).capitalize()} {m.group(2)}"
+
+
 def _ops_color_for_model(name: str, assigned: dict[str, str]) -> str:
-    """Stable palette assignment; 'unknown' always renders muted."""
-    key = (name or "").strip()
+    """Stable palette assignment; 'unknown' always renders muted. The name is
+    canonicalised first so every variant of a model shares one colour."""
+    key = _ops_canonical_model(name)
     if not key or key.lower() in ("unknown", "—"):
         return "var(--text-muted)"
     if key in assigned:
@@ -4388,23 +4415,25 @@ def render_ops_page(
             if a.get("returned") is False:
                 stalled_subagents += 1
 
-    # Distinct models across main agent + sub-agents + verifiers.
+    # Distinct models across main agent + sub-agents + verifiers — counted on
+    # the canonical tag, excluding the "unknown" bucket (not a real model).
     distinct_models: set[str] = set()
     for r in runs_desc:
-        m = r.get("model")
-        if isinstance(m, str) and m and m.lower() != "unknown":
-            distinct_models.add(m)
+        for cand in [r.get("model")]:
+            c = _ops_canonical_model(cand)
+            if c != "unknown":
+                distinct_models.add(c)
         for a in (r.get("sub_agents") or {}).values():
             if not isinstance(a, dict):
                 continue
-            am = a.get("model")
-            if isinstance(am, str) and am and am.lower() != "unknown":
-                distinct_models.add(am)
+            c = _ops_canonical_model(a.get("model"))
+            if c != "unknown":
+                distinct_models.add(c)
         for it in ((r.get("verification") or {}).get("iterations") or []):
             if isinstance(it, dict):
-                vm = it.get("model")
-                if isinstance(vm, str) and vm and vm.lower() != "unknown":
-                    distinct_models.add(vm)
+                c = _ops_canonical_model(it.get("model"))
+                if c != "unknown":
+                    distinct_models.add(c)
 
     # ----- Sparkline series (chronological order) ---------------------------
     duration_series = [r.get("duration_seconds") or 0 for r in runs_asc]
@@ -4433,9 +4462,10 @@ def render_ops_page(
     palette: dict[str, str] = {}
 
     def _bump(role: str, name: str | None) -> None:
-        if not name or not isinstance(name, str) or not name.strip():
-            return
-        bucket = model_role_counts.setdefault(name.strip(), {"main": 0, "research": 0, "verify": 0})
+        # Canonicalise so all variants of a model fold into one slice; the
+        # "unknown" bucket is kept (it surfaces identification gaps).
+        canon = _ops_canonical_model(name)
+        bucket = model_role_counts.setdefault(canon, {"main": 0, "research": 0, "verify": 0})
         bucket[role] += 1
 
     for r in runs_desc:
@@ -4583,11 +4613,14 @@ def render_ops_page(
                         chart=_ops_svg_stacked_bars(verification_stacks, width=160, height=30,
                                                       label="Verification verdicts"))
         + _ops_kpi_tile("Sub-agent stalls", str(stalled_subagents),
-                        sub=f"out of {sub_agent_returns} returns",
-                        kind=("crit" if stalled_subagents > 0 else "ok"), primary=True,
+                        sub=f"out of {sub_agent_returns} sub-agent returns in window",
+                        kind=("crit" if stalled_subagents > 0 else "ok"), primary=True)
+        + _ops_kpi_tile("Fetch failures", str(total_failures),
+                        sub=f"coverage gaps across {len(runs_desc)} runs",
+                        kind=("warn" if total_failures > 0 else "ok"), primary=True,
                         chart=_ops_svg_bars(failures_series, width=160, height=30,
                                               color="var(--warn)",
-                                              label="Fetch failures over time"))
+                                              label="Fetch failures per run (chronological)"))
         + '</div>'
     )
 
@@ -4612,7 +4645,6 @@ def render_ops_page(
                         chart=_ops_svg_bars(items_series, width=140, height=28,
                                               color="var(--ok)",
                                               label="Items per run"))
-        + _ops_kpi_tile("Distinct models", distinct_models_str, sub=distinct_models_sub)
         + '</div>'
     )
 
@@ -4642,8 +4674,8 @@ def render_ops_page(
   </div>
 
   <div class="ops-subsection">
-    <h3 class="ops-subhead">Models in use</h3>
-    <p class="ops-subtitle">Distinct Claude models that signed work across all runs — main agent, research sub-agents, verifiers. The split surfaces runtime-config changes and any sub-agent that forgot to self-identify.</p>
+    <h3 class="ops-subhead">Models in use <span class="muted" style="font-weight:400">· {distinct_models_str} distinct</span></h3>
+    <p class="ops-subtitle"><strong>{distinct_models_str} distinct Claude model(s)</strong> signed work across all runs ({_escape(distinct_models_sub)}) — main agent, research sub-agents, verifiers. Variants of a model (vendor prefix, 1M-context suffix) fold into one tag; agents that did not self-identify fold into <code>unknown</code>. The split surfaces runtime-config changes and any sub-agent that forgot to self-identify.</p>
     <div class="ops-models">
       <div class="ops-models__chart">{donut_html}</div>
       <div class="ops-models__table">{models_table_html}</div>
@@ -4877,7 +4909,7 @@ _FETCH_FAILURE_CLASS_KIND: dict[str, str] = {
 def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -> str:
     """v2.55 — render the (now-strict) fetch_failures shape as a "Coverage
     gaps" table. Each row is a source the brief needed but couldn't get
-    via any recipe (bridge / Wayback / alternate publisher), so the row's
+    via any recipe (bridge / corroborating alternate publisher), so the row's
     intrinsic meaning is "operator should look at this — content was
     missing." Earlier versions of this table doubled as a bridge-use log;
     v2.55 split that out into `bridge_uses[]` (rendered separately).
@@ -5109,7 +5141,7 @@ def _ops_render_verification_iterations(
         n = it.get("n", "?")
         verdict = (it.get("verdict") or "").upper() or "?"
         verdict_kind = "ok" if verdict == "CLEAN" else "warn"
-        model = it.get("model") or "unknown"
+        model = _ops_canonical_model(it.get("model"))
         t_count = it.get("truth", 0)
         e_count = it.get("editorial", 0)
         a_count = it.get("advisory", 0)
@@ -5251,7 +5283,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     glance, full picture' card."""
     date = run.get("date") or "?"
     kind = run.get("kind", "daily")
-    main_name = run.get("model") or "unknown"
+    main_name = _ops_canonical_model(run.get("model"))
     main_id = run.get("model_id") or ""
     main_colour = _ops_color_for_model(main_name, palette)
     pv = (run.get("prompt_version") or "?").lstrip("v")
@@ -5361,7 +5393,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             '</div>'
         )
     if data.get("returned") is False:
-        model_name = data.get("model") or "unknown"
+        model_name = _ops_canonical_model(data.get("model"))
         return (
             f'<div class="ops-sa-card ops-sa-card--stalled">'
             f'<div class="ops-sa-card__head"><strong>{_escape(key)}</strong>'
@@ -5371,7 +5403,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             '</div>'
         )
 
-    model_name = data.get("model") or "unknown"
+    model_name = _ops_canonical_model(data.get("model"))
     model_id = data.get("model_id") or ""
     colour = _ops_color_for_model(model_name, palette)
     used = _ops_count_sources(data.get("sources_used"))
@@ -5531,7 +5563,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         used = _ops_count_sources(a.get("sources_used"))
         attempted = _ops_count_sources(a.get("sources_attempted"))
         items = a.get("items_returned") or 0
-        m = a.get("model") or ""
+        m = _ops_canonical_model(a.get("model"))
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
         # v2.57 — runs-table cells show the items-returned headline only;
         # source coverage moved to a tooltip on the cell. The inline
@@ -5564,7 +5596,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             if failures
             else '<span class="muted">0</span>'
         )
-        main_name = r.get("model") or "unknown"
+        main_name = _ops_canonical_model(r.get("model"))
         main_colour = _ops_color_for_model(main_name, palette)
         verif_iters = r.get("verification_iterations")
         verif_residual = r.get("verification_residual_count") or 0
@@ -6915,7 +6947,6 @@ def render_sources_overview_charts(
       - Cited-count per category bars — are HIGH-reliability categories
         (national CERT, vendor PSIRT) under-cited relative to their
         share of the source list? That's the lopsided-coverage signal.
-      - Fetch-failure rate over recent runs — sparkline from run_log.
       - Active-but-never-cited count — sources kept on the active list
         that aren't pulling weight; rotation candidates.
     """
@@ -7054,26 +7085,9 @@ def render_sources_overview_charts(
             '</div>'
         )
 
-    # Fetch-failure sparkline from run_log.
-    fail_block = ""
-    if run_log:
-        runs = (run_log.get("runs") or [])[:30]
-        if runs:
-            counts = [len(r.get("fetch_failures") or []) for r in reversed(runs)]
-            spark_svg = _ops_svg_sparkline(
-                [float(c) for c in counts], width=320, height=58,
-                label=f"Fetch failures across last {len(counts)} runs",
-            )
-            fail_block = (
-                '<div class="ops-chart-card">'
-                '<h3 class="section-head" style="margin-top:0">Fetch failures</h3>'
-                '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
-                f'Failures recorded in <code>run_log.json</code> across the last {len(counts)} runs '
-                f'(sum {sum(counts)}).'
-                '</p>'
-                f'{spark_svg}'
-                '</div>'
-            )
+    # v2.64 — the run_log fetch-failure sparkline was REMOVED from /sources/.
+    # Fetch failures are run-level operational telemetry → they live on /ops/
+    # (run-log table + Coverage gaps), not on the source-catalogue page.
 
     return (
         '<section class="ops-section">'
@@ -7087,7 +7101,6 @@ def render_sources_overview_charts(
         '<h3 class="section-head" style="margin-top:0">By reliability</h3>'
         f'{rel_donut}'
         '</div>'
-        f'{fail_block}'
         f'{top_block}'
         f'{cat_block}'
         '</div>'
