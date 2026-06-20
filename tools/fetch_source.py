@@ -27,13 +27,15 @@ The script will NEVER:
 - Run third-party JS or load any other origin.
 
 Hosts the direct bridge cannot get content from (Cloudflare Managed
-Challenge refuses every UA). Use `wayback <URL>` as the canonical
-fallback for these; if Wayback has no coverage either (group-ib.com,
-downloads.seppmail.com), the routine prompt routes to WebSearch:
-- inside-it.ch, databreaches.net, www.darkreading.com, www.coe.int
-  → bridge attempts fail; `wayback <URL>` has fresh-enough snapshots.
-- www.group-ib.com, downloads.seppmail.com → Wayback no recent coverage;
+Challenge / geo-WAF refuses every UA, re-confirmed in the 2026-06-20
+audit with the Chrome-138 UA + Sec-CH-UA client hints below):
+- www.group-ib.com → 503 Managed Challenge; Wayback no recent coverage;
   WebSearch fallback only.
+- www.ccn-cert.cni.es → 403 geo-block from outside Spain; Wayback empty.
+- www.coe.int, downloads.seppmail.com → blocked; Wayback fallback.
+Previously listed here but RECOVERED by the UA bump — use the feed path,
+not Wayback: databreaches.net (`feed https://databreaches.net/feed/`),
+www.darkreading.com (its /rss.xml), www.inside-it.ch (its /rss.xml).
 
 Usage:
     python3 tools/fetch_source.py url <URL>                          # plain GET with browser UA, prints body
@@ -148,11 +150,33 @@ _SSL_CTX = _build_ssl_context()
 # A modern, stable desktop-Chrome User-Agent. Matches what publishers
 # expect from a human visitor; does not impersonate Googlebot or any
 # other crawler.
+#
+# v2.62 (2026-06-20 full-source audit): bumped Chrome 124 → 138 and
+# switched the platform token to Windows. The stale 124/macOS UA was
+# being filtered by several publishers' WAFs that key off both the
+# Chrome major version AND the absence of the `Sec-CH-UA` client-hint
+# headers a real Chrome 138 always sends. With the bump + the client
+# hints added to `fetch()` below, the 2026-06-20 audit recovered
+# `databreaches.net` (RSS feed now 200) and `prodaft.com` (reports +
+# resources now 200) — both previously thought transport-blocked.
+# Keep the UA string, the `Sec-CH-UA` version list, and the
+# `Sec-CH-UA-Platform` token mutually consistent: a UA/header mismatch
+# is itself a bot signal.
 BROWSER_UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/124.0.0.0 Safari/537.36"
+    "Chrome/138.0.0.0 Safari/537.36"
 )
+
+# Client-hint headers a real Chrome 138 sends on a top-level navigation.
+# Kept in lockstep with BROWSER_UA above (major version + platform).
+# Sent on every bridge GET so WAFs that cross-check UA ↔ Sec-CH-UA do
+# not flag the request as automation.
+BROWSER_CLIENT_HINTS = {
+    "Sec-CH-UA": '"Chromium";v="138", "Google Chrome";v="138", "Not?A_Brand";v="99"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"Windows"',
+}
 
 # v2.52 — host allowlist removed.
 #
@@ -185,15 +209,25 @@ BROWSER_UA = (
 # instead of retrying the direct fetch.
 
 # Hosts known to sit behind Cloudflare's Managed Challenge ("Just a
-# moment..."). The bridge will still attempt these; the agent should
-# prefer the Wayback Machine fallback (`wayback <URL>`) on a recurring
-# 403 from any host that looks like it's in this class.
+# moment...") or a geo/WAF block that ignores every UA. The bridge will
+# still attempt these; the agent should prefer the Wayback Machine
+# fallback (`wayback <URL>`) — or, for the hosts noted below, a feed/RSS
+# path — on a recurring 403/503.
+#
+# v2.62 (2026-06-20 full-source audit): re-probed every entry with the
+# Chrome-138 UA + Sec-CH-UA client hints. RECOVERED and removed from the
+# set: databreaches.net (the /feed/ RSS now returns 200 — use
+# `feed https://databreaches.net/feed/`; the HTML homepage is still 403),
+# www.darkreading.com (the /rss.xml feed serves clean dated entries), and
+# www.inside-it.ch (the /rss.xml feed resolves via `url`). These three are
+# no longer dead — they just need their feed path, recorded in
+# sources/sources.json. Still genuinely blocked to every UA (kept below):
+# group-ib.com (503 Managed Challenge), ccn-cert.cni.es (403 geo-block
+# from outside Spain), coe.int, downloads.seppmail.com.
 CLOUDFLARE_BLOCKED_HOSTS = frozenset({
-    "www.inside-it.ch", "inside-it.ch",
-    "databreaches.net", "www.databreaches.net",
-    "www.darkreading.com", "darkreading.com",
     "www.coe.int", "coe.int",
     "www.group-ib.com", "group-ib.com",
+    "www.ccn-cert.cni.es", "ccn-cert.cni.es",
     "downloads.seppmail.com",
 })
 
@@ -376,7 +410,9 @@ def fetch(
         "Sec-Fetch-Dest": "document",
         "Sec-Fetch-Mode": "navigate",
         "Sec-Fetch-Site": "none",
+        "Sec-Fetch-User": "?1",
         "Upgrade-Insecure-Requests": "1",
+        **BROWSER_CLIENT_HINTS,
     }
     if extra_headers:
         headers.update(extra_headers)
