@@ -46,7 +46,7 @@ Three named sub-agents — all isolated context, model bound by their YAML front
 
 - **`cti-research`** — Phase 1 (daily) / Phase 2 (weekly) parallel research workers. One per domain (S1–S4 daily, W1–W2 weekly). Pivots from news to primary sources, returns verified items with full discovery traces. Opens its return with a mandatory `**Model:**` self-identification line. Definition: [.claude/agents/cti-research.md](.claude/agents/cti-research.md).
 - **`cti-verification`** — Phase 5.7 (daily) / Phase 4.7 (weekly) cold-reader verifier. **Opus default.** Read-only — main agent owns all edits. Looped iteratively, fresh spawn each iteration (no shared memory) until verdict CLEAN or 5-iteration cap. Same self-identification contract. Definition: [.claude/agents/cti-verification.md](.claude/agents/cti-verification.md).
-- **`cti-verification-alt`** — model-rotation variant of `cti-verification`. **Sonnet default.** Identical operational system prompt (gatekeeper framing, F1–F12 finding categories, return contract, 30-min cap). Only the YAML frontmatter differs. The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations** (iter 2, iter 4) so model-specific blind spots are caught when the next iteration runs on a different model. Definition: [.claude/agents/cti-verification-alt.md](.claude/agents/cti-verification-alt.md). **When you edit one verifier definition, you MUST edit the other in the same commit** — the bodies are kept byte-equivalent so rotation only changes the runtime, not the contract.
+- **`cti-verification-alt`** — model-rotation variant of `cti-verification`. **Sonnet default.** Identical operational system prompt (gatekeeper framing, F1–F15 finding categories, return contract, 30-min cap). Only the YAML frontmatter differs. The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations** (iter 2, iter 4) so model-specific blind spots are caught when the next iteration runs on a different model. Definition: [.claude/agents/cti-verification-alt.md](.claude/agents/cti-verification-alt.md). **When you edit one verifier definition, you MUST edit the other in the same commit** — the bodies are kept byte-equivalent so rotation only changes the runtime, not the contract.
 
 The main agent does composition, state update, commit, sync, push, publish-verification. Main agent and sub-agents may run on different models — the runtime decides per role and every agent self-identifies in its output. **Self-identification primary source: harness env vars `CLAUDE_FRIENDLY_NAME` and `CLAUDE_MODEL_ID`** (v2.47). The operator sets these in the routine container; sub-agents read them via Bash (`echo $CLAUDE_FRIENDLY_NAME`) and emit them verbatim in the `**Model:**` line. Falling back to "reason about your identity" is the v2.46 behaviour and is preserved when the env vars are unset, but it has demonstrably drifted (sub-agents pattern-matched stale training-data names). Set the env vars in the routine config to make the AI-content notice on every brief precisely correct. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents so the operator gets the right tool set + model binding.
 
@@ -152,6 +152,32 @@ work/<run-id>/verification.iter<N>.findings.yaml  # v2.48 § findings-summary �
 
 Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `.claude/agents/cti-research.md`, `.claude/agents/cti-verification.md`, or `.claude/agents/cti-verification-alt.md` MUST ship all three of these in the same commit (banner bump + CHANGELOG entry + the file edit itself). Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records. **Both verifier definitions move in lockstep** — when you edit one, edit the other to keep their bodies byte-equivalent (only the `model:` frontmatter differs).
 
+### Daily ↔ weekly parity — shared machinery moves in lockstep; the lens stays divergent (ALWAYS)
+
+`prompts/daily-cti-brief.md` and `prompts/weekly-summary.md` deliberately **share their procedure and machinery** but deliberately **differ in their intelligence lens and output structure**. **The daily is the gold standard for shared machinery.** When you change a shared element in one prompt you MUST mirror the equivalent change into the other **in the same commit** (same discipline as the two verifier definitions above), adapting only the phase numbers / cadence units, and update `prompts/brief-template.md` when the change touches the rendered shape. The CHANGELOG entry's `### What changed` must name which prompt(s) moved; `### What stays` must note what was intentionally left divergent. The two drifted once (the weekly lacked the daily's verification/triage pass, compose-after-return gate, `Evidence:` field, F13–F15 + prior-iteration deltas, and historical-context rule — see CHANGELOG v2.61); this rule exists so that cannot recur silently.
+
+**Shared machinery — change one ⇒ mirror into the other (adapt phase numbers / cadence only):**
+
+- CRITICAL "always produce a brief/summary" header + the anti-crash guards.
+- Prime directives **except** the lens ones listed below — zero-LLM-knowledge, inline-links-must-be-real, no IOCs, no vanity metrics, two-source + national-CERT carve-out, fake-news guard, recency mechanics, trace-to-primary, CISA-KEV-deadline rule, historical-context/Background, less-is-more.
+- Per-item metadata footer spec (taxonomy fields, multi-CVE breakdown, blocked-URL allowlist, the `Evidence:` source-quote field).
+- Skeleton-then-Edit + the compose-after-return anti-fabrication gate.
+- Self-identification (model + timestamps), the AI-content notice, the `Generated by:` line.
+- Verification & triage pass (daily Phase 2 / weekly Phase 2.5).
+- Self-check gate (daily Phase 5.5 / weekly Phase 4.5) **and** verification sub-agent loop (daily Phase 5.7 / weekly Phase 4.7): model rotation, prior-iteration deltas on even iterations, the F1–F15 finding set, rich per-iteration `findings[]`, early-exit, 5-iteration cap.
+- `state/run_log.json` schema (`sub_agents`, `fetch_failures`, `bridge_uses`, `verification.iterations[]`) and the state-update lifecycle (`covered_items`, `cves_seen`, `sources`, `deep_dive_history`).
+- Publishing chain + `work/<run-id>/` commit + publish verification.
+- Main-agent-does-no-source-fetching anti-classifier-trip invariant; the META self-evolution authority + hard-invariants list.
+
+**Intentionally divergent — do NOT force-sync (this is the *point* of having two prompts):**
+
+- The intelligence lens / editorial framing: daily = operational today's-signal, 1–7-day patch / hunt / block / detect decisions, **no** long-horizon; weekly = broader threat picture, multi-day chains, research & threat-actor developments, annual reports, long-horizon, looking-ahead.
+- Section structure: daily 8 sections (incl. Deep Dive + the Immediate-Action callout); weekly 12 sections (incl. on-fire / multi-day / research+actor / annual / long-running / policy / looking-ahead).
+- Cadence + recency unit: daily `window_hours`; weekly `window_days` + most-recent-Sunday ISO-week anchor.
+- Sub-agent fan-out: daily S1–S4; weekly Phase 1 structured review + W1–W2.
+- Phase numbering offset (no deep-dive phase in the weekly; the weekly adds Phase 2.5 triage).
+- Dedup polarity: the daily (PD-8) never repeats a recent weekly and carries no long-horizon synthesis; the weekly **may** repeat a daily item with a new lens. The asymmetry runs one way.
+
 Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump when they materially change runtime behaviour. Pure clarifications, reformatting, and ops-doc updates do not.
 
 1. **Bump the version banner** in the prompt itself (`> **Prompt version:** vN.M`). Daily and weekly versions move in lockstep — even if only one was edited substantively — so `state/run_log.json.prompt_version` is unambiguous across runs.
@@ -162,4 +188,4 @@ Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump w
 
 The routine has full authority to modify `prompts/`, `docs/`, `sources/sources.json`, `state/*.json`, `.claude/agents/`, `.claude/memory/`, `site/taxonomy.yaml`, and `tools/`. Every change appears in the commit diff for after-the-fact review.
 
-**Hard invariants that must NOT be removed or weakened** (surface concerns in § Verification Notes instead): AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, Phase 4.5 verification loop, Phase 5.5 self-check gate, per-item metadata footer using taxonomy values, memory commits.
+**Hard invariants that must NOT be removed or weakened** (surface concerns in § Verification Notes instead): AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, self-check gate (Phase 5.5 daily / 4.5 weekly), verification sub-agent loop (Phase 5.7 daily / 4.7 weekly), per-item metadata footer using taxonomy values, memory commits.
