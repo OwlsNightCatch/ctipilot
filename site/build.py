@@ -4648,7 +4648,6 @@ def render_ops_page(
     )
 
     run_count_label = f"{len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'}"
-    sources_changed_html = _ops_render_sources_changed(all_runs, prefix=prefix)
     source_health_html = _ops_render_source_health(source_health)
     body = f"""
 <h1>Operations</h1>
@@ -4678,13 +4677,7 @@ def render_ops_page(
 
 <section class="ops-cluster" id="sources">
   <h2 class="ops-cluster__head">Sources</h2>
-  <p class="ops-cluster__intro">How the source list changed on the most recent run that touched it, and the latest independent accessibility probe of every active source. The autonomous routine maintains <code>sources/sources.json</code> in Phase 5 — promoting proven candidates, demoting dead/blocked sources, and correcting fetch recipes / categories / reliability as publishers change — and records each edit so it surfaces here.</p>
-
-  <div class="ops-subsection">
-    <h3 class="ops-subhead">Sources changed (latest run)</h3>
-    <p class="ops-subtitle">Per-run edits to <code>sources/sources.json</code> from <code>run_log[].sources_changed</code> — promotions, demotions, new candidates, and fetch-method / category / reliability / url corrections.</p>
-    {sources_changed_html}
-  </div>
+  <p class="ops-cluster__intro">The latest independent accessibility probe of every active source. The autonomous routine maintains <code>sources/sources.json</code> in Phase 5 — promoting proven candidates, demoting dead/blocked sources, and correcting fetch recipes / categories / reliability as publishers change. <strong>Per-run source-list edits are shown in the <a href="#latest">Run detail</a> selector above</strong> (each run's "Sources changed" table), so you can step through what every run changed — not just the latest.</p>
 
   <div class="ops-subsection">
     <h3 class="ops-subhead">Source health snapshot</h3>
@@ -4747,53 +4740,41 @@ _SOURCES_CHANGE_BADGE = {
 }
 
 
-def _ops_render_sources_changed(runs: list[dict[str, Any]], *, prefix: str) -> str:
-    """v2.62 — the most recent run that recorded `sources_changed[]` edits to
+def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
+    """v2.62 — the `sources_changed[]` edits a SINGLE run made to
     sources/sources.json, rendered as a table of what moved (promotions,
     demotions, new candidates, and fetch-method / category / reliability / url
-    corrections). The per-run change log is the operator's at-a-glance view of
-    how the source list evolved on each fire."""
-    rec = None
-    for r in reversed(runs):
-        sc = r.get("sources_changed")
-        if isinstance(sc, list) and sc:
-            rec = r
-            break
-    if rec is None:
-        return (
-            '<div class="empty"><p>No source-list changes recorded in the window.</p>'
-            '<p class="muted">Runs populate <code>sources_changed[]</code> in Phase 5 (v2.62+): '
-            'promotions, demotions, new candidates, and fetch-method / category / reliability '
-            'corrections. A counters-only run records <code>[]</code>.</p></div>'
-        )
-    sc = [c for c in rec["sources_changed"] if isinstance(c, dict)]
-    counts = Counter(c.get("change") for c in sc)
-    summary = " · ".join(f"{n} {k}" for k, n in counts.most_common())
-    CAP = 60
-    shown = sc[:CAP]
-    rows = []
-    for c in shown:
-        sid = c.get("id", "?")
-        ch = c.get("change", "?")
-        kind = _SOURCES_CHANGE_BADGE.get(ch, "neutral")
-        frm = c.get("from") or "—"
-        to = c.get("to") or "—"
-        rows.append(
-            f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(sid)}</a></td>'
-            f'<td><span class="ops-pill ops-pill--{kind}">{_escape(ch)}</span></td>'
-            f'<td class="mono muted">{_escape(str(frm))} → {_escape(str(to))}</td>'
+    corrections). Lives inside the per-run detail panel so the run-detail
+    selector shows each run's source-list edits, not just the latest's."""
+    sc = [c for c in (run.get("sources_changed") or []) if isinstance(c, dict)]
+    if not sc:
+        body = '<p class="muted">No source-list edits recorded for this run.</p>'
+    else:
+        counts = Counter(c.get("change") for c in sc)
+        summary = " · ".join(f"{n} {k}" for k, n in counts.most_common())
+        CAP = 60
+        rows = "".join(
+            f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(c.get("id", "?"), safe="")}/">{_escape(c.get("id", "?"))}</a></td>'
+            f'<td><span class="ops-pill ops-pill--{_SOURCES_CHANGE_BADGE.get(c.get("change"), "neutral")}">{_escape(c.get("change", "?"))}</span></td>'
+            f'<td class="mono muted">{_escape(str(c.get("from") or "—"))} → {_escape(str(c.get("to") or "—"))}</td>'
             f'<td class="muted">{_escape(c.get("reason", ""))}</td></tr>'
+            for c in sc[:CAP]
         )
-    more = (f'<p class="muted">+ {len(sc) - CAP} more (see <code>state/run_log.json</code> '
-            f'<code>sources_changed</code>).</p>' if len(sc) > CAP else "")
-    date = rec.get("date", "?")
-    kindlabel = rec.get("kind", "daily")
+        more = (f'<p class="muted">+ {len(sc) - CAP} more (see <code>state/run_log.json</code> '
+                f'<code>sources_changed</code> for this run).</p>' if len(sc) > CAP else "")
+        body = (
+            f'<p class="muted ops-latest__failures-help">{_escape(summary)}.</p>'
+            '<div class="data-wrap"><table class="data">'
+            '<thead><tr><th>Source</th><th>Change</th><th>From → To</th><th>Reason</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>{more}'
+        )
     return (
-        f'<p class="ops-subtitle">Most recent run with source-list edits: '
-        f'<span class="mono">{_escape(date)}</span> ({_escape(kindlabel)}) — {_escape(summary)}.</p>'
-        '<div class="data-wrap"><table class="data">'
-        '<thead><tr><th>Source</th><th>Change</th><th>From → To</th><th>Reason</th></tr></thead>'
-        f'<tbody>{"".join(rows)}</tbody></table></div>{more}'
+        '<div class="ops-latest__failures">'
+        '<h3 class="ops-mini-head">Sources changed</h3>'
+        '<p class="muted ops-latest__failures-help">Edits this run made to <code>sources/sources.json</code> — '
+        'promotions, demotions, new candidates, and fetch-method / category / reliability / url corrections '
+        '(<code>run_log[].sources_changed</code>).</p>'
+        f'{body}</div>'
     )
 
 
@@ -5285,6 +5266,9 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     # showing where the bridge was successfully invoked. Separate panel
     # so success and failure don't share a list.
     bridge_uses_html = _ops_render_bridge_uses(run.get("bridge_uses") or [])
+    # v2.62 — per-run source-list edits, rendered inside this panel so the
+    # run-detail selector shows each run's source changes, not just the latest.
+    run_sources_changed_html = _ops_render_run_sources_changed(run, prefix=prefix)
 
     # v2.58 — verification iteration renderer now returns TWO fragments:
     # a compact chip row (iteration timeline) for the 2-col Verification
@@ -5348,6 +5332,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
   <p class="muted ops-latest__failures-help">Sources the brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55.</p>
   {failures_html}
 </div>
+{run_sources_changed_html}
 {bridge_uses_html}
 {verif_findings_html}
 """
