@@ -216,7 +216,7 @@
       "fetch_method": "blocked",
       "last_successful_fetch": null,
       "consecutive_failures": 2,
-      "notes": "Spanish national CERT under CNI. WebFetch returns HTTP 403; bridge fetcher ALSO returns 403 — Cloudflare / geo-IP gating from outside Spain or anti-bot protection. Surface as coverage gap in § 7 ('ccn-cert-es: 403 even with bridge fetcher'). NEVER demote on this transport block (Phase 5 rule A1). Retest periodically; recover if CCN-CERT publishes a CSAF feed at /.well-known/csaf/ or relaxes the geo block. | 2026-06-20 full audit (v2.62): retested with Chrome-138 UA — still HTTP 403 (geo-block from outside Spain), Wayback empty, /.well-known/csaf/ 403. Coverage gap; WebSearch-only. NEVER demote-on-transport beyond this; recover if the geo block relaxes or a CSAF feed appears."
+      "notes": "Spanish national CERT under CNI. WebFetch returns HTTP 403; bridge fetcher ALSO returns 403 — Cloudflare / geo-IP gating from outside Spain or anti-bot protection. Surface as coverage gap in § 7 ('ccn-cert-es: 403 even with bridge fetcher'). NEVER demote on this transport block (Phase 5 rule A1). Retest periodically; recover if CCN-CERT publishes a CSAF feed at /.well-known/csaf/ or relaxes the geo block. | 2026-06-20 full audit (v2.well-known/csaf/ 403. Coverage gap; WebSearch-only. NEVER demote-on-transport beyond this; recover if the geo block relaxes or a CSAF feed appears."
     },
     {
       "id": "censys-blog",
@@ -562,16 +562,16 @@
         "ch-eu",
         "gov"
       ],
-      "reliability": "HIGH",
+      "reliability": "MEDIUM",
       "language": [
         "en",
         "it"
       ],
-      "status": "active",
+      "status": "demoted",
       "fetch_method": "rss",
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
-      "notes": "Italian national CSIRT under ACN; English and Italian alerts and bulletins. WebFetch returns HTTP 403 (transport-side block, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini`. | 2026-06-20 full audit (v2.62): live=Y, drill=N. FETCH → feed https://www.acn.gov.it/portale/feedrss/-/journal/rss/20119/723192 5 (title+date+one-line severity/product summary+link); OR bridge: python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini for the listing. AVOID: WebFetch 403s both the listing and the advisory detail pages — skip WebFetch entirely. Advisory detail pages are a Liferay/React SPA: bridge 'url' returns only the shell (no body text). Use the RSS feed; its summary gives severity + affected products, then pivot to the underlying vendor advisory.."
+      "notes": "Italian national CSIRT under ACN; English and Italian alerts and bulletins. WebFetch returns HTTP 403 (transport-side block, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini`. | 2026-06-20 full audit (v2.62): live=Y, drill=N. FETCH → feed https://www.acn.gov.it/portale/feedrss/-/journal/rss/20119/723192 5 (title+date+one-line severity/product summary+link); OR bridge: python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini for the listing. AVOID: WebFetch 403s both the listing and the advisory detail pages — skip WebFetch entirely. Advisory detail pages are a Liferay/React SPA: bridge 'url' returns only the shell (no body text). Use the RSS feed; its summary gives severity + affected products, then pivot to the underlying vendor advisory.. | 2026-06-20 v2.64 fetch-waste review: no readable path — WebFetch 403, advisory body is a React SPA, and the referenced RSS (csirt.gov.it/data/indexer/rss) does not parse. DEMOTED as fetch-waste. Recover if ACN exposes a parseable feed or a CSAF endpoint."
     },
     {
       "id": "cyberscoop",
@@ -608,7 +608,7 @@
       "fetch_method": "rss",
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
-      "notes": "Mixed quality; verify before use. URL UPDATED 2026-05-08: HTML root https://www.darkreading.com/ returns HTTP 403 to WebFetch — switched to RSS feed which serves cleanly with full dated entries. Cite per-article URLs (drill into <link> from feed). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → rss: python3 tools/fetch_source.py feed https://www.darkreading.com/rss.xml 5 — full dated entries with substantive summaries; cite per-article <link>. For full body, WebFetch the article (works on older posts; brand-new posts 403) or `wayback <article_url>` once snapshotted.. AVOID: Both WebFetch and the bridge 403 the HTML root and brand-new article URLs — do not retry the bridge direct fetch on darkreading.com (it's on the bridge-fails list). The feed is the path; wayback covers older article bodies.."
+      "notes": "Mixed quality; verify before use. URL UPDATED 2026-05-08: HTML root https://www.darkreading.com/ returns HTTP 403 to WebFetch — switched to RSS feed which serves cleanly with full dated entries. Cite per-article URLs (drill into <link> from feed). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → rss: python3 tools/fetch_source.py feed https://www.darkreading.com/rss.xml 5 — full dated entries with substantive summaries; cite per-article <link>. AVOID: Both WebFetch and the bridge 403 the HTML root and brand-new article URLs — do not retry the bridge direct fetch on darkreading.com (it's on the bridge-fails list)."
     },
     {
       "id": "databreaches-net",
@@ -626,7 +626,7 @@
       "fetch_method": "rss",
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
-      "notes": "Long-running independent breach tracker run by Dissent Doe; primary aggregator for breach disclosures (often the first to publish state AG breach-notification filings, hospital/clinic disclosures, education-sector incidents). WebFetch returns HTTP 403 (re-confirmed 2026-05-08; RSS at /feed/ also 403's). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://databreaches.net/` (host added to bridge allowlist 2026-05-08). NB: the bridge ALSO returns 403 from some egress IPs (the publisher's WAF appears to have IP-reputation rules in addition to UA filtering). If the bridge fails, surface as a coverage gap rather than retrying. Discovery layer: trace each breach back to the victim's own statement or regulator filing before citing. | 2026-06-01: HTTP 403, no usable Wayback snapshot (5th consecutive). Sustained 403 = transport block, no demote; needs alternate-URL strategy or replacement. | 2026-06-20 full audit (v2.62): RECOVERED via the Chrome-138 UA + Sec-CH-UA client hints. FETCH → `feed https://databreaches.net/feed/` returns 200 with dated breach disclosures (the HTML homepage is still 403 — skip it). Discovery: trace each breach to the victim statement / regulator filing before citing. fetch_method bridge→rss; +ransomware.",
+      "notes": "Long-running independent breach tracker run by Dissent Doe; primary aggregator for breach disclosures (often the first to publish state AG breach-notification filings, hospital/clinic disclosures, education-sector incidents). WebFetch returns HTTP 403 (re-confirmed 2026-05-08; RSS at /feed/ also 403's). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://databreaches.net/` (host added to bridge allowlist 2026-05-08). NB: the bridge ALSO returns 403 from some egress IPs (the publisher's WAF appears to have IP-reputation rules in addition to UA filtering). If the bridge fails, surface as a coverage gap rather than retrying. Discovery layer: trace each breach back to the victim's own statement or regulator filing before citing. |. Sustained 403 = transport block, no demote; needs alternate-URL strategy or replacement. | 2026-06-20 full audit (v2.62): RECOVERED via the Chrome-138 UA + Sec-CH-UA client hints. FETCH → `feed https://databreaches.net/feed/` returns 200 with dated breach disclosures (the HTML homepage is still 403 — skip it). Discovery: trace each breach to the victim statement / regulator filing before citing. fetch_method bridge→rss; +ransomware. | 2026-06-20 v2.64 fetch-waste review: KEPT — the /feed/ RSS carries ~1.4 KB article bodies per item (readable without drilling). Confirmed full-content feed.",
       "consecutive_fetch_failures": 0
     },
     {
@@ -852,7 +852,7 @@
       "fetch_method": "blocked",
       "last_successful_fetch": null,
       "consecutive_failures": 2,
-      "notes": "Singapore-headquartered global CTI firm. WebFetch returns HTTP 403 (re-confirmed 2026-05-08); RSS at /blog/feed/ also 403. Bridge fetcher would need www.group-ib.com on its allowlist — not currently allowed because the publisher's WAF was observed to drop the bridge UA too in earlier tests. Surface as coverage gap. Retest periodically; recover to `active` if a CSAF/RSS becomes available. | 2026-06-20 full audit (v2.62): retested with Chrome-138 UA + client hints — still HTTP 503 (Cloudflare Managed Challenge) on /blog/ and /blog/feed/; Wayback no recent coverage. Remains a coverage gap; WebSearch-only discovery. Do NOT WebFetch or bridge — it will 503. Recover if a CSAF/RSS becomes available.",
+      "notes": "Singapore-headquartered global CTI firm. WebFetch returns HTTP 403 (re-confirmed 2026-05-08); RSS at /blog/feed/ also 403. Bridge fetcher would need www.group-ib.com on its allowlist — not currently allowed because the publisher's WAF was observed to drop the bridge UA too in earlier tests. Surface as coverage gap. Retest periodically; recover to `active` if a CSAF/RSS becomes available. | 2026-06-20 full audit (v2. Remains a coverage gap; WebSearch-only discovery. Do NOT WebFetch or bridge — it will 503. Recover if a CSAF/RSS becomes available.",
       "consecutive_fetch_failures": 1
     },
     {
@@ -884,15 +884,15 @@
         "ch-eu",
         "news"
       ],
-      "reliability": "HIGH",
+      "reliability": "MEDIUM",
       "language": [
         "de"
       ],
-      "status": "active",
+      "status": "demoted",
       "fetch_method": "rss",
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
-      "notes": "German tech press, strong technical reporting (translate findings to English in brief). heise often relays primary German-language reporting from Der Spiegel / Süddeutsche / NDR — when an article cites such an outlet, walk the chain and prefer the original. (v2.55: rss_url verified — use `python3 tools/fetch_source.py feed https://www.heise.de/security/feed.xml [N]`) WARNING: per-article URLs (https://www.heise.de/news/<slug>.html) are TollBit-gated (HTTP 307 → tollbit.heise.de or 274-byte \"not authorized\" body). The feed gives 150-char summaries — use those for awareness; for body, pivot to a corroborating publisher. | 2026-06-20 full audit (v2.62): live=Y, drill=N. FETCH → rss: python3 tools/fetch_source.py feed https://www.heise.de/security/feed.xml 5  (awareness/headline only — feed summaries are ~150 chars). AVOID: Do NOT WebFetch per-article heise.de/news/<slug>.html for body — heise+ paywall (\"Sie benoetigen ein heise+ Paket\"); for substance pivot to a corroborating publisher (e.g. the vendor PSIRT the item references)..",
+      "notes": "German tech press, strong technical reporting (translate findings to English in brief). heise often relays primary German-language reporting from Der Spiegel / Süddeutsche / NDR — when an article cites such an outlet, walk the chain and prefer the original. (v2.55: rss_url verified — use `python3 tools/fetch_source.py feed https://www.heise.de/security/feed.xml [N]`) WARNING: per-article URLs (https://www.heise.de/news/<slug>.html) are TollBit-gated (HTTP 307 → tollbit.heise.de or 274-byte \"not authorized\" body). The feed gives 150-char summaries — use those for awareness; for body, pivot to a corroborating publisher. | 2026-06-20 full audit (v2.62): live=Y, drill=N. FETCH → rss: python3 tools/fetch_source.py feed https://www.heise.de/security/feed.xml 5  (awareness/headline only — feed summaries are ~150 chars). AVOID: Do NOT WebFetch per-article heise.de/news/<slug>.html for body — heise+ paywall (\"Sie benoetigen ein heise+ Paket\"); for substance pivot to a corroborating publisher (e.g. the vendor PSIRT the item references).. | 2026-06-20 v2.64 fetch-waste review: feed item bodies are ~120-char teasers and per-article pages are TollBit-paywalled (HTTP 307) — neither the feed nor a drill yields a readable article body. DEMOTED as fetch-waste (fetching the feed cannot produce citable content). Recover only if heise exposes a full-text feed.",
       "rss_url": "https://www.heise.de/security/feed.xml",
       "last_covered_in_brief": "2026-06-20",
       "consecutive_quiet_periods": 0,
@@ -1032,7 +1032,7 @@
       "fetch_method": "rss",
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
-      "notes": "Swiss IT trade press; primary reporting on Swiss incidents (translate findings to English in brief). WebFetch returns HTTP 403 (re-confirmed 2026-05-08); the RSS feed at /feed.rss also 403's. REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.inside-it.ch/`. | 2026-06-01: HTTP 403, no Wayback (3rd consecutive) | 2026-06-10: RSS bridge route https://www.inside-it.ch/rss.xml confirmed working via fetch_source.py url (resolves the prior 404 gap); no in-window security incidents on the feed this run. | 2026-06-13: HTTP 403, no usable Wayback snapshot — unresolvable this run. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → feed https://www.inside-it.ch/rss.xml 5 (via bridge; returns dated Swiss IT items, summary present) then bridge: python3 tools/fetch_source.py url <article-url> for body. Translate findings to English in the brief.. AVOID: WebFetch 403s the homepage and the feed — skip WebFetch entirely. The old /feed.rss path 403'd historically; /rss.xml is the working feed. Wayback has no usable fresh snapshots..",
+      "notes": "Swiss IT trade press; primary reporting on Swiss incidents (translate findings to English in brief). WebFetch returns HTTP 403 (re-confirmed 2026-05-08); the RSS feed at /feed.rss also 403's. REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.inside-it.ch/`. | 2026-06-10: RSS bridge route https://www.inside-it.ch/rss.xml confirmed working via fetch_source.py url (resolves the prior 404 gap); no in-window security incidents on the feed this run. |. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → feed https://www.inside-it.ch/rss.xml 5 (via bridge; returns dated Swiss IT items, summary present) then bridge: python3 tools/fetch_source.py url <article-url> for body. Translate findings to English in the brief. AVOID: WebFetch 403s the homepage and the feed — skip WebFetch entirely. The old /feed.rss path 403'd historically; /rss.xml is the working feed.",
       "consecutive_fetch_failures": 0,
       "last_covered_in_brief": "2026-06-12"
     },
@@ -2771,23 +2771,6 @@
       "last_successful_fetch": "2026-06-20",
       "consecutive_failures": 0,
       "notes": "Discovered 2026-06-13 via CVE-2026-48558 (SimpleHelp OIDC auth-bypass) — Horizon3 was the primary-discovery vendor with public PoC/IOC disclosure; consistent original research on RMM/enterprise-tooling auth bypasses. Fetched 200 this run. Candidate — promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://horizon3.ai/attack-research/ (listing) then webfetch the /attack-research/disclosures/<slug>/ article for body. AVOID: Cadence is sparse (CVE disclosures, not daily) — gaps of weeks are normal, not a failure."
-    },
-    {
-      "id": "sansec",
-      "publisher": "Sansec (sansec.io)",
-      "url": "https://sansec.io/research",
-      "category": [
-        "research"
-      ],
-      "reliability": "MEDIUM",
-      "language": [
-        "en"
-      ],
-      "status": "demoted",
-      "fetch_method": "webfetch",
-      "last_successful_fetch": "2026-06-16",
-      "consecutive_failures": 0,
-      "notes": "2026-06-16: surfaced as primary by S3+S4 for the Awesome Motive WordPress CDN supply-chain attack (~1.2M sites). Magecart/JS-supply-chain forensics specialist; frequently first to detect CDN-compromise campaigns affecting EU e-commerce/gov WordPress. Candidate — promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): DUPLICATE of source id `sansec-research` (identical URL https://sansec.io/research). Consolidated — `sansec-research` is the canonical active entry. This id retained as demoted soft-removal per the no-delete rule; do NOT rotate or cite it."
     },
     {
       "id": "zimperium-zlabs",
