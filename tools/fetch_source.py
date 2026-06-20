@@ -28,13 +28,14 @@ The script will NEVER:
 
 Hosts the direct bridge cannot get content from (Cloudflare Managed
 Challenge / geo-WAF refuses every UA, re-confirmed in the 2026-06-20
-audit with the Chrome-138 UA + Sec-CH-UA client hints below):
-- www.group-ib.com → 503 Managed Challenge; Wayback no recent coverage;
-  WebSearch fallback only.
-- www.ccn-cert.cni.es → 403 geo-block from outside Spain; Wayback empty.
-- www.coe.int, downloads.seppmail.com → blocked; Wayback fallback.
-Previously listed here but RECOVERED by the UA bump — use the feed path,
-not Wayback: databreaches.net (`feed https://databreaches.net/feed/`),
+audit with the Chrome-138 UA + Sec-CH-UA client hints below). There is
+no archived-snapshot fallback — surface these as a coverage gap and use
+WebSearch to find a corroborating publisher instead:
+- www.group-ib.com → 503 Managed Challenge.
+- www.ccn-cert.cni.es → 403 geo-block from outside Spain.
+- www.coe.int, downloads.seppmail.com → blocked.
+Previously listed here but RECOVERED by the UA bump — use the feed path:
+databreaches.net (`feed https://databreaches.net/feed/`),
 www.darkreading.com (its /rss.xml), www.inside-it.ch (its /rss.xml).
 
 Usage:
@@ -56,7 +57,6 @@ Usage:
     python3 tools/fetch_source.py cert-fr actu-recent [N]            # CERT-FR weekly-bulletin / actualité RSS (default 20)
     python3 tools/fetch_source.py ico-uk enforcement [N]             # UK ICO enforcement actions — top N by lastmod from sitemap.xml (default 20)
     python3 tools/fetch_source.py sec-edgar 8k [start] [end] [item]  # SEC EDGAR 8-K full-text search (default Item 1.05, last 14 days)
-    python3 tools/fetch_source.py wayback <URL> [target-ts] [min-sz] # Wayback Machine snapshot fetch (default target=now, min body 5000 B)
     # v2.54 — generic RSS/Atom feed fetcher (works on any HTTPS feed URL)
     python3 tools/fetch_source.py feed <URL> [N]                     # parse any RSS/Atom feed and return last N items as JSON
     # v2.53 — Microsoft MSRC Update Guide (Angular SPA at msrc.microsoft.com/update-guide/ backed by anonymous CVRF + SUG OData)
@@ -78,7 +78,6 @@ Examples:
     python3 tools/fetch_source.py cert-fr avis-recent 10 | jq '.items[].link'
     python3 tools/fetch_source.py ico-uk enforcement 5 | jq '.items[].url'
     python3 tools/fetch_source.py sec-edgar 8k 2026-05-01 2026-05-15 1.05 | jq '.hits[].display_name'
-    python3 tools/fetch_source.py wayback https://www.darkreading.com/article/foo
     python3 tools/fetch_source.py feed https://thedfirreport.com/feed/ 5 | jq '.items[].title'
     python3 tools/fetch_source.py feed https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v 10
     python3 tools/fetch_source.py feed https://www.schneier.com/feed/atom/ 5
@@ -204,15 +203,15 @@ BROWSER_CLIENT_HINTS = {
 #
 # A small `CLOUDFLARE_BLOCKED_HOSTS` set is retained for documentation
 # only — the bridge can still attempt these hosts, but the failure is
-# expected (Cloudflare Managed Challenge ignores every UA) and the
-# routine should route to the Wayback Machine fallback (`wayback <URL>`)
-# instead of retrying the direct fetch.
+# expected (Cloudflare Managed Challenge ignores every UA). There is no
+# archived-snapshot fallback; the routine should surface these as a
+# coverage gap and use WebSearch to find a corroborating publisher.
 
 # Hosts known to sit behind Cloudflare's Managed Challenge ("Just a
 # moment...") or a geo/WAF block that ignores every UA. The bridge will
-# still attempt these; the agent should prefer the Wayback Machine
-# fallback (`wayback <URL>`) — or, for the hosts noted below, a feed/RSS
-# path — on a recurring 403/503.
+# still attempt these; on a recurring 403/503 the agent should treat the
+# host as a coverage gap (WebSearch for a corroborating publisher) — or,
+# for the hosts noted below, use the feed/RSS path instead.
 #
 # v2.62 (2026-06-20 full-source audit): re-probed every entry with the
 # Chrome-138 UA + Sec-CH-UA client hints. RECOVERED and removed from the
@@ -396,8 +395,7 @@ def fetch(
 
     v2.52 — host allowlist removed. The bridge is usable on any HTTPS
     publisher; `extra_headers` lets callers add publisher-specific
-    headers (SEC requires an identifying User-Agent suffix; Wayback's
-    CDX rate-limiter prefers a non-empty Accept-Language).
+    headers (e.g. SEC EDGAR requires an identifying User-Agent suffix).
     """
     _check_url(url)
     headers = {
@@ -1169,263 +1167,6 @@ def msft_secblog_recent(count: int = 20, topic: str | None = None) -> dict[str, 
     }
 
 
-# ── Wayback Machine fallback for Cloudflare-Managed-Challenge hosts ───
-#
-# Workflow:
-#  1. Ask Wayback's "availability" JSON API for the closest snapshot to
-#     `target_timestamp` (default = now). One round-trip; rarely fails.
-#  2. If that snapshot's body is below `min_size`, fall through to the
-#     CDX API which lists every snapshot in a range — we sort by body
-#     size descending and try the largest one within ±180 days of the
-#     target. CDX is rate-limited and 503s often; we retry once after a
-#     35-second pause (the rate-limit window is ~30 s).
-#  3. Fetch the chosen snapshot via the standard wrapped URL
-#     (`/web/<ts>/<orig>`), which decompresses for us. Strip Wayback's
-#     wombat toolbar injection from the body so the caller sees clean
-#     publisher HTML.
-#
-# The result is a JSON object — { snapshot_url, snapshot_ts, original_url,
-# size, body } — the caller (agent) decides whether to trust the
-# snapshot's recency. The snapshot timestamp is preserved verbatim so the
-# caller can apply PD-7 recency rules in the daily / weekly prompt.
-WAYBACK_AVAILABLE = "https://archive.org/wayback/available"
-WAYBACK_CDX       = "https://web.archive.org/cdx/search/cdx"
-WAYBACK_WEB_BASE  = "https://web.archive.org/web"
-
-
-def _strip_wayback_injection(html: str) -> str:
-    """Remove Wayback's wombat toolbar + rewriting script bookends and
-    analytics comments so the body returned to the caller is close to
-    the original publisher HTML.
-
-    Wayback prepends a cluster of scripts (athena.js, bundle-playback.js,
-    wombat.js, ruffle.js, an inline __wm.init/__wm.wombat shim, banner
-    stylesheets) and appends a trailing HTML comment containing
-    PetaboxLoader3 metrics. We also strip the URL-rewriting prefix from
-    absolute links so the body's references read like the original
-    publisher's. Defensive (a missing element is a no-op).
-    """
-    # Remove the canonical toolbar bookend if present.
-    html = re.sub(
-        r"<!--\s*BEGIN WAYBACK TOOLBAR INSERT\s*-->.*?<!--\s*END WAYBACK TOOLBAR INSERT\s*-->",
-        "", html, flags=re.DOTALL,
-    )
-    # Remove every <script> tag that sources an archive.org / web-static.archive.org URL.
-    html = re.sub(
-        r"<script[^>]*\bsrc=[\"\'][^\"\']*(?:archive\.org|web-static\.archive\.org)[^\"\']*[\"\'][^>]*>\s*</script>",
-        "", html, flags=re.IGNORECASE,
-    )
-    # Remove inline <script> tags whose body mentions Wayback runtime
-    # injections (__wm., archive_analytics, RufflePlayer, PetaboxLoader3,
-    # window.addEventListener with archive_analytics inside).
-    html = re.sub(
-        r"<script[^>]*>(?:(?!</script>).)*?(?:__wm\.|archive_analytics|RufflePlayer|PetaboxLoader3)(?:(?!</script>).)*?</script>",
-        "", html, flags=re.DOTALL,
-    )
-    # Remove Wayback banner stylesheets.
-    html = re.sub(
-        r"<link[^>]*\bhref=[\"\'][^\"\']*web-static\.archive\.org[^\"\']*[\"\'][^>]*/?>",
-        "", html, flags=re.IGNORECASE,
-    )
-    # Remove the trailing PetaboxLoader3 / FILE ARCHIVED metrics comment.
-    html = re.sub(
-        r"<!--\s*(?:FILE ARCHIVED ON|playback timings|PetaboxLoader3)\b.*?-->",
-        "", html, flags=re.DOTALL | re.IGNORECASE,
-    )
-    # Strip Wayback URL-rewriting prefix from absolute links — keep the
-    # original publisher URL intact for downstream citation extraction.
-    # Pattern: https://web.archive.org/web/<timestamp>[<flags>]/<orig-url>
-    html = re.sub(
-        r"https?://web\.archive\.org/web/\d{14}(?:[a-z_]{2,3})?/(https?://)",
-        r"\1", html,
-    )
-    # Strip whitespace runs left by the deletions.
-    html = re.sub(r"\n\s*\n\s*\n+", "\n\n", html)
-    return html
-
-
-def _wayback_availability(orig_url: str, target_ts: str) -> dict[str, Any] | None:
-    qs = urllib.parse.urlencode({"url": orig_url, "timestamp": target_ts})
-    code, body, _ = fetch(
-        f"{WAYBACK_AVAILABLE}?{qs}",
-        accept="application/json",
-        max_bytes=MAX_BODY_BYTES_HTML,
-    )
-    if code != 200 or not body:
-        return None
-    try:
-        data = json.loads(body.decode("utf-8", errors="replace"))
-    except Exception:
-        return None
-    return (data.get("archived_snapshots") or {}).get("closest")
-
-
-def _wayback_cdx(orig_url: str, *, days_back: int = 180,
-                 max_rows: int = 50) -> list[dict[str, Any]]:
-    """Query the CDX index for the most-recent up-to-180-days of
-    snapshots of `orig_url`, filtered to HTTP 200. Returns rows sorted by
-    size descending so the caller can pick a snapshot whose body is
-    non-trivial (Cloudflare-blocked publishers often have stored
-    snapshots of the empty challenge page mixed in with real captures).
-    Tolerates one 503 retry after a 35 s pause — CDX's rate limiter
-    window is ~30 s.
-    """
-    import time as _time
-    from datetime import date, timedelta
-    end_ts = date.today().strftime("%Y%m%d")
-    start_ts = (date.today() - timedelta(days=days_back)).strftime("%Y%m%d")
-    qs = urllib.parse.urlencode({
-        "url": orig_url,
-        "output": "json",
-        "from": start_ts,
-        "to": end_ts,
-        "filter": "statuscode:200",
-        "limit": str(max_rows),
-    })
-    url = f"{WAYBACK_CDX}?{qs}"
-    for attempt in (1, 2):
-        try:
-            code, body, _ = fetch(url, accept="application/json")
-            if code == 200 and body:
-                rows = json.loads(body.decode("utf-8", errors="replace"))
-                # First row is the column header.
-                if not rows or len(rows) < 2:
-                    return []
-                header, *data_rows = rows
-                idx = {col: i for i, col in enumerate(header)}
-                parsed = []
-                for r in data_rows:
-                    try:
-                        parsed.append({
-                            "timestamp": r[idx["timestamp"]],
-                            "original":  r[idx["original"]],
-                            "statuscode": r[idx["statuscode"]],
-                            "length":    int(r[idx["length"]]) if r[idx["length"]].isdigit() else 0,
-                        })
-                    except (IndexError, KeyError):
-                        continue
-                parsed.sort(key=lambda x: x["length"], reverse=True)
-                return parsed
-            if code == 503 and attempt == 1:
-                _time.sleep(35)
-                continue
-            return []
-        except Exception:
-            if attempt == 1:
-                _time.sleep(35)
-                continue
-            return []
-    return []
-
-
-# Tell-tale fragments that Wayback's "no snapshot / error" placeholder
-# pages contain. These can be 5–15 KB so they pass a naive size filter,
-# but they hold zero publisher content. If any of these appear inside the
-# fetched body we treat the snapshot as unusable and fall through.
-_WAYBACK_PLACEHOLDER_MARKERS = (
-    "<title>Wayback Machine</title>",
-    "Got an HTTP 302 response",
-    "Got an HTTP 301 response",
-    "This URL has been excluded from the Wayback Machine",
-    "Page cannot be displayed due to robots.txt",
-    "wb_div_redirect",
-)
-
-
-def _is_wayback_placeholder(body: bytes) -> bool:
-    """Heuristic — True iff `body` looks like a Wayback error/placeholder
-    page rather than a real publisher snapshot."""
-    text = body.decode("utf-8", errors="replace")[:8192]
-    return any(marker in text for marker in _WAYBACK_PLACEHOLDER_MARKERS)
-
-
-def wayback_snapshot(orig_url: str, target_ts: str | None = None,
-                     min_size: int = 5000) -> dict[str, Any]:
-    """Fetch a usable Wayback snapshot of `orig_url`. Tries the
-    availability API first; if that snapshot's body is below `min_size`
-    or looks like a Wayback placeholder/error page, walks the CDX index
-    for the largest snapshot in the last 180 days that passes both gates.
-    Returns a dict with `snapshot_url`, `snapshot_ts`, `original_url`,
-    `size`, `from_strategy`, and `body` (publisher HTML, Wayback wombat
-    injection stripped). Raises RuntimeError when no usable snapshot can
-    be retrieved.
-    """
-    from datetime import date
-    if target_ts is None:
-        target_ts = date.today().strftime("%Y%m%d")
-    if not re.match(r"^\d{4,14}$", target_ts):
-        raise ValueError(f"refused: invalid Wayback timestamp {target_ts!r} (YYYYMMDDhhmmss-truncatable)")
-
-    tried_ts: set[str] = set()
-    candidates: list[dict[str, Any]] = []
-
-    def _accept_or_record(ts: str, snap_url: str, code: int, body: bytes,
-                          strategy: str) -> dict[str, Any] | None:
-        size = len(body) if body else 0
-        placeholder = _is_wayback_placeholder(body) if body else False
-        candidates.append({"ts": ts, "size": size, "placeholder": placeholder,
-                           "strategy": strategy, "code": code})
-        if code == 200 and size >= min_size and not placeholder:
-            cleaned = _strip_wayback_injection(body.decode("utf-8", errors="replace"))
-            return {
-                "snapshot_url":  snap_url,
-                "snapshot_ts":   ts,
-                "original_url":  orig_url,
-                "size":          size,
-                "from_strategy": strategy,
-                "body":          cleaned,
-            }
-        return None
-
-    # Step 1 — availability API
-    snap = _wayback_availability(orig_url, target_ts)
-    if snap and snap.get("status") == "200":
-        ts = snap["timestamp"]
-        tried_ts.add(ts)
-        snap_url = f"{WAYBACK_WEB_BASE}/{ts}/{orig_url}"
-        try:
-            code, body, _ = fetch(snap_url, accept="text/html, */*;q=0.5",
-                                  max_bytes=MAX_BODY_BYTES_HTML)
-            hit = _accept_or_record(ts, snap_url, code, body, "availability")
-            if hit:
-                return hit
-        except Exception:
-            pass
-
-    # Step 2 — CDX index, biggest snapshot first, skipping already-tried timestamps
-    rows = _wayback_cdx(orig_url, days_back=180, max_rows=50)
-    for row in rows:
-        ts = row["timestamp"]
-        if ts in tried_ts:
-            continue
-        tried_ts.add(ts)
-        # CDX `length` is the snapshot's stored byte count — small CDX
-        # rows (< min_size) are almost always Cloudflare empty captures;
-        # skip them without paying the round-trip.
-        if row.get("length", 0) and row["length"] < max(min_size // 2, 1500):
-            candidates.append({"ts": ts, "size": row["length"], "placeholder": False,
-                               "strategy": "cdx-skipped-small", "code": 0})
-            continue
-        snap_url = f"{WAYBACK_WEB_BASE}/{ts}/{orig_url}"
-        try:
-            code, body, _ = fetch(snap_url, accept="text/html, */*;q=0.5",
-                                  max_bytes=MAX_BODY_BYTES_HTML)
-        except Exception:
-            continue
-        hit = _accept_or_record(ts, snap_url, code, body, "cdx")
-        if hit:
-            return hit
-
-    raise RuntimeError(
-        f"no usable Wayback snapshot for {orig_url!r} ≥ {min_size} bytes "
-        f"in the last 180 days; tried {len(candidates)} candidate(s): "
-        + ", ".join(
-            f"{c['ts']}({c['size']}B{'/PH' if c['placeholder'] else ''}/{c['strategy']})"
-            for c in candidates[:8]
-        )
-    )
-
-
 # ── CLI ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str]) -> int:
@@ -1497,10 +1238,6 @@ def main(argv: list[str]) -> int:
     p_edgar_8k.add_argument("end", nargs="?", default=None, help="ISO date (default: today)")
     p_edgar_8k.add_argument("item", nargs="?", default="1.05", help="8-K item code (default 1.05)")
 
-    p_wb = sub.add_parser("wayback", help="Wayback Machine snapshot fetch (fallback for Cloudflare-blocked hosts)")
-    p_wb.add_argument("orig_url", help="original publisher URL to fetch the closest Wayback snapshot of")
-    p_wb.add_argument("target_ts", nargs="?", default=None, help="YYYYMMDD target timestamp (default: today)")
-    p_wb.add_argument("min_size", type=int, nargs="?", default=5000, help="minimum acceptable body size in bytes (default 5000)")
 
     # v2.54 — generic RSS/Atom feed subcommand (covers most CTI blog publishers cleanly)
     p_feed = sub.add_parser("feed", help="Generic RSS/Atom feed fetcher — works on any HTTPS feed URL")
@@ -1605,14 +1342,6 @@ def main(argv: list[str]) -> int:
                 json.dump(sec_edgar_8k(args.start, args.end, args.item),
                           sys.stdout, indent=2)
                 sys.stdout.write("\n")
-            return 0
-        if args.cmd == "wayback":
-            result = wayback_snapshot(args.orig_url, args.target_ts, args.min_size)
-            # `body` can be large; emit metadata header first then the body.
-            meta = {k: v for k, v in result.items() if k != "body"}
-            print(json.dumps(meta, indent=2))
-            print("--- BODY ---")
-            sys.stdout.write(result["body"])
             return 0
         if args.cmd == "feed":
             json.dump(feed_recent(args.feed_url, args.count), sys.stdout, indent=2)

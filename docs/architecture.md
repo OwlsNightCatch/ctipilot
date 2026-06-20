@@ -215,7 +215,7 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   do not even attempt `WebFetch` on those hosts; go straight to the
   bridge. Structured subcommands (`cisa-kev`, `ncsc-csh`, `enisa-euvd`,
   `bsi-rss/csaf`, `ncsc-nl`, `cert-eu`, `cert-fr`, `ico-uk`, `sec-edgar`,
-  `feed`, `wayback`, `msrc`) wrap the publishers whose listing pages are
+  `feed`, `msrc`) wrap the publishers whose listing pages are
   JS-rendered SPAs. Read-only by design: no auth, no JS execution, no
   third-party deps; the **v2.52** host allow-list was removed in favour of
   the layer-3 SSRF defences (https-only, resolved-IP deny list, redirect

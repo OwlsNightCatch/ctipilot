@@ -115,12 +115,12 @@ printf '%s\t%s\t%s\n' "<url>" "<status_code>" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 
 The Phase 5.5 `tools/check_brief.py` URL-liveness check reads this ledger and trusts its records: any URL the ledger lists as `200` (or `2xx`) within this run skips the script's own HEAD/GET re-fetch. This kills SSL-cert / anti-bot 403 noise on URLs you've already verified live, without weakening the gate (URLs not in the ledger are still re-fetched fresh).
 
-## Bridge fetcher — MANDATORY for known-403 / SPA-only hosts (v2.52 — allowlist removed, structured discovery feeds added, Wayback fallback)
+## Bridge fetcher — MANDATORY for known-403 / SPA-only hosts (v2.52 — allowlist removed, structured discovery feeds added)
 
 The bridge ([`tools/fetch_source.py`](../../tools/fetch_source.py)) is read-only, stdlib-only, and runs every fetch behind layer-3 SSRF defences (loopback / link-local / private / cloud-metadata IP refused; HTTPS-only; redirect re-validated; body cap 25 MB HTML / 64 MB JSON). **v2.52 removed the static host allowlist** — the bridge accepts any HTTPS publisher, so the table below is the **recommended recipe** rather than a hard ACL. Hosts that 403 the routine's default `WebFetch` UA almost all respond 200 to the bridge's desktop-Chrome UA.
 
 ### Bridge-first rule
-For any host on the table below, your **first attempt** is the bridge subcommand, not `WebFetch`. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the direct bridge fails, fall through to the Wayback Machine subcommand (`wayback <URL>`); if Wayback has no usable snapshot either, that's a real coverage gap — record it in `fetch_failures` per the schema below.
+For any host on the table below, your **first attempt** is the bridge subcommand, not `WebFetch`. **403 / SPA-empty on these hosts is transport-side**, never demotes the source. If the direct bridge also fails (Cloudflare Managed Challenge / geo-block ignores every UA), that's a real coverage gap — use `WebSearch` to find a corroborating publisher carrying the same story, and if none exists record it in `fetch_failures` per the schema below.
 
 ### Structured discovery feeds (v2.52 + v2.53 — preferred over `url` for JS-rendered listings)
 
@@ -142,7 +142,6 @@ Many publishers serve a JS-rendered SPA on their listing page but expose a serve
 | **`msrc recent [N]`** (v2.53) | newest N CVEs across all releases, sorted by releaseDate desc | the OData feed includes Linux Mariner / Azure CVEs mixed in — filter by `releaseNumber` to scope to Patch Tuesday only |
 | **`msrc releases [N]`** (v2.53) | most-recent N monthly release tags (e.g. 2026-May, 2026-Apr, …) | discovery only — chain into `msrc release` or `msrc cvrf` |
 | **`msft-secblog recent [N] [TOPIC]`** (v2.53) | Microsoft Security Blog RSS, optionally filtered by topic slug. Topics include `threat-intelligence`, `vulnerabilities-and-exploits`, `incident-response`, `ai-and-machine-learning` | `url <link>` → full server-rendered article HTML (~250–350 KB per post, complete body) |
-| `wayback <URL> [target-ts] [min-size]` | Snapshot metadata + cleaned publisher HTML body | Fallback for hosts behind Cloudflare Managed Challenge — see § Wayback fallback below |
 
 ### Microsoft MSRC Update Guide — the SPA at msrc.microsoft.com/update-guide/ (v2.53)
 
@@ -207,7 +206,7 @@ A handful of publishers have no exposed RSS feed but do server-render their list
 
 When the user gives the agent a publisher landing URL that has no obvious feed, **always run a sitemap probe first** (`https://<host>/sitemap.xml`) before falling back to landing-scrape. Trellix has no sitemap; SANS has its scope-wide sitemap but no NewsBites sub-feed.
 
-### Per-host recipe table (v2.52 — Cloudflare-blocked hosts now have a Wayback fallback)
+### Per-host recipe table (v2.52)
 
 | Source / source-id | First try | If that fails |
 |---|---|---|
@@ -223,26 +222,11 @@ When the user gives the agent a publisher landing URL that has no obvious feed, 
 | `ico-uk` | **v2.52 — `ico-uk enforcement N`** for sitemap-driven listing, then `url <url>` per action | none |
 | `sec-disclosures-edgar` | **v2.52 — `sec-edgar 8k [start] [end] 1.05`** to enumerate cyber-incident filings, then `url <filing_url>` for the 8-K | direct `url https://efts.sec.gov/LATEST/search-index?…` works too; the subcommand parses the JSON cleanly |
 | `prodaft` | `url https://www.prodaft.com/sitemap.xml` for discovery, then `url <per-post URL>` | none |
-| `bleepingcomputer` | `url https://www.bleepingcomputer.com/news/security/` for discovery; article URLs frequently 403 | **`wayback <article URL>`** when the article is the only source for a claim |
-| `nccgroup`, `dragos`, `sygnia`, `talos`, `acn.gov.it` | `url <URL>` (bridge) | `wayback <URL>` if Cloudflare anti-bot fires |
-| `ccn-cert-es` | `url <URL>` (geo-blocked in many cases — bridge attempt still records the failure) | `wayback <URL>` |
-| **Cloudflare Managed Challenge — `inside-it.ch`, `databreaches.net`, `www.darkreading.com`, `www.coe.int`** | direct bridge attempt fails (recorded in `fetch_failures`) | **`wayback <URL>`** — Wayback has fresh-enough snapshots for these; use this as the canonical fallback |
-| `www.group-ib.com`, `downloads.seppmail.com` | direct bridge attempt fails | Wayback has no recent coverage; **WebSearch fallback only** |
-
-### Wayback fallback — when and how (v2.52)
-
-The `wayback <URL> [target-ts] [min-size]` subcommand is the canonical fallback for Cloudflare-Managed-Challenge-protected hosts. It:
-
-1. Queries Wayback's availability API for the closest snapshot to `target-ts` (default = today).
-2. Fetches the snapshot, **rejects empty / placeholder responses** (Wayback's own "no snapshot" page can be ~9 KB of useless HTML; the subcommand detects the placeholder markers and falls through).
-3. If the availability snapshot is too small or a placeholder, walks the CDX index for the **largest snapshot in the last 180 days** (one 35-s retry on the 503 rate limit), tries them biggest-first, accepts the first one that's ≥ `min-size` (default 5000 bytes) and not a placeholder.
-4. Strips Wayback's wombat-toolbar injection + URL rewriting so the body the caller reads is close to the original publisher HTML (`<title>`, `<meta>`, `<body>` preserved; `archive.org/_static/`, `__wm.wombat`, `archive_analytics`, the trailing `PetaboxLoader3` analytics comment all removed).
-
-Result shape: JSON metadata block (`snapshot_url`, `snapshot_ts`, `original_url`, `size`, `from_strategy`) followed by `--- BODY ---` then the cleaned publisher HTML.
-
-**Recency caveats.** Wayback snapshots may be days or weeks out-of-window — the subcommand returns the *available* data, not necessarily *fresh* data. Always read `snapshot_ts` against the `window_hours` recency rule before citing the content; if the snapshot pre-dates the window, the snapshot is fine as a historical / Background-paragraph (PD-10) reference but not as a fresh in-window primary. The agent is responsible for that policy call.
-
-**When to use Wayback vs WebSearch.** WebSearch is fine when you only need to know *that* something happened (e.g. confirm a story exists). Wayback is the right call when you need to *quote* the publisher's text and the original is Cloudflare-blocked.
+| `bleepingcomputer` | `url https://www.bleepingcomputer.com/news/security/` for discovery; article URLs frequently 403 | retry the bridge once; if still 403, `WebSearch` for a corroborating publisher carrying the same story |
+| `nccgroup`, `dragos`, `sygnia`, `talos`, `acn.gov.it` | `url <URL>` (bridge) | retry once; if Cloudflare anti-bot persists, `WebSearch` for a corroborating publisher |
+| `ccn-cert-es` | `url <URL>` (geo-blocked in many cases — bridge attempt still records the failure) | `WebSearch` for a corroborating publisher; record the gap |
+| **Cloudflare Managed Challenge — `inside-it.ch`, `databreaches.net`, `www.darkreading.com`** | use the **feed** path (`feed <feed-url>`) — the homepages 403 the bridge but the RSS serves: `inside-it.ch`→`/rss.xml`, `databreaches.net`→`/feed/`, `darkreading.com`→`/rss.xml` | `WebSearch` for a corroborating publisher |
+| `www.group-ib.com`, `www.coe.int`, `downloads.seppmail.com` | direct bridge attempt fails (no UA works) | **`WebSearch` fallback only**; record the coverage gap |
 
 ## fetch_failures reporting — log ONLY real, unrecovered failures (v2.55 — tightened)
 
@@ -252,9 +236,9 @@ Result shape: JSON metadata block (`snapshot_url`, `snapshot_ts`, `original_url`
 
 A failure is anything that **denied the brief content from a source the recipe in `sources/sources.json` says should work**, and where no fallback worked. Concretely:
 
-- HTTP 5xx (5xx-range — 500 / 502 / 503 / 504) returned by both the direct URL AND any bridge or Wayback fallback you actually tried.
-- HTTP 403 / 429 / TLS / DNS / timeout where the bridge recipe also failed AND Wayback (where applicable) had no usable snapshot AND `covered_anyway: false` (no alternate corroborating source carried the same story).
-- Cloudflare Managed Challenge on a host with no Wayback snapshot AND no working alternate (e.g. `group-ib.com`, `downloads.seppmail.com`).
+- HTTP 5xx (5xx-range — 500 / 502 / 503 / 504) returned by both the direct URL AND the bridge fallback you actually tried.
+- HTTP 403 / 429 / TLS / DNS / timeout where the bridge recipe also failed AND `covered_anyway: false` (no alternate corroborating source carried the same story).
+- Cloudflare Managed Challenge on a host with no working alternate (e.g. `group-ib.com`, `downloads.seppmail.com`).
 - A bridge subcommand that 404s on what should be a valid identifier (e.g. NCSC-NL CSAF speculative-ID enumeration is *not* this — see § Bridge fetcher; speculative enumeration has been deprecated and should never produce a `fetch_failures[]` entry).
 - A new host the bridge has not yet been taught to handle (post-v2.52 the bridge accepts any HTTPS host, so this should only fire on TollBit-style auth-gated content or fresh anti-bot deployments).
 
@@ -265,7 +249,7 @@ These are the cases the audit caught — none of them belong in `fetch_failures[
 - **"Bridge fetched OK; no new content in window."** A successful 2xx bridge call that returned no fresh items is **success**. The source was reachable, the recipe worked, the in-window pickings were thin. Note it (if at all) in `## Coverage gaps` as a quiet-day observation; it is NOT a fetch failure.
 - **"WebFetch returned 403 on a known-403 host where the bridge then succeeded."** The bridge is the documented recipe for the host. The direct-WebFetch attempt is incidental; logging it as a failure double-counts the recovery the bridge already provided.
 - **SPA listing pages handled by a structured-endpoint bridge subcommand.** E.g. you fetched `https://euvd.enisa.europa.eu/` got an SPA shell, then ran `enisa-euvd recent criticals` and got JSON. The first step is part of the recipe transition, not a failure.
-- **Source where `covered_anyway: true` via a deterministic alternate** (bridge subcommand, RSS feed, Wayback snapshot, or another publisher's primary on the same story). The story reached the brief; the source-of-origin choice does not deserve a "failure" label.
+- **Source where `covered_anyway: true` via a deterministic alternate** (bridge subcommand, RSS feed, or another publisher's primary on the same story). The story reached the brief; the source-of-origin choice does not deserve a "failure" label.
 - **NCSC-NL speculative-ID 404s** — speculative enumeration is deprecated as of v2.52. If you encountered 404s by guessing IDs, the recipe is wrong, not the source. Use `ncsc-nl recent N` to enumerate IDs first; if you still 404 on a freshly-enumerated ID, *that* is loggable.
 - **Drop / scope decisions.** "Item ultimately dropped per § 7" is editorial, not a fetch failure.
 
@@ -288,11 +272,11 @@ For every record that DOES belong in `fetch_failures[]`, include — verbatim �
 ```
 - id: <source id from sources.json>
   url_tried: <exact URL the agent attempted, verbatim>
-  fetch_method: webfetch | websearch | bridge:cisa-kev | bridge:url | bridge:ncsc-csh.recent | bridge:enisa-euvd.recent | bridge:bsi-rss | bridge:ncsc-nl.csaf | bridge:wayback | …
+  fetch_method: webfetch | websearch | bridge:cisa-kev | bridge:url | bridge:ncsc-csh.recent | bridge:enisa-euvd.recent | bridge:bsi-rss | bridge:ncsc-nl.csaf | bridge:feed | …
   status_code: <HTTP status>
   error_class: transport-403 | transport-429 | transport-5xx | transport-tls | transport-dns | transport-timeout | paywall | robots-blocked | geo-blocked | rate-limited | tollbit-gated | other
   error_message: <verbatim error text, truncated to ~200 chars>
-  attempted_methods: [webfetch, bridge:cisa-kev, wayback]   # ordered list of every method tried for this source in this run
+  attempted_methods: [webfetch, bridge:cisa-kev, websearch]   # ordered list of every method tried for this source in this run
   mitigation_applied: <the recovery the agent performed, e.g. "switched to corroborating publisher X", or "none — coverage gap" if uncovered>
   covered_anyway: true | false      # ALWAYS log as `false` here — v2.55 only logs records that ended in a real gap
 ```
