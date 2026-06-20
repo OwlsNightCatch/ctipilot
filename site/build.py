@@ -76,7 +76,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -4324,6 +4324,7 @@ def render_ops_page(
     site_url: str,
     cachebust: str,
     canonical: str,
+    source_health: dict[str, Any] | None = None,
 ) -> str:
     """Operations dashboard.
 
@@ -4647,14 +4648,17 @@ def render_ops_page(
     )
 
     run_count_label = f"{len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'}"
+    sources_changed_html = _ops_render_sources_changed(all_runs, prefix=prefix)
+    source_health_html = _ops_render_source_health(source_health)
     body = f"""
 <h1>Operations</h1>
-<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, wall-clock duration) and <code>sources/sources.json</code> (last-successful-fetch timestamps). Last {run_count_label} shown.</p>
+<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, source-list edits, wall-clock duration) and <code>sources/sources.json</code> + <code>state/source_health.json</code> (last-successful-fetch timestamps + independent accessibility probe). Last {run_count_label} shown.</p>
 
 <nav class="ops-nav" aria-label="Dashboard sections">
   <span class="ops-nav__label">Jump to</span>
   <a href="#health">Health</a>
   <a href="#latest">Run detail</a>
+  <a href="#sources">Sources</a>
   <a href="#trends">Trends</a>
   <a href="#runlog">Run log</a>
 </nav>
@@ -4670,6 +4674,22 @@ def render_ops_page(
   <h2 class="ops-cluster__head">Run detail</h2>
   <p class="ops-cluster__intro">Full breakdown of a single run — sub-agent allocation and telemetry, verification iterations, fetch failures, and bridge-fetcher use. Defaults to the latest run; pick any run in the window from the selector.</p>
   {run_detail_html}
+</section>
+
+<section class="ops-cluster" id="sources">
+  <h2 class="ops-cluster__head">Sources</h2>
+  <p class="ops-cluster__intro">How the source list changed on the most recent run that touched it, and the latest independent accessibility probe of every active source. The autonomous routine maintains <code>sources/sources.json</code> in Phase 5 — promoting proven candidates, demoting dead/blocked sources, and correcting fetch recipes / categories / reliability as publishers change — and records each edit so it surfaces here.</p>
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Sources changed (latest run)</h3>
+    <p class="ops-subtitle">Per-run edits to <code>sources/sources.json</code> from <code>run_log[].sources_changed</code> — promotions, demotions, new candidates, and fetch-method / category / reliability / url corrections.</p>
+    {sources_changed_html}
+  </div>
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Source health snapshot</h3>
+    {source_health_html}
+  </div>
 </section>
 
 <section class="ops-cluster" id="trends">
@@ -4716,6 +4736,111 @@ def render_ops_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+    )
+
+
+_SOURCES_CHANGE_BADGE = {
+    "promoted": "ok", "recovered": "ok", "added": "ok",
+    "demoted": "crit",
+    "recategorised": "neutral", "url": "neutral",
+    "reliability": "warn", "fetch_method": "warn",
+}
+
+
+def _ops_render_sources_changed(runs: list[dict[str, Any]], *, prefix: str) -> str:
+    """v2.62 — the most recent run that recorded `sources_changed[]` edits to
+    sources/sources.json, rendered as a table of what moved (promotions,
+    demotions, new candidates, and fetch-method / category / reliability / url
+    corrections). The per-run change log is the operator's at-a-glance view of
+    how the source list evolved on each fire."""
+    rec = None
+    for r in reversed(runs):
+        sc = r.get("sources_changed")
+        if isinstance(sc, list) and sc:
+            rec = r
+            break
+    if rec is None:
+        return (
+            '<div class="empty"><p>No source-list changes recorded in the window.</p>'
+            '<p class="muted">Runs populate <code>sources_changed[]</code> in Phase 5 (v2.62+): '
+            'promotions, demotions, new candidates, and fetch-method / category / reliability '
+            'corrections. A counters-only run records <code>[]</code>.</p></div>'
+        )
+    sc = [c for c in rec["sources_changed"] if isinstance(c, dict)]
+    counts = Counter(c.get("change") for c in sc)
+    summary = " · ".join(f"{n} {k}" for k, n in counts.most_common())
+    CAP = 60
+    shown = sc[:CAP]
+    rows = []
+    for c in shown:
+        sid = c.get("id", "?")
+        ch = c.get("change", "?")
+        kind = _SOURCES_CHANGE_BADGE.get(ch, "neutral")
+        frm = c.get("from") or "—"
+        to = c.get("to") or "—"
+        rows.append(
+            f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(sid)}</a></td>'
+            f'<td><span class="ops-pill ops-pill--{kind}">{_escape(ch)}</span></td>'
+            f'<td class="mono muted">{_escape(str(frm))} → {_escape(str(to))}</td>'
+            f'<td class="muted">{_escape(c.get("reason", ""))}</td></tr>'
+        )
+    more = (f'<p class="muted">+ {len(sc) - CAP} more (see <code>state/run_log.json</code> '
+            f'<code>sources_changed</code>).</p>' if len(sc) > CAP else "")
+    date = rec.get("date", "?")
+    kindlabel = rec.get("kind", "daily")
+    return (
+        f'<p class="ops-subtitle">Most recent run with source-list edits: '
+        f'<span class="mono">{_escape(date)}</span> ({_escape(kindlabel)}) — {_escape(summary)}.</p>'
+        '<div class="data-wrap"><table class="data">'
+        '<thead><tr><th>Source</th><th>Change</th><th>From → To</th><th>Reason</th></tr></thead>'
+        f'<tbody>{"".join(rows)}</tbody></table></div>{more}'
+    )
+
+
+def _ops_render_source_health(source_health: dict[str, Any] | None) -> str:
+    """v2.62 — surface the previously-orphaned `state/source_health.json`
+    snapshot (written by tools/source_health.py, an independent weekly HEAD/GET
+    probe of every active source). Shows the class breakdown and lists any
+    source that is not ok / redirect-ok / ua-blocked, so a real outage is
+    visible between full audits."""
+    if not isinstance(source_health, dict) or not source_health:
+        return (
+            '<div class="empty"><p>No <code>state/source_health.json</code> snapshot yet.</p>'
+            '<p class="muted">Written by <code>tools/source_health.py</code> (weekly GitHub Action / '
+            'manual run) — an independent HEAD/GET probe of every active source, separate from the '
+            'daily routine.</p></div>'
+        )
+    latest = source_health.get("latest") or {}
+    hist = source_health.get("runs") or []
+    by_class = (hist[-1].get("by_class") if hist else {}) or {}
+    fetched_at = source_health.get("last_updated", "?")
+    CLS = [("ok", "ok"), ("redirect-ok", "ok"), ("ua-blocked", "warn"),
+           ("client-error", "crit"), ("server-error", "crit"), ("unreachable", "crit")]
+    pills = [f'<span class="ops-pill ops-pill--{kind}">{by_class.get(cls, 0)} {cls}</span>'
+             for cls, kind in CLS if by_class.get(cls, 0)]
+    bad = [r for r in latest.values()
+           if isinstance(r, dict) and r.get("class") not in ("ok", "redirect-ok", "ua-blocked")]
+    if bad:
+        rows = "".join(
+            f'<tr><td class="mono">{_escape(r.get("id", "?"))}</td>'
+            f'<td><span class="ops-pill ops-pill--crit">{_escape(r.get("class", "?"))}</span></td>'
+            f'<td class="mono muted">{_escape(str(r.get("status_code") or "—"))}</td>'
+            f'<td class="mono muted">{_escape(r.get("host", ""))}</td></tr>'
+            for r in sorted(bad, key=lambda x: x.get("id", ""))
+        )
+        table = ('<div class="data-wrap"><table class="data">'
+                 '<thead><tr><th>Source</th><th>Class</th><th>HTTP</th><th>Host</th></tr></thead>'
+                 f'<tbody>{rows}</tbody></table></div>')
+    else:
+        table = ('<p class="muted">All probed active sources returned ok / redirect-ok / '
+                 'ua-blocked in the latest snapshot.</p>')
+    return (
+        f'<p class="ops-subtitle">Independent HEAD/GET probe of every active source — snapshot '
+        f'<span class="mono">{_escape(str(fetched_at))}</span>. <code>ua-blocked</code> is expected '
+        f'(the bridge fetcher handles those); <code>client-error</code> / <code>server-error</code> / '
+        f'<code>unreachable</code> warrant a look.</p>'
+        f'<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.5rem 0">{" ".join(pills)}</div>'
+        f'{table}'
     )
 
 
@@ -5464,6 +5589,14 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         duration = _ops_format_duration(r.get("duration_seconds"))
         items_pub = r.get("items_published")
         items_pub_str = str(items_pub) if items_pub is not None else "—"
+        sc = [c for c in (r.get("sources_changed") or []) if isinstance(c, dict)]
+        if sc:
+            sc_counts = Counter(c.get("change") for c in sc)
+            sc_tip = ", ".join(f"{n} {k}" for k, n in sc_counts.most_common())
+            src_delta_html = (f'<span class="ops-pill ops-pill--neutral" title="{_escape(sc_tip)}">'
+                              f'{len(sc)}</span>')
+        else:
+            src_delta_html = '<span class="muted">0</span>'
 
         rows.append(
             '<tr>'
@@ -5476,6 +5609,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             f'<td class="mono">{_escape(items_pub_str)}</td>'
             f'{cells}'
             f'<td>{failures_html}</td>'
+            f'<td>{src_delta_html}</td>'
             f'<td>{verif_html}</td>'
             '</tr>'
         )
@@ -5484,7 +5618,9 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         '<div class="data-wrap"><table class="data ops-runs-table">'
         '<thead><tr><th>Date</th><th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
         '<th>Items</th><th>S1/W1</th><th>S2/W2</th><th>S3</th><th>S4</th>'
-        '<th>Fetch fail</th><th>Verif</th></tr></thead>'
+        '<th title="Fetch failures (coverage gaps)">Fetch fail</th>'
+        '<th title="sources/sources.json edits this run (hover for breakdown)">Src Δ</th>'
+        '<th>Verif</th></tr></thead>'
         '<tbody>' + "".join(rows) + '</tbody></table></div>'
     )
 
@@ -8156,6 +8292,16 @@ def main() -> int:
             run_log = json.loads(rl_src.read_text())
         except Exception:
             run_log = None
+
+    # Load the independent source-health snapshot (v2.62 — finally rendered on
+    # /ops/; written by tools/source_health.py). Absent on a fresh clone.
+    source_health = None
+    sh_src = ROOT / "state" / "source_health.json"
+    if sh_src.exists():
+        try:
+            source_health = json.loads(sh_src.read_text())
+        except Exception:
+            source_health = None
     emit_html(
         "sources/",
         render_source_list_page(
@@ -8347,6 +8493,7 @@ def main() -> int:
             site_url=site_url,
             cachebust=cachebust,
             canonical=site_url + "ops/",
+            source_health=source_health,
         ),
     )
 

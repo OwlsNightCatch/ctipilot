@@ -165,14 +165,18 @@ The agent re-reads these every run before writing.
   model + verdict + truth/editorial/advisory finding counts),
   `verification_iterations`, `verification_residual_count` (v2.47: derived
   from final-iteration `truth + editorial` when verdict is NEEDS_FIXES;
-  `0` when CLEAN — the v2.47 cap-breach signal builds on this). Surfaced
-  on the operations dashboard at `/ops/`.
+  `0` when CLEAN — the v2.47 cap-breach signal builds on this), and
+  `sources_changed` (**v2.62** — one `{id, change, from, to, reason}` per
+  `sources/sources.json` edit the run made: status transitions, new
+  candidates, and fetch-method / category / reliability / url corrections).
+  Surfaced on the operations dashboard at `/ops/`.
 - `state/source_health.json` — **v2.47**, written by [`tools/source_health.py`](../tools/source_health.py)
   on a weekly GitHub Actions cron. Bounded history (12 runs ≈ 3 months
   at weekly cadence) of `(id, status_code, latency_ms, fetched_at, class)`
   per active source. Lets the daily routine's source-demotion logic key off
   a stable failing pattern instead of the day-of-week luck of its single
-  fire. Surfaced on `/ops/` once it exists.
+  fire. **v2.62**: rendered on `/ops/` (the "Sources" cluster's
+  health-snapshot panel — class breakdown + any non-ok source).
 
 ### `sources/` — the curated source list
 
@@ -200,14 +204,22 @@ The agent maintains this file autonomously per the lifecycle in the top-level
 ### `tools/` — small operator-shipped helpers
 
 - [`tools/fetch_source.py`](../tools/fetch_source.py) — stdlib-only Python
-  bridge that re-issues HTTP requests with a stable desktop-Chrome
-  User-Agent. Solves the recurring 403 / 302-to-login that the routine
-  container hits on a handful of high-signal publishers (CISA pages, the
-  Swiss NCSC Cyber Security Hub) where the upstream WAF is filtering
-  the agent's default UA. **Mandatory every run for CISA + NCSC.ch** —
+  bridge that re-issues HTTP requests with a current desktop-Chrome
+  User-Agent (**v2.62**: Chrome 138 + the matching `Sec-CH-UA` client-hint
+  headers a real Chrome sends, so WAFs that cross-check UA ↔ client-hints
+  stop filtering it — the bump recovered `databreaches.net` and
+  `prodaft.com` in the 2026-06-20 audit). Solves the recurring 403 /
+  302-to-login that the routine container hits on high-signal publishers
+  (CISA pages, the Swiss NCSC Cyber Security Hub) where the upstream WAF
+  filters the agent's default UA. **Mandatory every run for CISA + NCSC.ch** —
   do not even attempt `WebFetch` on those hosts; go straight to the
-  bridge. Read-only by design: no auth, no JS execution, no third-party
-  deps, host allow-list enforced.
+  bridge. Structured subcommands (`cisa-kev`, `ncsc-csh`, `enisa-euvd`,
+  `bsi-rss/csaf`, `ncsc-nl`, `cert-eu`, `cert-fr`, `ico-uk`, `sec-edgar`,
+  `feed`, `wayback`, `msrc`) wrap the publishers whose listing pages are
+  JS-rendered SPAs. Read-only by design: no auth, no JS execution, no
+  third-party deps; the **v2.52** host allow-list was removed in favour of
+  the layer-3 SSRF defences (https-only, resolved-IP deny list, redirect
+  re-validation, body-size cap).
 - [`tools/check_brief.py`](../tools/check_brief.py) — the institutionalised
   Phase 5.5 self-check gate. Stdlib-only Python script that bundles every
   pre-commit consistency check (state JSON parses, CVE sync, H3 footer
