@@ -49,12 +49,6 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Primary advisory](URL) · Tags: rce, zero-click, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, no-patch*
 
-#### CVE Summary Table
-
-| CVE | Product | CVSS | EPSS | KEV | Exploited | Patch | Source |
-|---|---|---|---|---|---|---|---|
-| CVE-YYYY-NNNNN | … | … | … | … | … | … | [Link](url) |
-
 ## 3. Research & Investigative Reporting
 
 ### {Substantive primary report headline}
@@ -138,9 +132,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 ## 3. Vulnerability roll-up
 
-| CVE | Product | Status | Patched | KEV | First brief | Source |
-|---|---|---|---|---|---|---|
-| CVE-YYYY-NNNNN | … | Active ITW \| KEV-added \| PoC-public \| Patched \| Disclosure-only | … | … | [briefs/YYYY-MM-DD.md](briefs/YYYY-MM-DD.md) | [Vendor PSIRT](url) |
+{Per-CVE H3 entries for the operationally critical CVEs of the week. No summary table — each CVE gets its own entry with status-this-week-vs-first-covered prose and a per-item footer.}
 
 ### CVE-YYYY-NNNNN — {Vendor} {Product}: {one-line description}
 

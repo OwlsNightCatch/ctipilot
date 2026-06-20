@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.63 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.64 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -477,13 +477,7 @@ If you cannot determine your own model precisely, write `Anthropic Claude (speci
 
 **§ 2 Multi-day campaigns and chains.** Canonical "what happened with X this week". One H3 per chain. Show the trajectory: what was known at start of week, what changed each day, where it stands now. Link the originating daily brief and the current primary source. The section a Tier 2/3 reader reaches for to understand a campaign the dailies covered piecewise.
 
-**§ 3 Vulnerability roll-up.** Markdown table covering every CVE referenced this week, plus per-CVE H3 entries for **operationally critical** ones (Active ITW, KEV-added during window, pre-auth RCE on internet-exposed software, supply-chain compromise affecting widely-deployed software). Items that cleared the daily's § 3 inclusion gates but are now patched and have no exploitation evidence stay in the table without an H3. Use per-CVE breakdown notation in the footer when an H3 covers more than one CVE.
-
-```
-| CVE | Product | Status | Patched | KEV | First brief | Source |
-|---|---|---|---|---|---|---|
-| CVE-YYYY-NNNNN | … | Active ITW \| KEV-added \| PoC-public \| Patched \| Disclosure-only | … | … | [briefs/YYYY-MM-DD.md](briefs/YYYY-MM-DD.md) | [Vendor PSIRT](url) |
-```
+**§ 3 Vulnerability roll-up.** Per-CVE H3 entries for the **operationally critical** CVEs of the week (Active ITW, KEV-added during window, pre-auth RCE on internet-exposed software, supply-chain compromise affecting widely-deployed software), each with status-this-week-vs-first-covered prose and a per-item footer. **No CVE summary table** (removed v2.64 — the per-item footers already carry CVE / CVSS / Vector / Auth / Status, and the table was a recurring source of patched-version / KEV transcription errors). A CVE that cleared the daily's § 3 gates but is now patched with no exploitation evidence can be folded into a one-line mention inside a related H3 rather than getting its own. Use per-CVE breakdown notation in the footer when an H3 covers more than one CVE.
 
 **§ 4 Sector & victim patterns.** One H3 per sector that saw meaningful activity in the window. Where a Swiss / European public-sector sector saw activity, lead with that. Avoid generic sector commentary — every claim needs an inline source link to a specific incident or report.
 

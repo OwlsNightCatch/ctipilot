@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.64 — 2026-06-20 (drop Wayback fallback repo-wide; remove the CVE Summary Table from briefs; RSS fetch-waste demotions)
+
+### Why
+
+Operator review: (1) the Wayback Machine fallback is no longer wanted — fetching publisher content from web.archive.org is out; (2) the per-section **CVE Summary Table** was a recurring source of transcription errors (patched-version / KEV / SAP-note cells contradicting the body — see the v2.48–v2.63 verification logs) and duplicated data the per-item footers already carry; (3) RSS sources whose feed is a teaser AND whose articles can't be drilled are a waste of tool calls — fetching them can't produce citable content.
+
+### What changed
+
+- **Wayback removed everywhere (T3):** the `wayback` subcommand + all of its code is gone from `tools/fetch_source.py`; the cti-research agent's per-host recipe table now routes Cloudflare-blocked hosts to a feed path or a WebSearch corroboration instead of Wayback; `fetch_failures` guidance, docs, and `sources/sources.json` notes no longer mention Wayback. Blocked hosts (group-ib, ccn-cert-es, coe.int, seppmail) are surfaced as coverage gaps with WebSearch as the only fallback.
+- **CVE Summary Table removed from future briefs (T4):** dropped from `prompts/brief-template.md` (daily § 2 + weekly § 3), the daily S1 sub-agent return spec, and the weekly § 3 instruction. Per-CVE H3 entries with their taxonomy footers (CVE / CVSS / Vector / Auth / Status) remain — the table is gone. Existing briefs keep their tables; this is forward-only.
+- **RSS fetch-waste demotions (T2):** audited every RSS/feedburner source for article readability. `heise-sec` (120-char teaser feed + TollBit-paywalled articles) and `csirt-acn-it` (no parseable feed + React-SPA advisory body) demoted as fetch-waste; `databreaches-net` confirmed full-content feed (~1.4 KB bodies) and kept.
+- **`sources/sources.json`:** deleted the duplicate `sansec` entry entirely (kept active `sansec-research`).
+- **Ops dashboard / source_health (no prompt-behaviour change):** model-name normalisation, Health-section consolidation, bridge-failure floating, and removal of the fetch-failure chart from /sources/ — see CLAUDE.md / build.py.
+
+### What stays
+
+Lens divergence and all hard invariants untouched. The per-item taxonomy footer (which carries the CVE metadata the table used to duplicate) is unchanged and still mandatory. The bridge, RSS, and structured-endpoint fetch recipes are unchanged except for the Wayback removal.
+
 ## 2.63 — 2026-06-20 (every-run source-accessibility health check + recipe-aware probe; Ops dashboard floats only unsolved source problems)
 
 ### Why
