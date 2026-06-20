@@ -248,12 +248,21 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   the top-N missing-but-cited domains with citation counts and brief samples.
   Operator runs manually to spot publishers worth promoting to
   `status: candidate`. Pure post-hoc analytics; no runtime cost.
-- [`tools/source_health.py`](../tools/source_health.py) — **v2.47**.
-  Independent weekly health-check of every `status: active` source.
-  HEAD-only, records `(id, status_code, latency_ms, fetched_at, class)` to
-  `state/source_health.json` (12-run bounded history). Run by the
-  [`source-health.yml`](../.github/workflows/source-health.yml) GitHub
-  Action on Sundays at 04:30 UTC and on `workflow_dispatch`.
+- [`tools/source_health.py`](../tools/source_health.py) — **v2.47, rebuilt v2.63**.
+  Periodic accessibility probe of **every** source (active + candidate +
+  demoted), now probed via its *actual recipe*: `feed` (with common-path
+  discovery) for RSS sources, the documented `tools/fetch_source.py`
+  subcommand for `api`/`bridge` sources (so the bridge recipes themselves are
+  verified), and a browser-UA HEAD→GET (Chrome-138 UA, GET-retry-after-403)
+  for `webfetch`. Records `(id, status, fetch_method, status_code, class,
+  action, action_reason, fetched_at)` to `state/source_health.json`
+  (schema_version 2, 12-run bounded history). The derived `action` ∈
+  `none | needs-bridge | needs-demote` is what the Ops dashboard Health panel
+  floats — only the unsolved problems. Run by the
+  [`source-health.yml`](../.github/workflows/source-health.yml) GitHub Action
+  on Sundays at 04:30 UTC, on `workflow_dispatch`, **and at the end of every
+  daily / weekly routine run** (Phase 5 / Phase 4) so the snapshot is fresh
+  every fire.
 
 ### `docs/` — operator-facing documentation
 

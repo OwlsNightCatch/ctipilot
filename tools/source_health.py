@@ -36,6 +36,7 @@ import ipaddress
 import json
 import socket
 import ssl
+import subprocess
 import sys
 import time
 import urllib.error
@@ -62,10 +63,40 @@ KNOWN_UA_BLOCKED_HOSTS: tuple[str, ...] = (
     "ico.org.uk", "www.ico.org.uk",
 )
 
+# Kept in lockstep with tools/fetch_source.py BROWSER_UA / BROWSER_CLIENT_HINTS
+# (v2.62 bump to Chrome 138 + Sec-CH-UA). The probe must mimic exactly what the
+# bridge sends, so "reachable in the health probe" == "reachable via the bridge".
 DESKTOP_UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
 )
+BROWSER_CLIENT_HINTS = {
+    "Sec-CH-UA": '"Chromium";v="138", "Google Chrome";v="138", "Not?A_Brand";v="99"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"Windows"',
+}
+
+FETCH_SOURCE = ROOT / "tools" / "fetch_source.py"
+
+# v2.63 — `api`/`bridge` sources are served by tools/fetch_source.py, not by a
+# plain GET of their `url` (the url is often an SPA shell or a catalog page).
+# To verify the bridge *recipe* still works we invoke the documented subcommand
+# and check it returns a non-trivial body. `api` sources map to their specific
+# subcommand below; `bridge` sources fall back to `url <url>`. Anything not
+# mapped also falls back to `url <url>`.
+API_BRIDGE_CMD: dict[str, list[str]] = {
+    "cisa-kev": ["cisa-kev"],
+    "cisa-advisories": ["cisa", "page", "https://www.cisa.gov/news-events/cybersecurity-advisories"],
+    "cisa-news": ["cisa", "page", "https://www.cisa.gov/news-events/news"],
+    "cisa-directives": ["cisa", "page", "https://www.cisa.gov/news-events/directives"],
+    "ncsc-ch-security-hub": ["ncsc-csh", "recent", "1"],
+    "anssi-fr": ["cert-fr", "avis-recent", "1"],
+    "cert-eu": ["cert-eu", "recent", "1"],
+    "sec-disclosures-edgar": ["sec-edgar", "8k"],
+    "ransomware-live": ["url", "https://api.ransomware.live/v2/recentvictims"],
+}
+# Minimum stdout bytes for a bridge invocation to count as "served content".
+BRIDGE_MIN_BYTES = 200
 
 
 def _ip_blocked(addr: str) -> bool:
@@ -107,7 +138,26 @@ class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(req, fp, code, msg, headers, newurl)
 
 
-def _check(url: str, *, timeout: float) -> tuple[int | None, int, str]:
+def _check(url: str, *, timeout: float, retries: int = 1) -> tuple[int | None, int, str]:
+    """`_check_once` with a transient-failure retry. Cloudflare-fronted hosts
+    intermittently 403/429/5xx a single request under a rapid sweep; one retry
+    after a short backoff turns those blips into the true (usually 2xx) result,
+    so the dashboard floats only PERSISTENT problems, not transient noise. A
+    definitive result (2xx/3xx, or 404/410 = gone) returns immediately."""
+    last = _check_once(url, timeout=timeout)
+    status = last[0]
+    if status is not None and (200 <= status < 400 or status in (404, 410)):
+        return last
+    for _ in range(max(0, retries)):
+        time.sleep(1.5)
+        last = _check_once(url, timeout=timeout)
+        status = last[0]
+        if status is not None and (200 <= status < 400 or status in (404, 410)):
+            return last
+    return last
+
+
+def _check_once(url: str, *, timeout: float) -> tuple[int | None, int, str]:
     """Returns `(status_code, latency_ms, error_message)`. status_code is
     None on transport errors. latency_ms is the wall-clock time the request
     took, regardless of outcome. error_message is empty on success."""
@@ -120,6 +170,7 @@ def _check(url: str, *, timeout: float) -> tuple[int | None, int, str]:
         "User-Agent": DESKTOP_UA,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.9",
+        **BROWSER_CLIENT_HINTS,
     }
     t0 = time.monotonic()
     for method in ("HEAD", "GET"):
@@ -133,7 +184,9 @@ def _check(url: str, *, timeout: float) -> tuple[int | None, int, str]:
                     pass
                 return resp.status, int((time.monotonic() - t0) * 1000), ""
         except urllib.error.HTTPError as e:
-            if e.code in (405, 501) and method == "HEAD":
+            # Many sites refuse HEAD (405/501) or anti-bot-block it (403/429)
+            # while serving GET fine — retry as GET before concluding.
+            if e.code in (403, 405, 429, 501) and method == "HEAD":
                 continue
             return e.code, int((time.monotonic() - t0) * 1000), ""
         except (urllib.error.URLError, socket.timeout, ssl.SSLError, ConnectionError) as e:
@@ -163,6 +216,133 @@ def _classify(status: int | None, host: str) -> str:
     return f"http-{status}"
 
 
+def _bridge_check(source_id: str, url: str, *, timeout: float) -> tuple[str, str]:
+    """Invoke the documented bridge recipe for an `api` / `bridge` source and
+    report whether it still returns usable content. Returns `(class, detail)`
+    where class is `bridge-ok` or `bridge-fail`. This is how we verify the
+    sources that go through tools/fetch_source.py are still working, rather
+    than only HEAD-probing a URL that may be an SPA shell."""
+    argv = API_BRIDGE_CMD.get(source_id) or ["url", url]
+    why = ""
+    # One transient retry — the same Cloudflare/rate-limit blip handling as _check.
+    for attempt in (1, 2):
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(FETCH_SOURCE), *argv],
+                capture_output=True, text=True, timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            why = f"timed out after {timeout:.0f}s"
+        except Exception as e:  # noqa: BLE001
+            why = f"error: {str(e)[:120]}"
+        else:
+            out = proc.stdout or ""
+            if proc.returncode == 0 and len(out.strip()) >= BRIDGE_MIN_BYTES:
+                return "bridge-ok", f"bridge `{' '.join(argv)}` → {len(out)} B"
+            tail = (proc.stderr or out or "").strip().splitlines()
+            why = tail[-1][:140] if tail else f"rc={proc.returncode}, {len(out)} B"
+        if attempt == 1:
+            time.sleep(1.5)
+    return "bridge-fail", f"bridge `{' '.join(argv)}` failed: {why}"
+
+
+def _feed_ok(feed_url: str, *, timeout: float) -> bool:
+    """True iff the bridge can parse `feed_url` as a feed AND it carries ≥1
+    item. A homepage that isn't a feed parses to 0 items → False, so this does
+    not give a false OK on a non-feed URL."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(FETCH_SOURCE), "feed", feed_url, "3"],
+            capture_output=True, text=True, timeout=timeout,
+        )
+    except Exception:  # noqa: BLE001
+        return False
+    if proc.returncode != 0:
+        return False
+    try:
+        data = json.loads(proc.stdout or "{}")
+    except Exception:  # noqa: BLE001
+        return False
+    return int(data.get("count") or 0) > 0
+
+
+# Common feed paths to try when an `rss` source's `url` is a homepage/index
+# rather than the feed itself (the feed URL otherwise lives only in `notes`).
+_FEED_SUFFIXES = ("/feed/", "/rss/", "/feed.xml", "/rss.xml", "/atom.xml", "/feed", "/rss")
+
+
+def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, str, int | None]:
+    """Verify an `rss` source by actually fetching its FEED (the recipe), not by
+    HEAD-probing its `url` (which may be a hostile homepage while the feed is
+    fine). Tries, in order: an explicit `rss_url` field, the `url` itself, then
+    common feed paths under the url's base. Returns `(class, detail, status)`.
+    `bridge-ok` when a feed parses with items; otherwise falls back to a GET of
+    `url` so the failure is classified (so a genuinely-dead source still flags)."""
+    seen: set[str] = set()
+    candidates: list[str] = []
+    for c in [s.get("rss_url"), s.get("url")]:
+        if isinstance(c, str) and c and c not in seen:
+            seen.add(c); candidates.append(c)
+    base = (s.get("url") or "").rstrip("/")
+    if base:
+        for suf in _FEED_SUFFIXES:
+            u = base + suf
+            if u not in seen:
+                seen.add(u); candidates.append(u)
+    for feed_url in candidates:
+        if _feed_ok(feed_url, timeout=max(timeout, 25.0)):
+            return "bridge-ok", f"feed ok: {feed_url}", None
+    # No feed worked — classify the homepage fetch so a real outage still shows.
+    status, _lat, err = _check(s.get("url", ""), timeout=timeout)
+    return _classify(status, host), (err or "no working feed found"), status
+
+
+# Probe classes that mean "reachable / handled" — no operator action needed.
+_HEALTHY_CLASSES = frozenset({"ok", "redirect-ok", "bridge-ok"})
+
+
+def _action(status: str, fetch_method: str, cls: str, code: int | None) -> tuple[str, str]:
+    """Derive the operator action for a source from its lifecycle status, its
+    configured fetch_method, and the probe outcome. The Ops dashboard floats
+    ONLY sources whose action is not `none` — i.e. unsolved problems.
+
+    Returns `(action, reason)` where action ∈ {none, needs-bridge, needs-demote}.
+      - none         → reachable, or already handled (demoted / served via a
+                       working bridge / known UA-blocked host already bridged).
+      - needs-bridge → a browser-grade UA is refused (403/429) on a source that
+                       is NOT yet on the bridge → build a dedicated bridge recipe
+                       (or demote if even the bridge can't reach it).
+      - needs-demote → the source is dead/erroring (404/5xx/unreachable) OR its
+                       already-implemented bridge/api recipe is now failing →
+                       fix the recipe or demote.
+    """
+    on_bridge = fetch_method in ("bridge", "api")
+    # Already-demoted sources are a handled state — never surface them.
+    if status == "demoted":
+        return "none", "already demoted (handled)"
+    if cls in _HEALTHY_CLASSES:
+        return "none", ""
+    # A source already routed through the bridge whose bridge now fails, or any
+    # `blocked` source that is still active, is an unsolved problem to fix/demote.
+    if cls == "bridge-fail" or fetch_method == "blocked":
+        return "needs-demote", "bridge/api recipe is failing now — fix the recipe or demote"
+    if cls == "ua-blocked":
+        # Known UA-blocked host. Handled iff it is already on the bridge.
+        if on_bridge:
+            return "none", "UA-blocked host, already served via the bridge"
+        return "needs-bridge", f"host blocks the browser UA (HTTP {code}) — add a bridge recipe or demote"
+    if cls == "client-error":
+        if code in (403, 429):
+            # Anti-bot / UA / geo refusal of a browser UA.
+            return ("needs-demote", "bridge/api recipe is failing (403/429) — fix or demote") if on_bridge \
+                else ("needs-bridge", f"browser UA refused (HTTP {code}) — needs a dedicated bridge recipe or demote")
+        # 404 / 410 / other 4xx → the resource is gone.
+        return "needs-demote", f"resource gone (HTTP {code}) — update the URL or demote"
+    if cls in ("server-error", "unreachable"):
+        return "needs-demote", f"source unreachable ({cls}{f', HTTP {code}' if code else ''}) — recheck and demote if persistent"
+    return "needs-demote", f"unexpected probe class {cls!r} — review"
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--dry-run", action="store_true",
@@ -181,14 +361,18 @@ def main() -> int:
     except Exception as e:
         print(f"FATAL: cannot parse sources.json: {e}", file=sys.stderr)
         return 2
-    sources = [s for s in sources_data.get("sources", []) if s.get("status") == "active"]
+    # v2.63 — check EVERY source (active + candidate + demoted), not just the
+    # active ones, so the snapshot is a complete periodic accessibility sweep.
+    # The Ops dashboard then floats only the ones that need operator action.
+    sources = [s for s in sources_data.get("sources", []) if s.get("url")]
     if not sources:
-        print("No active sources to check.")
+        print("No sources to check.")
         return 0
 
     fetched_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     print(f"# source-health snapshot — {fetched_at}")
-    print(f"# checking {len(sources)} active source(s); timeout={args.timeout}s")
+    print(f"# checking {len(sources)} source(s); timeout={args.timeout}s "
+          "(api/bridge sources verified through tools/fetch_source.py)")
 
     # Pre-flight: probe a single high-availability HTTPS host. If the SSL
     # handshake fails because the local Python has no CA trust store
@@ -224,16 +408,37 @@ def main() -> int:
         url = s.get("url", "")
         if not url:
             continue
+        src_status = s.get("status", "")
+        fetch_method = s.get("fetch_method", "")
         host = (urlparse(url).hostname or "").lower()
-        status, latency_ms, err = _check(url, timeout=args.timeout)
-        cls = _classify(status, host)
+        # Probe each source via its ACTUAL recipe, not a blind HEAD of `url`:
+        #   api / bridge → exercise the documented tools/fetch_source.py recipe
+        #   rss          → fetch the FEED (url may be a hostile homepage)
+        #   webfetch/etc → browser-UA HEAD→GET of the url
+        if fetch_method in ("api", "bridge"):
+            cls, detail = _bridge_check(sid, url, timeout=max(args.timeout, 45.0))
+            status = None
+            latency_ms = 0
+            err = "" if cls == "bridge-ok" else detail
+        elif fetch_method == "rss":
+            cls, detail, status = _rss_check(s, host, timeout=args.timeout)
+            latency_ms = 0
+            err = "" if cls in _HEALTHY_CLASSES else detail
+        else:
+            status, latency_ms, err = _check(url, timeout=args.timeout)
+            cls = _classify(status, host)
+        action, action_reason = _action(src_status, fetch_method, cls, status)
         rec = {
             "id": sid,
             "url": url,
             "host": host,
+            "status": src_status,
+            "fetch_method": fetch_method,
             "status_code": status,
             "latency_ms": latency_ms,
             "class": cls,
+            "action": action,
+            "action_reason": action_reason,
             "fetched_at": fetched_at,
         }
         if err:
@@ -241,18 +446,32 @@ def main() -> int:
         results.append(rec)
         # Human-readable line.
         st_disp = str(status) if status is not None else "—"
-        print(f"  [{cls:>13}] {st_disp:>3}  {latency_ms:>5} ms  {sid:<32}  {host}")
+        flag = "" if action == "none" else f"  ⚠ {action}"
+        print(f"  [{cls:>13}] {st_disp:>3}  {latency_ms:>5} ms  {sid:<32}  {host}{flag}")
 
     # Group counts for quick top-line.
     by_class: dict[str, int] = {}
+    by_action: dict[str, int] = {}
     for r in results:
         by_class[r["class"]] = by_class.get(r["class"], 0) + 1
+        by_action[r["action"]] = by_action.get(r["action"], 0) + 1
     print()
     print("# class breakdown:")
-    for cls in ("ok", "redirect-ok", "ua-blocked", "client-error", "server-error", "unreachable"):
+    for cls in ("ok", "redirect-ok", "bridge-ok", "ua-blocked",
+                "client-error", "server-error", "unreachable", "bridge-fail"):
         n = by_class.get(cls, 0)
         if n:
             print(f"  {n:>3}× {cls}")
+    print("# action breakdown (dashboard floats non-`none`):")
+    for act in ("none", "needs-bridge", "needs-demote"):
+        n = by_action.get(act, 0)
+        if n:
+            print(f"  {n:>3}× {act}")
+    flagged = [r for r in results if r["action"] != "none"]
+    if flagged:
+        print("# UNSOLVED — needs a dedicated bridge fetcher or demotion:")
+        for r in flagged:
+            print(f"  - {r['id']:<28} [{r['action']}] {r['action_reason']}")
 
     if args.dry_run:
         print("\n(dry-run — state/source_health.json not written)")
@@ -270,11 +489,16 @@ def main() -> int:
     else:
         existing = {}
     runs = list(existing.get("runs") or [])
-    runs.append({"fetched_at": fetched_at, "results": results, "by_class": by_class})
+    runs.append({"fetched_at": fetched_at, "results": results,
+                 "by_class": by_class, "by_action": by_action})
     runs = runs[-args.history_cap :]
     out = {
-        "schema_version": 1,
-        "schema": "Independent weekly source-health snapshot. Surface in /ops/.",
+        "schema_version": 2,
+        "schema": ("Periodic source-accessibility snapshot (v2.63: every source, "
+                   "api/bridge verified through tools/fetch_source.py). Each result "
+                   "carries `status`, `fetch_method`, `class`, and a derived `action` "
+                   "(none | needs-bridge | needs-demote). The Ops dashboard floats only "
+                   "non-`none` actions — sources that need a dedicated bridge or demotion."),
         "last_updated": fetched_at,
         "history_cap": args.history_cap,
         "runs": runs,
