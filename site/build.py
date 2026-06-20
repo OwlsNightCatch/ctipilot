@@ -4617,7 +4617,7 @@ def render_ops_page(
     )
 
     run_count_label = f"{len(all_desc)} run{'' if len(all_desc) == 1 else 's'}"
-    source_health_html = _ops_render_source_health(source_health)
+    source_health_html = _ops_render_source_health(source_health, prefix=prefix)
     picker_count_label = f"{len(picker_runs)} most-recent run{'' if len(picker_runs) == 1 else 's'}"
     body = f"""
 <h1>Operations</h1>
@@ -4632,9 +4632,14 @@ def render_ops_page(
 
 <section class="ops-cluster" id="health">
   <h2 class="ops-cluster__head">Health</h2>
-  <p class="ops-cluster__intro">Global overview across all {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime. The two compact charts below summarise the model split and sub-agent fetch behaviour for the whole window.</p>
+  <p class="ops-cluster__intro">Global overview across all {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime. Below: source-accessibility action items, then a compact model split and sub-agent fetch summary for the whole window.</p>
   {primary_kpis}
   {secondary_kpis}
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Source accessibility — needs attention</h3>
+    {source_health_html}
+  </div>
 
   <div class="ops-subsection">
     <h3 class="ops-subhead">Models in use</h3>
@@ -4660,14 +4665,8 @@ def render_ops_page(
 
 <section class="ops-cluster" id="latest">
   <h2 class="ops-cluster__head">Run detail</h2>
-  <p class="ops-cluster__intro">Everything about a single run in one place — pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources a brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. The source-accessibility probe at the foot of this section is independent of any single run.</p>
+  <p class="ops-cluster__intro">Everything about a single run in one place — pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>that run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Global source-accessibility action items live in the <a href="#health">Health</a> section above — distinct from a single run's coverage gaps.</p>
   {run_detail_html}
-
-  <div class="ops-subsection">
-    <h3 class="ops-subhead">Source accessibility — independent probe</h3>
-    <p class="ops-subtitle"><strong>Distinct from a run's "Coverage gaps" above.</strong> Coverage gaps are sources a brief <em>needed</em> but couldn't fetch on that run; this is the scheduled HEAD/GET probe of <strong>every active source</strong> (<code>state/source_health.json</code>, written by <code>tools/source_health.py</code>), independent of any run — the current snapshot of which sources are reachable, with every failed / errored source listed.</p>
-    {source_health_html}
-  </div>
 </section>
 
 <p class="muted ops-footnote">
@@ -4756,50 +4755,86 @@ def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
     )
 
 
-def _ops_render_source_health(source_health: dict[str, Any] | None) -> str:
-    """v2.62 — surface the previously-orphaned `state/source_health.json`
-    snapshot (written by tools/source_health.py, an independent weekly HEAD/GET
-    probe of every active source). Shows the class breakdown and lists any
-    source that is not ok / redirect-ok / ua-blocked, so a real outage is
-    visible between full audits."""
+_SOURCE_STATUS_KIND = {"active": "ok", "candidate": "neutral", "demoted": "crit"}
+
+
+def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: str = "") -> str:
+    """v2.63 — surface ONLY the unsolved accessibility problems from
+    `state/source_health.json` (written by tools/source_health.py, which probes
+    EVERY source with the bridge's UA and exercises the api/bridge recipes).
+
+    The panel floats only sources whose derived `action` is not `none` — i.e.
+    sources that need a dedicated bridge fetcher (browser UA refused, not yet on
+    the bridge) or need demotion (dead/erroring, or an already-implemented
+    bridge recipe now failing). It deliberately does NOT list healthy sources,
+    already-demoted sources, or sources already served by a working bridge —
+    those are handled, not problems."""
     if not isinstance(source_health, dict) or not source_health:
         return (
             '<div class="empty"><p>No <code>state/source_health.json</code> snapshot yet.</p>'
-            '<p class="muted">Written by <code>tools/source_health.py</code> (weekly GitHub Action / '
-            'manual run) — an independent HEAD/GET probe of every active source, separate from the '
-            'daily routine.</p></div>'
+            '<p class="muted">Written by <code>tools/source_health.py</code> (run at the end of every '
+            'routine + a weekly GitHub Action) — a periodic accessibility probe of every source that '
+            'also verifies the api/bridge recipes still work.</p></div>'
         )
     latest = source_health.get("latest") or {}
-    hist = source_health.get("runs") or []
-    by_class = (hist[-1].get("by_class") if hist else {}) or {}
     fetched_at = source_health.get("last_updated", "?")
-    CLS = [("ok", "ok"), ("redirect-ok", "ok"), ("ua-blocked", "warn"),
-           ("client-error", "crit"), ("server-error", "crit"), ("unreachable", "crit")]
-    pills = [f'<span class="ops-pill ops-pill--{kind}">{by_class.get(cls, 0)} {cls}</span>'
-             for cls, kind in CLS if by_class.get(cls, 0)]
-    bad = [r for r in latest.values()
-           if isinstance(r, dict) and r.get("class") not in ("ok", "redirect-ok", "ua-blocked")]
-    if bad:
-        rows = "".join(
-            f'<tr><td class="mono">{_escape(r.get("id", "?"))}</td>'
-            f'<td><span class="ops-pill ops-pill--crit">{_escape(r.get("class", "?"))}</span></td>'
-            f'<td class="mono muted">{_escape(str(r.get("status_code") or "—"))}</td>'
-            f'<td class="mono muted">{_escape(r.get("host", ""))}</td></tr>'
-            for r in sorted(bad, key=lambda x: x.get("id", ""))
+    total = len(latest)
+    flagged = [r for r in latest.values()
+               if isinstance(r, dict) and r.get("action") not in (None, "", "none")]
+    intro = (
+        f'<p class="ops-subtitle">Periodic probe of all <strong>{total}</strong> sources — snapshot '
+        f'<span class="mono">{_escape(str(fetched_at))}</span>. Uses the bridge\'s browser UA and '
+        f'exercises the <code>api</code>/<code>bridge</code> recipes, so "reachable here" means '
+        f'"reachable via the configured fetch method". Only <strong>unsolved problems</strong> are '
+        f'listed below — healthy sources, already-demoted sources, and sources already served by a '
+        f'working bridge are omitted.</p>'
+    )
+    if not flagged:
+        return (
+            intro
+            + '<p class="ops-pill ops-pill--ok" style="display:inline-block">✓ All '
+            + f'{total} sources reachable via their configured fetch method — nothing needs a '
+            + 'dedicated bridge or demotion.</p>'
         )
-        table = ('<div class="data-wrap"><table class="data">'
-                 '<thead><tr><th>Source</th><th>Class</th><th>HTTP</th><th>Host</th></tr></thead>'
-                 f'<tbody>{rows}</tbody></table></div>')
-    else:
-        table = ('<p class="muted">All probed active sources returned ok / redirect-ok / '
-                 'ua-blocked in the latest snapshot.</p>')
+
+    def _group(rows_data: list[dict[str, Any]], heading: str, help_txt: str) -> str:
+        if not rows_data:
+            return ""
+        rows = "".join(
+            f'<tr>'
+            f'<td class="mono"><a href="{prefix}sources/{urllib.parse.quote(r.get("id", "?"), safe="")}/">'
+            f'{_escape(r.get("id", "?"))}</a></td>'
+            f'<td><span class="ops-pill ops-pill--{_SOURCE_STATUS_KIND.get(r.get("status"), "neutral")}">'
+            f'{_escape(r.get("status") or "?")}</span></td>'
+            f'<td class="mono muted">{_escape(r.get("fetch_method") or "—")}</td>'
+            f'<td class="mono muted">{_escape(r.get("class") or "?")}'
+            f'{(" " + str(r.get("status_code"))) if r.get("status_code") else ""}</td>'
+            f'<td class="muted">{_escape(r.get("action_reason") or "")}</td>'
+            f'</tr>'
+            for r in sorted(rows_data, key=lambda x: x.get("id", ""))
+        )
+        return (
+            f'<h4 class="ops-mini-head" style="margin-top:1rem">{heading} '
+            f'<span class="ops-pill ops-pill--crit">{len(rows_data)}</span></h4>'
+            f'<p class="muted ops-latest__failures-help">{help_txt}</p>'
+            '<div class="data-wrap"><table class="data">'
+            '<thead><tr><th>Source</th><th>Status</th><th>Method</th><th>Probe</th><th>What to do</th></tr></thead>'
+            f'<tbody>{rows}</tbody></table></div>'
+        )
+
+    needs_bridge = [r for r in flagged if r.get("action") == "needs-bridge"]
+    needs_demote = [r for r in flagged if r.get("action") == "needs-demote"]
+    other = [r for r in flagged if r.get("action") not in ("needs-bridge", "needs-demote")]
     return (
-        f'<p class="ops-subtitle">Independent HEAD/GET probe of every active source — snapshot '
-        f'<span class="mono">{_escape(str(fetched_at))}</span>. <code>ua-blocked</code> is expected '
-        f'(the bridge fetcher handles those); <code>client-error</code> / <code>server-error</code> / '
-        f'<code>unreachable</code> warrant a look.</p>'
-        f'<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin:0.5rem 0">{" ".join(pills)}</div>'
-        f'{table}'
+        intro
+        + _group(needs_bridge, "Needs a dedicated bridge fetcher (or demotion)",
+                 "A browser-grade UA is refused on these, but they are not yet routed through "
+                 "<code>tools/fetch_source.py</code>. Build a dedicated bridge recipe — or demote if "
+                 "even the bridge can't reach them.")
+        + _group(needs_demote, "Failing — fix the recipe or demote",
+                 "Dead / erroring sources, or sources whose already-implemented "
+                 "<code>api</code>/<code>bridge</code> recipe is now failing. Update the URL/recipe, or demote.")
+        + _group(other, "Review", "Unexpected probe outcome — inspect.")
     )
 
 

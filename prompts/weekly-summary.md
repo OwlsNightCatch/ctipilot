@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.62 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.63 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -681,6 +681,16 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
 
 Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap. **`fetch_failures[]` (v2.56 tightened): log ONLY records where the recipe in `sources/sources.json` could not retrieve usable content AND no fallback worked AND `covered_anyway: false`.** Do NOT log successful bridge fetches that returned no in-window content (quiet days are success, not gaps); do NOT log WebFetch-403 outcomes on known-403 hosts where the documented bridge subcommand then succeeded; do NOT log SPA-empty landings handled by a structured-endpoint bridge subcommand. **`sources_changed[]` (v2.62 — new)** = one entry for every `sources/sources.json` edit this run (status transitions, new candidates with `from: ""`, and `recategorised` / `reliability` / `fetch_method` / `url` metadata-drift corrections); `[]` when the run only refreshed `last_successful_fetch` / counters; each entry carries `id`, `change`, `from`, `to`, `reason`; the Ops dashboard highlights these per run. **`bridge_uses[]` (v2.56 — optional)** captures bridge-subcommand telemetry (`{id, method, outcome}`) so successful bridge invocations are tracked without contaminating the failure list. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
 
+### `state/source_health.json` — periodic accessibility probe (run at the END of every run, v2.63)
+
+Shared machinery with the daily — see the daily prompt's § `state/source_health.json` for the full rationale. After the state writes above, run the source-accessibility health check so **every source is probed on every fire**:
+
+```bash
+python3 tools/source_health.py        # writes state/source_health.json (probes ALL sources via their actual recipe; ~2-4 min)
+```
+
+It probes each source via its real recipe (`feed` for RSS, the documented `tools/fetch_source.py` subcommand for `api`/`bridge`, browser-UA HEAD→GET for `webfetch`) and derives an **action** (`none` | `needs-bridge` | `needs-demote`) per source, printing an `UNSOLVED` list. **Act on that list this run when you safely can** (add/switch a bridge recipe for `needs-bridge`; fix the URL/recipe or demote for `needs-demote`), recording each edit in `sources_changed[]`. Commit `state/source_health.json` in Phase 5. The Ops dashboard's Health → "Source accessibility — needs attention" panel floats exactly this list. Script-level errors → log in § 10 and continue; never block the summary.
+
 ---
 
 ## Phase 4.5 — Self-check gate (institutionalised script)
@@ -803,6 +813,7 @@ The summary lands on `main` exclusively via the auto-merge GitHub Action (`.gith
 ```bash
 git add briefs/weekly/YYYY-Www.md \
         state/covered_items.json state/cves_seen.json state/run_log.json \
+        state/source_health.json \
         sources/sources.json \
         .claude/memory/ \
         "work/${RUN_ID}/"

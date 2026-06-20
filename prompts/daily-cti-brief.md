@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.62 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.63 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -710,6 +710,16 @@ Append one record per run, then trim to 90 most recent. **`run_id` is mandatory 
 
 **Sparse-record consequence:** `/ops/` cells read directly. Phase 5.5 catches missing keys and FAILs the commit.
 
+### `state/source_health.json` — periodic accessibility probe (run at the END of every run, v2.63)
+
+After the state writes above, run the source-accessibility health check so **every source is probed on every fire** (not just on the weekly GitHub Action). It probes each source via its *actual* recipe — `feed` for RSS sources, the documented `tools/fetch_source.py` subcommand for `api`/`bridge` sources, a browser-UA HEAD→GET for `webfetch` — so "reachable here" means "reachable via the configured fetch method", and it verifies the bridge recipes still work.
+
+```bash
+python3 tools/source_health.py        # writes state/source_health.json (probes ALL sources; ~2-4 min)
+```
+
+It derives an **action** per source (`none` | `needs-bridge` | `needs-demote`) and prints an `UNSOLVED` list. **Act on that list the same run when you safely can** (it is your own self-evolution authority over `sources/sources.json`): a `needs-bridge` source (browser UA refused, not yet bridged) → add/switch to a `bridge`/`api`/`rss` recipe and record the edit in `sources_changed[]`; a `needs-demote` source (dead/erroring, or an implemented bridge that now fails) → fix the URL/recipe or demote per the lifecycle rules, again recording it. The Ops dashboard's Health → "Source accessibility — needs attention" panel floats exactly this list, so leaving it non-empty across runs is visible drift. Commit `state/source_health.json` in Phase 6. If the script errors at the script level (not a per-source failure), log it in § 7 and continue — never let it block the brief.
+
 ---
 
 ## Phase 5.5 — Self-check gate (institutionalised script)
@@ -876,6 +886,7 @@ Brief lands on `main` exclusively via the auto-merge GitHub Action (`.github/wor
 ```bash
 git add briefs/YYYY-MM-DD.md \
         state/covered_items.json state/cves_seen.json state/deep_dive_history.json state/run_log.json \
+        state/source_health.json \
         sources/sources.json \
         .claude/memory/ \
         "work/${RUN_ID}/"

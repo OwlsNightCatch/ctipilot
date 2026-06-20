@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.63 — 2026-06-20 (every-run source-accessibility health check + recipe-aware probe; Ops dashboard floats only unsolved source problems)
+
+### Why
+
+v2.62 surfaced *which sources a run changed*, but nothing periodically answered "which sources are now unreachable and need a dedicated bridge fetcher or demotion?" — `tools/source_health.py` only ran weekly, only HEAD-probed `active` sources, and only checked the raw `url` (not the actual fetch recipe), so it both missed broken `api`/`bridge` recipes and false-flagged sources whose homepage is hostile but whose feed works. The operator asked for: the accessibility probe moved into the global Health view; a list that floats ONLY unsolved problems (needs-bridge / needs-demote), never already-demoted or already-bridged sources; verification that the bridge recipes still work; every source checked; and the check run at the end of every routine.
+
+### What changed
+
+- **Daily + weekly (shared machinery, in lockstep):** the routine now runs `python3 tools/source_health.py` at the END of every run (new § `state/source_health.json` in Phase 5 / Phase 4) and commits the snapshot, so every source is probed on every fire — not just on the weekly cron. The prompt directs the agent to act on the printed `UNSOLVED` list the same run (add a bridge recipe for `needs-bridge`, fix-or-demote for `needs-demote`) and record the edit in `sources_changed[]`.
+- **`tools/source_health.py` (v2.63):** probes EVERY source (not just active); probes via the *actual recipe* (`feed` for RSS with common-path discovery, the documented `tools/fetch_source.py` subcommand for `api`/`bridge`, browser-UA HEAD→GET with a GET-retry-after-403 for `webfetch`); UA aligned to the bridge (Chrome 138 + Sec-CH-UA); derives a per-source `action` (`none` | `needs-bridge` | `needs-demote`); schema_version 2.
+- **`site/build.py` Ops dashboard:** the source-accessibility panel moved into **Health** and now floats ONLY non-`none` actions (sources needing a dedicated bridge or demotion), grouped and detailed; already-demoted and already-bridged-and-working sources are omitted. Explicitly distinguished from a run's per-run "Coverage gaps".
+
+### What stays
+
+The lens stays divergent; hard invariants untouched. The status-axis lifecycle thresholds and the "transport-403 never auto-demotes" rule are unchanged — the health check *recommends* action; the agent still applies the lifecycle rules. `sources_changed` (v2.62) and the per-run Run-detail panels are unchanged.
+
 ## 2.62 — 2026-06-20 (source-metadata-drift correction made a first-class lifecycle step; per-run `sources_changed` telemetry surfaced on the Ops dashboard)
 
 ### Why
