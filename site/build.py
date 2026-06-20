@@ -4483,9 +4483,40 @@ def render_ops_page(
     heatmap_html = _ops_svg_heatmap(heatmap_rows, cell=14, gap=2, label="Sub-agent fetch density (used/attempted)") \
         if heatmap_rows else '<p class="muted">No sub-agent allocation recorded yet.</p>'
 
-    # ----- Latest run deep panel -------------------------------------------
-    latest_panel_html = _ops_render_latest_run_panel(last_run, palette, prefix=prefix) \
-        if last_run else '<p class="muted">No runs recorded yet.</p>'
+    # ----- Run-detail picker -----------------------------------------------
+    # The detail panel is selectable across every run in the window, not just
+    # the latest. Each run's panel is rendered into the page; a <select>
+    # toggles which one is visible (app.js wireOpsRunPicker — CSP-safe, no
+    # inline handlers). The latest run (first of runs_desc) is the default.
+    # All but the selected panel carry `hidden`, so the page is fully usable
+    # with JS disabled (the latest panel shows; the rest are reachable once
+    # JS wires the select).
+    if runs_desc:
+        run_options: list[str] = []
+        run_panels: list[str] = []
+        for i, r in enumerate(runs_desc):
+            key = r.get("run_id") or f"idx-{i}"
+            label = _ops_run_picker_label(r)
+            selected = " selected" if i == 0 else ""
+            run_options.append(
+                f'<option value="{_escape(key)}"{selected}>{_escape(label)}</option>'
+            )
+            run_panels.append(
+                f'<div class="ops-run-panel" data-run-panel="{_escape(key)}"'
+                f'{"" if i == 0 else " hidden"}>'
+                + _ops_render_latest_run_panel(r, palette, prefix=prefix)
+                + '</div>'
+            )
+        run_detail_html = (
+            '<div class="ops-run-picker">'
+            '<label class="ops-run-picker__label" for="ops-run-select">Showing run</label>'
+            f'<select id="ops-run-select" class="ops-run-picker__select" '
+            f'aria-label="Select a run to inspect">{"".join(run_options)}</select>'
+            '</div>'
+            + "".join(run_panels)
+        )
+    else:
+        run_detail_html = '<p class="muted">No runs recorded yet.</p>'
 
     # ----- Verification iteration timeline ---------------------------------
     iter_rows: list[str] = []
@@ -4616,7 +4647,7 @@ def render_ops_page(
 <nav class="ops-nav" aria-label="Dashboard sections">
   <span class="ops-nav__label">Jump to</span>
   <a href="#health">Health</a>
-  <a href="#latest">Latest run</a>
+  <a href="#latest">Run detail</a>
   <a href="#trends">Trends</a>
   <a href="#runlog">Run log</a>
 </nav>
@@ -4629,9 +4660,9 @@ def render_ops_page(
 </section>
 
 <section class="ops-cluster" id="latest">
-  <h2 class="ops-cluster__head">Latest run</h2>
-  <p class="ops-cluster__intro">Full breakdown of the most recent run — sub-agent allocation and telemetry, verification iterations, fetch failures, and bridge-fetcher use.</p>
-  {latest_panel_html}
+  <h2 class="ops-cluster__head">Run detail</h2>
+  <p class="ops-cluster__intro">Full breakdown of a single run — sub-agent allocation and telemetry, verification iterations, fetch failures, and bridge-fetcher use. Defaults to the latest run; pick any run in the window from the selector.</p>
+  {run_detail_html}
 </section>
 
 <section class="ops-cluster" id="trends">
@@ -5065,6 +5096,26 @@ def _ops_render_verification_iterations(
         )
 
     return chips_html, findings_html
+
+
+def _ops_run_picker_label(run: dict[str, Any]) -> str:
+    """One-line label for a run in the run-detail <select>.
+
+    `<date> · <kind> · <verdict>` — e.g. "2026-06-20 · daily · CLEAN" or
+    "2026-05-19 · daily · NEEDS_FIXES (2 residual)". The verdict mirrors the
+    clean-publish definition: residual == 0 ⇒ CLEAN, else NEEDS_FIXES with the
+    residual count. Runs without verification telemetry show no verdict tag.
+    """
+    date = run.get("date") or "?"
+    kind = run.get("kind", "daily")
+    bits = [str(date), str(kind)]
+    if run.get("verification_iterations") is not None:
+        residual = run.get("verification_residual_count") or 0
+        if residual == 0:
+            bits.append("CLEAN")
+        else:
+            bits.append(f"NEEDS_FIXES ({residual} residual)")
+    return " · ".join(bits)
 
 
 def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *,

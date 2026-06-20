@@ -28,7 +28,43 @@
     wireKeyboardShortcuts();
     wireMdSplitButtons();
     wireSectionCollapse();
+    wireOpsRunPicker();
     await Promise.all([wireGlobalSearch(), wireGithubBadge(), wireListFilters()]);
+  }
+
+  // ── ops dashboard: run-detail picker ───────────────────────────────
+  // The /ops/ "Run detail" cluster renders one .ops-run-panel per run in
+  // the window; #ops-run-select toggles which is visible. No-ops on every
+  // other page (the select is absent). Deep-linkable via `#run=<key>` so a
+  // specific run can be shared; on load that run is selected if present.
+  function wireOpsRunPicker() {
+    var sel = document.getElementById('ops-run-select');
+    if (!sel) return;
+    var panels = document.querySelectorAll('[data-run-panel]');
+    if (!panels.length) return;
+
+    function show(key) {
+      var matched = false;
+      panels.forEach(function (p) {
+        var isMatch = p.getAttribute('data-run-panel') === key;
+        p.hidden = !isMatch;
+        if (isMatch) matched = true;
+      });
+      return matched;
+    }
+
+    sel.addEventListener('change', function () {
+      show(sel.value);
+      if (window.history && history.replaceState) {
+        history.replaceState(null, '', '#run=' + encodeURIComponent(sel.value));
+      }
+    });
+
+    var m = (window.location.hash || '').match(/run=([^&]+)/);
+    if (m) {
+      var key = decodeURIComponent(m[1]);
+      if (show(key)) sel.value = key;
+    }
   }
 
   // ── collapsible H2 sections (brief pages) ──────────────────────────
