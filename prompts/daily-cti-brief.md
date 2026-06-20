@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.60 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.61 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -61,6 +61,8 @@ Anti-crash guards (priority order):
    Daily covers gap since last *daily*; weekly (separate routine) since last *weekly* — both run independently, self-coordinate. Daily is primary operational coverage; weekly is the consolidating view.
 
 8. **No repetition across runs.** Read **last 7 days of briefs** + the most recent two weekly summaries before composing. Items already covered are not re-reported. Two exceptions: (a) **UPDATE rule** — *material new development* (new actor, victim, CVE in chain, fresh patch, confirmed law-enforcement) opens `> **UPDATE (originally covered YYYY-MM-DD):**` and describes only the delta — never recap; (b) **Long-running campaign rule** — ongoing campaigns (sustained edge-device exploitation waves, long-running named-cluster operations regardless of nexus, ransomware-affiliate turnovers/rebrands) get ≤1 consolidated UPDATE per week unless something critical changes.
+
+   **Division of labour with the weekly (asymmetric — deliberate).** The daily is *primary operational coverage*: today's signal, the 1–7-day patch / hunt / block / detect decisions. The longer arc is the weekly's job (`prompts/weekly-summary.md`). Concretely, the daily **must not** (i) re-report an item already consolidated in a recent weekly (dedup against the two weeklies you read above), nor (ii) carry **long-horizon / strategic-arc synthesis** — multi-week trend framing, "looking ahead / what to watch" horizon lists, annual-report *retrospective* synthesis beyond the one-time PD-9 treatment, cross-week sectoral-pattern essays. Those belong in the weekly. The asymmetry runs one way: the **weekly may repeat a daily item with a new lens; the daily never repeats the weekly.** A newly-published annual report still gets its one-time daily PD-9 treatment the day it lands; the *retrospective horizon view* of it is the weekly's.
 
 9. **Annual / quarterly threat reports** (recurring flagship landscape reports from major DFIR/IR vendors, EU agencies, telecoms, OT-security specialists, breach-investigation firms — any periodic publication centred on YoY/QoQ trend rollup) get **one** dedicated treatment — typically that day's deep dive — covering only highly-relevant findings for a Swiss/EU public-sector SOC. Logged in `state/covered_items.json` with `type: "annual-report"`. **Never re-summarised**; specific findings can be cited as context. Weekly may cross-reference for horizon view.
 
@@ -141,7 +143,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 1. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every brief from the last 7 days into its own context — at 50–80 KB per brief, seven dailies plus the latest weekly run the main agent ~120 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only the keys-only digest in the main agent's context:
 
    ```bash
-   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–9 of the previous weekly.
+   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–10 of the previous weekly.
    # Emits BOTH a full prior_coverage.json (for sub-agents to Read in their
    # isolated contexts) AND a keys-only prior_coverage_keys.json (for the main
    # agent — dedup index only, no titles / tldrs / URLs).

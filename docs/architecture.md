@@ -70,9 +70,15 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   verification → deep dive → compose → state update → self-check →
   commit/push). Spawns four parallel research sub-agents.
 - [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) — the weekly
-  consolidating summary. Reads the past 7 days of dailies, plus two
-  long-horizon sub-agents (W1 long-running campaigns + annual reports;
-  W2 policy + regulatory).
+  consolidating summary (12 sections, 0–11). Reads the past 7 days of
+  dailies, runs a Phase 2.5 verification & triage pass, then composes via
+  two horizon sub-agents (W1 long-running campaigns + threat-actor
+  developments + research findings + annual reports; W2 policy +
+  regulatory). Same procedure as the daily (gold standard); the lens
+  differs — broader threat picture, multi-day chains, research / actor
+  developments, annual reports, long-horizon "looking ahead". The weekly
+  may repeat a daily item with a new lens; the daily never repeats the
+  weekly and carries no long-horizon synthesis.
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
   the prompts. Treat as the audit trail for editorial-policy changes.
 - [`prompts/verification.md`](../prompts/verification.md) — the editorial /

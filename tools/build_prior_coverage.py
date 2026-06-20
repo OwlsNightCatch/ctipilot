@@ -2,7 +2,7 @@
 """Build prior_coverage.json (full) + prior_coverage_keys.json (keys-only)
 from gap-window dailies + previous weekly.
 
-Walks every H3 in §§ 0–6 of each daily and §§ 0–9 of the previous weekly
+Walks every H3 in §§ 0–6 of each daily and §§ 0–10 of the previous weekly
 in scope, extracts {key, title, tldr_one_line, primary_source_url, date,
 brief_path, section}, and writes:
 
@@ -47,6 +47,13 @@ _SECTION_KEYWORDS: list[tuple[str, str]] = [
     ("active threats", "active-threats"),
     ("active threat", "active-threats"),
     ("trending vulnerabilities", "trending-vulnerabilities"),
+    # Weekly research/threat-actor section — must precede the bare "research"
+    # key so a weekly "Research findings & threat-actor developments" heading
+    # maps to weekly-research, not the daily `research` slug.
+    ("threat-actor", "weekly-research"),
+    ("research findings", "weekly-research"),
+    ("research & threat", "weekly-research"),
+    ("research and threat", "weekly-research"),
     ("research", "research"),
     ("notable incidents", "active-threats"),
     ("switzerland, europe", "active-threats"),
@@ -346,8 +353,8 @@ def main(argv: list[str] | None = None) -> int:
     }
     weekly_section_keys = {
         "weekly-glance", "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
-        "weekly-sector-patterns", "weekly-incidents-recap", "weekly-annual-reports",
-        "weekly-long-running", "weekly-policy", "weekly-looking-ahead",
+        "weekly-sector-patterns", "weekly-incidents-recap", "weekly-research",
+        "weekly-annual-reports", "weekly-long-running", "weekly-policy", "weekly-looking-ahead",
     }
 
     # Walk the briefs once at full detail; the keys-only companion is

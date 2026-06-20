@@ -126,7 +126,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 {2–4 paragraph technical recap with inline source links. Where relevant, link back to the specific daily brief that first covered it and to the primary technical write-up.}
 
-— *Source: [Vendor PSIRT advisory](URL) · [Research blog with technical analysis](URL) · [Daily brief](briefs/YYYY-MM-DD.md) · Tags: actively-exploited, pre-auth, rce, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available*
+— *Source: [Vendor PSIRT advisory](URL) · [Research blog with technical analysis](URL) · [Daily brief](briefs/YYYY-MM-DD.md) · Tags: actively-exploited, pre-auth, rce, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available · Evidence: "verbatim quote confirming ongoing exploitation" (Vendor PSIRT); "verbatim quote on exposure / CVSS" (Research blog)*
 
 ## 2. Multi-day campaigns and chains
 
@@ -164,7 +164,15 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Victim disclosure](URL) · [Regulator notice](URL) · Tags: data-breach, ransomware · Region: europe · Sector: telco*
 
-## 6. Annual / periodic threat reports
+## 6. Research & threat-actor developments
+
+### {Research finding or threat-actor development}
+
+{Synthesis across the week — the broader picture the week's primary research and actor-level shifts point to (new techniques, malware analysis, new named clusters, attribution shifts, tooling / affiliate moves), not a relist of daily § 3 items. Background paragraph (PD-14) when prior reporting is older than ~6 months. Inline links throughout.}
+
+— *Source: [Primary research / vendor analysis](URL) · [Daily brief](briefs/YYYY-MM-DD.md) · Tags: nation-state, espionage, <nexus-tag-from-taxonomy-if-applicable> · Region: global*
+
+## 7. Annual / periodic threat reports
 
 ### {Report name}
 
@@ -172,7 +180,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Report PDF or vendor blog](URL) · Tags: nation-state, espionage · Region: global*
 
-## 7. Long-running campaigns — status update
+## 8. Long-running campaigns — status update
 
 ### {Campaign name}
 
@@ -180,7 +188,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Latest publicly-reported development](URL) · Tags: nation-state, <nexus-tag-from-taxonomy-if-applicable> · Region: global*
 
-## 8. Policy & regulatory horizon
+## 9. Policy & regulatory horizon
 
 ### {Policy item}
 
@@ -188,13 +196,13 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Regulator publication](URL) · Tags: law-enforcement, eu-nexus · Region: europe*
 
-## 9. Looking ahead — what to watch next week
+## 10. Looking ahead — what to watch next week
 
 A focused, justified list. **Not predictions** — items already in motion.
 
 - **{Item}** — {one-line rationale citing what is in motion}. ([Source](URL); [Daily brief](briefs/YYYY-MM-DD.md))
 
-## 10. Verification & coverage notes
+## 11. Verification & coverage notes
 
 - Items still flagged `[SINGLE-SOURCE]` from the week.
 - Items dropped from this week's roll-up that may resurface (briefly explain why dropped).

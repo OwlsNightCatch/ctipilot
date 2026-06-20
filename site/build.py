@@ -1165,6 +1165,13 @@ _SECTION_KEYWORDS: list[tuple[str, str]] = [
     ("trending vulnerabilities", "trending-vulnerabilities"),
     ("notable incidents", "active-threats"),  # legacy
     ("switzerland, europe", "active-threats"),  # legacy
+    # Weekly research/threat-actor section — precede the bare "research" key
+    # so a weekly "Research findings & threat-actor developments" heading
+    # maps to weekly-research rather than the daily `research` slug.
+    ("threat-actor", "weekly-research"),
+    ("research findings", "weekly-research"),
+    ("research & threat", "weekly-research"),
+    ("research and threat", "weekly-research"),
     ("research", "research"),
     ("updates to prior coverage", "updates"),
     ("updates on previously covered", "updates"),

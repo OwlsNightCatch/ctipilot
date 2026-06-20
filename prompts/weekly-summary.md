@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.60 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.61 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -20,11 +20,13 @@ The weekly is **not a one-to-one rollup of the daily briefs**. The reader has al
 
 1. **"What would be on fire by Monday morning if no one had acted on the dailies this week."** Items where active exploitation is ongoing, where a campaign is still acquiring victims, where a patch window closed without coverage, where a vendor-disclosed pre-auth RCE is being triaged into real compromises. Each such item gets a clear **"if you did nothing this week, this is what's currently breaking"** framing in §§ 1–3 — the escalation candidates a SOC manager would surface to leadership Monday morning. (CISA KEV remediation deadlines do **not** qualify on their own — US-FCEB-only compliance dates per the daily's PD-13; the underlying *exploitation* is what drives the on-fire framing, not the deadline.)
 
-2. **The strategic-horizon view a daily reader cannot see from any single day.** Multi-day campaign chains where each daily added a piece; sectoral pressure that emerged across multiple incidents in different geographies; long-running operator turnovers (affiliate shifts, infrastructure rebuilds); annual / quarterly threat reports that re-frame the trend lines; policy and regulatory moves that change defenders' obligations.
+2. **The strategic-horizon view a daily reader cannot see from any single day.** Multi-day campaign chains where each daily added a piece; sectoral pressure that emerged across multiple incidents in different geographies; long-running operator turnovers (affiliate shifts, infrastructure rebuilds); **threat-actor developments** — new cluster IDs, attribution shifts, tooling and infrastructure changes, ransomware-affiliate movements that re-shape who is hitting whom; **research findings** — the week's substantive primary technical research (new techniques, malware-family analysis, tradecraft evolution) that changes how defenders reason about a class of attack; annual / quarterly threat reports that re-frame the trend lines; policy and regulatory moves that change defenders' obligations. This is the **broader threat picture** the daily, by design, never assembles.
 
-3. **The longer arc on items the dailies could only sketch.** A vulnerability that was disclosure-only on Monday but is in KEV with confirmed ITW exploitation by Friday. An incident that was claim-only on Tuesday but has a regulator filing by Thursday. A campaign that was "China-nexus suspected" on Wednesday but has a named cluster ID by Sunday.
+3. **The longer arc on items the dailies could only sketch.** A vulnerability that was disclosure-only on Monday but is in KEV with confirmed ITW exploitation by Friday. An incident that was claim-only on Tuesday but has a regulator filing by Thursday. A campaign that was "China-nexus suspected" on Wednesday but has a named cluster ID by Sunday. Plus the **long-horizon / looking-ahead** view: what is in motion now that will develop over the coming weeks, what to keep watch on.
 
-The weekly **may** repeat material from the daily briefs — that is its consolidating purpose — but it must add a new lens (chain / pattern / horizon / escalation) on top. **Repetition without a new lens is padding.** Surface-level talking points are not.
+The weekly **may** repeat material from the daily briefs — that is its consolidating purpose — but it must add a new lens (chain / pattern / horizon / escalation / research synthesis) on top. **Repetition without a new lens is padding.** Surface-level talking points are not.
+
+**Division of labour with the daily (asymmetric, deliberate).** The daily is *primary operational coverage* — today's signal, the 1–7-day patch/hunt/block/detect decisions. The weekly is the *consolidating, broader, longer-horizon view*. The asymmetry runs one way: the **weekly may repeat a daily item** (with a new lens), but the **daily must not repeat a weekly item and must not carry long-horizon / strategic-arc synthesis** — that content belongs here. The daily dedups against the most recent weeklies (daily PD-8); the weekly does the cross-day / horizon synthesis the daily deliberately leaves out.
 
 The summary is **always English**. **No operational attack details, no IOCs, no rule code, no vanity metrics.** Sources: public reporting, primary research, regulator notices, victim disclosures, and the daily briefs themselves.
 
@@ -36,16 +38,16 @@ The single most important property is that **every fire ends with a written, com
 
 Anti-crash guards (same as daily prompt):
 
-1. **Always write the file.** Even if both horizon sub-agents return nothing, even if half the daily briefs failed to load, the summary file is created with the AI-content notice, metadata strip, a stub "Week at a glance", and § 10 explaining what failed.
-2. **Hard-cap every sub-agent at 30 min wall-clock; do not pre-empt before that.** Past 30 min, abandon and proceed without the sub-agent; log the gap in § 10. Same cap applies to Phase 4.7 verification sub-agent and follow-up research sub-agents.
+1. **Always write the file.** Even if both horizon sub-agents return nothing, even if half the daily briefs failed to load, the summary file is created with the AI-content notice, metadata strip, a stub "Week at a glance", and § 11 explaining what failed. The empty file in `briefs/weekly/` is the operational signal that a run took place.
+2. **Hard-cap every sub-agent at 30 min wall-clock; do not pre-empt before that.** The earlier 10-min soft cap is removed — depth over speed (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Time-boxing). Past 30 min, abandon and proceed without the sub-agent; log the gap in § 11. Same cap applies to the Phase 4.7 verification sub-agent and to follow-up research sub-agents.
 3. **Skeleton-then-Edit.** A single `Write` of the whole file trips `Stream idle timeout`. `Write` skeleton → `Read` → `Edit` per section.
 4. **Persist intermediate state often** under `work/<run-id>/` (gitignored).
 5. **Drop raw HTML once extracted.**
 6. **Bounded retries.** No `WebFetch` retried more than once. No git push retried.
 7. **Two-stage publishing chain (Phase 5) is non-negotiable.** Each push tried once.
 8. **Take time on quality, not retries.**
-9. **Phase 4.7 verification + Phase 4.5 self-check are non-negotiable, but never block the publish.** Both gates run; if a gate cannot conclude inside its budget, ship what you have and log the unresolved finding in § 10. The CRITICAL header always wins.
-10. **Main agent does NO source fetching during Phase 2 (v2.52 — anti-classifier-trip).** While the two `cti-research` horizon sub-agents (W1 / W2) are running, the main agent MUST NOT call `WebFetch`, `WebSearch`, or `python3 tools/fetch_source.py`. Source-fetching is the sub-agents' exclusive job in Phase 2; their isolated contexts absorb the raw policy / regulator / annual-report / advisory content so the main agent's working context stays compositional rather than research-loaded. Two failure modes the rule prevents: (a) **duplicate work** — fetches the sub-agent was already going to do, wasted wall-clock and rate-limit budget; (b) **classifier trip** — accumulating raw CTI content (NCSC.ch / ICO / ANSSI / ENISA / regulator filings, breach-enforcement listings, exploit-detail vendor PSIRTs) on top of the prompt baseline + the Phase 0 digests has tripped Anthropic's "violative cyber content" classifier on past runs, killing the routine mid-Phase-3 with `API Error … Usage Policy` and **no published summary** (the worst CRITICAL violation). The only main-agent invocations of those tools are: Phase 3 verification spot-checks (per-item URL on a sub-agent's already-cited URL), Phase 4.7 verification-fix iterations (re-fetching one primary to replace a broken or generic URL the verifier flagged), and Phase 6 publish polling (`curl` on the site index — not a CTI fetch). Anything else: spawn another sub-agent. **The full bridge-fetcher recipe table lives in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher** — the sub-agents read it; the main agent does not. Hardened as W-INV-3.
+9. **Phase 4.7 verification + Phase 4.5 self-check are non-negotiable, but never block the publish.** Both gates run; if a gate cannot conclude inside its budget, ship what you have and log the unresolved finding in § 11. The CRITICAL header always wins.
+10. **Main agent does NO source fetching during Phase 2 (v2.52 — anti-classifier-trip).** While the two `cti-research` horizon sub-agents (W1 / W2) are running, the main agent MUST NOT call `WebFetch`, `WebSearch`, or `python3 tools/fetch_source.py`. Source-fetching is the sub-agents' exclusive job in Phase 2; their isolated contexts absorb the raw policy / regulator / annual-report / advisory content so the main agent's working context stays compositional rather than research-loaded. Two failure modes the rule prevents: (a) **duplicate work** — fetches the sub-agent was already going to do, wasted wall-clock and rate-limit budget; (b) **classifier trip** — accumulating raw CTI content (NCSC.ch / ICO / ANSSI / ENISA / regulator filings, breach-enforcement listings, exploit-detail vendor PSIRTs) on top of the prompt baseline + the Phase 0 digests has tripped Anthropic's "violative cyber content" classifier on past runs, killing the routine mid-Phase-3 with `API Error … Usage Policy` and **no published summary** (the worst CRITICAL violation). The only main-agent invocations of those tools are: Phase 2.5 verification & triage spot-checks (per-item URL on a sub-agent's already-cited URL), Phase 4.7 verification-fix iterations (re-fetching one primary to replace a broken or generic URL the verifier flagged), and Phase 6 publish polling (`curl` on the site index — not a CTI fetch). Anything else: spawn another sub-agent. **The full bridge-fetcher recipe table lives in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher** — the sub-agents read it; the main agent does not. Hardened as W-INV-3.
 
 ---
 
@@ -57,17 +59,23 @@ The weekly inherits every prime directive from `prompts/daily-cti-brief.md`. Hig
 2. **Inline links at the point of claim.** No bibliography. No footnotes.
 3. **No IOCs. No vanity metrics. Always English.**
 4. **Two-source verification with national-CERT carve-out.** Items marked `[SINGLE-SOURCE]` in the daily briefs remain marked here unless new corroboration emerged this week.
-5. **Trace to the most primary source.** News articles are discovery; vendor blogs / CERT advisories / research-lab posts / regulator filings / victim disclosures are the substance. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primaries over English aggregators. **Sources must fall inside the gap-derived window** — items whose freshest available source is outside `window_days` AND that have not seen fresh in-window development drop to § 10 unless they are explicit horizon / status-update content (W1 long-running campaign updates, § 6 annual-report retrospective, § 9 looking-ahead). Stale-source drift (sources lagging the summary by 3+ days) drains weekly signal even more than daily.
+5. **Trace to the most primary source.** News articles are discovery; vendor blogs / CERT advisories / research-lab posts / regulator filings / victim disclosures are the substance. CVE primary-source order: vendor advisory > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > researcher write-up > aggregator. Prefer non-English primaries over English aggregators. **Sources must fall inside the gap-derived window** — items whose freshest available source is outside `window_days` AND that have not seen fresh in-window development drop to § 11 unless they are explicit horizon / status-update content (W1 long-running campaign updates, § 7 annual-report retrospective, § 6 research / threat-actor Background paragraph (PD-14), § 10 looking-ahead). Stale-source drift (sources lagging the summary by 3+ days) drains weekly signal even more than daily.
+
+   **Recency enforcement (mirrors daily PD-7's NEW emphasis).** The gap-derived `window_days` is a publication-date filter on the *source*, not on the underlying CVE assignment year (CVE-2025-XXXXX is fine in a 2026 weekly if the source describing it is fresh). Sub-agents drop out-of-window items at fetch time; the main agent re-checks in Phase 2.5 (verification & triage): any item whose freshest source is older than `window_days` and has no fresher in-window development drops to § 11 unless it qualifies as one of the explicit-horizon exceptions above. Anchor both the sub-agent filter and the Phase 2.5 re-check on the same `window_days`.
 6. **Weekly editorial framing (W-PD-1).** Every item answers one of three questions: (a) *what would be on fire if no one acted on the daily?*, (b) *what cross-day pattern emerged that no single daily could surface?*, (c) *what strategic / horizon shift happened that changes defender obligations going forward?*. Items that answer none of these three get dropped — even if they were prominent in a daily.
 7. **Annual / periodic reports** get fuller distillation in the weekly than the daily, since the weekly's audience expects horizon framing.
 8. **`tools/fetch_source.py` is mandatory for CISA + NCSC.ch every run** — never `WebFetch` those hosts directly. Same rule as daily.
 9. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date); sweeping attribution from non-research outfits (attribute the claim, not the actor — *"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); Telegram/X-only sourcing (never include). Full policy: `prompts/verification.md`.
 10. **No IOCs.** No file hashes (MD5/SHA-1/SHA-256/imphash), no IPs, no attacker-controlled domains/URL paths, no YARA/Sigma/Suricata. The weekly is *knowledge* — TTPs, campaigns, actors, vulnerabilities, targeting, sectors, detection concepts. IOC distribution belongs elsewhere (MISP). When a source emphasises IOCs, summarise the *behaviour*, not the indicator.
 11. **No vanity metrics.** Skip vendor-marketing numbers — median dwell time, breakout time, YoY %, "X new adversaries tracked", "$Y billion damage", "Z% of CISOs say". Operational scoring (CVSS, EPSS, CISA KEV, vendor severity, exploitation status) is fine.
-12. **CISA KEV remediation deadlines are not operational signal for this audience** (daily PD-13). The KEV **listing flag** is jurisdiction-agnostic intelligence and stays useful (CISA confirms in-the-wild exploitation); the **deadline** is a US-FCEB-only compliance date with no weight in CH / EU. Never lead a § 0 bullet, § 1 H3, § 9 *Looking ahead* item, or any framing on a KEV deadline alone — *"KEV deadline expired during the window"* / *"KEV deadline pending next week"* is **not** what makes an item operationally critical for a Swiss/EU public-sector SOC. Continuing exploitation, named-cluster targeting, victim disclosures, fresh patches, and regulatory action **are** what matter; refer back to those.
+12. **CISA KEV remediation deadlines are not operational signal for this audience** (daily PD-13). The KEV **listing flag** is jurisdiction-agnostic intelligence and stays useful (CISA confirms in-the-wild exploitation); the **deadline** is a US-FCEB-only compliance date with no weight in CH / EU. Never lead a § 0 bullet, § 1 H3, § 10 *Looking ahead* item, or any framing on a KEV deadline alone — *"KEV deadline expired during the window"* / *"KEV deadline pending next week"* is **not** what makes an item operationally critical for a Swiss/EU public-sector SOC. Continuing exploitation, named-cluster targeting, victim disclosures, fresh patches, and regulatory action **are** what matter; refer back to those.
 13. **Less is more — relevance over volume.** Every item costs reader attention. Ship fewer, sharper items. The weekly's bar is **higher than the daily's** because every item must additionally answer W-PD-1 — items that are interesting in isolation but don't meet inaction-=-incident / cross-day-pattern / horizon-shift get dropped. Drop without ceremony: vendor marketing dressed as research; commentary on already-covered stories without material delta; awareness pieces; industry surveys; conference recaps; product launches; YoY statistics without defender takeaway.
 
-    **Variable size by signal.** Quiet week = short summary; noisy week = longer one. Don't pad. **Reader trusts brevity reflects signal, not laziness.** Within a section, prefer 3 sharp items over 8 mediocre; when in doubt, drop. **Empty sections are explicit:** render the heading + a one-line italic stub stating so on purpose (e.g. *"No qualifying multi-day chains in window — section intentionally empty."*).
+    **Variable size by signal.** Quiet week = short summary; noisy week = longer one. Don't pad. **Reader trusts brevity reflects signal, not laziness.** Within a section, prefer 3 sharp items over 8 mediocre; when in doubt, drop. **Empty sections are explicit:** render the heading + a one-line italic stub stating so on purpose, adapted per section (e.g. *"No qualifying multi-day chains in window — section intentionally empty."* / *"No new research or threat-actor developments with operational impact this week — section intentionally empty."* / *"No annual or periodic report landed in window — section intentionally empty."*).
+
+    **Item-level cuts (mirrors daily PD-11).** Cut: throat-clearing intros (*"This vulnerability has been disclosed by…"*); hedge stacks (*"It is possible that this might potentially…"*); restated section context; closing flourishes (*"Defenders should remain vigilant"*); recap of prior coverage with no fresh delta or new lens. Every sentence either carries a fact a Tier 2/3 reader can act on or it goes.
+
+14. **Historical-context / Background rule (the weekly is the right home for it).** When covering a *highly relevant* report / campaign / threat-actor development / research finding with prior public reporting **older than ~6 months**, open the item with a 3–5-sentence **Background** paragraph citing the 2–3 most relevant prior reports. The daily explicitly skips this longer arc (daily PD-10 reserves it for deep dives); the weekly carries it as a matter of course — it is part of the "broader picture / longer arc" the weekly exists to assemble. Apply especially in § 6 (Research & threat-actor developments), § 7 (Annual / periodic reports), and § 8 (Long-running campaigns). Skip for routine short-cycle items already fully framed by the daily.
 
 The weekly **may** repeat material from the daily briefs — the daily's PD-8 (no repetition across runs) does not apply. But every repeated item must answer W-PD-1's three questions.
 
@@ -150,7 +158,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
    If `briefs/weekly/` is empty, use 7 days. Window-class table:
 
-   | `gap_days` | Window class | Expected size | § 10 disclosure |
+   | `gap_days` | Window class | Expected size | § 11 disclosure |
    |---|---|---|---|
    | ≤ 8 d | Standard week | normal coverage | none |
    | 9 – 15 d | One missed week | doubled — covers two weeks | `Coverage window: catch-up of N days; previous weekly YYYY-Www` |
@@ -161,7 +169,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 3. **Generate the structured H3-record + state digests via scripts (MANDATORY — token-budget guard).** The main agent must NOT `Read` every daily brief in full into its own context — at 50–80 KB each, five dailies plus the previous weekly run the main agent ~100 K tokens of input *before Phase 1 starts*. Instead, build the two compact summaries via Bash and `Read` only the keys-only digest in the main agent's context:
 
    ```bash
-   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–9 of the previous weekly.
+   # Walk every H3 in §§ 0–6 of each in-window daily and §§ 0–10 of the previous weekly.
    # Emits BOTH a full prior_coverage.json (for sub-agents to Read in their
    # isolated contexts) AND a keys-only prior_coverage_keys.json (for the main
    # agent — dedup index only, no titles / tldrs / URLs).
@@ -192,14 +200,14 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
 
 7. **Optional on-demand reads for specific items:**
    - When composing a §-1 / §-2 / §-7 entry that requires the full body of a specific daily, `Read` only that file.
-   - When the previous weekly's "Looking ahead" list (§ 9) drives this week's status updates, `Read` only the previous weekly's § 9 by `offset` / `limit` (search for `## 9` first to anchor the offset). Do NOT `Read` the whole previous weekly — its H3s already appear in `prior_coverage.json`.
+   - When the previous weekly's "Looking ahead" list drives this week's status updates, `Read` only that section by `offset` / `limit` — search for the `Looking ahead` heading text first to anchor the offset (the section *number* varies by prompt version, so match on the heading text, never a hard-coded `## N`). Do NOT `Read` the whole previous weekly — its H3s already appear in `prior_coverage.json`.
    - When you need the full record for an item flagged in `state-summary.json` `items.recent`, `Bash`-extract it: `jq '.items[] | select(.key == "<key>")' state/covered_items.json`.
 
 8. Initialise a `TodoWrite` plan for the phases.
 
 If any script fails, surface the error and stop.
 
-Build a **deduplication context**: CVE ids from `state-summary.json.cves.ids`; named actors / campaigns / incidents / annual reports from `state-summary.json.items.keys`; H3 records (key + title + one-line tl;dr + primary URL + date) from `prior_coverage.json`; previous weekly's "Looking ahead" items via on-demand offset-`Read` of § 9 of the prior weekly file (those are first-priority candidates for status updates this run).
+Build a **deduplication context**: CVE ids from `state-summary.json.cves.ids`; named actors / campaigns / incidents / annual reports from `state-summary.json.items.keys`; H3 records (key + title + one-line tl;dr + primary URL + date) from `prior_coverage.json`; previous weekly's "Looking ahead" items via on-demand offset-`Read` of the prior weekly's *Looking ahead* section (match the heading text — the section number varies by version) (those are first-priority candidates for status updates this run).
 
 Build a **source rotation list** by reading `state-summary.json.runs.fetch_gaps_in_window` (sources flagged as failing in ≥ 2 of the last 7 runs are pre-computed rotation-priority candidates). Filter by category before passing to W1 (research / news / discovery / active-breaking) vs W2 (gov / policy / regulatory).
 
@@ -207,7 +215,7 @@ Build a **source rotation list** by reading `state-summary.json.runs.fetch_gaps_
 
 ## Phase 1 — Structured review (main context, ~5 min)
 
-Build six working lists from the week's daily briefs. The first five carry forward across runs; the sixth is the **weekly's editorial centre of gravity**.
+Build seven working lists from the week's daily briefs. The first five carry forward across runs; the sixth is the **weekly's editorial centre of gravity** (inaction = incident); the seventh surfaces the week's **research and threat-actor developments**.
 
 1. **Top stories of the week** — by impact, exploitation, CH/EU nexus.
 2. **Multi-day campaigns / chains** — items that appeared on more than one day with new developments, or items where the daily's § Updates accumulated meaningful deltas.
@@ -220,7 +228,9 @@ Build six working lists from the week's daily briefs. The first five carry forwa
    - Campaign cluster confirmed targeting the audience's geography / sector.
    - A vendor advisory reclassified during the week (e.g. CVSS revised upward, exploitation status flipped from "not confirmed" to "exploited").
 
-   This list drives § 1's framing. Items not on it can still appear in §§ 2–9 if they answer one of W-PD-1's other two questions (cross-day pattern, strategic horizon).
+   This list drives § 1's framing. Items not on it can still appear in §§ 2–10 if they answer one of W-PD-1's other two questions (cross-day pattern, strategic horizon).
+
+7. **Research & threat-actor developments** (NEW, feeds § 6). Walk the week's daily § 3 (Research & Investigative Reporting) items plus anything the horizon sub-agents surface, and assemble: (a) the week's substantive **primary research findings** — new techniques, malware-family analysis, exploitation-chain write-ups, tradecraft evolution that changes how a defender reasons about a class of attack; (b) **threat-actor developments** — new named clusters, attribution shifts, tooling / infrastructure changes, ransomware-affiliate movements. Synthesise across the week — what is the *broader picture* these point to — rather than relisting each daily research item. Items with prior reporting older than ~6 months get a Background paragraph (PD-14).
 
 ---
 
@@ -251,30 +261,34 @@ Per `Agent` call, the prompt is a thin per-domain envelope:
 
 1. **Run identifier** — `Run id: <YYYY-Www>-<sha8>` (the deterministic run_id from Phase 0 step 0). The sub-agent checkpoints into `work/<run-id>/`. Pre-create the directory before spawning.
 2. **Recency window** — `window_days: <N>` from Phase 0 step 2 (convert to `window_hours` if helpful: `N * 24`).
-3. **Domain** — W1 (long-horizon ongoing developments) or W2 (strategic & policy horizon), with the source-filter hint below.
+3. **Domain** — W1 (threat-actor, campaign, research & report horizon) or W2 (strategic & policy horizon), with the source-filter hint below.
 4. **Source-list slice** — the subset of `sources/sources.json` (status: active) whose `category` matches the sub-agent's filter.
 5. **Dedup context** — CVE IDs from `cves_seen.json`, named entities from `covered_items.json`, headlines from each daily brief in the gap window, the previous weekly's "Looking ahead" items (these are first-priority candidates for status updates). **Plus** `prior_coverage_records: <count>` and the path `work/<run-id>/prior_coverage.json` — the structured per-H3 records (key, title, one-line tl;dr, primary-source URL, date) for every item in every daily brief inside the gap window. Sub-agents read it before fetching so they can dedup against full records, not just headlines.
 6. **Rotation-priority list** — sources flagged by Phase 0 step 7 as gaps in 2+ daily briefs in the window, filtered to this sub-agent's category.
 7. **Today's ISO date** + **ISO week** so the sub-agent has anchors for "in-window" decisions.
 8. **URL-liveness ledger path** — `work/<run-id>/url-liveness.tsv` (pre-created empty by Phase 0). Every sub-agent appends one tab-separated line `<url>\t<status>\t<fetched_at_iso>` after every successful WebFetch / bridge fetch of a Source URL it cites. Phase 4.5's `tools/check_brief.py` reads this ledger and trusts its records over re-fetching every Source URL itself.
 
-### Reinforced rules — for the sub-agents during fetch, and for the main agent during Phase 3 spot-checks + Phase 4.7 re-fetches
+### Reinforced rules — for the sub-agents during fetch, and for the main agent during Phase 2.5 spot-checks + Phase 4.7 re-fetches
 
-**These rules belong to the `cti-research` sub-agent's operational system prompt — they govern fetching.** The full bridge-fetcher recipe table (cisa-kev / cisa-{advisories,news,directives} / ncsc-ch-security-hub / enisa-euvd / bsi-de / advisories-ncsc-nl / anssi-fr / cert-eu / cert-pl / ncsc-uk / databreaches-net / ico-uk / nccgroup / dragos / sygnia / ccn-cert-es / talos / prodaft / inside-it-ch / acn.gov.it), the `WebFetch` outbound-links template, the SPA-only-host structured-endpoint subcommands, and the discovery-trace shape all live in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) (§ Bridge fetcher, § `WebFetch`, § Source-link discipline, § Discovery trace). **The main agent does not read or follow the bridge-fetcher table** — it does no source fetching during Phase 2 (anti-crash guard #10 / W-INV-3), and during Phase 3 / Phase 4.7 single-URL spot-checks it calls `WebFetch` only on a per-article URL already in a sub-agent's `Sources:` block (the sub-agent already navigated the bridge). The main agent's only direct bridge call is the Phase 4.7 verification-fix re-fetch when the verifier flagged a broken URL — that one case uses `python3 tools/fetch_source.py url <new specific URL>`, never the listing-page subcommands.
+**These rules belong to the `cti-research` sub-agent's operational system prompt — they govern fetching.** The full bridge-fetcher recipe table (cisa-kev / cisa-{advisories,news,directives} / ncsc-ch-security-hub / enisa-euvd / bsi-de / advisories-ncsc-nl / anssi-fr / cert-eu / cert-pl / ncsc-uk / databreaches-net / ico-uk / nccgroup / dragos / sygnia / ccn-cert-es / talos / prodaft / inside-it-ch / acn.gov.it), the `WebFetch` outbound-links template, the SPA-only-host structured-endpoint subcommands, and the discovery-trace shape all live in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) (§ Bridge fetcher, § `WebFetch`, § Source-link discipline, § Discovery trace). **The main agent does not read or follow the bridge-fetcher table** — it does no source fetching during Phase 2 (anti-crash guard #10 / W-INV-3), and during Phase 2.5 / Phase 4.7 single-URL spot-checks it calls `WebFetch` only on a per-article URL already in a sub-agent's `Sources:` block (the sub-agent already navigated the bridge). The main agent's only direct bridge call is the Phase 4.7 verification-fix re-fetch when the verifier flagged a broken URL — that one case uses `python3 tools/fetch_source.py url <new specific URL>`, never the listing-page subcommands.
 
 The two rules the main agent DOES apply when consolidating daily-brief content into the weekly and composing each section (these are about citation discipline, not fetching):
 
-1. **Drill into curated sources at citation time too.** If a sub-agent returned a homepage / listing / category-landing URL as a Source (it should not have, but happens), drop the item to § 10 rather than promoting the generic URL. Phase 4.5's `tools/check_brief.py` URL allowlist FAILs the commit on those patterns anyway — catch it before the script does.
-2. **Source-link discipline at composition time.** First link in every footer is the most primary the sub-agent returned (vendor PSIRT > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news). Include every other URL the sub-agent surfaced as `· Additional source:`. If unsure about a URL, drop the item to § 10.
+1. **Drill into curated sources at citation time too.** If a sub-agent returned a homepage / listing / category-landing URL as a Source (it should not have, but happens), drop the item to § 11 rather than promoting the generic URL. Phase 4.5's `tools/check_brief.py` URL allowlist FAILs the commit on those patterns anyway — catch it before the script does.
+2. **Source-link discipline at composition time.** First link in every footer is the most primary the sub-agent returned (vendor PSIRT > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news). Include every other URL the sub-agent surfaced as `· Additional source:`. If unsure about a URL, drop the item to § 11.
 
 Phase 4.5 enforces both rules mechanically: `tools/check_brief.py` runs the URL allowlist on every footer's `Source:` and live-HEAD/GETs every URL. The main agent's job here is to not let bad URLs reach the commit, not to re-do the bridge work.
 
-### W1 — Long-horizon ongoing developments
+### W1 — Threat-actor, campaign, research & report horizon
 
-Two things in one return:
+Four things in one return (all drawn from the research / news / discovery / active-breaking source categories):
 
 1. **Long-running campaigns.** Re-check the status of every long-running campaign tracked in `covered_items.json` (named campaigns against edge devices, long-haul espionage operators, ransomware affiliate-program shifts, cascading vendor-vulnerability waves). For each, search for any publicly-reported development in the window that didn't make the daily briefs — including content older than the daily window if it materially changes the campaign's status this week. Include each campaign's `key` from `covered_items.json` so the main agent can update appearances.
-2. **Annual / periodic reports.** Search for any yearly or quarterly threat report published in the last 30 days that the daily briefs did not yet cover. For reports already covered by a daily, surface follow-up commentary or analysis the daily did not include.
+2. **Threat-actor developments.** Search for actor-level shifts in the window the dailies did not fully capture: new named clusters (UNC####, Storm-####, TA####, APT##, CL-###-####), attribution shifts (suspected-nexus → named-cluster), tooling / loader / infrastructure changes, ransomware-affiliate movements (rebrands, affiliate turnover, leak-site changes). Attribute the claim, not the actor, when the source is not a research outfit. This feeds § 6.
+3. **Research findings.** Search for substantive primary threat-research published in the window — new techniques, malware-family analysis, exploitation-chain write-ups, tradecraft evolution — that materially improves how a defender reasons about a class of attack and that the daily § 3 did not already exhaust. Surface the *synthesis* (what broader pattern the research points to), not a relist. This feeds § 6.
+4. **Annual / periodic reports.** Search for any yearly or quarterly threat report published in the last 30 days that the daily briefs did not yet cover. For reports already covered by a daily, surface follow-up commentary, cross-finding patterns, or analysis the daily did not include. This feeds § 7.
+
+For (1)–(4), items with prior public reporting older than ~6 months carry a 3–5-sentence Background paragraph (PD-14) — the weekly is the right home for that longer arc.
 
 ### W2 — Strategic & policy horizon
 
@@ -305,11 +319,29 @@ If a sub-agent finds nothing it returns an empty list with a one-line explanatio
 
 ---
 
+## Phase 2.5 — Verification & triage pass (~5 min, main context)
+
+The weekly analogue of the daily's Phase 2 verification pass. **Trigger:** as soon as **all returning horizon sub-agents have returned** (or hit the 30-min cap). Stalled sub-agents are abandoned, not waited on. This pass triages every candidate — both the Phase 1 working-list items derived from the dailies AND the W1/W2 returns — so Phase 3 composes from a verified, deduplicated, ranked set rather than from raw returns.
+
+The main agent may call `WebFetch` / `tools/fetch_source.py` here ONLY for single-URL spot-checks on a URL a sub-agent already cited (W-INV-3 still forbids fresh source-fetching — no listing-page or discovery fetches). For every candidate:
+
+1. **Spot-check URLs.** Confirm each cited link was actually fetched by a sub-agent in this run (or, for a daily-derived item, that it traces to the daily's primary). Re-fetch the primary on doubt. **Drop the item** if a cited URL 404s, redirects to a homepage, lands on a generic listing / category, or shows unrelated content; replace a landing-page URL with the specific article / advisory URL. Items whose URL cannot be replaced go to § 11 as `URL verification failed: <url> — <reason>`. A URL no agent fetched is fabricated — drop it and surface in § 11.
+2. **Two-source / national-CERT carve-out (PD-4).** Items still resting on a single non-carve-out source carry `[SINGLE-SOURCE]` and are named in § 11.
+3. **Fake-news guard (PD-9).** Extra scrutiny for leak-site claims, hallucinated CVEs, AI blogspam, months-old news dressed as new, sweeping attribution from non-research outfits (attribute the claim, not the actor).
+4. **Verify CVE identifiers** on NVD/MITRE; drop any that don't resolve.
+5. **Weekly dedup (deliberately different from the daily's PD-8).** The weekly *may* repeat daily content — do **not** drop an item merely because a daily covered it. Dedup instead against **prior weeklies** (`prior_coverage.json` weekly records + the last two weekly summaries): an item already consolidated in a prior weekly returns only as a § 8 status-update carrying a fresh in-window delta. Then apply **W-PD-1**: every surviving item must answer inaction = incident / cross-day pattern / strategic horizon — drop the ones that answer none, even if they were prominent in a daily.
+6. **Recency re-check (PD-5).** Compute each item's freshest-source publication date; if it falls outside `window_days` AND there is no fresher in-window development, drop to § 11 with reason `out-of-window: source <date>, window_days=<N>` — unless it is explicit-horizon content (W1 long-running update, § 6 research / threat-actor Background, § 7 annual-report retrospective, § 10 looking-ahead). Sanity-check dates against today; drop items mis-dated as this week's news when the underlying event is older.
+7. **Rank** within each target section by exploitation > CH/EU nexus > government nexus > cross-day-pattern strength > horizon significance.
+
+Items failing verification are logged in § 11. **Persist the triaged candidate set** under `work/<run-id>/triage.json` so Phase 3 composes from a stable, audited list and a later step can resume.
+
+---
+
 ## Phase 3 — Compose summary (~10 min)
 
 The summary is a finished publication. **No workflow-internal language in the output** — no "From sub-agent W1", no "see Phase 2", no copies of section descriptions, no leaked placeholders.
 
-### Output structure (NORMATIVE — exactly 11 sections in this order)
+### Output structure (NORMATIVE — exactly 12 sections in this order)
 
 | § | Title | Always present? |
 |---|---|---|
@@ -319,23 +351,53 @@ The summary is a finished publication. **No workflow-internal language in the ou
 | 3 | Vulnerability roll-up | Yes |
 | 4 | Sector & victim patterns | Yes |
 | 5 | Incidents & disclosures recap | Yes |
-| 6 | Annual / periodic threat reports | Yes |
-| 7 | Long-running campaigns — status update | Yes |
-| 8 | Policy & regulatory horizon | Yes |
-| 9 | Looking ahead — what to watch next week | Yes |
-| 10 | Verification & coverage notes | Yes |
+| 6 | Research & threat-actor developments | Yes (or explicit empty stub) |
+| 7 | Annual / periodic threat reports | Yes |
+| 8 | Long-running campaigns — status update | Yes |
+| 9 | Policy & regulatory horizon | Yes |
+| 10 | Looking ahead — what to watch next week | Yes |
+| 11 | Verification & coverage notes | Yes |
+
+Numbering is **dense and stable** — never skip a section number. § 6 (Research & threat-actor developments) sits intentionally after the data sections (§§ 1–5) and before the report / horizon sections (§§ 7–9): the file runs data → research / horizon synthesis → forward look (§ 10) → notes (§ 11). § 6 mirrors the daily's § 3 (Research & Investigative Reporting) but synthesises across the week rather than reporting single findings.
 
 The file opens with `# CTI Weekly Summary — YYYY-Www ({Mon DD} – {Sun DD}, YYYY)`, the AI-content notice, and the metadata line.
 
+### Compose-after-return discipline (anti-fabrication — mirrors daily Phase 4)
+
+**Do not begin Phase 3 composition of any horizon-sourced section (§ 6 research / threat-actor, § 7 annual reports, § 8 long-running campaigns, § 9 policy) until every Phase 2 sub-agent has either returned or hit the 30-min hard cap.** A sub-agent counts as returned exactly when its `.ended_at` checkpoint file exists in `work/<run-id>/`. Gate at the top of horizon-section composition:
+
+```bash
+for k in W1 W2; do
+    if [ ! -f "work/${RUN_ID}/${k}.ended_at" ]; then
+        elapsed=$(( $(date -u +%s) - $(date -u -d "$(cat work/${RUN_ID}/${k}.started_at)" +%s) ))
+        if [ "$elapsed" -lt 1800 ]; then
+            echo "Phase 3 BLOCKED — ${k} still running (${elapsed}s elapsed, 1800s cap)"; sleep 30; continue
+        fi
+        # Past 30 min — treat as stalled, proceed without ${k}, log the gap in § 11.
+        echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "work/${RUN_ID}/${k}.ended_at.stalled"
+    fi
+done
+```
+
+Sections sourced entirely from the daily briefs (§§ 1–5, drawn from the Phase 1 working lists) may be composed before the horizon sub-agents return — they don't depend on W1/W2. But **never pre-fill a section with content from a sub-agent whose return you have only inferred.** Skeleton placeholders (`_(no content yet)_`) are fine; substantive prose attributed to a W-agent that has not written `.ended_at` is forbidden. The skeleton-then-Edit pattern (anti-stream-timeout) and this gate are complementary: write the placeholder skeleton during Phase 2 / 2.5, populate horizon sections only from actual returns in Phase 3.
+
 ### Per-item metadata footer (NORMATIVE — same as the daily)
 
-Every individual content block — every Top Story, every Multi-day Chain entry, every Vulnerability Roll-up entry that earns its own H3, every Sector pattern, every Incidents Recap entry, every Annual / Periodic report, every Long-running campaign, every Policy item — ends with **exactly one italic Markdown line** as the **last line** of the block:
+Every individual content block — every Top Story, every Multi-day Chain entry, every Vulnerability Roll-up entry that earns its own H3, every Sector pattern, every Incidents Recap entry, every Research & threat-actor item, every Annual / Periodic report, every Long-running campaign, every Policy item — ends with **exactly one italic Markdown line** as the **last line** of the block:
 
 ```
 — *Source: [Title](URL) [· [Title](URL)] · Tags: tag1, tag2 · Region: region1[, region2] [· CVE: CVE-…] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*
 ```
 
-Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 (Week at a glance), § 9 (Looking ahead), and § 10 (Verification & coverage notes) do **not** carry per-item footers.
+Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 (Week at a glance), § 10 (Looking ahead), and § 11 (Verification & coverage notes) do **not** carry per-item footers.
+
+**`Evidence:` field (source-quote binding — mirrors the daily).** When the sub-agent (or, for a daily-derived item, the originating daily's footer) extracted verbatim quotes from the fetched sources, the item's footer carries an `Evidence:` field listing those quotes with attribution:
+
+```
+· Evidence: "verbatim quote 1" (Publisher A); "verbatim quote 2" (Publisher B)
+```
+
+Each quote must be (a) a substring of the body text returned by `WebFetch` / `tools/fetch_source.py` on one of the URLs in the item's `Source:` / `Additional source:` list, and (b) attributed by that source's publisher name (the binding the reader can verify). Use straight `"..."` quote marks. `site/build.py` parses `Evidence:` into a structured list and `tools/check_brief.py`'s `evidence-shape` check validates the field's shape; items without an `Evidence:` field pass silently (permissive rollout, identical to the daily). **Mandatory on every § 1 item** — § 1 ("what's on fire if no one acted") is the weekly's highest-trust section, the analogue of the daily's § 0 Immediate Action callout, so each of its load-bearing exploitation claims must bind to a fetched-source quote. Strongly encouraged on § 2 / § 3 / § 6 items; optional elsewhere.
 
 **Multi-source.** When more than one publisher carries substantive sourcing, list them all. Build supports two equivalent forms: `Source: [a](u) · [b](u) · [c](u)` (preferred for 2–4 sources) and `Source: [a](u) · Additional source: [b](u) · Additional source: [c](u)`. The first link is the **most primary**: vendor PSIRT advisory > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news.
 
@@ -376,12 +438,12 @@ Breakdown: **CVSS:** `9.1 / 7.2` (slash-separated, **same order as CVEs**), or `
 
 A single `Write` of the whole 11-section file trips `Stream idle timeout — partial response received`. **Required pattern:**
 
-1. **`Write` the skeleton.** Header + AI-generation notice + metadata line + `## 0. Week at a glance` bullets (short, fine in the skeleton). For each `## 1.` through `## 10.`: heading on its own line + `_(no content yet)_` placeholder.
+1. **`Write` the skeleton.** Header + AI-generation notice + metadata line + `## 0. Week at a glance` bullets (short, fine in the skeleton). For each `## 1.` through `## 11.`: heading on its own line + `_(no content yet)_` placeholder.
 2. **`Read` the file you just wrote.**
 3. **`Edit` each section in turn**, one section per call. Replace the placeholder with the section's content per per-section guidance below.
 4. If any section is unusually long (CVE roll-up table, multi-day campaigns rollup), split that section's Edit into halves.
 
-If a placeholder leaks into a published summary because of a mid-Edit failure, that's a quality bug — § 10 should explicitly note it and the next run should re-Edit the affected section.
+If a placeholder leaks into a published summary because of a mid-Edit failure, that's a quality bug — § 11 should explicitly note it and the next run should re-Edit the affected section.
 
 ### Self-identification — name your actual model AND every sub-agent's model
 
@@ -409,7 +471,7 @@ If you cannot determine your own model precisely, write `Anthropic Claude (speci
 
 ### Per-section guidance
 
-**§ 0 Week at a glance.** 5–8 bullets. Lead with items from List 6 (inaction = incident) — Monday-morning escalation items. Cover the week's biggest cross-day chain, the most-exploited vulnerability, the most active actor, the most relevant breach, the most important policy / regulatory move. Inline links throughout: every bullet links to its underlying daily brief (`briefs/YYYY-MM-DD.md`) **and** to the original source.
+**§ 0 Week at a glance.** 5–8 bullets. Lead with items from List 6 (inaction = incident) — Monday-morning escalation items. Cover the week's biggest cross-day chain, the most-exploited vulnerability, the most active actor, the most significant research finding or threat-actor development, the most relevant breach, the most important policy / regulatory move. Inline links throughout: every bullet links to its underlying daily brief (`briefs/YYYY-MM-DD.md`) **and** to the original source.
 
 **§ 1 Highest-impact events — what's on fire if no one acted.** Items from List 6. Each H3 leads with a **one-line "if you didn't act on this, here is what's now ongoing"** framing — active exploitation status, ongoing victim acquisition, mass-scanning evidence, fresh victim disclosures (CISA KEV deadlines are **not** an acceptable framing per the inherited PD-13 — the *exploitation* is what matters, not the US-FCEB compliance date). Body adds technical specifics from the dailies + any new development this week. End each item with the per-item footer. **This section is the weekly's editorial centre.** If List 6 is empty (all the week's escalation items resolved by mid-week), say so explicitly: *"No item in this week's daily coverage continued to be operationally critical at week-end."* — empty is a valid signal, padding is not.
 
@@ -427,15 +489,17 @@ If you cannot determine your own model precisely, write `Anthropic Claude (speci
 
 **§ 5 Incidents & disclosures recap.** Roll-up of the week's notable publicly-disclosed security incidents. Note cross-cutting themes — sectoral concentration, recurring root causes, common initial-access vectors, regulatory follow-up. **Frame as a defender's learning summary, not a chronological list.** Each H3 cites the victim disclosure, the regulator notice (if any), the primary technical analysis (if any).
 
-**§ 6 Annual / periodic threat reports.** When a yearly or quarterly threat report was published in the gap window or remained operationally relevant, distil its highly-relevant findings for a Swiss / European public-sector SOC. **Don't repeat what the daily already covered** — surface only the synthesis, the cross-finding patterns, the implications for the audience that the daily's recap did not have room for. Logged in `state/covered_items.json` with `type: "annual-report"`.
+**§ 6 Research & threat-actor developments.** The week's substantive primary research and actor-level shifts — List 7 plus W1 parts 2–3. Two strands, each as its own H3(s): **(a) research findings** — new techniques, malware-family analysis, exploitation-chain write-ups, tradecraft evolution; lead with the *broader picture* the week's research points to, not a relist of each daily § 3 item. **(b) threat-actor developments** — new named clusters, attribution shifts (suspected-nexus → named cluster), tooling / infrastructure changes, ransomware-affiliate movements; attribute the claim, not the actor, for non-research sources. This is the section that mirrors the daily's § 3 but synthesises across the week. Apply the Background-paragraph rule (PD-14) for items with prior reporting older than ~6 months — the longer arc belongs here. Every H3 ends with the per-item footer. If the week produced no research or actor development with operational impact for a Swiss / EU public-sector SOC, say so explicitly: *"No new research or threat-actor developments with operational impact this week — section intentionally empty."*
 
-**§ 7 Long-running campaigns — status update.** Sub-agent W1 part 1, deduplicated against this week's daily-brief Updates. One H3 per campaign with current state, what changed this week, outstanding questions a defender should keep watch on. Include the campaign's `key` from `covered_items.json` so cross-references resolve.
+**§ 7 Annual / periodic threat reports.** When a yearly or quarterly threat report was published in the gap window or remained operationally relevant, distil its highly-relevant findings for a Swiss / European public-sector SOC. **Don't repeat what the daily already covered** — surface only the synthesis, the cross-finding patterns, the implications for the audience that the daily's recap did not have room for. Logged in `state/covered_items.json` with `type: "annual-report"`.
 
-**§ 8 Policy & regulatory horizon.** Sub-agent W2 output. Items that change Swiss / European public-sector SOC obligations directly — NCSC.ch advisories, FINMA guidance, NIS2 transposition steps, DORA implementation deadlines, sector-specific regulators (BAKOM / OFCOM / Council of Europe / EU CRA). Each item explains *what changed* and *what defenders need to do differently*.
+**§ 8 Long-running campaigns — status update.** Sub-agent W1's long-running-campaign output (part 1), deduplicated against this week's daily-brief Updates. One H3 per campaign with current state, what changed this week, outstanding questions a defender should keep watch on. Include the campaign's `key` from `covered_items.json` so cross-references resolve.
 
-**§ 9 Looking ahead — what to watch next week.** A focused, justified list. **Not predictions** — items already in motion that are likely to develop next week (vendor advisories with patches mid-rollout, campaigns still acquiring victims, regulatory consultations closing, EU / Swiss regulator deadlines approaching, ongoing exploitation against named target classes). Each item links back to the relevant earlier reporting. No footer per item; this is a list section. Per the inherited PD-13, **a pending CISA KEV remediation deadline is not on its own a Looking-ahead item** — it's a US-FCEB compliance date; the underlying exploitation trajectory is what to surface.
+**§ 9 Policy & regulatory horizon.** Sub-agent W2 output. Items that change Swiss / European public-sector SOC obligations directly — NCSC.ch advisories, FINMA guidance, NIS2 transposition steps, DORA implementation deadlines, sector-specific regulators (BAKOM / OFCOM / Council of Europe / EU CRA). Each item explains *what changed* and *what defenders need to do differently*.
 
-**§ 10 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context.
+**§ 10 Looking ahead — what to watch next week.** A focused, justified list. **Not predictions** — items already in motion that are likely to develop next week (vendor advisories with patches mid-rollout, campaigns still acquiring victims, regulatory consultations closing, EU / Swiss regulator deadlines approaching, ongoing exploitation against named target classes). Each item links back to the relevant earlier reporting. No footer per item; this is a list section. Per the inherited PD-13, **a pending CISA KEV remediation deadline is not on its own a Looking-ahead item** — it's a US-FCEB compliance date; the underlying exploitation trajectory is what to surface.
+
+**§ 11 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context.
 
 ### Technical depth — what every item must include (sub-agent-owned vocabulary)
 
@@ -581,9 +645,22 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
         "ended_at": "YYYY-MM-DDTHH:MM:SSZ",                   // verbatim from the verifier's **Timestamps:** line; "unknown" if absent
         "duration_seconds": NN,                               // integer; null if either timestamp unknown
         "verdict": "CLEAN | NEEDS_FIXES",
-        "truth": 0,
-        "editorial": 0,
-        "advisory": 0,
+        "truth": 0,                                          // F1–F4 + F13–F15 count
+        "editorial": 0,                                      // F5–F10 + F12 count
+        "advisory": 0,                                       // F11 count
+        "findings": [                                        // v2.48 — RICH per-finding records (REQUIRED every iteration; [] on CLEAN)
+          {
+            "code": "F1",                                    // F1..F15
+            "category": "broken-url",                        // human-readable slug matching the F-code
+            "section": "weekly-top-stories",                 // brief section the finding lives in
+            "item": "first ~80 chars of the H3 heading",
+            "url_or_quote": "https://… or verbatim quote (~120 chars)",
+            "summary": "verifier's one-line reasoning",
+            "remediation_applied": "what the main agent did (or 'deferred' / 'residual-at-cap')",
+            "remediation_outcome": "fixed-clean | fixed-degraded | dropped-item | deferred | residual-at-cap"
+          }
+          // one entry per numbered finding; the LAST iteration's findings[] is the cap-breach detail the Ops dashboard renders
+        ],
         "telemetry": { /* pass through */ }
       }
     ]
@@ -607,11 +684,11 @@ Bundles every Phase 4.5 mechanical check **plus** build-side smoke tests (`site/
 
 1. State JSON parses (`covered_items.json`, `cves_seen.json`, `deep_dive_history.json`, `run_log.json`, `sources/sources.json`).
 2. Taxonomy loads (`site/taxonomy.yaml`).
-3. Summary structure: weekly required sections present (`weekly-top-stories`, `weekly-multi-day`, `weekly-vuln-rollup`, `weekly-sector-patterns`, `weekly-incidents-recap`, `weekly-annual-reports`, `weekly-long-running`, `weekly-policy`, `weekly-looking-ahead`, `verification-notes`).
+3. Summary structure: weekly required sections present (`weekly-top-stories`, `weekly-multi-day`, `weekly-vuln-rollup`, `weekly-sector-patterns`, `weekly-incidents-recap`, `weekly-research`, `weekly-annual-reports`, `weekly-long-running`, `weekly-policy`, `weekly-looking-ahead`, `verification-notes`).
 4. AI-content notice present at the top.
 5. **IOC heuristic scan** — SHA-256 / SHA-1 / MD5 patterns and routable IPv4 (with version-string false-positive suppression) → FAIL.
 6. Every CVE referenced in the summary is in `state/cves_seen.json`.
-7. Every H3 in §§ 1–8 ends with a v2 metadata footer.
+7. Every H3 in §§ 1–9 ends with a v2 metadata footer.
 8. Every footer carries Source (≥1 link), Tags, Region.
 9. Every footer's tags / regions / sectors / vectors / auth / statuses are values from `site/taxonomy.yaml`.
 10. Multi-CVE items use either a single shared CVSS or per-CVE breakdown.
@@ -621,13 +698,13 @@ Bundles every Phase 4.5 mechanical check **plus** build-side smoke tests (`site/
 14. **`tools/fetch_source.py` for known-403 hosts** — when the summary cites CISA / NCSC.ch URLs and the run log records a 403/429 on those source ids without bridge mitigation, the script FAILs.
 15. `run_log.json` fully populated for today (every Ops-dashboard field).
 16. At least one source has `last_successful_fetch == today` in `sources/sources.json`.
-17. **`covered_items.json` appearances** — every § 1 / § 2 / § 7 H3 item with a `key` matching `covered_items.json` has a `weekly_summary` `appearances[]` record for today (warns).
+17. **`covered_items.json` appearances** — every § 1 / § 2 / § 8 H3 item with a `key` matching `covered_items.json` has a `weekly_summary` `appearances[]` record for today (warns).
 18. **Daily-brief link integrity** — every `briefs/YYYY-MM-DD.md` link in the summary points to a file that exists in the gap window (warns; surfaces file-rename drift between daily and weekly routines).
 19. `site/test_build.py` exits 0.
 
-WARNs are tolerated and logged in § 10; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`prompts/check-brief-fixes.md`](check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
+WARNs are tolerated and logged in § 11; FAILs block the commit. Common-FAIL fix recipes (cve-sync, footer-presence, run-log-fields, sources-touched, footer-taxonomy, fetch-source-403, multi-cve-cvss, blocked-source, source-urls 404): see [`prompts/check-brief-fixes.md`](check-brief-fixes.md). The script is read-only by design — drift is what *you* fix; the script just surfaces it.
 
-Non-zero exit aborts the rest of the run (no Phase 4.7 verification, no commit) until you've fixed the FAILs. If the script itself fails to start (Python crash, not a real FAIL), proceed to Phase 4.7 anyway and log the script-level error in § 10 — never let tooling block the summary.
+Non-zero exit aborts the rest of the run (no Phase 4.7 verification, no commit) until you've fixed the FAILs. If the script itself fails to start (Python crash, not a real FAIL), proceed to Phase 4.7 anyway and log the script-level error in § 11 — never let tooling block the summary.
 
 The mechanical gate runs **before** Phase 4.7's verification sub-agent because (a) the script is dramatically cheaper than spawning a verifier — fix mechanical drift on the cheap path before paying for editorial review, (b) editorial fixes in Phase 4.7 may themselves introduce mechanical drift (a footer rewrite that drops a required field, an item-drop that orphans a `covered_items.json` appearance), so each Phase 4.7 iteration re-runs `check_brief.py` before re-spawning the verifier.
 
@@ -653,7 +730,7 @@ Spawn a single `Agent` call. **Rotate the sub-agent type per iteration** to vary
 | 1, 3, 5 | `cti-verification` | `opus` |
 | 2, 4 | `cti-verification-alt` | `sonnet` |
 
-Both agent definitions ([`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md)) carry the **identical operational system prompt** — gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10, whole-brief checks 11–13 (including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon*), return format with finding categories F1–F12 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries; F12 is single-source missing-flag), verdict line, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap. The only difference is the model frontmatter pins.
+Both agent definitions ([`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md), [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md)) carry the **identical operational system prompt** — gatekeeper framing + anti-hallucinated-findings clause, truth checks 1–4 (URL fetched, lands on specific article, supports the claim, named entities cross-checked), editorial-quality checks 5–10, whole-brief checks 11–13 (including the W-PD-1 weekly question: does each item answer one of *inaction = incident* / *cross-day pattern* / *strategic horizon*), return format with finding categories F1–F15 (F7 covers the weekly-specific drop case for pure one-to-one daily summaries; F12 is single-source missing-flag; F13–F15 are truth-class — analytical-link-as-fact, quantifier-without-source, name-collision-unflagged), verdict line, mandatory `**Model:**` + `**Timestamps:**` self-identification, 30-min hard runtime cap. The only difference is the model frontmatter pins.
 
 The spawn message is short:
 
@@ -663,6 +740,7 @@ The spawn message is short:
 4. **Dedup context** built in Phase 0 (gap-window dailies + last 2 weekly summaries + `cves_seen.json` + `covered_items.json`).
 5. **Relevant slice of `state/run_log.json`** — today's `sub_agents`, `fetch_failures`, `items_published`.
 6. **Confirmation that Phase 4.5 passed** — one line stating `mechanical gate (check_brief.py) exited 0 in iteration N pre-spawn` so the verifier knows mechanical defects are out of scope.
+7. **(even iterations only — parity with the daily's Phase 5.7)** `Prior-iteration deltas` block. Iterations 2 and 4 (the Sonnet `cti-verification-alt` spawns) receive a structured summary of every finding the previous iteration emitted and every remediation the main agent applied since, so the alt verifier verifies the applied edits rather than reading cold and risking a contradictory remediation. Odd iterations (`cti-verification`, Opus) continue to read genuinely cold — the alternation preserves model-rotation blind-spot detection on the odd cycle while preventing regression introduction on the even cycle. Format the block from `state/run_log.json.verification.iterations[<N-1>].findings[]` + the per-finding remediation log; one entry per prior finding with `code`, `section`, `summary`, `remediation_applied`, and a `verify_in_this_iteration:` question. Omit the block on iteration 1 entirely (no prior iteration exists). See [`prompts/daily-cti-brief.md`](daily-cti-brief.md) § Phase 5.7 for the canonical entry shape.
 
 ### Iterative refinement loop (cap: 5 iterations; early-exit at low-defect convergence)
 
@@ -686,15 +764,18 @@ Read the verification sub-agent's response and act on each finding type:
 | Unsupported / hallucinated fact | Drop the fact and the claim it props up. |
 | Missing inline citation | Add the citation, or rewrite the sentence to drop the unsourced fact. |
 | **Strengthen primary source** | Re-pivot via `WebSearch` / `WebFetch` to the vendor PSIRT advisory or vendor research blog. Promote that to first source; demote NVD/CERT to `Additional source:`. |
-| **Drop** (low relevance / not weekly content) | Remove the H3 from the summary; log in § 10. **Re-update state**: remove the matching `weekly_summary` `appearances[]` entry from `covered_items.json`; remove dropped CVEs from `cves_seen.json` if today was their only `last_seen`. Items that are pure one-to-one daily summaries belong in the dailies, not here. |
+| **Drop** (low relevance / not weekly content) | Remove the H3 from the summary; log in § 11. **Re-update state**: remove the matching `weekly_summary` `appearances[]` entry from `covered_items.json`; remove dropped CVEs from `cves_seen.json` if today was their only `last_seen`. Items that are pure one-to-one daily summaries belong in the dailies, not here. |
 | **Needs more research** | Spawn ≤3 follow-up `cti-research` sub-agents in parallel; 30-min wall-clock per sub-agent (same as Phase 2). Re-Edit the affected item with new findings, or drop. |
-| **Surface contradiction** | Add an explicit § 10 contradiction line. |
-| **Missed angles** | Spawn one targeted `cti-research` sub-agent if the angle is likely to clear the inclusion gate; else log as a coverage gap in § 10. |
+| **Surface contradiction** | Add an explicit § 11 contradiction line. |
+| **Missed angles** | Spawn one targeted `cti-research` sub-agent if the angle is likely to clear the inclusion gate; else log as a coverage gap in § 11. |
 | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave — F11 advisory items alone never block CLEAN. |
+| Analytical-link-as-fact (F13) | Soften or drop the asserted connection. If a source genuinely supports the link, re-cite that source on the connection claim and rewrite so the link is the source's claim, not the brief's inference. |
+| Quantifier without source (F14) | Replace the quantifier with the value the source actually states, or drop it ("five unpatched zero-days" → "four" if the source enumerates four, "several" if uncounted, or omit). |
+| Name-collision unflagged (F15) | Add an explicit disambiguation phrase ("named for the attacker tooling", "no relation to the X campaign"). If the H3 is actually an update to prior coverage, restructure it as an `UPDATE:`-style block linking back. |
 
 After remediation, **re-run `python3 tools/check_brief.py briefs/weekly/YYYY-Www.md`** to confirm the fixes did not introduce mechanical drift; fix every FAIL before re-spawning the verifier. Then a **fresh `cti-verification` sub-agent** is spawned (no shared memory) against the updated summary. The loop runs until verdict `CLEAN` or until the iteration cap (5) is reached. After the cap, the summary publishes regardless as a fail-open safety valve, with unresolved findings logged in § 10 along with `verification: 5 iterations exhausted, verifier was not satisfied at cap`. **The cap is a safety valve, not the goal** — every cap-breach is reviewed after-the-fact for whether the verifier was finding real defects or chasing fabricated ones.
 
-**Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "telemetry": { ... when reported ... } }`. The Ops dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`.
+**Capture the verifier's model AND timestamps on every iteration.** The verification sub-agent's return opens with `**Model:** <friendly name> (`<model-id>`)` followed by `**Timestamps:** started_at=… · ended_at=… · duration_seconds=…`. Append a record to `state/run_log.json.verification.iterations[]` for every iteration: `{ "n": N, "model": "<friendly>", "model_id": "<model-id>", "started_at": "<UTC ISO 8601>", "ended_at": "<UTC ISO 8601>", "duration_seconds": N, "verdict": "CLEAN|NEEDS_FIXES", "truth": N, "editorial": N, "advisory": N, "findings": [ /* one record per F-finding; [] on CLEAN — rich shape per § Phase 4 schema */ ], "telemetry": { ... when reported ... } }`. **Parse the verifier's `### Findings summary (machine-readable)` YAML block into `findings[]`** (one record per F-finding, adding `remediation_applied` / `remediation_outcome` after you act on it); the LAST iteration's `findings[]` is the cap-breach detail the Ops dashboard renders. The dashboard renders one row per iteration with the verifier model, duration, and finding-count breakdown. Missing `**Model:**` line → `"unknown"`. Missing `**Timestamps:**` line → `"unknown"` for both timestamps and `null` for `duration_seconds`. Missing `findings[]` (legacy records) → empty array with a yellow "no per-finding detail" badge.
 
 **Follow-up `cti-research` sub-agents** are capped at **3 per iteration** with 30-min wall-clock budget (same as Phase 2). **At least one verification iteration is mandatory** — never commit without a `cti-verification` return on file.
 
@@ -841,17 +922,20 @@ fi
 
 - [ ] Summary in English; inline links throughout (including links back to the relevant daily-brief files **and** the original primary sources); no IOCs, no vanity metrics, no emojis.
 - [ ] **Every item answers ≥1 of W-PD-1's three questions** (inaction = incident / cross-day pattern / strategic horizon). Pure one-to-one daily summaries are dropped.
-- [ ] § 1 leads with items where active exploitation, missed deadlines, or campaign continuation make inaction = incident — or explicitly states the section is empty for the week.
-- [ ] § 6 annual-report findings deduplicate against earlier daily-brief coverage (synthesis only, no recap).
-- [ ] § 9 "Looking ahead" lists items in motion, not speculation.
-- [ ] Every H3 item in §§ 1–8 ends with a v2 metadata footer using only taxonomy values.
+- [ ] **Phase 2.5 verification & triage pass ran** — URLs spot-checked, dedup against prior weeklies (not the dailies), recency re-checked against `window_days`, candidates ranked; `triage.json` persisted.
+- [ ] **Compose-after-return gate honoured** — no § 6–§ 9 horizon prose attributed to a W-agent that has not written its `.ended_at` checkpoint.
+- [ ] § 1 leads with items where active exploitation, missed deadlines, or campaign continuation make inaction = incident — or explicitly states the section is empty for the week. **Every § 1 item carries an `Evidence:` field** binding its load-bearing exploitation claims to fetched-source quotes.
+- [ ] § 6 Research & threat-actor developments present (or explicit empty stub); items synthesise the week's research / actor shifts rather than relisting daily § 3 entries; Background paragraph (PD-14) on items with prior reporting older than ~6 months.
+- [ ] § 7 annual-report findings deduplicate against earlier daily-brief coverage (synthesis only, no recap).
+- [ ] § 10 "Looking ahead" lists items in motion, not speculation.
+- [ ] Every H3 item in §§ 1–9 ends with a v2 metadata footer using only taxonomy values.
 - [ ] **`python3 tools/check_brief.py briefs/weekly/YYYY-Www.md` exits 0 BEFORE the first Phase 4.7 verification spawn** (mechanical gate runs first; verifier then handles editorial + truth). Re-runs after every Phase 4.7 fix iteration.
-- [ ] **Phase 4.7 verification ran via the `cti-verification` sub-agent** at least once, covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in § 10. Re-spawn was a fresh sub-agent every iteration, not a continuation.
+- [ ] **Phase 4.7 verification ran via the `cti-verification` sub-agent** at least once, covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in § 11. Re-spawn was a fresh sub-agent every iteration, not a continuation.
 - [ ] CVE entries do not lean on NVD/MITRE/cve.org per-CVE pages (script-blocked) or on a national CERT/NCSC as the *only* primary source.
 - [ ] Multi-CVE items carry per-CVE breakdown for fields whose value differs.
 - [ ] `tools/fetch_source.py` was used for CISA + NCSC.ch every run.
 - [ ] `run_log.json` record for today fully populated (model, prompt_version, both sub-agents' allocation, fetch_failures, items_published, verification counters).
-- [ ] § 10 lists single-source items, drops, contradictions, reduced-confidence items, sub-agents that didn't return, parseable `Coverage gaps:`.
+- [ ] § 11 lists single-source items, drops, contradictions, reduced-confidence items, sub-agents that didn't return, parseable `Coverage gaps:`.
 - [ ] State files updated. No content from training data.
 - [ ] **Summary file exists at `briefs/weekly/YYYY-Www.md`** — even on a quiet week, even with sub-agent failures.
 - [ ] **Phase 6 publish verification ran** — the operator output's `publish:` line was set from the actual poll result (`ok` / `main-only` / `pending`), not assumed.
@@ -899,13 +983,13 @@ The weekly summary inherits the daily prompt's self-evolution authority and hard
 
 W-INV-1. **Every item answers W-PD-1's three questions.** Pure one-to-one daily summaries are not weekly content.
 W-INV-2. **§ 1 frames items as "what's on fire if no one acted"** — Mon-morning escalation register.
-W-INV-3. **Main agent does NO source fetching during Phase 2 (v2.52).** No `WebFetch`, no `WebSearch`, no `python3 tools/fetch_source.py`. Source-fetching is the W1 / W2 `cti-research` sub-agents' exclusive job in Phase 2 — they hold the raw policy / regulator / annual-report / advisory content in their isolated contexts so the main agent's working context stays compositional. The only main-agent invocations of those tools are: Phase 3 single-URL spot-checks on a sub-agent's already-cited URL, Phase 4.7 verification-fix re-fetches of one URL the verifier flagged, Phase 6 publish `curl` against `https://ctipilot.ch/`. Bridge-fetcher recipe table moved out of this prompt into [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher in the same release — sub-agents read it; main agent does not. This invariant exists because (a) duplicate fetches waste wall-clock + rate-limit budget, and (b) cumulative raw CTI content in main-agent context has tripped the cyber-content classifier mid-Phase-3 on past runs, killing the routine with `API Error … Usage Policy` and no published summary (the worst CRITICAL violation). The classifier reads the whole conversation — the smaller the main-agent CTI baseline, the more headroom for sub-agent returns + composition.
+W-INV-3. **Main agent does NO source fetching during Phase 2 (v2.52).** No `WebFetch`, no `WebSearch`, no `python3 tools/fetch_source.py`. Source-fetching is the W1 / W2 `cti-research` sub-agents' exclusive job in Phase 2 — they hold the raw policy / regulator / annual-report / advisory content in their isolated contexts so the main agent's working context stays compositional. The only main-agent invocations of those tools are: Phase 2.5 single-URL spot-checks on a sub-agent's already-cited URL, Phase 4.7 verification-fix re-fetches of one URL the verifier flagged, Phase 6 publish `curl` against `https://ctipilot.ch/`. Bridge-fetcher recipe table moved out of this prompt into [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher in the same release — sub-agents read it; main agent does not. This invariant exists because (a) duplicate fetches waste wall-clock + rate-limit budget, and (b) cumulative raw CTI content in main-agent context has tripped the cyber-content classifier mid-Phase-3 on past runs, killing the routine with `API Error … Usage Policy` and no published summary (the worst CRITICAL violation). The classifier reads the whole conversation — the smaller the main-agent CTI baseline, the more headroom for sub-agent returns + composition.
 
 ### Process for self-edits
 
 1. Make the change in the same run as the summary.
 2. Bump the prompt version in `prompts/CHANGELOG.md` and add an entry explaining what changed and why.
 3. Commit alongside the summary and state-file updates.
-4. Do not silently rewrite hard invariants. If a hard invariant feels wrong for a specific case, surface it in § 10 and let the human change the rule.
+4. Do not silently rewrite hard invariants. If a hard invariant feels wrong for a specific case, surface it in § 11 and let the human change the rule.
 
 If a self-edit is large enough that it might break the next run, prefer two smaller commits over one big one — one for the summary, one for the prompt change.

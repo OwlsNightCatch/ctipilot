@@ -223,6 +223,13 @@ _SECTION_KEYWORDS: list[tuple[str, str]] = [
     ("active threats", "active-threats"),
     ("active threat", "active-threats"),
     ("trending vulnerabilities", "trending-vulnerabilities"),
+    # Weekly research/threat-actor section — must precede the bare "research"
+    # key below so a weekly "Research findings & threat-actor developments"
+    # heading maps to weekly-research, not the daily `research` slug.
+    ("threat-actor", "weekly-research"),
+    ("research findings", "weekly-research"),
+    ("research & threat", "weekly-research"),
+    ("research and threat", "weekly-research"),
     ("research", "research"),
     ("notable incidents", "active-threats"),  # legacy daily
     ("switzerland, europe", "active-threats"),  # legacy daily
@@ -434,8 +441,8 @@ WEEKLY_REQUIRED_SECTION_KEYS = (
 )
 WEEKLY_FOOTERED_SECTION_KEYS = (
     "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
-    "weekly-sector-patterns", "weekly-incidents-recap", "weekly-annual-reports",
-    "weekly-long-running", "weekly-policy",
+    "weekly-sector-patterns", "weekly-incidents-recap", "weekly-research",
+    "weekly-annual-reports", "weekly-long-running", "weekly-policy",
 )
 
 
@@ -768,7 +775,7 @@ def check_primary_source_quality(sections: list[dict[str, Any]],
     if kind == "weekly":
         target_keys = (
             "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
-            "weekly-annual-reports", "weekly-long-running",
+            "weekly-research", "weekly-annual-reports", "weekly-long-running",
         )
     else:
         target_keys = ("active-threats", "trending-vulnerabilities", "research", "deep-dive")
@@ -897,7 +904,7 @@ def check_aggregator_only_sourcing(sections: list[dict[str, Any]],
     if kind == "weekly":
         target_keys = (
             "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
-            "weekly-incidents-recap",
+            "weekly-incidents-recap", "weekly-research",
         )
     else:
         target_keys = ("active-threats", "trending-vulnerabilities", "research")
@@ -954,7 +961,7 @@ def check_single_source_flag(sections: list[dict[str, Any]],
     if kind == "weekly":
         target_keys = (
             "weekly-top-stories", "weekly-multi-day", "weekly-vuln-rollup",
-            "weekly-annual-reports", "weekly-long-running", "weekly-policy",
+            "weekly-research", "weekly-annual-reports", "weekly-long-running", "weekly-policy",
         )
     else:
         target_keys = ("active-threats", "trending-vulnerabilities", "research")

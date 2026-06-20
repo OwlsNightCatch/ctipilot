@@ -4,6 +4,56 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.61 — 2026-06-20 (weekly aligned to the daily gold standard in structure + procedure, with a sharpened horizon lens; daily↔weekly division of labour made explicit)
+
+### Why
+
+The weekly summary had drifted procedurally from the daily, which is the gold-standard routine. A side-by-side audit found the weekly was **missing several procedures the daily institutionalised** and was **under-serving the intelligence lens the weekly exists for**. The operator asked to (a) bring the weekly procedurally very close to the daily, and (b) sharpen the weekly's *distinct* view onto the intelligence — broader threat picture, how things developed across the week, the week's highest-impact / "what's on fire if no one acted" items, threat-actor developments, research findings, long-horizon / multi-day campaigns, annual reports, and looking-ahead — while keeping the asymmetry: **the weekly may repeat a daily item with a new lens; the daily must not repeat the weekly and must not carry long-horizon synthesis.**
+
+Concrete procedural gaps the weekly had relative to the daily:
+
+1. **No pre-compose verification/triage pass.** The daily's Phase 2 (URL spot-check → two-source → fake-news → CVE-verify → dedup → recency re-check → rank) had no weekly analogue; the weekly jumped from horizon research straight to compose.
+2. **No compose-after-return anti-fabrication gate.** The daily's Phase 4 `.ended_at`-file gate (added v2.58 after a run fabricated sub-agent returns mid-wait) had no weekly equivalent, even though the weekly spawns W1/W2 the same way.
+3. **No historical-context / Background rule.** The daily's PD-10 reserves Background for deep dives; the weekly — whose whole job is the longer arc — had no Background directive at all.
+4. **Thin less-is-more + recency directives** vs. the daily's (no item-level-cuts list, weaker recency-enforcement framing).
+5. **`Evidence:` source-quote binding absent** from the weekly footer spec, even though `check_brief.py`'s `evidence-shape` check runs on weeklies too.
+6. **Phase 4.7 lagged Phase 5.7:** no prior-iteration-deltas block for even (Sonnet) iterations, no F13/F14/F15 remediation rows, no rich per-iteration `findings[]` in the run-log schema, finding range stated as F1–F12.
+
+And the lens gap: the weekly had **no home for research findings or threat-actor developments** — the daily has a dedicated § 3 Research section, the weekly had none, scattering that content or dropping it.
+
+### What changed
+
+**`prompts/weekly-summary.md` (v2.61):**
+
+- **New § 6 "Research & threat-actor developments"** — mirrors the daily's § 3 but synthesises across the week (research findings + actor-level shifts: new clusters, attribution shifts, tooling / affiliate moves). Output structure goes from 11 to **12 sections (0–11)**; §§ 6–10 renumbered to §§ 7–11 (Annual reports → § 7, Long-running → § 8, Policy → § 9, Looking ahead → § 10, Verification → § 11). All internal § cross-references updated.
+- **New Phase 2.5 — Verification & triage pass** between horizon research and compose: the weekly analogue of the daily's Phase 2, with weekly-specific dedup (against prior *weeklies*, not the dailies, since the weekly may repeat daily content) and W-PD-1 enforcement. Persists `work/<run-id>/triage.json`.
+- **Compose-after-return discipline** added to Phase 3 (the daily's `.ended_at` gate, adapted to W1/W2).
+- **W1/W2 rebalanced:** W1 is now "threat-actor, campaign, research & report horizon" (long-running campaigns + threat-actor developments + research findings + annual reports); W2 unchanged (strategic & policy). Phase 1 gains a 7th working list ("Research & threat-actor developments").
+- **Prime directives:** PD-5 recency strengthened (mirrors daily PD-7 emphasis, anchored on the new Phase 2.5 re-check); PD-13 less-is-more gains an item-level-cuts list and per-section empty-stub guidance; **new PD-14 historical-context / Background rule** (the weekly is the explicit home for the longer arc the daily skips).
+- **`Evidence:` field** documented in the footer spec — mandatory on § 1 (the weekly's highest-trust section, analogue of the daily's Immediate Action callout), encouraged on §§ 2 / 3 / 6.
+- **Phase 4.7 brought to parity with the daily's Phase 5.7:** prior-iteration-deltas block for even iterations, F13/F14/F15 + generic-URL remediation rows, finding range corrected to F1–F15, rich per-iteration `findings[]` added to the run-log schema (truth = F1–F4 + F13–F15; editorial = F5–F10 + F12).
+- **"What the weekly is for"** rewritten to foreground the broader-picture / research / threat-actor / long-horizon lens and to state the daily↔weekly asymmetry explicitly. Quality-gate checklist expanded (Phase 2.5 ran, compose-after-return honoured, § 1 Evidence, § 6 present-or-stub).
+- Looking-ahead Phase-0 reads made **section-number-agnostic** (match the heading text, not `## N`) so future renumbers don't break the previous-weekly read.
+
+**`prompts/daily-cti-brief.md` (v2.61, lockstep):** banner bump; **PD-8 gains an explicit daily↔weekly division-of-labour clause** (daily must not re-report a recent weekly's item, must not carry long-horizon / strategic-arc synthesis — that is the weekly's job; the asymmetry runs one way); prior-coverage comment updated to "§§ 0–10 of the previous weekly".
+
+**Tooling / config (so the new § 6 renders, validates, and dedups):**
+- `site/taxonomy.yaml` — added `weekly-research` to `sections`.
+- `tools/check_brief.py` — added `weekly-research` slug-keyword mappings (before the bare `research` key), `WEEKLY_FOOTERED_SECTION_KEYS`, and the primary-source-quality / single-source / aggregator-only `target_keys` (mirroring the daily's treatment of `research`).
+- `site/build.py` and `tools/build_prior_coverage.py` — same slug mappings; `build_prior_coverage.py` `weekly_section_keys` set gains `weekly-research` so the new section is indexed for dedup.
+- `prompts/brief-template.md` — weekly template gains the § 6 block, renumbers §§ 7–11, and shows an `Evidence:` example on § 1.
+- `docs/architecture.md` — weekly description updated (12 sections, Phase 2.5, rebalanced W1/W2, the lens + asymmetry).
+
+### What stays
+
+- **Every hard invariant** (AI-content notice, inline links, two-source + national-CERT carve-out, no IOCs, no vanity metrics, English, always-produce, feature-branch publishing chain, Phase 4.5 self-check, Phase 4.7 verification loop, taxonomy footers, memory commits) — untouched.
+- **The daily's procedure is unchanged** beyond the lockstep banner and the PD-8 clause — the daily remains the gold standard; the weekly was moved toward it.
+- **The verifier definitions** (`cti-verification.md` / `-alt.md`) are untouched — they already carry F1–F15 and the W-PD-1 weekly check; no lockstep edit was needed.
+- **Section slugs are derived from heading text, not numbers**, so the renumber does not change any slug; existing weeklies (W19–W24) still parse and `check_brief.py` still passes against them. `weekly-research` is **footered-but-not-required**, so historical weeklies without the section do not FAIL.
+- Verified after the change: `site/test_build.py`, `site/build.py` (briefs=52, 0 skips), `tools/check_brief.py briefs/weekly/2026-W24.md` (0 FAIL), and `tools/build_prior_coverage.py` all pass.
+
+---
+
 ## 2.60 — 2026-05-25 (weekly ISO-week anchor — most-recent-Sunday; fixes Sun→Mon-boundary duplicate weeklies)
 
 ### Why
