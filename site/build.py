@@ -4286,6 +4286,29 @@ def _ops_count_sources(value: Any) -> int:
     return 0
 
 
+def _verification_clean_publish(run: dict[str, Any]) -> bool:
+    """True when a run published with the verifier's final verdict CLEAN.
+
+    The canonical signal is ``verification_residual_count == 0``: per the
+    run-log schema it is ``0`` on a clean publish and ``> 0`` only when the
+    iteration cap was hit with NEEDS_FIXES still outstanding. This is
+    independent of how many iterations it took — a brief that reached CLEAN
+    after remediation published just as clean as one that passed on the first
+    pass. The earlier definition required ``verification_iterations == 1``,
+    which conflated "clean on the first try" with "published clean" and
+    undercounted the rate badly (it counted only the single-pass runs and
+    dropped every brief that reached CLEAN after one or more remediation
+    rounds — the bulk of all runs).
+
+    Returns ``False`` for runs where verification never ran / was not recorded
+    (``verification_iterations is None``) so they are excluded from the rate
+    rather than silently counted as clean.
+    """
+    if run.get("verification_iterations") is None:
+        return False
+    return (run.get("verification_residual_count") or 0) == 0
+
+
 def render_ops_page(
     run_log: dict[str, Any] | None,
     sources: list[dict[str, Any]] | None,
@@ -4329,12 +4352,10 @@ def render_ops_page(
     avg_items = sum(items_published) / len(items_published) if items_published else 0
     total_items = sum(items_published)
 
-    # Verification cleanliness: iterations == 1 AND residual == 0 ⇒ clean publish.
-    clean_runs = sum(
-        1 for r in runs_desc
-        if (r.get("verification_iterations") or 0) == 1
-        and (r.get("verification_residual_count") or 0) == 0
-    )
+    # Verification cleanliness: a brief "published clean" whenever the final
+    # verifier verdict was CLEAN (residual == 0), whether that took one pass
+    # or several remediation rounds. See _verification_clean_publish.
+    clean_runs = sum(1 for r in runs_desc if _verification_clean_publish(r))
     rated_runs = sum(1 for r in runs_desc if r.get("verification_iterations") is not None)
     clean_rate = (clean_runs / rated_runs * 100) if rated_runs else None
 
@@ -4373,10 +4394,15 @@ def render_ops_page(
     items_series = [r.get("items_published") or 0 for r in runs_asc]
     failures_series = [len(r.get("fetch_failures") or []) for r in runs_asc]
 
-    # Verification stacks: clean (green) + needs_fixes (yellow) + residuals (red).
+    # Verification stacks: clean outcome (green) + remediation rounds (yellow)
+    # + residuals (red). Green marks a clean publish regardless of how many
+    # iterations it took; yellow shows the remediation rounds it took to get
+    # there, so a brief that reached CLEAN after several iterations still
+    # reads as ultimately-clean rather than as a string of yellow with no
+    # green (which contradicted the clean-rate KPI).
     verification_stacks: list[list[tuple[float, str]]] = []
     for r in runs_asc:
-        clean = 1 if (r.get("verification_iterations") or 0) == 1 and not (r.get("verification_residual_count") or 0) else 0
+        clean = 1 if _verification_clean_publish(r) else 0
         needs = max(0, (r.get("verification_iterations") or 0) - 1)
         residuals = r.get("verification_residual_count") or 0
         verification_stacks.append([

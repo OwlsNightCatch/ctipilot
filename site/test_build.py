@@ -28,6 +28,7 @@ from build import (  # noqa: E402
     _safe_url,
     _strip_controls,
     _strip_footer_metadata_in_md,
+    _verification_clean_publish,
     _xml_validate,
     file_publish_moment,
     is_safe_path_segment,
@@ -887,6 +888,42 @@ assert_match(
 )
 for _retired in build.UMAMI_RETIRED_HOSTS:
     assert_not_in(f"retired host {_retired} absent from CSP", _retired, build.CSP_META)
+
+
+# ---------------------------------------------------------------------
+# Ops dashboard — verification clean-rate
+# ---------------------------------------------------------------------
+# Regression guard: "clean publish" means the final verifier verdict was
+# CLEAN (residual == 0), regardless of how many iterations it took. The old
+# definition required iterations == 1 and so excluded every brief that
+# reached CLEAN after remediation — the bulk of all runs (reported 2% when
+# the true clean-publish rate was 68%).
+print("== ops verification clean-rate ==")
+assert_eq(
+    "first-pass clean counts (iters=1, resid=0)",
+    _verification_clean_publish({"verification_iterations": 1, "verification_residual_count": 0}),
+    True,
+)
+assert_eq(
+    "clean-after-remediation counts (iters=4, resid=0)",
+    _verification_clean_publish({"verification_iterations": 4, "verification_residual_count": 0}),
+    True,
+)
+assert_eq(
+    "cap-breach with residuals does not count (iters=5, resid=2)",
+    _verification_clean_publish({"verification_iterations": 5, "verification_residual_count": 2}),
+    False,
+)
+assert_eq(
+    "missing residual count treated as clean (iters=3, resid absent)",
+    _verification_clean_publish({"verification_iterations": 3}),
+    True,
+)
+assert_eq(
+    "unrated run (no verification recorded) does not count",
+    _verification_clean_publish({"verification_residual_count": 0}),
+    False,
+)
 
 
 # ---------------------------------------------------------------------
