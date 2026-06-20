@@ -4550,10 +4550,40 @@ def render_ops_page(
         last_run_label += f' <span class="muted ops-kpi__delta">({days_since_last}d ago)</span>'
     clean_rate_str = f"{clean_rate:.0f}%" if clean_rate is not None else "—"
     clean_rate_sub = f"{clean_runs}/{rated_runs} clean publish" if rated_runs else "no telemetry yet"
+    if clean_rate is None:
+        clean_rate_kind = "neutral"
+    elif clean_rate >= 80:
+        clean_rate_kind = "ok"
+    elif clean_rate >= 50:
+        clean_rate_kind = "warn"
+    else:
+        clean_rate_kind = "crit"
     distinct_models_str = str(len(distinct_models)) if distinct_models else "—"
     distinct_models_sub = ", ".join(sorted(distinct_models)[:3]) if distinct_models else "no model recorded"
 
-    kpi_tiles = (
+    # Primary row — the operator's first look: freshness, verification quality,
+    # sub-agent reliability. Each carries a status colour. Volume / cadence /
+    # runtime KPIs sit in the smaller secondary grid below.
+    primary_kpis = (
+        '<div class="ops-kpi-row">'
+        + _ops_kpi_tile("Last run", last_run_label,
+                        sub=f"{total_failures} fetch failure{'s' if total_failures != 1 else ''} in window",
+                        kind=("warn" if days_since_last > 1 else "ok"),
+                        primary=True)
+        + _ops_kpi_tile("Verification clean-rate", clean_rate_str, sub=clean_rate_sub,
+                        kind=clean_rate_kind, primary=True,
+                        chart=_ops_svg_stacked_bars(verification_stacks, width=160, height=30,
+                                                      label="Verification verdicts"))
+        + _ops_kpi_tile("Sub-agent stalls", str(stalled_subagents),
+                        sub=f"out of {sub_agent_returns} returns",
+                        kind=("crit" if stalled_subagents > 0 else "ok"), primary=True,
+                        chart=_ops_svg_bars(failures_series, width=160, height=30,
+                                              color="var(--warn)",
+                                              label="Fetch failures over time"))
+        + '</div>'
+    )
+
+    secondary_kpis = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile("Total runs (window)", str(min(total_runs, len(runs_desc))),
                         sub=f"{len(daily_runs)} daily · {len(weekly_runs)} weekly",
@@ -4574,56 +4604,65 @@ def render_ops_page(
                         chart=_ops_svg_bars(items_series, width=140, height=28,
                                               color="var(--ok)",
                                               label="Items per run"))
-        + _ops_kpi_tile("Verification clean-rate", clean_rate_str, sub=clean_rate_sub,
-                        chart=_ops_svg_stacked_bars(verification_stacks, width=140, height=28,
-                                                      label="Verification verdicts"))
-        + _ops_kpi_tile("Sub-agent stalls", str(stalled_subagents),
-                        sub=f"out of {sub_agent_returns} returns",
-                        kind=("crit" if stalled_subagents > 0 else "ok"),
-                        chart=_ops_svg_bars(failures_series, width=140, height=28,
-                                              color="var(--warn)",
-                                              label="Fetch failures over time"))
-        + _ops_kpi_tile("Last run", last_run_label,
-                        sub=f"{total_failures} fetch failure{'s' if total_failures != 1 else ''} in window",
-                        kind=("warn" if days_since_last > 1 else "neutral"))
         + _ops_kpi_tile("Distinct models", distinct_models_str, sub=distinct_models_sub)
         + '</div>'
     )
 
+    run_count_label = f"{len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'}"
     body = f"""
 <h1>Operations</h1>
-<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, wall-clock duration) and <code>sources/sources.json</code> (last-successful-fetch timestamps). Last {len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'} shown.</p>
+<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, wall-clock duration) and <code>sources/sources.json</code> (last-successful-fetch timestamps). Last {run_count_label} shown.</p>
 
-{kpi_tiles}
+<nav class="ops-nav" aria-label="Dashboard sections">
+  <span class="ops-nav__label">Jump to</span>
+  <a href="#health">Health</a>
+  <a href="#latest">Latest run</a>
+  <a href="#trends">Trends</a>
+  <a href="#runlog">Run log</a>
+</nav>
 
-<section class="ops-section">
-  <h2 class="section-head">Latest run</h2>
+<section class="ops-cluster" id="health">
+  <h2 class="ops-cluster__head">Health</h2>
+  <p class="ops-cluster__intro">At-a-glance state of the routine across the last {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime.</p>
+  {primary_kpis}
+  {secondary_kpis}
+</section>
+
+<section class="ops-cluster" id="latest">
+  <h2 class="ops-cluster__head">Latest run</h2>
+  <p class="ops-cluster__intro">Full breakdown of the most recent run — sub-agent allocation and telemetry, verification iterations, fetch failures, and bridge-fetcher use.</p>
   {latest_panel_html}
 </section>
 
-<section class="ops-section">
-  <h2 class="section-head">Models in use</h2>
-  <p class="subtitle ops-subtitle">Distinct Claude models that signed work in this window — main agent, research sub-agents, verification sub-agents. Tracking the split lets you spot runs where the runtime config changed and runs where a sub-agent forgot to self-identify.</p>
-  <div class="ops-models">
-    <div class="ops-models__chart">{donut_html}</div>
-    <div class="ops-models__table">{models_table_html}</div>
+<section class="ops-cluster" id="trends">
+  <h2 class="ops-cluster__head">Trends across the window</h2>
+  <p class="ops-cluster__intro">How models, fetch behaviour, and verification verdicts move across the last {run_count_label}.</p>
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Models in use</h3>
+    <p class="ops-subtitle">Distinct Claude models that signed work in this window — main agent, research sub-agents, verification sub-agents. Tracking the split lets you spot runs where the runtime config changed and runs where a sub-agent forgot to self-identify.</p>
+    <div class="ops-models">
+      <div class="ops-models__chart">{donut_html}</div>
+      <div class="ops-models__table">{models_table_html}</div>
+    </div>
+  </div>
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Sub-agent fetch density</h3>
+    <p class="ops-subtitle">Each cell is one run × one sub-agent. Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
+    <div class="ops-heatmap-wrap">{heatmap_html}</div>
+  </div>
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Verification iterations</h3>
+    <p class="ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded a per-iteration breakdown. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
+    {verif_table_html}
   </div>
 </section>
 
-<section class="ops-section">
-  <h2 class="section-head">Sub-agent fetch density</h2>
-  <p class="subtitle ops-subtitle">Each cell is one run × one sub-agent. Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
-  <div class="ops-heatmap-wrap">{heatmap_html}</div>
-</section>
-
-<section class="ops-section">
-  <h2 class="section-head">Verification iterations</h2>
-  <p class="subtitle ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded a per-iteration breakdown. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
-  {verif_table_html}
-</section>
-
-<section class="ops-section">
-  <h2 class="section-head">Recent runs</h2>
+<section class="ops-cluster" id="runlog">
+  <h2 class="ops-cluster__head">Run log</h2>
+  <p class="ops-cluster__intro">Every run in the window, newest first — duration, items published, verification verdict, and per-sub-agent model assignment.</p>
   {runs_table_html}
 </section>
 
@@ -4643,12 +4682,16 @@ def render_ops_page(
 
 
 def _ops_kpi_tile(label: str, value: str, *, sub: str = "", kind: str = "neutral",
-                   chart: str = "") -> str:
-    """One KPI tile. `value` may contain HTML (e.g. embedded muted span)."""
+                   chart: str = "", primary: bool = False) -> str:
+    """One KPI tile. `value` may contain HTML (e.g. embedded muted span).
+
+    `primary=True` marks a prominent tile for the Health cluster's top row
+    (larger value, more padding via the `.ops-kpi--primary` modifier)."""
     sub_html = f'<div class="ops-kpi__sub">{_escape(sub)}</div>' if sub else ""
     chart_html = f'<div class="ops-kpi__chart">{chart}</div>' if chart else ""
+    primary_cls = " ops-kpi--primary" if primary else ""
     return (
-        f'<div class="ops-kpi ops-kpi--{kind}">'
+        f'<div class="ops-kpi ops-kpi--{kind}{primary_cls}">'
         f'<div class="ops-kpi__label">{_escape(label)}</div>'
         f'<div class="ops-kpi__value">{value}</div>'
         f'{sub_html}'
