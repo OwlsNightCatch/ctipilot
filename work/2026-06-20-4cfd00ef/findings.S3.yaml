@@ -1,0 +1,418 @@
+domain: S3
+run_id: "2026-06-20-4cfd00ef"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-06-20T04:06:43Z"
+ended_at: "2026-06-20T04:47:00Z"
+duration_seconds: 2417
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 9
+
+items:
+  - title: "Sapphire Sleet (DPRK) compromises Mastra npm maintainer account, injects RAT across 142 packages via easy-day-js typosquat dependency"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+        publisher: "Snyk Security"
+        date: "2026-06-16"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent (feed), URL https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/ → primary (Microsoft Threat Intelligence); corroborated via WebSearch → Snyk Security, URL https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+    summary: |
+      In the early hours of 2026-06-17 UTC, an attacker using the dormant npm maintainer account
+      "ehindero" republished 142 packages across the @mastra and mastra npm scopes, injecting a
+      single new dependency — easy-day-js@1.11.22, a dayjs clone turned dropper — into every
+      published package including @mastra/core (~4M downloads/month) and mastra (~1.5M/month).
+      The postinstall hook fired regardless of whether the consuming project actually called
+      Mastra APIs; it disabled TLS certificate verification, fetched a second-stage payload from
+      attacker-controlled infrastructure, and executed a cross-platform Node.js implant that
+      harvested cryptocurrency wallet extension data (MetaMask, Phantom, Coinbase Wallet, OKX,
+      Keplr, TronLink) from Chromium-based browser profiles and established a remote-access
+      trojan for persistent access. Microsoft Threat Intelligence attributes the infrastructure
+      and post-compromise TTPs to Sapphire Sleet (also tracked as UNC1069, STARDUST CHOLLIMA,
+      BlueNoroff, CageyChameleon), the DPRK-affiliated cluster that previously conducted the
+      Axios npm supply-chain compromise in April 2026. The attack maps to T1195.002 (Supply Chain
+      Compromise: Compromise Software Supply Chain), T1059.007 (JavaScript), T1555.003
+      (Credentials from Web Browsers). Detection: hunt for postinstall execution of Node.js
+      spawning network calls in the npm lifecycle; lockfile presence of easy-day-js; parent
+      process chain showing npm → node → curl/fetch to non-Mastra infrastructure; audit
+      ~/.npm/_logs and Node.js LaunchAgents/systemd units for unknown persistence. Hardening:
+      audit npm package.json lockfiles for easy-day-js; check package manifests at
+      registry.npmjs.org for the 142 @mastra/* packages between versions 1.13.0-1.13.1; verify
+      SLSA provenance attestation; pin package versions and enforce lock-file-only installs in
+      CI/CD pipelines.
+    ch_eu_nexus: "global; any Swiss/EU developer or CI/CD pipeline installing @mastra packages is exposed; DPRK supply-chain campaigns consistently cross European developer ecosystems"
+    public_sector_nexus: "indirect — public-sector organisations using Mastra-based AI tooling or JavaScript CI pipelines are affected"
+    sector: "technology, software development, AI/ML, financial (crypto theft)"
+    cves: []
+    actors_campaigns_malware: ["Sapphire Sleet", "UNC1069", "STARDUST CHOLLIMA", "BlueNoroff", "easy-day-js (malicious package)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft assesses with high confidence that this activity is attributable to Sapphire Sleet, a North Korean state actor that primarily targets the financial sector"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+      - quote: "An attacker using the npm account ehindero republished 141 packages in the @mastra scope, including @mastra/core, mastra, and create-mastra, in a burst that ran from 01:12 to 02:36"
+        attribution: "Snyk Security"
+        source_url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+
+  - title: "DragonForce (Hackledorb) deploys Backdoor.Turn — first in-the-wild malware to abuse Microsoft Teams TURN relays for covert QUIC C2"
+    sources:
+      - url: "https://www.security.com/threat-intelligence/dragonforce-msteams-backdoor"
+        publisher: "Broadcom Symantec / Carbon Black"
+        date: "2026-06-16"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/ransomware-gang-abuses-microsoft-teams-relays-to-hide-malicious-traffic/"
+        publisher: "BleepingComputer"
+        date: "2026-06-16"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/microsoft-teams-relay-servers-abused-in-dragonforce-ransomware-attack/"
+        publisher: "SecurityWeek"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/06/dragonforce-hackers-abuse-microsoft.html → primary: Broadcom Symantec/Carbon Black, URL https://www.security.com/threat-intelligence/dragonforce-msteams-backdoor → corroborated via WebSearch"
+    summary: |
+      Broadcom's Symantec and Carbon Black disclosed that DragonForce ransomware operators
+      (tracked as Hackledorb) deployed a custom Go-based backdoor called Backdoor.Turn against
+      a major US services firm — the first confirmed in-the-wild abuse of Microsoft Teams TURN
+      relay infrastructure for C2. The attack began in December 2025 (initial access) and
+      lasted 1–2 months before detection. Initial access was via SQL/MS-SQL exploitation;
+      subsequent phases included DLL side-loading of VirtualBox executables, BYOVD (Bring Your
+      Own Vulnerable Driver) using four vulnerable drivers — Huawei HWAuidoOs2Ec.sys (novel),
+      Topaz Antifraud wsftprm.sys (CVE-2025-61155), Tower of Fantasy GameDriverX64.sys
+      (CVE-2025-1055), K7 Security K7RKScan.sys (CVE-2023-52271) — to disable EDR/AV, and
+      lateral movement via LDAP/AD enumeration. Backdoor.Turn obtains an anonymous Teams
+      visitor token from Microsoft's Skype-backed identity service, establishes the connection
+      via legitimate Microsoft TURN relay signalling, then tunnels C2 over QUIC directly to
+      attacker infrastructure; defenders monitoring network traffic see only traffic to
+      legitimate Microsoft endpoints. The technique builds on "Ghost Calls" research
+      (Praetorian, 2025). MITRE ATT&CK: T1190 (initial access via SQL exploitation), T1218.011
+      (Rundll32/DLL side-loading), T1068 (BYOVD LPE), T1562.001 (Impair Defenses), T1071
+      (Application Layer Protocol — QUIC/Teams relay as C2 transport), T1486 (ransomware
+      deployment). Detection: identify unsigned or anomalous DLL loads from VirtualBox/DbgView
+      parent processes; alert on loading of known-vulnerable driver hashes; monitor for
+      anomalous Teams relay traffic with QUIC sessions to non-Microsoft IPs behind legitimate
+      relay signalling; EDR telemetry on driver load events. Hardening: block known-vulnerable
+      driver hash list; restrict SQL/MSSQL exposure; enforce Conditional Access on Teams
+      anonymous token issuance.
+    ch_eu_nexus: "global; DragonForce has EU victims; BYOVD driver list includes widely deployed drivers common in EU enterprise environments"
+    public_sector_nexus: "indirect — public-sector networks running MS Teams and exposed SQL/MSSQL are within scope"
+    sector: "cross-sector, US services sector confirmed victim"
+    cves: ["CVE-2023-52271", "CVE-2025-61155", "CVE-2025-1055"]
+    actors_campaigns_malware: ["DragonForce", "Hackledorb", "Backdoor.Turn", "ABYSSWORKER"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "To our knowledge this is the first time TURN relay infrastructure has been abused this way in the wild"
+        attribution: "Broadcom Symantec / Carbon Black"
+        source_url: "https://www.security.com/threat-intelligence/dragonforce-msteams-backdoor"
+      - quote: "The malware obtains anonymous Teams visitor tokens and routes C2 traffic through legitimate Microsoft relay servers, making it appear as trusted Teams infrastructure"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/microsoft-teams-relay-servers-abused-in-dragonforce-ransomware-attack/"
+
+  - title: "usbliter8: permanent SecureROM exploit for Apple A12/A13 SoCs — hardware bug in DWC2 USB controller, physical access required, unpatchable"
+    sources:
+      - url: "https://ps.tc/pages/blog-usbliter8.html"
+        publisher: "Paradigm Shift Technology"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/unpatchable-usbliter8-exploit-breaks.html"
+        publisher: "The Hacker News"
+        date: "2026-06-19"
+        role: "corroborating"
+      - url: "https://github.com/prdgmshift/usbliter8"
+        publisher: "Paradigm Shift (GitHub PoC)"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/06/unpatchable-usbliter8-exploit-breaks.html → primary: Paradigm Shift research blog, URL https://ps.tc/pages/blog-usbliter8.html; GitHub PoC at https://github.com/prdgmshift/usbliter8"
+    summary: |
+      Paradigm Shift Technology published usbliter8 on 2026-06-18 with full technical write-up
+      and a working RP2350-based PoC — a permanent, software-unpatchable bootrom exploit for
+      Apple A12 and A13 (and S4/S5) SoCs. The root cause is a hardware-level buffer underflow
+      in the Synopsys DWC2 USB controller's DMA path that Apple's DART (Device Address
+      Resolution Table / IOMMU) does not block in DFU mode, allowing arbitrary SRAM overwrites.
+      A12 exploitation uses a ROP chain to reach privileged EL1 execution inside SecureROM;
+      A13 additionally requires bypassing Pointer Authentication (PAC) through heap corruption
+      and ROM remapping before injecting custom USB handlers and booting unsigned iBoot images —
+      fully compromising the device's chain of trust. The exploit requires physical access to
+      the target device, which must be in DFU mode, connected via USB to an RP2350-based
+      microcontroller running the exploit firmware, and the exploit completes in 0.7–1.2
+      seconds. Because SecureROM is burned into silicon, no OS update can remediate it.
+      Affected: iPhone XS/XS Max/XR, iPhone 11/11 Pro/11 Pro Max, iPhone SE (2nd gen), iPad
+      Air (3rd gen), iPad mini (5th gen), iPad 8th gen, Apple Watch Series 4/5, Watch SE (1st
+      gen), HomePod mini. Unaffected: A14 and later (different SecureROM configuration).
+      MITRE ATT&CK: T1542.003 (Pre-OS Boot: Bootkit via bootrom exploit), T1078 (boot-level
+      persistence). Defender relevance: the exploit enables jailbreak, custom firmware
+      installation, and bypass of all iOS/iPadOS security controls on affected hardware — key
+      concern for mobile device management (MDM) enforcement and Secure Enclave-protected
+      credential stores. Hardening: this flaw cannot be patched; migration to A14+ hardware is
+      the only full mitigation. Device management posture: ensure DFU mode access is physically
+      restricted in high-security environments; review MDM compliance checks for A12/A13 device
+      jailbreak indicators.
+    ch_eu_nexus: "global; any Swiss/EU organisation that manages A12/A13-era Apple devices in MDM or COPE programs should assess exposure"
+    public_sector_nexus: "indirect — public-sector organisations with iPhones/iPads on A12/A13 in secure environments"
+    sector: "cross-sector, mobile device management"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability exploits a buffer underflow in the USB controller's DMA mechanism, allowing attackers with physical USB access to overwrite SRAM and gain control of execution flow"
+        attribution: "Paradigm Shift Technology"
+        source_url: "https://ps.tc/pages/blog-usbliter8.html"
+      - quote: "That code is burned into the silicon at manufacture. No software update can reach it."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/unpatchable-usbliter8-exploit-breaks.html"
+
+  - title: "AutoJack: Microsoft discloses RCE-via-webpage attack class against AI browsing agents, illustrated in AutoGen Studio dev builds (pre-release only)"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/autojack-attack-lets-one-web-page.html"
+        publisher: "The Hacker News"
+        date: "2026-06-19"
+        role: "corroborating"
+    discovery_trace: "first seen at: msft-secblog recent feed, URL https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/ → primary (no pivot needed); corroborated via hackernews feed"
+    summary: |
+      Microsoft Security researchers disclosed AutoJack, a three-stage exploit chain in AutoGen
+      Studio's MCP (Model Context Protocol) WebSocket implementation that allows a malicious
+      webpage rendered by an AI browsing agent to execute arbitrary host commands. The three
+      weaknesses chained: (1) insufficient WebSocket origin validation (CWE-1385) — a browsing
+      agent running locally inherits the localhost identity, satisfying the origin allowlist;
+      (2) missing authentication on MCP WebSocket paths (CWE-306) — authentication middleware
+      in AutoGen Studio skips the /mcp route assuming downstream controls; (3) command injection
+      via base64-encoded server parameters (CWE-78) — the MCP endpoint executes server
+      parameters without allowlisting. An attacker-controlled webpage rendered by the agent
+      crafts a malicious WebSocket connection, triggers execution under the AutoGen Studio
+      process account, and achieves host-level code execution. The vulnerability existed only in
+      pre-release PyPI builds 0.4.3.dev1 and 0.4.3.dev2; the stable release 0.4.2.2 was never
+      affected. Microsoft fixed the issue before public PyPI release (GitHub commit
+      b0477309d2a0baf489aa256646e41e513ab3bfe8). No exploitation in the wild confirmed.
+      Operational significance: the paper describes an entire attack-class applicable to any
+      AI agentic framework with a local WebSocket API exposed to browsing agents — the pattern
+      (origin-bypass → unauthenticated API → code execution) applies beyond AutoGen. MITRE:
+      T1059.007 (JavaScript for WebSocket crafting), T1106 (Native API execution), T1563.001
+      (Remote Service Session Hijacking — localhost WebSocket). Detection for AI agent
+      deployments: monitor for AutoGen Studio or MCP server processes spawning unexpected child
+      processes; alert on Node.js/Python processes making outbound connections outside known
+      AI infrastructure; audit localhost WebSocket listeners for unauthenticated code-execution
+      paths. Hardening: enforce strict CORS/origin validation on all localhost WebSocket APIs;
+      implement allowlist-based command validation in any agentic framework MCP endpoint; run
+      agent frameworks in sandboxed VMs or Windows Sandbox rather than on developer workstations.
+    ch_eu_nexus: "global; any Swiss/EU development team or AI platform running AutoGen Studio or similar local agentic frameworks is within scope"
+    public_sector_nexus: "indirect — AI tooling increasingly deployed in public-sector development environments"
+    sector: "technology, AI/ML, software development"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Steer the agent to load an attacker's web page, and that page's JavaScript can reach a privileged local service on the same machine and spawn a process on the host"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/"
+
+  - title: "INC ransomware-as-a-service: Acronis TRU documents Rust encryptors, BYOVD (filwfp.sys / filnk.sys), Veeam credential dumping, 830+ victims since 2023"
+    sources:
+      - url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+        publisher: "Acronis Threat Research Unit"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html"
+        publisher: "The Hacker News"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (THN, 2026-06-18), URL https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html → pivot to primary: Acronis TRU, URL https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+    summary: |
+      Acronis Threat Research Unit published a comprehensive INC ransomware-as-a-service
+      evolution report on 2026-06-17, documenting the group's growth from August 2023 to
+      2026 (830+ victims) and its post-LockBit/BlackCat affiliate migration. Key TTPs: initial
+      access via edge-device exploitation (Citrix NetScaler CVE-2023-3519, CVE-2025-5777;
+      Fortinet EMS CVE-2023-48788; SimpleHelp CVE-2024-57727), credential access via updated
+      Veeam backup credential dumpers, BYOVD defense evasion using custom drivers
+      filwfp.sys / filnk.sys / fildds.sys to disable security products, lateral movement via
+      PsExec and living-off-the-land binaries, C2 via Cobalt Strike and legitimate RMM tools
+      (AnyDesk, ScreenConnect, TeamViewer), and data exfiltration via Rclone before encryption.
+      Encryptors rebuilt in Rust support multithreading and partial-file encryption with ESXi
+      targeting. Primary victims are US organizations (65%+) across legal, manufacturing,
+      construction, technology, and healthcare; top-2 countries targeted include Australia.
+      MITRE ATT&CK: T1190 (edge device exploitation), T1003 (credential dumping from Veeam),
+      T1068 (BYOVD via custom driver stack), T1486 (ransomware), T1537 (data exfiltration).
+      Detection: alert on loading of unsigned or unknown kernel drivers (filwfp.sys, filnk.sys,
+      fildds.sys); monitor Veeam APIs and database paths for credential extraction patterns;
+      hunt for Rclone usage with cloud storage destinations. Hardening: patch CVE-2023-3519,
+      CVE-2025-5777, CVE-2023-48788, CVE-2024-57727 on internet-facing edge devices; restrict
+      Veeam API access; deploy Windows Driver Block List for known-vulnerable drivers.
+    ch_eu_nexus: "global; INC has EU victims; the BYOVD driver set (filwfp/filnk) is a direct evasion threat to Swiss/EU EDR deployments"
+    public_sector_nexus: "indirect — public-sector legal, IT, and healthcare organisations in scope"
+    sector: "cross-sector, legal, manufacturing, healthcare"
+    cves: ["CVE-2023-3519", "CVE-2025-5777", "CVE-2023-48788", "CVE-2024-57727"]
+    actors_campaigns_malware: ["INC ransomware", "INC RaaS"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "INC has evolved from an emerging ransomware-as-a-service (RaaS) operation into one of the most active ransomware groups in 2026, claiming more than 800 victims since 2023"
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+
+  - title: "UPDATE: Gentlemen ransomware (Storm-2697) claims Mackay Sugar attack; Krebs identifies Russian operator 'Hastalamuerte' (Alexander Yapaev, Izhevsk)"
+    sources:
+      - url: "https://therecord.media/mackay-sugar-cyberattack-claimed-gentlemen"
+        publisher: "The Record (Recorded Future News)"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+        publisher: "KrebsOnSecurity"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: therecord feed, URL https://therecord.media/mackay-sugar-cyberattack-claimed-gentlemen → corroborated via krebsonsecurity feed, URL https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/ (older but fresh development: Krebs's attribution is a significant operationally-relevant piece not yet in prior briefs)"
+    summary: |
+      Mackay Sugar (Australia's second-largest sugar producer) confirmed on 2026-06-18 that an
+      external party accessed parts of its IT environment on approximately 2026-06-10, halting
+      harvesting and milling operations at two of its three mills. The Gentlemen ransomware
+      group claimed responsibility on its dark web leak site, threatening data publication.
+      This is the most operationally impactful OT-adjacent Gentlemen incident reported in-window;
+      Gentlemen (Storm-2697) has emerged as 2026's second-most-active RaaS by victim count
+      (240+ victims through June 2026), operating a 90%-affiliate model with the GentleKiller
+      EDR-kill framework previously documented by ESET. Separately, KrebsOnSecurity (2026-06-10)
+      and Check Point (research.checkpoint.com/2026/thus-spoke-the-gentlemen/) published
+      OSINT attribution identifying the administrator as Alexander Andreevich Yapaev (aliases:
+      Hastalamuerte, Zeta88), a 36-year-old from Izhevsk, Russia. Attribution evidence: cross-
+      matched ProtonMail addresses, Telegram IDs, GitHub handles, and phone numbers from
+      Russian data-breach corpora across BreachForums, RaidForums, Exploit, and Nulled.
+      Operational AI use confirmed: admin uses AI tools to develop ransomware tooling and assist
+      post-exploitation. Note: the ESET EDR-killer framework write-up was covered in the
+      2026-06-19 brief (key: item:eset-the-gentlemen-raas-gang) — this is a fresh incident and
+      attribution development, not a repeat.
+    ch_eu_nexus: "global; Gentlemen has EU victims; the attribution of a Russian operator is directly relevant to Swiss/EU law-enforcement and sanctions context"
+    public_sector_nexus: "indirect"
+    sector: "manufacturing, OT/ICS-adjacent (food production)"
+    cves: []
+    actors_campaigns_malware: ["The Gentlemen", "Storm-2697", "GentleKiller", "Hastalamuerte", "Zeta88"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-19"
+    evidence:
+      - quote: "Gentlemen, which emerged in late 2025, operates a ransomware-as-a-service model offering affiliates up to 90% of ransom payments and employs double-extortion tactics"
+        attribution: "The Record"
+        source_url: "https://therecord.media/mackay-sugar-cyberattack-claimed-gentlemen"
+      - quote: "The group's administrator, operating under usernames Hastalamuerte and Zeta88, was attributed to Alexander Andreevich Yapaev, a 36-year-old from Izhevsk, Russia"
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"
+
+  - title: "NCSC UK CEO: hostile states account for 75% of 200+ UK critical infrastructure incidents; AI to weaponise legacy-tech vulns at scale by 2028"
+    sources:
+      - url: "https://www.ncsc.gov.uk/news/ncsc-ceo-hostile-states-linked-to-three-quarters-of-cyber-attacks"
+        publisher: "UK NCSC"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://therecord.media/britain-nation-state-cyberattacks-richard-horne-rusi"
+        publisher: "The Record"
+        date: "2026-06-17"
+        role: "corroborating"
+    discovery_trace: "first seen at: therecord feed, URL https://therecord.media/britain-nation-state-cyberattacks-richard-horne-rusi → primary: UK NCSC official news page, URL https://www.ncsc.gov.uk/news/ncsc-ceo-hostile-states-linked-to-three-quarters-of-cyber-attacks"
+    summary: |
+      UK NCSC CEO Richard Horne, speaking at the RUSI Annual Security Lecture on 2026-06-17,
+      disclosed that approximately 75% of the 200+ cyber incidents affecting UK critical
+      national infrastructure in the year to May 2026 are assessed as state-linked, with Russia,
+      China, and Iran identified as the primary hostile actors. Horne described cyberspace as an
+      active contest rather than a risk domain, citing adversary "prepositioning" across
+      essential service networks — language directly echoing the Volt Typhoon pattern in US
+      infrastructure. The NCSC assessed with high confidence that by 2028 AI-enabled attack
+      capabilities will be used to exploit known vulnerabilities in legacy technology at scale
+      across critical national infrastructure. Three defensive priorities highlighted: threat
+      exposure understanding, security fundamentals implementation, and operational resilience.
+      The UK Cyber Security and Resilience Bill and National Cyber Action Plan (due early July
+      2026) are the legislative backdrop. While UK-specific in framing, the assessment is
+      operationally relevant to Swiss/EU infrastructure defenders who share threat actors and
+      face the same legacy-technology exposure pattern. MITRE ATT&CK relevance: T1195 (Supply
+      Chain), T1190 (Exploit Public-Facing Application), T1564/T1071 (Living-off-the-land
+      persistence patterns associated with PRC prepositioning). Defender takeaway: the 2028
+      AI-exploitation forecast is an operational planning horizon — legacy OT/ICS SCADA systems
+      with known unpatched CVEs face elevated risk from AI-accelerated mass-exploitation tooling.
+    ch_eu_nexus: "directly relevant — UK shares threat actors with CH/EU; NCSC-CH tracks same PRC/RU prepositioning patterns; findings inform Swiss CNI risk posture"
+    public_sector_nexus: "direct — critical infrastructure, public administration"
+    sector: "cross-sector, critical infrastructure, energy, water, telecoms"
+    cves: []
+    actors_campaigns_malware: ["Volt Typhoon (referenced pattern)", "Russia", "China", "Iran"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "around 75% of those are believed to be linked to state actors"
+        attribution: "UK NCSC"
+        source_url: "https://www.ncsc.gov.uk/news/ncsc-ceo-hostile-states-linked-to-three-quarters-of-cyber-attacks"
+      - quote: "by 2028 AI-enabled cyber capabilities will likely be used by attackers to exploit known vulnerabilities in legacy technology at scale"
+        attribution: "UK NCSC"
+        source_url: "https://www.ncsc.gov.uk/news/ncsc-ceo-hostile-states-linked-to-three-quarters-of-cyber-attacks"
+
+  - title: "'Popa' Android TV-box botnet linked to publicly-traded Israeli proxy firm Alarum Technologies (NetNut) — 1.5-2.5M nodes, running four years"
+    sources:
+      - url: "https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/"
+        publisher: "KrebsOnSecurity"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://www.qurium.org/forensics/finding-popa/"
+        publisher: "Qurium (independent forensics)"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: krebs feed, URL https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/ → primary (no pivot needed); Qurium forensics report surfaced as outbound link from the Krebs article"
+    summary: |
+      KrebsOnSecurity and independent researchers from Qurium and Synthient documented the Popa
+      botnet — an Android-based malware running on consumer TV boxes that has maintained
+      1.5–2.5 million distinct IP addresses daily across 250–300 control servers for four years,
+      relaying traffic linked to advertising fraud, account takeovers, and AI training data
+      scraping. Multiple independent security firms (XLAB, Qurium, Synthient, Nokia Deepfield,
+      Include Security, Spur) attributed Popa's outbound traffic to infrastructure operated by
+      NetNut, the "residential proxy" business unit of Alarum Technologies Ltd (NASDAQ: ALAR,
+      Tel Aviv). The technical linkage runs through an SDK named Popa originally written by
+      Moishi Kramer (currently NetNut VP of R&D), who claims he lost control of the SDK after
+      licensing it years ago. Alarum Technologies rejected the characterisation as "a botnet",
+      asserting flawed deductions. The investigation surfaces a recurring commercial grey-zone
+      pattern: SDK monetisation embedding proxy-relay functionality without adequate user
+      consent, repurposed as botnet infrastructure. Affected device categories include
+      third-party Android TV boxes (CRICFy, DooFlix, X96 Mini Box, etc.) as well as LG webOS,
+      Samsung Tizen and Roku devices. Detection: Popa nodes open encrypted relay tunnels and
+      average traffic to ~300 C2 IPs; hunt for unexpected outbound CONNECT/tunnel traffic from
+      media-device classes on enterprise/campus networks. Hardening: block media device access
+      to corporate internet by default; audit Android TV boxes on guest/IoT VLANs for proxy
+      relay behaviour.
+    ch_eu_nexus: "global; Android TV-box proxy ecosystems operate across EU consumer and institutional networks; GDPR/data-sovereignty implications for proxy-relayed traffic"
+    public_sector_nexus: "indirect — IoT/media devices on public-sector guest networks could be enrolled"
+    sector: "technology, IoT, advertising technology"
+    cves: []
+    actors_campaigns_malware: ["Popa botnet", "Vo1d botnet (related)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "For the past four years, a sprawling Android-based botnet called Popa has forced millions of consumer TV boxes to relay Internet traffic linked to advertising fraud, account takeovers, and mass data-scraping efforts"
+        attribution: "KrebsOnSecurity"
+        source_url: "https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/"
+
+candidate_sources:
+  - id: paradigm-shift-research
+    publisher: "Paradigm Shift Technology (ps.tc)"
+    url: "https://ps.tc"
+    category: research
+    why: "Independent hardware-security research lab that published the usbliter8 bootrom exploit for Apple A12/A13 SoCs — first-party primary research with PoC code, not covered by existing curated source list."
+
+coverage_gaps:
+  - source_id: dragos
+    reason: "No in-window items — feed not accessible via RSS, WebSearch found no new Dragos publications in 36h window"
+  - source_id: greynoise
+    reason: "No feed configured; WebSearch returned no new GreyNoise research publications in window"
+  - source_id: elastic-seclabs
+    reason: "No in-window items found via WebSearch"
+  - source_id: recordedfuture-insikt
+    reason: "No feed accessible; no new Insikt Group primary publications in window found"
