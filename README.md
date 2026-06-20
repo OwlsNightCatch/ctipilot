@@ -183,7 +183,7 @@ The site uses **Umami Cloud** for aggregate visitor counts so the operator can s
 - Search-string parameters are excluded from collection.
 - Block at the network layer if you don't want to be counted: `cloud.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without it.
 
-The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/docs/analytics/`](https://ctipilot.ch/about/docs/analytics/).
+The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://gateway.umami.is` (the beacon endpoint) for `script-src` / `connect-src` — no other third-party origin can run code or receive data from this page. Full disclosure at [`/about/docs/analytics/`](https://ctipilot.ch/about/docs/analytics/).
 
 The agent's Phase 0 does **not** consume any engagement signal. Editorial weighting is purely verification + CH/EU nexus + novelty per [`prompts/verification.md`](prompts/verification.md).
 
@@ -193,7 +193,7 @@ This is a fully autonomous, self-evolving system: the agent edits its own prompt
 
 - **Phase 5.5 self-check.** Before commit, the agent verifies that every CVE in the brief is in `cves_seen.json`, every § 2–4 item has a `covered_items.json` appearance for today, every § 5 UPDATE carries an inline citation, every H3 in §§ 1–7 carries a v2 metadata footer, every footer value is in `site/taxonomy.yaml`, and all state JSON parses cleanly. Drift aborts the commit; the brief stays on disk and the next run rebuilds state from it.
 - **Vendored library integrity.** `site/build.py` aborts on SHA-256 mismatch against [`site/assets/vendor/HASHES`](site/assets/vendor/HASHES).
-- **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'`, `https://cloud.umami.is` (the analytics script), and `https://api-gateway.umami.dev` (the beacon endpoint); no inline frames or forms.
+- **Strict CSP** delivered via meta tag — no inline scripts; `script-src` and `connect-src` are restricted to `'self'`, `https://cloud.umami.is` (the analytics script), and `https://gateway.umami.is` (the beacon endpoint); no inline frames or forms.
 - **Build-side Markdown sanitisation** with a pinned tag/URI-scheme allowlist. The build refuses any rendered output that would carry an event handler, a `javascript:` / `data:` URI, or a forbidden tag.
 - **Site privacy guarantees:** no cookies set, no fingerprinting, no third-party scripts other than Umami's privacy-by-design tracker (aggregate counts only, no PII).
 

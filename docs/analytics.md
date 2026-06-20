@@ -5,9 +5,9 @@ This site uses [Umami Cloud](https://umami.is) for aggregate visitor counts. Uma
 - No cookies. No fingerprinting. No personal data persisted.
 - Aggregates only: page URL, referrer host, country (IP discarded after lookup), and a daily-rotated hash for unique-visitor counting.
 - Search-string parameters are excluded from collection.
-- The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://api-gateway.umami.dev` (the beacon endpoint). No other third-party origin can run code or receive data.
+- The site's strict CSP allows only `'self'`, `https://cloud.umami.is` (the script), and `https://gateway.umami.is` (the beacon endpoint). No other third-party origin can run code or receive data.
 
-Block at the network layer if you don't want to be counted: `cloud.umami.is` and `api-gateway.umami.dev` in your browser, ad-blocker, or DNS resolver. The site keeps working without them.
+Block at the network layer if you don't want to be counted: `cloud.umami.is` and `gateway.umami.is` in your browser, ad-blocker, or DNS resolver. The site keeps working without them.
 
 ## Per-page coverage
 

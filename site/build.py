@@ -1780,7 +1780,7 @@ CSP_META = (
     '<meta http-equiv="Content-Security-Policy" content='
     "\"default-src 'self'; script-src 'self' https://cloud.umami.is; "
     "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-    "connect-src 'self' https://cloud.umami.is https://api-gateway.umami.dev; "
+    "connect-src 'self' https://cloud.umami.is https://gateway.umami.is; "
     "object-src 'none'; base-uri 'self'; form-action 'none'; "
     'upgrade-insecure-requests" />'
 )
