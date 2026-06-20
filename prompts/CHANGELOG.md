@@ -4,6 +4,23 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.62 — 2026-06-20 (source-metadata-drift correction made a first-class lifecycle step; per-run `sources_changed` telemetry surfaced on the Ops dashboard)
+
+### Why
+
+A full out-of-band audit of all 147 sources on 2026-06-20 (12 parallel workers, artefacts under `work/source-audit-2026-06-20/`) found that the source list's *status* axis was maintained but its *metadata* axis had drifted: ~47 sources had a `fetch_method` that no longer reflected the recipe that actually works (publishers that began 403-ing WebFetch but serve a clean RSS feed; SPA landings whose only path is a bridge subcommand; feeds that moved or died), ~35 had stale `category` tags (vendor labs mis-tagged `gov`; research blogs that started shipping CVE write-ups but lacked `vulns`), and dozens of proven candidates had never been promoted. Two "transport-blocked" sources (`databreaches.net`, `prodaft.com`) turned out to be reachable once the bridge UA was modernised. The lifecycle rules covered status transitions and url updates but never said "also fix the recipe / categories / reliability when a fetch shows they're wrong," and there was no per-run record of source edits for the operator to review — so drift accumulated silently between audits.
+
+### What changed
+
+- **Daily + weekly (shared machinery, in lockstep):** added a **metadata-drift correction** step to the `sources/sources.json` lifecycle — fetching a source re-validates its `fetch_method` / `category` / `reliability`, and a mismatch is corrected in place (append-only dated note), not just its counters. Added a `sources_changed[]` array to the `state/run_log.json` schema (both prompts) with `{id, change, from, to, reason}` per edit, plus its population rule; the change vocabulary is `promoted | demoted | added | recategorised | reliability | fetch_method | url | recovered`.
+- **`tools/fetch_source.py` (v2.62):** bumped the bridge User-Agent Chrome 124 → 138 and added the matching `Sec-CH-UA` client-hint headers a real Chrome 138 sends, so WAFs that cross-check UA ↔ client-hints stop filtering the bridge. This recovered `databreaches.net` (its `/feed/` RSS now 200) and `prodaft.com`. Trimmed `CLOUDFLARE_BLOCKED_HOSTS` to the hosts still genuinely blocked to every UA (`group-ib.com`, `ccn-cert.cni.es`, `coe.int`, `downloads.seppmail.com`).
+- **`site/build.py` Ops dashboard:** new per-run "Sources Δ" runs-table column + a "Source changes (latest run)" panel reading `run_log[].sources_changed`, and a "Source health" panel that finally surfaces the previously-orphaned `state/source_health.json` snapshot.
+- **`sources/sources.json`:** applied the audit — 33 candidate→active promotions, 1 duplicate consolidated (`sansec` → `sansec-research`), reliability/category/fetch_method corrections, and an append-only dated audit note with the working recipe on every source so an LLM agent knows how to fetch each one and what not to waste calls on.
+
+### What stays
+
+The intelligence lens and output structure stay divergent (daily operational-today vs. weekly horizon). The hard invariants are untouched: AI-content notice, no IOCs, two-source + national-CERT carve-out, English output, feature-branch-only publishing, the self-check gate (Phase 5.5 / 4.5) and verification loop (Phase 5.7 / 4.7), per-item taxonomy footers, memory commits. The status-axis transition thresholds (3 content runs to promote; the 403/429/503 *never*-demotes-on-transport rule; one-new-candidate-per-run cap) are unchanged — v2.62 only adds the *metadata* axis alongside them. `sources_changed` is additive: a run that records `[]` is valid.
+
 ## 2.61 — 2026-06-20 (weekly aligned to the daily gold standard in structure + procedure, with a sharpened horizon lens; daily↔weekly division of labour made explicit)
 
 ### Why

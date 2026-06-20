@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.61 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.62 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -577,6 +577,8 @@ Same active-maintenance rules as the daily prompt: bump `last_successful_fetch` 
 
 **New-candidate shape: use the canonical JSON template under § "Phase 5 — Update state" → `sources/sources.json` in the daily prompt** (`prompts/daily-cti-brief.md`). Every field is required; `category` is **always** a list even with a single value; the field is `publisher`, never `name`. `tools/check_brief.py` runs a `sources-schema` shape + controlled-vocab check that FAILs the commit on any drift.
 
+**Metadata-drift correction (v2.62) — shared machinery, see the daily prompt's § `sources/sources.json` bullet.** A fetch that reveals a stale `fetch_method` (documented recipe 403s but the feed serves), a `category` that no longer matches what the source publishes, or a `reliability` tier that sourcing quality has outgrown → correct the field **in place** with an append-only dated note. **Record every such edit — plus every status transition, new candidate, and url change — in `state/run_log.json.sources_changed[]`** so the Ops dashboard highlights what moved this run.
+
 ### `state/run_log.json` — feeds the Ops dashboard at `/ops/`
 
 **Capture main-agent end timestamp now (MANDATORY, symmetric with Phase 0 step 0).** Before writing the record, capture an UTC ISO 8601 end timestamp for the main agent and persist it alongside the start stamp:
@@ -631,6 +633,15 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
       "covered_anyway": true
     }
   ],
+  "sources_changed": [                                        // v2.62 — every sources/sources.json edit this run; the Ops dashboard "Sources changed" panel + runs-table "Sources Δ" column read this. `[]` on a run that only refreshed last_successful_fetch / counters.
+    {
+      "id": "github-advisory",                                // source id touched (REQUIRED)
+      "change": "promoted",                                   // promoted | demoted | added | recategorised | reliability | fetch_method | url | recovered (REQUIRED)
+      "from": "candidate",                                    // prior value ("" for an added candidate)
+      "to": "active",                                         // new value
+      "reason": "3 content runs; live + drillable"            // one-line why (REQUIRED)
+    }
+  ],
   "items_published": N,                                       // total H3 items in the summary
   "items_dropped_by_verification": N,                         // from Phase 4.7 Drop / hallucination drops
   "verification_iterations": N,                               // ≤5 (legacy scalar, still required)
@@ -668,7 +679,7 @@ Append a per-run record. **`run_id` is mandatory and idempotent (v2.47):** the d
 }
 ```
 
-Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap. **`fetch_failures[]` (v2.56 tightened): log ONLY records where the recipe in `sources/sources.json` could not retrieve usable content AND no fallback worked AND `covered_anyway: false`.** Do NOT log successful bridge fetches that returned no in-window content (quiet days are success, not gaps); do NOT log WebFetch-403 outcomes on known-403 hosts where the documented bridge subcommand then succeeded; do NOT log SPA-empty landings handled by a structured-endpoint bridge subcommand. **`bridge_uses[]` (v2.56 — optional)** captures bridge-subcommand telemetry (`{id, method, outcome}`) so successful bridge invocations are tracked without contaminating the failure list. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
+Same population rules as daily: `sources_attempted` = every source id named in each W-spawn; `sources_used` = subset that contributed at least one citation; `returned: false` only when stalled past 10-min cap. **`fetch_failures[]` (v2.56 tightened): log ONLY records where the recipe in `sources/sources.json` could not retrieve usable content AND no fallback worked AND `covered_anyway: false`.** Do NOT log successful bridge fetches that returned no in-window content (quiet days are success, not gaps); do NOT log WebFetch-403 outcomes on known-403 hosts where the documented bridge subcommand then succeeded; do NOT log SPA-empty landings handled by a structured-endpoint bridge subcommand. **`sources_changed[]` (v2.62 — new)** = one entry for every `sources/sources.json` edit this run (status transitions, new candidates with `from: ""`, and `recategorised` / `reliability` / `fetch_method` / `url` metadata-drift corrections); `[]` when the run only refreshed `last_successful_fetch` / counters; each entry carries `id`, `change`, `from`, `to`, `reason`; the Ops dashboard highlights these per run. **`bridge_uses[]` (v2.56 — optional)** captures bridge-subcommand telemetry (`{id, method, outcome}`) so successful bridge invocations are tracked without contaminating the failure list. Per-agent `model` / `model_id` come **verbatim** from the agent's return (research agents' `**Model:**` first line, verifier's `**Model:**` line above the report heading) — `unknown` if absent. `started_at` / `ended_at` per sub-agent and per verification iteration come **verbatim** from the agent's `**Timestamps:**` line — `"unknown"` if absent and `duration_seconds: null`. The main agent's `started` / `completed` come from `work/<run-id>/main.started_at` / `main.ended_at` (Phase 0 step 0 + the capture above). Don't invent.
 
 ---
 
