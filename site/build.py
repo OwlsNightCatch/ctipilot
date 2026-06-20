@@ -4335,9 +4335,18 @@ def render_ops_page(
     sparse-record consequence is visible as "no data" rather than blank panels.
     """
     all_runs = list((run_log or {}).get("runs") or [])
-    # Newest first for the table; chronological for the time-series charts.
-    runs_desc = list(reversed(all_runs))[:30]
-    runs_asc = list(reversed(runs_desc))
+    # v2.62 dashboard restructure:
+    #   - Health KPIs + trend charts are GLOBAL — computed over every recorded
+    #     run, not a 30-run slice (the operator asked for global stats).
+    #   - The run-log table renders all runs (paginated client-side).
+    #   - The run-detail selector is bounded to the most-recent 30 (each panel
+    #     is heavy; older runs remain inspectable via the run-log table).
+    #   - The fetch-density heatmap stays a compact recent window.
+    all_desc = list(reversed(all_runs))          # newest first, ALL runs
+    runs_desc = all_desc                          # KPIs + charts: global
+    runs_asc = list(reversed(runs_desc))          # chronological, all runs
+    picker_runs = all_desc[:30]                   # run-detail selector (bounded)
+    heatmap_runs = all_desc[:16]                  # fetch-density (compact)
 
     daily_runs = [r for r in runs_desc if r.get("kind", "daily") != "weekly"]
     weekly_runs = [r for r in runs_desc if r.get("kind") == "weekly"]
@@ -4470,10 +4479,11 @@ def render_ops_page(
     # ----- Sub-agent allocation heatmap ------------------------------------
     sa_keys = ["S1", "S2", "S3", "S4", "W1", "W2"]
     heatmap_rows: list[tuple[str, list[tuple[float, str]]]] = []
+    heatmap_asc = list(reversed(heatmap_runs))  # compact recent window, chronological
     for k in sa_keys:
         cells: list[tuple[float, str]] = []
         present = False
-        for r in runs_asc:
+        for r in heatmap_asc:
             a = (r.get("sub_agents") or {}).get(k)
             if not isinstance(a, dict):
                 cells.append((0.0, f"{r.get('date','?')} {k}: not in this run"))
@@ -4499,10 +4509,10 @@ def render_ops_page(
     # All but the selected panel carry `hidden`, so the page is fully usable
     # with JS disabled (the latest panel shows; the rest are reachable once
     # JS wires the select).
-    if runs_desc:
+    if picker_runs:
         run_options: list[str] = []
         run_panels: list[str] = []
-        for i, r in enumerate(runs_desc):
+        for i, r in enumerate(picker_runs):
             key = r.get("run_id") or f"idx-{i}"
             label = _ops_run_picker_label(r)
             selected = " selected" if i == 0 else ""
@@ -4526,54 +4536,13 @@ def render_ops_page(
     else:
         run_detail_html = '<p class="muted">No runs recorded yet.</p>'
 
-    # ----- Verification iteration timeline ---------------------------------
-    iter_rows: list[str] = []
-    for r in list(reversed(runs_desc))[-10:][::-1]:
-        iters = ((r.get("verification") or {}).get("iterations") or [])
-        if not iters:
-            continue
-        for it in iters:
-            if not isinstance(it, dict):
-                continue
-            verdict = it.get("verdict", "?")
-            kind = "ok" if verdict == "CLEAN" else ("warn" if verdict == "NEEDS_FIXES" else "neutral")
-            mname = it.get("model") or "unknown"
-            colour = _ops_color_for_model(mname, palette)
-            counts = (
-                f'truth {it.get("truth", 0)} · '
-                f'editorial {it.get("editorial", 0)} · '
-                f'advisory {it.get("advisory", 0)}'
-            )
-            tele = it.get("telemetry") or {}
-            tele_bits: list[str] = []
-            if tele.get("urls_checked"):
-                tele_bits.append(f'{tele["urls_checked"]} URLs')
-            if tele.get("duration_seconds"):
-                tele_bits.append(_ops_format_duration(tele["duration_seconds"]))
-            tele_str = " · ".join(tele_bits)
-            iter_rows.append(
-                '<tr>'
-                f'<td class="mono"><a href="{prefix}briefs/{_escape(r.get("date", ""))}/">{_escape(r.get("date", ""))}</a></td>'
-                f'<td class="mono">#{int(it.get("n", 0)) if isinstance(it.get("n"), int) else "?"}</td>'
-                f'<td>{_ops_pill(verdict, kind=kind)}</td>'
-                f'<td><span class="ops-legend__swatch" style="background:{colour}"></span>'
-                f' <span class="mono">{_escape(mname)}</span></td>'
-                f'<td class="mono muted">{_escape(counts)}</td>'
-                f'<td class="mono muted">{_escape(tele_str)}</td>'
-                '</tr>'
-            )
-    if iter_rows:
-        verif_table_html = (
-            '<div class="data-wrap"><table class="data">'
-            '<thead><tr><th>Date</th><th>Iter</th><th>Verdict</th>'
-            '<th>Verifier model</th><th>Findings</th><th>Telemetry</th></tr></thead>'
-            '<tbody>' + "".join(iter_rows) + '</tbody></table></div>'
-        )
-    else:
-        verif_table_html = '<p class="muted">No per-iteration verification records yet.</p>'
+    # v2.62 — the GLOBAL "Verification iterations" table was removed. Per-
+    # iteration verdicts now live ONLY in each run's detail panel
+    # (_ops_render_verification_iterations, called from the run-detail
+    # selector), so the same data is not presented twice.
 
-    # ----- Recent runs table ------------------------------------------------
-    runs_table_html = _ops_render_runs_table(runs_desc, palette, prefix=prefix)
+    # ----- Run-log table (ALL runs, paginated client-side) -----------------
+    runs_table_html = _ops_render_runs_table(all_desc, palette, prefix=prefix)
 
     # ----- (v2.48) Stale-active-sources MOVED TO /sources/ ----------------
     # The "Stale active sources" panel that previously lived here is now
@@ -4647,51 +4616,29 @@ def render_ops_page(
         + '</div>'
     )
 
-    run_count_label = f"{len(runs_desc)} run{'' if len(runs_desc) == 1 else 's'}"
+    run_count_label = f"{len(all_desc)} run{'' if len(all_desc) == 1 else 's'}"
     source_health_html = _ops_render_source_health(source_health)
+    picker_count_label = f"{len(picker_runs)} most-recent run{'' if len(picker_runs) == 1 else 's'}"
     body = f"""
 <h1>Operations</h1>
-<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, source-list edits, wall-clock duration) and <code>sources/sources.json</code> + <code>state/source_health.json</code> (last-successful-fetch timestamps + independent accessibility probe). Last {run_count_label} shown.</p>
+<p class="subtitle">Live telemetry from <code>state/run_log.json</code> (per-run sub-agent allocation, model split, verification verdicts, fetch failures, source-list edits, wall-clock duration) and <code>sources/sources.json</code> + <code>state/source_health.json</code> (last-successful-fetch timestamps + independent accessibility probe). Stats below are global across all {run_count_label}.</p>
 
 <nav class="ops-nav" aria-label="Dashboard sections">
   <span class="ops-nav__label">Jump to</span>
   <a href="#health">Health</a>
-  <a href="#latest">Run detail</a>
-  <a href="#sources">Sources</a>
-  <a href="#trends">Trends</a>
   <a href="#runlog">Run log</a>
+  <a href="#latest">Run detail</a>
 </nav>
 
 <section class="ops-cluster" id="health">
   <h2 class="ops-cluster__head">Health</h2>
-  <p class="ops-cluster__intro">At-a-glance state of the routine across the last {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime.</p>
+  <p class="ops-cluster__intro">Global overview across all {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime. The two compact charts below summarise the model split and sub-agent fetch behaviour for the whole window.</p>
   {primary_kpis}
   {secondary_kpis}
-</section>
-
-<section class="ops-cluster" id="latest">
-  <h2 class="ops-cluster__head">Run detail</h2>
-  <p class="ops-cluster__intro">Full breakdown of a single run — sub-agent allocation and telemetry, verification iterations, fetch failures, and bridge-fetcher use. Defaults to the latest run; pick any run in the window from the selector.</p>
-  {run_detail_html}
-</section>
-
-<section class="ops-cluster" id="sources">
-  <h2 class="ops-cluster__head">Sources</h2>
-  <p class="ops-cluster__intro">The latest independent accessibility probe of every active source. The autonomous routine maintains <code>sources/sources.json</code> in Phase 5 — promoting proven candidates, demoting dead/blocked sources, and correcting fetch recipes / categories / reliability as publishers change. <strong>Per-run source-list edits are shown in the <a href="#latest">Run detail</a> selector above</strong> (each run's "Sources changed" table), so you can step through what every run changed — not just the latest.</p>
-
-  <div class="ops-subsection">
-    <h3 class="ops-subhead">Source health snapshot</h3>
-    {source_health_html}
-  </div>
-</section>
-
-<section class="ops-cluster" id="trends">
-  <h2 class="ops-cluster__head">Trends across the window</h2>
-  <p class="ops-cluster__intro">How models, fetch behaviour, and verification verdicts move across the last {run_count_label}.</p>
 
   <div class="ops-subsection">
     <h3 class="ops-subhead">Models in use</h3>
-    <p class="ops-subtitle">Distinct Claude models that signed work in this window — main agent, research sub-agents, verification sub-agents. Tracking the split lets you spot runs where the runtime config changed and runs where a sub-agent forgot to self-identify.</p>
+    <p class="ops-subtitle">Distinct Claude models that signed work across all runs — main agent, research sub-agents, verifiers. The split surfaces runtime-config changes and any sub-agent that forgot to self-identify.</p>
     <div class="ops-models">
       <div class="ops-models__chart">{donut_html}</div>
       <div class="ops-models__table">{models_table_html}</div>
@@ -4699,22 +4646,28 @@ def render_ops_page(
   </div>
 
   <div class="ops-subsection">
-    <h3 class="ops-subhead">Sub-agent fetch density</h3>
-    <p class="ops-subtitle">Each cell is one run × one sub-agent. Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
+    <h3 class="ops-subhead">Sub-agent fetch density <span class="muted" style="font-weight:400">· last {len(heatmap_runs)} runs</span></h3>
+    <p class="ops-subtitle">Each cell is one run × one sub-agent (most recent {len(heatmap_runs)}). Intensity = used / attempted source ratio. Empty rows = sub-agent not in this routine (S1–S4 daily, W1–W2 weekly). White cells = stalled or absent.</p>
     <div class="ops-heatmap-wrap">{heatmap_html}</div>
-  </div>
-
-  <div class="ops-subsection">
-    <h3 class="ops-subhead">Verification iterations</h3>
-    <p class="ops-subtitle">Per-iteration verdicts and verifier-model assignments for the last 10 runs that recorded a per-iteration breakdown. Truth findings (F1–F4) get fresh re-research; editorial (F5–F10) get inline edits; advisory (F11) are typically ignored.</p>
-    {verif_table_html}
   </div>
 </section>
 
 <section class="ops-cluster" id="runlog">
   <h2 class="ops-cluster__head">Run log</h2>
-  <p class="ops-cluster__intro">Every run in the window, newest first — duration, items published, verification verdict, and per-sub-agent model assignment.</p>
+  <p class="ops-cluster__intro">Every recorded run, newest first — duration, items published, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. Shows 10 per page by default; use the selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
   {runs_table_html}
+</section>
+
+<section class="ops-cluster" id="latest">
+  <h2 class="ops-cluster__head">Run detail</h2>
+  <p class="ops-cluster__intro">Everything about a single run in one place — pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources a brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. The source-accessibility probe at the foot of this section is independent of any single run.</p>
+  {run_detail_html}
+
+  <div class="ops-subsection">
+    <h3 class="ops-subhead">Source accessibility — independent probe</h3>
+    <p class="ops-subtitle"><strong>Distinct from a run's "Coverage gaps" above.</strong> Coverage gaps are sources a brief <em>needed</em> but couldn't fetch on that run; this is the scheduled HEAD/GET probe of <strong>every active source</strong> (<code>state/source_health.json</code>, written by <code>tools/source_health.py</code>), independent of any run — the current snapshot of which sources are reachable, with every failed / errored source listed.</p>
+    {source_health_html}
+  </div>
 </section>
 
 <p class="muted ops-footnote">
@@ -4740,6 +4693,31 @@ _SOURCES_CHANGE_BADGE = {
 }
 
 
+def _ops_pager_wrap(inner_html: str, *, pagesize: int = 10, size_select: bool = False) -> str:
+    """Wrap a table (whose <tbody> carries `data-pager-rows`) in a client-side
+    pager container (app.js `wireOpsPagers`). The control bar is hidden until JS
+    reveals it, so the no-JS fallback is the full, unpaginated table. When
+    `size_select` is set, a 10/35/50/100 rows-per-page <select> is offered."""
+    size_html = ""
+    if size_select:
+        opts = "".join(
+            f'<option value="{s}"{" selected" if s == pagesize else ""}>{s}</option>'
+            for s in (10, 35, 50, 100)
+        )
+        size_html = ('<label class="ops-pager__size">Rows per page '
+                     f'<select data-pager-size aria-label="Rows per page">{opts}</select></label>')
+    bar = (
+        '<div class="ops-pager__bar" data-pager-bar hidden>'
+        f'{size_html}'
+        '<div class="ops-pager__nav">'
+        '<button type="button" class="ops-pager__btn" data-pager-prev>‹ Prev</button>'
+        '<span class="ops-pager__status" data-pager-status></span>'
+        '<button type="button" class="ops-pager__btn" data-pager-next>Next ›</button>'
+        '</div></div>'
+    )
+    return f'<div class="ops-pager" data-ops-pager data-pagesize="{pagesize}">{bar}{inner_html}</div>'
+
+
 def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
     """v2.62 — the `sources_changed[]` edits a SINGLE run made to
     sources/sources.json, rendered as a table of what moved (promotions,
@@ -4752,28 +4730,28 @@ def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
     else:
         counts = Counter(c.get("change") for c in sc)
         summary = " · ".join(f"{n} {k}" for k, n in counts.most_common())
-        CAP = 60
         rows = "".join(
             f'<tr><td class="mono"><a href="{prefix}sources/{urllib.parse.quote(c.get("id", "?"), safe="")}/">{_escape(c.get("id", "?"))}</a></td>'
             f'<td><span class="ops-pill ops-pill--{_SOURCES_CHANGE_BADGE.get(c.get("change"), "neutral")}">{_escape(c.get("change", "?"))}</span></td>'
             f'<td class="mono muted">{_escape(str(c.get("from") or "—"))} → {_escape(str(c.get("to") or "—"))}</td>'
             f'<td class="muted">{_escape(c.get("reason", ""))}</td></tr>'
-            for c in sc[:CAP]
+            for c in sc
         )
-        more = (f'<p class="muted">+ {len(sc) - CAP} more (see <code>state/run_log.json</code> '
-                f'<code>sources_changed</code> for this run).</p>' if len(sc) > CAP else "")
-        body = (
-            f'<p class="muted ops-latest__failures-help">{_escape(summary)}.</p>'
+        table = (
             '<div class="data-wrap"><table class="data">'
             '<thead><tr><th>Source</th><th>Change</th><th>From → To</th><th>Reason</th></tr></thead>'
-            f'<tbody>{rows}</tbody></table></div>{more}'
+            f'<tbody data-pager-rows>{rows}</tbody></table></div>'
+        )
+        body = (
+            f'<p class="muted ops-latest__failures-help">{_escape(summary)}.</p>'
+            + _ops_pager_wrap(table, pagesize=10, size_select=False)
         )
     return (
         '<div class="ops-latest__failures">'
-        '<h3 class="ops-mini-head">Sources changed</h3>'
+        '<h3 class="ops-mini-head">Sources changed (this run)</h3>'
         '<p class="muted ops-latest__failures-help">Edits this run made to <code>sources/sources.json</code> — '
         'promotions, demotions, new candidates, and fetch-method / category / reliability / url corrections '
-        '(<code>run_log[].sources_changed</code>).</p>'
+        '(<code>run_log[].sources_changed</code>). Paginated; 10 per page.</p>'
         f'{body}</div>'
     )
 
@@ -5011,7 +4989,7 @@ def _ops_render_bridge_uses(uses: list[dict[str, Any]] | None) -> str:
 
     return (
         '<div class="ops-bridge-uses">'
-        '<h3 class="ops-mini-head">Bridge invocations (latest run)</h3>'
+        '<h3 class="ops-mini-head">Bridge invocations (this run)</h3>'
         f'<p class="muted">{total} bridge call{"s" if total != 1 else ""} this run — '
         'these are <em>successful</em> bridge fetches (separate from "Coverage gaps" above).</p>'
         f'<div class="ops-bridge-uses__chips">{"".join(outcome_chips)}</div>'
@@ -5327,12 +5305,12 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
      real, unrecovered failures). The bridge_uses panel below it tracks
      bridge invocations separately so success and failure don't get
      conflated in the same list. -->
+{run_sources_changed_html}
 <div class="ops-latest__failures">
-  <h3 class="ops-mini-head">Coverage gaps (latest run)</h3>
-  <p class="muted ops-latest__failures-help">Sources the brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55.</p>
+  <h3 class="ops-mini-head">Coverage gaps (this run)</h3>
+  <p class="muted ops-latest__failures-help">Sources <em>this run's</em> brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55. (Distinct from the independent source-accessibility probe at the foot of this section, which probes <em>all</em> active sources regardless of what any run needed.)</p>
   {failures_html}
 </div>
-{run_sources_changed_html}
 {bridge_uses_html}
 {verif_findings_html}
 """
@@ -5599,15 +5577,16 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             '</tr>'
         )
 
-    return (
+    table = (
         '<div class="data-wrap"><table class="data ops-runs-table">'
         '<thead><tr><th>Date</th><th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
         '<th>Items</th><th>S1/W1</th><th>S2/W2</th><th>S3</th><th>S4</th>'
         '<th title="Fetch failures (coverage gaps)">Fetch fail</th>'
         '<th title="sources/sources.json edits this run (hover for breakdown)">Src Δ</th>'
         '<th>Verif</th></tr></thead>'
-        '<tbody>' + "".join(rows) + '</tbody></table></div>'
+        '<tbody data-pager-rows>' + "".join(rows) + '</tbody></table></div>'
     )
+    return _ops_pager_wrap(table, pagesize=10, size_select=True)
 
 
 # === RSS BUILDERS ======================================================

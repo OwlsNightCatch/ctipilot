@@ -29,7 +29,67 @@
     wireMdSplitButtons();
     wireSectionCollapse();
     wireOpsRunPicker();
+    wireOpsPagers();
     await Promise.all([wireGlobalSearch(), wireGithubBadge(), wireListFilters()]);
+  }
+
+  // ── ops dashboard: generic table pager ─────────────────────────────
+  // Any [data-ops-pager] container with a <tbody data-pager-rows> is
+  // paginated client-side: default page size from data-pagesize (10),
+  // optional [data-pager-size] <select> (e.g. 10/35/50/100), and
+  // [data-pager-prev] / [data-pager-next] / [data-pager-status] controls
+  // inside a [data-pager-bar] (hidden until JS reveals it, so the no-JS
+  // fallback is the full, unpaginated table). Used by the run-log table
+  // and every per-run "Sources changed" table. Each container is wired
+  // independently, so many pagers on one page (one per run panel) is fine.
+  function wireOpsPagers() {
+    var pagers = document.querySelectorAll('[data-ops-pager]');
+    if (!pagers.length) return;
+    pagers.forEach(function (pager) {
+      var tbody = pager.querySelector('[data-pager-rows]');
+      if (!tbody) return;
+      var rows = Array.prototype.slice.call(tbody.rows);
+      var total = rows.length;
+      var sizeSel = pager.querySelector('[data-pager-size]');
+      var prev = pager.querySelector('[data-pager-prev]');
+      var next = pager.querySelector('[data-pager-next]');
+      var status = pager.querySelector('[data-pager-status]');
+      var bar = pager.querySelector('[data-pager-bar]');
+
+      function curSize() {
+        var v = parseInt((sizeSel && sizeSel.value) || pager.getAttribute('data-pagesize') || '10', 10);
+        return (v > 0) ? v : 10;
+      }
+      var page = 1;
+
+      function render() {
+        var pageSize = curSize();
+        var pages = Math.max(1, Math.ceil(total / pageSize));
+        if (page > pages) page = pages;
+        if (page < 1) page = 1;
+        var start = (page - 1) * pageSize;
+        var end = Math.min(start + pageSize, total);
+        for (var i = 0; i < rows.length; i++) {
+          rows[i].style.display = (i >= start && i < end) ? '' : 'none';
+        }
+        if (status) {
+          status.textContent = total === 0
+            ? '0 of 0'
+            : (start + 1) + '–' + end + ' of ' + total + ' · page ' + page + '/' + pages;
+        }
+        if (prev) prev.disabled = (page <= 1);
+        if (next) next.disabled = (page >= pages);
+      }
+
+      if (bar) bar.hidden = false; // controls only make sense with JS
+      if (sizeSel) sizeSel.addEventListener('change', function () { page = 1; render(); });
+      if (prev) prev.addEventListener('click', function () { if (page > 1) { page--; render(); } });
+      if (next) next.addEventListener('click', function () {
+        var pages = Math.max(1, Math.ceil(total / curSize()));
+        if (page < pages) { page++; render(); }
+      });
+      render();
+    });
   }
 
   // ── ops dashboard: run-detail picker ───────────────────────────────
