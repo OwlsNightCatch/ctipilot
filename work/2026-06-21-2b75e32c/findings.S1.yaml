@@ -1,0 +1,96 @@
+domain: S1
+run_id: 2026-06-21-2b75e32c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-21T04:05:44Z
+ended_at: 2026-06-21T04:13:28Z
+duration_seconds: 464
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 14
+  bridge_fetches: 7
+
+items:
+  - title: "Sapphire Sleet (BlueNoroff) compromises 142 Mastra npm packages via dormant maintainer account — cross-platform RAT with SYSTEM-level persistence"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+        publisher: "Microsoft Threat Intelligence"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+        publisher: "Snyk Security"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/"
+        publisher: "BleepingComputer"
+        date: "2026-06-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed (https://feeds.feedburner.com/TheHackersNews via bridge) → BleepingComputer article 2026-06-20 → primary: Microsoft Security Blog 2026-06-17; Snyk corroborating same date"
+    summary: |
+      North Korean state-sponsored cluster Sapphire Sleet (also tracked as BlueNoroff, UNC1069, STARDUST CHOLLIMA, CageyChameleon) hijacked the dormant npm maintainer account `ehindero` — which had legitimate publish rights across the entire `@mastra` scope since 2024–2025 alpha releases but had gone inactive — and on June 17, 2026 bulk-republished 142 packages with a typosquatted malicious dependency `easy-day-js@1.11.22` (mimicking `dayjs` with 57M+ weekly downloads). The postinstall hook in `easy-day-js` runs an obfuscated `setup.cjs` dropper that disables TLS certificate verification (`NODE_TLS_REJECT_UNAUTHORIZED=0`), contacts C2 at `23.254.164.92:8000`, fetches a 41 KB cross-platform Node.js tasking client and executes it as a detached hidden process. The second-stage implant enumerates 166 cryptocurrency wallet browser-extension IDs (MetaMask, Phantom, Coinbase Wallet, OKX, Keplr, Binance Wallet, TronLink), steals Chrome/Edge/Brave profiles and browser histories, collects host inventory, and establishes OS-specific persistence: NVM-themed registry `Run` keys (Windows), `LaunchAgent com.nvm.protocal.plist` (macOS), `systemd nvmconf.service` (Linux). A third-stage PowerShell backdoor achieves reflective .NET assembly injection into `cmd.exe` with a `scdev` svchost service running under SYSTEM. Clean versions: `mastra@1.13.0` / `@mastra/core@1.42.0` and lower. Malicious: `mastra@1.13.1`, `@mastra/core@1.42.1`, `easy-day-js@1.11.22`. Microsoft Defender XDR signatures `Trojan:JS/NpmStealz.Z!MTB`, `.ZA!MTB`, `Trojan:JS/NpmSteal.DB!MTB`, `Trojan:PowerShell/PsExec.DE!MTB`. Detection: Sysmon or EDR events for `node.exe` spawning with `--no-warnings` flag loading `setup.cjs` or `easy-day-js`; anomalous ASEP registry writes from npm process trees; `scdev` service creation under svchost; outbound to `23.254.164.92`/`23.254.164.123` on 8000/443. Hardening: always run `npm install --ignore-scripts`; pin lock-file and verify hashes; rotate credentials from systems that installed `mastra@1.13.1` or `@mastra/core@1.42.1`. This is Sapphire Sleet's second npm scope-takeover in 2026 (after the April Axios npm compromise).
+    ch_eu_nexus: "npm ecosystem is global; AI/developer tooling is heavily used in Swiss and European public-sector DevOps pipelines and finance-sector engineering teams"
+    public_sector_nexus: "indirect — affects any government or public-sector organisation that uses Mastra-based AI workflow tooling in CI/CD"
+    sector: "technology, finance, developer-tooling"
+    cves: []
+    actors_campaigns_malware: ["Sapphire Sleet", "BlueNoroff", "UNC1069", "STARDUST CHOLLIMA", "CageyChameleon", "NpmStealz"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft Threat Intelligence assesses with high confidence that this activity is attributable to Sapphire Sleet"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+      - quote: "npm does not expire scope publish permissions on inactivity"
+        attribution: "Snyk Security"
+        source_url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+      - quote: "The scdev service runs as a shared svchost.exe process under the SYSTEM context with automatic startup, providing Sapphire Sleet with boot-persistent, elevated access independent of user logon."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+    extended_notes: |
+      MITRE ATT&CK mappings: T1195.002 (Supply Chain Compromise — dependency injection), T1036.004 (Masquerading — typosquat), T1547.001 (Registry Run Keys), T1547.014 (Systemd/LaunchAgent), T1562.008 (Disable Defense — TLS bypass), T1005 (Data from Local System), T1041 (Exfiltration over C2). The attack root cause — dormant maintainer accounts with permanent publish rights — applies equally to any npm package with a contributor who left the project years ago. Defenders should audit their own private registry ACLs and enforce time-bound or MFA-required publish tokens.
+
+  - title: "Prinz Eugen: new Go-based ransomware with ChaCha20-Poly1305 encryption, no ransom note, initial access via stolen RDP credentials"
+    sources:
+      - url: "https://www.threatdown.com/blog/prinz-eugen-ransomware-a-deep-dive-into-a-new-go-based-encryptor/"
+        publisher: "Malwarebytes ThreatDown"
+        date: "2026-06-20"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/new-prinz-eugen-ransomware-prioritizes-recent-files-for-encryption/"
+        publisher: "BleepingComputer"
+        date: "2026-06-20"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer listing scrape (bridge url bleepingcomputer.com/news/security/) → article 2026-06-20 → primary: Threatdown blog 2026-06-20 → corroborating: BleepingComputer same date"
+    summary: |
+      Malwarebytes ThreatDown published on June 20, 2026, a technical deep-dive into Prinz Eugen, a new, non-RaaS ransomware operation active since at least early 2026. The Go binary (package name `scorched-earth-ausfc`) prioritises recently modified files for encryption — maximising business-critical impact — using ChaCha20-Poly1305 AEAD with a three-stage KDF (Argon2id → SHA-256 → HKDF-SHA256) and per-file random IVs; files carry a `CHV1` magic header and the `.prinzeugen` extension. Initial access is via stolen RDP credentials. Post-access the operator manually executes `servertool.exe` (downloaded via Chrome, staged in the Music folder), creates a backdoor admin account (`net user admin germania /add`), and abuses the RemotePC RMM tool for lateral movement and PowerShell stager delivery — consistent with hands-on-keyboard LOTL tradecraft. The binary zeroes its hardcoded key and forces GC before self-deletion to prevent key recovery. At least five confirmed victims across finance (Standard Bank Group, ~1.2 TB / 154M SQL rows exfiltrated; Vantage Finance), US automotive services (700Credit, 8.4M records with SSNs), France (Transitions Pro Centre Val de Loire), and a North American driving-school software provider. The operator alias ROOTBOY/GERMANIA is linked to pre-existing data-broker activity from July 2025. C2: `212.80.7.74` (AS215439 Play2go International, Frankfurt). No public patch lever exists — this is a behavioural/hardening problem. Detection: process creation of `servertool.exe` with directory-path arguments; `net user admin germania /add` command line; RemotePC PowerShell launch chains; `.prinzeugen` extension fan-out on shared drives. Hardening: restrict RDP to VPN/jump-host, enforce MFA on all remote-access sessions, audit/revoke dormant RMM tool licenses, disable RemotePC unless explicitly required.
+    ch_eu_nexus: "French victim confirmed (Transitions Pro Centre Val de Loire); C2 hosted in Germany (AS215439 Frankfurt); no Swiss victim confirmed but pattern targets finance and data-rich organisations prevalent across DACH"
+    public_sector_nexus: "indirect — LOTL and RDP-credential initial access pattern broadly applicable across CH/EU public-sector environments"
+    sector: "finance, education, automotive"
+    cves: []
+    actors_campaigns_malware: ["Prinz Eugen", "ROOTBOY", "GERMANIA"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Go-based malware prioritizes the encryption of the most recently modified files."
+        attribution: "Malwarebytes ThreatDown"
+        source_url: "https://www.threatdown.com/blog/prinz-eugen-ransomware-a-deep-dive-into-a-new-go-based-encryptor/"
+      - quote: "net user admin germania /add"
+        attribution: "Malwarebytes ThreatDown"
+        source_url: "https://www.threatdown.com/blog/prinz-eugen-ransomware-a-deep-dive-into-a-new-go-based-encryptor/"
+      - quote: "A new ransomware operation named 'Prinz Eugen' prioritizes recently modified files for encryption and leaves no ransom note on the system."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-prinz-eugen-ransomware-prioritizes-recent-files-for-encryption/"
+    extended_notes: |
+      MITRE ATT&CK: T1133 External Remote Services, T1021.001 Remote Desktop Protocol, T1059.001 PowerShell, T1136.001 Local Account creation, T1547.001 Registry Run Keys, T1486 Data Encrypted for Impact, T1588.001 Obtain Capabilities — Malware. The absence of a ransom note and the out-of-band extortion model (direct contact via TOX, victim portal) is a tactic increasingly adopted by organised groups to reduce forensic artifacts and evade automated detection of extortion communications. Defenders should not rely on ransom-note detection as a ransomware indicator; instead monitor for large-scale file rename/write patterns and the `.prinzeugen` extension via EDR.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: bleepingcomputer
+    reason: "Direct WebFetch returns HTTP 403 on article pages; bridge via url subcommand succeeded for the Gravity SMTP article but returned 403 for the Mastra attribution article — content recovered via THN feed and Microsoft primary."
+  - source_id: cert-fr
+    reason: "CERT-FR avis-recent 10 returned latest advisory dated 2026-06-16 — no new advisories published in the 36h window."
+  - source_id: bsi-de
+    reason: "BSI RSS returned latest advisories dated 2026-06-19 — nothing from June 20-21 in the feed."
+  - source_id: ncsc-nl
+    reason: "NCSC-NL recent 15 returned latest advisory dated 2026-06-19 — nothing from June 20-21."

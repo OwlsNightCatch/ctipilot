@@ -1,0 +1,169 @@
+# work/2026-06-21-2b75e32c/findings.S2.yaml
+domain: S2
+run_id: 2026-06-21-2b75e32c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-21T04:05:56Z
+ended_at: 2026-06-21T04:35:00Z
+duration_seconds: 1744
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 9
+  bridge_fetches: 6
+
+items:
+  - title: "CVE-2026-12569 — PTC Windchill PDMLink / FlexPLM deserialization RCE actively exploited; BSI conducted middle-of-the-night calls to German administrators"
+    sources:
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12713"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-19"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-12569"
+        publisher: "NVD"
+        date: "2026-06-17"
+        role: "corroborating"
+      - url: "https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability"
+        publisher: "PTC Trust Center"
+        date: "2026-06-15"
+        role: "corroborating"
+      - url: "https://www.heise.de/en/news/PTC-Windchill-BSI-calls-admins-at-night-due-to-critical-security-vulnerability-11338329.html"
+        publisher: "Heise Security (EN)"
+        date: "2026-06-19"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: ncsc-csh (bridge subcommand ncsc-csh recent 10), post 12713, URL https://security-hub.ncsc.admin.ch/#/posts/12713
+      → corroborating: NVD CVE record, URL https://nvd.nist.gov/vuln/detail/CVE-2026-12569
+      → corroborating: PTC Trust Center advisory (SPA shell only but document serves as citation), URL https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability
+      → corroborating: Heise Security EN article (TollBit-gated, RSS summary used), URL https://www.heise.de/en/news/PTC-Windchill-BSI-calls-admins-at-night-due-to-critical-security-vulnerability-11338329.html
+    summary: |
+      CVE-2026-12569 is an unauthenticated remote code execution vulnerability in PTC Windchill PDMLink and FlexPLM
+      product lifecycle management platforms caused by unsafe Java deserialization of untrusted data reaching the
+      Windchill login-service handler. No authentication is required; network access to the Windchill or FlexPLM
+      web-based login interface is the sole prerequisite. CVSS v4.0 score is 9.3 (Critical); CWE-20 / CWE-502.
+      Active exploitation has been confirmed: attackers deploy persistent JSP webshells with 16-character lowercase
+      hex filenames into the Windchill login directory (/Windchill/login/[0-9a-f]{16}.jsp) and use a distinctive
+      attacker-specific HTTP header (X-windchill-req: ?x8Fmgow) to interact with them post-compromise. The NCSC-CH
+      specifically noted organizations in Switzerland among those currently targeted. The German BSI conducted
+      proactive outreach — calling administrators directly at approximately 02:30 local time on 17 June 2026 — after
+      obtaining intelligence of imminent attacks against exposed Windchill instances, an unusual degree of urgency
+      indicating high confidence in near-term exploitation. Patched versions are available: Windchill 13.1.2.8,
+      13.1.3.4, 13.0.2.12, 12.1.2.27 (patch released 15 June 2026); PTC cloud-hosted instances are automatically
+      patched. Windchill PDMLink is heavily deployed in European aerospace, defence, automotive, and industrial
+      manufacturing verticals — all sectors with significant CH/EU public-sector supply-chain exposure.
+    ch_eu_nexus: "Switzerland explicitly named by NCSC-CH as targeted; German BSI proactive outreach indicates confirmed DE targeting; EU aerospace/defence/automotive supply chains"
+    public_sector_nexus: "indirect via supply chain — government procurement, defence contractors, industrial manufacturing with public-sector clients"
+    sector: "manufacturing, aerospace, defence, automotive, OT-adjacent"
+    cves: [CVE-2026-12569]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Current exploitation status: Actively Exploited"
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12713"
+      - quote: "CVE-2026-12569 CVSS4.0: 9.3 (CRITICAL) - Unauthenticated Remote code execution via deserialization of untrusted data"
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12713"
+      - quote: "BSI calls admins at night due to critical security vulnerability"
+        attribution: "Heise Security (EN)"
+        source_url: "https://www.heise.de/en/news/PTC-Windchill-BSI-calls-admins-at-night-due-to-critical-security-vulnerability-11338329.html"
+    extended_notes: |
+      Affected versions: Windchill PDMLink <= 11.0 M030 and 11.1 M020 through 13.1.3.0;
+      FlexPLM <= 11.0 M030 and 11.1 M020 through 13.0.3.0.
+      Detection: web-server access logs for POST requests to the Windchill login-service
+      endpoint from external IPs followed by GET requests to /Windchill/login/[0-9a-f]{16}.jsp
+      paths; HTTP header X-windchill-req present in follow-on requests to deployed webshells;
+      file-integrity monitoring for unexpected .jsp files in the Windchill login directory.
+      Technique: T1190 (Exploit Public-Facing Application) → T1505.003 (Server Software Component:
+      Web Shell). MITRE ATT&CK: https://attack.mitre.org/techniques/T1190/,
+      https://attack.mitre.org/techniques/T1505/003/.
+      Hardening: immediate patch to the above fixed builds; network-layer controls restricting
+      access to Windchill/FlexPLM login interfaces to trusted source addresses only;
+      disable internet exposure of PLM management interfaces.
+      Note: distinct from March 2026 CVE-2026-4681 event (German BKA physical company visits)
+      on same product family — these are two separate exploitation campaigns.
+
+  - title: "CVE-2026-4020 — Gravity SMTP WordPress plugin unauthenticated information disclosure mass-exploited at scale; API keys, OAuth tokens exposed across ~100k sites"
+    sources:
+      - url: "https://thenextweb.com/news/gravity-smtp-wordpress-plugin-vulnerability-cve-2026-4020-api-keys-exploit"
+        publisher: "The Next Web"
+        date: "2026-06-20"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-jxfc-8wcq-xxcg"
+        publisher: "GitHub Advisory Database (GHSA-jxfc-8wcq-xxcg)"
+        date: "2026-03-17"
+        role: "corroborating"
+    discovery_trace: |
+      first seen at: hackernews feed (feedburner.com/TheHackersNews), published 2026-06-20,
+      URL https://thehackernews.com/2026/06/hackers-exploit-gravity-smtp-wordpress.html
+      → pivot: The Next Web primary article, URL https://thenextweb.com/news/gravity-smtp-wordpress-plugin-vulnerability-cve-2026-4020-api-keys-exploit
+      → corroborating: GitHub Advisory Database GHSA, URL https://github.com/advisories/GHSA-jxfc-8wcq-xxcg
+      → WebSearch corroboration: Wordfence blocking 17M+ requests confirmed across multiple sources
+    summary: |
+      CVE-2026-4020 is an unauthenticated information disclosure vulnerability in the Gravity SMTP WordPress
+      plugin (all versions through 2.1.4) caused by a REST API endpoint /wp-json/gravitysmtp/v1/tests/mock-data
+      whose permission_callback unconditionally returns true. Any unauthenticated visitor appending
+      ?page=gravitysmtp-settings triggers the plugin's register_connector_data() method, which returns
+      approximately 365 KB of JSON containing the full system report: API keys, OAuth tokens for all configured
+      email connectors (Amazon SES, Google Workspace, Mailjet, Resend, Zoho), WordPress/PHP versions, database
+      configuration details, and active plugin inventory. Wordfence has blocked over 17 million exploitation
+      attempts since early May 2026, with a peak of 4 million daily requests on 7 June 2026. A patch was
+      released as version 2.1.5 on 17 March 2026, but mass exploitation began roughly two months later.
+      WordPress CMS is widely deployed across European public-sector websites and government communications
+      infrastructure; any site using Gravity SMTP with third-party email integration should be treated as
+      potentially compromised if running a pre-2.1.5 version. Sites may have had API credentials harvested
+      months before becoming aware of exploitation.
+    ch_eu_nexus: "global exploitation; significant CH/EU public-sector CMS exposure given WordPress prevalence in European government websites"
+    public_sector_nexus: "indirect — government and public-sector WordPress CMS deployments at risk"
+    sector: "public administration, healthcare, education, any sector using WordPress CMS"
+    cves: [CVE-2026-4020]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "hackers are mass-exploiting a Gravity SMTP flaw to steal API keys from 100,000 WordPress sites"
+        attribution: "The Next Web"
+        source_url: "https://thenextweb.com/news/gravity-smtp-wordpress-plugin-vulnerability-cve-2026-4020-api-keys-exploit"
+      - quote: "REST API endpoint registered at /wp-json/gravitysmtp/v1/tests/mock-data with a permission_callback that unconditionally returns true"
+        attribution: "The Next Web"
+        source_url: "https://thenextweb.com/news/gravity-smtp-wordpress-plugin-vulnerability-cve-2026-4020-api-keys-exploit"
+    extended_notes: |
+      Detection: web-server access logs for GET requests to /wp-json/gravitysmtp/v1/tests/mock-data
+      with ?page=gravitysmtp-settings parameter from external IPs. Response body size ~365 KB is
+      a distinctive indicator. Technique: T1190 (Exploit Public-Facing Application) → T1552.001
+      (Credentials In Files — cloud API tokens). Any site that ran a vulnerable version should
+      treat all configured SES/Google/Mailjet/Resend/Zoho credentials as compromised and rotate
+      them immediately after upgrading to >=2.1.5. The plugin inventory in the JSON response
+      also enables targeted follow-on attack planning against known-vulnerable plugin stacks.
+
+cve_table:
+  - cve: CVE-2026-12569
+    product: "PTC Windchill PDMLink / FlexPLM"
+    cvss: "9.3 (v4.0 Critical)"
+    epss: "not retrieved"
+    kev: false
+    exploited: true
+    patch: "Windchill 13.1.2.8, 13.1.3.4, 13.0.2.12, 12.1.2.27 (released 2026-06-15)"
+    source: "NCSC-CH #12713 / NVD / PTC Advisory"
+  - cve: CVE-2026-4020
+    product: "Gravity SMTP WordPress plugin (through 2.1.4)"
+    cvss: "5.3 (Wordfence) / 7.5 (other vendors)"
+    epss: "not retrieved"
+    kev: false
+    exploited: true
+    patch: "Version 2.1.5 (released 2026-03-17)"
+    source: "TNW / GitHub Advisory GHSA-jxfc-8wcq-xxcg"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: heise-sec
+    reason: "Article body TollBit-gated (HTTP 307 → tollbit.heise.de); used RSS 150-char summary and corroborating Heise EN version (also TollBit-gated). Cross-referenced via WebSearch."
+  - source_id: cert-fr
+    reason: "cert-fr actu-recent 5 returned Oct 2025 bulletins (stale feed); cert-fr avis-recent 5 returned items from May-Jun 15 only (outside 36h window). No in-window FR items recovered."
+  - source_id: cert-eu
+    reason: "Most recent CERT-EU advisory is 2026-008 (Ivanti Sentry, June 10), outside the 36h window. No new CERT-EU advisories in window."
+  - source_id: inside-it-ch
+    reason: "RSS feed (via bridge feed subcommand) returned 10 items, all business/general IT news in German — no security incidents in the 36h window."

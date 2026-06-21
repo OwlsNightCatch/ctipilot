@@ -1,0 +1,140 @@
+domain: S3
+run_id: 2026-06-21-2b75e32c
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-21T04:06:06Z
+ended_at: 2026-06-21T04:15:34Z
+duration_seconds: 568
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 10
+  bridge_fetches: 8
+
+items:
+  - title: "Sapphire Sleet (DPRK / BlueNoroff) poisons 142 Mastra npm packages via a dormant maintainer account compromise"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/", publisher: "Microsoft Security Blog / Microsoft Threat Intelligence", date: "2026-06-17", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/", publisher: "BleepingComputer", date: "2026-06-20", role: "corroborating" }
+      - { url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/", publisher: "Snyk Security Research", date: "2026-06-16", role: "corroborating" }
+    discovery_trace: "first seen at: msft-secblog recent feed, URL https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/ → primary: Microsoft Security Blog (same URL) → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/ → corroborating: Snyk, URL https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+    summary: |
+      On 17 June 2026 at 01:07 UTC, Microsoft Threat Intelligence detected malicious versions of 142 packages across the @mastra scope on npm, attributing the operation to Sapphire Sleet (BlueNoroff / UNC1069 / STARDUST CHOLLIMA), a DPRK state-sponsored group focused on financial sector and cryptocurrency targets. The attack vector was the compromise of a dormant former contributor npm account ("ehindero") that retained publish rights across the entire Mastra AI agent framework scope — the account had never had its scope access revoked after the contributor stopped active work. The attacker injected easy-day-js@1.11.22 (a typosquat of the widely used dayjs date library) into every package's package.json, then republished all 142 packages with the malicious dependency; the easy-day-js postinstall hook disabled TLS certificate verification, downloaded a second-stage Node.js RAT from a raw IP (23.254.164.92:8000, Hostwinds), and executed it as a detached hidden background process. The cross-platform second-stage payload — targeting Windows, Linux, and macOS — harvested host data, browser histories, credentials, and enumerated 166 cryptocurrency wallet browser extensions including MetaMask, Phantom, Solflare, Coinbase Wallet, OKX, and Keplr; on Windows it established persistence via Registry Run keys, on Linux via systemd, and on macOS via LaunchAgents. Attribution rests on PowerShell backdoor tradecraft, C2 infrastructure patterns, and post-compromise activity consistent with Sapphire Sleet's prior operations, including an April 2026 Axios npm supply chain compromise detailed in an earlier Microsoft advisory.
+    ch_eu_nexus: "global; any developer or CI/CD pipeline running npm install or npm update after 17 June 01:07 UTC is potentially exposed; EU technology sector directly at risk"
+    public_sector_nexus: "indirect — public-sector DevOps pipelines using Mastra for AI agent development are exposed"
+    sector: "technology, financial, cryptocurrency, any organisation using Mastra AI framework"
+    cves: []
+    actors_campaigns_malware: ["Sapphire Sleet", "BlueNoroff", "UNC1069", "STARDUST CHOLLIMA", "Alluring Pisces", "CryptoCore", "easy-day-js (malicious npm package)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Microsoft Threat Intelligence monitoring observed easy-day-js@1.11.22 at 01:07 UTC and mastra@1.13.1 at 01:28 UTC on June 17, 2026"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+      - quote: "A poisoned npm package infected 140+ projects with a hidden payload. This report highlights how to detect, hunt, and defend against supply chain attacks"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+      - quote: "The ehindero account — a dormant former contributor whose scope access was never revoked — was compromised and used to republish 142 packages across the @mastra npm scope on June 17, 2026"
+        attribution: "Snyk Security Research"
+        source_url: "https://snyk.io/blog/a-forgotten-contributor-account-compromised-the-entire-mastra-npm-package-scope/"
+    extended_notes: |
+      MITRE ATT&CK mappings: T1195.002 Compromise Software Supply Chain, T1059.001 PowerShell, T1547.001 Registry Run Keys (Windows persistence), T1543.004 Launch Daemon (macOS), T1543.002 systemd (Linux), T1552.001 Credentials in Files, T1539 Steal Web Session Cookie (wallet extension theft).
+
+      DETECTION / HUNT: Process tree alert where node.exe or npm spawns a detached child process with unusual parent-child relationships. Network connections from Node.js processes to raw IP addresses on non-standard ports (8000) without TLS. Sysmon EID 1 with node.exe commandline containing --detach. Alert on postinstall hooks that disable TLS (NODE_TLS_REJECT_UNAUTHORIZED=0 in environment). Hunt for easy-day-js@1.11.22 in node_modules or package-lock.json. SBOM / dependency-graph monitoring for unexpected easy-day-js additions to Mastra-ecosystem packages.
+
+      HARDENING: Enforce npm package lockfiles and verify integrity before install. Implement npm audit and SLSA provenance checking. Revoke stale npm contributor scopes immediately on contributor departure. Use Sigstore/npm provenance attestations. Block outbound connections from CI/CD build agents to raw IP addresses. Review all Mastra packages installed between 17 June 01:07 UTC and remediation.
+
+      The April 2026 Axios npm compromise by the same group (referenced in the Microsoft advisory) used an identical account-takeover vector, suggesting Sapphire Sleet has systematised the approach of identifying dormant high-privilege npm accounts.
+
+  - title: "INC ransomware encryptors rewritten in Rust, BYOVD defence evasion routine systematised — Acronis documents 830+ victims since 2023"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html", publisher: "The Hacker News", date: "2026-06-18", role: "primary" }
+      - { url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/", publisher: "Acronis TRU", date: "2026-06-10", role: "corroborating" }
+    discovery_trace: "first seen at: feed https://feeds.feedburner.com/TheHackersNews, item published 2026-06-18, URL https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html → pivot to Acronis primary at URL https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/ (403 on direct fetch; search confirms June 10 publication date)"
+    summary: |
+      Acronis Threat Research Unit's deep-dive (10 June 2026) on INC ransomware, synthesised by The Hacker News on 18 June, documents INC's evolution from an emerging RaaS operation to the second-most-active ransomware group by victim count. Both the Windows and Linux/ESXi encryptors have been rewritten in Rust, improving cross-platform reach and complicating static analysis. Initial access follows three vectors: spear-phishing campaigns, credentials purchased from Initial Access Brokers, and exploitation of CVE-2023-3519 (Citrix NetScaler unauthenticated RCE), CVE-2023-48788 (Fortinet EMS SQL injection RCE), CVE-2024-57727 (SimpleHelp RMM authentication bypass), and CVE-2025-5777 (Citrix Bleed 2). The attack chain uses living-off-the-land binaries for lateral movement (WMI, PsExec, legitimate remote-management tools including Cobalt Strike, AnyDesk, ScreenConnect, TeamViewer), BYOVD with specific vulnerable kernel drivers to disable or circumvent EDR and AV, and Rclone for data exfiltration to cloud storage before deploying the encryptor with partial-file and multithreaded encryption to maximise throughput. A recently updated toolset includes a modified credential dumper targeting Veeam backup deployments — a deliberate tactic to impair backup recovery as a negotiation lever. 65.3% of INC's 830+ victims are US-based; among European countries, Germany and the UK are prominently represented; primary sectors are legal services, manufacturing, construction, technology, and healthcare.
+    ch_eu_nexus: "EU exposure: Germany and UK among top victim countries; Swiss public-sector legal-services and healthcare entities in scope of INC's stated targeting"
+    public_sector_nexus: "indirect — legal services and healthcare are primary targets; public-sector hospitals and municipal legal offices at risk"
+    sector: "legal services, manufacturing, construction, technology, healthcare"
+    cves: ["CVE-2023-3519", "CVE-2023-48788", "CVE-2024-57727", "CVE-2025-5777"]
+    actors_campaigns_malware: ["INC ransomware", "Sinobi", "Lynx"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Both the Windows and Linux/ESXi encryptors have been rewritten in Rust to facilitate cross-platform development and resist reverse engineering"
+        attribution: "The Hacker News (citing Acronis TRU)"
+        source_url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html"
+      - quote: "INC exploits the Bring Your Own Vulnerable Driver (BYOVD), using vulnerable system drivers to bypass or neutralize security defenses"
+        attribution: "Acronis TRU (via search confirmation)"
+        source_url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+    extended_notes: |
+      MITRE ATT&CK mappings: T1190 Exploit Public-Facing Application (CVE-2023-3519, CVE-2023-48788), T1078 Valid Accounts (IAB credentials), T1047 WMI Lateral Movement, T1568.002 Dynamic Resolution, T1486 Data Encrypted for Impact, T1490 Inhibit System Recovery (Veeam credential theft), T1562.001 Disable or Modify Tools (BYOVD), T1537 Transfer Data to Cloud Account (Rclone).
+
+      DETECTION: Monitor Veeam credential access anomalies (Veeam.Backup.DBEngine.exe spawning credential-access processes). Alert on kernel driver loads from non-system directories (Sysmon EID 6 with non-Microsoft signature). Flag Rclone usage with cloud storage destinations outside normal IT usage. EDR: hunt for known BYOVD driver hashes across the fleet. Monitor SimpleHelp, AnyDesk, ScreenConnect installation events from non-standard paths.
+
+      HARDENING: Patch all four named CVEs immediately (Citrix, Fortinet EMS, SimpleHelp). Enforce MFA on VPN and remote-management tools. Segment Veeam infrastructure and restrict credential exposure. Use kernel-mode code signing enforcement (HVCI) to block BYOVD drivers.
+
+  - title: "Popa residential-proxy botnet on Android TV boxes linked to Israeli firm Alarum Technologies (NetNut) — Krebs investigative report"
+    sources:
+      - { url: "https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/", publisher: "Krebs on Security", date: "2026-06-18", role: "primary" }
+      - { url: "https://www.qurium.org/forensics/finding-popa/", publisher: "Qurium Media Foundation", date: "2026-06-18", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('Android TV botnet Popa Israeli firm June 2026') → primary: Krebs on Security, URL https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/ → corroborating: Qurium forensics, URL https://www.qurium.org/forensics/finding-popa/"
+    summary: |
+      Krebs on Security and Qurium Media Foundation jointly documented Popa, a residential-proxy botnet that has infected millions of Android-based consumer TV boxes for at least four years. Popa operates as a plugin component of the larger Vo1d botnet (documented by XLAB/Qianxin), with an average of 1.5–2.5 million distinct IP addresses reporting daily across 250–300 C2 servers (Black Lotus Labs telemetry). The botnet monetises infected devices by routing advertising fraud, account-takeover traffic, and AI data-scraping operations through residential IP addresses, making the traffic appear to originate from legitimate residential users. Qurium's forensic investigation of 46+ C2 domains traced infrastructure shared with NetNut, a "residential proxy" service operated by publicly-traded Alarum Technologies Ltd (NASDAQ: ALAR), through NinjaTech SIA and the neonative.dll library; a key NetNut executive founded Ninjatech. Popa propagates through approximately 5,000 malware samples embedded in pirated streaming apps (CRICFy, DooFlix, Sprozfy, RTS TV, CyberFlix, HD/OceanStreams), torrent clients, and compromised legitimate applications including SmartTube, reaching unofficial Android TV hardware and even legitimately distributed apps on Samsung and LG smart TV platforms.
+    ch_eu_nexus: "global; residential proxy infrastructure abused for attacks on EU organisations including organisations hosted by Qurium; EU regulatory angle on Alarum Technologies (NASDAQ-listed)"
+    public_sector_nexus: "indirect — residential-proxy abuse facilitates credential-stuffing against public-sector portals and data scraping from open government data repositories"
+    sector: "consumer electronics, media streaming, financial services (account-takeover consumer)"
+    cves: []
+    actors_campaigns_malware: ["Popa botnet", "Vo1d botnet", "Badbox 2.0"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Popa averages 1.5-2.5 million distinct IP addresses daily across 250-300 control servers"
+        attribution: "Krebs on Security (Black Lotus Labs telemetry)"
+        source_url: "https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/"
+      - quote: "Qurium found several dozen domains used to control Popa that were all hosted in lockstep across multiple Internet addresses over time, including gmslb.net, safernetwork.io, tera-home.com, and ninjatech.io"
+        attribution: "Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/06/popa-botnet-linked-to-publicly-traded-israeli-firm/"
+    extended_notes: |
+      MITRE ATT&CK mappings: T1583.003 Botnet (infrastructure acquisition), T1496 Resource Hijacking (proxy relay), T1090.002 External Proxy (residential proxy relay for C2 obfuscation), T1204.002 Malicious File (pirated app installation).
+
+      DEFENDER NOTE: Traffic originating from residential-IP proxy networks is notoriously difficult to block without collateral damage. Key defender posture: (1) Flag authentication events from residential ASNs that are unexpected for your user population (e.g. Alarum/NetNut IP ranges). (2) Monitor for Android TV box IP ranges accessing sensitive portals — these devices have no legitimate reason to authenticate to corporate services. (3) NetNut/IPIDEA/RoboVPN IP-range blocklists updated by Spur.us are the best operational data source. (4) SOC investigation teams should recognise that apparent residential-IP access may be proxy-relayed attack traffic, not actual geographic targeting signal.
+
+      FAKE-NEWS CAUTION: Alarum Technologies has not been charged with any crime. The Krebs/Qurium investigation is suggestive of a corporate connection but the legal question of whether the proxy traffic constitutes unlawful conduct is unresolved. Attribution the claim to Krebs/Qurium rather than asserting direct criminal attribution.
+
+  - title: "Sophos X-Ops: Multi-stage AI pipeline reduces 11.8 trillion raw events to 81,573 actionable infostealer alerts [SINGLE-SOURCE — rotation priority]"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/a-needle-in-a-stack-of-needles-hunting-infostealers-with-ai", publisher: "Sophos X-Ops (François Labrèche)", date: "2026-06-16", role: "primary" }
+    discovery_trace: "first seen at: bridge:feed https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 (rotation-priority source sophos-xops), item published 2026-06-16 → primary: Sophos blog, URL https://www.sophos.com/en-us/blog/a-needle-in-a-stack-of-needles-hunting-infostealers-with-ai → primary (no further pivot needed)"
+    summary: |
+      Sophos principal data scientist François Labrèche presents a four-stage AI detection pipeline for identifying infostealer compromises within the volume of telemetry typical of large managed-security environments. Stage 1 applies multi-layered detectors: simple rule-based filters remove noise, correlation rules group related events, and ML models — including an LSTM-based DGA classifier detecting algorithmically generated domain communications and a logistic-regression hands-on-keyboard activity model — flag anomalous behaviour. Stage 2 deduplicates and clusters similar alerts. Stage 3 applies context-aware suppression using historical false-positive baselines per customer entity. Stage 4 applies a Gradient Boosted Trees (GBT) classifier that scores remaining alerts using static features (MITRE ATT&CK technique coverage, entity count per alert cluster) and dynamic features (historical incident rate for that alert-type/entity combination), producing a ranked prioritised queue. The pipeline compressed 11.8 trillion raw events to 81,573 prioritised alerts in a real production case where a genuine infostealer compromise was identified — a 99.999% reduction in analyst-review burden that preserved the true positive. Key defender insight for SOC engineers: DGA detection and hands-on-keyboard activity scoring are the highest-signal ML components; the behavioural indicators (anomalous program activity flagged by Sophos Intercept X, malware presence, password-theft patterns) are the features that survive all four stages rather than any specific infostealer family signature.
+    ch_eu_nexus: "global; directly applicable to Swiss and EU public-sector SOC alert-triage automation"
+    public_sector_nexus: "indirect — detection methodology applicable to any SOC"
+    sector: "all sectors; security operations"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "multi-layered pipelines can filter out the noise"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/a-needle-in-a-stack-of-needles-hunting-infostealers-with-ai"
+    extended_notes: |
+      DETECTION ENGINEER APPLICABILITY: The four-stage pipeline architecture is directly reproducible in SIEM/XDR environments: (1) static rules → (2) correlation → (3) historical FP suppression → (4) ML scoring. The LSTM DGA model specifically is available as open-source from multiple academic groups (e.g. endgame-inc/dga_predict) and can be deployed against DNS query logs from a SIEM. The GBT stage's dynamic feature (historical incident rate per alert/entity) is equivalent to Risk Score entities in Splunk ES or Sentinel's UEBA entity scoring — enabling no-code implementation of the final prioritisation stage in commercial SIEMs.
+
+      SOURCE NOTE: Marked SINGLE-SOURCE as Sophos rotation-priority source. Article published June 16, just outside the 36h window, but included per rotation-priority source obligation. No corroborating second source found for the specific pipeline performance numbers (11.8T events → 81,573 alerts).
+
+coverage_gaps:
+  - source_id: dragos
+    reason: "Dragos 2026 OT Year in Review published February 2026 — outside window; no in-window Dragos research found"
+  - source_id: acronis-tru
+    reason: "Acronis INC ransomware report (June 10 primary) returned HTTP 403 on bridge fetch; covered via THN synthesis (June 18)"
+  - source_id: dfirreport
+    reason: "Most recent DFIR Report (May 11, 2026) outside window; no in-window post"
+  - source_id: oceanlotus-eset
+    reason: "ESET OceanLotus domestic targeting article (June 11) outside 36h and 72h windows; dropped"
+  - source_id: eviltokens-eset-sekoia
+    reason: "ESET EvilTokens article (June 15) and Sekoia parts 1-2 (March-April) outside both windows; dropped"
