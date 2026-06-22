@@ -1,0 +1,343 @@
+# work/2026-W25-0aacfe65/findings.W1.yaml
+domain: W1
+run_id: 2026-W25-0aacfe65
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-21T23:07:06Z
+ended_at: 2026-06-21T23:52:00Z
+duration_seconds: 2694
+self_telemetry:
+  webfetch_calls: 13
+  websearch_calls: 12
+  bridge_fetches: 5
+
+items:
+
+  # ========== DELIVERABLE 1: LONG-RUNNING CAMPAIGNS ==========
+
+  - title: "FortiBleed long-running campaign: scale expands to 86,644 devices, CISA confirms AD compromise, Fortinet links to FG-IR-26-060 and FG-IR-25-647"
+    campaign_key: "item:fortibleed-73-932-internet-facing-fortigate-devices-exposed-"
+    sources:
+      - { url: "https://www.securityweek.com/fortibleed-86000-fortinet-device-credentials-compromised/", publisher: "SecurityWeek", date: "2026-06-19", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure", publisher: "CISA", date: "2026-06-18", role: "corroborating" }
+      - { url: "https://www.fortinet.com/blog/psirt-blogs/analysis-of-reported-credential-compromise-of-fortigate-devices", publisher: "Fortinet PSIRT", date: "2026-06-19", role: "corroborating" }
+      - { url: "https://www.securityaffairs.com/193902/hacking/cisa-warns-of-active-exploitation-following-fortibleed-leak.html", publisher: "Security Affairs", date: "2026-06-20", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage item:fortibleed (2026-06-18) → in-window delta from SecurityWeek/CISA expanding scope → Fortinet PSIRT confirmation → Security Affairs follow-up"
+    summary: |
+      The FortiBleed credential-harvesting campaign has grown from the 73,932 figure in the 18 June daily brief to a confirmed 86,644 FortiGate management URLs across 194 countries and 21,632 domains — roughly 50% of all internet-facing Fortinet devices. A Russian-speaking multi-operator group ran approximately 1.16 billion credential attempts against 320,000+ FortiGate targets using a 45-GPU Hashtopolis cluster. Credential types break down as generic admin accounts (35%), built-in Fortinet system accounts (28.3%), and organisation-specific accounts (36.7%). Fortinet confirmed on 19 June that the campaign ties to previously disclosed incidents FG-IR-26-060 and FG-IR-25-647, and that credentials originated from exported device configurations — consistent with earlier FortiOS credential-exposure CVEs (CVE-2022-40684, CVE-2023-27997, CVE-2024-21762 have historical precedent here), rather than a new vulnerability. CISA's 18 June alert confirmed at least four organisations were "fully compromised" with AD domain takeover and lateral movement, and Huntress observed 845 partner organisations affected. Named organisations in the leaked dataset include Foxconn, Samsung, Comcast, Siemens, Lenovo, PwC, Accenture, Oracle, and a Turkish NATO defence contractor claimed as fully compromised with classified document exfiltration.
+
+      **Defender posture:** CISA mandates migrating all FortiGate SSL VPN deployments to certificate-based authentication or FIDO2; Fortinet recommends upgrading to 7.4, 7.6, or 8.0 for PBKDF2 credential storage. Immediate actions: terminate all admin/VPN sessions, reset credentials, review logs for accounts with "admin" or built-in names, block external management interfaces, and audit for post-compromise AD persistence (unexpected admin accounts, new GPOs, lateral movement from VPN-adjacent subnets).
+    ch_eu_nexus: "EU/global; the dataset spans 194 countries. Fortinet VPN is common in Swiss cantonal and federal networks."
+    public_sector_nexus: "direct — CISA names government entities and critical infrastructure among confirmed compromises"
+    sector: "government, critical-infrastructure, telco, finance"
+    cves: []
+    actors_campaigns_malware: ["FortiBleed (campaign name)", "Russian-speaking multi-operator group"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-18
+    evidence:
+      - quote: "A Russian-speaking threat actor group ran approximately 1.16 billion credential attempts against 320,777 FortiGate targets using a 45-GPU cluster managed via Hashtopolis"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/fortibleed-86000-fortinet-device-credentials-compromised/"
+      - quote: "CISA confirmed active exploitation, with attackers using compromised Fortinet SSL VPN credentials to breach networks and hijack Windows Active Directory domains"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure"
+
+  - title: "ShinyHunters/UNC6240 Oracle PeopleSoft campaign: new Google GTIG analysis confirms 100+ organisations notified, 68% higher education, MeshCentral masquerade TTPs detailed"
+    campaign_key: "CVE-2026-35273"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit", publisher: "Google GTIG", date: "2026-06-17", role: "primary" }
+      - { url: "https://www.securityweek.com/google-confirms-exploitation-of-oracle-peoplesoft-zero-day-by-shinyhunters/", publisher: "SecurityWeek", date: "2026-06-17", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage CVE-2026-35273 (2026-06-16) → in-window delta from Google GTIG detailed analysis → ShinyHunters education targeting confirmed"
+    summary: |
+      Google's Threat Intelligence Group published a detailed analysis on 17 June confirming UNC6240 (ShinyHunters) exploited CVE-2026-35273 (CVSS 9.8, Oracle PeopleSoft Environment Management RCE) between 27 May and 9 June as a zero-day, before Oracle's 10 June advisory. Over 100 organisations were notified, 68% in higher education. Attack chain: unauthenticated POST to `/PSEMHUB/hub` and `/PSIGW/HttpListeningConnector` → JSP shell implant → customised MeshCentral agent v1.1.59 masquerading as Azure cloud endpoints (`azurenetfiles.net`) → lateral movement via `[victim]_fanout.sh` SSH credential spraying → `zstd`-compressed exfiltration. Defacement marker `README-IF-YOU-SEE-THIS-YOUVE-BEEN-HACKED.TXT` found on compromised systems. The Council of Europe (daily brief 2026-06-16) remains the only named EU/CH-relevant victim at time of writing; the Google report does not name additional European institutions but the 68% higher-education concentration with global reach makes EU universities a likely target class.
+
+      **Defender posture:** Block `/PSEMHUB/*` and `/PSIGW/HttpListeningConnector` at perimeter WAF; hunt for unexpected `.jsp` files in PSEMHUB.war directories; monitor for MeshCentral agent installation under Azure-mimicking domain names; alert on outbound SSH fan-out scripts with victim-abbreviation naming patterns; apply Oracle CPU June 2026.
+    ch_eu_nexus: "direct — Council of Europe (Strasbourg) confirmed victim; EU universities broadly exposed"
+    public_sector_nexus: "direct — Council of Europe is an intergovernmental body; higher-education sector is EU public-sector adjacent"
+    sector: "higher-education, government, international organisations"
+    cves: [CVE-2026-35273]
+    actors_campaigns_malware: ["UNC6240", "ShinyHunters"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-16
+    evidence:
+      - quote: "Mandiant and Google GTIG observed UNC6240 exploiting CVE-2026-35273 against PeopleSoft Environment Management endpoints between May 27 and June 9, 2026, before Oracle's advisory"
+        attribution: "Google GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/shinyhunters-targets-education-sector-oracle-exploit"
+
+  - title: "The Gentlemen (Storm-2697) RaaS: Mackay Sugar OT-adjacent claim, self-propagating Go encryptor dissected by Microsoft, 483 victims Q1-Q2 2026"
+    campaign_key: "item:eset-the-gentlemen-raas-gang-centrally-builds-and-maintains-"
+    sources:
+      - { url: "https://www.securityweek.com/ransomware-attack-shuts-down-mills-of-australias-second-largest-sugar-producer/", publisher: "SecurityWeek", date: "2026-06-17", role: "primary" }
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/05/28/the-gentlemen-ransomware-dissecting-a-self-propagating-go-encryptor/", publisher: "Microsoft Security Blog", date: "2026-05-28", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/06/the-gentlemen-raas-uses-gentlekiller.html", publisher: "The Hacker News", date: "2026-06-20", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage item:eset-the-gentlemen-raas (2026-06-19) → new in-window delta: Mackay Sugar OT claim, expanded victim count from SecurityWeek + THN"
+    summary: |
+      Since the June 19 ESET coverage, The Gentlemen claimed the Mackay Sugar attack (Australia's second-largest raw sugar producer) on 15 June: mills were shut down, with IT systems supporting "cane supply, harvesting and mill operations" compromised. Whether industrial control systems (ICS/OT) were directly reached remains unconfirmed; the company resumed limited manual crushing on 12 June. No data leaked as of 20 June. The group now has 483+ victims on its dark-web leak site, 380 in 2026 alone (second-most prolific group in 2026 by published victim count, behind Qilin). Microsoft's 28 May analysis details the technical underpinning: a Go-based encryptor using per-file ephemeral Curve25519 + XChaCha20 encryption with aggressive self-propagation — when deployed with `--spread`, it functions as a self-replicating worm that enumerates SMB shares and deploys via WMI/PsExec without further operator interaction. EDR-killer framework GentleKiller centrally maintained by Storm-2697 operators and distributed to affiliates targets 400+ security processes. Fox Tempest (Microsoft-disrupted malware-signing-as-a-service) provided the signed dropper chain used by some affiliates. Check Point Q1 2026 data shows the group avoids US targets (only 13.3%), concentrating on Australia, Thailand, and Brazil — OT/manufacturing-heavy economies.
+
+      **Defender posture:** Hunt for `--spread` argument in process command lines of Go-compiled binaries; block WMI lateral movement from unexpected source hosts (`Win32_Process.Create` via WMI); enforce tiered SMB ACLs to prevent worm propagation; deploy EDR with kernel-level self-protection to resist GentleKiller process-termination; monitor for unsigned or Fox-Tempest-signed binaries (Authenticode certificate chain from short-lived issuing CAs).
+    ch_eu_nexus: "indirect — no confirmed Swiss/EU victims this week; OT-adjacent targeting pattern relevant to EU food/energy sectors"
+    public_sector_nexus: "indirect — OT/critical-infrastructure targeting"
+    sector: "manufacturing, OT/ICS, food-production"
+    cves: []
+    actors_campaigns_malware: ["Storm-2697", "The Gentlemen", "GentleKiller", "Fox Tempest"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-19
+    evidence:
+      - quote: "The Gentlemen named Mackay Sugar on their Tor website on June 15; it has yet to leak any data — which usually means negotiations are still ongoing"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/ransomware-attack-shuts-down-mills-of-australias-second-largest-sugar-producer/"
+
+  - title: "Nightmare/Chaotic Eclipse CVE-2026-50656 (RoguePlanet): TOCTOU race in Windows Defender confirmed unpatched, PoC works on fully-patched June-2026 Windows"
+    campaign_key: "item:nightmare-chaotic-eclipse-zero-day-wave-the-defender-lpe-now"
+    sources:
+      - { url: "https://www.helpnetsecurity.com/2026/06/17/rogueplanet-zero-day-cve-2026-50656/", publisher: "Help Net Security", date: "2026-06-17", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656", publisher: "Microsoft MSRC", date: "2026-06-17", role: "corroborating" }
+      - { url: "https://www.securityweek.com/microsoft-working-on-patch-for-rogueplanet-zero-day/", publisher: "SecurityWeek", date: "2026-06-17", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage item:nightmare-chaotic-eclipse (2026-06-19 update) → in-window delta: patch still absent as of June 21, PoC validated on June-2026 Patch Tuesday builds"
+    summary: |
+      As of 21 June, CVE-2026-50656 (RoguePlanet, CVSS 7.8) remains unpatched. The exploit published by researcher Nightmare Eclipse (Chaotic Eclipse) on 10 June — hours after June Patch Tuesday — abuses a Time-of-Check to Time-of-Use (TOCTOU) race condition in Microsoft Defender's file-processing workflow: Defender checks a file path under the SYSTEM account, then reopens it for analysis; the exploit replaces the original file in the gap between those two operations to achieve SYSTEM-level command execution. CWE-59 (Improper Link Resolution Before File Access). The PoC is validated against fully-patched Windows 10 and Windows 11, including the June 2026 Patch Tuesday build KB5094126. Real-Time Protection status does not affect exploitability. The researcher warns that "small changes in the PoC can completely bypass mitigations — the only thing you can realistically do is wait for a patch." Microsoft confirmed the vulnerability and stated a fix is "in development" with no release timeline given.
+
+      **Defender posture:** No direct user-space mitigation is available. Attack requires local authenticated access (T1068 Exploitation for Privilege Escalation), making it a post-initial-access concern. Detection angle: monitor for `MsMpEng.exe` spawning unexpected child processes or for symbolic link manipulation in temp directories timed to Defender scan activity (Sysmon EID 11 file creation + EID 1 child process of MsMpEng.exe). Enforce application whitelisting to limit post-exploitation lateral movement.
+    ch_eu_nexus: "global — affects all Windows deployments without patch"
+    public_sector_nexus: "indirect — unpatched privilege escalation in ubiquitous security product"
+    sector: "all"
+    cves: [CVE-2026-50656]
+    actors_campaigns_malware: ["Nightmare Eclipse (researcher alias)", "Chaotic Eclipse (campaign name)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-19
+    evidence:
+      - quote: "The PoC functions regardless of Real-Time Protection enablement status and works against Windows 11 with KB5094126 (June 2026 Patch Tuesday)"
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/17/rogueplanet-zero-day-cve-2026-50656/"
+
+  - title: "Operation Endgame expands to SocGholish/TA569: 106 C2 servers seized, 14,971 WordPress sites cleaned, Evil Corp nexus confirmed — residual clusters operational"
+    campaign_key: "item:operation-endgame-expands-to-socgholish-ta569-106-c2-servers"
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/sayonara-socgholish-operation-endgame-disrupts-major-cybercrime-operation", publisher: "Proofpoint", date: "2026-06-18", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/06/18/law-enforcement-socgholish-operation-endgame/", publisher: "Help Net Security", date: "2026-06-18", role: "corroborating" }
+      - { url: "https://www.politie.nl/en/news/2026/juni/18/11-international-law-enforcement-initiate-hunt-on-malware-group-socgholish.html", publisher: "Dutch National Police", date: "2026-06-18", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage item:operation-endgame-expands (2026-06-19 daily) → in-window delta: Proofpoint detailed analysis of residual clusters and Evil Corp nexus"
+    summary: |
+      The prior daily brief (2026-06-19) covered the takedown itself. The in-window delta is Proofpoint's post-action analysis (18 June) surfacing the Evil Corp connection and the resilience problem: TA569 served as primary distribution for WastedLocker (Evil Corp), LockBit, and RansomHub ransomware for years. Law enforcement (Netherlands NHCTU, Canada RCMP, US FBI, Germany BKA, Europol) seized 106 servers and credentials for 1.4 million compromised WordPress sites. However, five clusters remain fully operational: TA2726 (Keitaro TDS provider used by multiple actors), TA2727 (macOS-focused), ZPHP, ErrTraffic (covered in daily 2026-06-17), and LandUpdate808/KongTuke. All employ identical FakeUpdates social engineering. The 55% of Infoblox cloud customers exposed to SocGholish in 2026 illustrates the pre-takedown scale. Proofpoint notes that WordPress sites frequently reinfect because the underlying credential compromise persists beyond CMS-level cleanup.
+
+      **Defender posture:** Proofpoint recommends the Emerging Threats ruleset for network detection; browser isolation for email-delivered links; GPO restriction on downloading and executing JScript/WSH files (`wscript.exe`, `cscript.exe` execution from user writable paths). For WordPress administrators: MFA on wp-admin, IP-allowlisted admin access, disable PHP execution in wp-content/uploads, FIM on core files, and full credential rotation after detection. Detection: alert on blob-URL downloads followed by JScript/WSH execution (Sysmon EID 11 in %TEMP% + EID 1 wscript.exe/cscript.exe).
+    ch_eu_nexus: "EU/global — Dutch NHCTU led operation; European WordPress-hosted infrastructure was used in the campaign"
+    public_sector_nexus: "indirect — WordPress-hosted government and municipal sites are likely within the 14,971 cleaned set"
+    sector: "all — SocGholish is a horizontal delivery mechanism"
+    cves: []
+    actors_campaigns_malware: ["TA569", "SocGholish", "FakeUpdates", "GhoLoader", "Evil Corp", "Mustard Tempest", "UNC1543", "TA2726", "TA2727", "ErrTraffic", "LandUpdate808"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-19
+    evidence:
+      - quote: "TA2726, TA2727, ZPHP, ErrTraffic, and LandUpdate808/KongTuke clusters remain active post-takedown, all using identical fake-update social engineering"
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/sayonara-socgholish-operation-endgame-disrupts-major-cybercrime-operation"
+
+  # ========== DELIVERABLE 2: THREAT-ACTOR DEVELOPMENTS ==========
+
+  - title: "FishMonger (I-SOON / Earth Lusca) ports SprySOCKS to Windows with RawWNPF kernel rootkit and possible UEFI bootkit component (CVE-2023-24932)"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/", publisher: "ESET WeLiveSecurity", date: "2026-06-16", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/china-linked-sprysocks-backdoor-expands.html", publisher: "The Hacker News", date: "2026-06-17", role: "corroborating" }
+    discovery_trace: "first seen at: prior_coverage item:fishmongerports-its-sprysocks (2026-06-17 daily) → in-window delta: ESET full technical paper with kernel-driver detail, UEFI bootkit indicator, new victim regions"
+    summary: |
+      ESET's full research paper (16 June) on FishMonger (Earth Lusca, TAG-22, Aquatic Panda — the Winnti Group contractor tracked as I-SOON) reveals two undocumented Windows SprySOCKS variants active between 2023–2024. WIN_DRV deploys the `RawWNPF.sys` kernel driver as a rootkit that: (1) hooks `NtQuerySystemInformation` to hide processes; (2) intercepts `IoCompletionRoutine` for IOCTL `0x12001B` in `nsiproxy.sys` to hide network connections; (3) registers minifilter callbacks (`IRP_MJ_CREATE`, `IRP_MJ_DIRECTORY_CONTROL`) to conceal files; (4) uses `CmRegisterCallbackEx` to hide persistence registry keys; (5) employs Windows Filtering Platform (WFP) to redirect specially crafted TCP packets to the hidden backdoor port. WIN_PLUS is a simplified variant without the driver. Communication protocols: TCP, UDP, WebSocket; 30+ supported commands. Limited telemetry also indicates a possible UEFI bootkit component exploiting CVE-2023-24932 (BlackLotus Secure Boot bypass, now patched). Victims: government organisations in Honduras, Taiwan, Thailand, Pakistan. EU nexus is indirect but concerning given I-SOON's broad targeting of government and defence.
+
+      **Defender posture:** Hunt for `RawWNPF.sys` and variants; monitor for DLL side-loading via MFC Satellite DLLs; detect `svchost.exe` process-doppelgänging injections; alert on `netsh.exe`-based firewall rule modifications; FIM on `%SystemRoot%\Fonts` and spool directories for encrypted `.dat` persistence. For the UEFI angle: verify Secure Boot policy is on current patch level and enable Vulnerable Driver Blocklist.
+    ch_eu_nexus: "indirect — I-SOON targets government/defence sectors globally; EU government networks are in the assessed targeting scope"
+    public_sector_nexus: "direct — all confirmed victims are government organisations"
+    sector: "government, defence"
+    cves: [CVE-2023-24932]
+    actors_campaigns_malware: ["FishMonger", "Earth Lusca", "TAG-22", "Aquatic Panda", "I-SOON", "SprySOCKS", "WIN_DRV", "WIN_PLUS", "RawWNPF"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-17
+    evidence:
+      - quote: "WIN_DRV uses the RawWNPF driver, a rootkit that hides the malware's files, processes, registry keys and network connections so they never show up in tools like netstat"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"
+
+  - title: "Sapphire Sleet (DPRK / BlueNoroff) escalates npm supply chain attacks: Mastra AI ecosystem poisoned in 88 minutes — second major npm strike after April 2026 Axios attack"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/", publisher: "Microsoft Security Blog", date: "2026-06-17", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/", publisher: "BleepingComputer", date: "2026-06-18", role: "corroborating" }
+    discovery_trace: "first seen at: msft-secblog feed entry (2026-06-17) → Microsoft Security Blog primary → BleepingComputer corroborating; note UNK_DeadDrop daily coverage (2026-06-16) is distinct cluster, this is a separate Sapphire Sleet operation"
+    summary: |
+      Microsoft attributes a second 2026 npm supply chain attack to Sapphire Sleet (UNC1069, STARDUST CHOLLIMA, BlueNoroff): attackers compromised the `ehindero` maintainer account (whose scope access was never revoked) and published 140+ malicious packages across the `@mastra` scope in 88 minutes on 13 June. The weaponised dependency `easy-day-js@1.11.22` (typosquatting the legitimate `dayjs` with 57M+ weekly downloads) ran an obfuscated 4,572-byte dropper (`setup.cjs`) via npm's `postinstall` hook: (1) TLS verification disabled via `NODE_TLS_REJECT_UNAUTHORIZED=0`; (2) marker files dropped in temp dirs; (3) ~41 KB second-stage fetched from C2 (`23.254.164.92:8000`); (4) detached, hidden Node.js process spawned. Persistence cross-platform: Windows Registry Run key (`protocal.cjs`), macOS LaunchAgent (`com.nvm.protocal.plist`), Linux systemd user unit (`nvmconf.service`). Exfiltrated: 166 browser extension IDs (MetaMask, Phantom, Coinbase), browser history SQLite DBs, cloud provider credentials (AWS, Azure, GCP), LLM API keys (OpenAI, Anthropic, Google), CI/CD tokens, SSH keys. This is the second Sapphire Sleet npm attack in 2026 (first: Axios HTTP client, ~70M weekly downloads, March/April 2026), establishing a pattern of targeting AI developer toolchain supply chains for maximum credential coverage. Microsoft Defender detects as `Trojan:JS/NpmStealz.Z!MTB`.
+
+      **Defender posture:** Run `npm install --ignore-scripts` in CI/CD pipelines to prevent postinstall execution; pin package versions in lock files; monitor for `setup.cjs` or `easy-day-js` in `node_modules`; hunt for `protocal.cjs` in Registry Run keys or LaunchAgent plists; rotate all API keys and cloud credentials on affected systems; Sysmon: alert on `node.exe` spawning detached child processes from within `node_modules` directories (EID 1 parent-image filter).
+    ch_eu_nexus: "global — AI developers anywhere running npm install with mastra packages are affected; Swiss software/research sector uses these tools"
+    public_sector_nexus: "indirect — public-sector software development environments at risk"
+    sector: "technology, AI development, financial services (cryptocurrency)"
+    cves: []
+    actors_campaigns_malware: ["Sapphire Sleet", "BlueNoroff", "UNC1069", "STARDUST CHOLLIMA", "NpmStealz", "easy-day-js (malicious package)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers compromised the ehindero maintainer account and published over 140 malicious packages across the @mastra scope in 88 minutes on June 13"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/"
+
+  - title: "INC ransomware Q1 2026 surge: 830+ victims, BYOVD drivers, Rust encryptor rewrite — Acronis report and Lynx/Sinobi code-overlap variants active"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html", publisher: "The Hacker News", date: "2026-06-19", role: "primary" }
+      - { url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/", publisher: "Acronis TRU", date: "2026-06-18", role: "primary" }
+      - { url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q1-2026/", publisher: "Check Point Research", date: "2026-05-11", role: "corroborating" }
+    discovery_trace: "first seen at: THN feed item (2026-06-19) → Acronis TRU primary → Check Point Q1 report background"
+    summary: |
+      INC ransomware has surpassed 830 victims since August 2023 and ranked 4th in Q1 2026 (120+ incidents per ZeroFox, behind Qilin, Akira, and The Gentlemen). Key technical evolution per Acronis: (1) Rust-based rewrite of Windows and Linux/ESXi encryptors for cross-platform deployment and reverse-engineering resistance; (2) BYOVD deployment using drivers `filwfp.sys`, `filnk.sys`, and `fildds.sys` for EDR termination — these are the same three drivers as used in earlier Vanilla Tempest campaigns, suggesting a driver supply relationship; (3) lateral movement via LOLBins (RDP, PsExec), commercial RMM tools (AnyDesk, ScreenConnect, TeamViewer), and Cobalt Strike; (4) Veeam credential dumper for backup infrastructure targeting. The May 2024 source-code sale to an unidentified party spawned two code-overlap variants: Lynx (still active, declining 42%) and Sinobi. INC avoids the US (65%+ of victims historically), with heavy European exposure: NHS Dumfries & Galloway and Alder Hey Children's Hospital (UK) among confirmed victims; Germany is the #2 ransomware target country in Q1 2026 (Emsisoft, 5.9% of global victims).
+
+      **Defender posture:** Detect the three BYOVD drivers (`filwfp.sys`, `filnk.sys`, `fildds.sys`) via Sysmon EID 6 (driver load) with hash-based blocklist; alert on Veeam process memory access from unexpected parents (credential dumping); monitor for Cobalt Strike Beacon patterns in network traffic; restrict LOLBin (PsExec, RDP from management jump hosts only) via WDAC; ensure backup systems have MFA and are network-isolated.
+    ch_eu_nexus: "EU/global — NHS UK victims confirmed; Germany is #2 country globally; healthcare/education targets relevant to CH cantonal hospitals and universities"
+    public_sector_nexus: "direct — NHS Dumfries & Galloway confirmed victim; healthcare and education are primary target sectors"
+    sector: "healthcare, education, legal, manufacturing, technology"
+    cves: [CVE-2023-3519, CVE-2025-5777, CVE-2023-48788, CVE-2024-57727]
+    actors_campaigns_malware: ["INC ransomware", "Lynx", "Sinobi", "Cobalt Strike"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The disruption of LockBit and the shutdown of BlackCat created opportunities for INC to expand as affiliates migrated to alternative operations — by Q1 2026 it ranked 4th with 120+ incidents"
+        attribution: "Acronis TRU"
+        source_url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html"
+
+  # ========== DELIVERABLE 3: RESEARCH FINDINGS ==========
+
+  - title: "AutoJack: AI browsing agent hijack to host RCE via MCP WebSocket localhost trust bypass — AutoGen Studio pre-release builds affected (no CVE assigned yet)"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/", publisher: "Microsoft Security Blog", date: "2026-06-18", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/autojack-attack-lets-one-web-page.html", publisher: "The Hacker News", date: "2026-06-19", role: "corroborating" }
+    discovery_trace: "first seen at: THN feed item (2026-06-19) → Microsoft Security Blog primary → corroborated via THN detailed article"
+    summary: |
+      Microsoft's Defender Security Research Team published AutoJack (18 June), a three-flaw chain in AutoGen Studio's Model Context Protocol (MCP) WebSocket implementation that converts a browsing AI agent into a host-level RCE delivery mechanism. Chain: (1) CWE-1385 Origin allowlist bypass — the browsing agent (MultimodalWebSurfer) runs as a localhost process and passes origin checks on the MCP WebSocket at `ws://localhost:8081/api/mcp/ws/?server_params=`; (2) CWE-306 Missing authentication — the `/api/mcp/*` path family skips the normal auth middleware; (3) CWE-78 OS command injection — StdioServerParams decodes the base64 `server_params` URL argument and passes attacker-controlled binary path directly to `subprocess.run`. A malicious webpage steers the agent, reaching the privileged local socket and executing arbitrary host processes under the AutoGen Studio process account. No CVE identifiers assigned in the initial disclosure. Only pre-release PyPI builds 0.4.3.dev1 and 0.4.3.dev2 are affected; the stable 0.4.2.2 release lacks the MCP route entirely. Fix committed at GitHub `b047730` — no stable-release patch yet. No in-the-wild exploitation observed. The same week Microsoft disclosed CVE-2026-26030 and CVE-2026-25592 (Semantic Kernel RCE), and the Sophos underground-AI report (daily 2026-06-19) showed criminal interest in agent frameworks — collectively this week established the AI agent control plane as a concrete attack surface class.
+
+      **Defender posture:** T1059 (Command and Scripting Interpreter via agent-spawned process) + T1566 (social engineering / prompt injection driving agent to attacker URL). Detection: Sysmon EID 1 `autogenstudio.exe` spawning unexpected child processes; network detection rule on WebSocket connections to `ws://localhost:*/api/mcp/ws/`; EDR parent-child relationship anomaly (browser process → local WebSocket → unexpected OS binary). Hardening: bind MCP socket to loopback with host firewall; run AutoGen Studio under low-privilege accounts in isolated developer containers; never deploy on shared or production systems.
+    ch_eu_nexus: "global — relevant to any Swiss public-sector or research institution deploying AI agent frameworks"
+    public_sector_nexus: "indirect — public-sector AI adoption creates new exposure class"
+    sector: "technology, AI development, research"
+    cves: [CVE-2026-26030, CVE-2026-25592]
+    actors_campaigns_malware: ["AutoJack (research name)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerable handler at /api/mcp/ws/?server_params= skipped authentication middleware for /api/mcp/* paths and executed attacker-controlled commands via StdioServerParams without an executable allowlist"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/18/autojack-single-page-rce-host-running-ai-agent/"
+
+  - title: "Velvet Ant Operation Highland: China-nexus actor maintained decade-long (2016–2026) undetected presence in air-gapped critical infrastructure via multi-hop HTTP proxy chain and backdoored PAM/OpenSSH"
+    sources:
+      - { url: "https://www.sygnia.co/blog/operation-highland-velvet-ant/", publisher: "Sygnia", date: "2026-06-11", role: "primary" }
+      - { url: "https://gbhackers.com/modified-openssh-binaries/", publisher: "GBHackers", date: "2026-06-16", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch 'Velvet Ant Operation Highland VerdantBamboo BRICKSTORM June 2026' → Sygnia blog primary → GBHackers corroborating"
+    summary: |
+      Sygnia disclosed on 11 June an investigation into Velvet Ant (a China-nexus APT tracked separately from VerdantBamboo/UNC5221) that maintained undetected access in a segregated critical infrastructure network for approximately a decade (first artifacts: ~2016). The attack chain: internet-facing servers compromised via modified `auditdb` reverse shell (GS-Netcat derivative, masquerades as kernel thread) and custom SOCKS5 Perl proxy → HTTP command execution via Nginx + FastCGI wrapper chains → custom `uptime` binary establishing SSH connections from internal targets based on HTTP parameters — bridging a network with no direct internet connectivity. Nine variants of backdoored `pam_unix.so` with hardcoded passwords and credential harvesting, plus modified `ssh`, `sshd`, `scp`, `ssh-keygen` binaries with keylogging. Persistence via systemd or modified SysVinit scripts. No direct EU/Swiss victim named, but Velvet Ant previously targeted Cisco NX-OS zero-days (CVE-2024-20399) and F5 BIG-IP appliances (Sygnia prior reports); the OT/critical-infrastructure TTPs are directly relevant to European network operators.
+
+      **Background:** Velvet Ant has been tracked since Sygnia's 2024 disclosures on F5 BIG-IP abuse and Cisco NX-OS zero-day deployment. This 2026 investigation reveals the full depth of their long-dwell infrastructure compromise methodology — prior reporting covered the exploit entry points; this report covers the persistence layer that survived those initial mitigations.
+
+      **Defender posture:** FIM on PAM modules and OpenSSH binaries as highest-priority security controls; monitor for processes masquerading as kernel threads (Sysmon EID 1: low-privilege process with kernel-like name); detect Nginx + FastCGI CGI execution patterns on bastion hosts; enforce MFA before critical-host SSH access; post-compromise credential rotation must precede persistence removal. On isolated networks: deploy EDR with offline telemetry collection; audit for unauthorised systemd/SysVinit service installations.
+    ch_eu_nexus: "indirect — OT/critical-infrastructure targeting relevant to CH/EU network operators and utilities"
+    public_sector_nexus: "direct — critical infrastructure target"
+    sector: "critical-infrastructure, OT, government"
+    cves: [CVE-2024-20399]
+    actors_campaigns_malware: ["Velvet Ant", "auditdb (reverse shell)", "GS-Netcat", "RawWNPF (not this actor — note: this is Velvet Ant)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Velvet Ant maintained undetected presence in a segregated critical infrastructure network from ~2016 to 2026 via a three-stage access chain using modified PAM and OpenSSH binaries with hardcoded passwords"
+        attribution: "Sygnia"
+        source_url: "https://www.sygnia.co/blog/operation-highland-velvet-ant/"
+
+  - title: "VerdantBamboo/UNC5221 deploys FreeBSD-compatible and Rust-based BRICKSTORM variants with new .NET AOT backdoor (PLENET/GRIMBOLT) via compromised MSP firewall"
+    sources:
+      - { url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/", publisher: "Volexity", date: "2026-06-04", role: "primary" }
+      - { url: "https://cybersecuritynews.com/chinese-apt-verdantbamboo-uses-brickstorm-malware/", publisher: "CyberSecurityNews", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch 'Velvet Ant Operation Highland VerdantBamboo BRICKSTORM June 2026' → Volexity blog primary → corroborating news article"
+    summary: |
+      Volexity published on 4 June (in-window for this W25 weekly window at 8 days) a new BRICKSTORM investigation into VerdantBamboo (WARP PANDA, UNC5221) — a China-nexus actor distinct from Velvet Ant. Key new findings vs. prior BRICKSTORM reports: (1) A FreeBSD-compatible BRICKSTORM variant deployed on a pfSense firewall at a compromised MSP — the first non-Linux variant; (2) A Rust-based BRICKSTORM variant with `gobfuscate` obfuscation; (3) Two new companion backdoors: PLENET/GRIMBOLT (.NET Native AOT compiled — harder to decompile than standard .NET; interactive shell, remote execution, file manipulation, C2 switching) and AGENTPSD (Python/PyInstaller reverse shell as fallback). Initial access via MSP firewall compromise then lateral movement to victim via stolen Egnyte Storage Sync credentials (SSH as `egnyteservice`). Victim's Microsoft 365 environment reached via BRICKSTORM SOCKS5 proxy on the Storage Sync VM. Vulnerability in Egnyte Storage Sync v13.13 (sudo misconfiguration via `tee`) allowed privilege escalation.
+
+      **Background:** VerdantBamboo/UNC5221 was first documented by NVISO in April 2025 targeting Ivanti appliances with BRICKSTORM. The new variants show accelerated tooling development and an MSP supply-chain vector for the first time.
+
+      **Defender posture:** Monitor firewall and pfSense syslog for unexpected process execution; inspect NAS and storage-sync VMs for BRICKSTORM WebSocket C2 patterns; audit `sudoers` entries for `tee`-enabled escalation paths; look for `.NET Native AOT` compiled binaries (large single-file executables with no managed IL visible to standard .NET decompilers); detect PyInstaller-compiled Python payloads in unusual paths. MSP defenders: treat all downstream customer environments as potentially exposed when an MSP edge device is compromised.
+    ch_eu_nexus: "EU/global — MSP supply-chain attack; Swiss companies using MSPs with pfSense/Egnyte infrastructure are in the exposure class"
+    public_sector_nexus: "indirect — MSP attacks affect public-sector customers of those MSPs"
+    sector: "technology, MSP, government, finance"
+    cves: []
+    actors_campaigns_malware: ["VerdantBamboo", "UNC5221", "WARP PANDA", "BRICKSTORM", "PLENET", "GRIMBOLT", "AGENTPSD"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "VerdantBamboo deployed a FreeBSD-compatible BRICKSTORM implant on the MSP's pfSense firewall, then used stolen Egnyte credentials to pivot to the victim organisation's Storage Sync system"
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"
+
+  - title: "usbliter8: Unpatchable A12/A13 SecureROM exploit via USB DMA buffer underflow — physical DFU-mode attack achieving pre-boot ACE, Secure Enclave unaffected"
+    sources:
+      - { url: "https://9to5mac.com/2026/06/18/new-unpatchable-exploit-targets-apple-devices-with-a12-and-a13-chips/", publisher: "9to5Mac", date: "2026-06-18", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/unpatchable-usbliter8-exploit-breaks.html", publisher: "The Hacker News", date: "2026-06-20", role: "corroborating" }
+    discovery_trace: "first seen at: THN feed item (2026-06-20) → 9to5Mac primary for device list → THN corroborating"
+    summary: |
+      Paradigm Shift published usbliter8 on 18 June: a working exploit achieving arbitrary code execution inside the SecureROM (burned-in boot code, unpatchable) of Apple A12 and A13 SoCs. The bug is a hardware-level USB DMA buffer underflow in the USB controller combined with a firmware configuration flaw — the USB interrupt handler can be hijacked to write to controlled memory locations, bypassing PAC (Pointer Authentication) through staged memory corruption. Attack completes in under 2 seconds; requires physical possession of the device in DFU (Device Firmware Update) mode connected to a dedicated RP2350 microcontroller board. Affected devices: A12 — iPhone XR, iPhone XS/XS Max, iPad Air 3, iPad mini 5, iPad 8, Apple TV 4K (2nd gen); A13 — iPhone 11 series, iPhone SE (2nd gen), iPad 9, Studio Display; S4/S5 — Apple Watch Series 4/5, Watch SE (1st gen), HomePod mini. A12X/Z (iPad Pro 2018/2020) theoretically exploitable but not yet implemented. The Secure Enclave is NOT compromised — passcodes and encrypted user data remain protected. However, the exploit enables loading unsigned boot firmware and is described as "opening wider attack vectors to compromise the Secure Enclave." Full technical write-up and PoC published at `ps.tc/pages/blog-usbliter8.html` and GitHub `prdgmshift/usbliter8`.
+
+      **Defender posture:** No software patch is possible — hardware replacement is the only full mitigation. Enterprise MDM teams should inventory affected devices and prioritise hardware refresh. Physical security controls (device storage, USB-C port blocking for DFU-mode exposure) are the primary operational mitigations. Risk is forensics/intelligence-collection class, not remote exploitation — no network-facing threat.
+    ch_eu_nexus: "global — widely deployed devices in Swiss public-sector BYOD / mobile device management fleets"
+    public_sector_nexus: "indirect — government BYOD / MDM programme exposure"
+    sector: "all (mobile device management)"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The exploit finishes in under two seconds, before Apple's signed boot chain loads, and is the result of both a hardware bug in the USB controller and a specific configuration flaw present in the device firmware"
+        attribution: "9to5Mac"
+        source_url: "https://9to5mac.com/2026/06/18/new-unpatchable-exploit-targets-apple-devices-with-a12-and-a13-chips/"
+
+  # ========== DELIVERABLE 4: ANNUAL / PERIODIC REPORTS ==========
+
+  - title: "Check Point State of Ransomware Q1 2026: ecosystem consolidation — top 10 groups hold 71.1% of victims, The Gentlemen breakout +315%, LockBit 5.0 resurges +106%"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q1-2026/", publisher: "Check Point Research", date: "2026-05-11", role: "primary" }
+      - { url: "https://www.emsisoft.com/en/blog/47562/the-state-of-ransomware-in-q1-2026/", publisher: "Emsisoft", date: "2026-04-14", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch 'Emsisoft state of ransomware Q1 2026 quarterly report findings Europe' → Check Point Research primary → Emsisoft corroborating"
+    summary: |
+      Check Point Research Q1 2026 (published 11 May — within the 30-day look-back for annual/periodic reports; not covered in dailies) recorded 2,122 DLS-posted ransomware victims — second-highest Q1 on record, 117% above Q1 2024. Key structural shift: the top 10 groups now account for 71.1% of all victims, the highest concentration since early 2024, reversing two years of fragmentation. This has operational implications: organisations face fewer but more capable, professionalised adversaries investing in operational consistency. Dominant groups: Qilin (338 victims, third consecutive quarter leading), The Gentlemen (+315% from Q4 2025, 166 victims — avoids US, concentrating on Australia/Thailand/Brazil and OT sectors), LockBit 5.0 (+106%, 163 victims, Rust-rewrite with multi-platform support, $500 Bitcoin affiliate deposit). DragonForce (+29%), Nightspire (+183% across quarters — OneDrive cloud encryption capability). Emsisoft Q1 2026 (14 April) independently confirms Germany as the #2 country globally at 5.9% of victims, displacing Canada; EU countries (Germany, France, Italy, UK) collectively ~20.7% of global victims. Switzerland: Check Point notes Akira holds ~31% of Swiss victims.
+
+      **Background:** This report analyses the Q1 data that set the stage for the June 2026 incidents covered in the dailies. The Gentlemen's 315% growth in Q1 explains the scale of the Mackay Sugar, ESET GentleKiller, and Microsoft encryptor-dissection coverage in the W25 window. LockBit 5.0's resurgence and the consolidation trend have direct bearing on threat-modelling for Swiss/EU public-sector defenders.
+    ch_eu_nexus: "direct — Switzerland specifically named; Germany #2 globally; EU countries = 20.7% of global victims"
+    public_sector_nexus: "direct — healthcare and education confirmed sectors; government adjacent"
+    sector: "all — ransomware is horizontal"
+    cves: []
+    actors_campaigns_malware: ["Qilin", "The Gentlemen", "LockBit 5.0", "DragonForce", "Nightspire", "Akira", "INC ransomware"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Top 10 ransomware groups accounted for 71.1% of all DLS-posted victims in Q1 2026 — the highest concentration since early 2024, reversing two years of ecosystem fragmentation"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q1-2026/"
+
+candidate_sources:
+  - id: hivesecurity-gitlab
+    publisher: "Hive Security (hivesecurity.gitlab.io)"
+    url: "https://hivesecurity.gitlab.io/"
+    category: research
+    why: "Published technical deep-dive on RoguePlanet CVE-2026-50656 TOCTOU race condition in Microsoft Defender; independent security research blog covering Windows kernel exploitation; surfaced via WebSearch in this run."
+
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "Known Cloudflare-gated host; RSS feed not tried this run; no Swiss-specific in-window items identified via WebSearch fallback."
+  - source_id: acronis-tru
+    reason: "HTTP 403 on direct WebFetch to acronis.com/en/tru blog article; content retrieved via secondary sources (THN, WebSearch summaries). Covered anyway: true."
+  - source_id: bleepingcomputer
+    reason: "HTTP 403 on direct fetch for two articles (Mastra, FortiBleed); content recovered via WebSearch and secondary sourcing. Covered anyway: true."
+
+fetch_failures: []
