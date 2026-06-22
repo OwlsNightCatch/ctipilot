@@ -1,0 +1,80 @@
+domain: S1
+run_id: 2026-06-22-dece656d
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-22T04:06:33Z
+ended_at: 2026-06-22T04:21:09Z
+duration_seconds: 875
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 9
+  bridge_fetches: 12
+
+items:
+  - title: "AryStinger botnet hijacks 4,300+ legacy D-Link routers as reconnaissance and attack proxies (CVE-2013-3307, CVE-2016-5681, CVE-2025-11837)"
+    sources:
+      - url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+        publisher: "Qianxin XLab"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+        publisher: "BleepingComputer"
+        date: "2026-06-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer RSS feed, URL https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/ (published 2026-06-21T14:14Z, in 36h window) → primary: Qianxin XLab research blog, URL https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+    summary: |
+      Qianxin XLab disclosed AryStinger, a previously undocumented botnet first observed on March 12, 2026 spreading via two EoL router vulnerabilities (CVE-2013-3307 and CVE-2016-5681 affecting Linksys and D-Link RTL819X-class devices) and, from April 26, via CVE-2025-11837 (QNAP Malware Remover code-injection, Pwn2Own 2025 demo, patched in v6.6.8.20251023). The botnet runs two malware variants: an RTL819X C-language version targeting legacy routers (D-Link DIR-850L 75%, DIR-818LW 13%) with massdns and traffic-tunnel capability, and a Go-language Standard version for NAS devices with integrated fscan, ksubdomain, httpx, and Tlsx recon tooling plus remote command and source-level Go/Java/Python payload execution. The core design purpose is pre-intrusion reconnaissance infrastructure rather than DDoS or cryptomining: infected nodes are assigned distributed DNS subdomain brute-force scanning tasks by a C2 server, split across Executors in parallel to map attack surfaces at scale. Nodes also deploy a dropbear SSH backdoor on a fixed local port and configure iptables to allow inbound C2 traffic, establishing persistent SYSTEM-level remote access. NAT-tunnel tooling lets the C2 proxy attack traffic through compromised nodes, hiding the operator's true origin. At least 4,300 routers are confirmed infected based on asset-scanning for the botnet's dropbear deployment pattern; geographic distribution is South Korea 48.5%, China 31.8%, Sweden 6.4%, Malaysia 3.5%, Singapore 2.5%. VirusTotal detection rate at disclosure was zero. No attribution claimed by XLab; the hardcoded XOR key "sh_#@!_2024_secret" and the Go project name "Ary-Attack" suggest activity since at least 2024.
+
+      CVE-2013-3307: Remote command execution in Linksys routers (RCE via cgi-bin handling); CVE-2016-5681: Remote code execution in D-Link DIR-850L via stack-based buffer overflow in HTTP service; CVE-2025-11837: Code injection in QNAP Malware Remover ≤6.6.8.20250925 (fixed 6.6.8.20251023).
+
+      Defender takeaway: Hunt for dropbear SSH processes on unusual ports on Linux/MIPS-based network devices. Network-level: alert on outbound massdns-pattern DNS query bursts from edge-network IP segments; Protobuf-over-HTTP C2 to domains matching "ajb8.com" and "auq8.com" suffixes. EDR/HIDS on QNAP NAS: monitor for curl|python spawning from the Malware Remover process tree (T1059.006), file writes to /tmp/bin/ by security service processes (T1036), and iptables rule modifications by non-privileged processes (T1562.004). Hardening: replace EoL D-Link DIR-850L and DIR-818LW immediately (no firmware fix possible); patch QNAP Malware Remover to ≥6.6.8.20251023; restrict inbound SSH on management VLANs to known jump-hosts only.
+    ch_eu_nexus: "Sweden ranks 3rd by infection count (6.4% of 4,300+ confirmed nodes); 48 EoL D-Link router models widely present in SOHO environments across Switzerland and EU. QNAP NAS devices used in Swiss public-sector environments as file shares may be affected via CVE-2025-11837."
+    public_sector_nexus: "indirect — legacy network infrastructure in office and government SOHO environments; QNAP NAS devices used as departmental file storage"
+    sector: "government, education, SME, telco"
+    cves:
+      - CVE-2013-3307
+      - CVE-2016-5681
+      - CVE-2025-11837
+    actors_campaigns_malware:
+      - AryStinger
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "XLab Network-wide Threat Awareness System detected IP 107.150.106.14 spreading a VT 0-detection ELF sample implemented in C through the old vulnerabilities CVE-2013-3307 and CVE-2016-5681"
+        attribution: "Qianxin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+      - quote: "at least 4,300 routers worldwide have already been infected, and the number is still continuously rising"
+        attribution: "Qianxin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+      - quote: "On April 26, we captured a homologous sample targeting NAS devices, spread through CVE-2025-11837"
+        attribution: "Qianxin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+    extended_notes: |
+      Technique mapping:
+      - T1190 Exploit Public-Facing Application (CVE-2013-3307, CVE-2016-5681, CVE-2025-11837)
+      - T1059.006 Command and Scripting Interpreter: Python (payload delivery via Python nat_tunnel script)
+      - T1040 Network Sniffing / T1046 Network Service Scanning (distributed DNS brute-force, port scan via fscan)
+      - T1572 Protocol Tunneling (traffic tunneling via nat_tunnel-linux-x86_64)
+      - T1133 External Remote Services (dropbear SSH backdoor on fixed port)
+      - T1562.004 Impair Defenses: Disable or Modify System Firewall (iptables modification)
+      - T1036 Masquerading (binary named syswapd0 to blend with system swap daemon)
+
+      The XLab article was published June 17; the BleepingComputer follow-up on June 21 (14:14 UTC) is the in-window publication that anchors this item. No prior coverage found in any of the last 7 daily briefs or W25 weekly.
+
+coverage_notes:
+  - "No new CISA KEV additions in the 36h window (last addition June 18: CVE-2026-20253 Splunk)"
+  - "CERT-EU most recent advisory is 2026-008 (June 10, Ivanti Sentry) — outside window"
+  - "NCSC-NL most recent in-window advisory: none (last is NCSC-2026-0208, June 19)"
+  - "BSI most recent advisory: WID-SEC-2026-2015 (June 19 ffmpeg) — outside window"
+  - "NCSC-CH most recent in-window advisory: none (last is post 12720 on June 19)"
+  - "MSRC June 2026 release (June 9): no exploited=Yes CVEs beyond those already covered; CVE-2026-50656 (BitLocker/RoguePlanet) already covered; CVE-2026-41091 (Defender EoP/RedSun) already covered"
+  - "AryStinger primary source (XLab) published June 17 (outside 72h developing window); BleepingComputer reporting published June 21 (in 36h window) — this is the freshest source and constitutes a valid in-window publication about a story not previously covered"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisco-psirt
+    reason: "Cisco PSIRT RSS feed timed out on fetch (TimeoutError). No critical in-window Cisco advisories identified via WebSearch to corroborate a gap."
+  - source_id: chrome-releases
+    reason: "Chrome releases RSS returned HTTP 302 redirect error. Chrome V8 CVE-2026-11645 (KEV June 11) is outside the 72h window per prior research."

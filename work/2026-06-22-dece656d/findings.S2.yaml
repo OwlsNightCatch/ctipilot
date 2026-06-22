@@ -1,0 +1,80 @@
+domain: S2
+run_id: 2026-06-22-dece656d
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-22T04:06:57Z
+ended_at: 2026-06-22T06:18:00Z
+duration_seconds: 7863
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 10
+  bridge_fetches: 22
+
+items:
+  - title: "AryStinger botnet targets end-of-life D-Link routers via decade-old CVEs; Sweden accounts for 6.4% of 4,300+ global infections"
+    sources:
+      - url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+        publisher: "Qianxin XLab"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+        publisher: "BleepingComputer"
+        date: "2026-06-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/ (published 2026-06-21, within window) → primary: Qianxin XLab, URL https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/ (published 2026-06-17)"
+    summary: |
+      Qianxin XLab published technical research on 2026-06-17 on a previously undocumented botnet they named AryStinger, targeting end-of-life D-Link routers built on RTL819X series chipsets (2012-2015 era). BleepingComputer covered it on 2026-06-21. The botnet exploits three CVEs: CVE-2013-3307 (Linksys/D-Link, 2013), CVE-2016-5681 (D-Link, 2016), and CVE-2025-11837 (NAS devices, 2025). Primary targets are D-Link DIR-850L (75% of infections) and DIR-818LW (13%). Confirmed EU nexus: Sweden represents 6.4% of 4,300+ globally infected devices (South Korea 48.5%, China 31.8%, Sweden 6.4%, Malaysia 3.5%, Singapore 2.5%).
+
+      The botnet runs two malware variants: a C-based RTL819X version (V2.0.27, 32-bit MIPS, 32+ versions captured since 2026-03-12) and a Go-based standard version (V1.0.102, x86-64, 22+ versions since 2026-04-26) targeting NAS devices with expanded toolset including fscan, ksubdomain, httpx, and tlsx. Infected devices are enrolled as "Executors" and support internal/external network scanning, DNS reconnaissance (massdns-like), traffic tunneling and proxying, remote command execution, and persistent backdoors. Persistence is established via Dropbear SSH deployed on port 2332 with iptables rules added. C2 communication uses HTTP/HTTPS with Protobuf encoding and XOR encryption (hardcoded key: sh_#@!_2024_secret). The operator splits scanning and reconnaissance tasks across multiple infected nodes for distributed operation.
+
+      No formal attribution. XLab notes the botnet's design enables credential theft through traffic monitoring, DNS hijacking, distributed scanning platforms for downstream attackers, DDoS infrastructure, and lateral movement within compromised networks. Detection: process names syswapd0h and syswapd0w on router filesystem, files under /tmp/bin/, script /tmp/cc.sh, Dropbear SSH listener on non-standard port 2332. Hardening: these D-Link models (DIR-850L, DIR-818LW, DIR-816L) are end-of-life with no vendor patch path — immediate device replacement is the only effective remediation. For defenders with legacy routers still in-network: block outbound traffic to C2 domains (ajb8.com, ahb8.com families), monitor for SSH listeners on non-standard ports, and apply egress filtering for port 2332.
+    ch_eu_nexus: "Sweden 6.4% of global infections (EU Member State); broader European exposure expected from similar RTL819X-based EOL device populations in SME/SOHO environments; affects SOHO and small-enterprise edge infrastructure"
+    public_sector_nexus: "indirect — EOL routers in public sector SOHO/branch environments; municipal/education network edge exposure plausible"
+    sector: "all sectors (edge/SOHO infrastructure)"
+    cves:
+      - CVE-2013-3307
+      - CVE-2016-5681
+      - CVE-2025-11837
+    actors_campaigns_malware:
+      - "AryStinger (malware family)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "More Than 4,000 Legacy Routers Compromised by AryStinger, Turned into Global Attack Proxies for Hackers"
+        attribution: "Qianxin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+      - quote: "A previously undocumented malware botnet named AryStinger has compromised more than 4,000 outdated routers to turn them into proxies for malicious traffic."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+      - quote: "Dropbear SSH deployment on port 2332 with iptables firewall rule configuration"
+        attribution: "Qianxin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+    extended_notes: |
+      MITRE ATT&CK mappings (inferred from XLab technical description):
+      - T1190 Exploit Public-Facing Application (initial access via CVE-2013-3307/CVE-2016-5681/CVE-2025-11837)
+      - T1133 External Remote Services (Dropbear SSH backdoor on port 2332)
+      - T1046 Network Service Discovery (internal/external network scanning)
+      - T1071.001 Application Layer Protocol: Web Protocols (C2 over HTTP/HTTPS with Protobuf+XOR)
+      - T1090.002 Proxy: External Proxy (infected devices enrolled as traffic proxies/tunnels)
+      - T1568.002 Dynamic Resolution: Domain Generation (C2 domain families ajb8.com, ahb8.com, ahb8.com families)
+      - T1562.004 Impair Defenses: Disable or Modify System Firewall (iptables rules added for persistence)
+      The Go-based NAS-targeting variant is noteworthy as a separate toolchain suggesting capability expansion. The botnet's use of legitimate network tools (fscan, httpx, ksubdomain, tlsx) in the standard version makes EDR detection harder on NAS endpoints that lack full EDR agents.
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Most recent posts (12720, 12713) are June 19, outside 36-hour window. Both items (AVer PTC cameras CVE-2026-40624 and PTC Windchill CVE-2026-12569) already in prior coverage. NCSC-CH Week 25 Wochenrückblick not yet published at time of search (URL 404)."
+  - source_id: cert-eu
+    reason: "Most recent advisory is 2026-008 (Ivanti Sentry, June 10), well outside 36-hour window."
+  - source_id: ncsc-nl
+    reason: "Most recent advisory is NCSC-2026-0208 (June 19, Cisco ISE), outside 36-hour window."
+  - source_id: anssi-fr
+    reason: "CERT-FR most recent avis is June 15, outside 36-hour window."
+  - source_id: bsi-de
+    reason: "BSI RSS most recent items are June 19 (strongSwan WID-SEC-2026-1832 update, Gogs WID-SEC-2026-2013, HAProxy, ffmpeg). All at the edge of or outside the 36-hour window. Gogs and strongSwan already in prior coverage. Other items are routine severity advisories without CH/EU public-sector nexus."
+  - source_id: inside-it-ch
+    reason: "RSS most recent security-relevant items are June 19 (business tech, digital sovereignty topics). No security incidents in 36-hour window."
+  - source_id: heise-sec
+    reason: "TollBit-gated per-article bodies; RSS summaries only. No in-window security items identified from RSS summary scan."
+
+candidate_sources: []

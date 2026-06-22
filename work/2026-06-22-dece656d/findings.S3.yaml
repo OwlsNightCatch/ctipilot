@@ -1,0 +1,190 @@
+domain: S3
+run_id: 2026-06-22-dece656d
+model: "Anthropic Claude (specific model not determined)"
+model_id: claude-sonnet-4-6
+started_at: 2026-06-22T04:07:15Z
+ended_at: 2026-06-22T04:52:00Z
+duration_seconds: 2685
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 11
+  bridge_fetches: 9
+
+items:
+  - title: "INC Ransomware evolution: Rust-rewritten cross-platform encryptors, BYOVD driver trio, and Veeam DPAPI credential targeting"
+    sources:
+      - url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+        publisher: "Acronis Threat Research Unit"
+        date: "2026-06-10"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html"
+        publisher: "The Hacker News"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch (\"INC ransomware 2026 technical analysis\") → Acronis TRU primary advisory (June 10) → THN corroborating coverage (June 18)"
+    summary: |
+      INC Ransomware has undergone a major technical evolution tracked by Acronis TRU through 2025-2026.
+      The group rewrote its Windows encryptor in Rust and developed a parallel Rust-based Linux/ESXi encryptor,
+      enabling efficient cross-platform targeting. A standout technique is a BYOVD (Bring Your Own Vulnerable
+      Driver) cluster using three signed but exploitable kernel drivers: filwfp.sys, filnk.sys, and fildds.sys,
+      which the threat actor deploys to disable EDR and security tooling via kernel-mode callbacks
+      (T1562.001 Impair Defenses / T1068 Exploitation for Privilege Escalation). The group developed a
+      dedicated Veeam credential dumper that abuses DPAPI (Data Protection API) blob decryption with a
+      salted key derived from machine-specific entropy to extract backup credentials, then uses those to
+      destroy or exfiltrate snapshots before triggering encryption — this targets the primary offline recovery
+      path for enterprise victims (T1555 Credentials from Password Stores). Initial access vectors include
+      exploitation of Citrix NetScaler CVE-2023-3519 (unauthenticated RCE), Fortinet EMS CVE-2023-48788
+      (SQL injection leading to RCE), and SimpleHelp CVE-2024-57727 (path traversal leading to credential
+      exposure). Lateral movement uses LOLBins (wmic, psexec, certutil) and legitimate RMM tools. Data
+      exfiltration via Rclone to cloud storage before encryption (T1567.002). Acronis also documents code
+      overlap and source-code sale connections linking INC to the Lynx and Sinobi RaaS offshoots. THN
+      reports 830+ total victims as of mid-2026. Defender priorities: hunt for unsigned or anomalously-signed
+      kernel drivers loaded at boot (Sysmon EID 6 / Windows EID 7045 with publisher/path analysis); audit
+      Veeam service-account DPAPI blob access (Security EID 4662 on credential manager objects); detect
+      Rclone invocation via Sysmon EID 1 (parent-process chain, remote config flag); restrict or monitor
+      SimpleHelp / RMM tool deployments from unexpected process parents.
+    ch_eu_nexus: "global; INC actively targets European healthcare, education, and government sectors; Lynx/Sinobi rebrands also active in EU"
+    public_sector_nexus: "direct — healthcare, government, and education listed as primary INC victim verticals"
+    sector: "healthcare, government, education, energy"
+    cves: [CVE-2023-3519, CVE-2023-48788, CVE-2024-57727]
+    actors_campaigns_malware: ["INC Ransomware", "Lynx RaaS", "Sinobi"]
+    mitre_ttps:
+      - "T1562.001 Impair Defenses: Disable or Modify Tools"
+      - "T1068 Exploitation for Privilege Escalation (BYOVD)"
+      - "T1555 Credentials from Password Stores (Veeam DPAPI)"
+      - "T1567.002 Exfiltration to Cloud Storage (Rclone)"
+      - "T1190 Exploit Public-Facing Application (initial access CVEs)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "INC ransomware has evolved significantly, adopting a Rust-based encryptor for both Windows and Linux/ESXi platforms"
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"
+      - quote: "INC ransomware claims 830 victims since its emergence"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/inc-ransomware-claims-830-victims-since.html"
+    extended_notes: |
+      The BYOVD driver trio (filwfp.sys, filnk.sys, fildds.sys) appears purpose-selected:
+      filwfp.sys relates to Windows Filtering Platform (network stack) — likely used to block outbound
+      telemetry from EDR agents; filnk.sys and fildds.sys are kernel-mode file system components.
+      The combination suggests a layered EDR-kill strategy targeting both network exfil and process/file
+      visibility paths. Detection engineers should correlate driver load events (EID 7045) with known
+      malicious driver hashes via Microsoft's vulnerable driver blocklist policy (WDAC) and LOLAD
+      (loldrivers.io). The Veeam DPAPI credential dumper represents an advancement over simple
+      Veeam config-file parsing — DPAPI blob access requires either SYSTEM-level context or the specific
+      service account's session, which raises the bar for the attacker but also produces cleaner telemetry:
+      Security EID 4662 (object access) on CryptProtectData / CryptUnprotectData COM calls from
+      unexpected processes is a high-fidelity hunt pivot.
+
+  - title: "BabaDeda Loader: ClickFix-delivered DLL sideloading into svchost.exe via Windows callback objects, delivers DanaBot and SectopRAT"
+    sources:
+      - url: "https://www.morphisec.com/blog/what-is-the-babadeda-loader-analysis-of-a-new-clickfix-malware-campaign/"
+        publisher: "Morphisec"
+        date: "2026-06-16"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch (\"ClickFix new loader June 2026 malware\") → Morphisec BabaDeda primary (June 16)"
+    summary: |
+      Morphisec published a technical analysis of BabaDeda Loader, a previously-undocumented ClickFix-delivered
+      malware family targeting education and financial-sector users. Delivery begins with ClickFix-style lure
+      pages (T1204.002 User Execution / Malicious Link) that instruct victims to paste a PowerShell or run
+      command into the Windows Run dialog. The loader achieves persistence and payload execution through DLL
+      side-loading into the Windows-native svchost.exe process (T1574.002 DLL Side-Loading), abusing Windows
+      callback object functions (KeRegisterBugCheckCallback and related undocumented callback registration
+      APIs) to execute malicious code inside the host process without spawning a new child. The external payload
+      is stored in a file named List.Control.dat, XOR-decoded at runtime using a key embedded in the loader
+      stub. The final payloads observed are DanaBot (banking trojan / MaaS loader) and SectopRAT (remote
+      access trojan with webcam/audio capture). The DLL side-loading into svchost.exe via callback
+      registration is a distinctive evasion technique — svchost.exe is a high-volume process and most
+      EDR parent/child alerting is tuned for module injection rather than callback-registered execution.
+      Detection pivots: Sysmon EID 7 (ImageLoad) for unexpected DLL loads from non-standard paths into
+      svchost.exe; Sysmon EID 10 (ProcessAccess) if cross-process handles are involved; hunt for List.Control.dat
+      presence in temp or user-writable directories; PowerShell ScriptBlock logging (EID 4104) for Run-box
+      paste delivery patterns.
+    ch_eu_nexus: "global; education and financial sectors are primary targets — both highly relevant for Swiss/EU public institutions and cantonal banks"
+    public_sector_nexus: "indirect — education sector targeting directly affects Swiss universities and cantonal school systems"
+    sector: "education, finance"
+    cves: []
+    actors_campaigns_malware: ["BabaDeda Loader", "DanaBot", "SectopRAT"]
+    mitre_ttps:
+      - "T1204.002 User Execution: Malicious File (ClickFix delivery)"
+      - "T1574.002 Hijack Execution Flow: DLL Side-Loading"
+      - "T1027 Obfuscated Files or Information (XOR-encoded payload in List.Control.dat)"
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "BabaDeda loader uses DLL sideloading into svchost.exe via Windows callback functions to execute XOR-decoded payload from List.Control.dat"
+        attribution: "Morphisec"
+        source_url: "https://www.morphisec.com/blog/what-is-the-babadeda-loader-analysis-of-a-new-clickfix-malware-campaign/"
+    extended_notes: |
+      Note: SINGLE-SOURCE — Morphisec is the sole publisher on BabaDeda at time of research.
+      BabaDeda is distinct from other ClickFix loaders (ErrTraffic, Potemkin) in its execution mechanism.
+      ErrTraffic injects into msiexec.exe via PowerShell IEX; Potemkin (RMMProject) drops an RMM
+      agent; BabaDeda uses kernel callback objects to run inside svchost.exe — a substantially
+      different technique class. The Windows callback abuse (KeRegisterBugCheckCallback family)
+      is typically associated with rootkits and BYOVD drivers, making its appearance in a loader
+      delivered via ClickFix somewhat unusual and worth tracking as a capability escalation.
+
+  - title: "eBanking phishing exploits IPv4-mapped IPv6 address notation to bypass URL regex scanners"
+    sources:
+      - url: "https://isc.sans.edu/diary/33090"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-06-19"
+        role: "primary"
+    discovery_trace: "first seen at: bridge feed (isc.sans.edu/rssfeed.xml) → SANS ISC diary entry 33090 (June 19) → primary (no pivot needed)"
+    summary: |
+      A SANS ISC diary documents a phishing campaign against Belgian banking customers (Belfius) that
+      uses IPv4-mapped IPv6 address notation in URLs to evade security tooling. The technique encodes
+      the destination IPv4 address as `[::ffff:5511:74be]` (the hexadecimal representation of the
+      dotted-decimal IP) within the URL structure, e.g., `https://[::ffff:5511:74be]/path`. Modern
+      browsers (Chrome, Firefox, Edge) resolve such URLs correctly per RFC 4291, rendering the phishing
+      page normally for the victim. However, regex-based URL extractors and email/proxy security scanners
+      typically match IPv4 patterns (`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`) but do not match the
+      `::ffff:` hexadecimal notation, causing the URL to pass as apparently IP-address-free. Because
+      the IPv4-mapped IPv6 address requires no DNS record, traditional DNS-based reputation lookups
+      produce no result, further degrading detection. The technique is trivially applicable beyond
+      banking phishing — any URL-based delivery mechanism (spearphishing link, HTML attachment,
+      QR code redirect) benefits from the same blind spot. Detection: update URL-extraction regex
+      patterns to capture `\[::ffff:[0-9a-fA-F:]+\]` notation; configure proxy / SWG / email gateway
+      vendors to resolve IPv4-mapped IPv6 addresses before reputation lookup; test existing tooling
+      against `[::ffff:X:X]`-style URLs in a controlled lab. MITRE T1598.003 Spearphishing Link /
+      T1071.001 Web Protocols (delivery via IPv4-mapped IPv6 URL evading inspection layer).
+    ch_eu_nexus: "EU-direct — Belgian bank (Belfius) targeted; technique applicable to Swiss cantonal banks and EU financial institutions"
+    public_sector_nexus: "indirect — cantonal bank customers, public payroll systems"
+    sector: "finance"
+    cves: []
+    actors_campaigns_malware: []
+    mitre_ttps:
+      - "T1598.003 Phishing for Information: Spearphishing Link"
+      - "T1071.001 Application Layer Protocol: Web Protocols"
+      - "T1027 Obfuscated Files or Information (IP encoding evasion)"
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The phishing URL uses an IPv4-mapped IPv6 notation [::ffff:5511:74be] which bypasses regex-based URL scanners that only check for standard dotted-decimal IPv4 patterns"
+        attribution: "SANS Internet Storm Center"
+        source_url: "https://isc.sans.edu/diary/33090"
+    extended_notes: |
+      Note: SINGLE-SOURCE — SANS ISC is the primary disclosing party for this technique observation.
+      The SANS ISC is a HIGH-reliability national/global CERT-equivalent authority; single-source
+      acceptable per carve-out. The technique is not novel at the RFC level but appears to be
+      newly weaponized in active phishing delivery. Swiss cantonal bank security teams and
+      Swiss Post Finance should evaluate whether their anti-phishing email gateways and proxy
+      inspection engines handle the `[::ffff:]` notation. NCSC-CH has not yet published on this
+      specific technique as of research time.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: group-ib
+    reason: "HTTP 503 on primary blog post; WebSearch found no corroborating in-window primary for Phantom Stealer (March 2026 publication, outside window)"
+  - source_id: volexity
+    reason: "Feed enumerated; most recent substantive report outside 36h/72h window — no qualifying items"
+  - source_id: recorded-future-insikt
+    reason: "WebSearch found no new Insikt Group primary publications within 72h window"
+  - source_id: mandiant-gtig
+    reason: "GTIG most recent report (Turla) June 15 — outside 36h primary window; developing window items already covered in prior_coverage"
+  - source_id: dragos
+    reason: "OT YiR (February 2026) and most recent blog items outside window — no qualifying items"
