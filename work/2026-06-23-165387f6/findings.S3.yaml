@@ -1,0 +1,205 @@
+domain: S3
+run_id: 2026-06-23-165387f6
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-23T04:06:29Z
+ended_at: 2026-06-23T04:52:00Z
+duration_seconds: 2731
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 11
+  bridge_fetches: 18
+
+items:
+
+  - title: "Squidbleed (CVE-2026-47729) — 29-year-old Squid proxy heap over-read leaks cleartext HTTP credentials from other users; no patch released yet"
+    sources:
+      - url: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+        publisher: "Calif.io (Calif Security Research)"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://www.securityweek.com/decades-old-squid-proxy-flaw-squidbleed-can-expose-user-data/"
+        publisher: "SecurityWeek"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN feed), URL https://feeds.feedburner.com/TheHackersNews → pivot: WebSearch 'Squidbleed CVE-2026-47729 calif.io technical analysis' → primary: Calif.io, URL https://blog.calif.io/p/squidbleed-cve-2026-47729 → corroborating: SecurityWeek, URL https://www.securityweek.com/decades-old-squid-proxy-flaw-squidbleed-can-expose-user-data/"
+    summary: |
+      CVE-2026-47729, nicknamed Squidbleed, is a heap over-read in the Squid web proxy's FTP directory-listing parser rooted in a C strchr pointer-arithmetic bug introduced in 1997. The vulnerable code path activates when an attacker-controlled FTP server sends a directory listing line that terminates immediately after the timestamp field, causing strchr to miscalculate the string boundary and read beyond the buffer into adjacent heap memory belonging to other requests. Because FTP support is enabled by default in Squid and port 21 is included in the default Safe_ports ACL, exploitation requires only that the attacker can reach the proxy as a trusted client — no special configuration flag. The leak exposes cleartext HTTP requests from other users sharing the same proxy infrastructure: Authorization headers carrying Basic-Auth credentials, session cookies, API keys, and custom application tokens. HTTPS traffic relayed as opaque CONNECT tunnels is not exposed; only cleartext HTTP and TLS-terminating proxy setups are affected. The fix (a null-terminator check before the vulnerable strchr calls) was merged to the Squid development branch in April 2026 and into v7 in May, but the patched version 7.7 has not yet shipped; no released Squid version contains the fix as of June 2026. Researcher Patrick Whitsell of Calif.io credits Anthropic Claude Mythos (Project Glasswing) with identifying the strchr edge case during AI-assisted fuzzing.
+    ch_eu_nexus: "global; Squid is widely deployed as a forward proxy and caching proxy in Swiss and EU public-sector IT, universities, healthcare networks, and ISPs"
+    public_sector_nexus: "direct — Squid is common in public-administration and education proxy infrastructure"
+    sector: "government, education, healthcare, telco, enterprise IT"
+    cves: [CVE-2026-47729]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Heartbleed's ancient cousin, hiding in Squid since 1997. A heap buffer overread that quietly leaks random users' HTTP requests."
+        attribution: "Calif.io"
+        source_url: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+      - quote: "Security researchers at Calif.io have disclosed a memory leak vulnerability in Squid Proxy that has existed in the software since 1997."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/decades-old-squid-proxy-flaw-squidbleed-can-expose-user-data/"
+    extended_notes: |
+      Defender takeaways: (1) No released patch — until Squid 7.7 ships, defenders should restrict who can reach the proxy from untrusted segments, disable FTP proxying (via Safe_ports ACL) if not needed, and ensure Squid is not exposed to semi-trusted or multi-tenant traffic. (2) Detection: monitor proxy access logs for FTP-proxy requests originating from unusual client IPs; anomalous FTP connections through the proxy from internal hosts should trigger review. (3) Affected versions: all Squid versions in default configuration prior to 7.7. (4) The 'trusted client' prerequisite means multi-tenant ISP proxy deployments, shared academic proxies, and cloud-based proxy services are highest risk.
+
+  - title: "AryStinger botnet repurposes 4,300+ legacy D-Link and QNAP routers (RTL819X) as a pre-intrusion reconnaissance and proxy mesh"
+    sources:
+      - url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+        publisher: "QiAnXin XLab"
+        date: "2026-06-17"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+        publisher: "BleepingComputer"
+        date: "2026-06-21"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN feed), URL https://feeds.feedburner.com/TheHackersNews → WebSearch 'XLab QiAnXin AryStinger primary research report' → primary: XLab blog, URL https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/ (bridge 403 — covered via BleepingComputer as corroborating) → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+    summary: |
+      QiAnXin XLab (first observed March 12, 2026) documented AryStinger, a previously undocumented botnet built on compromised legacy Realtek RTL819X-based routers — primarily D-Link DIR-850L (approximately 75% of the infected pool) and DIR-818LW — plus a Go-based variant targeting QNAP NAS devices. Unlike conventional DDoS botnets, AryStinger is explicitly a pre-intrusion reconnaissance platform: infected devices perform internet scanning, service fingerprinting, subdomain enumeration, traffic proxying, TCP tunneling, and on-demand command execution on the attacker's behalf, then return results to the operator. This positions the botnet at the reconnaissance and initial-access staging phases of targeted attack chains. The C-based router variant communicates over HTTP using Protobuf-encoded payloads XOR-encrypted with the hardcoded key "sh_#@!_2024_secret", downloads Dropbear SSH and runs it on port 2332 for persistent access. Exploitation uses CVE-2013-3307, CVE-2016-5681, and CVE-2025-11837 — all long-patched vulnerabilities on devices that are end-of-life and will never receive updates. Current infection count stands at approximately 4,300 routers and rising; geographically dominated by South Korea (48.5%), China (31.8%), Sweden (6.4%). XLab has not attributed AryStinger to any known threat cluster. The Go-based NAS variant is tracked separately and has far fewer infections at present.
+    ch_eu_nexus: "Sweden is the third-largest country by infection count; EU households and SMBs with legacy D-Link hardware are at direct risk of silent botnet enlistment"
+    public_sector_nexus: "indirect — botnet nodes are consumer/SMB gear, but the proxy mesh is used to obscure attacker origin in targeted intrusions against any sector"
+    sector: "telco, government, SMB, SOHO"
+    cves: [CVE-2013-3307, CVE-2016-5681, CVE-2025-11837]
+    actors_campaigns_malware: ["AryStinger"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "AryStinger exists for the stage of an attack that comes before the break-in. Infected devices scan the internet, fingerprint services, enumerate subdomains, tunnel traffic, and run commands on demand, then ship the results back to the operator."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/"
+      - quote: "The RTL819X version is written in C and deliberately stripped down...focuses on mass DNS scanning and traffic tunneling, communicates with its C2 over HTTP using Protobuf-encoded traffic obfuscated with XOR encryption using the hardcoded key sh_#@!_2024_secret, and establishes persistence by downloading Dropbear SSH and running it on port 2332."
+        attribution: "QiAnXin XLab"
+        source_url: "https://blog.xlab.qianxin.com/arystinger-botnet-hijacks-legacy-routers-for-global-attacks-en/"
+    extended_notes: |
+      Defender takeaways: (1) D-Link DIR-850L and DIR-818LW are end-of-life hardware and should be replaced. If replacement is not immediately possible, ensure they are firewalled from the internet and not accessible on port 21 or 2332. (2) Detection: outbound Dropbear SSH on port 2332 from consumer routers is a strong hunt signal; Protobuf-over-HTTP from router management IPs to non-RFC1918 destinations. (3) The botnet's purpose as a pre-intrusion reconnaissance mesh means defenders who see AryStinger C2 traffic originating from their network edge should treat it as likely already in an attacker's target list for a follow-on campaign.
+
+  - title: "ShapedPlugin WordPress plugin build-pipeline compromise (CVE-2026-10735): premium WooCommerce plugins backdoored via vendor's EDD update system for three weeks"
+    sources:
+      - url: "https://www.wordfence.com/blog/2026/06/psa-supply-chain-compromise-targets-shapedplugin-backdoored-pro-plugins-distributed-via-official-channels/"
+        publisher: "Wordfence"
+        date: "2026-06-11"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/"
+        publisher: "BleepingComputer"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN feed), URL https://feeds.feedburner.com/TheHackersNews → WebSearch 'ShapedPlugin WordPress supply chain Wordfence June 2026' → primary: Wordfence, URL https://www.wordfence.com/blog/2026/06/psa-supply-chain-compromise-targets-shapedplugin-backdoored-pro-plugins-distributed-via-official-channels/ (bridge 202 response) → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/"
+    summary: |
+      Around May 21, 2026, an attacker breached ShapedPlugin's CI/CD and Easy Digital Downloads (EDD)-based plugin distribution pipeline and injected malicious code into the Premium plugin releases for three products: Product Slider Pro for WooCommerce (before 3.5.4), Real Testimonials Pro (approximately 3.2.4, fixed in 3.2.5), and Smart Post Show Pro (before 4.0.2). Free versions distributed through the WordPress.org plugin repository were not affected. The malicious injection — tracked as CVE-2026-10735, CVSS 9.8 — planted a file named LicenseLoader.php that, upon admin-panel load, contacted a C2 to download a second-stage payload disguised as woocommerce-subscription or woocommerce-notification. The full payload bundle included Tiny File Manager 2.6, Adminer 5.2.1, a web shell, a REST API backdoor, credential-stealing components, and a login-bypass mechanism capable of defeating site-level 2FA. The compromise went undetected for approximately three weeks until Wordfence raised the alarm on June 11, 2026 after investigating suspicious behaviour. ShapedPlugin publicly acknowledged the incident on June 16. Timestamp analysis pointed to an automated injection affecting only four files within a two-hour window — consistent with an automated pipeline-level compromise rather than manual package tampering. Wordfence recommends that any site that installed ShapedPlugin premium updates between April and June 2026 should assume full compromise.
+    ch_eu_nexus: "WordPress with WooCommerce is extensively used by Swiss and European e-commerce, municipal information portals, and SMB websites; any premium ShapedPlugin customer is exposed"
+    public_sector_nexus: "indirect — primarily affects commercial and SMB WordPress deployments; municipal portals using WooCommerce for payments are direct risk"
+    sector: "technology, retail, SMB, public-sector web"
+    cves: [CVE-2026-10735]
+    actors_campaigns_malware: ["LicenseLoader"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers compromised the vendor's build and distribution pipeline, injecting backdoor code into Pro plugin releases distributed through official licensed update channels."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/06/psa-supply-chain-compromise-targets-shapedplugin-backdoored-pro-plugins-distributed-via-official-channels/"
+      - quote: "The malicious packages contained a file named LicenseLoader.php, which was loaded automatically within the WordPress admin panel. The loader contacted a command-and-control (C2) server...downloaded a second-stage payload, installed it as a fake plugin, reported the victim's domain to the attackers, and then deleted itself to hinder forensic analysis."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/"
+    extended_notes: |
+      Defender takeaways: (1) Affected product versions: Product Slider Pro < 3.5.4; Real Testimonials Pro ~3.2.4; Smart Post Show Pro < 4.0.2. Update all to current. (2) Sites that installed these plugins between April–June 2026 should conduct a full WordPress filesystem audit: look for woocommerce-subscription or woocommerce-notification in the plugins directory (these are fake plugins dropped by the second-stage payload), and check for Tiny File Manager (tinyfilemanager.php) or Adminer files. (3) Web-server access logs should be reviewed for POST requests to any admin-ajax.php or REST endpoint from unusual IPs during the exposure window. (4) MITRE ATT&CK: T1195.002 (Compromise Software Supply Chain), T1505.003 (Web Shell), T1059.004 (JavaScript/PHP server-side).
+
+  - title: "SonicWall CVE-2024-40766: Akira and Fog ransomware operators successfully pivot through patched firewalls via post-patch misconfiguration gaps (stale accounts, overpermissive LDAP groups, un-rotated credentials)"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/33094"
+        publisher: "SANS Internet Storm Center"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://arcticwolf.com/resources/blog/smash-and-grab-aggressive-akira-campaign-targets-sonicwall-vpns/"
+        publisher: "Arctic Wolf"
+        date: "2025-07-28"
+        role: "background"
+    discovery_trace: "first seen at: sans-isc RSS feed https://isc.sans.edu/rssfeed.xml → drilled to https://isc.sans.edu/diary/rss/33094 → background: Arctic Wolf, URL https://arcticwolf.com/resources/blog/smash-and-grab-aggressive-akira-campaign-targets-sonicwall-vpns/"
+    summary: |
+      SANS ISC handler published June 23, 2026 highlights a persistent and under-appreciated attack path: SonicWall firewalls patched against CVE-2024-40766 (improper access control, CVSS 9.3, Gen 5/6/7 SonicOS) continue to be breached by Akira and Fog ransomware operators because the patch fixes the vulnerability but leaves behind a collection of dangerous post-patch misconfigurations. The specific gaps documented include: (a) stale local accounts created during initial setup that were never removed and whose passwords were never rotated; (b) LDAP default groups configured with implicit SSL VPN access, silently granting VPN rights to hundreds of Active Directory accounts without administrator awareness; (c) unenforced or misconfigured MFA on the SSL VPN portal; and (d) publicly accessible Virtual Office Portal (MFA enrollment) pages that allow credential-stuffing and account creation attacks. Akira in particular is documented completing full encryption within hours of VPN access through these residual paths. Recommended hardening: firmware 7.3.0+; rotate all SonicWall account passwords post-patch; enforce MFA on all SSLVPN users including LDAP-group-derived ones; audit LDAP Default Group permissions and remove implicit VPN access grants; restrict the Virtual Office Portal to internal networks only; enable event logging for all SSLVPN login attempts.
+    ch_eu_nexus: "SonicWall is widely deployed as SMB and branch-office perimeter firewall across Swiss and EU public-sector and healthcare organisations"
+    public_sector_nexus: "direct — SonicWall is common in Swiss cantonal and communal IT perimeters"
+    sector: "government, healthcare, SMB, education"
+    cves: [CVE-2024-40766, CVE-2024-12802]
+    actors_campaigns_malware: ["Akira", "Fog"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2024-40766 is an improper access control vulnerability affecting SonicWall firewalls' management interface and SSLVPN service across Gen 5-7 devices. Though patches have been available since August 2024, attackers continue exploiting it because organizations apply firmware updates without completing post-patch hardening."
+        attribution: "SANS ISC"
+        source_url: "https://isc.sans.edu/diary/rss/33094"
+    extended_notes: |
+      This is specifically a post-patch failure story, not a new vulnerability. The SANS ISC writeup is valuable for Swiss/EU defenders because it names specific misconfigurations that survive firmware upgrades. Detection hunt: review SonicWall SSLVPN auth logs (Event ID 98 on SonicOS) for logons from stale local accounts; look for VPN sessions authenticated via LDAP groups that have not been recently reviewed; look for MFA enrollment portal (Virtual Office) traffic from external IPs. MITRE ATT&CK: T1133 (External Remote Services), T1078 (Valid Accounts), T1078.002 (Domain Accounts via LDAP misconfig).
+
+  - title: "DifyTap — four cross-tenant authorization flaws in Dify AI platform let authenticated editors silently redirect all LLM chat traffic to attacker-controlled trace providers (CVE-2026-41947 to -41949)"
+    sources:
+      - url: "https://thehackernews.com/2026/06/researchers-detail-difytap-flaws-in.html"
+        publisher: "The Hacker News"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://nvd.nist.gov/vuln/detail/CVE-2026-41947"
+        publisher: "NVD"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews (THN feed), URL https://feeds.feedburner.com/TheHackersNews → drilled to https://thehackernews.com/2026/06/researchers-detail-difytap-flaws-in.html → pivot: WebSearch 'Zafran DifyTap CVE-2026-41947' → NVD https://nvd.nist.gov/vuln/detail/CVE-2026-41947 → primary source is THN article (Zafran primary blog not separately resolvable)"
+    summary: |
+      Zafran Security researchers Ido Shani and Gal Zaban disclosed four vulnerabilities in Dify (open-source agentic workflow platform, 146,000+ GitHub stars) collectively dubbed DifyTap. The most critical is CVE-2026-41947 (CVSS 9.1): an authorization bypass in trace configuration endpoints that allows any authenticated editor user to set and enable trace providers for any application tenant, regardless of ownership. By pointing the trace provider at an attacker-controlled LLM observability endpoint, the attacker receives a silent BCC of every message and model response from the victim tenant's AI applications with no indication to the tenant. CVE-2026-41948 (CVSS 9.4) is a path traversal in the Plugin Daemon's internal REST API endpoint that, combined with insufficient URL sanitization, allows authenticated users to reach internal API endpoints they should not access. CVE-2026-41949 (CVSS 7.5) is an authorization bypass in the file preview endpoint (/console/api/files/{file_id}/preview) permitting cross-tenant file reads. Additionally, Zafran found Dify's PDF parsing stack retained a vulnerable version of PDFium (CVE-2024-5846, CVSS 8.8, a use-after-free). Three of the four flaws were fixed in Dify 1.14.2; CVE-2026-41948 is still unpatched awaiting the next release. Self-hosted Dify deployments used by organisations running AI agent workflows are at risk of silent LLM conversation exfiltration.
+    ch_eu_nexus: "Dify is increasingly used by Swiss and EU public-sector and research organisations for internal AI agent and RAG deployments; the cross-tenant exfiltration path is a direct data-sovereignty risk"
+    public_sector_nexus: "direct — self-hosted AI platforms running research and government workflows"
+    sector: "government, research, technology, healthcare"
+    cves: [CVE-2026-41947, CVE-2026-41948, CVE-2026-41949, CVE-2024-5846]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-41947 (CVSS score: 9.1) is an authorization bypass vulnerability that allows authenticated editor users to set and enable trace configurations for any application regardless of tenant ownership...attackers can exploit missing tenant ownership checks in the trace configuration endpoints to redirect all messages and responses from victim applications to attacker-controlled LLM trace providers."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/researchers-detail-difytap-flaws-in.html"
+    extended_notes: |
+      Defender takeaways: (1) Self-hosted Dify operators must upgrade to 1.14.2 immediately for three of four flaws; CVE-2026-41948 (path traversal into Plugin Daemon) remains open. (2) Until CVE-2026-41948 is patched, consider disabling Plugin Daemon or placing it behind additional network segmentation. (3) Operators with multi-tenant Dify deployments should audit trace provider configurations for all applications — check if any trace target points to an unexpected external URL. (4) MITRE ATT&CK: T1078 (Valid Accounts — authenticated editor), T1557 (Adversary-in-the-Middle — silent traffic redirection), T1530 (Data from Cloud Storage — cross-tenant file reads). (5) The PDFium CVE-2024-5846 use-after-free risk applies to any workflow that passes user-supplied PDFs into Dify's file parser.
+
+  - title: "Elastic Security Labs: Azure AD Graph Activity Logs now ingestible in SIEM — closes decade-long blind spot for detecting ROADrecon/AADInternals Entra ID enumeration"
+    sources:
+      - url: "https://www.elastic.co/security-labs/aad-graph-activity-logs-threat-detection"
+        publisher: "Elastic Security Labs"
+        date: "2026-06-19"
+        role: "primary"
+    discovery_trace: "first seen at: elastic-seclabs RSS feed https://www.elastic.co/security-labs/rss/feed.xml → drilled to https://www.elastic.co/security-labs/aad-graph-activity-logs-threat-detection → primary (no pivot needed)"
+    summary: |
+      Elastic Security Labs published a detection engineering guide (June 19, 2026) showing how to ingest the newly GA'd Azure AD Graph Activity Logs (AADGraphActivityLogs) into SIEM/XDR platforms and derive detections for adversary tooling that has historically been invisible. Although Microsoft deprecated Azure AD Graph in favour of Microsoft Graph, the legacy API remains operational and is actively exploited by ROADtools (ROADrecon), AzureHound v1, and AADInternals for Entra ID (formerly Azure AD) tenant enumeration — classic pre-lateral-movement steps in identity-based attacks. The new log source, first available in early May 2026, captures all calls made to the legacy Azure AD Graph API with full UPN, client_id, user_agent, IP, HTTP method, resource path, and response code. Elastic's detection rules surface: (a) ROADrecon-pattern user_agent strings; (b) anomalous 4xx burst rates indicative of permission probing; (c) FOCI (Family Of Client IDs) mismatch — a lateral-movement signal when a client_id normally used for one app is suddenly hitting Graph endpoints it would never legitimately use; (d) device-code flow authentication followed immediately by Graph enumeration; (e) unusual ASN origin for Graph API calls from corporate Entra tenants. Affected versions: any Entra ID / Azure AD tenant not ingesting AADGraphActivityLogs into SIEM. Detection requires enabling the log type via Entra diagnostic settings and routing to Log Analytics / Elastic / SIEM.
+    ch_eu_nexus: "Entra ID is the identity backbone for Swiss federal IT, cantonal administrations, EU institutions, and any Microsoft 365 tenant — this detection gap affects all of them"
+    public_sector_nexus: "direct — Entra ID / Azure AD is the primary identity platform for Swiss and EU public-sector cloud environments"
+    sector: "government, healthcare, finance, technology, education"
+    cves: []
+    actors_campaigns_malware: ["ROADrecon", "AADInternals", "AzureHound"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Azure AD Graph Activity Logs land in Elastic with full ECS parsing. Detect ROADrecon and AADInternals enumeration with ready-to-use detection rules."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/aad-graph-activity-logs-threat-detection"
+    extended_notes: |
+      This is categorised SINGLE-SOURCE (national-CERT carve-out does not apply — Elastic is not a government CERT), but the underlying log source and detection capability are directly verified against Microsoft documentation. Corroborating signal: the AADGraphActivityLogs GA announcement and community writeups are widely confirmed. Defender steps: (1) Enable AADGraphActivityLogs in Entra diagnostic settings; route to Log Analytics workspace or directly to SIEM. (2) Deploy Elastic's ready-to-use detection rule set or build equivalent KQL in Sentinel. (3) Key hunt fields: userAgent.original (look for ROADrecon/python-requests patterns), azure.aadgraphactivitylogs.properties.client_id (flag against known legitimate app registrations), http.response.status_code (4xx spike = permission probing). (4) MITRE ATT&CK: T1590 (Gather Victim Network Information — ROADrecon), T1087.004 (Account Discovery: Cloud Account — AADInternals), T1078.004 (Valid Accounts: Cloud Accounts — device-code flows).
+
+candidate_sources:
+  - id: calif-codex
+    publisher: "Calif.io (Calif Security Research)"
+    url: "https://blog.calif.io"
+    category: research
+    why: "Primary author of Squidbleed (CVE-2026-47729) — high-quality original vulnerability research with AI-assisted fuzzing methodology; published Substack blog. Candidate for inclusion as 'calif-codex' or similar ID."
+
+coverage_gaps:
+  - source_id: xlab-qianxin
+    reason: "Primary AryStinger blog post at blog.xlab.qianxin.com returned HTTP 403 to bridge; covered via BleepingComputer corroborating article."
+  - source_id: mandiant-gtig
+    reason: "UNC6508 PRC medical research espionage campaign (GTIG June 15) fell outside the 36-hour recency window; dropped for daily brief currency."
+  - source_id: elastic-seclabs
+    reason: "OXLOADER/CastleStealer Elastic post (June 19) falls outside 36-hour window and outside 72-hour developing_window_hours (approximately 96 hours old); dropped."
+  - source_id: dfirreport
+    reason: "DFIR Report feed shows no new articles within the recency window; most recent item is May 11 2026."
+  - source_id: wiz-blog
+    reason: "Wiz Cloud Threat Landscape feed — most recent item May 27, no in-window items."

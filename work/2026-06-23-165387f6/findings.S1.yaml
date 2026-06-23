@@ -1,0 +1,228 @@
+# work/2026-06-23-165387f6/findings.S1.yaml
+domain: S1
+run_id: 2026-06-23-165387f6
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-23T04:05:58Z
+ended_at: 2026-06-23T05:10:00Z
+duration_seconds: 3842
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 15
+  bridge_fetches: 12
+
+items:
+  - title: "ShapedPlugin WordPress supply chain — three Pro plugins backdoored via compromised build pipeline, credential and 2FA exfiltration (CVE-2026-10735)"
+    sources:
+      - { url: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html", publisher: "The Hacker News", date: "2026-06-22", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/", publisher: "BleepingComputer", date: "2026-06-18", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed (feeds.feedburner.com/TheHackersNews), URL https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/ → primary vendor analysis: Wordfence (WebFetch returned 403 but BleepingComputer body is sufficient primary)"
+    summary: |
+      Attackers compromised ShapedPlugin's build and distribution pipeline on May 21, 2026, injecting
+      backdoor code into three paid WordPress plugins: Product Slider Pro for WooCommerce (before
+      v3.5.4), Real Testimonials Pro (v3.2.5), and Smart Post Show Pro (before v4.0.2). The malicious
+      LicenseLoader.php activates when an administrator loads any admin-panel page, contacts a remote
+      C2 server, downloads and installs a second-stage payload disguised as a WooCommerce plugin
+      (woocommerce-subscription or woocommerce-notification), then self-deletes to hinder forensics.
+      The second-stage steals WordPress admin credentials, 2FA TOTP secrets from security plugins
+      (e.g., WP Mail SMTP, Post SMTP, Easy WP SMTP), wp-config.php authentication salts, database
+      credentials, and three months of WooCommerce order data including payment-adjacent fields. Persistence
+      is maintained via hidden REST API endpoints. The injected code was present in official Pro builds
+      distributed through ShapedPlugin's licensed update channel from May 21 to June 12-16. Affected
+      installation base for the free product line alone exceeds 400,000 sites; Pro subscribers are
+      directly at risk. CVE-2026-10735 (CVSS 9.8) is the primary identifier; CVE-2026-49777 is a duplicate
+      submission.
+    ch_eu_nexus: "global; European WordPress hosting providers and WooCommerce merchants directly in scope; public-sector WordPress deployments at risk"
+    public_sector_nexus: "indirect — many EU municipality and public-authority websites run WordPress with WooCommerce or third-party plugins"
+    sector: "retail, public-sector web, technology"
+    cves: [CVE-2026-10735, CVE-2026-49777]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers compromised the vendor's build and distribution pipeline, injecting backdoor code into Pro plugin releases distributed through official licensed update channels"
+        attribution: "Wordfence (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+      - quote: "The malware operates through a loader triggered on admin pages that fetches remote payloads from 194.76.217[.]28:2871, installs them as hidden fake plugins, and erases itself to obstruct incident response"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+    extended_notes: |
+      Detection: Sysmon EID 1 — child process of php-fpm, apache2, or nginx spawning outbound network
+      calls; web-server access logs for REST endpoint paths matching /wp-json/wc-subscription or
+      /wp-json/wc-notification; presence of LicenseLoader.php in plugin directories; hidden plugins
+      named woocommerce-subscription or woocommerce-notification in wp-content/plugins that do not
+      appear in the WP plugin list. Hunt: wp_users table for accounts created after May 21 with
+      administrator role; wp_options for unauthorized REST namespaces.
+      Hardening: update to Product Slider Pro 3.5.4, Smart Post Show Pro 4.0.2; reset all WordPress
+      admin passwords and 2FA; audit WooCommerce transaction logs and SMTP credentials. This follows
+      the OptinMonster supply chain compromise documented in W25 — DACH defenders should audit all
+      Pro/premium plugins from smaller vendors using EDD licensing for similar loader patterns.
+
+  - title: "CVE-2026-47729 'Squidbleed' — 29-year-old Squid proxy heap over-read leaks other users' cleartext HTTP auth headers, no in-production patch yet"
+    sources:
+      - { url: "https://blog.calif.io/p/squidbleed-cve-2026-47729", publisher: "Calif.io Security Research", date: "2026-06-18", role: "primary" }
+      - { url: "https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html", publisher: "The Hacker News", date: "2026-06-22", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews feed, URL https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html → primary: Calif.io researcher blog, URL https://blog.calif.io/p/squidbleed-cve-2026-47729"
+    summary: |
+      CVE-2026-47729, dubbed Squidbleed by researchers at Calif.io, is a heap buffer over-read in Squid
+      Proxy's FTP gateway component (FtpGateway.cc) present since a 1997 code commit. The root cause is
+      in the whitespace-skipping loop that calls strchr() without first checking for the null terminator:
+      when strchr() searches for '\0', it returns a pointer to the terminator rather than NULL, causing
+      the loop to advance beyond the buffer boundary into adjacent heap memory containing cached HTTP
+      requests from other proxy users. An attacker-controlled FTP server (reachable from the proxy on
+      TCP/21, enabled by default) can serve malformed directory listings with no filename field, triggering
+      the read. Leaked data includes HTTP Authorization headers, session cookies, API keys, and any other
+      cleartext request content cached in adjacent heap. Only cleartext HTTP and TLS-terminating proxy
+      configurations are affected; HTTPS CONNECT-tunnelled traffic is not exposed. SUSE rates it CVSS 6.5
+      (Moderate); NVD score is pending. No patch ships until Squid 7.7, which has not yet been released
+      as of June 22. Squid 7.6 does NOT contain the fix despite early reports. No confirmed in-the-wild
+      exploitation. Discovered via Anthropic's Claude Mythos AI model under Project Glasswing.
+    ch_eu_nexus: "direct — Squid is widely deployed as a forward/reverse proxy across EU public-sector networks, university perimeters, and ISP transparent proxies"
+    public_sector_nexus: "direct — EU government networks frequently deploy Squid as an outbound proxy; internal HTTP traffic crosses it cleartext"
+    sector: "public-sector, technology, ISP, education"
+    cves: [CVE-2026-47729]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A heap over-read in the Squid web proxy can leak another user's cleartext HTTP request, including any credentials or session tokens it carries, to anyone already allowed to send traffic through the same proxy"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html"
+      - quote: "while (strchr(w_space, *copyFrom)) — without checking for string termination first, causing the pointer to advance beyond the buffer boundary"
+        attribution: "Calif.io Security Research"
+        source_url: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+    extended_notes: |
+      Detection: Monitor Squid access logs for FTP-proxied requests (MIME type ftp://); anomalous FTP
+      connections to external hosts on TCP/21 through the proxy may indicate an attacker probing.
+      Hunting: Review Squid worker crash logs for heap corruption signals; look for unexpected HTTP
+      Authorization headers in Squid's access.log from sources sharing the same proxy worker.
+      Hardening: Disable FTP proxying in squid.conf (acl ftp proto FTP; http_access deny ftp) if FTP
+      proxying is not needed; upgrade to Squid 7.7 when released. Production Squid packages on RHEL,
+      Debian, and Ubuntu ship 4.x–6.x — check whether your distribution has backported the fix.
+      The vulnerability was discovered by an AI model (Claude Mythos), illustrating the emerging pattern
+      of AI-assisted zero-day discovery documented in the W25 research section.
+
+  - title: "UPDATE: Klue/Icarus SaaS integration breach — victim list expands to 9 named firms including HackerOne, Huntress, Snyk; June 22 deadline passed"
+    sources:
+      - { url: "https://www.securityweek.com/more-cybersecurity-firms-disclose-impact-from-klue-hack/", publisher: "SecurityWeek", date: "2026-06-22", role: "primary" }
+      - { url: "https://www.securityweek.com/cybersecurity-firms-impacted-by-klue-supply-chain-attack/", publisher: "SecurityWeek", date: "2026-06-19", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch ('AryStinger botnet FortiBleed update June 22 23 2026') → SecurityWeek URL surfaced in results → fetched https://www.securityweek.com/more-cybersecurity-firms-disclose-impact-from-klue-hack/"
+    summary: |
+      The Klue/Icarus CRM data exfiltration incident (originally covered 2026-06-19 and 2026-06-21)
+      reached a material new threshold on June 22: at least nine Klue customers publicly disclosed
+      impact, including cybersecurity vendors HackerOne, Huntress, Jamf, OneTrust, Recorded Future,
+      Snyk, and Tanium, plus Insurity and Sprout Social. Revenue intelligence platform Gong additionally
+      confirmed access to usernames, business titles, and emails. The attacker (Icarus, alias "mr bean",
+      emerged April 2026, also tracked as UNC6395) had set June 22 as a publication deadline unless
+      Klue and victims engaged in ransom negotiations. The data stolen comprises Salesforce CRM records:
+      contact names, email addresses, job titles, phone numbers, business addresses, price quotes,
+      and sales account data. CrowdStrike is assisting with the investigation. The incident is significant
+      because the victim list is dominated by cybersecurity vendors — their client contact data now
+      resides in a threat-actor-controlled corpus and could be used for precision spear-phishing targeting
+      security operations staff.
+    ch_eu_nexus: "indirect — several affected vendors (Huntress, Recorded Future, Snyk) have CH/EU customer relationships; their stolen CRM data includes EU security contacts"
+    public_sector_nexus: "indirect"
+    sector: "technology, cybersecurity"
+    cves: []
+    actors_campaigns_malware: ["Icarus", "UNC6395"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-to-prior:2026-06-21
+    evidence:
+      - quote: "At least nine Klue customers have disclosed impact from the incident, including cybersecurity firms HackerOne, Huntress, Jamf, OneTrust, Recorded Future, Snyk, and Tanium"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/more-cybersecurity-firms-disclose-impact-from-klue-hack/"
+      - quote: "Icarus has added Klue to its Tor-based leak site, claiming responsibility for the attack and threatening to publish the information stolen from Klue customers' Salesforce instances"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/cybersecurity-firms-impacted-by-klue-supply-chain-attack/"
+    extended_notes: |
+      Defender implication: Security operations staff at organizations that are customers of HackerOne,
+      Huntress, Recorded Future, Snyk, or any of the named nine firms should treat their business-contact
+      data as potentially compromised and be alert to spear-phishing targeting security roles. The
+      attacker accessed Salesforce via the Klue integration's OAuth token — hunt for anomalous Salesforce
+      API access from unfamiliar user agents or IP ranges around June 11-12. Per ReliaQuest's prior
+      analysis, the actor executed "nearly a thousand queries in 15 minutes and sustained extraction
+      windows lasting over 6 hours" — network egress logs from Klue's Salesforce connector may retain
+      this artefact.
+
+  - title: "CVE-2026-20245 — Cisco Catalyst SD-WAN Manager CLI command injection to root, sixth SD-WAN zero-day of 2026; CISA KEV deadline June 23"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx", publisher: "Cisco PSIRT", date: "2026-06-05", role: "primary" }
+      - { url: "https://www.securityweek.com/cisco-patches-another-sd-wan-zero-day-the-sixth-exploited-in-2026/", publisher: "SecurityWeek", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge (python3 tools/fetch_source.py cisa-kev) — CVE-2026-20245 listed with dateAdded 2026-06-09, dueDate 2026-06-23 → Cisco PSIRT advisory URL from notes field → SecurityWeek corroboration via WebSearch"
+    summary: |
+      CVE-2026-20245 (CVSS 7.8) is a CLI command injection in Cisco Catalyst SD-WAN Manager (formerly
+      vManage), SD-WAN Controller (formerly vSmart), and SD-WAN Validator (formerly vBond). The
+      vulnerability stems from insufficient validation of user-supplied input in the CLI's file-upload
+      handling; an authenticated attacker with netadmin privileges can upload a crafted file that triggers
+      command injection, escalating to root. Cisco PSIRT observed "limited cases where exploitation
+      resulted in configuration changes pushed to edge devices," confirming in-the-wild abuse. Exploitation
+      requires netadmin credentials — achievable by chaining with previously KEV-listed Cisco SD-WAN flaws
+      CVE-2026-20182 (auth bypass) or CVE-2026-20127 (credential access, exploited since 2023).
+      SecurityWeek characterises this as the sixth Cisco SD-WAN zero-day exploited in 2026; Mandiant
+      reported the flaw to Cisco. CISA set a June 23, 2026 remediation deadline for federal FCEB agencies;
+      patches are available in the May 14, 2026 SD-WAN security advisory batch. Affected: SD-WAN Manager
+      20.9.x, 20.12.x, 20.13.x prior to the May 2026 fix release; see Cisco advisory for precise version
+      table.
+    ch_eu_nexus: "global; SD-WAN infrastructure widely deployed in EU enterprise and public-sector networks"
+    public_sector_nexus: "direct — SD-WAN is used in federal/cantonal network interconnects; a netadmin compromise on SD-WAN Manager gives attacker-controlled routing"
+    sector: "telco, public-sector, enterprise"
+    cves: [CVE-2026-20245]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This vulnerability is due to insufficient validation of user-supplied input. An attacker could exploit this vulnerability by uploading a crafted file to the affected system. A successful exploit could allow the attacker to perform command injection attacks on an affected system and elevate their privileges as the root user."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+      - quote: "To exploit this vulnerability, the attacker must have netadmin privileges on the affected system. This would require valid credentials or exploitation of CVE-2026-20182 or CVE-2026-20127."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+    extended_notes: |
+      Detection: SD-WAN Manager audit logs — look for file-upload actions by netadmin accounts followed
+      by unexpected process spawns (SD-WAN Manager runs on CentOS; Sysmon/auditd would surface execve
+      calls from the netadmin service context). SD-WAN Manager has a syslog feed; aggregate CLI audit
+      events via SIEM. Post-exploitation: Cisco observed configuration changes pushed to edge devices —
+      hunt in vEdge/cEdge device configs for unexpected BGP peer additions, tunnel endpoint changes,
+      or policy pushes after the attacker's access window. If compromise suspected, do NOT simply patch
+      — follow Cisco TAC remediation playbook as the advisory notes that patching alone is insufficient
+      for already-compromised deployments.
+
+cve_table:
+  - cve: CVE-2026-10735
+    product: "ShapedPlugin WordPress Pro plugins (Product Slider Pro < 3.5.4, Smart Post Show Pro < 4.0.2, Real Testimonials Pro 3.2.5)"
+    cvss: "9.8"
+    epss: "N/A"
+    kev: "No"
+    exploited: "Yes (active)"
+    patch: "Update to Product Slider Pro 3.5.4, Smart Post Show Pro 4.0.2; reset all credentials"
+    source: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+  - cve: CVE-2026-47729
+    product: "Squid Proxy < 7.7"
+    cvss: "6.5 (SUSE rating; NVD pending)"
+    epss: "N/A"
+    kev: "No"
+    exploited: "No confirmed exploitation"
+    patch: "Squid 7.7 not yet released; disable FTP proxying as interim mitigation"
+    source: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+  - cve: CVE-2026-20245
+    product: "Cisco Catalyst SD-WAN Manager / Controller / Validator (20.9.x, 20.12.x, 20.13.x before May 2026 patch)"
+    cvss: "7.8"
+    epss: "N/A"
+    kev: "Yes (added 2026-06-09, deadline 2026-06-23)"
+    exploited: "Yes (limited in-the-wild)"
+    patch: "Apply Cisco SD-WAN May 2026 patch release; verify edge-device configs post-patch"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: wordfence-blog
+    reason: "WebFetch to wordfence.com/blog returned empty (anti-bot); BleepingComputer and THN carried the full story"
+  - source_id: databreaches-net
+    reason: "403 persistent per rotation-priority flag; attempted feed path, no success; no in-window items identified via fallback search"
+  - source_id: inside-it-ch
+    reason: "403 persistent per rotation-priority flag; no in-window items identified via search fallback"

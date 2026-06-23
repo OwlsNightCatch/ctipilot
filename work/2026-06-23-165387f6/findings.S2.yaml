@@ -1,0 +1,277 @@
+# work/2026-06-23-165387f6/findings.S2.yaml
+domain: S2
+run_id: 2026-06-23-165387f6
+model: "Anthropic Claude (specific model not determined)"
+model_id: claude-sonnet-4-6
+started_at: 2026-06-23T04:06:12Z
+ended_at: 2026-06-23T04:55:00Z
+duration_seconds: 2928
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 6
+  bridge_fetches: 18
+
+items:
+  - title: "Gitea Docker reverse proxy auth bypass actively unpatched in self-hosted deployments (CVE-2026-20896, CVSS 9.8)"
+    sources:
+      - url: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4"
+        publisher: "Gitea Blog"
+        date: "2026-06-20"
+        role: "primary"
+      - url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4"
+        publisher: "GitHub Security Advisory"
+        date: "2026-06-20"
+        role: "corroborating"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2027"
+        publisher: "BSI WID"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "BSI RSS bridge → WID-SEC-2026-2027 (2026-06-22, rated 'hoch') → Gitea blog primary → GitHub GHSA advisory corroborating"
+    summary: |
+      Gitea 1.26.4 (and 1.26.3) released 2026-06-20 patches a cluster of four vulnerabilities of which CVE-2026-20896 (CVSS 9.8 Critical) is the most severe. The Gitea Docker image ships with REVERSE_PROXY_TRUSTED_PROXIES defaulting to '*' (trust-all), meaning any attacker able to reach the container's HTTP port can pass an X-WEBAUTH-USER header with an arbitrary username and authenticate as any user including admin — no credentials required. The vulnerability is Docker-specific; bare-metal or non-Docker deployments using explicit reverse proxy config are unaffected unless they also set the trust-all wildcard. CVE-2026-27775 (High) is a branch permission caching race: a single-push batch operation can slip past protected-branch enforcement when the per-branch cache is populated after the push object is evaluated. CVE-2026-20779 (CVSS 7.1) exposes TOTP 2FA bypass via two paths — a TOCTOU race in the web flow and stateless replay of the X-Gitea-OTP API header within the 60-90 second OTP validity window. CVE-2026-22874 (High) is an SSRF in the webhooks and repository-migration subsystems permitting internal network probing from the Gitea server process. All four are patched in Gitea 1.26.3 / 1.26.4. Gitea is widely used by European public-sector DevOps teams and sovereign-cloud environments as a GitHub alternative.
+    ch_eu_nexus: "Direct — Gitea is the self-hosted Git platform of choice for DACH/EU public-sector DevOps and sovereign-cloud environments; BSI issued WID-SEC-2026-2027 on 2026-06-22 rating it 'hoch'"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government, education, DevOps/SCM infrastructure"
+    cves: [CVE-2026-20896, CVE-2026-27775, CVE-2026-20779, CVE-2026-22874]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Docker deployments using X-Auth-User headers are vulnerable to account takeover via header spoofing — the Docker image defaulted REVERSE_PROXY_TRUSTED_PROXIES to wildcard '*'"
+        attribution: "Gitea Blog"
+        source_url: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4"
+      - quote: "CVSS: 9.8 — Gitea Docker image ships with REVERSE_PROXY_TRUSTED_PROXIES = '*', anyone who can reach the container's HTTP port can authenticate as any Gitea user by supplying an X-WEBAUTH-USER header"
+        attribution: "GitHub Security Advisory GHSA-f75j-4cw6-rmx4"
+        source_url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4"
+      - quote: "WID-SEC-2026-2027 — Gitea: Mehrere Schwachstellen ermöglichen nicht autorisierten Zugriff und weitere Angriffe — Risiko: hoch"
+        attribution: "BSI WID"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2027"
+    extended_notes: |
+      Defender angle: Gitea running in Docker should immediately check REVERSE_PROXY_TRUSTED_PROXIES config. Specific mitigations: (1) restrict to the exact IP/CIDR of your reverse proxy, (2) if not using header-auth, disable ENABLE_REVERSE_PROXY_AUTHENTICATION entirely in app.ini. For CVE-2026-20779 (TOTP), ensure API clients cannot replay OTP codes — Gitea 1.26.4 enforces single-use OTP server-side. For CVE-2026-22874 (SSRF), restrict Gitea's outbound network access at the network layer (egress firewall) as defence-in-depth. Detection: unusual Gitea admin logins from the reverse proxy IP with no corresponding user-password audit entry; webhook calls to RFC-1918 addresses in server logs. MITRE: T1190 (Exploit Public-Facing Application), T1078.001 (Default Accounts), T1071.001 (Web Protocols for C2 via SSRF).
+      Patch: Gitea 1.26.3 and 1.26.4 (both released 2026-06-20). Upgrade from any 1.x version.
+
+  - title: "ShapedPlugin WordPress Pro plugin supply chain attack — backdoor steals credentials, installs web shell (CVE-2026-49777 CVSS 10.0)"
+    sources:
+      - url: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+        publisher: "The Hacker News"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://www.wordfence.com/blog/2026/06/shapedplugin-supply-chain-attack/"
+        publisher: "Wordfence"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "feed https://feeds.feedburner.com/TheHackersNews (bridge) → THN 2026-06-22 article on ShapedPlugin → primary at THN URL → Wordfence primary blog noted (HTTP 202 from bridge, cited as corroborating)"
+    summary: |
+      On 2026-06-22 Wordfence disclosed a software supply chain compromise affecting multiple Pro (paid) WordPress plugins from ShapedPlugin — the vendor behind Product Slider for WooCommerce, WP Carousel Pro, and several other commercial plugins. The attack vector was the Easy Digital Downloads distribution infrastructure used by ShapedPlugin to deliver Pro plugin updates; attackers injected a backdoor into the update packages. The backdoor, identified as CVE-2026-49777 (CVSS 10.0), runs install-persistent.php on activation, captures plaintext credentials (including admin passwords and 2FA codes as entered), and exfiltrates wp-config.php (database credentials, secret keys). It also establishes a persistent web shell for remote command execution. Only the Pro (paid) plugin versions distributed via EDD were backdoored; free versions hosted on the WordPress.org plugin repository are unaffected. Sites that installed any ShapedPlugin Pro update in the period prior to Wordfence's disclosure should treat the WordPress installation as fully compromised: rotate all database credentials, WordPress secret keys, admin passwords, and investigate for lateral movement.
+    ch_eu_nexus: "Indirect — affects any EU/CH WordPress-based site running ShapedPlugin Pro plugins; public-sector sites using WooCommerce or WordPress for citizen-facing services are at risk"
+    public_sector_nexus: "indirect"
+    sector: "public-sector, e-government, SMB, media, education"
+    cves: [CVE-2026-49777, CVE-2026-10735]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The backdoor was injected into ShapedPlugin's Pro plugin update packages distributed via Easy Digital Downloads. Upon installation the payload runs install-persistent.php and harvests plaintext credentials including 2FA codes before exfiltrating wp-config.php"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+    extended_notes: |
+      Defender angle — WordPress administrators: (1) Check if any ShapedPlugin Pro plugin is installed (Product Slider for WooCommerce, WP Carousel Pro, etc.); (2) Assume full compromise of any affected site — rotate all credentials; (3) Search web-accessible directories for install-persistent.php; (4) Free WordPress.org versions were not affected. Detection: web server access logs for POST requests to install-persistent.php; unusual outbound connections from the web server process (T1071.001); new admin accounts or privilege escalations in wp_users (T1136.001). MITRE: T1195.002 (Compromise Software Supply Chain), T1505.003 (Server Software Component: Web Shell), T1552.001 (Unsecured Credentials: Credentials In Files). Hardening: restrict wp-admin to known IPs; use WordPress file integrity monitoring; prefer WordPress.org-hosted plugins over third-party distribution.
+
+  - title: "Microsoft 365 Copilot unauthenticated information disclosure and open redirect flagged by BSI (CVE-2026-54130 CVSS 9.8, CVE-2026-47645 CVSS 8.8) — server-side mitigated, no customer action"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2020"
+        publisher: "BSI WID"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-54130"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-22"
+        role: "corroborating"
+      - url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47645"
+        publisher: "Microsoft MSRC"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "BSI RSS bridge → WID-SEC-2026-2020 (2026-06-22) → MSRC CVE API for CVE-2026-54130 and CVE-2026-47645 → CVSS scores and mitigation status confirmed"
+    summary: |
+      BSI WID-SEC-2026-2020 (issued 2026-06-22) flags two vulnerabilities in Microsoft 365 Copilot that Microsoft has already mitigated server-side; no customer-side action is required. CVE-2026-54130 (CVSS 9.8, CWE-306 Missing Authentication for Critical Function) allows an unauthenticated network attacker to access information in Copilot — the specific exposed data is not detailed in the advisory. CVE-2026-47645 (CVSS 8.8, CWE-601 URL Redirection to Untrusted Site) is an open redirect in Copilot Business Chat that can be leveraged for privilege escalation or phishing via seemingly-legitimate Microsoft URLs. Both are rated Critical. Microsoft's fix was deployed to the SaaS backend; enterprise M365 Copilot customers need only verify they are running the current licensed version. The BSI advisory is notable for flagging SaaS-layer vulnerabilities — a signal that EU public-sector organisations using M365 Copilot should maintain visibility into Microsoft's SaaS security bulletins even when no action is required, as prior CISA guidance has noted Copilot as an authentication attack surface.
+    ch_eu_nexus: "Direct — BSI (German federal cybersecurity authority) issued this advisory on 2026-06-22 for EU/DACH public-sector M365 Copilot deployments; NIS2-regulated entities using Copilot should log this against their SaaS asset inventory"
+    public_sector_nexus: "direct"
+    sector: "public-sector, government, finance, enterprise"
+    cves: [CVE-2026-54130, CVE-2026-47645]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "WID-SEC-2026-2020 — Microsoft 365 Copilot: Zwei Schwachstellen ermöglichen nicht autorisierte Zugriffe — CVE-2026-54130, CVE-2026-47645 — bereits durch Microsoft serverseitig behoben, kein Handlungsbedarf für Kunden"
+        attribution: "BSI WID"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2020"
+      - quote: "CVSS v3.1 Base Score: 9.8 Critical — Missing authentication for critical function — CWE-306 — Exploitation Less Likely"
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-54130"
+    extended_notes: |
+      Defender angle: No patch action needed. Detection engineering note: while these specific vulnerabilities are server-side mitigated, they illustrate the attack surface of Copilot's authentication handling. Monitor Microsoft Entra sign-in logs for anomalous Copilot-service access patterns (Application ID: Microsoft 365 Copilot). For CVE-2026-47645 (open redirect), train users to verify URLs even when they appear to originate from microsoft.com. MITRE: T1078.004 (Valid Accounts: Cloud Accounts), T1566.002 (Phishing: Spearphishing Link via open redirect).
+
+  - title: "ILIAS eLearning SQL injection in ilTrQuery — no patch available, PoC public (CVE-2026-12789)"
+    sources:
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2016"
+        publisher: "BSI WID"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-69G6-PGGC-389P"
+        publisher: "GitHub Advisory Database"
+        date: "2026-06-21"
+        role: "corroborating"
+      - url: "https://euvd.enisa.europa.eu/enisa/EUVD-2026-38153"
+        publisher: "ENISA EUVD"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "BSI RSS bridge → WID-SEC-2026-2016 (2026-06-22, rated 'mittel') → GHSA advisory for CVE-2026-12789 → ENISA EUVD cross-reference"
+    summary: |
+      BSI WID-SEC-2026-2016 (2026-06-22) flags CVE-2026-12789, a SQL injection vulnerability in ILIAS 11.0's learning progress subsystem. The injection point is ilTrQuery::executeQueries in components/ILIAS/Tracking/classes/class.ilTrQuery.php. Exploitation requires an authenticated session (no privilege escalation from unauthenticated), and the CVSS v4 score of 2.0 reflects the authentication prerequisite and limited data-exposure scope. However, the ILIAS vendor has been unresponsive to the coordinated disclosure, and no patch is available at time of BSI publication. A public proof-of-concept is available on VulDB. ILIAS is the dominant open-source eLearning platform in the DACH region, deployed at hundreds of German, Austrian, and Swiss universities, vocational schools (Berufsschulen), and public-sector training portals. Any authenticated user — including enrolled students — could trigger the injection. The combination of unpatched status, PoC availability, and wide DACH deployment makes this relevant for defenders even at low CVSS severity.
+    ch_eu_nexus: "Direct — ILIAS is widely deployed across Swiss, German, and Austrian public educational and government training infrastructure; no patch available; PoC public"
+    public_sector_nexus: "direct"
+    sector: "education, public-sector, government"
+    cves: [CVE-2026-12789]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "WID-SEC-2026-2016 — ILIAS: Schwachstelle ermöglicht SQL-Injection — CVE-2026-12789 — Kein Patch verfügbar — öffentlicher Proof-of-Concept vorhanden"
+        attribution: "BSI WID"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2016"
+      - quote: "SQL injection in ilTrQuery::executeQueries in components/ILIAS/Tracking/classes/class.ilTrQuery.php — ILIAS 11.0 — requires authenticated session"
+        attribution: "GitHub Advisory Database"
+        source_url: "https://github.com/advisories/GHSA-69G6-PGGC-389P"
+    extended_notes: |
+      Defender angle — ILIAS administrators: (1) No patch exists; monitor ILIAS GitHub for a fix; (2) Apply WAF rules to block SQL metacharacter sequences in learning-progress API endpoints; (3) Restrict access to ilTrQuery-backed endpoints to enrolled users only (role-based ACL); (4) Review database user permissions — ILIAS DB user should not have FILE, DROP, or superuser privileges. Detection: database slow-query logs or WAF alerts for UNION/SELECT patterns in POST bodies to ILIAS tracking endpoints; unusual data volumes returned from the tracking subsystem. MITRE: T1190 (Exploit Public-Facing Application), T1078 (Valid Accounts — authenticated user required).
+
+  - title: "Squidbleed — 29-year-old heap over-read in Squid proxy FTP gateway leaks cross-user HTTP state (CVE-2026-47729)"
+    sources:
+      - url: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+        publisher: "calif.io (researcher write-up)"
+        date: "2026-06-18"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html"
+        publisher: "The Hacker News"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "feed https://feeds.feedburner.com/TheHackersNews (bridge) → THN 2026-06-22 article on Squidbleed → primary researcher post at calif.io"
+    summary: |
+      CVE-2026-47729 (Squidbleed) is a heap over-read in Squid's FTP-over-HTTP gateway, present in the codebase since 1997 and patched only in Squid 7.7. The vulnerable code is in src/FtpGateway.cc: the FTP directory listing parser uses strchr(w_space, *copyFrom) to detect whitespace, but this function returns non-NULL when *copyFrom is the null terminator (0x00 matches the embedded null in the search set), causing the parser to walk past the end of the FTP response buffer into adjacent heap memory. An attacker who controls an FTP server and can trick the Squid proxy into fetching from it (e.g. via an HTTP request from any proxied user to an FTP URL) can leak adjacent heap contents — which in a multi-user proxy environment includes decoded HTTP headers, authentication tokens, session cookies, and other credentials from other users' concurrent requests. The attack requires the attacker to control an FTP server, but not to have a privileged position relative to the proxy users. Squid 5.x and 6.x are affected; 7.7 is the patch. Particularly relevant for DACH/EU school, university, and government environments that run shared Squid proxies for web filtering.
+    ch_eu_nexus: "Indirect — Squid is commonly deployed in EU/DACH school, university, and government network perimeters for web filtering and caching; cross-user credential leakage in shared proxy environments"
+    public_sector_nexus: "indirect"
+    sector: "education, public-sector, government, telco"
+    cves: [CVE-2026-47729]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "strchr(w_space, *copyFrom) returns non-NULL on the null terminator, causing the FTP directory listing parser to walk past the end of the response buffer and leak adjacent heap memory — Squid 5.7 and below affected, patched in 7.7"
+        attribution: "calif.io"
+        source_url: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+      - quote: "The 29-year-old bug allows an attacker controlling an FTP server to cause Squid to leak adjacent heap contents including HTTP credentials from other users sharing the proxy"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html"
+    extended_notes: |
+      Defender angle: (1) Upgrade to Squid 7.7; (2) If upgrade is not immediately possible, consider disabling FTP proxying (ftp_list = no in squid.conf) as a temporary mitigation; (3) In school/university environments, review whether FTP proxying is needed at all — most modern environments do not require it. Detection: unusual Squid access log entries showing FTP requests (ftp:// scheme); monitor for clients making repeated FTP URL requests to attacker-controlled servers. MITRE: T1040 (Network Sniffing — effective outcome), T1190 (Exploit Public-Facing Application).
+
+cve_table:
+  - cve: CVE-2026-20896
+    product: "Gitea (Docker deployment)"
+    cvss: "9.8"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Gitea 1.26.3 / 1.26.4"
+    source: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4"
+  - cve: CVE-2026-27775
+    product: "Gitea (all deployments)"
+    cvss: "High"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Gitea 1.26.3 / 1.26.4"
+    source: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4"
+  - cve: CVE-2026-20779
+    product: "Gitea (TOTP 2FA)"
+    cvss: "7.1"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Gitea 1.26.3 / 1.26.4"
+    source: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4"
+  - cve: CVE-2026-22874
+    product: "Gitea (webhooks/migrations)"
+    cvss: "High"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Gitea 1.26.3 / 1.26.4"
+    source: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4"
+  - cve: CVE-2026-49777
+    product: "ShapedPlugin Pro WordPress plugins (EDD distribution)"
+    cvss: "10.0"
+    epss: ""
+    kev: "No"
+    exploited: "Yes — supply chain attack confirmed"
+    patch: "Remove affected plugin versions; treat site as compromised"
+    source: "https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html"
+  - cve: CVE-2026-54130
+    product: "Microsoft 365 Copilot"
+    cvss: "9.8"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Server-side mitigated by Microsoft; no customer action"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-54130"
+  - cve: CVE-2026-47645
+    product: "Microsoft 365 Copilot Business Chat"
+    cvss: "8.8"
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Server-side mitigated by Microsoft; no customer action"
+    source: "https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-47645"
+  - cve: CVE-2026-12789
+    product: "ILIAS 11.0 (ilTrQuery::executeQueries)"
+    cvss: "2.0 (CVSS v4)"
+    epss: ""
+    kev: "No"
+    exploited: "No (PoC public)"
+    patch: "No patch available — vendor unresponsive"
+    source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2016"
+  - cve: CVE-2026-47729
+    product: "Squid proxy 5.x / 6.x (FtpGateway.cc)"
+    cvss: ""
+    epss: ""
+    kev: "No"
+    exploited: "No (known)"
+    patch: "Squid 7.7"
+    source: "https://blog.calif.io/p/squidbleed-cve-2026-47729"
+
+candidate_sources:
+  - id: calif-io
+    publisher: "calif.io (independent security researcher blog)"
+    url: "https://blog.calif.io"
+    rss_url: ""
+    category: research
+    why: "Primary disclosure source for CVE-2026-47729 Squidbleed — original root-cause analysis including exact source code walkthrough. First-party researcher write-up. No equivalent in current sources.json."
+
+coverage_gaps:
+  - source_id: cert-fr-actu
+    reason: "cert-fr actu-recent 10 returned items dated 2025-10 to 2025-12 only — feed cache stale; no in-window CERTFR actualities retrieved."
+  - source_id: inside-it-ch
+    reason: "Feed now functional (rotation priority resolved). June 22 content was administrative IT governance only (Steffisburg RZ, Lancom merger) — no security incidents in window."
+  - source_id: databreaches-net
+    reason: "403-prone per rotation priority; not attempted this run. No known in-window CH/EU items identified via other sources."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis-recent returned no items dated within 36h window. Most recent avis dated June 18-19, just outside window."
+  - source_id: ncsc-nl
+    reason: "ncsc-nl recent returned advisories dated June 17-19 — all outside 36h window from June 23."
+  - source_id: cert-eu
+    reason: "cert-eu recent returned advisories 2026-006 (PAN-OS, June 18) and earlier — all outside 36h window."
