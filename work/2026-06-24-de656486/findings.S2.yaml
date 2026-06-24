@@ -1,0 +1,204 @@
+# work/2026-06-24-de656486/findings.S2.yaml
+domain: S2
+run_id: 2026-06-24-de656486
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-24T04:05:58Z
+ended_at: 2026-06-24T04:28:36Z
+duration_seconds: 1358
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 10
+  bridge_fetches: 12
+
+# WINDOW: June 22 12:00 UTC — June 24 12:00 UTC (36h)
+# DEDUP: Applied PD-8 against 88 prior-coverage records.
+# VERDICT: In-window CH/EU public-sector incident signal is genuinely thin.
+# One confirmed in-window item with CH nexus; CERT/advisory feeds show no
+# new EU-wide exploited-vulnerability advisories inside the 36h window.
+
+items:
+  - title: "Swiss Post Cybersecurity inaugural Swiss Threat Landscape Report highlights phishing, identity-based attacks and AI-enabled threats as dominant concerns"
+    sources:
+      - url: "https://www.swisspost-cybersecurity.ch/news/swiss-threat-landscape-report"
+        publisher: "Swiss Post Cybersecurity"
+        date: "2026-06-23"
+        role: "primary"
+    discovery_trace: >
+      first seen at: WebSearch ("Swiss Post cybersecurity threat landscape report June 2026")
+      → primary: Swiss Post Cybersecurity news page, URL https://www.swisspost-cybersecurity.ch/news/swiss-threat-landscape-report
+      (published 2026-06-23, confirmed via WebFetch)
+    summary: |
+      Swiss Post Cybersecurity published the inaugural Swiss Threat Landscape Report on 23 June 2026,
+      presented at the Hack'Events security conference in Zurich, Geneva, Lugano, and Luxembourg
+      (400+ participants). The 36-page report is based on operational data from the firm's SOC
+      monitoring, incident response engagements, and offensive security assessments — making it
+      one of the first systematic threat intelligence publications anchored in Swiss-specific
+      operational data rather than global aggregates.
+
+      Top threat categories named: phishing campaigns, identity-based attacks (credential stuffing,
+      account takeover, MFA-bypass chains), and AI-enabled threats (LLM-assisted phishing
+      personalisation, deepfake-driven social engineering, AI-generated malware scaffolding).
+      The report also highlights "large-scale attacker operations" as a growing structural concern.
+
+      Strategic framing: the report positions complete breach prevention as no longer achievable
+      at scale; the primary governance recommendation is strengthening detection, response, and
+      recovery capability — aligning with the NCSC-CH's own ISB posture for critical infrastructure.
+      Switzerland is described as an above-average-risk target due to its financial sector
+      concentration, density of international organisations (UN Geneva, ICRC, WEF Davos), and
+      critical infrastructure interconnects with EU partners.
+
+      Defender takeaway: the SOC-data grounding means the threat categories reflect actual
+      incident intake within Switzerland, not projected threat modelling. Detection engineering
+      prioritisation should weight identity-layer telemetry (Entra ID / AD sign-in logs, OAuth
+      token-grant anomalies, MFA push fatigue patterns mapped to T1621) and AI-assisted phishing
+      recognition (T1566.001 — synthetic personalisation detectable by email header anomaly scoring
+      rather than content heuristics alone). No IOCs published.
+    ch_eu_nexus: "Switzerland-primary; authored by Swiss SOC/IR/offensive-security firm"
+    public_sector_nexus: "direct — report explicitly names public-sector entities among targeted categories; Swiss federal office data cited in scope"
+    sector: "all-sector; primary emphasis financial, public-sector, critical infrastructure"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Swiss Post Cybersecurity presented the latest insights into the threat situation in Switzerland with the first release of the Swiss Threat Landscape Report at the Hack'Events in June 2026"
+        attribution: "Swiss Post Cybersecurity"
+        source_url: "https://www.swisspost-cybersecurity.ch/news/swiss-threat-landscape-report"
+      - quote: "Phishing, identity-based attacks, and AI-enabled threats dominate the current threat landscape"
+        attribution: "Swiss Post Cybersecurity (via WebSearch summary of report page)"
+        source_url: "https://www.swisspost-cybersecurity.ch/news/swiss-threat-landscape-report"
+    extended_notes: |
+      Single-source because the report is an inaugural publication and no independent
+      corroborating secondary has yet covered it in depth. The publisher is a Swiss
+      government-adjacent firm (Post subsidiary) with commercial SOC/IR operations.
+      Treat confidence as MEDIUM pending independent press coverage.
+      Report PDF download gated behind registration form at
+      https://www.swisspost-cybersecurity.ch/swiss-threat-landscape-report — full
+      methodology section not publicly readable without registration.
+      Notable sponsor: HarfangLab (FR-based EDR vendor) — suggests French EDR telemetry
+      feeds into the Swiss SOC dataset.
+
+  - title: "Icarus ransomware group claims Swiss CPaaS firm GMS AG (gms.net) as new victim — extends previously-covered campaign"
+    sources:
+      - url: "https://www.dexpose.io/icarus-ransomware-strikes-swiss-firm-gms-net/"
+        publisher: "dexpose.io"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://ransomware.live/id/R21zLW5ldEBJY2FydXM="
+        publisher: "ransomware.live"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: >
+      first seen at: WebSearch ("Icarus ransomware Switzerland June 2026") →
+      pivot: dexpose.io article https://www.dexpose.io/icarus-ransomware-strikes-swiss-firm-gms-net/ (2026-06-23) →
+      corroborated: ransomware.live listing https://ransomware.live/id/R21zLW5ldEBJY2FydXM= (discovered 2026-06-22)
+    summary: |
+      The Icarus ransomware group — active since April 2026 and responsible for the Klue.com OAuth
+      breach covered in the June 23 brief — claimed on or around June 22 to have compromised
+      GMS AG (gms.net), formerly Global Message Services AG, headquartered in Baar, Switzerland.
+      GMS AG is a global CPaaS (Communications Platform as a Service) and A2P SMS messaging
+      provider with approximately 688 employees, supplying enterprise messaging infrastructure
+      to financial institutions, governments, and enterprises worldwide.
+
+      The group claims to have exfiltrated Salesforce customer data. No primary victim statement
+      from GMS was locatable at research time. The in-window delta is a new named Swiss corporate
+      victim from the same threat actor, which constitutes a fresh item despite the actor being
+      covered in prior briefs.
+
+      Operational significance: A2P/CPaaS providers are high-value soft supply-chain targets.
+      Compromise of such a provider enables downstream SMS OTP interception or spoofed
+      smishing at scale using trusted sender IDs. Confirmed breach of GMS AG would affect
+      financial and public-sector clients relying on it for authentication SMS delivery.
+      Defenders should note that Icarus has demonstrated a TTPs pattern of targeting cloud-SaaS
+      data exports (Salesforce objects) rather than encrypting on-premises infrastructure,
+      suggesting a data-extortion-primary model consistent with T1530 (Data from Cloud Storage)
+      and T1567.002 (Exfiltration to Cloud Storage).
+    ch_eu_nexus: "Direct — victim headquartered in Baar, Switzerland; Swiss telco/CPaaS sector"
+    public_sector_nexus: "indirect — GMS AG provides messaging infrastructure to government and financial-sector clients"
+    sector: "telco, CPaaS, financial services (supply chain)"
+    cves: []
+    actors_campaigns_malware: ["Icarus ransomware"]
+    verification: SINGLE-SOURCE
+    confidence: LOW
+    novelty: "update-to-prior:2026-06-23"
+    evidence:
+      - quote: "Icarus ransomware group has struck again, this time targeting Swiss firm Gms-net"
+        attribution: "dexpose.io"
+        source_url: "https://www.dexpose.io/icarus-ransomware-strikes-swiss-firm-gms-net/"
+      - quote: "Ransomware.live discovered on 2026-06-22 that Gms-net has been claimed by Icarus ransomware group"
+        attribution: "ransomware.live (via dexpose.io citation)"
+        source_url: "https://www.dexpose.io/icarus-ransomware-strikes-swiss-firm-gms-net/"
+    extended_notes: |
+      Only aggregator sources cover this claim (dexpose.io + ransomware.live). No independent
+      reputable journalism verified at research time. Marked SINGLE-SOURCE / LOW confidence.
+      Prior brief context: Klue.com/Icarus covered 2026-06-23 brief. This is a new Swiss victim
+      claim from the same group, qualifying as an UPDATE with fresh in-window delta source
+      (ransomware.live listing June 22, dexpose.io article June 23).
+      NCSC-CH had no advisory on this claim as of research time.
+      Relevant ATT&CK mappings for threat-hunting context: T1195.001 (Supply Chain Compromise),
+      T1530 (Data from Cloud Storage — Salesforce), T1567.002 (Exfiltration to Cloud Storage),
+      T1486 (Data Encrypted for Impact — if encryption component confirmed).
+      Defender note: organisations using GMS AG for authentication SMS should review contingency
+      plans. Monitor vendor security advisories. Do not rely solely on SMS OTP as MFA factor
+      given the supply-chain risk.
+
+# NOTE: The following items were researched but fell outside the 36h window
+# or were already in prior coverage. Logged here for audit trail.
+# -----------------------------------------------------------------------
+# Ghost-Sender (InfoGuard Labs, Exchange Online SMTP spoofing):
+#   Published 2026-06-09 — outside 36h window. No fresh delta found in window.
+#   NCSC-CH advisory id 12619 published 2026-06-09. Not re-reported.
+#
+# CVE-2026-42897 (Exchange OWA XSS): patched 2026-06-09 — outside window.
+#
+# Cyber Europe 2026 (EU exercise, rail/maritime): NCSC-CH post 2026-06-12.
+#   Outside window.
+#
+# Germany NIS2 BSIG (December 2025 entry into force, March 2026 registration
+#   deadline): outside window; no in-window legislative delta found.
+#   Claimed "June 30, 2026 first-audit deadline" from search inference:
+#   VERIFIED to be Hungary-specific, not Germany. Germany's first KRITIS
+#   review window runs from 2027. Not included.
+#
+# NCSC-NL NCSC-2026-0210 (libssh2, medium) / NCSC-2026-0209 (MongoDB, medium):
+#   Published 2026-06-23 (in window) but medium severity only; libssh2
+#   pre-auth DoS and MongoDB credential-logging in SASL sessions. Minimal
+#   public-sector nexus and insufficient novelty for S2 primary items.
+#   Logged here for S1 cross-reference if the libssh2 OOB-write component
+#   is elevated to exploited status.
+#
+# CERT-EU advisories: newest is 2026-008 (Ivanti Sentry, 2026-06-10) —
+#   outside 36h window.
+#
+# CERT-FR advisories: newest in-window items are Cisco Catalyst CVE-2026-20262
+#   (actively exploited) and MS Edge/Spring/Moxa — all dated 2026-06-16/17,
+#   outside 36h window.
+#
+# BSI WID-SEC RSS (June 23 entries): all medium-severity routine updates
+#   (Kiali/OpenShift, Red Hat RHEL go-jose, OpenSSH, CPython, Apache log4j,
+#   OpenSSL) — no new critical/exploited advisories in 36h window.
+
+candidate_sources:
+  - id: swisspost-cybersecurity
+    publisher: "Swiss Post Cybersecurity (swisspost-cybersecurity.ch)"
+    url: "https://www.swisspost-cybersecurity.ch"
+    rss_url: null
+    category: research
+    why: >
+      Swiss government-adjacent SOC/IR/offensive-security firm (Post subsidiary).
+      Inaugural Swiss Threat Landscape Report (June 2026) demonstrates operational
+      data depth. Relevant for CH-nexus signal. No RSS feed found; news at
+      /news/tag/news — consider adding as landing-scrape source.
+
+coverage_gaps:
+  - source_id: govcert-at
+    reason: "SSL WRONG_VERSION_NUMBER on https://www.govcert.at/rss.xml — TLS handshake failure, no retry. Coverage gap for Austrian national CERT in-window items."
+  - source_id: in-window-ch-eu-incidents
+    reason: >
+      Genuine thin-signal day for CH/EU public-sector incidents in the 36h window.
+      All CERT feeds (NCSC-CH, CERT-EU, CERT-FR, BSI WID-SEC, NCSC-NL) show
+      their newest advisories dated June 17-22 at earliest — none within the strict
+      June 22 12:00 UTC to June 24 12:00 UTC window. No fresh ransomware, breach,
+      or hacktivist incident confirmed for CH/EU public-sector targets in window.

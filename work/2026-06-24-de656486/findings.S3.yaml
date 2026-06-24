@@ -1,0 +1,160 @@
+# work/2026-06-24-de656486/findings.S3.yaml
+domain: S3
+run_id: 2026-06-24-de656486
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-24T04:06:12Z
+ended_at: 2026-06-24T04:15:21Z
+duration_seconds: 549
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 7
+  bridge_fetches: 12
+items:
+  - title: "Unit 42: OpenClaw AI agent marketplace (ClawHub) hosts persistent malicious skills deploying macOS infostealers and agentic financial fraud"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/openclaw-ai-supply-chain-risk/"
+        publisher: "Unit 42 (Palo Alto Networks)"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.bitdefender.com/en_us/blog/labs/helpful-skills-or-hidden-payloads-bitdefender-labs-dives-deep-into-the-openclaw-malicious-skill-trap"
+        publisher: "Bitdefender Labs"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: unit42 listing page, URL https://unit42.paloaltonetworks.com/unit-42-all-articles/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/openclaw-ai-supply-chain-risk/"
+    summary: |
+      Unit 42 identified five persistent malicious skills on ClawHub (OpenClaw's third-party skill marketplace) between February and May 2026 that evaded automated security scanners. Two skills deployed the "cluw" macOS infostealer (linked to Atomic macOS Stealer/AMOS) via Base64-encoded curl-pipe-bash droppers using paste-site redirects (rentry[.]co, glot[.]io) as payload staging. A third skill (omnicogg) used 22 MB file-padding to exceed ClawScan and VirusTotal scanner thresholds, demonstrating that scanners not analyzing content beyond standard thresholds will miss padded payloads. Two additional skills introduced novel agentic attack classes: runtime affiliate injection (money-radar — dynamically overwriting financial recommendation referrals via remote JSON updates) and a Solana front-running pump-and-dump scheme (letssendit — pooling cryptocurrency across a coordinated AI botnet). Attack prerequisites are minimal: a skill on ClawHub with any published description installs with broad local system access, and "installation results in complete control over the agent's identity," bypassing traditional exploit requirements. Defenders should audit all installed OpenClaw/ClawHub skills line-by-line, monitor agent network traffic for connections to paste-site redirectors and anomalous C2 infrastructure, and validate publisher provenance before installation.
+    ch_eu_nexus: "global; EU/CH organizations using OpenClaw or similar AI agent frameworks for development or automation are directly in scope"
+    public_sector_nexus: "indirect — AI agent platforms increasingly adopted in public-sector IT automation"
+    sector: "technology, public-sector"
+    cves: []
+    actors_campaigns_malware: ["ClawHavoc", "cluw", "Atomic macOS Stealer", "krajekisbtc"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "installation results in complete control over the agent's identity"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/openclaw-ai-supply-chain-risk/"
+      - quote: "scanners that do not analyze content beyond standard thresholds will miss payloads"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/openclaw-ai-supply-chain-risk/"
+
+  - title: "Unit 42: Universal cloud-bucket hijacking via global namespace reuse — silent cross-CSP data exfiltration without exploit"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/cloud-bucket-hijacking-risks/"
+        publisher: "Unit 42 (Palo Alto Networks)"
+        date: "2026-06-22"
+        role: "primary"
+    discovery_trace: "first seen at: unit42 listing page, URL https://unit42.paloaltonetworks.com/unit-42-all-articles/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/cloud-bucket-hijacking-risks/"
+    summary: |
+      Unit 42 researcher Yahav Festinger documented a cross-CSP architectural attack technique that exploits the global uniqueness of cloud storage bucket names across AWS S3, Google Cloud Storage, and (to a lesser degree) Azure Blob Storage. The core technique: an attacker with IAM permissions to delete a bucket (storage.buckets.delete + storage.objects.delete in GCP; DeleteBucket in AWS; Microsoft.Storage/storageAccounts/delete in Azure) deletes the destination bucket and immediately recreates it under their own cloud account; existing log sinks, replication jobs, Pub/Sub subscriptions, and Data Firehose streams continue writing to the now-attacker-controlled bucket with no configuration change, no alert, and no indication in the source account's audit trail. No public exploitation by a named threat actor was identified, but the research establishes the attack surface clearly. GCP is the highest-impact surface (Cloud Logging aggregated sinks, Pub/Sub-to-Storage subscriptions, Storage Transfer Service all affected); AWS S3 bucket replication and Data Firehose are affected; Azure Storage is partially mitigated by soft-delete features but remains vulnerable in cross-subscription configurations. Detection: alert on storage bucket deletion API calls (GCP Cloud Audit logs: storage.googleapis.com/buckets.delete; AWS CloudTrail: DeleteBucket; Azure Monitor: Microsoft.Storage/storageAccounts/delete) and flag unexpected sink/replication-target recreation. Hardening: enforce least-privilege IAM restricting deletion rights to ≥2-person approval workflows, implement GCP VPC Service Controls data perimeters and AWS account-regional namespace isolation for S3, and use DSPM tooling to track sensitive bucket ownership.
+    ch_eu_nexus: "global; Swiss and EU public-sector cloud deployments using GCP, AWS or Azure log sinks or replication are directly in scope"
+    public_sector_nexus: "direct — cloud audit log integrity is foundational to SOC/SIEM pipelines"
+    sector: "government, healthcare, finance, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Unit 42 research details how attackers could exploit global name uniqueness in bucket hijacking to redirect cloud data streams across major CSPs"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cloud-bucket-hijacking-risks/"
+
+  - title: "JFrog: PostCSS typosquat npm packages deliver Nuitka-compiled Python RAT (aes-decode-runner-pro, postcss-minify-selector-parser)"
+    sources:
+      - url: "https://research.jfrog.com/post/from-postcss-typosquat-to-windows-rat/"
+        publisher: "JFrog Security Research"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/malicious-npm-packages-pose-as-postcss.html"
+        publisher: "The Hacker News"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: JFrog Security Research, URL https://research.jfrog.com/post/from-postcss-typosquat-to-windows-rat/"
+    summary: |
+      JFrog Security Research identified three malicious npm packages (aes-decode-runner-pro, postcss-minify-selector, postcss-minify-selector-parser) published by account 'abdrizak' that typosquat against postcss-selector-parser (150M+ weekly downloads). Each package conceals an AES-256-GCM-encrypted JavaScript dropper in its main entry (index.js → src/config/defaults.js); on import, it decodes and writes a PowerShell downloader (settings.ps1, with -ExecutionPolicy Bypass) that fetches winpatch-xd7d.win from nvidiadriver[.]net into %TEMP%\winPatch, then launches update.vbs via wscript. The VBS bootstrapper extracts dll.zip and executes a Nuitka-compiled Python 3.10 RAT (chost.exe + loader.py + six .pyd extension modules: audiodriver, command, auto, api, config, util). The RAT supports RC4/ARC4-encrypted HTTP POST C2, HKCU\Software\Microsoft\Windows\CurrentVersion\Run registry persistence, single-instance enforcement via %TEMP%\.store, VM detection via WMI queries + VMware/VirtualBox MAC prefixes, remote shell, file upload/download, and Chrome saved-login and extension-data theft (via DPAPI). MITRE ATT&CK: T1195.002 (Compromise Software Supply Chain), T1059.001 (PowerShell), T1027.002 (Obfuscated Files — AES/RC4 layering), T1547.001 (Registry Run Key persistence), T1057 (Process Discovery), T1555.003 (Credentials from Web Browsers). Detection: flag npm postinstall scripts spawning powershell.exe with -ExecutionPolicy Bypass; alert on wscript.exe launched from %TEMP%; monitor HKCU Run-key modifications by node/npm processes; network alert on outbound HTTP POST to non-standard ports from Python runtimes in %TEMP%.
+    ch_eu_nexus: "global; any European development team installing npm packages is in scope"
+    public_sector_nexus: "indirect — affects developer workstations and CI/CD pipelines"
+    sector: "technology, software development"
+    cves: []
+    actors_campaigns_malware: ["abdrizak (npm threat actor)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The npm publisher observed during the investigation was abdrizak. During the review, we found three related packages: aes-decode-runner-pro, postcss-minify-selector, postcss-minify-selector-parser"
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/from-postcss-typosquat-to-windows-rat/"
+      - quote: "The decoded blobs we analyzed from postcss-minify-selector-parser and aes-decode-runner-pro both lead to the same PowerShell downloader and Windows payload chain"
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/from-postcss-typosquat-to-windows-rat/"
+
+  - title: "Kaspersky: WhatsApp VBS campaign deploys preconfigured ManageEngine UEMS RMM agent for persistent remote access"
+    sources:
+      - url: "https://securelist.com/whatsapp-vbs-rmm-campaign/120290/"
+        publisher: "Kaspersky Securelist"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/whatsapp-vbscript-campaign-uses-fake-documents-to-install-manageengine-rmm-tool.html"
+        publisher: "The Hacker News"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Kaspersky Securelist, URL https://securelist.com/whatsapp-vbs-rmm-campaign/120290/"
+    summary: |
+      Kaspersky documented a large-scale, globally active malware campaign distributing malicious VBScript files via WhatsApp Desktop and Web. The attacker compromised multiple WhatsApp accounts and pushed VBS attachments (disguised as business/financial documents) directly to contacts' lists, requiring only two user interactions (download + open). The three-stage infection chain: Stage 1 VBS creates working directories and downloads secondary payloads; Stage 2 disables UAC protections and downloads a ZIP archive; Stage 3 silently installs a preconfigured ManageEngine Endpoint Central (UEMS) MSI agent connecting to attacker-controlled infrastructure for persistent remote monitoring and system administration. Kaspersky attributes with low confidence to a Chinese-speaking actor based on Simplified Chinese code comments and infrastructure overlap with ValleyRAT and Gh0st RAT activity. Primary victims are in Malaysia (80%), with secondary clusters in Brazil, India, Mexico, Singapore, UK, Spain, Taiwan, Australia, Russia, and Vietnam. MITRE ATT&CK: T1204.002 (User Execution — Malicious File), T1566.001 (Spearphishing Attachment via WhatsApp), T1105 (Ingress Tool Transfer), T1112 (Modify Registry — UAC bypass), T1219 (Remote Access Software — ManageEngine UEMS), T1548.002 (Abuse Elevation Control Mechanism). Defenders: Block VBS execution from user-downloads paths (AppLocker/WDAC policy); monitor wscript.exe/cscript.exe spawning from WhatsApp Desktop processes (Sysmon EID 1, parent image filter on WhatsApp.exe); alert on ManageEngine UEMS agent installation not initiated from authorised software-distribution infrastructure; network-block outbound connections from unexpected MSI installers to non-whitelisted RMM endpoints.
+    ch_eu_nexus: "global with Europe in scope; UK, Spain already confirmed in victim distribution"
+    public_sector_nexus: "indirect — primarily targets end users but RMM persistence enables lateral movement to organisational resources"
+    sector: "all sectors"
+    cves: []
+    actors_campaigns_malware: ["ValleyRAT", "Gh0st RAT"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the messages contained only the malicious attachment and did not include any accompanying text"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/whatsapp-vbs-rmm-campaign/120290/"
+      - quote: "Low-confidence attribution to Chinese-speaking threat actors based on simplified Chinese comments throughout VBScript variants. Notable overlap detected with ValleyRAT and Gh0st RAT infrastructure."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/whatsapp-vbs-rmm-campaign/120290/"
+
+  - title: "[UPDATE] Arctic Wolf: FortiBleed CyberStrike Harvester — reverse-engineered Go ELF binary reveals seven-VM operator toolchain and GPU credential cracking at scale"
+    sources:
+      - url: "https://arcticwolf.com/resources/blog/inside-fortibleed-reverse-engineering-the-cyberstrike-harvester-behind-a-global-fortigate-credential-factory/"
+        publisher: "Arctic Wolf Labs"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/fortibleed-targeted-fortigate-firewalls.html"
+        publisher: "The Hacker News"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → primary: Arctic Wolf Labs, URL https://arcticwolf.com/resources/blog/inside-fortibleed-reverse-engineering-the-cyberstrike-harvester-behind-a-global-fortigate-credential-factory/"
+    summary: |
+      Arctic Wolf Labs published a deep reverse-engineering breakdown of the CyberStrike Harvester — the Go-compiled ELF binary at the operational core of the FortiBleed campaign, which affected 430,000+ FortiGate firewalls and yielded a credential set estimated at 110 million entries. The binary was built with Go 1.21 and stripped of debug symbols; Arctic Wolf recovered function names and logic via binary diffing against known Go 1.21 stdlib. The Harvester executes across a seven-VM operator toolchain: VMs 1–3 handle CIDR-range enumeration using a forked Masscan instance targeting TCP/443; VMs 4–5 run the Harvester proper, which issues HTTPS GET requests directly to FortiGate management interfaces attempting to retrieve /remote/fgt_lang?lang=../../../..//////////dev/cmdb/sslvpn_websession (CVE-2018-13379 path traversal) and two 2024-era variants; VM 6 deduplicates and normalises recovered session blobs; VM 7 feeds the deduplicated credential set into a hashcat GPU cracking cluster (CUDA, detected via clGetPlatformInfo library calls). Post-access, Impacket's secretsdump and GetADUsers modules were recovered from attacker infrastructure artefacts, indicating Kerberoasting and AD enumeration as standard post-exploitation steps against organisations where firewall credentials were reused for domain accounts. MITRE ATT&CK: T1190 (Exploit Public-Facing Application — FortiGate path traversal), T1110.002 (Password Cracking — GPU hashcat), T1557.001 (adversary-in-the-middle — session blob replay), T1087.002 (Account Discovery — GetADUsers), T1558.003 (Kerberoasting — Impacket). Detection: alert on FortiGate access logs for GET requests to paths matching /../*/dev/cmdb/sslvpn_websession; monitor for Impacket secretsdump LDAP queries (EID 4662 on DC, replication permission class access) and unusual Kerberos TGS ticket requests (EID 4769) from service accounts cross-referenced to firewall admin credentials. Hardening: ensure FortiGate firmware ≥7.4.3 / ≥7.2.7 / ≥7.0.14 / ≥6.4.15 (patching all CVE-2018-13379 and 2024 descendants); disable SSL-VPN management interface internet exposure; enforce credential non-reuse between network appliance accounts and domain accounts.
+    ch_eu_nexus: "direct — Swiss federal network perimeters historically reliant on FortiGate for VPN; EU public-sector FortiGate estate confirmed in prior reporting as in scope"
+    public_sector_nexus: "direct — FortiGate widely deployed in Swiss federal and cantonal network perimeters"
+    sector: "government, critical infrastructure, telco"
+    cves: ["CVE-2018-13379"]
+    actors_campaigns_malware: ["CyberStrike Harvester", "FortiBleed"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-23"
+    evidence:
+      - quote: "Arctic Wolf Labs reverse engineered the binary and determined it was compiled using Go 1.21 and operates across a seven-virtual-machine toolchain"
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/inside-fortibleed-reverse-engineering-the-cyberstrike-harvester-behind-a-global-fortigate-credential-factory/"
+      - quote: "VM 7 feeds recovered credential data into a GPU-accelerated hashcat cracking cluster using CUDA, as identified by clGetPlatformInfo library calls within the binary"
+        attribution: "Arctic Wolf Labs"
+        source_url: "https://arcticwolf.com/resources/blog/inside-fortibleed-reverse-engineering-the-cyberstrike-harvester-behind-a-global-fortigate-credential-factory/"
+    extended_notes: |
+      FortiBleed base story first reported in S2/S4 prior briefs. This Arctic Wolf write-up is the first detailed RE of the actual Harvester binary — the prior coverage established scale of compromise but not the internal toolchain architecture. The Impacket post-access finding is the key new defender-actionable signal: organisations that rotated firewall credentials but did not audit for Kerberoasting activity in the days following their FortiGate compromise window should conduct retrospective hunts on EID 4769 anomalies and EID 4662 replication-access patterns.
+
+coverage_gaps:
+  - source_id: mandiant-gtig
+    reason: "Feed fetch failed (IncompleteRead error on feedburner URL); Mandiant M-Trends 2026 published March 2026, outside 36h window."
+  - source_id: dfirreport
+    reason: "No in-window publications; most recent DFIR report dated May 11, 2026."
+  - source_id: talos
+    reason: "No in-window publications; most recent Talos post dated June 18, 2026, outside 36h window."
