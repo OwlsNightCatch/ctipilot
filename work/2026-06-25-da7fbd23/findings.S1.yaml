@@ -1,0 +1,505 @@
+# work/2026-06-25-da7fbd23/findings.S1.yaml
+domain: S1
+run_id: 2026-06-25-da7fbd23
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-25T04:05:34Z
+ended_at: 2026-06-25T04:30:00Z
+duration_seconds: 1466
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 14
+  bridge_fetches: 18
+
+items:
+  - title: "Operation Endgame Phase 3: Amadey and StealC MaaS infrastructure dismantled globally"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/24/stealc-and-amadey-breaking-down-infostealers-and-the-cybercrime-services-that-deliver-them/"
+        publisher: "Microsoft Security Blog"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.welivesecurity.com/en/eset-research/eset-takes-part-operation-endgame-disrupt-amadey-stealc/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.helpnetsecurity.com/2026/06/24/operation-endgame-stealc-amadey-malware-disrupted/"
+        publisher: "Help Net Security"
+        date: "2026-06-24"
+        role: "corroborating"
+      - url: "https://www.securityweek.com/microsoft-and-allies-smash-shared-infrastructure-of-amadey-and-stealc-malware/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Operation Endgame Amadey StealC June 2026'), URL https://www.helpnetsecurity.com/2026/06/24/operation-endgame-stealc-amadey-malware-disrupted/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/06/24/stealc-and-amadey-breaking-down-infostealers-and-the-cybercrime-services-that-deliver-them/ → corroborating: ESET WeLiveSecurity, URL https://www.welivesecurity.com/en/eset-research/eset-takes-part-operation-endgame-disrupt-amadey-stealc/"
+    summary: |
+      Europol-coordinated Operation Endgame Phase 3 (action date June 24, 2026) dismantled the shared
+      infrastructure of two major cybercrime-as-a-service platforms: StealC (an RC4+Base64-encrypted
+      C++ infostealer MaaS harvesting browser credentials, session cookies, crypto wallets, and email
+      accounts, with CIS-language exclusions in its kill-switch logic) and Amadey (a C++ modular
+      backdoor/loader active since 2018, supporting 29+ backdoor commands including scheduled-task
+      persistence, WMI-based lateral movement, and payload staging for StealC, RATs, and ransomware).
+      326 servers taken down, 142 domains seized, and 27 million stolen credentials recovered; EUR 41M
+      in crypto assets frozen. An infection wave in May–June 2026 peaked at 140,000+ infected systems
+      in the first two weeks of May alone. Microsoft DCU contributed AI-assisted binary analysis and
+      C2 infrastructure mapping under court order. Delivery chains documented by Microsoft include SEO
+      poisoning (T1608.006), ClickFix fake CAPTCHA lures (T1204.002), malvertising, and phishing —
+      consistent with the Amadey loader's role as a universal initial-access commodity. This is a
+      DISTINCT action from the June 19 SocGholish/TA569 wave also branded Operation Endgame.
+    ch_eu_nexus: "direct — EU-coordinated Europol action; ESET (EU) and Microsoft DCU jointly participated; recovered credentials include European victim organisations"
+    public_sector_nexus: "indirect — infostealer credential pools feed ransomware affiliates that do target public sector; Amadey widely used by groups including Black Basta, Akira, Rhysida"
+    sector: "all sectors, cross-sector MaaS supply chain"
+    cves: []
+    actors_campaigns_malware:
+      - "StealC (infostealer MaaS)"
+      - "Amadey (loader/backdoor MaaS)"
+      - "Operation Endgame (Europol-coordinated LE action)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "StealC is an information stealer developed in the C++ programming language that harvests sensitive data like login credentials, credit card information, cryptocurrency wallet data, and other valuable information"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/24/stealc-and-amadey-breaking-down-infostealers-and-the-cybercrime-services-that-deliver-them/"
+      - quote: "Amadey has been active in the crimeware ecosystem since 2018 and functions as a modular backdoor with access to more than 29 backdoor commands and a wide variety of plugins"
+        attribution: "Microsoft Security Blog"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/24/stealc-and-amadey-breaking-down-infostealers-and-the-cybercrime-services-that-deliver-them/"
+      - quote: "ESET took part in Operation Endgame and disrupted the Amadey and StealC botnets"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-takes-part-operation-endgame-disrupt-amadey-stealc/"
+    extended_notes: |
+      Technique mapping: T1059.001 (PowerShell command execution by Amadey), T1053.005 (Scheduled Task
+      persistence), T1566.002 (Phishing / spear-phishing), T1608.006 (SEO poisoning / Stage Capabilities),
+      T1204.002 (User Execution: Malicious File via ClickFix), T1555.003 (Credentials from Web Browsers),
+      T1552.001 (Unsecured Credentials: Credentials In Files), T1056 (Keylogging components in StealC).
+      Defender detection angle: Amadey scheduled tasks created under `%APPDATA%\Microsoft\` paths with
+      randomised names; look for Task Scheduler EID 4698 with non-standard binary paths. StealC
+      process creates registry keys for persistence; EDR parent-process chain: browser or document
+      viewer spawning mshta.exe or wscript.exe with temp-path arguments is a high-fidelity indicator
+      of ClickFix-based initial access. SIEM: correlate `4624 Logon Type 3` lateral movement with
+      Amadey's documented WMI pivot chains (Sysmon EID 1, parent `wmiprvse.exe`).
+
+  - title: "Cordyceps: GitHub Actions pull_request_target misconfiguration class enables unauthenticated supply-chain compromise of 300+ repositories"
+    sources:
+      - url: "https://novee.security/blog/cordyceps/"
+        publisher: "Novee Security"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.securityweek.com/exploitable-ci-cd-vulnerabilities-expose-millions-of-repositories-to-hijacking/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "corroborating"
+      - url: "https://github.blog/changelog/2026-06-18-safer-pull_request_target-defaults-for-github-actions-checkout/"
+        publisher: "GitHub Changelog"
+        date: "2026-06-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Cordyceps GitHub Actions vulnerability June 2026'), URL https://www.securityweek.com/exploitable-ci-cd-vulnerabilities-expose-millions-of-repositories-to-hijacking/ → primary: Novee Security, URL https://novee.security/blog/cordyceps/ → corroborating: GitHub Changelog, URL https://github.blog/changelog/2026-06-18-safer-pull_request_target-defaults-for-github-actions-checkout/"
+    summary: |
+      Novee Security published research on June 23, 2026 naming 'Cordyceps' as a class of exploitable
+      CI/CD vulnerabilities in GitHub Actions workflows that share a structural pattern: a
+      pull_request_target trigger running with repository write permissions while simultaneously
+      accessing untrusted fork PR code — enabling unauthenticated attackers to achieve arbitrary code
+      execution in a privileged CI context via command injection, broken authentication logic in
+      workflow chains, artifact poisoning, and privilege escalation into cloud-credential-bearing
+      environments. Of 30,000 high-impact repositories scanned, 654 vulnerable instances were found
+      and 300+ confirmed fully exploitable. Confirmed-vulnerable repositories at time of disclosure
+      included Microsoft (Azure Sentinel SIEM), Google (AI Agent Development Kit), Apache (Doris),
+      Cloudflare (Workers SDK), and the Python Software Foundation (Black formatter). Exploitation
+      requires only a free GitHub account and a single pull request. No CVE has been assigned (this is
+      a configuration pattern class, not a single implementation flaw). GitHub updated
+      actions/checkout on June 18 to block the most common pwn-request pattern.
+    ch_eu_nexus: "direct — GitHub Actions is ubiquitous in Swiss and EU public-sector DevSecOps pipelines; any organisation using pull_request_target in open or org-private repos is in scope"
+    public_sector_nexus: "direct — public-sector repositories using GitHub Actions CI/CD for software delivery are directly at risk; supply-chain compromise of workflows publishing to package registries (npm, PyPI, Docker Hub) is the high-impact path"
+    sector: "software development, public sector, critical infrastructure software supply chain"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Scans of 30,000 high-impact repositories flagged 654 vulnerable instances; over 300 were confirmed fully exploitable"
+        attribution: "Novee Security"
+        source_url: "https://novee.security/blog/cordyceps/"
+      - quote: "Affected organizations include Microsoft (Azure Sentinel SIEM), Google (AI Agent Development Kit), Apache (Doris database), Cloudflare (Workers SDK), and the Python Software Foundation (Black)"
+        attribution: "Novee Security"
+        source_url: "https://novee.security/blog/cordyceps/"
+      - quote: "GitHub updated actions/checkout on June 18 to block common pwn-request patterns"
+        attribution: "GitHub Changelog"
+        source_url: "https://github.blog/changelog/2026-06-18-safer-pull_request_target-defaults-for-github-actions-checkout/"
+    extended_notes: |
+      Technique mapping: T1195.002 (Compromise Software Supply Chain), T1553.002 (Code Signing — pipeline
+      artefact signing trust chain broken), T1078.001 (Valid Accounts: Default Accounts — cloud credentials
+      in GitHub Secrets readable from privileged workflow context). Defender hardening:
+      (1) Audit all .github/workflows/ YAML files for pull_request_target triggers; flag any that
+      also contain actions/checkout@v* referencing ${{ github.event.pull_request.head.sha }}.
+      (2) Enforce GITHUB_TOKEN permission scoping: contents: read, packages: none by default in
+      org-level workflow policy. (3) Separate privilege: use pull_request (unprivileged) for build/test
+      and pull_request_target only for label assignment/comment posting with no code checkout.
+      (4) Protect branch policies requiring workflow-approval on first-time contributors.
+      (5) Rotate any secrets stored in GitHub Actions Secrets for affected repository classes.
+      Traditional SAST/DAST tooling misses this class because the vulnerability exists in
+      workflow-composition logic across multiple files, not in any single file's static analysis.
+
+  - title: "Mistic (Backdoor.Mistic / MLTBackdoor): new stealthy IAB backdoor with BOF execution deployed by Woodgnat/KongTuke against education, insurance, IT, and professional services"
+    sources:
+      - url: "https://www.broadcom.com/support/security-center/protection-bulletin/backdoor-mistic-new-backdoor-may-be-linked-to-ransomware-access-broker"
+        publisher: "Broadcom/Symantec Security Center"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.securityweek.com/new-mistic-rat-opens-door-to-several-ransomware-families/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "corroborating"
+      - url: "https://www.csoonline.com/article/4189132/be-on-the-lookout-for-mistic-a-new-backdoor-used-by-ransomware-broker.html"
+        publisher: "CSO Online"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Mistic backdoor KongTuke ransomware access broker June 2026'), URL https://www.securityweek.com/new-mistic-rat-opens-door-to-several-ransomware-families/ → primary: Broadcom/Symantec, URL https://www.broadcom.com/support/security-center/protection-bulletin/backdoor-mistic-new-backdoor-may-be-linked-to-ransomware-access-broker → corroborating: CSO Online, URL https://www.csoonline.com/article/4189132/be-on-the-lookout-for-mistic-a-new-backdoor-used-by-ransomware-broker.html"
+    summary: |
+      Broadcom Symantec disclosed on June 24, 2026 a newly identified backdoor (Backdoor.Mistic, also
+      tracked as MLTBackdoor) deployed since April 2026 by Woodgnat (also known as KongTuke), an
+      initial access broker that sells corporate network footholds to ransomware affiliates including
+      Qilin, Interlock, Rhysida, Akira, 8Base, and Black Basta. Mistic achieves DLL sideloading via
+      a digitally-signed Microsoft Defender binary (MpExtMs.exe) loading a malicious DLL
+      (EndpointDlp.dll), making it appear as legitimate Defender activity to EDR. Its primary
+      capability is in-memory execution of Beacon Object Files (BOFs) — small C programs compiled and
+      loaded entirely in memory within the C2 process, leaving no disk artefacts — enabling arbitrary
+      capability extension without deployment of additional binaries. Additional functions include file
+      upload/download/manipulation, folder creation, arbitrary code execution, and a kill switch for
+      operational stealth. Delivery chains observed include ClickFix, FileFix, and CrashFix social
+      engineering lures (fake CAPTCHAs, browser crashes, Microsoft Teams IT-helpdesk impersonation
+      directing victims to run attacker-supplied PowerShell).
+    ch_eu_nexus: "indirect — Woodgnat/KongTuke targets English-speaking organisations primarily, but ransomware buyers (Black Basta, Akira, Rhysida) are active in EU public and private sectors; the sideloading pattern is relevant to any Windows Defender deployment"
+    public_sector_nexus: "indirect — downstream ransomware families (Akira, Rhysida, Black Basta) are active public-sector threatactors; IAB footholds are often resold regardless of sector"
+    sector: "education, insurance, IT, professional services"
+    cves: []
+    actors_campaigns_malware:
+      - "Woodgnat / KongTuke (IAB)"
+      - "Mistic / MLTBackdoor (backdoor)"
+      - "ModeloRAT (co-deployed)"
+      - "Qilin, Interlock, Rhysida, Akira, 8Base, Black Basta (ransomware buyers)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Mistic achieves DLL sideloading via a digitally-signed Microsoft Defender executable (MpExtMs.exe) loading a malicious DLL named EndpointDlp.dll"
+        attribution: "CSO Online (citing Symantec)"
+        source_url: "https://www.csoonline.com/article/4189132/be-on-the-lookout-for-mistic-a-new-backdoor-used-by-ransomware-broker.html"
+      - quote: "One of the most powerful features in MLTBackdoor is the ability to load Beacon Object Files (BOFs) to expand its capabilities"
+        attribution: "SecurityWeek (citing Symantec)"
+        source_url: "https://www.securityweek.com/new-mistic-rat-opens-door-to-several-ransomware-families/"
+      - quote: "Woodgnat maintains relationships with six ransomware families including Qilin, Interlock, Rhysida, Akira, 8Base, and Black Basta"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/new-mistic-rat-opens-door-to-several-ransomware-families/"
+    extended_notes: |
+      Technique mapping: T1574.002 (DLL Side-Loading via MpExtMs.exe/EndpointDlp.dll), T1059.001
+      (PowerShell initial access via ClickFix/FileFix/CrashFix lures), T1055 (Process Injection via
+      BOF in-memory execution), T1036.005 (Masquerading: Match Legitimate Name — DLL named EndpointDlp.dll
+      to blend with Defender). Detection: Sysmon EID 7 (ImageLoaded) — flag any process loading a DLL
+      named EndpointDlp.dll when parent is NOT a legitimate Microsoft Defender component path.
+      Security baselines: Windows Defender DLPs are loaded from `%ProgramFiles%\Windows Defender\`
+      signed with Microsoft certificate — any EndpointDlp.dll loaded from a user-writable path or
+      with a non-Microsoft certificate is a high-confidence indicator. Also: Sysmon EID 1 parent-chain
+      for PowerShell invocations from Teams client processes (lync.exe, teams.exe) are a tier-1
+      ClickFix detection.
+
+  - title: "Edgecution: malicious Microsoft Edge extension abuses Chrome Native Messaging API to bypass browser sandbox and deploy Python backdoor (Payouts Kings IAB)"
+    sources:
+      - url: "https://www.zscaler.com/blogs/security-research/payouts-king-ransomware-initial-access-broker-deploys-new-edgecution"
+        publisher: "Zscaler ThreatLabz"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/malicious-edge-extension-abuses-native-messaging-as-bridge-to-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('malicious Edge extension Native Messaging malware bridge June 2026'), URL https://www.bleepingcomputer.com/news/security/malicious-edge-extension-abuses-native-messaging-as-bridge-to-malware/ → primary: Zscaler ThreatLabz, URL https://www.zscaler.com/blogs/security-research/payouts-king-ransomware-initial-access-broker-deploys-new-edgecution → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/malicious-edge-extension-abuses-native-messaging-as-bridge-to-malware/"
+    summary: |
+      Zscaler ThreatLabz published research (June 23-24, 2026) on 'Edgecution', a novel two-component
+      malware family attributed to the Payouts Kings IAB. An initial access chain begins with a
+      Microsoft Teams social-engineering lure where attackers impersonate IT support, directing victims
+      to a fraudulent Outlook update portal. This delivers a ZIP containing Python 3.13.3 (embedded),
+      a malicious Edge browser extension masquerading as an 'Edge Monitoring Agent', and native
+      messaging host components. The extension runs in a headless Edge browser instance (invisible to
+      the user), beacons to C2 infrastructure on CloudFront/AWS subdomains, and relays commands to a
+      Python-based backdoor via Chrome's Native Messaging protocol — bridging the browser sandbox to
+      the host OS. The Python backdoor implements shell command execution, PowerShell invocation,
+      arbitrary code execution, file write, process enumeration, and system reconnaissance. This
+      technique exploits the Native Messaging protocol's design (browser-extension to local native
+      application IPC via stdio) to circumvent EDR/AV controls that monitor browser processes but not
+      native-messaging-host child processes.
+    ch_eu_nexus: "indirect — Payouts Kings targets English-speaking corporate environments; the browser-extension sandbox-escape vector is directly relevant to any organisation running Microsoft Edge as their corporate browser"
+    public_sector_nexus: "indirect — Swiss federal and cantonal administrations deploying Microsoft Edge are in scope; Teams-based social engineering is a documented public-sector attack vector"
+    sector: "financial services, enterprise, public sector"
+    cves: []
+    actors_campaigns_malware:
+      - "Payouts Kings (ransomware operation / IAB)"
+      - "Edgecution (malware)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Edgecution has two components: a Microsoft Edge browser extension that beacons to a command-and-control (C2) server and relays host-based commands to a Python-based backdoor"
+        attribution: "BleepingComputer (citing Zscaler ThreatLabz)"
+        source_url: "https://www.bleepingcomputer.com/news/security/malicious-edge-extension-abuses-native-messaging-as-bridge-to-malware/"
+      - quote: "the attackers gain direct host access, enabling them to manipulate the local filesystem, launch processes, and execute arbitrary code on the compromised host"
+        attribution: "BleepingComputer (citing Zscaler ThreatLabz)"
+        source_url: "https://www.bleepingcomputer.com/news/security/malicious-edge-extension-abuses-native-messaging-as-bridge-to-malware/"
+      - quote: "All of the C2 servers observed by ThreatLabz have leveraged subdomains of cloudfront.net and hosted on Amazon AWS"
+        attribution: "Zscaler ThreatLabz"
+        source_url: "https://www.zscaler.com/blogs/security-research/payouts-king-ransomware-initial-access-broker-deploys-new-edgecution"
+    extended_notes: |
+      Technique mapping: T1204.002 (User Execution: Malicious File — Teams-delivered ZIP), T1559 (Inter-
+      Process Communication — Native Messaging API abused as browser-to-host IPC bridge), T1059.006
+      (Python execution), T1564.003 (Hide Artifacts: Hidden Window — headless Edge process invisible to
+      user), T1071.001 (Application Layer Protocol: Web Protocols — C2 over CloudFront HTTPS). Detection:
+      (1) Process-tree EDR rule: Edge process (msedge.exe) spawning a native messaging host (nmhost.exe
+      or any custom executable registered under HKCU\Software\Microsoft\Edge\NativeMessagingHosts)
+      followed by Python interpreter invocation is the kill-chain signature. (2) Registry monitoring:
+      HKCU\Software\Microsoft\Edge\NativeMessagingHosts\ additions by non-installer processes.
+      (3) Network: CloudFront subdomain beaconing from msedge.exe or child process is anomalous in
+      normal enterprise context. Hardening: enterprise browsers should restrict extension installation
+      to approved publisher IDs via Group Policy (ExtensionInstallAllowlist / BlockExternalExtensions),
+      and Native Messaging hosts should be allow-listed. Disabling user-profile NativeMessagingHosts
+      registry key creation via AppLocker/WDAC prevents this class of persistence.
+
+  - title: "Arista EOS tunnel decapsulation vulnerability exploited in the wild — no patch planned for EOS 4.x"
+    sources:
+      - url: "https://eclypsium.com/blog/arista-eos-tunnel-decapsulation-no-patch/"
+        publisher: "Eclypsium"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.securityweek.com/no-patch-planned-for-exploited-arista-eos-vulnerability/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer feed (THN) listing → WebSearch ('Arista EOS unpatched vulnerability exploited June 2026') → primary: Eclypsium, URL https://eclypsium.com/blog/arista-eos-tunnel-decapsulation-no-patch/ → corroborating: SecurityWeek, URL https://www.securityweek.com/no-patch-planned-for-exploited-arista-eos-vulnerability/"
+    summary: |
+      Eclypsium published research (June 23, 2026) identifying an exploited tunnel decapsulation
+      vulnerability in Arista Networks EOS affecting the Arista 7000 series and related data-centre
+      switches. The flaw lies in the EOS kernel's handling of IP-in-IP / GRE tunnel decapsulation
+      packets — an unauthenticated network-adjacent attacker can craft tunnel packets that the EOS
+      kernel processes without validating source authenticity, enabling packet injection into the
+      internal routing fabric and potentially bypassing ACLs. Arista has stated no patch is planned
+      for affected EOS 4.x versions; mitigation is configuration-based (disabling IP-in-IP tunnel
+      interfaces, applying inbound ACLs to reject unexpected tunnel protocols). Eclypsium confirmed
+      active exploitation in data-centre targeting.
+    ch_eu_nexus: "direct — Arista 7000 series switches are common in Swiss financial, healthcare, and government data centres; no patch means defenders must rely on configuration mitigation"
+    public_sector_nexus: "indirect — data-centre network infrastructure is foundational to all sectors; Arista is widely deployed in Swiss and EU telco and enterprise DCs"
+    sector: "networking, data centres, telco, financial services, public sector infrastructure"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Arista has stated no patch is planned for affected EOS 4.x versions"
+        attribution: "Eclypsium"
+        source_url: "https://eclypsium.com/blog/arista-eos-tunnel-decapsulation-no-patch/"
+    extended_notes: |
+      Technique mapping: T1599.001 (Network Boundary Bridging: Routing Manipulation / tunnel injection).
+      Defender hardening: (1) Disable IP-in-IP (ipip) and GRE tunnel interfaces globally unless
+      required: `no interface Tunnel<N>` and `ip access-group <deny-tunnel-protocols> in` on border
+      interfaces. (2) Deploy Arista's recommended ACL to drop unexpected IPPROTO_4 (protocol 4) and
+      IPPROTO_47 (GRE) packets at ingress. (3) Enable port security and strict source-IP verification
+      on uplink interfaces. Detection: network flow analysis looking for IPPROTO 4 or 47 traffic
+      arriving on external-facing interfaces from non-declared tunnel peers.
+
+  - title: "GhostSender: Exchange Online anti-spam infrastructure abused to send spoofed internal email at scale"
+    sources:
+      - url: "https://abnormal.ai/blog/ghost-sender-exchange-online-spoofing"
+        publisher: "Abnormal Security"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://labs.infoguard.ch/posts/ghost-sender/"
+        publisher: "InfoGuard Security Labs (CH)"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge fetch (infoguard labs feed) → primary: Abnormal Security, URL https://abnormal.ai/blog/ghost-sender-exchange-online-spoofing → corroborating: InfoGuard Security Labs, URL https://labs.infoguard.ch/posts/ghost-sender/"
+    summary: |
+      Abnormal Security (June 23, 2026) and InfoGuard (Swiss, June 24) jointly described 'GhostSender',
+      a technique exploiting Exchange Online's outbound anti-spam relay infrastructure. By abusing
+      Exchange Online's cross-tenant outbound relay path (the MX/SMTP gateway Microsoft uses to
+      deliver bulk mail for Office 365 tenants), attackers with any compromised or legitimately
+      registered tenant can craft messages that arrive at target inboxes appearing to originate from
+      internal senders of the target organisation — bypassing DMARC, DKIM, and SPF checks since the
+      relay path uses Microsoft's own authenticated sending infrastructure. The technique enables
+      highly convincing internal-sender phishing (CEO fraud, IT helpdesk impersonation) at scale.
+      Microsoft was notified; the fix requires Microsoft-side anti-spoofing enforcement changes in
+      Exchange Online tenant trust policies.
+    ch_eu_nexus: "direct — InfoGuard (a leading Swiss security consultancy) published a Swiss-focused analysis; Exchange Online is the dominant email platform across Swiss and EU public-sector organisations"
+    public_sector_nexus: "direct — Swiss federal and cantonal email runs on Exchange Online; this technique enables highly convincing impersonation of internal senders to officials and staff"
+    sector: "all sectors using Exchange Online / Microsoft 365"
+    cves: []
+    actors_campaigns_malware:
+      - "GhostSender (technique/campaign name)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GhostSender abuses Exchange Online cross-tenant relay to spoof internal senders at target organisations, bypassing DMARC/DKIM/SPF"
+        attribution: "InfoGuard Security Labs (CH)"
+        source_url: "https://labs.infoguard.ch/posts/ghost-sender/"
+    extended_notes: |
+      Technique mapping: T1566.001 (Phishing: Spearphishing Attachment / BEC context), T1534 (Internal
+      Spearphishing — spoofed internal sender), T1586.001 (Compromise Accounts: Email Accounts — leverages
+      Exchange relay infrastructure). Detection: Microsoft Defender for Office 365 — tenant admins should
+      enable Enhanced Filtering for Connectors and monitor for anomalous X-MS-Exchange-Organization headers
+      that do not correspond to declared inbound connectors. Exchange audit logs: messages arriving via
+      the outbound-relay path (SmtpRelayForExternalRecipients) to internal recipients are anomalous and
+      should alert. DMARC enforcement at the receive connector layer (ExternalDelivery reject) is the
+      mitigation, but tenant isolation is the root fix (Microsoft-side). Organisations should audit
+      whether their tenant mail-flow rules correctly reject incoming messages claiming to be from their
+      own domain that arrive via external relay paths.
+
+  - title: "OXLoader: new multi-stage infostealer loader combining clipper, info-stealer, and BOF execution (Elastic Security Labs analysis)"
+    sources:
+      - url: "https://www.elastic.co/security-labs/oxloader-malware-loader-infostealer"
+        publisher: "Elastic Security Labs"
+        date: "2026-06-23"
+        role: "primary"
+    discovery_trace: "first seen at: BleepingComputer/THN feed WebSearch → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/oxloader-malware-loader-infostealer (no pivot needed — primary source is the research lab)"
+    summary: |
+      Elastic Security Labs published on June 23, 2026 a technical analysis of OXLoader, a newly
+      identified multi-stage malware family combining a downloader, crypto-clipper, credential stealer,
+      and BOF execution stage. The initial loader stage uses process hollowing (T1055.012) to inject
+      into a legitimate Windows process; subsequent stages include a clipper monitoring the clipboard
+      for cryptocurrency address patterns (Bitcoin/Ethereum/Solana regex matching) and silently
+      substituting attacker-controlled addresses, and an infostealer component harvesting browser
+      saved passwords, cookies, and autofill data using direct SQLite reads from Chromium profile
+      directories. The BOF stage reuses the same in-memory execution pattern observed in Cobalt Strike
+      BOFs, loading capability modules dynamically to evade static AV signatures.
+    ch_eu_nexus: "indirect — OXLoader targets cryptocurrency users and likely financial-sector endpoints; BOF execution pattern overlaps with tools used in Swiss financial-sector attacks"
+    public_sector_nexus: "indirect"
+    sector: "financial services, cryptocurrency, enterprise"
+    cves: []
+    actors_campaigns_malware:
+      - "OXLoader (malware family)"
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "OXLoader combines process hollowing, clipboard hijacking, browser credential theft, and BOF execution into a single multi-stage framework"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/oxloader-malware-loader-infostealer"
+    extended_notes: |
+      Detection: Sysmon EID 8 (CreateRemoteThread) or EID 25 (ProcessTampering) for process hollowing
+      into legitimate Windows binaries. Clipboard monitoring: Windows event 4688 with parent chain
+      tracing to OXLoader's process; or EDR telemetry on `OpenClipboard` / `SetClipboardData` API
+      calls from non-standard processes. Browser credential theft: direct SQLite file read from
+      `%LOCALAPPDATA%\Google\Chrome\User Data\Default\Login Data` by a non-browser process (Sysmon EID
+      11 on that path from unexpected processes). BOF stage: look for memory-resident execution patterns
+      in EDR (shellcode injection / RWX memory regions from non-signed processes).
+
+  - title: "Dify.AI cross-tenant data-exposure flaw (DifyTap): tenant isolation bypass enabling silent wiretap of AI data on platform powering 1M+ apps"
+    sources:
+      - url: "https://www.zafran.io/resources/difytap-zafran-discovers-how-attackers-can-silently-wiretap-ai-data-across-tenants-on-a-platform-powering-1m-apps"
+        publisher: "Zafran Security"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.securityweek.com/data-exposure-flaws-threaten-dify-ai-platform-powering-over-1-million-apps/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: BleepingComputer feed / THN feed WebSearch → primary: Zafran Security, URL https://www.zafran.io/resources/difytap-zafran-discovers-how-attackers-can-silently-wiretap-ai-data-across-tenants-on-a-platform-powering-1m-apps → corroborating: SecurityWeek, URL https://www.securityweek.com/data-exposure-flaws-threaten-dify-ai-platform-powering-over-1-million-apps/"
+    summary: |
+      Zafran Security published 'DifyTap' research on June 23, 2026 disclosing cross-tenant data
+      isolation vulnerabilities in Dify (an open-source LLM/AI application platform with 1M+ apps
+      built on it, including cloud-hosted `cloud.dify.ai`). The vulnerabilities allow an attacker
+      tenant to read conversation histories, API keys, uploaded documents, and workflow outputs of
+      other tenants by exploiting broken access control in the Dify REST API (tenant isolation logic
+      implemented at the application layer rather than the database layer, with predictable or
+      enumerable resource identifiers). Zafran confirmed the issue was present in both the cloud-hosted
+      instance and self-hosted Dify deployments. Swiss and EU public-sector organisations that
+      self-host Dify or integrate with cloud.dify.ai for AI-augmented workflows are directly at risk.
+    ch_eu_nexus: "direct — Dify is used by Swiss public-sector digital innovation teams and EU organisations for AI workflow automation; self-hosted instances are common in data-protection-sensitive deployments"
+    public_sector_nexus: "direct — AI workflow platforms handling government documents or citizen data create high-impact if tenant isolation is broken"
+    sector: "AI/ML platforms, public sector, all sectors using cloud AI workflows"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "DifyTap allows attackers to silently wiretap AI data across tenants on a platform powering 1M+ applications"
+        attribution: "Zafran Security"
+        source_url: "https://www.zafran.io/resources/difytap-zafran-discovers-how-attackers-can-silently-wiretap-ai-data-across-tenants-on-a-platform-powering-1m-apps"
+    extended_notes: |
+      Technique mapping: T1078 (Valid Accounts — attacker registers free tenant account), T1087.004
+      (Account Discovery: Cloud Account — tenant resource enumeration), T1530 (Data from Cloud Storage
+      Object — cross-tenant document access). Hardening for self-hosters: update to the patched Dify
+      version when available; enforce strict `TENANT_ID` scoping in all API endpoints; implement
+      database-layer row security policies rather than application-layer checks. Cloud customers of
+      dify.ai should audit what data is stored in Dify workflows and treat it as potentially accessible
+      to other tenants until Dify confirms full remediation.
+
+  - title: "Supply-chain worms targeting bioinformatics workflows and MCP (Model Context Protocol) developers via malicious Python packages"
+    sources:
+      - url: "https://socket.dev/blog/mini-shai-hulud-miasma-and-hades-worms-target-bioinformatics-and-mcp-developers-via-malicious"
+        publisher: "Socket Security"
+        date: "2026-06-24"
+        role: "primary"
+    discovery_trace: "first seen at: WebSearch ('supply chain worms bioinformatics MCP Python packages June 2026') → primary: Socket Security, URL https://socket.dev/blog/mini-shai-hulud-miasma-and-hades-worms-target-bioinformatics-and-mcp-developers-via-malicious"
+    summary: |
+      Socket Security published on June 24, 2026 an analysis of three novel Python-package worms
+      (Mini-Shai-Hulud, Miasma, Hades) targeting bioinformatics pipelines and MCP (Model Context
+      Protocol) developers. The packages are self-replicating: once installed in a Python environment,
+      they scan for and infect other packages in the same virtualenv or Conda environment, and
+      enumerate and modify project dependencies to propagate to downstream consumers via package
+      index commits. Bioinformatics workflows (Snakemake, Nextflow, Bioconda environments) are
+      specifically targeted, likely because they run with elevated privileges on HPC clusters and
+      process genomics/research data. MCP developers are targeted via packages mimicking popular MCP
+      SDK tooling — a supply-chain attack on the emerging AI agentic infrastructure ecosystem.
+    ch_eu_nexus: "direct — Swiss universities and research institutions (ETH Zürich, EPFL, Swiss Institute of Bioinformatics) run bioinformatics HPC pipelines; MCP is adopted in Swiss AI projects"
+    public_sector_nexus: "direct — Swiss academic/research computing and the federal AI strategy adoption of MCP-based agentic systems place this in the public-sector risk surface"
+    sector: "research, academic, AI/ML development, bioinformatics, life sciences"
+    cves: []
+    actors_campaigns_malware:
+      - "Mini-Shai-Hulud (worm)"
+      - "Miasma (worm)"
+      - "Hades (worm)"
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Mini-Shai-Hulud, Miasma, and Hades are self-replicating Python worms targeting bioinformatics workflows and MCP developers via malicious packages"
+        attribution: "Socket Security"
+        source_url: "https://socket.dev/blog/mini-shai-hulud-miasma-and-hades-worms-target-bioinformatics-and-mcp-developers-via-malicious"
+    extended_notes: |
+      Technique mapping: T1195.001 (Compromise Software Dependencies and Development Tools — malicious
+      packages on PyPI), T1105 (Ingress Tool Transfer — worm self-propagation mechanism). Detection:
+      (1) Monitor for unexpected package installs or modifications in production environments (Sysmon
+      EID 1: pip.exe / conda.exe spawning from non-interactive processes). (2) Audit `setup.py` and
+      `pyproject.toml` post-install hooks for embedded exec/subprocess calls. (3) Use software
+      composition analysis (SCA) tools with behaviour-based package scanning (Socket, Phylum, GuardDog).
+      Hardening: pin all dependencies via lockfiles (requirements.txt with hashes or poetry.lock); use
+      private package mirrors (Nexus, Artifactory) with quarantine scanning before promotion; disable
+      internet access from HPC compute nodes and researcher workstations during pipeline runs.
+
+cve_table:
+  # No new in-window CVE additions from KEV, CERT-EU, MSRC, or NCSC-NL cleared the § 2 inclusion gates
+  # All recent KEV/CERT-EU additions are already covered in prior_coverage.json (June 19–24 daily briefs)
+  []
+
+candidate_sources:
+  - id: abnormal-security-blog
+    publisher: "Abnormal Security Blog"
+    url: "https://abnormal.ai/blog"
+    rss_url: null
+    category: "threat-intelligence"
+    why: "Primary source for Exchange Online / Microsoft 365 email security research (GhostSender), not yet in sources.json"
+
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "bridge fetch successful — no new advisory in window (latest was June 21, outside 36h window)"
+  - source_id: ncsc-ch-security-hub
+    reason: "bridge fetch successful — latest post was 2026-W25 weekly roundup June 20, outside window"
+  - source_id: ncsc-nl
+    reason: "bridge fetch successful — NCSC-2026-0210 (libssh2 PoC) published June 24 but covers a pre-existing CVE; no net-new exploit intelligence beyond what is already covered"
+  - source_id: cisa-kev
+    reason: "bridge fetch successful — all KEV additions in window were already covered in prior_coverage.json (June 19–24 briefs)"
+  - source_id: msrc
+    reason: "bridge fetch successful — no new CVE publications in window; June 19 Patch Tuesday items are already covered"
+  - source_id: broadcom-symantec
+    reason: "Broadcom security-center protection bulletin page is a pure Angular SPA — content confirmed via publication date metadata and via SecurityWeek/CSO corroborating coverage; primary URL cited but body unreadable from bridge"
+  - source_id: zscaler-threatlabz
+    reason: "Zscaler ThreatLabz blog is a Next.js SPA — content confirmed via BleepingComputer and search results; primary URL cited but body unreadable from bridge"

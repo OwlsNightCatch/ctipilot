@@ -1,0 +1,247 @@
+domain: S2
+run_id: 2026-06-25-da7fbd23
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-25T04:05:50Z
+ended_at: 2026-06-25T04:12:05Z
+duration_seconds: 375
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 13
+  bridge_fetches: 8
+
+items:
+  - title: "NCSC-CH Week 25 Warning: fake Microsoft 365/OneDrive voicemail phishing wave active in Switzerland delivers infostealers and harvests M365 credentials"
+    sources:
+      - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"
+        publisher: "NCSC-CH (National Cyber Security Centre Switzerland)"
+        date: "2026-06-23"
+        role: "primary"
+    discovery_trace: "first seen at: ncsc-ch-security-hub bridge (ncsc-csh recent 10) → pivot to NCSC-CH weekly review listing → primary: NCSC-CH Wochenrückblick Week 25, URL https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"
+    summary: |
+      NCSC-CH's Week 25 Wochenrückblick (published 2026-06-23) documents a higher-than-usual volume of
+      reports in Switzerland of a dual-path phishing/malware campaign impersonating Microsoft 365 and
+      OneDrive for Business. In the malware delivery variant, the email carries a ZIP attachment (e.g.
+      audio_Y6CEKNH8OE.zip) that, when extracted and run, installs an infostealer capable of harvesting
+      browser credentials, session cookies, and cryptocurrency wallet data. In the credential-harvest
+      variant, the link or attached HTML file opens a fake Microsoft login page with a simulated audio
+      player; clicking "Play voicemail as guest" leads to a phishing form capturing the M365 email address
+      and password. A third downstream risk named by NCSC-CH: once an M365 account is compromised, the
+      attacker reads ongoing business email, monitors payment arrangements, and uses the compromised mailbox
+      for chain phishing and BEC fraud — attacks that arrive from a recognised sender replying to an
+      existing thread, dramatically raising the success rate. NCSC-CH specifically notes that stolen
+      M365 credentials are frequently resold on dark-web markets and surface weeks or months later in
+      targeted follow-up attacks, making root-cause attribution harder.
+      Defender angle: ZIP attachments purporting to contain audio are the key detection discriminator —
+      legitimate voicemail-notification services from phone systems deliver .wav or .mp3, not archives.
+      Conditional Access polices requiring phishing-resistant MFA (FIDO2 / certificate-based) prevent
+      credential-theft follow-through even when the phishing page succeeds in capturing password.
+      Review Microsoft 365 Audit Logs for inbox rule creation (T1564.008 / T1098) and anomalous forwarding
+      rules created within minutes of a login from a new country or ASN — a common post-compromise
+      persistence step once BEC operators gain inbox access.
+    ch_eu_nexus: "CH; NCSC-CH national reporting explicitly calls out Switzerland-resident recipients"
+    public_sector_nexus: "direct — Swiss public-sector employees use M365; campaign mirrors prior federal-targeting patterns"
+    sector: "government, public-administration, finance (BEC downstream risk)"
+    cves: []
+    actors_campaigns_malware: ["infostealer (unspecified family)", "BEC operator (unattributed)"]
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In one version of the scam, the attackers try to trick the victim into running malware. The email has a compressed file attached to it, for example a ZIP file called 'audio_Y6CEKNH8OE.zip'."
+        attribution: "NCSC-CH"
+        source_url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"
+      - quote: "The phishing page displays what looks like an audio player, complete with a playback bar. To listen to the supposed message, victims are asked to click on a blue button labelled 'Play voicemail as guest'. A fake login page is then displayed in an attempt to steal the victim's Microsoft login details."
+        attribution: "NCSC-CH"
+        source_url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"
+      - quote: "Stolen Microsoft 365 login details give attackers access to emails, OneDrive, SharePoint and Teams, thereby gaining access to a large part of an organisation's internal communications. The compromised mailbox is then often used to send phishing emails to all of the victim's contacts ('chain phishing')."
+        attribution: "NCSC-CH"
+        source_url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"
+    extended_notes: |
+      The dual-path structure (malware vs. credential-harvest) is consistent with distribution by a
+      phishing-as-a-service kit that supports both payloads. The emotional lure variant ("Death notice"
+      as subject line) is a social-engineering escalation designed to override the recipient's reflexive
+      caution. MITRE ATT&CK mappings: T1566.001 (Spearphishing Attachment), T1566.002 (Spearphishing
+      Link), T1204.002 (Malicious File), T1114.003 (Email Forwarding Rule), T1589.001 (Gather Victim
+      Identity Information: Credentials), T1078.004 (Valid Accounts: Cloud Accounts).
+
+  - title: "MISP 2.5.42 closes two RCE paths (rdkafka plugin-load, ndjson log-injection) and six CVEs across broken access control — critical patch for EU CERT/CSIRT TIP operators"
+    sources:
+      - url: "https://www.misp-project.org/2026/06/22/misp.2.5.42.release.html/"
+        publisher: "MISP Project / CIRCL"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://github.com/MISP/MISP/releases/tag/v2.5.42"
+        publisher: "MISP Project (GitHub)"
+        date: "2026-06-22"
+        role: "corroborating"
+      - url: "https://github.com/advisories/GHSA-834x-pvxg-xh58"
+        publisher: "GitHub Security Advisory (GHSA)"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd bridge (enisa-euvd recent lastvulnerabilities) → EUVD-2026-38229 / CVE-2026-56446 (MISP ndjson RCE) dated Jun 22 → pivot to MISP project blog https://www.misp-project.org/2026/06/22/misp.2.5.42.release.html/ → GitHub release tag https://github.com/MISP/MISP/releases/tag/v2.5.42 → GHSA advisories per CVE"
+    summary: |
+      MISP v2.5.42 (released 2026-06-22 by the CIRCL-supported MISP Project) is a major security
+      hardening release addressing six CVEs. Two are remote-code-execution paths: (1) CVE-2026-56447
+      (CVSS 4.0 9.3) — a site administrator can point the Kafka_rdkafka_config setting to a crafted
+      .ini file containing rdkafka's plugin.library.paths directive, which loads an attacker-supplied
+      shared library under MISP's process privileges; (2) CVE-2026-56446 (CVSS 4.0 8.7) — a site
+      administrator can set the NDJSON error log to a PHP file in a web-accessible directory and inject
+      PHP code through controlled log entries. Both require a compromised site-admin account as a
+      prerequisite — the practical attack path is post-compromise persistence or lateral-movement within
+      a shared MISP instance. The remaining four CVEs cover: CVE-2026-56425 (CVSS 9.3) — Azure AD
+      OAuth 2.0 implementation uses session_id() as the OAuth state parameter, enabling session
+      hijacking via Referer leakage and CSRF; CVE-2026-56424 (CVSS 9.4) — broken access control in
+      EventReports and SharingGroups deleteSelection allows a contributor-level user to hard-delete
+      objects across all organisations on the instance; CVE-2026-56423 (CVSS 7.1) — IDOR in analyst
+      data, collections, and template-element endpoints allows cross-organisation overwrite;
+      CVE-2026-56422 — additional broken access control category. MISP is deployed across almost all
+      EU national CERTs/CSIRTs and many public-sector SOCs as their primary threat-intelligence
+      sharing platform; a compromised MISP instance exposes the entire community's TLP:AMBER and
+      TLP:RED intelligence corpus and can be used to inject false indicators. Upgrade to 2.5.42
+      immediately; verify file ownership on APP/tmp/ and webroot directories; audit admin-account audit
+      trail for any changes to Kafka or log-file configuration.
+    ch_eu_nexus: "direct EU nexus — MISP is the primary TIP for CIRCL (Luxembourg), GovCERT.ch, CERT-EU, BSI, ANSSI/CERT-FR, NCSC-NL, and dozens of other EU national CERTs"
+    public_sector_nexus: "direct"
+    sector: "government, public-administration, cybersecurity-community"
+    cves: ["CVE-2026-56447", "CVE-2026-56446", "CVE-2026-56425", "CVE-2026-56424", "CVE-2026-56423", "CVE-2026-56422"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An authenticated site administrator could configure the Kafka_rdkafka_config setting to point to an arbitrary filesystem path. The system would then parse the referenced INI file and pass options to rdkafka. A malicious configuration file could exploit rdkafka's plugin.library.paths feature to load external libraries, enabling arbitrary code execution under MISP's process privileges."
+        attribution: "GitHub Security Advisory GHSA-834x-pvxg-xh58"
+        source_url: "https://github.com/advisories/GHSA-834x-pvxg-xh58"
+      - quote: "MISP allowed a site administrator to configure an arbitrary filesystem path for the NDJSON error log used by JsonLogTool. Because log entries can include attacker-controlled content, an authenticated attacker with site administrator privileges could direct log output to a PHP file in a web-accessible directory and inject PHP code through logged data."
+        attribution: "MISP Project / CIRCL (ENISA EUVD)"
+        source_url: "https://www.misp-project.org/2026/06/22/misp.2.5.42.release.html/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application — for CVE-2026-56425 OAuth bypass);
+      T1548 (Abuse Elevation Control Mechanism — rdkafka shared-library load); T1505.003 (Web Shell
+      — ndjson PHP injection). Detection: audit MISP Django/CakePHP logs for changes to Kafka config
+      or log-file paths; monitor APP/tmp/logs/ for unexpected .php files; monitor web server access
+      logs for PHP execution in log directories; inspect AAD authentication events for OAuth state
+      parameter reuse or callback from unexpected IPs.
+
+  - title: "Ghost-Sender: Exchange Online configuration flaw lets unauthenticated senders bypass SPF/DKIM/DMARC to deliver spoofed internal email — no vendor patch, Swiss-authored research"
+    sources:
+      - url: "https://labs.infoguard.ch/posts/ghost-sender/"
+        publisher: "InfoGuard Labs (Switzerland)"
+        date: "2026-06-09"
+        role: "primary"
+      - url: "https://abnormal.ai/blog/ghost-sender-exchange-online-spoofing"
+        publisher: "Abnormal Security"
+        date: "2026-06-12"
+        role: "corroborating"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12619"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-09"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-csh bridge (ncsc-csh recent 10) → NCSC-CH Security Hub post 12619 (Exchange spoofing, June 9) → pivot to primary: InfoGuard Labs research https://labs.infoguard.ch/posts/ghost-sender/ → corroborating: Abnormal Security https://abnormal.ai/blog/ghost-sender-exchange-online-spoofing"
+    summary: |
+      InfoGuard Labs (Switzerland) disclosed on 2026-06-09 a systematic configuration weakness in
+      Microsoft Exchange Online they named Ghost-Sender. Organisations using Exchange Online but
+      routing inbound mail through an external MX record (a third-party spam filter or gateway) are
+      vulnerable: an attacker can submit mail directly to the organisation's Exchange Online Protection
+      ingress (mail.protection.outlook.com) rather than through the configured gateway. EOP delivers
+      the message to the inbox even when SPF, DKIM, and DMARC all fail, because the enforcement
+      decision is made at the gateway — which the attacker bypassed. The spoofed message displays
+      the forged sender's profile picture and is indistinguishable from a legitimate internal email.
+      Researchers Lucas Dodgson, Tobias Oberdörfer, and Robin Hilber found the misconfiguration
+      in more than 20 % of Exchange Online domains tested in bug bounty programs; preliminary evidence
+      shows active in-the-wild exploitation. Microsoft classifies it as a "known architectural
+      limitation" (not a CVE) and has not shipped a fix despite an internal mitigation that was
+      briefly deployed on April 22 and rolled back on April 27. Mitigation requires configuring an
+      Exchange Online inbound connector to reject mail not originating from the designated MX gateway
+      (Partner Organization connector with IP allow-list), or adding an Enhanced Filtering / require-TLS
+      transport rule. The NCSC-CH security hub alerted on this on June 9; the Week 25 voicemail
+      phishing campaign (see first item) is structurally compatible with Ghost-Sender exploitation for
+      initial delivery.
+    ch_eu_nexus: "direct — Swiss security firm authored the research; NCSC-CH issued a security hub advisory; over 20% of Exchange Online domains at risk across CH/EU public sector"
+    public_sector_nexus: "direct — Swiss federal and cantonal administrations commonly route via third-party gateway in front of Exchange Online"
+    sector: "government, public-administration, finance, all M365 tenants"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers can send emails impersonating virtually any sender, internal or external, and bypass SPF, DKIM, and DMARC protections. In affected environments, spoofed messages are accepted and delivered without warnings, even when authentication checks explicitly fail."
+        attribution: "InfoGuard Labs"
+        source_url: "https://labs.infoguard.ch/posts/ghost-sender/"
+      - quote: "Microsoft support indicated that this issue or a closely related one appears to be abused in the wild, so administrators should treat the check as urgent."
+        attribution: "Abnormal Security"
+        source_url: "https://abnormal.ai/blog/ghost-sender-exchange-online-spoofing"
+    extended_notes: |
+      MITRE ATT&CK: T1566.002 (Spearphishing Link — via spoofed sender); T1534 (Internal Spearphishing
+      — chain phishing from compromised or spoofed internal address). This item was originally first
+      published June 9 — outside the 36-hour window — but the NCSC-CH Week 25 warning (June 23, in
+      window) explicitly describes the voicemail phishing variant that is structurally identical to
+      Ghost-Sender delivery, and the no-patch status remains unchanged, making this an operationally
+      relevant standing advisory for Swiss public-sector Exchange Online tenants. Test: use
+      https://ghost-sender.com/tester (InfoGuard's free self-check tool) to determine whether your
+      tenant is reachable via direct-to-EOP submission. Remediation: Microsoft documentation at
+      https://techcommunity.microsoft.com/blog/exchange/introducing-more-control-over-direct-send-in-exchange-online/4408790.
+      NOTE: this item is borderline on recency (primary source June 9); include only if the main agent
+      judges the NCSC-CH Week 25 report (June 23) as a sufficient in-window development tying back to
+      the underlying issue.
+
+  - title: "Cacti 1.2.31 patches 40 vulnerabilities including pre-authentication SQL injection and unauthenticated RCE — widely used in EU network-monitoring stacks"
+    sources:
+      - url: "https://github.com/Cacti/cacti/security/advisories/GHSA-69gg-mjfm-jjpc"
+        publisher: "Cacti Project (GitHub Security Advisory)"
+        date: "2026-06-19"
+        role: "primary"
+      - url: "https://euvd.enisa.europa.eu/"
+        publisher: "ENISA EUVD (EUVD-2026-39131 / EUVD-2026-39136 / EUVD-2026-39137 / EUVD-2026-39138)"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd bridge (enisa-euvd recent criticals) → EUVD-2026-39131 / CVE-2026-39893 (Cacti pre-auth SQLi, Jun 24 ENISA publication) → pivot to GitHub advisory GHSA-69gg-mjfm-jjpc → Cacti project changelog https://www.cacti.net/info/changelog/1.2.31"
+    summary: |
+      Cacti 1.2.31 (released June 15, 2026; CVEs indexed by ENISA EUVD June 24) addresses 40
+      vulnerabilities including multiple critical pre-authentication paths. The most severe cluster:
+      CVE-2026-39893 / CVE-2026-39955 / CVE-2026-39948 (CVSS 9.8) are pre-authentication SQL
+      injection flaws in graph_view.php — the rfilter request parameter is concatenated directly into
+      an RLIKE SQL clause without sanitisation; guest graph-viewing (enabled by default) means the
+      injection endpoint requires no authentication. CVE-2026-39938 (CVSS 9.8) is an unauthenticated
+      local file inclusion via graph_theme parameter and rrdtool IPC serialisation hardening bypass.
+      CVE-2026-39949 is an authenticated RCE via host variable injection. Cacti is a pervasive
+      RRDtool-based network monitoring framework deployed across EU government, university, and ISP
+      infrastructure for SNMP polling and network traffic visualisation; its management interface is
+      frequently left on the same internal VLAN segment as core network equipment. Attackers who
+      compromise a Cacti instance can leverage its SNMP community strings and device credential store
+      to pivot laterally into managed network devices. Upgrade to 1.2.31 immediately; verify that
+      guest graph-viewing is disabled unless explicitly required (it enables the pre-auth SQLi path);
+      restrict Cacti to management networks with no public-internet exposure.
+    ch_eu_nexus: "global but EU-relevant — Cacti is standard tooling in EU cantonal, ISP, and university network-ops stacks"
+    public_sector_nexus: "indirect — Cacti commonly deployed in cantonal and municipal network operations"
+    sector: "telco, public-administration, education, energy"
+    cves: ["CVE-2026-39893", "CVE-2026-39938", "CVE-2026-39948", "CVE-2026-39949", "CVE-2026-39955"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The rfilter request variable was concatenated into a RLIKE SQL clause without sanitization. The endpoint does not require authentication (graph viewing supports guest access via the configured guest user), so the SQLi was reachable pre-auth on installs with guest viewing enabled."
+        attribution: "Cacti Project (GHSA-69gg-mjfm-jjpc)"
+        source_url: "https://github.com/Cacti/cacti/security/advisories/GHSA-69gg-mjfm-jjpc"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application); T1555 (Credentials from Password Stores
+      — SNMP community strings in Cacti device database); T1210 (Exploitation of Remote Services —
+      lateral movement via recovered SNMP credentials). The ENISA EUVD published four Cacti CVEs on
+      June 24 (EUVD-2026-39131, 39136, 39137, 39138), making this an in-window ENISA publication
+      even though the Cacti 1.2.31 release itself is June 15. BSI WID RSS did not carry a Cacti
+      advisory in this cycle.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-fr-avis
+    reason: "Feed returning only June 16-17 advisories — nothing in 36h window; advisory publication cadence appears weekly"
+  - source_id: cert-eu
+    reason: "Most recent advisory is 2026-008 from June 10 — no new advisories in 36h window"
+  - source_id: inside-it-ch
+    reason: "Cloudflare Managed Challenge; used WebSearch fallback — no specific in-window CH public-sector incident found"
+  - source_id: ccb-belgium
+    reason: "No specific in-window CCB/Safeonweb advisory retrieved; site reachable but search did not surface in-window items"
