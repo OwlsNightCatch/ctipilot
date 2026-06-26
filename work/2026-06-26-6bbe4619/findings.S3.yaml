@@ -1,0 +1,206 @@
+domain: S3
+run_id: 2026-06-26-6bbe4619
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-26T04:05:55Z
+ended_at: 2026-06-26T04:14:00Z
+duration_seconds: 484
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 10
+  bridge_fetches: 12
+
+items:
+  - title: "macOS.Gaslight — DPRK-aligned Rust backdoor embeds 38-message prompt-injection payload to abort AI analyst triage (SentinelLabs)"
+    sources:
+      - url: "https://www.sentinelone.com/labs/macos-gaslight-rust-backdoor-turns-prompt-injection-on-the-analyst-not-the-sandbox/"
+        publisher: "SentinelLabs"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.infosecurity-magazine.com/news/macos-gaslight-rust-backdoor/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, THN article dated 2026-06-25 → primary: SentinelLabs, URL https://www.sentinelone.com/labs/macos-gaslight-rust-backdoor-turns-prompt-injection-on-the-analyst-not-the-sandbox/ → corroborating: Infosecurity Magazine, URL https://www.infosecurity-magazine.com/news/macos-gaslight-rust-backdoor/"
+    summary: |
+      SentinelLabs published analysis on June 24, 2026 of macOS.Gaslight, a single-binary Rust implant attributed with high confidence to a DPRK-aligned cluster whose XProtect signature Apple calls MACOS_BONZAI_COBUCH. The distinctive feature is a 3.5 KB hardcoded cascade of 38 fabricated "system" messages embedded in the binary — fake token-expiry warnings, static-analysis errors, and memory failures — designed to steer LLM-based triage pipelines (increasingly embedded in analyst workflows and automated reverse-engineering tooling) into aborting or refusing analysis, rather than targeting a sandbox or AV engine. Beyond analyst evasion, Gaslight is a full-featured infostealer: a runtime-deployed CPython 3.10 interpreter is used to stage a 6.6 KB base64-encoded Python module that harvests browser credentials from Chrome, Brave, Firefox, and Safari, captures terminal histories, lists installed apps and running processes, runs `system_profiler`, and copies `login.keychain-db` in its entirety. Persistence is via a `LaunchAgent` plist masquerading as `com.apple.system.services.activity` (T1543.001). C2 uses the Telegram Bot API over a polling loop with AES-GCM-encrypted payloads over certificate-pinned TLS, with bot tokens scrubbed from log output. The sample first appeared on VirusTotal on May 22, 2026, surfaced by an Apple XProtect update in early June. Detection: hunt for Mach-O processes that write LaunchAgent plists with `com.apple.system.services.*` patterns, spawn Python interpreters from non-standard parent processes, or make outbound TLS connections to `api.telegram.org` from non-user-initiated processes; EDR: SentinelOne detects under the BONZAI family. Hardening: block Telegram Bot API egress or apply URL-category policies for `api.telegram.org` on enterprise-managed Macs; restrict LaunchAgent creation to signed, notarised agents.
+    ch_eu_nexus: "global; macOS threat relevant to any organisation with developer or executive Mac fleets; DPRK actors frequently pursue targets in Western Europe including financial and technology sectors"
+    public_sector_nexus: "indirect — DPRK macOS campaigns have historically targeted cryptocurrency, fintech, and government-adjacent researchers; the analyst-evasion technique affects all sectors that use LLM-assisted triage"
+    sector: "technology, finance, government-adjacent research"
+    cves: []
+    actors_campaigns_malware: ["BONZAI (Apple XProtect designation)", "macOS.Gaslight", "DPRK-aligned threat cluster"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "macOS.Gaslight is a macOS implant attributed to DPRK-aligned threat actors that combines credential theft, interactive shell access, and a novel analyst-targeting prompt injection attack"
+        attribution: "SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/macos-gaslight-rust-backdoor-turns-prompt-injection-on-the-analyst-not-the-sandbox/"
+      - quote: "The malware uses Telegram Bot API for command-and-control with AES-GCM encrypted payloads over certificate-pinned TLS connections. It persists via a LaunchAgent masquerading as com.apple.system.services.activity"
+        attribution: "SentinelLabs (via WebFetch)"
+        source_url: "https://www.sentinelone.com/labs/macos-gaslight-rust-backdoor-turns-prompt-injection-on-the-analyst-not-the-sandbox/"
+      - quote: "a 3.5 KB prompt-injection payload of 38 fabricated system messages, built to steer an LLM-assisted triage pipeline into aborting or refusing its analysis"
+        attribution: "Infosecurity Magazine"
+        source_url: "https://www.infosecurity-magazine.com/news/macos-gaslight-rust-backdoor/"
+    extended_notes: |
+      This represents a documented evolution of DPRK macOS implants beyond BlueNoroff / HiddenRisk. The analyst-targeting prompt injection is a technique class that defenders should expect to see generalise to other malware families: as LLM-assisted triage becomes standard in SOC and MDR workflows, embedding adversarial payloads in binaries to corrupt that pipeline is a natural attacker response. Detection engineering note: the fabricated messages are designed to look like plausible LLM session state; any binary that carries large blocks of JSON structured as role/content message arrays (the OpenAI chat completion format) should be flagged for secondary analysis.
+
+  - title: "CVE-2026-20245 Cisco Catalyst SD-WAN Manager — Mandiant documents zero-day exploitation months before disclosure; attacker created hidden root account via malicious CSV upload"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+        publisher: "Google Cloud / Mandiant (GTIG)"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://www.securityweek.com/cisco-sd-wan-zero-day-exploited-months-before-patching/"
+        publisher: "SecurityWeek"
+        date: "2026-06-25"
+        role: "corroborating"
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+        publisher: "Cisco PSIRT"
+        date: "2026-06-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, THN article dated 2026-06-25 → primary: Mandiant/Google Cloud Blog, URL https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager → corroborating: SecurityWeek, URL https://www.securityweek.com/cisco-sd-wan-zero-day-exploited-months-before-patching/"
+    summary: |
+      Mandiant (GTIG) published on June 25, 2026, a full forensic reconstruction of a state-suspected intrusion campaign that exploited CVE-2026-20245 as a zero-day at least two months before Cisco's June 5 disclosure, targeting SD-WAN infrastructure at a service provider. CVE-2026-20245 (CVSS 7.8, CWE-78 OS Command Injection) is in the CLI of Cisco Catalyst SD-WAN Manager (formerly vManage), Controller (formerly vSmart), and Validator (formerly vBond): an authenticated attacker with `netadmin` privileges supplies a crafted CSV file (`evil_tenant.csv`) to the system's file-upload feature, which fails to sanitise user input before passing it to shell commands, allowing arbitrary OS command execution as root. The attack chain Mandiant documented: initial access via SSH in March 2026 using the default `vmanage-admin` account; password change followed immediately by a restore to reduce detection probability; CSV upload exploitation of CVE-2026-20245 to escalate to root; creation of a hidden `troot` account by appending to `/etc/passwd` and `/etc/shadow`; configuration backed up and restored before termination; all forensic artefacts deleted including shell histories, temp files, and modified system tenant lists. The vulnerability is the seventh Cisco SD-WAN flaw confirmed exploited in 2026 (following CVE-2026-20182, CVE-2026-20127, CVE-2026-20122, CVE-2026-20128, CVE-2026-20133, and CVE-2022-20775). Fixed versions: 20.9.9.2, 20.12.7.2, 20.15.4.5, 20.15.5.3, 20.18.3.1, 26.1.1.2 or later. Detection: audit for new accounts in `/etc/passwd` or `/etc/shadow` added since last known-good baseline; review CLI file-upload audit logs (`SD-WAN Manager audit logs`) for CSV-type uploads; check tenant-list modifications; monitor for `su` switching to `root`-equivalent UIDs from admin sessions. Hardening: apply patches immediately; restrict who holds `netadmin` role; rotate all SD-WAN admin credentials; enforce credential-management policy to prevent default credentials from persisting.
+    ch_eu_nexus: "global; Cisco Catalyst SD-WAN is deployed by European telecom providers and enterprises as their WAN management plane; compromise of the Manager gives an attacker push-access to all edge devices"
+    public_sector_nexus: "direct — European public-sector WAN deployments and government-contracted ISPs running Cisco SD-WAN are in scope"
+    sector: "telco, public-sector, enterprise networking"
+    cves: ["CVE-2026-20245", "CVE-2026-20182", "CVE-2026-20127"]
+    actors_campaigns_malware: ["unnamed state-suspected actor (Mandiant attribution not yet public)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-20245 is an authenticated local privilege escalation vulnerability in Cisco Catalyst SD-WAN Manager's CLI that allows attackers to execute arbitrary commands as root through a crafted file upload"
+        attribution: "Google Cloud / Mandiant (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+      - quote: "The threat actor...changed the password of the admin account back to its original state before terminating their active session. This activity was likely performed to reduce the probability of detection."
+        attribution: "SecurityWeek (from Mandiant)"
+        source_url: "https://www.securityweek.com/cisco-sd-wan-zero-day-exploited-months-before-patching/"
+    extended_notes: |
+      The attacker's anti-forensic discipline (backup-modify-restore-delete pattern, credential cycling) is consistent with a nation-state or advanced criminal actor. The fact that this is Cisco SD-WAN's seventh exploited flaw in 2026 signals that the platform is under sustained offensive research. Defenders running SD-WAN Manager should treat it as an Tier-1 perimeter asset with equivalent monitoring to VPN concentrators and firewalls. Additional related Cisco PSIRT advisories were published alongside this flaw: cisco-sa-sdwan-rpa-EHchtZk (authentication bypass) and cisco-sa-sdwan-rpa2-v69WY2SW (unauthenticated rogue peering).
+
+  - title: "ESET Gamaredon 2025 annual paper: six new PowerShell tools, Cloudflare tunnel/workers C2, S3-compatible cloud exfil, and confirmed Turla collaboration"
+    sources:
+      - url: "https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://web-assets.esetstatic.com/wls/en/papers/white-papers/gamaredon-in-2025.pdf"
+        publisher: "ESET (full white paper)"
+        date: "2026-06-25"
+        role: "primary"
+    discovery_trace: "first seen at: ESET WeLiveSecurity RSS feed, item dated 2026-06-25, URL https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/ → primary (no pivot needed — ESET is originating national-CERT-class research body)"
+    summary: |
+      ESET Research published its full 2025 Gamaredon (Primitive Bear / Aqua Blizzard / UAC-0010) annual paper on June 25, 2026 — the first comprehensive public update on the FSB 18th Center group since their APT reports. Six new PowerShell-based tools were documented: PteroDee and PteroCache (simple downloaders), PteroPaste (paste-site C2 reader), PteroOdd and PteroEffigy (stealthy execution wrappers), and PteroSetup (USB/network-drive lateral-movement via malicious LNK shortcuts — T1091). The C2 infrastructure underwent major obfuscation: operators now channel all implant traffic through Cloudflare Tunnel (`trycloudflare.com`), Cloudflare Workers (`workers.dev`), Microsoft DevTunnels (`devtunnels.ms`), and Loophole tunnels — all pointing to actor-controlled backend servers but appearing in defender telemetry as legitimate CDN/PaaS egress. Dead-drop resolvers (T1102.001) proliferated across Telegram, Telegra.ph, Dropbox, GoFile, Mastodon, rentry.co, write.as, and paste sites to store encrypted C2 hostnames, meaning no hardcoded IP or domain appears in the implant binary. File stealers PteroPSDoor and PteroVDoor were updated to exfiltrate to S3-compatible object storage (Wasabi, Tebi, Intercolo) via `rclone`, replacing direct server uploads and blending exfil traffic with cloud-backup workflows. The collaboration with Turla (Snake operator cluster, Cozy Bear-adjacent) was confirmed for early 2025, including shared infrastructure and payload staging. ESET tracked 35 spearphishing campaigns in 2025, exclusively targeting Ukrainian governmental and military entities; Ukraine remains the primary focus but the techniques and infrastructure model transfers to any espionage-target geography. MITRE ATT&CK coverage: T1091 (USB replication), T1102.001 (dead-drop resolvers), T1567.002 (exfiltration to cloud storage), T1071.001 (web-based C2 over tunnels). Detection: block outbound connections to `trycloudflare.com`, `workers.dev`, and `devtunnels.ms` when initiated by Office/scripting processes; alert on `rclone` processes making outbound S3 API calls from non-DevOps hosts; hunt for PowerShell scripts reading from paste-site domains and decoding base64 blobs. Hardening: USB autorun policy (GPO: `NoDriveTypeAutoRun`), disable execution from `%TEMP%` via AppLocker/WDAC, block unapproved cloud-storage providers at the proxy layer.
+    ch_eu_nexus: "EU/European-adjacent; while Gamaredon targets Ukraine, the cloud-obfuscation and tunnel techniques described are immediately applicable to any espionage campaign; EU institutions and Swiss federal bodies with Ukraine-policy exposure are a natural secondary target for Gamaredon-style operations"
+    public_sector_nexus: "direct — Gamaredon explicitly targets governmental and military institutions; the tunnel/dead-drop C2 model is directly relevant to Swiss/EU defenders needing to detect state espionage tooling"
+    sector: "government, military, public administration"
+    cves: ["CVE-2025-8088"]
+    actors_campaigns_malware: ["Gamaredon", "Primitive Bear", "Aqua Blizzard", "UAC-0010", "Turla", "PteroDee", "PteroCache", "PteroPaste", "PteroSetup", "PteroPSDoor", "PteroVDoor", "PteroLNK"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Gamaredon deployed six new PowerShell-based tools in 2025, predominantly simple downloaders alongside resurrected VBScript weaponizers. The group significantly evolved its C2 infrastructure by leveraging tunnel services (trycloudflare.com, workers.dev, devtunnels.ms, loophole.site), dynamic DNS via No-IP, and PaaS providers (Clever Cloud, Supabase)"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/"
+      - quote: "File stealers PteroPSDoor and PteroVDoor were upgraded to exfiltrate data to S3-compatible cloud storage (Wasabi, Tebi, Intercolo), replacing direct server uploads. The group conducted 35 spearphishing campaigns targeting Ukrainian governmental and military entities"
+        attribution: "ESET WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/"
+    extended_notes: |
+      ANNUAL REPORT flag: this is ESET's annual paper on a major threat actor (not periodic; next update expected mid-2027). PD-9 applies.
+      The Turla collaboration note is operationally significant: it suggests shared staging infrastructure and possible technique cross-pollination between two of Russia's most capable espionage clusters. Defenders should not treat Gamaredon as a low-sophistication actor anymore — the cloud obfuscation model is now peer-level with Turla's own infrastructure tradecraft.
+
+  - title: "PixelSmash — CVE-2026-8461 heap OOB write in FFmpeg MagicYUV decoder: RCE via a 50 KB crafted media file upload to Nextcloud or Jellyfin"
+    sources:
+      - url: "https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/"
+        publisher: "JFrog Security Research"
+        date: "2026-06-22"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/ffmpeg-fixes-pixelsmash-flaw-in-widely-used-video-decoder/"
+        publisher: "BleepingComputer"
+        date: "2026-06-22"
+        role: "corroborating"
+    discovery_trace: "first seen at: Risky.biz bulletin outbound links (URL https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/), published 2026-06-24 bulletin → primary: JFrog Security Research, URL https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/ → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/ffmpeg-fixes-pixelsmash-flaw-in-widely-used-video-decoder/"
+    summary: |
+      JFrog Security Research disclosed CVE-2026-8461 (CVSS 8.8, CWE-122 Heap-Based Buffer Overflow) on June 22, 2026, in FFmpeg's MagicYUV lossless video decoder (`libavcodec/magicyuv.c`): a rounding inconsistency between how the frame allocator computes chroma plane heights and how the sliced decoder writes into those planes produces a one-row heap OOB write on processing of specially crafted AVI, MKV, or MOV files containing a MagicYUV stream. JFrog's researchers escalated the heap corruption to reliable RCE on systems with ASLR disabled by hijacking `AVBuffer` function pointers. More critically for production environments, they demonstrated RCE against Jellyfin media server (triggered automatically by the library scan of a shared folder containing the malicious AVI) and against Nextcloud (triggered by the built-in video preview-generation feature when a user uploads the crafted file) — requiring no interaction beyond file presence. Affected: FFmpeg versions before 8.1.2 (fixed in 8.1.2, released June 17, 2026). Any application embedding `libavcodec` that processes user-supplied video — Jellyfin, Nextcloud, Immich, mpv, OBS, PhotoPrism, Kodi, Emby, Plex, GNOME/KDE file managers, Discord, Slack, Telegram, AWS MediaConvert, Cloudflare Stream — is potentially affected. Prerequisites: attacker can deliver a crafted media file to an application using a vulnerable FFmpeg version (file upload, shared folder, media ingest pipeline). Detection: `libavcodec` heap corruption events in application crash logs; HTTP 500 errors on Nextcloud preview-generation endpoint (`/apps/files_videoviewer/` or `/core/preview.png` with `fileId` parameter pointing to AVI/MKV); heap profiler anomalies. Hardening: upgrade to FFmpeg 8.1.2 or later; for Nextcloud, disable video preview generation in `config.php` (`'enable_previews' => false` or remove `OC\Preview\Movie` from `enabledPreviewProviders`) until the Nextcloud app ships the patched FFmpeg.
+    ch_eu_nexus: "high — Nextcloud is the dominant self-hosted file-sharing platform in Swiss and EU public-sector environments (Bund, Kanton, municipalities, universities, hospitals); Jellyfin is common in public media libraries and broadcast environments"
+    public_sector_nexus: "direct — Nextcloud deployment in Swiss federal and cantonal IT, EU institution file collaboration; media ingest pipelines in public broadcasting entities"
+    sector: "public-sector, education, healthcare, media, technology"
+    cves: ["CVE-2026-8461"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This post documents a critical heap buffer overflow in FFmpeg's MagicYUV decoder (CWE-122). The attack exploits a rounding mismatch when computing chroma plane heights in sliced video encoding, triggering a one-row heap OOB write via crafted AVI/MKV/MOV files."
+        attribution: "JFrog Security Research"
+        source_url: "https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/"
+      - quote: "Real-world RCE was demonstrated against Jellyfin media server (via automatic library scanning) and Nextcloud (via preview generation)"
+        attribution: "JFrog Security Research (via WebFetch)"
+        source_url: "https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/"
+    extended_notes: |
+      The Nextcloud attack vector is particularly alarming for EU/Swiss public sector: an attacker with any file-upload capability to a Nextcloud instance (including a shared link or external storage integration) can trigger RCE on the server without any user interaction beyond the server's automatic preview generation. This is a zero-click server-side path for authenticated users and potentially unauthenticated users if share links accept AVI uploads. Nextcloud operators should treat this as P1 until FFmpeg 8.1.2 is in the distribution packages.
+
+  - title: "BadBlocker — Island Security: Chrome \"Adblock for YouTube\" (11M+ installs) has dormant arbitrary-JS-injection architecture, one server-side toggle away from mass compromise"
+    sources:
+      - url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+        publisher: "Island (Enterprise Browser)"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/chrome-ad-blocker-with-10m-installs.html"
+        publisher: "The Hacker News"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed, item dated 2026-06-25 → primary: Island Security blog, URL https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+    summary: |
+      Island's enterprise-browser security team published analysis on June 25, 2026 of the Chrome extension "Adblock for YouTube" (extension ID: `cmedhionkhpnakcndndgjdbohmhepckk`) which carries a Chrome Web Store "Featured" badge and 11+ million installs. The extension's architecture contains the complete infrastructure for arbitrary JavaScript injection into any website visited by the user — activated by a single server-side configuration change, without an extension update, without triggering a store review, and without any visible browser indicator. The mechanism: the extension fetches a remote configuration file at startup; a specific key in that configuration enables a code-injection path that executes attacker-controlled JavaScript in the DOM of every page, with access to DOM content including credentials in password fields, session tokens, form data, and any visible page element. Ownership changed around 2018 — the extension grew from hundreds of thousands to 11+ million users after that change; the extension has prior links to other ad-blockers subsequently removed from the Chrome Web Store for malware. No evidence that the injection capability has been activated in production was found, but the architecture is fully functional and the threat actor would only need to update the remote configuration to weaponise 11M browsers simultaneously. MITRE ATT&CK: T1176 (Browser Extensions), T1185 (Browser Session Hijacking). Detection: Enterprise browsers (Island, Talon) can policy-restrict extensions by ID; any endpoint-security product with browser extension telemetry should flag extensions that fetch remote JS or configuration at runtime; SIEM-side: NetFlow anomaly on `cmedhionkhpnakcndndgjdbohmhepckk`-originating requests to configuration CDN domains. Hardening: block the extension by ID `cmedhionkhpnakcndndgjdbohmhepckk` via Chrome enterprise policy (`ExtensionSettings`, `blocked_install_message`); enforce allowlist-only extension policy for managed Chrome devices.
+    ch_eu_nexus: "global; browser extension supply-chain risk is directly applicable to Swiss and EU public-sector managed Chrome deployments"
+    public_sector_nexus: "direct — Chrome is the primary browser in most Swiss federal and EU institution managed environments; 11M consumer installs mean significant likelihood of employees using personal Chrome profiles synced to managed devices"
+    sector: "cross-sector, technology, public-sector"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The extension contains the architectural ingredients for arbitrary JavaScript execution on any website, activated by a single server-side configuration change, without an extension update, without a store review"
+        attribution: "Island (Enterprise Browser)"
+        source_url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+    extended_notes: |
+      This is a supply-chain-in-waiting rather than a confirmed attack. The MEDIUM confidence reflects: (1) no evidence of malicious use in production; (2) Island is a vendor with a commercial interest in browser-extension risk perception. However, the architecture is confirmed by Chrome extension analysis (extension ID verifiable), and the prior-owner malware history is documented. The operational risk is real: a single CDN config change by whoever controls the extension's infrastructure deploys arbitrary JavaScript to 11M browsers simultaneously.
+
+  - title: "Microsoft DART: Storm-2603 and an unnamed second attacker ran simultaneously in the same compromised SharePoint environment for months (published June 22)"
+    sources:
+      - url: "https://www.microsoft.com/en-us/security/blog/2026/06/22/one-intrusion-two-cyberattackers-uncovering-parallel-threat-activity/"
+        publisher: "Microsoft Security / DART"
+        date: "2026-06-22"
+        role: "primary"
+    discovery_trace: "first seen at: Risky.biz Bulletin outbound links section, URL https://www.microsoft.com/en-us/security/blog/2026/06/22/one-intrusion-two-cyberattackers-uncovering-parallel-threat-activity/, published 2026-06-24 bulletin → primary (no further pivot needed — Microsoft DART is primary disclosing party)"
+    summary: |
+      Microsoft's Detection and Response Team (DART) published on June 22, 2026 a case study of a SharePoint intrusion where two unrelated threat actors operated simultaneously in the same victim environment for an extended period, each obscuring the other's presence and complicating attribution. Storm-2603 gained initial access by exploiting on-premises SharePoint vulnerabilities (T1190) including local file inclusion probes targeting `win.ini` and `web.config` path patterns; once inside, they established persistence via Cloudflare tunnels, Zoho Assist (a legitimate RMM), and SSH-over-Visual-Studio-Code DevTunnel (T1572), created privileged accounts (T1136.001), and deployed Velociraptor (an open-source forensic agent) as a persistent collection tool (T1560). The second, unrelated actor deployed custom backdoors via DLL sideloading (T1574.002) and used a different lateral-movement chain. The overlap meant each actor's detection artefacts were partially attributed to the other, creating a systematic blind spot in the investigation timeline. For Swiss/EU defenders the key takeaways are: (1) simultaneous multi-actor presence is underreported and is more common in high-value environments than current incident response playbooks assume; (2) legitimate tools — Velociraptor, Zoho Assist, VS Code DevTunnel — are now standard attacker persistence and collection infrastructure, requiring behavioural rather than signature-based detection; (3) Cloudflare tunnel egress from SharePoint-adjacent processes should be a high-fidelity alert. Detection: Sysmon EID 1 child-process chain from SharePoint process tree spawning `code.exe`, `zoho*`, or `rclone`; network: TLS handshakes from SharePoint server to `trycloudflare.com` or `devtunnels.ms`; `4624`/`4648` for service-account logons using newly-created accounts; EDR: DLL sideloading from `C:\Windows\System32\` with non-Microsoft signature in `%APPDATA%` or temp paths.
+    ch_eu_nexus: "EU/global; on-premises SharePoint is standard in Swiss federal and cantonal government, EU institutions, and large enterprises; Storm-2603 has been associated with broadly targeted credential-harvesting campaigns"
+    public_sector_nexus: "direct — on-premises SharePoint is core government collaboration infrastructure in Switzerland and across EU member states"
+    sector: "public-sector, enterprise, technology"
+    cves: []
+    actors_campaigns_malware: ["Storm-2603", "Velociraptor (used as attacker tool)"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Two unrelated threat actors operated simultaneously within the same environment. Overlapping activity streams enabled sustained access while masking the full scope of the intrusion."
+        attribution: "Microsoft Security / DART"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/06/22/one-intrusion-two-cyberattackers-uncovering-parallel-threat-activity/"
+    extended_notes: |
+      This is SINGLE-SOURCE — Microsoft DART is the primary disclosing party for its own investigation. Flagged accordingly. The SharePoint exploitation vector attributed to Storm-2603 connects to a broader advisory Microsoft published in July 2025 on active SharePoint on-premises exploitation (https://www.microsoft.com/en-us/security/blog/2025/07/22/disrupting-active-exploitation-of-on-premises-sharepoint-vulnerabilities/). Organisations still running on-premises SharePoint (as opposed to SharePoint Online) should review exposure of the SharePoint management interface to the internet and audit for the Velociraptor / Zoho Assist / VS Code tunnel triad as attacker persistence indicators.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: bleepingcomputer
+    reason: "Article body returned HTTP 403 on direct fetch; used WebSearch as fallback to confirm story corroboration on PixelSmash and Gaslight items. Stories confirmed covered by other primaries."
+  - source_id: talos
+    reason: "No fresh S3-domain items detected in the 36-hour window from Cisco Talos blog; not a fetch failure."
+  - source_id: mandiant-gtig
+    reason: "Mandiant/GTIG Feedburner mirror returned exit code 1 on bridge feed call; covered via direct WebFetch of the Google Cloud Blog article and confirmed live."

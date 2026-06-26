@@ -1,0 +1,187 @@
+# work/2026-06-26-6bbe4619/findings.S2.yaml
+domain: S2
+run_id: 2026-06-26-6bbe4619
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-26T04:05:50Z
+ended_at: 2026-06-26T04:14:03Z
+duration_seconds: 493
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 9
+  bridge_fetches: 18
+
+items:
+  - title: "Cisco Catalyst SD-WAN Manager zero-day kill chain detailed: rogue tenant escalation to root (CVE-2026-20182, CVE-2026-20245)"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+        publisher: "Mandiant / Google Cloud GTIG"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/mandiant-reveals-how-cisco-sd-wan-zero-day-attacks-gained-root-access/"
+        publisher: "BleepingComputer"
+        date: "2026-06-24"
+        role: "corroborating"
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwanvman-privesc-PUNQjQWc"
+        publisher: "Cisco PSIRT"
+        date: "2026-05-18"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge:ncsc-csh post 12579, advisory updated 2026-06-25 referencing Mandiant report → primary: Mandiant Google Cloud GTIG blog, URL https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager → corroborating: BleepingComputer URL https://www.bleepingcomputer.com/news/security/mandiant-reveals-how-cisco-sd-wan-zero-day-attacks-gained-root-access/"
+    summary: |
+      Mandiant's GTIG published a full kill-chain reconstruction on 2026-06-24 for attacks exploiting Cisco Catalyst SD-WAN Manager (vManage). The attacker — attributed to a suspected espionage-motivated actor — first abused CVE-2026-20127 and CVE-2026-20182 (CVSS 10.0, authentication bypass via authentication bypass on the SD-WAN northbound API) to enroll a rogue peering connection and gain initial SSH access to the vManage controller. Once authenticated, the actor exploited CVE-2026-20245, an unpatched zero-day (CVSS 7.8) in the tenant data upload CLI feature: by uploading a crafted `evil_tenant.csv` file through the tenant-upload mechanism, the actor triggered a server-side script parsing vulnerability that created a new OS-level `troot` account with root privileges. Post-exploitation included deletion of all artefacts — command history, syslog entries, and uploaded files — constituting deliberate anti-forensic sanitisation. Activity tracked from late 2025 through March 2026; victim was a communications service provider. The NCSC-CH Security Hub (post ID 12579) was updated on 2026-06-25 to reference the Mandiant analysis, making this an in-window delta for Swiss defenders monitoring that feed. Cisco patches for CVE-2026-20245 are available in vManage 20.12.5 and 20.9.8; CVE-2026-20182 was patched in May 2026. Detection: monitor vManage audit logs (`/var/log/nms/`) for tenant-upload API calls (`POST /dataservice/tenantmgmt/csv`); hunt for unexpected OS account creation events (`/etc/passwd` modifications) and cleared shell history on vManage hosts; Sysmon-equivalent on the vManage Linux host should alert on child processes of the tenant-upload service. Hardening: restrict northbound API access by source IP ACL; enforce MFA on all vManage administrator accounts; upgrade to fixed releases immediately (T1190, T1068, T1070.003).
+    ch_eu_nexus: "NCSC-CH Security Hub advisory updated in-window; vManage widely deployed in Swiss/EU telco and public-sector WAN environments"
+    public_sector_nexus: "indirect — SD-WAN controllers in government WAN infrastructure at risk"
+    sector: "telco, public-sector, government"
+    cves: [CVE-2026-20182, CVE-2026-20245, CVE-2026-20127]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Mandiant observed a threat actor exploit three vulnerabilities in Cisco Catalyst SD-WAN Manager (vManage) software to gain unauthorized access and escalate privileges to root on a victim device"
+        attribution: "Mandiant / Google Cloud GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+      - quote: "The actor uploaded a crafted tenant CSV file that, when processed by an internal script, caused the creation of an 'troot' root-level OS account"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/mandiant-reveals-how-cisco-sd-wan-zero-day-attacks-gained-root-access/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application), T1068 (Exploitation for Privilege Escalation), T1070.003 (Indicator Removal — Clear Command History). The tenant-upload CSV injection is a novel attack surface not previously documented publicly. Defenders should note that standard vManage health-check dashboards will not flag the troot account creation; OS-level auditing of /etc/passwd and sudoers is required. Cisco Talos and Mandiant researchers: Chester Sng, Pete Boonyakarn, Logeswaran Nadarajan.
+
+  - title: "Europe ransomware incidents up 55% YoY (Jan–Apr 2026): Qilin in 26/31 EU states, SafePay targeting Germany, supply-chain breach via Miljödata exposes ~200 Swedish municipalities"
+    sources:
+      - url: "https://www.prnewswire.com/news-releases/black-kites-first-report-dedicated-europe-ransomware-incidents-rose-55-year-over-year-in-early-2026-as-supply-chains-become-a-key-attack-path-302808057.html"
+        publisher: "Black Kite / PR Newswire"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://www.darkreading.com/cybersecurity-analytics/europe-evolves-ransomware-favorite-region"
+        publisher: "Dark Reading"
+        date: "2026-06-25"
+        role: "corroborating"
+      - url: "https://www.infosecurity-magazine.com/news/increase-ransomware-europe/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Black Kite Europe ransomware 2026 report') → primary: PR Newswire press release, URL https://www.prnewswire.com/news-releases/black-kites-first-report-dedicated-europe-ransomware-incidents-rose-55-year-over-year-in-early-2026-as-supply-chains-become-a-key-attack-path-302808057.html → corroborating: Dark Reading URL https://www.darkreading.com/cybersecurity-analytics/europe-evolves-ransomware-favorite-region and Infosecurity Magazine URL https://www.infosecurity-magazine.com/news/increase-ransomware-europe/"
+    summary: |
+      Black Kite's inaugural Europe-dedicated ransomware report (published 2026-06-25) quantifies the threat landscape for European organisations across January–April 2026, tracking 2,054 confirmed ransomware incidents across 31 EU/EEA countries — up 55% year-over-year, averaging 171 incidents per month. Qilin (also known as Agenda) was the most geographically pervasive group, active in 26 of 31 observed countries. SafePay concentrated disproportionately in Germany (more than 50% of its EU activity). The report highlights supply-chain breach as an accelerating attack path: a single compromise of Miljödata, a Swedish HR and payroll software provider, cascaded to approximately 200 municipalities, 25 companies, several universities, and more than 1 million individuals — a canonical example of Tier-N supply-chain exposure in the Nordics. By absolute volume, the top five target countries were Germany (370 incidents, 17.9%), UK (347, 16.8%), France (255, 12.3%), Italy (240, 11.6%), and Spain (203, 9.8%). Switzerland was not broken out as a standalone figure in the press materials. The report warns that EU Critical Entities Resilience Directive (CER) and NIS2 implementation lags are widening the attack surface; regulated sectors (healthcare, energy, manufacturing) accounted for a disproportionate share of victim counts. Detection angles: ransomware precursor activity typically surfaces as lateral-movement artefacts (T1021.002 SMB/Windows Admin Shares, T1059 scripted enumeration) and exfiltration events (T1048 — outbound to cloud storage via non-standard ports) in the days before encryption; EDR telemetry for Qilin variants should watch for VSS deletion (T1490) via vssadmin.exe or wmic.exe called from an unusual parent. Hardening: MFA on all remote-access paths; segment HR/payroll suppliers as high-risk third parties under NIS2 Article 21 supply-chain risk management obligations.
+    ch_eu_nexus: "Directly covers 31 EU/EEA countries; Germany, France, Italy top targets; supply-chain breach pattern directly relevant to Swiss municipal IT procurement"
+    public_sector_nexus: "direct — municipalities, universities, regulated sectors enumerated as victim categories"
+    sector: "public-sector, government, healthcare, education, manufacturing, energy"
+    cves: []
+    actors_campaigns_malware: ["Qilin", "SafePay", "Agenda"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ransomware incidents in Europe rose 55% year-over-year in the first four months of 2026, with 2,054 confirmed incidents across 31 countries averaging 171 per month"
+        attribution: "Black Kite / PR Newswire"
+        source_url: "https://www.prnewswire.com/news-releases/black-kites-first-report-dedicated-europe-ransomware-incidents-rose-55-year-over-year-in-early-2026-as-supply-chains-become-a-key-attack-path-302808057.html"
+      - quote: "Qilin was the most geographically widespread group, present in 26 of 31 countries tracked, while SafePay concentrated more than half its EU activity in Germany"
+        attribution: "Dark Reading"
+        source_url: "https://www.darkreading.com/cybersecurity-analytics/europe-evolves-ransomware-favorite-region"
+    extended_notes: |
+      The Miljödata supply-chain breach is the single most operationally relevant finding for Swiss public sector: Swiss cantonal/communal governments use analogous shared HR/payroll platforms. The NIS2 third-party risk management obligation (Article 21(2)(d)) directly applies. Detection engineers should add network monitoring for outbound connections from HR-application servers to unexpected cloud storage endpoints.
+
+  - title: "Gamaredon (FSB Armageddon) Gammasteel PowerShell infostealer: cloud-storage exfiltration via Wasabi/Tebi/Intercolo, PteroPaste USB weaponizer, six new 2025 tools detailed (Sekoia FSB Matryoshka part 3/3)"
+    sources:
+      - url: "https://blog.sekoia.io/fsbs-matryoshka-3-3-gamaredons-gifts-that-keeps-unpacking-gammasteel/"
+        publisher: "Sekoia.io"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/"
+        publisher: "Sekoia.io"
+        date: "2026-06-25"
+        role: "corroborating"
+      - url: "https://www.welivesecurity.com/en/eset-research/gamaredon-troop-geminis-malware/"
+        publisher: "ESET WeLiveSecurity"
+        date: "2026-06-10"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Sekoia Gamaredon 2026 Gammasteel FSB Matryoshka') → primary: Sekoia blog part 3, URL https://blog.sekoia.io/fsbs-matryoshka-3-3-gamaredons-gifts-that-keeps-unpacking-gammasteel/ → corroborating: Sekoia blog part 1, URL https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/ → ESET WeLiveSecurity prior context, URL https://www.welivesecurity.com/en/eset-research/gamaredon-troop-geminis-malware/"
+    summary: |
+      Sekoia's Threat Intelligence & Research team published the third and final instalment of their "FSB's Matryoshka" Gamaredon series on 2026-06-25, completing a comprehensive technical decomposition of the group's current toolchain. Gamaredon (also tracked as Troop Gemini / UAC-0010, attributed to Russia's FSB Centre 18 in Crimea) is the highest-volume state-sponsored threat actor targeting Ukrainian government, military, and critical infrastructure. Part 3 focuses on Gammasteel — a PowerShell-based infostealer exfiltrating documents via S3-compatible cloud storage APIs (Wasabi, Tebi, and Intercolo cloud services), deliberately chosen for their near-identical API surface to legitimate AWS S3 traffic to evade proxy-layer content inspection. PteroPaste is revealed as a composite tool combining USB drive weaponizer, downloader, runner, and persistence logic in a single scripted package — enabling infection of air-gapped or segregated segments when a user inserts a removable drive. Sekoia identified six new PowerShell tools first observed in 2025 across the series: PteroDee (downloader), PteroCache (staging), PteroDum (persistence watcher), PteroOdd (conditional stager), PteroPaste (USB weaponizer), PteroEffigy (decoy dropper). C2 infrastructure is routed through Cloudflare Workers (masking true C2 origin), with secondary dead-drop channels using Telegram, Dropbox, DEV Community posts, and Mastodon — a multi-layer dead-drop architecture (T1102.001) resistant to single-source blocking. Part 1 of the series (same publication date) covers GammaPhish phishing infrastructure and GammaWorm, a self-propagating worm that spreads via NTFS alternate data streams on USB drives. While primary targeting is Ukraine, Gamaredon's spearphish lures occasionally target EU diplomatic missions and defence contractors engaged on Ukraine-related matters; defenders in Swiss government and EU institutions with Ukraine-related remits should treat this as a directly relevant threat. MITRE ATT&CK: T1566.001 (Spearphishing Attachment — GammaPhish), T1052.001 (Exfiltration Over Physical Medium — PteroPaste USB), T1567.002 (Exfiltration to Cloud Storage — Gammasteel), T1102.001 (Dead Drop Resolver — Telegram/DEV Community/Mastodon), T1547 (Boot/Logon Autostart Execution — PteroDum persistence). Detection: hunt for PowerShell child processes of explorer.exe writing to removable-media paths; alert on outbound HTTPS PUT/POST to Wasabi/Tebi endpoints from non-backup workloads; monitor for base64-encoded PowerShell execution chains referencing S3-compatible APIs (T1059.001 + T1567.002 chained telemetry). Hardening: USB device control policies (block or approve-list only); outbound proxy allow-listing to block non-approved S3-API endpoints.
+    ch_eu_nexus: "EU diplomatic and defence-adjacent organisations are secondary targets; Gamaredon's C2 channels (Cloudflare Workers, Telegram, DEV Community, Mastodon) are widely accessible from EU networks"
+    public_sector_nexus: "indirect — EU government and diplomatic mission staff engaged on Ukraine-adjacent work are in-scope secondary targets"
+    sector: "government, defence, public-sector"
+    cves: []
+    actors_campaigns_malware: ["Gamaredon", "Troop Gemini", "UAC-0010", "Gammasteel", "GammaPhish", "GammaWorm", "PteroPaste", "PteroDee", "PteroCache", "PteroDum", "PteroOdd", "PteroEffigy"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Gammasteel exfiltrates victim documents via S3-compatible cloud storage APIs including Wasabi, Tebi, and Intercolo, exploiting the near-identical API surface to legitimate AWS S3 traffic"
+        attribution: "Sekoia.io"
+        source_url: "https://blog.sekoia.io/fsbs-matryoshka-3-3-gamaredons-gifts-that-keeps-unpacking-gammasteel/"
+      - quote: "PteroPaste combines USB drive weaponization, downloader, runner, and persistence capabilities in a single PowerShell package, enabling infection across air-gapped segments"
+        attribution: "Sekoia.io"
+        source_url: "https://blog.sekoia.io/fsbs-matryoshka-3-3-gamaredons-gifts-that-keeps-unpacking-gammasteel/"
+    extended_notes: |
+      The dead-drop resolver chain (Cloudflare Workers → Telegram → Dropbox → DEV Community → Mastodon) represents a significant operational security investment. Each layer is independently deniable and the C2 origin is never exposed in DNS queries observable on the victim network. Detection engineers implementing DLP or proxy-layer inspection should add specific rules for PowerShell processes initiating outbound connections to wasabi.com, s3.wasabisys.com, tebi.io, and intercolo.eu via PUT/POST methods. The six new tool names (PteroDee, PteroCache, PteroDum, PteroOdd, PteroPaste, PteroEffigy) should be added to hunting watchlists as process-name and file-system artefact strings.
+
+  - title: "GitLab patches 19.1.1/19.0.3/18.11.6: improper authorisation, XSS, code injection, SSRF via mirror sync across versions 8.3 through 19.1.0 (NCSC-NL NCSC-2026-0211)"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211"
+        publisher: "NCSC-NL"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+        publisher: "GitLab"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: advisories-ncsc-nl, bridge:ncsc-nl recent 20 returned NCSC-2026-0211 (2026-06-25) → bridge:ncsc-nl csaf NCSC-2026-0211 returned full CSAF JSON → primary: NCSC-NL advisory page URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211 → corroborating: GitLab patch release notes URL https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+    summary: |
+      NCSC-NL published advisory NCSC-2026-0211 on 2026-06-25 for GitLab's batch security patch releases (19.1.1, 19.0.3, 18.11.6), rating probability "medium" and damage potential "high". The patch addresses multiple vulnerability classes across a wide version range (8.3 through 19.1.0): improper authorisation on the package management API (CWE-862, CWE-863) enabling unauthorised package publish/delete; a stored XSS (CWE-79) in the Snippet feature; a code injection vulnerability (CWE-94) in CI/CD pipeline configuration parsing; a server-side request forgery (SSRF) vulnerability (CWE-350) in the repository mirror synchronisation URL validation allowing internal network probing; sensitive data (DAST site profile secrets) exposure in GitLab application logs (CWE-532); and an authorisation bypass via user-controlled object reference in project issue tracking (CWE-639). The SSRF in mirror sync is the highest-impact vulnerability in multi-tenant GitLab deployments: an attacker with a project-level Maintainer role can configure a mirror URL pointing to internal metadata endpoints or private network ranges (T1590.002, lateral movement into the hosting infrastructure). The code injection in CI/CD configuration parsing is a potential supply-chain vector: malicious pipeline definitions processed server-side (T1195.002, T1059 — depending on CI runner isolation). GitLab.com (SaaS) was patched at release; self-managed instances require manual upgrade. Swiss government and cantonal administrations running self-managed GitLab for source code management and CI/CD should treat the SSRF and code-injection findings as priority patches. Detection: audit GitLab application logs for mirror-sync attempts to RFC 1918 addresses or localhost; alert on CI/CD job failures with unexpected payload-like filenames or base64 content in pipeline job logs. Hardening: upgrade to 18.11.6, 19.0.3, or 19.1.1; restrict project Maintainer role assignment; isolate CI runners from production network segments.
+    ch_eu_nexus: "NCSC-NL advisory (Dutch national CERT); GitLab widely used for Swiss public-sector DevOps and cantonal code management"
+    public_sector_nexus: "direct — many Swiss federal and cantonal IT units run self-managed GitLab"
+    sector: "public-sector, government, technology"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "NCSC-NL rates this advisory: probability medium, damage high. Affected: GitLab versions 8.3 through 19.1.0. Fixed in: 18.11.6, 19.0.3, 19.1.1."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211"
+      - quote: "GitLab patch release 19.1.1, 19.0.3, and 18.11.6 addresses critical security issues including improper authorisation, cross-site scripting, code injection, and server-side request forgery"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+    extended_notes: |
+      MITRE ATT&CK mappings: SSRF via mirror sync → T1590.002 (Gather Victim Network Info via SSRF); code injection in CI/CD → T1195.002 (Supply Chain Compromise — Compromise Software Supply Chain) + T1059; improper authorisation on package API → T1078 (Valid Accounts — project-level token abuse); DAST secrets in logs → T1552.001 (Credentials in Files). Priority: self-managed GitLab instances in public-sector DevOps environments should patch within 48 hours given the SSRF and code-injection findings.
+
+cve_table:
+  - cve: "CVE-2026-20182"
+    product: "Cisco Catalyst SD-WAN Manager (vManage)"
+    cvss: "10.0"
+    epss: "unknown"
+    kev: "yes"
+    exploited: "yes — espionage actor, late 2025–Mar 2026"
+    patch: "vManage 20.12.5, 20.9.8"
+    source: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+  - cve: "CVE-2026-20245"
+    product: "Cisco Catalyst SD-WAN Manager (vManage) — tenant-upload CLI feature"
+    cvss: "7.8"
+    epss: "unknown"
+    kev: "yes"
+    exploited: "yes — zero-day, root privilege escalation via evil_tenant.csv"
+    patch: "vManage 20.12.5, 20.9.8"
+    source: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+  - cve: "CVE-2026-20127"
+    product: "Cisco Catalyst SD-WAN Manager (vManage) — northbound API auth bypass"
+    cvss: "10.0"
+    epss: "unknown"
+    kev: "unknown"
+    exploited: "yes — used in conjunction with CVE-2026-20182 for initial access"
+    patch: "vManage 20.12.5, 20.9.8"
+    source: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed (https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v) returned IncompleteRead error on chunked encoding; bridge:feed failed. Used WebSearch fallback — Mandiant GTIG blog article on Cisco SD-WAN discovered and covered via WebSearch + bridge:url on Mandiant Cloud blog."
+  - source_id: cert-fr-avis
+    reason: "cert-fr avis-recent feed returned items only through 2026-06-18; nothing in 36h window."
+  - source_id: cert-fr-actu
+    reason: "cert-fr actu-recent (weekly bulletins) returned items only through December 2025 — feed appears stuck."
+  - source_id: ncsc-ch-focus
+    reason: "NCSC-CH Week 26 weekly review (wochenrueckblick_26) returned HTTP 404; not yet published (published Thursdays, today is Friday but article not live as of 04:00 UTC)."

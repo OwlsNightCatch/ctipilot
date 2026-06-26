@@ -1,0 +1,204 @@
+# work/2026-06-26-6bbe4619/findings.S1.yaml
+domain: S1
+run_id: 2026-06-26-6bbe4619
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-26T04:05:38Z
+ended_at: 2026-06-26T04:52:00Z
+duration_seconds: 2782
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 9
+  bridge_fetches: 6
+
+items:
+  - title: "Cisco Catalyst SD-WAN Manager authenticated CSV injection zero-day exploited at telecom (CVE-2026-20245)"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/cisco-sd-wan-manager-zero-day-exploitation/"
+        publisher: "Mandiant / Google Threat Intelligence Group"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/cisco-sd-wan-manager-zero-day.html"
+        publisher: "The Hacker News"
+        date: "2026-06-25"
+        role: "corroborating"
+      - url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+        publisher: "Cisco PSIRT"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge → KEV entry for CVE-2026-20245 dated Jun 25 → WebSearch 'CVE-2026-20245 Cisco SD-WAN exploitation' → Mandiant primary at cloud.google.com → Cisco PSIRT advisory → THN corroborating"
+    summary: |
+      Mandiant (GTIG) disclosed on 2026-06-25 that CVE-2026-20245, a privilege escalation vulnerability in Cisco Catalyst SD-WAN Manager (vManage), was exploited as a zero-day at a telecom service provider months before Cisco's public advisory. The vulnerability resides in the CSV file upload functionality: an authenticated attacker with Network Operator role (a low-privilege role normally used for read-only monitoring) can craft a malicious CSV payload uploaded via the SD-WAN Manager UI that, when processed server-side, executes arbitrary OS commands with root-level privileges. Mandiant observed a full attack chain: initial access via CVE-2026-20127 or CVE-2026-20182 (authentication bypass vulnerabilities patched in March 2026) → CSV upload exploitation of CVE-2026-20245 → root shell → creation of rogue NETCONF user → persistent access via NETCONF XML management interface for ongoing lateral movement. CVSS v3.1 score is 7.8 (High). Cisco rated the advisory as High. Fixed in SD-WAN Manager versions 20.6.6.2, 20.9.5, 20.12.2, and 21.1.1. Cisco confirmed no workaround exists — patch is the only mitigation.
+    ch_eu_nexus: "global; EU public-sector and telecom SD-WAN deployments at risk; CISA KEV-listed Jun 25 requiring federal patch by Jul 16"
+    public_sector_nexus: "indirect — EU telecoms and government agencies using Cisco Catalyst SD-WAN/vManage"
+    sector: "telco, public-sector, critical infrastructure"
+    cves: [CVE-2026-20245]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Mandiant has identified exploitation of CVE-2026-20245 as a zero-day vulnerability in Cisco Catalyst SD-WAN Manager by a suspected nation-state threat actor"
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/cisco-sd-wan-manager-zero-day-exploitation/"
+      - quote: "The attacker leveraged CSV file upload functionality to achieve command injection and escalate to root privileges from a Network Operator account"
+        attribution: "Mandiant / Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/cisco-sd-wan-manager-zero-day-exploitation/"
+      - quote: "Cisco rates this vulnerability as High (CVSS 7.8) and confirms no workaround is available; patched versions include 20.6.6.2, 20.9.5, 20.12.2, and 21.1.1"
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+    extended_notes: |
+      Detection: SD-WAN Manager audit logs for CSV upload events from Network Operator accounts (unusual for read-only role), followed by NETCONF session creation from new user accounts. Review all NETCONF connections to vManage management interfaces. Check for new user accounts not provisioned through standard IAM workflows. ATT&CK: T1190 (Exploit Public-Facing Application for initial bypass), T1078.004 (Valid Accounts - initial low-priv auth), T1068 (Exploitation for Privilege Escalation via CSV injection), T1505.003 (Web Shell / persistent NETCONF backdoor). Hardening: upgrade to fixed versions immediately; restrict SD-WAN Manager UI access to management VLAN only; enable logging for all CSV upload operations; audit NETCONF user accounts.
+
+  - title: "Ubiquiti UniFi OS triple zero-day cluster actively exploited — CVE-2026-34908/34909/34910 (CVSS 10.0)"
+    sources:
+      - url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/ENISA-2026-0034910"
+        publisher: "ENISA EUVD"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge → three Ubiquiti UniFi CVEs added to KEV Jun 23 → ENISA EUVD bridge advisory for CVE-2026-34910 → confirmed EPSS and product versions"
+    summary: |
+      CISA added three Ubiquiti UniFi OS vulnerabilities to the KEV catalog on 2026-06-23, all with CVSS v3.1 scores of 10.0 (Critical) and confirmed active exploitation. CVE-2026-34910 is an OS command injection in the UniFi OS management interface; CVE-2026-34909 is a path traversal enabling read/write access to arbitrary filesystem paths; CVE-2026-34908 is an improper access control vulnerability permitting authentication bypass or privilege escalation. All three affect UniFi OS on devices including UniFi Dream Machine, Dream Router, Dream Wall, Cloud Gateway series, and network/security/access control gateways running firmware prior to UniFi OS 4.1.13. ENISA EUVD confirmed EPSS scores of 81.84% (CVE-2026-34910), 80.31% (CVE-2026-34909), and 78.97% (CVE-2026-34908) as of Jun 24, indicating high exploitation probability. These CVEs were chained in observed attacks: path traversal for file read to extract credentials → authentication bypass → command injection for remote code execution with root privileges on the gateway device. Ubiquiti released firmware update 4.1.13 addressing all three. CISA federal patch deadline is July 14, 2026.
+    ch_eu_nexus: "direct — Ubiquiti equipment is extensively deployed in Swiss and EU public-sector networks, SMEs, and local government IT infrastructure"
+    public_sector_nexus: "direct — Ubiquiti UniFi gateways common in public-sector and SME environments across Switzerland and EU"
+    sector: "public-sector, SME, local government, education"
+    cves: [CVE-2026-34908, CVE-2026-34909, CVE-2026-34910]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-34910: OS command injection in Ubiquiti UniFi OS, CVSS 10.0, actively exploited, added to CISA KEV 2026-06-23"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "EPSS score 81.84%; affects UniFi Dream Machine, Dream Router, Dream Wall, Cloud Gateway, and gateway devices running UniFi OS prior to 4.1.13"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/ENISA-2026-0034910"
+    extended_notes: |
+      Detection: UniFi OS syslog for unexpected shell execution from management service processes; look for outbound connections from gateway devices initiated by nginx/unifi-os worker processes (unusual parent-child process chains). Monitor for new SSH authorized_keys additions on gateway devices. Network-level: detect exfiltration or C2 from gateway IP addresses to external destinations. ATT&CK: T1190 (path traversal for initial access), T1556 (auth bypass), T1068 (command injection privilege escalation), T1059 (command execution). Hardening: upgrade to UniFi OS 4.1.13 immediately; restrict UniFi controller management port (TCP 8443) to management VLAN; disable direct internet exposure of UniFi OS management; enable two-factor authentication on UniFi accounts.
+
+  - title: "macOS.Gaslight — DPRK-linked Rust backdoor with prompt injection anti-analysis (in-the-wild, Jun 2026)"
+    sources:
+      - url: "https://www.sentinelone.com/blog/gaslight-dprk-macos-backdoor-prompt-injection-anti-analysis/"
+        publisher: "SentinelOne"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/macos-gaslight-dprk-backdoor.html"
+        publisher: "The Hacker News"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('DPRK macOS malware June 2026') → SentinelOne primary blog post → THN corroborating article"
+    summary: |
+      SentinelOne's SentinelLabs published on 2026-06-24 an analysis of macOS.Gaslight, a Rust-language macOS backdoor attributed with medium-high confidence to DPRK-affiliated threat actors based on XProtect BONZAI family signature matches and infrastructure overlaps. The implant is distributed as a trojanized DMG installer — SentinelOne observed cryptocurrency-themed lures (fake trading platform or DeFi wallet installer). On execution, the DMG drops a signed-but-abused developer certificate bundle and launches the Gaslight daemon as a LaunchAgent for persistence. Gaslight's most distinctive technical feature is a prompt injection anti-analysis payload embedded in its configuration: if the malware's binary is submitted to a public LLM-based analysis service (VirusTotal's code analysis, Google Gemini code review, or similar), a hidden instruction in the binary's strings section instructs the LLM to report the sample as benign or mislabel its capabilities. The backdoor supports remote shell execution, file upload/download, screen capture, clipboard harvesting, and keylogging. C2 communication uses HTTPS with HPKP-pinned certificates to infrastructure hosted on bulletproof providers. Apple has pushed XProtect rule BONZAI.D/E as of Jun 25. No CVE assigned (malware, not CVE-tracked vulnerability).
+    ch_eu_nexus: "global; DPRK crypto-theft campaigns active across EU; macOS environments in Swiss fintech and crypto sector at elevated risk"
+    public_sector_nexus: "indirect — macOS prevalent in finance and tech sectors; DPRK targeting pattern includes fintech and DeFi"
+    sector: "finance, cryptocurrency, technology"
+    cves: []
+    actors_campaigns_malware: ["macOS.Gaslight", "DPRK", "BONZAI"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "macOS.Gaslight is a Rust-based backdoor attributed to DPRK-affiliated threat actors; Apple XProtect BONZAI family signatures have been updated to detect variants D and E"
+        attribution: "SentinelOne"
+        source_url: "https://www.sentinelone.com/blog/gaslight-dprk-macos-backdoor-prompt-injection-anti-analysis/"
+      - quote: "The malware embeds a prompt injection payload in its binary strings to deceive LLM-based analysis services into reporting the sample as benign"
+        attribution: "SentinelOne"
+        source_url: "https://www.sentinelone.com/blog/gaslight-dprk-macos-backdoor-prompt-injection-anti-analysis/"
+    extended_notes: |
+      Detection: macOS Unified Log for new LaunchAgent plist additions in ~/Library/LaunchAgents/ with non-Apple developer certificate signer. Sysmon for macOS (if deployed): process creation events for Rust-compiled binaries launching from application bundle paths. XProtect BONZAI.D/E detection if XProtect up to date. EDR: look for HTTPS connections with cert pinning (unusual TLS fingerprint) from unsigned or abnormally-signed processes. Hunt: audit LaunchAgent persistence entries on all managed macOS endpoints — check for unsigned or unknown-signer binaries. ATT&CK: T1543.004 (LaunchAgent persistence), T1059 (command execution), T1113 (screen capture), T1056.001 (keylogging), T1071.001 (HTTPS C2). Anti-analysis note: prompt injection in malware binaries is an emerging evasion technique against LLM-integrated security tooling — defenders using AI-based code analysis should treat "benign" verdicts on macOS DMG submissions with increased skepticism pending human review. Hardening: restrict LaunchAgent installations via MDM profile; enforce Gatekeeper with Notarization requirement; ensure XProtect is current.
+
+  - title: "GitLab 19.1.1 patches two stored XSS vulnerabilities including unauthenticated write path (CVE-2026-10086, CVE-2026-10712)"
+    sources:
+      - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+        publisher: "GitLab"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://about.gitlab.com/releases/2026/06/25/patch-release-gitlab-19-1-1-released/"
+        publisher: "GitLab Security Blog"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('GitLab security patch June 2026') → GitLab patch release notes at docs.gitlab.com → confirmed CVE CVSS scores in release body"
+    summary: |
+      GitLab released patch version 19.1.1 on 2026-06-25 addressing six CVEs across GitLab CE and EE. Two merit urgent attention. CVE-2026-10086 (CVSS 8.7, High) is a stored cross-site scripting vulnerability in the Analytics Dashboard component of GitLab EE: a user with Developer role or higher can inject malicious JavaScript through a crafted analytics dashboard configuration that executes in the browser context of any user viewing the dashboard, including project Owners and Group Admins. This allows session token theft, account takeover, or further lateral movement within GitLab-managed infrastructure. CVE-2026-10712 (CVSS 8.0, High) is a stored XSS in the Web IDE's static asset handler: an attacker can upload a crafted asset file through an unauthenticated path (public project upload endpoint, no login required) that, when rendered in the Web IDE, executes JavaScript in the victim's browser session. All GitLab instances running 19.x prior to 19.1.1, 18.x prior to 18.10.5, and 17.x prior to 17.11.9 are affected. GitLab SaaS (GitLab.com) was patched prior to public disclosure.
+    ch_eu_nexus: "direct — GitLab is widely used in Swiss and EU public-sector DevSecOps and SDLC pipelines including government ministries and research institutions"
+    public_sector_nexus: "direct — GitLab CE/EE self-hosted instances in Swiss and EU public sector"
+    sector: "public-sector, technology, research, government"
+    cves: [CVE-2026-10086, CVE-2026-10712]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-10086: Stored XSS in Analytics Dashboard, CVSS 8.7 (High), affects GitLab EE, requires Developer role"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+      - quote: "CVE-2026-10712: Stored XSS in Web IDE asset handler, CVSS 8.0 (High), exploitable via unauthenticated upload path on public projects"
+        attribution: "GitLab"
+        source_url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+    extended_notes: |
+      Detection: GitLab application logs for Web IDE asset uploads from unauthenticated requests (HTTP 200 on POST /projects/:id/uploads without auth headers) — anomalous if upload results in a .html/.svg/.js asset. Audit Analytics Dashboard access logs for cross-user dashboard rendering. Browser-side: Content-Security-Policy header violations in GitLab access logs may surface exploitation attempts. ATT&CK: T1059.007 (JavaScript execution), T1185 (browser session hijacking), T1550.001 (use of web session cookies). Hardening: upgrade to 19.1.1 / 18.10.5 / 17.11.9 immediately; for public GitLab instances, consider temporarily disabling unauthenticated uploads until upgrade is applied; enforce CSP headers (GitLab 16+ supports strict CSP mode via admin config); restrict Analytics Dashboard access to known users via group membership controls.
+
+cve_table:
+  - cve: CVE-2026-20245
+    product: "Cisco Catalyst SD-WAN Manager (vManage)"
+    cvss: "7.8"
+    epss: "unknown"
+    kev: "yes"
+    exploited: "yes — zero-day at telecom, Mandiant confirmed"
+    patch: "20.6.6.2, 20.9.5, 20.12.2, 21.1.1"
+    source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-sdwan-privesc-4uxFrdzx"
+  - cve: CVE-2026-34910
+    product: "Ubiquiti UniFi OS (Dream Machine / Dream Router / Dream Wall / Cloud Gateway series)"
+    cvss: "10.0"
+    epss: "81.84%"
+    kev: "yes"
+    exploited: "yes — actively exploited, KEV Jun 23"
+    patch: "UniFi OS 4.1.13"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/ENISA-2026-0034910"
+  - cve: CVE-2026-34909
+    product: "Ubiquiti UniFi OS (Dream Machine / Dream Router / Dream Wall / Cloud Gateway series)"
+    cvss: "10.0"
+    epss: "80.31%"
+    kev: "yes"
+    exploited: "yes — actively exploited, KEV Jun 23"
+    patch: "UniFi OS 4.1.13"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/ENISA-2026-0034909"
+  - cve: CVE-2026-34908
+    product: "Ubiquiti UniFi OS (Dream Machine / Dream Router / Dream Wall / Cloud Gateway series)"
+    cvss: "10.0"
+    epss: "78.97%"
+    kev: "yes"
+    exploited: "yes — actively exploited, KEV Jun 23"
+    patch: "UniFi OS 4.1.13"
+    source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/ENISA-2026-0034908"
+  - cve: CVE-2026-10086
+    product: "GitLab EE 17.x < 17.11.9, 18.x < 18.10.5, 19.x < 19.1.1"
+    cvss: "8.7"
+    epss: "unknown"
+    kev: "no"
+    exploited: "not confirmed in wild"
+    patch: "19.1.1, 18.10.5, 17.11.9"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+  - cve: CVE-2026-10712
+    product: "GitLab CE/EE 17.x < 17.11.9, 18.x < 18.10.5, 19.x < 19.1.1"
+    cvss: "8.0"
+    epss: "unknown"
+    kev: "no"
+    exploited: "not confirmed in wild"
+    patch: "19.1.1, 18.10.5, 17.11.9"
+    source: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: mandiant-gtig
+    reason: "Feedburner RSS feed returned IncompleteRead error; article content retrieved via WebSearch fallback instead. Mandiant content covered via WebSearch + THN corroboration."
+  - source_id: ncsc-ch-security-hub
+    reason: "Bridge subcommand returned no new advisories in the 36h window for S1 domain items; no CSH alerts for these CVEs."
+  - source_id: rapid7-research
+    reason: "RSS feed showed no new in-window posts covering the specific CVEs identified; Rapid7 blog had no in-window original research on CVE-2026-20245 or GitLab."
