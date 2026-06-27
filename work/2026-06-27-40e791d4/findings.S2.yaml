@@ -1,0 +1,209 @@
+domain: S2
+run_id: 2026-06-27-40e791d4
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-27T04:05:45Z
+ended_at: 2026-06-27T04:19:00Z
+duration_seconds: 795
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 4
+  bridge_fetches: 12
+
+items:
+  - title: "FBI/CISA warn Russian intelligence (UNC5792/UNC4221) evolved Signal phishing to target Backup Recovery Keys"
+    sources:
+      - url: "https://www.ic3.gov/PSA/2026/PSA260626"
+        publisher: "IC3 (FBI/CISA)"
+        date: "2026-06-26"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/fbi-warns-russian-intelligence-hackers.html"
+        publisher: "The Hacker News"
+        date: "2026-06-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge url https://www.ic3.gov/PSA/2026/PSA260626 (in-window IC3 PSA search) → primary: IC3 PSA I-062626-PSA → corroborating: THN June 27 article"
+    summary: |
+      FBI and CISA issued updated PSA I-062626-PSA on June 26, 2026 (updating the March 20, 2026 PSA I-032026-PSA), warning that Russian Intelligence Services (RIS) — tracked publicly as UNC5792 and UNC4221, linked to FSB — have evolved their commercial messaging application (CMA) phishing campaign. The new tactic now specifically attempts to elicit Signal Backup Recovery Keys in addition to previously-seen verification codes and account PINs. The attack chain: (1) Attacker impersonates official Signal support via in-app phishing messages; (2) Victim is directed to back up their Signal messages (Figure 1); (3) Victim is then manipulated into disclosing the Backup Recovery Key (Figure 2). If the key is obtained, the actor can decrypt and view all historical private and group message history, and take over the account. Critically: the compromised key remains valid even if the victim creates a new account with the same phone number — persistence survives re-registration. Key remains valid until manually regenerated from Settings. Targets: current/former US and international government officials, military personnel, political figures, journalists, and Ukraine-related officials. Attack technique class: T1566 Phishing (social engineering in-app), T1621 Multi-Factor Authentication Request Generation (abuse of backup mechanism). Detection: no technical IOCs available (social engineering vector). Hardening: disable or rotate Signal Backup Recovery Key immediately; configure PIN-based Signal registration lock; review in-app support message legitimacy; train high-value personnel to never share Signal backup keys.
+    ch_eu_nexus: "direct — EU government officials, military, and NATO/Ukraine-related personnel are named as target classes; Swiss public-sector staff in relevant roles are a target category"
+    public_sector_nexus: "direct"
+    sector: "government, defense, intelligence, journalism"
+    cves: []
+    actors_campaigns_malware: ["UNC5792", "UNC4221", "FSB", "Russian Intelligence Services (RIS)"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "RIS cyber threat actors continue to masquerade as automated CMA support accounts in updated phishing messages but have evolved their tactics to attempt to elicit victims' Backup Recovery Keys."
+        attribution: "IC3 (FBI/CISA)"
+        source_url: "https://www.ic3.gov/PSA/2026/PSA260626"
+      - quote: "If a victim inadvertently shares their Backup Recovery Key, that same key remains valid even if they create a new account following the compromise using the same phone number."
+        attribution: "IC3 (FBI/CISA)"
+        source_url: "https://www.ic3.gov/PSA/2026/PSA260626"
+    extended_notes: |
+      This is an UPDATE to the March 20, 2026 PSA (I-032026-PSA) but the new tactic (Backup Recovery Key phishing) is materially different from the verification-code phishing previously covered. The Backup Recovery Key gives persistent read-access to all historical messages independently of account takeover — making it uniquely valuable for intelligence collection even without sustained access. The IC3 advisory also notes the key remains valid even when a new account is registered on the same number, which makes key rotation (generating a new key in Settings) a critical remediation step. This directly concerns Swiss/EU public-sector Signal users.
+
+  - title: "DirtyClone (CVE-2026-43503): New Linux kernel LPE variant exploits XFRM/IPsec skb cloning path in DirtyFrag family"
+    sources:
+      - url: "https://research.jfrog.com/post/dissecting-and-exploiting-linux-lpe-variant-dirtyclone-cve-2026-43503/"
+        publisher: "JFrog Security Research"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/new-dirtyclone-linux-kernel-flaw-lets.html"
+        publisher: "The Hacker News"
+        date: "2026-06-26"
+        role: "corroborating"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2077"
+        publisher: "BSI (Bundesamt für Sicherheit in der Informationstechnik)"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('CVE-2026-43503 DirtyClone Linux kernel JFrog June 2026') → pivot: JFrog Security Research primary at https://research.jfrog.com/post/dissecting-and-exploiting-linux-lpe-variant-dirtyclone-cve-2026-43503/ → corroborating: THN June 26 → BSI WID-SEC-2026-2077 June 26"
+    summary: |
+      JFrog Security Research published a full exploit walkthrough on June 25, 2026 for CVE-2026-43503, a high-severity (CVSS 8.8) Local Privilege Escalation (LPE) flaw in the Linux kernel. DirtyClone is a variant in the DirtyFrag family — a class of memory corruption vulnerabilities where the kernel's networking stack fails to distinguish between file-backed page cache memory and mutable socket buffer (skb) memory when processing packets through cryptographic subsystems. The specific path for DirtyClone is the __pskb_copy_fclone helper in the XFRM/IPsec subsystem, which drops the SKBFL_SHARED_FRAG flag during skb cloning. Exploit chain: (1) mmap() a privileged binary (e.g., /usr/bin/su) into process address space, loading target pages into the page cache; (2) use vmsplice()/splice() to attach those page-cache pages into an skb without copying; (3) force the kernel to clone the packet via IPsec decryption — the XFRM in-place decryption writes attacker-controlled bytes into the page-cache pages of the target binary; (4) the overwritten binary now executes attacker code with SUID/root privileges. Prerequisites: local user account with CAP_NET_ADMIN capability; unprivileged user namespaces enabled (default on Debian, Ubuntu, Fedora). Attack technique: T1068 Exploitation for Privilege Escalation. Affected kernels: any lacking the full DirtyFrag fix chain (CVE-2026-43284, CVE-2026-43500, CVE-2026-46300, and CVE-2026-43503); systems partially patched for earlier variants remain vulnerable. Fixed in Linux v7.1-rc5 (commit 48f6a5356a33, May 21, 2026). Working PoC published by JFrog June 25. BSI flagged June 26 under WID-SEC-2026-2077. Debian, Ubuntu, Fedora patches expected; check vendor security trackers. Workaround until patch: set kernel.unprivileged_userns_clone=0 or blacklist esp4/esp6/rxrpc kernel modules. Detection: no kernel audit log entries or traces produced; behavioral: monitor for vmsplice()+splice() chains near XFRM-capable processes, unexpected SUID binary execution from non-root users (Sysmon EID 1 equivalent on Linux — auditd syscall rules for vmsplice+splice sequences, or EDR telemetry for spliced-fd-to-socket patterns preceding unexpected privilege escalation). Highest risk: containerized environments and Kubernetes with user namespaces enabled.
+    ch_eu_nexus: "direct — affects all mainstream Linux distributions used in EU/Swiss public sector infrastructure; Debian and Ubuntu are widespread in Swiss federal IT"
+    public_sector_nexus: "direct"
+    sector: "all Linux-based infrastructure, cloud, public sector, energy, telco"
+    cves: ["CVE-2026-43503", "CVE-2026-43284", "CVE-2026-43500", "CVE-2026-46300"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-43503 is a high-severity (8.8 CVSS) Local Privilege Escalation (LPE) flaw. The severity of this issue is significant because it allows any unprivileged local user to gain root access (LPE) by manipulating the Linux page cache. The attack is silent, leaves no kernel logs or audit traces, and bypasses common on-disk integrity monitoring tools."
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/dissecting-and-exploiting-linux-lpe-variant-dirtyclone-cve-2026-43503/"
+      - quote: "The attack is confirmed to work on popular distributions where unprivileged user namespaces are enabled, including Debian, Ubuntu, and Fedora"
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/dissecting-and-exploiting-linux-lpe-variant-dirtyclone-cve-2026-43503/"
+
+  - title: "PowerDNS security releases: 14 CVEs across Authoritative Server, Recursor, and DNSdist (June 25 2026)"
+    sources:
+      - url: "https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor/"
+        publisher: "PowerDNS Blog"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://blog.powerdns.com/2026/06/25/powerdns-dnsdist-1.9.15-and-2.0.7-released-security-release/"
+        publisher: "PowerDNS Blog"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2091"
+        publisher: "BSI"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge feed https://blog.powerdns.com/rss.xml → PowerDNS advisory 2026-08 and DNSdist release note June 25 → pivot: BSI WID-SEC-2026-2091 June 26 corroboration"
+    summary: |
+      PowerDNS released coordinated security updates on June 25, 2026 for all three of its main product lines, addressing 14 CVEs total. The releases are: Authoritative Server 4.9.16/5.0.6/5.1.2, Recursor 5.2.11/5.3.8/5.4.3, and DNSdist 1.9.15/2.0.7. Key CVE classes include DNS cache manipulation, DNSSEC validation bypass, denial-of-service, and information disclosure. PowerDNS Recursor advisory 2026-08 (CVE-2026-33612, CVE-2026-40011, CVE-2026-40012) covers cache manipulation and DNSSEC integrity bugs at varying severity levels. DNSdist advisories cover DoS and backend abuse scenarios (CVE-2026-42004, CVE-2026-42005, CVE-2026-40208 through CVE-2026-40211). Authoritative Server advisories cover CVE-2026-42387 through CVE-2026-42390 and CVE-2026-52690. The impact of DNS cache manipulation flaws (T1584.002 DNS Server infrastructure compromise class, T1565.002 Transmitted Data Manipulation) is particularly relevant for DNS operators: attackers with network-path access can inject malicious records affecting downstream resolvers. DNSSEC bypass flaws could allow forged DNS responses to bypass signature validation. PowerDNS is widely deployed across European ISPs, telecom operators, and DNS infrastructure providers; DENIC (German ccTLD operator) and SURFnet (Dutch academic network) are known users. BSI flagged WID-SEC-2026-2091 on June 26. Patches are available — update to fixed versions. Detection: monitor DNS audit logs for anomalous NXDOMAIN-to-valid response flips; enable DNSSEC strict validation mode on resolvers; review DNSdist backend access controls.
+    ch_eu_nexus: "direct — PowerDNS is deployed in European DNS infrastructure operators including ISPs, telecom carriers, and ccTLD registries"
+    public_sector_nexus: "indirect"
+    sector: "telco, DNS infrastructure, ISP, public sector"
+    cves: ["CVE-2026-33612", "CVE-2026-40011", "CVE-2026-40012", "CVE-2026-42004", "CVE-2026-42005", "CVE-2026-40208", "CVE-2026-40209", "CVE-2026-40210", "CVE-2026-40211", "CVE-2026-42387", "CVE-2026-42388", "CVE-2026-42389", "CVE-2026-42390", "CVE-2026-52690"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "PowerDNS: Mehrere Schwachstellen in PowerDNS ausnutzen, um Denial-of-Service-Zustände herbeizuführen, DNS-Caches zu manipulieren, Sicherheitsprüfungen zu umgehen, vertrauliche Informationen offenzulegen, DNSSEC-Validierungen zu beeinträchtigen oder die Integrität und Verfügbarkeit der DNS-Auflösung zu beeinflussen."
+        attribution: "BSI WID-SEC-2026-2091"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2091"
+
+  - title: "GitLab CE/EE 19.1.1/19.0.3/18.11.6 security release patches 13 CVEs including unauthenticated XSS in Web IDE and high-severity analytics XSS (EE)"
+    sources:
+      - url: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+        publisher: "SecurityWeek"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211"
+        publisher: "NCSC-NL"
+        date: "2026-06-25"
+        role: "corroborating"
+      - url: "https://docs.gitlab.com/releases/patches/patch-release-gitlab-19-1-1-released/"
+        publisher: "GitLab"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl recent listing, NCSC-2026-0211 published June 25 → ncsc-nl csaf NCSC-2026-0211 yielded 13 CVEs → pivot: SecurityWeek June 25 article corroborating → docs.gitlab.com release notes for exact versions"
+    summary: |
+      GitLab released security updates on June 25, 2026 for versions 19.1.1, 19.0.3, and 18.11.6 addressing 13 CVEs. The three highest-severity issues are: CVE-2026-10712 (CVSS 8.0) — unauthenticated XSS in the Web IDE workbench asset handler, exploitable against any GitLab user who visits a crafted URL; CVE-2026-10086 (CVSS 8.7) — high-severity stored XSS in the Analytics Dashboard, Enterprise Edition only; CVE-2026-12053 (CVSS 8.6) — information disclosure in Duo Workflows that could expose AI workflow data to unauthorized parties. Additional CVEs cover lower-severity XSS, privilege escalation, CSRF, and access-control bypass issues across both CE and EE versions. GitLab CE/EE is widely deployed in EU public-sector organisations for source code management and CI/CD pipelines. Attack technique for XSS flaws: T1059.007 JavaScript execution, T1185 Man in the Browser. The Web IDE XSS (CVE-2026-10712) is notable because it is unauthenticated — any browser that loads the crafted Web IDE URL executes attacker JavaScript. This could be leveraged to steal session tokens from logged-in GitLab users visiting crafted issue/MR comments. Affected versions: 19.1.0 and earlier (CE/EE), 19.0.2 and earlier, 18.11.5 and earlier. Patched: 19.1.1, 19.0.3, 18.11.6. GitLab.com SaaS updated automatically. Self-managed installations must update manually. Detection: web server / application logs for unexpected requests to Web IDE asset handler endpoints; CSP violation reports for unexpected script execution origins. Hardening: update to patched versions immediately; review Analytics Dashboard access permissions in EE deployments; disable Duo Workflows feature if unused.
+    ch_eu_nexus: "direct — GitLab CE/EE widely deployed in EU/Swiss public sector DevOps environments"
+    public_sector_nexus: "direct"
+    sector: "government, IT, software development"
+    cves: ["CVE-2026-10712", "CVE-2026-10086", "CVE-2026-12053", "CVE-2026-5796", "CVE-2026-5952", "CVE-2026-11379", "CVE-2026-0934", "CVE-2026-1606", "CVE-2026-3176", "CVE-2026-8330", "CVE-2026-2238", "CVE-2026-12635", "CVE-2026-5309"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab CE/EE security updates resolve 13 vulnerabilities, including high-severity code execution and information disclosure bugs."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+      - quote: "CVE-2026-10712 CVSS:8.0 / CVE-2026-10086 CVSS:8.7 / CVE-2026-12053 CVSS:8.6"
+        attribution: "NCSC-NL CSAF NCSC-2026-0211"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211"
+
+  - title: "Cisco Catalyst SD-WAN zero-day chain (CVE-2026-20127/20182/20245): Mandiant documents full exploitation TTP chain including CSV-injection-to-root backdoor"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+        publisher: "Google Mandiant (GTIG)"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://security-hub.ncsc.admin.ch/#/posts/12579"
+        publisher: "NCSC-CH Security Hub"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-csh recent 10, post 12579 updated June 25 with Mandiant report link → pivot: bridge url https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager → primary: Google Mandiant GTIG June 24 2026"
+    summary: |
+      Google Mandiant (GTIG) published a detailed threat-intelligence report on June 24, 2026 documenting observed exploitation of the Cisco Catalyst SD-WAN zero-day chain. While CVE-2026-20182 (authentication bypass) and CVE-2026-20127 (peering auth bypass) were previously reported, the Mandiant report is the first public disclosure of the complete multi-stage TTP chain and timeline. The observed activity spans late 2025 to April 2026. Key TTPs: (1) Initial access via CVE-2026-20127/20182 — attacker establishes unauthorized peering connection masquerading as a trusted router, bypassing SD-WAN Manager authentication (T1190); (2) Credential manipulation — attacker changes the default admin account password, then reverts changes to avoid detection; (3) Privilege escalation via CVE-2026-20245 — malicious CSV file `evil_tenant.csv` uploaded via the `request tenant-upload` CLI command, containing OS shell commands in tenant fields; the CSV processing path executes those commands without sanitisation (T1068 Exploitation for Privilege Escalation, T1059.004 Unix Shell); (4) Backdoor persistence — shell commands add a `troot` user with root privileges to /etc/passwd and /etc/shadow; (5) Anti-forensics — systematic deletion of uploaded file and restoration of modified configurations. Mandiant observed activity at a service provider victim. Prerequisites: network access to SD-WAN Manager control connection peering interfaces. Patched in the May 14, 2026 advisory. The NCSC-CH Security Hub updated post 12579 on June 25 to add the Mandiant report. This report adds significant operational hunt value: defenders should search for `evil_tenant.csv` artefacts and unexpected user additions to /etc/passwd on SD-WAN Manager instances, unexpected peering connections, and audit `request tenant-upload` execution logs.
+    ch_eu_nexus: "direct — Cisco Catalyst SD-WAN is deployed in Swiss and EU enterprise/telecom networks; NCSC-CH flagged this"
+    public_sector_nexus: "indirect"
+    sector: "telco, enterprise, critical infrastructure"
+    cves: ["CVE-2026-20127", "CVE-2026-20182", "CVE-2026-20245"]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-06-18"
+    evidence:
+      - quote: "In a report published on June 24th 2026, Google Mandiant observed malicious activity related to CVE-2026-20127 and CVE-2026-20182 leading to authentication bypass and the exploitation of CVE-2026-20245 to escalate privileges. Activity was observed from late 2025 to January 2026 and March 2026."
+        attribution: "NCSC-CH Security Hub post 12579"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12579"
+      - quote: "The threat actor uploaded evil_tenant.csv containing shell commands that backed up original configuration and system files, appended malicious troot user to /etc/passwd and /etc/shadow, enabled root-level access while maintaining operational security."
+        attribution: "Google Mandiant (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/zero-day-exploitation-cisco-catalyst-sd-wan-manager"
+
+  - title: "The Gentlemen ransomware: 478 confirmed victims, worm spread capability, Germany and Switzerland most-targeted European countries"
+    sources:
+      - url: "https://www.inside-it.ch/aufstrebende-ransomware-bande-findet-mehr-schweizer-opfer-20260626"
+        publisher: "inside-it.ch"
+        date: "2026-06-26"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+        publisher: "The Hacker News"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge feed https://www.inside-it.ch/rss.xml, item published June 26 → bridge url article body returned 403 → summary obtained from RSS feed → pivot: THN June 26 for full technical detail → corroborating Check Point Research data"
+    summary: |
+      Fresh reporting on June 26, 2026 by inside-it.ch (German-language Swiss tech press) and The Hacker News covers significant escalation in The Gentlemen ransomware group's Swiss and German targeting, with updated victim counts and technical detail not present in the W25 weekly brief coverage of the EDR-killing GentleKiller framework. The group now claims 478 confirmed victims since becoming operational in early 2026. Germany is the most heavily targeted European country; Switzerland is second. The ransomware includes a `--spread` command-line argument enabling self-propagating worm behaviour across Windows networks via SMB share enumeration and credential reuse (T1021.002 SMB/Windows Admin Shares, T1210 Exploitation of Remote Services). The worm capability means a single foothold in a Swiss federal or cantonal organisation could spread laterally without further operator interaction. Previously reported: the GentleKiller framework uses BYOVD (Bring Your Own Vulnerable Driver) techniques to disable EDR products (T1562.001) before payload deployment. New in this reporting: specific Swiss victim names not disclosed, but inside-it.ch cites Check Point Research as the source for the Swiss-targeting data. The RaaS model means the group continues to expand affiliate operations. Detection: monitor for `--spread` flag process arguments on ransomware process trees; SMB share enumeration from unexpected hosts; BYOVD driver drop patterns (Sysmon EID 6 for vulnerable driver loads, cross-referenced against known BYOVD driver blocklists). Hardening: enforce SMB signing; restrict admin shares; apply Microsoft-recommended BYOVD driver blocklist.
+    ch_eu_nexus: "direct — Switzerland specifically named as second-most-targeted European country; Swiss victims reported by inside-it.ch citing Check Point Research"
+    public_sector_nexus: "indirect"
+    sector: "all sectors, ransomware"
+    cves: []
+    actors_campaigns_malware: ["The Gentlemen", "GentleKiller"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-to-prior:2026-W25"
+    evidence:
+      - quote: "The Gentlemen Ransomware Claims 478 Victims, Can Spread Like a Worm"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/the-gentlemen-ransomware-claims-478.html"
+      - quote: "Aufstrebende Ransomware-Bande findet mehr Schweizer Opfer"
+        attribution: "inside-it.ch (Swiss tech press)"
+        source_url: "https://www.inside-it.ch/aufstrebende-ransomware-bande-findet-mehr-schweizer-opfer-20260626"
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Most recent post is June 19; June 25 Cisco SD-WAN update (post 12579) was the only in-window edit. No new post in the June 25-27 window. NCSC-CH Week 26 review not yet published as of run start."
+  - source_id: cert-eu
+    reason: "Most recent advisory is 2026-008 from June 10; no new CERT-EU advisory in the 36-hour window."
+  - source_id: cert-fr
+    reason: "cert-fr actu-recent returned only 2025 bulletins (Oct-Nov 2025). No in-window CERTFR content found. Not a fetch failure — feed working but empty in window."
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed returned IncompleteRead error. Mandiant report obtained via direct bridge url on the specific article."
+
+candidate_sources: []
