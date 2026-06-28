@@ -1,0 +1,251 @@
+# work/2026-06-28-1b30612a/findings.S2.yaml
+domain: S2
+run_id: 2026-06-28-1b30612a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-28T04:05:43Z
+ended_at: 2026-06-28T04:14:47Z
+duration_seconds: 544
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 9
+  bridge_fetches: 14
+
+items:
+  - title: "PowerDNS Recursor and DNSdist security releases patch DNS cache poisoning and DNSSEC bypass (CVE-2026-3361, CVE-2026-42390)"
+    sources:
+      - url: "https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor"
+        publisher: "PowerDNS Blog"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://doc.powerdns.com/recursor/security-advisories/powerdns-advisory-2026-08.html"
+        publisher: "PowerDNS Documentation"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2091"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "BSI RSS → WID-SEC-2026-2091 listed June 26 → BSI CSAF fetched → PowerDNS blog primary → PowerDNS advisory doc fetched for full CVE detail"
+    summary: |
+      PowerDNS released security advisory 2026-08 on June 25 for Recursor, patching multiple DNS resolver
+      vulnerabilities affecting deployments across European ISP, telco, and government infrastructure. The
+      most critical flaw is CVE-2026-3361 (CVSS 7.5): a ZoneToCache mechanism flaw allowing DNS cache
+      poisoning — an attacker who can inject malicious zone transfers via IXFR/AXFR can manipulate cached
+      DNS responses to redirect queries. CVE-2026-42390 (CVSS 6.5) enables ZONEMD validation bypass,
+      allowing forged zone data to pass integrity checks. CVE-2026-52690 (CVSS 5.9) affects resolvers
+      communicating with non-EDNS servers, enabling spoofed answer injection. CVE-2026-42387 (CVSS 5.9)
+      crashes Recursor during ZoneToCache RRSIG validation. Additional medium-severity flaws affect ECS
+      handling, the internal webserver, and catalog zone processing. DNSdist 2026-09 simultaneously patched
+      CVE-2026-40211, CVE-2026-42005, CVE-2026-40011, and CVE-2026-42004 in its TCP/DoT/DoH listeners.
+      Affected versions: Recursor < 5.2.11, < 5.3.8, < 5.4.3; DNSdist < 1.9.15, < 2.0.7. No exploitation
+      in the wild or public PoCs reported. Patched versions: Recursor 5.2.11, 5.3.8, 5.4.3; DNSdist 1.9.15, 2.0.7.
+      Detection focus: monitor for unexpected IXFR/AXFR responses from non-authoritative sources; review
+      Recursor zone-cache configuration (rec_control command output); correlate DNS resolution anomalies
+      against SIEM for cache-poisoning indicators. Hardening: restrict ZoneToCache to trusted zone sources;
+      enforce DNSSEC validation with NSEC3 opt-out awareness; upgrade before enabling catalog zone features.
+    ch_eu_nexus: "CH/EU-direct: PowerDNS Recursor is widely deployed in European ISP, university, and government DNS resolvers; Dutch origin (Open-Xchange/PowerDNS); Debian DSA-6367/6369 issued June 26 covering Debian stable/oldstable distributions"
+    public_sector_nexus: "direct — Recursor and DNSdist are common in Swiss cantonal and federal DNS infrastructure, EU member-state government resolvers"
+    sector: "telco, public-sector, education"
+    cves:
+      - CVE-2026-3361
+      - CVE-2026-42390
+      - CVE-2026-52690
+      - CVE-2026-42387
+      - CVE-2026-40211
+      - CVE-2026-42005
+      - CVE-2026-40011
+      - CVE-2026-42004
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ZoneToCache can be abused to poison the cache by injecting malicious IXFR or AXFR responses"
+        attribution: "PowerDNS Blog"
+        source_url: "https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor"
+      - quote: "CVE-2026-42390: ZONEMD validation bypass allowing zone integrity check circumvention"
+        attribution: "PowerDNS Documentation"
+        source_url: "https://doc.powerdns.com/recursor/security-advisories/powerdns-advisory-2026-08.html"
+    extended_notes: |
+      Detection and hunt: query Recursor rec_control `get-zone-to-cache-info` to audit active zone-cache
+      entries; suspicious entries pointing to external or unexpected sources are direct indicators.
+      For DNSdist: check for unexpected TCP connection handling anomalies or crashes in logs.
+      Debian systems: `apt-get install pdns-recursor` will pull the patched version via DSA-6367/6369.
+      MITRE ATT&CK: T1584.002 (Compromise Infrastructure: DNS Server), T1071.004 (Application Layer Protocol: DNS).
+
+  - title: "GitLab CE/EE 19.1.1 / 19.0.3 / 18.11.6 patches three high-severity XSS and information disclosure vulnerabilities"
+    sources:
+      - url: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+        publisher: "SecurityWeek"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+        publisher: "GitHub Security Advisory Database"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "NCSC-NL recent listing → NCSC-2026-0211 (June 25) → NCSC-NL CSAF fetched → SecurityWeek article fetched for full CVE details → GitHub GHSA fetched for Keycloak corroboration (same source chain found GitLab and Keycloak)"
+    summary: |
+      GitLab released critical security patches on June 24-25 covering 13 vulnerabilities across CE and EE
+      editions. Three high-severity flaws require immediate attention for self-managed deployments.
+      CVE-2026-10712 (High): Stored XSS in Web IDE Workbench allows an unauthenticated attacker to craft
+      a malicious project or file that executes arbitrary JavaScript in the victim browser when a developer
+      opens the IDE — no authentication required on the attacker side. CVE-2026-10086 (High): Stored XSS
+      in the Analytics Dashboard (EE-only) requires an authenticated Developer-role user to inject scripts
+      that execute in other users' sessions. CVE-2026-12053 (High): Duo Workflows insufficient output
+      filtering discloses sensitive information from AI workflow processing. CVE-2026-11379 (Medium): DAST
+      site profile secrets exfiltration by a Developer-role user. GitLab.com already patched; self-managed
+      instances must upgrade to 19.1.1, 19.0.3, or 18.11.6 immediately. No public PoCs; no exploitation
+      in the wild confirmed. Detection: audit Sysmon EID 1 for gitlab-ctl or gitlab-rake spawns by
+      web-server parent processes; web-server access logs for unexpected POST to /ide/ or /-/analytics/
+      endpoints with script content; correlate Content-Security-Policy violation reports against SIEM.
+      Hardening: upgrade to patched version; restrict Developer role assignment; disable Duo AI Workflows
+      if not in use; enforce Content-Security-Policy headers.
+    ch_eu_nexus: "CH/EU-direct: GitLab CE/EE self-managed heavily deployed by Swiss cantons, EU government agencies, European universities, and national research networks (SWITCH, RENATER); NCSC-NL issued NCSC-2026-0211 June 25; CCB Belgium advisory issued"
+    public_sector_nexus: "direct — GitLab self-managed is standard DevOps platform in CH/EU public-sector software factories"
+    sector: "public-sector, education, technology"
+    cves:
+      - CVE-2026-10712
+      - CVE-2026-10086
+      - CVE-2026-12053
+      - CVE-2026-11379
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GitLab has patched three high-severity vulnerabilities including stored XSS in Web IDE Workbench allowing unauthenticated JavaScript execution"
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+    extended_notes: |
+      MITRE ATT&CK: CVE-2026-10712 maps to T1059.007 (JavaScript), T1185 (Browser Session Hijacking);
+      CVE-2026-12053 maps to T1552.001 (Credentials in Files — AI workflow secrets).
+      Web IDE XSS is particularly dangerous in DevOps environments: a compromised developer session can
+      yield CI/CD pipeline secrets, repository signing keys, and deployment credentials.
+      NCSC-NL CSAF advisory: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0211
+
+  - title: "Keycloak JWT Algorithm Confusion (CVE-2026-11800) allows federated identity impersonation; multiple critical IAM vulnerabilities patched"
+    sources:
+      - url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+        publisher: "GitHub Security Advisory Database"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2093"
+        publisher: "BSI CERT-Bund"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "BSI RSS → WID-SEC-2026-2093 listed June 26 → BSI CSAF fetched → GitHub GHSA-gqj5-2xp5-3qmp fetched for primary CVE detail → BSI advisory confirmed multi-CVE scope"
+    summary: |
+      Red Hat and the Keycloak project patched multiple critical vulnerabilities in Keycloak 26.4.12 and
+      26.6.2 (released June 25), addressing flaws in the dominant open-source IAM/SSO platform used by
+      European public-sector deployments. The most severe is CVE-2026-11800 (CVSS 8.1, CWE-347 Improper
+      Verification of Cryptographic Signature): a JWT Algorithm Confusion attack where an attacker with
+      valid client credentials can forge SAML or OIDC assertions by substituting the algorithm field in
+      the JWT header, bypassing RSA signature verification. Prerequisites: valid (possibly low-privilege)
+      client credentials or a registered OAuth client; this allows impersonation of any federated user
+      including administrators. CVE-2026-37982: WebAuthn token replay attack — authentication tokens can
+      be replayed beyond their intended use window due to missing nonce uniqueness enforcement, enabling
+      authentication bypass for WebAuthn/FIDO2 configured realms. CVE-2026-9086: Stored XSS via
+      case-insensitive URI validation bypass in the Admin Console. Additional flaws in OIDC/SAML handling
+      (CVE-2026-9083, CVE-2026-9099, CVE-2026-9705, CVE-2026-9799, CVE-2026-9800). Red Hat RHSA-2026:30083
+      and RHSA-2026:30084 issued for Red Hat Build of Keycloak (RHBK). Self-managed Keycloak instances
+      need immediate upgrade to 26.4.12 or 26.6.2. Detection: correlate identity-provider audit log events
+      for token issuance with algorithm=HS256 on RSA-configured realms (T1134.001); monitor for unexpected
+      admin-role token grants (EID 4648 equivalent in Keycloak event log); alert on WebAuthn assertions
+      without unique challenge binding. Hardening: disable symmetric-algorithm JWT processing on asymmetric-key
+      realms; enforce algorithm allowlists in realm OIDC settings; upgrade before enabling WebAuthn/FIDO2.
+    ch_eu_nexus: "CH/EU-direct: Keycloak is the dominant open-source IAM/SSO for EU public-sector, used in Swiss cantonal IT, EU Agency identity federations, NIS2-governed entities. Red Hat RHBK commercial build widely deployed. BSI issued WID-SEC-2026-2093 June 26."
+    public_sector_nexus: "direct — Keycloak underpins identity federation for Swiss and EU government eID, internal portals, and inter-agency SSO"
+    sector: "public-sector, identity-providers, healthcare, finance"
+    cves:
+      - CVE-2026-11800
+      - CVE-2026-37982
+      - CVE-2026-9086
+      - CVE-2026-9083
+      - CVE-2026-9099
+      - CVE-2026-9705
+      - CVE-2026-9799
+      - CVE-2026-9800
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-11800: JWT Algorithm Confusion allows an attacker with valid client credentials to forge assertions and impersonate any federated user"
+        attribution: "GitHub Security Advisory Database"
+        source_url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+      - quote: "CVSS 8.1 (HIGH) — CWE-347 Improper Verification of Cryptographic Signature"
+        attribution: "GitHub Security Advisory Database"
+        source_url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+    extended_notes: |
+      MITRE ATT&CK: CVE-2026-11800 maps to T1134.001 (Access Token Manipulation: Token Impersonation/Theft),
+      T1550.001 (Use Alternate Authentication Material: Application Access Token), T1556.006 (Modify Authentication
+      Process: MFA Manipulation for WebAuthn replay).
+      JWT algorithm confusion is a well-documented attack class; defenders should audit Keycloak realm
+      configurations for OIDC clients using RS256/ES256 to ensure the `algorithm` field cannot be downgraded
+      to HS256 by client-side manipulation. The alg=none bypass variant is also worth testing.
+      Keycloak audit event types to watch: LOGIN_ERROR with INVALID_SIGNATURE, CLIENT_REGISTER with
+      unexpected algorithms, ADMIN_INITIATED_ACTION for unexpected account manipulation following auth.
+      Red Hat RHSA references: https://access.redhat.com/errata/RHSA-2026:30083
+
+cve_table:
+  - cve: CVE-2026-3361
+    product: "PowerDNS Recursor < 5.2.11 / 5.3.8 / 5.4.3"
+    cvss: "7.5"
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "Recursor 5.2.11, 5.3.8, 5.4.3"
+    source: "https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor"
+  - cve: CVE-2026-42390
+    product: "PowerDNS Recursor < 5.2.11 / 5.3.8 / 5.4.3"
+    cvss: "6.5"
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "Recursor 5.2.11, 5.3.8, 5.4.3"
+    source: "https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor"
+  - cve: CVE-2026-10712
+    product: "GitLab CE/EE < 19.1.1 / 19.0.3 / 18.11.6"
+    cvss: "High"
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "GitLab CE/EE 19.1.1, 19.0.3, 18.11.6"
+    source: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+  - cve: CVE-2026-10086
+    product: "GitLab EE < 19.1.1 / 19.0.3 / 18.11.6"
+    cvss: "High"
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "GitLab CE/EE 19.1.1, 19.0.3, 18.11.6"
+    source: "https://www.securityweek.com/gitlab-patches-code-execution-information-disclosure-vulnerabilities/"
+  - cve: CVE-2026-11800
+    product: "Keycloak < 26.4.12 / 26.6.2"
+    cvss: "8.1"
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "Keycloak 26.4.12, 26.6.2"
+    source: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+  - cve: CVE-2026-37982
+    product: "Keycloak < 26.4.12 / 26.6.2"
+    cvss: ""
+    epss: ""
+    kev: false
+    exploited: false
+    patch: "Keycloak 26.4.12, 26.6.2"
+    source: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "NCSC-CH Week 26 Wochenrückblick returned HTTP 404 — report not yet published for current week. None of 15 recent posts fell within the 36-hour window (latest was June 9, 2026)."
+  - source_id: cert-fr
+    reason: "cert-fr actu-recent returned only 2025 items (Oct-Dec 2025); cert-fr avis-recent latest was June 18-19, both outside 36-hour window."
+  - source_id: cert-eu
+    reason: "Latest CERT-EU advisory from June 10, 2026 — outside 36-hour window. No in-window items."
+  - source_id: enisa
+    reason: "ENISA EUVD recent criticals/exploited returned no CH/EU-specific items within window that were not already covered (S1 domain items)."

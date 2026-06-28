@@ -1,0 +1,381 @@
+domain: S1
+run_id: 2026-06-28-1b30612a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-28T04:05:35Z
+ended_at: 2026-06-28T04:12:58Z
+duration_seconds: 443
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 9
+
+items:
+  - title: "Ubiquiti UniFi OS triple-CVE exploitation chain: unauthenticated RCE + root (CVE-2026-34908, CVE-2026-34909, CVE-2026-34910)"
+    sources:
+      - url: "https://securityweek.com/ubiquiti-unifi-os-vulnerabilities-exploited-in-the-wild/"
+        publisher: "SecurityWeek"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV"
+        date: "2026-06-23"
+        role: "primary"
+      - url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-31384"
+        publisher: "ENISA EUVD"
+        date: "2026-06-24"
+        role: "corroborating"
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → KEV entries CVE-2026-34908/34909/34910 added 2026-06-23 → pivot: SecurityWeek, URL https://securityweek.com/ubiquiti-unifi-os-vulnerabilities-exploited-in-the-wild/ → corroborating: ENISA EUVD EUVD-2026-31384, exploitedSince 2026-06-23"
+    summary: |
+      Three Ubiquiti UniFi OS vulnerabilities — CVE-2026-34909 (CVSS 10.0, path traversal, CWE-22),
+      CVE-2026-34910 (improper input validation / command injection, CWE-20), and CVE-2026-34908
+      (improper access control, CWE-284) — are being chained in the wild for unauthenticated root
+      access on UniFi OS-based network appliances (routers, switches, gateways, access points).
+      All three flaws require no authentication and are reachable from the network. Bishop Fox
+      publicly demonstrated the three-CVE RCE-to-root chain. Field reports include rogue admin
+      accounts being silently created on managed networks. CISA added all three to KEV on June 23
+      with a BOD 26-04 federal remediation deadline of June 26 (already passed). Patch is UniFi OS
+      Server 5.0.8 (released May 21, 2026). Organizations running UniFi network management
+      infrastructure in public-sector or mixed enterprise environments should treat this as
+      immediate-action priority — the attack surface includes all UniFi-managed appliances that
+      expose the UniFi OS web UI or management plane.
+    ch_eu_nexus: "global; UniFi OS devices widespread in Swiss and European SMB, ISP, education, and municipal networks"
+    public_sector_nexus: "direct — UniFi OS is deployed in smaller-agency and municipal public-sector networks"
+    sector: "telco, education, public-sector, SMB"
+    cves:
+      - CVE-2026-34908
+      - CVE-2026-34909
+      - CVE-2026-34910
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA added CVE-2026-34908, CVE-2026-34909, and CVE-2026-34910 to its Known Exploited Vulnerabilities Catalog"
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "Bishop Fox demonstrated a chained exploit for all three CVEs achieving unauthenticated remote code execution with root privileges"
+        attribution: "SecurityWeek"
+        source_url: "https://securityweek.com/ubiquiti-unifi-os-vulnerabilities-exploited-in-the-wild/"
+      - quote: "exploitedSince: 2026-06-23; CVSS 10.0 path traversal (CVE-2026-34909)"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-31384"
+    extended_notes: |
+      Technique class: T1190 Exploit Public-Facing Application (path traversal + command injection
+      chain) → T1068 Exploitation for Privilege Escalation (root via chain). No authentication
+      required — prerequisites are only network access to the UniFi OS management port (TCP 443
+      or 8443). Detection: monitor UniFi OS controller audit logs for unexpected admin account
+      creation events; EDR on Linux-based UniFi OS appliances for unexpected child processes spawned
+      from the web-server process (uhttpd or unifi); network telemetry for unexpected management-
+      plane sessions. Hardening: patch to UniFi OS Server 5.0.8; restrict management plane access
+      to trusted admin VLANs or IP ranges; disable remote management if not required. Affected:
+      UniFi OS Server <= 5.0.7. Patched: 5.0.8.
+    mitre_ttps:
+      - T1190
+      - T1068
+
+  - title: "Gitea act_runner Docker container hardening bypass allows host escape (CVE-2026-58053)"
+    sources:
+      - url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-58053"
+        publisher: "ENISA EUVD"
+        date: "2026-06-28"
+        role: "primary"
+      - url: "https://www.vulncheck.com/advisories/gitea-act-runner-container-hardening-bypass-via-workflow-container-options"
+        publisher: "VulnCheck"
+        date: "2026-06-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: enisa-euvd bridge (recent criticals), URL https://euvd.enisa.europa.eu/ → EUVD-2026-58053 published 2026-06-28, CVSS 9.4 → pivot: VulnCheck advisory URL https://www.vulncheck.com/advisories/gitea-act-runner-container-hardening-bypass-via-workflow-container-options"
+    summary: |
+      CVE-2026-58053 affects Gitea act_runner through version 0.262.0 when configured with the
+      Docker backend. The runner passes the workflow-defined `container.options` string directly
+      to Docker's `HostConfig` for the job container. When `privileged: false` is enforced at the
+      runner level, the code forces only the `Privileged` flag off but merges the full
+      `container.options` string — allowing options such as `--pid=host`, `--cap-add=SYS_PTRACE`,
+      `--security-opt=seccomp:unconfined`, or custom volume mounts to pass through unchanged. Any
+      user with write access to a repository whose workflows run on a Docker-backed Gitea runner
+      can inject these options into workflow YAML and escape to the host with root privileges
+      despite `privileged: false` being set. CVSS 4.0 score is 9.4 (Critical). A public PoC is
+      available at github.com/bikini/exploitarium. Organizations hosting self-service CI/CD on
+      internal Gitea + Docker runners — common in Swiss and European open-source public-sector
+      deployments — are exposed if any untrusted developers or external contributors can trigger
+      workflow runs.
+    ch_eu_nexus: "direct — Gitea is widely deployed as self-hosted Git in Swiss and European public-sector and academic IT"
+    public_sector_nexus: "direct — Gitea + act_runner Docker backend used in Swiss and EU public-sector CI/CD pipelines"
+    sector: "government, education, software-development"
+    cves:
+      - CVE-2026-58053
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "passes workflow container.options string to Docker job container HostConfig; forces only Privileged=false but merges options like --pid=host, --cap-add, --security-opt unchanged"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/gitea-act-runner-container-hardening-bypass-via-workflow-container-options"
+      - quote: "CVSS 4.0 score 9.4; public PoC: github.com/bikini/exploitarium/tree/main/gitea-act-runner-container-options-poc"
+        attribution: "ENISA EUVD"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-58053"
+    extended_notes: |
+      Technique class: T1611 Escape to Host (container hardening bypass via Docker HostConfig
+      injection) → T1068 Exploitation for Privilege Escalation. Prerequisites: write access to a
+      repo whose workflows execute on a Docker-backed Gitea act_runner; the runner must be
+      configured with `privileged: false` (the common hardened setting). The vulnerability is
+      specifically in the act_runner workflow-options-to-Docker-HostConfig merge logic, not in
+      Docker itself. Detection: monitor Docker daemon audit logs for containers launched with
+      unusual HostConfig flags (pid_mode=host, cap_add entries beyond baseline, non-default
+      seccomp profiles); CI/CD workflow YAML diffs in PRs from external contributors for
+      container.options injection. Hardening: upgrade to act_runner 0.263.0 or later when
+      available; strip or allowlist `container.options` at the runner policy layer; use gVisor or
+      similar kernel-isolation runtimes for untrusted CI workloads; require PRs from external
+      contributors to be reviewed before workflow execution (GitHub equivalent: require approval
+      for fork workflows). Affected: act_runner through 0.262.0 with Docker backend. Fix: act_runner
+      >= 0.263.0 (pending vendor release at time of advisory).
+    mitre_ttps:
+      - T1611
+      - T1068
+
+  - title: "Turla (FSB) STOCKSTAY .NET backdoor: new espionage toolkit targeting EU government entities"
+    sources:
+      - url: "https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering/"
+        publisher: "Google Threat Intelligence Group (GTIG)"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://therecord.media/turla-stockstay-backdoor-espionage-europe"
+        publisher: "The Record (Recorded Future)"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: mandiant-gtig feed (Feedburner), URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → STOCKSTAY/Turla item published 2026-06-25 → primary: Google GTIG, URL https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering/ → corroborating: The Record, URL https://therecord.media/turla-stockstay-backdoor-espionage-europe"
+    summary: |
+      Google GTIG published on June 25, 2026 a detailed technical analysis of STOCKSTAY, a modular
+      .NET backdoor attributed with high confidence to Turla (FSB Center 16; also tracked as
+      SUMMIT, Secret Blizzard, VENOMOUS BEAR, UAC-0194). Active since at least December 2022 and
+      continuously developed, STOCKSTAY comprises three cooperating components communicating via
+      WM_COPYDATA IPC: STOCKSTAY.STOCKBROKER (proxy-aware WebSocket tunneler using the
+      websocket-sharp open-source library), STOCKSTAY.STOCKMARKET (orchestrator, 4096-bit RSA key
+      generation, unique infection ID), and STOCKSTAY.STOCKTRADER (14+ command backdoor including
+      file ops, registry read/write/delete, arbitrary process execution, screen capture, archive
+      exfiltration). The C2 server is a Python Tornado WebSocket handler backed by an SQLite3
+      database, hosted on third-party free-tier platforms (Render, Glitch). Configuration is
+      environmentally keyed (hostname/domain hash as decryption password) with time-based execution
+      windows (e.g. Monday-Friday 09:00–18:00). Since April 2025, all strings are obfuscated with
+      K1MORPHER (Squirrel3 PRNG-based, runtime deobfuscation). STOCKSTAY shares K1MORPHER and
+      significant code-level overlaps with KAZUAR, and was observed deployed alongside KAZUAR via
+      Active Directory GPO in a January 2024 Ukraine intrusion. Initial access includes malicious
+      RDP file phishing, WinRAR path-traversal (CVE-2025-8088), decoy documents masquerading as
+      Ukrainian university distance learning portals and Italian Foreign Affairs Ministry materials,
+      and MSI installers hosted on GitHub. Targets are government, military, and foreign affairs
+      organizations in Ukraine, Italy, Netherlands, Poland, and Germany — all EU/EEA states.
+    ch_eu_nexus: "direct — confirmed victims in Italy, Netherlands, Poland, Germany; campaign posture consistent with broader EU government targeting"
+    public_sector_nexus: "direct — government, military, foreign affairs sector targets across EU member states"
+    sector: "government, defense, foreign affairs"
+    cves:
+      - CVE-2025-8088
+    actors_campaigns_malware:
+      - "Turla"
+      - "SUMMIT"
+      - "Secret Blizzard"
+      - "VENOMOUS BEAR"
+      - "UAC-0194"
+      - "STOCKSTAY"
+      - "KAZUAR"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "STOCKSTAY is a .NET-based multi-component backdoor continuously developed and deployed by Turla since at least December 2022. Targets government, military, and foreign affairs entities in Ukraine and Europe (Italy, Netherlands, Poland, Germany)"
+        attribution: "Google GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering/"
+      - quote: "Shares significant code and functional overlaps with KAZUAR; K1MORPHER string obfuscation mechanism observed in both families since April 2025"
+        attribution: "Google GTIG"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering/"
+    extended_notes: |
+      MITRE ATT&CK mapping (GTIG-provided): T1566 Phishing (T1566.002 malicious link via UKR.NET),
+      T1204.002 User Execution (malicious RDP/RAR files), T1190 Exploit Public-Facing Application
+      (CVE-2025-8088 WinRAR path traversal), T1574.014 .NET AppDomainManager injection (early
+      samples), T1547.001 Registry Run Keys (persistence), T1053 Scheduled Task (time-gated
+      execution), T1071.001 C2 over WebSocket/HTTPS, T1573.002 Encrypted Channel (RSA+AES),
+      T1036 Masquerading (stock-market/PDF-viewer/calculator file names), T1027 Obfuscated Files
+      (K1MORPHER), T1083 File and Directory Discovery, T1113 Screen Capture, T1560.001 Archive
+      Collected Data. Detection: hunt for WM_COPYDATA IPC between unsigned .NET assemblies with
+      names matching the ms-lib-math-core / ms-api-wmcpdt / ms-api-win-render naming pattern;
+      Sysmon EID 3 network connections to Render.com / Glitch.me WSS endpoints from Windows
+      processes not associated with user browser activity; Registry autorun entries for
+      MicrosoftUpdateOneDrive.exe or similar Microsoft-masquerading executable names; EDR telemetry
+      for .NET AppDomainManager hijack events (Sysmon EID 7 loading non-signed DLLs from unusual
+      paths). Historical: KAZUAR analysis published by Microsoft June 2026 (covered in prior brief)
+      provides cross-reference material for K1MORPHER detection research.
+    mitre_ttps:
+      - T1566
+      - T1566.002
+      - T1204.002
+      - T1190
+      - T1574.014
+      - T1547.001
+      - T1053
+      - T1071.001
+      - T1573.002
+      - T1036
+      - T1027
+      - T1083
+      - T1113
+      - T1560.001
+
+  - title: "libssh2 out-of-bounds write with public PoC (CVE-2026-55200) — affects SSH client libraries in embedded and server stacks"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0210"
+        publisher: "NCSC-NL (NCSC-2026-0210)"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-r8mh-x5qv-7gg2"
+        publisher: "GitHub Advisory Database"
+        date: "2026-06-23"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl recent bridge → NCSC-2026-0210 updated 2026-06-24 with public PoC note → primary: NCSC-NL CSAF NCSC-2026-0210 (fetched via ncsc-nl csaf subcommand) → corroborating: GitHub GHSA-r8mh-x5qv-7gg2"
+    summary: |
+      CVE-2026-55200 is a heap out-of-bounds write in libssh2's `ssh2_transport_read()` function
+      (CWE-680: Integer Overflow to Buffer Overflow). The `packet_length` field in SSH transport
+      packets is not bounds-checked before memory allocation; a malicious SSH server can send a
+      crafted packet length value to trigger the write, causing heap corruption that can lead to
+      denial of service or, in environments without ASLR, potential remote code execution. Affects
+      all implementations using libssh2 <= 1.11.1. NCSC-NL updated advisory NCSC-2026-0210 on
+      June 24 to note that a public PoC has appeared (at github.com/bikini/exploitarium) confirming
+      code execution under specific conditions. The companion flaw CVE-2026-55199 (CVSS 8.2, CWE-835
+      infinite loop via crafted SSH_MSG_EXT_INFO extension count → CPU exhaustion pre-auth DoS) is
+      also unfixed in 1.11.1. libssh2 is widely embedded in vendor SSH client stacks including
+      PHP, curl, FileZilla, WinSCP, Bitvise, and many network appliances — patch availability
+      depends on downstream vendor uptake. Fix: upgrade to the patched commit (97acf3df) or
+      libssh2 1.11.2 when released.
+    ch_eu_nexus: "global; libssh2 embedded in widely-deployed tools across all sectors including Swiss and EU public-sector file transfer, scripting, and network management"
+    public_sector_nexus: "indirect — libssh2 underlies curl, PHP SSH2 extension, WinSCP used in many public-sector automation stacks"
+    sector: "cross-sector"
+    cves:
+      - CVE-2026-55200
+      - CVE-2026-55199
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Update (2026-06-24): Publieke PoC code verschenen die bevestigd dat de kwetsbaarheid onder specifieke mogelijkheden kan leiden tot het uitvoeren van willekeurige code"
+        attribution: "NCSC-NL (NCSC-2026-0210)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0210"
+      - quote: "Out-of-bounds write flaw in ssh2_transport_read() that fails to enforce upper bounds on packet_length field; CVSS 9.2 Critical"
+        attribution: "GitHub Advisory Database (GHSA-r8mh-x5qv-7gg2)"
+        source_url: "https://github.com/advisories/GHSA-r8mh-x5qv-7gg2"
+    extended_notes: |
+      Technique class: T1190 Exploit Public-Facing Application (client-side, when connecting to
+      a malicious/compromised SSH server) for the OOB-write; T1499.004 Application/System
+      Exploitation for the DoS vector (CVE-2026-55199). The OOB write (CVE-2026-55200) is a
+      server-to-client path — exploitation requires the connecting client to be tricked into
+      connecting to an attacker-controlled SSH server (MITM position or rogue server). Detection:
+      crash telemetry from processes using libssh2 (PHP-FPM, curl, scp wrappers) with heap
+      corruption exit codes; EDR coverage for unexpected process crashes in SSH client utilities;
+      network telemetry for SSH sessions to unusual external endpoints from automation/scripting
+      hosts. Hardening: upgrade libssh2 to post-1.11.1 fix commit; audit embedded libssh2 versions
+      in appliances and vendor-provided tooling; ensure ASLR is enabled (default on modern Linux;
+      verification: /proc/sys/kernel/randomize_va_space should be 2) to raise exploitation
+      barrier for the code-execution path. Affected: libssh2 <= 1.11.1. Patched: commit 97acf3df
+      for CVE-2026-55200, commit 1762685 for CVE-2026-55199.
+    mitre_ttps:
+      - T1190
+      - T1499.004
+
+  - title: "Keycloak 26.6.4 patches eight CVEs including JWT algorithm confusion (CVE-2026-11800) and policy enforcer bypass (CVE-2026-9800)"
+    sources:
+      - url: "https://www.keycloak.org/2026/06/keycloak-2664-released"
+        publisher: "Keycloak Project"
+        date: "2026-06-26"
+        role: "primary"
+      - url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2093"
+        publisher: "BSI CERT-Bund (WID-SEC-2026-2093)"
+        date: "2026-06-26"
+        role: "corroborating"
+      - url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+        publisher: "GitHub Advisory Database"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: bsi-rss bridge → WID-SEC-2026-2093 published 2026-06-26 → BSI CSAF bsi-csaf WID-SEC-2026-2093 (fetched) → pivot: Keycloak official release notes, URL https://www.keycloak.org/2026/06/keycloak-2664-released → corroborating: GitHub GHSA-gqj5-2xp5-3qmp for CVE-2026-11800 detail"
+    summary: |
+      Keycloak 26.6.4, released June 26, 2026, patches eight security vulnerabilities. The highest-
+      severity issues are CVE-2026-11800 (CVSS 8.1, JWT algorithm confusion in the JWT Authorization
+      Grant flow: an attacker with valid client credentials can forge an assertion to bypass signature
+      verification and create unauthorized access tokens, impersonating any federated user linked to
+      the affected IdP, CWE-347) and CVE-2026-9800 (CVSS 8.1, policy enforcer authorization bypass:
+      an authenticated attacker can include the configured access-denied page path in a request URL
+      as a path segment or query parameter to bypass role, scope, and UMA permission checks, CWE-1025).
+      Additional CVEs cover group-admin-to-realm-admin privilege escalation (CVE-2026-9099),
+      filesystem path probing / information disclosure (CVE-2026-9083), XSS via URI validation
+      bypass (CVE-2026-9086), re-enablement of disabled clients via expired Registration Access
+      Token (CVE-2026-9705), and scope mapping enforcement bypass (CVE-2026-9795, reported as
+      Critical). Keycloak is the dominant open-source SSO / IdP solution in European public
+      administration and is embedded in Red Hat SSO / RHBK. Upgrades to 26.6.4 or the matching
+      Red Hat Security Advisories (RHSA-2026:30083, RHSA-2026:30084) are the remediation path.
+    ch_eu_nexus: "direct — Keycloak is core IdP infrastructure for many Swiss cantonal/federal and EU member-state public-sector deployments, eIDAS federation components, and European open-source government portals"
+    public_sector_nexus: "direct — Keycloak / Red Hat SSO is primary IdP in EU public-sector identity federation stacks"
+    sector: "government, finance, healthcare, education"
+    cves:
+      - CVE-2026-11800
+      - CVE-2026-9800
+      - CVE-2026-9099
+      - CVE-2026-9083
+      - CVE-2026-9086
+      - CVE-2026-9705
+      - CVE-2026-9795
+      - CVE-2026-9799
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "JWT Algorithm Confusion Vulnerability in Keycloak — enables attackers with valid client credentials to bypass signature verification by forging an assertion to create unauthorized access tokens and impersonate any federated user linked to the affected Identity Provider; CVSS 8.1"
+        attribution: "GitHub Advisory Database (GHSA-gqj5-2xp5-3qmp)"
+        source_url: "https://github.com/advisories/GHSA-gqj5-2xp5-3qmp"
+      - quote: "Keycloak 26.6.4 released — eight CVEs addressed: CVE-2026-9099 (group-admin escalation to realm-admin), CVE-2026-9083 (filesystem path probing), CVE-2026-9086 (XSS URI bypass), CVE-2026-9705 (disabled client re-enablement), CVE-2026-9795 (scope mapping bypass), CVE-2026-9799 (UMA permission ticket bypass), CVE-2026-9800 (policy enforcer bypass), CVE-2026-11800 (JWT algorithm confusion)"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/06/keycloak-2664-released"
+    extended_notes: |
+      CVE-2026-11800 (JWT algorithm confusion) is the highest-risk issue for public-sector IdP
+      deployments: it enables an attacker with any valid client credential in a Keycloak realm
+      to forge tokens for any federated user, effectively bypassing the entire identity layer.
+      This maps to T1550.001 Application Access Token abuse and T1556.006 Multi-Factor
+      Authentication manipulation (if MFA is policy-enforced via the IdP but the token issuer
+      is bypassed). CVE-2026-9800 (policy enforcer authorization bypass) maps to T1078.004 Cloud
+      Accounts / valid account abuse with elevated privilege. Detection: Keycloak audit events for
+      unexpected token issuances (EVENT_TYPE=CODE_TO_TOKEN, CLIENT_AUTH) with mismatched algorithm
+      fields; policy enforcer access logs for requests containing the access-denied-page path as
+      a query parameter or path segment; SIEM correlation of Keycloak admin REST API calls
+      (POST /admin/realms/{realm}/clients) against the realm-admin role assignments for accounts
+      that were previously only group-admins (CVE-2026-9099 vector). Hardening: upgrade to
+      Keycloak 26.6.4 or Red Hat RHBK 26.0.z with RHSA-2026:30083/30084; validate JWT algorithm
+      allowlist configuration (`defaultSignatureAlgorithm` should not permit `none` or RS256 where
+      only ES256 is expected); review group-to-role mappings for realm-admin role delegation;
+      audit Registration Access Token expiry policy. Red Hat SSO users: check RHSA-2026:30083 and
+      RHSA-2026:30084 for specific package versions.
+    mitre_ttps:
+      - T1550.001
+      - T1556.006
+      - T1078.004
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "ncsc-csh recent 10 returned only 2 posts (IDs 12579 and 12619); both outside 36h window (May 18 and June 9). No in-window NCSC-CH posts."
+  - source_id: cert-eu
+    reason: "cert-eu recent 10 — latest advisory is 2026-008 from June 10, outside 36h window. No in-window CERT-EU advisories."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent 10 — latest avis from June 18, outside 36h window. No in-window CERT-FR avis."
+  - source_id: bleepingcomputer
+    reason: "Listing page bridge attempt returned only navigation HTML for index; individual articles attempted via WebSearch pivots — no additional in-window S1 items not covered by other sources."
+
+items_evaluated_and_rejected:
+  - title: "Cisco SD-WAN sixth zero-day"
+    reason: "Resolves to CVE-2026-20182 — already in prior_coverage as Cisco Catalyst SD-WAN authentication bypass"
+  - title: "StealC/Amadey Operation Endgame DCU takedown"
+    reason: "Prior coverage: key 'operation-endgame-dismantles-the-amadey-and-stealc-malware-a' in briefs/2026-06-25.md"
+  - title: "Chrome V8 CVE-2026-11645"
+    reason: "Patched June 8 — outside 72h developing window"
+  - title: "CERT-EU 2026-007 Windows Netlogon"
+    reason: "Published June 10 — outside 72h developing window"
+  - title: "n8n CVE-2026-25049"
+    reason: "Source article dated January 7, 2026 — outside window"

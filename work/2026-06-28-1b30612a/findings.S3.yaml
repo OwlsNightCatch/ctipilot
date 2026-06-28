@@ -1,0 +1,209 @@
+domain: S3
+run_id: 2026-06-28-1b30612a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-28T04:05:56Z
+ended_at: 2026-06-28T04:17:01Z
+duration_seconds: 665
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 6
+
+items:
+  - title: "Unit 42: CL-STA-1062 Chinese APT deploys TinyRCT .NET backdoor against Southeast Asian energy and government targets via AppDomainManager injection"
+    sources:
+      - url: "https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-backdoor/"
+        publisher: "Palo Alto Networks Unit 42"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/chinese-speaking-apt-deploys-new.html"
+        publisher: "The Hacker News"
+        date: "2026-06-26"
+        role: "corroborating"
+      - url: "https://blog.talosintelligence.com/uat-7237-targets-web-hosting-infra/"
+        publisher: "Cisco Talos"
+        date: "2025-08-15"
+        role: "corroborating (prior UAT-7237 research, cited by Unit 42)"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → item 'Chinese-Speaking APT Deploys New TinyRCT Backdoor in Southeast Asia Campaign' (2026-06-26) → primary: Unit 42, URL https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-backdoor/ → corroborating: THN article, URL https://thehackernews.com/2026/06/chinese-speaking-apt-deploys-new.html"
+    summary: |
+      Unit 42 (June 25, 2026) documented CL-STA-1062, a Chinese-speaking APT cluster overlapping with Cisco Talos's UAT-7237, actively targeting government entities and critical energy infrastructure in Southeast Asia (campaigns observed March 2022 through December 2025). The group compromises internet-facing web applications and deploys ASPX web shells for initial access (T1505.003), then chains to a novel custom .NET backdoor named TinyRCT via AppDomainManager injection (T1574.014): a benign, signed chrome_setup.exe is delivered in a ZIP; the adjacent malicious chrome_setup.exe.config causes the .NET CLR to load MyAppDomainManager.dll from the same directory, bootstrapping TinyRCT in-process. TinyRCT communicates via HTTP with AES-128-CBC-encrypted payloads (hardcoded key "ThisIsASecretKey87654321"), beacons on a 10-second interval, supports arbitrary command execution via cmd.exe, file exfiltration in 40 KB gzip+AES chunks, screen capture (JPEG), C2 configuration updates, and self-destruction via choice.exe. Anti-sandbox guard: the implant terminates if its working directory is not %LOCALAPPDATA% or %USERPROFILE%\Downloads. Observed lateral-movement tools include Mimikatz, JuicyPotato, VNT tunnel, SoftEther VPN (masqueraded as VMware vmtools.exe), and a persistence scheduled task named "GoogleUpdaterTaskSystem140.0.7272.0". Payload staging via password-protected RAR archives. Detection hooks: Sysmon EID 1 — watch for chrome_setup.exe spawning cmd.exe from %USERPROFILE%\Downloads or %LOCALAPPDATA%; DLL load events showing MyAppDomainManager.dll loading from the same directory as a signed PE; MSSQL server execution of curl exfiltration commands; scheduled-task creation with the documented name pattern. Hunt: enumerate .NET config files in user writeable directories adjacent to signed executables.
+    ch_eu_nexus: "indirect — Southeast Asia primary targeting; techniques (AppDomainManager injection, web-shell initial access) are universally applicable to European public-sector web infrastructure"
+    public_sector_nexus: "direct — government entities and state-owned energy enterprises in Taiwan, Southeast Asian nations"
+    sector: "government, energy, web hosting"
+    cves: []
+    actors_campaigns_malware: ["CL-STA-1062", "UAT-7237", "TinyRCT", "SoftEther VPN", "Mimikatz", "JuicyPotato"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CL-STA-1062 represents a sustained, sophisticated threat targeting critical infrastructure across Asia-Pacific. Their adoption of custom malware (TinyRCT) alongside commodity tools reflects operational maturity."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-backdoor/"
+      - quote: "TinyRCT is a .NET-based RAT with capabilities including arbitrary command execution, file enumeration and exfiltration, screen capture, and self-destruct functionality. The malware communicates via HTTP with AES-128 encrypted payloads."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-backdoor/"
+    extended_notes: |
+      UAT-7237 was first documented by Talos in August 2025, correlating activity to Taiwanese web hosting infrastructure. Unit 42 now expands the victim scope to include state-owned energy enterprises and government targets across Southeast Asia. The AppDomainManager injection technique is low in EDR telemetry because no separate child process is created — the malicious code loads in-process within the legitimate signed executable's CLR. MITRE T1574.014 is significantly underdetected in most endpoint deployments. Defenders should ensure custom .NET CLR startup hooks (AppDomainInitializer) are audited in their environments and that .NET config file writes to user-writable directories alongside signed PE files generate alerts.
+
+  - title: "Miasma / Mini Shai-Hulud supply-chain worm compromises 23 LeoPlatform/RStreams npm packages, codfish/semantic-release-action GitHub Actions tag, and Verana Blockchain Go module"
+    sources:
+      - url: "https://socket.dev/blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem"
+        publisher: "Socket Research Team"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/miasma-malware-targets-npm-packages-and.html"
+        publisher: "The Hacker News"
+        date: "2026-06-26"
+        role: "corroborating"
+      - url: "https://www.stepsecurity.io/blog/mass-npm-supply-chain-attack-20-leo-platform-packages-compromised"
+        publisher: "StepSecurity"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → item 'Miasma Malware Targets npm Packages and GitHub Actions in Supply Chain Attack' (2026-06-26) → primary: Socket.dev, URL https://socket.dev/blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem → corroborating: StepSecurity, URL https://www.stepsecurity.io/blog/mass-npm-supply-chain-attack-20-leo-platform-packages-compromised"
+    summary: |
+      Socket Research Team (June 25, 2026) documented the latest Miasma/Mini Shai-Hulud wave, a persistent npm-worm campaign that has now expanded to the Go ecosystem. On June 24, 2026 between 15:38–15:39 UTC, an attacker compromised the npm publisher account "czirker" (likely via credential theft) and pushed malicious versions of 23 packages — 19 under the LeoPlatform/RStreams data-pipeline ecosystem (leo-sdk, leo-auth, leo-aws, leo-cron, leo-logger, leo-cli, leo-connector-*, rstreams-*, serverless-*) plus 4 under a separate "llxlr" account (hexo-*, prism-silq, solo-nav). All packages inject a malicious binding.gyp file (T1195.001 Supply Chain Compromise): npm invokes node-gyp automatically at install time; the gyp command chain applies ROT-cipher decode followed by eval() of the first stage; AES-GCM-encrypted second stages download and execute a Bun runtime payload. The GitHub Actions component is equally severe: at 15:39:06 UTC the same day, the attacker force-pushed a malicious commit to codfish/semantic-release-action and redirected version tags to execute attacker-controlled code inside CI runners — stealing GitHub OIDC tokens, PATs, npm publishing tokens, cloud credentials (AWS/Azure/GCP), and CI secrets via artifact exfiltration (T1587.001, T1552.001). Propagation uses dead-drop commits containing the marker string "RevokeAndItGoesKaboom" as C2 channels (T1102.001). The Go module compromise affects github.com/verana-labs/verana-blockchain@v0.10.1-dev.20 via a malicious .claude/index.js + VS Code workspace task that triggers on folder-open. The malware explicitly checks for CrowdStrike, SentinelOne, Defender, Carbon Black, Cylance and includes a Russian-locale guard. Detection hunt terms: binding.gyp appearing in pure-JavaScript packages; Bun runtime downloads in CI; dead-drop strings "RevokeAndItGoesKaboom", "TheBeautifulSandsOfTime", "thebeautifulmarchoftime"; mutable GitHub Actions tag references; .claude/index.js or .vscode/tasks.json with folder-open auto-execution in Go or JS repos.
+    ch_eu_nexus: "EU public-sector DevOps pipelines using LeoPlatform/RStreams for data integration or any GitHub Actions workflow referencing codfish/semantic-release-action by mutable tag"
+    public_sector_nexus: "indirect — any organisation using affected npm packages or the compromised GitHub Action in CI pipelines"
+    sector: "software supply chain, CI/CD, cloud infrastructure"
+    cves: []
+    actors_campaigns_malware: ["Miasma", "Mini Shai-Hulud", "Hades"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An npm developer account associated with the LeoPlatform ('czirker') was breached, likely via leaked credentials, to enable the attack, allowing the threat actors to leverage an npm token belonging to the maintainer to push trojanized versions within a six-second window."
+        attribution: "Socket Research Team"
+        source_url: "https://socket.dev/blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem"
+      - quote: "Any workflow that ran against one of these tags after that timestamp executed the attacker's payload directly inside the GitHub Actions runner. The payload steals GitHub OIDC tokens, harvests Personal Access Tokens matching known GitHub token patterns, encrypts the collected material with AES-128-GCM, and attempts to propagate a backdoor into other repositories accessible with the stolen credentials."
+        attribution: "Socket Research Team"
+        source_url: "https://socket.dev/blog/miasma-mini-shai-hulud-hits-leoplatform-npm-packages-go-ecosystem"
+    extended_notes: |
+      This is the third documented Miasma wave after prior PyPI and @redhat-cloud-services npm compromises. The addition of Go-ecosystem poisoning via source repository manipulation (not Go module proxy injection) marks a new expansion vector. The .claude/settings.json and .vscode/tasks.json persistence paths specifically target IDE/AI-agent runtime environments (VS Code, Cursor, Claude Code, Gemini CLI). The mutable-tag GitHub Actions vector (force-push redirecting a version tag) is covered by T1195.002 and the Cordyceps research published June 25 — defenders should enforce pinned SHAs for all third-party Actions references.
+
+  - title: "Island Research: 'BadBlocker' — Adblock for YouTube's dormant server-controlled JavaScript injection gives 11M-user extension one API call away from arbitrary code execution on every website"
+    sources:
+      - url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+        publisher: "Island (Oleg Zaytsev, Shachar Gritzman)"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/chrome-ad-blocker-with-10m-installs.html"
+        publisher: "The Hacker News"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews feed, URL https://feeds.feedburner.com/TheHackersNews → item 'Chrome Ad Blocker with 10M+ Installs Found with Dormant Script Injection Capability' (2026-06-25) → WebSearch to find primary Island blog → primary: Island, URL https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+    summary: |
+      Island security researchers Oleg Zaytsev and Shachar Gritzman published "BadBlocker" (June 25, 2026) documenting a dormant but architecturally complete arbitrary-JavaScript-execution capability in "Adblock for YouTube" (Chrome Extension ID: cmedhionkhpnakcndndgjdbohmhepckk, 11M+ users, #31 on Chrome Web Store). The extension fetches configuration every 24 hours from api.adblock-for-youtube.com/api/v2/rules; the server-controlled scripletsRules field can activate the trusted-create-element scriptlet, which appends a dynamically-sourced <script> element to the DOM using a TrustedTypes policy that bypasses the browser's own script-injection guard. Because the extension declares `"<all_urls>"` host permissions but validates only whether the string "youtube.com" appears anywhere in the URL (not as the actual hostname), a lure URL such as https://bank.example.com/search?q=youtube.com passes the check — enabling the injected script to execute in authenticated banking, admin-panel, or enterprise SaaS sessions with full DOM and credential access (T1176 Browser Extensions; T1056 Input Capture; T1041 Exfiltration). Island demonstrated a proof-of-concept exfiltrating Salesforce data via this path. Capability is dormant: no malicious payload was active at analysis time. However, prior sister extensions (Adblock for Chrome, Adblock for You) were removed by Google for actual malware, and the Unistream SDK (ad-injection) was present until June 2024. No Chrome Web Store action confirmed at publication. Detection: monitor for browser extensions making HTTPS configuration-fetch requests outside their declared purpose scope; flag trusted-create-element or equivalent scriptlet execution injecting external-origin script content; audit extension manifest host permissions against stated functionality. Remediation: browser-extension governance policy restricting `<all_urls>` extensions without business justification; CBSP (Chrome Browser Security Policy) extension allowlisting.
+    ch_eu_nexus: "direct — 11M European users, many in enterprise environments accessing SaaS, banking, and government portals in the same browser profile as this extension"
+    public_sector_nexus: "indirect — public-sector employees using personal or managed Chrome instances with this extension installed"
+    sector: "browser security, enterprise SaaS"
+    cves: []
+    actors_campaigns_malware: ["AdBlock for YouTube", "Unistream SDK"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The extension contains the architectural ingredients for arbitrary JavaScript execution on any website, activated by a single server-side configuration change, without an extension update, without a store review, and without any visible sign that something has changed."
+        attribution: "Island (Oleg Zaytsev, Shachar Gritzman)"
+        source_url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+      - quote: "If server passes 'script' as element type with JavaScript content, code runs in page context with access to sensitive data"
+        attribution: "Island (Oleg Zaytsev, Shachar Gritzman)"
+        source_url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"
+
+  - title: "Cisco Talos deep-dive: Windows Component Object Model (COM) in malware — ITaskService, BITS, WMI, and DCOM as evasion primitives across Gh0stRAT, Attor, Qakbot, WarmCookie"
+    sources:
+      - url: "https://blog.talosintelligence.com/introduction-to-com-usage-by-windows-threats/"
+        publisher: "Cisco Talos"
+        date: "2026-06-25"
+        role: "primary"
+    discovery_trace: "first seen at: Talos RSS feed, URL https://blog.talosintelligence.com/rss/ → item 'Introduction to COM usage by Windows threats' (2026-06-25) → primary (no pivot needed): Cisco Talos, URL https://blog.talosintelligence.com/introduction-to-com-usage-by-windows-threats/"
+    summary: |
+      Cisco Talos published a comprehensive reverse-engineering guide (June 25, 2026) documenting how Windows threat actors systematically weaponise Component Object Model (COM) interfaces to conceal malicious operations inside legitimate Windows service call stacks. Key technique classes: (1) ITaskService / ITaskScheduler persistence — scheduled-task creation without a visible schtasks.exe process, bypassing process-creation EDR telemetry (T1053.005); (2) IBackgroundCopyJob (BITS) for C2 and file transfer — traffic attributed to the Windows BITS service process rather than malware process (T1197); (3) IWbemLocator / IWbemClassObject (WMI) for system and security-software discovery — enumeration blends into svchost.exe WMI calls (T1082, T1518.001); (4) DCOM (IDispatch) for remote object activation across network boundaries enabling lateral movement (T1021.003). All four approaches share a common detection gap: EDR event-creation visibility is limited when function calls route through vtable indirection rather than direct API imports. Malware families studied: Gh0stRAT/SimpleRemoter (ITaskService persistence), Attor/BadSpace (BITS C2 + WMI enumeration, active 2013+), Qakbot (WMI enumeration), WarmCookie (ITaskScheduler 1.0 CLSID_CTaskScheduler, emerged April 2024). Talos documents YARA GUID-byte matching approach for hunting (Task Scheduler CLSID byte pattern: 9F 36 87 0F E5 A4 FC 4C BD 3E 73 E6 15 45 72 DD; ITaskService IID: C7 A4 AB 2F A9 4D 13 40 96 97 20 CC 3F D4 0F 85) and dynamic instrumentation via DispatchLogger / DynamoRIO. Detection: enumerate scheduled-task creation events where the creating process is not schtasks.exe or PowerShell (unexpected image paths spawning ITaskService); WMI activity attributed to non-system processes with unusual parent chains; BITS job creation from non-svchost processes.
+    ch_eu_nexus: "universal — COM-based evasion affects all Windows environments including Swiss/EU public-sector Active Directory domains; Qakbot and WarmCookie have active EU distribution"
+    public_sector_nexus: "indirect — detection-engineering primer for SOC analysts hunting COM-based persistence and C2 in Windows environments"
+    sector: "cross-sector"
+    cves: []
+    actors_campaigns_malware: ["Gh0stRAT", "SimpleRemoter", "Attor", "BadSpace", "Qakbot", "WarmCookie", "UAT-4356"]
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "COM—a fundamental Windows inter-process communication and object activation mechanism—provides attackers convenient access to legitimate Windows functionality while obfuscating malicious activity behind indirect vtable calls"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/introduction-to-com-usage-by-windows-threats/"
+      - quote: "Task Scheduler COM interfaces (ITaskService, ITaskScheduler) enable scheduled task creation without visible schtasks.exe process execution"
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/introduction-to-com-usage-by-windows-threats/"
+    extended_notes: |
+      The Attor backdoor case study is particularly relevant: it uses BITS for C2 via IBackgroundCopyJob, routing all C2 traffic through the BITS service process, which is a trusted Windows service. This defeats process-based allow-listing and many EDR rules that exclude BITS from suspicion. The article also references hunting COM objects from Google Cloud's GTIG — linking to the 2019 Mandiant series on COM object hunting (cloud.google.com/blog/topics/threat-intelligence/hunting-com-objects). Detection engineers should review their scheduled-task-creation detection rules to cover COM-based task creation, which generates different Windows event logs than schtasks.exe invocations.
+
+  - title: "Netcraft: Bluekit PhaaS adds Browser-in-the-Middle via rrweb DOM streaming — MFA bypass technique defeats phishing-resistant MFA and Device Bound Session Credentials"
+    sources:
+      - url: "https://www.netcraft.com/blog/bluekit-phishing-as-a-service-threat"
+        publisher: "Netcraft"
+        date: "2026-06-25"
+        role: "primary"
+      - url: "https://www.varonis.com/blog/bluekit-phaas"
+        publisher: "Varonis Threat Labs"
+        date: "2026-06-17"
+        role: "corroborating (original discovery)"
+    discovery_trace: "first seen at: WebSearch ('Bluekit phishing-as-a-service device code phishing June 2026') → Netcraft primary article, URL https://www.netcraft.com/blog/bluekit-phishing-as-a-service-threat → corroborating: Varonis (original), referenced by Netcraft"
+    summary: |
+      Netcraft published a technical breakdown of Bluekit (June 25, 2026), a newly-active PhaaS platform first documented by Varonis Threat Labs on June 17, 2026 and now detected at scale (~70 active hostnames in a single week). Bluekit's distinguishing technique is Browser-in-the-Middle (BitM): rather than proxying the target's HTTP traffic (as Evilginx/AiTM do, which creates session-fingerprint mismatches that DBSC can catch), Bluekit runs a fully automated legitimate browser on the attacker's infrastructure, then streams the live DOM to the victim via WebSocket using rrweb (github.com/rrweb-io/rrweb), an open-source DOM-serialisation library. The victim interacts with what appears to be an authentic page; keystrokes and mouse events are relayed back to the attacker's browser and executed against the real site. Since the session is created in and owned by the attacker's browser from the start, Device Bound Session Credentials (DBSC) — which bind session tokens to the legitimate browser's device keys — provide no protection. Traditional phishing-resistant FIDO2/WebAuthn is also bypassed because the attacker's browser completes the relying-party challenge on behalf of the victim. Anti-analysis evasion: CSS filter values randomised on each page load (defeating pixel-hash screenshot detection); obfuscated JavaScript bundles >1 MB that rotate periodically; custom CAPTCHA impersonating brand identity; WebRTC IP mismatch detection to identify analyst proxies/VPNs. Detection hooks: rrweb library presence outside legitimate analytics context; WebSocket streams carrying binary/encrypted DOM diff payloads to unexpected origins; sub-second form-submission round-trip latency (BitM introduces measurable lag absent on direct login pages); browser API calls to WebRTC beyond expected scope; CSS filter rules on top-level HTML elements with randomised parameters.
+    ch_eu_nexus: "direct — EU cloud, financial services, and government M365 tenants are named Bluekit targets; Switzerland's exposed government portals and cantonal Microsoft tenants are in scope"
+    public_sector_nexus: "indirect — Bluekit targets Microsoft 365, Entra ID and similar cloud identity infrastructure used by Swiss/EU public-sector organisations"
+    sector: "identity, cloud services, financial services"
+    cves: []
+    actors_campaigns_malware: ["Bluekit", "Evilginx", "rrweb"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The victim completes what appears to be a normal login flow but in reality, they have authenticated into the attacker's browser session on the attacker's browser."
+        attribution: "Netcraft"
+        source_url: "https://www.netcraft.com/blog/bluekit-phishing-as-a-service-threat"
+      - quote: "Device Bound Session Credentials (DBSC) cannot protect against BitM attacks"
+        attribution: "Netcraft"
+        source_url: "https://www.netcraft.com/blog/bluekit-phishing-as-a-service-threat"
+    extended_notes: |
+      The DBSC-bypass finding is technically significant: Google's DBSC project was specifically designed as the next-generation anti-session-hijacking mechanism for Chrome, binding session tokens to the device's secure enclave/TPM. Bluekit's BitM architecture defeats DBSC because the session is born and lives in the attacker's browser — no token theft occurs. The Varonis Threat Labs original report (June 17, 2026) predates Netcraft's analysis by 8 days; Netcraft independently verified active infrastructure deployment. Both are included as sources because they provide complementary technical depth.
+
+  - title: "SANS ISC honeypot analysis: Terrabot IoT botnet (Mirai/Gafgyt variant) and automated cybercrime targeting legacy D-Link, GPON, MVPower endpoints — persistent exploitation of decade-old CVEs"
+    sources:
+      - url: "https://isc.sans.edu/diary/rss/33104"
+        publisher: "SANS Internet Storm Center (Nicole Phillips, SANS.edu)"
+        date: "2026-06-24"
+        role: "primary"
+    discovery_trace: "first seen at: SANS ISC RSS feed, URL https://isc.sans.edu/rssfeed.xml → item 'What do Ports Hear When Nobody's Listening? An Assessment of Automated Cybercrime' (2026-06-24) → primary (no pivot needed): SANS ISC, URL https://isc.sans.edu/diary/rss/33104"
+    summary: |
+      SANS ISC DShield honeypot analysis (June 24–25, 2026) documents the operational tradecraft of automated IoT botnet infrastructure, with a detailed case study of Terrabot — a Mirai/Gafgyt-derived botnet exploiting three legacy CVEs: CVE-2016-20017 (unauthenticated command injection in legacy D-Link DSL gateways), CVE-2018-10561 (authentication bypass in Dasan GPON routers), and CVE-2016-20016 (JAWS web-server RCE in MVPower CCTV DVRs, exploited 2017–2022). The analysis is notable not for new CVEs but for demonstrating that automated exploit-delivery infrastructure designed for devices over a decade old remains actively operational, with 24 unique IPs attempting the same campaigns over 11 days and staging binaries at 140.233.190.47. Observed operational security failures (broken payloads, mis-formatted requests) do not reduce the threat because the automation volume outpaces patching cycles. Detection relevance for Swiss/EU public-sector: GPON, D-Link DSL, and legacy CCTV DVR infrastructure persists in operational technology environments and building management systems. Defenders should confirm no publicly exposed management interfaces on these device classes; MITRE T1190 (Exploit Public-Facing Application) applies. Hunt: scan exposed management interfaces for known vulnerable firmware; validate that legacy network equipment has no internet-facing management access; review firewall rules for outbound connections from CCTV/DVR systems to unexpected external IPs.
+    ch_eu_nexus: "indirect — legacy D-Link, GPON routers, and CCTV DVRs remain present in Swiss cantonal and municipal infrastructure; automated exploitation campaigns are persistent"
+    public_sector_nexus: "indirect — OT/building-management endpoints in public-sector premises"
+    sector: "OT/ICS, IoT, telco"
+    cves: ["CVE-2016-20017", "CVE-2018-10561", "CVE-2016-20016"]
+    actors_campaigns_malware: ["Terrabot", "Mirai", "Gafgyt"]
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "TerraBot is an aggressive IoT botnet variant derived from Mirai and Gafgyt source code frameworks that scans the internet for exploits to weaponize and build its network of compromised devices."
+        attribution: "SANS ISC (Nicole Phillips)"
+        source_url: "https://isc.sans.edu/diary/rss/33104"
+    extended_notes: |
+      The pedagogical value of this diary entry is high for detection engineers: it demonstrates that even technically imperfect automated campaigns (broken payloads, empty request bodies) succeed because they operate at scale with unique IPs per attempt, defeating naive rate-limiting or IP-blocklist defences. The 11-day persistence of the same campaign across 24 unique IPs suggests use of residential-proxy or compromised-device rotation infrastructure — behavioural rather than IP-based detection is required.
+
+candidate_sources:
+  - id: socket-dev-research
+    publisher: "Socket Research Team (socket.dev)"
+    url: "https://socket.dev/blog/"
+    rss_url: "https://socket.dev/blog/rss.xml"
+    category: research
+    why: "Primary source for npm/PyPI/Go supply-chain research; produced the authoritative Miasma wave analysis. Not currently in sources.json but published at least 3 in-window primaries this run."
+
+coverage_gaps:
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed returned stale/empty content on first attempt. STOCKSTAY article (June 25) already in prior_coverage. No new in-window GTIG primaries found outside prior coverage — GTIG blog listing confirmed only STOCKSTAY (June 25) and Cisco SD-WAN (prior coverage) as most recent."
+  - source_id: sophos-xops
+    reason: "Sophos feed returned 404. Sophos 2026 Active Adversary Report confirmed January 2026 publication (outside window). 'Pointing a Cursor at evading detection' confirmed June 2, 2026 (outside 72h window). No in-window Sophos X-Ops research found."
+  - source_id: dfirreport
+    reason: "DFIR Report feed accessible but all items older than 72h window — last item predates June 25."
