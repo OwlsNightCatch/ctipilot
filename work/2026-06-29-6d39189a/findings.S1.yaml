@@ -1,0 +1,222 @@
+# work/2026-06-29-6d39189a/findings.S1.yaml
+domain: S1
+run_id: "2026-06-29-6d39189a"
+model: "Claude Sonnet 4.6"
+model_id: "claude-sonnet-4-6"
+started_at: "2026-06-29T04:06:45Z"
+ended_at: "2026-06-29T04:33:00Z"
+duration_seconds: 1575
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 7
+  bridge_fetches: 9
+
+window_hours: 36
+window_cutoff_utc: "2026-06-27T16:00:00Z"
+
+sources_checked:
+  - cisa-kev (bridge subcommand) — last updated 2026-06-25, no new additions in 36h window
+  - enisa-euvd (criticals + exploited) — checked, no new in-window items
+  - bsi-rss + bsi-csaf (WID-SEC-2026-2087 GCP, WID-SEC-2026-2092 Chrome) — Chrome CVEs from 2026-06-25, GCP CVE-2025-0982 from 2026-06-25, both outside strict window
+  - cert-eu recent 5 — last advisory 2026-06-10, outside window
+  - cert-fr avis-recent 10 — last advisory 2026-06-19, outside window
+  - ncsc-nl recent 10 — last advisory 2026-06-25, outside window
+  - ncsc-ch-security-hub (recent posts) — checked
+  - hackernews RSS feed — filtered for 2026-06-27+ items
+  - bleepingcomputer RSS feed — filtered for 2026-06-27+ items
+  - securelist (StrikeShark) — primary report 2026-06-24
+  - 0din.ai blog — original research 2026-06-15, BC coverage 2026-06-27
+
+items:
+  - title: "StrikeShark: Chinese-nexus loader deploys Cobalt Strike via Perfect DLL Hijacking and API hook-based evasion"
+    sources:
+      - url: "https://securelist.com/strikeshark-campaign/120326/"
+        publisher: "Kaspersky Securelist"
+        date: "2026-06-24"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/new-sharkloader-malware-deploys-cobalt.html"
+        publisher: "The Hacker News"
+        date: "2026-06-26"
+        role: "corroborating"
+    discovery_trace: "first seen at: hackernews RSS feed (filtered 2026-06-27+ items) → THN article 2026-06-26 17:49 IST (12:19 UTC) — outside 36h window BUT Kaspersky primary from 2026-06-24; NOTE: THN article is outside strict 36h window (cutoff 2026-06-27T16:00Z); item DEMOTED — included as contextual, recency borderline"
+    recency_note: "Primary (Kaspersky 2026-06-24) and corroborating (THN 2026-06-26 12:19 UTC) both outside strict 36h window. Demoted to coverage_gap or contextual only — DO NOT include as primary finding."
+    status: "DEMOTED_OUTSIDE_WINDOW"
+    summary: |
+      Kaspersky published a detailed analysis of the StrikeShark campaign on June 24, documenting a previously undocumented
+      loader called SharkLoader that delivers Cobalt Strike Beacon. The actor (assessed as Chinese-speaking, low confidence,
+      no prior APT cluster match) gained initial access by exploiting a wide range of known vulnerabilities in internet-facing
+      appliances: Microsoft Exchange (CVE-2021-26855 ProxyLogon, CVE-2022-41082), Openfire (CVE-2023-32315), GeoServer
+      (CVE-2024-36401), F5 BIG-IP (CVE-2023-46747), Fortinet FortiOS (CVE-2024-21762, CVE-2022-40684), Cisco IOS XE
+      (CVE-2023-20198), and others. The loader implements a novel "Perfect DLL Hijacking" technique that bypasses the Windows
+      loader lock by directly manipulating undocumented loader structures (LdrpLoaderLock, LdrpWorkInProgress) to release
+      the critical section before thread creation, avoiding the standard thread-in-loader-lock deadlock that defeats naive
+      DLL injection. SharkLoader DLLs use Blowfish-ECB and AES-128 encryption; the encrypted beacon payload is stored as
+      a file with the PE header stripped. Post-loading, 30+ API hooks are installed via Microsoft Detours to redirect
+      VirtualAlloc/VirtualProtect/CreateProcess to NT direct syscalls (bypassing user-mode API monitoring), stub ETW event
+      writers (EtwEventWrite, EventWriteEx) to suppress telemetry, and hook Sleep to flip Cobalt Strike Beacon memory from
+      RWX to RW between execution cycles (defeating memory-scan based detection). PPID spoofing redirects child process
+      creation to svchost.exe. Targets include diplomatic and government entities across Indonesia, Taiwan, Lebanon, Syria,
+      Colombia, North Macedonia, Nepal, and Serbia.
+    ch_eu_nexus: "global; Serbia and North Macedonia (EU candidate states) among confirmed victims"
+    public_sector_nexus: "direct — government and diplomatic entities confirmed victimised"
+    sector: "government, diplomatic, software development"
+    cves: [CVE-2021-26855, CVE-2022-41082, CVE-2023-32315, CVE-2024-36401, CVE-2023-46747, CVE-2024-21762, CVE-2023-20198]
+    actors_campaigns_malware: ["SharkLoader", "StrikeShark", "Cobalt Strike Beacon"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SharkLoader implements Perfect DLL Hijacking to bypass the Windows loader lock by resolving undocumented loader structures LdrpLoaderLock and LdrpWorkInProgress"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/strikeshark-campaign/120326/"
+      - quote: "SyncRes.dat installs 30+ API hooks via Microsoft Detours redirecting VirtualAlloc/VirtualProtect to NT direct syscalls and stubbing ETW event writers"
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/strikeshark-campaign/120326/"
+    extended_notes: |
+      Detection vantage: Sysmon EID 7 (image loaded) for SystemSettings.dll loaded into SystemSettings.exe; Sysmon EID 10
+      (process access) for the loader lock manipulation pattern; EDR telemetry for direct NT syscall stubs (no ntdll trampoline
+      — look for syscall stubs that do not originate from ntdll.dll address space); Windows Security EID 4688 with parent
+      image SystemSettings.exe spawning svchost.exe (PPID spoof). The ETW hook-stub pattern is detectable by ETW provider
+      integrity checks (Elastic, CrowdStrike, SentinelOne all hook at kernel ETW callback level above user-mode stubs).
+      MITRE: T1190 (initial access via public-facing app), T1574.001 (DLL side-loading via SystemSettings.exe),
+      T1562.001 (ETW impair-defenses — EtwEventWrite stubbing), T1055.012 (process hollowing / direct syscall injection),
+      T1134.004 (PPID spoofing to svchost.exe).
+
+  - title: "AI coding-agent indirect prompt injection via DNS TXT payload: Mozilla 0DIN 'Clone This Repo and I Own Your Machine'"
+    sources:
+      - url: "https://0din.ai/blog/clone-this-repo-and-i-own-your-machine"
+        publisher: "Mozilla 0DIN"
+        date: "2026-06-15"
+        role: "primary"
+      - url: "https://www.bleepingcomputer.com/news/security/clean-github-repo-tricks-ai-coding-agents-into-running-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-06-27"
+        role: "corroborating"
+    discovery_trace: "first seen at: bleepingcomputer RSS feed, URL https://www.bleepingcomputer.com/news/security/clean-github-repo-tricks-ai-coding-agents-into-running-malware/ (2026-06-27 14:22 UTC, in-window) → primary: Mozilla 0DIN blog https://0din.ai/blog/clone-this-repo-and-i-own-your-machine (2026-06-15, outside window — BC coverage is the in-window source)"
+    recency_note: "BleepingComputer coverage (2026-06-27 14:22 UTC) is in-window. Underlying research published 2026-06-15. Related but distinct from CVE-2026-12957 (Amazon Q MCP config — covered 2026-06-27)."
+    status: "INCLUDE"
+    summary: |
+      Mozilla's Zero Day Investigative Network (0DIN) published research on a multi-stage indirect prompt injection attack
+      targeting AI coding agents such as Claude Code. A malicious GitHub repository contains three cooperating components:
+      (1) clean, plausible setup instructions directing the user to install a Python package; (2) the package itself, which
+      is designed to fail at runtime, emitting an error message that instructs the runtime to execute `python3 -m axiom init`;
+      (3) the `axiom init` handler, which issues a DNS TXT lookup to an attacker-controlled domain and executes the returned
+      record value as a shell command. The attack chain achieves three levels of indirection — error message → DNS resolution
+      → shell execution — with no malicious code present in the repository itself (passing naive static analysis). The agent
+      never "decides" to open a shell; it interprets each step as normal error recovery. The technique exploits the agent's
+      tendency to autonomously execute suggested remediation commands, bypassing explicit user approval on each sub-step. No
+      CVE has been assigned; the attack is a class of agentic behaviour-exploitation rather than a single software vulnerability.
+      Defenders operating environments where AI coding agents have repository access (CI/CD pipelines, developer workstations
+      with Claude Code / GitHub Copilot Workspace / Cursor) should treat this as a supply-chain risk requiring agent permission
+      controls, mandatory human-in-the-loop for network-dependent init steps, and DNS monitoring for TXT record queries
+      originating from agent processes.
+    ch_eu_nexus: "global; relevant to Swiss public-sector and private-sector DevOps teams using AI coding assistants"
+    public_sector_nexus: "indirect — public-sector DevOps / developer workstations using AI coding agents"
+    sector: "software development, CI/CD, developer tooling"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Claude Code never decided to open a shell. It decided to fix an error. The reverse shell is three indirection steps away from anything Claude Code actually evaluated"
+        attribution: "Mozilla 0DIN"
+        source_url: "https://0din.ai/blog/clone-this-repo-and-i-own-your-machine"
+      - quote: "A seemingly benign GitHub repository contains three components: clean setup instructions, a Python package that triggers an error message, and an initialization command that fetches and executes a DNS TXT record controlled by attackers"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/clean-github-repo-tricks-ai-coding-agents-into-running-malware/"
+    extended_notes: |
+      This is the second AI coding-agent supply-chain research item in two consecutive days (2026-06-27 covered Amazon Q
+      Developer CVE-2026-12957 — MCP config auto-load). The techniques are complementary: the Amazon Q issue exploited
+      automatic MCP server config loading; this 0DIN issue exploits agentic error-recovery autonomy with out-of-band payload
+      retrieval. Both attack classes are relevant to any AI coding agent that can run shell commands. Detection: DNS monitoring
+      for TXT record queries originating from developer-tooling process trees (node, python, pip) during repository setup;
+      EDR parent-child chain for agent process spawning unexpected shell children; network egress monitoring for DNS TXT
+      RR types from developer workstations. Hardening: enforce interactive-mode or human-in-the-loop for every external
+      network call made by agent-executed init scripts; treat DNS TXT query capability as requiring explicit scope approval.
+      MITRE: T1566 (phishing via malicious repo link in job posting / tutorial), T1071.004 (DNS — C2 via TXT record),
+      T1059.004 (Unix shell execution via agent-driven error recovery).
+
+  - title: "KDDI email platform breach exposes up to 14.22 million email credentials across six Japanese ISPs"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/data-breach-exposes-up-to-142-million-email-logins-at-six-isps/"
+        publisher: "BleepingComputer"
+        date: "2026-06-28"
+        role: "primary"
+      - url: "https://securityaffairs.com/194387/data-breach/kddi-data-breach-impacts-up-to-14-2-million-email-accounts-at-six-isps.html"
+        publisher: "SecurityAffairs"
+        date: "2026-06-28"
+        role: "corroborating"
+      - url: "https://infosecurity-magazine.com/news/kddi-breach-japanese-telcos/"
+        publisher: "Infosecurity Magazine"
+        date: "2026-06-28"
+        role: "corroborating"
+    discovery_trace: "first seen at: bleepingcomputer RSS feed, URL https://www.bleepingcomputer.com/news/security/data-breach-exposes-up-to-142-million-email-logins-at-six-isps/ (2026-06-28 14:13 UTC, in-window) → corroborating: SecurityAffairs https://securityaffairs.com/194387/data-breach/kddi-data-breach-impacts-up-to-14-2-million-email-accounts-at-six-isps.html (2026-06-28) → underlying KDDI disclosure ~2026-06-24 (japantimes.co.jp — HTTP 402 paywall)"
+    recency_note: "English-language coverage peaked 2026-06-28 (in-window). Underlying KDDI corporate announcement ~2026-06-24. The Register first English coverage ~2026-06-24 (outside window). BleepingComputer June 28 coverage constitutes an in-window source."
+    status: "INCLUDE"
+    summary: |
+      Japanese telecommunications provider KDDI disclosed that attackers exploited vulnerabilities in third-party software
+      integrated into its centralised ISP email management platform, gaining unauthorised access detected on approximately
+      June 17, 2026. The breach potentially exposed email addresses and passwords for up to 14.22 million subscriber accounts
+      across six ISPs operating on the shared platform: STNet, KDDI Web Communications, JCOM, Chubu Telecommunications,
+      Nifty, and Biglobe. KDDI stated some passwords were stored in hashed or encrypted form; the 14.22 million figure is
+      a worst-case estimate pending forensic completion. No specific CVE for the exploited third-party software vulnerability
+      has been publicly disclosed. The incident illustrates the credential-exposure risk profile of managed shared-service
+      email platforms where a single vulnerable dependency serves multiple ISP tenants. For Swiss and European defenders,
+      the relevant threat model is the subsequent credential-stuffing risk: compromised email credentials from ISP-managed
+      mailboxes propagate directly into phishing-as-initial-access campaigns targeting EU public-sector users whose external
+      communication addresses are on ISP-managed domains.
+    ch_eu_nexus: "indirect — Japanese breach; risk to EU/CH defenders via credential-stuffing and phishing using leaked email credential pairs"
+    public_sector_nexus: "indirect — email credential theft enables phishing against public-sector users"
+    sector: "telco, ISP, managed email services"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "KDDI said its investigation found that a threat actor exploited vulnerabilities in third-party software integrated into the email management system"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/data-breach-exposes-up-to-142-million-email-logins-at-six-isps/"
+      - quote: "The breach potentially exposed email addresses and passwords for up to 14.22 million subscriber accounts across six ISPs"
+        attribution: "SecurityAffairs"
+        source_url: "https://securityaffairs.com/194387/data-breach/kddi-data-breach-impacts-up-to-14-2-million-email-accounts-at-six-isps.html"
+    extended_notes: |
+      No CVE for the third-party software vulnerability has been disclosed. The shared-platform architecture (multiple ISP
+      tenants on one email management system) is the key amplifier: a single vulnerability in the shared dependency produced
+      a multi-ISP blast radius. Relevance to Swiss defenders: KDDI email credentials will appear in credential-stuffing
+      lists and dark-web markets; priority for defenders monitoring external-facing authentication systems for anomalous
+      login patterns from Japanese ISP email address spaces. Sector: telco/ISP managed email — the attack surface is the
+      third-party ISP email management platform, not individual end-user mail clients.
+
+cve_table: []
+# No new CVEs cleared the KEV/exploited gate in the 36h window.
+# Chrome CVE-2026-13281/13282/13283 (Stable Channel 2026-06-25) and GCP CVE-2025-0982 (BSI 2026-06-25) are outside the window.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-fr
+    reason: "Latest advisory (CERTFR-2026-AVI-0780) dated 2026-06-19 — well outside 36h window. No in-window items."
+  - source_id: ncsc-nl
+    reason: "Latest advisory (NCSC-2026-0211) dated 2026-06-25 — outside 36h window. No in-window items."
+  - source_id: cert-eu
+    reason: "Latest advisory (2026-008 Ivanti Sentry) dated 2026-06-10 — outside 36h window. No in-window items."
+  - source_id: cisa-kev
+    reason: "KEV catalog last updated 2026-06-25. No new additions in 36h window."
+  - source_id: japantimes-co-jp
+    reason: "HTTP 402 paywall on KDDI breach primary Japanese-language source; covered via BleepingComputer and SecurityAffairs."
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed returned empty JSON on attempt; no StrikeShark/GRU items identified via alternate THN source."
+
+operational_note: |
+  The 36h window (2026-06-27T16:00Z through 2026-06-29T04:14Z) was notably quiet from a CISA KEV and national CERT
+  perspective — no new exploited CVEs added to KEV, and all CERT advisories (CERT-FR, NCSC-NL, CERT-EU) dated prior
+  to the window. The most operationally significant new items are:
+  1. The 0DIN/Mozilla AI coding agent indirect PI research (BC coverage June 27, in-window) — novel attack class, distinct
+     from Amazon Q MCP config issue covered yesterday.
+  2. KDDI email breach (BC coverage June 28, in-window) — 14.22M credential exposure, downstream phishing risk.
+  3. StrikeShark/SharkLoader (Kaspersky June 24, THN June 26) — DEMOTED as outside 36h window; surfaced for main agent
+     awareness only.
+  The Chrome stable channel update (CVE-2026-13281/82/83) and GCP bulletin (CVE-2025-0982) from June 25 BSI advisories
+  are outside the window and were not included.

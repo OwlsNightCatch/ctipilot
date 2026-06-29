@@ -1,0 +1,87 @@
+# work/2026-06-29-6d39189a/findings.S3.yaml
+domain: S3
+run_id: 2026-06-29-6d39189a
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-29T04:07:06Z
+ended_at: 2026-06-29T04:50:00Z
+duration_seconds: 2574
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 14
+  bridge_fetches: 10
+
+items:
+  - title: "Cryptojacking campaign exploits Argo Workflows and Gogs CVE-2026-52806 to compromise Kubernetes clusters at scale"
+    sources:
+      - url: "https://threats.wiz.io/all-incidents/cryptojacking-campaign-targeting-k8s-clusters"
+        publisher: "Wiz Threat Research"
+        date: "2026-06-28"
+        role: "primary"
+        note: "Published 2026-06-25, last edited 2026-06-28 — within 36h window"
+      - url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+        publisher: "Rapid7 Labs"
+        date: "2026-05-28"
+        role: "corroborating"
+        note: "Primary Gogs CVE-2026-52806 disclosure; referenced as exploitation vector in campaign"
+      - url: "https://github.com/argoproj/argo-workflows/security/advisories"
+        publisher: "Argo Workflows maintainers (GitHub GHSA)"
+        date: "2026-06-10"
+        role: "corroborating"
+        note: "Argo Workflows security advisories index confirming known vulnerabilities used as access vector"
+    discovery_trace: "first seen at: wiz-blog RSS feed, URL https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml → primary: Wiz Threat Research incident page, URL https://threats.wiz.io/all-incidents/cryptojacking-campaign-targeting-k8s-clusters (last edited Jun 28 2026) → corroborating: Rapid7 Labs Gogs CVE-2026-52806 disclosure URL https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    summary: |
+      A cryptojacking campaign active June 13-23, 2026 compromised thousands of Linux hosts, with primary focus on large managed Kubernetes clusters. Attackers combined two initial-access paths: (1) vulnerabilities in Argo Workflows (including the incomplete-fix chain tracked via GHSA-3775-99mw-8rp4 / CVE-2026-31892 covering ArtifactGC.PodSpecPatch bypass of Strict/Secure templateReferencing) and (2) CVE-2026-52806, a CVSSv4 9.4 argument-injection RCE in Gogs (all versions prior to 0.14.3) where a malicious pull-request branch name injects `--exec` into `git rebase`, running arbitrary commands as the Gogs server process. Once inside a cluster node, attackers stole Kubernetes service account tokens and used them to schedule workloads on over 300 additional nodes, achieving lateral movement via privileged container escape (T1611). Deployed payloads included cryptominers and data exfiltration tooling (T1496, T1041). The Wiz incident entry designates actor as "Unknown"; the C2 framework used is "Realm C2". Gogs patch (0.14.3) was released June 7, 2026; Argo Workflows patched CVE-2026-31892 incomplete-fix in June 10 advisory. The Wiz incident page was finalised and last edited June 28, 2026, indicating fresh confirmation/closure of the campaign scope.
+
+      Technique mapping: T1190 (Exploit Public-Facing Application — Argo Workflows, Gogs), T1078.004 (Cloud Accounts — stolen K8s service account tokens), T1610 (Deploy Container — cryptominer workloads), T1611 (Escape to Host — privileged container escape), T1496 (Resource Hijacking — cryptomining), T1041 (Exfiltration over C2 Channel).
+
+      Detection posture: Defenders should monitor for unexpected Argo Workflow submissions from non-standard service accounts (Argo audit logs, K8s API server audit log `verb=create, resource=workflows.argoproj.io`), `git rebase` child processes spawned by the Gogs service user, Kubernetes API calls to `POST /api/v1/namespaces/{ns}/pods` from unexpected service account tokens (K8s audit log event `objectRef.resource=pods, user.username != expected`), and container escape indicators (Sysmon EID 1 with parent namespace mismatch, `kubectl exec` from unusual callers, `nsenter`/`chroot` in container context). Hardening: upgrade Gogs to 0.14.3 or set `DISABLE_REGISTRATION = true` and `MAX_CREATION_LIMIT = 0`; apply complete Argo Workflows patch chain including June 10 GHSA-48p8-g2fx-3wwm; audit K8s RBAC to eliminate default service accounts with cluster-admin or node-escalation permissions; disable privileged containers via Pod Security Admission (enforce: restricted).
+    ch_eu_nexus: "Global; K8s and DevOps infrastructure widely deployed by EU public-sector organisations; Gogs used in some government and research-institution internal git hosting; Argo Workflows common in data-pipeline and CI/CD contexts"
+    public_sector_nexus: "indirect — self-hosted Gogs and Argo Workflows instances in research institutions and government CI/CD pipelines are within scope"
+    sector: "cloud, devops, research, public-sector"
+    cves: [CVE-2026-52806]
+    actors_campaigns_malware: ["Unknown actor", "Realm C2"]
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Researchers identified a campaign leveraging the Realm C2 framework that has compromised thousands of Linux hosts between June 13-23, 2026, with a primary focus on a large managed Kubernetes clusters. The attackers exploited vulnerabilities in Argo Workflows and Gogs to gain initial access, then deployed cryptominers and used stolen Kubernetes service account tokens to spread laterally across over 300 additional nodes via privileged container escape."
+        attribution: "Wiz Threat Research"
+        source_url: "https://threats.wiz.io/all-incidents/cryptojacking-campaign-targeting-k8s-clusters"
+      - quote: "The vulnerability allows any authenticated user to achieve remote code execution (RCE) on the server by creating a pull request with a malicious branch name that injects the --exec flag into git rebase during the 'Rebase before merging' merge operation. A fix is available in Gogs 0.14.3, released June 7, 2026."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+    extended_notes: |
+      Confidence rated MEDIUM rather than HIGH because: (1) the Wiz Threat Research entry is a threat-landscape tracker page rather than a full technical write-up, and the primary researcher attribution is not stated; (2) the Rapid7 Gogs disclosure dates to May 28 (before the campaign activity window), so the link between CVE-2026-52806 and this specific K8s campaign is stated by Wiz but not independently corroborated by a second source covering the combined Gogs+Argo+K8s pivot. No named threat-actor cluster is attributed. The campaign scope (thousands of hosts, 300+ nodes) is from the Wiz tracker and not independently validated. Defenders in EU public-sector environments running Gogs or Argo Workflows should prioritise patching regardless.
+
+      Note on Gogs default-config risk: Gogs defaults to `DISABLE_REGISTRATION = false` and `MAX_CREATION_LIMIT = -1`, meaning any internet-facing instance with open registration allows an external attacker to self-register and immediately weaponize CVE-2026-52806 without needing existing credentials. ~1,141 internet-facing instances visible on Shodan at Rapid7 disclosure time; internal deployments likely much larger.
+
+cve_table:
+  - cve: CVE-2026-52806
+    product: "Gogs (self-hosted Git service) < 0.14.3"
+    cvss: "9.4 (CVSSv4, Critical — Rapid7 Labs score)"
+    epss: unknown
+    kev: "not listed"
+    exploited: "yes — active exploitation observed in June 2026 K8s campaign (Wiz Threat Research)"
+    patch: "Gogs 0.14.3 (June 7, 2026)"
+    source: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: mandiant-gtig
+    reason: "Feedburner feed returned empty/no content; bridge attempt returned no output. No in-window Mandiant/GTIG research items found via WebSearch either."
+  - source_id: dfirreport
+    reason: "DFIR Report feed: most recent post from 2026-05-11, well outside 36h window. No qualifying items."
+  - source_id: sentinellabs
+    reason: "SentinelOne blog RSS: most recent research post 2026-06-26 (Week 26 roundup) already covered in prior coverage (macOS.Gaslight, Operation Endgame). No new S3-domain primary research in 36h window."
+  - source_id: trellix
+    reason: "Trellix blog not checked (prior coverage showed APT28 post from February 2026 — outside window). No specific in-window items found via WebSearch."
+  - source_id: eset-research
+    reason: "ESET research signal in 36h window: Operation Endgame participation (already in prior coverage as item:operation-endgame). No new ESET primary research post in window."
+  - source_id: check-point-research
+    reason: "Check Point weekly threat intelligence report for June 29 not yet published at research time. June 22 was most recent available."
+  - source_id: red-canary
+    reason: "Intelligence Insights June 2026 published 2026-06-18 — outside 36h window. Not included."
+  - source_id: jfrog-research
+    reason: "DirtyClone (CVE-2026-43503) JFrog post (June 25) already in prior coverage as CVE-2026-43503. Excluded per dedup rules."
