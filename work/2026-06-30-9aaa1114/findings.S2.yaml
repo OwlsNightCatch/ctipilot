@@ -1,0 +1,148 @@
+# work/2026-06-30-9aaa1114/findings.S2.yaml
+domain: S2
+run_id: 2026-06-30-9aaa1114
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-30T04:06:23Z
+ended_at: 2026-06-30T04:15:20Z
+duration_seconds: 537
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 10
+  bridge_fetches: 12
+
+items:
+  - title: "n8n workflow automation platform — 18 GitHub Security Advisories including OAuth credential hijack and unauthenticated trigger execution (CVE-2026-54305 CVSS 9.9, CVE-2026-54307 CVSS 8.5)"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212"
+        publisher: "NCSC-NL"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://github.com/advisories/GHSA-2j5h-858j-5mpf"
+        publisher: "GitHub Security Advisory (CVE-2026-54305)"
+        date: "2026-06-29"
+        role: "corroborating"
+      - url: "https://github.com/advisories/GHSA-pmqw-72cg-wx85"
+        publisher: "GitHub Security Advisory (CVE-2026-54307)"
+        date: "2026-06-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: ncsc-nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212 → primary: NCSC-NL CSAF advisory listing 18 GHSAs → corroborating: GitHub Security Advisories for CVE-2026-54305 and CVE-2026-54307"
+    summary: |
+      NCSC-NL advisory NCSC-2026-0212 (June 29, 2026) covers 18 GitHub Security Advisories against n8n, the open-source workflow automation platform widely deployed in EU government and CSIRT automation pipelines. The highest-severity flaw, CVE-2026-54305 (CVSS 9.9), affects n8n Dynamic Credentials Enterprise Edition endpoints: the API lacks ownership and scope checks, allowing any authenticated user to enumerate credential IDs, initiate OAuth flows that overwrite a victim's OAuth tokens (cross-tenant integration takeover), or revoke legitimate tokens — constituting a privilege escalation and lateral movement path within shared n8n deployments (T1078.004 Cloud Accounts, T1548 Abuse Elevation Control Mechanism). CVE-2026-54307 (CVSS 8.5) permits editor-level users in shared workflow instances to access other users' credentials via the public API (T1552.001 Credentials in Files). Additional flaws in this batch include: CSP bypass via the Respond to Webhook node, JavaScript injection via the Chat Trigger node, API token exfiltration via the SecurityScorecard node, unauthenticated workflow execution via MicrosoftAgent365Trigger and StripeTrigger nodes (T1190 Exploit Public-Facing Application), and prototype pollution in the HTTP Request node. Affected versions span four release trains: < 1.123.55, < 2.24.0, < 2.25.7, < 2.26.1, < 2.26.2. No exploitation in the wild confirmed as of advisory date. Detection: audit shared n8n deployments for unexpected credential ownership changes (OAuth access token rotation events in connected cloud/identity providers), unusual API calls to credential-management endpoints, and workflow trigger invocations from unauthenticated sources. Hardening: upgrade to patched versions, restrict Dynamic Credentials EE to authorised users, disable internet-exposed trigger endpoints that are not required.
+    ch_eu_nexus: "EU-wide; n8n is commonly deployed in European government, CERT, and public-sector automation pipelines connecting cloud services, IAM, and payment integrations"
+    public_sector_nexus: "direct — automation pipelines, CERT/SOC integrations"
+    sector: "government, financial, telco, cross-sector automation"
+    cves:
+      - CVE-2026-54305
+      - CVE-2026-54307
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "NCSC-2026-0212 — n8n — Meerdere kwetsbaarheden verholpen in n8n (18 GHSAs)"
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212"
+      - quote: "CVE-2026-54305: Dynamic Credential EE endpoints lack ownership/scope checks allowing authenticated user to enumerate, overwrite, or revoke other users' OAuth credentials"
+        attribution: "GitHub Security Advisory GHSA-2j5h-858j-5mpf"
+        source_url: "https://github.com/advisories/GHSA-2j5h-858j-5mpf"
+      - quote: "CVE-2026-54307: Editor-level users can access other users' credentials via public API in shared workflow instances"
+        attribution: "GitHub Security Advisory GHSA-pmqw-72cg-wx85"
+        source_url: "https://github.com/advisories/GHSA-pmqw-72cg-wx85"
+    extended_notes: |
+      This batch supersedes the earlier May 2026 n8n advisories (CVE-2026-44789, CVE-2026-44790, CVE-2026-44791) which were already covered. Defenders using n8n for SOAR/SIEM integration in EU public-sector environments should treat the OAuth credential hijack (CVE-2026-54305) as highest priority given the cross-tenant scope. The unauthenticated trigger execution flaws (MicrosoftAgent365Trigger, StripeTrigger) are particularly dangerous on internet-exposed n8n instances. Hunt telemetry: IDP/OAuth provider access logs for unexpected grant changes; n8n application logs for credential API calls from non-owner users; web server logs for unauthenticated POST requests to trigger endpoints.
+
+  - title: "SzafirHost e-signature client CVE-2026-13165 — JAR parser confusion enables malicious native library injection on Polish government and banking systems"
+    sources:
+      - url: "https://cert.pl/en/posts/2026/06/CVE-2026-13165/"
+        publisher: "CERT Polska"
+        date: "2026-06-29"
+        role: "primary"
+    discovery_trace: "first seen at: cert-pl, URL https://cert.pl/en/posts/2026/06/CVE-2026-13165/ → primary (no pivot needed — CERT-PL is the disclosing authority)"
+    summary: |
+      CERT Polska disclosed CVE-2026-13165 on June 29, 2026 in SzafirHost, a widely deployed Polish e-signature and trusted timestamping client mandated for use in Polish government services, courts, and banking. The vulnerability is a JAR parser confusion attack (T1574.002 DLL Side-Loading / T1036.005 Masquerading, technique class CWE-345 Insufficient Verification of Data Authenticity): SzafirHost uses the Java standard library's JarFile API (which reads the Central Directory at the end of the ZIP/JAR) for signature verification, but JarInputStream (which reads local file headers sequentially) for extraction. An attacker delivering a crafted JAR — for example via a malicious e-signature update package, tampered document, or intercepted download — can insert a malicious native DLL between the last legitimate entry's data and the Central Directory. JarFile verification never encounters the injected entry (it is invisible to the Central Directory walk). JarInputStream extraction writes the attacker's DLL to the native temp directory without hash verification. The native library is subsequently loaded by the JVM or a loader function within SzafirHost, achieving code execution in the context of the signing/verification process, which typically runs under the end user's account on Windows systems used in court or administrative workflows. Fixed in SzafirHost v1.2.2. EU public-sector defenders should verify deployed SzafirHost versions across workstations used for document signing in Polish government and partner organisations; also relevant for any European eIDAS-compliant signing infrastructure integrating with Polish authorities. Detection: monitor for creation of unexpected native DLL files in Java temp directories during SzafirHost invocation; review JVM startup arguments for unexpected library paths.
+    ch_eu_nexus: "Poland (EU member); affects Polish government, courts, banking; eIDAS-adjacent; relevant to EU organisations interoperating with Polish digital signature infrastructure"
+    public_sector_nexus: "direct — Polish government, judiciary, public administration"
+    sector: "government, financial, legal/judiciary"
+    cves:
+      - CVE-2026-13165
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-13165 — parser confusion in SzafirHost between JarFile (Central Directory verification) and JarInputStream (local header extraction) allows injection of malicious native library invisible to signature check"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/06/CVE-2026-13165/"
+      - quote: "Fixed in SzafirHost v1.2.2; affects all prior versions of the widely deployed Polish e-signature client used in government, court, and banking workflows"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/06/CVE-2026-13165/"
+    extended_notes: |
+      The parser-confusion class (JarFile vs JarInputStream) is a known Java attack vector previously exploited in supply-chain contexts. CERT-PL is the disclosing authority (single-source national CERT carve-out applies). No exploitation in the wild reported. The fix (v1.2.2) should be deployed to all workstations where SzafirHost is installed, particularly in court and public administration workflows where the tool is run against externally provided documents. Given the eIDAS cross-border recognition framework, European CERTs with partner integrations into Polish public services should also assess exposure.
+
+  - title: "Swiss BACS pilot: 25 Aargau organisations show systematic cyber resilience gaps — process governance and emergency planning weakest"
+    sources:
+      - url: "https://www.inside-it.ch/lueckenhafte-cyberresilienz-von-aargauer-gemeinden-20260629"
+        publisher: "Inside IT Switzerland"
+        date: "2026-06-29"
+        role: "primary"
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/lueckenhafte-cyberresilienz-von-aargauer-gemeinden-20260629 → primary (no pivot needed — Inside IT is the primary news source; BACS pilot results not yet on bacs.admin.ch)"
+    summary: |
+      The Swiss Federal Office for Cybersecurity (BACS) conducted a pilot cyber resilience assessment (CYRA methodology) covering 25 organisations in Canton Aargau — 14 municipalities plus industry entities — and published results June 29, 2026 (reported by Inside IT Switzerland). The pilot reveals that while basic security controls (backup, access control, antivirus) are frequently in place, three structural weaknesses are pervasive: (1) incomplete documentation of business-critical process dependencies on IT and OT systems, impeding scope-aware incident response; (2) weak process-oriented governance — security practices anchored in technical controls rather than documented administrative processes; (3) emergency and recovery planning only partially implemented, with most organisations lacking tested playbooks for IT failure scenarios. Industry participants showed materially higher maturity than municipalities, particularly for OT/production systems. Limitation: assessments were self-reported, not externally verified. The pilot positions BACS for a national roll-out of CYRA to Swiss municipalities; findings provide the baseline against which cantonal cyber strategies should be calibrated. Swiss SOC defenders and cantonal CISO offices should note that the most actionable gaps are in documentation and planning rather than tool deployment — an EDR on an undocumented OT dependency provides far less resilience than a well-maintained asset registry with tested runbooks.
+    ch_eu_nexus: "Switzerland (direct); pilot by Swiss federal authority BACS; findings applicable to Swiss cantonal and municipal IT governance"
+    public_sector_nexus: "direct — Swiss municipalities and federal cybersecurity authority"
+    sector: "government, public administration, OT/ICS"
+    cves: []
+    actors_campaigns_malware: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "BACS Pilot CYRA — 14 Aargauer Gemeinden und Industriebetriebe: Basisschutz vorhanden, aber Prozess-Governance, IT/OT-Abhängigkeitsdokumentation und Notfallplanung systematisch lückenhaft"
+        attribution: "Inside IT Switzerland"
+        source_url: "https://www.inside-it.ch/lueckenhafte-cyberresilienz-von-aargauer-gemeinden-20260629"
+    extended_notes: |
+      SINGLE-SOURCE-OTHER flag: no second independent source found for the BACS pilot results in-window. Inside IT Switzerland is a high-quality Swiss IT news outlet (HIGH reliability in sources.json) but is not a government authority. Main agent should consider whether to include with the SINGLE-SOURCE flag or hold for a second source. The BACS press release may appear on bacs.admin.ch within 24h. The item has direct CH public-sector relevance and a concrete policy angle (CYRA national roll-out trajectory).
+
+  - title: "Germany NIS2UmsG June 30 compliance milestone: first internal audit checkpoint for ~29,500 obligated entities"
+    sources:
+      - url: "https://www.advisori.de/en/blog/nis2-enforcement-2026-bsi-audit-fines"
+        publisher: "ADVISORI (legal/advisory commentary)"
+        date: "2026-06-28"
+        role: "primary"
+      - url: "https://nisd2.eu/nis2-compliance-checklist-for-germany/"
+        publisher: "nisd2.eu"
+        date: "2026-06-25"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Germany NIS2 June 2026 compliance deadline BSI audit') → pivot: advisori.de blog (June 28) → corroborating: nisd2.eu checklist (June 25)"
+    summary: |
+      Germany's NIS2 transposition law (NIS2UmsG / BSI-Gesetz neu) entered into force December 6, 2025, placing approximately 29,500 German entities (essential and important) under binding security obligations across 16 critical sectors. The June 30, 2026 date is widely cited in German legal and compliance commentary as the first internal compliance checkpoint: entities are expected to have completed gap analysis, documented risk frameworks, and at minimum partially implemented the ten mandatory security measures (risk analysis, incident response, business continuity, supply chain security, cryptography, MFA, access control, vulnerability management, network security, and training). BSI began proactive compliance enquiries in Q1 2026. Registration with BSI (deadline March 6, 2026) was widely missed — approximately 18,500 of 29,500 obligated entities reportedly failed to register by the deadline, creating a secondary enforcement queue. Director-level personal liability for non-compliance is a distinguishing feature of NIS2UmsG; executives cannot delegate accountability to IT departments. Maximum fines: essential entities €10M or 2% global annual turnover; important entities €7M or 1.4%. Formal BSI external audit requirements for essential entities are mandated by December 2028; the June 30 milestone represents an industry-standard internal governance checkpoint, not a formal BSI-imposed external audit deadline. Swiss organisations with German subsidiaries or operating in cross-border EU critical infrastructure should assess NIS2UmsG applicability to their German entities.
+    ch_eu_nexus: "Germany (EU member); NIS2UmsG is the German transposition of EU NIS2 Directive; affects EU-wide supply chains and cross-border critical infrastructure operators"
+    public_sector_nexus: "indirect — essential and important entities include public administration in Germany; affects Swiss organisations with German operations"
+    sector: "energy, transport, financial, health, water, digital infrastructure, public administration, space"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "NIS2UmsG in force since 6 December 2025; June 30, 2026 is the first internal compliance milestone; BSI conducting active outreach to non-registered entities; director liability applies from day one"
+        attribution: "ADVISORI"
+        source_url: "https://www.advisori.de/en/blog/nis2-enforcement-2026-bsi-audit-fines"
+      - quote: "~29,500 German entities obligated; 10 mandatory measures; registration deadline March 6, 2026 widely missed"
+        attribution: "nisd2.eu"
+        source_url: "https://nisd2.eu/nis2-compliance-checklist-for-germany/"
+    extended_notes: |
+      Confidence MEDIUM because (1) the June 30 internal checkpoint date is legal/advisory commentary rather than a formal BSI-published deadline — the primary BSI obligation dates are registration (March 2026) and formal audit certification (December 2028); (2) ADVISORI is a consulting firm rather than a primary legal authority. Main agent should frame this as "widely cited first internal compliance milestone" rather than a hard regulatory deadline. Relevance: timely (June 30 is today); affects EU supply chains including Swiss exporters.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actu-recent feed returned entries only up to Nov 2025; feed appears stale. No in-window items."
+  - source_id: inside-it-ch
+    reason: "Inside-IT.ch article body inaccessible via bridge (Cloudflare Managed Challenge on article URLs); RSS summary used for item confirmation; full article body not retrieved."
+  - source_id: cert-eu
+    reason: "CERT-EU recent feed returned advisories all pre-June 10, 2026; no in-window items found."
+  - source_id: bsi-de
+    reason: "BSI RSS feed in-window entries were all updates to older advisories; no new material in window."

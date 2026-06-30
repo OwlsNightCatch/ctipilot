@@ -1,0 +1,300 @@
+# work/2026-06-30-9aaa1114/findings.S1.yaml
+domain: S1
+run_id: 2026-06-30-9aaa1114
+model: Claude Sonnet 4.6
+model_id: claude-sonnet-4-6
+started_at: 2026-06-30T04:06:14Z
+ended_at: 2026-06-30T04:11:18Z
+duration_seconds: 304
+self_telemetry:
+  webfetch_calls: 18
+  websearch_calls: 6
+  bridge_fetches: 12
+
+items:
+  - title: "SimpleHelp OIDC authentication bypass actively exploited — Djinn Stealer deployed (CVE-2026-48558)"
+    sources:
+      - url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/"
+        publisher: "BleepingComputer"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+        publisher: "Horizon3.ai"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://ccb.belgium.be/advisories/warning-simplehelp-patched-cve-2026-48558-critical-authentication-bypass-vulnerability"
+        publisher: "Centre for Cybersecurity Belgium (CCB)"
+        date: "2026-06-29"
+        role: "corroborating"
+      - url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+        publisher: "CISA KEV"
+        date: "2026-06-29"
+        role: "corroborating"
+      - url: "https://simple-help.com/security/simplehelp-security-update-2026-05"
+        publisher: "SimpleHelp (vendor advisory)"
+        date: "2026-05"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge cisa-kev, CISA KEV catalog showing CVE-2026-48558 added 2026-06-29, due 2026-07-02 → primary: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/ → corroborated: Horizon3.ai, URL https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/ → corroborated: CCB Belgium, URL https://ccb.belgium.be/advisories/warning-simplehelp-patched-cve-2026-48558-critical-authentication-bypass-vulnerability"
+    summary: |
+      CVE-2026-48558 is a critical (CVSS 10.0) authentication bypass in SimpleHelp Remote Monitoring and
+      Management (RMM) software, added to the CISA Known Exploited Vulnerabilities catalog on 2026-06-29
+      with a mandatory patch deadline of 2026-07-02. The vulnerability resides in the OIDC SSO callback
+      handler: the server accepts identity tokens without verifying the cryptographic signature (CWE-347),
+      allowing an attacker to forge an arbitrary OIDC token and obtain a full Technician-level session.
+      MFA is also bypassed on first OIDC login. Prerequisites for exploitation require that the target
+      instance has an OIDC provider configured, a TechnicianGroup associated with that provider, and
+      the "Allow group authenticated logins" option enabled — Horizon3.ai measured approximately 14,000
+      internet-exposed SimpleHelp servers with roughly 7.2% (approximately 1,000) having a vulnerable
+      OIDC configuration. Threat actors have chained this bypass with deployment of Djinn Stealer, a
+      new cross-platform (Windows/macOS/Linux) infostealer that harvests credentials, session tokens,
+      and browser data. The deployment mechanism involves a "TaskWeaver" loader component that establishes
+      persistence via scheduled tasks (Windows) or launchd plists (macOS). Affected versions: SimpleHelp
+      prior to v5.5.16 (stable) and v6.0 RC 2. Defender prioritisation: internet-exposed SimpleHelp
+      instances with OIDC enabled should patch immediately (mandatory US federal deadline 2026-07-02);
+      review Technician session audit logs for unexpected logins not correlated with VPN/MFA events;
+      detect TaskWeaver loader via parent-process chains where SimpleHelp service spawns unexpected
+      child processes (Sysmon EID 1, filter on parent image `SimpleHelpServer.exe` or `SimpleHelp.exe`
+      spawning `powershell.exe`, `cmd.exe`, `wscript.exe`, or scheduled-task creation via `schtasks.exe`);
+      hunt infostealer exfiltration channels via outbound HTTPS from unexpected endpoints post-RMM-login.
+    ch_eu_nexus: "global; European public-sector and SME entities use SimpleHelp as MSP/internal RMM tooling"
+    public_sector_nexus: "indirect — RMM tools extensively used in Swiss and EU public-sector IT managed-service contracts"
+    sector: "IT services, government, managed service providers"
+    cves: [CVE-2026-48558]
+    actors_campaigns_malware: ["Djinn Stealer", "TaskWeaver loader"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-48558 was added to CISA's Known Exploited Vulnerabilities Catalog on June 29, 2026, with a remediation deadline of July 2, 2026."
+        attribution: "CISA KEV"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "Hackers exploit critical SimpleHelp flaw to deploy new Djinn infostealer and TaskWeaver malware"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/"
+      - quote: "The vulnerability resides in the OIDC callback handler and allows forged tokens to bypass MFA and achieve full Technician session access (CWE-347)."
+        attribution: "Horizon3.ai"
+        source_url: "https://horizon3.ai/attack-research/disclosures/cve-2026-48558-simplehelp-authentication-bypass-iocs/"
+    mitre_attack:
+      - id: T1190
+        name: "Exploit Public-Facing Application"
+      - id: T1556.006
+        name: "MFA — Modify Authentication Process"
+      - id: T1555
+        name: "Credentials from Password Stores (infostealer)"
+      - id: T1053.005
+        name: "Scheduled Task/Job: Scheduled Task (TaskWeaver persistence)"
+    extended_notes: |
+      SimpleHelp is a commercial RMM platform widely used by managed service providers (MSPs) and IT
+      teams in European public-sector support contracts. Any entity relying on an OIDC-enabled SimpleHelp
+      deployment for remote management access is directly at risk. The CISA KEV deadline of 2026-07-02
+      applies to US federal entities; European defenders should treat this as a P1 patch given active
+      exploitation. The vendor patched this in May 2026 (v5.5.16 / v6.0 RC2); the exploitation campaign
+      appears to have begun after public disclosure of the OIDC config requirement surface.
+
+  - title: "Mustang Panda deploys ZOHOMURK dead-drop C2 via Zoho WorkDrive against Indian government and energy targets"
+    sources:
+      - url: "https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/"
+        publisher: "Acronis Threat Research Unit (TRU)"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/mustang-panda-uses-zoho-workdrive-as.html"
+        publisher: "The Hacker News"
+        date: "2026-06-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: WebSearch ('Mustang Panda Zoho WorkDrive 2026') → primary: Acronis TRU, URL https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/ → corroborated: The Hacker News, URL https://thehackernews.com/2026/06/mustang-panda-uses-zoho-workdrive-as.html"
+    summary: |
+      Acronis Threat Research Unit published a 2026-06-29 report detailing a Mustang Panda (China-aligned
+      APT, also tracked as TA416, BRONZE PRESIDENT, HoneyMyte) campaign targeting Indian government
+      hydropower sector entities and government bodies with Taiwan Memorandum of Understanding relationships.
+      The campaign introduces three novel tools: SHARDLOADER (DLL sideloading loader, loads shellcode from
+      fragmented files to evade static detection), MINIRECON (lightweight recon implant harvesting system
+      metadata, logged-in user lists, directory enumerations), and ZOHOMURK (a C2 implant using Zoho
+      WorkDrive as a dead-drop resolver). ZOHOMURK uses hardcoded attacker-controlled Zoho OAuth2 client
+      credentials to authenticate to the Zoho API; it reads operator commands from an attacker-controlled
+      WorkDrive "inbox" folder and writes exfiltrated output to an "outbox" folder, blending all C2
+      traffic with legitimate Zoho API calls to `workdrive.zoho.com`. Active beaconing was observed
+      between June 12 and June 22, 2026. The technique class is T1102.001 (Web Service: Dead Drop
+      Resolver) — identical in principle to the group's previously documented use of Google Drive and
+      Dropbox for C2. Detection: monitor outbound API calls to `workdrive.zoho.com` originating from
+      non-standard parent processes (Office applications, `rundll32.exe`, `svchost.exe` loading unsigned
+      DLLs); flag OAuth2 token-request flows from endpoints where Zoho WorkDrive is not an authorised
+      business application; look for DLL load events where a signed Microsoft or Adobe binary
+      (`legitimateapp.exe`) loads a same-directory DLL not in the expected product set (Sysmon EID 7,
+      unsigned DLL, parent is a trusted but hijackable binary). Hardening: restrict outbound HTTPS to
+      known-good SaaS tenants via CASB or egress proxy policy, require explicit allowlisting of
+      Zoho WorkDrive API endpoints for government endpoints where it is not a sanctioned tool.
+    ch_eu_nexus: "indirect — campaign targets India but the dead-drop C2 technique is actor-agnostic and can be replicated against any target; Mustang Panda has prior EU targeting (European government entities, 2022–2024)"
+    public_sector_nexus: "direct — campaign specifically targets government entities; EU public-sector defenders should review Zoho WorkDrive egress"
+    sector: "government, energy (hydropower)"
+    cves: []
+    actors_campaigns_malware: ["Mustang Panda", "TA416", "BRONZE PRESIDENT", "SHARDLOADER", "MINIRECON", "ZOHOMURK"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Mustang Panda deploys ZOHOMURK, a novel implant that uses hardcoded Zoho OAuth credentials to leverage an attacker-controlled WorkDrive account as a dead-drop C2 channel, reading commands from an inbox folder and writing output to an outbox folder."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/"
+      - quote: "Active beaconing observed June 12–22, 2026; targets include Indian government hydropower entities and government bodies with Taiwan MOU relationships."
+        attribution: "Acronis Threat Research Unit"
+        source_url: "https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/"
+    mitre_attack:
+      - id: T1102.001
+        name: "Web Service: Dead Drop Resolver"
+      - id: T1574.002
+        name: "DLL Side-Loading (SHARDLOADER)"
+      - id: T1082
+        name: "System Information Discovery (MINIRECON)"
+      - id: T1087.001
+        name: "Account Discovery: Local Account (MINIRECON)"
+    extended_notes: |
+      The dead-drop C2 pattern (ZOHOMURK via Zoho WorkDrive) is functionally equivalent to Mustang Panda's
+      prior use of legitimate cloud storage APIs (Dropbox, Google Drive, OneDrive) documented in earlier
+      campaigns against European government targets. The switch to Zoho WorkDrive likely reflects defenders
+      adding Dropbox/Google/OneDrive DLP controls to their egress monitoring. European public-sector SOCs
+      that recently tightened controls on Google/Dropbox without extending the ruleset to Zoho should
+      update their CASB/egress policies. SHARDLOADER's fragmentation technique — loading shellcode across
+      multiple files rather than a single payload — is designed to defeat static file-content scanning
+      and may evade legacy AV signatures that require the complete payload to trigger.
+
+  - title: "Supply-chain attack: hijacked npm and Go packages deliver Python infostealer via VS Code Tasks (JFrog research)"
+    sources:
+      - url: "https://jfrog.com/blog/supply-chain-attack-hijacks-npm-and-go-packages-via-vs-code-tasks/"
+        publisher: "JFrog Security Research"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/hackers-exploit-vs-code-tasks-to-hide.html"
+        publisher: "The Hacker News"
+        date: "2026-06-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: feed https://feeds.feedburner.com/TheHackersNews, THN item 'Hackers Exploit VS Code Tasks to Hide Malicious Code in npm and Go Packages' (2026-06-29) → pivot to primary: JFrog Security Research, URL https://jfrog.com/blog/supply-chain-attack-hijacks-npm-and-go-packages-via-vs-code-tasks/ → corroborated: THN, URL https://thehackernews.com/2026/06/hackers-exploit-vs-code-tasks-to-hide.html"
+    summary: |
+      JFrog Security Research disclosed on 2026-06-29 a novel supply-chain attack technique exploiting
+      VS Code Tasks configuration files (`.vscode/tasks.json`) embedded in npm packages and Go modules.
+      Attackers injected malicious `.vscode/tasks.json` files into hijacked or typosquatted packages,
+      configuring tasks that execute automatically when a developer opens the project directory in VS Code
+      (via the `runOptions.runOn: "folderOpen"` directive). The malicious task payload is a Python infostealer
+      that harvests developer credentials, SSH keys, cloud API keys (AWS, GCP, Azure), browser session
+      tokens, and .npmrc authentication tokens, then exfiltrates via HTTPS. The technique deliberately
+      avoids npm lifecycle scripts (`preinstall`, `postinstall`, `prepare`) — which npm v12+ blocked by
+      default in March 2026 — instead moving execution into the editor's task runner. Detection: monitor
+      for VS Code task execution events in EDR telemetry where `code.exe` spawns `python.exe`, `python3`,
+      `cmd.exe`, or `powershell.exe` as a child process in a non-standard working directory; audit
+      `.vscode/tasks.json` files added in package dependencies for `runOn: "folderOpen"` combined with
+      shell commands or Python interpreter invocations; treat any dependency-installed `.vscode/` directory
+      as untrusted input. Hardening: configure VS Code Workspace Trust to block automatic task execution
+      on untrusted folders (`security.workspace.trust.enabled: true`; do not auto-trust installed packages);
+      review developer workstation EDR rules for `code.exe`→`python` parent-child chains not matching
+      known build pipelines; enforce package-signing or lockfile pinning (npm `package-lock.json`, Go
+      `go.sum` verification) to detect unexpected package updates before install.
+    ch_eu_nexus: "global; affects all developer organisations including Swiss public-sector software teams and government IT shops using VS Code and npm/Go toolchains"
+    public_sector_nexus: "indirect — developer credential theft (cloud API keys, SSH keys) directly enables lateral movement into government cloud environments"
+    sector: "technology, software development, all sectors with in-house development teams"
+    cves: []
+    actors_campaigns_malware: ["Python infostealer (unnamed)", "VS Code Tasks supply-chain technique"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "JFrog researchers found malicious .vscode/tasks.json files in hijacked npm and Go packages that execute a Python infostealer when the victim opens the project in VS Code, bypassing npm v12's lifecycle-script blocking by exploiting the folderOpen task trigger."
+        attribution: "JFrog Security Research"
+        source_url: "https://jfrog.com/blog/supply-chain-attack-hijacks-npm-and-go-packages-via-vs-code-tasks/"
+      - quote: "The technique avoids postinstall/preinstall hooks and targets developers using VS Code, harvesting AWS, GCP, Azure API keys, SSH keys, and browser session tokens."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/hackers-exploit-vs-code-tasks-to-hide.html"
+    mitre_attack:
+      - id: T1195.002
+        name: "Supply Chain Compromise: Compromise Software Supply Chain"
+      - id: T1059.006
+        name: "Command and Scripting Interpreter: Python"
+      - id: T1555.003
+        name: "Credentials from Web Browsers"
+      - id: T1552.001
+        name: "Unsecured Credentials: Credentials In Files (SSH keys, API keys)"
+    extended_notes: |
+      This technique represents a direct evasion response to npm v12's March 2026 hardening that blocked
+      automatic execution of lifecycle scripts (`preinstall`/`postinstall`/`prepare`) by default. Attackers
+      immediately pivoted to the VS Code task runner as an alternate execution vector, demonstrating the
+      ecosystem-level cat-and-mouse between supply-chain attackers and package manager mitigations.
+      Detection engineers who added EDR coverage for `node.exe`→`python` chains triggered by `npm install`
+      may not have considered `code.exe`→`python` chains triggered by workspace open — the parent-process
+      filter differs. Development teams should treat `.vscode/` directory contents in installed packages
+      with the same suspicion as lifecycle scripts.
+
+  - title: "n8n workflow automation platform — multiple vulnerabilities including unauthenticated trigger injection (NCSC-NL NCSC-2026-0212)"
+    sources:
+      - url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212"
+        publisher: "NCSC-NL"
+        date: "2026-06-29"
+        role: "primary"
+      - url: "https://thehackernews.com/2026/06/critical-n8n-flaws-let-attackers-inject.html"
+        publisher: "The Hacker News"
+        date: "2026-06-29"
+        role: "corroborating"
+    discovery_trace: "first seen at: bridge ncsc-nl recent, NCSC-2026-0212 listed 2026-06-29 → primary: NCSC-NL advisory, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212 → corroborated: The Hacker News, URL https://thehackernews.com/2026/06/critical-n8n-flaws-let-attackers-inject.html"
+    summary: |
+      NCSC-NL published advisory NCSC-2026-0212 on 2026-06-29 covering multiple security vulnerabilities
+      in n8n, an open-source workflow automation platform increasingly deployed in European public-sector
+      and SME environments for API orchestration. The most severe vulnerability (exact CVE number not
+      yet assigned at time of NCSC advisory publication) affects the `MicrosoftAgent365Trigger` and
+      `StripeTrigger` webhook nodes: because n8n validates incoming webhook payloads by matching a path
+      token rather than verifying a cryptographic HMAC signature, an unauthenticated attacker who knows
+      or can enumerate the webhook path can inject arbitrary fake trigger payloads, causing n8n to execute
+      any workflow connected to that trigger. In environments where n8n workflows have downstream
+      consequences (sending emails, writing to databases, executing API calls with privileged credentials),
+      this constitutes unauthenticated remote workflow execution. A second class of vulnerabilities
+      (authenticated) allows workflow editors with operator-level access to craft malicious workflow
+      definitions that exfiltrate stored credentials from n8n's credential vault via SSRF or expression
+      injection. n8n versions affected: all releases prior to 1.97.0 (the vendor patched in 1.97.0 /
+      1.97.1). Detection: review n8n server logs for unexpected high-frequency calls to webhook endpoints
+      from external source IPs, particularly those sending payloads that differ structurally from
+      legitimate provider payloads (Microsoft/Stripe webhook schemas are well-defined); alert on workflow
+      executions triggered from known-bad source IPs or at unusual hours; audit n8n credential-store
+      access events for operator accounts not associated with active workflow execution sessions.
+      Hardening: upgrade to n8n >= 1.97.1 immediately; place n8n behind an authenticated reverse proxy
+      where external webhook delivery is not required; for Microsoft 365 and Stripe triggers, add webhook
+      secret validation (both platforms support HMAC-SHA256 signing of payloads — n8n 1.97.0 adds
+      mandatory signature verification for these trigger types).
+    ch_eu_nexus: "direct — n8n is widely deployed across EU public-sector and commercial environments; NCSC-NL advisory explicitly calls out EU relevance"
+    public_sector_nexus: "direct — n8n used for API orchestration in government IT automation pipelines; unauthenticated workflow execution is a direct operational risk"
+    sector: "IT services, government, finance, all sectors with n8n deployments"
+    cves: []
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "NCSC-NL advisory NCSC-2026-0212 (2026-06-29): Multiple vulnerabilities in n8n including unauthenticated fake payload injection via MicrosoftAgent365Trigger and StripeTrigger webhook nodes due to path-token-only validation without HMAC signature verification."
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0212"
+      - quote: "Critical n8n flaws let attackers inject fake trigger payloads without authentication, triggering arbitrary workflow execution on connected automation pipelines."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/06/critical-n8n-flaws-let-attackers-inject.html"
+    mitre_attack:
+      - id: T1190
+        name: "Exploit Public-Facing Application"
+      - id: T1078
+        name: "Valid Accounts (credential vault exfiltration via authenticated path)"
+      - id: T1210
+        name: "Exploitation of Remote Services (SSRF in workflow definitions)"
+    extended_notes: |
+      n8n's deployment in public-sector automation pipelines (especially for Microsoft 365 and payment
+      integrations) makes the unauthenticated trigger injection particularly concerning. Many n8n deployments
+      expose webhook endpoints publicly to receive legitimate third-party callbacks (Microsoft, Stripe,
+      GitHub, etc.) — these same endpoints are the attack surface. The combination of unauthenticated
+      trigger injection + authenticated credential exfiltration means a multi-stage attack chain is possible:
+      (1) enumerate webhook paths via timing or pattern analysis, (2) inject triggers to execute workflows
+      that exfiltrate stored OAuth tokens or API keys from the credential vault, (3) use those credentials
+      for follow-on attacks against connected services (Microsoft 365 tenants, Stripe accounts, databases).
+
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "No in-window advisories (2026-06-29 to 2026-06-30). Most recent advisory is 2026-008 from June 10, 2026."
+  - source_id: anssi-fr
+    reason: "CERT-FR RSS only returned items from June 18-19, 2026 — outside the 36h window."
+  - source_id: ncsc-ch-security-hub
+    reason: "GovCERT.ch/NCSC-CH CSH: no new posts in the 36h window per bridge ncsc-csh recent check."
+  - source_id: rapid7-research
+    reason: "RSS feed at https://www.rapid7.com/blog/feed/ returned HTTP 404 — feed endpoint may have moved."
+
+candidate_sources: []
