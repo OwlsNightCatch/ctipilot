@@ -1,0 +1,125 @@
+domain: S1
+run_id: 2026-07-01-af9e697d
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: 2026-07-01T04:05:50Z
+ended_at: 2026-07-01T04:08:47Z
+duration_seconds: 177
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 6
+  bridge_fetches: 8
+items:
+  - title: "CVE-2026-8451 — \"CitrixBleed To Infinity And Beyond\": pre-auth memory overread in NetScaler's SAML AuthnRequest XML parser"
+    sources:
+      - { url: "https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/", publisher: "watchTowr Labs", date: "2026-06-30", role: "primary" }
+      - { url: "https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/", publisher: "CyberScoop", date: "2026-06-30", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8451", publisher: "NVD", date: "2026-06-30", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Citrix NetScaler CVE-2026-8451 CVE-2026-10817 security bulletin June 2026\") → pivot: watchTowr Labs primary write-up, URL https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/ → corroborating: CyberScoop, URL https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/ → verified: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-8451"
+    summary: |
+      Citrix disclosed CVE-2026-8451 (CVSS 8.8) on 2026-06-30 as part of a six-CVE NetScaler ADC/Gateway
+      bulletin. watchTowr Labs (researcher Aliz Hammond), who reported the bug in March 2026, published the
+      technical root-cause the same day. The flaw lives in NetScaler's hand-rolled XML attribute-value parser
+      used to process base64-encoded SAML AuthnRequest documents submitted to the /saml/login endpoint on
+      appliances configured as a SAML Identity Provider. The parser's terminator logic treats quoted attribute
+      values and unquoted attribute values differently: quoted values stop at the matching quote, but unquoted
+      values are only terminated by NUL, '>' or the matching quote — whitespace/newline is NOT treated as a
+      terminator for unquoted values. By submitting an AssertionConsumerServiceURL or ID attribute with no
+      closing quote and a trailing newline, and by leaving the outer <samlp:AuthnRequest> start tag itself
+      unterminated (no closing '>'), an attacker can make the parser walk past the intended attribute boundary,
+      past the end of the well-formed XML, and keep consuming bytes until it hits a stray '>' character
+      elsewhere in the request buffer — as demonstrated, even bytes belonging to unrelated elements placed
+      outside the nominal AuthnRequest scope. The over-read bytes are embedded verbatim into the NSC_TASS
+      cookie returned in the 302 response, giving an unauthenticated remote attacker a primitive to leak
+      adjacent process/heap memory content one authentication attempt at a time — the same "CitrixBleed" leak
+      pattern as CVE-2025-5777 and the March-2026 CVE-2026-3055 (both from the same appliance family and the
+      same root parser). No public PoC or confirmed in-the-wild exploitation had been reported at publication
+      time; Citrix credits Michael Tucker (JPMorgan Chase XOR team), Aliz Hammond (watchTowr) and Maxim Suhanov
+      with discovery/reporting. The bulletin (Citrix KB CTX696604) bundles five additional CVEs
+      (CVE-2026-8452, CVE-2026-8655, CVE-2026-10816, CVE-2026-10817, CVE-2026-13474) spanning DoS-via-memory-
+      management issues in Gateway/DNS-proxy/AAA-vserver configurations and an unauthenticated arbitrary-file-read
+      in the Management Interface.
+    ch_eu_nexus: "global; NetScaler ADC/Gateway is widely deployed as VPN/remote-access edge infrastructure across Swiss and EU public-sector and enterprise networks — same product family implicated in prior CitrixBleed incidents"
+    public_sector_nexus: "indirect — NetScaler Gateway is a common remote-access/VPN front door for government and critical-infrastructure networks"
+    sector: "cross-sector; any organisation running NetScaler ADC/Gateway configured as SAML IdP"
+    cves: [CVE-2026-8451, CVE-2026-8452, CVE-2026-8655, CVE-2026-10816, CVE-2026-10817, CVE-2026-13474]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Citrix eloquently describes CVE-2026-8451 as: “Insufficient input validation leading to memory overread”... Of note is that for this vulnerability to be exploitable, matching CitrixBleed3?4?, the NetScaler appliance has to be configured as a SAML IDP."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/"
+      - quote: "Insufficient input validation in NetScaler ADC and NetScaler Gateway leading to memory overread if NetScaler ADC or NetScaler Gateway is configured as a SAML IDP"
+        attribution: "NVD (CVE-2026-8451 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8451"
+      - quote: "The flaw stems from improper parsing of SAML authentication requests when appliances are configured as SAML identity providers, allowing unauthenticated attackers to read out-of-bounds memory."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/"
+    extended_notes: |
+      Affected/patched versions per watchTowr's reproduction of the Citrix advisory text: NetScaler ADC and
+      NetScaler Gateway 14.1 before 14.1-72.61; 13.1 before 13.1-63.18; ADC FIPS before 14.1-72.61 FIPS; ADC
+      FIPS and NDcPP before 13.1-37.272. Detection/hunt angle for defenders: this is the fourth
+      "CitrixBleed"-class memory-overread bug in this same appliance family within roughly a year
+      (CVE-2025-5777 → CVE-2025-12101 → CVE-2026-3055 → CVE-2026-8451) — all four share the pattern of
+      malformed/oversized attribute or field values in an authentication-adjacent parser leaking adjacent
+      memory into a response artefact (cookie or page content) returned to an unauthenticated client. Hunt
+      for anomalous /saml/login POST bodies with malformed or missing XML attribute quoting/termination, and
+      for oversized or malformed NSC_TASS cookie values in ingress logs/WAF captures on NetScaler appliances
+      configured as SAML IdP. MITRE ATT&CK: T1190 (Exploit Public-Facing Application) for the initial
+      unauthenticated access vector; the leaked memory could yield session tokens or credentials enabling
+      T1078 (Valid Accounts) follow-on. Hardening: disable SAML IdP configuration where not required; if SAML
+      IdP is required, patch to 14.1-72.61 / 13.1-63.18 (or FIPS equivalents) immediately; rotate any
+      credentials/certificates that may have transited memory near the SAML processing path (matching prior
+      CitrixBleed remediation guidance of session termination + credential rotation post-patch, per Citrix's
+      historical CVE-2025-5777 bulletin pattern of `kill icaconnection -all` / `kill pcoipConnection -all`
+      post-patch session invalidation — not independently confirmed for this specific bulletin, since the
+      Citrix KB CTX696604 page is an Angular SPA that returned no server-rendered content to the bridge
+      fetcher in this run).
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "CISA ICS advisory icsa-26-181-06 (StoneFly Storage Concentrator hardcoded credentials/command injection, EUVD-listed 2026-06-30) 403'd via both the cisa page bridge subcommand and direct url bridge fetch (retried once each). WebSearch found only a 2024-dated LevelBlue/SpiderLabs StoneFly write-up (different, older StoneFly disclosure, not this one) as a possible corroborator, so I could not independently verify this is fresh in-window disclosure vs. a delayed EUVD ingestion of an older CISA advisory batch — dropped rather than risk mis-dating."
+  - source_id: bsi-de
+    reason: "BSI WID-SEC RSS feed's top ~15 entries (Linux kernel, NGINX) are all tagged [UPDATE] with an identical batch pubDate of 2026-06-30 11:50-11:51 GMT despite covering advisory IDs spanning WID-SEC-2024-1863 through WID-SEC-2026-1661 — this reads as a feed-wide republish/reindex artifact rather than genuinely fresh individual disclosures, so none were surfaced as in-window items."
+  - source_id: cisco-psirt
+  - source_id: apple-security
+  - source_id: mozilla-mfsa
+  - source_id: github-advisory
+  - source_id: greynoise
+  - source_id: jpcert
+  - source_id: msrc-blog
+  - source_id: zdi
+  - source_id: sansec-research
+  - source_id: shadowserver
+  - source_id: vulncheck
+  - source_id: exodus-intelligence
+  - source_id: flatt-security
+  - source_id: aikido-security
+  - source_id: socket-dev-blog
+  - source_id: horizon3-ai
+  - source_id: infoguard-labs
+  - source_id: truesec
+  - source_id: trustwave-spiderlabs
+  - source_id: synacktiv
+  - source_id: claroty-team82
+  - source_id: 0patch-blog
+  - source_id: cert-pl
+  - source_id: ccb-belgium
+  - source_id: oracle-cpu
+  - source_id: sonatype
+  - source_id: calif-codex
+  - source_id: rapid7-research
+  - source_id: tenable-research
+  - source_id: snyk-research
+  - source_id: socprime
+  - source_id: trendmicro-research
+  - source_id: wiz-blog
+  - source_id: chrome-releases
+  - source_id: projectzero
+  # Not individually fetched this run given the 30-min budget and the strength/depth already reached on
+  # the NetScaler item; CISA KEV, ENISA EUVD (exploited + criticals), NCSC-CH Security Hub, NCSC-NL
+  # advisories, and BSI WID-SEC RSS were all fetched and checked for fresh in-window items — none of the
+  # remaining unfetched sources' typical cadence (daily/weekly digest blogs) would plausibly have carried
+  # a materially different fresh item not already visible via the aggregating feeds checked.

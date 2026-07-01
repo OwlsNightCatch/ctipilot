@@ -1,0 +1,140 @@
+domain: S2
+run_id: 2026-07-01-af9e697d
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-01T04:06:02Z
+ended_at: 2026-07-01T04:09:38Z
+duration_seconds: 216
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 7
+  bridge_fetches: 10
+items:
+  - title: "Citrix NetScaler ADC/Gateway CVE-2026-8451 — pre-auth SAML XML-parser memory overread, root-cause echo of CitrixBleed"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0216", publisher: "NCSC-NL", date: "2026-06-30", role: "primary" }
+      - { url: "https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/", publisher: "watchTowr Labs", date: "2026-06-30", role: "primary" }
+      - { url: "https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/", publisher: "CyberScoop", date: "2026-06-30", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl (bridge: ncsc-nl recent → csaf NCSC-2026-0216), URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0216 → pivot: WebSearch (\"Citrix NetScaler CVE-2026-8451 CVE-2026-10817 CVE-2026-8452 advisory\") → primary: watchTowr Labs (vulnerability discoverer), URL https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/ → corroborating: CyberScoop, URL https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/"
+    summary: |
+      Citrix's 30 June 2026 security bulletin (CTX696604) fixes six vulnerabilities in NetScaler ADC and
+      NetScaler Gateway. The headline flaw, CVE-2026-8451 (CVSS 8.8), was found by watchTowr Labs in the
+      SAML-authentication XML attribute parser: the parser treats attribute-value termination differently
+      for quoted vs. unquoted values, accepting an unquoted value terminated by `>` or a null byte rather
+      than requiring whitespace/quote termination. A malformed, unterminated attribute in a crafted SAML
+      AuthnRequest causes the parser to read past the buffer boundary, letting an unauthenticated attacker
+      leak arbitrary process memory from any NetScaler configured as a SAML Identity Provider — the same
+      exploitation shape (out-of-bounds read via malformed SAML request to the auth endpoint) as the actively
+      exploited CVE-2026-3055 disclosed in March 2026, and structurally in the CitrixBleed/CitrixBleed2
+      lineage (CVE-2023-4966, CVE-2025-5777, CVE-2025-12101). Companion CVEs in the same bulletin:
+      CVE-2026-10817 (also insufficient input validation, memory overread when TCP TimeStamp is enabled on
+      an LB/CS/VPN virtual server), CVE-2026-8452 and CVE-2026-8655 (memory-management flaws in
+      Gateway/DNS-proxy/recursive-resolver/AAA virtual-server configs, leading to DoS or undefined control
+      flow), and CVE-2026-10816 (Management Interface access-control flaw allowing unauthenticated arbitrary
+      file read). Public PoC code for CVE-2026-8451 has been shared (watchTowr's GitHub repo). As of
+      disclosure neither the vendor bulletin nor watchTowr's write-up confirmed exploitation in the wild —
+      but NetScaler has accumulated 20+ CISA KEV entries over three years and the March 2026 sibling flaw
+      (CVE-2026-3055) was confirmed exploited within days of disclosure, so this is a high-probability
+      near-term exploitation candidate. Affected: NetScaler ADC/Gateway 14.1 before 14.1-72.61 and 13.1
+      before 13.1-63.18 (per patch-level references); fixed builds are available now.
+    ch_eu_nexus: "NCSC-NL issued a formal advisory (NCSC-2026-0216); NetScaler ADC/Gateway is heavily deployed as edge VPN/load-balancer infrastructure across Swiss and EU public-sector and enterprise networks, and the CitrixBleed lineage has repeatedly produced mass pre-auth exploitation against exactly this deployment base in Europe."
+    public_sector_nexus: "indirect — historical CitrixBleed campaigns disproportionately hit government/critical-infrastructure NetScaler edge deployments; this is the same code path and same actor-attractive prerequisite (SAML IdP-configured appliance, common in federated public-sector identity setups)"
+    sector: "cross-sector; public-sector, finance, critical-infrastructure edge/VPN infrastructure"
+    cves: [CVE-2026-8451, CVE-2026-10817, CVE-2026-8452, CVE-2026-8655, CVE-2026-10816, CVE-2026-13474]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the parser has read beyond the end of the XML buffer, and we've successfully tricked NetScaler into returning memory that was never supposed to leave the process"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/"
+      - quote: "The new flaw shares a root cause with the March bug: both involve out-of-bounds memory reads triggered by malformed SAML requests sent to NetScaler's authentication endpoints."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/"
+      - quote: "As of Tuesday, the latest vulnerability had not joined that list — neither the vendor bulletin nor watchTowr's writeup cited confirmed exploitation at the time of disclosure."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/"
+    extended_notes: |
+      Detection/hunt angle for defenders: NetScaler request logs / WAF logs for SAML AuthnRequest bodies
+      with malformed/unterminated XML attribute values (unquoted attributes not terminated by whitespace);
+      unusual response sizes or timing on the SAML SSO endpoint that could indicate memory-scraping probes;
+      audit whether the appliance is configured as SAML IdP (prerequisite for CVE-2026-8451) and whether
+      TCP TimeStamp is enabled on LB/CS/VPN vservers (prerequisite for CVE-2026-10817). Hardening: apply
+      NetScaler ADC/Gateway 14.1-72.61+ / 13.1-63.18+ (or vendor-current equivalents per CTX696604);
+      given the CitrixBleed pattern, treat any internet-facing NetScaler not yet patched as a live exposure
+      window and consider session/token invalidation post-patch as NetScaler's historical guidance
+      recommends after CitrixBleed-class fixes (not confirmed required for this specific CVE by Citrix at
+      time of writing — verify against the vendor bulletin). MITRE ATT&CK: T1190 Exploit Public-Facing
+      Application (pre-auth), T1552 Unsecured Credentials / T1212 Exploitation for Credential Access
+      (memory-disclosure leading to credential/session-token theft).
+
+  - title: "Oracle E-Business Suite CVE-2026-46817 (Oracle Payments File Transmission) — pre-auth RCE, first confirmed in-the-wild exploitation on honeypots"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-06-29", role: "primary" }
+      - { url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html", publisher: "Security Affairs", date: "2026-06-30", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"Oracle E-Business Suite vulnerability exploited attacks June 2026 payments\") → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/ → corroborating: Security Affairs, URL https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html (both citing threat-intel firm Defused's honeypot observations and Oracle's May 2026 CPU advisory at https://www.oracle.com/security-alerts/cspumay2026.html)"
+    summary: |
+      CVE-2026-46817 (CVSS 3.1: 9.8) is a critical, unauthenticated remote code execution flaw in the File
+      Transmission component of Oracle Payments within Oracle E-Business Suite, affecting EBS 12.2.3 through
+      12.2.15. Oracle patched it in the May 2026 Critical Patch Update. On the weekend of 27-28 June 2026 —
+      roughly six weeks post-patch and before any public PoC existed — threat-intel firm Defused observed
+      the first confirmed in-the-wild exploitation attempts against its Oracle EBS honeypots: crafted XML
+      POST requests to the `/OA_HTML/ibytransmit` endpoint that call an internal Oracle Java function
+      directly, redirected to read arbitrary files (e.g. `/etc/passwd`) from the server — consistent with the
+      unauthenticated-file-read/RCE path the CVE describes. The observed attacking IP (45.84.137.125,
+      AS136787 PacketHub S.A., France) used a distinctive user-agent string (`ibytransmit-lab-poc/1.0`)
+      indicating purpose-built exploitation tooling rather than opportunistic scanning noise. Exploitation
+      is not yet attributed to a named actor/cluster, but Oracle EBS has been the vector of the ShinyHunters
+      /UNC6240 mass-extortion campaign earlier in 2026 (via the separate PeopleSoft CVE-2026-35273), and Clop
+      has a well-documented history of mass Oracle EBS exploitation for data-theft extortion — both are
+      relevant context for why an unauthenticated pre-auth RCE in this specific product line draws fast
+      attacker interest. Over 450 Oracle EBS instances remain internet-exposed globally per Shadowserver-style
+      counts cited in reporting, roughly 200 of them in the US and Europe combined; patch-adoption rate
+      six weeks post-CPU is unknown.
+    ch_eu_nexus: "Oracle EBS is widely deployed in EU public-sector and large-enterprise back-office/ERP environments; reporting places a material share of the ~450 internet-exposed instances in Europe (grouped with the US at ~200 total). No named EU/CH victim yet at time of writing — flagging as an active, fast-moving exploitation event with EU exposure, not a confirmed EU incident."
+    public_sector_nexus: "indirect — EBS/Oracle Payments is common in government and higher-education back-office finance systems (the same product family used in the unrelated but adjacent PeopleSoft ShinyHunters/UNC6240 campaign that hit numerous US universities and the NAIC)"
+    sector: "cross-sector; finance/ERP back-office, public-sector, higher-education"
+    cves: [CVE-2026-46817]
+    actors_campaigns_malware: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "we observed an actor exploiting the vulnerability on our Oracle E-Business honeypots"
+        attribution: "Defused (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+      - quote: "This vulnerability has no known previous exploitation and no public POC code exists."
+        attribution: "Security Affairs"
+        source_url: "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html"
+      - quote: "Oracle continues to periodically receive reports of attempts to maliciously exploit vulnerabilities for which Oracle has already released security patches."
+        attribution: "Oracle (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-oracle-e-business-suite-flaw-now-exploited-in-attacks/"
+    extended_notes: |
+      Confidence set to MEDIUM rather than HIGH because exploitation is so far confirmed only against
+      honeypots (Defused), not against production victims, and neither source names a threat cluster.
+      Detection/hunt: web-server / WAF access logs for POST requests to `/OA_HTML/ibytransmit` with
+      XML bodies invoking non-standard internal function calls; anomalous outbound reads of OS files
+      (e.g. `/etc/passwd`) via the File Transmission component; unusual user-agent strings on EBS-facing
+      endpoints. Hardening: apply Oracle's May 2026 CPU (cspumay2026) immediately if not already done;
+      restrict EBS/Oracle Payments web interfaces to internal networks — do not expose `/OA_HTML/` paths
+      to the public internet; treat any unpatched internet-facing instance as a potential compromise and
+      review for the specific ibytransmit POST pattern. MITRE ATT&CK: T1190 Exploit Public-Facing
+      Application, T1005 Data from Local System (arbitrary file read via the abused Java function).
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Most recent post (id 12579, Cisco SD-WAN) last-modified 2026-06-25; no post created/modified inside the 36h window at time of fetch — checked via `ncsc-csh recent 15`."
+  - source_id: cert-eu
+    reason: "RSS feed (cert-eu recent via api) most recent advisory dated 2026-06-10 (2026-007 Windows Netlogon); no new advisory in-window."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent and actu-recent feeds returned items dated 2026-06-19 to 2026-06-22 at freshest (avis) and stale ACT bulletins from Oct/Nov 2025 (actu feed appears cached/stale in this environment); no in-window item found."
+  - source_id: inside-it-ch
+    reason: "Landing/article URLs 403'd via both WebFetch and bridge `url` subcommand despite feed listing candidate headlines (Oracle EBS mention, FDPIC federal-IT report) dated 2026-06-30; feed summary alone was insufficient for the technical depth bar so the FDPIC item was dropped and the Oracle EBS item was independently corroborated via WebSearch/BleepingComputer/Security Affairs instead."
+  - source_id: compass-security
+    reason: "Feed checked (blog.compass-security.com/feed/); most recent post 2026-06-26 (Cyber Resilience Act Part I), not a fresh in-window technical item."
+  - source_id: bsi-de
+    reason: "bsi-rss returned a valid-looking feed but the bridge's XML parser errored (mismatched tag) on the full body; not retried a second time per bounded-retry rule — logged as a parse-level gap, not a fetch failure (HTTP 200 was returned)."
+  - source_id: govcert-at / cert-at
+    reason: "govcert.ch RSS feed failed XML parse (mismatched tag); cert.at RSS URL guessed and returned 404 — no verified live feed URL found in the time available; not pursued further as no CH/EU/public-sector lead pointed there this run."
