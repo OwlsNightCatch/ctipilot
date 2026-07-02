@@ -1,0 +1,121 @@
+domain: S3
+run_id: 2026-07-02-6551f8c2
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-02T04:11:13Z
+ended_at: 2026-07-02T04:16:26Z
+duration_seconds: 313
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 8
+  bridge_fetches: 12
+items:
+  - title: "Cisco Talos: \"ARToken\" — an EvilTokens affiliate panel exposes a complete BEC-as-a-service toolkit on top of Microsoft 365 device-code phishing"
+    sources:
+      - { url: "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/", publisher: "Cisco Talos", date: "2026-07-01", role: "primary" }
+      - { url: "https://cyberscoop.com/artoken-bec-platform-cisco-talos/", publisher: "CyberScoop", date: "2026-07-01", role: "corroborating" }
+    discovery_trace: "first seen at: talos (bridge feed https://blog.talosintelligence.com/rss/) → primary: Cisco Talos, URL https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/ (no pivot needed) → corroborating: CyberScoop, URL https://cyberscoop.com/artoken-bec-platform-cisco-talos/"
+    summary: |
+      Cisco Talos identified a fully-featured phishing-as-a-service (PhaaS) operator panel, "ARToken," that shares API contracts and infrastructure patterns with EvilTokens, the device-code phishing platform Sekoia and Microsoft documented in March/April 2026. ARToken's React SPA dashboard exposes 80+ API endpoints covering device-code phishing, Primary Refresh Token (PRT) persistence, mailbox access, BEC operations, and SharePoint/OneDrive exfiltration — a complete post-compromise BEC operations environment, not just a credential-phishing kit. Talos found the panel's 1.7MB compiled JavaScript bundle unauthenticated at "dashboard-bl.pamconj[.]com" during an IR engagement; the C2 API (spx.pamconj[.]com) issues an identical POST /api/device/start contract (userId, clientMode:"broker", login_hint, redirect_url → device_code/user_code/verification_uri) to the one Sekoia documented for EvilTokens, and the same broker-mode WAM flow drives PRT acquisition via /prt/setup → /prt/refresh → /prt/renew → /prt/reacquire → /prt/cookie — a persistence chain that survives password resets (kit config flag persistAfterPassChange:false signals affiliates understand this and must exfiltrate/escalate before a reset). The phishing payload itself is delivered XOR-encrypted (16-byte key) and gated by a seven-layer client-side anti-analysis chain (User-Agent regex, navigator.webdriver check, browser feature fingerprinting, window-dimension analysis, interaction telemetry requiring 3+ mouse moves/1+ touch event, an 800ms timing gate, and mouse-trajectory pattern analysis) — materially more sophisticated than EvilTokens' previously documented server-side X-Antibot-Token (SHA-256(secret+timestamp+"antibot"), 5-min validity) mechanism. Capabilities not previously reported for EvilTokens include cross-mailbox keyword monitoring ("Box Monitor"), programmatic inbox-rule creation for evidence suppression, token import/export for cross-platform trading, operator-to-operator shared access links, geo-dynamic lure templates, and a standalone Windows desktop session browser ("ARTBrowser") equivalent to EvilTokens' "Portal Browser." The recovered in-the-wild lure abused a real vendor relationship (spoofed accounts-payable contact, Reply-To pivot to an attacker domain, SPF/DKIM/DMARC all failing) and a genuine sharepoint.com tenant whose anchor text displayed the real vendor tenant but whose href pointed to a look-alike tenant folded from the vendor name plus ".com" under an attacker-controlled Microsoft 365 workspace, inheriting SharePoint's clean domain reputation.
+    ch_eu_nexus: "global; targets Microsoft 365 tenants broadly, directly relevant to any EU/CH public-sector or enterprise M365 estate"
+    public_sector_nexus: "indirect"
+    sector: "cross-sector; finance, HR, logistics per EvilTokens targeting precedent"
+    cves: []
+    actors_campaigns_malware: ["ARToken", "EvilTokens"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cisco Talos identified a fully-featured phishing-as-a-service (PhaaS) operator panel, branded \"ARToken,\" that shares infrastructure, API contracts, and operational patterns with the EvilTokens platform documented by Sekoia and Microsoft in early 2026."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/"
+      - quote: "ARToken is notable, though, for the capabilities that go beyond what's been made public about EvilTokens so far by companies like Sekoia and Microsoft itself, such as inbox rule manipulation and shared access links."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/artoken-bec-platform-cisco-talos/"
+    extended_notes: |
+      MITRE ATT&CK per Talos: T1566.002 (Spearphishing Link), T1528 (Steal Application Access Token), T1098.001 (Additional Cloud Credentials), T1114.002 (Remote Email Collection), T1550.001 (Use Alternate Authentication Material: Application Access Token), T1531 (Account Access Removal), T1583.006 (Acquire Infrastructure: Web Services), T1027 (Obfuscated Files or Information), T1497.001 (Virtualization/Sandbox Evasion: System Checks).
+      Detection/hunt: hunt for OAuth 2.0 Device Authorization Grant (RFC 8628) sign-ins with anomalous client identifiers/clientMode "broker" semantics in Entra ID sign-in logs; monitor for WAM broker-issued PRT refresh/renew patterns outside expected device-registration windows; alert on new Entra device registrations shortly after a device-code auth event from an unfamiliar IP/UA; flag inbox rules created programmatically with forwarding+auto-delete combinations (evidence-suppression signature); DMARC/DKIM/SPF-fail-but-display-name-trusted mail combined with SharePoint tenant-name-plus-suffix look-alike hrefs is a detectable lure pattern for mail-gateway URL rewriting/analysis. Hardening: disable/restrict the OAuth device-code flow via Conditional Access unless required; enforce Conditional Access token-protection (sign-in frequency + PRT binding) to blunt persistence-through-password-reset; block legacy/device-code auth for finance/AP-adjacent roles.
+
+  - title: "Kaspersky MDR: SEO-poisoned fake-installer sites (90+ domains, 10 languages) trojanize ScreenConnect via DLL sideloading to deploy AsyncRAT"
+    sources:
+      - { url: "https://securelist.com/tr/the-soc-files-screenconnect-campaign-with-asyncrat/120472/", publisher: "Kaspersky Securelist (SOC Files / MDR)", date: "2026-07-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/seo-poisoned-software-sites-abuse.html", publisher: "The Hacker News", date: "2026-07-01", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist (bridge feed https://securelist.com/feed/) → primary: Kaspersky Securelist, URL https://securelist.com/tr/the-soc-files-screenconnect-campaign-with-asyncrat/120472/ (no pivot needed) → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/seo-poisoned-software-sites-abuse.html"
+    summary: |
+      Kaspersky's Managed Detection and Response (MDR) team pivoted from a single flagged incident (suspicious PowerShell/VBS spawned by a ScreenConnect process) into a full C2-infrastructure investigation, uncovering a "massive, multi-domain, multi-language" campaign running since at least August 2025. Spoofed sites in 10 languages (English, Russian, Chinese, German, French, Spanish, Portuguese, Arabic, plus others) impersonate popular free software — OBS Studio, DNS Jumper, DS4Windows, Bandicam among others — across 90+ domains hosted on two distinct IP clusters (162.216.241[.]242/198.23.185[.]81 and 2.59.134[.]97) plus a separate C2 infrastructure set. Each malicious installer archive bundles a legitimate, Microsoft-signed install.exe alongside a rogue install.res.1033.dll sideloaded via classic DLL search-order abuse; on execution ScreenConnect deploys as an "Access-type" service, then spawns a PowerShell script (Fj5NmEsp9EuKrun.ps1) that adds Microsoft Defender path exclusions for all local drives, C:\Users\Public, and RegAsm.exe, and disables the UAC consent prompt (ConsentPromptBehaviorAdmin=0). A chained VBScript drops five files into C:\Users\Public, kills active powershell.exe processes to erase forensic traces, then runs cap.ps1, which extracts [SXX-prefixed hex sequences from secret_bytes.txt, XOR-decrypts them (key 0xA7) with inverted bit order to reconstruct a .NET PE, and reflectively loads it into the CLR. The loaded assembly's ConsoleApp1.Module1.Run method performs classic process hollowing (T1055.012) into a suspended RegAsm.exe, which becomes the AsyncRAT container. Persistence is a scheduled task ("MasterPackager.Updater") re-triggering the VBScript chain every two minutes via schtasks. The final AsyncRAT beacon connects to a hardcoded C2 domain.
+    ch_eu_nexus: "global; free-software-download lure themes are language-localized including German and French, directly relevant to CH/EU end-user populations"
+    public_sector_nexus: "indirect"
+    sector: "cross-sector; consumer and enterprise endpoints reached via free-software search traffic"
+    cves: []
+    actors_campaigns_malware: ["AsyncRAT"]
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "During a recent investigation engagement, the Kaspersky Managed Detection and Response (MDR) team discovered the ScreenConnect remote access tool being leveraged to deploy and execute an AsyncRAT payload. A deep dive into this single incident unraveled a massive campaign distributing malicious installer archives hosted on spoofed websites."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/tr/the-soc-files-screenconnect-campaign-with-asyncrat/120472/"
+      - quote: "Kaspersky said the activity is part of a \"massive, multi-domain, multi-language\" campaign that distributes malicious installer archives hosted on spoofed websites."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/seo-poisoned-software-sites-abuse.html"
+    extended_notes: |
+      Detection/hunt: monitor for ScreenConnect (ConnectWise) service creation with an explicit --server / relay parameter passed via command line where the deploying process is a freshly-downloaded installer rather than IT-managed deployment; alert on Defender exclusion additions covering full drive roots or C:\Users\Public via PowerShell rather than GPO/MDM; flag RegAsm.exe (a normally short-lived .NET assembly-registration utility) running long-lived with active network connections — a classic process-hollowing tell; hunt scheduled tasks with 1–5 minute recurrence intervals invoking wscript.exe against scripts in C:\Users\Public. Hardening: block DLL sideloading via WDAC/AppLocker rules on trusted-signed binaries' companion DLLs when the DLL is unsigned; restrict ScreenConnect/RMM tool installation to allow-listed vendor-signed relay servers; treat "free software" download SEO results as a phishing vector requiring browser-isolation or download-reputation gating.
+
+  - title: "Recorded Future Insikt Group: Iran-nexus TAG-182 rebuilds MarkiRAT surveillance-malware distribution via fake VPN/media-player Android apps after partial internet restoration [SINGLE-SOURCE]"
+    sources:
+      - { url: "https://www.recordedfuture.com/research/nexus-tag182-disseminates-markirat", publisher: "Recorded Future (Insikt Group)", date: "2026-07-01", role: "primary" }
+    discovery_trace: "first seen at: recordedfuture-insikt (bridge feed https://www.recordedfuture.com/feed) → primary: Recorded Future Insikt Group, URL https://www.recordedfuture.com/research/nexus-tag182-disseminates-markirat (no pivot needed)"
+    summary: |
+      Insikt Group identified new infrastructure tied to the TAG-182 cluster distributing MarkiRAT, a surveillance implant historically attributed to the Iran-nexus group Ferocious Kitten (active since ~2015 against anti-government networks, activists, and human-rights advocates inside Iran). TAG-182's current wave uses fake Android apps — a media-player theme ("YESHICA"/"YESHICA YEPlayer") and a fake VPN ("Pis2ray VPN," not present on Google Play or the App Store) — staged from purpose-built websites and distributed via lures highly likely propagated across Instagram. Insikt assesses TAG-182 is a component of Iran's broader domestic-surveillance apparatus and that operational tempo is likely increasing following the partial restoration of Iranian internet access on 26 May 2026 and the post-April-2026 de-escalation of the kinetic Iran/US/Israel conflict, as authorities redirect capacity toward monitoring perceived dissidents. The MarkiRAT sample analyzed shares tradecraft overlap with historical Ferocious Kitten variants, notably reuse of the Background Intelligent Transfer Service (BITS) for C2/staging — a technique consistent across both old and new samples — though Insikt stops short of confidently merging the two cluster identities pending further evidence. Infrastructure clusters on two hosting providers (AS47447, 23M GmbH; AS199959, CrownCloud) use Let's Encrypt certificates and domain-naming conventions mimicking Microsoft, Google, Facebook, and VPN branding, registered predominantly via Namecheap and NameSilo.
+    ch_eu_nexus: "diaspora relevance — targets Farsi-speaking communities inside and outside Iran, indirect relevance to CH/EU-resident Iranian diaspora populations"
+    public_sector_nexus: "none stated"
+    sector: "civil society, human rights, diaspora communities"
+    cves: []
+    actors_campaigns_malware: ["TAG-182", "MarkiRAT", "Ferocious Kitten (possible overlap, unconfirmed)"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Insikt Group has identified new infrastructure associated with the TAG-182 threat cluster, used to disseminate MarkiRAT malware in support of Iranian government surveillance operations."
+        attribution: "Recorded Future (Insikt Group)"
+        source_url: "https://www.recordedfuture.com/research/nexus-tag182-disseminates-markirat"
+    extended_notes: |
+      Detection/hunt (behavioural, no IOCs): monitor for BITS-job creation (bitsadmin.exe / BITS COM interface) initiated by side-loaded or newly-installed Android-companion-style desktop utilities; treat unsigned "VPN" or "media player" MSI/ZIP installers sourced outside official app stores as a standard mobile/desktop dual-surface phishing vector for diaspora-facing organisations. Background note: Ferocious Kitten was first publicly documented by Kaspersky Securelist in 2021; this is a distinct, newly-surfaced 2026 infrastructure wave, not a repeat of that reporting.
+
+  - title: "Kaspersky: fresh June-2026 telemetry on OpenClaw (formerly Clawdbot/Moltbot) AI-agent marketplace shows malicious \"skill\" distribution continuing despite scanning countermeasures"
+    sources:
+      - { url: "https://securelist.com/openclaw-security/120484/", publisher: "Kaspersky Securelist", date: "2026-07-01", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist (bridge feed https://securelist.com/feed/) → primary: Kaspersky Securelist, URL https://securelist.com/openclaw-security/120484/ (no pivot needed)"
+    summary: |
+      Kaspersky published fresh detection telemetry (through mid-June 2026) on OpenClaw, the AI-agent framework rebranded twice (Clawdbot → Moltbot → OpenClaw, the last name change following an Anthropic trademark demand). OpenClaw's architecture lets the agent load "skills" — plaintext SKILL.md natural-language instruction files, some containing embedded code — from a community marketplace ("ClawHub"), requiring file-system access plus tokens/keys for the systems each skill interacts with, typically supplied via environment variables or plaintext files alongside the agent. Kaspersky reports ~530 vulnerabilities disclosed against OpenClaw and its underlying technologies in under two years (CVE publication for the project only began February 2026), most involving insecure secrets storage and excessive-privilege execution paths exploitable to hijack the agent or inject commands. Because building a malicious skill requires no custom-malware development — just a natural-language or embedded-bash instruction — Kaspersky frames skill distribution as a supply-chain-attack analogue with an even lower bar than typical package-repository attacks: prior to 7 February 2026 no skills underwent any security check, and Kaspersky's own April scan of the skill hub found 24 accounts distributing 600+ malicious skills, with open-source intelligence indicating 1,100+ malicious accounts created since January 2026. ClawHub has since added VirusTotal and NVIDIA SkillSpector pre-publication scanning, but Kaspersky's June 2026 detection statistics (flagged as HEUR:Trojan.ANSI.MalClaw.gen) show malicious OpenClaw-skill activity continuing on customer endpoints despite the new controls.
+    ch_eu_nexus: "global; any CH/EU organisation permitting employee use of OpenClaw/community AI-agent skills is exposed"
+    public_sector_nexus: "indirect"
+    sector: "cross-sector; any enterprise adopting community-sourced AI-agent automation"
+    cves: []
+    actors_campaigns_malware: ["OpenClaw", "Clawdbot", "Moltbot"]
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In less than two years, around 530 vulnerabilities have been discovered both in OpenClaw itself and in the underlying technologies... Our scan of the skill hub in April identified 24 accounts that were distributing more than 600 malicious skills. Overall, open-source intelligence indicates that over 1100 malicious accounts have been created since January."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/openclaw-security/120484/"
+    extended_notes: |
+      Background (from broader, older reporting not independently re-verified this run): OpenClaw's most-cited critical flaw is a gateway command-execution CVE (widely reported as CVE-2026-25253, CVSS 8.8) per SecurityWeek/Tenable/Palo Alto coverage from February 2026 — cited here for context only, not as an in-window claim. Detection/hunt: treat SKILL.md ingestion as an untrusted-code-execution surface — log and alert on file-system access and outbound network calls originating from the OpenClaw agent process to hosts not present in an allow-list; monitor for plaintext credential/token files co-located with agent skill directories; require pre-execution scanning (VT/SkillSpector-equivalent) plus a sandboxed/least-privilege execution wrapper (OpenClaw's own sandboxing subsystem) before any community-sourced skill runs against production credentials. Hardening: enterprise AI-usage policy explicitly barring third-party/community AI-agent skill installation without security review.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: dragos
+    reason: "Blog landing page is a JS-rendered SPA with no exposed RSS/feed endpoint found (dragos.com/feed/ and blog/feed 404); no in-window item identified via WebSearch either."
+  - source_id: claroty-team82
+    reason: "No working RSS feed (rss.xml and /feed both 404/410); WebSearch surfaced only stale Jan/Feb 2026 research (IDIS Cloud Manager RCE, LonTalk protocol) being republished by aggregator industrialcyber.co, which also 403'd the bridge fetch — dropped per recency rules, no in-window Claroty publication found."
+  - source_id: nozomi-networks
+  - source_id: akamai-sirt
+  - source_id: synacktiv
+    reason: "No RSS feed found (nozomi blog/feed 404, akamai blog/rss/security 404, synacktiv feed.xml 404); no in-window items surfaced via WebSearch for any of the three."
+  - source_id: google-tag
+    reason: "blog.google/threat-analysis-group/rss/ 404; WebSearch found no July 2026 TAG publication in window."
+  - source_id: pushsecurity
+    reason: "RSS feed returned malformed/non-XML body (parse error) via bridge; not retried per bounded-retry rule."
+  - source_id: morphisec
+    reason: "RSS feed 403 via bridge; not retried per bounded-retry rule."
