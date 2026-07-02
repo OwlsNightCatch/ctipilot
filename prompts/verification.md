@@ -10,13 +10,10 @@ Defends the brief against hallucination, vendor hype, fake-news patterns common 
 
 **National-CERT carve-out:** when a HIGH-reliability national CERT or government cybersecurity authority is the **primary disclosing party for its own jurisdiction or for an advisory it owns**, single-source is acceptable.
 
-Carve-out qualifiers (illustrative, not exhaustive):
-- NCSC-CH, GovCERT.ch
-- CERT-EU, ENISA
-- BSI (Germany), ANSSI/CERT-FR (France)
-- NCSC-UK, NCSC-NL
-- CISA (USA)
-- AGID/CSIRT-IT (Italy), CCN-CERT (Spain)
+<!-- ORG-PROFILE:BEGIN org-certs -->
+<!-- GENERATED from config/org-profile.yaml — do not edit by hand; edit the config and run: python3 tools/compose_prompts.py --write -->
+**National-CERT single-source carve-out list** — a HIGH-reliability national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
+<!-- ORG-PROFILE:END org-certs -->
 
 The reasoning: these organisations *are* the authoritative source for advisories they issue. Their *commentary on someone else's disclosure* still requires the standard two-source rule.
 
@@ -85,7 +82,7 @@ In every case the brief states the original date so the reader is not misled.
 - [ ] No item from the last 7 briefs appears unless under § 4 Updates with a delta + an inline citation.
 - [ ] Every item passed two-source verification, OR is national-CERT primary disclosure, OR is marked `[SINGLE-SOURCE]`.
 - [ ] CVE identifiers verified against NVD/MITRE.
-- [ ] CH/EU/public-sector items in § 1 carry the appropriate `Region:` and `Sector:` tags in their metadata footer.
+- [ ] Home-region / coverage-focus / primary-sector items in § 1 carry the appropriate `Region:` and `Sector:` tags in their metadata footer.
 - [ ] Deep dive present, or explicit "no item met the bar".
 - [ ] State files updated (`state/covered_items.json`, `sources/sources.json`).
 - [ ] Verification Notes section lists drops, single-source items, and contradictions.
@@ -107,7 +104,7 @@ After Phase 4 has written the brief, Phase 5 has updated state, and Phase 5.5 ha
 
 **Editorial-quality gate.** Every item assessed against:
 
-1. **Relevance** to a Swiss / EU public-sector SOC — items that are interesting in the abstract but operationally irrelevant are flagged for drop.
+1. **Relevance** to the profiled organization's SOC (config/org-profile.yaml — composed into every agent) — items that are interesting in the abstract but operationally irrelevant are flagged for drop.
 2. **Primary-source strength** — first source should be a vendor PSIRT advisory / research-lab post / vendor blog / regulator filing / victim statement. NVD/MITRE and national CERTs/NCSCs are second-tier primaries; they belong as `Additional source:` unless a vendor or research-lab post genuinely does not exist for this item. Items whose only source is `nvd.nist.gov` or `cert.ssi.gouv.fr` (or similar) get flagged.
 3. **Vendor-marketing tells** — vanity metrics, product-efficacy claims, AI-blogspam patterns.
 4. **Fake-news patterns** — leak-site claims as fact, sweeping attribution by non-research outfits, Telegram/X-only sourcing, months-old news as new.

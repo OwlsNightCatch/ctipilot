@@ -155,7 +155,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 ### {Sector}
 
-{One paragraph with inline links. Where a Swiss / European public-sector area saw meaningful activity, call it out explicitly.}
+{One paragraph with inline links. Where an area inside the org's home region / coverage focus saw meaningful activity, call it out explicitly.}
 
 — *Source: [Evidence link](URL) · Tags: ransomware, organized-crime · Region: europe · Sector: healthcare*
 
@@ -179,7 +179,7 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 ### {Report name}
 
-{Cross-finding synthesis a Swiss / European public-sector SOC needs. Each finding gets a citation. Do not repeat findings the dailies already absorbed.}
+{Cross-finding synthesis the profiled organization's SOC needs. Each finding gets a citation. Do not repeat findings the dailies already absorbed.}
 
 — *Source: [Report PDF or vendor blog](URL) · Tags: nation-state, espionage · Region: global*
 

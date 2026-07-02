@@ -97,23 +97,37 @@ The deployment's organization-specific values live in one config file:
 organization (name, short name, sector, additional sectors, region focus,
 home region, description, audience), watchlists (products with
 vendor/exposure/criticality, suppliers with relationship/criticality,
-standing free-text interests), and the vulnerability-triage scheme
-(categories with id/name/criteria/response + a default). The defaults
+standing free-text interests), the vulnerability-triage scheme
+(categories with id/name/criteria/response + a default), the
+national-CERT single-source carve-out list (`national_certs` — absent key
+= upstream default list, `[]` = carve-out disabled), and the weekly's
+standing policy/regulatory watch (`policy_watch`). The defaults
 reproduce the historical Swiss-federal-SOC deployment; watchlists and
 triage ship empty/disabled, which makes every profile-driven behaviour a
 no-op.
 
 `tools/compose_prompts.py` (stdlib-only; `--check` / `--write` / `--dump` /
 `--selftest`) renders the profile into `ORG-PROFILE:BEGIN/END` managed
-marker blocks inside five files: both master prompts (mission + audience
-paragraphs, plus the § Organization profile & watchlists data block), the
-`cti-research` definition (mission, audience, watchlist values — so every
-research spawn sees the same org context without spawn-message bloat), and
-both verifier definitions (§ Organization context — so the relevance check
-judges against the *configured* organization). The static policy text
-around the blocks (anti-overshoot rules, sweep ownership, org-triage line
-spec) lives in the prompts and follows the normal versioning rule; the
-generated blocks carry values only and are exempt from version bumps.
+marker blocks inside six files: both master prompts (mission + audience
+paragraphs, the § Organization profile & watchlists data block, and the
+weekly's `org-policy-watch` block under W2), `prompts/verification.md`
+(the `org-certs` carve-out list), the `cti-research` definition (mission,
+audience, watchlist values, `org-certs` — so every research spawn sees the
+same org context without spawn-message bloat), and both verifier
+definitions (§ Organization context, including the carve-out list — so the
+relevance check judges against the *configured* organization). The static
+policy text around the blocks (anti-overshoot rules, sweep ownership,
+org-triage line spec) lives in the prompts, is deliberately org-neutral
+(it references "the profiled constituency", never a hardcoded
+region/sector), and follows the normal versioning rule; the generated
+blocks carry values only and are exempt from version bumps.
+
+The same decoupling exists on the site side: `config/branding.yaml`
+(loaded by `site/branding_config.py` into `site/build.py`) owns the
+published site's identity, theme overrides, logos, chart palettes, feed
+slices, trend cohorts, and analytics; `site/branding/` holds downstream
+asset files. The shipped config equals the loader's defaults and builds a
+byte-identical site. Fork contract: [docs/customization.md](customization.md).
 
 Enforcement is three-layered: the `compose-profile` workflow (below)
 composes or fail-louds on push; `tools/check_brief.py` carries a

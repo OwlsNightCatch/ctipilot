@@ -354,10 +354,15 @@ Spawned ONLY when the main agent's Phase 0 found non-empty `intel/<YYYY-MM-DD>/`
 
 Before you return an item, confirm:
 
-1. Two-source verification by default — ≥2 independent reputable sources. If only one, mark `[SINGLE-SOURCE]` and name it. Carve-out: a HIGH-reliability national CERT / government cybersecurity authority (NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL) acting as primary disclosing party for its own jurisdiction or an advisory it owns — single-source acceptable.
+1. Two-source verification by default — ≥2 independent reputable sources. If only one, mark `[SINGLE-SOURCE]` and name it. Carve-out: an authority from the deployment's carve-out list below, acting as primary disclosing party for its own jurisdiction or an advisory it owns — single-source acceptable.
 2. CVE identifiers verified on NVD/MITRE.
 3. Fake-news scrutiny: ransomware leak-site claims need victim disclosure or HIGH-reliability journalism; sweeping attribution from non-research outfits → attribute the claim, not the actor (*"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); never include Telegram/X-only sourcing.
 4. Dates check out — drop items mis-dated as today's news when the underlying event is months old.
+
+<!-- ORG-PROFILE:BEGIN org-certs -->
+<!-- GENERATED from config/org-profile.yaml — do not edit by hand; edit the config and run: python3 tools/compose_prompts.py --write -->
+**National-CERT single-source carve-out list** — a HIGH-reliability national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
+<!-- ORG-PROFILE:END org-certs -->
 
 ## Self-identification — name your actual model (MANDATORY)
 
@@ -425,8 +430,8 @@ items:
     discovery_trace: "cisa-kev bridge → CVE-2026-20182 newly listed → Talos primary → Rapid7 corroborating → Cisco PSIRT advisory"
     summary: |
       3-8 sentence technical summary, English, no IOCs, no vanity metrics.
-    ch_eu_nexus: "global; affects EU public-sector SD-WAN deployments"
-    public_sector_nexus: "indirect"
+    region_nexus: "global; affects EU public-sector SD-WAN deployments"
+    primary_sector_nexus: "indirect"
     sector: "telco, public-sector"
     cves: [CVE-2026-20182]
     actors_campaigns_malware: ["UAT-8616"]
@@ -517,7 +522,7 @@ When the YAML write fails, return the prior shape. The main agent parses both sh
 **Sources:** [Publisher, YYYY-MM-DD](url) — primary; [Publisher2, YYYY-MM-DD](url) — corroborating
 **Discovery trace:** …
 **Summary:** …
-**CH/EU nexus:** … | **Public-sector nexus:** … | **Sector:** …
+**Region nexus:** … | **Primary-sector nexus:** … | **Sector:** …
 **CVEs:** CVE-…, CVE-…
 **Verification:** MULTI-SOURCE | SINGLE-SOURCE-NATIONAL-CERT | SINGLE-SOURCE-OTHER | CONTRADICTED
 **Confidence:** HIGH / MEDIUM / LOW

@@ -4,6 +4,30 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.69 — 2026-07-02 (org-neutral prompt prose; national-CERT carve-out list and policy watch move into the org profile)
+
+### Why
+
+The deployment is organization-parameterizable via `config/org-profile.yaml`, but a body of "Swiss / EU public-sector" phrasing, the hardcoded national-CERT single-source carve-out list, and the weekly's Swiss/EU regulator enumeration lived as static prose OUTSIDE the ORG-PROFILE managed blocks. A downstream fork changing the org profile still inherited the Swiss lens in ranking rules, deep-dive criteria, section-ordering guidance, empty-section boilerplate, the verifier's F7 drop rule, and the W2 policy sweep — and any local rewrite of that prose would conflict with upstream prompt improvements on every merge. This release makes the org profile the *only* place the lens lives, so forks customize config and merge prompts cleanly. Companion change (no prompt semantics): the site build gains `config/branding.yaml` + `site/branding/` for the same decoupling on the visual side — see `docs/customization.md`.
+
+### What changed
+
+- **Both master prompts** (v2.69, lockstep): every org-lens phrase outside the managed blocks now references the profile instead of naming it — "Swiss/EU public-sector" → "the profiled constituency / the profiled organization's SOC (§ Organization profile)", "CH/EU nexus" ranking → "home-region/coverage-focus nexus", § 1 ordering, deep-dive criteria 1–2, less-is-more criteria (a)/(c), empty-section boilerplate, PD-13's jurisdiction rationale (now states the profiled audience is not a US-FCEB agency), the S2 spawn-table label, and both editorial-quality gates. Semantics for the default Swiss-federal-SOC deployment are unchanged — the managed blocks already carry that lens.
+- **Weekly W2 / § 9**: the hardcoded regulator enumeration (NCSC.ch, FINMA, NIS2 / DORA / CRA, OFCOM / BAKOM, Council of Europe, sanctions actions) moved to a new `policy_watch` list in `config/org-profile.yaml`, rendered as a new `org-policy-watch` managed block under W2; § 9 references that watch list. Omitting the key keeps the previous list verbatim.
+- **National-CERT carve-out list** (NCSC-CH … CERT-PL) moved to a new `national_certs` list in `config/org-profile.yaml`, rendered as a new `org-certs` managed block into `.claude/agents/cti-research.md` and `prompts/verification.md` (now a compose target), and appended to the `verify-context` block both verifier agents receive. Omitting the key keeps the previous list; an explicit `[]` disables the carve-out (two-source everywhere).
+- **Research findings schema**: example field names `ch_eu_nexus` / `public_sector_nexus` renamed to org-neutral `region_nexus` / `primary_sector_nexus`; the compact-summary labels follow ("Region nexus / Primary-sector nexus").
+- **Both verifier agents** (lockstep, byte-identical bodies): the coverage-shape check and the F7 drop rule now phrase the lens via § Organization context; the redundant "(default: Swiss / EU public-sector)" parenthetical dropped.
+- **`prompts/brief-template.md`**: template placeholders for the sector-pattern and synthesis sections now phrase the lens via the org profile.
+- **`tools/compose_prompts.py`**: renders the two new blocks; validates the two new optional keys (absent → upstream defaults, `[]` → feature disabled); `prompts/verification.md` added to TARGETS; selftest extended.
+
+### What stays
+
+- The default deployment's lens is untouched: the composed blocks still say Swiss federal SOC · public-sector · switzerland · Switzerland and Europe, and rendered brief content is unaffected — this is prose refactoring plus config extraction, not an editorial-policy change.
+- The daily/weekly lens divergence (operational today's-signal vs long-horizon) is untouched; the two prompts moved in lockstep on shared machinery only.
+- All hard invariants: two-source verification + carve-out mechanics (now config-listed, same default trust bar), no IOCs, AI-content notice, English output, publishing chain, self-check gate, verification loop, metadata footers, memory commits.
+- Worked examples that illustrate formats (ISAC-CH closed-source drop fixtures, discovery-trace samples) keep their Swiss flavor — they document format, not lens.
+- `tools/check_brief.py` heuristics keyed to `switzerland`/`europe` region tags (tldr-body-drift) are unchanged — they no-op harmlessly on deployments with other home regions (documented in `docs/customization.md`).
+
 ## 2.68 — 2026-07-02 (version history lives only in this file; stale-reference and contradiction sweep; prompt-version gate implemented)
 
 ### Why

@@ -853,9 +853,27 @@ def ico_uk_enforcement(count: int = 20) -> dict[str, Any]:
 # to Item 1.05 (the cybersecurity-incident-disclosure item introduced
 # 2023-12-18) and the trailing 14-day window. SEC's developer guidance
 # asks API users to identify themselves in the User-Agent; we send a
-# CTI-pilot-specific UA suffix so the call is attributable.
+# deployment-specific UA (site name from config/branding.yaml, falling
+# back to the upstream default) so the call is attributable.
 SEC_EDGAR_SEARCH = "https://efts.sec.gov/LATEST/search-index"
-SEC_EDGAR_UA = "ctipilot.ch CTI brief (contact via repository)"
+
+
+def _branded_edgar_ua() -> str:
+    try:
+        from pathlib import Path
+        from compose_prompts import parse_yaml_subset  # sibling module
+        cfg_path = Path(__file__).resolve().parent.parent / "config" / "branding.yaml"
+        cfg = parse_yaml_subset(cfg_path.read_text(encoding="utf-8"),
+                                source=str(cfg_path))
+        name = str(cfg.get("site", {}).get("name", "")).strip()
+        if name:
+            return f"{name} CTI brief (contact via repository)"
+    except Exception:
+        pass
+    return "ctipilot.ch CTI brief (contact via repository)"
+
+
+SEC_EDGAR_UA = _branded_edgar_ua()
 
 
 def sec_edgar_8k(start: str | None = None, end: str | None = None,

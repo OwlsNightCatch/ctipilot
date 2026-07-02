@@ -925,20 +925,31 @@ assert_eq("fallback: weekly 2026-W19 → UTC", weekly_w19.tzinfo, timezone.utc)
 import re  # noqa: E402  -- used for the connect-src directive match below
 
 print("== umami CSP ==")
-assert_in(
-    "snippet loads from the script host",
-    f'src="{build.UMAMI_SCRIPT_HOST}/script.js"',
-    build.UMAMI_SNIPPET,
-)
-assert_in("CSP permits the script host", build.UMAMI_SCRIPT_HOST, build.CSP_META)
-assert_in("CSP connect-src permits the beacon host", build.UMAMI_BEACON_HOST, build.CSP_META)
-assert_match(
-    "beacon host is inside connect-src (not some other directive)",
-    r"connect-src[^;]*" + re.escape(build.UMAMI_BEACON_HOST),
-    build.CSP_META,
-)
-for _retired in build.UMAMI_RETIRED_HOSTS:
-    assert_not_in(f"retired host {_retired} absent from CSP", _retired, build.CSP_META)
+if build.ANALYTICS_ENABLED:
+    assert_in(
+        "snippet loads from the script host",
+        f'src="{build.UMAMI_SCRIPT_HOST}/script.js"',
+        build.UMAMI_SNIPPET,
+    )
+    assert_in("CSP permits the script host", build.UMAMI_SCRIPT_HOST, build.CSP_META)
+    assert_in("CSP connect-src permits the beacon host", build.UMAMI_BEACON_HOST, build.CSP_META)
+    assert_match(
+        "beacon host is inside connect-src (not some other directive)",
+        r"connect-src[^;]*" + re.escape(build.UMAMI_BEACON_HOST),
+        build.CSP_META,
+    )
+    for _retired in build.UMAMI_RETIRED_HOSTS:
+        assert_not_in(f"retired host {_retired} absent from CSP", _retired, build.CSP_META)
+else:
+    # analytics.provider "none" — the off switch must strip every
+    # third-party origin from both the snippet and the CSP.
+    assert_eq("analytics off: snippet empty", build.UMAMI_SNIPPET, "")
+    assert_not_in("analytics off: no umami host in CSP", "umami", build.CSP_META)
+    assert_match(
+        "analytics off: connect-src is first-party only",
+        r"connect-src 'self';",
+        build.CSP_META,
+    )
 
 
 # ---------------------------------------------------------------------
@@ -974,6 +985,162 @@ assert_eq(
     "unrated run (no verification recorded) does not count",
     _verification_clean_publish({"verification_residual_count": 0}),
     False,
+)
+
+
+# ---------------------------------------------------------------------
+# Branding profile (config/branding.yaml → branding_config.py)
+# ---------------------------------------------------------------------
+# The customization framework's core contract: the SHIPPED config is the
+# upstream default (byte-identical site), every theme value is an override
+# layer, unknown keys fail loud, and the analytics off switch works. See
+# docs/customization.md.
+import tempfile  # noqa: E402
+import branding_config  # noqa: E402
+
+print("== branding profile ==")
+
+_shipped = branding_config.load_branding()
+assert_eq(
+    "shipped config/branding.yaml equals upstream DEFAULTS "
+    "(byte-identical default site)",
+    _shipped, branding_config.DEFAULTS,
+)
+assert_eq(
+    "default theme emits no override CSS",
+    branding_config.render_branding_css(_shipped), "",
+)
+assert_eq(
+    "default favicon data-URI is byte-exact",
+    branding_config.default_favicon_href(_shipped),
+    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+    "viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' "
+    "fill='%23e85d75'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' "
+    "dominant-baseline='middle' font-family='ui-monospace,monospace' "
+    "font-size='15' font-weight='700' fill='%230e1116'%3ECTI%3C/text%3E%3C/svg%3E",
+)
+# Missing file → identical defaults (a fork may delete the config).
+assert_eq(
+    "missing config file falls back to DEFAULTS",
+    branding_config.load_branding(Path("/nonexistent/branding.yaml")),
+    branding_config.DEFAULTS,
+)
+
+with tempfile.TemporaryDirectory() as _td:
+    _tmp = Path(_td) / "branding.yaml"
+
+    # Unknown key fails loud (typo protection).
+    _tmp.write_text('site:\n  nmae: "typo"\n', encoding="utf-8")
+    try:
+        branding_config.load_branding(_tmp)
+        FAILURES.append("branding: unknown key 'site.nmae' was accepted")
+        print("  FAIL branding: unknown key accepted")
+    except branding_config.BrandingError:
+        print("  ok  unknown key fails loud")
+
+    # Bad analytics provider fails loud.
+    _tmp.write_text('analytics:\n  provider: "google"\n', encoding="utf-8")
+    try:
+        branding_config.load_branding(_tmp)
+        FAILURES.append("branding: provider 'google' was accepted")
+        print("  FAIL branding: bad provider accepted")
+    except branding_config.BrandingError:
+        print("  ok  unsupported analytics provider fails loud")
+
+    # Referenced logo file must exist under site/branding/.
+    _tmp.write_text('logo:\n  header_mark: "missing.svg"\n', encoding="utf-8")
+    try:
+        branding_config.load_branding(_tmp)
+        FAILURES.append("branding: missing logo file was accepted")
+        print("  FAIL branding: missing logo file accepted")
+    except branding_config.BrandingError:
+        print("  ok  missing logo file fails loud")
+
+    # Partial override: unset keys inherit defaults; theme overrides emit
+    # the two light-theme selector shapes styles.css uses.
+    _tmp.write_text(
+        'site:\n'
+        '  name: "acme-cti.example"\n'
+        'theme:\n'
+        '  dark:\n'
+        '    accent: "#00b3a4"\n'
+        '  light:\n'
+        '    accent: "#00776e"\n'
+        'analytics:\n'
+        '  provider: "none"\n',
+        encoding="utf-8",
+    )
+    _fork = branding_config.load_branding(_tmp)
+    assert_eq("override: site.name replaced", _fork["site"]["name"], "acme-cti.example")
+    assert_eq(
+        "override: unset tagline inherits upstream default",
+        _fork["site"]["tagline"], "Switzerland, Europe & Public Sector",
+    )
+    assert_eq("override: analytics off", _fork["analytics"]["provider"], "none")
+    _css = branding_config.render_branding_css(_fork)
+    assert_in("override css: dark accent in :root", "--accent: #00b3a4;", _css)
+    assert_in(
+        "override css: light accent under prefers-color-scheme",
+        ':root:not([data-theme="dark"])', _css,
+    )
+    assert_in(
+        "override css: light accent under explicit data-theme",
+        ':root[data-theme="light"]', _css,
+    )
+
+    # Custom trend cohorts / sector slices replace the defaults wholesale;
+    # empty lists keep the upstream sets.
+    _tmp.write_text(
+        'trends:\n'
+        '  cohorts:\n'
+        '    - key: "apac"\n'
+        '      title: "APAC items / week"\n'
+        '      regions:\n'
+        '        - "apac"\n'
+        'feeds:\n'
+        '  sector_slices:\n'
+        '    - filename: "feed-manufacturing.xml"\n'
+        '      title_suffix: "Manufacturing"\n'
+        '      description: "Items affecting manufacturing."\n'
+        '      sectors:\n'
+        '        - "manufacturing"\n',
+        encoding="utf-8",
+    )
+    _fork2 = branding_config.load_branding(_tmp)
+    assert_eq(
+        "custom cohorts replace defaults",
+        branding_config.trend_cohorts(_fork2, [{"key": "default"}]),
+        [{"key": "apac", "title": "APAC items / week", "tags": (),
+          "sectors": (), "regions": ("apac",), "match": "any"}],
+    )
+    assert_eq(
+        "custom sector slices replace defaults",
+        branding_config.sector_feed_slices(_fork2, [("default",)]),
+        [("feed-manufacturing.xml", ("manufacturing",), (),
+          "Manufacturing", "Items affecting manufacturing.")],
+    )
+    assert_eq(
+        "empty cohort list keeps upstream defaults",
+        branding_config.trend_cohorts(_shipped, [{"key": "default"}]),
+        [{"key": "default"}],
+    )
+
+# Module-level consistency in the imported build: snippet present iff
+# analytics enabled; branding constants derive from the shipped config.
+assert_eq(
+    "build: snippet presence matches ANALYTICS_ENABLED",
+    bool(build.UMAMI_SNIPPET), build.ANALYTICS_ENABLED,
+)
+assert_eq("build: SITE_NAME from config", build.SITE_NAME, _shipped["site"]["name"])
+assert_eq(
+    "build: default sector slices in effect with empty config list",
+    build.SECTOR_FEED_SLICES is build._DEFAULT_SECTOR_FEED_SLICES,
+    not _shipped["feeds"]["sector_slices"],
+)
+assert_eq(
+    "build: default trend cohorts in effect with empty config list",
+    build.TREND_COHORTS is build._DEFAULT_TREND_COHORTS,
+    not _shipped["trends"]["cohorts"],
 )
 
 

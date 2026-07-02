@@ -85,8 +85,49 @@ ROOT = Path(__file__).resolve().parent.parent
 SITE = Path(__file__).resolve().parent
 OUT = SITE / "_site"
 
-DEFAULT_SITE_URL = "https://ctipilot.ch/"
-DEFAULT_GITHUB_REPO = "OwlsNightCatch/ctipilot"
+# === BRANDING PROFILE ===================================================
+#
+# Every site-identity / theme / analytics value comes from
+# config/branding.yaml via the sibling loader module (fail-loud on unknown
+# keys; upstream defaults on a missing file/key, so the upstream-shipped
+# config builds a byte-identical site). Downstream forks customize ONLY
+# config/branding.yaml + site/branding/ and merge upstream freely — no
+# identity literal may be reintroduced below this point. See
+# docs/customization.md.
+import branding_config  # noqa: E402  (sibling module; sys.path[0] is site/)
+
+BRANDING = branding_config.load_branding()
+
+SITE_NAME = BRANDING["site"]["name"].strip()
+WORDMARK_STRONG = BRANDING["site"]["wordmark_strong"]
+WORDMARK_ACCENT = BRANDING["site"]["wordmark_accent"]
+TAGLINE = BRANDING["site"]["tagline"].strip()
+HOME_LEDE = BRANDING["site"]["lede"].strip()
+HOME_META_DESCRIPTION = BRANDING["site"]["meta_description"].strip()
+FOOTER_TAGLINE = BRANDING["site"]["footer_tagline"].strip()
+SITE_LANG = BRANDING["site"]["lang"].strip()
+SITE_LOCALE = BRANDING["site"]["locale"].strip()
+
+DEFAULT_SITE_URL = BRANDING["site"]["url"].rstrip("/") + "/"
+DEFAULT_GITHUB_REPO = BRANDING["site"]["github_repo"].strip()
+
+# Theme override layer — empty strings across config/branding.yaml (the
+# upstream default) yield an empty override, no branding.css is emitted,
+# and styles.css keeps owning every design token.
+BRANDING_CSS = branding_config.render_branding_css(BRANDING)
+BRANDING_ASSETS_DIR = SITE / "branding"
+HAS_CUSTOM_CSS = (BRANDING_ASSETS_DIR / "custom.css").is_file()
+THEME_COLOR_DARK = BRANDING["theme"]["dark"]["bg"].strip() or "#0e1116"
+THEME_COLOR_LIGHT = BRANDING["theme"]["light"]["bg"].strip() or "#fafbfc"
+
+# Build-generated SVG chart colors (Ops / Trends / entities).
+CHART_ACCENT_RGB = BRANDING["charts"]["accent_rgb"].strip() or "232,93,117"
+CHART_INFO_RGB = BRANDING["charts"]["info_rgb"].strip() or "121,192,255"
+
+# RSS channel descriptions (channel titles derive from SITE_NAME + TAGLINE).
+FEED_DAILY_DESCRIPTION = BRANDING["feeds"]["daily_description"].strip()
+FEED_WEEKLY_DESCRIPTION = BRANDING["feeds"]["weekly_description"].strip()
+FEED_ITEMS_DESCRIPTION = BRANDING["feeds"]["items_description"].strip()
 
 # RSS truncation per feed (HTML archive is unbounded).
 FEED_DAILY_MAX = 30
@@ -1842,9 +1883,11 @@ def prune_orphans(out: Path) -> None:
 # client-side). JS still handles topbar wiring, search autocomplete,
 # list-page filter chips, and the brief-page tag/region/section toggles.
 
-# Umami analytics — single source of truth for every host that appears in
-# both the loader snippet and the CSP. UMAMI_SNIPPET and CSP_META below are
-# BUILT from these constants so the script's loader host and the CSP's
+# Umami analytics — config-driven via config/branding.yaml `analytics:`.
+# `provider: "umami"` injects the snippet on every page and allows exactly
+# its two hosts in the CSP; `provider: "none"` is the one-line off switch —
+# no snippet, first-party-only CSP. UMAMI_SNIPPET and CSP_META below are
+# BUILT from the same constants so the script's loader host and the CSP's
 # allowed hosts can never silently drift apart again.
 #
 # REGRESSION GUARD (2026-06-20). The loader served from UMAMI_SCRIPT_HOST
@@ -1862,22 +1905,27 @@ def prune_orphans(out: Path) -> None:
 # reintroduce a host listed in UMAMI_RETIRED_HOSTS. The import-time assertion
 # after CSP_META enforces both rules on every build (including the deploy-site
 # CI step, which runs `python3 site/build.py`).
-UMAMI_WEBSITE_ID = "abe09860-85be-4b06-8383-002f2e598061"
-UMAMI_SCRIPT_HOST = "https://cloud.umami.is"    # serves script.js (script-src)
-UMAMI_BEACON_HOST = "https://gateway.umami.is"  # receives /api/send beacons (connect-src)
+ANALYTICS_ENABLED = BRANDING["analytics"]["provider"] == "umami"
+UMAMI_WEBSITE_ID = BRANDING["analytics"]["umami"]["website_id"].strip()
+UMAMI_SCRIPT_HOST = BRANDING["analytics"]["umami"]["script_host"].strip().rstrip("/")
+UMAMI_BEACON_HOST = BRANDING["analytics"]["umami"]["beacon_host"].strip().rstrip("/")
 UMAMI_RETIRED_HOSTS = ("https://api-gateway.umami.dev",)  # NEVER reintroduce
 
 UMAMI_SNIPPET = (
     f'<script defer src="{UMAMI_SCRIPT_HOST}/script.js" '
     f'data-website-id="{UMAMI_WEBSITE_ID}" '
     'data-exclude-search="true"></script>'
-)
+) if ANALYTICS_ENABLED else ""
 
+_CSP_SCRIPT_SRC = "'self'" + (f" {UMAMI_SCRIPT_HOST}" if ANALYTICS_ENABLED else "")
+_CSP_CONNECT_SRC = "'self'" + (
+    f" {UMAMI_SCRIPT_HOST} {UMAMI_BEACON_HOST}" if ANALYTICS_ENABLED else ""
+)
 CSP_META = (
     '<meta http-equiv="Content-Security-Policy" content='
-    f"\"default-src 'self'; script-src 'self' {UMAMI_SCRIPT_HOST}; "
+    f"\"default-src 'self'; script-src {_CSP_SCRIPT_SRC}; "
     "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-    f"connect-src 'self' {UMAMI_SCRIPT_HOST} {UMAMI_BEACON_HOST}; "
+    f"connect-src {_CSP_CONNECT_SRC}; "
     "object-src 'none'; base-uri 'self'; form-action 'none'; "
     'upgrade-insecure-requests" />'
 )
@@ -1887,16 +1935,22 @@ CSP_META = (
 # than shipping a CSP that silently blocks analytics. Deterministic: a pure
 # function of the constants above, never of brief content, so it can never
 # false-positive on editorial drift.
-assert UMAMI_SCRIPT_HOST in CSP_META, "CSP is missing the Umami script host (script-src/connect-src)"
-assert UMAMI_BEACON_HOST in CSP_META, (
-    f"CSP connect-src is missing the Umami beacon host {UMAMI_BEACON_HOST!r}; "
-    "the loader POSTs pageviews to <beacon-host>/api/send and the browser blocks "
-    "every beacon otherwise (analytics silently dead)"
-)
-for _retired_host in UMAMI_RETIRED_HOSTS:
-    assert _retired_host not in CSP_META, (
-        f"retired Umami host {_retired_host!r} reappeared in the CSP — it no longer "
-        f"receives beacons; the live host is {UMAMI_BEACON_HOST!r}. See UMAMI_RETIRED_HOSTS."
+if ANALYTICS_ENABLED:
+    assert UMAMI_SCRIPT_HOST in CSP_META, "CSP is missing the Umami script host (script-src/connect-src)"
+    assert UMAMI_BEACON_HOST in CSP_META, (
+        f"CSP connect-src is missing the Umami beacon host {UMAMI_BEACON_HOST!r}; "
+        "the loader POSTs pageviews to <beacon-host>/api/send and the browser blocks "
+        "every beacon otherwise (analytics silently dead)"
+    )
+    for _retired_host in UMAMI_RETIRED_HOSTS:
+        assert _retired_host not in CSP_META, (
+            f"retired Umami host {_retired_host!r} reappeared in the CSP — it no longer "
+            f"receives beacons; the live host is {UMAMI_BEACON_HOST!r}. See UMAMI_RETIRED_HOSTS."
+        )
+else:
+    assert UMAMI_SNIPPET == "" and "umami" not in CSP_META, (
+        "analytics.provider is 'none' but an analytics host survived into the "
+        "snippet or CSP — the off switch must remove every third-party origin"
     )
 
 GH_ICON_SVG = (
@@ -1941,6 +1995,84 @@ EXTERNAL_LINK_SVG = (
 )
 
 
+# --- Branding-driven template fragments ---------------------------------
+#
+# Each helper resolves to the built-in upstream default when the matching
+# config/branding.yaml value is empty, and to the operator's override
+# (a file under site/branding/, copied to /branding/ in the output) when
+# set. Byte-identical to the pre-branding template in the default state.
+
+FAVICON_DATA_URI = branding_config.default_favicon_href(BRANDING)
+
+_DEFAULT_BRAND_MARK_SVG = (
+    '<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">\n'
+    '          <path d="M3.5 12a8.5 8.5 0 0 1 17 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>\n'
+    '          <path d="M7.5 12a4.5 4.5 0 0 1 9 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>\n'
+    '          <circle cx="12" cy="12" r="2" fill="currentColor"/>\n'
+    '        </svg>'
+)
+
+
+def _branding_asset_url(rel: str, *, pfx: str, cachebust: str) -> str:
+    return f"{pfx}branding/{_escape(rel)}?v={cachebust}"
+
+
+def _brand_mark_html(*, pfx: str, cachebust: str) -> str:
+    rel = BRANDING["logo"]["header_mark"].strip()
+    if rel:
+        return (
+            f'<img class="brand-logo" '
+            f'src="{_branding_asset_url(rel, pfx=pfx, cachebust=cachebust)}" alt="" />'
+        )
+    return _DEFAULT_BRAND_MARK_SVG
+
+
+def _footer_mark_html(*, pfx: str, cachebust: str) -> str:
+    rel = BRANDING["logo"]["footer_mark"].strip()
+    if rel:
+        return (
+            f'<img class="footer-brand__mark" '
+            f'src="{_branding_asset_url(rel, pfx=pfx, cachebust=cachebust)}" '
+            'alt="" aria-hidden="true" />'
+        )
+    text = _escape(BRANDING["logo"]["footer_mark_text"].strip())
+    return f'<span class="footer-brand__mark" aria-hidden="true">{text}</span>'
+
+
+def _favicon_href(*, pfx: str, cachebust: str) -> str:
+    rel = BRANDING["logo"]["favicon"].strip()
+    if rel:
+        return _branding_asset_url(rel, pfx=pfx, cachebust=cachebust)
+    return FAVICON_DATA_URI
+
+
+def _branding_css_links(*, pfx: str, cachebust: str) -> str:
+    """Extra stylesheet <link>s after styles.css: the generated theme
+    override (assets/css/branding.css) and the operator's free-form
+    site/branding/custom.css — each only when it exists."""
+    links = ""
+    if BRANDING_CSS:
+        links += f'\n<link rel="stylesheet" href="{pfx}assets/css/branding.css?v={cachebust}" />'
+    if HAS_CUSTOM_CSS:
+        links += f'\n<link rel="stylesheet" href="{pfx}branding/custom.css?v={cachebust}" />'
+    return links
+
+
+_WORDMARK_HTML = (
+    f"<strong>{_escape(WORDMARK_STRONG)}</strong>"
+    + (f"<em>{_escape(WORDMARK_ACCENT)}</em>" if WORDMARK_ACCENT else "")
+)
+_FOOTER_TAGLINE_HTML = (
+    f"\n            <small>{_escape(FOOTER_TAGLINE)}</small>" if FOOTER_TAGLINE else ""
+)
+_FOOTER_LEDE_HTML = "\n          ".join(
+    _escape(ln) for ln in BRANDING["site"]["footer_lede"].strip().splitlines()
+)
+_COPYRIGHT_NOTE_HTML = "\n        ".join(
+    _escape(ln) for ln in BRANDING["site"]["copyright_note"].strip().splitlines()
+)
+
+
 def base_template(
     *,
     title: str,
@@ -1967,33 +2099,33 @@ def base_template(
     pfx = home_relative_prefix
     body_attr = f' class="{_escape(body_class)}"' if body_class else ""
     return f"""<!doctype html>
-<html lang="en">
+<html lang="{_escape(SITE_LANG)}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)" />
-<meta name="theme-color" content="#fafbfc" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="{_escape(THEME_COLOR_DARK)}" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="{_escape(THEME_COLOR_LIGHT)}" media="(prefers-color-scheme: light)" />
 {CSP_META}
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <title>{_escape(title)}</title>
 <meta name="description" content="{_escape(description)}" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
 <link rel="canonical" href="{_escape(canonical)}" />
-<meta property="og:site_name" content="ctipilot.ch" />
+<meta property="og:site_name" content="{_escape(SITE_NAME)}" />
 <meta property="og:type" content="article" />
 <meta property="og:title" content="{_escape(title)}" />
 <meta property="og:description" content="{_escape(description)}" />
 <meta property="og:url" content="{_escape(canonical)}" />
-<meta property="og:locale" content="en_US" />
+<meta property="og:locale" content="{_escape(SITE_LOCALE)}" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="{_escape(title)}" />
 <meta name="twitter:description" content="{_escape(description)}" />
-<link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />
-<link rel="alternate" type="application/rss+xml" title="ctipilot.ch — Daily" href="{pfx}feed.xml" />
-<link rel="alternate" type="application/rss+xml" title="ctipilot.ch — Weekly" href="{pfx}feed-weekly.xml" />
-<link rel="alternate" type="application/rss+xml" title="ctipilot.ch — Per item" href="{pfx}feed-items.xml" />
+<link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />{_branding_css_links(pfx=pfx, cachebust=cachebust)}
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Daily" href="{pfx}feed.xml" />
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Weekly" href="{pfx}feed-weekly.xml" />
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Per item" href="{pfx}feed-items.xml" />
 <link rel="sitemap" type="application/xml" href="{pfx}sitemap.xml" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23e85d75'/%3E%3Ctext x='50%25' y='52%25' text-anchor='middle' dominant-baseline='middle' font-family='ui-monospace,monospace' font-size='15' font-weight='700' fill='%230e1116'%3ECTI%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="{_favicon_href(pfx=pfx, cachebust=cachebust)}" />
 {alt_links}
 {UMAMI_SNIPPET}
 <!-- Path prefix back to the site root, used by app.js to build URLs. -->
@@ -2008,15 +2140,11 @@ def base_template(
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="bar-inner">
-    <a class="brand" href="{pfx}" aria-label="Home — ctipilot.ch">
+    <a class="brand" href="{pfx}" aria-label="Home — {_escape(SITE_NAME)}">
       <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-          <path d="M3.5 12a8.5 8.5 0 0 1 17 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M7.5 12a4.5 4.5 0 0 1 9 0" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.55"/>
-          <circle cx="12" cy="12" r="2" fill="currentColor"/>
-        </svg>
+        {_brand_mark_html(pfx=pfx, cachebust=cachebust)}
       </span>
-      <span class="brand-text"><strong>ctipilot</strong><em>.ch</em></span>
+      <span class="brand-text">{_WORDMARK_HTML}</span>
     </a>
 
     <form class="searchbox" role="search" data-search-form>
@@ -2058,17 +2186,14 @@ def base_template(
   <div class="footer-inner">
     <div class="footer-grid">
       <section class="footer-brand">
-        <a class="footer-brand__home" href="{pfx}" aria-label="ctipilot.ch home">
-          <span class="footer-brand__mark" aria-hidden="true">CTI</span>
+        <a class="footer-brand__home" href="{pfx}" aria-label="{_escape(SITE_NAME)} home">
+          {_footer_mark_html(pfx=pfx, cachebust=cachebust)}
           <span class="footer-brand__title">
-            <strong>ctipilot.ch</strong>
-            <small>Switzerland · Europe · Public sector</small>
+            <strong>{_escape(SITE_NAME)}</strong>{_FOOTER_TAGLINE_HTML}
           </span>
         </a>
         <p class="footer-brand__lede">
-          Daily and weekly cyber threat intelligence for Tier 2/3 SOC, IR
-          and detection engineers. Source-linked, IOC-free, autonomously
-          generated by an LLM with parallel research and verification.
+          {_FOOTER_LEDE_HTML}
         </p>
         <p class="footer-brand__notice">
           <span class="footer-brand__notice-label">AI-generated · no human review</span>
@@ -2111,8 +2236,7 @@ def base_template(
 
     <div class="footer-bottom">
       <p class="footer-bottom__copy">
-        © {datetime.now(timezone.utc).year} ctipilot.ch — published under the MIT License.
-        Made in Switzerland.
+        © {datetime.now(timezone.utc).year} {_escape(SITE_NAME)} — {_COPYRIGHT_NOTE_HTML}
       </p>
       <p class="footer-bottom__build" id="footer-meta">
         <span class="mono">build {_escape(cachebust[:8])}</span>
@@ -2975,7 +3099,7 @@ def render_cve_list_page(
 {table}
 """
     return base_template(
-        title="CVEs — ctipilot.ch",
+        title=f"CVEs — {SITE_NAME}",
         description=f"{len(cves)} CVEs referenced across all briefs.",
         body=body,
         canonical=canonical,
@@ -3112,7 +3236,7 @@ def render_topic_list_page(
 {list_html}
 """
     return base_template(
-        title="Topics — ctipilot.ch",
+        title=f"Topics — {SITE_NAME}",
         description=f"{len(topics)} tracked topics — CVEs, actors, campaigns, incidents, tools.",
         body=body,
         canonical=canonical,
@@ -3227,7 +3351,7 @@ def render_source_list_page(
 {table}
 """
     return base_template(
-        title="Sources — ctipilot.ch",
+        title=f"Sources — {SITE_NAME}",
         description=f"{len(sources)} curated CTI sources.",
         body=body,
         canonical=canonical,
@@ -3405,7 +3529,7 @@ def render_briefs_list_page(
 {''.join(section_html) or '<div class="empty">No briefs published yet.</div>'}
 """
     return base_template(
-        title="Briefs — ctipilot.ch",
+        title=f"Briefs — {SITE_NAME}",
         description=f"{len(briefs)} CTI briefs published, newest first.",
         body=body,
         canonical=canonical,
@@ -3483,8 +3607,8 @@ def render_home_page(
     if not latest and not latest_weekly:
         body = f"""
 <section class="home-hero">
-  <h1>ctipilot.ch</h1>
-  <p class="lede">Daily and weekly cyber threat intelligence — Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.</p>
+  <h1>{_escape(SITE_NAME)}</h1>
+  <p class="lede">{_escape(HOME_LEDE)}</p>
 </section>
 <section class="home-empty">
   <p>The first daily routine run will publish a brief here.</p>
@@ -3493,8 +3617,8 @@ def render_home_page(
 {redirect_js}
 """
         return base_template(
-            title="ctipilot.ch — Switzerland, Europe & Public Sector",
-            description="Daily and weekly cyber threat intelligence briefs covering Switzerland, Europe, and the public sector.",
+            title=f"{SITE_NAME} — {TAGLINE}",
+            description=HOME_META_DESCRIPTION,
             body=body,
             canonical=canonical,
             site_url=site_url,
@@ -3592,8 +3716,8 @@ def render_home_page(
 
     body = f"""
 <section class="home-hero">
-  <h1>ctipilot.ch</h1>
-  <p class="lede">Daily and weekly cyber threat intelligence — Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.</p>
+  <h1>{_escape(SITE_NAME)}</h1>
+  <p class="lede">{_escape(HOME_LEDE)}</p>
 </section>
 
 <div class="home-today-grid">
@@ -3605,8 +3729,8 @@ def render_home_page(
 {redirect_js}
 """
     return base_template(
-        title="ctipilot.ch — Switzerland, Europe & Public Sector",
-        description="Daily and weekly cyber threat intelligence (CTI) briefs covering Switzerland, Europe, and the public sector. Source-linked, IOC-free, autonomously generated by an LLM.",
+        title=f"{SITE_NAME} — {TAGLINE}",
+        description=HOME_META_DESCRIPTION,
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -3623,7 +3747,7 @@ def render_home_page(
 # monthly) rather than every taxonomy value verbatim. Add cohorts here
 # as the brief's coverage shifts; never silently rename one (entity URLs
 # don't move, but the trend chart's labels do).
-TREND_COHORTS: list[dict[str, Any]] = [
+_DEFAULT_TREND_COHORTS: list[dict[str, Any]] = [
     {
         "key": "ransomware",
         "title": "Ransomware items / week",
@@ -3692,6 +3816,41 @@ TREND_COHORTS: list[dict[str, Any]] = [
     },
 ]
 
+# config/branding.yaml `trends.cohorts` replaces the default cohort set
+# wholesale when non-empty (a fork tracking a different region/sector lens
+# redefines the tiles without touching this file).
+TREND_COHORTS: list[dict[str, Any]] = branding_config.trend_cohorts(
+    BRANDING, _DEFAULT_TREND_COHORTS
+)
+
+TRENDS_PAGE_DESCRIPTION = (
+    "Weekly trend dashboard across all CTI briefs — ransomware, "
+    "actively-exploited vulnerabilities, public-sector, OT/ICS, "
+    "supply-chain, AI-abuse, Switzerland + Europe, nation-state."
+    if TREND_COHORTS is _DEFAULT_TREND_COHORTS
+    else "Weekly trend dashboard across all CTI briefs — "
+    + ", ".join(c["title"] for c in TREND_COHORTS) + "."
+)
+
+
+def _trends_cohort_note(prefix: str) -> str:
+    """Explanatory paragraph under the trends grid. The upstream default
+    prose names the default cohorts' framing; a custom cohort set gets a
+    neutral line instead."""
+    if TREND_COHORTS is _DEFAULT_TREND_COHORTS:
+        return (
+            "<p>The cohorts are coarse on purpose: they're the questions a "
+            "Swiss / EU public-sector SOC manager would ask scanning the site "
+            'monthly ("are we seeing more ransomware?", "is OT/ICS '
+            'escalating?", "did public-sector targeting move?"). For finer '
+            f'slicing, use the per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>'
+        )
+    return (
+        "<p>The cohorts are coarse on purpose — they mirror the deployment's "
+        "trend cohorts in config/branding.yaml. For finer slicing, use the "
+        f'per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>'
+    )
+
 
 def _iso_week_str(date_iso: str) -> str | None:
     """`YYYY-MM-DD` → `YYYY-Www`. Used to bucket items into ISO weeks for
@@ -3743,7 +3902,7 @@ def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
         req = urllib.request.Request(
             api,
             headers={
-                "User-Agent": f"ctipilot.ch site build (github.com/{repo})",
+                "User-Agent": f"{SITE_NAME} site build (github.com/{repo})",
                 "Accept": "application/vnd.github+json",
             },
             method="GET",
@@ -3815,8 +3974,8 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 </section>
 """
     return base_template(
-        title="RSS feeds — ctipilot.ch",
-        description="All RSS feeds — daily, weekly, per item, plus eight sector-specific slices (public sector, healthcare, finance, energy, OT/ICS, defense, telco, education).",
+        title=f"RSS feeds — {SITE_NAME}",
+        description=FEEDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
         home_relative_prefix=prefix,
@@ -3837,7 +3996,7 @@ def render_trends_page(briefs: list[dict[str, Any]], *,
             '<p class="muted">No briefs yet — trend dashboard is empty.</p>'
         )
         return base_template(
-            title="Trends — ctipilot.ch",
+            title=f"Trends — {SITE_NAME}",
             description="Weekly trend dashboard across all CTI briefs.",
             body=body,
             canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -3865,7 +4024,7 @@ def render_trends_page(briefs: list[dict[str, Any]], *,
     if not weeks_sorted:
         body = '<h1>Trends</h1><p class="muted">No weekly buckets yet.</p>'
         return base_template(
-            title="Trends — ctipilot.ch",
+            title=f"Trends — {SITE_NAME}",
             description="Weekly trend dashboard across all CTI briefs.",
             body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
@@ -3915,12 +4074,12 @@ def render_trends_page(briefs: list[dict[str, Any]], *,
 <section style="margin-top:1.5rem">
   <h2 class="section-head">How to read this</h2>
   <p>Each tile counts items whose footer carries the relevant taxonomy values. Tiles aggregate over the week the brief was published — a brief on a Tuesday contributes to that ISO week's bucket. The "vs prior week" delta is week-over-week.</p>
-  <p>The cohorts are coarse on purpose: they're the questions a Swiss / EU public-sector SOC manager would ask scanning the site monthly ("are we seeing more ransomware?", "is OT/ICS escalating?", "did public-sector targeting move?"). For finer slicing, use the per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>
+  {_trends_cohort_note(prefix)}
 </section>
 """
     return base_template(
-        title="Trends — ctipilot.ch",
-        description="Weekly trend dashboard across all CTI briefs — ransomware, actively-exploited vulnerabilities, public-sector, OT/ICS, supply-chain, AI-abuse, Switzerland + Europe, nation-state.",
+        title=f"Trends — {SITE_NAME}",
+        description=TRENDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
         home_relative_prefix=prefix,
@@ -4125,7 +4284,7 @@ def _ops_format_duration(seconds: float | int | None) -> str:
 
 
 def _ops_svg_sparkline(values: list[float], *, width: int = 220, height: int = 36,
-                       stroke: str = "var(--accent)", fill: str = "rgba(232,93,117,0.18)",
+                       stroke: str = "var(--accent)", fill: str = f"rgba({CHART_ACCENT_RGB},0.18)",
                        label: str = "") -> str:
     """Inline SVG line + filled-area sparkline. Empty values → placeholder."""
     if not values or all(v <= 0 for v in values):
@@ -4319,7 +4478,7 @@ def _ops_svg_heatmap(rows: list[tuple[str, list[tuple[float, str]]]], *, cell: i
             v = max(0.0, min(1.0, float(value)))
             # Mix accent colour with elevation; alpha encodes intensity.
             alpha = 0.18 + 0.82 * v
-            colour = f"rgba(232,93,117,{alpha:.2f})" if v > 0 else "var(--bg-elev-2)"
+            colour = f"rgba({CHART_ACCENT_RGB},{alpha:.2f})" if v > 0 else "var(--bg-elev-2)"
             parts.append(
                 f'<rect x="{x}" y="{y}" width="{cell}" height="{cell}" rx="2" '
                 f'fill="{colour}"><title>{_escape(tip)}</title></rect>'
@@ -4336,7 +4495,7 @@ def _ops_svg_heatmap(rows: list[tuple[str, list[tuple[float, str]]]], *, cell: i
     )
 
 
-_MODEL_PALETTE: list[str] = [
+_MODEL_PALETTE: list[str] = BRANDING["charts"]["model_palette"] or [
     "#e85d75", "#79c0ff", "#56d364", "#ffd866", "#d2a8ff",
     "#ff9b6b", "#56b3d3", "#bd9bff", "#9bdc4d",
 ]
@@ -4714,7 +4873,7 @@ def render_ops_page(
                         sub=f"min {_ops_format_duration(min(durations) if durations else 0)} · "
                             f"max {_ops_format_duration(max(durations) if durations else 0)}",
                         chart=_ops_svg_sparkline(duration_series, width=140, height=28,
-                                                  stroke="var(--info)", fill="rgba(121,192,255,0.2)",
+                                                  stroke="var(--info)", fill=f"rgba({CHART_INFO_RGB},0.2)",
                                                   label="Run duration over time"))
         + _ops_kpi_tile("Items published",
                         str(total_items),
@@ -4783,7 +4942,7 @@ def render_ops_page(
 </p>
 """
     return base_template(
-        title="Operations dashboard — ctipilot.ch",
+        title=f"Operations dashboard — {SITE_NAME}",
         description="Live agent telemetry: run cadence, durations, model split, sub-agent allocation, verification verdicts, fetch failures, source-rotation health.",
         body=body,
         canonical=canonical,
@@ -5918,10 +6077,10 @@ def build_daily_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
         if b["publish_ts"] > most_recent:
             most_recent = b["publish_ts"]
     feed = _channel_rss(
-        title="ctipilot.ch — Daily (Switzerland, Europe & Public Sector)",
+        title=f"{SITE_NAME} — Daily ({TAGLINE})",
         link=site_url,
         self_link=site_url + "feed.xml",
-        description="Daily cyber threat intelligence briefs covering Switzerland, Europe, and the public sector — autonomously generated, source-linked, IOC-free.",
+        description=FEED_DAILY_DESCRIPTION,
         last_build=rfc822(most_recent if daily else _fallback_lastbuild(briefs)),
         items_xml="".join(items_xml),
     )
@@ -5955,10 +6114,10 @@ def build_weekly_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[s
         if b["publish_ts"] > most_recent:
             most_recent = b["publish_ts"]
     feed = _channel_rss(
-        title="ctipilot.ch — Weekly (Switzerland, Europe & Public Sector)",
+        title=f"{SITE_NAME} — Weekly ({TAGLINE})",
         link=site_url,
         self_link=site_url + "feed-weekly.xml",
-        description="Weekly cyber threat intelligence summaries — multi-day campaigns, sector patterns, policy horizon.",
+        description=FEED_WEEKLY_DESCRIPTION,
         last_build=rfc822(most_recent if weekly else _fallback_lastbuild(briefs)),
         items_xml="".join(items_xml),
     )
@@ -6042,10 +6201,10 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
         if it["publish_ts"] > most_recent:
             most_recent = it["publish_ts"]
     feed = _channel_rss(
-        title="ctipilot.ch — Per item",
+        title=f"{SITE_NAME} — Per item",
         link=site_url,
         self_link=site_url + "feed-items.xml",
-        description="Individual content blocks from CTI briefs (Immediate Actions, Active Threats, Trending Vulnerabilities, Research, Updates, Deep Dive).",
+        description=FEED_ITEMS_DESCRIPTION,
         last_build=rfc822(most_recent if item_entries else _fallback_lastbuild(briefs)),
         items_xml="".join(items_xml),
     )
@@ -6060,7 +6219,7 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
 # brief.
 #
 # (sector_filename, [accept_sectors], [accept_tags], title_suffix, description)
-SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = [
+_DEFAULT_SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = [
     (
         "feed-public-sector.xml",
         ("public-sector",),
@@ -6118,6 +6277,22 @@ SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]]
         "Items affecting education institutions, ed-tech platforms, research universities.",
     ),
 ]
+
+# config/branding.yaml `feeds.sector_slices` replaces the default slice set
+# wholesale when non-empty.
+SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]] = (
+    branding_config.sector_feed_slices(BRANDING, _DEFAULT_SECTOR_FEED_SLICES)
+)
+
+FEEDS_PAGE_DESCRIPTION = (
+    "All RSS feeds — daily, weekly, per item, plus eight sector-specific "
+    "slices (public sector, healthcare, finance, energy, OT/ICS, defense, "
+    "telco, education)."
+    if SECTOR_FEED_SLICES is _DEFAULT_SECTOR_FEED_SLICES
+    else "All RSS feeds — daily, weekly, per item, plus "
+    f"{len(SECTOR_FEED_SLICES)} sector-specific slices "
+    "(" + ", ".join(s[3] for s in SECTOR_FEED_SLICES) + ")."
+)
 
 
 def build_sector_feeds(briefs: list[dict[str, Any]],
@@ -6185,7 +6360,7 @@ def build_sector_feeds(briefs: list[dict[str, Any]],
             if it["publish_ts"] > most_recent:
                 most_recent = it["publish_ts"]
         feed = _channel_rss(
-            title=f"ctipilot.ch — {title_suffix}",
+            title=f"{SITE_NAME} — {title_suffix}",
             link=site_url,
             self_link=site_url + fname,
             description=description,
@@ -6783,7 +6958,7 @@ def compute_related_entities(
 # Stable colour palette for non-model legend swatches (donut slices,
 # bar segments). Distinct from `_MODEL_PALETTE` so a future page that
 # ever needs both at once doesn't collide.
-_ENTITY_PALETTE: list[str] = [
+_ENTITY_PALETTE: list[str] = BRANDING["charts"]["entity_palette"] or [
     "#e85d75", "#79c0ff", "#56d364", "#ffd866", "#d2a8ff",
     "#ff9b6b", "#56b3d3", "#bd9bff", "#9bdc4d", "#f48fb1",
     "#a3d977", "#7eb9ff",
@@ -7087,7 +7262,10 @@ def render_sources_overview_charts(
 
     # Reliability donut — fixed colour mapping so HIGH always reads green.
     reliability_color = {
-        "HIGH": "#56d364", "MEDIUM": "#ffd866", "LOW": "#e85d75", "—": "var(--text-muted)",
+        "HIGH": BRANDING["charts"]["reliability_high"].strip() or "#56d364",
+        "MEDIUM": BRANDING["charts"]["reliability_medium"].strip() or "#ffd866",
+        "LOW": BRANDING["charts"]["reliability_low"].strip() or "#e85d75",
+        "—": "var(--text-muted)",
     }
     rel_slices = [
         (k, float(v), reliability_color.get(k, "var(--text-muted)"))
@@ -7245,7 +7423,7 @@ def render_entities_index_page(
 {list_html}
 """
     return base_template(
-        title="Entities — ctipilot.ch",
+        title=f"Entities — {SITE_NAME}",
         description=f"{len(entities)} tracked entities across all briefs.",
         body=body,
         canonical=canonical,
@@ -7597,10 +7775,30 @@ def copy_assets() -> None:
                 body = cleaned
         atomic_write_bytes(dst_path, body)
 
+    # Downstream branding assets (logos, favicon, fonts, custom.css) from
+    # site/branding/ → _site/branding/. Docs stay out of the output.
+    bsrc = BRANDING_ASSETS_DIR
+    if bsrc.exists():
+        for src_path in bsrc.rglob("*"):
+            if not src_path.is_file() or src_path.suffix == ".md":
+                continue
+            size = src_path.stat().st_size
+            if size > MAX_VENDOR_BYTES:
+                raise RuntimeError(
+                    f"refused: branding asset {src_path} is {size} bytes, "
+                    f"exceeds cap of {MAX_VENDOR_BYTES}"
+                )
+            atomic_write_bytes(
+                OUT / "branding" / src_path.relative_to(bsrc),
+                src_path.read_bytes(),
+            )
+
 
 def cachebust_value() -> str:
     """A short content-hashed fingerprint over the JS + CSS assets +
-    taxonomy. Deterministic across runs with the same inputs."""
+    taxonomy + branding overrides. Deterministic across runs with the
+    same inputs; identical to the pre-branding fingerprint while no
+    branding override exists (empty theme, no site/branding/ assets)."""
     h = hashlib.sha256()
     for p in sorted((SITE / "assets").rglob("*")):
         if p.is_file() and p.suffix in (".js", ".css"):
@@ -7611,6 +7809,16 @@ def cachebust_value() -> str:
     tax = SITE / "taxonomy.yaml"
     if tax.exists():
         h.update(tax.read_bytes())
+    if BRANDING_CSS:
+        h.update(b"\x00branding.css\x00")
+        h.update(BRANDING_CSS.encode("utf-8"))
+    if BRANDING_ASSETS_DIR.exists():
+        for p in sorted(BRANDING_ASSETS_DIR.rglob("*")):
+            if p.is_file() and p.suffix != ".md":
+                h.update(p.relative_to(SITE).as_posix().encode("utf-8"))
+                h.update(b"\x00")
+                h.update(p.read_bytes())
+                h.update(b"\x00")
     return h.hexdigest()[:10]
 
 
@@ -7641,7 +7849,7 @@ def write_robots(out_path: Path, *, sitemap_url: str) -> None:
     )
 
 
-def write_security_txt(out_path: Path, *, repo: str, expires: str) -> None:
+def write_security_txt(out_path: Path, *, repo: str, expires: str, site_url: str) -> None:
     """RFC 9116 security.txt. Routes reports through GitHub Private
     Vulnerability Reporting so we never need to publish a contact email."""
     body = (
@@ -7652,7 +7860,7 @@ def write_security_txt(out_path: Path, *, repo: str, expires: str) -> None:
         f"Contact: https://github.com/{repo}/security/advisories/new\n"
         f"Expires: {expires}\n"
         f"Preferred-Languages: en\n"
-        f"Canonical: https://ctipilot.ch/.well-known/security.txt\n"
+        f"Canonical: {site_url}.well-known/security.txt\n"
     )
     atomic_write_text(out_path, body)
 
@@ -7692,8 +7900,14 @@ def self_check(
     inline_script_re = re.compile(r"<script(?:\s[^>]*)?>(?!\s*</script>)[^<]", re.IGNORECASE)
     # Match the actual `<script>` tag that loads Umami, not stray textual
     # mentions of the URL (which can appear in docs that describe the
-    # analytics setup).
-    umami_tag_re = re.compile(r'<script[^>]*\bsrc=(?:"|&quot;)https://cloud\.umami\.is/script\.js', re.IGNORECASE)
+    # analytics setup). Host comes from config/branding.yaml; with
+    # analytics off, every page must carry ZERO analytics tags.
+    expected_umami_count = 1 if ANALYTICS_ENABLED else 0
+    umami_script_host = UMAMI_SCRIPT_HOST or "https://cloud.umami.is"
+    umami_tag_re = re.compile(
+        r'<script[^>]*\bsrc=(?:"|&quot;)' + re.escape(umami_script_host) + r'/script\.js',
+        re.IGNORECASE,
+    )
     # Pages with a `meta http-equiv="refresh"` redirect are intentionally
     # minimal stubs (e.g. /cves/<id>/ → /entities/<key>/ back-compat
     # redirects). Skip them — they're noindex'd, don't load the navbar,
@@ -7705,7 +7919,7 @@ def self_check(
         if redirect_re.search(text):
             continue
         umami_count = len(umami_tag_re.findall(text))
-        if umami_count != 1:
+        if umami_count != expected_umami_count:
             # Cosmetic — analytics may not load on this page, but the
             # page itself is fine. Aggregate so one umami misconfig
             # doesn't produce 100 lines of warnings.
@@ -7730,10 +7944,12 @@ def self_check(
                 )
     if umami_warnings:
         if len(umami_warnings) == 1:
-            warnings.append(f"umami <script> tag count != 1 in {umami_warnings[0]}")
+            warnings.append(
+                f"umami <script> tag count != {expected_umami_count} in {umami_warnings[0]}"
+            )
         else:
             warnings.append(
-                f"umami <script> tag count != 1 in {len(umami_warnings)} pages "
+                f"umami <script> tag count != {expected_umami_count} in {len(umami_warnings)} pages "
                 f"(first: {umami_warnings[0]}) — analytics misconfig, page content unaffected"
             )
     # No raw `**Markdown**` survives in any RSS content. Cosmetic — feed
@@ -7824,6 +8040,12 @@ def main() -> int:
     copy_assets()
     cachebust = cachebust_value()
     atomic_write_bytes(OUT / ".nojekyll", b"")
+
+    # Theme override layer (config/branding.yaml `theme:`). Emitted only
+    # when at least one value is overridden — the upstream-default build
+    # writes no branding.css and links none.
+    if BRANDING_CSS:
+        atomic_write_text(OUT / "assets" / "css" / "branding.css", BRANDING_CSS)
 
     briefs = collect_briefs()
 
@@ -8466,7 +8688,7 @@ def main() -> int:
         "about/",
         render_static_doc(
             md_text=about_landing_md,
-            title="About — ctipilot.ch",
+            title=f"About — {SITE_NAME}",
             description="What this project is, how the briefs are produced, and how to read them.",
             prefix="../",
             canonical=site_url + "about/",
@@ -8485,7 +8707,7 @@ def main() -> int:
             "about/docs/",
             render_static_doc(
                 md_text=docs_index_md,
-                title="Documentation — ctipilot.ch",
+                title=f"Documentation — {SITE_NAME}",
                 description="System reference: architecture, operating, analytics, improvements.",
                 prefix="../../",
                 canonical=site_url + "about/docs/",
@@ -8501,7 +8723,7 @@ def main() -> int:
                 rel_url,
                 render_static_doc(
                     md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
-                    title=f"{title} — ctipilot.ch",
+                    title=f"{title} — {SITE_NAME}",
                     description=f"{title} — system documentation.",
                     prefix="../../../",
                     canonical=site_url + rel_url,
@@ -8532,7 +8754,7 @@ def main() -> int:
             "about/prompts/",
             render_static_doc(
                 md_text=prompts_index_md,
-                title="Prompts — ctipilot.ch",
+                title=f"Prompts — {SITE_NAME}",
                 description="The prompts the routine loads at runtime, plus their version-history changelog.",
                 prefix="../../",
                 canonical=site_url + "about/prompts/",
@@ -8548,7 +8770,7 @@ def main() -> int:
                 rel_url,
                 render_static_doc(
                     md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
-                    title=f"{title} — ctipilot.ch",
+                    title=f"{title} — {SITE_NAME}",
                     description=f"{title} — runtime prompt / policy.",
                     prefix="../../../",
                     canonical=site_url + rel_url,
@@ -8562,7 +8784,7 @@ def main() -> int:
                 "about/prompts/changelog/",
                 render_static_doc(
                     md_text=_read_text_capped(changelog_path, MAX_BRIEF_BYTES),
-                    title="Prompt CHANGELOG — ctipilot.ch",
+                    title=f"Prompt CHANGELOG — {SITE_NAME}",
                     description="Editorial-policy audit trail — every prompt-version change explained.",
                     prefix="../../../",
                     canonical=site_url + "about/prompts/changelog/",
@@ -8666,13 +8888,13 @@ def main() -> int:
 
   <p class="muted" style="margin-top:1.6rem;font-size:0.82rem">
     If you think this is a broken link inside the site, please open an issue at
-    <a href="https://github.com/OwlsNightCatch/ctipilot/issues" target="_blank" rel="noopener noreferrer">github.com/OwlsNightCatch/ctipilot</a>.
+    <a href="https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}/issues" target="_blank" rel="noopener noreferrer">github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}</a>.
   </p>
 </section>
 """
 
     err = base_template(
-        title="404 — Not found · ctipilot.ch",
+        title=f"404 — Not found · {SITE_NAME}",
         description="The page you requested is not on this site. Search or use the suggested links to find what you were looking for.",
         body=err_body,
         canonical=site_url + "404.html",
@@ -8701,8 +8923,9 @@ def main() -> int:
     write_robots(OUT / "robots.txt", sitemap_url=site_url + "sitemap.xml")
     write_security_txt(
         OUT / ".well-known" / "security.txt",
-        repo="OwlsNightCatch/ctipilot",
+        repo=os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO),
         expires="2027-05-08T00:00:00Z",
+        site_url=site_url,
     )
 
     # ---- CNAME (GitHub Pages custom domain) ---------------------------

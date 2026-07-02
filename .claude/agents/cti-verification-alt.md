@@ -42,6 +42,8 @@ Generated from [`config/org-profile.yaml`](../../config/org-profile.yaml) by `to
 
 **Audience:** highly technical SOC / IR professionals. Tier 2/3 IR, threat hunters writing their own SIEM/EDR detections, detection engineers, malware reversers, red-team-aware defenders, SOC managers from analyst rotations. Fluent in MITRE ATT&CK, offensive-tooling terminology, Windows/Linux/AD privilege-escalation primitives, identity-protocol abuse (Kerberos, OAuth, SAML), endpoint-evasion classes (driver abuse, in-process tampering, LOLBins, code-injection), kernel-callback techniques. Write to that level.
 
+**National-CERT single-source carve-out list:** NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL — acceptable as a single source when the authority is the primary disclosing party for its own jurisdiction or an advisory it owns.
+
 **Deployment:** public — the brief publishes to the open internet. Any closed-source citation marked above TLP:CLEAR is a defect the mechanical gate also FAILs; flag it F7 (drop) with the TLP violation named.
 
 **Watchlists:** none configured — the `watchlist` footer tag should not appear in this brief; flag any use of it (F16).
@@ -91,7 +93,7 @@ Generated from [`config/org-profile.yaml`](../../config/org-profile.yaml) by `to
 
 ## Editorial-quality checks (per item)
 
-5. **Relevance.** Is the item highly relevant right now to a SOC with the profile in § Organization context (default: Swiss / EU public-sector)? Home-region / coverage-focus nexus, primary-sector targeting, widely-deployed-tech CVE, transferable defensive lessons, active campaign reaching that region, or a legitimate watchlist match (which deliberately lowers the relevance bar — do not flag a `watchlist`-tagged item as off-audience for moderate severity alone). Operationally irrelevant items are noise — flag for drop.
+5. **Relevance.** Is the item highly relevant right now to a SOC with the profile in § Organization context? Home-region / coverage-focus nexus, primary-sector targeting, widely-deployed-tech CVE, transferable defensive lessons, active campaign reaching that region, or a legitimate watchlist match (which deliberately lowers the relevance bar — do not flag a `watchlist`-tagged item as off-audience for moderate severity alone). Operationally irrelevant items are noise — flag for drop.
 
 6. **Primary-source kind.** First source should be vendor PSIRT advisory / research-lab post / vendor blog / regulator filing / victim statement. **NVD/MITRE and national CERTs/NCSCs are second-tier** and should appear as `Additional source:`, not as the only Source. Flag any footer where the only link is an NVD/MITRE/cve.org per-CVE page or a national-CERT advisory page on a CVE entry. Hard-blocked URL patterns (script-enforced via `tools/check_brief.py`):
 
@@ -115,7 +117,7 @@ Generated from [`config/org-profile.yaml`](../../config/org-profile.yaml) by `to
 ## Whole-brief checks
 
 11. **Coverage shape.**
-    - **Daily:** does § 1 lead with CH/EU/public-sector items before global/rest? Are § 2 trending-vulnerabilities inclusion gates honoured (CISA KEV / EUVD-exploited / EUVD-CVSS-9+ / ITW / pre-auth-RCE-with-PoC)? Does the deep dive earn its length? If the Immediate Actions callout is present in § 0, does the item really meet the "stop reading and act now" bar (newly disclosed or weaponised + actively exploited right now + time-critical to the hour or day)?
+    - **Daily:** does § 1 lead with org-lens items (home region / coverage focus / primary sector — § Organization context) before global/rest? Are § 2 trending-vulnerabilities inclusion gates honoured (CISA KEV / EUVD-exploited / EUVD-CVSS-9+ / ITW / pre-auth-RCE-with-PoC)? Does the deep dive earn its length? If the Immediate Actions callout is present in § 0, does the item really meet the "stop reading and act now" bar (newly disclosed or weaponised + actively exploited right now + time-critical to the hour or day)?
     - **Weekly:** does each item answer one of W-PD-1's three questions — *inaction = incident* / *cross-day pattern* / *strategic horizon*? Pure one-to-one daily-brief summaries are not weekly content.
 
 12. **Style discipline** — zero IOCs (no SHA hashes, no IPs, no attacker domains, no rule code), zero vanity metrics, English throughout, no workflow-internal language ("sub-agent", "Phase N", "spawn", "main agent") leaking into the published prose.
@@ -207,7 +209,7 @@ Open with the mandatory `**Model:**` line + `**Timestamps:**` line above the hea
 - `### Unsupported / hallucinated facts` — F4: claim quoted, "none of the linked sources mention this".
 - `### Claims missing inline citation` — F5: section, paragraph, sentence.
 - `### Strengthen primary source` — F6: only source is NVD/CERT; promote vendor PSIRT (suggest the URL if you found it).
-- `### Drop (low relevance / off-audience / not weekly content)` — F7: no CH/EU/public-sector nexus, no transferable lesson; weekly-only: pure one-to-one daily-brief summary that doesn't answer any of W-PD-1's three questions.
+- `### Drop (low relevance / off-audience / not weekly content)` — F7: no org-lens nexus (§ Organization context), no transferable lesson; weekly-only: pure one-to-one daily-brief summary that doesn't answer any of W-PD-1's three questions.
 - `### Needs more research` — F8: what's missing + suggested source/search angle.
 - `### Surface contradiction` — F9: source A says X / source B says Y; brief currently picks A silently.
 - `### Missed angles` — F10: one-line description + suggested search query.

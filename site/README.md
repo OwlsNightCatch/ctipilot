@@ -21,11 +21,19 @@ search and filters are inert but every page still serves its content.
 ```
 site/
 ├── build.py               # Stdlib-only Python SSG. Single entrypoint.
+├── branding_config.py     # Loader for config/branding.yaml — site identity,
+│                          # theme overrides, logos, chart palettes, feeds,
+│                          # analytics. Fail-loud on unknown keys; the shipped
+│                          # config builds a byte-identical site. See
+│                          # docs/customization.md.
+├── branding/              # Downstream-owned brand assets (logos, favicon,
+│                          # fonts, custom.css). Upstream ships only a README.
 ├── taxonomy.yaml          # Controlled vocabulary (themes, regions, sectors,
 │                          # CVE fields, section keys). The build refuses any
 │                          # post-cut-over item using a value not in here.
 ├── test_build.py          # Stdlib-only smoke tests (Markdown render, footer
-│                          # parser, Defect A regression, taxonomy validation).
+│                          # parser, Defect A regression, taxonomy validation,
+│                          # branding-profile contract).
 ├── README.md              # this file
 └── assets/
     ├── css/styles.css     # Dark-first stylesheet, light/dark/system, print

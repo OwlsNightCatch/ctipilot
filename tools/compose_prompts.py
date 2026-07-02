@@ -55,11 +55,29 @@ END_RE = re.compile(r"^<!--\s*ORG-PROFILE:END\s+(?P<name>[a-z-]+)\s*-->\s*$")
 # Target files and the block names each MUST contain.
 TARGETS: list[tuple[str, list[str]]] = [
     ("prompts/daily-cti-brief.md", ["daily-mission", "org-data"]),
-    ("prompts/weekly-summary.md", ["weekly-mission", "org-data"]),
+    ("prompts/weekly-summary.md", ["weekly-mission", "org-data", "org-policy-watch"]),
+    ("prompts/verification.md", ["org-certs"]),
     (".claude/agents/cti-research.md",
-     ["research-mission", "research-audience", "org-data"]),
+     ["research-mission", "research-audience", "org-data", "org-certs"]),
     (".claude/agents/cti-verification.md", ["verify-context"]),
     (".claude/agents/cti-verification-alt.md", ["verify-context"]),
+]
+
+# Upstream defaults for the optional org-profile keys below — used when the
+# key is ABSENT from config/org-profile.yaml (an explicit empty list is a
+# deliberate "disable" and is honoured as such).
+DEFAULT_NATIONAL_CERTS: list[str] = [
+    "NCSC-CH", "GovCERT.ch", "CERT-EU", "ENISA", "BSI", "ANSSI/CERT-FR",
+    "NCSC-UK", "NCSC-NL", "CISA", "CCN-CERT", "AGID-CSIRT-IT", "CERT.at",
+    "CERT-PL",
+]
+DEFAULT_POLICY_WATCH: list[str] = [
+    "NCSC.ch announcements (use `tools/fetch_source.py` — direct WebFetch 403s)",
+    "FINMA guidance",
+    "EU NIS2 / DORA / CRA developments (transposition steps, implementation deadlines)",
+    "OFCOM / BAKOM publications",
+    "Council of Europe cybercrime convention items",
+    "sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure",
 ]
 
 ALLOWED_EXPOSURE = {"internet-facing", "internal", "endpoint", "cloud-saas", "ot"}
@@ -405,6 +423,20 @@ def validate_profile(profile: dict[str, Any],
     if site_url and not re.match(r"^https?://\S+$", site_url):
         raise ProfileError(f"deployment.site_url {site_url!r} must be an http(s) URL or empty")
 
+    # national_certs / policy_watch — optional lists of strings; an absent
+    # key keeps the upstream default, an explicit [] disables the feature.
+    def _opt_str_list(key: str, default: list[str]) -> list[str]:
+        raw = profile.get(key)
+        if raw is None:
+            return list(default)
+        if not isinstance(raw, list) or not all(
+                isinstance(x, str) and x.strip() for x in raw):
+            raise ProfileError(f"{key}: must be a list of non-empty strings (or omitted)")
+        return [x.strip() for x in raw]
+
+    national_certs = _opt_str_list("national_certs", DEFAULT_NATIONAL_CERTS)
+    policy_watch = _opt_str_list("policy_watch", DEFAULT_POLICY_WATCH)
+
     return {
         "profile_version": 1,
         "organization": norm_org,
@@ -422,6 +454,8 @@ def validate_profile(profile: dict[str, Any],
             "visibility": visibility,
             "site_url": site_url,
         },
+        "national_certs": national_certs,
+        "policy_watch": policy_watch,
     }
 
 
@@ -609,6 +643,18 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
     lines.append("")
     lines.append(f"**Audience:** {_flow(org['audience'])}")
     lines.append("")
+    certs = profile["national_certs"]
+    if certs:
+        lines.append("**National-CERT single-source carve-out list:** "
+                     + ", ".join(certs)
+                     + " — acceptable as a single source when the authority is "
+                       "the primary disclosing party for its own jurisdiction "
+                       "or an advisory it owns.")
+    else:
+        lines.append("**National-CERT single-source carve-out:** disabled for "
+                     "this deployment — flag every single-source item "
+                     "regardless of the source's authority.")
+    lines.append("")
     dep = profile["deployment"]
     if dep["visibility"] == "public":
         lines.append("**Deployment:** public — the brief publishes to the open "
@@ -660,6 +706,53 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _render_certs(profile: dict[str, Any]) -> str:
+    """`org-certs` block — the national-CERT single-source carve-out list
+    (research agent + prompts/verification.md)."""
+    certs = profile["national_certs"]
+    lines: list[str] = [GENERATED_NOTE]
+    if certs:
+        lines.append(
+            "**National-CERT single-source carve-out list** — a HIGH-reliability "
+            "national CERT / government cybersecurity authority acting as the "
+            "primary disclosing party for its own jurisdiction or an advisory it "
+            "owns is acceptable as a single source: " + ", ".join(certs) + ". "
+            "The list is deployment-configurable (`national_certs` in "
+            "config/org-profile.yaml); treat it as the trust bar, illustrative "
+            "rather than exhaustive for same-tier authorities."
+        )
+    else:
+        lines.append(
+            "**National-CERT single-source carve-out: DISABLED** — "
+            "`national_certs` in config/org-profile.yaml is empty; two-source "
+            "verification applies to every item without exception."
+        )
+    return "\n".join(lines)
+
+
+def _render_policy_watch(profile: dict[str, Any]) -> str:
+    """`org-policy-watch` block — the weekly W2 / § 9 standing regulatory
+    watch list."""
+    org = profile["organization"]
+    items = profile["policy_watch"]
+    lines: list[str] = [GENERATED_NOTE]
+    if items:
+        lines.append(
+            f"Standing policy / regulatory watch for {org['name']} "
+            f"({org['region_focus']} · {org['sector']}):"
+        )
+        lines.append("")
+        lines.extend(f"- {_flow(t)}" for t in items)
+    else:
+        lines.append(
+            "No standing policy / regulatory watch configured (`policy_watch` "
+            "in config/org-profile.yaml is empty) — cover only policy "
+            "developments with direct, sourced operational impact on the "
+            "constituency."
+        )
+    return "\n".join(lines)
+
+
 def render_blocks(profile: dict[str, Any]) -> dict[str, str]:
     return {
         "daily-mission": _render_mission(profile, "daily"),
@@ -668,6 +761,8 @@ def render_blocks(profile: dict[str, Any]) -> dict[str, str]:
         "research-audience": _render_research_audience(profile),
         "org-data": _render_org_data(profile),
         "verify-context": _render_verify_context(profile),
+        "org-certs": _render_certs(profile),
+        "org-policy-watch": _render_policy_watch(profile),
     }
 
 
@@ -877,8 +972,33 @@ def selftest() -> int:
     check(blocks_a == blocks_b, "rendering deterministic")
     check("pipe \\| in notes" in blocks_a["org-data"], "table-cell pipe escaped")
     check(set(blocks_a) == {"daily-mission", "weekly-mission", "research-mission",
-                            "research-audience", "org-data", "verify-context"},
+                            "research-audience", "org-data", "verify-context",
+                            "org-certs", "org-policy-watch"},
           "all block names rendered")
+
+    # 4b. national_certs / policy_watch: absent key → upstream default;
+    # explicit values render; explicit [] disables.
+    check(profile["national_certs"] == DEFAULT_NATIONAL_CERTS,
+          "absent national_certs falls back to upstream default")
+    check(profile["policy_watch"] == DEFAULT_POLICY_WATCH,
+          "absent policy_watch falls back to upstream default")
+    check("NCSC-CH" in blocks_a["org-certs"], "org-certs renders the carve-out list")
+    check("FINMA guidance" in blocks_a["org-policy-watch"],
+          "org-policy-watch renders the watch list")
+    variant = _copy.deepcopy(parsed)
+    variant["national_certs"] = ["SingCERT"]
+    variant["policy_watch"] = []
+    vp = validate_profile(variant, tax)
+    vb = render_blocks(vp)
+    check("SingCERT" in vb["org-certs"] and "NCSC-CH" not in vb["org-certs"],
+          "custom national_certs replaces the default list")
+    check("DISABLED" not in vb["org-certs"], "non-empty custom list stays enabled")
+    check("No standing policy / regulatory watch configured" in vb["org-policy-watch"],
+          "explicit empty policy_watch disables the watch")
+    variant2 = _copy.deepcopy(parsed)
+    variant2["national_certs"] = []
+    vb2 = render_blocks(validate_profile(variant2, tax))
+    check("DISABLED" in vb2["org-certs"], "explicit empty national_certs disables carve-out")
 
     # 5. Block replacement: idempotent, preserves surroundings, catches drift.
     doc = ("before\n"
