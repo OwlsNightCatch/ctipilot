@@ -2479,6 +2479,158 @@ def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
                "no items carry `Evidence:` field yet (v2.58 rollout — optional)")
 
 
+def check_profile_sync() -> None:
+    """v2.65 — WARN when the ORG-PROFILE managed blocks in the prompts have
+    drifted from config/org-profile.yaml (the run then executed against a
+    stale composition). WARN-only by design: drift is fixable for the *next*
+    run, not retroactively, and the brief must never be blocked on it. The
+    compose-profile GitHub Action is the loud enforcement point."""
+    script = ROOT / "tools" / "compose_prompts.py"
+    cfg = ROOT / "config" / "org-profile.yaml"
+    if not script.exists() or not cfg.exists():
+        ok("profile-sync", "org-profile composition not present — n/a")
+        return
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script), "--check", "--quiet"],
+            capture_output=True, text=True, timeout=120,
+        )
+    except Exception as e:  # noqa: BLE001 — never let this check crash the gate
+        warn("profile-sync", f"compose_prompts --check failed to run: {e}")
+        return
+    if proc.returncode == 0:
+        ok("profile-sync", "ORG-PROFILE blocks in sync with config/org-profile.yaml")
+    elif proc.returncode == 3:
+        warn("profile-sync",
+             "ORG-PROFILE blocks drifted from config/org-profile.yaml — this run "
+             "loaded a stale composition; run `python3 tools/compose_prompts.py "
+             "--write` and commit the composed prompts alongside this brief")
+    elif proc.returncode == 2:
+        warn("profile-sync",
+             "config/org-profile.yaml is invalid (compose_prompts --check exit 2): "
+             + (proc.stderr or "").strip()[:200])
+    else:
+        warn("profile-sync", f"compose_prompts --check unexpected exit {proc.returncode}")
+
+
+def _load_org_profile() -> dict[str, Any] | None:
+    """Parsed org profile via `compose_prompts.py --dump`, or None when the
+    composition is absent/invalid (callers degrade to n/a — never FAIL)."""
+    script = ROOT / "tools" / "compose_prompts.py"
+    cfg = ROOT / "config" / "org-profile.yaml"
+    if not script.exists() or not cfg.exists():
+        return None
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(script), "--dump"],
+            capture_output=True, text=True, timeout=60,
+        )
+        if proc.returncode != 0:
+            return None
+        return json.loads(proc.stdout)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _footer_status_exploited(footer: dict[str, Any]) -> bool:
+    # Handles both plain `exploited` and per-CVE-scoped `exploited (CVE-…)`.
+    return any(str(s).strip().lower().startswith("exploited")
+               for s in (footer.get("status") or []))
+
+
+def check_evidence_presence(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
+    """v2.65 — Evidence-escalation presence check (WARN, not FAIL).
+
+    The prompts require the `Evidence:` footer field on: the daily § 0
+    Immediate Action callout and every daily § 1 / § 2 item whose Status
+    includes `exploited`; every weekly § 1 item; and every weekly § 3 item
+    whose Status includes `exploited`. Quotes come from the sub-agents'
+    findings YAMLs — the fix is cheap, so the prompt instructs the main
+    agent to clear this WARN before the Phase 5.7 / 4.7 verifier spawn."""
+    missing: list[tuple[str, str]] = []
+    checked = 0
+    for sec in sections:
+        key = sec["key"]
+        for item in sec.get("items", []):
+            footer = item.get("footer")
+            if not footer:
+                continue
+            if kind == "weekly":
+                required = (key == "weekly-top-stories"
+                            or (key == "weekly-vuln-rollup"
+                                and _footer_status_exploited(footer)))
+            else:
+                required = (key == "immediate-actions"
+                            or (key in {"active-threats", "trending-vulnerabilities"}
+                                and _footer_status_exploited(footer)))
+            if not required:
+                continue
+            checked += 1
+            if not (footer.get("evidence") or []):
+                missing.append((key, item["heading"][:60]))
+    if missing:
+        names = "; ".join(f"'{h}' ({k})" for k, h in missing[:5])
+        more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""
+        warn("evidence-presence",
+             f"{len(missing)} item(s) require an `Evidence:` field (v2.65 escalation: "
+             f"exploited-status / highest-trust items) but carry none: {names}{more} — "
+             "populate from the findings YAML `evidence` records before the verifier spawn")
+    else:
+        ok("evidence-presence",
+           f"all {checked} evidence-required item(s) carry an `Evidence:` field"
+           if checked else "no evidence-required items in this brief")
+
+
+_ORG_TRIAGE_RE = re.compile(r"^\*\*Org triage \([^)]*\):\*\*\s*([A-Za-z0-9-]+)", re.M)
+
+
+def check_org_triage(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
+    """v2.65 — org-triage line presence + category-id validity (WARN, not FAIL).
+
+    When config/org-profile.yaml defines vulnerability-triage categories,
+    every CVE-typed item in the daily § 2 (weekly § 3) must end its body with
+    a `**Org triage (<short_name>):** <id> — …` line whose id is a defined
+    category. When no scheme is configured, any Org-triage line is drift.
+    Criteria *consistency* (does the category follow from the cited facts?)
+    is the verifier's F16 concern — this check is mechanical only."""
+    profile = _load_org_profile()
+    if profile is None:
+        ok("org-triage", "org profile not available — n/a")
+        return
+    cats = {c["id"] for c in profile["vulnerability_triage"]["categories"]}
+    target_key = "weekly-vuln-rollup" if kind == "weekly" else "trending-vulnerabilities"
+    problems: list[tuple[str, str, str]] = []
+    found = 0
+    for sec in sections:
+        for item in sec.get("items", []):
+            body = "\n".join(item.get("body") or [])
+            m = _ORG_TRIAGE_RE.search(body)
+            footer = item.get("footer") or {}
+            if not cats:
+                if m:
+                    problems.append((sec["key"], item["heading"][:60],
+                                     "Org-triage line present but the profile defines no scheme"))
+                continue
+            if m:
+                found += 1
+                if m.group(1) not in cats:
+                    problems.append((sec["key"], item["heading"][:60],
+                                     f"unknown triage category {m.group(1)!r} "
+                                     f"(defined: {sorted(cats)})"))
+            elif sec["key"] == target_key and footer.get("cve"):
+                problems.append((sec["key"], item["heading"][:60],
+                                 "CVE-typed item missing the Org-triage line"))
+    if problems:
+        names = "; ".join(f"{k}/'{h}': {reason}" for k, h, reason in problems[:5])
+        more = f" (+{len(problems) - 5} more)" if len(problems) > 5 else ""
+        warn("org-triage", f"{len(problems)} org-triage issue(s): {names}{more}")
+    elif not cats:
+        ok("org-triage", "no triage scheme configured and no Org-triage lines present")
+    else:
+        ok("org-triage",
+           f"{found} Org-triage line(s) present, all category ids valid")
+
+
 def check_name_collision(sections: list[dict[str, Any]]) -> None:
     """Flag H3 items that name an entity from prior coverage without
     explicit disambiguation.
@@ -2670,6 +2822,15 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== Evidence-field shape (v2.58) ==")
     check_evidence_shape(sections)
+
+    print(f"\n== Evidence-field presence on exploited-status items (v2.65) ==")
+    check_evidence_presence(sections, kind=kind)
+
+    print(f"\n== org-profile composition sync (v2.65) ==")
+    check_profile_sync()
+
+    print(f"\n== org-triage lines (v2.65) ==")
+    check_org_triage(sections, kind=kind)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
     check_source_urls_resolve(sections, skip=skip_link_check)

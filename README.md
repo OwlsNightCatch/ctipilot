@@ -63,6 +63,8 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── verification.md        # Fake-news / two-source verification policy
 │   ├── brief-template.md      # Canonical Markdown skeleton for the rendered brief / weekly
 │   └── check-brief-fixes.md   # How to fix common check_brief.py FAILs
+├── config/
+│   └── org-profile.yaml       # v2.65 — organization profile: org/sector/region, product + supplier watchlists, vuln-triage scheme
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
@@ -76,6 +78,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── tools/
+│   ├── compose_prompts.py     # v2.65 — renders config/org-profile.yaml into the ORG-PROFILE managed blocks in prompts + agent defs
 │   ├── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
 │   ├── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe, v2.47 cap-breach + tldr-deadline-lead + aggregator-only-sourcing + single-source-flag + URL-liveness cache)
 │   ├── source_candidates.py   # v2.47 — surface "sources we should add" (cited-but-not-in-sources.json domains, top-N)
@@ -96,16 +99,21 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
 │   ├── deploy-site.yml        # Build + deploy site/ to GitHub Pages
-│   └── source-health.yml      # v2.47 — weekly cron firing tools/source_health.py
+│   ├── source-health.yml      # v2.47 — weekly cron firing tools/source_health.py
+│   └── compose-profile.yml    # v2.65 — composes config/org-profile.yaml into the prompts on push
 ├── .claude/agents/
-│   ├── cti-research.md        # Phase 1 / Phase 2 parallel research worker (env-var self-id, prior_coverage dedup, URL-liveness ledger)
-│   ├── cti-verification.md    # Phase 5.7 / Phase 4.7 cold-reader verifier (Opus default; gatekeeper; F1–F12 finding categories)
-│   └── cti-verification-alt.md # v2.47 — Sonnet rotation variant of cti-verification (byte-identical body, only model: differs)
+│   ├── cti-research.md        # Phase 1 / Phase 2 parallel research worker (env-var self-id, prior_coverage dedup, URL-liveness ledger, watchlist sweeps)
+│   ├── cti-verification.md    # Phase 5.7 / Phase 4.7 cold-reader verifier (Opus default; gatekeeper; F1–F16 finding categories)
+│   └── cti-verification-alt.md # v2.47 — Sonnet rotation variant of cti-verification (byte-identical body below its header note; only model: differs)
 ├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
 
 For an end-to-end map of how every piece reads and writes data, see [`docs/architecture.md`](docs/architecture.md). For operator setup and the runbook, see [`docs/operating.md`](docs/operating.md).
+
+## Customizing for your organization (v2.65)
+
+The deployment is organization-parameterizable via [`config/org-profile.yaml`](config/org-profile.yaml): describe your organisation / sector / region (the shipped default is the Swiss public-sector deployment), list **products** (e.g. Windows Server, Windows clients) and **suppliers** the research agents will specifically sweep every run, and define your own **vulnerability-triage categories** so every CVE item in the brief carries an immediate `Org triage` rating in your scheme. `python3 tools/compose_prompts.py --write` renders the profile into the prompts and agent definitions (the `compose-profile` workflow does it on push). Watchlist matches only *sharpen* relevance — general threat-landscape coverage always stays primary (hard anti-overshoot rules, `watchlist`-tagged items, ≤ ⅓ guideline). See [`docs/operating.md`](docs/operating.md#customizing-the-organization-profile-v265).
 
 ## Operating principles (non-negotiable)
 

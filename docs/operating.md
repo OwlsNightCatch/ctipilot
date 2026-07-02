@@ -95,6 +95,20 @@ In <https://claude.ai/code/routines>:
 
 ---
 
+## Customizing the organization profile (v2.65)
+
+Everything organization-specific is parameterized in [`config/org-profile.yaml`](../config/org-profile.yaml): who the briefs are for (name, sector, region, description, audience), the **product watchlist** (estate technologies swept for advisories / exploitation every run — e.g. Windows Server, Windows clients, a firewall line), the **supplier watchlist** (companies swept for breach / incident / compromise reporting), standing free-text interests, and the **vulnerability-triage scheme** (your own categories with criteria + response targets; when configured, every CVE-typed brief item carries a `**Org triage (<short_name>):** P1 — …` line derived from the item's cited facts).
+
+To change it:
+
+1. Edit `config/org-profile.yaml` (the file documents its own strict-YAML syntax; sectors/regions must be `site/taxonomy.yaml` values).
+2. Run `python3 tools/compose_prompts.py --check` to validate, then `--write` to render the values into the `ORG-PROFILE` managed blocks inside the two master prompts and the three agent definitions. **Never edit those blocks by hand.**
+3. Commit the config **and** the composed files together, on a feature branch as usual.
+
+If you edit the config on an operator branch (e.g. via the GitHub web UI) and forget step 2, the [`compose-profile`](../.github/workflows/compose-profile.yml) workflow composes and commits for you; on `claude/**` branches and `main` it is check-only and fails loud instead (auto-committing there would race the auto-merge workflow). `tools/check_brief.py` additionally WARNs (`profile-sync`) when a routine runs against a stale composition.
+
+Guardrails you get for free: watchlist matches only *lower the relevance bar* (they never bypass recency / verification / sourcing gates); watchlist-driven items are tagged `watchlist` in their footers and capped by the ≤ ⅓ anti-overshoot guideline so general threat-landscape coverage always stays primary; a zero-hit sweep is reported as one `Watchlist:` line in the Verification Notes, never padded items. Empty watchlists + no triage scheme (the shipped default) reproduce the pre-v2.65 behaviour exactly.
+
 ## Source-health snapshot (v2.47 § 3.7)
 
 [`tools/source_health.py`](../tools/source_health.py) is an independent weekly health-check of every `status: active` source. HEAD-only against each source URL, records `(id, status_code, latency_ms, fetched_at, class)` per source into `state/source_health.json` (bounded history, 12 runs ≈ 3 months at weekly cadence). Runs as the [`weekly-source-health`](../.github/workflows/source-health.yml) GitHub Action on Sundays at 04:30 UTC, and on manual `workflow_dispatch`.

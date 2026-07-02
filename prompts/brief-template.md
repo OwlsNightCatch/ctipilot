@@ -47,7 +47,11 @@ The example is purely illustrative — the actual item depth is whatever the lin
 ### CVE-YYYY-NNNNN — {Vendor} {Product}: {one-line description}
 {2–4 sentence summary: what it is, prerequisites, exploitation status, who it affects, what to do.}
 
-— *Source: [Primary advisory](URL) · Tags: rce, zero-click, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, no-patch*
+**Org triage ({short_name}):** {category-id} — {category name}. {One clause mapping the scheme's criteria onto facts cited above.} *(Only when `config/org-profile.yaml` defines a triage scheme — omit the line entirely otherwise. Body line, always immediately before the footer.)*
+
+— *Source: [Primary advisory](URL) · Tags: rce, zero-click, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, no-patch · Evidence: "verbatim exploitation-status quote" (Primary publisher)*
+
+*(Exploited-status § 1 / § 2 items require the `Evidence:` field (v2.65). An item included because of an org-profile watchlist match additionally carries the `watchlist` tag in `Tags:`.)*
 
 ## 3. Research & Investigative Reporting
 
@@ -138,7 +142,9 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 {Short paragraph. Status this week vs. status when first covered.}
 
-— *Source: [Vendor PSIRT](URL) · [Research blog](URL) · Tags: rce, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available*
+**Org triage ({short_name}):** {category-id} — {category name}. {One clause; note when the week changed the item's triage class.} *(Only when `config/org-profile.yaml` defines a triage scheme — omit otherwise. Exploited-status § 3 entries also require the `Evidence:` footer field, v2.65.)*
+
+— *Source: [Vendor PSIRT](URL) · [Research blog](URL) · Tags: rce, actively-exploited, cisa-kev · Region: global · CVE: CVE-YYYY-NNNNN · CVSS: 9.8 · Vector: zero-click · Auth: pre-auth · Status: exploited, cisa-kev, patch-available · Evidence: "verbatim exploitation-status quote" (Vendor PSIRT)*
 
 ## 4. Sector & victim patterns
 

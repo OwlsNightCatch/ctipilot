@@ -91,6 +91,35 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   recipes for common `tools/check_brief.py` FAILs. The prompt's Phase 5.5
   references it for remediation.
 
+### `config/org-profile.yaml` + `tools/compose_prompts.py` — organization parameterization (v2.65)
+
+The deployment's organization-specific values live in one config file:
+organization (name, short name, sector, additional sectors, region focus,
+home region, description, audience), watchlists (products with
+vendor/exposure/criticality, suppliers with relationship/criticality,
+standing free-text interests), and the vulnerability-triage scheme
+(categories with id/name/criteria/response + a default). The defaults
+reproduce the historical Swiss-federal-SOC deployment; watchlists and
+triage ship empty/disabled, which makes every profile-driven behaviour a
+no-op.
+
+`tools/compose_prompts.py` (stdlib-only; `--check` / `--write` / `--dump` /
+`--selftest`) renders the profile into `ORG-PROFILE:BEGIN/END` managed
+marker blocks inside five files: both master prompts (mission + audience
+paragraphs, plus the § Organization profile & watchlists data block), the
+`cti-research` definition (mission, audience, watchlist values — so every
+research spawn sees the same org context without spawn-message bloat), and
+both verifier definitions (§ Organization context — so the relevance check
+judges against the *configured* organization). The static policy text
+around the blocks (anti-overshoot rules, sweep ownership, org-triage line
+spec) lives in the prompts and follows the normal versioning rule; the
+generated blocks carry values only and are exempt from version bumps.
+
+Enforcement is three-layered: the `compose-profile` workflow (below)
+composes or fail-louds on push; `tools/check_brief.py` carries a
+`profile-sync` WARN so a routine run surfaces stale composition; and
+CLAUDE.md forbids hand-editing the generated blocks.
+
 ### `.claude/agents/` — custom sub-agent definitions
 
 - [`cti-research.md`](../.claude/agents/cti-research.md) — isolated context,
@@ -291,8 +320,18 @@ System reference for operators, contributors, and curious readers. Pure docs —
   every active source, commits `state/source_health.json` directly to
   `main` (state/* sits in the auto-merge auto-resolution allowlist, so a
   concurrent claude/* push won't race). Independent of the daily routine.
+- [`compose-profile.yml`](../.github/workflows/compose-profile.yml) —
+  **v2.65**. Triggers on push touching `config/org-profile.yaml`, the
+  compose script, or any composed target. Selftests the compose script,
+  then: on operator branches with drift, runs `--write` and commits the
+  composed prompts back to the branch; on `main` and `claude/**`, is
+  check-only and fails loud (`::error::`) — auto-committing on `claude/**`
+  would race `auto-merge-claude.yml` (same push event; the branch can be
+  merged + deleted mid-run, and a GITHUB_TOKEN push would not re-trigger
+  the merge), so the Claude session that edits the config is required to
+  compose in the same commit instead.
 
-The three workflows are independent. The site is a *consumer* of the agent's
+The four workflows are independent. The site is a *consumer* of the agent's
 output and never writes back.
 
 ### `site/` — the public reader

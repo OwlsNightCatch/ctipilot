@@ -1,0 +1,135 @@
+name: Compose org profile into prompts
+
+# Background:
+# The organization profile (config/org-profile.yaml — org description, sector /
+# region lens, product + supplier watchlists, vulnerability-triage scheme) is
+# rendered into ORG-PROFILE managed blocks inside the master prompts and the
+# sub-agent definitions by `python3 tools/compose_prompts.py --write`. This
+# workflow keeps those generated blocks in sync with the config on every push
+# that touches the config, the compose script, or a composed target.
+#
+# Behaviour by branch:
+#   - main:      check-only. Drift on main means a branch was merged without
+#                composing — fail loud with ::error:: so the operator (or the
+#                next Claude session) runs --write. Never commit to main here;
+#                main is owned by auto-merge-claude.yml.
+#   - claude/**: check-only. The Claude session/routine that edits the config
+#                is required to run --write itself before committing (CLAUDE.md
+#                rule). Auto-committing here would race auto-merge-claude.yml —
+#                that workflow fires on the same push event, can merge + delete
+#                the branch while this one runs, and a GITHUB_TOKEN push would
+#                not re-trigger it, stranding the compose commit on a
+#                recreated orphan branch.
+#   - other:     auto-compose. Operator branches (GitHub web-UI edits, manual
+#                PR branches) get the composed prompts committed back to the
+#                branch, so a config-only edit is publishable without local
+#                tooling. The GITHUB_TOKEN push does not re-trigger workflows
+#                (GitHub suppresses recursive runs for the default token),
+#                which also terminates any loop by construction.
+#
+# Shell-only — no third-party Actions — because the org's policy restricts
+# Actions to the OwlsNightCatch org (same constraint as auto-merge-claude.yml).
+
+on:
+  push:
+    paths:
+      - "config/org-profile.yaml"
+      - "tools/compose_prompts.py"
+      - "prompts/daily-cti-brief.md"
+      - "prompts/weekly-summary.md"
+      - ".claude/agents/cti-research.md"
+      - ".claude/agents/cti-verification.md"
+      - ".claude/agents/cti-verification-alt.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compose-profile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repo (shell-only, no Actions)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          # Untrusted input read via env, not interpolated into the shell
+          # body (same defence as auto-merge-claude.yml).
+          REF_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if printf '%s' "$REF_BRANCH" | grep -qE '[^A-Za-z0-9._/-]'; then
+            echo "refused: branch '$REF_BRANCH' contains disallowed characters" >&2
+            exit 1
+          fi
+          git init -q .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          git fetch --no-tags --depth 1 origin "$REF_BRANCH"
+          git checkout -q -B "$REF_BRANCH" FETCH_HEAD
+          git config user.name  "Claude Code"
+          git config user.email "noreply@anthropic.com"
+
+      - name: Selftest the compose script
+        run: |
+          set -euo pipefail
+          python3 tools/compose_prompts.py --selftest
+
+      - name: Check / compose
+        env:
+          REF_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          set +e
+          python3 tools/compose_prompts.py --check
+          rc=$?
+          set -e
+
+          case "$rc" in
+            0)
+              echo "::notice::ORG-PROFILE blocks are in sync with config/org-profile.yaml."
+              exit 0
+              ;;
+            2)
+              echo "::error::config/org-profile.yaml is invalid — see the compose_prompts output above."
+              exit 1
+              ;;
+            3)
+              ;;  # drift — handled below
+            *)
+              echo "::error::compose_prompts.py --check failed unexpectedly (exit $rc)."
+              exit 1
+              ;;
+          esac
+
+          if [ "$REF_BRANCH" = "main" ]; then
+            echo "::error::ORG-PROFILE blocks on main are out of sync with config/org-profile.yaml. A branch was merged without composing. Run 'python3 tools/compose_prompts.py --write' on a feature branch and publish it."
+            exit 1
+          fi
+
+          case "$REF_BRANCH" in
+            claude/*)
+              echo "::error::ORG-PROFILE blocks on $REF_BRANCH are out of sync. The Claude session that edits config/org-profile.yaml must run 'python3 tools/compose_prompts.py --write' and commit the composed prompts in the same commit (CLAUDE.md rule). Not auto-committing here — it would race auto-merge-claude.yml."
+              exit 1
+              ;;
+          esac
+
+          # Operator branch — compose and push the result back.
+          python3 tools/compose_prompts.py --write
+          git add prompts/daily-cti-brief.md prompts/weekly-summary.md \
+                  .claude/agents/cti-research.md \
+                  .claude/agents/cti-verification.md \
+                  .claude/agents/cti-verification-alt.md
+          if git diff --cached --quiet; then
+            echo "::notice::--write produced no staged changes (drift resolved elsewhere)."
+            exit 0
+          fi
+          git commit \
+            -m "compose: render config/org-profile.yaml into ORG-PROFILE blocks" \
+            -m "Auto-composed by .github/workflows/compose-profile.yml on push to ${REF_BRANCH}."
+          git push origin "$REF_BRANCH"
+          echo "::notice::Composed prompts committed and pushed to $REF_BRANCH."

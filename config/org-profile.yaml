@@ -1,0 +1,140 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Organization profile — the single parameterization point for this deployment.
+#
+# WHAT THIS IS
+#   Everything organization-specific about the CTI routines lives here: who the
+#   briefs are for, which sector/region lens the research agents apply, which
+#   products and suppliers deserve a dedicated watchlist sweep, and how the
+#   organization categorizes vulnerabilities (so briefs carry an immediate
+#   org-triage rating on CVE items).
+#
+# HOW IT REACHES THE AGENTS
+#   `python3 tools/compose_prompts.py --write` renders this file into the
+#   ORG-PROFILE managed blocks inside:
+#     - prompts/daily-cti-brief.md
+#     - prompts/weekly-summary.md
+#     - .claude/agents/cti-research.md
+#     - .claude/agents/cti-verification.md
+#     - .claude/agents/cti-verification-alt.md
+#   The compose-profile GitHub Action (.github/workflows/compose-profile.yml)
+#   re-composes on push. NEVER hand-edit the generated blocks — edit this file.
+#   Editing only the VALUES here does not require a prompt-version bump; the
+#   templates and policy text around the blocks live in the prompts and follow
+#   the normal versioning rule.
+#
+# SYNTAX (strict subset of YAML — parsed by a stdlib-only parser)
+#   - 2-space indentation, no tabs, no flow style except the empty list `[]`.
+#   - Full-line comments only (a `#` line); no trailing comments after values.
+#   - Multi-line text uses block scalars (`key: |`).
+#   - `sector` / `additional_sectors` must be values from site/taxonomy.yaml
+#     `sectors:`; `home_region` must be a `regions:` value.
+#   Run `python3 tools/compose_prompts.py --check` to validate.
+# ─────────────────────────────────────────────────────────────────────────────
+
+profile_version: 1
+
+organization:
+  # Display name used in the composed mission statements and (short form) in
+  # the rendered "Org triage (<short_name>):" label.
+  name: "Swiss federal SOC"
+  short_name: "SOC"
+  # Primary sector lens — MUST be a site/taxonomy.yaml `sectors:` value.
+  sector: "public-sector"
+  # Optional additional sectors (taxonomy values) the org also cares about.
+  additional_sectors: []
+  # Free-text geographic focus used in mission statements.
+  region_focus: "Switzerland and Europe"
+  # Home region for ranking — MUST be a site/taxonomy.yaml `regions:` value.
+  home_region: "switzerland"
+  # One-to-three-sentence description of the constituency the briefs defend.
+  description: |
+    national / cantonal / federal administration, regulators, critical
+    infrastructure, healthcare, education, public-sector technology suppliers
+  # The reader the briefs are written for. Sets the technical register of
+  # every agent in the workflow.
+  audience: |
+    highly technical SOC / IR professionals. Tier 2/3 IR, threat hunters
+    writing their own SIEM/EDR detections, detection engineers, malware
+    reversers, red-team-aware defenders, SOC managers from analyst rotations.
+    Fluent in MITRE ATT&CK, offensive-tooling terminology, Windows/Linux/AD
+    privilege-escalation primitives, identity-protocol abuse (Kerberos, OAuth,
+    SAML), endpoint-evasion classes (driver abuse, in-process tampering,
+    LOLBins, code-injection), kernel-callback techniques. Write to that level.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Watchlists — organization-specific sharpening on top of general coverage.
+# Empty lists are valid (the sweeps become no-ops; nothing else changes).
+# The general threat landscape for the sector/region above ALWAYS remains the
+# primary mission — watchlist policy (anti-overshoot rules, tagging, sweep
+# ownership) lives in the prompts, not here.
+#
+# products:  estate technologies the research agents sweep for advisories,
+#            exploitation reporting, and KEV/EUVD additions every run.
+#   - name: "Windows Server"
+#     vendor: "Microsoft"
+#     exposure: "internal"
+#     criticality: "high"
+#     notes: "AD domain controllers and file services"
+#   - name: "Windows 11"
+#     vendor: "Microsoft"
+#     exposure: "endpoint"
+#     criticality: "high"
+#     notes: "managed client fleet"
+#   Allowed `exposure` values: internet-facing | internal | endpoint |
+#   cloud-saas | ot. Allowed `criticality` values: high | medium | low.
+#
+# suppliers: companies / service providers the research agents sweep for
+#            breach disclosures, incident reports, and compromise claims.
+#   - name: "Example Hosting AG"
+#     relationship: "managed service provider"
+#     criticality: "high"
+#     notes: "hosts the citizen-portal estate"
+#
+# interests: optional standing free-text intelligence topics that get the same
+#            relevance boost as a watchlist match.
+#   - "e-government identity / eIDAS ecosystem abuse"
+
+watchlist:
+  products: []
+  suppliers: []
+  interests: []
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Vulnerability triage — how THIS organization categorizes vulnerabilities.
+# When categories are defined, every CVE-typed item in the briefs carries a
+# bold `**Org triage (<short_name>):**` line mapping the item's cited facts
+# (exposure, auth prerequisite, exploitation status, watchlist membership)
+# onto one of these categories. Leave `categories: []` to disable the line
+# entirely (the default keeps briefs byte-identical to the pre-profile era).
+#
+# Example scheme:
+#
+# vulnerability_triage:
+#   intro: |
+#     Patch-priority classes per our vulnerability-management directive.
+#   default_category: "P3"
+#   categories:
+#     - id: "P1"
+#       name: "Emergency"
+#       criteria: |
+#         Actively exploited AND (internet-facing estate product OR pre-auth
+#         on a widely deployed perimeter technology).
+#       response: "Out-of-band patch / mitigate within 24 h; page on-call."
+#     - id: "P2"
+#       name: "Urgent"
+#       criteria: |
+#         Actively exploited elsewhere but not internet-facing for us, OR
+#         public PoC on an internet-facing estate product without confirmed
+#         exploitation.
+#       response: "Patch within 7 days; add hunt query."
+#     - id: "P3"
+#       name: "Scheduled"
+#       criteria: |
+#         Everything else that clears the brief's inclusion gates but matches
+#         neither P1 nor P2.
+#       response: "Next regular patch window."
+
+vulnerability_triage:
+  intro: ""
+  default_category: ""
+  categories: []
