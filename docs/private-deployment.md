@@ -1,4 +1,4 @@
-# Private deployment (v2.66)
+# Private deployment
 
 The stack runs unchanged as an **organization-internal** service: private
 GitHub repository, the same routines and publishing chain, and the reader

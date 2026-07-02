@@ -91,7 +91,7 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   recipes for common `tools/check_brief.py` FAILs. The prompt's Phase 5.5
   references it for remediation.
 
-### `config/org-profile.yaml` + `tools/compose_prompts.py` — organization parameterization (v2.65)
+### `config/org-profile.yaml` + `tools/compose_prompts.py` — organization parameterization
 
 The deployment's organization-specific values live in one config file:
 organization (name, short name, sector, additional sectors, region focus,
@@ -120,12 +120,12 @@ composes or fail-louds on push; `tools/check_brief.py` carries a
 `profile-sync` WARN so a routine run surfaces stale composition; and
 CLAUDE.md forbids hand-editing the generated blocks.
 
-The v2.66 `deployment:` section (`visibility: public|private`, `site_url`)
+The `deployment:` section (`visibility: public|private`, `site_url`)
 drives the TLP ceiling on closed-source citations and the publish-phase
 site poll (`compose_prompts.py --get deployment.site_url`); see
 [`docs/private-deployment.md`](private-deployment.md).
 
-### `intel/` — closed-source drop folder (v2.66)
+### `intel/` — closed-source drop folder
 
 Operator-owned feed scripts commit dated folders (`intel/<YYYY-MM-DD>/`)
 of front-mattered text documents; the routines detect in-window content in
@@ -147,7 +147,7 @@ state — costs nothing.
   also reused for verification follow-ups (max 3 per iteration). Embeds the
   `WebFetch` outbound-links template, the `tools/fetch_source.py` contract
   for known-403 hosts, the discovery-trace return format, the mandatory
-  `**Model:**` self-identification line. **v2.47 additions**: env-var
+  `**Model:**` self-identification line. Also covers: env-var
   self-identification (reads `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID`
   set by the harness, falls back to runtime-context reasoning), prior-
   coverage dedup at fetch time (reads `work/<run-id>/prior_coverage.json`
@@ -157,15 +157,15 @@ state — costs nothing.
   redundant HEAD/GET).
 - [`cti-verification.md`](../.claude/agents/cti-verification.md) — read-only,
   isolated context, per-role model bound by the agent definition's frontmatter
-  (Opus by default since v2.46 — gatekeeper of the publish gate).
+  (Opus by default — gatekeeper of the publish gate).
   Phase 5.7 (daily) / Phase 4.7 (weekly) cold-reader verifier, runs AFTER
   `tools/check_brief.py` exits 0 (cheap mechanical gate first), looped
   iteratively (cap 5, fresh spawn each time, no shared memory; each iteration
   re-runs `check_brief.py` between fix and re-spawn). Same self-identification
-  contract. **v2.47 additions**: F12 single-source-flag finding category
-  promoted to numbered finding; iteration-rotation note (don't assume
-  same model as prior iteration); env-var self-identification.
-- [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) — **v2.47**
+  contract. Also covers: the F12 single-source-flag finding category;
+  an iteration-rotation note (don't assume same model as prior
+  iteration); env-var self-identification.
+- [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) —
   Sonnet-pinned variant of `cti-verification`. Byte-identical operational system
   prompt; only the YAML `model:` frontmatter differs (`sonnet` vs `opus`).
   The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations**
@@ -205,25 +205,25 @@ The agent re-reads these every run before writing.
   with a tighter schema.
 - `state/deep_dive_history.json` — rolling 30-day list of `{date, topic, category}`
   entries used by Phase 3 to apply the deep-dive category-rotation rule.
-- `state/run_log.json` — rolling 90-day per-run record: `run_id` (v2.47:
-  deterministic `<YYYY-MM-DD>-<sha8 of brief_path|started_minute>` —
+- `state/run_log.json` — rolling 90-day per-run record: `run_id`
+  (deterministic `<YYYY-MM-DD>-<sha8 of brief_path|started_minute>` —
   idempotent retry), model, sub-agent source allocation (`sources_attempted`
   / `sources_used` / `items_returned` per S1–S4), `fetch_failures`,
   `items_published`, `deep_dive`, `verification.iterations[]` (per-iteration
   model + verdict + truth/editorial/advisory finding counts),
-  `verification_iterations`, `verification_residual_count` (v2.47: derived
+  `verification_iterations`, `verification_residual_count` (derived
   from final-iteration `truth + editorial` when verdict is NEEDS_FIXES;
-  `0` when CLEAN — the v2.47 cap-breach signal builds on this), and
-  `sources_changed` (**v2.62** — one `{id, change, from, to, reason}` per
+  `0` when CLEAN — the cap-breach signal builds on this), and
+  `sources_changed` (one `{id, change, from, to, reason}` per
   `sources/sources.json` edit the run made: status transitions, new
   candidates, and fetch-method / category / reliability / url corrections).
   Surfaced on the operations dashboard at `/ops/`.
-- `state/source_health.json` — **v2.47**, written by [`tools/source_health.py`](../tools/source_health.py)
+- `state/source_health.json` — written by [`tools/source_health.py`](../tools/source_health.py)
   on a weekly GitHub Actions cron. Bounded history (12 runs ≈ 3 months
   at weekly cadence) of `(id, status_code, latency_ms, fetched_at, class)`
   per active source. Lets the daily routine's source-demotion logic key off
   a stable failing pattern instead of the day-of-week luck of its single
-  fire. **v2.62**: rendered on `/ops/` (the "Sources" cluster's
+  fire. Rendered on `/ops/` (the "Sources" cluster's
   health-snapshot panel — class breakdown + any non-ok source).
 
 ### `sources/` — the curated source list
@@ -253,9 +253,9 @@ The agent maintains this file autonomously per the lifecycle in the top-level
 
 - [`tools/fetch_source.py`](../tools/fetch_source.py) — stdlib-only Python
   bridge that re-issues HTTP requests with a current desktop-Chrome
-  User-Agent (**v2.62**: Chrome 138 + the matching `Sec-CH-UA` client-hint
+  User-Agent (Chrome 138 + the matching `Sec-CH-UA` client-hint
   headers a real Chrome sends, so WAFs that cross-check UA ↔ client-hints
-  stop filtering it — the bump recovered `databreaches.net` and
+  stop filtering it — the UA bump recovered `databreaches.net` and
   `prodaft.com` in the 2026-06-20 audit). Solves the recurring 403 /
   302-to-login that the routine container hits on high-signal publishers
   (CISA pages, the Swiss NCSC Cyber Security Hub) where the upstream WAF
@@ -265,7 +265,7 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   `bsi-rss/csaf`, `ncsc-nl`, `cert-eu`, `cert-fr`, `ico-uk`, `sec-edgar`,
   `feed`, `msrc`) wrap the publishers whose listing pages are
   JS-rendered SPAs. Read-only by design: no auth, no JS execution, no
-  third-party deps; the **v2.52** host allow-list was removed in favour of
+  third-party deps; an earlier host allow-list was removed in favour of
   the layer-3 SSRF defences (https-only, resolved-IP deny list, redirect
   re-validation, body-size cap).
 - [`tools/check_brief.py`](../tools/check_brief.py) — the institutionalised
@@ -281,7 +281,7 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   parser + taxonomy loader from `site/build.py` so script and build agree
   on parsing rules. Read-only — the agent fixes drift, the script
   reports it. Non-zero exit aborts the commit. Maintained as part of
-  the agent's self-evolution authority. **v2.47 additions**: `cap-breach`
+  the agent's self-evolution authority. Also covers: `cap-breach`
   WARN (final-iteration `NEEDS_FIXES`); `verification_residual_count`
   derived from final iteration's `truth + editorial`; deterministic
   `run_id` field required + idempotent (no duplicate runs[] entries);
@@ -290,14 +290,14 @@ The agent maintains this file autonomously per the lifecycle in the top-level
   `single-source-flag` WARN (single Source missing `[SINGLE-SOURCE]`);
   URL-liveness cache (skip live HEAD/GET on URLs the sub-agents already
   verified live in `work/<run-id>/url-liveness.tsv`).
-- [`tools/source_candidates.py`](../tools/source_candidates.py) — **v2.47**.
-  Walks last 30 days of briefs, counts every outbound-link host, subtracts
+- [`tools/source_candidates.py`](../tools/source_candidates.py) —
+  walks last 30 days of briefs, counts every outbound-link host, subtracts
   hosts already in `sources.json` and the news-aggregator allowlist, outputs
   the top-N missing-but-cited domains with citation counts and brief samples.
   Operator runs manually to spot publishers worth promoting to
   `status: candidate`. Pure post-hoc analytics; no runtime cost.
-- [`tools/source_health.py`](../tools/source_health.py) — **v2.47, rebuilt v2.63**.
-  Periodic accessibility probe of **every** source (active + candidate +
+- [`tools/source_health.py`](../tools/source_health.py) — periodic
+  accessibility probe of **every** source (active + candidate +
   demoted), now probed via its *actual recipe*: `feed` (with common-path
   discovery) for RSS sources, the documented `tools/fetch_source.py`
   subcommand for `api`/`bridge` sources (so the bridge recipes themselves are
@@ -333,14 +333,14 @@ System reference for operators, contributors, and curious readers. Pure docs —
 - [`deploy-site.yml`](../.github/workflows/deploy-site.yml) — triggers on
   push to `main` whenever the site inputs change. Runs `site/build.py`,
   uploads the bundle to GitHub Pages.
-- [`source-health.yml`](../.github/workflows/source-health.yml) — **v2.47**.
-  Weekly cron (Sundays 04:30 UTC) + `workflow_dispatch`. Runs
+- [`source-health.yml`](../.github/workflows/source-health.yml) — weekly
+  cron (Sundays 04:30 UTC) + `workflow_dispatch`. Runs
   [`tools/source_health.py`](../tools/source_health.py) HEAD-only against
   every active source, commits `state/source_health.json` directly to
   `main` (state/* sits in the auto-merge auto-resolution allowlist, so a
   concurrent claude/* push won't race). Independent of the daily routine.
 - [`compose-profile.yml`](../.github/workflows/compose-profile.yml) —
-  **v2.65**. Triggers on push touching `config/org-profile.yaml`, the
+  triggers on push touching `config/org-profile.yaml`, the
   compose script, or any composed target. Selftests the compose script,
   then: on operator branches with drift, runs `--write` and commits the
   composed prompts back to the branch; on `main` and `claude/**`, is
@@ -383,7 +383,7 @@ of the repo:
   recent-coverage sparkline as every entity page.
 - It emits **eleven RSS feeds**: three main feeds (`/feed.xml`, daily,
   last 30; `/feed-weekly.xml`, weekly, last 30; `/feed-items.xml`,
-  per-item granular, last 50) plus **eight sector slices** (v2.47):
+  per-item granular, last 50) plus **eight sector slices**:
   `/feed-public-sector.xml`, `/feed-healthcare.xml`, `/feed-finance.xml`,
   `/feed-energy.xml`, `/feed-ot-ics.xml`, `/feed-defense.xml`,
   `/feed-telco.xml`, `/feed-education.xml`. Each slice is the per-item
@@ -398,7 +398,7 @@ of the repo:
   (`_ops_svg_sparkline` / `_ops_svg_bars` / `_ops_svg_donut` /
   `_ops_svg_heatmap` / `_ops_kpi_tile`) power the entity pages and
   the CVE / topic / entity overview KPI strips.
-- **v2.47** — `/trends/` cross-brief threat-class trend dashboard
+- `/trends/` cross-brief threat-class trend dashboard
   (8 cohort sparklines bucketed by ISO week — ransomware, actively-
   exploited vulnerabilities, public-sector, OT/ICS, supply-chain,
   AI-abuse, Switzerland+Europe, nation-state); `/feeds/` single
@@ -408,7 +408,7 @@ of the repo:
   block at the bottom of each daily brief surfacing items dropped from
   § 7 Verification Notes; horizontal actor-timeline strip on entity
   pages of type actor / campaign / incident / tool / annual-report.
-- **v2.47** — `data/site.json.github.{url,stars}` populated at build time
+- `data/site.json.github.{url,stars}` populated at build time
   via best-effort GitHub API fetch; the topbar's `wireGithubBadge()` in
   `assets/js/app.js` consumes it to render a live star count next to
   the GitHub icon. Build never fails on the fetch (silently degrades to

@@ -1,4 +1,4 @@
-# `intel/` — closed-source intelligence drop folder (v2.66)
+# `intel/` — closed-source intelligence drop folder
 
 This directory is the **hand-off point between an operator-owned feed script
 and the autonomous brief routines**. A script (yours — commercial CTI portal

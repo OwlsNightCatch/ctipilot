@@ -949,13 +949,13 @@ def _render_list(items: list[tuple[int, str]], *, ordered: bool, base_url: str |
 # === FOOTER PARSER =====================================================
 
 # Parse a single metadata-footer line into a structured dict.
-# v2.66 — Traffic Light Protocol markings accepted on closed-source
+# Traffic Light Protocol markings accepted on closed-source
 # citations. Order matters only for documentation; membership is the check.
 TLP_VALUES = {"CLEAR", "GREEN", "AMBER", "AMBER+STRICT", "RED"}
 
 
 def parse_closed_source_field(value: str) -> list[dict[str, str]]:
-    """Parse the v2.66 `Closed-source:` footer field.
+    """Parse the `Closed-source:` footer field.
 
     Shape (one or more records, `;`-separated):
         Closed-source: "Title" (Provider, YYYY-MM-DD, TLP:AMBER, ref: DOC-ID)
@@ -1077,12 +1077,12 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
         "vector": None,
         "auth": None,
         "status": [],
-        # v2.58 — source-quote binding. List of `{quote, attribution}` records
+        # source-quote binding. List of `{quote, attribution}` records
         # extracted from the optional `Evidence:` field in the footer. Empty
         # when the item has no Evidence field; renderer treats either case
         # as valid for now.
         "evidence": [],
-        # v2.66 — closed-source citations (unlinked; the referenced document
+        # closed-source citations (unlinked; the referenced document
         # lives under intel/<date>/ in the repo, not on the public web).
         # List of `{title, provider, date, tlp, ref, raw}` records parsed
         # from the optional `Closed-source:` field.
@@ -1136,7 +1136,7 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
                 elif key == "status":
                     out["status"] = [t.strip() for t in value.split(",") if t.strip()]
                 elif key == "evidence":
-                    # v2.58 — parse `"quote 1" (Publisher A); "quote 2" (Publisher B)` into
+                    # parse `"quote 1" (Publisher A); "quote 2" (Publisher B)` into
                     # structured records. Tolerates curly quotes and `;` or `·` as
                     # the inter-quote separator (· is unusual; · is the field
                     # separator and won't occur inside an Evidence value because
@@ -2260,7 +2260,7 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "", sources_only
 # === BRIEF DETAIL ======================================================
 
 def _editorial_choices_block(brief: dict[str, Any], *, prefix: str) -> str:
-    """v2.7 (§ 2.7) — render an "Editorial choices" collapsed `<details>`
+    """Render an "Editorial choices" collapsed `<details>`
     block at the bottom of the brief page. Pulls items the editorial flagged
     as dropped or held back from the verification-notes section, surfaces
     them as a discoverable but distinct block. Not in the TL;DR, not in the
@@ -2316,7 +2316,7 @@ def _per_item_delta_block(item: dict[str, Any], *,
                            brief_name: str,
                            appearances_index: dict[str, list[dict[str, Any]]] | None,
                            prefix: str) -> str:
-    """v2.7 (§ 3.5) — render a per-item "Changes since first coverage" inline
+    """Render a per-item "Changes since first coverage" inline
     `<details>` block for items whose CVE / topic key has more than one
     `appearances[]` record in `covered_items.json`. The block lists each
     prior appearance's `delta_summary` + date + brief link.
@@ -3125,7 +3125,7 @@ def render_topic_list_page(
 # === SOURCE LIST + DETAIL ==============================================
 
 def _stale_days_for_source(s: dict[str, Any], today: date) -> int:
-    """v2.48 — days since `last_successful_fetch`. Returns -1 if the source
+    """Days since `last_successful_fetch`. Returns -1 if the source
     has never been successfully fetched (or the field is malformed). Caller
     decides whether to flag negative as 'never fetched' or 'stale forever'."""
     lf = s.get("last_successful_fetch")
@@ -3179,7 +3179,7 @@ def render_source_list_page(
             f'<span class="e-tag">{_escape(c)}</span>'
             for c in (s.get("category") or [])
         )
-        # v2.48 — stale data attribute so the "Stale" filter chip can
+        # Stale data attribute so the "Stale" filter chip can
         # toggle the table to silent-active sources only.
         days = _stale_days_for_source(s, today)
         is_stale_active = (s.get("status") == "active") and (days == -1 or days > 7)
@@ -3615,7 +3615,7 @@ def render_home_page(
     )
 
 
-# === TRENDS DASHBOARD (v2.47 § 4.1) ====================================
+# === TRENDS DASHBOARD ====================================
 
 # Trend "cohorts" — each tile on /trends/ aggregates by week the count of
 # items whose footer carries any of the listed taxonomy values. Cohorts
@@ -3730,7 +3730,7 @@ def _item_matches_cohort(footer: dict[str, Any], cohort: dict[str, Any]) -> bool
 
 
 def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
-    """v2.47 polish — best-effort fetch of `https://api.github.com/repos/<repo>`
+    """Best-effort fetch of `https://api.github.com/repos/<repo>`
     so the topbar can render a live star count. Returns `{url, stars,
     full_name}` on success; empty dict on any failure (network down, rate
     limited, parse error, blocked address). The build never fails on this —
@@ -3763,7 +3763,7 @@ def fetch_github_metadata(repo: str, *, timeout: float = 6.0) -> dict[str, Any]:
 
 def render_feeds_page(*, site_url: str, cachebust: str,
                        prefix: str, canonical: str) -> str:
-    """v2.47 polish — single discovery page for all 11 RSS feeds (3 main +
+    """Single discovery page for all 11 RSS feeds (3 main +
     8 sector slices). The topbar/footer link to this page; the brief-list
     page no longer carries chip-style per-feed links. `<head>` rel=alternate
     autodiscovery for the three main feeds is unchanged."""
@@ -3826,7 +3826,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 def render_trends_page(briefs: list[dict[str, Any]], *,
                         site_url: str, cachebust: str,
                         prefix: str, canonical: str) -> str:
-    """v2.47 § 4.1 — cross-brief threat-class trend dashboard at /trends/.
+    """Cross-brief threat-class trend dashboard at /trends/.
     Buckets every brief footer's tags + sectors + regions by ISO week and
     renders one sparkline per TREND_COHORT. Pure post-hoc analytics; the
     data comes entirely from already-parsed brief footers, no new state."""
@@ -3927,10 +3927,10 @@ def render_trends_page(briefs: list[dict[str, Any]], *,
     )
 
 
-# === ACTOR-TIMELINE STRIP (v2.47 § 4.2) =================================
+# === ACTOR-TIMELINE STRIP =================================
 
 def _actor_timeline_strip(entity: dict[str, Any]) -> str:
-    """v2.47 § 4.2 — horizontal timeline strip for actor / campaign /
+    """Horizontal timeline strip for actor / campaign /
     incident / tool entity pages. Marker dot per appearance between the
     first and last coverage dates. Hover tooltip names the brief. Renders
     above the existing Story timeline; falls back to empty string for
@@ -4387,7 +4387,7 @@ def _ops_pill(text: str, *, kind: str = "neutral") -> str:
 
 def _ops_count_sources(value: Any) -> int:
     # Sub-agent telemetry records sources_attempted / sources_used as either a
-    # list of source IDs (pre-v2.50) or an integer count (v2.50+). Accept both.
+    # list of source IDs (legacy) or an integer count. Accept both.
     if isinstance(value, bool):
         return 0
     if isinstance(value, int):
@@ -4439,7 +4439,7 @@ def render_ops_page(
     sparse-record consequence is visible as "no data" rather than blank panels.
     """
     all_runs = list((run_log or {}).get("runs") or [])
-    # v2.62 dashboard restructure:
+    # Dashboard structure:
     #   - Health KPIs + trend charts are GLOBAL — computed over every recorded
     #     run, not a 30-run slice (the operator asked for global stats).
     #   - The run-log table renders all runs (paginated client-side).
@@ -4643,7 +4643,7 @@ def render_ops_page(
     else:
         run_detail_html = '<p class="muted">No runs recorded yet.</p>'
 
-    # v2.62 — the GLOBAL "Verification iterations" table was removed. Per-
+    # The GLOBAL "Verification iterations" table was removed. Per-
     # iteration verdicts now live ONLY in each run's detail panel
     # (_ops_render_verification_iterations, called from the run-detail
     # selector), so the same data is not presented twice.
@@ -4651,12 +4651,12 @@ def render_ops_page(
     # ----- Run-log table (ALL runs, paginated client-side) -----------------
     runs_table_html = _ops_render_runs_table(all_desc, palette, prefix=prefix)
 
-    # ----- (v2.48) Stale-active-sources MOVED TO /sources/ ----------------
+    # ----- Stale-active-sources MOVED TO /sources/ ----------------
     # The "Stale active sources" panel that previously lived here is now
     # rendered exclusively on /sources/ — alongside the source's
     # reliability, status, category tags, and lifecycle counters
     # (consecutive_quiet_periods, consecutive_fetch_failures). The Ops
-    # dashboard no longer surfaces it at all (v2.48 follow-up: the
+    # dashboard no longer surfaces it at all (follow-up: the
     # placeholder block was confusing — the operator just wants it gone).
 
     # ----- KPI tiles --------------------------------------------------------
@@ -4827,7 +4827,7 @@ def _ops_pager_wrap(inner_html: str, *, pagesize: int = 10, size_select: bool = 
 
 
 def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
-    """v2.62 — the `sources_changed[]` edits a SINGLE run made to
+    """the `sources_changed[]` edits a SINGLE run made to
     sources/sources.json, rendered as a table of what moved (promotions,
     demotions, new candidates, and fetch-method / category / reliability / url
     corrections). Lives inside the per-run detail panel so the run-detail
@@ -4868,7 +4868,7 @@ _SOURCE_STATUS_KIND = {"active": "ok", "candidate": "neutral", "demoted": "crit"
 
 
 def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: str = "") -> str:
-    """v2.63 — surface ONLY the unsolved accessibility problems from
+    """surface ONLY the unsolved accessibility problems from
     `state/source_health.json` (written by tools/source_health.py, which probes
     EVERY source with the bridge's UA and exercises the api/bridge recipes).
 
@@ -4966,7 +4966,7 @@ def _ops_kpi_tile(label: str, value: str, *, sub: str = "", kind: str = "neutral
     )
 
 
-# v2.48 — error-class → CSS-modifier mapping for the rich fetch_failures table.
+# error-class → CSS-modifier mapping for the rich fetch_failures table.
 _FETCH_FAILURE_CLASS_KIND: dict[str, str] = {
     "transport-403": "warn",
     "transport-429": "warn",
@@ -4984,18 +4984,18 @@ _FETCH_FAILURE_CLASS_KIND: dict[str, str] = {
 
 
 def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -> str:
-    """v2.55 — render the (now-strict) fetch_failures shape as a "Coverage
+    """render the (now-strict) fetch_failures shape as a "Coverage
     gaps" table. Each row is a source the brief needed but couldn't get
     via any recipe (bridge / corroborating alternate publisher), so the row's
     intrinsic meaning is "operator should look at this — content was
     missing." Earlier versions of this table doubled as a bridge-use log;
-    v2.55 split that out into `bridge_uses[]` (rendered separately).
+    those were split out into `bridge_uses[]` (rendered separately).
 
     Soft-signal handling: a record with `covered_anyway: true` survived
     in the data only because an older sub-agent prompt logged a recovered
-    fetch here — v2.55+ tells sub-agents not to do this, but the table
+    fetch here — the agent prompts tell sub-agents not to do this, but the table
     still tolerates such records and tags them yellow ("recovered — does
-    not belong here under v2.55 rules") so the operator can quickly
+    not belong here") so the operator can quickly
     distinguish current-shape from drift.
     """
     if not failures:
@@ -5022,7 +5022,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         covered_anyway = f.get("covered_anyway")
         kind = _FETCH_FAILURE_CLASS_KIND.get(error_class, "warn" if is_legacy else "neutral")
 
-        # v2.55 — yellow soft-signal flag when a recovered fetch is logged
+        # yellow soft-signal flag when a recovered fetch is logged
         # here against the new (stricter) schema rule.
         soft_signal = (covered_anyway is True) and not is_legacy
 
@@ -5047,14 +5047,14 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
             if mitigation else '<span class="muted">none</span>'
         )
 
-        # Source cell — with the v2.55 soft-signal badge when applicable.
+        # Source cell — with the soft-signal badge when applicable.
         sid_extra = ""
         if is_legacy:
             sid_extra = '<div class="muted" style="font-size:0.72rem">legacy shape — needs detail</div>'
         elif soft_signal:
             sid_extra = (
                 '<div class="muted" style="font-size:0.72rem;color:var(--warn)">'
-                'covered via alternate — should NOT be in this list under v2.55'
+                'covered via alternate — should NOT be in this list'
                 '</div>'
             )
 
@@ -5084,12 +5084,12 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
 
 
 def _ops_render_bridge_uses(uses: list[dict[str, Any]] | None) -> str:
-    """v2.55 — render the optional bridge_uses[] telemetry as a compact
+    """render the optional bridge_uses[] telemetry as a compact
     counter strip. Each entry is `{id, method, outcome}` from a sub-agent's
     `## Bridge uses` section. Outcomes are grouped (ok / empty-feed /
     item-not-found / other) so the operator sees bridge effectiveness at
     a glance without the "is this a failure?" ambiguity that polluted the
-    pre-v2.55 fetch_failures table.
+    legacy fetch_failures table.
     """
     if not uses:
         return ""
@@ -5157,15 +5157,15 @@ def _ops_render_verification_iterations(
     legacy_count: int | None,
     legacy_residual: int | None,
 ) -> tuple[str, str]:
-    """v2.58 — return (chips_html, findings_html) instead of one combined
+    """return (chips_html, findings_html) instead of one combined
     string. The chips_html is the compact iteration timeline that fits in
     the 2-column "Verification" panel slot; the findings_html is a stack
     of per-iteration finding tables intended to be rendered in a
     full-width block beneath the latest-run card, like the Coverage Gaps
     table already gets full-width treatment.
 
-    Pre-v2.58 only the FINAL iteration's findings rendered (the
-    cap-breach signal). v2.58 renders every iteration's `findings[]`
+    Previously only the FINAL iteration's findings rendered (the
+    cap-breach signal). The dashboard renders every iteration's `findings[]`
     that is non-empty so the operator can walk the verifier's full
     debugging trail — what did iter-1 flag, what did the main agent fix,
     what did iter-2 then flag, etc.
@@ -5298,7 +5298,7 @@ def _ops_render_verification_iterations(
     # If the final iteration was a NEEDS_FIXES cap-breach but recorded no
     # findings[], note that explicitly — the operator still needs to see
     # the cap-breach signal even when the verifier's findings array is
-    # empty (pre-v2.48 contract).
+    # empty (legacy contract).
     cap_breach_note = ""
     if cap_breach_iter is not None and not (cap_breach_iter.get("findings") or []):
         n = cap_breach_iter.get("n", "?")
@@ -5378,21 +5378,21 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         sa_cards.append(_ops_render_subagent_card(k, a, palette))
     sa_grid = f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
 
-    # v2.55 — "Coverage gaps" table replaces the old "Fetch failures"
-    # one. Schema is the same; the rule (sub-agent prompt v2.55) is that
+    # "Coverage gaps" table replaces the old "Fetch failures"
+    # one. Schema is the same; the sub-agent prompt rule is that
     # only un-recoverable misses get logged here. Soft-signal records
-    # (covered_anyway: true that survived from the old v2.48–v2.54 rule)
+    # (covered_anyway: true that survived from the old logging rule)
     # render with a yellow row badge.
     failures_html = _ops_render_fetch_failures(failures, prefix=prefix)
-    # v2.55 — `bridge_uses[]` is an optional sub-agent telemetry stream
+    # `bridge_uses[]` is an optional sub-agent telemetry stream
     # showing where the bridge was successfully invoked. Separate panel
     # so success and failure don't share a list.
     bridge_uses_html = _ops_render_bridge_uses(run.get("bridge_uses") or [])
-    # v2.62 — per-run source-list edits, rendered inside this panel so the
+    # per-run source-list edits, rendered inside this panel so the
     # run-detail selector shows each run's source changes, not just the latest.
     run_sources_changed_html = _ops_render_run_sources_changed(run, prefix=prefix)
 
-    # v2.58 — verification iteration renderer now returns TWO fragments:
+    # verification iteration renderer now returns TWO fragments:
     # a compact chip row (iteration timeline) for the 2-col Verification
     # slot, and a full-width findings_html block (per-iteration finding
     # tables for EVERY iteration with findings — not just the final one).
@@ -5431,7 +5431,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
   <!-- Verification (chips only) + Deep-dive share a 2-column row at
        desktop; both are short so two columns is plenty. The per-
        iteration finding TABLES escape this row into a full-width
-       section below the Coverage Gaps table (v2.58). -->
+       section below the Coverage Gaps table. -->
   <div class="ops-latest__row ops-latest__row--summary">
     <div>
       <h3 class="ops-mini-head">Verification</h3>
@@ -5444,7 +5444,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
   </div>
 </div>
 
-<!-- v2.55 — table renamed "Coverage gaps" because that's what it
+<!-- table renamed "Coverage gaps" because that's what it
      actually contains now (sub-agent prompt was tightened to only log
      real, unrecovered failures). The bridge_uses panel below it tracks
      bridge invocations separately so success and failure don't get
@@ -5452,7 +5452,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
 {run_sources_changed_html}
 <div class="ops-latest__failures">
   <h3 class="ops-mini-head">Coverage gaps (this run)</h3>
-  <p class="muted ops-latest__failures-help">Sources <em>this run's</em> brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here under v2.55. (Distinct from the independent source-accessibility probe at the foot of this section, which probes <em>all</em> active sources regardless of what any run needed.)</p>
+  <p class="muted ops-latest__failures-help">Sources <em>this run's</em> brief needed that returned no usable content via any documented recipe. Bridge-recovered or quiet-day sources do NOT appear here. (Distinct from the independent source-accessibility probe at the foot of this section, which probes <em>all</em> active sources regardless of what any run needed.)</p>
   {failures_html}
 </div>
 {bridge_uses_html}
@@ -5488,7 +5488,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     items = data.get("items_returned") or 0
     tele = data.get("telemetry") or {}
 
-    # v2.57 — operator feedback drove a second round of card simplification:
+    # operator feedback drove a second round of card simplification:
     #   1. Drop the `used / attempted` progress bar entirely — it visually
     #      implied a quality score, but a 5/63-source slice on a quiet day
     #      is perfectly normal for S3 and 14/16 on a busy day for S1 is also
@@ -5509,7 +5509,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             return f"{n}s"
         return f"{n // 60}m {n % 60:02d}s"
 
-    # Duration: prefer top-level duration_seconds (v2.47); fall back to telemetry.
+    # Duration: prefer top-level duration_seconds; fall back to telemetry.
     dur_raw = data.get("duration_seconds")
     if dur_raw in (None, ""):
         dur_raw = tele.get("duration_seconds")
@@ -5642,7 +5642,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         items = a.get("items_returned") or 0
         m = _ops_canonical_model(a.get("model"))
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
-        # v2.57 — runs-table cells show the items-returned headline only;
+        # runs-table cells show the items-returned headline only;
         # source coverage moved to a tooltip on the cell. The inline
         # "(12/18 sources)" parenthetical was visual clutter at table
         # density and the number-pair was ambiguous without context.
@@ -6052,7 +6052,7 @@ def build_items_feed(briefs: list[dict[str, Any]], *, site_url: str) -> tuple[st
     return feed, most_recent
 
 
-# === SECTOR-SPECIFIC RSS FEED SLICES (v2.47 § 4.3) ======================
+# === SECTOR-SPECIFIC RSS FEED SLICES ======================
 #
 # One feed per audience sector. Each is a filtered slice of build_items_feed
 # (per-H3 entries) where the item's footer Sector / Tags carry the relevant
@@ -6122,7 +6122,7 @@ SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]]
 
 def build_sector_feeds(briefs: list[dict[str, Any]],
                         *, site_url: str) -> list[tuple[str, str, datetime]]:
-    """v2.47 § 4.3 — emit one RSS feed per audience sector. Each feed is the
+    """Emit one RSS feed per audience sector. Each feed is the
     per-item feed filtered by Sector / Tags so subscribers can subscribe to
     the slice they care about (`/feed-healthcare.xml`, `/feed-public-sector.xml`,
     `/feed-ot-ics.xml`, …) instead of parsing every per-item entry.
@@ -7162,7 +7162,7 @@ def render_sources_overview_charts(
             '</div>'
         )
 
-    # v2.64 — the run_log fetch-failure sparkline was REMOVED from /sources/.
+    # the run_log fetch-failure sparkline was REMOVED from /sources/.
     # Fetch failures are run-level operational telemetry → they live on /ops/
     # (run-log table + Coverage gaps), not on the source-catalogue page.
 
@@ -7874,7 +7874,7 @@ def main() -> int:
             )
             return 5
 
-    # v2.47 § 3.5: per-item "Changes since first coverage" lookup. Build a
+    # Per-item "Changes since first coverage" lookup. Build a
     # quick index keyed by entity key (CVE id or topic key) → sorted list of
     # appearance records, but only for entities with len(appearances) > 1
     # (no delta to show on a brand-new entity). The lookup is consulted at
@@ -8382,7 +8382,7 @@ def main() -> int:
         except Exception:
             run_log = None
 
-    # Load the independent source-health snapshot (v2.62 — finally rendered on
+    # Load the independent source-health snapshot (finally rendered on
     # /ops/; written by tools/source_health.py). Absent on a fresh clone.
     source_health = None
     sh_src = ROOT / "state" / "source_health.json"
@@ -8586,7 +8586,7 @@ def main() -> int:
         ),
     )
 
-    # /trends/ — v2.47 § 4.1 cross-brief threat-class trend dashboard.
+    # /trends/ — cross-brief threat-class trend dashboard.
     emit_html(
         "trends/",
         render_trends_page(
@@ -8599,7 +8599,7 @@ def main() -> int:
         lastmod=latest["publish_iso"][:10] if latest else "",
     )
 
-    # /feeds/ — v2.47 polish single discovery page for all 11 RSS feeds.
+    # /feeds/ — single discovery page for all 11 RSS feeds.
     emit_html(
         "feeds/",
         render_feeds_page(
@@ -8689,7 +8689,7 @@ def main() -> int:
     atomic_write_text(OUT / "feed.xml", daily_xml)
     atomic_write_text(OUT / "feed-weekly.xml", weekly_xml)
     atomic_write_text(OUT / "feed-items.xml", items_xml)
-    # v2.47 § 4.3 — sector-specific feed slices.
+    # Sector-specific feed slices.
     sector_feed_results = build_sector_feeds(briefs, site_url=site_url)
     sector_feed_hashes: dict[str, str] = {}
     for fname, xml, _ts in sector_feed_results:
@@ -8777,7 +8777,7 @@ def main() -> int:
     atomic_write_text(OUT / "data" / "search.json", json.dumps(search_idx))
 
     # site.json (deterministic — no now())
-    # v2.47 polish: include live GitHub star count when reachable. The
+    # Include live GitHub star count when reachable. The
     # topbar's `wireGithubBadge()` (assets/js/app.js) consumes
     # `github.{url,stars}`. Best-effort fetch; build never fails on this.
     repo = os.environ.get("GITHUB_REPO", DEFAULT_GITHUB_REPO)

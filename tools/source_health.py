@@ -64,7 +64,7 @@ KNOWN_UA_BLOCKED_HOSTS: tuple[str, ...] = (
 )
 
 # Kept in lockstep with tools/fetch_source.py BROWSER_UA / BROWSER_CLIENT_HINTS
-# (v2.62 bump to Chrome 138 + Sec-CH-UA). The probe must mimic exactly what the
+# (Chrome 138 + Sec-CH-UA). The probe must mimic exactly what the
 # bridge sends, so "reachable in the health probe" == "reachable via the bridge".
 DESKTOP_UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -78,7 +78,7 @@ BROWSER_CLIENT_HINTS = {
 
 FETCH_SOURCE = ROOT / "tools" / "fetch_source.py"
 
-# v2.63 — `api`/`bridge` sources are served by tools/fetch_source.py, not by a
+# `api`/`bridge` sources are served by tools/fetch_source.py, not by a
 # plain GET of their `url` (the url is often an SPA shell or a catalog page).
 # To verify the bridge *recipe* still works we invoke the documented subcommand
 # and check it returns a non-trivial body. `api` sources map to their specific
@@ -361,7 +361,7 @@ def main() -> int:
     except Exception as e:
         print(f"FATAL: cannot parse sources.json: {e}", file=sys.stderr)
         return 2
-    # v2.63 — check EVERY source (active + candidate + demoted), not just the
+    # Check EVERY source (active + candidate + demoted), not just the
     # active ones, so the snapshot is a complete periodic accessibility sweep.
     # The Ops dashboard then floats only the ones that need operator action.
     sources = [s for s in sources_data.get("sources", []) if s.get("url")]
@@ -494,7 +494,7 @@ def main() -> int:
     runs = runs[-args.history_cap :]
     out = {
         "schema_version": 2,
-        "schema": ("Periodic source-accessibility snapshot (v2.63: every source, "
+        "schema": ("Periodic source-accessibility snapshot (every source, "
                    "api/bridge verified through tools/fetch_source.py). Each result "
                    "carries `status`, `fetch_method`, `class`, and a derived `action` "
                    "(none | needs-bridge | needs-demote). The Ops dashboard floats only "

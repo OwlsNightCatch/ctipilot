@@ -9,7 +9,7 @@ brief_path, section}, and writes:
 - work/<run-id>/prior_coverage.json       (full records — for sub-agents)
 - work/<run-id>/prior_coverage_keys.json  (keys-only digest — for main agent)
 
-v2.51 split rationale: both files are emitted in a single invocation so
+Split rationale: both files are emitted in a single invocation so
 Phase 0 needs only one call. The main agent reads the keys-only digest
 (`{key, date, brief_path, section}` per record — no titles, no tldrs,
 no URLs) for the dedup yes/no it actually needs; sub-agents read the full
@@ -198,7 +198,7 @@ def _walk_brief(path: Path, allowed_section_keys: set[str] | None = None,
     return records
 
 
-# --- Name-collision candidates (v2.57) ------------------------------------
+# --- Name-collision candidates ------------------------------------
 #
 # Extracts proper-noun-shaped tokens from prior-coverage H3 titles that the
 # main agent should recognise as potential collisions when composing today's
@@ -251,7 +251,7 @@ _COLLISION_PATTERNS: list[re.Pattern[str]] = [
 #
 # - A parenthesised-content pattern was considered and rejected — it
 #   duplicated useful catches with the quoted pattern but added noise
-#   (country names, year/bulletin descriptors). v2.57 calibration on the
+#   (country names, year/bulletin descriptors). Calibration on the
 #   historical corpus showed it doubled the false-positive rate without
 #   adding any entity the other patterns missed.
 # - Named-actor / cluster identifiers (UAT-8616, UNC1151, APT28, Storm-2460,
@@ -395,7 +395,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(payload, f, indent=2, ensure_ascii=False)
         f.write("\n")
 
-    # v2.51 — emit a keys-only companion file in default (non-`--keys-only`)
+    # Emit a keys-only companion file in default (non-`--keys-only`)
     # mode so the main agent can Read just the dedup index without pulling
     # CVE titles + breach prose + URL slugs into its working context. The
     # main agent's Phase 0 reads this file; sub-agents continue reading

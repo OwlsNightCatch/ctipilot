@@ -16,7 +16,7 @@ It is **read-only by design**: no posts, no auth, no cookies, no
 JavaScript execution, no third-party libraries. The whole script is
 stdlib (`urllib`, `json`, `argparse`).
 
-v2.52 — host allowlist removed. The bridge is usable on any HTTPS
+The bridge enforces no host allowlist and is usable on any HTTPS
 publisher (see `_check_url` for the SSRF defences that remain — IP-range
 deny list on the resolved host, redirect re-validation, body-size cap,
 https-only).
@@ -50,22 +50,22 @@ Usage:
     python3 tools/fetch_source.py bsi-rss                            # BSI cert-bund WID-SEC RSS feed (XML)
     python3 tools/fetch_source.py bsi-csaf <WID-SEC-ID>              # BSI WID-SEC advisory CSAF JSON (full body — e.g. WID-SEC-2026-1438)
     python3 tools/fetch_source.py ncsc-nl csaf <ID> [VERSION]        # one Dutch NCSC CSAF advisory (e.g. NCSC-2025-0432, default v1)
-    # v2.52 — structured discovery feeds for hosts whose listing pages are JS-rendered
+    # Structured discovery feeds for hosts whose listing pages are JS-rendered
     python3 tools/fetch_source.py ncsc-nl recent [N]                 # Dutch NCSC RSS — last N advisory IDs + titles (default 20)
     python3 tools/fetch_source.py cert-eu recent [N]                 # CERT-EU RSS — last N advisories (default 20)
     python3 tools/fetch_source.py cert-fr avis-recent [N]            # CERT-FR vendor-vuln advisories RSS (default 20)
     python3 tools/fetch_source.py cert-fr actu-recent [N]            # CERT-FR weekly-bulletin / actualité RSS (default 20)
     python3 tools/fetch_source.py ico-uk enforcement [N]             # UK ICO enforcement actions — top N by lastmod from sitemap.xml (default 20)
     python3 tools/fetch_source.py sec-edgar 8k [start] [end] [item]  # SEC EDGAR 8-K full-text search (default Item 1.05, last 14 days)
-    # v2.54 — generic RSS/Atom feed fetcher (works on any HTTPS feed URL)
+    # Generic RSS/Atom feed fetcher (works on any HTTPS feed URL)
     python3 tools/fetch_source.py feed <URL> [N]                     # parse any RSS/Atom feed and return last N items as JSON
-    # v2.53 — Microsoft MSRC Update Guide (Angular SPA at msrc.microsoft.com/update-guide/ backed by anonymous CVRF + SUG OData)
+    # Microsoft MSRC Update Guide (Angular SPA at msrc.microsoft.com/update-guide/ backed by anonymous CVRF + SUG OData)
     python3 tools/fetch_source.py msrc cvrf <YYYY-Mon>               # full monthly CVRF JSON (e.g. 2026-May) — ~2–3 MB
     python3 tools/fetch_source.py msrc cve <CVE-ID>                  # per-CVE detail JSON (e.g. CVE-2026-41089) — ~2–3 KB
     python3 tools/fetch_source.py msrc release <YYYY-Mon> [N]        # OData list of CVEs in one release (cheaper than `cvrf`)
     python3 tools/fetch_source.py msrc recent [N]                    # newest N CVEs across all releases
     python3 tools/fetch_source.py msrc releases [N]                  # most-recent N monthly release tags
-    # v2.53 — Microsoft Security Blog (RSS, with topic filter)
+    # Microsoft Security Blog (RSS, with topic filter)
     python3 tools/fetch_source.py msft-secblog recent [N] [TOPIC]    # last N posts; TOPIC e.g. threat-intelligence
 
 Examples:
@@ -150,7 +150,7 @@ _SSL_CTX = _build_ssl_context()
 # expect from a human visitor; does not impersonate Googlebot or any
 # other crawler.
 #
-# v2.62 (2026-06-20 full-source audit): bumped Chrome 124 → 138 and
+# 2026-06-20 full-source audit: bumped Chrome 124 → 138 and
 # switched the platform token to Windows. The stale 124/macOS UA was
 # being filtered by several publishers' WAFs that key off both the
 # Chrome major version AND the absence of the `Sec-CH-UA` client-hint
@@ -177,7 +177,7 @@ BROWSER_CLIENT_HINTS = {
     "Sec-CH-UA-Platform": '"Windows"',
 }
 
-# v2.52 — host allowlist removed.
+# No host allowlist.
 #
 # Prior versions of the bridge gated every fetch on a frozenset of known
 # publishers (ALLOWED_HOSTS). Operationally, that meant every new CTI
@@ -213,7 +213,7 @@ BROWSER_CLIENT_HINTS = {
 # host as a coverage gap (WebSearch for a corroborating publisher) — or,
 # for the hosts noted below, use the feed/RSS path instead.
 #
-# v2.62 (2026-06-20 full-source audit): re-probed every entry with the
+# 2026-06-20 full-source audit: re-probed every entry with the
 # Chrome-138 UA + Sec-CH-UA client hints. RECOVERED and removed from the
 # set: databreaches.net (the /feed/ RSS now returns 200 — use
 # `feed https://databreaches.net/feed/`; the HTML homepage is still 403),
@@ -307,7 +307,7 @@ def _check_url(url: str) -> None:
     link-local / private / cloud-metadata. Called for the initial request
     AND for every redirect destination (see SafeRedirectHandler below).
 
-    v2.52 — host allowlist removed. The agent can target any HTTPS
+    No host allowlist — the agent can target any HTTPS
     publisher; the layer-3 defences here (resolved-IP deny list) are the
     gate that matters. A poisoned A record pointing at 127.0.0.1 / RFC
     1918 / 169.254.169.254 is still refused. Hostname guesses don't lift
@@ -393,7 +393,7 @@ def fetch(
     layer-3 SSRF defences in `_check_url` / `_resolve_and_check`. Body
     size is capped at `max_bytes`.
 
-    v2.52 — host allowlist removed. The bridge is usable on any HTTPS
+    The bridge enforces no host allowlist and is usable on any HTTPS
     publisher; `extra_headers` lets callers add publisher-specific
     headers (e.g. SEC EDGAR requires an identifying User-Agent suffix).
     """
@@ -519,7 +519,7 @@ def cisa_kev() -> Any:
     return fetch_json(CISA_KEV_JSON)
 
 
-# ── ENISA EUVD helpers (v2.48 — added 2026-05-10; hotfixed 2026-05-11) ─
+# ── ENISA EUVD helpers (added 2026-05-10; hotfixed 2026-05-11) ─
 #
 # The ENISA EU Vulnerability Database SPA at https://euvd.enisa.europa.eu/
 # returns an empty <noscript> shell to WebFetch. The underlying REST API
@@ -668,7 +668,7 @@ def ncsc_nl_csaf(advisory_id: str, version: int = 1) -> Any:
     return fetch_json(f"https://advisories.ncsc.nl/csaf/v2/{year}/{slug}.json")
 
 
-# ── v2.52 — RSS-driven listing helpers ─────────────────────────────────
+# ── RSS-driven listing helpers ─────────────────────────────────
 #
 # A small RSS parser. We parse with `xml.etree.ElementTree` rather than a
 # third-party feedparser to keep the stdlib-only posture. The parser
@@ -926,7 +926,7 @@ def sec_edgar_8k(start: str | None = None, end: str | None = None,
     }
 
 
-# ── Generic RSS/Atom feed subcommand (v2.54) ──────────────────────────
+# ── Generic RSS/Atom feed subcommand ──────────────────────────
 #
 # Most CTI publisher blogs ship a standard RSS 2.0 or Atom 1.0 feed at
 # `/feed/`, `/rss/`, `/feed.xml`, or via Feedburner. Rather than adding
@@ -936,7 +936,7 @@ def sec_edgar_8k(start: str | None = None, end: str | None = None,
 # The agent's drilldown pattern (take `link` from `items[i]`, then
 # `url <link>` for the full body) works uniformly across every publisher.
 #
-# Verified against the v2.54 source-list expansion:
+# Verified against the source-list expansion:
 #   - thedfirreport.com/feed/             (RSS 2.0)
 #   - krebsonsecurity.com/feed/           (RSS 2.0, full <content:encoded>)
 #   - blog.compass-security.com/feed/     (RSS 2.0)
@@ -968,7 +968,7 @@ def feed_recent(feed_url: str, count: int = 20) -> dict[str, Any]:
     return {"source": host or "feed", "feed": feed_url, "count": len(items), "items": items}
 
 
-# ── Microsoft MSRC Update Guide (v2.53) ───────────────────────────────
+# ── Microsoft MSRC Update Guide ───────────────────────────────
 #
 # The MSRC Update Guide UI at https://msrc.microsoft.com/update-guide/
 # is a pure Angular SPA — fetching that URL or any of its routes (e.g.
@@ -1132,7 +1132,7 @@ def msrc_releases(top: int = 24) -> dict[str, Any]:
     return {"source": "msrc-releases", "total": len(all_rels), "count": len(items), "items": items}
 
 
-# ── Microsoft Security Blog feeds (v2.53) ─────────────────────────────
+# ── Microsoft Security Blog feeds ─────────────────────────────
 #
 # https://www.microsoft.com/en-us/security/blog/ is the unified MSFT
 # Security blog hub. The CMS exposes:
@@ -1192,7 +1192,7 @@ def main(argv: list[str]) -> int:
     p_cisa_html = cisa_sub.add_parser("page", help="HTML page with browser UA")
     p_cisa_html.add_argument("url")
 
-    # v2.48 — additional bridge endpoints for known-403 / SPA-only sources.
+    # Additional bridge endpoints for known-403 / SPA-only sources.
     p_euvd = sub.add_parser("enisa-euvd", help="ENISA EU Vulnerability Database (JSON)")
     euvd_sub = p_euvd.add_subparsers(dest="euvd_cmd", required=True)
     p_euvd_recent = euvd_sub.add_parser("recent", help="recent / criticals / exploited listings")
@@ -1213,7 +1213,7 @@ def main(argv: list[str]) -> int:
     p_ncscnl_recent = ncscnl_sub.add_parser("recent", help="most-recent NCSC-NL advisory IDs from the RSS feed")
     p_ncscnl_recent.add_argument("count", type=int, nargs="?", default=20)
 
-    # v2.52 — structured discovery feeds for hosts whose listing pages are JS-rendered
+    # Structured discovery feeds for hosts whose listing pages are JS-rendered
     p_certeu = sub.add_parser("cert-eu", help="CERT-EU security advisories")
     certeu_sub = p_certeu.add_subparsers(dest="certeu_cmd", required=True)
     p_certeu_recent = certeu_sub.add_parser("recent", help="last N CERT-EU advisories (RSS)")
@@ -1239,12 +1239,12 @@ def main(argv: list[str]) -> int:
     p_edgar_8k.add_argument("item", nargs="?", default="1.05", help="8-K item code (default 1.05)")
 
 
-    # v2.54 — generic RSS/Atom feed subcommand (covers most CTI blog publishers cleanly)
+    # Generic RSS/Atom feed subcommand (covers most CTI blog publishers cleanly)
     p_feed = sub.add_parser("feed", help="Generic RSS/Atom feed fetcher — works on any HTTPS feed URL")
     p_feed.add_argument("feed_url", help="full feed URL, e.g. https://thedfirreport.com/feed/")
     p_feed.add_argument("count", type=int, nargs="?", default=20)
 
-    # v2.53 — Microsoft MSRC Update Guide (SPA-backed by public CVRF + SUG OData APIs)
+    # Microsoft MSRC Update Guide (SPA-backed by public CVRF + SUG OData APIs)
     p_msrc = sub.add_parser("msrc", help="Microsoft MSRC Update Guide — SPA backed by anonymous CVRF + SUG OData APIs")
     msrc_sub = p_msrc.add_subparsers(dest="msrc_cmd", required=True)
     p_msrc_cvrf = msrc_sub.add_parser("cvrf", help="full CVRF JSON for one monthly release (e.g. 2026-May) — ~2–3 MB")
@@ -1259,7 +1259,7 @@ def main(argv: list[str]) -> int:
     p_msrc_releases = msrc_sub.add_parser("releases", help="most-recent N monthly release tags from the CVRF index")
     p_msrc_releases.add_argument("count", type=int, nargs="?", default=24)
 
-    # v2.53 — Microsoft Security Blog (RSS-driven; supports topic-filtered feed)
+    # Microsoft Security Blog (RSS-driven; supports topic-filtered feed)
     p_msft = sub.add_parser("msft-secblog", help="Microsoft Security Blog (RSS)")
     msft_sub = p_msft.add_subparsers(dest="msft_cmd", required=True)
     p_msft_recent = msft_sub.add_parser("recent", help="last N security-blog posts (general or per-topic)")
@@ -1289,7 +1289,7 @@ def main(argv: list[str]) -> int:
         if args.cmd == "cisa":
             if args.cisa_cmd == "page":
                 # Soft check — `cisa page <URL>` is meant for CISA-hosted pages.
-                # The bridge no longer enforces a host allowlist (v2.52), but
+                # The bridge enforces no host allowlist, but
                 # if the agent passed a non-CISA URL it almost certainly meant
                 # to use the generic `url <URL>` subcommand instead.
                 if "cisa.gov" not in (urllib.parse.urlparse(args.url).hostname or ""):

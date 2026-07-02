@@ -42,10 +42,10 @@ The site deploys automatically on every push to `main` that touches the brief fe
 - **Topbar search.** Token-prefix scoring across briefs, sections, entities (every type), and sources. Press `/` anywhere on the site to focus. CVE ids match as a single token. Search results route to the canonical `/entities/<key>/` URL.
 - **Verification filters.** The Entities and Topics overviews can filter by `[SINGLE-SOURCE]`, `[SINGLE-SOURCE-NATIONAL-CERT]`, or `[SINGLE-SOURCE-OTHER]` so a SOC reviewer can audit single-source items across all briefs at once.
 - **Operations dashboard** at `/ops/` — recent runs (sub-agent allocation, fetch failures, deep-dive picks) and stale active sources (no successful fetch for >7 days). The same SVG chart primitives drive entity pages and the operations dashboard.
-- **Trends dashboard** at [`/trends/`](https://ctipilot.ch/trends/) (v2.47) — weekly-bucketed sparklines across eight cohorts (ransomware, actively-exploited vulnerabilities, public-sector, OT/ICS, supply-chain, AI-abuse, Switzerland+Europe, nation-state). Pure post-hoc analytics from brief-footer metadata.
-- **Editorial-choices block** (v2.47) — every daily brief renders an "Editorial choices — N items considered and not included" collapsed `<details>` block at the bottom of the page. The brief routine's drop reasoning, normally only in § 7's prose, surfaces as a discoverable, distinct block under the brief body.
-- **Per-item delta block** (v2.47) — items whose CVE / topic key has more than one appearance in `state/covered_items.json` render an inline "Changes since first coverage" `<details>` listing prior `delta_summary` entries with dates and brief links.
-- **Actor-timeline strip** (v2.47) — entity pages of type `actor`, `campaign`, `incident`, `tool`, and `annual-report` carry a horizontal timeline strip showing first-coverage → last-coverage with a marker dot per appearance.
+- **Trends dashboard** at [`/trends/`](https://ctipilot.ch/trends/) — weekly-bucketed sparklines across eight cohorts (ransomware, actively-exploited vulnerabilities, public-sector, OT/ICS, supply-chain, AI-abuse, Switzerland+Europe, nation-state). Pure post-hoc analytics from brief-footer metadata.
+- **Editorial-choices block** — every daily brief renders an "Editorial choices — N items considered and not included" collapsed `<details>` block at the bottom of the page. The brief routine's drop reasoning, normally only in § 7's prose, surfaces as a discoverable, distinct block under the brief body.
+- **Per-item delta block** — items whose CVE / topic key has more than one appearance in `state/covered_items.json` render an inline "Changes since first coverage" `<details>` listing prior `delta_summary` entries with dates and brief links.
+- **Actor-timeline strip** — entity pages of type `actor`, `campaign`, `incident`, `tool`, and `annual-report` carry a horizontal timeline strip showing first-coverage → last-coverage with a marker dot per appearance.
 - **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
 - **Light / dark / system theme toggle** — top-bar button cycles `system → light → dark → system`; persisted per device.
 - **Per-brief metadata badge** — each brief header shows the prompt version that produced it, linking to the changelog entry.
@@ -64,9 +64,9 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── brief-template.md      # Canonical Markdown skeleton for the rendered brief / weekly
 │   └── check-brief-fixes.md   # How to fix common check_brief.py FAILs
 ├── config/
-│   └── org-profile.yaml       # v2.65 — organization profile: org/sector/region, product + supplier watchlists, vuln-triage scheme, deployment (public/private + site URL)
+│   └── org-profile.yaml       # organization profile: org/sector/region, product + supplier watchlists, vuln-triage scheme, deployment (public/private + site URL)
 ├── intel/
-│   └── README.md              # v2.66 — closed-source drop folder: intel/<YYYY-MM-DD>/ documents ingested by a conditional intake sub-agent, cited by reference (never linked), TLP-gated
+│   └── README.md              # closed-source drop folder: intel/<YYYY-MM-DD>/ documents ingested by a conditional intake sub-agent, cited by reference (never linked), TLP-gated
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
@@ -80,11 +80,11 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   └── weekly/
 │       └── YYYY-Www.md        # Weekly summaries (ISO week)
 ├── tools/
-│   ├── compose_prompts.py     # v2.65 — renders config/org-profile.yaml into the ORG-PROFILE managed blocks in prompts + agent defs
+│   ├── compose_prompts.py     # renders config/org-profile.yaml into the ORG-PROFILE managed blocks in prompts + agent defs
 │   ├── fetch_source.py        # Bridge fetcher for CISA / NCSC CSH (browser UA, host-allowlisted)
-│   ├── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe, v2.47 cap-breach + tldr-deadline-lead + aggregator-only-sourcing + single-source-flag + URL-liveness cache)
-│   ├── source_candidates.py   # v2.47 — surface "sources we should add" (cited-but-not-in-sources.json domains, top-N)
-│   └── source_health.py       # v2.47 — independent weekly source-health snapshot (HEAD-only every active source; writes state/source_health.json)
+│   ├── check_brief.py         # Phase 5.5 self-check gate (state ↔ brief consistency, blocked-URL list, live HEAD probe, cap-breach + tldr-deadline-lead + aggregator-only-sourcing + single-source-flag + URL-liveness cache)
+│   ├── source_candidates.py   # surface "sources we should add" (cited-but-not-in-sources.json domains, top-N)
+│   └── source_health.py       # independent weekly source-health snapshot (HEAD-only every active source; writes state/source_health.json)
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
 │   ├── build.py               # SSG entrypoint — emits real HTML pages for every URL
 │   ├── taxonomy.yaml          # Controlled vocabulary (themes, regions, CVE fields, sections)
@@ -97,26 +97,26 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ├── docs/                      # Operator-facing documentation (pure docs)
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
-│   ├── private-deployment.md  # v2.66 — host the whole stack org-internally (private repo + scheduled pull/build/serve)
+│   ├── private-deployment.md  # host the whole stack org-internally (private repo + scheduled pull/build/serve)
 │   └── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main
 │   ├── deploy-site.yml        # Build + deploy site/ to GitHub Pages
-│   ├── source-health.yml      # v2.47 — weekly cron firing tools/source_health.py
-│   └── compose-profile.yml    # v2.65 — composes config/org-profile.yaml into the prompts on push
+│   ├── source-health.yml      # weekly cron firing tools/source_health.py
+│   └── compose-profile.yml    # composes config/org-profile.yaml into the prompts on push
 ├── .claude/agents/
 │   ├── cti-research.md        # Phase 1 / Phase 2 parallel research worker (env-var self-id, prior_coverage dedup, URL-liveness ledger, watchlist sweeps)
 │   ├── cti-verification.md    # Phase 5.7 / Phase 4.7 cold-reader verifier (Opus default; gatekeeper; F1–F16 finding categories)
-│   └── cti-verification-alt.md # v2.47 — Sonnet rotation variant of cti-verification (byte-identical body below its header note; only model: differs)
+│   └── cti-verification-alt.md # Sonnet rotation variant of cti-verification (byte-identical body below its header note; only model: differs)
 ├── CNAME                      # Custom-domain marker for GitHub Pages → ctipilot.ch
 └── .gitignore
 ```
 
 For an end-to-end map of how every piece reads and writes data, see [`docs/architecture.md`](docs/architecture.md). For operator setup and the runbook, see [`docs/operating.md`](docs/operating.md).
 
-## Customizing for your organization (v2.65)
+## Customizing for your organization
 
-The deployment is organization-parameterizable via [`config/org-profile.yaml`](config/org-profile.yaml): describe your organisation / sector / region (the shipped default is the Swiss public-sector deployment), list **products** (e.g. Windows Server, Windows clients) and **suppliers** the research agents will specifically sweep every run, and define your own **vulnerability-triage categories** so every CVE item in the brief carries an immediate `Org triage` rating in your scheme. `python3 tools/compose_prompts.py --write` renders the profile into the prompts and agent definitions (the `compose-profile` workflow does it on push). Watchlist matches only *sharpen* relevance — general threat-landscape coverage always stays primary (hard anti-overshoot rules, `watchlist`-tagged items, ≤ ⅓ guideline). See [`docs/operating.md`](docs/operating.md#customizing-the-organization-profile-v265).
+The deployment is organization-parameterizable via [`config/org-profile.yaml`](config/org-profile.yaml): describe your organisation / sector / region (the shipped default is the Swiss public-sector deployment), list **products** (e.g. Windows Server, Windows clients) and **suppliers** the research agents will specifically sweep every run, and define your own **vulnerability-triage categories** so every CVE item in the brief carries an immediate `Org triage` rating in your scheme. `python3 tools/compose_prompts.py --write` renders the profile into the prompts and agent definitions (the `compose-profile` workflow does it on push). Watchlist matches only *sharpen* relevance — general threat-landscape coverage always stays primary (hard anti-overshoot rules, `watchlist`-tagged items, ≤ ⅓ guideline). See [`docs/operating.md`](docs/operating.md#customizing-the-organization-profile).
 
 ## Operating principles (non-negotiable)
 
@@ -153,8 +153,8 @@ The agent walks through:
 4. **Phase 3 — Deep-dive selection.** At most 1–2 items, with the category-rotation rule applied.
 5. **Phase 4 — Compose.** Write `briefs/YYYY-MM-DD.md` with sections 0–8 (TL;DR; Immediate Actions, often absent; Active Threats / Trending Actors / Notable Incidents & Disclosures; Trending Vulnerabilities; Research & Investigative Reporting; Updates to Prior Coverage; Deep Dive; Action Items; Verification Notes). Each H3 item carries a v2 metadata footer (`— *Source: … · Tags: … · Region: … [· CVE: …] [· CVSS: …] [· Vector: …] [· Auth: …] [· Status: …]*`) parseable by the build.
 6. **Phase 5 — State update.** Append to `covered_items.json` and `cves_seen.json`; bump `last_successful_fetch` on used sources; propose at most one new source as `candidate`; append to `deep_dive_history.json` if a deep dive was selected; append a record to `run_log.json`.
-7. **Phase 5.5 — Self-check gate.** [`tools/check_brief.py`](tools/check_brief.py) verifies state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. v2.47 adds: `cap-breach` WARN (final-iteration `NEEDS_FIXES` surfaces to Ops dashboard); `tldr-deadline-lead` WARN (PD-13 enforcement at the bullet level); `aggregator-only-sourcing` WARN (≥2 Sources all from news aggregators); `single-source-flag` WARN (single Source missing the `[SINGLE-SOURCE]` marker); `verification_residual_count` derived from the final iteration's `truth + editorial` (was silently 0 before); `run_id` deterministic + idempotent (no duplicate runs[] entries); URL-liveness cache (skip live HEAD/GET on URLs sub-agents already verified live in `work/<run-id>/url-liveness.tsv`). If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
-8. **Phase 5.7 — Verifier loop (gatekeeper).** [`cti-verification`](.claude/agents/cti-verification.md) (Opus) reads the brief cold; CLEAN gates publish. NEEDS_FIXES → main agent applies remediations + re-runs Phase 5.5 + re-spawns. **5-iteration cap with model rotation** (v2.47): odd iterations spawn `cti-verification` (Opus), even iterations spawn [`cti-verification-alt`](.claude/agents/cti-verification-alt.md) (Sonnet — byte-identical body) so model-specific blind spots are caught across iterations. F1–F12 finding categories include the new F12 single-source-flag.
+7. **Phase 5.5 — Self-check gate.** [`tools/check_brief.py`](tools/check_brief.py) verifies state JSON parses; every CVE in the brief is in `cves_seen.json`; every § 2–4 item has a matching `covered_items.json` appearance for today; every § 5 UPDATE carries an inline citation; every H3 in §§ 1–7 carries a v2 metadata footer; every footer value is in `site/taxonomy.yaml`. Additional checks: `cap-breach` WARN (final-iteration `NEEDS_FIXES` surfaces to Ops dashboard); `tldr-deadline-lead` WARN (PD-13 enforcement at the bullet level); `aggregator-only-sourcing` WARN (≥2 Sources all from news aggregators); `single-source-flag` WARN (single Source missing the `[SINGLE-SOURCE]` marker); `verification_residual_count` derived from the final iteration's `truth + editorial` (was silently 0 before); `run_id` deterministic + idempotent (no duplicate runs[] entries); URL-liveness cache (skip live HEAD/GET on URLs sub-agents already verified live in `work/<run-id>/url-liveness.tsv`). If any check fails, abort the commit; the brief stays on disk and the next run rebuilds state from it.
+8. **Phase 5.7 — Verifier loop (gatekeeper).** [`cti-verification`](.claude/agents/cti-verification.md) (Opus) reads the brief cold; CLEAN gates publish. NEEDS_FIXES → main agent applies remediations + re-runs Phase 5.5 + re-spawns. **5-iteration cap with model rotation**: odd iterations spawn `cti-verification` (Opus), even iterations spawn [`cti-verification-alt`](.claude/agents/cti-verification-alt.md) (Sonnet — byte-identical body) so model-specific blind spots are caught across iterations. The F1–F16 finding categories include the F12 single-source-flag.
 9. **Phase 6 — Commit & push the feature branch** — `auto-merge-claude.yml` promotes to `main` (with the same auto-resolution rules as the routine for `state/*.json` and `sources/sources.json` conflicts), then `deploy-site.yml` rebuilds gh-pages. **Phase 7** polls `git fetch origin main` and `https://ctipilot.ch/` to confirm both legs of the chain landed. Direct push to `main` is forbidden by repo policy.
 
 Full walkthrough lives in the prompts themselves ([`prompts/daily-cti-brief.md`](prompts/daily-cti-brief.md), [`prompts/weekly-summary.md`](prompts/weekly-summary.md)). Architecture map: [`docs/architecture.md`](docs/architecture.md). Operator runbook: [`docs/operating.md`](docs/operating.md).

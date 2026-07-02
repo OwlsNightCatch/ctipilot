@@ -24,7 +24,8 @@ Design rules:
       fails to import, the script falls back to its own minimal parsers and
       logs a WARN — the run still completes.
     - Output is line-by-line `PASS / FAIL / WARN  <check>: <detail>` so the
-      agent can copy the failure verbatim into § 8 if it commits anyway.
+      agent can copy the failure verbatim into Verification Notes (§ 7 daily /
+      § 11 weekly) if it commits anyway.
     - The script never modifies any file. It is read-only. The agent fixes
       drift; this script reports it.
 """
@@ -151,7 +152,7 @@ except Exception as exc:  # pragma: no cover — fallback path
             elif k == "status":
                 out["status"] = [t.strip() for t in v.split(",") if t.strip()]
             elif k == "evidence":
-                # v2.58 — match the build-side Evidence parser.
+                # match the build-side Evidence parser.
                 quote_re = re.compile(r'["“]([^"”]+?)["”]\s*(?:\(\s*(?P<attr>[^)]+?)\s*\))?')
                 recs: list[dict[str, str]] = []
                 for qm in quote_re.finditer(v):
@@ -161,7 +162,7 @@ except Exception as exc:  # pragma: no cover — fallback path
                         recs.append({"quote": qtext, "attribution": qattr})
                 out["evidence"] = recs
             elif k in ("closed-source", "closed_source"):
-                # v2.66 — mirror of site/build.py parse_closed_source_field.
+                # mirror of site/build.py parse_closed_source_field.
                 cs_recs: list[dict[str, str]] = []
                 for cm in re.finditer(r'["“]([^"”]+?)["”]\s*\(([^)]*)\)', v):
                     rec = {"title": cm.group(1).strip(), "provider": "", "date": "",
@@ -668,7 +669,7 @@ def check_multi_cve_footers(sections: list[dict[str, Any]], *, kind: str = "dail
         ok("multi-cve-cvss", "multi-CVE entries either single CVSS or carry per-CVE breakdown")
 
 
-# Sources that are NEVER acceptable in a footer's `Source:` list (per v2.28
+# Sources that are NEVER acceptable in a footer's `Source:` list (per the editorial rule
 # editorial rule). NVD and MITRE per-CVE pages are derived data sheets — the
 # vendor PSIRT advisory or research-lab post is the primary disclosing source
 # and must be cited instead. NVD/MITRE still appear automatically as
@@ -783,7 +784,7 @@ def check_blocked_source_patterns(sections: list[dict[str, Any]],
 def check_primary_source_quality(sections: list[dict[str, Any]],
                                    *, kind: str = "daily") -> None:
     """Soft-warn when an item's first source is a national CERT/NCSC. The
-    editorial rule (v2.28) is: prefer vendor advisories / blogs / research-lab
+    editorial rule is: prefer vendor advisories / blogs / research-lab
     posts as primary. CERTs belong as `Additional source:` unless the item
     has no other reachable primary. (NVD/MITRE/cve.org per-CVE pages are
     handled by `blocked-source` above as a hard FAIL.)"""
@@ -823,7 +824,7 @@ def check_primary_source_quality(sections: list[dict[str, Any]],
 
 
 def _load_url_liveness_ledger() -> dict[str, str]:
-    """v2.47 URL-liveness cache. Sub-agents append to `work/<run-id>/url-liveness.tsv`
+    """URL-liveness cache. Sub-agents append to `work/<run-id>/url-liveness.tsv`
     a tab-separated `<url>\\t<status>\\t<fetched_at>` line for every Source URL
     they successfully fetched in-run. We sweep every `work/*/url-liveness.tsv`
     (most recent wins on duplicate URLs) and return `{url: status}` for any
@@ -862,7 +863,7 @@ def _load_url_liveness_ledger() -> dict[str, str]:
     return {u: st for u, (st, _) in cached.items() if st.startswith("2")}
 
 
-# v2.47 — News-aggregator host allowlist for the "aggregator-only sourcing"
+# News-aggregator host allowlist for the "aggregator-only sourcing"
 # warning. These are reputable news outlets per `sources.json`, but they
 # aggregate primary research and should NOT be the only sources backing an
 # item. An item whose Source field is ≥2 URLs all from this list meets the
@@ -913,7 +914,7 @@ def _host_is_aggregator(host: str) -> bool:
 
 def check_aggregator_only_sourcing(sections: list[dict[str, Any]],
                                      *, kind: str = "daily") -> None:
-    """v2.47 (§ 2.4): an item whose Source field has ≥2 URLs all matching the
+    """(§ 2.4): an item whose Source field has ≥2 URLs all matching the
     news-aggregator allowlist meets the literal two-source bar but lacks any
     primary disclosure (vendor PSIRT advisory, research-lab post, regulator
     filing, victim statement). Flag it so § 7 carries the reduced-confidence
@@ -955,7 +956,7 @@ def check_aggregator_only_sourcing(sections: list[dict[str, Any]],
 
 def check_single_source_flag(sections: list[dict[str, Any]],
                                *, kind: str = "daily") -> None:
-    """v2.47 (§ 2.5 mechanical complement to the verifier's F12): an item
+    """Mechanical complement to the verifier's F12: an item
     whose Source field has exactly 1 URL, where the host is NOT one of the
     national-CERT carve-out hosts, must carry the `[SINGLE-SOURCE]` marker
     (or the related `SINGLE-SOURCE-OTHER` / `SINGLE-SOURCE-NATIONAL-CERT`
@@ -995,7 +996,7 @@ def check_single_source_flag(sections: list[dict[str, Any]],
             if len(sources) != 1:
                 continue
             if footer.get("closed_source"):
-                # v2.66 — a closed-source citation is HIGH-credibility
+                # a closed-source citation is HIGH-credibility
                 # corroboration; one URL + one closed-source ref is not a
                 # single-source item.
                 continue
@@ -1034,7 +1035,7 @@ _TLDR_EXPLOITATION_RE = re.compile(
 
 
 def check_tldr_deadline_lead(sections: list[dict[str, Any]]) -> None:
-    """v2.47 (§ 2.3) — PD-13 enforcement at the bullet level. A TL;DR bullet
+    """(§ 2.3) — PD-13 enforcement at the bullet level. A TL;DR bullet
     that leads with US-only KEV-deadline framing without naming the actual
     urgent driver (active exploitation, victim class, exposure magnitude,
     attack class) is the editorial regression PD-13 was added to prevent.
@@ -1077,11 +1078,11 @@ def check_tldr_deadline_lead(sections: list[dict[str, Any]]) -> None:
 def check_source_urls_resolve(sections: list[dict[str, Any]],
                                 *, skip: bool, timeout: float = 10.0) -> None:
     """Live HEAD/GET every Source URL in every footer; FAIL on 404. Catches
-    fabricated-URL drift the v2.27 verifier was designed to find — duplicating
+    fabricated-URL drift the verifier was designed to find — duplicating
     it here so the operator gets a green/red answer locally without spawning
     a sub-agent. Use `--no-link-check` for offline runs.
 
-    v2.47 URL-liveness cache: any URL the sub-agents successfully fetched
+    URL-liveness cache: any URL the sub-agents successfully fetched
     in-run (recorded in `work/<run-id>/url-liveness.tsv` as a 2xx entry) is
     trusted and skipped — the sub-agent has already proved it live."""
     if skip:
@@ -1154,7 +1155,7 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
         ok("source-urls", "no http(s) source URLs to check")
         return
 
-    # v2.47 URL-liveness cache — sub-agents that successfully fetched a URL
+    # URL-liveness cache — sub-agents that successfully fetched a URL
     # in-run record it as 2xx in `work/<run-id>/url-liveness.tsv`. Trust those
     # entries and skip the live HEAD/GET; the agent has already proved them
     # live. This kills SSL-cert / anti-bot 403 noise on URLs the agent has
@@ -1311,7 +1312,7 @@ def check_source_urls_resolve(sections: list[dict[str, Any]],
         ok("source-urls", f"all {checked} source URL(s) returned HTTP 200 (or UA-blocked allowlisted)")
 
 
-# v2.48 — full bridge-allowlist source-id matchers. Source ids in
+# full bridge-allowlist source-id matchers. Source ids in
 # sources.json are stable strings; here we list the substrings that
 # identify a bridge-allowlisted source (case-insensitive substring match
 # against the lowered source id).
@@ -1329,7 +1330,7 @@ BRIDGE_REQUIRED_SOURCE_IDS = frozenset({
     "talos", "prodaft", "inside-it-ch", "acn", "csirt-acn-it",
 })
 
-# v2.48 — required keys in the rich `fetch_failures` entry shape.
+# required keys in the rich `fetch_failures` entry shape.
 RICH_FAILURE_REQUIRED_KEYS = (
     "id", "url_tried", "fetch_method", "status_code",
     "error_class", "attempted_methods", "mitigation_applied",
@@ -1346,7 +1347,7 @@ def _failure_id_is_bridge_allowlisted(sid: str) -> bool:
 def check_fetch_source_for_known_403(brief_text: str,
                                       run_log: dict[str, Any] | None,
                                       brief_date: str) -> None:
-    """CISA + NCSC.ch + every bridge-allowlisted host (v2.48 expanded) must
+    """CISA + NCSC.ch + every bridge-allowlisted host must
     be fetched via `tools/fetch_source.py`. Phase 5.5 surfaces three signals:
 
     1. **Bridge-required FAIL** (`fetch-failure-bridge-required`) — a
@@ -1354,11 +1355,11 @@ def check_fetch_source_for_known_403(brief_text: str,
        AND whose `attempted_methods` does NOT contain a `bridge:*` method.
        The agent went direct on a host where the bridge was the right
        first move.
-    2. **Legacy 403 FAIL** — preserved for back-compat with v2.47-shape
+    2. **Legacy 403 FAIL** — preserved for back-compat with legacy-shape
        entries (`{id, code: "403"}` without `attempted_methods`): a 403/429
        on a known-403 source id is treated as unhandled.
     3. **Rich-shape WARN** (`fetch-failure-detail`) — entry missing one of
-       the v2.48 required keys → flag for upgrade. Legacy entries pass via
+       the required rich-shape keys → flag for upgrade. Legacy entries pass via
        a back-compat path; new entries that drop a required key fail this.
     """
     KNOWN_403_HOSTS = ("www.cisa.gov", "cisa.gov", "ncsc.admin.ch", "ncsc.ch")
@@ -1387,9 +1388,9 @@ def check_fetch_source_for_known_403(brief_text: str,
     failures = rec.get("fetch_failures") or []
 
     # ── 1. Legacy 403 unhandled-on-known-host check ──────────────────────
-    # Back-compat: legacy v2.43–v2.47 entries used `{id, code|status, note:
+    # Back-compat: legacy entries used `{id, code|status, note:
     # "handled via bridge fetch_source.py; ..."}`. The `note` substring is
-    # the legacy mitigation marker. v2.48 entries use the rich shape with
+    # the legacy mitigation marker. current entries use the rich shape with
     # `attempted_methods` instead — we accept either as proof the bridge
     # was used.
     LEGACY_HANDLED_RE = re.compile(
@@ -1424,7 +1425,7 @@ def check_fetch_source_for_known_403(brief_text: str,
     else:
         ok("fetch-source-403", "no CISA/NCSC.ch URLs cited; nothing to verify")
 
-    # ── 2. v2.48 — bridge-required FAIL across the FULL allowlist ────────
+    # ── 2. bridge-required FAIL across the FULL allowlist ────────
     bridge_skipped: list[str] = []
     for f in failures:
         if not isinstance(f, dict):
@@ -1443,7 +1444,7 @@ def check_fetch_source_for_known_403(brief_text: str,
     if bridge_skipped:
         fail(
             "fetch-failure-bridge-required",
-            f"v2.48: bridge subcommand not attempted for bridge-allowlisted source(s): {bridge_skipped}. "
+            f"bridge subcommand not attempted for bridge-allowlisted source(s): {bridge_skipped}. "
             "These hosts must be fetched via `python3 tools/fetch_source.py …` first; see "
             "prompts/daily-cti-brief.md § Reinforced rules ¶2 for the per-source subcommand table.",
         )
@@ -1451,7 +1452,7 @@ def check_fetch_source_for_known_403(brief_text: str,
         ok("fetch-failure-bridge-required",
            f"every fetch_failures entry on the bridge allowlist used a bridge:* method")
 
-    # ── 3. v2.48 — rich-shape detail WARN ────────────────────────────────
+    # ── 3. rich-shape detail WARN ────────────────────────────────
     thin_entries: list[str] = []
     for f in failures:
         if not isinstance(f, dict):
@@ -1468,7 +1469,7 @@ def check_fetch_source_for_known_403(brief_text: str,
     if thin_entries:
         warn(
             "fetch-failure-detail",
-            f"v2.48: {len(thin_entries)} fetch_failures entr{'y' if len(thin_entries) == 1 else 'ies'} "
+            f"{len(thin_entries)} fetch_failures entr{'y' if len(thin_entries) == 1 else 'ies'} "
             f"missing rich-shape detail (sample: {thin_entries[:3]}). "
             "The Ops dashboard renders these as yellow 'needs-detail' rows. "
             "Sub-agents must include url_tried, fetch_method, status_code, error_class, attempted_methods, "
@@ -1476,7 +1477,7 @@ def check_fetch_source_for_known_403(brief_text: str,
         )
     elif failures:
         ok("fetch-failure-detail",
-           f"all {len(failures)} fetch_failures entr{'y' if len(failures) == 1 else 'ies'} carry the v2.48 rich shape")
+           f"all {len(failures)} fetch_failures entr{'y' if len(failures) == 1 else 'ies'} carry the rich shape")
 
 
 def check_covered_items_appearances(brief_date: str,
@@ -1565,7 +1566,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
 
     # Required top-level keys. Daily and weekly share most of the schema but
     # diverge on a couple of fields (`deep_dive` is daily-only; `iso_week` /
-    # `kind` are weekly-only). v2.47: `run_id` added — deterministic id used
+    # `kind` are weekly-only). `run_id` is a deterministic id used
     # for idempotent retry (Phase 5 refuses to append a duplicate).
     if kind == "weekly":
         required = {
@@ -1578,19 +1579,19 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
             "deep_dive", "verification_iterations", "verification_residual_count",
         }
     missing = required - set(rec.keys())
-    # `run_id` is the only newly-required field as of v2.47 — older records
-    # from v2.46 and earlier still parse, but the WARN flags them so the
+    # `run_id` is the only newly-required field — older records
+    # from older runs still parse, but the WARN flags them so the
     # operator notices the schema gap. The fields list above keeps `run_id`
     # in the required set so any *new* record without it FAILs.
     if missing == {"run_id"}:
         warn("run-log-fields",
-             "run_id missing on this run record (v2.47+ requirement; older records grandfathered)")
+             "run_id missing on this run record (older records grandfathered)")
     elif missing:
         fail("run-log-fields", f"record missing keys: {sorted(missing)}")
     else:
         ok("run-log-fields", "run_log record has every required top-level key")
 
-    # v2.47 idempotent retry: no two runs[] entries may share the same run_id.
+    # Idempotent retry: no two runs[] entries may share the same run_id.
     # The deterministic id (computed in Phase 0 step 0 as
     # `<date|iso-week>-<sha8 of brief_path|started_minute>`) makes a true
     # retry within the same minute compute the same id; Phase 5 must update
@@ -1625,7 +1626,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                     incomplete.append(f"{k}: missing '{f}'")
             if isinstance(a.get("sources_attempted"), list) and not a["sources_attempted"]:
                 empty_alloc.append(f"{k}: sources_attempted is empty (Ops dashboard renders 0/0)")
-    # v2.66 — the conditional closed-source intake agent (S5 daily / W3
+    # the conditional closed-source intake agent (S5 daily / W3
     # weekly) only runs when intel/<date>/ had files; validate its record
     # shape when present, never require it.
     intake_key = "W3" if kind == "weekly" else "S5"
@@ -1660,11 +1661,11 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
     if not isinstance(vi, int) or vi < 1:
         fail("run-log-verification", f"verification_iterations should be ≥ 1 (got {vi!r})")
     elif vi > 5:
-        warn("run-log-verification", f"verification_iterations = {vi} exceeds the v2.46 cap of 5")
+        warn("run-log-verification", f"verification_iterations = {vi} exceeds the cap of 5")
     else:
         ok("run-log-verification", f"verification_iterations = {vi}")
 
-    # v2.47 corrected residual semantics: `verification_residual_count` is
+    # Residual semantics: `verification_residual_count` is
     # `(final_iter.truth + final_iter.editorial)` when the FINAL iteration's
     # verdict is `NEEDS_FIXES` (cap reached without CLEAN); `0` when the
     # final verdict is `CLEAN`. F11 advisory excluded — F11 alone never
@@ -1688,14 +1689,14 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
         fail("run-log-verification-residual",
              f"verification_residual_count should be ≥ 0 (got {vr!r})")
     elif expected_vr is not None and vr != expected_vr:
-        # v2.47: cross-check against the per-iteration block. The legacy
+        # Cross-check against the per-iteration block. The legacy
         # "every NEEDS_FIXES final iteration silently records 0" pattern
         # this catches.
         fail(
             "run-log-verification-residual",
             f"verification_residual_count = {vr} but final-iteration "
             f"verdict + truth/editorial implies {expected_vr} "
-            f"(v2.47 derived = (truth + editorial) of the final iteration "
+            f"(derived = (truth + editorial) of the final iteration "
             f"if NEEDS_FIXES, else 0; F11 advisory excluded)",
         )
     elif vr > 0:
@@ -1704,7 +1705,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
     else:
         ok("run-log-verification-residual", f"verification_residual_count = 0 (clean publish)")
 
-    # v2.47 cap-breach yellow signal — distinct from the residual-count
+    # Cap-breach yellow signal — distinct from the residual-count
     # check above. A NEEDS_FIXES final iteration is a regression even when
     # the residual count is correctly recorded. Surfaces to the Ops
     # dashboard so the operator notices the pattern.
@@ -1721,9 +1722,9 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                 f"safety valve, not on a CLEAN verdict. Surface to the Ops dashboard's 7-day "
                 f"rolling cap-breach count.",
             )
-            # v2.48 — cap-breach iteration MUST carry per-finding detail
+            # cap-breach iteration MUST carry per-finding detail
             # so the operator can debug WHAT was unresolved. Legacy
-            # iterations (v2.43-v2.47) didn't record this; warn so the
+            # iterations didn't record this; warn so the
             # next run captures it. Today's run with no findings[] on
             # a NEEDS_FIXES iteration is the highest-priority drift to
             # fix because the dashboard otherwise shows truth=4
@@ -1732,7 +1733,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
             if not isinstance(findings, list) or not findings:
                 warn(
                     "verification-finding-detail",
-                    f"v2.48: cap-breach iteration {final_iter.get('n', vi)} has empty / missing "
+                    f"cap-breach iteration {final_iter.get('n', vi)} has empty / missing "
                     "findings[] — the Ops dashboard cannot render WHAT the verifier flagged. "
                     "The verifier's `### Findings summary (machine-readable)` YAML block must "
                     "be parsed into iteration.findings[] (one record per F-finding). See "
@@ -1744,7 +1745,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                     f"cap-breach iteration {final_iter.get('n', vi)} carries {len(findings)} per-finding record(s)",
                 )
 
-    # v2.58 — commit-gate when verifier is still in flight. The premature-commit
+    # commit-gate when verifier is still in flight. The premature-commit
     # failure mode from the 2026-05-15 run was: the routine spawned the
     # verifier, a stop-hook fired before the verifier returned, the main
     # agent set `verification.final_verdict: "pending"` (or PENDING), then
@@ -1767,14 +1768,14 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
         ok("verification-final-verdict-set", f"verification.final_verdict = {fv!r}")
     elif vblock_for_vr and isinstance(vblock_for_vr.get("iterations"), list) and vblock_for_vr["iterations"]:
         # Block exists with iterations but no final_verdict field — accept on
-        # the basis of the final iteration's verdict, since older v2.43–v2.52
+        # the basis of the final iteration's verdict, since older
         # records may not carry the top-level field.
         ok("verification-final-verdict-set",
            "verification.final_verdict not explicitly set; final iteration's verdict is authoritative")
 
-    # Per-agent model surface (v2.43+). Main agent records its own model;
+    # Per-agent model surface. Main agent records its own model;
     # every sub-agent that returned should record the model it self-identified
-    # with. WARN (not FAIL) on missing fields so older runs from v2.42 still
+    # with. WARN (not FAIL) on missing fields so older runs still
     # pass validation.
     main_model = rec.get("model")
     main_model_id = rec.get("model_id")
@@ -1797,11 +1798,11 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
     if missing_subagent_models:
         warn("run-log-subagent-models",
              f"sub-agents missing self-reported model: {missing_subagent_models} "
-             "(v2.43+ — set to 'unknown' if the **Model:** line was absent)")
+             "(set to 'unknown' if the **Model:** line was absent)")
     else:
         ok("run-log-subagent-models", "every returning sub-agent has a recorded model")
 
-    # Per-iteration verification block (v2.43+).
+    # Per-iteration verification block.
     vblock = rec.get("verification")
     if isinstance(vblock, dict) and isinstance(vblock.get("iterations"), list) and vblock["iterations"]:
         per_iter = vblock["iterations"]
@@ -1820,7 +1821,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                  f"verification_iterations ({vi}) != len(verification.iterations) ({len(per_iter)})")
     else:
         warn("run-log-verification-iterations",
-             "verification.iterations[] not populated (v2.43+ — record per-iteration model + verdict)")
+             "verification.iterations[] not populated (record per-iteration model + verdict)")
 
     # Wall-clock timing — drives the duration sparkline on the dashboard.
     started = rec.get("started")
@@ -1840,7 +1841,7 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
 def check_essential_coverage(brief_date: str, run_log: dict[str, Any] | None,
                               sources_data: dict[str, Any] | None,
                               *, kind: str = "daily") -> None:
-    """v2.67 — every active `tier: essential` source (national CERTs / NCSC /
+    """every active `tier: essential` source (national CERTs / NCSC /
     CISA / ENISA-class authorities) must be *attempted* on every daily run.
     Reads the union of today's `sub_agents[*].sources_attempted`. WARN, not
     FAIL — the brief must publish regardless; the gap is disclosed and the
@@ -2050,7 +2051,7 @@ def check_sources_schema(sources_data: dict[str, Any] | None) -> None:
                     f"{sorted(valid_reliability)}"
                 )
 
-        # --- tier (v2.67 — required on in-rotation sources; drives the daily
+        # --- tier (required on in-rotation sources; drives the daily
         #     essential-coverage guarantee + staleness rotation) ---
         valid_tiers = set((sources_data.get("tiers") or {}).keys()) or {"essential", "standard"}
         tier = s.get("tier")
@@ -2162,16 +2163,16 @@ def check_test_build(skip: bool) -> None:
 def check_ai_notice(brief_text: str) -> None:
     """Hard invariant 1: every brief carries the AI-generated content notice.
 
-    The v2.43 prompt also requires the notice to enumerate sub-agent models —
+    The prompt requires the notice to enumerate sub-agent models —
     we WARN (not FAIL) when the sub-agent enumeration is missing so older
-    briefs from v2.42 and earlier still pass."""
+    older briefs still pass."""
     if "AI-generated content" in brief_text and "no human review" in brief_text:
         ok("ai-notice", "AI-generated content notice present")
     else:
         fail("ai-notice", "missing 'AI-generated content — no human review' notice")
         return
 
-    # Sub-agent model surface (v2.43+). The blockquote should mention
+    # Sub-agent model surface. The blockquote should mention
     # "sub-agents" and the metadata line should carry "**Sub-agents:**".
     has_blockquote_subagents = bool(re.search(r"sub-agents?\s*\(", brief_text, re.IGNORECASE))
     has_metadata_subagents = "**Sub-agents:**" in brief_text
@@ -2184,7 +2185,61 @@ def check_ai_notice(brief_text: str) -> None:
         if not has_metadata_subagents:
             missing.append("**Sub-agents:** metadata field")
         warn("ai-notice-subagents",
-             f"v2.43+ surface missing: {', '.join(missing)} (older briefs ok)")
+             f"sub-agent model enumeration missing: {', '.join(missing)} (older briefs ok)")
+
+
+PROMPT_BADGE_RE = re.compile(r"\*\*Prompt:\*\*\s*v(\d+\.\d+)")
+CHANGELOG_HEAD_RE = re.compile(r"^##\s+(\d+\.\d+)\s+—", re.MULTILINE)
+
+
+def check_prompt_version(brief_text: str, brief_path: Path, brief_date: str) -> None:
+    """The brief footer's `**Prompt:** vN.M` badge must match the most recent
+    heading in prompts/CHANGELOG.md.
+
+    This is the safety net for the versioning rule: a prompt edit must ship
+    the banner bump and the CHANGELOG entry in the same commit — a mismatch
+    here means one of the two was skipped. Severity depends on when the check
+    runs: FAIL while the brief is still uncommitted (the normal pre-commit
+    gate — this is the moment the mismatch must be fixed); WARN on a brief
+    that is already committed clean, whose badge legitimately trails a
+    changelog that moved on after publication."""
+    m = PROMPT_BADGE_RE.search(brief_text)
+    if not m:
+        warn("prompt-version", "no `**Prompt:** vN.M` badge found on the Generated-by line")
+        return
+    badge = m.group(1)
+    changelog = ROOT / "prompts" / "CHANGELOG.md"
+    if not changelog.exists():
+        warn("prompt-version", "prompts/CHANGELOG.md not found — cannot cross-check the badge")
+        return
+    m2 = CHANGELOG_HEAD_RE.search(changelog.read_text(encoding="utf-8"))
+    if not m2:
+        warn("prompt-version", "no `## N.M —` heading found in prompts/CHANGELOG.md")
+        return
+    latest = m2.group(1)
+    if badge == latest:
+        ok("prompt-version", f"brief badge v{badge} matches the CHANGELOG's most recent entry")
+        return
+
+    # Mismatch — decide severity from whether this is the pre-commit gate.
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", str(brief_path)],
+            capture_output=True, text=True, cwd=ROOT, timeout=15)
+        pre_commit = bool(proc.stdout.strip()) if proc.returncode == 0 else None
+    except Exception:
+        pre_commit = None
+    if pre_commit is None:  # git unavailable — fall back to a date heuristic
+        pre_commit = brief_date == datetime.now(timezone.utc).date().isoformat()
+
+    if pre_commit:
+        fail("prompt-version",
+             f"brief badge v{badge} != CHANGELOG latest v{latest} — the prompt banner bump and "
+             f"the CHANGELOG entry must ship in the same commit as the prompt edit (versioning rule)")
+    else:
+        warn("prompt-version",
+             f"brief badge v{badge} trails CHANGELOG latest v{latest} "
+             f"(brief already committed; the changelog moved on after publication — informational)")
 
 
 def check_no_iocs(brief_text: str) -> None:
@@ -2268,9 +2323,9 @@ def check_no_iocs(brief_text: str) -> None:
         ok("ioc-scan", "no obvious IOC patterns detected (version-string false positives skipped)")
 
 
-# --- v2.57 Tier 2 pre-verifier mechanical checks --------------------------
+# --- Pre-verifier mechanical checks --------------------------
 #
-# These four checks land in v2.57 to catch defect classes that previously
+# These checks catch defect classes that previously
 # burned verifier-iteration budget on mechanical issues. Each addresses a
 # specific failure mode from the 2026-05-15 cap-breach run; see
 # prompts/CHANGELOG.md entry v2.57 for the operator-facing rationale.
@@ -2359,7 +2414,7 @@ _QUANTIFIER_SKIP_SECTIONS = {"tldr", "verification-notes"}
 def check_quantifier_evidence(sections: list[dict[str, Any]]) -> None:
     """Surface quantifier claims for verifier corroboration. WARN severity.
 
-    Pure detection in v2.57 — false positives expected. The output gives the
+    Pure detection — false positives expected. The output gives the
     verifier (and the next iteration's spawn message) a focused list of claims
     to cross-check against cited sources. Tier 1 evidence-binding will
     upgrade this to FAIL when each claim must carry a verbatim source quote.
@@ -2389,7 +2444,7 @@ def check_quantifier_evidence(sections: list[dict[str, Any]]) -> None:
 
 
 # Regional/sector phrases in TL;DR prose that should be supported by the
-# corresponding body footer's Region: / Sector: taxonomy values. v2.52 ships
+# corresponding body footer's Region: / Sector: taxonomy values. The check ships
 # a narrow Switzerland/Europe set — the 2026-05-15 failure mode. Other
 # regions are reserved for future iteration once historical-brief
 # calibration confirms the noise floor.
@@ -2483,9 +2538,9 @@ _DISAMBIGUATION_PHRASES = (
 
 
 def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
-    """Validate the optional v2.58 `Evidence:` footer field on every item.
+    """Validate the optional `Evidence:` footer field on every item.
 
-    Source-quote binding (Tier 1, v2.58) lets each H3 carry an inline
+    Source-quote binding lets each H3 carry an inline
     `Evidence:` field in its footer — verbatim quotes from cited sources,
     each followed by `(Publisher)` to bind it back to one of the listed
     Sources. This check is shape-only and gentle by design:
@@ -2531,7 +2586,7 @@ def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
                 for s in (footer.get("sources") or [])
                 if s.get("label")
             }
-            # v2.66 — closed-source providers are valid Evidence attributions.
+            # closed-source providers are valid Evidence attributions.
             publisher_labels |= {
                 (cs.get("provider") or "").strip().lower()
                 for cs in (footer.get("closed_source") or [])
@@ -2570,11 +2625,11 @@ def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
                f"all {items_with_evidence} item(s) with `Evidence:` carry parseable, bound quotes")
         else:
             ok("evidence-shape",
-               "no items carry `Evidence:` field yet (v2.58 rollout — optional)")
+               "no items carry `Evidence:` field yet (optional elsewhere)")
 
 
 def check_profile_sync() -> None:
-    """v2.65 — WARN when the ORG-PROFILE managed blocks in the prompts have
+    """WARN when the ORG-PROFILE managed blocks in the prompts have
     drifted from config/org-profile.yaml (the run then executed against a
     stale composition). WARN-only by design: drift is fixable for the *next*
     run, not retroactively, and the brief must never be blocked on it. The
@@ -2633,7 +2688,7 @@ def _footer_status_exploited(footer: dict[str, Any]) -> bool:
 
 
 def check_evidence_presence(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
-    """v2.65 — Evidence-escalation presence check (WARN, not FAIL).
+    """Evidence-escalation presence check (WARN, not FAIL).
 
     The prompts require the `Evidence:` footer field on: the daily § 0
     Immediate Action callout and every daily § 1 / § 2 item whose Status
@@ -2666,7 +2721,7 @@ def check_evidence_presence(sections: list[dict[str, Any]], *, kind: str = "dail
         names = "; ".join(f"'{h}' ({k})" for k, h in missing[:5])
         more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""
         warn("evidence-presence",
-             f"{len(missing)} item(s) require an `Evidence:` field (v2.65 escalation: "
+             f"{len(missing)} item(s) require an `Evidence:` field (escalation rule: "
              f"exploited-status / highest-trust items) but carry none: {names}{more} — "
              "populate from the findings YAML `evidence` records before the verifier spawn")
     else:
@@ -2680,7 +2735,7 @@ _TLP_KNOWN = {"CLEAR", "GREEN", "AMBER", "AMBER+STRICT", "RED"}
 
 
 def check_closed_source(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
-    """v2.66 — closed-source citation hygiene + TLP-vs-deployment gate.
+    """closed-source citation hygiene + TLP-vs-deployment gate.
 
     Closed-source citations (`Closed-source: "Title" (Provider, date, TLP:X,
     ref: ID)`) reference documents dropped under intel/<YYYY-MM-DD>/ by the
@@ -2761,7 +2816,7 @@ _ORG_TRIAGE_RE = re.compile(r"^\*\*Org triage \([^)]*\):\*\*\s*([A-Za-z0-9-]+)",
 
 
 def check_org_triage(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
-    """v2.65 — org-triage line presence + category-id validity (WARN, not FAIL).
+    """org-triage line presence + category-id validity (WARN, not FAIL).
 
     When config/org-profile.yaml defines vulnerability-triage categories,
     every CVE-typed item in the daily § 2 (weekly § 3) must end its body with
@@ -2947,6 +3002,9 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== AI-content notice ==")
     check_ai_notice(brief_text)
 
+    print(f"\n== prompt-version badge vs CHANGELOG ==")
+    check_prompt_version(brief_text, brief_path, brief_date)
+
     print(f"\n== IOC scan ==")
     check_no_iocs(brief_text)
 
@@ -2971,44 +3029,44 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== blocked source patterns (NVD per-CVE / generic landings / indexes) ==")
     check_blocked_source_patterns(sections, kind=kind)
 
-    print(f"\n== internal anchor links (v2.57) ==")
+    print(f"\n== internal anchor links ==")
     check_anchor_resolution(brief_text)
 
     print(f"\n== primary-source quality ==")
     check_primary_source_quality(sections, kind=kind)
 
-    print(f"\n== aggregator-only sourcing (v2.47) ==")
+    print(f"\n== aggregator-only sourcing ==")
     check_aggregator_only_sourcing(sections, kind=kind)
 
-    print(f"\n== single-source flag (v2.47) ==")
+    print(f"\n== single-source flag ==")
     check_single_source_flag(sections, kind=kind)
 
     if kind == "daily":
-        print(f"\n== TL;DR deadline-lead (v2.47) ==")
+        print(f"\n== TL;DR deadline-lead ==")
         check_tldr_deadline_lead(sections)
 
-        print(f"\n== TL;DR / body region drift (v2.57) ==")
+        print(f"\n== TL;DR / body region drift ==")
         check_tldr_body_drift(sections)
 
-    print(f"\n== quantifier-evidence heuristic (v2.57) ==")
+    print(f"\n== quantifier-evidence heuristic ==")
     check_quantifier_evidence(sections)
 
-    print(f"\n== name-collision pre-check (v2.57) ==")
+    print(f"\n== name-collision pre-check ==")
     check_name_collision(sections)
 
-    print(f"\n== Evidence-field shape (v2.58) ==")
+    print(f"\n== Evidence-field shape ==")
     check_evidence_shape(sections)
 
-    print(f"\n== Evidence-field presence on exploited-status items (v2.65) ==")
+    print(f"\n== Evidence-field presence on exploited-status items ==")
     check_evidence_presence(sections, kind=kind)
 
-    print(f"\n== org-profile composition sync (v2.65) ==")
+    print(f"\n== org-profile composition sync ==")
     check_profile_sync()
 
-    print(f"\n== org-triage lines (v2.65) ==")
+    print(f"\n== org-triage lines ==")
     check_org_triage(sections, kind=kind)
 
-    print(f"\n== closed-source citations (v2.66) ==")
+    print(f"\n== closed-source citations ==")
     check_closed_source(sections, kind=kind)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
@@ -3027,7 +3085,7 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
     print(f"\n== sources.json bookkeeping ==")
     check_sources_touched_today(brief_date, sources_data)
 
-    print(f"\n== essential-source coverage (v2.67) ==")
+    print(f"\n== essential-source coverage ==")
     check_essential_coverage(brief_date, run_log, sources_data, kind=kind)
 
     print(f"\n== sources.json schema (shape + controlled-vocab) ==")

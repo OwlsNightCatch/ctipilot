@@ -393,7 +393,7 @@ def validate_profile(profile: dict[str, Any],
     if not norm_categories:
         default_category = ""
 
-    # deployment (v2.66) — optional section; defaults preserve the historic
+    # deployment — optional section; defaults preserve the historic
     # public GitHub-Pages deployment.
     dep = profile.get("deployment", {})
     if not isinstance(dep, dict):

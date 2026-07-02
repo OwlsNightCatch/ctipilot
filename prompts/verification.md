@@ -22,7 +22,7 @@ The reasoning: these organisations *are* the authoritative source for advisories
 
 **Single-source items that do not qualify for the carve-out** must be marked `[SINGLE-SOURCE]` next to the item title, with the source named explicitly in the body.
 
-**Contradictions** are surfaced in § 8 Verification Notes of the brief, not silently resolved by picking a side.
+**Contradictions** are surfaced in the brief's Verification Notes section (§ 7 daily / § 11 weekly), not silently resolved by picking a side.
 
 ---
 
@@ -67,9 +67,9 @@ Single-source social-media posts are not sources. Even if the post is by a resea
 
 ## Recency sanity check
 
-Every item in the brief must reflect events within the last 24 h (default) or 72 h (active campaign). When a sub-agent surfaces something older, the agent must confirm it qualifies under one of:
+Every item in the brief must reflect events inside the gap-derived recency window (`window_hours`, default 24 h; developing stories up to `developing_window_hours`, default 72 h — see the daily prompt's PD-7). When a sub-agent surfaces something older, the agent must confirm it qualifies under one of:
 
-- A *material new development* on a longer-running campaign (in which case it goes under § 5 Updates to Prior Coverage with the original date).
+- A *material new development* on a longer-running campaign (in which case it goes under § 4 Updates to Prior Coverage with the original date).
 - A vendor advisory that happened to land late but is freshly relevant (e.g., a CVE quietly added to KEV today for a 2024-disclosed flaw).
 - A national-CERT publication today that references prior activity.
 
@@ -82,16 +82,16 @@ In every case the brief states the original date so the reader is not misled.
 - [ ] Every claim has an inline link to a source fetched today.
 - [ ] Zero IOCs anywhere (hashes, IPs, attacker domains/URLs, rule code).
 - [ ] Zero vanity metrics (dwell time, breakout time, YoY counts).
-- [ ] No item from the last 7 briefs appears unless under § 5 Updates with a delta + an inline citation.
+- [ ] No item from the last 7 briefs appears unless under § 4 Updates with a delta + an inline citation.
 - [ ] Every item passed two-source verification, OR is national-CERT primary disclosure, OR is marked `[SINGLE-SOURCE]`.
 - [ ] CVE identifiers verified against NVD/MITRE.
-- [ ] CH/EU/public-sector items in § 2 carry the appropriate `Region:` and `Sector:` tags in their metadata footer.
+- [ ] CH/EU/public-sector items in § 1 carry the appropriate `Region:` and `Sector:` tags in their metadata footer.
 - [ ] Deep dive present, or explicit "no item met the bar".
 - [ ] State files updated (`state/covered_items.json`, `sources/sources.json`).
 - [ ] Verification Notes section lists drops, single-source items, and contradictions.
 - [ ] No content from training data — only from today's fetches.
 - [ ] **`python3 tools/check_brief.py` exits 0 BEFORE the verification sub-agent is spawned** — every mechanical consistency check passes first; the verifier reads a brief whose URL allowlist / footer taxonomy / CVE-sync / run-log shape is already clean.
-- [ ] **Phase 5.7 (daily) / Phase 4.7 (weekly) verification subagent ran** (see below) covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in § 8.
+- [ ] **Phase 5.7 (daily) / Phase 4.7 (weekly) verification subagent ran** (see below) covering both URL truth and editorial quality; verdict reached `CLEAN` within ≤5 iterations or residual findings logged in Verification Notes (§ 7 daily / § 11 weekly).
 - [ ] CVE entries do not lean on a national CERT/NCSC as the *only* primary source — the disclosing vendor's PSIRT advisory or research-lab post is preferred.
 - [ ] **No `Source:` URL is on the hard-blocked allowlist** (NVD/MITRE/cve.org per-CVE pages, Heise homepage / `/news/` / `/security`, NOS homepage / `/artikel/`, CERT-FR `/avis/` or `/actualite/` indexes, CISA news-events root, Dragos year-in-review marketing landing, ABW cybersecurity category landing). The full list is enforced by `tools/check_brief.py` and lives at the top of the script.
 - [ ] **Every `Source:` URL returns HTTP 200 on a live HEAD/GET** at commit time (`tools/check_brief.py` validates). 404s are typically fabricated URLs that look plausible — re-pivot to a real one or drop the item.
@@ -114,9 +114,9 @@ After Phase 4 has written the brief, Phase 5 has updated state, and Phase 5.5 ha
 5. **Contradictions** between sources cited for the same item.
 6. **Clarity** — is anything under-explained to the point that a Tier 2 responder could not act on it without further research?
 
-The verifier returns structured Markdown with sections `Broken / unreachable URLs`, `Generic / oversight URLs`, `Citation does not support the claim`, `Unsupported / hallucinated facts`, `Claims missing inline citation`, `Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`, `Editorial / less-is-more flags`, **`Single-source items missing [SINGLE-SOURCE] flag`** (F12 — promoted from "the gatekeeper sometimes catches" to a numbered finding in v2.47), and a `Verdict: CLEAN | NEEDS_FIXES`.
+The verifier returns structured Markdown with sections `Broken / unreachable URLs`, `Generic / oversight URLs`, `Citation does not support the claim`, `Unsupported / hallucinated facts`, `Claims missing inline citation`, `Strengthen primary source`, `Drop`, `Needs more research`, `Surface contradiction`, `Missed angles`, `Editorial / less-is-more flags`, **`Single-source items missing [SINGLE-SOURCE] flag`** (F12), and a `Verdict: CLEAN | NEEDS_FIXES`.
 
-**Verifier-model rotation (v2.47):** the main agent rotates between two verifier sub-agent definitions across iterations — odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). The two definitions carry the byte-identical operational system prompt; only the YAML model frontmatter differs. This rotation catches model-specific blind spots that would otherwise silently inherit when every iteration runs on the same model.
+**Verifier-model rotation:** the main agent rotates between two verifier sub-agent definitions across iterations — odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). The two definitions carry the byte-identical operational system prompt; only the YAML model frontmatter differs. This rotation catches model-specific blind spots that would otherwise silently inherit when every iteration runs on the same model.
 
 ### Iterative refinement loop (cap: 5 iterations — fail-open safety valve, not goal)
 
@@ -129,13 +129,13 @@ The main agent reads the verification report and remediates per finding type:
 | Unsupported / hallucinated fact | Drop the fact and the claim it props up. |
 | Missing inline citation | Add the citation, or rewrite the sentence to drop the unsourced fact. |
 | **Strengthen primary source** | Re-pivot via `WebSearch` / `WebFetch` to the vendor PSIRT advisory or vendor research blog. Promote that to first source; demote NVD/CERT to `Additional source:`. |
-| **Drop** (low relevance) | Remove the item; log in § 8; remove the matching `appearances[]` entry for today from `covered_items.json`. |
+| **Drop** (low relevance) | Remove the item; log in Verification Notes; remove the matching `appearances[]` entry for today from `covered_items.json`. |
 | **Needs more research** | Spawn ≤3 follow-up research sub-agents in parallel; re-Edit the affected item with new findings, or drop. |
-| **Surface contradiction** | Add an explicit § 8 contradiction line; do not silently pick a side. |
+| **Surface contradiction** | Add an explicit Verification Notes contradiction line; do not silently pick a side. |
 | **Missed angles** | Spawn one targeted research sub-agent if the angle would clear the inclusion gate; else log as a coverage gap. |
 | Editorial / less-is-more (advisory) | Apply if cheap; otherwise leave. |
 
-After remediation, the main agent **re-runs `python3 tools/check_brief.py`** to confirm the fixes did not introduce mechanical drift, then a **fresh** verification sub-agent is spawned (no shared memory) against the updated brief. The loop runs until verdict `CLEAN` or until the iteration cap (5) is reached. After the cap, the brief publishes regardless as a fail-open safety valve, with unresolved findings logged in § 8 — the prime directive (the brief must publish) wins. **The cap is a safety net, not the goal** — a brief that needs 5 iterations is a quality regression and gets reviewed after-the-fact.
+After remediation, the main agent **re-runs `python3 tools/check_brief.py`** to confirm the fixes did not introduce mechanical drift, then a **fresh** verification sub-agent is spawned (no shared memory) against the updated brief. The loop runs until verdict `CLEAN` or until the iteration cap (5) is reached. After the cap, the brief publishes regardless as a fail-open safety valve, with unresolved findings logged in Verification Notes — the prime directive (the brief must publish) wins. **The cap is a safety net, not the goal** — a brief that needs 5 iterations is a quality regression and gets reviewed after-the-fact.
 
 **The main agent may spawn up to 3 follow-up research sub-agents per iteration**, each scoped to one specific question with a suggested source / search angle from the verifier. These sub-agents share the Phase 1 patience clause and 30-min wall-clock budget.
 
@@ -148,5 +148,5 @@ The verification sub-agent's iteration count and residual-finding count are writ
 Periodically (e.g. weekly), a human operator reviews:
 
 - `git log -- sources/sources.json` to see what got demoted, what was proposed as `candidate`. Promote candidates the operator trusts; revert demotions if the source recovered.
-- Section 8 (Verification Notes) of recent briefs to spot recurring single-source patterns or repeated drops, which may indicate a missing source or a quality issue with an existing one.
+- The Verification Notes section (§ 7 daily / § 11 weekly) of recent briefs to spot recurring single-source patterns or repeated drops, which may indicate a missing source or a quality issue with an existing one.
 - Aggregate coverage in `state/covered_items.json` to spot blind spots — categories of threat consistently missing.
