@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/daily-cti-brief.md` and `prompts/weekly-s
 
 ---
 
+## 2.67 — 2026-07-02 (methodology-driven research agents; tiered source allocation with a daily essential-coverage guarantee)
+
+### Why
+
+Operator request, third round: stop telling the research agents *which sources to query* — hardcoded publisher names in the agent definition (the v2.66 playbooks, the per-host recipe tables, the RSS quick-reference) duplicate `sources/sources.json` and go stale the moment the list evolves. Instead: teach every agent the *methodology* of world-class CTI (dig past news and alarming catches to primary evidence, produce actionable results), make the curated source list the single collection plan the agents know how to read and keep up to date, and guarantee that the essential providers (national CERTs, NCSC, CISA, ENISA, …) are queried every single day while the remaining providers rotate in a balanced way so nothing is missed and no run floods.
+
+### What changed
+
+- **`.claude/agents/cti-research.md` — new § Intelligence methodology:** the five-stage cycle written as tradecraft — direction (org requirement decides, not curiosity), collection (evidence not headlines; never stop at the first report; an alarming headline is a hypothesis; absences are intelligence), processing (fact / claim / inference buckets at collection time — the upstream half of the anti-hallucination chain), analysis (corroboration = independence not count; competing-hypotheses-in-miniature for attribution; delta-vs-repeat contextualization; org-specific severity weighing), dissemination (actionability as the exit criterion), plus craft habits (References-section pivots, disclosing-party preference, contradiction handling, recycled-news trap, honest dead-end logging).
+- **Source knowledge moved out of the prompt into the list:** the per-host recipe table, publisher RSS quick-reference, Microsoft-specific sections, and named-source playbooks are GONE from the agent definition. Replaced by **§ Working the source list — the record is the recipe** (how to read `tier` / `fetch_method` / `notes`-borne dated recipes / `reliability`, slice discipline, drift-fixing duty) and **§ Fetch tooling reference** (capability catalog of `tools/fetch_source.py` subcommands + the seven cross-host empirical rules, publisher-agnostic). **§ Domain collection missions** replace the v2.66 playbooks: per-domain intelligence *questions* and collection shape, naming zero publishers — sources come exclusively from the spawn slice.
+- **Tiered sources (`sources/sources.json`):** new top-level `tiers` vocabulary + required per-source `tier` field. 14 records tagged `essential` (NCSC-CH ×3, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CERT-PL, CERT-AT, CISA KEV / advisories / directives); everything else `standard`. `sources_changed[]` vocabulary gained `tier`; candidate shape carries `tier: standard` by default (essential is an operator-grade decision).
+- **Daily + weekly (lockstep): tier-aware per-agent allocation** replaces the flat category slice — essential floor (ALL active essential records, category-matched, every daily run, no exceptions) + staleness rotation for standard records (oldest `last_successful_fetch` first, gap-flagged records promoted, ~10–14 per agent) so every standard source is attempted at least every ~7 runs. Spawn element 4 now passes full per-record metadata incl. tier and the newest recipe note; § 7 gained a parseable `Essential-coverage: missed=…` disclosure (omitted on full coverage).
+- **`tools/check_brief.py`:** `sources-schema` validates the `tier` field/vocabulary; new **`essential-coverage`** check (WARN — publish never blocks) verifies every active essential source appears in the union of today's `sub_agents[*].sources_attempted`. Run against the 2026-07-02 brief it immediately surfaced 6 missed essential authorities — the exact defect class this release closes.
+
+### What stays
+
+Lens divergence, hard invariants, and the whole v2.65/v2.66 machinery unchanged. The bridge tool itself, the outbound-links template, the discovery-trace contract, and the anti-classifier main-agent-no-fetch invariant are untouched — only *where source knowledge lives* moved (into `sources/sources.json`, whose v2.62 metadata-drift duty already keeps recipes current). The `fetch_gaps_in_window` rotation signal is still consumed — now as a promotion input to the staleness ranking rather than a parallel list.
+
 ## 2.66 — 2026-07-02 (closed-source intel intake; private deployment; alert-fatigue calibration; per-domain research playbooks)
 
 ### Why

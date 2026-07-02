@@ -129,7 +129,7 @@ tools/compose_prompts.py           # v2.65 — renders the profile into the ORG-
 .claude/memory/                    # version-controlled auto-memory — MUST be committed when touched
 .claude/hooks/setup-memory.sh      # SessionStart hook — symlinks system auto-memory dir
 .claude/settings.json              # autoMemoryEnabled, SessionStart hook
-sources/sources.json               # ~80 curated CTI sources (autonomous lifecycle)
+sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; v2.67 tier field: essential = queried every daily run, standard = staleness rotation)
 state/covered_items.json           # rolling coverage log
 state/cves_seen.json               # flat CVE index
 state/deep_dive_history.json       # 30-day deep-dive picks (rotation memory)

@@ -1837,6 +1837,46 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
         warn("run-log-timestamps", "started/completed timestamps not both recorded")
 
 
+def check_essential_coverage(brief_date: str, run_log: dict[str, Any] | None,
+                              sources_data: dict[str, Any] | None,
+                              *, kind: str = "daily") -> None:
+    """v2.67 — every active `tier: essential` source (national CERTs / NCSC /
+    CISA / ENISA-class authorities) must be *attempted* on every daily run.
+    Reads the union of today's `sub_agents[*].sources_attempted`. WARN, not
+    FAIL — the brief must publish regardless; the gap is disclosed and the
+    next run's rotation self-heals. Weekly runs are exempt (the guarantee is
+    a daily property; W1/W2 slices are horizon-scoped)."""
+    if kind == "weekly":
+        ok("essential-coverage", "n/a for weekly runs (daily-coverage guarantee)")
+        return
+    if not sources_data or not run_log:
+        warn("essential-coverage", "sources.json or run_log.json unavailable")
+        return
+    essential = {s["id"] for s in sources_data.get("sources", [])
+                 if s.get("tier") == "essential" and s.get("status") == "active"}
+    if not essential:
+        warn("essential-coverage", "no active `tier: essential` sources defined in sources.json")
+        return
+    recs = [r for r in (run_log.get("runs") or [])
+            if r.get("date") == brief_date and r.get("kind", "daily") == "daily"]
+    if not recs:
+        warn("essential-coverage", f"no daily run_log record for {brief_date}")
+        return
+    attempted: set[str] = set()
+    for a in (recs[-1].get("sub_agents") or {}).values():
+        if isinstance(a, dict):
+            attempted |= set(a.get("sources_attempted") or [])
+    missed = sorted(essential - attempted)
+    if missed:
+        warn("essential-coverage",
+             f"{len(missed)} essential source(s) not attempted this run — a daily run "
+             f"must query every national-CERT/NCSC/CISA/ENISA-class source: {missed} "
+             "(disclose in § 7; the allocation step must include ALL essential sources)")
+    else:
+        ok("essential-coverage",
+           f"all {len(essential)} essential sources attempted this run")
+
+
 def check_sources_touched_today(brief_date: str, sources_data: dict[str, Any] | None) -> None:
     """At least one source must have `last_successful_fetch == brief_date`.
     Otherwise the Ops dashboard's stale-sources panel cannot move and the
@@ -2009,6 +2049,19 @@ def check_sources_schema(sources_data: dict[str, Any] | None) -> None:
                     f"{tag}: unknown reliability {reliability!r} — must be one of "
                     f"{sorted(valid_reliability)}"
                 )
+
+        # --- tier (v2.67 — required on in-rotation sources; drives the daily
+        #     essential-coverage guarantee + staleness rotation) ---
+        valid_tiers = set((sources_data.get("tiers") or {}).keys()) or {"essential", "standard"}
+        tier = s.get("tier")
+        if is_in_rotation:
+            if not isinstance(tier, str) or not tier:
+                errors.append(f"{tag}: status={status!r} requires `tier` "
+                              f"(one of {sorted(valid_tiers)})")
+            elif tier not in valid_tiers:
+                errors.append(f"{tag}: unknown tier {tier!r} — must be one of {sorted(valid_tiers)}")
+        elif tier is not None and tier not in valid_tiers:
+            errors.append(f"{tag}: unknown tier {tier!r} — must be one of {sorted(valid_tiers)}")
 
         fetch_method = s.get("fetch_method")
         if is_in_rotation:
@@ -2973,6 +3026,9 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== sources.json bookkeeping ==")
     check_sources_touched_today(brief_date, sources_data)
+
+    print(f"\n== essential-source coverage (v2.67) ==")
+    check_essential_coverage(brief_date, run_log, sources_data, kind=kind)
 
     print(f"\n== sources.json schema (shape + controlled-vocab) ==")
     check_sources_schema(sources_data)
