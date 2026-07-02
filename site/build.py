@@ -949,6 +949,55 @@ def _render_list(items: list[tuple[int, str]], *, ordered: bool, base_url: str |
 # === FOOTER PARSER =====================================================
 
 # Parse a single metadata-footer line into a structured dict.
+# v2.66 — Traffic Light Protocol markings accepted on closed-source
+# citations. Order matters only for documentation; membership is the check.
+TLP_VALUES = {"CLEAR", "GREEN", "AMBER", "AMBER+STRICT", "RED"}
+
+
+def parse_closed_source_field(value: str) -> list[dict[str, str]]:
+    """Parse the v2.66 `Closed-source:` footer field.
+
+    Shape (one or more records, `;`-separated):
+        Closed-source: "Title" (Provider, YYYY-MM-DD, TLP:AMBER, ref: DOC-ID)
+    Title + provider are required; date, TLP marking, and ref are optional
+    but strongly encouraged. Returns `{title, provider, date, tlp, ref, raw}`
+    records; fields the record does not carry are empty strings. Unparseable
+    fragments return a record with only `raw` set so validate_footer can
+    flag them instead of silently dropping the citation.
+    """
+    records: list[dict[str, str]] = []
+    rec_re = re.compile(r'["“]([^"”]+?)["”]\s*\(([^)]*)\)')
+    matched_spans: list[tuple[int, int]] = []
+    for m in rec_re.finditer(value):
+        matched_spans.append(m.span())
+        title = m.group(1).strip()
+        inner = m.group(2).strip()
+        rec = {"title": title, "provider": "", "date": "", "tlp": "", "ref": "",
+               "raw": m.group(0)}
+        for i, part in enumerate(p.strip() for p in inner.split(",")):
+            if not part:
+                continue
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", part):
+                rec["date"] = part
+            elif part.upper().startswith("TLP:"):
+                rec["tlp"] = part[4:].strip().upper()
+            elif part.lower().startswith("ref:"):
+                rec["ref"] = part[4:].strip()
+            elif i == 0 or not rec["provider"]:
+                rec["provider"] = part
+        records.append(rec)
+    # Anything outside the matched record spans that still carries text is
+    # an unparseable fragment — surface it so validation can flag it.
+    leftover = value
+    for a, b in sorted(matched_spans, reverse=True):
+        leftover = leftover[:a] + leftover[b:]
+    leftover = leftover.strip(" ;·")
+    if leftover:
+        records.append({"title": "", "provider": "", "date": "", "tlp": "",
+                        "ref": "", "raw": leftover})
+    return records
+
+
 def parse_footer_line(line: str) -> dict[str, Any] | None:
     """Parse a metadata-footer line. Returns None if the line isn't a
     footer or is malformed.
@@ -994,7 +1043,7 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     # Sanity gate: the line must contain at least one of the footer field
     # labels somewhere in the body. Otherwise we'd treat any italic line
     # ending in `*` as a footer, which would corrupt prose paragraphs.
-    if not re.search(r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources|Evidence):", body):
+    if not re.search(r"\b(?:Sources?|Tags|Region|Sector|Sectors|CVE|CVSS|Vector|Auth|Status|Additional source|Additional sources|Evidence|Closed-source):", body):
         return None
 
     # Pull all `[Title](URL)` first; we'll consume them by position.
@@ -1033,12 +1082,17 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
         # when the item has no Evidence field; renderer treats either case
         # as valid for now.
         "evidence": [],
+        # v2.66 — closed-source citations (unlinked; the referenced document
+        # lives under intel/<date>/ in the repo, not on the public web).
+        # List of `{title, provider, date, tlp, ref, raw}` records parsed
+        # from the optional `Closed-source:` field.
+        "closed_source": [],
     }
 
     KNOWN_TYPED_KEYS = {
         "tags", "region", "sector", "sectors", "cve", "cvss",
         "vector", "auth", "status", "additional_source", "additional_sources",
-        "source", "sources", "evidence",
+        "source", "sources", "evidence", "closed-source", "closed_source",
     }
 
     def _add_source_from_placeholder(ph: str) -> None:
@@ -1051,7 +1105,7 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
 
     for p in parts:
         # Try `Key: value`.
-        key_m = re.match(r"^([A-Za-z][A-Za-z ]*?):\s*(.*)$", p)
+        key_m = re.match(r"^([A-Za-z][A-Za-z -]*?):\s*(.*)$", p)
         if key_m:
             key = key_m.group(1).strip().lower().replace(" ", "_")
             value = key_m.group(2).strip()
@@ -1098,6 +1152,8 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
                         if q:
                             recs.append({"quote": q, "attribution": a})
                     out["evidence"] = recs
+                elif key in ("closed-source", "closed_source"):
+                    out["closed_source"] = parse_closed_source_field(value)
                 continue
             # Unknown typed key — fall through and try bare-link extraction.
         # Bare link(s): every link placeholder in this part becomes an
@@ -1114,6 +1170,7 @@ def parse_footer_line(line: str) -> dict[str, Any] | None:
     has_field = bool(
         out["sources"] or out["tags"] or out["regions"]
         or out["sectors"] or out["cve"] or out["status"]
+        or out["closed_source"]
     )
     if not has_field:
         return None
@@ -1126,8 +1183,16 @@ def validate_footer(footer: dict[str, Any], taxonomy: dict[str, set[str]]) -> li
     Empty list means everything is fine. The caller decides whether to
     fail the build (post-cut-over) or warn (legacy briefs)."""
     errors: list[str] = []
-    if not footer.get("sources"):
-        errors.append("missing primary source link")
+    if not footer.get("sources") and not footer.get("closed_source"):
+        errors.append("missing primary source link (or closed-source citation)")
+    for cs in footer.get("closed_source", []) or []:
+        if not cs.get("title") or not cs.get("provider"):
+            errors.append(
+                "malformed Closed-source citation (expected "
+                '`"Title" (Provider, YYYY-MM-DD[, TLP:X][, ref: ID])`): '
+                + (cs.get("raw") or "")[:80])
+        if cs.get("tlp") and cs["tlp"] not in TLP_VALUES:
+            errors.append(f"unknown TLP marking on closed-source citation: {cs['tlp']}")
     themes = taxonomy.get("themes", set()) | taxonomy.get("nexus", set())
     sectors = taxonomy.get("sectors", set())
     regions = taxonomy.get("regions", set())
@@ -2142,6 +2207,18 @@ def render_footer_html(footer: dict[str, Any], *, prefix: str = "", sources_only
                 f'<a class="{cls}" href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>'
             )
         parts.append('<span class="meta-sources"><strong>Sources:</strong> ' + " · ".join(src_parts) + "</span>")
+
+    if footer.get("closed_source"):
+        cs_parts = []
+        for cs in footer["closed_source"]:
+            bits = [b for b in (cs.get("provider"), cs.get("date"),
+                                f"TLP:{cs['tlp']}" if cs.get("tlp") else "",
+                                f"ref: {cs['ref']}" if cs.get("ref") else "") if b]
+            label = f'“{cs.get("title", "")}”' + (f' ({", ".join(bits)})' if bits else "")
+            cs_parts.append('<span class="src-closed">' + _escape(label) + "</span>")
+        parts.append(
+            '<span class="meta-closed-source"><strong>Closed source:</strong> '
+            + " · ".join(cs_parts) + "</span>")
 
     if sources_only:
         return '<aside class="item-footer">' + "".join(parts) + "</aside>"

@@ -60,6 +60,11 @@ The example is purely illustrative — the actual item depth is whatever the lin
 
 — *Source: [Primary report](URL) · Tags: nation-state, espionage, identity, ai-abuse · Region: global*
 
+### [CLOSED-SOURCE] {Item sourced from an intel/ drop file — shape when no public URL corroborates}
+{Paragraph; inline attribution at the point of claim reads `(Provider name, YYYY-MM-DD — closed source)` — plain text, never a link. When a public source corroborates, add it as a normal linked Source and drop the [CLOSED-SOURCE] heading marker.}
+
+— *Closed-source: "Document title" (Provider name, YYYY-MM-DD, TLP:CLEAR, ref: PROV-2026-1234) · Tags: phishing, identity · Region: switzerland · Sector: public-sector · Evidence: "verbatim quote from the drop file" (Provider name)*
+
 ## 4. Updates to Prior Coverage
 
 ### UPDATE: {short story title — what changed}

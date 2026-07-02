@@ -120,6 +120,25 @@ composes or fail-louds on push; `tools/check_brief.py` carries a
 `profile-sync` WARN so a routine run surfaces stale composition; and
 CLAUDE.md forbids hand-editing the generated blocks.
 
+The v2.66 `deployment:` section (`visibility: public|private`, `site_url`)
+drives the TLP ceiling on closed-source citations and the publish-phase
+site poll (`compose_prompts.py --get deployment.site_url`); see
+[`docs/private-deployment.md`](private-deployment.md).
+
+### `intel/` — closed-source drop folder (v2.66)
+
+Operator-owned feed scripts commit dated folders (`intel/<YYYY-MM-DD>/`)
+of front-mattered text documents; the routines detect in-window content in
+Phase 0 and spawn a conditional intake sub-agent (S5 daily / W3 weekly)
+that extracts items with `closed_source` source records, mandatory verbatim
+evidence quotes, and public-corroboration pivots. Briefs cite the documents
+by reference (`Closed-source:` footer field — parsed by `site/build.py`,
+rendered unlinked), never by URL. `check_brief.py` gates TLP against the
+deployment visibility (`closed-source-tlp` FAIL) and traces citations back
+to drop files; the verifier `Read`s the files as ground truth. Contract:
+[`intel/README.md`](../intel/README.md). Empty/absent `intel/` — the normal
+state — costs nothing.
+
 ### `.claude/agents/` — custom sub-agent definitions
 
 - [`cti-research.md`](../.claude/agents/cti-research.md) — isolated context,

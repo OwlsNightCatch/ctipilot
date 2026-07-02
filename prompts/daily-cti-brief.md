@@ -1,6 +1,6 @@
 # Daily CTI Brief — Master Prompt
 
-> **Prompt version:** v2.65 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v2.66 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the brief footer (`**Prompt:** vN.M`) and to `state/run_log.json.prompt_version`. The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. The main agent composes the brief and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output (see `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md` for the sub-agent contract; § Self-identification below for yours). The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the brief's AI-content notice. The Ops dashboard at `/ops/` surfaces the per-run model split so an operator can see at a glance which model wrote which part.
 > **Output:** `briefs/YYYY-MM-DD.md` — one Markdown file per day, version-controlled, English.
@@ -77,6 +77,8 @@ Anti-crash guards (priority order):
 
     **Variable size by signal.** Quiet day = short brief; noisy day = longer one. Don't pad. **Reader trusts brevity reflects signal, not laziness.** Within a section, prefer 3 sharp items over 8 mediocre; when in doubt, drop.
 
+    **Calibration — a false negative and a false positive are both failures, with different costs (v2.66).** Missing a threat that is relevant to *this organization* (§ Organization profile) can mean an unhandled incident; flooding the reader with marginal items breeds alert fatigue until real warnings stop being read — both erode the brief's entire reason to exist. The operating point: **inclusion is decided by org-relevance, not by newsworthiness.** For borderline calls, run the item through one question — *"would a Tier 2/3 responder at this organization act differently in the next 7 days because of this?"* — yes ⇒ include with the action named; no ⇒ drop. Two audit trails keep the threshold honest: (a) every borderline *drop* of a plausibly org-relevant item gets a one-line § 7 entry (`borderline-drop: <title> — <reason>`) so a false negative is visible after the fact; (b) every borderline *include* states its org-relevance in one clause so a false positive can be challenged. The § 0 TL;DR and Immediate Action callout are the most alert-fatigue-sensitive real estate on the page — reserve them for items where inaction plausibly ends in an incident for this organization.
+
     **Empty sections are explicit.** Render heading + `*No qualifying items in window — this section is intentionally left empty.*` (adapt per section: `No active threats with CH/EU nexus this run — section intentionally empty.` / `No new research with operational defender impact this run — section intentionally empty.`). The **Immediate Actions callout** inside § 0 is omitted entirely on quiet days (no callout, no placeholder) per its own criteria.
 
     **Item-level cuts.** Cut: throat-clearing intros (*"This vulnerability has been disclosed by..."*); hedge stacks (*"It is possible that this might potentially..."*); restated section context (*"As a vulnerability, CVE-X is a vulnerability..."*); closing flourishes (*"Defenders should remain vigilant"*); recap of prior coverage already in `covered_items.json`.
@@ -101,6 +103,8 @@ This deployment is parameterized by [`config/org-profile.yaml`](../config/org-pr
 **Organization:** Swiss federal SOC (SOC) · **Primary sector:** public-sector · **Home region:** switzerland · **Coverage focus:** Switzerland and Europe
 
 **Constituency:** national / cantonal / federal administration, regulators, critical infrastructure, healthcare, education, public-sector technology suppliers
+
+**Deployment:** public · **Site URL:** https://ctipilot.ch/ — the brief publishes to the OPEN INTERNET: closed-source content above TLP:CLEAR must NEVER appear in it (`check_brief.py` FAILs the commit).
 
 **Product watchlist:** none configured — the product sweep is a no-op; general coverage rules apply unchanged.
 
@@ -158,6 +162,7 @@ site/taxonomy.yaml                 # controlled vocabulary for footers
 site/test_build.py                 # build-side smoke tests
 tools/check_brief.py               # Phase 5.5 self-check; bundles every gate + test_build.py
 tools/fetch_source.py              # HTTP bridge for hosts that 403 the routine UA (CISA, NCSC.ch, …)
+intel/<YYYY-MM-DD>/                # v2.66 — closed-source drops (usually absent; Phase 0 step 8 detects, S5 ingests)
 work/<run-id>/                     # gitignored intermediate state
 ```
 
@@ -223,7 +228,8 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 
 6. Establish today's ISO date.
 7. **Compute gap-derived recency window** (PD-7). Pass `window_hours` to every Phase 1 sub-agent. Surface in § 7 if `gap_hours > 30`.
-8. Initialise `TodoWrite` plan.
+8. **Detect closed-source intel drops (v2.66).** Via Bash directory listing only (no file reads): enumerate date-named subdirectories of `intel/` (when the directory exists), keep those whose date falls within `window_hours` of today AND which contain at least one non-README file. Non-empty result ⇒ Phase 1 additionally spawns the **S5 closed-source intake** sub-agent with these paths (see Phase 1 § Conditional S5). Empty or absent `intel/` ⇒ no S5, no cost — **the normal state on most days**. Never read the intel files into your own context (same anti-classifier rationale as anti-crash guard #9 — the intake agent's isolated context absorbs the raw content).
+9. Initialise `TodoWrite` plan.
 
 If any script fails, surface the error and stop.
 
@@ -233,9 +239,9 @@ Build **source rotation list** by reading `state-summary.json.runs.fetch_gaps_in
 
 ---
 
-## Phase 1 — Parallel research (four sub-agents, up to 30 min wall-clock each)
+## Phase 1 — Parallel research (S1–S4, plus conditional S5 intake; up to 30 min wall-clock each)
 
-Spawn **all four sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent definition embeds the full operational system prompt — defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
+Spawn **all Phase 1 sub-agents in a single message** — S1–S4 always, plus **S5 when Phase 0 step 8 found intel files** — via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent definition embeds the full operational system prompt — defender-vantage opener, link-discipline clauses, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
 
 **Capture each sub-agent's reported model AND its start/end timestamps.** Every research return opens with two mandatory lines (in this order):
 
@@ -291,6 +297,17 @@ Phase 5.5 enforces both rules mechanically: `tools/check_brief.py` runs the URL 
 | **S4 — Incidents & disclosures** | `category` ∋ `breaches` (+ `news` for journalistic corroboration) | SEC EDGAR 8-K, UK ICO / CNIL / EDPB notices, victim public statements, breach-disclosure-focused journalism. Prefer victim statements + regulator notices over leak-site claims. Dark-web-listing items: *"X was listed by group Y; not confirmed by X"*. **Owns the supplier-watchlist sweep** — check each watchlisted supplier for breach / incident / compromise reporting, results in the findings YAML `watchlist_sweep` block. |
 
 A source's primary category determines ownership. `news` read by S3 for journalistic substance, by S4 only for breach corroboration.
+
+### Conditional S5 — closed-source intake (v2.66; spawned only when intel files exist)
+
+When Phase 0 step 8 found non-empty `intel/<date>/` directories in-window, spawn a fifth `cti-research` sub-agent with `Domain: S5 — closed-source intake` and the detected directory paths. S5's operational rules live in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Closed-source intake; the envelope is the standard spawn contract minus the source-list slice (element 4) and rotation list (element 6) — S5 reads local files, it does not sweep the public source list. What S5 does:
+
+- `Read`s every drop file, extracts qualifying items into `work/<run-id>/findings.S5.yaml` (standard schema; sources are `closed_source` records `{provider, date, title, tlp, ref, file}` instead of URLs; verbatim `evidence` quotes from the document are REQUIRED on every item — they are what the verifier checks against the file).
+- Treats the documents as **HIGH-reliability primary sources** (single-document sourcing is acceptable; the composed item then carries a `[CLOSED-SOURCE]` heading marker), and **attempts public corroboration** for every item via the normal pivot discipline — a public primary both strengthens the item and de-restricts it.
+- Applies the recency window to the document's *publication* date, the same PD-8 dedup against `prior_coverage.json`, and every content gate (no IOCs, fake-news scrutiny on third-party claims relayed by the document).
+- **Respects the deployment TLP ceiling** in § Organization profile & watchlists: on a public deployment, a document above TLP:CLEAR may be used ONLY as a lead to public sources — never cited, never quoted; on a private deployment it is citable up to its marking.
+
+The main agent treats S5's return exactly like S1–S4 (`.ended_at` gate, run_log `sub_agents.S5` record, compose-from-findings). **Composition rule for S5 items:** cite the document per § Closed-source citations (footer spec below) — referenced, never linked. Rank closed-source items by the same org-relevance bar; their provenance earns credibility, not automatic prominence.
 
 ---
 
@@ -412,6 +429,14 @@ The build's footer parser (`site/build.py` `parse_footer_line`) parses `Evidence
 
 **Mandatory for the Immediate Action callout in § 0.** The Immediate Actions block is the highest-trust item on the page — it tells the reader to drop everything and act. v2.53 mandates `Evidence:` on the callout's footer specifically (the only required-Evidence place in v2.53; other sections remain optional). Both quotes in the Immediate Action callout's Evidence field should come from the most operationally critical Source on the item (the vendor PSIRT or the primary ITW-confirming research blog).
 
+**Closed-source citations (v2.66 — referenced, never linked).** Items sourced from `intel/<date>/` drop files (S5 intake) cite the document via a `Closed-source:` footer field instead of a `[Title](URL)` link — there is no public URL, and **fabricating one is the worst possible move** (PD-2). Shape (after any linked sources; `;`-separates multiple records):
+
+```
+· Closed-source: "Document title" (Provider name, YYYY-MM-DD, TLP:CLEAR, ref: PROV-2026-1234)
+```
+
+Title + provider are mandatory; date, TLP marking, and `ref:` (the provider's stable document id, or the drop filename) are strongly encouraged — the `ref` is how a reader requests the document through internal channels and how the verifier finds the file under `intel/`. Inline at the point of claim, cite as plain text: `(Provider, YYYY-MM-DD — closed source)`. An item with **no** public-URL source additionally carries `[CLOSED-SOURCE]` in its H3 heading (the reader-visible verifiability marker; `check_brief.py` WARNs when absent). Closed-source documents count as HIGH-reliability primaries for PD-5 (single-document sourcing acceptable). **TLP ceiling per the deployment line in § Organization profile & watchlists** — on a public deployment, any citation above TLP:CLEAR FAILs the mechanical gate (`closed-source-tlp`); the `Evidence:` quotes for such items must come verbatim from the drop file, attributed to the provider name.
+
 **Multi-source.** When >1 publisher carries substantive sourcing, list them all. Two equivalent forms (build parses both): `Source: [a](u1) · [b](u2) · [c](u3) · Tags: …` (preferred for 2–4 sources) or `Source: [a](u1) · Additional source: [b](u2) · Additional source: [c](u3) · Tags: …`. **First link is the most primary**: vendor PSIRT advisory > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news.
 
 **Two distinct primaries** is fine in canonical cases: vendor advisory + vendor research blog (often different team or third-party lab that did discovery); vendor advisory + regulator filing (e.g. SEC 8-K); CERT advisory that is itself the primary disclosing party for its jurisdiction + the vendor advisory it references. First two `[Title](URL)` blocks both primaries; subsequent corroborating.
@@ -497,7 +522,7 @@ Specific, **derived from this brief's content only**. Generic advice ("deploy ED
 
 ### § 7 Verification Notes
 
-Items dropped (with reason — including CVEs that didn't clear § 2); `[SINGLE-SOURCE]` items; reduced-confidence items; contradictions; stalled sub-agents; **`Coverage gaps:`** parseable line consumed by next run's Phase 0 rotation list — format `Coverage gaps: source-id (reason); source-id (reason); source-a, source-b — not fetched in this run.` Source IDs from `sources.json` preferred; fall back to publisher names. **`Watchlist:`** parseable line when the profile configures watchlists (§ Organization profile & watchlists) — format `Watchlist: products checked=N, hits=N; suppliers checked=M, hits=M`; omit when not configured.
+Items dropped (with reason — including CVEs that didn't clear § 2); `[SINGLE-SOURCE]` items; reduced-confidence items; contradictions; stalled sub-agents; **`Coverage gaps:`** parseable line consumed by next run's Phase 0 rotation list — format `Coverage gaps: source-id (reason); source-id (reason); source-a, source-b — not fetched in this run.` Source IDs from `sources.json` preferred; fall back to publisher names. **`Watchlist:`** parseable line when the profile configures watchlists (§ Organization profile & watchlists) — format `Watchlist: products checked=N, hits=N; suppliers checked=M, hits=M`; omit when not configured. **`Closed-source intake:`** parseable line whenever Phase 0 step 8 detected intel files — format `Closed-source intake: files=N, items=M, leads-only=K (TLP-restricted)`; omit when no intel was present (the normal state).
 
 ### Technical depth — what every item must include (sub-agent-owned vocabulary)
 
@@ -1035,6 +1060,9 @@ A pushed feature branch is not a published brief. Verify both promotion-to-main 
 ```bash
 brief_path="briefs/$(date -u +%F).md"
 DEADLINE=$(($(date +%s) + 600))
+# v2.66 — the site URL is deployment-configurable (empty = private deployment
+# whose internal web server pulls on its own schedule; skip step 7b).
+SITE_URL=$(python3 tools/compose_prompts.py --get deployment.site_url)
 
 # 7a — Wait for the auto-merge action to land the brief on main.
 LANDED=false
@@ -1048,17 +1076,18 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     sleep 20
 done
 
-# 7b — Wait for the live site to reflect today's brief.
+# 7b — Wait for the live site to reflect today's brief (skipped when the
+# deployment config sets no site URL — private deployments own the last mile).
 SITE_LIVE=false
-if [ "$LANDED" = "true" ]; then
+if [ "$LANDED" = "true" ] && [ -n "$SITE_URL" ]; then
     today_iso="$(date -u +%F)"
     while [ "$(date +%s)" -lt "$DEADLINE" ]; do
-        # ctipilot.ch index page links every published brief by date.
-        # A successful match means the deploy-site workflow has rebuilt
-        # gh-pages and Pages has served the new bundle.
-        if curl -fsS --max-time 15 https://ctipilot.ch/ | grep -q "${today_iso}"; then
+        # The site index page links every published brief by date.
+        # A successful match means the deploy pipeline has rebuilt
+        # and served the new bundle.
+        if curl -fsS --max-time 15 "$SITE_URL" | grep -q "${today_iso}"; then
             SITE_LIVE=true
-            echo "publish: site reflects ${today_iso} at https://ctipilot.ch/"
+            echo "publish: site reflects ${today_iso} at ${SITE_URL}"
             break
         fi
         sleep 20
@@ -1069,7 +1098,8 @@ fi
 **Outcomes (report exactly one in the operator output):**
 
 - `publish: ok` — brief on main AND site references today's date (`LANDED=true && SITE_LIVE=true`).
-- `publish: main-only` — brief on main but site did not update inside the 10-min budget (`LANDED=true && SITE_LIVE=false`). Most often a deploy-site workflow failure — operator checks the Actions tab.
+- `publish: ok (main — site polling disabled)` — brief on main and `deployment.site_url` is empty (private deployment; the internal web server pulls + rebuilds on its own schedule — see `docs/private-deployment.md`). This is the success outcome for that configuration, not a degradation.
+- `publish: main-only` — brief on main but site did not update inside the 10-min budget (`LANDED=true && SITE_LIVE=false` with a non-empty site URL). Most often a deploy-site workflow failure — operator checks the Actions tab.
 - `publish: pending (<reason>)` — brief did not land on main inside the budget. `<reason>` is the most likely cause: `auto-merge running` (workflow still in flight), `auto-merge conflict` (workflow failed loud, look for `::error::` annotation), `feature-branch push failed` (sync/push step failed; commit is local-only), `unknown` (no signal — operator inspects manually).
 
 **Hard rules:** never delete the local commit or feature branch on verification failure; the local commit is the operational record. Never push or re-push during verification — verification is read-only. The operator decides whether to re-trigger the auto-merge workflow (`workflow_dispatch` with the branch name) or open a PR.
@@ -1088,6 +1118,8 @@ fi
 - [ ] **`run_log.json` fully populated** — model, prompt_version, every sub-agent's allocation, `fetch_failures`, `items_published`, `deep_dive`, verification counters.
 - [ ] **`tools/fetch_source.py` used for CISA + NCSC.ch** every run.
 - [ ] **Watchlist sweeps ran with assigned ownership** (S1 products, S4 suppliers) when the profile configures watchlists; § 7 carries the parseable `Watchlist:` line; watchlist-driven items carry the `watchlist` tag and stayed within the ≤ ⅓ anti-overshoot guideline.
+- [ ] **Closed-source intake handled** — S5 spawned iff Phase 0 step 8 found intel files; closed-source citations are referenced (never linked), carry provider + date (+ TLP + ref), respect the deployment TLP ceiling; items without a public URL carry `[CLOSED-SOURCE]`; § 7 carries the parseable `Closed-source intake:` line when intel was present.
+- [ ] **Calibration audit trail present** — borderline drops of plausibly org-relevant items logged in § 7 (`borderline-drop:`); borderline includes state their org-relevance in one clause.
 - [ ] **Org-triage lines present and criteria-consistent** on CVE-typed § 0 / § 2 / § 5 items when the profile defines a triage scheme; absent everywhere when it doesn't.
 - [ ] **Brief file exists at `briefs/YYYY-MM-DD.md`** — even on quiet days, even with sub-agent failures.
 - [ ] **Phase 7 publish verification ran** — the operator output's `publish:` line was set from the actual poll result (`ok` / `main-only` / `pending`), not assumed.
@@ -1131,6 +1163,7 @@ The agent has full authority to modify this prompt, source list, documentation, 
 15. `state/run_log.json` populated every run with full per-sub-agent allocation + verification counters — Ops dashboard depends on it.
 16. **Main agent does NO source fetching during Phase 1 (v2.52).** No `WebFetch`, no `WebSearch`, no `python3 tools/fetch_source.py`. Source-fetching is the `cti-research` sub-agents' exclusive job in Phase 1 — they hold the raw advisory / breach / enforcement content in their isolated contexts so the main agent's working context stays compositional. The only main-agent invocations of those tools are: Phase 2 single-URL spot-checks on a sub-agent's already-cited URL, Phase 5.7 verification-fix re-fetches of one URL the verifier flagged, Phase 7 publish `curl` against `https://ctipilot.ch/`. Bridge-fetcher recipe table moved out of this prompt into [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Bridge fetcher in the same release — sub-agents read it; main agent does not. This invariant exists because (a) duplicate fetches waste wall-clock + rate-limit budget, and (b) cumulative raw CTI content in main-agent context has tripped the cyber-content classifier mid-Phase-2 on past runs, killing the brief with `API Error … Usage Policy` and no published file (the worst PD-1 violation). The classifier reads the whole conversation — the smaller the main-agent CTI baseline, the more headroom for sub-agent returns + composition.
 17. **Watchlist anti-overshoot + triage truthfulness (v2.65).** Organization watchlists (§ Organization profile & watchlists) sharpen relevance *on top of* general landscape coverage; they never displace critical general-situation items (≤ ⅓ guideline), never bypass the verification / recency / sourcing gates, and never pad quiet days. The `**Org triage**` line derives only from facts the item already cites — a triage rating built on uncited facts is an F16 defect, not a convenience. Values live in `config/org-profile.yaml`; the generated ORG-PROFILE blocks are never hand-edited (regenerate via `python3 tools/compose_prompts.py --write`).
+18. **Closed-source TLP + citation discipline (v2.66).** Closed-source (`intel/`) content is cited by reference (`Closed-source:` field / plain-text inline attribution), never via a fabricated URL. On a `deployment.visibility: public` profile, content above TLP:CLEAR never appears in the brief — not as citation, not as quote, not as paraphrased detail that only the restricted document supports (`check_brief.py` `closed-source-tlp` FAILs the commit; above-CLEAR documents are leads to public sources only). Every closed-source claim traces to a drop file the verifier can `Read`.
 
 ### Encouraged self-edits
 

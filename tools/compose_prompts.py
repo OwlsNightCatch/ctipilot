@@ -393,6 +393,18 @@ def validate_profile(profile: dict[str, Any],
     if not norm_categories:
         default_category = ""
 
+    # deployment (v2.66) — optional section; defaults preserve the historic
+    # public GitHub-Pages deployment.
+    dep = profile.get("deployment", {})
+    if not isinstance(dep, dict):
+        raise ProfileError("deployment: must be a mapping")
+    visibility = str(dep.get("visibility", "public")).strip().lower()
+    if visibility not in {"public", "private"}:
+        raise ProfileError(f"deployment.visibility {visibility!r} must be public or private")
+    site_url = str(dep.get("site_url", "https://ctipilot.ch/")).strip()
+    if site_url and not re.match(r"^https?://\S+$", site_url):
+        raise ProfileError(f"deployment.site_url {site_url!r} must be an http(s) URL or empty")
+
     return {
         "profile_version": 1,
         "organization": norm_org,
@@ -405,6 +417,10 @@ def validate_profile(profile: dict[str, Any],
             "intro": str(vt.get("intro", "")).strip(),
             "default_category": default_category,
             "categories": norm_categories,
+        },
+        "deployment": {
+            "visibility": visibility,
+            "site_url": site_url,
         },
     }
 
@@ -553,8 +569,19 @@ def _render_org_data(profile: dict[str, Any]) -> str:
         head += " · **Additional sectors:** " + ", ".join(org["additional_sectors"])
     head += (f" · **Home region:** {org['home_region']} · "
              f"**Coverage focus:** {org['region_focus']}")
+    dep = profile["deployment"]
+    dep_line = (f"**Deployment:** {dep['visibility']} · **Site URL:** "
+                + (dep["site_url"] or "none (site polling disabled)"))
+    if dep["visibility"] == "public":
+        dep_line += (" — the brief publishes to the OPEN INTERNET: closed-source "
+                     "content above TLP:CLEAR must NEVER appear in it "
+                     "(`check_brief.py` FAILs the commit).")
+    else:
+        dep_line += (" — private deployment: closed-source content up to the "
+                     "drop file's TLP marking may be cited (unlinked).")
     lines: list[str] = [GENERATED_NOTE, head, "",
-                        f"**Constituency:** {_flow(org['description'])}", ""]
+                        f"**Constituency:** {_flow(org['description'])}", "",
+                        dep_line, ""]
     lines.extend(_render_products(wl["products"]))
     lines.append("")
     lines.extend(_render_suppliers(wl["suppliers"]))
@@ -581,6 +608,17 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
     lines.append(f"**Constituency:** {_flow(org['description'])}")
     lines.append("")
     lines.append(f"**Audience:** {_flow(org['audience'])}")
+    lines.append("")
+    dep = profile["deployment"]
+    if dep["visibility"] == "public":
+        lines.append("**Deployment:** public — the brief publishes to the open "
+                     "internet. Any closed-source citation marked above TLP:CLEAR "
+                     "is a defect the mechanical gate also FAILs; flag it F7 "
+                     "(drop) with the TLP violation named.")
+    else:
+        lines.append("**Deployment:** private — closed-source citations up to the "
+                     "referenced drop file's TLP marking are acceptable. Verify "
+                     "each citation's TLP against the file's front-matter.")
     lines.append("")
     if wl["products"] or wl["suppliers"] or wl["interests"]:
         prods = ", ".join(f"{p['name']} ({p['vendor']})" for p in wl["products"]) or "none"
@@ -799,6 +837,22 @@ def selftest() -> int:
     tax = {"sectors": {"finance", "energy"}, "regions": {"dach"}}
     profile = validate_profile(parsed, tax)
     check(profile["vulnerability_triage"]["default_category"] == "P2", "triage default")
+    check(profile["deployment"] == {"visibility": "public",
+                                    "site_url": "https://ctipilot.ch/"},
+          "deployment defaults when section absent")
+    import copy as _copy
+    dep_variant = _copy.deepcopy(parsed)
+    dep_variant["deployment"] = {"visibility": "private", "site_url": ""}
+    dp = validate_profile(dep_variant, tax)
+    check(dp["deployment"]["visibility"] == "private" and dp["deployment"]["site_url"] == "",
+          "private deployment with empty site_url accepted")
+    dep_bad = _copy.deepcopy(parsed)
+    dep_bad["deployment"] = {"visibility": "internal"}
+    try:
+        validate_profile(dep_bad, tax)
+        check(False, "invalid deployment.visibility rejected")
+    except ProfileError:
+        check(True, "invalid deployment.visibility rejected")
 
     # 3. Validation failures fail loud.
     import copy
@@ -872,6 +926,8 @@ def main() -> int:
                       help="regenerate managed blocks in place")
     mode.add_argument("--dump", action="store_true",
                       help="print the parsed profile as JSON")
+    mode.add_argument("--get", metavar="DOTTED.KEY",
+                      help="print one profile value (e.g. deployment.site_url)")
     mode.add_argument("--selftest", action="store_true",
                       help="run embedded parser/renderer tests")
     p.add_argument("--quiet", action="store_true", help="suppress per-file messages")
@@ -883,6 +939,15 @@ def main() -> int:
     try:
         if args.dump:
             print(json.dumps(load_profile(), indent=2, ensure_ascii=False))
+            return 0
+        if args.get:
+            node: Any = load_profile()
+            for part in args.get.split("."):
+                if not isinstance(node, dict) or part not in node:
+                    print(f"compose_prompts: ERROR: unknown key {args.get!r}", file=sys.stderr)
+                    return 2
+                node = node[part]
+            print(node if isinstance(node, str) else json.dumps(node, ensure_ascii=False))
             return 0
         in_sync, messages = compose(write=args.write)
     except ProfileError as e:

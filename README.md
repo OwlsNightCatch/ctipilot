@@ -64,7 +64,9 @@ The site deploys automatically on every push to `main` that touches the brief fe
 │   ├── brief-template.md      # Canonical Markdown skeleton for the rendered brief / weekly
 │   └── check-brief-fixes.md   # How to fix common check_brief.py FAILs
 ├── config/
-│   └── org-profile.yaml       # v2.65 — organization profile: org/sector/region, product + supplier watchlists, vuln-triage scheme
+│   └── org-profile.yaml       # v2.65 — organization profile: org/sector/region, product + supplier watchlists, vuln-triage scheme, deployment (public/private + site URL)
+├── intel/
+│   └── README.md              # v2.66 — closed-source drop folder: intel/<YYYY-MM-DD>/ documents ingested by a conditional intake sub-agent, cited by reference (never linked), TLP-gated
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~80 sources)
 ├── state/
@@ -95,6 +97,7 @@ The site deploys automatically on every push to `main` that touches the brief fe
 ├── docs/                      # Operator-facing documentation (pure docs)
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
+│   ├── private-deployment.md  # v2.66 — host the whole stack org-internally (private repo + scheduled pull/build/serve)
 │   └── analytics.md           # What we measure, what we don't (RSS opens deliberately untracked)
 ├── .github/workflows/
 │   ├── auto-merge-claude.yml  # Promotes pushes to claude/** branches onto main

@@ -102,7 +102,8 @@ except Exception as exc:  # pragma: no cover — fallback path
         body = m.group("body").strip()
         out: dict[str, Any] = {"sources": [], "tags": [], "regions": [], "sectors": [],
                                 "cve": None, "cvss": None, "vector": None,
-                                "auth": None, "status": [], "evidence": []}
+                                "auth": None, "status": [], "evidence": [],
+                                "closed_source": []}
         # Replace links with placeholders so we don't trip on `· Source:` text.
         links = list(_FOOTER_LINK_RE.finditer(body))
         ph_map: dict[str, str] = {}
@@ -120,7 +121,7 @@ except Exception as exc:  # pragma: no cover — fallback path
             label, url = ph_map[m_link.group(0)].split("|||", 1)
             out["sources"].append({"label": label, "url": url})
         for p in parts[1:]:
-            kv = re.match(r"^([A-Za-z][A-Za-z ]*?):\s*(.*)$", p)
+            kv = re.match(r"^([A-Za-z][A-Za-z -]*?):\s*(.*)$", p)
             if not kv:
                 continue
             k = kv.group(1).strip().lower().replace(" ", "_")
@@ -159,6 +160,25 @@ except Exception as exc:  # pragma: no cover — fallback path
                     if qtext:
                         recs.append({"quote": qtext, "attribution": qattr})
                 out["evidence"] = recs
+            elif k in ("closed-source", "closed_source"):
+                # v2.66 — mirror of site/build.py parse_closed_source_field.
+                cs_recs: list[dict[str, str]] = []
+                for cm in re.finditer(r'["“]([^"”]+?)["”]\s*\(([^)]*)\)', v):
+                    rec = {"title": cm.group(1).strip(), "provider": "", "date": "",
+                           "tlp": "", "ref": "", "raw": cm.group(0)}
+                    for i, part in enumerate(x.strip() for x in cm.group(2).split(",")):
+                        if not part:
+                            continue
+                        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", part):
+                            rec["date"] = part
+                        elif part.upper().startswith("TLP:"):
+                            rec["tlp"] = part[4:].strip().upper()
+                        elif part.lower().startswith("ref:"):
+                            rec["ref"] = part[4:].strip()
+                        elif i == 0 or not rec["provider"]:
+                            rec["provider"] = part
+                    cs_recs.append(rec)
+                out["closed_source"] = cs_recs
         return out
 
     def parse_taxonomy(path: Path) -> dict[str, set[str]]:
@@ -557,7 +577,7 @@ def check_h3_footers(sections: list[dict[str, Any]], taxonomy: dict[str, set[str
                     missing.append(tag)
                     continue
                 footer = it["footer"]
-                if not footer.get("sources"):
+                if not footer.get("sources") and not footer.get("closed_source"):
                     no_source.append(tag)
                 if not footer.get("tags"):
                     no_tags.append(tag)
@@ -973,6 +993,11 @@ def check_single_source_flag(sections: list[dict[str, Any]],
             footer = it.get("footer") or {}
             sources = footer.get("sources") or []
             if len(sources) != 1:
+                continue
+            if footer.get("closed_source"):
+                # v2.66 — a closed-source citation is HIGH-credibility
+                # corroboration; one URL + one closed-source ref is not a
+                # single-source item.
                 continue
             host = _host_path(sources[0].get("url", ""))[0]
             heading = it.get("heading") or ""
@@ -1600,11 +1625,21 @@ def check_run_log_for_today(brief_date: str, run_log: dict[str, Any] | None,
                     incomplete.append(f"{k}: missing '{f}'")
             if isinstance(a.get("sources_attempted"), list) and not a["sources_attempted"]:
                 empty_alloc.append(f"{k}: sources_attempted is empty (Ops dashboard renders 0/0)")
+    # v2.66 — the conditional closed-source intake agent (S5 daily / W3
+    # weekly) only runs when intel/<date>/ had files; validate its record
+    # shape when present, never require it.
+    intake_key = "W3" if kind == "weekly" else "S5"
+    a = sa.get(intake_key)
+    if isinstance(a, dict):
+        for f in ("returned", "items_returned"):
+            if f not in a:
+                incomplete.append(f"{intake_key}: missing '{f}' (intake record present but partial)")
     if incomplete:
         fail("run-log-subagents", f"sub-agent records incomplete: {incomplete}")
     else:
         n = len(sub_agent_keys)
-        ok("run-log-subagents", f"all {n} sub-agent allocation record(s) present ({', '.join(sub_agent_keys)})")
+        extra = f" + {intake_key} intake" if isinstance(a, dict) else ""
+        ok("run-log-subagents", f"all {n} sub-agent allocation record(s) present ({', '.join(sub_agent_keys)}){extra}")
     if empty_alloc:
         warn("run-log-subagents", f"sub-agents with empty source allocation: {empty_alloc}")
 
@@ -2443,6 +2478,12 @@ def check_evidence_shape(sections: list[dict[str, Any]]) -> None:
                 for s in (footer.get("sources") or [])
                 if s.get("label")
             }
+            # v2.66 — closed-source providers are valid Evidence attributions.
+            publisher_labels |= {
+                (cs.get("provider") or "").strip().lower()
+                for cs in (footer.get("closed_source") or [])
+                if cs.get("provider")
+            }
             for rec in evidence:
                 attr = (rec.get("attribution") or "").strip().lower()
                 if not attr:
@@ -2579,6 +2620,88 @@ def check_evidence_presence(sections: list[dict[str, Any]], *, kind: str = "dail
         ok("evidence-presence",
            f"all {checked} evidence-required item(s) carry an `Evidence:` field"
            if checked else "no evidence-required items in this brief")
+
+
+_TLP_PUBLIC_ALLOWED = {"", "CLEAR"}          # markings publishable on a public deployment
+_TLP_KNOWN = {"CLEAR", "GREEN", "AMBER", "AMBER+STRICT", "RED"}
+
+
+def check_closed_source(sections: list[dict[str, Any]], *, kind: str = "daily") -> None:
+    """v2.66 — closed-source citation hygiene + TLP-vs-deployment gate.
+
+    Closed-source citations (`Closed-source: "Title" (Provider, date, TLP:X,
+    ref: ID)`) reference documents dropped under intel/<YYYY-MM-DD>/ by the
+    operator's feed script. Checks:
+      - TLP gate (FAIL): on a `deployment.visibility: public` profile, any
+        closed-source citation marked above TLP:CLEAR fails the commit —
+        the brief publishes to the open internet. An unmarked citation
+        WARNs (assumed CLEAR, but the drop file should say so).
+      - ref-file existence (WARN): a `ref:`/title should trace to a file
+        under intel/ — a citation referencing nothing on disk is
+        unverifiable for the cold-reader verifier and the operator.
+      - reader-visible flag (WARN): an item sourced ONLY from closed
+        sources (no public URL) must carry `[CLOSED-SOURCE]` in its
+        heading so the reader sees the different verifiability guarantee.
+    """
+    profile = _load_org_profile()
+    visibility = ((profile or {}).get("deployment") or {}).get("visibility", "public")
+    intel_root = ROOT / "intel"
+    intel_files = {p.name for p in intel_root.glob("*/*")} if intel_root.exists() else set()
+
+    tlp_fails: list[str] = []
+    tlp_unmarked: list[str] = []
+    missing_refs: list[str] = []
+    missing_flag: list[str] = []
+    total = 0
+    for sec in sections:
+        for it in sec.get("items", []):
+            footer = it.get("footer") or {}
+            cs_list = footer.get("closed_source") or []
+            if not cs_list:
+                continue
+            tag = f"'{it['heading'][:60]}' ({sec['key']})"
+            total += len(cs_list)
+            for cs in cs_list:
+                tlp = (cs.get("tlp") or "").upper()
+                if visibility == "public":
+                    if tlp and tlp not in _TLP_PUBLIC_ALLOWED:
+                        tlp_fails.append(f"{tag}: TLP:{tlp}")
+                    elif not tlp:
+                        tlp_unmarked.append(tag)
+                if intel_files:
+                    ref = cs.get("ref") or ""
+                    if not any(ref and ref in name for name in intel_files) \
+                            and not any((cs.get("title") or "zzz").lower()[:24]
+                                        in name.lower() for name in intel_files):
+                        missing_refs.append(f"{tag}: ref {ref or cs.get('title', '')!r}")
+                elif cs.get("ref"):
+                    missing_refs.append(f"{tag}: intel/ directory absent but ref cited")
+            if not (footer.get("sources") or []) \
+                    and "[CLOSED-SOURCE]" not in (it.get("heading") or "").upper():
+                missing_flag.append(tag)
+
+    if tlp_fails:
+        fail("closed-source-tlp",
+             f"{len(tlp_fails)} closed-source citation(s) above TLP:CLEAR on a PUBLIC "
+             f"deployment — remove the item or re-anchor it in public sources: "
+             + "; ".join(tlp_fails[:5]))
+    elif tlp_unmarked:
+        warn("closed-source-tlp",
+             f"{len(tlp_unmarked)} closed-source citation(s) without a TLP marking on a "
+             f"public deployment (assumed CLEAR — mark the drop file): "
+             + "; ".join(tlp_unmarked[:5]))
+    if missing_refs:
+        warn("closed-source-ref",
+             f"{len(missing_refs)} closed-source citation(s) not traceable to a file "
+             f"under intel/: " + "; ".join(missing_refs[:5]))
+    if missing_flag:
+        warn("closed-source-flag",
+             f"{len(missing_flag)} item(s) sourced only from closed sources without a "
+             f"[CLOSED-SOURCE] heading marker: " + "; ".join(missing_flag[:5]))
+    if not (tlp_fails or tlp_unmarked or missing_refs or missing_flag):
+        ok("closed-source",
+           f"{total} closed-source citation(s), all hygienic" if total
+           else "no closed-source citations in this brief")
 
 
 _ORG_TRIAGE_RE = re.compile(r"^\*\*Org triage \([^)]*\):\*\*\s*([A-Za-z0-9-]+)", re.M)
@@ -2831,6 +2954,9 @@ def run_checks(brief_path: Path, *, skip_build_tests: bool, skip_link_check: boo
 
     print(f"\n== org-triage lines (v2.65) ==")
     check_org_triage(sections, kind=kind)
+
+    print(f"\n== closed-source citations (v2.66) ==")
+    check_closed_source(sections, kind=kind)
 
     print(f"\n== source URL liveness (HEAD/GET every Source link) ==")
     check_source_urls_resolve(sections, skip=skip_link_check)

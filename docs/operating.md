@@ -109,6 +109,8 @@ If you edit the config on an operator branch (e.g. via the GitHub web UI) and fo
 
 Guardrails you get for free: watchlist matches only *lower the relevance bar* (they never bypass recency / verification / sourcing gates); watchlist-driven items are tagged `watchlist` in their footers and capped by the ≤ ⅓ anti-overshoot guideline so general threat-landscape coverage always stays primary; a zero-hit sweep is reported as one `Watchlist:` line in the Verification Notes, never padded items. Empty watchlists + no triage scheme (the shipped default) reproduce the pre-v2.65 behaviour exactly.
 
+**Closed-source feeds (v2.66):** point your provider-export / ISAC-download script at the `intel/<YYYY-MM-DD>/` drop-folder contract ([`intel/README.md`](../intel/README.md)) — the next routine fire ingests the documents via a dedicated intake sub-agent, cites them by reference (never linked), and enforces the TLP ceiling implied by `deployment.visibility`. **Private hosting (v2.66):** to run the whole stack org-internally (private repo, internal web server on a scheduled pull → build → serve loop, above-CLEAR intel allowed), follow [`docs/private-deployment.md`](private-deployment.md).
+
 ## Source-health snapshot (v2.47 § 3.7)
 
 [`tools/source_health.py`](../tools/source_health.py) is an independent weekly health-check of every `status: active` source. HEAD-only against each source URL, records `(id, status_code, latency_ms, fetched_at, class)` per source into `state/source_health.json` (bounded history, 12 runs ≈ 3 months at weekly cadence). Runs as the [`weekly-source-health`](../.github/workflows/source-health.yml) GitHub Action on Sundays at 04:30 UTC, and on manual `workflow_dispatch`.

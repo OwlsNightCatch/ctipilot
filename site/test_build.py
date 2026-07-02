@@ -198,6 +198,57 @@ assert_eq(
     None,
 )
 
+# v2.66 — closed-source citations (unlinked; document lives under intel/).
+cs_only = (
+    '— *Closed-source: "Targeting of cantonal e-government portals" '
+    "(ISAC-CH weekly bulletin, 2026-07-01, TLP:AMBER, ref: ISACCH-2026-27) · "
+    "Tags: phishing, identity · Region: switzerland · Sector: public-sector*"
+)
+p_cs = parse_footer_line(cs_only)
+assert p_cs is not None, "closed-source-only footer must parse"
+assert_eq("closed-source sources empty", p_cs["sources"], [])
+assert_eq("closed-source count", len(p_cs["closed_source"]), 1)
+assert_eq("closed-source title", p_cs["closed_source"][0]["title"],
+          "Targeting of cantonal e-government portals")
+assert_eq("closed-source provider", p_cs["closed_source"][0]["provider"],
+          "ISAC-CH weekly bulletin")
+assert_eq("closed-source date", p_cs["closed_source"][0]["date"], "2026-07-01")
+assert_eq("closed-source tlp", p_cs["closed_source"][0]["tlp"], "AMBER")
+assert_eq("closed-source ref", p_cs["closed_source"][0]["ref"], "ISACCH-2026-27")
+assert_eq("closed-source-only footer validates", validate_footer(p_cs, tax), [])
+
+cs_mixed = (
+    "— *Source: [Vendor PSIRT](https://vendor.example/psirt/adv-1) · "
+    'Closed-source: "Provider flash report" (CTI Provider X, 2026-07-02, TLP:CLEAR) · '
+    "Tags: vulnerabilities, actively-exploited · Region: global · "
+    "CVE: CVE-2026-11111 · Vector: zero-click · Auth: pre-auth · Status: exploited*"
+)
+p_csm = parse_footer_line(cs_mixed)
+assert p_csm is not None
+assert_eq("mixed keeps the linked source", len(p_csm["sources"]), 1)
+assert_eq("mixed keeps the closed-source record", len(p_csm["closed_source"]), 1)
+assert_eq("mixed footer validates", validate_footer(p_csm, tax), [])
+
+cs_bad = parse_footer_line(
+    "— *Closed-source: some unquoted text without a record shape · Tags: ransomware · Region: global*"
+)
+assert cs_bad is not None
+errs = validate_footer(cs_bad, tax)
+assert any("Closed-source" in e for e in errs), f"malformed closed-source flagged: {errs}"
+
+cs_badtlp = parse_footer_line(
+    '— *Closed-source: "T" (Prov, 2026-07-01, TLP:PURPLE) · Tags: ransomware · Region: global*'
+)
+assert cs_badtlp is not None
+errs2 = validate_footer(cs_badtlp, tax)
+assert any("TLP" in e for e in errs2), f"unknown TLP flagged: {errs2}"
+
+cs_html = render_footer_html(p_cs)
+assert_in("closed-source rendered unlinked", "meta-closed-source", cs_html)
+_cs_span = cs_html.split('src-closed">', 1)[1].split("</span>", 1)[0]
+assert_not_in("closed-source has no anchor", "<a", _cs_span)
+assert_in("closed-source provider rendered", "ISAC-CH weekly bulletin", _cs_span)
+
 # TL;DR aggregate footer (no Source — Tags + Region only).
 tldr_agg = "— *Tags: vulnerabilities, actively-exploited, cisa-kev · Region: global, europe*"
 p_tldr = parse_footer_line(tldr_agg)

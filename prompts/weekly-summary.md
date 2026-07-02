@@ -1,6 +1,6 @@
 # Weekly CTI Summary — Master Prompt
 
-> **Prompt version:** v2.65 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
+> **Prompt version:** v2.66 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the summary footer (`**Prompt:** vN.M`) and `state/run_log.json.prompt_version`.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure. Schedule set by operator; this prompt is cadence-agnostic. The main agent composes the summary and owns the publishing chain; parallel horizon research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/) so they always run with the right tool set + isolated context window. **Main agent and sub-agents may run on different models** — the runtime config decides per role and every agent self-identifies its model in its output. The main agent records the per-agent model in `state/run_log.json` and aggregates the distinct model set into the summary's AI-content notice (see § Self-identification). The Ops dashboard at `/ops/` surfaces the per-run model split.
 > **Output:** `briefs/weekly/YYYY-Www.md` — one Markdown file per ISO week, version-controlled, English.
@@ -74,6 +74,8 @@ The weekly inherits every prime directive from `prompts/daily-cti-brief.md`. Hig
 12. **CISA KEV remediation deadlines are not operational signal for this audience** (daily PD-13). The KEV **listing flag** is jurisdiction-agnostic intelligence and stays useful (CISA confirms in-the-wild exploitation); the **deadline** is a US-FCEB-only compliance date with no weight in CH / EU. Never lead a § 0 bullet, § 1 H3, § 10 *Looking ahead* item, or any framing on a KEV deadline alone — *"KEV deadline expired during the window"* / *"KEV deadline pending next week"* is **not** what makes an item operationally critical for a Swiss/EU public-sector SOC. Continuing exploitation, named-cluster targeting, victim disclosures, fresh patches, and regulatory action **are** what matter; refer back to those.
 13. **Less is more — relevance over volume.** Every item costs reader attention. Ship fewer, sharper items. The weekly's bar is **higher than the daily's** because every item must additionally answer W-PD-1 — items that are interesting in isolation but don't meet inaction-=-incident / cross-day-pattern / horizon-shift get dropped. Drop without ceremony: vendor marketing dressed as research; commentary on already-covered stories without material delta; awareness pieces; industry surveys; conference recaps; product launches; YoY statistics without defender takeaway.
 
+    **Calibration — a false negative and a false positive are both failures, with different costs (v2.66 — mirrors the daily's PD-11 calibration).** Missing a threat relevant to *this organization* (§ Organization profile) can mean an unhandled incident; flooding the reader with marginal items breeds alert fatigue until real warnings stop being read. Inclusion is decided by org-relevance plus W-PD-1, not by newsworthiness. Borderline test: *"would a SOC manager at this organization escalate or re-plan anything next week because of this?"* Audit trails: every borderline *drop* of a plausibly org-relevant item gets a one-line § 11 entry (`borderline-drop: <title> — <reason>`); every borderline *include* states its org-relevance in one clause. § 0 Week-at-a-glance and § 1 are the most alert-fatigue-sensitive real estate — reserve them for genuine Monday-morning escalation material.
+
     **Variable size by signal.** Quiet week = short summary; noisy week = longer one. Don't pad. **Reader trusts brevity reflects signal, not laziness.** Within a section, prefer 3 sharp items over 8 mediocre; when in doubt, drop. **Empty sections are explicit:** render the heading + a one-line italic stub stating so on purpose, adapted per section (e.g. *"No qualifying multi-day chains in window — section intentionally empty."* / *"No new research or threat-actor developments with operational impact this week — section intentionally empty."* / *"No annual or periodic report landed in window — section intentionally empty."*).
 
     **Item-level cuts (mirrors daily PD-11).** Cut: throat-clearing intros (*"This vulnerability has been disclosed by…"*); hedge stacks (*"It is possible that this might potentially…"*); restated section context; closing flourishes (*"Defenders should remain vigilant"*); recap of prior coverage with no fresh delta or new lens. Every sentence either carries a fact a Tier 2/3 reader can act on or it goes.
@@ -93,6 +95,8 @@ This deployment is parameterized by [`config/org-profile.yaml`](../config/org-pr
 **Organization:** Swiss federal SOC (SOC) · **Primary sector:** public-sector · **Home region:** switzerland · **Coverage focus:** Switzerland and Europe
 
 **Constituency:** national / cantonal / federal administration, regulators, critical infrastructure, healthcare, education, public-sector technology suppliers
+
+**Deployment:** public · **Site URL:** https://ctipilot.ch/ — the brief publishes to the OPEN INTERNET: closed-source content above TLP:CLEAR must NEVER appear in it (`check_brief.py` FAILs the commit).
 
 **Product watchlist:** none configured — the product sweep is a no-op; general coverage rules apply unchanged.
 
@@ -156,6 +160,7 @@ site/taxonomy.yaml                 # controlled vocabulary for metadata footers
 site/test_build.py                 # build-side smoke tests
 tools/check_brief.py               # institutionalised Phase 4.5 self-check; bundles every gate + test_build.py
 tools/fetch_source.py              # HTTP bridge for sources that 403 the routine UA (CISA, NCSC.ch, …)
+intel/<YYYY-MM-DD>/                # v2.66 — closed-source drops (usually absent; Phase 0 step 8 detects, W3 ingests)
 work/<run-id>/                     # gitignored intermediate state
 ```
 
@@ -247,7 +252,8 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent`, `Bash`, `Write`, `Edit`, `TodoW
    - When the previous weekly's "Looking ahead" list drives this week's status updates, `Read` only that section by `offset` / `limit` — search for the `Looking ahead` heading text first to anchor the offset (the section *number* varies by prompt version, so match on the heading text, never a hard-coded `## N`). Do NOT `Read` the whole previous weekly — its H3s already appear in `prior_coverage.json`.
    - When you need the full record for an item flagged in `state-summary.json` `items.recent`, `Bash`-extract it: `jq '.items[] | select(.key == "<key>")' state/covered_items.json`.
 
-8. Initialise a `TodoWrite` plan for the phases.
+8. **Detect closed-source intel drops (v2.66 — mirrors the daily's Phase 0 step 8).** List `intel/<YYYY-MM-DD>/` directories whose date falls inside the gap window and which contain at least one non-README file. Non-empty result ⇒ Phase 2 additionally spawns the **W3 closed-source intake** sub-agent with those paths, scoped to what the dailies did NOT already absorb (items from intel drops that a daily already covered are dedup'd via `prior_coverage.json` like everything else). Empty or absent `intel/` ⇒ no W3 — the normal state. Never read the intel files into your own context (W-INV-3 rationale).
+9. Initialise a `TodoWrite` plan for the phases.
 
 If any script fails, surface the error and stop.
 
@@ -278,9 +284,9 @@ Build seven working lists from the week's daily briefs. The first five carry for
 
 ---
 
-## Phase 2 — Horizon research (two parallel sub-agents, up to 30 min wall-clock each)
+## Phase 2 — Horizon research (W1–W2 in parallel, plus conditional W3 intake; up to 30 min wall-clock each)
 
-Spawn **two sub-agents in a single message** via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
+Spawn **all Phase 2 sub-agents in a single message** — W1 and W2 always, plus **W3 when Phase 0 step 8 found intel files** — via parallel `Agent` calls with `subagent_type: cti-research` (defined at [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context — the harness binds the sub-agent to whichever model the agent definition's frontmatter pins, and the agent self-identifies its model in the first line of its return). The sub-agent's system prompt embeds the full operational rules: defender-vantage opener, link-discipline, MANDATORY bridge-fetcher for known-403 hosts, `WebFetch` outbound-links template + empirical findings, Discovery-trace requirements, return format with **mandatory `**Model:**` self-identification line**, operational guardrails. **Do not duplicate that content in the spawn message** — the sub-agent already has it.
 
 **Capture each sub-agent's reported model AND its start/end timestamps.** Every research return opens with two mandatory lines (in this order):
 
@@ -335,6 +341,10 @@ Four things in one return (all drawn from the research / news / discovery / acti
 5. **Watchlist status sweep** (§ Organization profile & watchlists — only when the profile configures watchlists). One consolidated pass across the gap window per watchlisted product (advisories, exploitation-status changes, KEV/EUVD additions) and per watchlisted supplier (breach / incident / compromise reporting). Results in the findings YAML `watchlist_sweep` block; hits feed §§ 1–3 / § 5 with the `watchlist` tag.
 
 For (1)–(4), items with prior public reporting older than ~6 months carry a 3–5-sentence Background paragraph (PD-14) — the weekly is the right home for that longer arc.
+
+### Conditional W3 — closed-source intake (v2.66; spawned only when intel files exist)
+
+The weekly mirror of the daily's S5 (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Closed-source intake for the operational rules). Spawn with `Domain: W3 — closed-source intake` and the intel directory paths from Phase 0 step 8; omit the source-list slice and rotation list from the envelope. W3 reads every in-window drop file, extracts items the dailies did not already absorb into `work/<run-id>/findings.W3.yaml` (sources as `closed_source` records; verbatim `evidence` quotes REQUIRED), treats the documents as HIGH-reliability primaries, attempts public corroboration, applies W-PD-1 like every other weekly item, and respects the deployment TLP ceiling from § Organization profile & watchlists (above-CLEAR documents on a public deployment are leads only). Composed items cite per § Closed-source citations below — referenced, never linked — and carry `[CLOSED-SOURCE]` in the heading when no public URL corroborates.
 
 ### W2 — Strategic & policy horizon
 
@@ -437,6 +447,8 @@ Field separator is the middle dot ` · ` (U+00B7 with surrounding spaces). § 0 
 
 Each quote must be (a) a substring of the body text returned by `WebFetch` / `tools/fetch_source.py` on one of the URLs in the item's `Source:` / `Additional source:` list, and (b) attributed by that source's publisher name (the binding the reader can verify). Use straight `"..."` quote marks. `site/build.py` parses `Evidence:` into a structured list and `tools/check_brief.py`'s `evidence-shape` check validates the field's shape. **Mandatory on every § 1 item** — § 1 ("what's on fire if no one acted") is the weekly's highest-trust section, the analogue of the daily's § 0 Immediate Action callout, so each of its load-bearing exploitation claims must bind to a fetched-source quote. **v2.65 additionally requires it on every § 3 item whose `Status:` includes `exploited`** (see Phase 3 § Compose strictly from the findings files; `check_brief.py` surfaces gaps via the `evidence-presence` WARN). Strongly encouraged on § 2 / § 6 items; optional elsewhere.
 
+**Closed-source citations (v2.66 — referenced, never linked; mirrors the daily).** Items sourced from `intel/<date>/` drop files (W3 intake, or carried forward from a daily's S5 item) cite the document via a `Closed-source:` footer field instead of a link: `· Closed-source: "Document title" (Provider name, YYYY-MM-DD, TLP:CLEAR, ref: PROV-2026-1234)`. Title + provider mandatory; date, TLP, and `ref:` strongly encouraged. Inline at the point of claim: `(Provider, YYYY-MM-DD — closed source)` — plain text, no fabricated URL ever. Items with no public-URL source carry `[CLOSED-SOURCE]` in the H3 heading. Closed-source documents count as HIGH-reliability primaries (single-document sourcing acceptable). TLP ceiling per the deployment line in § Organization profile & watchlists — above-CLEAR citations on a public deployment FAIL the mechanical gate (`closed-source-tlp`).
+
 **Multi-source.** When more than one publisher carries substantive sourcing, list them all. Build supports two equivalent forms: `Source: [a](u) · [b](u) · [c](u)` (preferred for 2–4 sources) and `Source: [a](u) · Additional source: [b](u) · Additional source: [c](u)`. The first link is the **most primary**: vendor PSIRT advisory > vendor research blog > research-lab post > regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD > ENISA EUVD > news.
 
 **Multi-primary.** Two distinct primary sources is fine when the canonical case applies: vendor advisory + research blog (the disclosing team often blogs separately), vendor advisory + regulator filing (8-K, ICO notice), CERT advisory + the vendor advisory it references (when the CERT itself is the primary disclosing party for its jurisdiction).
@@ -531,7 +543,7 @@ If you cannot determine your own model precisely, write `Anthropic Claude (speci
 
 **§ 10 Looking ahead — what to watch next week.** A focused, justified list. **Not predictions** — items already in motion that are likely to develop next week (vendor advisories with patches mid-rollout, campaigns still acquiring victims, regulatory consultations closing, EU / Swiss regulator deadlines approaching, ongoing exploitation against named target classes). Each item links back to the relevant earlier reporting. No footer per item; this is a list section. Per the inherited PD-13, **a pending CISA KEV remediation deadline is not on its own a Looking-ahead item** — it's a US-FCEB compliance date; the underlying exploitation trajectory is what to surface.
 
-**§ 11 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context. **`Watchlist:`** parseable line when the profile configures watchlists — format `Watchlist: products checked=N, hits=N; suppliers checked=M, hits=M`; omit when not configured.
+**§ 11 Verification & coverage notes.** Items still flagged `[SINGLE-SOURCE]` from the week. Items dropped from this week's roll-up that may resurface (briefly explain why dropped). Contradictions across sources that remain unresolved. Items included with reduced confidence (only aggregator source available). Sub-agents that didn't return on time. **`Coverage gaps:`** parseable line — same format as the daily — listing source ids the routine could not fetch this week, with reasons. The next weekly run reads this line for source-rotation context. **`Watchlist:`** parseable line when the profile configures watchlists — format `Watchlist: products checked=N, hits=N; suppliers checked=M, hits=M`; omit when not configured. **`Closed-source intake:`** parseable line whenever Phase 0 step 8 detected intel files — format `Closed-source intake: files=N, items=M, leads-only=K (TLP-restricted)`; omit when no intel was present.
 
 ### Technical depth — what every item must include (sub-agent-owned vocabulary)
 
@@ -937,6 +949,9 @@ A pushed feature branch is not a published summary. Verify both promotion-to-mai
 ISO_WEEK=$(d=$(date -u +%u); date -u -d "$((d % 7)) days ago" +%G-W%V)
 weekly_path="briefs/weekly/${ISO_WEEK}.md"
 DEADLINE=$(($(date +%s) + 600))
+# v2.66 — the site URL is deployment-configurable (empty = private deployment
+# whose internal web server pulls on its own schedule; skip the site poll).
+SITE_URL=$(python3 tools/compose_prompts.py --get deployment.site_url)
 
 LANDED=false
 while [ "$(date +%s)" -lt "$DEADLINE" ]; do
@@ -950,12 +965,12 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
 done
 
 SITE_LIVE=false
-if [ "$LANDED" = "true" ]; then
+if [ "$LANDED" = "true" ] && [ -n "$SITE_URL" ]; then
     week_id="$ISO_WEEK"
     while [ "$(date +%s)" -lt "$DEADLINE" ]; do
-        if curl -fsS --max-time 15 https://ctipilot.ch/ | grep -q "${week_id}"; then
+        if curl -fsS --max-time 15 "$SITE_URL" | grep -q "${week_id}"; then
             SITE_LIVE=true
-            echo "publish: site reflects ${week_id} at https://ctipilot.ch/"
+            echo "publish: site reflects ${week_id} at ${SITE_URL}"
             break
         fi
         sleep 20
@@ -966,7 +981,8 @@ fi
 **Outcomes (report exactly one in the operator output):**
 
 - `publish: ok` — weekly on main AND site references this week's id (`LANDED=true && SITE_LIVE=true`).
-- `publish: main-only` — weekly on main but site did not update inside the budget. Most often a deploy-site workflow failure — operator checks the Actions tab.
+- `publish: ok (main — site polling disabled)` — weekly on main and `deployment.site_url` is empty (private deployment; the internal web server pulls + rebuilds on its own schedule — see `docs/private-deployment.md`). The success outcome for that configuration.
+- `publish: main-only` — weekly on main but site did not update inside the budget (non-empty site URL). Most often a deploy-site workflow failure — operator checks the Actions tab.
 - `publish: pending (<reason>)` — weekly did not land on main inside the budget. `<reason>` is the most likely cause: `auto-merge running`, `auto-merge conflict`, `feature-branch push failed`, or `unknown`.
 
 **Hard rules:** never delete the local commit or feature branch on verification failure; the local commit is the operational record. Verification is read-only.
@@ -981,6 +997,8 @@ fi
 - [ ] **Compose-after-return gate honoured** — no § 6–§ 9 horizon prose attributed to a W-agent that has not written its `.ended_at` checkpoint.
 - [ ] § 1 leads with items where active exploitation, missed deadlines, or campaign continuation make inaction = incident — or explicitly states the section is empty for the week. **Every § 1 item carries an `Evidence:` field** binding its load-bearing exploitation claims to fetched-source quotes; so does every § 3 item whose `Status:` includes `exploited` (v2.65).
 - [ ] **Watchlist status sweep ran (W1)** when the profile configures watchlists; § 11 carries the parseable `Watchlist:` line; watchlist-driven items carry the `watchlist` tag and stayed within the ≤ ⅓ anti-overshoot guideline.
+- [ ] **Closed-source intake handled** — W3 spawned iff Phase 0 step 8 found in-window intel files; closed-source citations referenced (never linked) with provider + date (+ TLP + ref); TLP ceiling respected; `[CLOSED-SOURCE]` marker on items without a public URL; § 11 carries the parseable `Closed-source intake:` line when intel was present.
+- [ ] **Calibration audit trail present** — borderline drops logged in § 11 (`borderline-drop:`); borderline includes state their org-relevance in one clause.
 - [ ] **Org-triage lines present and criteria-consistent** on CVE-typed § 3 entries when the profile defines a triage scheme; absent everywhere when it doesn't.
 - [ ] § 6 Research & threat-actor developments present (or explicit empty stub); items synthesise the week's research / actor shifts rather than relisting daily § 3 entries; Background paragraph (PD-14) on items with prior reporting older than ~6 months.
 - [ ] § 7 annual-report findings deduplicate against earlier daily-brief coverage (synthesis only, no recap).
@@ -1036,6 +1054,7 @@ The weekly summary inherits the daily prompt's self-evolution authority and hard
 14. `tools/fetch_source.py` is the bridge for CISA + NCSC.ch every run; never let 403/429 on these hosts go un-mitigated.
 15. `state/run_log.json` populated every run with the full per-sub-agent allocation block + verification counters — the Ops dashboard depends on it.
 16. **Watchlist anti-overshoot + triage truthfulness (v2.65 — mirrors daily invariant #17).** Organization watchlists sharpen relevance *on top of* general landscape coverage; they never displace critical general-situation items (≤ ⅓ guideline), never bypass the verification / recency / sourcing / W-PD-1 gates, and never pad quiet weeks. The `**Org triage**` line derives only from facts the item already cites. Values live in `config/org-profile.yaml`; the generated ORG-PROFILE blocks are never hand-edited (regenerate via `python3 tools/compose_prompts.py --write`).
+17. **Closed-source TLP + citation discipline (v2.66 — mirrors daily invariant #18).** Closed-source (`intel/`) content is cited by reference (`Closed-source:` field / plain-text inline attribution), never via a fabricated URL. On a `deployment.visibility: public` profile, content above TLP:CLEAR never appears in the summary — not as citation, not as quote, not as paraphrased detail only the restricted document supports (`check_brief.py` `closed-source-tlp` FAILs the commit; above-CLEAR documents are leads to public sources only). Every closed-source claim traces to a drop file the verifier can `Read`.
 
 **Weekly-specific (W-INV):**
 
