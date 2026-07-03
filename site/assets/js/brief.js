@@ -308,6 +308,75 @@
     return div;
   }
 
+  // ── chrome sync (meta banner counts + aside filter chips) ────────────
+
+  function setAll(sel, text) {
+    document.querySelectorAll(sel).forEach(function (n) { n.textContent = text; });
+  }
+
+  function uniqueSorted(list, key) {
+    var set = {};
+    list.forEach(function (e) {
+      (e[key] || []).forEach(function (v) { set[v] = true; });
+    });
+    return Object.keys(set).sort();
+  }
+
+  function buildChip(facetAttr, v) {
+    var b = el('button', 'filter-chip');
+    b.type = 'button';
+    b.setAttribute(facetAttr, v);
+    b.setAttribute('aria-pressed', 'true');
+    b.setAttribute('title', 'Toggle ' + v);
+    b.textContent = v;
+    return b;
+  }
+
+  function buildFilterGroup(label, facetAttr, values) {
+    var d = el('details', 'filter-group');
+    d.open = true;
+    var s = el('summary', null, label + ' ');
+    var count = el('span', 'filter-count');
+    count.appendChild(el('span', 'muted', '(' + values.length + ')'));
+    s.appendChild(count);
+    d.appendChild(s);
+    var row = el('div', 'filter-chip-row');
+    values.forEach(function (v) { row.appendChild(buildChip(facetAttr, v)); });
+    d.appendChild(row);
+    return d;
+  }
+
+  // Rebuild the aside Tags/Regions chips so they match the entries the
+  // new window actually shows, then hand filtering back to filter.min.js.
+  function rebuildFilters(ops) {
+    var tags = uniqueSorted(ops, 'tags');
+    var regions = uniqueSorted(ops, 'regions');
+    document.querySelectorAll('[data-filter="brief"] .toc-filters').forEach(function (host) {
+      host.textContent = '';
+      if (tags.length) host.appendChild(buildFilterGroup('Tags', 'data-filter-tag', tags));
+      if (regions.length) host.appendChild(buildFilterGroup('Regions', 'data-filter-region', regions));
+      var reset = el('button', 'filter-reset', 'Reset filters');
+      reset.type = 'button';
+      reset.setAttribute('data-action', 'clear-filters');
+      reset.hidden = true;
+      host.appendChild(reset);
+      var status = el('p', 'filter-status');
+      status.setAttribute('data-role', 'filter-status');
+      status.hidden = true;
+      host.appendChild(status);
+    });
+    if (window.CTIBrief && typeof window.CTIBrief.rebind === 'function') {
+      window.CTIBrief.rebind();
+    }
+  }
+
+  function updateMeta(ops, win) {
+    setAll('[data-window-entries]', String(ops.length));
+    setAll('[data-window-cves]', String(uniqueSorted(ops, 'cve_ids').length));
+    var label = win.since ? ('since ' + win.since) : ('last ' + win.hours + ' h');
+    setAll('[data-window-label]', label);
+  }
+
   // ── render ───────────────────────────────────────────────────────────
 
   function renderWindow(book, win) {
@@ -371,5 +440,8 @@
       status.textContent = 'showing ' + ops.length
         + (ops.length === 1 ? ' entry ' : ' entries ') + bounds.label;
     }
+
+    updateMeta(ops, win);
+    rebuildFilters(ops);
   }
 })();

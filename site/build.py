@@ -1652,11 +1652,12 @@ def render_priority_badge(priority: str) -> str:
     return f'<span class="badge {cls}">{_escape(priority or "notable")}</span>'
 
 
-def render_entry_badges(entry: dict[str, Any], *, prefix: str = "",
-                        with_pills: bool = True) -> str:
-    """Metadata badge strip: priority, kind, discovered-at timestamp,
-    verification badge (single-source*), watchlist marker, then tag /
-    region / CVE pills."""
+def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
+    """Top status strip on an entry card: priority, kind, discovered-at
+    timestamp, and the status badges (verification single-source*, deep
+    dive, watchlist, org-triage). The taxonomy pills (tags / regions /
+    CVEs) render BELOW the entry body via `render_entry_taxonomy` — the
+    v2 footer placement, restored."""
     parts: list[str] = [render_priority_badge(entry.get("priority") or "notable")]
     parts.append(f'<span class="badge">{_escape(entry.get("kind") or "")}</span>')
     disc = _fmt_discovered(entry.get("discovered_at"))
@@ -1678,14 +1679,22 @@ def render_entry_badges(entry: dict[str, Any], *, prefix: str = "",
             f'<span class="badge badge--cve" title="{_escape(str(ot.get("rationale") or "org triage"))}">'
             f'{_escape(str(ot["category"]))}</span>'
         )
-    if with_pills:
-        for t in entry.get("tags") or []:
-            parts.append(render_tag_pill(t, prefix=prefix))
-        for r in entry.get("regions") or []:
-            parts.append(render_region_pill(r, prefix=prefix))
-        for cid in entry_cve_ids(entry):
-            parts.append(render_cve_pill(cid, prefix=prefix))
     return '<div class="entry-badges">' + " ".join(parts) + "</div>"
+
+
+def render_entry_taxonomy(entry: dict[str, Any], *, prefix: str = "") -> str:
+    """Below-the-entry metadata pills — tag / region / CVE — the v2
+    footer, restored under each item. Empty entries render nothing."""
+    pills: list[str] = []
+    for t in entry.get("tags") or []:
+        pills.append(render_tag_pill(t, prefix=prefix))
+    for r in entry.get("regions") or []:
+        pills.append(render_region_pill(r, prefix=prefix))
+    for cid in entry_cve_ids(entry):
+        pills.append(render_cve_pill(cid, prefix=prefix))
+    if not pills:
+        return ""
+    return '<div class="entry-taxonomy">' + " ".join(pills) + "</div>"
 
 
 def render_entry_evidence(entry: dict[str, Any]) -> str:
@@ -1850,6 +1859,7 @@ def render_entry_card(
         f'data-discovered="{_escape(entry.get("discovered_at") or "")}">'
         f"{heading_html}"
         f"{inner}"
+        f"{render_entry_taxonomy(entry, prefix=prefix)}"
         f"{render_entry_sources(entry)}"
         f"</article>"
     )
@@ -2161,9 +2171,27 @@ def render_live_brief_page(
     24 h relative to the build's reference moment) is fully
     server-rendered; brief.js re-renders #brief-sections client-side
     from data/briefbook.json when the reader changes the window."""
-    ops = operational_entries(window_entries)
+    ops = sorted(operational_entries(window_entries), key=entry_sort_key)
     n = len(ops)
+    cve_count = len({c for e in ops for c in entry_cve_ids(e)})
     anchor_label = ref_ts.strftime("%Y-%m-%d %H:%M UTC")
+    toc_html = _brief_filter_aside(ops)
+
+    meta_items = (
+        '<div class="brief-meta">'
+        '<div class="brief-meta__item brief-meta__item--lead">'
+        '<span class="brief-meta__label">Type</span>'
+        '<span class="brief-meta__value"><span class="brief-meta__type brief-meta__type--live">live</span></span></div>'
+        '<div class="brief-meta__item"><span class="brief-meta__label">Window</span>'
+        f'<span class="brief-meta__value" data-window-label>last {DEFAULT_WINDOW_HOURS} h</span></div>'
+        '<div class="brief-meta__item"><span class="brief-meta__label">Anchor</span>'
+        f'<span class="brief-meta__value"><span class="mono">{_escape(anchor_label)}</span></span></div>'
+        '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>'
+        f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-entries>{n}</span></span></div>'
+        '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">CVEs</span>'
+        f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-cves>{cve_count}</span></span></div>'
+        "</div>"
+    )
 
     chips = "".join(
         f'<button type="button" class="chip{" active" if h == DEFAULT_WINDOW_HOURS else ""}" '
@@ -2218,13 +2246,21 @@ def render_live_brief_page(
   <h1>Live brief</h1>
   <p class="subtitle">The current intelligence window, assembled from the pipeline's per-finding entries. Pick a wider window or a start date — the page re-renders instantly from the last {BRIEFBOOK_WINDOW_DAYS} days of published entries.</p>
 </header>
-{_ai_notice_html()}
-{control_bar}
-{data_island}
-<article class="brief-layout brief-layout--live" data-brief-page>
+<article class="brief-layout brief-layout--live" data-brief-page data-filter="brief">
+  {meta_items}
+  {control_bar}
+  {data_island}
   <div class="brief-main">
+    <details class="toc-mobile" data-filter="brief">
+      <summary>On this page</summary>
+      <div class="toc-mobile-body aside-toc">{toc_html}</div>
+    </details>
+    {_ai_notice_html()}
     <div class="brief-prose" id="brief-sections" data-default-hours="{DEFAULT_WINDOW_HOURS}">{sections_html}</div>
   </div>
+  <aside class="aside-toc aside-toc--desktop" aria-label="In this brief" data-filter="brief">
+    {toc_html}
+  </aside>
 </article>
 """
     top = ops[0] if ops else None
@@ -2619,6 +2655,7 @@ def render_entry_page(
   {render_entry_evidence(entry)}
   {actions_html}
   {chain_html}
+  {render_entry_taxonomy(entry, prefix=prefix)}
   {render_entry_sources(entry, with_roles=True)}
 </article>
 """
@@ -2680,81 +2717,99 @@ def render_embedded_entries_section(
 # === HOME (v3) =========================================================
 
 
+def _home_tldr_list(picked: list[dict[str, Any]], *, cap_chars: int = 240) -> str:
+    """Compact TL;DR bullet list for a home feature card — headline +
+    (length-capped) summary + a permalink arrow, one bullet per picked
+    entry."""
+    lis: list[str] = []
+    for e in picked:
+        url = entry_url_path(e)
+        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
+        summ = (e.get("summary") or "").strip()
+        if len(summ) > cap_chars:
+            summ = summ[: cap_chars - 1].rstrip() + "…"
+        lis.append(
+            "<li>"
+            f"<strong>{_inline_text(headline)}.</strong> "
+            f"{_inline_text(summ)} "
+            f'<a href="{_escape(url)}">→</a>'
+            "</li>"
+        )
+    return f"<ul>{''.join(lis)}</ul>" if lis else ""
+
+
 def render_home_page(
     *,
-    window_entries: list[dict[str, Any]],
-    latest_day: str | None,
-    latest_day_entries: list[dict[str, Any]],
+    today: str | None,
+    today_entries: list[dict[str, Any]],
+    prev_day: str | None,
+    prev_day_entries: list[dict[str, Any]],
     latest_week: str | None,
     latest_week_entries: list[dict[str, Any]],
-    recent_entries: list[dict[str, Any]],
     site_url: str,
     cachebust: str,
     canonical: str,
 ) -> str:
-    """Home — hero + three feature cards (live brief, latest day page,
-    latest weekly) + a recent-entries list with kind/priority badges."""
+    """Home — hero + three feature cards, each leading with its TL;DR:
+    (1) the current day's live entries, (2) the previous — now completed —
+    day's brief, (3) the latest weekly summary."""
     redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
 
-    ops = operational_entries(window_entries)
-    n_window = len(ops)
-    top = sorted(ops, key=entry_sort_key)[0] if ops else None
-    live_inner = (
-        f'<p class="muted">{n_window} entr{"y" if n_window == 1 else "ies"} in the current 24 h window.</p>'
-        + (
-            f"<ul><li><strong>{_inline_text((top.get('headline') or top.get('title') or '').strip().strip('*').rstrip('.'))}.</strong> "
-            f"{_inline_text((top.get('summary') or '').strip()[:220])}</li></ul>"
-            if top else '<p class="muted">A quiet window — no new verified signal in the last 24 h.</p>'
+    # (1) Live — the current day's entries, still being appended to.
+    if today:
+        live_ops = sorted(operational_entries(today_entries), key=entry_sort_key)
+        live_tldr = _home_tldr_list(select_tldr_entries(live_ops))
+        live_card = (
+            '<section class="home-today home-today--live">'
+            '<p class="home-today-eyebrow">Live — today</p>'
+            f"<h2>CTI Daily Brief — {_escape(today)}</h2>"
+            f'<p class="muted">{len(live_ops)} entr{"y" if len(live_ops) == 1 else "ies"} '
+            f"published so far today — updates through the day.</p>"
+            + (live_tldr or '<p class="muted">A quiet day so far — no new verified signal yet.</p>')
+            + '<p class="home-today-cta"><a class="cta" href="brief/">Open the live brief →</a></p>'
+            "</section>"
         )
-    )
-    live_card = (
-        '<section class="home-today home-today--daily">'
-        '<p class="home-today-eyebrow">Live brief</p>'
-        "<h2>The current window</h2>"
-        f"{live_inner}"
-        '<p class="home-today-cta"><a class="cta" href="brief/">Open the live brief →</a></p>'
-        "</section>"
-    )
+    else:
+        live_card = (
+            '<section class="home-today home-today--live">'
+            '<p class="home-today-eyebrow">Live — today</p>'
+            '<p class="muted">No entries published yet — the first pipeline run will open today\'s brief.</p>'
+            '<p class="home-today-cta"><a class="cta" href="brief/">Open the live brief →</a></p>'
+            "</section>"
+        )
 
-    if latest_day:
-        day_ops = sorted(operational_entries(latest_day_entries), key=entry_sort_key)
-        tldr = select_tldr_entries(day_ops, cap=3)
-        lis = "".join(
-            f"<li><strong>{_inline_text((e.get('headline') or '').strip().strip('*').rstrip('.'))}.</strong> "
-            f"{_inline_text((e.get('summary') or '').strip()[:180])}</li>"
-            for e in tldr
-        )
+    # (2) Latest completed day — the day before today, now finalised.
+    if prev_day:
+        day_ops = sorted(operational_entries(prev_day_entries), key=entry_sort_key)
+        day_tldr = _home_tldr_list(select_tldr_entries(day_ops))
         day_card = (
             '<section class="home-today home-today--daily">'
-            '<p class="home-today-eyebrow">Latest day archive</p>'
-            f"<h2>CTI Daily Brief — {_escape(latest_day)}</h2>"
-            f'<p class="muted">{len(day_ops)} entr{"y" if len(day_ops) == 1 else "ies"} published on {_escape(latest_day)}.</p>'
-            + (f"<ul>{lis}</ul>" if lis else "")
-            + f'<p class="home-today-cta"><a class="cta" href="briefs/{_escape(latest_day)}/">Read the day page →</a></p>'
+            '<p class="home-today-eyebrow">Completed daily brief</p>'
+            f"<h2>CTI Daily Brief — {_escape(prev_day)}</h2>"
+            f'<p class="muted">{len(day_ops)} entr{"y" if len(day_ops) == 1 else "ies"} '
+            f"published on {_escape(prev_day)}.</p>"
+            + (day_tldr or "")
+            + f'<p class="home-today-cta"><a class="cta" href="briefs/{_escape(prev_day)}/">Read the day page →</a></p>'
             "</section>"
         )
     else:
         day_card = (
             '<section class="home-today home-today--daily">'
-            '<p class="home-today-eyebrow">Latest day archive</p>'
-            '<p class="muted">No entries published yet — the first pipeline run will create the first day page.</p>'
+            '<p class="home-today-eyebrow">Completed daily brief</p>'
+            '<p class="muted">No completed day yet — the previous day\'s brief appears here once a new day begins.</p>'
             "</section>"
         )
 
+    # (3) Latest weekly summary.
     if latest_week:
         strat = sorted(strategic_entries(latest_week_entries), key=entry_sort_key)
-        glance = [e for e in strat if e.get("priority") in ("critical", "high")][:3]
-        lis = "".join(
-            f"<li><strong>{_inline_text((e.get('headline') or '').strip().strip('*').rstrip('.'))}.</strong> "
-            f"{_inline_text((e.get('summary') or '').strip()[:180])}</li>"
-            for e in glance
-        )
+        glance = [e for e in strat if e.get("priority") in ("critical", "high")][:6]
         weekly_card = (
             '<section class="home-today home-today--weekly">'
             '<p class="home-today-eyebrow">This week\'s summary</p>'
             f"<h2>CTI Weekly Summary — {_escape(latest_week)}</h2>"
             f'<p class="muted">{len(strat)} strategic entr{"y" if len(strat) == 1 else "ies"} this ISO week.</p>'
-            + (f"<ul>{lis}</ul>" if lis else "")
+            + (_home_tldr_list(glance) or "")
             + f'<p class="home-today-cta"><a class="cta" href="weekly/{_escape(latest_week)}/">Read the full weekly →</a></p>'
             "</section>"
         )
@@ -2765,24 +2820,6 @@ def render_home_page(
             '<p class="muted">No weekly summary yet — published Sundays.</p>'
             "</section>"
         )
-
-    recent_lis = "".join(
-        "<li>"
-        f'<a href="{entry_url_path(e)}">{_escape(e.get("title") or e["id"])}</a> '
-        f'<span class="e-meta" style="display:inline-flex;gap:0.3rem;vertical-align:middle">'
-        f'<span class="e-tag">{_escape(e.get("kind") or "")}</span>'
-        f"{render_priority_badge(e.get('priority') or 'notable')}"
-        "</span> "
-        f'<span class="muted mono">{_escape(e["date"])}</span>'
-        "</li>"
-        for e in recent_entries[:10]
-    )
-    recent_section = (
-        '<div class="home-recent-grid"><section class="home-recent">'
-        "<h3>Recent entries</h3>"
-        f'<ul class="home-recent-list">{recent_lis}</ul>'
-        "</section></div>"
-    ) if recent_lis else ""
 
     body = f"""
 <section class="home-hero">
@@ -2796,7 +2833,6 @@ def render_home_page(
 {weekly_card}
 </div>
 
-{recent_section}
 {redirect_js}
 """
     return base_template(
@@ -7683,7 +7719,11 @@ def main() -> int:
     )
 
     # ---- Home -------------------------------------------------------------
-    latest_day = max(days) if days else None
+    # "today" = the newest day with entries (the live, still-appended day);
+    # "prev_day" = the most recent completed day before it.
+    day_keys = sorted(days.keys(), reverse=True)
+    today = day_keys[0] if day_keys else None
+    prev_day = day_keys[1] if len(day_keys) > 1 else None
     latest_week = max(weeks) if weeks else None
     recent_entries = sorted(
         entries, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
@@ -7699,12 +7739,12 @@ def main() -> int:
     emit_html(
         "",
         render_home_page(
-            window_entries=window_entries,
-            latest_day=latest_day,
-            latest_day_entries=days.get(latest_day, []) if latest_day else [],
+            today=today,
+            today_entries=days.get(today, []) if today else [],
+            prev_day=prev_day,
+            prev_day_entries=days.get(prev_day, []) if prev_day else [],
             latest_week=latest_week,
             latest_week_entries=weeks.get(latest_week, []) if latest_week else [],
-            recent_entries=recent_entries,
             site_url=site_url,
             cachebust=cachebust,
             canonical=site_url,
