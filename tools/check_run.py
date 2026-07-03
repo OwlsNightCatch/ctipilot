@@ -250,6 +250,7 @@ NATIONAL_CERT_HOSTS: tuple[str, ...] = (
     "cisa.gov", "www.cisa.gov",
     "csirt.gov.it", "agid.gov.it", "acn.gov.it",
     "cert.at", "govcert.gv.at", "cert.pl", "ccn-cert.cni.es",
+    "ccb.belgium.be", "safeonweb.be",
     "jpcert.or.jp",
 )
 

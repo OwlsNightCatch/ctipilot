@@ -1,0 +1,156 @@
+domain: S2
+run_id: 2026-07-03T1809Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-03T18:11:36Z
+ended_at: 2026-07-03T18:16:33Z
+duration_seconds: 297
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 6
+  bridge_fetches: 9
+
+items:
+  - title: "Rancher SAML authentication-replay flaw (CVE-2026-44946) undermines Okta/ADFS/Keycloak/Shibboleth federated logins"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0220", publisher: "NCSC-NL", date: "2026-07-03", role: "primary" }
+      - { url: "https://github.com/rancher/rancher/security/advisories/GHSA-c5jm-xcmq-9j95", publisher: "Rancher (SUSE) GitHub Security Advisory", date: "2026-06-29", role: "primary" }
+      - { url: "https://github.com/rancher/rancher/security/advisories/GHSA-c4rp-wgqc-mfhc", publisher: "Rancher (SUSE) GitHub Security Advisory", date: "2026-06-29", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (feed listing, NCSC-2026-0220 entry published 2026-07-03T08:21Z) → drilled: python3 tools/fetch_source.py ncsc-nl csaf NCSC-2026-0220 → primary: Rancher/SUSE GitHub Security Advisory, URL https://github.com/rancher/rancher/security/advisories/GHSA-c5jm-xcmq-9j95 (SAML replay, CVE-2026-44946) and URL https://github.com/rancher/rancher/security/advisories/GHSA-c4rp-wgqc-mfhc (companion PRTB permission-persistence flaw, CVE-2026-44947)"
+    summary: |
+      NCSC-NL published an advisory on 2026-07-03 covering two Rancher (SUSE) vulnerabilities patched in
+      2.14.3 / 2.13.7 / 2.12.11 / 2.11.15. The primary flaw, CVE-2026-44946 (CVSS 3.1: 7.4, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N),
+      is a SAML authentication-replay weakness in Rancher's Assertion Consumer Service (ACS) handler: the
+      handler does not enforce single-use of SAML assertions, so a captured, validly-signed SAML response
+      plus the victim's pre-authentication SAML state cookie can be resubmitted to spin up a second,
+      independently authenticated Rancher session with the victim's permissions. The vendor advisory states
+      the issue affects "all SAML providers (Okta, Ping, ADFS, Keycloak, Shibboleth)" configured against
+      Rancher — i.e. the weakness sits in Rancher's assertion-consumption logic, not in any specific IdP.
+      Exploitation requires an attacker able to intercept/capture a legitimate SAML response and its
+      companion state cookie (network position or a prior foothold on the authentication path), then replay
+      it before the assertion's validity window expires. The fix adds server-side assertion-ID tracking with
+      an in-memory cache and strict time-window validation. A companion advisory, CVE-2026-44947 (CVSS 4.9),
+      fixes the legacy Project Role Template Binding (PRTB) reconciler: when the `aggregated-roletemplates`
+      feature is disabled (the default), removing the `updatepsa` permission from a RoleTemplate fails to
+      clean up the associated Pod Security Admission ClusterRole/ClusterRoleBinding, letting a user retain
+      unauthorized PSA permissions after an administrator believed them revoked. Rancher is a widely deployed
+      Kubernetes multi-cluster management platform in enterprise and public-sector cloud/on-prem estates;
+      an authentication-plane bypass against it is a cluster-takeover primitive regardless of which
+      federated IdP the organization uses on the backend.
+    region_nexus: "global; Netherlands NCSC advisory, relevant to any EU/CH public-sector Kubernetes estate federating via SAML"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cloud/container infrastructure, cross-sector"
+    cves: [CVE-2026-44946, CVE-2026-44947]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Rancher's SAML login does not enforce one-time use of SAML assertions: the same signed SAML response can be submitted more than once"
+        attribution: "Rancher (SUSE) GitHub Security Advisory GHSA-c5jm-xcmq-9j95"
+        source_url: "https://github.com/rancher/rancher/security/advisories/GHSA-c5jm-xcmq-9j95"
+      - quote: "An attacker...can replay the captured SAML response together with the associated state cookie to establish a new authenticated Rancher session as the victim"
+        attribution: "Rancher (SUSE) GitHub Security Advisory GHSA-c5jm-xcmq-9j95"
+        source_url: "https://github.com/rancher/rancher/security/advisories/GHSA-c5jm-xcmq-9j95"
+      - quote: "A SAML authentication replay vulnerability in Rancher's ACS handler allowed potential man-in-the-middle attacks by failing to enforce one-time use of SAML assertions in versions 2.14.0 to before 2.14.3."
+        attribution: "NCSC-NL (NCSC-2026-0220)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0220"
+    extended_notes: |
+      Detection: hunt for duplicate SAML assertion IDs (InResponseTo / AssertionID) reaching the Rancher ACS
+      endpoint within a short time window from differing source IPs/user-agents — Rancher's own fix implements
+      exactly this server-side check, so pre-patch environments should add equivalent detection at a reverse
+      proxy/WAF in front of the ACS endpoint if patching is delayed. Hardening: upgrade to 2.14.3 / 2.13.7 /
+      2.12.11 / 2.11.15; shorten SAML assertion validity windows at the IdP; monitor for multiple concurrent
+      Rancher sessions tied to the same identity from disjoint source IPs. No confirmed in-the-wild
+      exploitation reported by either NCSC-NL or the vendor at time of writing — flagged as a patch-cycle
+      disclosure, not an active-exploitation item. ATT&CK: closest mapping is T1606.002 (Forge Web
+      Credentials: SAML Tokens) / broadly T1550 (Use Alternate Authentication Material) for the session-reuse
+      outcome; this is a replay rather than a forgery, so treat the mapping as approximate.
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation; included for identity-federation/K8s-management significance and national-CERT sourcing (public-sector cloud relevance)"
+
+  - title: "GitHub Enterprise Server: missing authorization on the Copilot PR-summary endpoint let authenticated users read private-repo source code (CVE-2026-9132), plus stored XSS and OAuth-scope UI misrepresentation"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0219", publisher: "NCSC-NL", date: "2026-07-03", role: "primary" }
+      - { url: "https://docs.github.com/en/enterprise-server@3.21/admin/release-notes#3.21.2", publisher: "GitHub Enterprise Server 3.21.2 release notes", date: "2026-07-02", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (feed listing, NCSC-2026-0219 entry published 2026-07-03T08:21Z) → drilled: python3 tools/fetch_source.py ncsc-nl csaf NCSC-2026-0219 → corroboration: GitHub Enterprise Server release notes, URL https://docs.github.com/en/enterprise-server@3.21/admin/release-notes#3.21.2"
+    summary: |
+      NCSC-NL (2026-07-03) reports three GitHub Enterprise Server vulnerabilities fixed across versions
+      3.17.17, 3.18.11, 3.19.8, 3.20.4 and 3.21.2/3.22 (all versions before 3.21/3.22 are affected). The most
+      significant, CVE-2026-9132, is a missing-authorization flaw (CWE-862) in the Copilot pull-request
+      description diff-summary endpoint: an authenticated user could reach source code from a private
+      repository they had no access rights to via that endpoint, because the endpoint's authorization check
+      did not verify the caller's actual repository permissions before returning the diff summary generated
+      by Copilot. CVE-2026-9106 is a UI-misrepresentation bug (CWE-451): the OAuth consent screen hid the
+      `manage_runners:org` scope from the authorization prompt, so a user approving what looked like a
+      narrower-scoped OAuth app grant unintentionally handed the app control over organization Actions
+      runner management. CVE-2026-10585 is a stored XSS (CWE-79) in Discussion titles: an authenticated
+      attacker can inject a JavaScript payload into a title field that executes in the browser context of any
+      other user who views that Discussion. All three require an authenticated account on the target GHES
+      instance; none require pre-existing admin rights.
+    region_nexus: "global; relevant to CH/EU public-sector organizations and technology suppliers self-hosting GitHub Enterprise Server for source-code custody and CI/CD"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector technology suppliers, software supply chain, cross-sector"
+    cves: [CVE-2026-9132, CVE-2026-9106, CVE-2026-10585]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "De derde kwetsbaarheid betreft een ontbrekende autorisatie, waardoor geauthenticeerde gebruikers toegang konden krijgen tot broncode van private repositories waar zij geen rechten voor hadden, via het Copilot pull request description diff summary endpoint."
+        attribution: "NCSC-NL (NCSC-2026-0219)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0219"
+      - quote: "A missing authorization vulnerability in GitHub Enterprise Server prior to version 3.21 allowed authenticated users to access private repository source code via the Copilot pull request description diff summary endpoint."
+        attribution: "NCSC-NL CSAF record (CVE-2026-9132)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0219"
+    extended_notes: |
+      Detection: on self-hosted GHES, audit-log review for anomalous calls to the Copilot PR
+      description/diff-summary endpoint from accounts with no direct collaborator relationship to the
+      referenced repository (T1213.003 Data from Information Repositories: Code Repositories); review
+      Discussion-creation events for script-like content in title fields (stored XSS, executes in viewer
+      browser context); review OAuth App authorization audit-log entries for `manage_runners:org` grants
+      that were not visible at consent time (T1550 Use Alternate Authentication Material / OAuth token
+      abuse). Hardening: upgrade self-hosted GHES to >=3.17.17 / 3.18.11 / 3.19.8 / 3.20.4 / 3.21.2 or
+      3.22; review and revoke any OAuth App authorizations granted with `manage_runners:org` scope issued
+      before the patch; treat this as a routine patch-cycle disclosure — no exploitation-in-the-wild claim
+      from NCSC-NL or GitHub at time of writing. Single-source (NCSC-NL, carve-out-eligible national CERT);
+      GitHub's own dedicated GHSA advisory pages for these three CVE IDs were not independently reachable
+      during this run (vendor release notes only confirm the patched versions, not full technical detail) —
+      flagged as a corroboration gap for the next run to close.
+    borderline: true
+    borderline_reason: "no confirmed exploitation; patch-cycle disclosure included for public-sector software-supply-chain relevance (self-hosted GHES for source custody/CI-CD) and because NCSC-NL is an essential home-region-adjacent source"
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product/supplier watchlist configured; applied sector/region lens (public-sector, CH/EU) as instructed. No CH-specific incident/advisory cleared the in-window bar beyond items already in prior_coverage.json (MedusaLocker/Kanton Zürich Baudirektion claim, 'The Gentlemen' Swiss targeting, Cisco SD-WAN, Keycloak, SharePoint, Kemp LoadMaster, Citrix NetScaler, Argo CD — all previously surfaced 2026-06-27 to 2026-07-03). Checked for updates on the unconfirmed MedusaLocker/Kanton Zürich Baudirektion leak-site claim (2026-07-02) via WebSearch — no cantonal statement or further corroboration found in-window."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actualite RSS feed (https://www.cert.ssi.gouv.fr/actualite/feed/) returned only entries up to 2025-12-04 — feed appears stale, consistent with the 2026-06-30 note already on this source record in sources.json. Confirmed again this run; recommend re-checking the feed URL / cadence."
+  - source_id: cert-fr-avis
+    reason: "CERT-FR avis RSS feed newest entry was 2026-06-25 (CERTFR-2026-AVI-0802) — no in-window (last 16h) advisories."
+  - source_id: cert-eu
+    reason: "CERT-EU security-advisories RSS newest entry was 2026-06-10 (2026-008, Ivanti Sentry) — no in-window items; slow-cadence source per prior notes."
+  - source_id: enisa
+    reason: "ENISA /news newest item 2026-07-01 (NIS360 survey announcement, policy/administrative, not threat-relevant) — no in-window technical items."
+  - source_id: cert-pl
+    reason: "CERT Polska /en/news/ newest item 2026-06-12 (UNC1151/Ghostwriter Gmail phishing) — no in-window items."
+  - source_id: cert-at
+    reason: "CERT.at /en/news/ (via cert.at blog) newest item 2026-06-01 — no in-window items; sparse ~monthly cadence per prior notes."
+  - source_id: ncsc-ch-focus
+    reason: "NCSC-CH Im Fokus newest weekly review (Woche 26, Zoom/Browser-in-the-Browser malware campaign) published 2026-06-30 — outside the 16h window; no new Woche-27 review yet."
+  - source_id: ncsc-ch-incidents
+    reason: "NCSC-CH Aktuelle Vorfälle (consumer-fraud page) newest dated entry 01.07.2026 — outside 16h window; page lags per prior notes."
+  - source_id: cisa-advisories
+    reason: "python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories returned HTTP 403 on this attempt (bridge normally works per source notes); not retried a second time per bounded-retry policy. No CISA-sourced item in this return as a result."
+  - source_id: ncsc-uk
+    reason: "NCSC-UK reports-advisories listing surfaced only articles with visible dates in March/April 2026 (Citrix NetScaler, F5 BIG-IP APM advisories) — could not confirm an in-window (last 16h) publication or update timestamp for these pages during this run; excluded for insufficient recency confidence rather than treated as a fetch failure."
+  - source_id: safeonweb-be, oneconsult-ch, scip-ch, truesec, withsecure-labs, infoguard-ch, jpcert, prodaft, govcert-at
+    reason: "Not fetched this run due to time-budget prioritization of essential CERT/NCSC sources and the two in-window vulnerability leads pursued to primary; no evidence collected either way for these standard-tier sources this run."

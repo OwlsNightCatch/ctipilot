@@ -1,0 +1,183 @@
+domain: S1
+run_id: 2026-07-03T1809Z-intel
+model: "Sonnet 5 (self-identified; CLAUDE_FRIENDLY_NAME/CLAUDE_MODEL_ID env vars unset)"
+model_id: claude-sonnet-5
+started_at: 2026-07-03T18:11:29Z
+ended_at: 2026-07-03T18:21:05Z
+duration_seconds: 576
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 8
+  bridge_fetches: 22
+items:
+  - title: "WatchGuard Fireware OS — pre-auth use-after-free RCE in the iked IKEv2/LDAP path (CVE-2026-13368, CVSS 9.2)"
+    sources:
+      - { url: "https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023", publisher: "WatchGuard PSIRT", date: "2026-07-02", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2193", publisher: "BSI CERT-Bund (WID-SEC-2026-2193)", date: "2026-07-03", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-2193, 'WatchGuard Firebox: Mehrere Schwachstellen', published 2026-07-03T10:50:50Z) → primary: WatchGuard PSIRT, URL https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023 → CVE verification via NVD CVE API https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-13368"
+    summary: |
+      WatchGuard disclosed CVE-2026-13368 (CVSS 4.0 base score 9.2, CRITICAL; CWE-416 use-after-free) on 2026-07-02,
+      one of ten CVEs patched in the same Fireware OS release cycle (WGSA-2026-00014 through -00023). The flaw is a
+      race condition leading to a use-after-free in the iked process — the IKEv2 key-exchange daemon on Firebox
+      appliances — triggered during LDAP authentication for Mobile VPN with IKEv2. A remote, unauthenticated
+      attacker can exploit the race to execute arbitrary code in the iked process context. Prerequisite: the
+      Firebox must have Mobile VPN with IKEv2 configured to use an external LDAP authentication server (a common
+      enterprise/remote-access configuration). Affected: Fireware OS 11.0 up to and including 11.12.4_Update1,
+      12.0 up to and including 12.12, 12.5 up to and including 12.5.18, and 2025.1 up to and including 2026.2.
+      WatchGuard's resolution table lists fixed builds 2026.2.1 (for the 2025.1/2026.x line) and 12.12.1 (for the
+      12.x line); the 12.5.x branch (T15/T35 models) is listed "Unresolved" at publication, and the 11.x branch is
+      End of Life with no fix planned. No workaround is available. BSI CERT-Bund relayed the full ten-advisory
+      WatchGuard batch (WGSA-2026-00014 to -00023) as WID-SEC-2026-2193 on 2026-07-03, rating the batch severity
+      "hoch" (high). No public PoC or in-the-wild exploitation has been reported as of this run. This is an
+      internet-facing, unauthenticated, pre-auth RCE class flaw on a widely deployed UTM/firewall/VPN gateway
+      appliance — the exact class of device (Fortinet, Ivanti, Citrix precedent) that has repeatedly become a
+      fast-follow mass-exploitation target once technical detail becomes public.
+    region_nexus: "global; EU/CH public-sector remote-access VPN gateways using Firebox + external LDAP are directly exposed"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, cross-sector (remote-access infrastructure)"
+    cves: [CVE-2026-13368]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A remote unauthenticated attacker could exploit this vulnerability to execute arbitrary code in the context of the iked process on Fireboxes that have a Mobile VPN with IKEv2 configured to use an external LDAP authentication server."
+        attribution: "WatchGuard PSIRT (WGSA-2026-00023)"
+        source_url: "https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023"
+      - quote: "This vulnerability affects Fireware OS 11.0 up to and including 11.12.4_Update1, 12.0 up to and including 12.12, 12.5 up to and including 12.5.18, and 2025.1 up to and including 2026.2."
+        attribution: "WatchGuard PSIRT (WGSA-2026-00023)"
+        source_url: "https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application) as the initial-access vector; T1133 (External Remote
+      Services) frames the exposed IKEv2/Mobile-VPN service class. CWE-416 use-after-free is the root-cause
+      primitive (technique class akin to T1055-adjacent memory-corruption exploitation, though ATT&CK does not have
+      a dedicated UAF sub-technique).
+      Detection/hunt: Firebox Traffic Monitor / syslog for unexpected iked process restarts or crashes correlating
+      with inbound UDP/500 and UDP/4500 (IKE/NAT-T) traffic; monitor the LDAP server's own auth logs for malformed
+      or high-frequency bind attempts originating from the Firebox's configured LDAP client identity, which would
+      indicate exploitation attempts against the race condition; any unscheduled Fireware OS process crash-loop on
+      appliances with Mobile VPN + IKEv2 + external LDAP configured warrants incident-response triage before
+      assuming benign instability.
+      Hardening: patch to Fireware OS 2026.2.1 (2025.1/2026.x branch) or 12.12.1 (12.x branch) immediately; for the
+      12.5.x branch (T15/T35 models) where no fix exists yet, and for EOL 11.x, the only mitigation is disabling
+      external-LDAP-backed Mobile VPN with IKEv2 or migrating authentication to a non-LDAP backend (e.g. RADIUS)
+      until a fix ships; no vendor-documented workaround otherwise.
+      Credited researcher: Cody Sixteen (per WatchGuard advisory).
+
+  - title: "Control Web Panel pre-auth blind SQL injection to RCE via INTO DUMPFILE web-shell write (CVE-2026-57517, CVSS 9.8)"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-07-03", role: "primary" }
+      - { url: "https://control-webpanel.com/changelog", publisher: "Control Web Panel (vendor changelog)", date: "2026-05-06", role: "corroborating" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (listing, dated 03/07/2026) → primary: CCB Belgium advisory, URL https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets → corroborating: vendor changelog https://control-webpanel.com/changelog#1773753427572-9bf81bf4-f2d2 → CVE verification via NVD CVE API https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-57517"
+    summary: |
+      CCB Belgium published a fresh advisory today (2026-07-03) for CVE-2026-57517, a CVSS 3.1 9.8 / CVSS 4.0 9.3
+      pre-authentication blind SQL injection in Control Web Panel (CWP, formerly CentOS Web Panel), a widely
+      deployed Linux server/hosting-management platform (web hosting, DNS, email, and server administration).
+      The vulnerable input is the `userRes` POST parameter handled at the CWP user endpoint (`login/index.php`-
+      adjacent user module); insufficient sanitisation lets an unauthenticated remote attacker inject SQL that
+      executes with the backend database's privileges. The disclosed exploitation chain: (1) attacker sends a
+      crafted HTTP request injecting SQL via `userRes`; (2) the injected query uses `INTO DUMPFILE` to blind-write
+      an attacker-controlled PHP web shell into a web-accessible directory (CCB names the Roundcube logs directory
+      per the underlying CVE record) without needing query output or valid credentials; (3) the web shell executes
+      arbitrary commands with the privileges of the `cwpsvc` service account, yielding full server compromise.
+      Affected: Control Web Panel before version 0.9.8.1225. CCB states there is no evidence of in-the-wild
+      exploitation as of publication, but flags CWP's large internet-facing footprint (tens of thousands of
+      internet-exposed instances have historically been observed for this product family) as a high-priority risk
+      given the pre-auth, no-interaction nature of the flaw. The vendor's own changelog shows 0.9.8.1225 shipped
+      2026-05-06 — the fix predates the public CVE disclosure (2026-07-01) by roughly two months, meaning any CWP
+      instance not updated since May 2026 remains exposed today.
+    region_nexus: "global; CWP is a common self-hosted control panel on internet-facing Linux servers used by SMB/education/public-sector web-hosting operators in Europe"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector, web-hosting/IT infrastructure, education"
+    cves: [CVE-2026-57517]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This blind SQL injection vulnerability in the userRes parameter allows unauthenticated remote attackers to write arbitrary files to the underlying filesystem and achieve remote code execution."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets"
+      - quote: "There is no evidence of exploitation in the wild, however, the combination of critical severity, lack of authentication requirements, and CWP's large internet-facing footprint makes this a high-priority risk."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets"
+      - quote: "The attacker leverages an INTO DUMPFILE to blind-inject and write a PHP web shell to a web-accessible directory, without needing to see any query output or possess valid credentials."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application) for the initial SQLi vector; T1505.003 (Server
+      Software Component: Web Shell) for the post-injection PHP web-shell persistence/execution step. CWE-89 (SQL
+      Injection).
+      Detection/hunt: web-server / CWP access logs for POST requests to the user endpoint containing SQL syntax
+      (UNION, SLEEP(), INTO DUMPFILE, OUTFILE) in the `userRes` parameter; file-integrity monitoring on the
+      Roundcube webmail logs directory and other web-accessible paths under the CWP docroot for newly created
+      `.php` files; process monitoring for the `cwpsvc` service account spawning shell interpreters or unexpected
+      child processes (classic web-shell execution pattern); MySQL/MariaDB general/audit log review for
+      `INTO DUMPFILE`/`INTO OUTFILE` statements originating from the CWP application database user.
+      Hardening: update to Control Web Panel 0.9.8.1225 or later immediately; CCB notes patching does not remediate
+      historic compromise — any instance that ran an affected version internet-facing since disclosure (or since
+      the May 2026 silent fix) should be checked for planted web shells before being considered clean.
+
+cve_table:
+  - cve: CVE-2026-13368
+    product: "WatchGuard Fireware OS (Firebox) — Mobile VPN with IKEv2 + external LDAP auth"
+    cvss: "9.2 (CVSS 4.0, CVSS:4.0/AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H)"
+    epss: null
+    kev: false
+    exploited: "no evidence of in-the-wild exploitation reported as of 2026-07-03"
+    patch: "2026.2.1 (2025.1/2026.x branch); 12.12.1 (12.x branch); 12.5.x (T15/T35) unresolved; 11.x End of Life"
+    source: "https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023"
+  - cve: CVE-2026-57517
+    product: "Control Web Panel (CWP / formerly CentOS Web Panel)"
+    cvss: "9.8 (CVSS 3.1, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H); 9.3 (CVSS 4.0)"
+    epss: null
+    kev: false
+    exploited: "no evidence of in-the-wild exploitation reported per CCB Belgium (2026-07-03)"
+    patch: "0.9.8.1225 or later"
+    source: "https://ccb.belgium.be/advisories/warning-cve-2026-57517-cvss-98-blind-sql-injection-control-web-panel-lets"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn instructions; general coverage rules applied unchanged (checked CISA KEV additions, ENISA EUVD criticals/exploited, and all essential-tier CERT feeds for any watchlist-relevant hits regardless)."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories returned upstream HTTP 403 (retried once, same result). No CISA-original advisory content reached this run; CISA KEV catalog (separate bridge subcommand) was fetched successfully and checked for in-window additions (none since 2026-07-01)."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent feed returned items only through 2026-06-25 (stale, consistent with prior run's 2026-06-30 note flagging feed staleness). No in-window ANSSI content available via this feed."
+  - source_id: cert-eu
+    reason: "cert-eu recent feed newest item dated 2026-06-10 (2026-007, Windows Netlogon). No in-window CERT-EU advisories."
+  - source_id: ncsc-uk
+    reason: "Listing fetched successfully but all drilled article slugs (Cisco Catalyst SD-WAN, Citrix NetScaler, F5 BIG-IP APM) resolved to dates from March-June 2026 — no in-window (last 16h) NCSC-UK content found."
+
+notes_for_main_agent: |
+  Deliberately excluded after review (documented here rather than padded as items):
+  - CVE-2026-8037 (Kemp LoadMaster) and CVE-2026-8451 (Citrix NetScaler SAML IDP memory overread) both appear in
+    NCSC-CH Security Hub posts published today (2026-07-03), but both are already fully covered in prior_coverage
+    (2026-06-30/2026-07-01/2026-07-02 entries) including prior "actively exploited" status updates. No material
+    new delta beyond what NCSC-CH's post restates; not surfaced as a new item or update.
+  - Citrix NetScaler companion CVEs (CVE-2026-8452, -8655, -10816, -10817, -13474) surfaced via NCSC-NL advisory
+    NCSC-2026-0216, published 2026-06-30T20:43Z — outside the 16h recency window with no fresh in-window
+    development; dropped per recency discipline rather than force-fit as new.
+  - Rancher SAML-assertion-replay (CVE-2026-44946, CVSS 7.4) and Project Role Template Binding permission-retention
+    (CVE-2026-44947), via NCSC-NL NCSC-2026-0220 (published today) — underlying CVE published by SUSE/Rancher on
+    2026-06-30, 3 days before the NCSC-NL relay, no fresh exploitation evidence; dropped per recency discipline
+    (borderline — flagging for visibility given identity/SSO relevance, but did not clear the freshness bar).
+  - GitHub Enterprise Server three CVEs (CVE-2026-10585 stored XSS, CVE-2026-9106 OAuth consent-scope
+    misrepresentation, CVE-2026-9132 Copilot PR-diff private-source disclosure) via NCSC-NL NCSC-2026-0219
+    (published today, fresh) — all CVSS 3.1 5.4-6.5 MEDIUM, all require existing authenticated access/privileges;
+    below the bar for a standalone S1 item at this severity/prerequisite profile.
+  - Cisco Catalyst Center unauthenticated arbitrary file read (CVE-2026-20191, CVSS 7.5) via NCSC-NL NCSC-2026-0218
+    — vendor-published 2026-07-01T17:16Z, ~49h before this run's anchor; outside both the 16h window and the 72h
+    developing-story window with no fresh in-window development found.
+  - Argo CD repo-server unauthenticated RCE (no CVE, unpatched) — NCSC-CH posted an update today
+    (id 12741) but this is the same underlying Synacktiv research already covered as
+    2026-07-02/argo-cd-repo-server-unauthenticated-rce-no-cve-unpatched-18; no material new fact (only that the
+    researchers' "argo-cdown" exploitation tool release was delayed) — not surfaced as an update.
