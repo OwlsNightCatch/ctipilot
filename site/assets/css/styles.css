@@ -763,18 +763,33 @@ table.data .cve-id { font-family: var(--mono); white-space: nowrap; }
   align-items: center;
   margin: 0.5rem 0 1rem;
 }
-.toolbar .input {
-  flex: 1 1 220px;
+/* Global form input — dark by default (also fixes the native date field,
+   which otherwise renders as a bright white pill on mobile). */
+.input {
   min-width: 0;
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.7rem;
   background: var(--bg-elev);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font: inherit; font-size: 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
   outline: none;
+  /* Render the native date/time picker + spinners in the page theme. */
+  color-scheme: dark;
 }
-.toolbar .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232, 93, 117, 0.18); }
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(232, 93, 117, 0.18); }
+.input::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+:root[data-theme="light"] .input { color-scheme: light; }
+:root[data-theme="light"] .input::-webkit-calendar-picker-indicator { filter: none; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .input { color-scheme: light; }
+  :root:not([data-theme="dark"]) .input::-webkit-calendar-picker-indicator { filter: none; }
+}
+
+.toolbar .input {
+  flex: 1 1 220px;
+}
 
 .chip {
   font-size: 0.8rem;
@@ -3759,14 +3774,15 @@ body::after {
 /* Brief metadata strip — structured "data band" of label/value pairs.
    Each pair stacks the uppercase mono label above the value so the
    row reads as a clean grid of indexable fields, not a wrapping
-   sentence. The first item ("Type") gets an accent dot to anchor the
-   eye; counts ("Items" / "CVEs") right-align on desktop. */
+   sentence. Mobile: a tidy 2-column grid (wide fields span both);
+   desktop (>=720px): a single flex row with counts right-aligned.
+   The first item ("Type") gets an accent dot to anchor the eye. */
 .brief-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0.55rem 1.6rem;
-  padding: 0.7rem 0.95rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.75rem 1.1rem;
+  padding: 0.85rem 0.95rem;
   margin-bottom: 1rem;
   background: var(--bg-elev);
   border: 1px solid var(--border-soft);
@@ -3776,10 +3792,13 @@ body::after {
 .brief-meta__item {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.22rem;
   min-width: 0;
   position: relative;
 }
+/* Fields with a long value (e.g. the anchor timestamp) span the full
+   width on the mobile grid so they never crush into a half column. */
+.brief-meta__item--wide { grid-column: 1 / -1; }
 .brief-meta__item--lead {
   padding-left: 0.85rem;
 }
@@ -3787,18 +3806,29 @@ body::after {
   content: "";
   position: absolute;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 0.5rem;
   width: 6px;
   height: 6px;
   background: var(--accent);
   border-radius: 999px;
   box-shadow: 0 0 8px rgba(232, 93, 117, 0.55);
 }
-/* Push the count items (Items / CVEs) to the right edge on desktop so
-   the metadata strip reads "left = identity, right = magnitude". */
+/* The live type already carries its own pulsing dot — drop the generic
+   lead dot + padding so it isn't doubled. */
+.brief-meta__item--live { padding-left: 0; }
+.brief-meta__item--live::before { display: none; }
 @media (min-width: 720px) {
-  .brief-meta__item--count:nth-of-type(1 of .brief-meta__item--count) {
+  .brief-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem 1.6rem;
+    padding: 0.7rem 0.95rem;
+  }
+  .brief-meta__item--lead::before { top: 50%; transform: translateY(-50%); }
+  /* Push the count cluster (Entries / CVEs) to the right edge: the first
+     count item is the one directly preceded by a non-count item. */
+  .brief-meta__item:not(.brief-meta__item--count) + .brief-meta__item--count {
     margin-left: auto;
   }
 }
@@ -4541,9 +4571,10 @@ body::after {
   margin: 1rem 0 0.3rem;
 }
 .brief-controls__label {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
   margin-right: 0.2rem;
 }
@@ -4554,7 +4585,7 @@ body::after {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-.brief-controls__since .input { width: auto; padding: 0.25rem 0.5rem; font-size: 0.82rem; }
+.brief-controls__since .input { padding: 0.35rem 0.55rem; font-size: 0.82rem; }
 .brief-controls__status {
   margin-left: auto;
   font-size: 0.82rem;
@@ -4562,7 +4593,19 @@ body::after {
 }
 .brief-controls__note { font-size: 0.76rem; margin: 0.2rem 0 1rem; }
 @media (max-width: 639px) {
-  .brief-controls__status { margin-left: 0; width: 100%; }
+  /* Stack the window controls into clean full-width rows on mobile:
+     label · chip row · since · status. */
+  .brief-controls { gap: 0.55rem 0.4rem; }
+  .brief-controls__label { flex: 1 0 100%; margin: 0; }
+  .brief-controls .chip { flex: 1 1 auto; text-align: center; }
+  .brief-controls__since { flex: 1 0 100%; }
+  .brief-controls__since .input { flex: 1 1 auto; }
+  .brief-controls__status { margin-left: 0; flex: 1 0 100%; }
+}
+/* Comfortable tap targets for window chips + filter chips on touch. */
+@media (hover: none) {
+  .brief-controls .chip { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; }
+  .filter-chip { min-height: 34px; }
 }
 
 .run-note { margin: 0 0 1.2rem; }

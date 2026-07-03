@@ -2179,12 +2179,12 @@ def render_live_brief_page(
 
     meta_items = (
         '<div class="brief-meta">'
-        '<div class="brief-meta__item brief-meta__item--lead">'
+        '<div class="brief-meta__item brief-meta__item--lead brief-meta__item--live">'
         '<span class="brief-meta__label">Type</span>'
         '<span class="brief-meta__value"><span class="brief-meta__type brief-meta__type--live">live</span></span></div>'
         '<div class="brief-meta__item"><span class="brief-meta__label">Window</span>'
         f'<span class="brief-meta__value" data-window-label>last {DEFAULT_WINDOW_HOURS} h</span></div>'
-        '<div class="brief-meta__item"><span class="brief-meta__label">Anchor</span>'
+        '<div class="brief-meta__item brief-meta__item--wide"><span class="brief-meta__label">Anchor</span>'
         f'<span class="brief-meta__value"><span class="mono">{_escape(anchor_label)}</span></span></div>'
         '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>'
         f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-entries>{n}</span></span></div>'
