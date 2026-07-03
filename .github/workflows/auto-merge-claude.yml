@@ -30,8 +30,8 @@ name: Auto-merge claude/* branches to main
 #   3. Main advanced — both branches have unique commits. Try a regular
 #      merge. If git auto-resolves cleanly, push main + delete branch.
 #      If it conflicts, apply the auto-resolution rules:
-#         - state/cves_seen.json, state/covered_items.json,
-#           state/run_log.json, state/deep_dive_history.json → "ours"
+#         - state/cves_seen.json, state/source_health.json,
+#           entities/registry.yaml → "ours"
 #           (the routine's version: it has the freshest state for the
 #           run that just completed; main's appended state from earlier
 #           runs is already merged in via the merge commit's other
@@ -159,9 +159,10 @@ jobs:
 
           # Case 3 — main advanced. Both branches have unique commits.
           # Try a regular merge (creates a merge commit). Most routine
-          # runs touch disjoint paths (briefs/YYYY-MM-DD.md is unique
-          # per-day; state JSON appends are usually at non-overlapping
-          # positions), so git's auto-merge resolves cleanly.
+          # runs touch disjoint paths (entries/<date>/<slug>.md and
+          # runs/<date>/<run-id>.md are unique per run; state JSON and
+          # registry appends are usually at non-overlapping positions),
+          # so git's auto-merge resolves cleanly.
           echo "::warning::main advanced since $BRANCH was created; attempting merge commit."
           if git merge --no-edit -m "Auto-merge $BRANCH into main" "origin/$BRANCH"; then
             git push origin main
@@ -177,7 +178,7 @@ jobs:
           while IFS= read -r conflict_path; do
             [ -z "$conflict_path" ] && continue
             case "$conflict_path" in
-              state/cves_seen.json|state/covered_items.json|state/run_log.json|state/deep_dive_history.json)
+              state/cves_seen.json|state/source_health.json|entities/registry.yaml)
                 echo "::notice::auto-resolving $conflict_path with --ours (routine's fresh state)"
                 git checkout --ours -- "$conflict_path"
                 git add -- "$conflict_path"

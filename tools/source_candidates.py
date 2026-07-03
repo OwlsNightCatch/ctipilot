@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """tools/source_candidates.py — surface "sources we should add" candidates.
 
-Walks the last 30 days of briefs, counts every outbound link host, subtracts
+Walks the last 30 days of entries, counts every outbound link host, subtracts
 hosts already in `sources/sources.json` (and the "discovery only" news-
 aggregator allowlist that the routine never wants to promote to a primary),
 and outputs the top-N missing-but-cited domains with citation counts and a
@@ -32,7 +32,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent.parent
-BRIEFS_DIR = ROOT / "briefs"
+ENTRIES_DIR = ROOT / "entries"
 SOURCES_JSON = ROOT / "sources" / "sources.json"
 
 # News-aggregator hosts the routine never wants to promote to a primary.
@@ -136,15 +136,16 @@ def _is_noise_host(host: str) -> bool:
     return any(host == h or host.endswith("." + h) for h in AGGREGATOR_HOSTS + NEVER_PROMOTE_HOSTS)
 
 
-def _read_briefs(window_days: int) -> list[Path]:
-    if not BRIEFS_DIR.exists():
+def _read_entries(window_days: int) -> list[Path]:
+    """Every entry file whose folder date falls inside the window."""
+    if not ENTRIES_DIR.exists():
         return []
     today = datetime.now(timezone.utc).date()
     cutoff = today - timedelta(days=window_days)
     out: list[Path] = []
-    for p in sorted(BRIEFS_DIR.glob("*.md")):
-        m = re.match(r"^(\d{4}-\d{2}-\d{2})$", p.stem)
-        if not m:
+    for day_dir in sorted(ENTRIES_DIR.iterdir()):
+        m = re.match(r"^(\d{4}-\d{2}-\d{2})$", day_dir.name)
+        if not m or not day_dir.is_dir():
             continue
         try:
             y, mo, d = (int(x) for x in m.group(1).split("-"))
@@ -152,19 +153,14 @@ def _read_briefs(window_days: int) -> list[Path]:
         except Exception:
             continue
         if d_iso >= cutoff:
-            out.append(p)
-    # Plus the most-recent ~5 weeklies since they extract source-date drift.
-    weekly_dir = BRIEFS_DIR / "weekly"
-    if weekly_dir.exists():
-        weeklies = sorted(weekly_dir.glob("*.md"), reverse=True)[:5]
-        out.extend(weeklies)
+            out.extend(sorted(day_dir.glob("*.md")))
     return out
 
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--window-days", type=int, default=30,
-                   help="how many days back to walk briefs (default 30)")
+                   help="how many days back to walk entries (default 30)")
     p.add_argument("--top", type=int, default=20,
                    help="how many top missing-but-cited hosts to print (default 20)")
     p.add_argument("--json", action="store_true",
@@ -184,9 +180,9 @@ def main() -> int:
         except Exception as e:
             print(f"WARN: cannot parse sources.json: {e}", file=sys.stderr)
 
-    briefs = _read_briefs(args.window_days)
+    briefs = _read_entries(args.window_days)
     if not briefs:
-        print("No briefs in window.")
+        print("No entries in window.")
         return 0
 
     counts: dict[str, int] = defaultdict(int)
@@ -221,11 +217,11 @@ def main() -> int:
     if args.json:
         out = {
             "window_days": args.window_days,
-            "briefs_walked": len(briefs),
+            "entries_walked": len(briefs),
             "total_inline_links": total_links,
             "tracked_hosts": sorted(source_hosts),
             "candidates": [
-                {"host": h, "citations": n, "sample_briefs": samples[h]}
+                {"host": h, "citations": n, "sample_entries": samples[h]}
                 for h, n in top
             ],
         }
@@ -233,7 +229,7 @@ def main() -> int:
         return 0
 
     print(f"# source-candidate suggestions (window: {args.window_days} d)")
-    print(f"#  briefs walked:       {len(briefs)}")
+    print(f"#  entries walked:      {len(briefs)}")
     print(f"#  total inline links:  {total_links}")
     print(f"#  tracked hosts:       {len(source_hosts)} in sources.json")
     print(f"#  noise hosts skipped: {len(AGGREGATOR_HOSTS) + len(NEVER_PROMOTE_HOSTS)}")

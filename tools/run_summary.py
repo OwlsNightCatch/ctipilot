@@ -1,215 +1,172 @@
 #!/usr/bin/env python3
-"""Emit a compact dedup summary of state files for the routine main agent.
+"""Emit a compact state digest for the pipeline main agent (v3).
 
-The full state files (`state/covered_items.json`, `state/cves_seen.json`,
-`state/run_log.json`, `sources/sources.json`) collectively run >300 KB
-on a mature repo and consume tens of thousands of tokens just to load.
-The main agent only needs the *keys* for dedup decisions plus a few
-recent records — not the full structured data.
+The main agent must not load the full state files or scan `entries/` /
+`runs/` wholesale into its context. This script distils exactly what
+Phase 0 needs into one small JSON:
 
-This script emits a single JSON to stdout (or a file) that the main
-agent can `Read` instead of loading the four full state files. Sub-agents
-that need the full files still `Read` them directly.
-
-Schema:
     {
-      "today": "2026-05-11",
-      "cves": {                               # from cves_seen.json
-        "count": 184,
-        "ids": ["CVE-2026-0300", ...],        # all ids
-        "recent": [                            # last_seen within last N days
-          {"id": "...", "first_seen": "...", "last_seen": "...", "title": "..."}
-        ]
+      "today": "2026-07-03",
+      "now": "2026-07-03T14:02:11Z",
+      "cves": {                        # from state/cves_seen.json
+        "count": 190,
+        "ids": ["CVE-2026-0300", ...],
+        "recent": [{"id", "first_seen", "last_seen", "title"}]   # last N days
       },
-      "items": {                              # from covered_items.json
-        "count": 89,
-        "keys": ["actor:Akira", ...],         # all keys (small)
-        "recent": [                            # last_covered within last N days
-          {"key": "...", "type": "...", "title": "...", "last_covered": "...",
-           "primary_source_url": "..."}
-        ]
-      },
-      "sources": {                            # from sources/sources.json
+      "sources": {                     # from sources/sources.json
         "active_count": 78,
-        "active_ids": ["ncsc-ch-security-hub", ...],
-        "demoted_ids": ["..."],
-        "candidate_ids": ["..."]
+        "active_ids": [...], "demoted_ids": [...], "candidate_ids": [...]
       },
-      "runs": {                               # from run_log.json
-        "count": 35,
-        "last_run": {"run_id": "...", "date": "...", "kind": "..."},
-        "fetch_gaps_in_window": [             # source-ids hit by 2+ runs
-          {"id": "...", "runs_failing": 3, "last_status": 403}
-        ]
+      "runs": {                        # from runs/** (content_model)
+        "count": 71,
+        "last_run": {"run_id", "kind", "date", "started", "completed"},
+        "fetch_gaps_in_window": [{"id", "runs_failing", "last_status"}]
+      },
+      "window24h": {                   # budget snapshot from entries/**
+        "operational_total": 5,
+        "entries_by_kind": {"threat": 2, "vulnerability": 2, "research": 1},
+        "updates": 1,
+        "deep_dives_today": 1,         # deep_dive entries with today's folder date
+        "critical_count": 0,           # priority: critical in last 24 h
+        "high_count": 2
       }
     }
 
-Token cost: typical mature repo ~5–10 KB / ~1.5–3K tokens, vs ~120 KB /
-~30K tokens for the four full files.
-
 Usage:
-    python3 tools/run_summary.py [--out PATH] [--recent-days N] [--gap-runs N]
-    python3 tools/run_summary.py --out work/<run-id>/state-summary.json
-
-Exit 0 on success; 1 on missing/malformed state file.
+    python3 tools/run_summary.py [--out PATH] [--recent-days N] \
+        [--gap-runs N] [--gap-window N] [--now ISO8601Z]
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from collections import Counter
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-STATE_FILES = {
-    "covered_items": REPO_ROOT / "state" / "covered_items.json",
-    "cves_seen": REPO_ROOT / "state" / "cves_seen.json",
-    "run_log": REPO_ROOT / "state" / "run_log.json",
-    "sources": REPO_ROOT / "sources" / "sources.json",
-}
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "site"))
+import content_model as cm  # noqa: E402
 
 
-def _load(path: Path) -> dict:
-    if not path.exists():
-        print(f"warn: {path.relative_to(REPO_ROOT)} missing — skipped", file=sys.stderr)
-        return {}
+def _load_json(path: Path):
     try:
         return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
-        print(f"error: {path.relative_to(REPO_ROOT)} parse failure: {e}", file=sys.stderr)
-        sys.exit(1)
-
-
-def _parse_date(s: str | None) -> date | None:
-    if not s:
-        return None
-    try:
-        return datetime.strptime(s, "%Y-%m-%d").date()
-    except ValueError:
+    except FileNotFoundError:
         return None
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", help="Output path (default: stdout)")
-    ap.add_argument("--recent-days", type=int, default=14,
-                    help="Records 'recent' if last_seen/last_covered within N days (default 14)")
-    ap.add_argument("--gap-runs", type=int, default=2,
-                    help="Source flagged 'gap' if it failed in ≥ N recent runs (default 2)")
-    ap.add_argument("--gap-window", type=int, default=7,
-                    help="How many recent runs to scan for gap detection (default 7)")
-    ap.add_argument("--today", help="Override today's date YYYY-MM-DD (testing)")
-    args = ap.parse_args(argv)
+def build_summary(now: datetime, recent_days: int, gap_runs: int,
+                  gap_window: int) -> dict:
+    today = now.strftime("%Y-%m-%d")
+    out: dict = {"today": today, "now": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
 
-    today = (
-        datetime.strptime(args.today, "%Y-%m-%d").date() if args.today else date.today()
-    )
-    cutoff = today - timedelta(days=args.recent_days)
-
-    out: dict = {"today": today.isoformat()}
-
-    # ─── cves_seen.json ──────────────────────────────────────────────
-    cves_data = _load(STATE_FILES["cves_seen"])
-    cves = cves_data.get("cves", []) if isinstance(cves_data, dict) else []
+    # --- CVEs -------------------------------------------------------------
+    cves_doc = _load_json(ROOT / "state" / "cves_seen.json") or {}
+    cves = cves_doc.get("cves") or []
+    cutoff = (now - timedelta(days=recent_days)).strftime("%Y-%m-%d")
     out["cves"] = {
         "count": len(cves),
-        "ids": [c["id"] for c in cves if "id" in c],
+        "ids": sorted({c.get("id") for c in cves if c.get("id")}),
         "recent": [
-            {
-                "id": c.get("id"),
-                "last_seen": c.get("last_seen"),
-                "title": (c.get("title") or "")[:100],
-            }
-            for c in cves
-            if (d := _parse_date(c.get("last_seen"))) and d >= cutoff
+            {k: c.get(k) for k in ("id", "first_seen", "last_seen", "title")}
+            for c in cves if (c.get("last_seen") or "") >= cutoff
         ],
     }
 
-    # ─── covered_items.json ──────────────────────────────────────────
-    ci_data = _load(STATE_FILES["covered_items"])
-    items = ci_data.get("items", []) if isinstance(ci_data, dict) else []
-    out["items"] = {
-        "count": len(items),
-        "keys": [i["key"] for i in items if "key" in i],
-        "recent": [
-            {
-                "key": i.get("key"),
-                "type": i.get("type"),
-                "title": (i.get("title") or "")[:100],
-                "last_covered": i.get("last_covered"),
-            }
-            for i in items
-            if (d := _parse_date(i.get("last_covered"))) and d >= cutoff
-        ],
-    }
-
-    # ─── sources/sources.json ────────────────────────────────────────
-    src_data = _load(STATE_FILES["sources"])
-    src_list = src_data.get("sources", []) if isinstance(src_data, dict) else []
-    by_status: dict[str, list[str]] = {}
-    for s in src_list:
-        sid, status = s.get("id"), s.get("status", "unknown")
-        if sid:
-            by_status.setdefault(status, []).append(sid)
+    # --- Sources ----------------------------------------------------------
+    src_doc = _load_json(ROOT / "sources" / "sources.json") or {}
+    srcs = src_doc.get("sources") or []
+    by_status = {"active": [], "demoted": [], "candidate": []}
+    for s in srcs:
+        by_status.setdefault(s.get("status", ""), []).append(s.get("id"))
     out["sources"] = {
-        "active_count": len(by_status.get("active", [])),
-        "active_ids": sorted(by_status.get("active", [])),
-        "demoted_ids": sorted(by_status.get("demoted", [])),
-        "candidate_ids": sorted(by_status.get("candidate", [])),
+        "active_count": len(by_status["active"]),
+        "active_ids": sorted(i for i in by_status["active"] if i),
+        "demoted_ids": sorted(i for i in by_status["demoted"] if i),
+        "candidate_ids": sorted(i for i in by_status["candidate"] if i),
     }
 
-    # ─── run_log.json ────────────────────────────────────────────────
-    rl_data = _load(STATE_FILES["run_log"])
-    runs = rl_data.get("runs", []) if isinstance(rl_data, dict) else []
-    out["runs"] = {"count": len(runs)}
-    if runs:
-        last = runs[-1]
-        out["runs"]["last_run"] = {
-            "run_id": last.get("run_id"),
-            "date": last.get("date"),
-            "iso_week": last.get("iso_week"),
-            "kind": last.get("kind", "daily"),
-            "model": last.get("model"),
-        }
-        # Gap detection: scan the last `gap_window` runs for repeated
-        # fetch_failures on the same source id.
-        gap_counter: Counter[str] = Counter()
-        last_status: dict[str, int | str] = {}
-        for r in runs[-args.gap_window:]:
-            for ff in r.get("fetch_failures") or []:
-                sid = ff.get("id")
-                if not sid:
-                    continue
-                gap_counter[sid] += 1
-                last_status[sid] = ff.get("status_code") or ff.get("status") or "?"
-        out["runs"]["fetch_gaps_in_window"] = sorted(
-            (
-                {"id": sid, "runs_failing": n, "last_status": last_status.get(sid, "?")}
-                for sid, n in gap_counter.items()
-                if n >= args.gap_runs
-            ),
-            key=lambda x: (-x["runs_failing"], x["id"]),
-        )
+    # --- Runs (runs/** via content_model) ----------------------------------
+    runs = cm.collect_runs()
+    last = runs[-1] if runs else None
+    gap_counter: dict = {}
+    for run in runs[-gap_window:]:
+        for f in run.get("fetch_failures") or []:
+            if not isinstance(f, dict) or not f.get("id"):
+                continue
+            rec = gap_counter.setdefault(f["id"], {"runs_failing": 0, "last_status": None})
+            rec["runs_failing"] += 1
+            rec["last_status"] = f.get("status_code", f.get("code", f.get("status")))
+    out["runs"] = {
+        "count": len(runs),
+        "last_run": (
+            {k: last.get(k) for k in ("run_id", "kind", "date", "started", "completed")}
+            if last else None
+        ),
+        "fetch_gaps_in_window": [
+            {"id": sid, **rec}
+            for sid, rec in sorted(gap_counter.items())
+            if rec["runs_failing"] >= gap_runs
+        ],
+    }
 
-    payload = json.dumps(out, indent=2, ensure_ascii=False)
+    # --- 24 h budget snapshot (entries/**) ----------------------------------
+    since = now - timedelta(hours=24)
+    by_kind: dict = {}
+    updates = deep_dives_today = critical = high = operational = 0
+    for e in cm.collect_entries():
+        if e.get("deep_dive") and e.get("date") == today:
+            deep_dives_today += 1
+        ts = cm.parse_ts(e.get("discovered_at"))
+        if ts is None or ts < since or ts > now + timedelta(minutes=5):
+            continue
+        if e.get("horizon") != "operational":
+            continue
+        operational += 1
+        if e.get("update_of"):
+            updates += 1
+        else:
+            by_kind[e.get("kind", "?")] = by_kind.get(e.get("kind", "?"), 0) + 1
+        if e.get("priority") == "critical":
+            critical += 1
+        elif e.get("priority") == "high":
+            high += 1
+    out["window24h"] = {
+        "operational_total": operational,
+        "entries_by_kind": by_kind,
+        "updates": updates,
+        "deep_dives_today": deep_dives_today,
+        "critical_count": critical,
+        "high_count": high,
+    }
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--out", help="write JSON here instead of stdout")
+    ap.add_argument("--recent-days", type=int, default=14)
+    ap.add_argument("--gap-runs", type=int, default=2)
+    ap.add_argument("--gap-window", type=int, default=7)
+    ap.add_argument("--now", help="override 'now' (UTC ISO 8601 Z) for testing")
+    args = ap.parse_args()
+
+    now = (
+        datetime.strptime(args.now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+        if args.now else datetime.now(timezone.utc)
+    )
+    summary = build_summary(now, args.recent_days, args.gap_runs, args.gap_window)
+    payload = json.dumps(summary, indent=1, ensure_ascii=False) + "\n"
     if args.out:
-        out_path = Path(args.out)
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(payload + "\n", encoding="utf-8")
-        cves_n = out["cves"]["count"]
-        items_n = out["items"]["count"]
-        print(
-            f"state-summary: path={out_path} bytes={len(payload)+1} "
-            f"cves={cves_n} items={items_n} "
-            f"sources_active={out['sources']['active_count']} runs={out['runs']['count']}"
-        )
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.out).write_text(payload, encoding="utf-8")
+        print(f"run_summary: wrote {args.out} ({len(payload)} bytes)")
     else:
-        sys.stdout.write(payload + "\n")
+        sys.stdout.write(payload)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

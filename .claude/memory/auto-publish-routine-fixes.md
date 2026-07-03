@@ -4,7 +4,7 @@ description: User wants routine site/tooling fixes committed, pushed, and deploy
 type: feedback
 ---
 
-For routine fixes in this repo (site/build.py, tools/check_brief.py, prompt
+For routine fixes in this repo (site/build.py, tools/check_run.py, prompt
 edits with version bump, doc fixes, similar low-risk in-repo changes), do
 the full commit → push → auto-merge wait → deploy-site wait → live URL probe
 chain end-to-end without pausing to confirm. Do not stop at "ready to commit"

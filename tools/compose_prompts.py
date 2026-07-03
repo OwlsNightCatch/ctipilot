@@ -7,7 +7,7 @@ supplier watchlists, vulnerability-triage scheme) is parameterized in
 marker blocks inside the master prompts and the sub-agent definitions, so
 every agent in the workflow sees the same organization context:
 
-    prompts/daily-cti-brief.md            blocks: daily-mission, org-data
+    prompts/cti-run.md                    blocks: daily-mission, org-data
     prompts/weekly-summary.md             blocks: weekly-mission, org-data
     .claude/agents/cti-research.md        blocks: research-mission, org-data
     .claude/agents/cti-verification.md    blocks: verify-context
@@ -54,7 +54,7 @@ END_RE = re.compile(r"^<!--\s*ORG-PROFILE:END\s+(?P<name>[a-z-]+)\s*-->\s*$")
 
 # Target files and the block names each MUST contain.
 TARGETS: list[tuple[str, list[str]]] = [
-    ("prompts/daily-cti-brief.md", ["daily-mission", "org-data"]),
+    ("prompts/cti-run.md", ["daily-mission", "org-data"]),
     ("prompts/weekly-summary.md", ["weekly-mission", "org-data", "org-policy-watch"]),
     ("prompts/verification.md", ["org-certs"]),
     (".claude/agents/cti-research.md",
@@ -493,11 +493,14 @@ def _sector_phrase(org: dict[str, Any]) -> str:
 
 def _render_mission(profile: dict[str, Any], kind: str) -> str:
     org = profile["organization"]
-    artifact = {"daily": "daily brief", "weekly": "**weekly summary**"}[kind]
+    artifact = {
+        "daily": "operating the continuous intelligence pipeline",
+        "weekly": "producing the weekly strategic view",
+    }[kind]
     lines = [
         GENERATED_NOTE,
-        f"You are a senior cyber threat intelligence officer producing a {artifact} "
-        f"on cyber threats relevant to **{org['name']}** — {_flow(org['description'])}. "
+        f"You are a senior cyber threat intelligence officer {artifact} "
+        f"for **{org['name']}** — {_flow(org['description'])}. "
         f"Coverage focus: **{org['region_focus']}**, primary sector lens {_sector_phrase(org)}. "
         "The general threat landscape for this focus ALWAYS comes first; the organization "
         "watchlists (§ Organization profile & watchlists) sharpen relevance on top of it — "
@@ -579,8 +582,8 @@ def _render_triage(profile: dict[str, Any]) -> list[str]:
     vt = profile["vulnerability_triage"]
     org = profile["organization"]
     if not vt["categories"]:
-        return ["**Vulnerability-triage scheme:** none configured — omit the "
-                "`**Org triage**` line everywhere; do not invent a rating."]
+        return ["**Vulnerability-triage scheme:** none configured — leave "
+                "`org_triage: null` everywhere; do not invent a rating."]
     out = [f"**Vulnerability-triage scheme ({org['short_name']}):**"
            + (f" {_flow(vt['intro'])}" if vt["intro"] else ""), ""]
     out.extend(_render_triage_table(vt))
@@ -607,9 +610,9 @@ def _render_org_data(profile: dict[str, Any]) -> str:
     dep_line = (f"**Deployment:** {dep['visibility']} · **Site URL:** "
                 + (dep["site_url"] or "none (site polling disabled)"))
     if dep["visibility"] == "public":
-        dep_line += (" — the brief publishes to the OPEN INTERNET: closed-source "
-                     "content above TLP:CLEAR must NEVER appear in it "
-                     "(`check_brief.py` FAILs the commit).")
+        dep_line += (" — entries publish to the OPEN INTERNET: closed-source "
+                     "content above TLP:CLEAR must NEVER appear in them "
+                     "(`check_run.py` FAILs the commit).")
     else:
         dep_line += (" — private deployment: closed-source content up to the "
                      "drop file's TLP marking may be cited (unlinked).")
@@ -657,7 +660,7 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
     lines.append("")
     dep = profile["deployment"]
     if dep["visibility"] == "public":
-        lines.append("**Deployment:** public — the brief publishes to the open "
+        lines.append("**Deployment:** public — entries publish to the open "
                      "internet. Any closed-source citation marked above TLP:CLEAR "
                      "is a defect the mechanical gate also FAILs; flag it F7 "
                      "(drop) with the TLP violation named.")
@@ -676,14 +679,15 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
         lines.append("")
         lines.append("A watchlist match justifies inclusion at moderate severity (the "
                      "relevance bar is deliberately lower for these — do not flag them as "
-                     "off-audience for severity alone), and such items must carry the "
-                     "`watchlist` tag in their footer `Tags:`. Every truth gate applies "
-                     "unchanged. A brief dominated by watchlist items (guideline: more than "
-                     "about a third of the § 1 + § 2 items) has over-rotated onto the "
-                     "watchlist — flag it (F11) so the main agent rebalances.")
+                     "off-audience for severity alone), and such entries must carry "
+                     "`watchlist_hit: true` plus the `watchlist` tag. Every truth gate "
+                     "applies unchanged. A window dominated by watchlist entries "
+                     "(guideline: more than about a third of the threat + vulnerability "
+                     "entries) has over-rotated onto the watchlist — flag it (F11) so the "
+                     "main agent rebalances.")
     else:
-        lines.append("**Watchlists:** none configured — the `watchlist` footer tag should "
-                     "not appear in this brief; flag any use of it (F16).")
+        lines.append("**Watchlists:** none configured — `watchlist_hit: true` and the "
+                     "`watchlist` tag should not appear on any entry; flag any use (F16).")
     lines.append("")
     if vt["categories"]:
         lines.append(f"**Org-triage scheme (configured, short name `{org['short_name']}`):**")
@@ -691,18 +695,16 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
         lines.extend(_render_triage_table(vt))
         lines.append("")
         default = vt["default_category"] or "none defined"
-        lines.append(f"Default category: {default}. Every CVE-typed item in the daily § 0 "
-                     "Immediate Action callout, § 2 Trending Vulnerabilities, and a CVE-typed "
-                     "§ 5 deep dive (weekly: § 3 Vulnerability roll-up) must end its body with "
-                     f"`**Org triage ({org['short_name']}):** <id> — <name>. <clause>` "
-                     "immediately before the metadata footer. The chosen category must follow "
-                     "from facts the item itself cites (exposure class, auth prerequisite, "
-                     "exploitation status, watchlist membership). Missing line, unknown "
-                     "category id, or a triage clause introducing facts no cited source "
+        lines.append(f"Default category: {default}. Every `vulnerability`-kind entry (and "
+                     "any critical-priority CVE-carrying entry) must set frontmatter "
+                     "`org_triage: {category, rationale}`. The chosen category must follow "
+                     "from facts the entry itself cites (exposure class, auth prerequisite, "
+                     "exploitation status, watchlist membership). Missing block, unknown "
+                     "category id, or a rationale introducing facts no cited source "
                      "supports → flag F16 (org-triage, editorial).")
     else:
-        lines.append("**Org-triage scheme:** none configured — any `**Org triage**` line "
-                     "in the brief is a defect; flag it F16 (org-triage, editorial).")
+        lines.append("**Org-triage scheme:** none configured — any non-null `org_triage` "
+                     "block on an entry is a defect; flag it F16 (org-triage, editorial).")
     return "\n".join(lines)
 
 

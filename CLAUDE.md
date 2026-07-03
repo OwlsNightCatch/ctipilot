@@ -1,10 +1,10 @@
 # CLAUDE.md — ctipilot.ch repo conventions
 
-Loaded into every Claude Code session here (interactive or routine). The master prompts under `prompts/` are the source of truth for the daily / weekly brief routines — this file only carries cross-cutting rules every session needs.
+Loaded into every Claude Code session here (interactive or routine). The master prompts under `prompts/` are the source of truth for the pipeline routines — this file only carries cross-cutting rules every session needs.
 
 ## What this repo is
 
-Autonomous CTI newsletter for a Swiss federal SOC (by default — the deployment is organization-parameterizable via `config/org-profile.yaml`). A scheduled Claude Code routine reads `prompts/daily-cti-brief.md` (or `prompts/weekly-summary.md`) on each fire, researches that day's threat landscape via parallel sub-agents, writes `briefs/YYYY-MM-DD.md`, updates state under `state/`, and publishes via the feature-branch + auto-merge chain. The static site at [https://ctipilot.ch/](https://ctipilot.ch/) rebuilds on every push to `main` that touches the brief feed.
+Autonomous CTI pipeline for a Swiss federal SOC (by default — the deployment is organization-parameterizable via `config/org-profile.yaml`). A scheduled Claude Code routine reads `prompts/cti-run.md` on each fire — **multiple fires per day are first-class** — researches the window's threat landscape via parallel sub-agents, and publishes each verified finding as its own entry file `entries/YYYY-MM-DD/<slug>.md` plus one run record `runs/YYYY-MM-DD/<run-id>.md`. A weekly routine (`prompts/weekly-summary.md`) adds `horizon: strategic` entries. **There is no brief file** — the brief is *rendered* from entries over a reader-chosen time window (default: last 24 h) at [https://ctipilot.ch/brief/](https://ctipilot.ch/brief/); the site rebuilds on every push to `main` that touches the content store. The normative data model is [docs/pipeline.md](docs/pipeline.md).
 
 Audience is Tier 2/3 IR / threat hunters / detection engineers — assume MITRE ATT&CK fluency, no executive hedging, no IOCs, no vanity metrics.
 
@@ -14,191 +14,123 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 
 | Goal | Command |
 |---|---|
-| Phase 5.5 self-check on today's brief | `python3 tools/check_brief.py` |
-| Run check on a specific brief | `python3 tools/check_brief.py briefs/YYYY-MM-DD.md` |
+| Phase 5.5 self-check on a run's output | `python3 tools/check_run.py <run-id>` (no arg = latest run) |
+| Validate the whole content store | `python3 tools/check_run.py --all` |
 | Build the static site (smoke test for any `site/` change) | `python3 site/build.py` |
 | Stdlib-only smoke tests for build helpers | `python3 site/test_build.py` |
+| Build the per-run dedup index | `python3 tools/build_prior_coverage.py <run-id> 7` |
+| Compact state digest | `python3 tools/run_summary.py --out work/<run-id>/state-summary.json` |
 | Bridge fetcher for known-403 hosts | `python3 tools/fetch_source.py {cisa-kev \| ncsc-csh recent N \| url <URL>}` |
 | Validate the org profile / re-render it into the prompts | `python3 tools/compose_prompts.py --check` / `--write` (also `--dump`, `--selftest`) |
 
-`tools/check_brief.py` MUST exit 0 before any commit on a brief. The script is read-only; drift is what *you* fix.
+`tools/check_run.py` MUST exit 0 before any commit that adds entries or a run record. The script is read-only; drift is what *you* fix.
 
 ## Hard rules — ALWAYS / NEVER
 
-- **ALWAYS commit `.claude/memory/` changes on every session that touches it.** IMPORTANT — auto-memory is **enabled** and persisted under `.claude/memory/` (committed to git). Every routine fire spawns a fresh container that clones the repo from `main`; any memory written but not committed is silently lost on the next fire. If a session calls `/memory`, accepts a "remember that…" prompt, or writes any topic file under `.claude/memory/`, the session's commit MUST `git add .claude/memory/` alongside whatever other state it changed. The publishing chain (feature branch → auto-merge → `main`) handles the push automatically once it's committed. **Memory that doesn't reach `main` did not happen.**
+- **ALWAYS commit `.claude/memory/` changes on every session that touches it.** Auto-memory is enabled and persisted under `.claude/memory/` (committed to git). Every routine fire spawns a fresh container that clones from `main`; memory not committed is silently lost. **Memory that doesn't reach `main` did not happen.**
 - **NEVER push directly to `main`.** Repo policy. The feature-branch + auto-merge chain below is the only supported path.
-- **NEVER let closed-source content above TLP:CLEAR into a brief on a public deployment.** Closed-source intel (`intel/<date>/` drop files) is cited by reference (`Closed-source: "Title" (Provider, date, TLP:X, ref: ID)`) — never via a fabricated URL. On `deployment.visibility: public` (see `config/org-profile.yaml`), above-CLEAR documents are leads to public sources only; `check_brief.py` `closed-source-tlp` FAILs the commit. Drop contract: [intel/README.md](intel/README.md). Private hosting: [docs/private-deployment.md](docs/private-deployment.md).
-- **NEVER hand-edit an `ORG-PROFILE` managed block.** Organization-specific values (org description, sector/region lens, product + supplier watchlists, vulnerability-triage scheme, national-CERT carve-out list, policy watch) live in `config/org-profile.yaml`; `python3 tools/compose_prompts.py --write` regenerates the generated blocks inside both master prompts, `prompts/verification.md`, and all three agent definitions. **Any session that edits `config/org-profile.yaml` MUST run the compose script and commit the composed files in the same commit** — the `compose-profile` workflow fail-louds (does not auto-commit) on `claude/**` and `main`, so an uncomposed config change becomes red CI, not silent drift. Pure config-value changes need no prompt-version bump; changes to the compose *renderer* or to the static watchlist/triage policy text in the prompts follow the normal versioning rule. The static prompt prose is deliberately **org-neutral** — it references "the profiled constituency / § Organization profile" instead of naming a region or sector; never reintroduce a hardcoded org/sector/region phrase outside a managed block.
-- **NEVER reintroduce a site-identity literal into `site/build.py`.** Every site name / tagline / footer string / color / logo / analytics value comes from `config/branding.yaml` via `site/branding_config.py` (fail-loud loader; the shipped config builds a byte-identical site, `analytics.provider: "none"` is the tracking off switch, theme values are an override layer on `site/assets/css/styles.css`). Downstream forks customize only `config/*.yaml` + `site/branding/` — the fork contract is [docs/customization.md](docs/customization.md). `site/test_build.py` asserts the shipped-config-equals-defaults contract.
-- **NEVER put IOCs in a brief.** No SHA hashes, no IPs, no attacker domains, no YARA / Sigma / Suricata. The brief is *knowledge* — TTPs, campaigns, vulnerabilities, detection concepts.
-- **NEVER `WebFetch` CISA / NCSC.ch directly** — both reliably 403 the routine UA. Same for CSIRT Italia, UK ICO, Inside IT, PRODAFT, NCC Group, occasionally Cisco Talos. Use `python3 tools/fetch_source.py` (host allow-list + desktop-Chrome UA).
-- **NEVER call `WebFetch` without the outbound-links template.** The default summariser drops every URL; without an explicit "Outbound links" ask the news → primary pivot collapses. Template lives verbatim in `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md`.
-- **NEVER cite a homepage, listing index, news category, or NVD/MITRE per-CVE page as a Source.** `tools/check_brief.py` FAILs the commit on these patterns. Use the specific article / advisory / vendor PSIRT URL.
-- **NEVER skip `tools/check_brief.py` before commit.** Phase 5.5 (daily) / Phase 4.5 (weekly). Exit 0 required.
-- **NEVER block the brief on a sub-agent.** Sub-agents stalled past the 30-min hard cap are abandoned, not waited on. Late + short + partial is fine. **Failing to write a brief is the worst outcome** — operator can't tell if the run failed or nothing happened.
+- **NEVER edit a published entry.** Entries are immutable once committed. New information, corrections, and same-day developments are NEW entries with `update_of: <original entry id>`. The run record is the only per-run file a same-minute retry may update in place.
+- **NEVER let a run finish without a run record.** `runs/<date>/<run-id>.md` is the mandatory artifact of every fire — zero entries is a healthy quiet window; a missing record is an operational failure.
+- **NEVER duplicate in-window coverage.** Every run's Phase 0 builds the prior-coverage index (last 7 days INCLUDING earlier runs today); a candidate matching covered CVEs/entities ships as an `update_of` delta or not at all. `check_run.py` FAILs CVE-level duplicates.
+- **NEVER inflate volume.** The rolling 24 h across all runs stays in the one-daily-brief band (soft ceiling 14 operational entries; ≤1 deep dive per UTC day; ≤1 `priority: critical` per 24 h). More runs mean lower latency, never more content.
+- **NEVER invent a second entity key.** Every actor/campaign/malware/tool/incident/report is linked via its `entities/registry.yaml` key; check aliases before registering anything new; registry keys are permanent (extend aliases, never rename).
+- **NEVER let closed-source content above TLP:CLEAR into an entry on a public deployment.** Closed-source intel (`intel/<date>/`) is cited via `closed_sources` frontmatter (referenced, never a fabricated URL); on `deployment.visibility: public`, above-CLEAR documents are leads to public sources only; `check_run.py` `closed-source-tlp` FAILs the commit. Drop contract: [intel/README.md](intel/README.md).
+- **NEVER hand-edit an `ORG-PROFILE` managed block.** Organization values live in `config/org-profile.yaml`; `python3 tools/compose_prompts.py --write` regenerates the blocks in both master prompts, `prompts/verification.md`, and all three agent definitions. Any session that edits the config MUST compose and commit the composed files in the same commit.
+- **NEVER reintroduce a site-identity literal into `site/build.py`.** Every site name / tagline / color / analytics value comes from `config/branding.yaml` via `site/branding_config.py`. Fork contract: [docs/customization.md](docs/customization.md).
+- **NEVER put IOCs in an entry.** No hashes, no IPs, no attacker domains, no YARA/Sigma/Suricata. Entries are *knowledge* — TTPs, campaigns, vulnerabilities, detection concepts.
+- **NEVER `WebFetch` CISA / NCSC.ch directly** — both reliably 403 the routine UA. Use `python3 tools/fetch_source.py`.
+- **NEVER call `WebFetch` without the outbound-links template** (verbatim in `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md`) — the default summariser drops every URL.
+- **NEVER cite a homepage, listing index, news category, or NVD/MITRE per-CVE page as a source.** `check_run.py` FAILs these patterns. Use the specific article / advisory / vendor PSIRT URL.
+- **NEVER skip `tools/check_run.py` before commit.** Phase 5.5. Exit 0 required.
+- **NEVER block the run on a sub-agent.** Sub-agents stalled past the 30-min hard cap are abandoned, not waited on. **Failing to write the run record is the worst outcome.**
 
 ## Auto-memory mechanics (only what's non-obvious)
 
-- **Storage:** `.claude/memory/MEMORY.md` is the index (auto-loaded into every session, first 200 lines / 25 KB). Topic files in the same dir load on demand. The `/memory` command, "remember that…" prompts, and Claude's automatic note-taking all work as documented — only difference is the files live in the repo.
-- **Redirect mechanism:** [`.claude/hooks/setup-memory.sh`](.claude/hooks/setup-memory.sh) symlinks `~/.claude/projects/<project-hash>/memory` → `<repo>/.claude/memory/` on `SessionStart`. Idempotent. The hook self-documents.
-- **Fallback:** if the symlink isn't created (hook approval declined, container restriction), Claude can still `Read` / `Write` / `Edit` `.claude/memory/` directly. Persistence still works; only the `/memory` command and the auto-loading behaviour are lost.
-- **First local run** prompts to approve the hook once per machine. Pre-existing local-only memory is migrated into `.claude/memory/` and the original dir moved aside as `*.local-backup-<timestamp>`.
+- **Storage:** `.claude/memory/MEMORY.md` is the index (auto-loaded, first 200 lines / 25 KB); topic files load on demand. Only difference from stock behaviour: the files live in the repo.
+- **Redirect mechanism:** [`.claude/hooks/setup-memory.sh`](.claude/hooks/setup-memory.sh) symlinks the system auto-memory dir into `<repo>/.claude/memory/` on `SessionStart`. Idempotent; self-documenting.
+- **Fallback:** if the symlink isn't created, `Read`/`Write`/`Edit` `.claude/memory/` directly — persistence still works.
 
 ## Custom sub-agents (`.claude/agents/`)
 
-Three named sub-agents — all isolated context, model bound by their YAML frontmatter (operator-rebindable):
+Three named sub-agents — isolated context, model bound by YAML frontmatter (operator-rebindable):
 
-- **`cti-research`** — Phase 1 (daily) / Phase 2 (weekly) parallel research workers. One per domain (S1–S4 daily, W1–W2 weekly; plus the conditional S5/W3 closed-source intake spawned only when `intel/<date>/` has in-window files). Pivots from news to primary sources, returns verified items with full discovery traces. Opens its return with a mandatory `**Model:**` self-identification line. Definition: [.claude/agents/cti-research.md](.claude/agents/cti-research.md).
-- **`cti-verification`** — Phase 5.7 (daily) / Phase 4.7 (weekly) cold-reader verifier. **Opus default.** Read-only — main agent owns all edits. Looped iteratively, fresh spawn each iteration (no shared memory) until verdict CLEAN or 5-iteration cap. Same self-identification contract. Definition: [.claude/agents/cti-verification.md](.claude/agents/cti-verification.md).
-- **`cti-verification-alt`** — model-rotation variant of `cti-verification`. **Sonnet default.** Identical operational system prompt (gatekeeper framing, F1–F16 finding categories, return contract, 30-min cap). Only the YAML frontmatter and the alt header note differ. The Phase 5.7 / Phase 4.7 main-agent loop spawns this on **even iterations** (iter 2, iter 4) so model-specific blind spots are caught when the next iteration runs on a different model. Definition: [.claude/agents/cti-verification-alt.md](.claude/agents/cti-verification-alt.md). **When you edit one verifier definition, you MUST regenerate the other in the same commit** — edit `cti-verification.md`, then copy its post-H1 body verbatim below the alt file's header note (the documented byte-equivalence boundary; the alt header explains the mechanics).
+- **`cti-research`** — Phase 1 (intel run) / Phase 2 (weekly) parallel research workers, one per domain (S1–S4 + conditional S5 intake; W1–W2 + conditional W3). Reads the prior-coverage index AND `entities/registry.yaml` before fetching; returns findings YAMLs with `entity_keys` / `new_entities` / `novelty: update-of:<entry-id>`. Opens every return with the mandatory `**Model:**` line.
+- **`cti-verification`** — Phase 5.7 cold-reader verifier (**Opus default**). Scope: the run's new entries + run record. Read-only; looped fresh-spawn until CLEAN or 5-iteration cap. Finding categories F1–F16 incl. frontmatter⇔body agreement and priority calibration.
+- **`cti-verification-alt`** — Sonnet rotation variant, byte-identical body below its header note. Spawned on even iterations. **When you edit one verifier definition, you MUST regenerate the other in the same commit.**
 
-The main agent does composition, state update, commit, sync, push, publish-verification. Main agent and sub-agents may run on different models — the runtime decides per role and every agent self-identifies in its output. **Self-identification primary source: harness env vars `CLAUDE_FRIENDLY_NAME` and `CLAUDE_MODEL_ID`.** The operator sets these in the routine container; agents read them via Bash (`echo $CLAUDE_FRIENDLY_NAME`) and emit them verbatim in the `**Model:**` line. Falling back to "reason about your identity" is preserved when the env vars are unset, but it has demonstrably drifted (sub-agents pattern-matched stale training-data names). Set the env vars in the routine config to make the AI-content notice on every brief precisely correct. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents so the operator gets the right tool set + model binding.
+**Self-identification primary source: env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID`** (set in the routine container); fallback is reasoning from runtime context, never a training-data guess. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents.
 
 ## Branching and publishing — feature branch only
 
-Every session here (interactive or routine) operates on a `claude/<adjective>-<name>-<id>` feature branch. **`main` is owned by [`.github/workflows/auto-merge-claude.yml`](.github/workflows/auto-merge-claude.yml)** — that workflow is the only thing that promotes commits onto `main`.
+Every session here operates on a `claude/<adjective>-<name>-<id>` feature branch. **`main` is owned by [`.github/workflows/auto-merge-claude.yml`](.github/workflows/auto-merge-claude.yml)** — the only thing that promotes commits onto `main`.
 
-**1. Session start — pull the freshest `main` before doing any work.** The routine container's clone may be stale (the local git proxy mirrors github.com on a schedule, not per-pull) and another routine or operator commit may have landed since the worktree was created. Run:
+**1. Session start — pull the freshest `main` before doing any work:**
 
 ```bash
 git fetch origin main
 git merge --no-edit -m "sync: pull origin/main at session start" origin/main
 ```
 
-Conflicts on `state/cves_seen.json`, `state/covered_items.json`, `state/run_log.json`, `state/deep_dive_history.json`, or `sources/sources.json` resolve via the same auto-rules the workflow uses (state/* → `--ours`, `sources/sources.json` → `--theirs`); anything else surfaces to the operator.
+Conflicts on `state/*.json` or `entities/registry.yaml` resolve `--ours`, `sources/sources.json` resolves `--theirs` (same rules as the workflow); anything else surfaces to the operator. Entry and run-record files are per-run unique paths and cannot conflict.
 
-**2. Throughout the session — feature branch only.** Never check out `main`, never push to `main`, never `git push origin HEAD:main`. Repo policy on `main-protect` blocks force-push and non-fast-forward; the routine's GitHub App is also rejected by branch protection on direct push.
+**2. Throughout the session — feature branch only.** Never check out `main`, never push to `main`.
 
-**3. Session end — stage specifics (never `git add -A`), commit, sync again, push the feature branch with retry.** **Always include `.claude/memory/` in the stage list when memory was touched.**
+**3. Session end — stage specifics (never `git add -A`), commit, sync again, push with retry.** Always include `.claude/memory/` when memory was touched. Use the retry shape from `prompts/cti-run.md` Phase 6 (the explicit `if/else` on `PUSH_OK` matters — the `[ ... ] && echo` tail shape exits 1 on success and makes the harness flag a successful push as failed).
 
-```bash
-current_branch=$(git rev-parse --abbrev-ref HEAD)
-git add <specific files — including .claude/memory/ when modified>
-git commit -m "<descriptive message>"
-git fetch origin main && git merge --no-edit origin/main   # second sync — main may have advanced
+**4. Auto-merge takes it from there.** Every push to `claude/**` fires the workflow: fast-forward when possible, auto-resolution on known paths, feature branch deleted on success, loud `::error::` otherwise.
 
-PUSH_OK=false
-for attempt in 1 2 3; do
-    if git push origin "$current_branch"; then
-        PUSH_OK=true
-        echo "push: ok (feature branch)"
-        break
-    fi
-    echo "push attempt ${attempt} failed; retrying in $((attempt * 5))s"
-    sleep $((attempt * 5))
-done
-if [ "$PUSH_OK" = "true" ]; then
-    :
-else
-    echo "push: feature-branch push failed after 3 attempts"
-    exit 1
-fi
-```
+**5. Publish verification (Phase 7).** Poll `git fetch origin main && git cat-file -e origin/main:runs/<date>/<run-id>.md` until the record lands (10-min budget), then poll `<site>/data/briefbook.json` for the run id. Report `publish: ok` / `main-only` / `pending (<reason>)` from the actual poll. **A pushed feature branch is not a published run.**
 
-The explicit `if/else` matters: the tail shape `[ "$PUSH_OK" != "true" ] && echo "..."` exits 1 in the **success** case (test "true != true" is false → exit 1, `&&` propagates), which makes the harness flag a successful push as a failed background task. Use the shape above.
-
-**4. Auto-merge takes it from there.** Every push to a `claude/**` branch fires the workflow on a github-hosted runner, which fast-forwards `main` if the feature branch is a strict descendant, applies the same auto-resolution rules on a true divergence, and deletes the feature branch on success. Conflicts outside the auto-resolved paths fail loud with `::error::` annotations.
-
-**5. Publish verification (Phase 7 daily / Phase 6 weekly).** Poll `git fetch origin main && git cat-file -e origin/main:<brief-path>` until the brief lands (10-min budget), then poll `https://ctipilot.ch/` until the deploy-site workflow rebuilt gh-pages. Report `publish: ok` / `main-only` / `pending (<reason>)` from the actual poll, not a guess. **A pushed feature branch is not a published brief** — verification is what confirms both the auto-merge action and the deploy-site action succeeded.
-
-**`gh` is for local interactive sessions only.** The Anthropic-managed cloud routine container and Claude Code on the Web do **not** ship `gh` and have no GitHub credentials configured. **The cloud routine and Claude Code on the Web MUST use the polling path above and MUST NOT attempt `gh`** — `gh` will exit 127. In a local session where `gh auth status` exits 0, use `gh run list / watch / view --log-failed` against `auto-merge-claude.yml` and `deploy-site.yml` filtered by your push's head SHA — that surfaces the *why* (auto-merge conflict, deploy build failure, workflow didn't fire) when polling alone can't distinguish those. Match runs by head SHA, not branch tip, since concurrent pushes race.
+**`gh` is for local interactive sessions only.** The cloud routine container and Claude Code on the Web do **not** ship `gh` — use the polling path.
 
 ## Operational guardrails
 
-- **Skeleton-then-Edit (applies to docs / prompts / build code, not just briefs).** A single `Write` of any large file — or a long sequence of large `Edit`s in one assistant turn — trips `Stream idle timeout — partial response received` and silently drops the rest of the turn. Empirical limit: past ~6–8 substantial `Edit` calls in a single response is risky; a single `Write` of >300 lines is risky. Two shapes that work: (1) for new files, `Write` a placeholder skeleton (`_(no content yet)_`) → `Read` it back → `Edit` each section in turn; (2) for refactors that touch many files, batch ~5 small `Edit`s per turn, then yield with a one-sentence progress update before the next batch. A stream-idle timeout cannot be recovered from — the user can interrupt; that hang cannot.
-- **Persist intermediate state often** under `work/<run-id>/<step>.json`. After every meaningful unit of work — every fetched source summarised, every CVE enriched, every section drafted — write the partial result so a later step can resume. **`work/<run-id>/` is version-controlled** — Phase 6 (daily) / Phase 5 (weekly) commits the directory alongside the brief so sub-agent findings YAMLs, verification iteration reports, the URL-liveness ledger, and per-agent timestamp checkpoints are auditable in git history. The directory is the operator's primary forensic surface when a published brief later surfaces a defect.
-- **One new candidate source per run, maximum.** Sub-agents surface candidates; the main agent writes them as `status: "candidate"` in `sources/sources.json` during Phase 5.
-- **Verification loop is non-negotiable but never blocks publish.** Phase 5.7 (daily) / Phase 4.7 (weekly) spawns the verifier. Iteration 1 always runs. NEEDS_FIXES → apply remediations and re-spawn fresh. **Cap 5 iterations**, with **model rotation across iterations**: odd iterations spawn `cti-verification` (Opus), even iterations spawn `cti-verification-alt` (Sonnet). Iteration 5 still NEEDS_FIXES → publish anyway with residuals logged in § Verification Notes; `verification_residual_count` records `(truth + editorial)` of the final iteration so the cap-breach surfaces on the Ops dashboard (**never 0 on a NEEDS_FIXES final iteration**).
+- **Entry files are small — one `Write` per entry is safe.** Never batch more than ~5 file writes per assistant turn; long files (run record with many findings, docs) use skeleton-then-`Edit`. A single `Write` >300 lines risks a stream-idle timeout.
+- **Persist intermediate state often** under `work/<run-id>/` (version-controlled — committed with the run). Findings YAMLs, verification reports, url-liveness ledger, timestamp checkpoints are the operator's forensic surface.
+- **One new candidate source per run, maximum.**
+- **Verification loop is non-negotiable but never blocks publish.** Iteration 1 always runs; model rotation (odd = Opus `cti-verification`, even = Sonnet `cti-verification-alt`); cap 5 with fail-open; `verification_residual_count` never 0 on a NEEDS_FIXES final iteration.
 
 ## Where things live
 
 ```
-prompts/daily-cti-brief.md         # daily routine master prompt
-prompts/weekly-summary.md          # weekly routine master prompt
+prompts/cti-run.md                 # intel-run master prompt (fires N×/day)
+prompts/weekly-summary.md          # weekly strategic run (builds on cti-run.md)
 prompts/CHANGELOG.md               # editorial-policy audit trail (bump on every prompt edit)
-prompts/verification.md            # fake-news / two-source verification policy
-prompts/brief-template.md          # canonical Markdown skeleton for the rendered brief / weekly
-prompts/check-brief-fixes.md       # how to fix common check_brief.py FAILs
-config/org-profile.yaml            # org profile: description, sector/region, product+supplier watchlists, triage scheme, national-CERT carve-out list, policy watch, deployment (visibility, site_url)
-config/branding.yaml               # site branding profile: identity/wordmark, taglines, theme-override tokens, logos/favicon, chart palettes, feed slices, trend cohorts, analytics (off switch)
-site/branding_config.py            # fail-loud loader for config/branding.yaml (consumed by site/build.py; shipped config == upstream defaults == byte-identical site)
-site/branding/                     # downstream-owned brand assets: logos, favicon, fonts, custom.css (upstream ships only the README)
-docs/customization.md              # downstream fork / rebrand guide: two-config model, upstream-merge workflow, recipes
-intel/README.md                    # closed-source drop-folder contract (intel/<YYYY-MM-DD>/ + front-matter + TLP)
-docs/private-deployment.md         # org-internal hosting: private repo + scheduled pull/build/serve of site/_site
-tools/compose_prompts.py           # renders the profile into the ORG-PROFILE managed blocks (never hand-edit those)
-.github/workflows/compose-profile.yml # composes on push to operator branches; check-only fail-loud on main + claude/**
-.claude/agents/cti-research.md     # research sub-agent definition
-.claude/agents/cti-verification.md  # verification sub-agent (Opus default)
-.claude/agents/cti-verification-alt.md # rotation variant (Sonnet default; identical body)
-.claude/memory/                    # version-controlled auto-memory — MUST be committed when touched
-.claude/hooks/setup-memory.sh      # SessionStart hook — symlinks system auto-memory dir
-.claude/settings.json              # autoMemoryEnabled, SessionStart hook
-sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; tier field: essential = queried every daily run, standard = staleness rotation)
-state/covered_items.json           # rolling coverage log
-state/cves_seen.json               # flat CVE index
-state/deep_dive_history.json       # 30-day deep-dive picks (rotation memory)
-state/run_log.json                 # per-run telemetry — feeds the Ops dashboard at /ops/
-briefs/YYYY-MM-DD.md               # daily output
-briefs/weekly/YYYY-Www.md          # weekly output
+prompts/verification.md            # two-source / fake-news verification policy
+prompts/entry-template.md          # canonical entry + run-record skeletons
+prompts/check-run-fixes.md         # fix recipes for common check_run.py FAILs
+docs/pipeline.md                   # NORMATIVE v3 data model (entries, registry, runs)
+config/org-profile.yaml            # org profile (compose_prompts.py renders it into the prompts)
+config/branding.yaml               # site branding profile
+entries/YYYY-MM-DD/<slug>.md       # per-finding intelligence entries (immutable)
+entities/registry.yaml             # global entity registry (actors, campaigns, malware, …)
+runs/YYYY-MM-DD/<run-id>.md        # per-run records: telemetry frontmatter + verification notes
+sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; tier field)
+state/cves_seen.json               # flat CVE dedup index
+state/source_health.json           # bounded source-health history
+site/content_model.py              # reference parser/validator (entries, registry, runs)
+site/build.py                      # static-site generator (dynamic /brief/, day pages, weekly, ops, feeds)
+site/taxonomy.yaml                 # controlled vocabulary for entry frontmatter
+tools/check_run.py                 # Phase 5.5 gate (must exit 0)
+tools/build_prior_coverage.py      # entry-store dedup index builder
+tools/run_summary.py               # compact state digest (+ 24 h budget snapshot)
+tools/migrate_briefs.py            # one-shot v2→v3 migration (kept for provenance)
 tools/fetch_source.py              # bridge fetcher for known-403 hosts
-tools/check_brief.py               # institutionalised self-check (single command, must exit 0)
-tools/source_candidates.py         # surface "sources we should add" (cited-but-not-in-sources.json)
-tools/source_health.py             # independent weekly source-health snapshot (run by GH Actions)
-.github/workflows/source-health.yml # weekly cron firing source_health.py
-state/source_health.json            # bounded health-snapshot history (Ops dashboard reads this)
-site/build.py                      # static-site generator (stdlib-only)
-site/taxonomy.yaml                 # controlled vocabulary for footers (build refuses unknown values)
-site/_site/trends/                 # cross-brief threat-class trend dashboard (built from briefs)
-site/_site/feed-{public-sector,healthcare,finance,energy,ot-ics,defense,telco,education}.xml  # sector-specific RSS slices
-docs/architecture.md               # end-to-end map of what reads/writes what
-docs/operating.md                  # operator runbook
-work/<run-id>/                     # version-controlled per-run artefact dir — committed in Phase 6 with the brief
-work/<run-id>/url-liveness.tsv     # sub-agents append `<url>\t<status>\t<fetched_at>` per fetch; check_brief.py reads this
-work/<run-id>/prior_coverage.json  # Phase 0 builds this; sub-agents read it for fetch-time dedup
-work/<run-id>/findings.<S1|S2|S3|S4>.yaml  # structured sub-agent findings; main agent reads from disk
-work/<run-id>/verification.iter<N>.md  # full verifier disk report per iteration
-work/<run-id>/verification.iter<N>.findings.yaml  # machine-readable per-iteration finding records
+tools/source_candidates.py         # cited-but-untracked host surfacing
+tools/source_health.py             # source accessibility probe
+work/<run-id>/                     # per-run artefacts (committed with the run)
 ```
 
 ## Editing the master prompts — versioning rule (ALWAYS)
 
-Any edit to `prompts/daily-cti-brief.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/brief-template.md`, `prompts/check-brief-fixes.md`, `.claude/agents/cti-research.md`, `.claude/agents/cti-verification.md`, or `.claude/agents/cti-verification-alt.md` MUST ship all three of these in the same commit (banner bump + CHANGELOG entry + the file edit itself). Skipping any of them produces silent drift between what the routine actually loaded, what the brief footer claims, and what the changelog records. **Both verifier definitions move in lockstep** — edit `cti-verification.md`, then regenerate the alt file's body from it (byte-identical below the alt header note; only the frontmatter and that note differ). **Exemption:** regeneration of `ORG-PROFILE` managed blocks by `tools/compose_prompts.py` after a `config/org-profile.yaml` value change is NOT a prompt edit — no banner bump, no CHANGELOG entry; the compose commit records it. Edits to the compose renderer or to the static policy text around the blocks are prompt edits and follow the full rule.
+Any edit to `prompts/cti-run.md`, `prompts/weekly-summary.md`, `prompts/verification.md`, `prompts/entry-template.md`, `prompts/check-run-fixes.md`, or any `.claude/agents/*.md` MUST ship all three of: banner bump + `prompts/CHANGELOG.md` entry (`### Why` / `### What changed` / `### What stays`) + the edit itself, in the same commit. Both prompt versions move in lockstep; both verifier definitions move in lockstep (edit `cti-verification.md`, regenerate the alt body byte-identically). **Exemption:** ORG-PROFILE block regeneration after a config-value change is not a prompt edit. `check_run.py` cross-checks the run record's `prompt_version` against the CHANGELOG head and FAILs on mismatch.
 
-### Daily ↔ weekly parity — shared machinery moves in lockstep; the lens stays divergent (ALWAYS)
+### Intel-run ↔ weekly — shared machinery lives in one place; the lens stays divergent (ALWAYS)
 
-`prompts/daily-cti-brief.md` and `prompts/weekly-summary.md` deliberately **share their procedure and machinery** but deliberately **differ in their intelligence lens and output structure**. **The daily is the gold standard for shared machinery.** When you change a shared element in one prompt you MUST mirror the equivalent change into the other **in the same commit** (same discipline as the two verifier definitions above), adapting only the phase numbers / cadence units, and update `prompts/brief-template.md` when the change touches the rendered shape. The CHANGELOG entry's `### What changed` must name which prompt(s) moved; `### What stays` must note what was intentionally left divergent. The two drifted once (the weekly lacked the daily's verification/triage pass, compose-after-return gate, `Evidence:` field, F13–F15 + prior-iteration deltas, and historical-context rule); this rule exists so that cannot recur silently.
-
-**Shared machinery — change one ⇒ mirror into the other (adapt phase numbers / cadence only):**
-
-- CRITICAL "always produce a brief/summary" header + the anti-crash guards.
-- Prime directives **except** the lens ones listed below — zero-LLM-knowledge, inline-links-must-be-real, no IOCs, no vanity metrics, two-source + national-CERT carve-out, fake-news guard, recency mechanics, trace-to-primary, CISA-KEV-deadline rule, historical-context/Background, less-is-more.
-- Per-item metadata footer spec (taxonomy fields, multi-CVE breakdown, blocked-URL allowlist, the `Evidence:` source-quote field).
-- Skeleton-then-Edit + the compose-after-return anti-fabrication gate.
-- Self-identification (model + timestamps), the AI-content notice, the `Generated by:` line.
-- Verification & triage pass (daily Phase 2 / weekly Phase 2.5).
-- Self-check gate (daily Phase 5.5 / weekly Phase 4.5) **and** verification sub-agent loop (daily Phase 5.7 / weekly Phase 4.7): model rotation, prior-iteration deltas on even iterations, the F1–F16 finding set, rich per-iteration `findings[]`, early-exit, 5-iteration cap.
-- `state/run_log.json` schema (`sub_agents`, `fetch_failures`, `bridge_uses`, `verification.iterations[]`) and the state-update lifecycle (`covered_items`, `cves_seen`, `sources`, `deep_dive_history`).
-- Publishing chain + `work/<run-id>/` commit + publish verification.
-- Main-agent-does-no-source-fetching anti-classifier-trip invariant; the META self-evolution authority + hard-invariants list.
-
-**Intentionally divergent — do NOT force-sync (this is the *point* of having two prompts):**
-
-- The intelligence lens / editorial framing: daily = operational today's-signal, 1–7-day patch / hunt / block / detect decisions, **no** long-horizon; weekly = broader threat picture, multi-day chains, research & threat-actor developments, annual reports, long-horizon, looking-ahead.
-- Section structure: daily 8 sections (incl. Deep Dive + the Immediate-Action callout); weekly 12 sections (incl. on-fire / multi-day / research+actor / annual / long-running / policy / looking-ahead).
-- Cadence + recency unit: daily `window_hours`; weekly `window_days` + most-recent-Sunday ISO-week anchor.
-- Sub-agent fan-out: daily S1–S4; weekly Phase 1 structured review + W1–W2.
-- Phase numbering offset (no deep-dive phase in the weekly; the weekly adds Phase 2.5 triage).
-- Dedup polarity: the daily (PD-8) never repeats a recent weekly and carries no long-horizon synthesis; the weekly **may** repeat a daily item with a new lens. The asymmetry runs one way.
-
-Edits to `CLAUDE.md`, `docs/`, `tools/`, or `site/` only require a prompt bump when they materially change runtime behaviour. Pure clarifications, reformatting, and ops-doc updates do not.
-
-1. **Bump the version banner** in the prompt itself (`> **Prompt version:** vN.M`). Daily and weekly versions move in lockstep — even if only one was edited substantively — so `state/run_log.json.prompt_version` is unambiguous across runs.
-2. **Add a top entry to [`prompts/CHANGELOG.md`](prompts/CHANGELOG.md)** with `### Why`, `### What changed`, `### What stays` headings. The CHANGELOG is the editorial-policy audit trail and the only place that explains *why* a behaviour shifted between two committed briefs. **No silent bumps.**
-3. **Carry the new version through the brief footer and run log.** Both read from the prompt's banner — no extra step if step 1 is correct. `tools/check_brief.py` cross-checks the footer banner against `prompts/CHANGELOG.md`'s most-recent heading and FAILs the commit on a mismatch (the safety net for skipped step-1 / step-2 edits).
+v3 ended the v2 copy-drift problem structurally: `prompts/weekly-summary.md` **builds on** `prompts/cti-run.md` (it instructs a runtime `Read` of the intel-run prompt and defines only the weekly divergences). Shared machinery (anti-crash guards, PD-1…13, composition discipline, state lifecycle, gate, verifier loop, publishing chain) is edited ONLY in `cti-run.md`; the weekly file carries the deliberately divergent lens — W-PD-1 inclusion gate, ISO-week recency, weekly dedup polarity (weekly may re-frame operational entries via `references`; intel runs never duplicate the weekly), `weekly_section` placement, section volume bands. When an edit to `cti-run.md` changes a phase contract the weekly references, re-read the weekly in the same commit to confirm the reference still holds.
 
 ## Self-evolution
 
-The routine has full authority to modify `prompts/`, `docs/`, `sources/sources.json`, `state/*.json`, `.claude/agents/`, `.claude/memory/`, `site/taxonomy.yaml`, and `tools/`. Every change appears in the commit diff for after-the-fact review.
+The routine has full authority to modify `prompts/`, `docs/`, `sources/sources.json`, `state/*.json`, `entities/registry.yaml`, `.claude/agents/`, `.claude/memory/`, `site/taxonomy.yaml`, and `tools/`. Every change appears in the commit diff for after-the-fact review.
 
-**Hard invariants that must NOT be removed or weakened** (surface concerns in § Verification Notes instead): AI-content notice, no IOCs, two-source verification with national-CERT carve-out, English output, feature-branch-only publishing chain, self-check gate (Phase 5.5 daily / 4.5 weekly), verification sub-agent loop (Phase 5.7 daily / 4.7 weekly), per-item metadata footer using taxonomy values, memory commits.
+**Hard invariants that must NOT be removed or weakened** (surface concerns in the run record instead): AI-content transparency via run records, no IOCs, two-source verification with carve-outs, English output, feature-branch-only publishing, the mechanical gate (`check_run.py` exit 0), the verification sub-agent loop, entry immutability + update_of discipline, the entity registry as the single entity namespace, volume discipline (24 h band, deep-dive day budget), run-record-per-fire, memory commits.

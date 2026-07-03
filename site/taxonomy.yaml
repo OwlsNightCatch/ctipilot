@@ -1,20 +1,18 @@
-# Controlled vocabularies for the CTI brief metadata footer.
+# Controlled vocabularies for entry frontmatter (v3 pipeline).
 #
-# Single source of truth. The build (site/build.py) parses this file and
-# fails on any post-cut-over item that uses a value not listed below. The
-# prompts (prompts/daily-cti-brief.md, prompts/weekly-summary.md) reference
+# Single source of truth. site/content_model.py validates every entry's
+# tags / regions / sectors / cves[] fields against this file and
+# site/build.py + tools/check_run.py fail on any value not listed below.
+# The prompts (prompts/cti-run.md, prompts/weekly-summary.md) reference
 # this file by name; do not duplicate the lists into the prompts.
 #
 # Lowercase, hyphenated, ASCII only. Add values when a real item needs one,
 # never preemptively. Removing a value is a breaking change for historical
 # pages — prefer leaving an obsolete value in place over removing it.
 
-# Theme tags. One or more per item. The list is intentionally rich because
-# items typically carry several theme tags at once (e.g. "ransomware,
-# data-breach, healthcare", or "vulnerabilities, actively-exploited, rce,
-# pre-auth, cisa-kev"). The build does not police minimum count, but the
-# prompt instructs the agent that a TL;DR-only line is the only place a
-# single tag is acceptable.
+# Theme tags (entry `tags:`). One or more per entry — entries typically
+# carry several at once (e.g. "ransomware, data-breach" or
+# "vulnerabilities, actively-exploited, rce, pre-auth, cisa-kev").
 themes:
   # Threat type
   - ransomware
@@ -64,15 +62,15 @@ themes:
   - patch-available
   - no-patch
 
-  # Organization-profile flag (v2.65). Carried ONLY by items included
-  # because of a config/org-profile.yaml watchlist match (product,
-  # supplier, or standing interest) — items that clear the general
-  # relevance bar on their own do not carry it. Lets readers and the
-  # trends dashboard slice org-specific signal from general coverage.
+  # Organization-profile flag. Carried ONLY by entries included because
+  # of a config/org-profile.yaml watchlist match (alongside
+  # `watchlist_hit: true`) — entries that clear the general relevance
+  # bar on their own do not carry it. Lets readers and the trends
+  # dashboard slice org-specific signal from general coverage.
   - watchlist
 
-# Sector tags. Zero or more per item, alongside theme + region. Items in
-# §3 "Active Threats…" typically carry one or two sector tags.
+# Sector tags (entry `sectors:`). Zero or more per entry, alongside
+# tags + regions. Threat/incident entries typically carry one or two.
 sectors:
   - public-sector
   - healthcare
@@ -90,7 +88,7 @@ sectors:
   - legal-services
   - technology
 
-# Nexus tags. Zero or more per item, alongside theme tags. Used to flag
+# Nexus tags. Zero or more per entry, alongside theme tags. Used to flag
 # the geopolitical attribution layer when a public source has stated it.
 nexus:
   - china-nexus
@@ -100,7 +98,7 @@ nexus:
   - us-nexus
   - eu-nexus
 
-# Region tags. One or more per item. `global` only for genuinely global
+# Region tags (entry `regions:`). One or more per entry. `global` only for genuinely global
 # events; default to the most specific region that fits.
 regions:
   - global
@@ -116,9 +114,9 @@ regions:
   - middle-east
   - russia-cis
 
-# CVE-only metadata fields. These appear on the `Trending Vulnerabilities`
-# items only; the build refuses CVE entries that omit `Vector`, `Auth`, or
-# `Status` after cut-over.
+# CVE record fields (entry `cves[]`): every record carries type / vector /
+# auth / status from the lists below; content_model.validate_entry refuses
+# records that omit vector, auth, or status.
 
 cve_types:
   - rce
@@ -156,8 +154,11 @@ cve_status:
   - no-patch
   - mitigation-only
 
-# Section keys. The build emits each item inside a `<section data-section>`
-# whose value is one of these — the filter UI uses these as the toggle keys.
+# Render-section keys. The build emits each entry card inside a
+# `<section data-section>` whose value is one of these — the filter UI uses
+# them as toggle keys. Kind → section mapping lives in site/content_model.py
+# (KIND_DAILY_SECTION / KIND_WEEKLY_SECTION); strategic entries may pin
+# their weekly section explicitly via the `weekly_section` frontmatter field.
 sections:
   - tldr
   - immediate-actions
@@ -168,7 +169,7 @@ sections:
   - deep-dive
   - action-items
   - verification-notes
-  # Weekly-only sections. The weekly brief uses a superset.
+  # Weekly-only sections (weekly_section values). The weekly view uses a superset.
   - weekly-glance
   - weekly-top-stories
   - weekly-multi-day
