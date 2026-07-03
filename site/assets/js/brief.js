@@ -190,6 +190,15 @@
     return n;
   }
 
+  // Migrated v2 headlines/summaries can carry literal Markdown emphasis
+  // markers. We render text via textContent (no HTML), so just strip the
+  // markers — this is cosmetic cleanup, not Markdown parsing.
+  function plainText(s) {
+    return String(s == null ? '' : s)
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/(^|\s)\*([^*\n]+)\*(?=[\s.,;:]|$)/g, '$1$2');
+  }
+
   function emptyStub() {
     var p = el('p', 'muted section-empty');
     p.appendChild(el('em', null, CFG.empty_stub || 'No qualifying items in window — this section is intentionally left empty.'));
@@ -216,9 +225,9 @@
     var ul = el('ul');
     picked.forEach(function (e) {
       var li = el('li');
-      var headline = (e.headline || e.title || e.id).replace(/\.+$/, '');
+      var headline = plainText(e.headline || e.title || e.id).replace(/\.+$/, '');
       li.appendChild(el('strong', null, headline + '.'));
-      li.appendChild(document.createTextNode(' ' + (e.summary || '') + ' '));
+      li.appendChild(document.createTextNode(' ' + plainText(e.summary || '') + ' '));
       var a = el('a', null, '→');
       a.setAttribute('href', e.url);
       li.appendChild(a);
@@ -237,7 +246,7 @@
     var p = el('p');
     p.appendChild(el('strong', null, ia.title || ''));
     p.appendChild(document.createTextNode(' — ' + (ia.action || '') + ' '));
-    var a = el('a', null, (e.headline || e.title || e.id) + ' →');
+    var a = el('a', null, plainText(e.headline || e.title || e.id) + ' →');
     a.setAttribute('href', e.url);
     p.appendChild(a);
     body.appendChild(p);
@@ -270,7 +279,7 @@
       li.setAttribute('data-entry-id', row.entry.id);
       var body = el('div', 'action-list__body', row.action + ' ');
       var a = el('a', 'action-list__ref',
-        (row.entry.headline || row.entry.title || row.entry.id) + ' →');
+        plainText(row.entry.headline || row.entry.title || row.entry.id) + ' →');
       a.setAttribute('href', row.entry.url);
       body.appendChild(a);
       li.appendChild(body);

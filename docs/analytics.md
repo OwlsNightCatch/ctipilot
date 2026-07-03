@@ -13,7 +13,7 @@ Block at the network layer if you don't want to be counted: `cloud.umami.is` and
 
 ## Per-page coverage
 
-Every emitted HTML page on the site loads the Umami snippet exactly once: the home page, every brief page, every per-item page, every CVE / source / topic page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.
+Every emitted HTML page on the site loads the Umami snippet exactly once: the home page, the dynamic brief at `/brief/`, every day and weekly page, every entry permalink, every entity / source page, every tag and region index, the operations dashboard, the about pages, and the 404 fallback. The build's self-check verifies the snippet is present on every page.
 
 Each click registers as a normal Umami pageview because every URL is a real HTML page (the site is a static-site generator, not a SPA). The legacy `#/...` hash-routes from the previous SPA still work via the home page's redirect bootstrap, but the redirect resolves to a clean URL before Umami sees it — so the indexed-old-URL → clean-URL transition is a single normal pageview from Umami's perspective.
 
@@ -22,8 +22,7 @@ Each click registers as a normal Umami pageview because every URL is a real HTML
 RSS feeds are pure XML; they cannot run JavaScript, and well-behaved RSS readers strip any active content. We accept that and do **not** try to track feed opens or link clicks via tagged URLs:
 
 - Feed `<link>` and `<guid>` URLs are plain canonical URLs. **No UTM parameters anywhere.** No query strings, no per-source variants. The build's self-check greps for `utm_` across the entire output and fails if anything appears.
-- Feed click-through registers as a normal Umami pageview on the destination page (the user's RSS reader is the referrer).
-- The "RSS — daily / weekly / per-item" links visible on the site fire `umami.track('feed-click', { feed: 'daily' | 'weekly' | 'items' })` via the standard Umami event helper before the user leaves the site. That's the one place we measure RSS interest, and it's measured *before* the user leaves. We do not measure feed opens themselves.
+- Feed click-through registers as a normal Umami pageview on the destination page (the user's RSS reader is the referrer). That is the only visibility into feed readership; feed opens themselves are not measured, and no custom events are fired.
 
 If a future operator wants feed-open metrics, they can add a server-side beacon (Cloudflare Worker, etc.). The current prompt does not authorize one, and the source list of allowed beacon endpoints in the CSP would need to be extended in the same change.
 
@@ -33,8 +32,8 @@ If a future operator wants feed-open metrics, they can add a server-side beacon 
 - Browser version, OS version, hardware fingerprinting.
 - Referer header data beyond the host.
 - Any cookie, ever.
-- Any LLM editorial signal: visitor data does not feed back into the agent's source-selection or topic-prioritisation logic. The brief is editorially neutral with respect to readership; what is read is not reflected in what is written.
+- Any LLM editorial signal: visitor data does not feed back into the agent's source-selection or topic-prioritisation logic. The pipeline is editorially neutral with respect to readership; what is read is not reflected in what is written.
 
 ## Telemetry the agent emits
 
-Distinct from the site analytics: the agent persists `state/run_log.json` per run, listing sub-agent allocation, fetch failures, deep-dive picks, etc. That file is committed to the public repo and rendered at the operations dashboard `/ops/`. It contains no visitor data — only what the agent itself did during the run.
+Distinct from the site analytics: every fire writes a run record (`runs/YYYY-MM-DD/<run-id>.md`) whose frontmatter carries the run's telemetry — models, sub-agent allocation, fetch failures, entry counts, verification iterations. Those files are committed to the public repo and rendered at the operations dashboard `/ops/`. They contain no visitor data — only what the agent itself did during the run.

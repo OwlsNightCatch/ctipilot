@@ -14,7 +14,7 @@ supported mode for closed-source intelligence above TLP:CLEAR
 | `config/org-profile.yaml` `deployment.visibility` | `public` | `private` |
 | `deployment.site_url` | `https://ctipilot.ch/` | your internal URL, or `""` to skip site polling |
 | Site hosting | GitHub Pages via `deploy-site.yml` | internal web server pulling + building on a schedule |
-| Closed-source TLP ceiling (`check_brief.py` gate) | TLP:CLEAR only | up to the drop file's marking |
+| Closed-source TLP ceiling (`check_run.py` gate) | TLP:CLEAR only | up to the drop file's marking |
 | Routine phases | identical | identical — only Phase 7's site poll adapts to `site_url` |
 
 `site/build.py` is stdlib-only and emits a fully static bundle into
@@ -70,7 +70,7 @@ the site works on an air-gapped network segment.
 
    # /etc/systemd/system/ctipilot-refresh.timer
    [Timer]
-   OnCalendar=*:0/15          # every 15 min; briefs land once or twice a day
+   OnCalendar=*:0/15          # every 15 min; entries land throughout the day
    Persistent=true
    [Install]
    WantedBy=timers.target
@@ -110,5 +110,5 @@ the site works on an air-gapped network segment.
 - **Feed scripts** (intel drops, source-health cron) need push access to the
   private repo — deploy keys or a machine PAT scoped to the repo.
 - **Back to public**: flip `visibility` to `public`, recompose, re-enable
-  `deploy-site.yml` — but first audit `intel/` and every published brief for
+  `deploy-site.yml` — but first audit `intel/` and every published entry for
   above-CLEAR closed-source content: git history is forever once public.

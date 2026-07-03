@@ -3694,6 +3694,10 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
     repo_blob = f"https://github.com/{repo}/blob/main/"
 
     def remap(path: str) -> str:
+        # Absolute URLs pass through untouched — the rewrite only applies
+        # to repo-relative paths.
+        if path.startswith(("http://", "https://", "mailto:", "tel:")):
+            return path
         # Drop a leading `./` if the author wrote one.
         p = path[2:] if path.startswith("./") else path
         # Strip optional fragment / query so we can route by extension.

@@ -1,6 +1,6 @@
 # Customization & downstream forks
 
-This repository is a **framework**: an autonomous CTI newsletter whose
+This repository is a **framework**: an autonomous CTI pipeline whose
 intelligence lens, visual identity, analytics, and publishing surface are all
 parameterized. The upstream deployment (ctipilot.ch, Swiss federal SOC lens)
 is just the default parameter set. A downstream fork customizes **only the
@@ -11,7 +11,7 @@ improvements, build/site upgrades — without touching its customizations.
 
 | Config | Owns | Consumed by |
 |---|---|---|
-| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, national-CERT carve-out list, policy/regulatory watch, deployment visibility | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of both master prompts, `prompts/verification.md`, and all three agent definitions |
+| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, national-CERT carve-out list, policy/regulatory watch, deployment visibility | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of both master prompts (`prompts/cti-run.md`, `prompts/weekly-summary.md`), `prompts/verification.md`, and all three agent definitions |
 | [`config/branding.yaml`](../config/branding.yaml) | The **published site**: name, wordmark, taglines, footer copy, logos, favicon, theme colors, fonts, chart palettes, RSS feed identity, sector feed slices, trend cohorts, analytics | `site/build.py` (via `site/branding_config.py`) at build time |
 
 Plus one asset directory:
@@ -58,8 +58,10 @@ python3 site/build.py && python3 site/test_build.py
 Conflicts can only arise in the downstream-owned set, and there only when
 upstream changes the same file — which for `config/*.yaml` means a schema
 addition (rare, and always additive with a documented default: take both
-sides, keep your values). `state/*` and `sources/*` evolve independently per
-deployment and are not part of the customization surface.
+sides, keep your values). The content store (`entries/`, `entities/`,
+`runs/`) plus `state/*` and `sources/*` evolve independently per deployment
+and are not part of the customization surface — a fork's intelligence is
+its own.
 
 ## Recipes
 
@@ -105,13 +107,14 @@ Everything lives in `config/org-profile.yaml`:
   from `site/taxonomy.yaml`), home region, region focus, constituency
   description, audience register.
 - `watchlist:` — your estate products, suppliers, standing interests.
-- `vulnerability_triage:` — your patch-priority scheme; every CVE item then
-  carries an `Org triage (<short_name>):` rating.
+- `vulnerability_triage:` — your patch-priority scheme; every vulnerability
+  entry then carries a structured `org_triage: {category, rationale}`
+  frontmatter block in your scheme.
 - `national_certs:` — which national CERTs / government authorities your
   deployment trusts as single sources for their own disclosures. Omit the
   key for the upstream default list; `[]` disables the carve-out entirely.
 - `policy_watch:` — the regulators and directives whose changes alter your
-  obligations (drives the weekly's W2 sweep and § 9 Policy horizon).
+  obligations (drives the weekly's W2 sweep and its `weekly-policy` section).
 
 Then `python3 tools/compose_prompts.py --write` (CI does it too). The
 static prompt prose is org-neutral by design — it always defers to these
@@ -138,12 +141,14 @@ draw from; extend it if your sector/region isn't represented.
 ## What deliberately stays fixed
 
 Hard invariants are not customization surface (see CLAUDE.md § Self-evolution):
-the AI-content notice, the no-IOC rule, two-source verification (the
-carve-out *list* is yours to set; the mechanism is not), English output, the
-feature-branch publishing chain, the self-check gate, the verification
-sub-agent loop, per-item metadata footers, and memory commits. Weakening
-them in a fork is possible — it's your repo — but nothing in the config
-schema encourages it, and upstream merges will not respect the weakening.
+the AI-content transparency via run records, the no-IOC rule, two-source
+verification (the carve-out *list* is yours to set; the mechanism is not),
+English output, the feature-branch publishing chain, the mechanical gate
+(`tools/check_run.py` exit 0), the verification sub-agent loop, entry
+immutability + `update_of` discipline, the entity registry as the single
+entity namespace, volume discipline, and memory commits. Weakening them in
+a fork is possible — it's your repo — but nothing in the config schema
+encourages it, and upstream merges will not respect the weakening.
 
 ## Known remaining upstream-flavored strings (by design)
 
@@ -152,9 +157,6 @@ schema encourages it, and upstream merges will not respect the weakening.
   and may hide or replace the docs pages via `custom.css` or its own docs.
 - Worked examples inside prompts/agents (e.g. the ISAC-CH closed-source
   drop fixture) keep their Swiss flavor: they document formats, not lens.
-- `tools/check_brief.py`'s tldr-body-drift heuristic keys on
-  `switzerland`/`europe` phrasing and no-ops harmlessly for other home
-  regions.
 - `tools/fetch_source.py` bridge recipes target hosts that 403 generic
   clients (CISA, NCSC.ch, NCSC-NL, SEC EDGAR) — they are source tooling,
   useful to any deployment, not branding. Its SEC EDGAR User-Agent picks up
