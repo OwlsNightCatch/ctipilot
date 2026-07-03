@@ -1,8 +1,8 @@
 # Operating
 
-Operator's reference for the autonomous CTI brief generator: one-time setup, the publishing chain, the operations dashboard, the sub-agent capability ceiling, and what to do when something goes wrong.
+Operator's reference for the autonomous CTI pipeline: one-time setup, the publishing chain, the operations dashboard, the sub-agent capability ceiling, and what to do when something goes wrong.
 
-The full daily / weekly process narrative lives in the prompts themselves — [`prompts/daily-cti-brief.md`](../prompts/daily-cti-brief.md) and [`prompts/weekly-summary.md`](../prompts/weekly-summary.md). This file is the operator-facing wrapper around them.
+The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`](../prompts/cti-run.md) (the intel run, fired several times per day) and [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) (the weekly strategic run). The data model (entries, entity registry, run records) is [`docs/pipeline.md`](pipeline.md). This file is the operator-facing wrapper around them.
 
 ---
 
@@ -11,14 +11,15 @@ The full daily / weekly process narrative lives in the prompts themselves — [`
 `main` is protected: only [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) promotes commits onto it. Every Claude Code session in this repo (interactive or routine) operates on a `claude/<adjective>-<name>-<id>` feature branch.
 
 ```
-routine fires (cloud, scheduled)
+routine fires (cloud, scheduled — intel run N×/day, weekly 1×/week)
    │
    ▼
 feature branch  ─── git push ───▶  auto-merge-claude.yml
    (claude/<…>)                      │
-                                     ▼ ff-merge to main (or regular merge with auto-resolution
-                                     │  for state/*.json → --ours, sources/sources.json → --theirs)
-                                     ▼
+                                     ▼ ff-merge to main (or regular merge with auto-resolution:
+                                     │  state/*.json + entities/registry.yaml → --ours,
+                                     │  sources/sources.json → --theirs; entry + run-record
+                                     ▼  files are per-run unique paths and cannot conflict)
                                    main  ─── workflow_run ───▶  deploy-site.yml
                                                                    │
                                                                    ▼ runs site/build.py,

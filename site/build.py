@@ -50,7 +50,6 @@ render gracefully with em-dash cells.
 from __future__ import annotations
 
 import hashlib
-import html as html_mod
 import json
 import math
 import os
@@ -230,7 +229,6 @@ def scan_for_secrets(text: str) -> list[tuple[str, str]]:
 CVE_RE = re.compile(r"\bCVE-\d{4}-\d{4,7}\b")
 LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^)\s]+)\)")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
-WEEK_RE = re.compile(r"^\d{4}-W\d{2}$")
 
 
 # === SLUG / HOST HELPERS ================================================
@@ -1071,27 +1069,6 @@ THEME_TOGGLE_SVG = (
     '</svg>'
 )
 
-COPY_ICON_SVG = (
-    '<svg class="md-split__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
-    '<path fill="currentColor" d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/>'
-    '<path fill="currentColor" d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/>'
-    '</svg>'
-)
-
-CARET_DOWN_SVG = (
-    '<svg class="md-split__chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
-    '<path fill="currentColor" d="M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"/>'
-    '</svg>'
-)
-
-EXTERNAL_LINK_SVG = (
-    '<svg class="md-split__ext" viewBox="0 0 16 16" aria-hidden="true" focusable="false">'
-    '<path fill="currentColor" d="M3.75 2A1.75 1.75 0 0 0 2 3.75v8.5C2 13.216 2.784 14 3.75 14h8.5A1.75 1.75 0 0 0 14 12.25v-3.5a.75.75 0 0 0-1.5 0v3.5a.25.25 0 0 1-.25.25h-8.5a.25.25 0 0 1-.25-.25v-8.5a.25.25 0 0 1 .25-.25h3.5a.75.75 0 0 0 0-1.5Z"/>'
-    '<path fill="currentColor" d="M9.25 2a.75.75 0 0 0 0 1.5h2.19L6.22 8.72a.749.749 0 1 0 1.06 1.06l5.22-5.22v2.19a.75.75 0 0 0 1.5 0v-4a.75.75 0 0 0-.75-.75Z"/>'
-    '</svg>'
-)
-
-
 # --- Branding-driven template fragments ---------------------------------
 #
 # Each helper resolves to the built-in upstream default when the matching
@@ -1796,7 +1773,7 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
         '<div class="callout__body">'
         f'<p><strong>{_escape(str(ia.get("title") or ""))}</strong> — '
         f'{_escape(str(ia.get("action") or "").strip())} '
-        f'<a href="{_escape(url)}">{_escape(entry.get("headline") or entry.get("title") or entry["id"])} →</a></p>'
+        f'<a href="{_escape(url)}">{_inline_text(entry.get("headline") or entry.get("title") or entry["id"])} →</a></p>'
         f"{quote_html}"
         "</div></aside>"
     )
@@ -1918,15 +1895,22 @@ def _empty_stub_html() -> str:
     return f'<p class="muted section-empty"><em>{_escape(SECTION_EMPTY_STUB)}</em></p>'
 
 
+def _inline_text(s: str) -> str:
+    """Headline / summary fields are *mostly* plain text, but migrated v2
+    content may carry inline Markdown emphasis. Render it (escaped, no
+    links) so `**bold**` never leaks verbatim into pages or feeds."""
+    return render_inline_no_links((s or "").strip())
+
+
 def render_tldr_bullets(picked: list[dict[str, Any]], *, prefix: str = "") -> str:
     lis: list[str] = []
     for e in picked:
         url = f"{prefix}{entry_url_path(e)}"
-        headline = (e.get("headline") or e.get("title") or e["id"]).rstrip(".")
+        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
         lis.append(
             "<li>"
-            f"<strong>{_escape(headline)}.</strong> "
-            f'{_escape((e.get("summary") or "").strip())} '
+            f"<strong>{_inline_text(headline)}.</strong> "
+            f'{_inline_text(e.get("summary") or "")} '
             f'<a href="{_escape(url)}">→</a>'
             "</li>"
         )
@@ -2388,7 +2372,7 @@ def render_days_index_page(
                 + (f"<span>{cves} CVE{'' if cves == 1 else 's'}</span>" if cves else "")
                 + (f'<span class="badge badge--crit">{crit} critical</span>' if crit else "")
                 + "</div>"
-                + (f'<div class="e-meta"><span class="muted">{_escape(hint[:160])}</span></div>' if hint else "")
+                + (f'<div class="e-meta"><span class="muted">{_inline_text(hint[:160])}</span></div>' if hint else "")
                 + "</span>"
                 f'<span class="mono muted">{_escape(day)}</span>'
                 "</li>"
@@ -2499,7 +2483,7 @@ def render_weekly_index_page(
             f'<span class="e-tag">weekly</span>'
             f'<span>{n} strategic entr{"y" if n == 1 else "ies"}</span>'
             "</div>"
-            + (f'<div class="e-meta"><span class="muted">{_escape(hint[:160])}</span></div>' if hint else "")
+            + (f'<div class="e-meta"><span class="muted">{_inline_text(hint[:160])}</span></div>' if hint else "")
             + "</span>"
             f'<span class="mono muted">{_escape(week)}</span>'
             "</li>"
@@ -2718,8 +2702,8 @@ def render_home_page(
     live_inner = (
         f'<p class="muted">{n_window} entr{"y" if n_window == 1 else "ies"} in the current 24 h window.</p>'
         + (
-            f"<ul><li><strong>{_escape((top.get('headline') or top.get('title') or '').rstrip('.'))}.</strong> "
-            f"{_escape((top.get('summary') or '').strip()[:220])}</li></ul>"
+            f"<ul><li><strong>{_inline_text((top.get('headline') or top.get('title') or '').strip().strip('*').rstrip('.'))}.</strong> "
+            f"{_inline_text((top.get('summary') or '').strip()[:220])}</li></ul>"
             if top else '<p class="muted">A quiet window — no new verified signal in the last 24 h.</p>'
         )
     )
@@ -2736,8 +2720,8 @@ def render_home_page(
         day_ops = sorted(operational_entries(latest_day_entries), key=entry_sort_key)
         tldr = select_tldr_entries(day_ops, cap=3)
         lis = "".join(
-            f"<li><strong>{_escape((e.get('headline') or '').rstrip('.'))}.</strong> "
-            f"{_escape((e.get('summary') or '').strip()[:180])}</li>"
+            f"<li><strong>{_inline_text((e.get('headline') or '').strip().strip('*').rstrip('.'))}.</strong> "
+            f"{_inline_text((e.get('summary') or '').strip()[:180])}</li>"
             for e in tldr
         )
         day_card = (
@@ -2761,8 +2745,8 @@ def render_home_page(
         strat = sorted(strategic_entries(latest_week_entries), key=entry_sort_key)
         glance = [e for e in strat if e.get("priority") in ("critical", "high")][:3]
         lis = "".join(
-            f"<li><strong>{_escape((e.get('headline') or '').rstrip('.'))}.</strong> "
-            f"{_escape((e.get('summary') or '').strip()[:180])}</li>"
+            f"<li><strong>{_inline_text((e.get('headline') or '').strip().strip('*').rstrip('.'))}.</strong> "
+            f"{_inline_text((e.get('summary') or '').strip()[:180])}</li>"
             for e in glance
         )
         weekly_card = (
@@ -3202,7 +3186,7 @@ def render_source_list_page(
         '</table></div>'
     ) if rows else '<div class="empty">No sources match.</div>'
 
-    chart_block = render_sources_overview_charts(sources, run_log=None, prefix=prefix)
+    chart_block = render_sources_overview_charts(sources, prefix=prefix)
     body = f"""
 <h1>Sources</h1>
 <p class="subtitle">{len(sources)} curated source{'' if len(sources) == 1 else 's'}. Each source can be searched and shows the entries that have cited it.</p>
@@ -5325,7 +5309,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             f'<div class="ops-sa-card__head"><strong>{_escape(key)}</strong>'
             ' <span class="ops-pill ops-pill--crit">stalled</span></div>'
             f'<p class="muted mono">{_escape(model_name)}</p>'
-            '<p class="muted">Past 10-min wall-clock budget; abandoned.</p>'
+            '<p class="muted">Past the 30-min wall-clock cap; abandoned.</p>'
             '</div>'
         )
 
@@ -5885,7 +5869,7 @@ def _entry_feed_item(entry: dict[str, Any], *, site_url: str,
         + entry_cve_ids(entry)
     )
     cats = "".join(f"<category>{_escape(c)}</category>" for c in cat_parts[:16])
-    desc_html = f"<p>{_escape((entry.get('summary') or '').strip())}</p>"
+    desc_html = f"<p>{_inline_text(entry.get('summary') or '')}</p>"
     return (
         "<item>"
         f"<title>{_escape(entry.get('headline') or entry.get('title') or entry['id'])}</title>"
@@ -6205,7 +6189,6 @@ def render_overview_charts(
 def render_sources_overview_charts(
     sources: list[dict[str, Any]],
     *,
-    run_log: dict[str, Any] | None,
     prefix: str,
 ) -> str:
     """Bias-detection chart strip for the /sources/ overview page.
@@ -6360,9 +6343,8 @@ def render_sources_overview_charts(
             '</div>'
         )
 
-    # the run_log fetch-failure sparkline was REMOVED from /sources/.
-    # Fetch failures are run-level operational telemetry → they live on /ops/
-    # (run-log table + Coverage gaps), not on the source-catalogue page.
+    # Fetch-failure sparklines live on /ops/ (run-log table + Coverage
+    # gaps), not on the source-catalogue page.
 
     return (
         '<section class="ops-section">'
@@ -6463,7 +6445,7 @@ def render_entities_index_page(
 # list carries the key, or its title/body mentions the entity's name or
 # an alias (the v2 phrase-matching approach, ported to entry dicts).
 # Timelines derive from entry dates; citations from entry sources; the
-# old covered_items "delta timeline" is replaced by the update_of chain
+# old v2 coverage-log "delta timeline" is replaced by the update_of chain
 # plus appearance dates.
 
 
@@ -7183,6 +7165,14 @@ def self_check(
     # carries no inline `<script>` block (CSP `script-src 'self'` would
     # refuse to execute it).
     inline_script_re = re.compile(r"<script(?:\s[^>]*)?>(?!\s*</script>)[^<]", re.IGNORECASE)
+    # Non-executable JSON data islands (<script type="application/json">,
+    # used by /brief/ to hand grouping constants to brief.js) are exempt:
+    # browsers never execute them and CSP script-src does not apply. Strip
+    # them before scanning so only genuinely executable inline bodies flag.
+    data_island_re = re.compile(
+        r'<script\s[^>]*type=(?:"|\')application/(?:ld\+)?json(?:"|\')[^>]*>.*?</script>',
+        re.IGNORECASE | re.DOTALL,
+    )
     # Match the actual `<script>` tag that loads Umami, not stray textual
     # mentions of the URL (which can appear in docs that describe the
     # analytics setup). Host comes from config/branding.yaml; with
@@ -7209,7 +7199,7 @@ def self_check(
             # page itself is fine. Aggregate so one umami misconfig
             # doesn't produce 100 lines of warnings.
             umami_warnings.append(str(path.relative_to(OUT)))
-        if inline_script_re.search(text):
+        if inline_script_re.search(data_island_re.sub("", text)):
             errors.append(
                 f"inline <script> body in {path.relative_to(OUT)} — "
                 "CSP would refuse to execute it. Move to an external file under assets/js/."

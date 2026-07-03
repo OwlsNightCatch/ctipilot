@@ -609,13 +609,19 @@ _SENT_SPLIT_RE = re.compile(r"(?<=[.!?])\s+(?=[A-Z“\"(\[])")
 
 
 def first_sentences(text: str, n: int, cap: int) -> str:
-    """First `n` sentences of `text`, hard-capped at `cap` chars (cut at a
-    word boundary)."""
+    """Up to `n` complete sentences of `text` that fit in `cap` chars;
+    only the first sentence is ever word-boundary-truncated (when it
+    alone exceeds the cap) so the result never ends mid-sentence."""
     text = re.sub(r"\s+", " ", text).strip()
     parts = _SENT_SPLIT_RE.split(text)
-    out = " ".join(parts[:n]).strip()
+    out = ""
+    for part in parts[:n]:
+        candidate = (out + " " + part).strip()
+        if out and len(candidate) > cap:
+            break
+        out = candidate
     if len(out) > cap:
-        out = out[:cap].rsplit(" ", 1)[0].rstrip(",;:—- ")
+        out = out[:cap].rsplit(" ", 1)[0].rstrip(",;:—- ") + " …"
     return out
 
 
@@ -665,6 +671,7 @@ def strip_markers(heading: str) -> str:
     t = re.sub(r"^\s*UPDATE\s*[:—–-]\s*", "", t)
     t = re.sub(r"^\s*ANNUAL REPORT\s*[:—–-]\s*", "", t)
     t = re.sub(r"\(`key:\s*[^`)]*`\)", "", t)
+    t = t.replace("**", "").replace("`", "")
     return re.sub(r"\s+", " ", t).strip(" —–-·")
 
 
@@ -1442,6 +1449,11 @@ def migrate_looking_ahead(brief: dict, section: dict, taxonomy: dict):
         heading=f"Looking ahead — {brief['name']}", body_md=raw,
         footer=footer, kind="outlook", horizon="strategic",
         taxonomy=taxonomy, weekly_section="weekly-looking-ahead")
+    # The section preamble is boilerplate ("A focused, justified list…");
+    # the first bullet is the actual signal — use it as the summary.
+    bullets = parse_tldr_bullets(raw)
+    if bullets:
+        entry["summary"] = first_sentences(strip_md_inline(bullets[0]), 2, 320)
     return entry
 
 
@@ -1530,10 +1542,13 @@ def resolve_updates(entries: list, entries_by_brief: dict) -> None:
                 return t | {p for w in t for p in w.split("-")
                             if len(p) > 3 and not p.isdigit()}
             ttok = toks(e["title"])
-            # >= 3 shared title tokens, best match.
+            # >= 3 shared title tokens, best match. Unexpanded tokens
+            # only — hyphen expansion would triple-count one shared
+            # concept ("supply-chain" -> supply, chain) into a match.
             best, bestn = None, 0
             for c in cands:
-                n = len(ttok & toks(c["title"]))
+                n = len(significant_tokens(e["title"])
+                        & significant_tokens(c["title"]))
                 if n >= 3 and n > bestn:
                     best, bestn = c, n
             target = best
@@ -1548,7 +1563,7 @@ def resolve_updates(entries: list, entries_by_brief: dict) -> None:
                         "ivanti", "fortinet", "vmware", "adobe", "linux",
                         "windows", "android", "apache", "github", "gitlab",
                         "amazon", "chrome", "firefox", "mozilla", "citrix",
-                        "salesforce", "cisa", "ncsc"}
+                        "salesforce", "cisa", "ncsc", "storm"}
 
                 def anchored(c):
                     for t in ttok & toks(c["title"]):
@@ -1572,7 +1587,7 @@ def resolve_updates(entries: list, entries_by_brief: dict) -> None:
                                          + first_paragraph(c["_body"]))), c)
                         for c in cands
                         if len(ttok & toks(c["title"] + " "
-                                           + first_paragraph(c["_body"]))) >= 4
+                                           + first_paragraph(c["_body"]))) >= 3
                         and anchored(c)])
         if target is None:
             append_note(e, "migration: update target unresolved "
