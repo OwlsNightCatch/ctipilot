@@ -39,49 +39,78 @@
     return bookPromise;
   }
 
+  // DOM handles, resolved in init().
+  var chips = null, fromInput = null, toInput = null, applyBtn = null;
+  var HOUR_MS = 3600 * 1000;
+
   function init() {
     var root = document.getElementById('brief-sections');
     var controls = document.querySelector('[data-brief-controls]');
     CFG = readConfig();
     if (!root || !controls || !CFG) return;
 
-    var chips = controls.querySelectorAll('[data-window-hours]');
-    var sinceInput = controls.querySelector('[data-window-since]');
+    chips = controls.querySelectorAll('[data-window-hours]');
+    fromInput = controls.querySelector('[data-window-from]');
+    toInput = controls.querySelector('[data-window-to]');
+    applyBtn = controls.querySelector('[data-window-apply]');
+
+    // Recent-runs overview: open on desktop, collapsed on phones so the
+    // brief content isn't pushed far down a small screen (its summary keeps
+    // it one tap away). Server renders it open for the no-JS case.
+    var runsPanel = document.querySelector('.runs-overview');
+    if (runsPanel && window.matchMedia &&
+        window.matchMedia('(max-width: 639px)').matches) {
+      runsPanel.removeAttribute('open');
+    }
 
     chips.forEach(function (chip) {
       chip.addEventListener('click', function () {
         var hours = parseInt(chip.getAttribute('data-window-hours'), 10);
         if (!(hours > 0)) return;
-        if (sinceInput) sinceInput.value = '';
         setActiveChip(chips, chip);
         applyWindow({ hours: hours });
       });
     });
 
-    if (sinceInput) {
-      sinceInput.addEventListener('change', function () {
-        var v = sinceInput.value; // YYYY-MM-DD from the date input
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
-        setActiveChip(chips, null);
-        applyWindow({ since: v });
+    if (applyBtn) applyBtn.addEventListener('click', applyCustomRange);
+    [fromInput, toInput].forEach(function (inp) {
+      if (!inp) return;
+      inp.addEventListener('change', applyCustomRange);
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); applyCustomRange(); }
       });
-    }
+    });
 
-    // ?hours=N / ?since=YYYY-MM-DD on load.
+    // ?hours=N  or  ?from=DD.MM.YYYY HH:MM&to=DD.MM.YYYY HH:MM  on load.
     var params = new URLSearchParams(window.location.search);
     var pHours = parseInt(params.get('hours') || '', 10);
-    var pSince = params.get('since') || '';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(pSince)) {
-      if (sinceInput) sinceInput.value = pSince;
+    var pFrom = parseEU(params.get('from')), pTo = parseEU(params.get('to'));
+    if (pFrom != null && pTo != null) {
       setActiveChip(chips, null);
-      applyWindow({ since: pSince }, { replaceUrl: false });
-    } else if (pHours > 0 && pHours !== CFG.default_hours) {
+      applyWindow({ from: pFrom, to: pTo }, { replaceUrl: false });
+      return;
+    }
+    if (pHours > 0) {
+      var matched = null;
       chips.forEach(function (c) {
-        if (parseInt(c.getAttribute('data-window-hours'), 10) === pHours) {
-          setActiveChip(chips, c);
-        }
+        if (parseInt(c.getAttribute('data-window-hours'), 10) === pHours) matched = c;
       });
+      setActiveChip(chips, matched);
       applyWindow({ hours: pHours }, { replaceUrl: false });
+      return;
+    }
+
+    // No params: the server rendered [ref − default_hours, ref]. Normalise
+    // the From/To boxes to that reference range without a fetch. If the
+    // visitor's real clock has moved materially past the build's reference
+    // moment, re-render the default against real "now" so the range shown
+    // is honest (this is the only case that triggers the briefbook fetch
+    // on load).
+    var refMs = parseTs(CFG.reference_ts || CFG.generated_at);
+    var dh = CFG.default_hours || 24;
+    if (refMs != null) fillBoxes(refMs - dh * HOUR_MS, refMs);
+    if (refMs != null && (Date.now() - refMs) > HOUR_MS) {
+      applyWindow({ hours: dh }, { replaceUrl: false });
     }
   }
 
@@ -89,19 +118,71 @@
     chips.forEach(function (c) { c.classList.toggle('active', c === active); });
   }
 
+  function markInvalid(inp, bad) {
+    if (!inp) return;
+    inp.classList.toggle('is-invalid', !!bad);
+    if (bad) inp.setAttribute('aria-invalid', 'true');
+    else inp.removeAttribute('aria-invalid');
+  }
+
+  function applyCustomRange() {
+    var fMs = parseEU(fromInput && fromInput.value);
+    var tMs = parseEU(toInput && toInput.value);
+    markInvalid(fromInput, fMs == null);
+    markInvalid(toInput, tMs == null);
+    if (fMs == null || tMs == null) return;
+    if (fMs > tMs) { var s = fMs; fMs = tMs; tMs = s; } // tolerate reversed entry
+    setActiveChip(chips, null);
+    applyWindow({ from: fMs, to: tMs });
+  }
+
   function applyWindow(win, opts) {
     opts = opts || {};
     ensureBook().then(function (book) {
-      renderWindow(book, win);
+      var bounds = renderWindow(book, win);
+      fillBoxes(bounds.since, bounds.until);
       if (opts.replaceUrl !== false && window.history && history.replaceState) {
-        var q = win.since ? ('?since=' + encodeURIComponent(win.since))
-                          : ('?hours=' + win.hours);
+        var q = win.hours
+          ? ('?hours=' + win.hours)
+          : ('?from=' + encodeURIComponent(fmtEU(bounds.since)) +
+             '&to=' + encodeURIComponent(fmtEU(bounds.until)));
         history.replaceState(null, '', q);
       }
     }).catch(function () {
       var status = document.querySelector('[data-window-status]');
       if (status) status.textContent = 'could not load the entry book — showing the default window';
     });
+  }
+
+  // ── date helpers (European DD.MM.YYYY HH:MM, interpreted as UTC) ─────
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function fmtEU(ms) {
+    var d = new Date(ms);
+    return pad2(d.getUTCDate()) + '.' + pad2(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() +
+      ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
+  }
+
+  // Parse "DD.MM.YYYY", "DD.MM.YYYY HH:MM" (also tolerates / or - separators
+  // and a T between date and time). Returns a UTC epoch-ms, or null.
+  function parseEU(s) {
+    if (!s) return null;
+    var m = String(s).trim().match(
+      /^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})(?:[ T,]+(\d{1,2}):(\d{2}))?$/);
+    if (!m) return null;
+    var day = +m[1], mon = +m[2], yr = +m[3];
+    var hr = m[4] != null ? +m[4] : 0, mi = m[5] != null ? +m[5] : 0;
+    if (mon < 1 || mon > 12 || day < 1 || day > 31 || hr > 23 || mi > 59) return null;
+    var ms = Date.UTC(yr, mon - 1, day, hr, mi, 0, 0);
+    var d = new Date(ms); // reject overflow like 31.02.2026
+    if (d.getUTCFullYear() !== yr || d.getUTCMonth() !== mon - 1 || d.getUTCDate() !== day) return null;
+    return ms;
+  }
+
+  function fillBoxes(sinceMs, untilMs) {
+    if (fromInput) { fromInput.value = fmtEU(sinceMs); markInvalid(fromInput, false); }
+    if (toInput) { toInput.value = fmtEU(untilMs); markInvalid(toInput, false); }
   }
 
   // ── window filter ───────────────────────────────────────────────────
@@ -111,13 +192,20 @@
     return isNaN(t) ? null : t;
   }
 
+  // Absolute [since, until] epoch-ms bounds. Presets are measured back from
+  // the visitor's real clock; an explicit range uses the parsed boxes.
   function windowBounds(win) {
-    if (win.since) {
-      return { since: Date.parse(win.since + 'T00:00:00Z'), label: 'since ' + win.since + ' (UTC)' };
+    var until, since, hours = null;
+    if (win.from != null && win.to != null) {
+      since = win.from; until = win.to;
+    } else {
+      hours = win.hours || (CFG.default_hours || 24);
+      until = Date.now();
+      since = until - hours * HOUR_MS;
     }
     return {
-      since: Date.now() - win.hours * 3600 * 1000,
-      label: 'from the last ' + win.hours + ' h'
+      since: since, until: until, hours: hours,
+      label: fmtEU(since) + ' → ' + fmtEU(until) + ' UTC'
     };
   }
 
@@ -125,7 +213,7 @@
     var out = [];
     (book.entries || []).forEach(function (e) {
       var ts = parseTs(e.discovered_at);
-      if (ts !== null && ts >= bounds.since) out.push(e);
+      if (ts !== null && ts >= bounds.since && ts <= bounds.until) out.push(e);
     });
     return out;
   }
@@ -251,14 +339,12 @@
     p.appendChild(a);
     body.appendChild(p);
     if (ia.evidence_quote) {
-      var bq = el('blockquote', 'entry-evidence');
-      var qp = el('p', null, '“' + ia.evidence_quote + '”');
+      var fig = el('figure', 'entry-cite entry-cite--inline');
+      fig.appendChild(el('p', 'entry-cite__quote', ia.evidence_quote));
       if (ia.evidence_publisher) {
-        qp.appendChild(document.createTextNode(' '));
-        qp.appendChild(el('cite', null, '— ' + ia.evidence_publisher));
+        fig.appendChild(el('figcaption', 'entry-cite__attr', ia.evidence_publisher));
       }
-      bq.appendChild(qp);
-      body.appendChild(bq);
+      body.appendChild(fig);
     }
     aside.appendChild(body);
     return aside;
@@ -373,21 +459,21 @@
   function updateMeta(ops, win) {
     setAll('[data-window-entries]', String(ops.length));
     setAll('[data-window-cves]', String(uniqueSorted(ops, 'cve_ids').length));
-    var label = win.since ? ('since ' + win.since) : ('last ' + win.hours + ' h');
+    var label = win.hours ? ('last ' + win.hours + ' h') : 'custom range';
     setAll('[data-window-label]', label);
   }
 
   // ── render ───────────────────────────────────────────────────────────
 
   function renderWindow(book, win) {
-    var root = document.getElementById('brief-sections');
-    if (!root) return;
     var bounds = windowBounds(win);
+    var root = document.getElementById('brief-sections');
+    if (!root) return bounds;
     var entries = inWindow(book, bounds);
     var ops = entries.filter(function (e) { return (e.horizon || 'operational') === 'operational'; });
     var runs = (book.runs || []).filter(function (r) {
       var ts = parseTs(r.completed || r.started);
-      return ts !== null && ts >= bounds.since;
+      return ts !== null && ts >= bounds.since && ts <= bounds.until;
     });
 
     // group
@@ -437,11 +523,12 @@
 
     var status = document.querySelector('[data-window-status]');
     if (status) {
-      status.textContent = 'showing ' + ops.length
-        + (ops.length === 1 ? ' entry ' : ' entries ') + bounds.label;
+      status.textContent = 'Showing ' + ops.length
+        + (ops.length === 1 ? ' entry · ' : ' entries · ') + bounds.label;
     }
 
     updateMeta(ops, win);
     rebuildFilters(ops);
+    return bounds;
   }
 })();

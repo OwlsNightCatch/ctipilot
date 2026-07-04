@@ -1414,6 +1414,15 @@ DAILY_SECTIONS: list[tuple[str, str]] = [
     ("verification-notes", "7. Verification Notes"),
 ]
 
+# Compact section labels for dense UI (the recent-runs overview breakdown).
+SECTION_SHORT: dict[str, str] = {
+    "active-threats": "Threats",
+    "trending-vulnerabilities": "Vulns",
+    "research": "Research",
+    "updates": "Updates",
+    "deep-dive": "Deep dive",
+}
+
 # Weekly structure — the v2 12-section order with the v2 headings.
 # `weekly-glance` is derived (one bullet per critical/high strategic
 # entry); `verification-notes` renders the week's run-record bodies.
@@ -1697,20 +1706,78 @@ def render_entry_taxonomy(entry: dict[str, Any], *, prefix: str = "") -> str:
     return '<div class="entry-taxonomy">' + " ".join(pills) + "</div>"
 
 
-def render_entry_evidence(entry: dict[str, Any]) -> str:
-    """Evidence quotes as styled blockquotes bound to their publisher."""
-    rows: list[str] = []
-    for ev in entry.get("evidence") or []:
-        if not isinstance(ev, dict) or not ev.get("quote"):
-            continue
-        pub = ev.get("publisher") or ""
-        rows.append(
-            '<blockquote class="entry-evidence">'
-            f'<p>“{_escape(str(ev["quote"]))}”'
-            + (f' <cite>— {_escape(str(pub))}</cite>' if pub else "")
-            + "</p></blockquote>"
+def _entry_source_by_publisher(entry: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """publisher (lower-cased) -> its source dict, from the entry's own
+    source list — lets an evidence quote link back to the article it was
+    taken from."""
+    out: dict[str, dict[str, Any]] = {}
+    for s in entry.get("sources") or []:
+        if isinstance(s, dict) and s.get("publisher"):
+            out.setdefault(str(s["publisher"]).strip().lower(), s)
+    return out
+
+
+def _cite_attribution_html(pub: str, src_by_pub: dict[str, dict[str, Any]]) -> str:
+    """One attribution caption for a quoted source. Links to the matching
+    source URL (with its date) when we have it, so the quote is checkable
+    against the original; plain publisher name otherwise."""
+    if not pub:
+        return ""
+    src = src_by_pub.get(pub.lower())
+    if src and src.get("url"):
+        url = _escape(_safe_url(str(src["url"])))
+        date = str(src.get("date") or "")
+        date_html = (
+            f' <span class="entry-cite__date mono">{_escape(date)}</span>' if date else ""
         )
-    return "".join(rows)
+        inner = (
+            f'<a href="{url}" target="_blank" rel="noopener noreferrer">{_escape(pub)}</a>'
+            f"{date_html}"
+        )
+    else:
+        inner = _escape(pub)
+    return f'<figcaption class="entry-cite__attr">{inner}</figcaption>'
+
+
+def render_entry_evidence(entry: dict[str, Any]) -> str:
+    """Verbatim source quotes rendered as a distinct "cited from the
+    reporting" block — deliberately neutral so it never reads as the
+    pipeline's own voice (that is the accent Defender-takeaway callout).
+    Consecutive quotes from the same publisher are grouped under a single
+    attribution, so a source is cited once no matter how many lines it
+    backs (no citation-in-citation repetition)."""
+    evs = [
+        ev for ev in (entry.get("evidence") or [])
+        if isinstance(ev, dict) and ev.get("quote")
+    ]
+    if not evs:
+        return ""
+    src_by_pub = _entry_source_by_publisher(entry)
+
+    groups: list[tuple[str, list[str]]] = []
+    for ev in evs:
+        pub = str(ev.get("publisher") or "").strip()
+        quote = str(ev["quote"])
+        if groups and groups[-1][0] == pub:
+            groups[-1][1].append(quote)
+        else:
+            groups.append((pub, [quote]))
+
+    figures: list[str] = []
+    for pub, quotes in groups:
+        quote_html = "".join(
+            f'<p class="entry-cite__quote">{_escape(q)}</p>' for q in quotes
+        )
+        figures.append(
+            '<figure class="entry-cite">'
+            f"{quote_html}{_cite_attribution_html(pub, src_by_pub)}"
+            "</figure>"
+        )
+    return (
+        '<div class="entry-cites" role="group" aria-label="Quoted from the reporting">'
+        + "".join(figures)
+        + "</div>"
+    )
 
 
 def render_entry_sources(entry: dict[str, Any], *, with_roles: bool = False) -> str:
@@ -1767,12 +1834,13 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
     quote_html = ""
     for ev in entry.get("evidence") or []:
         if isinstance(ev, dict) and ev.get("quote"):
-            pub = ev.get("publisher") or ""
+            pub = str(ev.get("publisher") or "").strip()
+            src_by_pub = _entry_source_by_publisher(entry)
             quote_html = (
-                '<blockquote class="entry-evidence">'
-                f'<p>“{_escape(str(ev["quote"]))}”'
-                + (f' <cite>— {_escape(str(pub))}</cite>' if pub else "")
-                + "</p></blockquote>"
+                '<figure class="entry-cite entry-cite--inline">'
+                f'<p class="entry-cite__quote">{_escape(str(ev["quote"]))}</p>'
+                f"{_cite_attribution_html(pub, src_by_pub)}"
+                "</figure>"
             )
             break
     return (
@@ -2155,10 +2223,100 @@ def _ai_notice_html() -> str:
     )
 
 
+def render_runs_overview(
+    all_entries: list[dict[str, Any]],
+    all_runs: list[dict[str, Any]],
+    *,
+    prefix: str = "",
+    limit: int = 10,
+) -> str:
+    """A compact readout of the last `limit` pipeline fires: when each
+    finished, how many items it published and the per-brief-section
+    breakdown. Entries are mapped to their fire via the `run_id` they
+    carry in frontmatter. Static (window-independent) — the panel is the
+    same whatever reading window the visitor picks."""
+    counts_by_run: dict[str, Counter] = defaultdict(Counter)
+    strategic_by_run: Counter = Counter()
+    for e in all_entries:
+        rid = e.get("run_id")
+        if not rid:
+            continue
+        if (e.get("horizon") or "operational") != "operational":
+            strategic_by_run[rid] += 1
+            continue
+        skey = entry_section_key(e)
+        if skey:
+            counts_by_run[rid][skey] += 1
+
+    runs_sorted = sorted(
+        (r for r in all_runs if r.get("run_id")),
+        key=lambda r: str(r.get("completed") or r.get("started") or r.get("run_id")),
+        reverse=True,
+    )[:limit]
+    if not runs_sorted:
+        return ""
+
+    rows: list[str] = []
+    for r in runs_sorted:
+        rid = str(r.get("run_id"))
+        ts = parse_ts(r.get("completed") or r.get("started"))
+        when = ts.strftime("%d.%m.%Y&nbsp;%H:%M") if ts else "—"
+        kind = str(r.get("kind") or "intel")
+        counts = counts_by_run.get(rid, Counter())
+        total = sum(counts.values()) + strategic_by_run.get(rid, 0)
+
+        cats: list[str] = []
+        for key, _title in DAILY_SECTIONS:
+            c = counts.get(key)
+            if c:
+                cats.append(
+                    f'<span class="runs-cat"><span class="runs-cat__n">{c}</span>'
+                    f'{_escape(SECTION_SHORT.get(key, key))}</span>'
+                )
+        if strategic_by_run.get(rid):
+            cats.append(
+                f'<span class="runs-cat"><span class="runs-cat__n">'
+                f'{strategic_by_run[rid]}</span>Strategic</span>'
+            )
+        breakdown = (
+            "".join(cats)
+            if cats
+            else '<span class="runs-cat runs-cat--none">quiet window</span>'
+        )
+        day = str(r.get("date") or "")
+        run_label = (
+            f'<a class="runs-row__run" href="{_escape(prefix)}briefs/{_escape(day)}/">'
+            f'<span class="runs-row__kind runs-row__kind--{_escape(kind)}">{_escape(kind)}</span></a>'
+            if day
+            else f'<span class="runs-row__kind runs-row__kind--{_escape(kind)}">{_escape(kind)}</span>'
+        )
+        rows.append(
+            '<li class="runs-row">'
+            f'<span class="runs-row__when mono">{when}</span>'
+            f"{run_label}"
+            f'<span class="runs-row__total"><span class="runs-row__total-n">{total}</span>'
+            f'<span class="runs-row__total-l">item{"" if total == 1 else "s"}</span></span>'
+            f'<span class="runs-row__cats">{breakdown}</span>'
+            "</li>"
+        )
+
+    return (
+        '<details class="runs-overview" open>'
+        '<summary class="runs-overview__summary">'
+        '<span class="runs-overview__title">Recent pipeline runs</span>'
+        f'<span class="runs-overview__meta muted">last {len(runs_sorted)} fires</span>'
+        "</summary>"
+        f'<ol class="runs-list">{"".join(rows)}</ol>'
+        "</details>"
+    )
+
+
 def render_live_brief_page(
     window_entries: list[dict[str, Any]],
     window_runs: list[dict[str, Any]],
     *,
+    all_entries: list[dict[str, Any]] | None = None,
+    all_runs: list[dict[str, Any]] | None = None,
     ref_ts: datetime,
     entries_by_id: dict[str, dict[str, Any]],
     card_html_by_id: dict[str, str],
@@ -2174,8 +2332,18 @@ def render_live_brief_page(
     ops = sorted(operational_entries(window_entries), key=entry_sort_key)
     n = len(ops)
     cve_count = len({c for e in ops for c in entry_cve_ids(e)})
-    anchor_label = ref_ts.strftime("%Y-%m-%d %H:%M UTC")
     toc_html = _brief_filter_aside(ops)
+
+    # The server-rendered default is an explicit clock window ending at the
+    # build's reference moment (the newest published signal): [ref-24h, ref].
+    # It is presented as a plain From→To range in European DD.MM.YYYY HH:MM
+    # form — no "anchor" concept. brief.js re-computes presets against the
+    # visitor's real clock and always fills the boxes with the exact range.
+    win_to = ref_ts
+    win_from = ref_ts - timedelta(hours=DEFAULT_WINDOW_HOURS)
+    from_str = win_from.strftime("%d.%m.%Y %H:%M")
+    to_str = win_to.strftime("%d.%m.%Y %H:%M")
+    range_label = f"{from_str} &rarr; {to_str} UTC"
 
     meta_items = (
         '<div class="brief-meta">'
@@ -2184,8 +2352,6 @@ def render_live_brief_page(
         '<span class="brief-meta__value"><span class="brief-meta__type brief-meta__type--live">live</span></span></div>'
         '<div class="brief-meta__item"><span class="brief-meta__label">Window</span>'
         f'<span class="brief-meta__value" data-window-label>last {DEFAULT_WINDOW_HOURS} h</span></div>'
-        '<div class="brief-meta__item brief-meta__item--wide"><span class="brief-meta__label">Anchor</span>'
-        f'<span class="brief-meta__value"><span class="mono">{_escape(anchor_label)}</span></span></div>'
         '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>'
         f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-entries>{n}</span></span></div>'
         '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">CVEs</span>'
@@ -2200,17 +2366,50 @@ def render_live_brief_page(
     )
     control_bar = (
         '<div class="brief-controls" data-brief-controls>'
-        '<span class="brief-controls__label">Window</span>'
+        '<div class="brief-controls__row brief-controls__row--presets">'
+        '<span class="brief-controls__label" id="brief-window-label">Window</span>'
+        '<div class="brief-seg" role="group" aria-labelledby="brief-window-label">'
         f"{chips}"
-        '<label class="brief-controls__since">since '
-        '<input type="date" class="input" data-window-since aria-label="Show entries since date (UTC)" />'
-        "</label>"
-        f'<span class="brief-controls__status" data-window-status>'
-        f"showing {n} entr{'y' if n == 1 else 'ies'} from the last {DEFAULT_WINDOW_HOURS} h</span>"
         "</div>"
-        '<p class="muted brief-controls__note">Content window anchored at the newest published '
-        f'signal (<span class="mono">{_escape(anchor_label)}</span>). Without JavaScript this page '
-        f"shows the default {DEFAULT_WINDOW_HOURS} h window.</p>"
+        "</div>"
+        '<div class="brief-controls__row brief-controls__row--range">'
+        '<label class="brief-field"><span class="brief-field__label">From</span>'
+        '<input type="text" inputmode="numeric" class="input brief-field__input" '
+        f'data-window-from value="{_escape(from_str)}" placeholder="DD.MM.YYYY HH:MM" '
+        'autocomplete="off" spellcheck="false" '
+        'aria-label="Range start — UTC, format DD.MM.YYYY HH:MM" /></label>'
+        '<label class="brief-field"><span class="brief-field__label">To</span>'
+        '<input type="text" inputmode="numeric" class="input brief-field__input" '
+        f'data-window-to value="{_escape(to_str)}" placeholder="DD.MM.YYYY HH:MM" '
+        'autocomplete="off" spellcheck="false" '
+        'aria-label="Range end — UTC, format DD.MM.YYYY HH:MM" /></label>'
+        '<span class="brief-field__tz">UTC</span>'
+        '<button type="button" class="brief-range-apply" data-window-apply>Apply</button>'
+        "</div>"
+        f'<p class="brief-controls__status" data-window-status>'
+        f"Showing {n} entr{'y' if n == 1 else 'ies'} &middot; {range_label}</p>"
+        "</div>"
+    )
+    console_note = (
+        '<p class="muted brief-controls__note">Times are UTC. Presets are measured back from '
+        "now; edit From / To for an exact range. Without JavaScript this page shows the last "
+        f"{DEFAULT_WINDOW_HOURS} h up to the newest published signal.</p>"
+    )
+    runs_overview = render_runs_overview(
+        all_entries if all_entries is not None else window_entries,
+        all_runs if all_runs is not None else window_runs,
+        prefix=prefix,
+    )
+    # The metadata band + window controls + recent-runs readout read as one
+    # cohesive console panel directly under the title — a single full-width
+    # card so the left content column never opens with a height-mismatch void.
+    console = (
+        '<section class="brief-console" aria-label="Window summary and controls">'
+        f"{meta_items}"
+        f"{control_bar}"
+        f"{console_note}"
+        f"{runs_overview}"
+        "</section>"
     )
 
     # Data island: the grouping constants brief.js needs, embedded as a
@@ -2227,6 +2426,7 @@ def render_live_brief_page(
         ],
         "empty_stub": SECTION_EMPTY_STUB,
         "generated_at": ref_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "reference_ts": ref_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     data_island = (
         '<script type="application/json" id="brief-config">'
@@ -2244,11 +2444,9 @@ def render_live_brief_page(
     body = f"""
 <header class="brief-page-head">
   <h1>Live brief</h1>
-  <p class="subtitle">The current intelligence window, assembled from the pipeline's per-finding entries. Pick a wider window or a start date — the page re-renders instantly from the last {BRIEFBOOK_WINDOW_DAYS} days of published entries.</p>
 </header>
 <article class="brief-layout brief-layout--live" data-brief-page data-filter="brief">
-  {meta_items}
-  {control_bar}
+  {console}
   {data_island}
   <div class="brief-main">
     <details class="toc-mobile" data-filter="brief">
@@ -7487,6 +7685,7 @@ def main() -> int:
         "brief/",
         render_live_brief_page(
             window_entries, window_runs,
+            all_entries=entries, all_runs=runs,
             ref_ts=ref,
             entries_by_id=entries_by_id,
             card_html_by_id=card_html_by_id,

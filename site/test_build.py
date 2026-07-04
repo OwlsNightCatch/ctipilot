@@ -390,7 +390,8 @@ assert_in("card keeps data-regions", 'data-regions="global"', card)
 assert_in("card keeps data-section", 'data-section="trending-vulnerabilities"', card)
 assert_in("card links the permalink", 'href="entries/2026-07-03/coolify-rce/"', card)
 assert_in("card carries sources line", "Example PSIRT", card)
-assert_in("card renders evidence blockquote", 'class="entry-evidence"', card)
+assert_in("card renders evidence citation", 'class="entry-cite"', card)
+assert_in("card citation carries attribution", 'class="entry-cite__attr"', card)
 assert_in("cve pill on card", "CVE-2026-34038", card)
 
 # single-source badge
