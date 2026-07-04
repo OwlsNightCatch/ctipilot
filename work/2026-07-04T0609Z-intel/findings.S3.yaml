@@ -1,0 +1,172 @@
+domain: S3
+run_id: "2026-07-04T0609Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-04T06:11:14Z"
+ended_at: "2026-07-04T06:19:29Z"
+duration_seconds: 495
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 13
+  bridge_fetches: 6
+
+items:
+  - title: "Blackpoint Cyber: \"Avalon\" AI-assisted malware framework bundles credential theft, lateral movement and the CrownX ransomware component behind an MSBuild/ETW-patching loader chain"
+    sources:
+      - { url: "https://blackpointcyber.com/blog/avalons-path-from-legal-lure-to-crownx-ransom-capabilities/", publisher: "Blackpoint Cyber (Adversary Pursuit Group)", date: "2026-07-02", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/new-avalon-malware-framework-packs.html", publisher: "The Hacker News", date: "2026-07-03", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new malware analysis blog post \\\"July 3, 2026\\\" OR \\\"July 4, 2026\\\"\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/new-avalon-malware-framework-packs.html → primary: Blackpoint Cyber, URL https://blackpointcyber.com/blog/avalons-path-from-legal-lure-to-crownx-ransom-capabilities/"
+    summary: |
+      Blackpoint Cyber's Adversary Pursuit Group documented Avalon, a previously undocumented modular malware
+      framework distributed via a spoofed legal-document phishing email pointing to a password-protected ISO
+      archive hosted on Proton Drive. Inside the ISO, a weaponized LNK disguised with a Microsoft Edge icon
+      (masquerading as a "secure PDF") launches cmd.exe, which invokes MSBuild.exe against a malicious project
+      file (zfighv.tmp) containing inline C# — a T1127.001 trusted-developer-utility proxy-execution chain. The
+      managed downloader patches ETW and AMSI functions with XOR return stubs before pulling an encrypted PE
+      payload over HTTPS with certificate-validation bypass. Avalon consolidates credential harvesting (browsers,
+      crypto wallets including MetaMask/Phantom/Ledger Live, Discord, Teams, RDP sessions, SSH keys, Windows
+      Credential Manager), lateral movement via admin shares and scheduled tasks, and the embedded CrownX
+      ransomware component (AES-GCM encryption, 40+ targeted extensions, VSS/WinRE/System Restore disabled to
+      impair recovery) under one framework. Defense evasion includes hardware-breakpoint handling, clean-ntdll
+      remapping, syscall obfuscation (HalosGate/TartarusGate) and named hooks/checks against Microsoft Defender,
+      SentinelOne, CrowdStrike, Sophos, Elastic Endpoint, FortiEDR, ESET, McAfee and Bitdefender. Blackpoint
+      assesses the framework shows signs of AI-assisted development, consolidating capability an actor would
+      previously have needed several discrete malware families to assemble.
+    region_nexus: "global; phishing lure and ISO/LNK delivery chain apply to any Windows enterprise, including EU/CH public-sector endpoints"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:avalon-malware-framework", type: tool, name: "Avalon malware framework (CrownX ransomware component)",
+          aliases: ["CrownX"],
+          summary: "Modular Windows malware framework combining credential theft, lateral movement and the CrownX ransomware payload behind an LNK→MSBuild→ETW/AMSI-patching loader chain; assessed by Blackpoint Cyber as showing signs of AI-assisted development (Blackpoint Cyber, 2026-07-02)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Avalon consolidated credential theft, persistence, and ransom functionality under one recovered payload rather than distributing them across discrete malware families."
+        attribution: "Blackpoint Cyber"
+        source_url: "https://blackpointcyber.com/blog/avalons-path-from-legal-lure-to-crownx-ransom-capabilities/"
+      - quote: "The shortcut paired a document themed filename with a Microsoft Edge icon, presenting the user with what appeared to be a secure PDF rather than an object capable of launching commands."
+        attribution: "Blackpoint Cyber"
+        source_url: "https://blackpointcyber.com/blog/avalons-path-from-legal-lure-to-crownx-ransom-capabilities/"
+      - quote: "A polished, modular implant recovered from an endpoint may reflect an afternoon of iteration rather than a seasoned development team, and the operational impact is identical either way."
+        attribution: "Blackpoint Cyber"
+        source_url: "https://blackpointcyber.com/blog/avalons-path-from-legal-lure-to-crownx-ransom-capabilities/"
+    extended_notes: |
+      ATT&CK mapping (Blackpoint's own description, not an ATT&CK-tagged report): T1566.001/T1204.002 phishing +
+      user execution of the ISO/LNK; T1127.001 MSBuild trusted-utility proxy execution; T1562.001 impair
+      defenses (ETW/AMSI patching); T1055/T1106 syscall-level evasion (HalosGate/TartarusGate); T1021.002
+      lateral movement via admin shares; T1053.005 scheduled tasks; T1555/T1552.001 credential harvesting;
+      T1490 inhibit system recovery (VSS/WinRE/System Restore); T1486 data encrypted for impact (CrownX).
+      Detection concept: alert on MSBuild.exe spawned by cmd.exe with a command line referencing a .tmp/.csproj
+      file outside a build pipeline (Sysmon EID 1, ParentImage=cmd.exe, Image=MSBuild.exe); flag ETW provider
+      trace-session termination or AMSI.dll patch signatures (image-load + memory-permission-change telemetry);
+      monitor for LNK files with mismatched icon-vs-target-extension delivered via ISO/IMG mount from a mail
+      client. Hardening: block MSBuild.exe/InstallUtil.exe/csc.exe execution via WDAC or AppLocker on non-
+      developer endpoints; disable automatic ISO/IMG mounting from Outlook/browser downloads; enforce Credential
+      Guard and LSA protection to blunt the credential-harvesting stage.
+      RECENCY CAVEAT: Blackpoint's own post is dated 2026-07-02 and the corroborating Hacker News write-up
+      2026-07-03 — both fall outside this run's strict window_hours=8 (~2026-07-03T22:09Z–2026-07-04T06:09Z),
+      though within the 72h developing-story allowance. Checked against prior_coverage.json (last 7 days,
+      including today's earlier 00:26Z run) — no match; this appears to be a genuine gap in the last two runs'
+      S3 coverage rather than a duplicate. Flagging borderline for the main agent's recency call.
+    borderline: true
+    borderline_reason: "primary (Blackpoint, 2026-07-02) and corroborating (THN, 2026-07-03) sources both predate this run's 8h window but are not previously covered in the last 7 days; genuinely new to the pipeline, not a developing-story delta."
+
+  - title: "Jamf Threat Labs: \"PamStealer\" macOS infostealer impersonates the Maccy clipboard manager and validates stolen passwords via the PAM API before exfiltrating them"
+    sources:
+      - { url: "https://www.jamf.com/blog/pamstealer-macos-infostealer-applescript-rust/", publisher: "Jamf Threat Labs", date: "2026-07-02", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/pamstealer-uses-fake-maccy-sites-and.html", publisher: "The Hacker News", date: "2026-07-03", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new malware analysis blog post \\\"July 3, 2026\\\" OR \\\"July 4, 2026\\\"\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/pamstealer-uses-fake-maccy-sites-and.html → primary: Jamf Threat Labs, URL https://www.jamf.com/blog/pamstealer-macos-infostealer-applescml-rust/"
+    summary: |
+      Jamf Threat Labs documented PamStealer, a two-stage macOS infostealer distributed from the typosquat
+      maccyapp[.]com impersonating the legitimate Maccy clipboard-manager app (maccy.app). Stage one is a
+      compiled AppleScript (.scpt) delivered on a disk image that uses JavaScript for Automation (JXA) rather
+      than shell commands (curl/zsh) to download and stage the payload via native NSURLSession APIs, first
+      performing host fingerprinting (CPU architecture, locale, keyboard layout, timezone) and excluding
+      Russian/Belarusian/Kazakh locales. Stage two is an arm64 Rust-based Mach-O binary masquerading as
+      Finder.app under ~/Library/Application Support/com.apple.finder.core/. The distinguishing behavior that
+      names the family: PamStealer validates the victim's typed login password through the macOS Pluggable
+      Authentication Modules API (pam_start, pam_authenticate, pam_end) before harvesting it, re-prompting the
+      victim if validation fails so only a confirmed-correct password is exfiltrated. It runtime-loads
+      Security.framework to pull browser-stored credentials and Keychain data, reads clipboard contents via
+      pbpaste, and establishes persistence through both the modern ServiceManagement API and legacy shared-file-
+      list APIs. Exfiltration is over HTTPS to avenger-sync[.]live/api/sync with ChaCha20-Poly1305-encrypted
+      payloads; the malware also social-engineers the user into granting Full Disk Access and queries Ethereum
+      JSON-RPC endpoints from server-supplied configuration.
+    region_nexus: "global; typosquat/malvertising delivery applies equally to EU/CH macOS endpoints"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:pamstealer", type: tool, name: "PamStealer",
+          aliases: [],
+          summary: "Two-stage macOS infostealer impersonating the Maccy clipboard manager; validates harvested login passwords via the PAM API before exfiltration (Jamf Threat Labs, 2026-07-02)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Rather than relying on shell commands such as curl or zsh, the AppleScript executes a self-contained JavaScript for Automation (JXA) downloader that retrieves and stages the payload using native Objective-C APIs."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/pamstealer-macos-infostealer-applescript-rust/"
+      - quote: "The result is a quieter routine that keeps only a verified password, and one fewer process chain for defenders to detect on."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/pamstealer-macos-infostealer-applescript-rust/"
+      - quote: "Because the cache writes this exchange to disk, it gives responders a reliable place to confirm both the contact and the channel after the fact, even though the contents are encrypted."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/pamstealer-macos-infostealer-applescript-rust/"
+    extended_notes: |
+      ATT&CK mapping: T1204.002 user execution of malicious file (fake Maccy DMG/scpt); T1036.005 masquerading
+      as a legitimate app name/location (Finder.app path); T1059.007 JavaScript/JXA execution; T1497.001
+      virtualization/sandbox evasion via locale/host fingerprinting; T1555.001 Keychain credential access;
+      T1555.003 credentials from web browsers; T1115 clipboard data collection; T1547 persistence via
+      ServiceManagement/LaunchAgent registration; T1071.001 web-protocol C2 with T1573 encrypted channel
+      (ChaCha20-Poly1305). Detection concept: Unified Log entries showing pam_authenticate invoked by a process
+      other than loginwindow/sudo/su; new LaunchAgent/ServiceManagement registrations by unsigned or ad-hoc-
+      signed binaries shortly after a disk-image mount from Downloads; EDR rule for osascript/compiled .scpt
+      execution chained to a subsequent unsigned Mach-O writing to
+      ~/Library/Application Support/com.apple.finder.core/. Hardening: Gatekeeper/notarization enforcement to
+      block unsigned/ad-hoc apps from launching; MDM policy restricting Full Disk Access grants and alerting on
+      new TCC.db entries for unrecognized bundle IDs; block AppleScript execution from quarantined/mounted disk
+      images via a Content Filter or EDR script-control policy.
+      RECENCY CAVEAT: same caveat as the Avalon item above — Jamf's own post is dated 2026-07-02, outside this
+      run's strict 8h window but within the 72h developing-story allowance, and not found in prior_coverage.json
+      for the last 7 days. Flagging borderline for the main agent's recency call.
+    borderline: true
+    borderline_reason: "primary (Jamf Threat Labs, 2026-07-02) and corroborating (THN, 2026-07-03) sources both predate this run's 8h window but are not previously covered in the last 7 days; genuinely new to the pipeline, not a developing-story delta."
+
+watchlist_sweep:
+  duty: none
+
+coverage_gaps:
+  - source_id: cisa-news
+    reason: "Bridge `cisa page https://www.cisa.gov/news-events/news` returned HTTP 403 (retried once per policy, not re-tried further)."
+  - source_id: prodaft
+    reason: "Bridge `url https://www.prodaft.com/reports` returned only the Next.js SPA shell (script/meta tags, no rendered article listing or hrefs) — no drillable content surfaced. Recipe note claims this host is recoverable via the bridge but this run's fetch returned an empty client-rendered shell."
+  - source_id: sans-newsbites
+    reason: "WebFetch on the listing returned '0 of 0 results / No results found' — the archive filter UI appears JS-driven and the summariser could not surface any issue links this run."
+  - source_id: claroty-team82
+    reason: "WebFetch of the listing surfaced titles only, no per-post dates (per source note); the bridge `url` fetch returned only page <head> metadata with no drillable per-article hrefs in the static HTML. Could not confirm any Claroty post fell inside window_hours=8 or even the 72h developing window; WebSearch cross-check found no Claroty Team82 publication dated within the last few days (most recent identifiable posts: Trane HVAC and LonTalk-protocol research, both undated/older)."
+  - source_id: intel471
+    reason: "RSS feed's newest item is 2026-06-23 (11 days old) — no in-window items."
+  - source_id: inside-it-ch
+    reason: "Feed fetched cleanly (10 items, newest 2026-07-03) but carries zero security-relevant Swiss items this run — all general IT-business news (M&A, personnel, data-center capacity)."
+  - source_id: schneier
+    reason: "Feed fetched cleanly (newest 2026-07-03T11:15Z, inside the 8h/developing window) but all items are surveillance-policy commentary, not CTI research in scope for S3's mission."
+  - source_id: morphisec
+    reason: "Newest genuine research item (RoguePlanet, Microsoft Defender EDR-as-attack-surface) is dated 2026-06-18 — well outside window; the 5 more-recent posts are marketing/webinar promotion per the source's own filtering note."
+  - source_id: scip-ch
+    reason: "Newest post dated 2026-06-26 — outside window."
+  - source_id: resecurity
+    reason: "Newest post dated 2026-06-29 — outside window."
+  - source_id: infoguard-ch
+    reason: "Newest post (2026-07-03) is an event recap (Security Lounge conference), not technical research; next-newest substantive item is 2026-06-29 (attack-pattern analysis) — outside window."
+  - source_id: oneconsult-ch
+    reason: "Newest post (BravoX DACH ransomware group, 2026-06-29) is outside window; no in-window item."
+  - source_id: shadowserver
+    reason: "Newest news item dated 2026-06-25 (StealC special report) — outside window; cadence is sparse per source note."
+
+candidate_sources: []
