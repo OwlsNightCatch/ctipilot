@@ -54,15 +54,6 @@
     toInput = controls.querySelector('[data-window-to]');
     applyBtn = controls.querySelector('[data-window-apply]');
 
-    // Recent-runs overview: open on desktop, collapsed on phones so the
-    // brief content isn't pushed far down a small screen (its summary keeps
-    // it one tap away). Server renders it open for the no-JS case.
-    var runsPanel = document.querySelector('.runs-overview');
-    if (runsPanel && window.matchMedia &&
-        window.matchMedia('(max-width: 639px)').matches) {
-      runsPanel.removeAttribute('open');
-    }
-
     chips.forEach(function (chip) {
       chip.addEventListener('click', function () {
         var hours = parseInt(chip.getAttribute('data-window-hours'), 10);

@@ -2300,11 +2300,20 @@ def render_runs_overview(
             "</li>"
         )
 
+    latest = parse_ts(runs_sorted[0].get("completed") or runs_sorted[0].get("started"))
+    latest_html = (
+        f'<span class="runs-overview__latest">last update '
+        f'<span class="mono">{latest.strftime("%d.%m.%Y&nbsp;%H:%M")}</span> UTC</span>'
+        if latest else ""
+    )
+    # Collapsed by default (both breakpoints): the summary surfaces the most
+    # recent fire so the reader sees freshness at a glance without expanding.
     return (
-        '<details class="runs-overview" open>'
+        '<details class="runs-overview">'
         '<summary class="runs-overview__summary">'
         '<span class="runs-overview__title">Recent pipeline runs</span>'
-        f'<span class="runs-overview__meta muted">last {len(runs_sorted)} fires</span>'
+        f"{latest_html}"
+        f'<span class="runs-overview__meta muted">{len(runs_sorted)} fires</span>'
         "</summary>"
         f'<ol class="runs-list">{"".join(rows)}</ol>'
         "</details>"
