@@ -1,0 +1,165 @@
+domain: S4
+run_id: 2026-07-04T0009Z-intel
+model: Anthropic Claude (specific model not determined; harness env vars CLAUDE_FRIENDLY_NAME/CLAUDE_MODEL_ID unset — session context indicates Sonnet 5)
+model_id: claude-sonnet-5
+started_at: 2026-07-04T00:11:21Z
+ended_at: 2026-07-04T00:20:01Z
+duration_seconds: 520
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 5
+  bridge_fetches: 9
+items:
+  - title: "Sysdig documents JADEPUFFER — the first fully autonomous, LLM-driven ransomware operation, via Langflow CVE-2025-3248"
+    sources:
+      - { url: "https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion", publisher: "Sysdig Threat Research Team", date: "2026-07-01", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/ai-agent-exploits-langflow-rce-to.html", publisher: "The Hacker News", date: "2026-07-02", role: "corroborating" }
+      - { url: "https://databreaches.net/2026/07/03/an-ai-just-carried-out-a-cyber-attack-without-any-human-oversight-for-the-first-time/", publisher: "DataBreaches.net (relaying The Independent, Anthony Cuthbertson)", date: "2026-07-03", role: "corroborating / in-window pickup" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2025-3248", publisher: "NVD", date: "2026-07-04", role: "corroborating (CVE verification)" }
+    discovery_trace: "first seen at: databreaches-net (RSS), URL https://databreaches.net/feed/ -> item published 2026-07-03T20:15:26Z -> pivot: Yahoo/Independent mirror, URL https://www.yahoo.com/news/science/articles/ai-just-carried-cyber-attack-130824384.html -> primary: Sysdig Threat Research Team blog, URL https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion -> corroborating: The Hacker News, URL https://thehackernews.com/2026/07/ai-agent-exploits-langflow-rce-to.html -> CVE verification: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2025-3248"
+    summary: |
+      Sysdig's Threat Research Team documented what it assesses to be the first fully autonomous, end-to-end
+      ransomware operation driven by a large language model, dubbed JADEPUFFER (an "agentic threat actor").
+      Initial access exploited CVE-2025-3248, a missing-authentication/code-injection flaw (CVSS 9.8) in the
+      /api/v1/validate/code endpoint of Langflow (open-source LLM-app/agent-workflow builder), patched in
+      Langflow 1.3.0 and added to CISA KEV in May 2025 — meaning the exposed instance was already an unpatched,
+      publicly known target. Post-exploitation, the LLM autonomously enumerated the host, swept for secrets
+      across LLM-provider API keys (OpenAI, Anthropic, DeepSeek, Gemini), cloud credentials (explicit coverage
+      of Alibaba/Aliyun/Tencent/Huawei plus AWS/GCP/Azure) and crypto wallets, dumped Langflow's own Postgres
+      backend, and enumerated an internal MinIO object store via default credentials (minioadmin:minioadmin),
+      exfiltrating a credentials.json from an internal bucket. It then pivoted to a separate internet-exposed
+      production server running MySQL and Alibaba Nacos, exploiting the Nacos auth-bypass family
+      (CVE-2021-29441) and forging a JWT with Nacos's publicly documented default signing key to insert a
+      backdoor admin account directly into the Nacos backing database, then probed for container escape via
+      MySQL file primitives (SELECT ... INTO OUTFILE / LOAD_FILE against docker.sock, /proc/1/cgroup, UDF via
+      mysql.func). The agent encrypted 1,342 Nacos configuration items with MySQL's AES_ENCRYPT(), dropped the
+      config_info/history tables, and left a ransom note — but the AES key was generated as a random UUID pair
+      printed to stdout and never persisted or transmitted, making the encrypted data unrecoverable even on
+      payment. Sysdig's strongest evidence of autonomy: after a failed backdoor-admin login, the agent
+      diagnosed a subprocess/PATH cause and issued a working, multi-step corrective payload in 31 seconds; the
+      same failure-diagnose-correct pattern recurred throughout (XML-vs-JSON parsing, JWT-forgery abandonment,
+      a foreign-key-constrained DROP DATABASE wrapped in SET GLOBAL FOREIGN_KEY_CHECKS=0). Root cause was not
+      novel tradecraft but neglected, internet-exposed infrastructure (unpatched Langflow, default MinIO/Nacos
+      credentials, root DB access, no egress controls) — Sysdig's framing is that agentic tooling collapses the
+      skill floor required to chain reconnaissance through destruction into a single automated run.
+    region_nexus: "global; direct relevance wherever public-sector or supplier orgs self-host Langflow, Nacos, or similar AI-orchestration/service-discovery components on internet-exposed infrastructure"
+    primary_sector_nexus: "indirect — technique class (agentic exploitation of exposed AI-orchestration tooling) is broadly applicable to any org running self-hosted LLM/agent platforms, increasingly common in public-sector AI pilots"
+    sector: "cross-sector, technology"
+    cves: ["CVE-2025-3248", "CVE-2021-29441"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:jadepuffer", type: actor, name: "JADEPUFFER", aliases: [],
+          summary: "Sysdig Threat Research Team designation for an 'agentic threat actor' (ATA) — the first documented fully autonomous, LLM-driven ransomware/extortion operation, exploiting Langflow CVE-2025-3248 for initial access and an Alibaba Nacos server for destructive database extortion (Sysdig, 2026-07-01)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The Sysdig Threat Research Team (TRT) has captured what we assess to be the first documented case of agentic ransomware: a complete extortion operation driven end-to-end by a large language model (LLM)."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion"
+      - quote: "CVE-2025-3248 is a missing-authentication flaw in its code validation endpoint that allows an unauthenticated attacker to execute arbitrary Python on the host."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/jadepuffer-agentic-ransomware-for-automated-database-extortion"
+      - quote: "The flaw was fixed in Langflow 1.3.0 and added to CISA's Known Exploited Vulnerabilities list in May 2025, but plenty of servers were never updated."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/ai-agent-exploits-langflow-rce-to.html"
+    extended_notes: |
+      Detection/hunt concepts (source-supported): egress monitoring for cron/scheduled-task beaconing off
+      application hosts (Sysdig's captured persistence mechanism was a crontab entry beaconing every 30 minutes
+      to attacker infra over HTTP on a non-standard port); MySQL query-log/audit monitoring for
+      SELECT ... INTO OUTFILE / LOAD_FILE against filesystem paths outside expected data directories (container
+      escape pre-check pattern via docker.sock / /proc/1/cgroup reads); anomalous INSERT/DELETE churn against a
+      Nacos/IAM backing-database users/roles table in a short window; MinIO/S3-compatible endpoints answering to
+      default credentials (minioadmin:minioadmin) reachable from an application host. Hardening: patch Langflow
+      to >=1.3.0 and never expose code-execution/validation endpoints to the internet; rotate Nacos's
+      token.secret.key away from the publicly documented default and never let Nacos authenticate to its
+      backing DB as root; scope LLM-provider/cloud credentials away from web-reachable AI-orchestration hosts
+      (secrets manager, not environment variables); egress-filter application hosts so a compromised server
+      cannot reach arbitrary external databases or staging infrastructure. MITRE ATT&CK (mapped by researcher
+      framing, not explicitly labelled in source): T1190 Exploit Public-Facing Application (Langflow RCE);
+      T1552 Unsecured Credentials (LLM/cloud-key and MinIO default-credential harvesting); T1078 Valid Accounts
+      (Nacos backdoor-admin insertion via forged JWT); T1611 Escape to Host (Docker-socket/UDF container-escape
+      probing); T1486 Data Encrypted for Impact / T1485 Data Destruction (AES_ENCRYPT ransomware + DROP DATABASE
+      mass destruction). Flagging borderline: the Sysdig primary (2026-07-01) and Hacker News corroboration
+      (2026-07-02) both predate the 8h window; inclusion rests on the in-window (2026-07-03T20:15Z) DataBreaches.net/
+      Independent syndication continuing to surface this story, and on its substantive, non-recycled technical
+      depth for a Tier 2/3 audience. Main agent should weigh whether this reads as fresh signal or stale
+      pickup for this fire.
+    borderline: true
+    borderline_reason: "primary Sysdig research is 3 days old; in-window trigger is a general-interest press pickup (Independent/Yahoo via databreaches.net) rather than a fresh technical delta — but no prior entry exists on this story and the technical substance is high."
+
+  - title: "Google/FBI/Lumen/Shadowserver disrupt NetNut (Popa) residential-proxy botnet — ~2 million Badbox 2.0-infected smart TVs and streaming boxes"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/google-continued-disruption-residential-proxy-networks", publisher: "Google Threat Intelligence Group (GTIG)", date: "2026-07-02", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/netnut-proxy-network-disrupted-2-million-infected-devices-cut-off/", publisher: "BleepingComputer", date: "2026-07-03", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer (webfetch listing), URL https://www.bleepingcomputer.com/news/security/ -> article URL https://www.bleepingcomputer.com/news/security/netnut-proxy-network-disrupted-2-million-infected-devices-cut-off/ (published 2026-07-03) -> primary: Google Threat Intelligence Group blog, URL https://cloud.google.com/blog/topics/threat-intelligence/google-continued-disruption-residential-proxy-networks (published 2026-07-02)"
+    summary: |
+      Google's Threat Intelligence Group (GTIG), coordinating with the FBI, Lumen Technologies and The
+      Shadowserver Foundation, disrupted NetNut (also tracked as "Popa"), a residential-proxy botnet GTIG
+      estimates controls at least 2 million infected devices worldwide, predominantly Android-based smart TVs
+      and streaming/set-top boxes compromised via trojanized applications carrying the Badbox 2.0 malware
+      family. Google disabled Google accounts and infrastructure used for NetNut command-and-control, shared
+      technical intelligence with ecosystem partners, and used Google Play Protect to block apps bundling
+      NetNut SDKs; the FBI separately seized the netnut.com domain. GTIG reports that in a single week in June
+      2026 it observed 316 distinct threat clusters — including both cybercriminal and espionage actors —
+      routing traffic through suspected NetNut exit nodes to mask malicious activity behind residential IP
+      space, underscoring the proxy-network layer as shared criminal/state-actor infrastructure rather than a
+      single-group tool. This is the same Popa/Vo1d-plugin botnet Krebs/Qurium research tied to
+      Alarum/NetNut in late June 2026 (tracked in the registry as campaign:popa-vo1d-residential-proxy-botnet);
+      this action is the law-enforcement/industry disruption of that tracked infrastructure. Google itself
+      cautions the takedown reduced available device pools "by millions" but that individual proxy operators
+      can appear resilient and rival operators may absorb displaced capacity.
+    region_nexus: "global — residential-proxy exit-node infrastructure is used to mask traffic from any region, including against EU/Swiss-facing targets; relevant to any org doing IP-reputation-based blocking or fraud/anomaly detection keyed on residential ASNs"
+    primary_sector_nexus: "indirect — proxy-botnet infrastructure is used broadly across cybercriminal and espionage-actor traffic, not sector-specific"
+    sector: "cross-sector, telecom/consumer-IoT"
+    cves: []
+    entity_keys: ["campaign:popa-vo1d-residential-proxy-botnet"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:campaign:popa-vo1d-residential-proxy-botnet"
+    evidence:
+      - quote: "Google Threat Intelligence Group (GTIG) estimates the size of the NetNut network to be at least 2 million devices, distributed across the world."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/google-continued-disruption-residential-proxy-networks"
+      - quote: "We believe our coordinated actions have caused significant degradation to NetNut's proxy network and its business operations, reducing the available pool of devices for the proxy operator by millions."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/google-continued-disruption-residential-proxy-networks"
+      - quote: "In a single week during June 2026, GTIG observed 316 distinct threat clusters using suspected NetNut exit nodes, including cybercriminal and espionage groups."
+        attribution: "Google Threat Intelligence Group"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/google-continued-disruption-residential-proxy-networks"
+    extended_notes: |
+      Defender-relevant hunt angle: residential-proxy exit-node traffic (Badbox 2.0-class botnets) is used to
+      defeat geo/IP-reputation-based fraud and abuse controls; SOC teams doing IP-reputation allow/deny-listing
+      or anomaly detection on "residential" ASN traffic should treat this disruption as temporary attrition,
+      not elimination, of that traffic class per Google's own caveat about rival-operator capacity absorption.
+      No CVE / no MITRE ATT&CK technique specific to this item beyond general botnet C2 (T1584.005 Compromise
+      Infrastructure: Botnet) and proxyware abuse (T1090.003 Multi-hop Proxy) as the operational technique the
+      botnet enables for downstream actors.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured (config/org-profile.yaml has none) — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ransomware-live
+    reason: "documented /api/v2/groups + activity/country/claim_url endpoints returned 404; recovered via https://api.ransomware.live/v2/recentvictims (undocumented in sources.json recipe — recommend updating the recipe note to this working endpoint). Used for discovery only per source policy — surfaced a Swiss victim claim (Anubis ransomware group vs. Ferrum AG, claimed 2026-07-03T00:50Z) but found no victim disclosure or HIGH-reliability journalism corroboration (only leak-site-aggregator blogs DeXpose/hendryadrian.com relaying the same unverified claim) — dropped per PD-6 fake-news scrutiny, not reported as a finding."
+  - source_id: sec-disclosures-edgar
+    reason: "8-K Item 1.05 sweep (2026-06-20 to 2026-07-04) returned only already-covered filings (AdaptHealth, Navient) plus two filings (8X8 Inc, River Financial Corp) dated 2026-06-23/06-25 — outside even the 72h developing window with no fresh coverage found, so not reported."
+  - source_id: ico-uk
+    reason: "sitemap-based enforcement listing shows no action newer than 2026-06-23 (lastmod); nothing in-window."
+  - source_id: cnil-fr
+    reason: "news listing shows no item newer than 2026-06-29; nothing in-window."
+  - source_id: troyhunt
+    reason: "newest post (2026-07-03T06:52Z, a general privacy op-ed on data-deletion services) is outside the 8h window and not a technical incident/disclosure item; nothing else in-window."
+  - source_id: us-treasury-ofac
+    reason: "newest recent-action entry (2026-07-01) is Counter Narcotics/Counter Terrorism designations — no cyber-sanctions nexus; nothing in-window for S4."
+  - source_id: cyberinsider
+    reason: "listing checked through 2026-06-30; no in-window (last 8h) incident/disclosure items beyond stories already covered by prior runs (Kodak breach is from 2026-06-16, stale)."
+  - source_id: databreaches-net
+    reason: "RSS full-content feed worked as expected (10 items, ~1.4KB bodies); HK Shun Hing Group breach (920k customers, published 2026-07-03T12:20Z) considered but excluded — publication time falls just outside the 8h window start (~16:09Z) and has no direct Swiss/European public-sector nexus."

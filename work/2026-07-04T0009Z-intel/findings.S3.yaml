@@ -1,0 +1,163 @@
+domain: S3
+run_id: 2026-07-04T0009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-04T00:11:15Z
+ended_at: 2026-07-04T00:21:38Z
+duration_seconds: 623
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 8
+  bridge_fetches: 4
+items:
+  - title: "Cisco Talos: ARToken — an EvilTokens affiliate panel automating device-code phishing and PRT theft against Microsoft 365"
+    sources:
+      - { url: "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/", publisher: "Cisco Talos", date: "2026-07-01", role: "primary" }
+      - { url: "https://www.sekoia.com/blog/eviltokens-an-ai-augmented-phishing-as-a-service-for-automating-bec-fraud-part-2", publisher: "Sekoia", date: "2026-04-07", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"blog.talosintelligence.com July 2026 new research\") → listing https://blog.talosintelligence.com/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/ → corroborating background: Sekoia, URL https://www.sekoia.com/blog/eviltokens-an-ai-augmented-phishing-as-a-service-for-automating-bec-fraud-part-2"
+    summary: |
+      Cisco Talos published a deep-dive on ARToken, an affiliate operator panel built on top of the
+      EvilTokens phishing-as-a-service (PhaaS) platform (first documented by Sekoia in April 2026),
+      exposing 80+ backend API endpoints for device-code phishing against Microsoft 365 tenants (RFC
+      8628 OAuth 2.0 device-authorization-grant abuse, T1566.002 lure → T1528 Steal Application Access
+      Token). Captured tokens are escalated to Primary Refresh Token (PRT) acquisition via "broker" mode
+      (T1550.001 Use Alternate Authentication Material), giving persistent access to Microsoft 365/Entra
+      ID resources that survives a victim password reset — MFA is bypassed entirely because the flow
+      never presents a credential prompt to intercept. The panel bundles BEC tooling (mailbox browsing via
+      a built-in Outlook-style UI, T1114.002), SharePoint/OneDrive file browsing and exfiltration, and a
+      seven-layer anti-analysis stack (mouse-movement/timing behavioral checks, device fingerprinting,
+      XOR-encrypted payload delivery) intended to defeat automated sandbox triage (T1497.001). Talos
+      documents 500+ Cloudflare Workers domains tied to the wider EvilTokens infrastructure and a
+      subscription-affiliate pricing model ($1,500 one-time plus $500/month), indicating a maturing
+      criminal-service economy around identity-token theft rather than a one-off phishing kit. Talos
+      published IOCs on GitHub for network blocking and hunting.
+    region_nexus: "global; any Microsoft 365 / Entra ID tenant, including EU/CH public-sector deployments, is a viable target for the underlying device-code phishing technique"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector, technology, public-sector (any Microsoft 365 tenant)"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:artoken-phishing-panel", type: tool, name: "ARToken",
+          aliases: ["EvilTokens affiliate panel"],
+          summary: "Phishing-as-a-service affiliate operator panel built on the EvilTokens platform, offering device-code phishing, Primary Refresh Token persistence, and SharePoint/mailbox exfiltration against Microsoft 365 (Cisco Talos, 2026-07-01)." }
+      - { key: "tool:eviltokens-phaas", type: tool, name: "EvilTokens",
+          aliases: [],
+          summary: "AI-augmented phishing-as-a-service platform automating device-code token theft and BEC fraud against Microsoft 365, first documented by Sekoia in April 2026; ARToken is a downstream affiliate panel on the same infrastructure." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The ARToken panel exposes 80+ API endpoints for device code phishing, Primary Refresh Token (PRT) persistence, email access, business email compromise (BEC) operations, and SharePoint exfiltration."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/"
+      - quote: "The phishing kit deploys a seven-layer anti-analysis system combining client-side behavioral verification with XOR-encrypted payloads."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/"
+      - quote: "EvilTokens is the first PhaaS to offer AI-augmented post-compromise tooling. The integration of LLM-driven automation significantly reduces the attacker's processing time and lowers the entry barrier for threat actors."
+        attribution: "Sekoia"
+        source_url: "https://www.sekoia.com/blog/eviltokens-an-ai-augmented-phishing-as-a-service-for-automating-bec-fraud-part-2"
+    extended_notes: |
+      MITRE ATT&CK techniques Talos maps: T1566.002 (Spearphishing Link), T1528 (Steal Application
+      Access Token), T1098.001 (Additional Cloud Credentials), T1114.002 (Remote Email Collection),
+      T1550.001 (Use Alternate Authentication Material), T1531 (Account Access Removal), T1583.006
+      (Acquire Infrastructure: Web Services), T1027 (Obfuscated Files or Information), T1497.001
+      (Virtualization/Sandbox Evasion: System Checks). Detection angle for defenders: device-code flows
+      are legitimate in Entra ID (used for CLI/limited-input-device sign-in) — hunt for anomalous device-code
+      grants via Entra ID sign-in logs (non-interactive sign-ins correlated with unusual client apps/user
+      agents), and for PRT-broker registration events outside managed-device enrollment baselines.
+      Hardening lever: Conditional Access policies restricting/blocking the device-code authentication flow
+      to only where operationally required (Microsoft added CA support for blocking this flow), plus
+      phishing-resistant MFA (FIDO2/Windows Hello for Business) which does not eliminate device-code abuse
+      but narrows where it can be chained.
+    borderline: true
+    borderline_reason: "Primary (Talos) published 2026-07-01T06:00Z, ~66h before this run's 8h window opened; no fresher primary or in-window delta found despite full slice + targeted search. Included because it is the single most substantive, detection-actionable identity-attack research item found this run and the standard-tier source slice yielded nothing else in-window; main agent should weigh against the 8h recency gate."
+
+  - title: "Kaspersky names \"Armored Likho\": new APT using AI-assisted loaders and Python BusySnake Stealer against government and power-sector targets in Russia, Brazil, Kazakhstan"
+    sources:
+      - { url: "https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/", publisher: "Kaspersky / Securelist", date: "2026-07-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/armored-likho-targets-government.html", publisher: "The Hacker News", date: "2026-07-03", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"site:thehackernews.com 2026/07/03\") → https://thehackernews.com/2026/07/armored-likho-targets-government.html → primary: Kaspersky/Securelist, URL https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/ (RSS pubDate confirmed via https://securelist.com/feed/)"
+    summary: |
+      Kaspersky designated a previously undocumented cluster "Armored Likho" (circumstantial overlap with
+      the group Kaspersky separately tracks as "Eagle Werewolf"), running an active spear-phishing campaign
+      against government agencies and electric-power-sector organizations in Russia, Brazil, and Kazakhstan.
+      Initial access is a RAR-archived EXE dropper delivered via phishing lures themed as government/social
+      program notices (T1566.001 Spearphishing Attachment); a second observed chain abuses ZDI-CAN-25373,
+      a Windows .LNK display-spoofing flaw that lets attackers hide malicious command-line arguments behind
+      whitespace/line-break padding in the shortcut's target field. The payload is BusySnake Stealer, a
+      previously unreported Python-based infostealer targeting Windows, obfuscated/encrypted with PyArmor
+      Pro 9.2.0 and using a bytecode-decrypt-on-call / re-encrypt-after-call scheme to frustrate static and
+      dynamic analysis. Capabilities include browser credential/cookie theft (Chrome/Chromium/Firefox),
+      cryptocurrency-wallet harvesting, Telegram Desktop credential theft, clipboard/file/screenshot
+      collection, and a built-in reverse-SSH tunneling module functionally equivalent to the group's
+      earlier Go2Tunnel tool — Kaspersky cites this tool-lineage overlap plus architectural similarity to
+      the AquilaRAT RAT as the attribution basis linking Armored Likho to the known "Eagle Werewolf"/AquilaRAT
+      cluster. Persistence is established via VBScript-launched scheduled tasks. Kaspersky notes indications
+      that first-stage loader/stager code was likely AI-assisted (redundant comments, boilerplate code
+      structure).
+    region_nexus: "Russia, Brazil, Kazakhstan (named victims); technique set (LNK spoofing via ZDI-CAN-25373, PyArmor-obfuscated Python stealers) is portable to any government/critical-infrastructure target and relevant to EU/CH threat-hunting baselines"
+    primary_sector_nexus: "primary"
+    sector: "public-sector / government, energy / electric-power"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:armored-likho", type: actor, name: "Armored Likho",
+          aliases: ["Eagle Werewolf (circumstantial overlap, per Kaspersky)"],
+          summary: "Newly designated APT cluster (Kaspersky, 2026-07-03) spear-phishing government and electric-power-sector targets in Russia, Brazil and Kazakhstan with the Python-based BusySnake Stealer; tool overlap (Go2Tunnel-equivalent module, AquilaRAT architecture) links it to the group Kaspersky separately tracks as Eagle Werewolf." }
+      - { key: "tool:busysnake-stealer", type: malware, name: "BusySnake Stealer",
+          aliases: [],
+          summary: "Previously undocumented Python-based Windows infostealer (PyArmor Pro 9.2.0 obfuscated) deployed by Armored Likho; harvests browser/crypto-wallet/Telegram credentials and includes a built-in reverse-SSH tunneling module (Kaspersky, 2026-07-03)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Armored Likho blends financially motivated campaigns targeting private individuals with targeted cyber-espionage aimed at organizations. Their toolkit features obfuscated, modular RATs and infostealers specifically engineered to bypass dynamic analysis."
+        attribution: "Kaspersky / Securelist"
+        source_url: "https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/"
+      - quote: "The group leveraged the ZDI-CAN-25373 shortcut vulnerability to conceal the contents of their command line. This flaw allows the attackers to use spaces or line breaks to hide execution parameters."
+        attribution: "Kaspersky / Securelist"
+        source_url: "https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/"
+      - quote: "In previously identified campaigns, the group used the Go2Tunnel tool designed to create reverse SSH tunnels. In BusySnake Stealer, similar functionality is implemented as a built-in feature."
+        attribution: "Kaspersky / Securelist"
+        source_url: "https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/"
+    extended_notes: |
+      Detection angle: hunt for scheduled-task creation chained from VBScript execution shortly after an
+      LNK/RAR attachment is opened from a mail-client parent process (Sysmon EID 1 process-creation with
+      parent wscript.exe/cscript.exe → schtasks.exe; EID 11 file-create for .lnk in Downloads/Temp with a
+      target field containing embedded whitespace/line-break padding, the ZDI-CAN-25373 signature).
+      Hardening lever: Windows LNK target-path validation / disabling shell icon preview for
+      untrusted-zone shortcuts; ensure MOTW propagation and Defender ASR rules blocking Office-spawned
+      child processes from executing scripting hosts. No CVE number was assigned by Kaspersky for
+      ZDI-CAN-25373 in this article (referenced only by ZDI candidate ID); flagged for the main agent to
+      resolve to a CVE if one exists before use in frontmatter cves[].
+    borderline: true
+    borderline_reason: "Primary (Kaspersky/Securelist RSS pubDate confirmed) published 2026-07-03T10:00:33Z, ~14h before this run's 8h window opened at ~2026-07-03T16:09Z — closest-to-window substantive research item found this run but still outside the strict cutoff."
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-news
+    reason: "Bridge (python3 tools/fetch_source.py cisa page ...) returned HTTP 403 on both https://www.cisa.gov/news-events/news and https://www.cisa.gov/news-events/alerts — documented recipe no longer works; needs a fresh working recipe (WebFetch is already excluded per source notes)."
+  - source_id: prodaft
+    reason: "Bridge fetch (python3 tools/fetch_source.py url) returns HTTP 200 but the body is a client-rendered Next.js SPA shell with no server-embedded JSON/dates for /reports or /blogs (grepped for slug/title/date keys — none present); WebFetch on the same URL 403'd. No structured endpoint identified. Recipe needs a JS-render capable fetcher or a discovered API endpoint."
+  - source_id: claroty-team82
+    reason: "Listing fetched clean (WebFetch) and drilled top article; most recent dated post found was 2026-06-25 (Iran-linked CyberAv3ngers/Barix warning-system piece) — outside the 8h/72h window, no fresher item published in-window."
+  - source_id: infoguard-ch
+    reason: "Most recent post (2026-07-03) is an event write-up (InfoGuard Security Lounge) with no technical substance; the one quarterly threat-intel report (Q2 2026, 2026-06-08) is well outside window. No in-window substantive research item."
+  - source_id: inside-it-ch
+    reason: "RSS fetched clean; all 2026-07-03 items are general Swiss IT business/personnel news (acquisitions, leadership changes) — no security content in-window."
+  - source_id: intel471
+    reason: "Feed fetched clean; most recent post 2026-06-23 (CTI-program/marketing content, not primary threat research) — outside window."
+  - source_id: morphisec
+    reason: "WebFetch returned titles/dates only (no article bodies surfaced by the summariser); most recent items dated 2026-06-18 to 2026-07-02 are AI-marketing/vendor-demo content, not threat research — outside window and out of scope regardless."
+  - source_id: oneconsult-ch
+    reason: "Listing fetched clean; most recent post (BravoX ransomware, 2026-06-29) is 5 days outside window with no fresher item; per source notes slow cadence is expected/normal."
+  - source_id: projectzero
+    reason: "WebFetch fetched clean; most recent post dated 2026-05-13 — well outside window."
+  - source_id: resecurity
+    reason: "WebFetch fetched clean; most recent post 2026-06-29 — outside window; no outbound links or load-bearing quotes surfaced by the summariser for any item."
+  - source_id: sans-newsbites
+    reason: "Latest issue identified as Vol XXVIII #48 (2026-06-30) — outside window; issue not drilled further since date alone excludes it."
+  - source_id: schneier
+    reason: "Atom feed fetched clean (freshest item 2026-07-03T11:15Z, technically in-window); content is privacy/policy/surveillance commentary, not primary technical threat research per this domain's mission — no qualifying item."
+  - source_id: scip-ch
+    reason: "WebFetch fetched clean; most recent lab post dated 20260626 — outside window."
