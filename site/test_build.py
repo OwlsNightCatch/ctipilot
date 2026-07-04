@@ -288,6 +288,7 @@ E_UPD = mk_entry(
     "coolify-rce-update", kind="vulnerability", priority="notable",
     ts="2026-07-03T08:00:00Z",
     update_of="2026-07-03/coolify-rce",
+    body="**UPDATE (originally covered 2026-07-03):** A public PoC has now surfaced.",
     cves=[{"id": "CVE-2026-34038", "cvss": "9.9", "epss": None, "type": "rce",
            "vector": "zero-click", "auth": "post-auth",
            "status": ["exploited", "patch-available", "cisa-kev"]}],
@@ -376,10 +377,16 @@ assert_in("callout carries the action", "Upgrade to v4.0.0-beta.469 immediately.
 assert_in("callout quotes evidence", "actively exploited in the wild", html)
 assert_in("update rendered as callout blockquote", 'class="callout-update"', html)
 assert_in("update lead links the original", "originally covered", html)
+assert_in("update body retained after prefix strip", "A public PoC has now surfaced.", html)
+assert_true(
+    "redundant update-prefix stripped from body",
+    "<strong>UPDATE (originally covered 2026-07-03)" not in html,
+)
 assert_in("update lead href", 'href="entries/2026-07-03/coolify-rce/"', html)
 assert_in("deep-dive entry in its section", 'data-section="deep-dive"', html)
 assert_in("action item present", "Patch Coolify to ≥ v4.0.0-beta.469.", html)
-assert_in("action back-link", 'class="action-list__ref"', html)
+assert_in("action finding-ref link", 'class="action-ref"', html)
+assert_in("action finding-ref carries a short label", 'class="action-ref__label"', html)
 assert_in("verification notes carry the run body", "Watchlist: no hits this run.", html)
 assert_in("run note names the run id", "2026-07-03T0412Z-intel", html)
 assert_in("verification badge absent for multi-source", 'data-priority="critical"', html)

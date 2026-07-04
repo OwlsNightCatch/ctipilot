@@ -341,6 +341,15 @@
     return aside;
   }
 
+  function shortEntryLabel(e) {
+    var cves = e.cve_ids || [];
+    if (cves.length) return cves[0] + (cves.length > 1 ? ' +' + (cves.length - 1) : '');
+    var text = plainText(e.headline || e.title || e.id).replace(/^\*+|\*+$/g, '').trim();
+    var MAX = 52;
+    if (text.length <= MAX) return text;
+    return text.slice(0, MAX).replace(/\s+\S*$/, '').replace(/[,;:—-]+$/, '') + '…';
+  }
+
   function actionItemsList(ops) {
     var rows = [];
     sortEntries(ops).forEach(function (e) {
@@ -354,12 +363,17 @@
     rows.forEach(function (row) {
       var li = el('li', 'action-list__item');
       li.setAttribute('data-entry-id', row.entry.id);
-      var body = el('div', 'action-list__body', row.action + ' ');
-      var a = el('a', 'action-list__ref',
-        plainText(row.entry.headline || row.entry.title || row.entry.id) + ' →');
+      li.appendChild(el('div', 'action-list__body', row.action));
+      var label = shortEntryLabel(row.entry);
+      var a = el('a', 'action-ref');
       a.setAttribute('href', row.entry.url);
-      body.appendChild(a);
-      li.appendChild(body);
+      a.setAttribute('aria-label', 'Open finding: ' + label);
+      a.appendChild(el('span', 'action-ref__tag', 'Finding'));
+      a.appendChild(el('span', 'action-ref__label', label));
+      var go = el('span', 'action-ref__go', '→');
+      go.setAttribute('aria-hidden', 'true');
+      a.appendChild(go);
+      li.appendChild(a);
       ul.appendChild(li);
     });
     return ul;

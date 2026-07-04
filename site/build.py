@@ -1872,6 +1872,39 @@ def render_update_lead(entry: dict[str, Any], *, prefix: str = "",
     )
 
 
+# Update entries render a styled "originally covered <link> (<date>)" lead
+# (render_update_lead). The agent also tends to open the body with a
+# redundant "**UPDATE (originally covered <date>):**" prefix — the same
+# reference a second time. Strip that leading prefix so the update is cited
+# once (in the lead), not twice.
+_BODY_UPDATE_PREFIX_RE = re.compile(
+    r"^\s*\*\*\s*update\b[^*\n]*?\b(?:originally|covered)\b[^*\n]*?\*\*\s*[:\-–—]*\s*",
+    re.IGNORECASE,
+)
+
+
+def _entry_body_markdown(entry: dict[str, Any]) -> str:
+    """Entry body Markdown, with the redundant leading update-reference
+    prefix stripped for update entries (the styled lead already cites it)."""
+    body = entry.get("body") or ""
+    if entry.get("update_of"):
+        body = _BODY_UPDATE_PREFIX_RE.sub("", body, count=1)
+    return body
+
+
+def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
+    """A compact clickable label for an entry reference (used by the Action
+    Items list). Prefers the CVE id(s); otherwise the headline/title cut at
+    a word boundary."""
+    cves = entry_cve_ids(entry)
+    if cves:
+        return cves[0] + (f" +{len(cves) - 1}" if len(cves) > 1 else "")
+    text = (entry.get("headline") or entry.get("title") or entry["id"]).strip().strip("*").strip()
+    if len(text) <= max_len:
+        return text
+    return text[:max_len].rsplit(" ", 1)[0].rstrip(",;:—- ") + "…"
+
+
 def render_entry_card(
     entry: dict[str, Any],
     *,
@@ -1890,7 +1923,7 @@ def render_entry_card(
     url = f"{prefix}{entry_url_path(entry)}"
     hl = max(2, min(int(heading_level), 4))
     body_html = enhance_brief_item_html(
-        render_markdown(entry.get("body") or "", base_url=base_url)
+        render_markdown(_entry_body_markdown(entry), base_url=base_url)
     )
     is_update = bool(entry.get("update_of"))
     inner = (
@@ -2073,15 +2106,19 @@ def render_brief_sections(
             rows: list[str] = []
             for e in sorted(ops, key=entry_sort_key):
                 url = f"{prefix}{entry_url_path(e)}"
+                label = _short_entry_label(e)
                 for a in e.get("actions") or []:
                     if not isinstance(a, str) or not a.strip():
                         continue
                     rows.append(
                         '<li class="action-list__item" '
                         f'data-entry-id="{_escape(e["id"])}">'
-                        f'<div class="action-list__body">{render_inline(a.strip(), base_url=base_url)}'
-                        f' <a class="action-list__ref" href="{_escape(url)}">'
-                        f'{_escape(e.get("headline") or e.get("title") or e["id"])} →</a></div>'
+                        f'<div class="action-list__body">{render_inline(a.strip(), base_url=base_url)}</div>'
+                        f'<a class="action-ref" href="{_escape(url)}" '
+                        f'aria-label="Open finding: {_escape(label)}">'
+                        '<span class="action-ref__tag">Finding</span>'
+                        f'<span class="action-ref__label">{_escape(label)}</span>'
+                        '<span class="action-ref__go" aria-hidden="true">→</span></a>'
                         "</li>"
                     )
             inner = (
@@ -2768,7 +2805,7 @@ def render_entry_page(
     evidence, actions, sources with roles, the update chain, entity
     links, and the part-of-run link."""
     body_html = enhance_brief_item_html(
-        render_markdown(entry.get("body") or "", base_url=canonical)
+        render_markdown(_entry_body_markdown(entry), base_url=canonical)
     )
     is_op = (entry.get("horizon") or "operational") == "operational"
     day = entry["date"]
