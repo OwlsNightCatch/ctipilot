@@ -4,6 +4,27 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.1 — 2026-07-05 (24 h window floor + 14-day in-context dedup)
+
+### Why
+
+Two coupled weaknesses in the v3.0 recency/dedup design surfaced with sub-daily cadences. First, `window_hours = max(6, gap_hours + 2)` let an intraday fire research as little as a 6–8 h slice of the landscape; a story that broke just before the previous fire's cutoff but only got its second corroborating source an hour later could fall through the crack between two narrow windows. Second, the main agent deduped only against a *keys-only* digest of the last 7 days — CVE ids and entity keys with no content — so genuinely-new-vs-`update_of` calls were made without the prior entries' actual substance in context, and coverage from 8–14 days ago (still very much live for slow-burn campaigns) was outside the window entirely. The fix is to always research at least a full day and to let the main agent read every in-window brief before deciding what is new.
+
+### What changed
+
+- **`window_hours = max(24, gap_hours + 2)`** (was `max(6, …)`) — a hard 24 h floor. Every fire now researches at least a full day of the threat landscape regardless of how many runs fall inside those 24 h. This does **not** inflate volume: a sub-daily fire re-scans the same 24 h and, via dedup, republishes only the new delta. `developing_window_hours = max(72, gap_hours + 24)` is unchanged. Applied in PD-7, Phase 0 step 6, the research agent's recency section, `docs/pipeline.md`, and `README.md`.
+- **Prior-coverage window 7 → 14 days**, and the main agent now `Read`s the **full** `work/<run-id>/prior_coverage.json` (not the keys-only digest) — every in-window brief loaded into context. `tools/build_prior_coverage.py` adds each entry's `summary` to the full record so reading the file is loading every brief. Coverage **older than 14 days** is handled by the store-wide metadata check (`state/cves_seen.json` surfaced as `cves.ids` in the state summary) rather than an in-context read. Applied in PD-8, Phase 0 steps 1–2, Phase 2 step 5, Phase 3 category-rotation note, both verifier definitions (lockstep), the weekly Phase 0, and the docs.
+- **`tools/check_run.py` cross-run dedup window 7 → 14 days** — the mechanical gate now FAILs a non-update entry sharing a CVE with any entry from the last 14 days, matching the widened in-context dedup window. `--all` store validation is unaffected (it never runs per-run dedup).
+- **Weekly banner bumped to v3.1** (lockstep with the intel run); its Phase 0 now `Read`s the full `prior_coverage.json` for consistency. The weekly already deduped over 14 days, so its window semantics are otherwise unchanged.
+
+### What stays
+
+- **Volume discipline is untouched** — the rolling 24 h across all runs stays in the one-daily-brief band; the wider research window is made safe by dedup, not by re-widening the content budget. More runs still mean lower latency, never more content.
+- **The token-budget guard's intent** — the main agent still never `Read`s prior entry *files* wholesale (full bodies); it reads the pre-digested `prior_coverage.json` (metadata + `summary`), and still does no source fetching in Phase 1 (anti-classifier-trip invariant #16).
+- Every other prime directive, the gate/verifier loop, entry immutability + `update_of` discipline, the entity registry, and the publishing chain.
+
+---
+
 ## 3.0 — 2026-07-03 (the pipeline release: per-finding entries, multiple runs per day, dynamic brief rendering)
 
 ### Why

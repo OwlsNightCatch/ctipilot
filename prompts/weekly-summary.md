@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.0 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.1 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -81,7 +81,7 @@ python3 tools/build_prior_coverage.py "$RUN_ID" 14
 python3 tools/run_summary.py --out "work/${RUN_ID}/state-summary.json"
 ```
 
-Then: `Read` the keys digest + state summary + `entities/registry.yaml` + `site/taxonomy.yaml`; compute the ISO-week anchor and `window_days`; run the duplicate-week guard; detect `intel/` drops (conditional W3); initialise `TodoWrite`. Build the W1/W2 source allocation from `sources.json` (same tiering; the weekly prioritises `research` / `discovery` / policy-bearing categories — there is no essential-coverage *guarantee* on the weekly, only prioritisation).
+Then: `Read` the full `prior_coverage.json` (every in-window brief loaded into context, same as the intel run's Phase 0) + state summary + `entities/registry.yaml` + `site/taxonomy.yaml`; compute the ISO-week anchor and `window_days`; run the duplicate-week guard; detect `intel/` drops (conditional W3); initialise `TodoWrite`. Build the W1/W2 source allocation from `sources.json` (same tiering; the weekly prioritises `research` / `discovery` / policy-bearing categories — there is no essential-coverage *guarantee* on the weekly, only prioritisation).
 
 ---
 

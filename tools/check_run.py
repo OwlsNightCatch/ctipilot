@@ -890,7 +890,7 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
     """Cross-run dedup — the mechanical stage-4 of the pipeline's dedup
     ladder (docs/pipeline.md § Dedup across runs). For each NON-update entry
     of this run: FAIL when any of its cves[].id appears in ANY entry from
-    the prior 7 days by folder date (including earlier runs the same day,
+    the prior 14 days by folder date (including earlier runs the same day,
     excluding this run's own entries and the entry's update_of lineage);
     WARN when one of its entity keys appears on a non-update prior entry —
     forcing the update_of decision to be explicit. For UPDATE entries: FAIL
@@ -904,7 +904,7 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
     except ValueError:
         warn("dedup", f"run date {run_date_s!r} unparseable — dedup window skipped")
         return
-    window_start = (run_date - timedelta(days=7)).isoformat()
+    window_start = (run_date - timedelta(days=14)).isoformat()
     prior = [e for e in all_entries
              if e.get("run_id") != run_id and window_start <= e["date"] <= run_date_s]
 
@@ -952,7 +952,7 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
     if not (cve_hits or entity_hits or update_fails):
         ok("dedup",
            f"no CVE/entity overlap with {len(prior)} prior entr{'y' if len(prior) == 1 else 'ies'} "
-           f"in the 7-day window; all update_of targets resolve in order")
+           f"in the 14-day window; all update_of targets resolve in order")
 
 
 def check_update_targets(scope_entries: list[dict], entries_by_id: dict[str, dict]) -> None:
@@ -2036,7 +2036,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         print("\n== entry ↔ run time binding ==")
         check_entry_run_binding(run, run_entries)
 
-        print("\n== cross-run dedup (7-day window) ==")
+        print("\n== cross-run dedup (14-day window) ==")
         check_dedup(run, run_entries, entries, entries_by_id)
 
     print("\n== update-chain integrity ==")
