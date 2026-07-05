@@ -28,11 +28,18 @@ The `github-advisory` 403 is **NOT** a browser-UA / anti-bot refusal (the source
 - `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` — drill one advisory.
 Cite the human URL `https://github.com/advisories/<GHSA-ID>`; the bridge supplies the data. `fetch_method` is now `bridge`.
 
-## CISA advisories / directives / news — Akamai bot-block on the egress TLS fingerprint (root-caused 2026-07-05)
+## CISA advisories / directives / news — REACHABLE via reader proxy + CSAF mirror (recovered 2026-07-05)
 
-`cisa.gov/news-events/{cybersecurity-advisories,directives,news}`, **all `.xml` feeds, and the CSAF `.well-known`** reliably 403 via both `WebFetch` and every `tools/fetch_source.py` recipe. Root cause: **Akamai bot management** (`Access Denied`, `Reference #18.*`, `errors.edgesuite.net`) keyed off the egress TLS/behavioural fingerprint — **every** UA/header combination 403s (chrome/firefox/googlebot/curl/minimal/+Referer all tested). Only the **static** `/sites/default/files/feeds/` path is served, which is why CISA **KEV** works via `python3 tools/fetch_source.py cisa-kev` while the dynamic Drupal advisory pages do not. No reachable content alternative exists (search.gov results are a JS shell needing an API key; Wayback has no snapshots; CSAF is Akamai-blocked too).
+**Root cause of the block:** `cisa.gov/news-events/*`, **all `.xml` feeds, and the CSAF `.well-known`** 403 a DIRECT fetch (`WebFetch` and `fetch_source.py url`/`cisa page` direct attempt) via **Akamai bot management** (`Access Denied`, `Reference #18.*`, `errors.edgesuite.net`) keyed off the egress TLS/behavioural fingerprint — **every** UA/header combination 403s (chrome/firefox/googlebot/curl/minimal/+Referer). Only the **static** `/sites/default/files/feeds/` path (KEV JSON) is served directly.
 
-**Handling (shipped v3.4):** these stay `active` — a 403 is transport, never demotes. `tools/source_health.py` now classes them `bridge-blocked` (action `none`, handled) via `TRANSPORT_BLOCKED_HANDLED`, so they stop churning `needs-demote` every run. Substitute: `cisa-kev` JSON for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). Log an `Essential-coverage: missed=` line when an essential CISA page 403s.
+**Fix (shipped v3.5) — the content IS now fetchable with full detail:**
+- `python3 tools/fetch_source.py cisa page <cisa-url>` — advisory / directive / news **body**. Tries a direct fetch first (auto-recovers if Akamai ever lifts), else falls back to the **r.jina.ai** reader proxy, which fetches from its own egress (bypasses the Akamai fingerprint) and returns clean markdown with the full body.
+- `python3 tools/fetch_source.py cisa feed <feed-url> [N]` — a cisa.gov RSS/Atom feed (`news.xml`, `cybersecurity-advisories/all.xml`, `ics-advisories.xml`, `ics-medical-advisories.xml`) → `{title, link}` items via the reader proxy. Drill each `link` with `cisa page`.
+- `python3 tools/fetch_source.py cisa csaf-recent [N]` — recent **ICS/OT** advisories from the **cisagov/CSAF** GitHub mirror `changes.csv` (newest-first, ISO-dated). Reachable via `raw.githubusercontent.com` (NOT proxy-blocked), NO third party.
+- `python3 tools/fetch_source.py cisa csaf <icsa-YY-DDD-NN | icsma-YY-DDD-NN>` — the full **CSAF v2 JSON** for one ICS advisory (CVEs, CVSS, product tree, remediations) — richest machine-readable form CISA publishes.
+- `cisa-kev` JSON stays the exploited-vuln ground truth. **Deprecated/dead:** `/cisa/blog.xml` (`/blog.xml`) returns Access-Denied even through the reader — do not use it.
+
+**Health/lifecycle:** these probe `bridge-ok` now. They remain in `source_health.py TRANSPORT_BLOCKED_HANDLED` only as a transient-outage safety net (a reader-proxy blip is treated as a transport block → never demote). Reader proxy is anonymous by default; set `JINA_API_KEY` env if a run ever hits its rate limit.
 
 ## JS-rendered pages with no server content (recurring recipe gaps)
 

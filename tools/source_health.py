@@ -103,17 +103,17 @@ API_BRIDGE_CMD: dict[str, list[str]] = {
 # Minimum stdout bytes for a bridge invocation to count as "served content".
 BRIDGE_MIN_BYTES = 200
 
-# Sources whose bridge recipe is a KNOWN, re-confirmed transport block (Akamai
-# bot-management 403 on every UA/header combination) with NO reachable content
-# recipe, a documented substitute (KEV JSON + WebSearch corroboration), AND
-# which the lifecycle hard rule forbids demoting (a 403 is transport, not
-# death). For these, a bridge failure that is a transport block is a HANDLED
-# state (class `bridge-blocked`, action `none`) rather than an unsolved
-# `needs-demote` — so the routine stops re-flagging them every run. Documented
-# in sources/sources.json notes + .claude/memory/source-fetch-blocks.md. If the
-# block ever lifts, the probe returns `bridge-ok` on its own; if the recipe
-# breaks for a NON-transport reason (parse error / 404 / empty body) it still
-# surfaces as `bridge-fail` → needs-demote, so a real regression is not masked.
+# Essential sources fronted by an anti-bot WAF (Akamai 403s the egress
+# fingerprint on every UA) whose bridge recipe reaches the content through a
+# server-side reader proxy (r.jina.ai) — so they normally probe `bridge-ok`.
+# They stay listed here as a TRANSIENT-OUTAGE SAFETY NET: if the reader proxy
+# is momentarily rate-limited / down and the direct fetch 403s, the bridge
+# fails with a transport reason, and for these hard-rule-protected essentials
+# that failure is a HANDLED state (class `bridge-blocked`, action `none`) — a
+# 403 never demotes — rather than an unsolved `needs-demote`. A NON-transport
+# recipe break (parse error / 404 / empty body) still surfaces as `bridge-fail`
+# → needs-demote, so a real regression is not masked. Recipes + fallbacks are
+# documented in sources/sources.json notes + .claude/memory/source-fetch-blocks.md.
 TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
     "cisa-advisories", "cisa-directives", "cisa-news",
 })
@@ -121,12 +121,14 @@ TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
 
 def _is_transport_block(msg: str) -> bool:
     """True iff a bridge failure message looks like a transport / anti-bot
-    block (HTTP 403/429/503 or an 'Access Denied' body) rather than a genuine
-    recipe break (parse error, 404, timeout, empty body)."""
+    block (HTTP 403/429/503, an 'Access Denied' / 'Access-Denied' relay, or a
+    'forbidden' body) rather than a genuine recipe break (parse error, 404,
+    timeout, empty body)."""
     m = (msg or "").lower()
     return (
         "403" in m or "429" in m or "503" in m
-        or "access denied" in m or "forbidden" in m
+        or "access denied" in m or "access-denied" in m
+        or "denied" in m or "forbidden" in m
     )
 
 

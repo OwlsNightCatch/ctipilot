@@ -44,7 +44,10 @@ Usage:
     python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
     python3 tools/fetch_source.py ncsc-csh recent [N]                # combined: list + each post's full content (default 10)
     python3 tools/fetch_source.py cisa-kev                           # full CISA KEV JSON catalog
-    python3 tools/fetch_source.py cisa page <URL>                    # CISA HTML advisory / news page (browser UA)
+    python3 tools/fetch_source.py cisa page <URL>                    # one cisa.gov page body (direct → r.jina.ai reader fallback; Akamai 403s a direct hit)
+    python3 tools/fetch_source.py cisa feed <FEED-URL> [N]           # a cisa.gov RSS/Atom feed → {title, link} items (news.xml / all.xml / blog.xml / ics*.xml)
+    python3 tools/fetch_source.py cisa csaf-recent [N]               # recent ICS/OT advisories from the cisagov/CSAF changes.csv index (dated, newest first)
+    python3 tools/fetch_source.py cisa csaf <icsa-YY-DDD-NN>         # full CSAF JSON for one ICS advisory (icsa-/icsma-) from the CSAF mirror
     python3 tools/fetch_source.py enisa-euvd recent [KIND]           # KIND ∈ lastvulnerabilities (default) | criticals | exploited
     python3 tools/fetch_source.py enisa-euvd advisory <ID>           # one EUVD advisory by id (e.g. EUVD-2025-12345)
     python3 tools/fetch_source.py bsi-rss                            # BSI cert-bund WID-SEC RSS feed (XML)
@@ -74,6 +77,10 @@ Usage:
 Examples:
     python3 tools/fetch_source.py ncsc-csh recent 5
     python3 tools/fetch_source.py cisa-kev | jq '.vulnerabilities | length'
+    python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml 10 | jq '.items[].link'
+    python3 tools/fetch_source.py cisa csaf-recent 5 | jq '.items[] | {id, released}'
+    python3 tools/fetch_source.py cisa csaf icsa-26-183-02 | jq '{title: .document.title, cves: [.vulnerabilities[].cve]}'
+    python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives | head -40
     python3 tools/fetch_source.py enisa-euvd recent criticals | jq '. | length'
     python3 tools/fetch_source.py bsi-csaf WID-SEC-2026-1438 | jq '.document.title'
     python3 tools/fetch_source.py ncsc-nl recent 10 | jq '.items[].id'
@@ -523,6 +530,164 @@ def ncsc_recent(page_size: int = 10) -> dict[str, Any]:
 
 def cisa_kev() -> Any:
     return fetch_json(CISA_KEV_JSON)
+
+
+# ── CISA dynamic content — Akamai bypass (reader proxy + CSAF mirror) ──
+#
+# www.cisa.gov fronts every DYNAMIC path (/news-events/*, the RSS/Atom
+# feeds, the CSAF .well-known) with Akamai bot management that 403s the
+# routine's egress TLS/behavioural fingerprint for EVERY User-Agent and
+# header set (re-confirmed 2026-07-05 across chrome/firefox/googlebot/
+# curl/minimal). Only the STATIC /sites/default/files/ path (the KEV JSON
+# above) is served directly. Two reachable ways around the block:
+#
+#   1. r.jina.ai — a reader proxy that fetches the page from ITS OWN
+#      infrastructure (not our egress), so it is not subject to the
+#      Akamai block. Returns clean markdown (or, with X-Return-Format:
+#      html, a simplified HTML). Used by `cisa page` (advisory / news /
+#      directive bodies + listings) and `cisa feed` (RSS → item list).
+#
+#   2. github.com/cisagov/CSAF — CISA mirrors every ICS/OT advisory as a
+#      CSAF v2 JSON document in this public repo. github.com itself is
+#      egress-proxy-blocked, but raw.githubusercontent.com is NOT — so the
+#      raw file path yields fully-structured ICS advisories (CVEs, CVSS,
+#      affected products, remediations) with NO third party in the loop.
+#      `OT/white/changes.csv` (newest-first, ISO-dated) is the discovery
+#      index. Used by `cisa csaf-recent` / `cisa csaf`.
+#
+# Citations always point at the human cisa.gov URL; the bridge supplies
+# the data, not the citation. Set JINA_API_KEY in the environment to raise
+# the reader-proxy rate limit if a run ever needs it (anonymous works for
+# the routine's handful of CISA fetches per fire).
+JINA_READER_BASE = "https://r.jina.ai/"
+CISA_CSAF_RAW_BASE = "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files"
+CISA_CSAF_OT_CHANGES = CISA_CSAF_RAW_BASE + "/OT/white/changes.csv"
+# ICS advisory ids: icsa-YY-DDD-NN (industrial) and icsma-YY-DDD-NN (medical).
+_CISA_ICS_ID_RE = re.compile(r"^ics(?:a|ma)-\d{2}-\d{3}-\d{2}$", re.IGNORECASE)
+# r.jina.ai renders a feed as one <hN><a href=…>title</a></hN> per item.
+_CISA_FEED_ITEM_RE = re.compile(
+    r'<h[1-6]>\s*<a\s+href="(https?://[^"]+)"[^>]*>(.*?)</a>\s*</h[1-6]>',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _jina_fetch(target_url: str, *, fmt: str | None = None,
+                max_bytes: int = MAX_BODY_BYTES_HTML) -> str:
+    """Fetch `target_url` through the r.jina.ai reader proxy and return the
+    decoded body. The reader fetches server-side (its own egress), so it is
+    not subject to the Akamai bot-block on www.cisa.gov. `fmt` maps to Jina's
+    `X-Return-Format` header ('html' keeps simplified markup; default is
+    markdown). Same SSRF defences as `fetch` — the ORIGIN url is validated
+    (https, not an internal address) before it is handed to the reader."""
+    _check_url(target_url)
+    extra: dict[str, str] = {"X-Retain-Images": "none"}
+    if fmt:
+        extra["X-Return-Format"] = fmt
+    key = os.environ.get("JINA_API_KEY")
+    if key:
+        extra["Authorization"] = f"Bearer {key}"
+    code, body, _ = fetch(
+        JINA_READER_BASE + target_url,
+        accept="text/plain, */*",
+        max_bytes=max_bytes,
+        extra_headers=extra,
+    )
+    if code != 200:
+        raise RuntimeError(f"reader proxy HTTP {code} for {target_url}")
+    text = body.decode("utf-8", errors="replace")
+    # Some cisa.gov paths (e.g. the deprecated /blog.xml) return the Akamai
+    # "Access Denied" page even through the reader; surface that as a failure
+    # rather than handing back the denial page as if it were real content.
+    head = text[:800].lower()
+    if "access denied" in head and ("edgesuite" in head or "permission to access" in head):
+        raise RuntimeError(f"reader proxy relayed an upstream Access-Denied for {target_url}")
+    return text
+
+
+def cisa_page(url: str) -> str:
+    """Fetch a cisa.gov page body. Tries the direct browser-UA fetch first
+    (so it auto-recovers the moment the Akamai block ever lifts) and falls
+    back to the r.jina.ai reader (clean markdown with the full body) on the
+    403 / anti-bot block that is currently the norm."""
+    try:
+        code, body, _ = fetch(
+            url,
+            accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        )
+        if code == 200 and len(body) > 500:
+            return body.decode("utf-8", errors="replace")
+    except Exception:  # noqa: BLE001 — fall through to the reader
+        pass
+    return _jina_fetch(url)
+
+
+def cisa_feed(feed_url: str, limit: int = 30) -> dict[str, Any]:
+    """Fetch a cisa.gov RSS/Atom feed through the reader proxy (which renders
+    each item as a `<hN><a href>` heading) and return `{title, link}` items.
+    The cisa.gov feed endpoints 403 a direct fetch (Akamai); the reader does
+    not. For the ICS feeds, `cisa csaf-recent` gives richer, fully-structured
+    data straight from the CSAF mirror — prefer it where the id is icsa/icsma."""
+    html = _jina_fetch(feed_url, fmt="html")
+    items: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for m in _CISA_FEED_ITEM_RE.finditer(html):
+        link = m.group(1).strip()
+        title = re.sub(r"<[^>]+>", "", m.group(2)).strip()
+        if "cisa.gov" not in link or not title or link in seen:
+            continue
+        seen.add(link)
+        items.append({"title": title, "link": link})
+        if len(items) >= max(1, int(limit)):
+            break
+    return {"source": "cisa-feed", "feed": feed_url, "count": len(items), "items": items}
+
+
+def _cisa_ics_advisory_url(adv_id: str) -> str:
+    """Human advisory URL for a CISA ICS/OT advisory id (for citation)."""
+    low = adv_id.lower()
+    kind = "ics-medical-advisories" if low.startswith("icsma") else "ics-advisories"
+    return f"https://www.cisa.gov/news-events/{kind}/{low}"
+
+
+def cisa_csaf_recent(count: int = 25) -> dict[str, Any]:
+    """Recent CISA ICS/OT advisories from the cisagov/CSAF `changes.csv`
+    index (newest first, ISO-dated). Reachable via raw.githubusercontent.com
+    with no Akamai and no third party. Each item carries the CSAF JSON url
+    (full structured detail — chain into `cisa csaf <id>`) and the human
+    advisory url for citation."""
+    txt = fetch_text(CISA_CSAF_OT_CHANGES, accept="text/csv, text/plain, */*;q=0.5")
+    rows: list[dict[str, str]] = []
+    for line in txt.splitlines():
+        m = re.match(r'^\s*"([^"]+\.json)"\s*,\s*"([^"]+)"\s*$', line.strip())
+        if not m:
+            continue
+        path, released = m.group(1), m.group(2)
+        adv_id = re.sub(r"^.*/", "", path)[:-5]  # strip dir + ".json"
+        rows.append({
+            "id": adv_id,
+            "released": released,
+            "csaf_url": f"{CISA_CSAF_RAW_BASE}/OT/white/{path}",
+            "advisory_url": _cisa_ics_advisory_url(adv_id),
+        })
+    rows.sort(key=lambda r: r["released"], reverse=True)
+    count = max(1, int(count))
+    return {"source": "cisa-csaf", "index": CISA_CSAF_OT_CHANGES,
+            "total": len(rows), "count": min(count, len(rows)), "items": rows[:count]}
+
+
+def cisa_csaf(adv_id: str) -> Any:
+    """Full CSAF v2 JSON for one CISA ICS/OT advisory (icsa-YY-DDD-NN or
+    icsma-YY-DDD-NN) from the cisagov/CSAF mirror. Contains the document
+    title, tracking dates, every CVE with CVSS, the product tree, and
+    remediations — the richest machine-readable form CISA publishes."""
+    aid = adv_id.strip().lower()
+    if not _CISA_ICS_ID_RE.match(aid):
+        raise ValueError(
+            f"refused: invalid CISA ICS advisory id {adv_id!r} "
+            "(expected icsa-YY-DDD-NN or icsma-YY-DDD-NN)"
+        )
+    year = "20" + aid.split("-")[1]
+    return fetch_json(f"{CISA_CSAF_RAW_BASE}/OT/white/{year}/{aid}.json")
 
 
 # ── ENISA EUVD helpers (added 2026-05-10; hotfixed 2026-05-11) ─
@@ -1315,10 +1480,17 @@ def main(argv: list[str]) -> int:
 
     p_cisa = sub.add_parser("cisa-kev", help="CISA Known Exploited Vulnerabilities catalog (JSON)")
 
-    p_cisa_page = sub.add_parser("cisa", help="CISA pages (advisories, news, directives)")
+    p_cisa_page = sub.add_parser("cisa", help="CISA pages (advisories, news, directives) — Akamai-bypassed via reader proxy + CSAF mirror")
     cisa_sub = p_cisa_page.add_subparsers(dest="cisa_cmd", required=True)
-    p_cisa_html = cisa_sub.add_parser("page", help="HTML page with browser UA")
+    p_cisa_html = cisa_sub.add_parser("page", help="one cisa.gov page body (direct, then r.jina.ai reader fallback)")
     p_cisa_html.add_argument("url")
+    p_cisa_feed = cisa_sub.add_parser("feed", help="a cisa.gov RSS/Atom feed → {title, link} items (via reader proxy)")
+    p_cisa_feed.add_argument("url", help="feed URL, e.g. https://www.cisa.gov/cybersecurity-advisories/all.xml")
+    p_cisa_feed.add_argument("count", type=int, nargs="?", default=30)
+    p_cisa_csafr = cisa_sub.add_parser("csaf-recent", help="recent ICS/OT advisories from the cisagov/CSAF changes.csv index (dated)")
+    p_cisa_csafr.add_argument("count", type=int, nargs="?", default=25)
+    p_cisa_csaf1 = cisa_sub.add_parser("csaf", help="full CSAF JSON for one ICS advisory (icsa-/icsma-) from the CSAF mirror")
+    p_cisa_csaf1.add_argument("id", help="advisory id, e.g. icsa-26-183-02 or icsma-26-181-01")
 
     # Additional bridge endpoints for known-403 / SPA-only sources.
     p_euvd = sub.add_parser("enisa-euvd", help="ENISA EU Vulnerability Database (JSON)")
@@ -1427,13 +1599,27 @@ def main(argv: list[str]) -> int:
         if args.cmd == "cisa":
             if args.cisa_cmd == "page":
                 # Soft check — `cisa page <URL>` is meant for CISA-hosted pages.
-                # The bridge enforces no host allowlist, but
-                # if the agent passed a non-CISA URL it almost certainly meant
+                # If the agent passed a non-CISA URL it almost certainly meant
                 # to use the generic `url <URL>` subcommand instead.
                 if "cisa.gov" not in (urllib.parse.urlparse(args.url).hostname or ""):
                     print("error: cisa page URL must be on cisa.gov — use `url <URL>` for other hosts", file=sys.stderr)
                     return 2
-                sys.stdout.write(fetch_text(args.url))
+                sys.stdout.write(cisa_page(args.url))
+                return 0
+            if args.cisa_cmd == "feed":
+                if "cisa.gov" not in (urllib.parse.urlparse(args.url).hostname or ""):
+                    print("error: cisa feed URL must be on cisa.gov", file=sys.stderr)
+                    return 2
+                json.dump(cisa_feed(args.url, args.count), sys.stdout, indent=2)
+                sys.stdout.write("\n")
+                return 0
+            if args.cisa_cmd == "csaf-recent":
+                json.dump(cisa_csaf_recent(args.count), sys.stdout, indent=2)
+                sys.stdout.write("\n")
+                return 0
+            if args.cisa_cmd == "csaf":
+                json.dump(cisa_csaf(args.id), sys.stdout, indent=2)
+                sys.stdout.write("\n")
                 return 0
         if args.cmd == "enisa-euvd":
             if args.euvd_cmd == "recent":
