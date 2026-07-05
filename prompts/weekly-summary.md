@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.4 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.5 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -33,7 +33,7 @@ PD-1 through PD-13 of [`prompts/cti-run.md`](cti-run.md) apply to every strategi
 
 - **Recency (replaces PD-7).** The unit is the **ISO week anchored on the most recent completed Sunday**: `week = ISO week of (today − weekday offset)`, covering Monday 00:00 UTC through Sunday 24:00. `window_days = days since the previous weekly run record` (default 7; a missed week self-heals to 14). W1/W2 receive `window_days`. A weekly run never fires twice for the same ISO week — if `runs/` already carries a `-weekly` record whose entries cover this week, stop and report `duplicate-week`.
 - **Dedup (replaces PD-8).** The weekly dedups against **prior weeklies' strategic entries** (not against operational entries — re-framing those is its job). An item already consolidated in a prior weekly returns only as a `weekly-long-running` status entry (or `update_of` note on the prior strategic entry) with a fresh in-window delta. Every included item passes W-PD-1.
-- **Volume (sharpens PD-11).** The week's strategic output follows the same relevance discipline as the intel run — volume tracks the week's genuinely-strategic signal, with **no entry-count target or ceiling** per section or overall. Publish exactly the strategic entries that clear W-PD-1; never pad a section to fill it, never cut a well-earned entry to hit a number. Empty sections are legitimate and rendered as such. The looking-ahead list is items already in motion — **not predictions**.
+- **Volume (sharpens PD-11).** The week's strategic output follows the same **sound-and-complete** relevance discipline as the intel run — volume tracks the week's genuinely-strategic signal, with **no entry-count target or ceiling** per section or overall. Publish every strategic entry that clears W-PD-1 (complete) and only those (sound); never pad a section to fill it, never cut a well-earned entry to hit a number. Empty sections are legitimate and rendered as such. The looking-ahead list is items already in motion — **not predictions**.
 - **Historical context (PD-14).** Strategic entries synthesising a topic whose prior public reporting is older than ~6 months open with a Background paragraph citing 2–3 prior reports. This is the weekly's home for the long arc; intel runs reserve it for deep dives.
 
 ---

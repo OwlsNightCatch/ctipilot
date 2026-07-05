@@ -4,6 +4,28 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.5 — 2026-07-05 (completeness: the brief must be sound *and* complete)
+
+### Why
+
+v3.3 replaced the count-based volume caps with a strict relevance/actionability gate, but its emphasis landed on *soundness* — drop marginal items, low false positives — with a closing "when in doubt, drop; marginal inclusions are the more corrosive failure" that biased the pipeline toward exclusion. For a reader who relies on ctipilot.ch as their single source that is only half the requirement: a genuinely-relevant item left out is a **blind spot**, and a silent one, since the reader never sees what they were not told. This release makes the two properties explicit and equal — the brief must be **sound** (only relevant / accurate / actionable content, very low false positives) *and* **complete** (every genuinely-relevant in-window item published, very low false negatives; no blind spot on anything that matters to the reader's job). A missed relevant item is exactly as serious a failure as an included marginal one.
+
+### What changed
+
+- **PD-11 (`prompts/cti-run.md`)** now frames the gate around two equal-weight properties — sound and complete — and defines each. The closing rule is rebalanced: the conservatism governs *scope and accuracy*, not how much relevant material gets in; doubt about *relevance to the constituency* resolves toward drop, but doubt about the *severity* of a clearly-relevant item resolves toward include-at-supported-priority, never omission. The volume paragraph gains "the gate removes noise, never signal". The Calibration paragraph notes that a false negative is the *silent* failure, so completeness is verified, not assumed. The Timeliness paragraph now reads "publish nothing else and, equally, leave nothing relevant unpublished".
+- **New Phase 2 completeness sweep:** after applying the relevance gate, the main agent re-reads the full findings set (including sub-agent `borderline` items) and confirms nothing genuinely relevant fell out for a non-scope reason; a scoped follow-up sub-agent is spawned if an omitted-but-relevant item needs a corroborating source. A new quality-gate checklist item ("sound AND complete") records it.
+- **Both verifier definitions (lockstep, byte-identical bodies):** the intel-run coverage check now verifies soundness and completeness with equal rigour and treats a relevant omission (F10 missed-angle / F8 too-thin) as weighing the same as a bad inclusion; the "Missed angles" check is reframed as a first-class completeness obligation with a "no gap found" verdict signal.
+- **`prompts/weekly-summary.md` (banner v3.5, lockstep):** the weekly volume directive adopts the same sound-and-complete framing.
+- **Docs synced:** `docs/pipeline.md` (§ Relevance discipline gains the sound/complete definitions), `README.md`, `CLAUDE.md` (the volume hard rule and hard-invariant #20 add the completeness half — "no blind spots").
+
+### What stays
+
+- **Everything from v3.3 and the v3.4 source-access self-healing change** — no hardcoded entry count; volume follows relevance; more runs never mean more content (dedup + `check_run.py` cross-run CVE-dedup FAIL); `critical` / deep-dive rarity governed by their qualitative bars; the vulnerability gate at "action beyond the regular patch cycle"; and the mandatory source-health repair contract.
+- **No mechanical-gate or schema change** — completeness is an editorial property (main-agent Phase 2 sweep + verifier coverage / missed-angle checks); `tools/check_run.py`, the entry contract, taxonomy, and the compose renderer are untouched. Completeness never licenses fabrication or LLM-knowledge: PD-1 stands — only what the run's sources support is published, and an omitted item is surfaced via a scoped follow-up sub-agent or a coverage-gap line, never invented.
+- Every other prime directive, the gate + verifier loop, entry immutability + `update_of` discipline, the entity registry, org-profile parameterization, and the publishing chain.
+
+---
+
 ## 3.4 — 2026-07-05 (source-access self-healing: OSV bridge for GitHub advisories; CISA transport-block handled state)
 
 ### Why
