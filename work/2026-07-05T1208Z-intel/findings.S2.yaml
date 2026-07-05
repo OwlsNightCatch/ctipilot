@@ -1,0 +1,86 @@
+domain: S2
+run_id: 2026-07-05T1208Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-05T12:10:49Z
+ended_at: 2026-07-05T12:15:12Z
+duration_seconds: 263
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 9
+  bridge_fetches: 10
+items: []
+# No in-window (window_hours: 8) items cleared the bar. Every candidate
+# surfaced either (a) predates the window by 2-7+ days and was already
+# absorbed by prior runs (see novelty-check detail below), or (b) is a
+# recycled/anniversary rewrite of a much older event (Romania Hipocrate
+# hospital ransomware — original event Feb 2024, resurfaced by a
+# retrospective blog post dated 2026-07-02; dropped per PD recency rules
+# on recycled news).
+#
+# Home-region CERT/authority feeds checked (NCSC-CH Cyber Security Hub /
+# GovCERT.ch, NCSC-NL advisories, BSI/CERT-Bund WID, ANSSI/CERT-FR avis +
+# actualite, CERT-EU security advisories, ENISA news, CERT Polska news)
+# are all currently quiet in the 8h window ending 2026-07-05T12:10Z —
+# freshest items on each feed are 2-6 days old and duplicate items already
+# present in prior_coverage.json (Argo CD unauthenticated RCE, Progress
+# Kemp LoadMaster CVE-2026-8037, Citrix NetScaler CVE-2026-8451 — all
+# absorbed 2026-07-01/07-02). NCSC-CH "Wochenrückblick" week 26 (fake-Zoom
+# malware, 30.06.2026) is 5 days stale and was not picked up by any
+# intervening run; too stale to present as fresh signal now.
+#
+# Swiss/DACH sector-focused blogs checked (OneConsult, scip AG, InfoGuard —
+# InfoGuard not separately drilled this run, time-boxed) show nothing newer
+# than 29.06.2026 (OneConsult "BravoX" DACH ransomware-group profile) —
+# 6 days stale, outside window.
+#
+# Targeted WebSearch sweeps for Swiss cantonal/federal, healthcare, and
+# critical-infrastructure incidents dated on or immediately before
+# 2026-07-05 returned nothing new; the most recent genuinely Swiss-nexus
+# item (MedusaLocker leak-site listing of Canton Zürich Baudirektion) was
+# already covered 2026-07-02 per prior_coverage.json — no material delta
+# found this run (leak-site claim status unchanged, no victim statement
+# located).
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No explicit product/supplier watchlist configured; applied the public-sector + Switzerland/Europe lens across all source checks per org profile. No in-window sector-relevant item cleared the recency/novelty bar."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Bridge (fetch_source.py cisa page <url>) and direct RSS (all.xml) both returned upstream HTTP 403 for www.cisa.gov this run; no working recipe found. Essential source, attempted but unrecoverable this run."
+  - source_id: cisa-directives
+    reason: "Same host-wide 403 as cisa-advisories; fetch_source.py cisa page https://www.cisa.gov/news-events/directives returned upstream HTTP 403."
+  - source_id: ncsc-uk
+    reason: "Landing page (bridge url fetch) returned a JS-rendered shell with no advisory listing; RSS guesses (/api/1/services/rss.xml, /feeds/rss.xml) both 404'd. No structured endpoint found in the time available — recipe gap, not logged as a hard failure since no essential claim was lost (no in-window UK item was known to exist)."
+  - source_id: govcert-at
+    reason: "RSS URL (https://www.govcert.gv.at/en/rss.xml) 404'd; landing-page WebFetch returned only nav/structure, no dated advisory entries surfaced (daily reports are German-only and not linked from the fetched shell)."
+  - source_id: inside-it-ch
+    reason: "https://www.inside-it.ch/feed 403'd; recovered via https://www.inside-it.ch/rss.xml (working recipe — update the source record's rss_url to this working path). All items on the recovered feed are general Swiss ICT-industry news from 02-03 July 2026 with no cybersecurity content in the current pull."
+  - source_id: cert-eu
+    reason: "cert-eu recent 10 (bridge) succeeded but the feed only publishes ~monthly; freshest advisory (2026-008, Ivanti Sentry) is dated 10 June 2026 — well outside window."
+  - source_id: enisa
+    reason: "WebFetch of https://www.enisa.europa.eu/news succeeded; page carries only institutional/programme news (NIS360, Cyber Europe 2026, CNA onboarding), no outbound links surfaced, nothing dated in-window."
+  - source_id: cert-pl
+    reason: "WebFetch of https://cert.pl/en/news/ succeeded; freshest item (UNC1151/Ghostwriter Gmail phishing) dated 12 June 2026 — outside window."
+fetch_failures:
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    fetch_method: "bridge:cisa.page"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://www.cisa.gov/news-events/cybersecurity-advisories"
+    attempted_methods: ["bridge:cisa.page", "bridge:feed (all.xml)"]
+    mitigation_applied: "none — coverage gap; no in-window essential claim confirmed lost since KEV catalog (bridge:cisa-kev) was independently fetched successfully and showed nothing newer than 2026-07-01"
+    covered_anyway: false
+  - id: cisa-directives
+    url_tried: "https://www.cisa.gov/news-events/directives"
+    fetch_method: "bridge:cisa.page"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://www.cisa.gov/news-events/directives"
+    attempted_methods: ["bridge:cisa.page"]
+    mitigation_applied: "none — coverage gap"
+    covered_anyway: false

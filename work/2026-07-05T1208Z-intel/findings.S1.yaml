@@ -1,0 +1,124 @@
+domain: S1
+run_id: 2026-07-05T1208Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-05T12:10:40Z
+ended_at: 2026-07-05T12:17:33Z
+duration_seconds: 413
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 15
+  bridge_fetches: 11
+items: []
+# No qualifying in-window (window_hours: 8, ~06:09Z-12:08Z UTC) items found.
+# Extensive corroborating detail below.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: >
+    Org profile configures no product watchlist ("none configured" per
+    org-profile.yaml) — sweep is a documented no-op per spawn instructions.
+    General coverage rules applied unchanged across all essential sources.
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: >
+      Bridge fetch (fetch_source.py cisa page / cisa-kev) 403'd on the HTML
+      listing endpoint (https://www.cisa.gov/news-events/cybersecurity-advisories);
+      cisa-kev JSON API subcommand worked fine and was used as the
+      authoritative KEV source instead (no new dateAdded entries since
+      2026-07-01, all already in prior_coverage).
+  - source_id: cisa-directives
+    reason: >
+      https://www.cisa.gov/news-events/directives 403'd via
+      fetch_source.py url (browser-UA bridge); no working structured
+      subcommand exists for this listing page. Recipe gap — the bridge
+      has no dedicated cisa-directives endpoint. WebSearch fallback for
+      "CISA emergency directive July 2026" surfaced only directives from
+      earlier in the year (ED 26-03 Cisco SD-WAN, BOD 26-04), nothing new
+      in-window.
+  - source_id: cisa-news
+    reason: >
+      https://www.cisa.gov/news 403'd via fetch_source.py url. No
+      structured subcommand available; same recipe gap as cisa-directives.
+  - source_id: industrialcyber-co
+    reason: >
+      Known-403 host; not directly fetched. WebSearch fallback surfaced
+      only stale (Dec 2025 / Feb 2026) OT/ICS incident retrospectives —
+      nothing in-window.
+  - source_id: ncsc-uk
+    reason: >
+      https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories
+      is a client-side-rendered SPA shell — the server-rendered body
+      (fetched via fetch_source.py url) carries only nav chrome and zero
+      advisory-listing links/dates. No sitemap or RSS alternative found
+      in the source record. Recipe gap — needs a structured
+      endpoint/JSON API investigated in a future run.
+verification_notes: |
+  Extensive multi-source check for the 2026-07-05T0609Z-2026-07-05T1208Z
+  UTC window (~6h gap since the prior intel-run fire, consistent with
+  window_hours: 8 in the spawn message). Essential sources fetched and
+  found to carry NOTHING newer than 2026-07-03 (all already present in
+  prior_coverage.json):
+    - CISA KEV JSON (bridge api) — dateReleased 2026-07-01T19:00Z, no
+      entries added since CVE-2026-45659 (2026-07-01, already covered).
+    - ENISA EUVD exploited/criticals/lastvulnerabilities listings — no
+      newly-exploited or newly-critical entries after the four already
+      covered (CVE-2026-45659, -48558, -20230, -12569); the
+      "lastvulnerabilities" feed's freshest datePublished items
+      (EUVD-2026-41256/41276/41277/41326, published 2026-07-02) are
+      low-severity (CVSS 5.1-7.5) library GHSA advisories with no
+      exploitation signal and no organizational relevance.
+    - NCSC-NL advisories RSS — newest advisory NCSC-2026-0219 published
+      2026-07-03T08:21Z (GitHub Enterprise Server / Rancher), already
+      outside window and would be a repeat of established coverage
+      patterns; nothing after that timestamp in the feed.
+    - BSI/CERT-Bund WID RSS — newest item timestamped 2026-07-03T11:25Z;
+      channel pubDate refreshed to 2026-07-05T12:07Z with zero new items
+      beneath it.
+    - CERT-FR (cert-fr avis-recent / actu-recent bridge) — newest avis
+      dated 26 June 2026; actualité bulletin feed stuck on an October
+      2025 backlog (feed likely stale/mis-cached upstream — noted for
+      source-health review, not logged as a hard failure since the
+      bridge call itself succeeded with 200).
+    - CERT-EU security-advisories RSS — newest advisory 2026-006/2026-06-10;
+      nothing since.
+    - NCSC-CH Cyber Security Hub (ncsc-csh recent) — newest post id 12741,
+      created 2026-07-03T07:25Z (Argo CD unauthenticated RCE advisory),
+      already covered in prior_coverage as
+      2026-07-02/argo-cd-repo-server-unauthenticated-rce-no-cve-unpatched-18.
+  Additional WebSearch sweeps (15 queries) for fresh (in-window)
+  KEV-style exploitation, new pre-auth RCE disclosures, CISA emergency
+  directives, OT/ICS advisories, and Swiss/European CERT activity
+  surfaced only stories already 2-4 days old and already represented in
+  prior_coverage (SharePoint CVE-2026-45659, Kemp LoadMaster CVE-2026-8037,
+  libssh2 CVE-2026-55200, Citrix NetScaler CVE-2026-8451, Adobe ColdFusion
+  CVEs, FortiBleed/INC-Lynx ransomware-link follow-up dated 2026-07-01/02).
+  Two borderline candidates were traced to primary and explicitly dropped
+  on recency grounds (source publication date outside window_hours and
+  outside the 72h developing-story allowance):
+    - Adobe ColdFusion/Campaign Classic follow-up (thehackernews,
+      2026-07-01) adding CVE-2026-48313/-48315/-48286 and reporting
+      active exploitation of CVE-2026-48282 "within hours of disclosure"
+      — a genuine delta on the 2026-07-02-covered ColdFusion entry, but
+      its freshest available source is 2026-07-01, i.e. older than the
+      entry it would update. Not carried forward.
+    - FortiBleed-to-INC/Lynx-ransomware attribution (SOCRadar STRU report
+      + thehackernews/securityweek/darkreading coverage, all dated
+      2026-07-01/02) — a materially new development on the
+      incident:fortibleed-fortigate-credential-exposure entity (first
+      confirmed link between mass FortiGate credential harvesting and
+      ransomware deployment), but 3+ days stale relative to this run's
+      12:08Z fire and outside the 72h developing-window cutoff
+      (2026-07-02T12:08Z). Flagging for the next run in case this
+      entity resurfaces with a fresher source, or for W1's weekly
+      long-running-campaign sweep.
+  This run's finding of zero in-window items is corroborated by the
+  immediately preceding intel-run (2026-07-05T0609Z-intel), whose S1-S4
+  sub-agent records all show items_returned: 0 across an overlapping
+  source slice — independent confirmation that the 2026-07-05 daytime
+  UTC window was a genuinely quiet period for CERT/vendor/KEV-class
+  signal, not a collection failure on this agent's part.
+cve_table: []
