@@ -72,8 +72,8 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] CVE identifiers verified against NVD/MITRE; `cves[]` records complete (type/vector/auth/status).
 - [ ] `evidence[]` present and verbatim on every critical-priority and exploited-status entry.
 - [ ] All entity references resolve in `entities/registry.yaml` (aliases checked); new entities registered with sourced definitions.
-- [ ] `priority` calibrated (critical ⇔ immediate_action bar; high ⇔ TL;DR-worthy); volume bands respected.
-- [ ] Deep-dive day budget respected; category rotation applied.
+- [ ] `priority` calibrated (critical ⇔ immediate_action bar; high ⇔ TL;DR-worthy); every entry clears the strict relevance/actionability gate (no count target or ceiling).
+- [ ] Deep-dive treatment reserved for an item that earns it; category rotation applied.
 - [ ] Run record complete: telemetry, verification counters, notes with drops / single-source / contradictions / parseable lines.
 - [ ] **`python3 tools/check_run.py "$RUN_ID"` exits 0 BEFORE the verification sub-agent is spawned** — the verifier reads output whose schema / URLs / taxonomy / dedup are already mechanically clean.
 - [ ] **Phase 5.7 verification sub-agent ran ≥1 iteration** covering both URL truth and editorial quality; verdict CLEAN within ≤5 iterations or residuals logged in the run record.

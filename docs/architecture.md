@@ -77,7 +77,7 @@ parts and defers to that spec for every field-level question.
 The single normative specification of the v3 content model: entry-file
 frontmatter (kinds, priority, verification enum, `update_of`, `cves[]`,
 `evidence[]`, `org_triage`, …), run-id shape, the entity-registry contract,
-run-record telemetry, volume discipline, cross-run dedup, and what
+run-record telemetry, relevance discipline, cross-run dedup, and what
 `tools/check_run.py` validates. **If any code or doc disagrees with it, the
 spec wins and the code is the bug.** Nothing in this file restates its field
 tables — read it once before touching any producer or consumer.
@@ -99,8 +99,8 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   *strategic* run, fired once per week. **Builds on `cti-run.md`** — it
   instructs a runtime `Read` of the intel-run prompt and defines only the
   weekly divergences (W-PD-1 inclusion gate, ISO-week recency, weekly dedup
-  polarity, `weekly_section` placement, section volume bands), so shared
-  machinery lives in exactly one file and cannot copy-drift. Output:
+  polarity, `weekly_section` placement, relevance-driven section volume), so
+  shared machinery lives in exactly one file and cannot copy-drift. Output:
   `horizon: strategic` entries + one run record; the `/weekly/YYYY-Www/`
   page is rendered from them. The weekly may re-frame operational entries
   via `references`; intel runs never duplicate strategic entries — the
@@ -130,9 +130,10 @@ body is the analysis in the same technical register as a v2 brief item.
 **Entries are immutable once committed.** New information — including a
 same-day development between two runs — is a new entry with
 `update_of: <original entry id>`; corrections ship the same way, never as
-edits. Volume is disciplined per rolling 24 h across all runs (≈ one v2
-daily brief; soft ceiling 14 operational entries, ≤ 1 deep dive per UTC
-day, ≤ 1 `priority: critical` per 24 h). Everything the site renders —
+edits. Volume follows a strict relevance/actionability gate rather than a
+count — no per-run, per-day, or rolling-24 h target or ceiling; the window
+carries exactly the entries that earn their place, and more runs mean lower
+latency, never more content (dedup). Everything the site renders —
 the dynamic brief, day archives, weeklies, feeds, entity pages, trends,
 `data/alerts.json` — is derived from these files. Contract pointer:
 [`entries/README.md`](../entries/README.md); spec: [`docs/pipeline.md`](pipeline.md).
@@ -348,7 +349,8 @@ every edit is recorded in the run record's `sources_changed[]`.
   liveness (honouring `work/<run-id>/url-liveness.tsv`), evidence
   presence/binding, `priority` ⇔ `immediate_action`, cross-run CVE dedup
   (FAIL) + entity-key dedup (WARN), `update_of` resolution + cycle check,
-  volume budgets, CVE sync with `cves_seen.json`, IOC scan, closed-source
+  rolling-24 h composition report (informational), CVE sync with
+  `cves_seen.json`, IOC scan, closed-source
   TLP ceiling, run-record completeness + prompt-version cross-check
   against `prompts/CHANGELOG.md`, `sources.json` shape,
   essential-coverage, and the `site/test_build.py` smoke tests. Fix
@@ -530,9 +532,9 @@ window's operational entries) and its research fan-out (W1–W2 + W3).
  │  URL spot-checks · two-source/carve-outs ·          │
  │  fake-news guard · CVE verify · dedup ⇒ new entry   │
  │  vs update_of vs drop · recency re-check ·          │
- │  24 h budget check · rank ⇒ priority                │
- │ Phase 3 — deep-dive selection (≤1/UTC day,          │
- │  category rotation from prior deep_dive entries)    │
+ │  relevance/actionability gate · rank ⇒ priority     │
+ │ Phase 3 — deep-dive selection (reserved for items   │
+ │  that earn it; category rotation from prior entries)│
  └──────────┬─────────────────────────────────────────┘
             ▼
  ┌────────────────────────────────────────────────────┐

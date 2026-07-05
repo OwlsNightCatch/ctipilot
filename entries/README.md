@@ -7,7 +7,7 @@ day — adds only the *new* findings since the previous fire. The weekly run
 (`prompts/weekly-summary.md`) adds `horizon: strategic` entries.
 
 The full normative contract (frontmatter schema, kinds, priority semantics,
-update rules, volume discipline) lives in [`docs/pipeline.md`](../docs/pipeline.md).
+update rules, relevance discipline) lives in [`docs/pipeline.md`](../docs/pipeline.md).
 `site/content_model.py` is the reference parser; `tools/check_run.py` is the
 gate that every entry must pass before commit.
 
