@@ -1,0 +1,85 @@
+domain: S4
+run_id: "2026-07-05T0009Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-05T00:11:02Z"
+ended_at: "2026-07-05T00:14:44Z"
+duration_seconds: 222
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 6
+  bridge_fetches: 9
+items:
+  - title: "Ransom-ISAC case study: US county government paid $1M to data-only extortion group Kairos after a brute-force credential intrusion"
+    sources:
+      - { url: "https://ransom-isac.org/blog/kairos-ransomware-data-extortion-case-study/", publisher: "Ransom-ISAC", date: "2026-07-03", role: "primary" }
+      - { url: "https://securityaffairs.com/194750/security/u-s-government-agency-paid-1m-to-data-extortion-group-kairos.html", publisher: "Security Affairs", date: "2026-07-04", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/us-government-entity-paid-kairos-group.html", publisher: "The Hacker News", date: "2026-07-04", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs (webfetch listing), URL https://securityaffairs.com/ → primary: Ransom-ISAC report, URL https://ransom-isac.org/blog/kairos-ransomware-data-extortion-case-study/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/us-government-entity-paid-kairos-group.html"
+    summary: |
+      Ransom-ISAC published a post-incident case study (2026-07-03, syndicated by Security Affairs and The Hacker
+      News on 2026-07-04) reconstructing a data-theft extortion case against a US county government (evidence
+      points to Union County, Ohio, per the report and prior public breach notices, though neither the county nor
+      the group has confirmed the link on-record in this report). The actor, self-styled "Kairos," gained initial
+      access on 19 May 2025 via a brute-force credential attack against a generic account with no MFA and no VPN
+      restriction (T1110 Brute Force / T1078 Valid Accounts) — Kairos itself told the victim "We accessed your
+      network using a bruteforce attack." No ransomware encryptor, locker binary, or payload has ever been
+      obtained or independently verified for this actor — Kairos operates purely as data-theft-and-leak extortion
+      (T1567 Exfiltration to leak site) without deploying an encryption payload, exfiltrating roughly 2 TB / 1.6
+      million files including prosecutorial records, SSNs, financial data and biometric material. Negotiation ran
+      ~28 days: Kairos opened at $3M, the victim countered $100K→$430K, Kairos dropped to $2M and then fixed a
+      final $1M deadline; the victim paid ~9.44 BTC on 13 June 2025. Ransom-ISAC's blockchain tracing shows the
+      payment splitting within hours into a "Main Guy" (6.61 BTC) and "Helper" (2.83 BTC) wallet, routed through
+      ByBit, OKX and the Russian exchange BELQI. The group's backend leak-site infrastructure (hosted on Virtual
+      Systems LLC / AS30860 in Ukraine) was later seized, with a notice attributed to Ukraine's Security Service
+      (SBU) Cyber Department displayed on the server. Ransom-ISAC explicitly flags that "the provided 'proof of
+      deletion' was not technically verifiable" and should not be treated as evidence the stolen data was destroyed.
+    region_nexus: "United States (public-sector/county government victim); transferable lesson for EU/CH public-sector"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, government"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:kairos-extortion", type: actor, name: "Kairos", aliases: [],
+          summary: "Data-theft-only extortion actor active since ~Nov 2024; no ransomware encryptor ever obtained or verified; relies on brute-force credential access and leak-site publication threats rather than encryption (Ransom-ISAC, 2026-07-03)." }
+      - { key: "incident:kairos-us-county-government-data-extortion-2025", type: incident, name: "Kairos data-extortion case against a US county government",
+          aliases: ["Union County Ohio extortion case"],
+          summary: "US county government (evidence points to Union County, Ohio) paid Kairos ~$1M / 9.44 BTC on 2025-06-13 after a May 2025 brute-force credential intrusion and threatened publication of ~2TB / 1.6M files; documented retrospectively by Ransom-ISAC (2026-07-03)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We accessed your network using a bruteforce attack."
+        attribution: "Kairos (quoted by Ransom-ISAC)"
+        source_url: "https://ransom-isac.org/blog/kairos-ransomware-data-extortion-case-study/"
+      - quote: "No encryptor sample, locker binary, or independently verified ransomware payload has been obtained in this case."
+        attribution: "Ransom-ISAC"
+        source_url: "https://ransom-isac.org/blog/kairos-ransomware-data-extortion-case-study/"
+      - quote: "The provided 'proof of deletion' was not technically verifiable and should not be treated as evidence that the stolen data was destroyed."
+        attribution: "Ransom-ISAC (relayed by Security Affairs)"
+        source_url: "https://securityaffairs.com/194750/security/u-s-government-agency-paid-1m-to-data-extortion-group-kairos.html"
+    extended_notes: |
+      Defender-relevant lessons for a public-sector SOC even though the victim is a US county: (1) initial access
+      was plain credential brute force against a generic/service account with no MFA and no VPN gating — the same
+      primitive that would defeat many cantonal/federal remote-access setups if MFA enforcement has gaps; hunt for
+      repeated authentication failures against shared/service accounts followed by a single success (T1110.001/
+      T1110.003), especially on externally reachable RDP/VPN/webmail/AD FS endpoints. (2) This is a pure data-theft
+      extortion model with zero encryption — victim organizations and IR playbooks tuned to detect "ransomware"
+      via file-encryption telemetry (mass rename/entropy spikes) will miss it; the detectable signal is large
+      abnormal outbound data volume / unusual access to case-management or prosecutorial file shares, not crypto
+      activity. (3) Ransom-ISAC's explicit non-verifiability of "proof of deletion" is a reusable negotiation-policy
+      point for any public-sector legal/incident-response team facing a similar demand. No IOCs; no ransom-payment
+      endorsement implied. The exact identity/confirmation of the county victim is not on-record from either party
+      in the cited primary — treat that specific attribution as a researcher inference (Ransom-ISAC ties the case
+      to public prior Union County, Ohio breach notices from May 2025), not a victim-confirmed fact.
+    borderline: false
+coverage_gaps:
+  - source_id: cisa-news
+    reason: "Both the bridge (fetch_source.py cisa page) and direct WebFetch returned HTTP 403 on https://www.cisa.gov/news-events/news; no working recipe found this run."
+  - source_id: industrialcyber-co
+    reason: "Both fetch_source.py url and WebFetch returned HTTP 403 on https://industrialcyber.co; no in-window items reachable via this route this run."
+  - source_id: inside-it-ch
+    reason: "https://www.inside-it.ch/ and https://www.inside-it.ch/rss both returned HTTP 403; no Swiss-specific in-window incident items found via WebSearch fallback either (checked; nothing in the 14h window)."
+  - source_id: general
+    reason: "Checked databreaches.net, risky.biz, krebsonsecurity, infosecurity-magazine, securityaffairs, malwarebytes, schneier, sans-isc, ico-uk enforcement sitemap, and SEC EDGAR 8-K item 1.05/8.01 filings for 2026-07-03..2026-07-05 — no additional items published inside the 14h window (2026-07-04T10:09Z–2026-07-05T00:09Z) qualified beyond the Kairos item; the FBI/TeamPCP SecurityAffairs piece (2026-07-04T07:55Z) narrowly missed the window start and substantially overlaps the already-covered npm supply-chain-worm / Mini Shai-Hulud campaign entities."
+candidate_sources: []

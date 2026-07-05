@@ -1,0 +1,89 @@
+domain: S2
+run_id: 2026-07-05T0009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-05T00:10:50Z
+ended_at: 2026-07-05T00:14:11Z
+duration_seconds: 201
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 6
+  bridge_fetches: 9
+items: []
+# No qualifying in-window items. Rationale below.
+#
+# Window_hours = 14 (from ~2026-07-04T10:09Z to run start 2026-07-05T00:09Z).
+# prior_coverage.json shows the previous intel run already absorbed
+# everything through 2026-07-04T06:24:38Z (Avalon framework, PamStealer),
+# so the effective new-content gap this run needed to cover was only
+# ~2026-07-04T06:25Z to 2026-07-05T00:09Z.
+#
+# Essential-slice sweep performed (all fetched fresh this run):
+# - NCSC-CH Security Hub (GovCERT.ch) bridge: newest post id 12741,
+#   created 2026-07-03T07:25:33Z (Argo CD RCE advisory) -- already
+#   covered by prior run (2026-07-02 entry, deep_dive). No post newer
+#   than 2026-07-03 exists in the feed.
+# - CERT-FR avis + actualite feeds: newest avis dated 26 June 2026;
+#   newest actualite bulletin from 2025-10/11 era in the feed order
+#   returned (feed pagination artifact) -- no in-window French advisory.
+# - BSI CERT-Bund WID RSS: newest items dated Fri 03 Jul 2026 10:25-11:25
+#   UTC -- outside the 14h window and all already-known CVEs (Kemp
+#   LoadMaster, WatchGuard Firebox, Coolify -- all previously covered).
+# - NCSC-NL advisories RSS: newest NCSC-2026-0219 (GitHub Enterprise
+#   Server) published Fri 03 Jul 2026 08:21 UTC -- outside window, not
+#   previously flagged but moderate severity (stored XSS + OAuth scope
+#   UI misrepresentation + missing authz on Copilot PR-diff endpoint,
+#   authenticated prerequisites); does not meet the bar for a public-
+#   sector-relevant standalone item and is outside the 14h recency gate.
+# - ENISA EUVD "lastvulnerabilities": newest entries dated 2 Jul 2026
+#   (open62541 OPC UA DoS pair CVE-2026-33592/CVE-2026-11946; liboauth2
+#   SSRF/DPoP pair CVE-2026-54430/CVE-2026-54431, assigned by CERT-PL) --
+#   all outside the 14h window and already indirectly covered (liboauth2
+#   pair traces to a CERT-PL post dated 2 Jul 2026, already stale for
+#   this window).
+# - CERT-EU security-advisories RSS: newest advisory dated 10 Jun 2026
+#   (Ivanti Sentry) -- no in-window item.
+# - CISA KEV catalog (bridge): newest dateAdded 2026-07-01
+#   (CVE-2026-45659, SharePoint) -- outside window and already covered.
+# - CISA cybersecurity-advisories and CISA directives pages: bridge
+#   fetch returned HTTP 403 on both (see Fetch failures below).
+# - NCSC-UK reports-advisories: newest dated 22 Jun 2026 -- no in-window
+#   item, and the five most recent entries did not expose detail-page
+#   URLs on the listing (only items 6-10 in the list carried resolvable
+#   links; all older than the window).
+# - CERT.at (Austria): newest blog post dated 01 Jun 2026 -- no in-window
+#   item.
+# - CERT Polska (cert.pl) RSS + news listing: newest post 02 Jul 2026
+#   11:55 UTC (liboauth2, duplicate of the EUVD entry above) -- outside
+#   window.
+# - Inside-IT Switzerland RSS: newest items all business/IT-market news
+#   dated 03 Jul 2026 (Microsoft AI subsidiary, M&A, ICT graduation) --
+#   no security content in-window.
+# - ENISA news listing: newest item 01 Jul 2026 (NIS360 survey call) --
+#   policy/administrative, not an operational or incident item, and
+#   outside the 14h window regardless.
+# - scip AG (Switzerland) Labs blog: newest post 26 Jun 2026 -- no
+#   in-window item.
+# - safeonweb.be (Belgium CCB): page fetched successfully (200) but is a
+#   Drupal SPA-style listing whose server-rendered HTML did not expose
+#   parseable article links within the time budget; no confirmed
+#   in-window item extracted (see Coverage gaps).
+#
+# Targeted WebSearch sweep (German/French/English, Switzerland + EU
+# public-sector angle) for the window surfaced only stale material
+# (April-June 2026 France/ANTS breach retrospectives, historical NCSC-CH
+# weekly reviews, a Nov-2025 Swiss phishing advisory mis-indexed by a
+# search engine) -- nothing dated inside window_hours=14 that was not
+# already in prior_coverage.json.
+#
+# Net assessment: this run's assigned window is a genuine quiet period
+# for the home-region/sector lens across every essential source
+# attempted. No item cleared both the recency gate and the dedup gate.
+watchlist_sweep: null
+tlp_restricted_leads: []
+candidate_sources: []
+coverage_gaps:
+  - source_id: safeonweb-be
+    reason: "webfetch and bridge:url both returned 200 but the page is a Drupal-rendered shell with no server-side-visible article listing reachable within the time budget; needs a dedicated news/listing sub-path identified in a future run (check sources/sources.json note for a corrected recipe)."
+  - source_id: ncsc-ch-focus
+    reason: "im-fokus weekly-review page not independently re-fetched this run; the most recent weekly review (week 26/2026, dated 2026-06-29) was already absorbed by prior_coverage.json and no new weekly review has been published inside the 14h window (next one due the following Monday)."
