@@ -303,8 +303,8 @@ completed: "2026-07-03T04:31:40Z"
 duration_seconds: 1177
 model: "…"                     # main-agent friendly name (env-var self-identification)
 model_id: "…"
-prompt_version: "v3.0"
-window_hours: 9                # gap-derived recency window this run covered
+prompt_version: "v3.1"
+window_hours: 24               # gap-derived recency window this run covered (24 h floor)
 gap_hours: 7                   # hours since the previous run record
 entries_published: 3           # new entry files this run (incl. updates)
 entries_updated: 1             # of which update_of entries
@@ -361,16 +361,25 @@ is built entirely from `runs/**` frontmatter.
 
 1. **Preflight scan.** Every run builds
    `work/<run-id>/prior_coverage.json` by scanning `entries/` for the last
-   7 days **plus everything already published today** (multiple-runs-a-day
+   14 days **plus everything already published today** (multiple-runs-a-day
    is just more records in the same scan). Records carry: entry id, title,
-   headline, kind, CVE ids, entity keys, primary URL, `discovered_at`.
-2. **Fetch-time dedup.** Research sub-agents read that file before fetching
-   and skip already-covered items unless they hold a material delta.
-3. **Compose-time dedup.** The main agent drops any candidate whose CVE ids
-   or entity keys match an in-window entry — unless it ships as
-   `update_of` with a genuine delta.
-4. **Mechanical gate.** `tools/check_run.py` FAILs a new non-update entry
-   whose CVE set intersects a prior entry from the last 7 days, and WARNs
+   headline, `summary`, kind, CVE ids, entity keys, primary URL,
+   `discovered_at`. The `summary` makes the file a load of every in-window
+   brief, not just a key list.
+2. **Compose-time dedup (in-context, 14 days).** The main agent `Read`s the
+   full `prior_coverage.json` — every in-window brief loaded into context —
+   and drops any candidate whose CVE ids or entity keys match an in-window
+   entry from **any** run in those 14 days, unless it ships as `update_of`
+   with a genuine delta.
+3. **Metadata check (store-wide, older than 14 days).** Coverage older than
+   the 14-day in-context window is caught by the store-wide CVE index
+   (`state/cves_seen.json`, surfaced as `cves.ids` in the state summary),
+   not an in-context read — an old CVE re-surfacing is still recognised.
+4. **Fetch-time dedup.** Research sub-agents read `prior_coverage.json`
+   before fetching and skip already-covered items unless they hold a
+   material delta.
+5. **Mechanical gate.** `tools/check_run.py` FAILs a new non-update entry
+   whose CVE set intersects a prior entry from the last 14 days, and WARNs
    on entity-key overlap, forcing the update_of decision to be explicit.
 
 ## Rendering — the brief is a query

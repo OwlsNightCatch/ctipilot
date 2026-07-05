@@ -23,3 +23,4 @@ The first 200 lines or 25 KB of this file are loaded into every session by the a
 - [Auto-commit/push/deploy for routine fixes](auto-publish-routine-fixes.md) — go end-to-end through commit→push→auto-merge→deploy-site→live URL without pausing for confirmation
 - [Changelog hygiene](changelog-hygiene.md) — version history lives only in prompts/CHANGELOG.md; never annotate rules with vN.M; check_run.py `prompt-version` gates it
 - [Customization framework](customization-framework.md) — branding.yaml + org-profile.yaml carry ALL org/brand values; never reintroduce identity literals in build.py or lens phrases in prompt prose; PYTHONHASHSEED=0 for build byte-diffs
+- [Source fetch blocks & primary-source substitutes](source-fetch-blocks.md) — kernel.org git now behind Anubis (use Ubuntu/Debian trackers as substitute primary); CISA 403s; JS-only recipe gaps

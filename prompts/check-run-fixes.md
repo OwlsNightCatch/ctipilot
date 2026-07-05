@@ -13,7 +13,7 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `entry-schema` (verification) | `multi-source` with <2 sources | Set the correct `verification` value (`single-source*`) + `sourcing_note`, or add the genuinely independent second source you already fetched |
 | `entry-schema` (entities) | Entity key not in `entities/registry.yaml` | Register the entity (key, type, name, aliases, sourced summary, first_seen) — or fix the key to the existing entity (check aliases first) |
 | `registry` | Alias/name collision or malformed registry record | Merge the duplicate into the existing key (aliases append-only); never mint a second key for a known entity |
-| `dedup` | Non-update entry shares CVEs with the last 7 days | Either convert to an update note (`update_of: <prior entry id>`, body = delta only) or delete the entry (it's covered) |
+| `dedup` | Non-update entry shares CVEs with the last 14 days | Either convert to an update note (`update_of: <prior entry id>`, body = delta only) or delete the entry (it's covered) |
 | `update-target` | `update_of` unresolved, later-dated, or cyclic | Point at the real prior entry id (`YYYY-MM-DD/slug`); chains must run backwards in time |
 | `cve-sync` | CVE in an entry but not in `state/cves_seen.json` | Append the CVE record to `cves_seen.json` (id, title, primary_source_url, first_seen, last_seen) |
 | `blocked-source` | Source URL is an NVD/MITRE per-CVE page, homepage, category landing, or advisory index | Replace with the specific vendor PSIRT / article / advisory URL you actually fetched; NVD/MITRE pages are auto-referenced by the site and never citable |

@@ -354,11 +354,14 @@ every edit is recorded in the run record's `sources_changed[]`.
   essential-coverage, and the `site/test_build.py` smoke tests. Fix
   recipes: [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md).
 - [`tools/build_prior_coverage.py`](../tools/build_prior_coverage.py) —
-  Phase 0 helper: scans `entries/` for the last N days **including entries
-  earlier runs published today** and writes
-  `work/<run-id>/prior_coverage.json` (full records — sub-agents read
-  this) + `prior_coverage_keys.json` (keys-only index for the main agent's
-  compose-time dedup). This file pair is the mechanical heart of the
+  Phase 0 helper: scans `entries/` for the last N days (14 on the intel run
+  and the weekly) **including entries earlier runs published today** and
+  writes `work/<run-id>/prior_coverage.json` (full records incl. each
+  entry's `summary` — the main agent AND the sub-agents read this to load
+  every in-window brief for compose-time / fetch-time dedup) +
+  `prior_coverage_keys.json` (lean keys-only metadata index). Coverage
+  older than the window is caught by the store-wide `state/cves_seen.json`
+  metadata check. This machinery is the mechanical heart of the
   no-repetition discipline.
 - [`tools/run_summary.py`](../tools/run_summary.py) — Phase 0 helper:
   compact state digest (known CVE ids, active sources, last run + gap
@@ -501,8 +504,8 @@ window's operational entries) and its research fan-out (W1–W2 + W3).
  │  intel run   │─────────────▶│ compute RUN_ID (YYYY-MM-DDTHHMMZ-intel)│
  │  fires       │  preflight   │ build_prior_coverage.py → work/<id>/  │
  │  (N×/day,    │              │   prior_coverage{,_keys}.json          │
- │  operator-   │              │   (last 7 days INCL. earlier runs      │
- │  scheduled)  │              │    today — the dedup index)            │
+ │  operator-   │              │   (last 14 days INCL. earlier runs     │
+ │  scheduled)  │              │    today — main agent loads all)       │
  └──────────────┘              │ run_summary.py → state digest +        │
                                │   rolling-24 h budget snapshot         │
                                │ Read entities/registry.yaml + taxonomy │

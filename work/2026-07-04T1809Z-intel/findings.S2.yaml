@@ -1,0 +1,82 @@
+domain: S2
+run_id: 2026-07-04T1809Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-04T18:11:31Z
+ended_at: 2026-07-04T18:15:19Z
+duration_seconds: 228
+self_telemetry:
+  webfetch_calls: 7
+  websearch_calls: 2
+  bridge_fetches: 11
+items: []
+# No items cleared the 8h in-window recency gate for this domain this run.
+# Every essential source in the S2 slice was attempted; the freshest content
+# found on each was 1-3 days old (outside window_hours: 8), confirming a
+# genuinely quiet window rather than a collection failure. Full attempt log
+# below.
+watchlist_sweep:
+  duty: sector-lens
+  note: "sector-lens duty carries no sweep per mission definition; no product/supplier watchlist configured on this deployment. General S2 collection weighted toward Swiss/EU public-sector, healthcare, education, critical-infrastructure lens throughout — no in-window hits found."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-incidents
+    reason: "https://www.ncsc.admin.ch/ncsc/de/home/aktuell/aktuelle-vorfaelle.html is a JS-rendered AEM page; the server-rendered body (bridge fetch) contains no article listing/content, only nav chrome. No structured API endpoint identified for this specific listing (distinct from the CSH JSON API already used for ncsc-ch-security-hub). Recommend the bridge recipe be revisited for this source in a future run."
+  - source_id: ncsc-ch-focus
+    reason: "WebFetch of https://www.ncsc.admin.ch/ncsc/de/home/aktuell/im-fokus.html returned only the 30.06.2026 'Woche 26' weekly item (Zoom-invite malware social-engineering piece) — nothing newer; NCSC-CH publishes this weekly digest on Mondays, so no fresh item expected mid-week."
+  - source_id: cert-eu
+    reason: "cert.europa.eu security-advisories RSS latest item is 2026-008 (10 June 2026); no new CERT-EU advisory in the 8h window."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis feed (cert.ssi.gouv.fr/avis/feed/) latest entries dated 23-26 June 2026; actualite feed (cert.ssi.gouv.fr/actualite/feed/) appears stale/mis-cached (items from Oct 2025-Jan 2026 only). No in-window CERT-FR content found via either feed."
+  - source_id: cert-at
+    reason: "cert.at homepage/listing shows no full article bodies via WebFetch; most recent visible blog post dated 1 June 2026. No structured feed endpoint attempted beyond the homepage per source record."
+  - source_id: cert-pl
+    reason: "cert.pl/en/news/ listing shows most recent item from 12 June 2026 via WebFetch; no in-window Polish CERT content."
+  - source_id: enisa
+    reason: "enisa.europa.eu/news listing shows only one item in the 1-4 July range (a NIS360 survey call, non-technical, 1 July) via WebFetch; no fresh technical advisory."
+  - source_id: ncsc-uk
+    reason: "ncsc.gov.uk reports-advisories listing shows no items newer than 22 June 2026 via bridge fetch."
+  - source_id: cisa-advisories
+    reason: "Bridge fetch (`tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`) returned upstream HTTP 403; single retry not attempted a second time per bounded-retry rule. cisa-kev structured endpoint was used instead (catalogVersion 2026.07.01, no entries dated in the 8h window)."
+  - source_id: cisa-directives
+    reason: "Bridge fetch (`tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives`) returned upstream HTTP 403."
+  - source_id: safeonweb-be
+    reason: "WebFetch of safeonweb.be/en returned HTTP 403 Forbidden."
+  - source_id: inside-it-ch
+    reason: "RSS bridge (rss.xml) fetched successfully; 15 most recent items (2 July - 3 July) are general Swiss IT/business news plus one SharePoint CVE-2026-45659 exploitation piece already covered in prior_coverage.json (2026-07-02 entry) and outside the 8h window."
+  - source_id: govcert-at
+    reason: "RSS feed https://www.govcert.gv.at/rss/gcs-rss.xml returned zero items (empty feed)."
+  - source_id: us-treasury-ofac
+    reason: "ofac.treasury.gov/recent-actions is a JS-rendered table via bridge fetch; no dated entries surfaced in the server-rendered body. No structured endpoint identified for this source."
+  - source_id: scip-ch
+    reason: "WebFetch of scip.ch/?labs shows most recent post dated 26 June 2026; no in-window Swiss research content."
+  - source_id: infoguard-ch
+    reason: "WebFetch shows most recent posts dated 29 June and 3 July 2026 (Security Lounge event recap, non-technical); no in-window technical content relevant to S2 lens."
+fetch_failures:
+  - id: cisa-advisories
+    url_tried: "https://www.cisa.gov/news-events/cybersecurity-advisories"
+    fetch_method: "bridge:cisa.page"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://www.cisa.gov/news-events/cybersecurity-advisories"
+    attempted_methods: ["bridge:cisa.page"]
+    mitigation_applied: "used cisa-kev structured endpoint as substitute ground-truth source; no in-window KEV additions found either"
+    covered_anyway: false
+  - id: cisa-directives
+    url_tried: "https://www.cisa.gov/news-events/directives"
+    fetch_method: "bridge:cisa.page"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://www.cisa.gov/news-events/directives"
+    attempted_methods: ["bridge:cisa.page"]
+    mitigation_applied: "none — coverage gap"
+    covered_anyway: false
+  - id: safeonweb-be
+    url_tried: "https://safeonweb.be/en"
+    fetch_method: "webfetch"
+    status_code: 403
+    error_class: transport-403
+    error_message: "The server returned HTTP 403 Forbidden."
+    attempted_methods: ["webfetch"]
+    mitigation_applied: "none — coverage gap (standard-tier source, no alternate recipe attempted this run)"
+    covered_anyway: false
