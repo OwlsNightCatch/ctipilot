@@ -49,6 +49,7 @@ from build import (  # noqa: E402
     build_sector_feeds,
     build_update_chains,
     compute_related_entities,
+    daily_run_dates,
     entries_by_day,
     entries_by_week,
     entry_section_key,
@@ -56,12 +57,15 @@ from build import (  # noqa: E402
     parse_taxonomy,
     render_brief_sections,
     render_cve_pill,
+    render_day_page,
+    render_days_index_page,
     render_entry_card,
     render_inline,
     render_markdown,
     scan_for_secrets,
     select_tldr_entries,
     slugify,
+    weekly_run_weeks,
     weekly_section_key,
 )
 
@@ -429,6 +433,49 @@ assert_eq("update chain resolves", build_update_chains(ALL_ENTRIES),
 picked = select_tldr_entries([E_NOTE, E_HIGH, E_CRIT])
 assert_eq("tl;dr picks critical first", picked[0]["id"], E_CRIT["id"])
 assert_eq("tl;dr pads with notable to 3", len(picked), 3)
+
+# ---------------------------------------------------------------------
+# empty-run visibility — a fire that published nothing must still get a
+# day/week page, an archive slot and resolvable links (quiet windows are
+# first-class). The page/link universe = content days ∪ days that ran.
+# ---------------------------------------------------------------------
+print("== empty-run visibility ==")
+QUIET_RUN = mk_run(run_id="2026-07-05T0009Z-intel", date="2026-07-05",
+                   started="2026-07-05T00:09:00Z", completed="2026-07-05T00:18:00Z",
+                   entries_published=0, entries_updated=0)
+WEEKLY_RUN = mk_run(run_id="2026-06-28T0800Z-weekly", kind="weekly",
+                    date="2026-06-28", entries_published=0)
+ALL_RUNS = [RUN, QUIET_RUN, WEEKLY_RUN]
+assert_eq("daily_run_dates ignores weekly, keeps daily fires",
+          daily_run_dates(ALL_RUNS), {"2026-07-03", "2026-07-05"})
+assert_eq("daily_run_dates drops malformed dates",
+          daily_run_dates([mk_run(date="not-a-date"), mk_run(date="")]), set())
+assert_eq("weekly_run_weeks keys the weekly fire's ISO week",
+          weekly_run_weeks(ALL_RUNS), {"2026-W26"})
+# The union: 2026-07-05 has no entry but ran, so it joins the page universe.
+day_universe = set(entries_by_day(ALL_ENTRIES)) | daily_run_dates(ALL_RUNS)
+assert_true("all-quiet day joins the day-page universe", "2026-07-05" in day_universe)
+week_universe = set(entries_by_week(ALL_ENTRIES)) | weekly_run_weeks(ALL_RUNS)
+assert_true("quiet weekly fire joins the week-page universe", "2026-W26" in week_universe)
+
+# Archive index lists the quiet day with an explicit "run record only" marker.
+archive_days = {d: entries_by_day(ALL_ENTRIES).get(d, []) for d in day_universe}
+archive_html = render_days_index_page(archive_days, site_url="https://x.example/",
+                                      cachebust="t", prefix="../",
+                                      canonical="https://x.example/briefs/")
+assert_in("archive lists the quiet day", "briefs/2026-07-05/", archive_html)
+assert_in("archive marks the quiet day as run-record-only",
+          "quiet window — run record only", archive_html)
+assert_in("archive still counts a content day's entries",
+          "5 entries", archive_html)
+
+# The quiet day's page renders (0 entries) and surfaces its run-note.
+by_id_all = {e["id"]: e for e in ALL_ENTRIES}
+quiet_page = render_day_page("2026-07-05", [], [QUIET_RUN], entries_by_id=by_id_all,
+                             site_url="https://x.example/", cachebust="t",
+                             prefix="../../", canonical="https://x.example/briefs/2026-07-05/")
+assert_in("quiet day page names the run", "2026-07-05T0009Z-intel", quiet_page)
+assert_in("quiet day page reports zero entries", 'brief-meta__count">0<', quiet_page)
 
 # ---------------------------------------------------------------------
 # briefbook.json / alerts.json shapes

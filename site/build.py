@@ -1573,6 +1573,25 @@ def entries_by_week(entries: list[dict[str, Any]]) -> dict[str, list[dict[str, A
     return dict(sorted(out.items()))
 
 
+def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
+    """UTC dates (YYYY-MM-DD) of every non-weekly fire — the days that ran,
+    whatever they published. Unioned with the content days so an all-quiet
+    day (0 entries) still gets a page, an archive slot and resolvable
+    run-links: a quiet window is a first-class outcome, not an absence."""
+    return {
+        str(r.get("date")) for r in runs
+        if r.get("kind") != "weekly" and DATE_RE.match(str(r.get("date") or ""))
+    }
+
+
+def weekly_run_weeks(runs: list[dict[str, Any]]) -> set[str]:
+    """ISO weeks (YYYY-Www) of every weekly fire — the weeks that ran,
+    the strategic-cadence analogue of `daily_run_dates`."""
+    out = {_iso_week_of(str(r.get("date"))) for r in runs if r.get("kind") == "weekly"}
+    out.discard(None)
+    return out
+
+
 def build_update_chains(entries: list[dict[str, Any]]) -> dict[str, list[str]]:
     """`update_of` back-references: entry id → ids of entries updating
     it, ascending by discovered_at (entries arrive pre-sorted)."""
@@ -2648,7 +2667,11 @@ def render_days_index_page(
                 f'<a class="e-title" href="{prefix}briefs/{_escape(day)}/">CTI Daily Brief — {_escape(day)}</a>'
                 '<div class="e-meta">'
                 f'<span class="e-tag">daily</span>'
-                f'<span>{n} entr{"y" if n == 1 else "ies"}</span>'
+                + (
+                    f'<span>{n} entr{"y" if n == 1 else "ies"}</span>'
+                    if n
+                    else '<span class="muted">quiet window — run record only</span>'
+                )
                 + (f"<span>{cves} CVE{'' if cves == 1 else 's'}</span>" if cves else "")
                 + (f'<span class="badge badge--crit">{crit} critical</span>' if crit else "")
                 + "</div>"
@@ -7654,7 +7677,17 @@ def main() -> int:
     updated_by = build_update_chains(entries)
     days = entries_by_day(entries)
     weeks = entries_by_week(entries)
-    day_pages = set(days)
+    # Every fire is a first-class event — including an all-quiet one that
+    # published nothing. Its run record is the artifact, so the day (or ISO
+    # week) must stay visible: listed in the archive, its run-notes rendered,
+    # its run-links resolvable. The page/link universe is therefore the union
+    # of content days/weeks and the days/weeks that merely ran. `days`/`weeks`
+    # themselves stay entry-driven (the RSS feeds carry published content
+    # only, never an empty item); the union drives page generation, the
+    # archive indexes, the search index, the home marquee, and every
+    # "is there a page for this date?" link decision.
+    day_pages = set(days) | daily_run_dates(runs)
+    week_pages = set(weeks) | weekly_run_weeks(runs)
     ref = reference_ts(entries, runs)
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
     entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -7744,7 +7777,10 @@ def main() -> int:
     )
 
     # ---- Day pages + index ---------------------------------------------
-    for day, day_entries in days.items():
+    # Iterate the union: content days AND days that only ran (a page for a
+    # quiet day renders 0 entries + that day's run-notes).
+    for day in sorted(day_pages):
+        day_entries = days.get(day, [])
         rel_url = f"briefs/{day}/"
         emit_html(
             rel_url,
@@ -7761,19 +7797,20 @@ def main() -> int:
     emit_html(
         "briefs/",
         render_days_index_page(
-            days,
+            {d: days.get(d, []) for d in day_pages},
             site_url=site_url,
             cachebust=cachebust,
             prefix="../",
             canonical=site_url + "briefs/",
         ),
-        lastmod=max(days) if days else "",
+        lastmod=max(day_pages) if day_pages else "",
     )
 
     # ---- Weekly pages + index + legacy redirects ------------------------
-    for week, week_entries in weeks.items():
+    for week in sorted(week_pages):
         if not is_safe_path_segment(week):
             continue
+        week_entries = weeks.get(week, [])
         rel_url = f"weekly/{week}/"
         emit_html(
             rel_url,
@@ -7785,7 +7822,7 @@ def main() -> int:
                 prefix="../../",
                 canonical=site_url + rel_url,
             ),
-            lastmod=max(e["date"] for e in week_entries),
+            lastmod=max((e["date"] for e in week_entries), default=""),
         )
         # Legacy URL shape /briefs/weekly/YYYY-Www/ → /weekly/YYYY-Www/.
         emit_html(
@@ -7800,7 +7837,7 @@ def main() -> int:
     emit_html(
         "weekly/",
         render_weekly_index_page(
-            weeks,
+            {w: weeks.get(w, []) for w in week_pages},
             site_url=site_url,
             cachebust=cachebust,
             prefix="../",
@@ -7964,9 +8001,12 @@ def main() -> int:
     )
 
     # ---- Home -------------------------------------------------------------
-    # "today" = the newest day with entries (the live, still-appended day);
-    # "prev_day" = the most recent completed day before it.
-    day_keys = sorted(days.keys(), reverse=True)
+    # "today" = the newest day that fired (the live, still-appended day) —
+    # including an all-quiet day, so the "Live — today" card reflects the
+    # most recent run even when it published nothing; "prev_day" = the most
+    # recent completed day before it. Entry lists come from `days`, so a
+    # quiet day renders the card's built-in "quiet day so far" copy.
+    day_keys = sorted(day_pages, reverse=True)
     today = day_keys[0] if day_keys else None
     prev_day = day_keys[1] if len(day_keys) > 1 else None
     latest_week = max(weeks) if weeks else None
@@ -8270,8 +8310,8 @@ def main() -> int:
 
     # ---- Search index -----------------------------------------------------
     search_idx: list[dict[str, Any]] = []
-    for day in sorted(days.keys(), reverse=True):
-        day_ops = days[day]
+    for day in sorted(day_pages, reverse=True):
+        day_ops = days.get(day, [])
         tldr = select_tldr_entries(day_ops, cap=1)
         search_idx.append({
             "kind": "day",
@@ -8281,12 +8321,12 @@ def main() -> int:
             "route": f"briefs/{day}/",
             "tags": sorted({c for e in day_ops for c in entry_cve_ids(e)})[:6],
         })
-    for week in sorted(weeks.keys(), reverse=True):
+    for week in sorted(week_pages, reverse=True):
         search_idx.append({
             "kind": "weekly",
             "id": week,
             "title": f"CTI Weekly Summary — {week}",
-            "hint": f"{len(weeks[week])} strategic entries",
+            "hint": f"{len(weeks.get(week, []))} strategic entries",
             "route": f"weekly/{week}/",
             "tags": [],
         })
