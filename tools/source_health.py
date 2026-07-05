@@ -119,19 +119,6 @@ TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
 })
 
 
-def _is_transport_block(msg: str) -> bool:
-    """True iff a bridge failure message looks like a transport / anti-bot
-    block (HTTP 403/429/503, an 'Access Denied' / 'Access-Denied' relay, or a
-    'forbidden' body) rather than a genuine recipe break (parse error, 404,
-    timeout, empty body)."""
-    m = (msg or "").lower()
-    return (
-        "403" in m or "429" in m or "503" in m
-        or "access denied" in m or "access-denied" in m
-        or "denied" in m or "forbidden" in m
-    )
-
-
 def _ip_blocked(addr: str) -> bool:
     try:
         ip = ipaddress.ip_address(addr)
@@ -277,9 +264,15 @@ def _bridge_check(source_id: str, url: str, *, timeout: float) -> tuple[str, str
         if attempt == 1:
             time.sleep(1.5)
     detail = f"bridge `{' '.join(argv)}` failed: {why}"
-    # A known transport-blocked essential (403 never demotes, substitute
-    # documented) is a HANDLED state, not an unsolved recipe break.
-    if source_id in TRANSPORT_BLOCKED_HANDLED and _is_transport_block(why):
+    # An essential reachable ONLY through an anti-bot bridge (server-side reader
+    # proxy) has no other transport, and the hard rule forbids demoting it on a
+    # transport failure. So ANY bridge failure for it — a relayed 403, a reader
+    # rate-limit, or a reader timeout under a heavy sweep — is a HANDLED state
+    # (`bridge-blocked`, action none), never an unsolved `needs-demote`. It
+    # probes `bridge-ok` whenever the reader responds; a persistent run of
+    # `bridge-blocked` across many sweeps is the signal to investigate. Real
+    # per-run fetch failures still surface in the run record's fetch_failures.
+    if source_id in TRANSPORT_BLOCKED_HANDLED:
         return "bridge-blocked", detail
     return "bridge-fail", detail
 

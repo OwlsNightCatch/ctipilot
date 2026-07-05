@@ -110,6 +110,7 @@ import re
 import socket
 import ssl
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -586,22 +587,32 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     key = os.environ.get("JINA_API_KEY")
     if key:
         extra["Authorization"] = f"Bearer {key}"
-    code, body, _ = fetch(
-        JINA_READER_BASE + target_url,
-        accept="text/plain, */*",
-        max_bytes=max_bytes,
-        extra_headers=extra,
-    )
-    if code != 200:
-        raise RuntimeError(f"reader proxy HTTP {code} for {target_url}")
-    text = body.decode("utf-8", errors="replace")
-    # Some cisa.gov paths (e.g. the deprecated /blog.xml) return the Akamai
-    # "Access Denied" page even through the reader; surface that as a failure
-    # rather than handing back the denial page as if it were real content.
-    head = text[:800].lower()
-    if "access denied" in head and ("edgesuite" in head or "permission to access" in head):
-        raise RuntimeError(f"reader proxy relayed an upstream Access-Denied for {target_url}")
-    return text
+    reader_url = JINA_READER_BASE + target_url
+    # The reader can cold-start / rate-limit / stall on a first hit; two tries
+    # with a short backoff turn those blips into the real (usually 200) result.
+    last = ""
+    for attempt in (1, 2, 3):
+        try:
+            code, body, _ = fetch(
+                reader_url, accept="text/plain, */*",
+                max_bytes=max_bytes, extra_headers=extra,
+            )
+        except Exception as e:  # noqa: BLE001 — network/timeout: retry
+            last = str(e)[:140]
+            code, body = 0, b""
+        if code == 200:
+            text = body.decode("utf-8", errors="replace")
+            # Some cisa.gov paths (e.g. the deprecated /blog.xml) return the
+            # Akamai "Access Denied" page even through the reader; surface that
+            # as a failure rather than handing back the denial page as content.
+            head = text[:800].lower()
+            if "access denied" in head and ("edgesuite" in head or "permission to access" in head):
+                raise RuntimeError(f"reader proxy relayed an upstream Access-Denied for {target_url}")
+            return text
+        last = f"HTTP {code}" if code else last
+        if attempt < 3:
+            time.sleep(2.0 * attempt)
+    raise RuntimeError(f"reader proxy failed for {target_url}: {last}")
 
 
 def cisa_page(url: str) -> str:

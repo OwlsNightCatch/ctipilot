@@ -4,6 +4,26 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.6 — 2026-07-05 (CISA advisories/directives/news/ICS now genuinely fetchable — reader proxy + CSAF mirror)
+
+### Why
+
+v3.4 marked CISA advisories/directives/news as transport-blocked essentials and told the routine to substitute KEV + WebSearch — a *handled* state, but the advisory narrative, directive text, and ICS detail were still not being read. The operator's requirement is explicit: these are highly-relevant sources that must be **in the reports with full detail**. They are now reachable. `www.cisa.gov` Akamai-403s a direct fetch on every UA (unchanged), but two transports get the content: a **server-side reader proxy** (r.jina.ai fetches from its own egress, not ours) for the HTML bodies and feeds, and the **cisagov/CSAF GitHub mirror** (via `raw.githubusercontent.com`, which is not proxy-blocked) for fully-structured ICS/OT advisories.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 5 `needs-bridge` playbook** rewritten around the general principle "an anti-bot block calls for a **different transport for the same data**, not a demotion", with the three concrete transports now available: data mirror (github.com → OSV.dev), server-side reader proxy (cisa.gov → `cisa page`/`cisa feed` via r.jina.ai), and structured publisher feed (CISA ICS → `cisa csaf-recent`/`cisa csaf`). The `needs-demote` note now reserves the handled `bridge-blocked` state for content unreachable by *every* transport (Cloudflare Managed-Challenge hosts like group-ib.com / ccn-cert.cni.es), not CISA.
+- **`tools/fetch_source.py` (tooling):** new `cisa page` (direct → r.jina.ai reader fallback), `cisa feed <url> [N]` (RSS/Atom → item list via the reader), `cisa csaf-recent [N]` (dated ICS index from the CSAF mirror), and `cisa csaf <icsa-/icsma- id>` (full CSAF v2 JSON). `_jina_fetch` helper reuses the `fetch` SSRF defences and raises on a relayed Access-Denied (e.g. the deprecated `/blog.xml`).
+- **`tools/source_health.py` (tooling):** cisa-advisories/directives/news now probe `bridge-ok`; they remain in `TRANSPORT_BLOCKED_HANDLED` only as a transient reader-proxy-outage safety net; `_is_transport_block` also recognises an `Access-Denied` relay.
+- **`sources/sources.json` (metadata):** CISA source notes document the working recipes; failure counters reset. **`.claude/memory/source-fetch-blocks.md`:** CISA section rewritten from "blocked, substitute" to "reachable via reader proxy + CSAF mirror".
+- **Weekly bumped to v3.6 in lockstep** (shared Phase 5 machinery; no weekly-specific divergence changed).
+
+### What stays
+
+- **No hard invariant weakened.** A 403 still never demotes; the reader proxy is a transport, not a citation (the brief still cites the cisa.gov URL); `cisa-kev` JSON remains the exploited-vuln ground truth; the "NEVER WebFetch CISA directly" rule still holds (a direct fetch still 403s — the bridge is the path). No schema/gate change: `check_run.py`, the entry contract, and taxonomy are untouched; the new `cisa` subcommands are additive.
+
+---
+
 ## 3.5 — 2026-07-05 (completeness: the brief must be sound *and* complete)
 
 ### Why
