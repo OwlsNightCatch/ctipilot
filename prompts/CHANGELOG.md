@@ -4,6 +4,28 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.4 — 2026-07-05 (source-access self-healing: OSV bridge for GitHub advisories; CISA transport-block handled state)
+
+### Why
+
+`tools/source_health.py` had flagged the same four sources `UNSOLVED` for weeks and every run either *declined* or *deferred* the fix — the run records literally read "out of scope for this quiet maintenance run; logged here for a follow-up." The detection half of the self-healing loop worked; the repair half never fired, because the Phase-5 source-health instruction said act "**when safely possible**" and authoring a bridge recipe always read as unsafe / out-of-scope on a quiet run. Two distinct root causes sat under the flags, neither a UA problem: (1) **github-advisory** — `github.com` and `api.github.com` are blocked by the **egress proxy itself** (each session is bound to its configured repository; every other github.com path returns HTTP 403 `sessions are bound to their configured repositories`), so no UA / header recovers it; (2) **cisa-advisories / directives / news** — `www.cisa.gov` dynamic paths are blocked by **Akamai bot management** on the egress TLS / behavioural fingerprint (every UA / header combination 403s), with only the static KEV JSON reachable, and the hard rule forbids demoting a 403.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 5 (`state/source_health.json`):** the "act when safely possible" line is replaced by a **standing repair order** — a `needs-bridge` / `needs-demote` flag must be resolved the same run; authoring and testing a new `tools/fetch_source.py` recipe is explicitly in scope for any run, including a quiet one; "logged for a follow-up" is no longer an acceptable resolution. The two flag types carry concrete playbooks: `needs-bridge` → add / switch a recipe or route to a reachable **mirror carrying the same data** (github.com → OSV.dev); `needs-demote` → fix the recipe, and for content unreachable by every recipe under a 403 (CISA advisories), document the transport block in the source notes so the health probe classes it `bridge-blocked` (handled), not churning-unsolved.
+- **`tools/fetch_source.py` — new `osv` recipe (tooling, not prompt prose):** `osv vuln <GHSA-or-CVE>` (GET `/v1/vulns/{id}`) and `osv query <ecosystem> <package> [version]` (POST `/v1/query`) against `api.osv.dev`, the reachable full mirror of the GitHub Advisory Database. A minimal stdlib `_post_json` helper carries the same SSRF defences as `fetch`.
+- **`tools/source_health.py` (tooling):** github-advisory wired into `API_BRIDGE_CMD` (canary on the permanent Log4Shell GHSA id); new `bridge-blocked` class + `TRANSPORT_BLOCKED_HANDLED` set so a re-confirmed transport 403 on the CISA essentials maps to action `none` (handled) rather than `needs-demote`. A NON-transport recipe break still surfaces as `bridge-fail` → needs-demote, so real regressions are not masked.
+- **`sources/sources.json` (metadata drift):** github-advisory `fetch_method` webfetch → bridge with the OSV recipe documented in notes; the three CISA sources carry the confirmed Akamai root cause + KEV / WebSearch substitute; the stale `bridge` fetch-method description ("Host MUST be on the bridge ALLOWED_HOSTS list") corrected to reflect the current no-allowlist bridge.
+- **`.claude/memory/source-fetch-blocks.md`:** github.com egress-proxy block + OSV substitute recorded; the CISA section updated with the Akamai-fingerprint confirmation.
+
+### What stays
+
+- **No hard invariant weakened.** A 403 still never demotes; two-source verification, no-IOC, entry immutability, the mechanical gate, and the publishing chain are untouched. The change *tightens* the self-healing contract (repair is mandatory, not optional) rather than loosening any rule.
+- **No schema / gate change:** `tools/check_run.py`, the entry frontmatter contract, and taxonomy are untouched. The `osv` recipe and `bridge-blocked` class are additive.
+- **Weekly bumped to v3.4 in lockstep.** The source-health machinery is shared (edited once in `cti-run.md`); the weekly inherits Phase 5 verbatim, so no weekly-specific divergence changed.
+
+---
+
 ## 3.2 — 2026-07-05 (sharpened Swiss / European CI + government focus; breach / incident inclusion gate)
 
 ### Why

@@ -19,9 +19,20 @@ Recurring transport blocks the routine hits, and what to cite instead. A block i
 
 These count as `role: primary` (vendor advisory analogs) and are **not** blocked-URL patterns (unlike NVD/MITRE per-CVE pages, which `check_run.py` FAILs).
 
-## CISA advisories / directives / news — persistent 403 (ongoing)
+## GitHub Advisory Database — github.com is egress-proxy-blocked; use OSV.dev (root-caused 2026-07-05)
 
-`cisa.gov/news-events/{cybersecurity-advisories,directives,news}` reliably 403 both direct `WebFetch` and the `tools/fetch_source.py cisa page ...` bridge (logged in `sources/sources.json` notes; `fetch_gaps_in_window` promotes them each run). CISA **KEV** is fine via `python3 tools/fetch_source.py cisa-kev` (JSON endpoint). For advisory/directive *content*, WebSearch fallback for the underlying CVE/advisory is the standard workaround — covered_anyway, not an unrecovered failure. Log an `Essential-coverage: missed=` line when an essential CISA page 403s.
+The `github-advisory` 403 is **NOT** a browser-UA / anti-bot refusal (the source-health audit mislabelled it). `github.com` **and** `api.github.com` are blocked by the **agent egress proxy itself**: each session is bound to its configured repository, so every other github.com / api.github.com path (including `github.com/advisories` and `api.github.com/advisories`) returns HTTP 403 with body `{"message":"This GitHub API path is not available: sessions are bound to their configured repositories..."}`. No UA / header / Sec-CH-UA set recovers it (re-confirmed across chrome/firefox/googlebot/curl/minimal), and it behaves identically in the routine container. `raw.githubusercontent.com` is a *different* host and IS reachable.
+
+**Fix (shipped v3.4):** route through **OSV.dev** (`api.osv.dev`), the reachable full mirror of the GitHub Advisory Database — every GHSA id present, aliased to its CVE:
+- `python3 tools/fetch_source.py osv query <ecosystem> <package> [version]` — advisories affecting a watchlist package (ecosystem ∈ npm|PyPI|Go|Maven|crates.io|NuGet|RubyGems|Packagist…). Maps cleanly onto the watchlist-driven model.
+- `python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>` — drill one advisory.
+Cite the human URL `https://github.com/advisories/<GHSA-ID>`; the bridge supplies the data. `fetch_method` is now `bridge`.
+
+## CISA advisories / directives / news — Akamai bot-block on the egress TLS fingerprint (root-caused 2026-07-05)
+
+`cisa.gov/news-events/{cybersecurity-advisories,directives,news}`, **all `.xml` feeds, and the CSAF `.well-known`** reliably 403 via both `WebFetch` and every `tools/fetch_source.py` recipe. Root cause: **Akamai bot management** (`Access Denied`, `Reference #18.*`, `errors.edgesuite.net`) keyed off the egress TLS/behavioural fingerprint — **every** UA/header combination 403s (chrome/firefox/googlebot/curl/minimal/+Referer all tested). Only the **static** `/sites/default/files/feeds/` path is served, which is why CISA **KEV** works via `python3 tools/fetch_source.py cisa-kev` while the dynamic Drupal advisory pages do not. No reachable content alternative exists (search.gov results are a JS shell needing an API key; Wayback has no snapshots; CSAF is Akamai-blocked too).
+
+**Handling (shipped v3.4):** these stay `active` — a 403 is transport, never demotes. `tools/source_health.py` now classes them `bridge-blocked` (action `none`, handled) via `TRANSPORT_BLOCKED_HANDLED`, so they stop churning `needs-demote` every run. Substitute: `cisa-kev` JSON for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). Log an `Essential-coverage: missed=` line when an essential CISA page 403s.
 
 ## JS-rendered pages with no server content (recurring recipe gaps)
 
