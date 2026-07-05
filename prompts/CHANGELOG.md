@@ -4,6 +4,28 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.2 — 2026-07-05 (sharpened Swiss / European CI + government focus; breach / incident inclusion gate)
+
+### Why
+
+The default deployment's org profile named "Switzerland and Europe · public-sector" but did not foreground what the constituency actually is — Swiss and European **critical infrastructure and government** — so the composed mission every agent reads treated general public-sector coverage and CI/gov coverage as equally central. Two consequences followed: (1) the regional + sector priority was under-weighted relative to newsworthiness in every agent's context, and (2) breach / incident coverage (S4's domain) drifted toward "notable company got breached" items with no bearing on this constituency — the highest-volume, lowest-relevance failure mode for a SOC brief. This release sharpens the profile so the CI/gov core is explicit in every composed block, and adds a breach / incident inclusion gate so out-of-nexus breaches must earn their place.
+
+### What changed
+
+- **`config/org-profile.yaml` (values only — composed, not a prompt edit):** `description` rewritten to lead with "Swiss and European critical infrastructure and government at its core" (federal/cantonal/communal administration, national + EU institutions and regulators, CI operators across energy/water/transport/healthcare/finance/telecommunications), with public-sector suppliers and the wider public sector in support; `region_focus` → "Switzerland and Europe, with Swiss and European critical infrastructure and government at the centre"; `additional_sectors` populated with the CI verticals (`energy`, `water`, `transport`, `healthcare`, `finance`, `telco`) so every agent weights CI targeting, not just government IT. `python3 tools/compose_prompts.py --write` regenerated the `daily-mission` / `weekly-mission` / `research-mission` / `org-data` / `verify-context` / `org-policy-watch` blocks across both master prompts, `prompts/verification.md`, and all three agent definitions — this is how the sharpened focus reaches every sub-agent. Config-value regeneration is exempt from the version bump; the bump below is for the prompt-prose edits.
+- **New PD-11 breach / incident inclusion gate (`prompts/cti-run.md`):** a breach / data-leak / extortion claim / incident with no nexus to the profiled constituency (home region, coverage focus, primary/additional sectors, watchlists) is out of scope unless it clears one of four higher bars — genuinely global significance, a new/materially-evolved TTP transferable to the constituency, an actor/cluster that plausibly also targets the constituency's CI/government core (the *same-actor* read over the *victim*), or an imminent shared threat. In-nexus incidents stay covered under criterion (c) of PD-11. Inclusions state which bar they clear; exclusions log a `borderline-drop:` line; entries are framed around the transferable lesson, never the victim name. The S4 spawn-table row now names the gate.
+- **`.claude/agents/cti-research.md`:** S4's domain mission gains the same relevance filter, applied *before returning* so out-of-nexus breaches are dropped (or marked `borderline`) at research time rather than triaged out later.
+- **Both verifier definitions (lockstep, byte-identical bodies):** the relevance check (check 5) gains the stricter breach / incident bar — an out-of-nexus breach clearing none of the four grounds, or framed around the victim's name rather than a transferable lesson, is F7 (drop).
+- **Weekly banner bumped to v3.2 (lockstep with the intel run).** The gate lives in PD-11, which the weekly inherits verbatim (shared machinery is edited once in `cti-run.md`); the weekly synthesises already-filtered operational incident entries, so its `weekly-incidents-recap` contract is unchanged.
+
+### What stays
+
+- **The general threat landscape for the focus still comes first** — the sharpened profile raises the CI/gov emphasis and the breach gate trims out-of-nexus noise; neither adds a watchlist, changes the volume bands, or weakens any hard invariant. Out-of-nexus breaches with a genuine global / new-TTP / same-actor / imminent-threat basis remain in scope, as does all in-nexus incident coverage.
+- **No mechanical-gate or schema change:** the breach gate is editorial (main-agent triage + research pre-filter + verifier F7 drop); `tools/check_run.py`, the entry frontmatter contract, taxonomy, and the compose renderer are untouched. `additional_sectors` values are all existing `site/taxonomy.yaml` sectors.
+- Every other prime directive, the gate/verifier loop, entry immutability + `update_of` discipline, the entity registry, org-profile parameterization (the CI/gov literal lives in the config, not the prompt prose), and the publishing chain.
+
+---
+
 ## 3.1 — 2026-07-05 (24 h window floor + 14-day in-context dedup)
 
 ### Why
