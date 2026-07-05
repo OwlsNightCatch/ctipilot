@@ -1,0 +1,116 @@
+domain: S1
+run_id: 2026-07-05T1809Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-05T18:11:10Z
+ended_at: 2026-07-05T18:15:18Z
+duration_seconds: 248
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 5
+  bridge_fetches: 9
+items:
+  - title: "CVE-2026-59509 — cve-search POST /fetch_cve_data: unauthenticated NoSQL-parameter manipulation to arbitrary MongoDB collection read, admin credential exposure"
+    sources:
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59509", publisher: "NVD/MITRE", date: "2026-07-05", role: "primary" }
+      - { url: "https://github.com/cve-search/cve-search/pull/1218", publisher: "cve-search project (GitHub PR — fix)", date: "2026-06-22", role: "primary" }
+      - { url: "https://cve.threatint.eu/CVE/CVE-2026-59509", publisher: "ThreatInt.eu (CVE aggregator)", date: "2026-07-05", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd bridge (recent lastvulnerabilities), URL https://euvd.enisa.europa.eu/ → primary: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-59509 → pivot: cve-search GitHub fix PR, URL https://github.com/cve-search/cve-search/pull/1218 → corroborating: ThreatInt.eu, URL https://cve.threatint.eu/CVE/CVE-2026-59509"
+    summary: |
+      CVE-2026-59509 (CVSS 4.0: 9.2, CRITICAL; CWE-20 Improper Input Validation) is an unauthenticated
+      vulnerability in cve-search — the open-source CVE/CPE aggregation tool maintained by CIRCL
+      (Luxembourg's CSIRT) that many national CERTs, CSIRTs and MISP-adjacent CTI teams run internally
+      to index and search vulnerability data. The flaw sits in the POST /fetch_cve_data endpoint: the
+      handler trusts attacker-controlled request parameters to select the target MongoDB collection,
+      the projected fields, and regex-based filters, rather than restricting queries to the intended CVE
+      collection. A remote, unauthenticated attacker can redirect the query to arbitrary application
+      collections — including mgmt_users — to exfiltrate administrative usernames and password hashes,
+      enabling offline cracking and admin-account takeover of the cve-search instance. Affected versions
+      run from v4.0 through v6.0.0; the fix (merged 2026-06-22, CVE assigned 2026-07-05 by CIRCL) adds
+      three server-side controls: restricting the endpoint to CVE-only collections, an allowlist for
+      DataTables column/field parameters, and enforced pagination bounds. No exploitation-in-the-wild
+      has been reported by either source at time of writing; EPSS is listed at 0.0, consistent with a
+      same-day disclosure rather than confirmed active exploitation.
+    region_nexus: "Europe — cve-search is maintained by CIRCL (Luxembourg national CSIRT) and is widely deployed by European CERTs/CSIRTs and MISP-ecosystem CTI teams for local vulnerability-database search; a compromised instance exposes analyst/admin credentials for the tool itself."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-59509]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated improper input validation vulnerability in the POST /fetch_cve_data endpoint in cve-search. A remote attacker can manipulate request parameters controlling the MongoDB collection, projected fields, and regular-expression filters to read arbitrary application MongoDB collections. This can expose administrative usernames and password hashes from the mgmt_users collection, enabling offline password cracking and potential administrative account compromise."
+        attribution: "NVD / CIRCL (CVE-2026-59509 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59509"
+      - quote: "unauthenticated NoSQL injection vulnerability in /fetch_cve_data, which allowed arbitrary MongoDB collection access"
+        attribution: "cve-search project, GitHub PR #1218"
+        source_url: "https://github.com/cve-search/cve-search/pull/1218"
+      - quote: "The endpoint previously trusted attacker-controlled request parameters to determine collection selection, field projection, sorting, and pagination behavior"
+        attribution: "cve-search project, GitHub PR #1218"
+        source_url: "https://github.com/cve-search/cve-search/pull/1218"
+    extended_notes: |
+      Detection concept: cve-search deployments should be treated as internal CTI infrastructure, not
+      internet-facing by design — the primary defender action is confirming the web UI/API is not
+      reachable from untrusted networks (check reverse-proxy / firewall ACLs on the Flask web
+      component's listening port) and reviewing access logs for POST requests to /fetch_cve_data with
+      non-default `collection`/`columns`/regex-filter parameter values (T1190 Exploit Public-Facing
+      Application). Hardening: upgrade past the fixed commit (server-side allowlisting of
+      collection/field/pagination parameters) or apply a reverse-proxy rule restricting /fetch_cve_data
+      to POST bodies referencing only the CVE collection until upgraded. If admin credentials in
+      mgmt_users may have been read, rotate all cve-search admin passwords (bcrypt/hash exposure enables
+      offline cracking, T1110.002 Password Cracking) as a precaution even absent confirmed exploitation.
+      No CISA KEV or ENISA EUVD "exploited" listing as of fetch time — this is a fresh, unconfirmed-exploitation
+      disclosure, included for its target class (CTI/CSIRT tooling relevant to this org's own
+      threat-intel supply chain) and CVSS severity, not for confirmed in-the-wild activity.
+    borderline: true
+    borderline_reason: "niche audience (cve-search/CIRCL-tooling operators only) and no confirmed exploitation yet, but CVSS 9.2 unauthenticated pre-auth admin-credential exposure in a tool some CERT/CSIRT/MISP-adjacent CTI teams run, and it is the only genuinely fresh in-window item found this run."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty in this deployment (config/org-profile.yaml has no configured products) — sweep is a no-op per tasking; general coverage rules applied unchanged across all fetched sources."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "Cached/bridge KEV catalog snapshot shows catalogVersion 2026.07.01 (dateReleased 2026-07-01) as the newest available data — no additions after 2026-07-01 visible via the bridge in this run; both CVE-2026-45659 and CVE-2026-48558 (the most recent entries) were already covered in prior_coverage."
+  - source_id: advisories-ncsc-nl
+    reason: "RSS feed's newest items are NCSC-2026-0219/0220, published 2026-07-03 — over 24h stale relative to the window and not fresh; nothing published 2026-07-04/05 surfaced."
+  - source_id: bsi-de
+    reason: "WID-SEC RSS feed's newest items are all dated 2026-07-03; no 2026-07-04/05 items surfaced — feed may not have refreshed since."
+  - source_id: cert-eu
+    reason: "cert.europa.eu security-advisories RSS returned its 10 most recent items but the newest (2026-008) is dated 2026-06-10 — clearly a slow-cadence bulletin series, nothing in-window; no coverage gap in the sense of a fetch failure, just a quiet source this run."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis-recent RSS returned items only through 2026-06-26 — no fresher advisories surfaced via the fetch_source.py cert-fr avis-recent subcommand this run."
+  - source_id: cisa-advisories
+    reason: "Bridge-fetched listing page (paginated Drupal view) shows newest alert dated Jul 01, 2026 (SharePoint KEV addition, already covered); no items from Jul 02-05 appeared on page 1."
+  - source_id: cert-pl
+    reason: "Not fetched this run — time-budget triage prioritised sources most likely to carry fresh exploitation signal (KEV, ENISA EUVD, NCSC-CH) given the intraday 6h-gap tasking; CERT-PL was referenced only indirectly (as a CVE assigner in an ENISA EUVD record for CVE-2026-54430/54431, already outside window)."
+  - source_id: ncsc-uk
+    reason: "Not fetched this run — standard rotation source, deprioritised given the thin intraday window and essential-tier sources already showing no fresh signal since 2026-07-03."
+  - source_id: claroty-team82
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: depthfirst
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: jpcert
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: morphisec
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: mozilla-mfsa
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: projectzero
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: resecurity
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: shadowserver
+    reason: "Not fetched this run — standard-tier, time-budget triage; historically sparse cadence per source note."
+  - source_id: socprime
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: trail-of-bits
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: trendmicro-research
+    reason: "Not fetched this run — standard-tier, time-budget triage."
+  - source_id: truesec
+    reason: "Not fetched this run — standard-tier, time-budget triage."
