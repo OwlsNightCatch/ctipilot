@@ -1363,7 +1363,16 @@ def render_cve_pill(cve: str, *, prefix: str = "") -> str:
 
 
 def reliability_badge(r: str) -> str:
-    cls = "badge--high" if r == "HIGH" else ("badge--med" if r == "MEDIUM" else "badge--low")
+    """Source-reliability badge for the NATO Admiralty letters A–F. A/B read as
+    high-confidence (green), C as medium (amber), D–F as low (red). Tolerates
+    the legacy HIGH/MEDIUM/LOW tokens on any historical data."""
+    key = (r or "").strip().upper()
+    if key in ("A", "B", "HIGH"):
+        cls = "badge--high"
+    elif key in ("C", "MEDIUM"):
+        cls = "badge--med"
+    else:
+        cls = "badge--low"
     return f'<span class="badge {cls}">{_escape(r or "")}</span>'
 
 
@@ -1697,6 +1706,12 @@ def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
             f'<span class="badge badge--low" title="{_escape(entry.get("sourcing_note") or "verification status")}">'
             f'{_escape(VERIFICATION_BADGE_LABEL[ver])}</span>'
         )
+    code = content_model.classification_code(entry)
+    if code:
+        parts.append(
+            f'<span class="badge mono" title="NATO Admiralty classification — '
+            f'source reliability (A–F) + information credibility (1–6)">{_escape(code)}</span>'
+        )
     if entry.get("deep_dive"):
         parts.append('<span class="badge badge--accent">deep dive</span>')
     if entry.get("watchlist_hit"):
@@ -1828,8 +1843,6 @@ def render_entry_sources(entry: dict[str, Any], *, with_roles: bool = False) -> 
             if not isinstance(c, dict):
                 continue
             extras = [str(b) for b in (c.get("provider"), c.get("date")) if b]
-            if c.get("tlp"):
-                extras.append(f"TLP:{str(c['tlp']).upper()}")
             if c.get("ref"):
                 extras.append(f"ref: {c['ref']}")
             label = f'“{c.get("title", "")}”' + (f' ({", ".join(extras)})' if extras else "")
@@ -3178,6 +3191,7 @@ def build_briefbook(
             "actions": [a for a in (e.get("actions") or []) if isinstance(a, str)],
             "watchlist_hit": bool(e.get("watchlist_hit")),
             "verification": e.get("verification"),
+            "classification": content_model.classification_code(e) or None,
             "immediate_action": ia_out,
             "html": html,
         })
@@ -6570,11 +6584,15 @@ def render_sources_overview_charts(
     ]
     status_donut = _ops_svg_donut(status_slices, size=140, label="Sources by status")
 
-    # Reliability donut — fixed colour mapping so HIGH always reads green.
+    # Reliability donut — fixed colour mapping for the NATO Admiralty letters
+    # (A/B green, C amber, D–F red); legacy HIGH/MEDIUM/LOW kept for old data.
+    _rel_high = BRANDING["charts"]["reliability_high"].strip() or "#56d364"
+    _rel_med = BRANDING["charts"]["reliability_medium"].strip() or "#ffd866"
+    _rel_low = BRANDING["charts"]["reliability_low"].strip() or "#e85d75"
     reliability_color = {
-        "HIGH": BRANDING["charts"]["reliability_high"].strip() or "#56d364",
-        "MEDIUM": BRANDING["charts"]["reliability_medium"].strip() or "#ffd866",
-        "LOW": BRANDING["charts"]["reliability_low"].strip() or "#e85d75",
+        "A": _rel_high, "B": _rel_high, "C": _rel_med,
+        "D": _rel_low, "E": _rel_low, "F": _rel_low,
+        "HIGH": _rel_high, "MEDIUM": _rel_med, "LOW": _rel_low,
         "—": "var(--text-muted)",
     }
     rel_slices = [

@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.4 — 2026-07-05 (NATO Admiralty classification; source reliability A–F; no TLP / public-private gate)
+
+### Why
+
+Two operator directives. First, **every published item must carry an explicit, configurable classification** — and a reliability/credibility rating fits *intelligence* (campaigns, incidents, research, breaches) but not a CVE, which already has its own patch-triage scheme. Second, the pipeline must **stop filtering on TLP or a public/private deployment flag**: everything the agents can read — including every file dropped under `intel/` — is fair game to process into entries and reports; provenance is still recorded, but nothing is withheld on the basis of a TLP marking. The old model gated closed-source citations above TLP:CLEAR on a "public" deployment and carried a `deployment.visibility` switch; both are removed.
+
+### What changed
+
+- **Classification (config-driven, `config/org-profile.yaml` → `classification:`).** Non-triage entries carry a NATO Admiralty `classification: {reliability, credibility}` — a source-reliability letter (A–F) and an information-credibility number (1–6), assessed independently and rendered as e.g. `B2`. The kinds that use the vulnerability-triage scheme instead (default `vulnerability` → `org_triage`) are `classification.triage_kinds`. The code tokens and definitions are fully customizable; empty code lists disable the requirement. New composition section (§ Intel classification), entry-template block, verifier finding category **F17**, and gate check `classification` (WARN on missing/mis-placed, FAIL on out-of-vocabulary code — same severity model as `org-triage`).
+- **Source reliability → Admiralty A–F.** `sources/sources.json` `reliability_tiers` (HIGH/MEDIUM/LOW) is replaced by `reliability_codes` (A–F); every one of the 154 sources was re-investigated (provenance + track record) and assigned a letter, weighting original/primary authorities over aggregators. Status mechanism and category taxonomy are unchanged; four candidate/demoted statuses were corrected from the audit. The two-source reputability bar is now "Admiralty ≥ C".
+- **TLP / visibility gate removed.** `deployment.visibility` is gone (a stale `visibility:` key now errors); the `closed-source-tlp` FAIL becomes a TLP-free `closed-source` traceability WARN; `content_model` no longer validates a `tlp` marking; S5/W3 intake processes all of `intel/` with no ceiling; the site stops rendering a TLP badge.
+
+### What stays
+
+Every hard invariant: two-source verification with the national-CERT / victim carve-outs, no IOCs, entry immutability + `update_of` discipline, the entity registry, the mechanical gate + verifier loop, feature-branch publishing, relevance discipline (no volume cap), run-record-per-fire. `org_triage` is unchanged for vulnerabilities. Closed-source citations are still referenced-never-linked and must trace to a drop file the verifier can `Read`.
+
 ## 3.3 — 2026-07-05 (relevance discipline replaces hardcoded volume caps)
 
 ### Why

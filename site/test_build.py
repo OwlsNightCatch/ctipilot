@@ -562,7 +562,7 @@ CVES_SEEN = {"cves": [
 SOURCES_RAW = {"sources": [
     {"id": "example-psirt", "publisher": "Example PSIRT",
      "url": "https://example.com/", "category": ["vulns"],
-     "reliability": "HIGH", "status": "active"},
+     "reliability": "A", "status": "active"},
 ]}
 day_pages = set(days)
 ents, matched = build_entities(REGISTRY, ALL_ENTRIES, CVES_SEEN, SOURCES_RAW, day_pages)
@@ -815,6 +815,28 @@ assert_eq(
     not _shipped["trends"]["cohorts"],
 )
 
+
+# ---------------------------------------------------------------------
+# NATO Admiralty classification + source-reliability rendering
+# ---------------------------------------------------------------------
+print("== admiralty classification + reliability badges ==")
+# Source-reliability letters map to badge severity (A/B high, C med, D–F low);
+# legacy HIGH/MEDIUM/LOW still tolerated on historical data.
+assert_true("reliability A → high", "badge--high" in build.reliability_badge("A"))
+assert_true("reliability B → high", "badge--high" in build.reliability_badge("B"))
+assert_true("reliability C → med", "badge--med" in build.reliability_badge("C"))
+assert_true("reliability E → low", "badge--low" in build.reliability_badge("E"))
+assert_true("legacy HIGH → high", "badge--high" in build.reliability_badge("HIGH"))
+# Per-entry classification code rendering.
+assert_eq("classification_code B2",
+          content_model.classification_code({"classification": {"reliability": "B", "credibility": 2}}),
+          "B2")
+assert_eq("classification_code empty when absent",
+          content_model.classification_code({}), "")
+_badges = build.render_entry_badges(
+    {"priority": "high", "kind": "incident", "discovered_at": "2026-07-05T00:00:00Z",
+     "classification": {"reliability": "B", "credibility": 2}})
+assert_true("entry badges carry the classification code", ">B2<" in _badges)
 
 # ---------------------------------------------------------------------
 # Result

@@ -42,9 +42,8 @@ to filename + folder date when it is missing, but the citation quality drops):
 title: "Targeting of cantonal e-government portals"
 provider: "ISAC-CH weekly bulletin"
 date: "2026-07-01"
-tlp: "AMBER"
 ref: "ISACCH-2026-27"
-reliability: "HIGH"
+reliability: "A"
 ---
 
 Document body — the full text of the closed-source report.
@@ -54,34 +53,35 @@ Document body — the full text of the closed-source report.
 - `provider` — who produced the intelligence (becomes the citation
   attribution; also the `evidence[]` quote attribution).
 - `date` — the document's publication date (recency decisions anchor here).
-- `tlp` — `CLEAR | GREEN | AMBER | AMBER+STRICT | RED`. **Mandatory in
-  spirit**: an unmarked file is treated as TLP:CLEAR on a public deployment
-  and WARNed. See the TLP gate below.
 - `ref` — a stable document id; carried into the entry's citation so a
   reader can request the document through your internal channels.
-- `reliability` — optional; defaults to HIGH (see credibility below).
+- `reliability` — optional hint for the intake agent, a NATO Admiralty
+  letter (`A`–`F`); defaults to `B`. It seeds the entry's `classification`
+  reliability. **There is no `tlp` field** — this pipeline does not gate on
+  TLP (a legacy `tlp:` key on an old drop is simply ignored).
 
 ## How the runs treat this content
 
 - **High credibility.** Closed-source documents are treated as
-  HIGH-reliability primary sources — the same tier as a national CERT
-  advisory. A single closed-source document is sufficient sourcing for an
-  entry (no two-source requirement; an entry's `sources[]` may be empty
-  when `closed_sources` is not). Public corroboration is still *attempted*
-  (it strengthens the entry and can lift a TLP constraint by re-anchoring
-  the story in public sources).
+  high-reliability (Admiralty `A`/`B`) primary sources — the same tier as a
+  national CERT advisory. A single closed-source document is sufficient
+  sourcing for an entry (no two-source requirement; an entry's `sources[]`
+  may be empty when `closed_sources` is not). Public corroboration is still
+  *attempted* (it strengthens the entry, re-anchors the story in public
+  sources, and lifts the item's credibility number toward `1`).
 - **Unlinked citations.** Entries cite these documents without URLs: a
   structured `closed_sources` frontmatter record —
-  `{title, provider, date, tlp, ref}` — plus
+  `{title, provider, date, ref}` — plus
   `(Provider, YYYY-MM-DD — closed source)` inline at the point of claim.
   Never a fabricated link. Renderers surface the citation from the
   frontmatter, unlinked by design.
-- **TLP gate (hard).** On a `deployment.visibility: public` profile
-  (`config/org-profile.yaml`), any citation above TLP:CLEAR **fails the
-  commit gate** (`check_run.py` `closed-source-tlp`) — entries publish to
-  the open internet. Drop above-CLEAR material only into private
-  deployments, or expect the intake agent to use it strictly as a *lead*
-  it re-anchors in public sources without citing or quoting the document.
+- **No TLP gate.** This pipeline never filters on TLP or a public/private
+  flag. **Every file here is fair game to process into entries and reports**
+  — nothing is withheld, downgraded, or treated as leads-only on the basis
+  of a TLP marking. The only closed-source check (`check_run.py`
+  `closed-source`) is a WARN that a citation traces to a file under `intel/`
+  so the verifier can `Read` it. (See the privacy note below — the control
+  is what you *drop here*, not a TLP filter downstream.)
 - **Verifiable.** The intake agent extracts verbatim `evidence[]` quotes
   from the document, and the verification sub-agent `Read`s the referenced
   drop file as ground truth to confirm every claim — closed-source entries
@@ -113,8 +113,11 @@ git commit -m "intel: drop ${DATE} ($(ls intel/${DATE} | wc -l) file(s))"
 git push origin "claude/intel-drop-${DATE}"
 ```
 
-**Privacy note.** Files in this directory are part of the repository. A
-public repository ⇒ every drop is world-readable regardless of TLP marking —
-put only TLP:CLEAR material here. For anything above CLEAR, run the private
-deployment (private repo + local site hosting): see
+**Privacy note.** Files in this directory are part of the repository, and the
+pipeline processes all of them into entries without any TLP filter — so the
+control is entirely **what you choose to drop here**. Everything committed is
+readable by anyone who can read the repository, and its substance can surface
+in published entries. On a public repository, drop only material you are
+willing to see world-readable; for anything more sensitive, run the repo and
+site privately (private repo + local hosting): see
 [`docs/private-deployment.md`](../docs/private-deployment.md).

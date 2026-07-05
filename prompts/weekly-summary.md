@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.3 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.4 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -48,13 +48,41 @@ Same composed profile as the intel run — the block below is generated from [`c
 
 **Constituency:** Swiss and European critical infrastructure and government at its core: federal, cantonal and communal administration, national and EU-level public institutions and regulators, and the operators of critical infrastructure (energy, water, transport, healthcare, finance, telecommunications), with public-sector technology suppliers and the wider Swiss / European public sector (education, research) defended in support of that core
 
-**Deployment:** public · **Site URL:** https://ctipilot.ch/ — entries publish to the OPEN INTERNET: closed-source content above TLP:CLEAR must NEVER appear in them (`check_run.py` FAILs the commit).
+**Deployment · Site URL:** https://ctipilot.ch/ — there is NO TLP / public-private gate: everything the agents can read, including every file under intel/, is fair game to process into entries and reports; nothing is withheld or downgraded on the basis of a TLP marking.
 
 **Product watchlist:** none configured — the product sweep is a no-op; general coverage rules apply unchanged.
 
 **Supplier / third-party watchlist:** none configured — the supplier sweep is a no-op; general coverage rules apply unchanged.
 
 **Standing intelligence interests:** none configured.
+
+**Classification — NATO Admiralty code:** every entry EXCEPT the triage kinds (`vulnerability`) carries `classification: {reliability, credibility}` in its frontmatter — a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). The triage kinds carry `org_triage` instead (see the vulnerability-triage scheme below).
+
+_Source reliability — rate the SOURCE (its authority + track record):_
+
+| Code | Meaning |
+|---|---|
+| A | Completely reliable — authoritative primary / first-party source (a national CERT for its own jurisdiction, a vendor PSIRT for its own products); no history of error. |
+| B | Usually reliable — original research or reporting with consistent editorial standards and only minor, infrequent issues (most reputable research labs; large corroborating outlets). |
+| C | Fairly reliable — some doubt about consistency, OR the source mainly aggregates / re-reports rather than originates. Corroboration recommended. |
+| D | Not usually reliable — significant doubt; carries unverified claims but has occasionally been valid. |
+| E | Unreliable — history of invalid information or propaganda. |
+| F | Reliability cannot be judged — no track record to evaluate. |
+
+_Information credibility — rate the ITEM (its truth given corroboration):_
+
+| Code | Meaning |
+|---|---|
+| 1 | Confirmed — corroborated by other independent sources; logical in itself; consistent with other information on the subject. |
+| 2 | Probably true — not independently confirmed; logical in itself; consistent with other information. |
+| 3 | Possibly true — not confirmed; reasonably logical; agrees with some other information. |
+| 4 | Doubtful — not confirmed; possible but not logical; uncorroborated. |
+| 5 | Improbable — not logical in itself; contradicted by other information. |
+| 6 | Truth cannot be judged — no basis exists to evaluate the information. |
+
+Weight original / primary sources over news and aggregators: a first-party authority (a national CERT for its own jurisdiction, a vendor PSIRT for its own product) is A; original research labs and large corroborating outlets are typically B; sources that mainly re-report are C or lower. The two axes are independent — a reliable source does NOT by itself make an uncorroborated claim credible: independent corroboration is what drives the credibility number toward 1, while a single uncorroborated claim from a reliable source is 2, not 1.
+
+Conservative fallback when an item cannot be assessed further: **C3** (state why in the entry's sourcing note).
 
 **Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating.
 <!-- ORG-PROFILE:END org-data -->
@@ -122,7 +150,7 @@ Standing policy / regulatory watch for Swiss federal SOC (Switzerland and Europe
 - sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure
 <!-- ORG-PROFILE:END org-policy-watch -->
 
-**Conditional W3 — closed-source intake:** weekly mirror of the intel run's S5, scoped to what operational entries did not absorb; same TLP ceiling and citation rules.
+**Conditional W3 — closed-source intake:** weekly mirror of the intel run's S5, scoped to what operational entries did not absorb; same citation rules (referenced never linked, Admiralty `classification` block) and the same no-TLP posture — everything in `intel/` is fair game to process.
 
 ---
 

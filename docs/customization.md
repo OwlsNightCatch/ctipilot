@@ -11,7 +11,7 @@ improvements, build/site upgrades — without touching its customizations.
 
 | Config | Owns | Consumed by |
 |---|---|---|
-| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, national-CERT carve-out list, policy/regulatory watch, deployment visibility | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of both master prompts (`prompts/cti-run.md`, `prompts/weekly-summary.md`), `prompts/verification.md`, and all three agent definitions |
+| [`config/org-profile.yaml`](../config/org-profile.yaml) | The **intelligence lens**: org name, sector, home region, constituency, audience register, product/supplier watchlists, org-triage scheme, the NATO Admiralty classification scheme + triage-kind split, national-CERT carve-out list, policy/regulatory watch, deployment site URL | `tools/compose_prompts.py` → rendered into the `ORG-PROFILE` managed blocks of both master prompts (`prompts/cti-run.md`, `prompts/weekly-summary.md`), `prompts/verification.md`, and all three agent definitions |
 | [`config/branding.yaml`](../config/branding.yaml) | The **published site**: name, wordmark, taglines, footer copy, logos, favicon, theme colors, fonts, chart palettes, RSS feed identity, sector feed slices, trend cohorts, analytics | `site/build.py` (via `site/branding_config.py`) at build time |
 
 Plus one asset directory:
@@ -132,8 +132,9 @@ draw from; extend it if your sector/region isn't represented.
   `config/org-profile.yaml` (the first drives canonical URLs/feeds, the
   second the routine's publish-verification poll).
 - Org-internal hosting: see [docs/private-deployment.md](private-deployment.md)
-  and set `deployment.visibility: "private"` (relaxes the TLP:CLEAR gate for
-  closed-source intel) plus `site_url: ""` (skips the public site poll).
+  and set `site_url: ""` (skips the public site poll). There is no TLP /
+  visibility flag — the pipeline processes everything it can read regardless;
+  privacy is a function of where you host and whether the repo is private.
 - Note `.github/workflows/*` restrict runs to the upstream org
   (`if: github.repository_owner == ...` guards) — adjust that guard once in
   your fork, or run the equivalent commands from your own CI.

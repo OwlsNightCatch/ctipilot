@@ -308,9 +308,6 @@ def _failure_id_is_bridge_allowlisted(sid: str) -> bool:
     return any(needle in s for needle in BRIDGE_REQUIRED_SOURCE_IDS)
 
 
-# v2 origin: check_brief.py _TLP_PUBLIC_ALLOWED (~line 2733).
-_TLP_PUBLIC_ALLOWED = {"", "CLEAR"}   # markings publishable on a public deployment
-
 # Taxonomy keys the gate requires (v2 set + cve_types, which the structured
 # per-entry cves[] records now reference directly).
 TAXONOMY_REQUIRED_KEYS = {
@@ -472,11 +469,11 @@ def check_sources_schema(sources_data: dict[str, Any] | None) -> None:
     # Top-level controlled vocabularies — sources reference these by key.
     valid_categories: set[str] = set((sources_data.get("categories") or {}).keys())
     valid_statuses: set[str] = set((sources_data.get("statuses") or {}).keys())
-    valid_reliability: set[str] = set((sources_data.get("reliability_tiers") or {}).keys())
+    valid_reliability: set[str] = set((sources_data.get("reliability_codes") or {}).keys())
     valid_fetch_methods: set[str] = set((sources_data.get("fetch_methods") or {}).keys())
 
     missing_top = [
-        k for k in ("schema_version", "categories", "reliability_tiers",
+        k for k in ("schema_version", "categories", "reliability_codes",
                     "statuses", "fetch_methods", "sources")
         if k not in sources_data
     ]
@@ -683,8 +680,8 @@ def check_sources_schema(sources_data: dict[str, Any] | None) -> None:
 
 def _load_org_profile() -> dict[str, Any] | None:
     """Parsed org profile via `compose_prompts.py --dump`, or None when the
-    composition is absent/invalid (callers degrade — the TLP gate defaults
-    to `public`, the strictest posture, when the profile can't be read).
+    composition is absent/invalid (the org-triage / classification checks
+    degrade to n/a when the profile can't be read).
 
     v2 origin: check_brief.py _load_org_profile (~line 2665)."""
     script = ROOT / "tools" / "compose_prompts.py"
@@ -1520,22 +1517,15 @@ def check_aggregator_only(run_entries: list[dict]) -> None:
         ok("aggregator-only", "no entry leans on news-aggregator hosts as its only sources")
 
 
-def check_closed_source_tlp(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
-    """closed_sources[] hygiene + TLP-vs-deployment gate (v2 origin:
-    check_closed_source ~line 2737):
-      - TLP gate (FAIL): on a `deployment.visibility: public` profile, any
-        closed_sources record marked above TLP:CLEAR fails the commit —
-        the entries publish to the open internet. When the profile cannot
-        be read, `public` (the strictest posture) is assumed.
-      - unmarked TLP (WARN): assumed CLEAR, but the drop file should say so.
-      - ref-file existence (WARN): a ref/title should trace to a file under
-        intel/<date>/ — a citation referencing nothing on disk is
-        unverifiable for the cold-reader verifier and the operator."""
-    visibility = ((profile or {}).get("deployment") or {}).get("visibility", "public")
+def check_closed_sources(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
+    """closed_sources[] traceability hygiene. There is NO TLP gate: this
+    pipeline never filters on TLP or a public/private flag — every file under
+    intel/ is fair game to process. The one remaining concern is that a cited
+    closed source should trace to a file under intel/<date>/ so the
+    cold-reader verifier and the operator can find the referenced document
+    (WARN — a citation referencing nothing on disk is unverifiable)."""
     intel_files = {p.name for p in INTEL_DIR.glob("*/*")} if INTEL_DIR.exists() else set()
 
-    tlp_fails: list[str] = []
-    tlp_unmarked: list[str] = []
     missing_refs: list[str] = []
     total = 0
     for e in run_entries:
@@ -1544,12 +1534,6 @@ def check_closed_source_tlp(run_entries: list[dict], profile: dict[str, Any] | N
                 continue
             total += 1
             tag = f"{e['id']}: \"{str(cs.get('title') or '')[:40]}\""
-            tlp = str(cs.get("tlp") or "").upper()
-            if visibility == "public":
-                if tlp and tlp not in _TLP_PUBLIC_ALLOWED:
-                    tlp_fails.append(f"{tag} TLP:{tlp}")
-                elif not tlp:
-                    tlp_unmarked.append(tag)
             ref = str(cs.get("ref") or "")
             if intel_files:
                 if not any(ref and ref in name for name in intel_files) \
@@ -1559,23 +1543,13 @@ def check_closed_source_tlp(run_entries: list[dict], profile: dict[str, Any] | N
             elif ref:
                 missing_refs.append(f"{tag}: intel/ directory absent but ref cited")
 
-    if tlp_fails:
-        fail("closed-source-tlp",
-             f"{len(tlp_fails)} closed-source citation(s) above TLP:CLEAR on a PUBLIC "
-             f"deployment — remove the entry or re-anchor it in public sources: "
-             + "; ".join(tlp_fails[:5]))
-    elif tlp_unmarked:
-        warn("closed-source-tlp",
-             f"{len(tlp_unmarked)} closed-source citation(s) without a TLP marking on a "
-             f"public deployment (assumed CLEAR — mark the drop file): "
-             + "; ".join(tlp_unmarked[:5]))
     if missing_refs:
-        warn("closed-source-tlp",
+        warn("closed-source",
              f"{len(missing_refs)} closed-source citation(s) not traceable to a file "
              f"under intel/: " + "; ".join(missing_refs[:5]))
-    if not (tlp_fails or tlp_unmarked or missing_refs):
-        ok("closed-source-tlp",
-           f"{total} closed-source citation(s), all hygienic" if total
+    else:
+        ok("closed-source",
+           f"{total} closed-source citation(s), all traceable to intel/" if total
            else "no closed-source citations in this run's entries")
 
 
@@ -1607,19 +1581,31 @@ def check_cve_sync(scope_entries: list[dict], cves_seen: dict[str, Any] | None,
         ok("cve-sync", f"all {len(all_ids)} CVE(s) in {scope_label} entries are in cves_seen.json")
 
 
+def _triage_kinds(profile: dict[str, Any] | None) -> set[str]:
+    """The entry kinds classified with the vulnerability-triage scheme
+    (org_triage) rather than the Admiralty intel classification. Config-driven
+    (`classification.triage_kinds`); defaults to {vulnerability}."""
+    cl = (profile or {}).get("classification") or {}
+    tk = cl.get("triage_kinds")
+    if isinstance(tk, list) and tk:
+        return {str(k) for k in tk}
+    return {"vulnerability"}
+
+
 def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
     """org_triage consistency with the profiled triage scheme (WARN, not
     FAIL — v2 origin: check_org_triage ~line 2818). When the org profile
-    defines vulnerability_triage categories, every `vulnerability`-kind
-    entry of this run should carry org_triage with a defined category id;
-    when no scheme is configured, any non-null org_triage is drift.
-    Criteria *consistency* (does the category follow from the cited facts?)
-    is the verifier's F16 concern — this check is mechanical only."""
+    defines vulnerability_triage categories, every triage-kind entry of this
+    run should carry org_triage with a defined category id; when no scheme is
+    configured, any non-null org_triage is drift. Criteria *consistency* (does
+    the category follow from the cited facts?) is the verifier's F16 concern —
+    this check is mechanical only."""
     if profile is None:
         ok("org-triage", "org profile not available — n/a")
         return
     vt = profile.get("vulnerability_triage") or {}
     cats = {c.get("id") for c in (vt.get("categories") or []) if isinstance(c, dict) and c.get("id")}
+    triage_kinds = _triage_kinds(profile)
     problems: list[str] = []
     found = 0
     for e in run_entries:
@@ -1628,9 +1614,9 @@ def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) ->
             if ot is not None:
                 problems.append(f"{e['id']}: org_triage present but the profile defines no scheme")
             continue
-        if e.get("kind") == "vulnerability":
+        if e.get("kind") in triage_kinds:
             if not isinstance(ot, dict):
-                problems.append(f"{e['id']}: vulnerability entry missing org_triage")
+                problems.append(f"{e['id']}: {e.get('kind')} (triage-kind) entry missing org_triage")
             elif ot.get("category") not in cats:
                 problems.append(
                     f"{e['id']}: unknown triage category {ot.get('category')!r} "
@@ -1646,6 +1632,64 @@ def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) ->
         ok("org-triage", "no triage scheme configured and no org_triage values present")
     else:
         ok("org-triage", f"{found} org_triage block(s), all category ids valid")
+
+
+def check_classification(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
+    """Intelligence-classification (NATO Admiralty) consistency with the
+    profile's configured scheme. Same severity model as check_org_triage:
+    WARN on a missing block (or a block on a triage-kind entry) so historical
+    pre-scheme entries and the record-only latest run stay green; FAIL on an
+    out-of-vocabulary reliability/credibility code (a real defect on a fresh
+    entry). Whether the letter fits the source and the number fits the
+    corroboration is the verifier's F17 concern — this is mechanical only."""
+    if profile is None:
+        ok("classification", "org profile not available — n/a")
+        return
+    cl = profile.get("classification") or {}
+    ic = cl.get("intel_classification") or {}
+    triage_kinds = _triage_kinds(profile)
+    rel_codes = {str(c.get("code")) for c in (ic.get("reliability") or []) if isinstance(c, dict)}
+    cred_codes = {str(c.get("code")) for c in (ic.get("credibility") or []) if isinstance(c, dict)}
+    configured = bool(rel_codes and cred_codes)
+    fails: list[str] = []
+    warns: list[str] = []
+    found = 0
+    for e in run_entries:
+        cls = e.get("classification")
+        kind = e.get("kind")
+        if not configured:
+            if cls is not None:
+                warns.append(f"{e['id']}: classification present but no intel-classification scheme is configured")
+            continue
+        if kind in triage_kinds:
+            if cls is not None:
+                warns.append(f"{e['id']}: {kind} (triage-kind) entry carries classification — triage kinds use org_triage, not the Admiralty code")
+            continue
+        if not isinstance(cls, dict):
+            warns.append(f"{e['id']}: {kind} entry missing classification (Admiralty reliability + credibility)")
+            continue
+        rel = str(cls.get("reliability") or "")
+        cred = str(cls.get("credibility") if cls.get("credibility") is not None else "")
+        bad = False
+        if rel not in rel_codes:
+            fails.append(f"{e['id']}: reliability {rel!r} not in {sorted(rel_codes)}")
+            bad = True
+        if cred not in cred_codes:
+            fails.append(f"{e['id']}: credibility {cred!r} not in {sorted(cred_codes)}")
+            bad = True
+        if not bad:
+            found += 1
+    for p in fails:
+        fail("classification", p)
+    for p in warns[:8]:
+        warn("classification", p)
+    if len(warns) > 8:
+        warn("classification", f"(+{len(warns) - 8} more)")
+    if not fails and not warns:
+        if not configured:
+            ok("classification", "no intel-classification scheme configured and no classification values present")
+        else:
+            ok("classification", f"{found} entr{'y' if found == 1 else 'ies'} carry a valid Admiralty classification")
 
 
 def check_sources_touched(run: dict[str, Any], sources_data: dict[str, Any] | None) -> None:
@@ -2049,11 +2093,14 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     check_aggregator_only(run_entries)
 
     profile = _load_org_profile()
-    print("\n== closed-source citations (TLP gate) ==")
-    check_closed_source_tlp(run_entries, profile)
+    print("\n== closed-source citations (traceability, no TLP gate) ==")
+    check_closed_sources(run_entries, profile)
 
     print("\n== org-triage ==")
     check_org_triage(run_entries, profile)
+
+    print("\n== classification (NATO Admiralty) ==")
+    check_classification(run_entries, profile)
 
     print("\n== CVE sync ==")
     check_cve_sync(run_entries, parsed_state.get("cves_seen.json"))

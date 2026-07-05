@@ -79,7 +79,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── org-profile.yaml       # Organization profile: org/sector/region, watchlists, triage scheme, deployment
 │   └── branding.yaml          # Site branding: identity, theme, logos, feeds, analytics
 ├── intel/
-│   └── README.md              # Closed-source drop folder (intel/<date>/, TLP-gated, cited by reference)
+│   └── README.md              # Closed-source drop folder (intel/<date>/, no TLP gate, cited by reference)
 ├── sources/
 │   └── sources.json           # Curated, dynamic CTI source list (~150 sources, tiered)
 ├── state/
@@ -231,4 +231,4 @@ See [`prompts/verification.md`](prompts/verification.md) for the full checklist 
 
 ## License / classification
 
-Entries default to **TLP:CLEAR** unless otherwise stated. The repository contains no IOCs and no operationally sensitive material — only public-source synthesis with links. Closed-source intelligence above TLP:CLEAR never appears in entries on the public deployment (mechanically gated; see [`intel/README.md`](intel/README.md)).
+The repository contains no IOCs and no operationally sensitive material — only public-source synthesis with links. **The pipeline applies no TLP or public/private filter**: everything the agents can read (including anything under [`intel/`](intel/README.md)) is fair game to process, so on the public deployment the control is simply what is committed to the repo. Each entry instead carries an explicit, configurable **classification** — the NATO Admiralty code (a source-reliability letter A–F plus an information-credibility number 1–6) for intelligence items, and the org's patch-triage rating (`org_triage`) for vulnerabilities. Source reliability in [`sources/sources.json`](sources/sources.json) uses the same Admiralty A–F scale. To keep material non-public, run the stack privately (private repo + internal hosting): see [`docs/private-deployment.md`](docs/private-deployment.md).

@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.3 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.4 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -49,9 +49,9 @@ Anti-crash guards (priority order):
 
 4. **No vanity metrics.** Skip vendor-marketing numbers — dwell time, breakout time, YoY %, "$Y billion damage", "Z% of CISOs say". Operational scoring (CVSS, EPSS, CISA KEV, vendor severity, exploitation status) is fine.
 
-5. **Two-source verification, with national-CERT carve-out.** Default: ≥2 independent reputable sources → `verification: multi-source`. Single source → `verification: single-source` (or `single-source-national-cert` / `single-source-victim` under the carve-outs) with `sourcing_note` naming the situation. Carve-outs: a HIGH-reliability national CERT / government authority as primary disclosing party for its own jurisdiction or advisory; a victim's own regulatory filing / statement about its own incident. Their *commentary on others' disclosures* still requires the standard rule. Contradictions → `verification: contradicted` + run-record note; never silently pick a side. Full policy: `prompts/verification.md`.
+5. **Two-source verification, with national-CERT carve-out.** Default: ≥2 independent reputable sources → `verification: multi-source`. Single source → `verification: single-source` (or `single-source-national-cert` / `single-source-victim` under the carve-outs) with `sourcing_note` naming the situation. Carve-outs: a high-reliability (Admiralty A / B) national CERT / government authority as primary disclosing party for its own jurisdiction or advisory; a victim's own regulatory filing / statement about its own incident. Their *commentary on others' disclosures* still requires the standard rule. Contradictions → `verification: contradicted` + run-record note; never silently pick a side. Full policy: `prompts/verification.md`.
 
-6. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or HIGH-reliability journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date — that is what `event_date` records); sweeping attribution from non-research outfits (attribute the claim, not the actor); Telegram/X-only sourcing (never include). Full policy: `prompts/verification.md`.
+6. **Fake-news guard.** Extra scrutiny for: ransomware leak-site claims (require victim disclosure or high-reliability, Admiralty A / B journalism); hallucinated CVEs (verify on NVD/MITRE); AI-generated security blogspam; vendor press releases dressed as research; months-old news as "new" (check the original event date — that is what `event_date` records); sweeping attribution from non-research outfits (attribute the claim, not the actor); Telegram/X-only sourcing (never include). Full policy: `prompts/verification.md`.
 
 7. **Recency — gap-derived from the last run, 24 h floor, schedule-agnostic, self-healing, strictly enforced.** Compute the gap from the **previous run record** (any kind): `gap_hours = hours since max(runs/**/*.md by started)`; empty `runs/` → 24. Window: `window_hours = max(24, gap_hours + 2)` — **a hard 24 h floor** so every fire researches at least a full day of the threat landscape even when several runs fall inside those 24 h; the +2 h overlap covers longer gaps. This never inflates volume: the widened window is made safe by dedup (PD-8), which now checks every candidate against **all in-window entries the main agent has loaded (last 14 days) and the store-wide metadata check beyond that** — a re-surfaced item ships only as an `update_of` delta or not at all. `developing_window_hours = max(72, gap_hours + 24)` for actively developing stories. Pass `window_hours` to every sub-agent. Self-healing: a missed fire simply widens the next window. Cadence-agnostic: the operator can fire this prompt 1× or 6× a day without touching it — sub-daily fires re-scan the same 24 h and lean entirely on dedup to publish only the new delta.
 
@@ -100,13 +100,41 @@ This deployment is parameterized by [`config/org-profile.yaml`](../config/org-pr
 
 **Constituency:** Swiss and European critical infrastructure and government at its core: federal, cantonal and communal administration, national and EU-level public institutions and regulators, and the operators of critical infrastructure (energy, water, transport, healthcare, finance, telecommunications), with public-sector technology suppliers and the wider Swiss / European public sector (education, research) defended in support of that core
 
-**Deployment:** public · **Site URL:** https://ctipilot.ch/ — entries publish to the OPEN INTERNET: closed-source content above TLP:CLEAR must NEVER appear in them (`check_run.py` FAILs the commit).
+**Deployment · Site URL:** https://ctipilot.ch/ — there is NO TLP / public-private gate: everything the agents can read, including every file under intel/, is fair game to process into entries and reports; nothing is withheld or downgraded on the basis of a TLP marking.
 
 **Product watchlist:** none configured — the product sweep is a no-op; general coverage rules apply unchanged.
 
 **Supplier / third-party watchlist:** none configured — the supplier sweep is a no-op; general coverage rules apply unchanged.
 
 **Standing intelligence interests:** none configured.
+
+**Classification — NATO Admiralty code:** every entry EXCEPT the triage kinds (`vulnerability`) carries `classification: {reliability, credibility}` in its frontmatter — a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). The triage kinds carry `org_triage` instead (see the vulnerability-triage scheme below).
+
+_Source reliability — rate the SOURCE (its authority + track record):_
+
+| Code | Meaning |
+|---|---|
+| A | Completely reliable — authoritative primary / first-party source (a national CERT for its own jurisdiction, a vendor PSIRT for its own products); no history of error. |
+| B | Usually reliable — original research or reporting with consistent editorial standards and only minor, infrequent issues (most reputable research labs; large corroborating outlets). |
+| C | Fairly reliable — some doubt about consistency, OR the source mainly aggregates / re-reports rather than originates. Corroboration recommended. |
+| D | Not usually reliable — significant doubt; carries unverified claims but has occasionally been valid. |
+| E | Unreliable — history of invalid information or propaganda. |
+| F | Reliability cannot be judged — no track record to evaluate. |
+
+_Information credibility — rate the ITEM (its truth given corroboration):_
+
+| Code | Meaning |
+|---|---|
+| 1 | Confirmed — corroborated by other independent sources; logical in itself; consistent with other information on the subject. |
+| 2 | Probably true — not independently confirmed; logical in itself; consistent with other information. |
+| 3 | Possibly true — not confirmed; reasonably logical; agrees with some other information. |
+| 4 | Doubtful — not confirmed; possible but not logical; uncorroborated. |
+| 5 | Improbable — not logical in itself; contradicted by other information. |
+| 6 | Truth cannot be judged — no basis exists to evaluate the information. |
+
+Weight original / primary sources over news and aggregators: a first-party authority (a national CERT for its own jurisdiction, a vendor PSIRT for its own product) is A; original research labs and large corroborating outlets are typically B; sources that mainly re-report are C or lower. The two axes are independent — a reliable source does NOT by itself make an uncorroborated claim credible: independent corroboration is what drives the credibility number toward 1, while a single uncorroborated claim from a reliable source is 2, not 1.
+
+Conservative fallback when an item cannot be assessed further: **C3** (state why in the entry's sourcing note).
 
 **Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating.
 <!-- ORG-PROFILE:END org-data -->
@@ -130,6 +158,18 @@ org_triage:
 ```
 
 Rules: the category follows strictly from applying the scheme's criteria to facts the entry already cites (exposure class, auth prerequisite, exploitation status, watchlist membership) — the rationale may NOT introduce new facts (PD-1; verifier flags drift as F16). No matching criteria → the scheme's default category with the reason stated. No scheme configured → `org_triage: null` everywhere.
+
+### Intel classification (static — the NATO Admiralty code)
+
+Every entry whose kind is NOT a triage kind (`classification.triage_kinds`, default `vulnerability`) sets frontmatter:
+
+```yaml
+classification:
+  reliability: B   # A–F — reliability of the sourcing (see § Organization profile)
+  credibility: 2   # 1–6 — truth of the item given corroboration
+```
+
+Rules: the two axes are set **independently** — a reliable source never by itself lifts the credibility number. **Reliability** follows the reporting source's nature and should track that source's own letter in `sources/sources.json`: a national CERT for its own jurisdiction or a vendor PSIRT for its own product is `A`; original research labs and large corroborating outlets are typically `B`; sources that mainly re-report are `C` or lower (weight primary sources over news/aggregators). **Credibility** follows corroboration: two independent sources agreeing → `1`; a single uncorroborated but plausible claim from a reliable source → `2`, not `1`; a claim contradicted by other reporting → `5`. Triage-kind entries carry `org_triage` instead and set `classification: null`. No intel-classification codes configured → `classification: null` everywhere. The verifier flags drift (missing block, out-of-vocab code, letter/number that contradicts the entry's own sourcing) as F17.
 
 ---
 
@@ -251,7 +291,7 @@ Spawn **all Phase 1 sub-agents in a single message** — S1–S4 always, plus **
 
 ### Conditional S5 — closed-source intake
 
-When Phase 0 found in-window `intel/<date>/` files, spawn a fifth `cti-research` sub-agent with `Domain: S5 — closed-source intake` and the directory paths (no source slice, no rotation list). S5 `Read`s every drop file, extracts qualifying items into `work/<run-id>/findings.S5.yaml` with `closed_source` records `{provider, date, title, tlp, ref, file}` and mandatory verbatim `evidence` quotes, attempts public corroboration, and **respects the deployment TLP ceiling** (public deployment: above-CLEAR documents are leads to public sources only — never cited, never quoted). Composed entries cite drop files via `closed_sources[]` frontmatter — referenced, never linked.
+When Phase 0 found in-window `intel/<date>/` files, spawn a fifth `cti-research` sub-agent with `Domain: S5 — closed-source intake` and the directory paths (no source slice, no rotation list). S5 `Read`s every drop file, extracts qualifying items into `work/<run-id>/findings.S5.yaml` with `closed_source` records `{provider, date, title, ref, file}` and mandatory verbatim `evidence` quotes, and attempts public corroboration (which strengthens the entry and lets it re-anchor in public sources). **There is no TLP ceiling: everything in `intel/` is fair game to process into entries** — nothing is withheld, downgraded, or treated as leads-only on the basis of a TLP marking (a legacy `tlp` key in a drop's front-matter is ignored). Composed entries cite drop files via `closed_sources[]` frontmatter — referenced, never linked — and carry the Admiralty `classification` block like any other non-vulnerability entry.
 
 While sub-agents run, the main agent does no source fetching (anti-crash guard #9). Draft the run-record skeleton and review the coverage snapshot instead.
 
@@ -553,7 +593,7 @@ while [ "$(date +%s)" -lt "$DEADLINE" ]; do
     sleep 20
 done
 
-# 7b — the site rebuilt with this run? (skipped on private deployments: empty SITE_URL)
+# 7b — the site rebuilt with this run? (skipped when site polling is disabled: empty SITE_URL)
 SITE_LIVE=false
 if [ "$LANDED" = "true" ] && [ -n "$SITE_URL" ]; then
     while [ "$(date +%s)" -lt "$DEADLINE" ]; do
@@ -567,7 +607,7 @@ if [ "$LANDED" = "true" ] && [ -n "$SITE_URL" ]; then
 fi
 ```
 
-Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — site polling disabled)` (private deployment) · `publish: main-only` (deploy-site likely failed — operator checks Actions) · `publish: pending (<reason>)` (auto-merge running / conflict / push failed / unknown). Never delete the local commit or re-push during verification — it is read-only.
+Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — site polling disabled)` (empty `site_url`) · `publish: main-only` (deploy-site likely failed — operator checks Actions) · `publish: pending (<reason>)` (auto-merge running / conflict / push failed / unknown). Never delete the local commit or re-push during verification — it is read-only.
 
 
 ---
@@ -626,8 +666,8 @@ The agent has full authority to modify this prompt, the source list, documentati
 14. `tools/fetch_source.py` bridge for CISA + NCSC.ch every run; never let 403/429 go unmitigated.
 15. Run-record telemetry populated every fire — the Ops dashboard depends on it.
 16. **Main agent does NO source fetching during Phase 1** (anti-classifier-trip; exceptions: Phase 2 spot-checks, Phase 5.7 single-URL re-fetches, Phase 7 polling).
-17. **Watchlist anti-overshoot + triage truthfulness** (≤ ⅓ guideline; `org_triage` derives only from cited facts; ORG-PROFILE blocks never hand-edited).
-18. **Closed-source TLP + citation discipline** (referenced never linked; above-CLEAR never on a public deployment; every claim traces to a drop file the verifier can `Read`).
+17. **Watchlist anti-overshoot + triage/classification truthfulness** (≤ ⅓ guideline; `org_triage` and the Admiralty `classification` derive only from cited facts; ORG-PROFILE blocks never hand-edited).
+18. **Closed-source citation discipline** (referenced never linked; every claim traces to a drop file the verifier can `Read`). No TLP or public/private gate — everything under `intel/` is fair game to process; nothing is withheld on the basis of a TLP marking.
 19. **Entries are immutable once committed** — corrections and developments are new `update_of` entries; the run record is the only file a retry may update in place.
 20. **Relevance discipline** — entry volume is governed by the strict relevance/actionability gate (PD-11), never a numeric target or ceiling; every entry must earn its place, more runs must never mean more content (dedup), and the reader must never be overflooded with marginal items.
 

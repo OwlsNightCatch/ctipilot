@@ -6,13 +6,13 @@ Defends the pipeline's published entries against hallucination, vendor hype, fak
 
 ## Two-source rule, with carve-outs
 
-**Default:** every claim must be corroborated by ≥2 independent reputable sources before an entry publishes (`verification: multi-source`). Reputable means a publisher present in `sources/sources.json` with `status: "active"` and `reliability` of at least MEDIUM, or a previously unseen publisher with a clearly verifiable editorial track record (in which case the agent also proposes them as a `candidate` source). Independence is about first-hand observation, not count — six rewrites of one wire story are one source.
+**Default:** every claim must be corroborated by ≥2 independent reputable sources before an entry publishes (`verification: multi-source`). Reputable means a publisher present in `sources/sources.json` with `status: "active"` and a NATO Admiralty `reliability` of at least **C** (A/B/C — i.e. not D/E/F), or a previously unseen publisher with a clearly verifiable editorial track record (in which case the agent also proposes them as a `candidate` source). Independence is about first-hand observation, not count — six rewrites of one wire story are one source.
 
-**National-CERT carve-out** (`verification: single-source-national-cert`): when a HIGH-reliability national CERT or government cybersecurity authority is the **primary disclosing party for its own jurisdiction or for an advisory it owns**, single-source is acceptable.
+**National-CERT carve-out** (`verification: single-source-national-cert`): when a high-reliability (Admiralty A / B) national CERT or government cybersecurity authority is the **primary disclosing party for its own jurisdiction or for an advisory it owns**, single-source is acceptable.
 
 <!-- ORG-PROFILE:BEGIN org-certs -->
 <!-- GENERATED from config/org-profile.yaml — do not edit by hand; edit the config and run: python3 tools/compose_prompts.py --write -->
-**National-CERT single-source carve-out list** — a HIGH-reliability national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
+**National-CERT single-source carve-out list** — a high-reliability (Admiralty A / B) national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
 <!-- ORG-PROFILE:END org-certs -->
 
 The reasoning: these organisations *are* the authoritative source for advisories they issue. Their *commentary on someone else's disclosure* still requires the standard two-source rule.
@@ -30,7 +30,7 @@ The reasoning: these organisations *are* the authoritative source for advisories
 ### Ransomware leak-site claims
 Frequently inflated; sometimes wholly fabricated. Some groups list victims they breached only superficially, list re-extorted victims twice, or list organisations they never touched as "marketing".
 
-**Rule:** never publish a leak-site claim as fact unless the named victim has confirmed (or pointedly declined to confirm), or a HIGH-reliability journalist with original sourcing has corroborated. Mirror-data-only (ransomware.live / ransomlook.io) is an *observation that the group claimed X*, not that X is true. Phrase accordingly or drop.
+**Rule:** never publish a leak-site claim as fact unless the named victim has confirmed (or pointedly declined to confirm), or a high-reliability (Admiralty A / B) journalist with original sourcing has corroborated. Mirror-data-only (ransomware.live / ransomlook.io) is an *observation that the group claimed X*, not that X is true. Phrase accordingly or drop.
 
 ### Hallucinated CVE numbers
 Sub-agents (and humans) sometimes invent CVE identifiers that look plausible but do not exist, or transpose digits.
@@ -69,6 +69,7 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] Zero vanity metrics.
 - [ ] No in-window duplication (incl. earlier runs today): repeats are `update_of` entries with a material delta or dropped.
 - [ ] Every entry's `verification` value is correct: `multi-source` needs ≥2 independent sources; carve-outs named in `sourcing_note`.
+- [ ] Classification set correctly: every non-triage-kind entry carries a valid Admiralty `classification` (reliability A–F tracking the cited source's own letter; credibility 1–6 tracking corroboration, assessed independently); triage-kind entries carry `org_triage` and `classification: null`.
 - [ ] CVE identifiers verified against NVD/MITRE; `cves[]` records complete (type/vector/auth/status).
 - [ ] `evidence[]` present and verbatim on every critical-priority and exploited-status entry.
 - [ ] All entity references resolve in `entities/registry.yaml` (aliases checked); new entities registered with sourced definitions.
@@ -90,7 +91,7 @@ After entries and the run record are written, state is updated, and `tools/check
 
 **Editorial-quality gate.** Relevance to the profiled organization; primary-source strength (vendor PSIRT / research lab / regulator / victim first — NVD/CERT second-tier); priority calibration; correct update-vs-new decisions; vendor-marketing tells; fake-news patterns; contradictions; clarity for a Tier 2 responder; missed angles.
 
-The verifier's finding categories (F1–F16), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping.
+The verifier's finding categories (F1–F17), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping.
 
 ### Iterative refinement loop (cap 5 — fail-open safety valve, not goal)
 

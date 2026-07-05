@@ -83,6 +83,7 @@ references: []
 deep_dive: false
 deep_dive_category: null
 org_triage: null
+classification: null
 watchlist_hit: false
 actions:
   - "Patch {Product} to ≥ {version} now; {rotation / isolation / hunt step tied to this entry's facts}."
@@ -94,11 +95,34 @@ affects, detection + hardening — inline links at point of claim, worked-good
 depth. No metadata footer line — frontmatter carries all metadata.}
 ````
 
+**Classification.** The `vulnerability` skeleton above is a triage kind
+(`classification.triage_kinds`), so it carries `org_triage` (a triage block
+when a scheme is configured) and `classification: null`. **Every other kind
+carries the NATO Admiralty classification instead of `org_triage`** — a
+source-reliability letter (A–F) and an information-credibility number (1–6),
+assessed independently (the reliability of the source never inflates the
+credibility of the item):
+
+```yaml
+org_triage: null
+classification:
+  reliability: B   # A–F — reliability of the sourcing (see the org profile scheme)
+  credibility: 2   # 1–6 — truth of the item given corroboration
+```
+
+Set the reliability letter from the reporting source's nature (a national CERT
+for its own jurisdiction or a vendor PSIRT for its own product is A; original
+research labs and large corroborating outlets are typically B; sources that
+mainly re-report are C or lower — weight primary sources over aggregators). Set
+the credibility number from corroboration: two independent sources agreeing → 1;
+a single uncorroborated but plausible claim from a reliable source → 2, not 1.
+
 Variants:
 
 - **threat / incident** — same skeleton with `kind: threat` (campaign /
   actor activity) or `kind: incident` (breach / disclosure), usually
-  `cves: []`, body ends with a `**Defender takeaway:**` line.
+  `cves: []`, `org_triage: null` + a `classification` block (above), body
+  ends with a `**Defender takeaway:**` line.
 - **critical entry** — `priority: critical` plus:
 
   ```yaml
@@ -118,9 +142,13 @@ Variants:
   + `references: [<entry ids>]`; a `weekly-top-stories` body opens with
   `**If you did nothing this week:**`. The `weekly-looking-ahead` entry is
   `kind: outlook` with the justified watch list as its body.
-- **closed-source entry** — `closed_sources: [{title, provider, date, tlp,
-  ref}]`, inline attribution in the body as plain text
-  `(Provider, YYYY-MM-DD — closed source)`, never a fabricated URL.
+- **closed-source entry** — `closed_sources: [{title, provider, date, ref}]`,
+  inline attribution in the body as plain text
+  `(Provider, YYYY-MM-DD — closed source)`, never a fabricated URL. There is
+  no TLP gate: intel/ material is processed like any other source (a legacy
+  `tlp` key, if present, is ignored). The classification block still applies —
+  a single closed-source document is usually reliability `B`/`A` (per the
+  provider) and credibility `2` until publicly corroborated.
 
 ---
 
@@ -141,6 +169,6 @@ iterations). Body:
 - {out-of-window: <title> — primary source <date>, window_hours=<N>}
 - Coverage gaps: source-id (reason); source-id (reason); source-a, source-b — not fetched in this run.
 - Watchlist: products checked=N, hits=N; suppliers checked=M, hits=M   *(only when configured)*
-- Closed-source intake: files=N, items=M, leads-only=K (TLP-restricted)  *(only when intel present)*
+- Closed-source intake: files=N, items=M, folded-into-entries=K  *(only when intel present)*
 - Essential-coverage: missed=source-id (reason)                          *(only on a miss)*
 ````

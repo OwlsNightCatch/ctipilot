@@ -193,11 +193,12 @@ standing free-text interests), the vulnerability-triage scheme
 (categories with id/name/criteria/response + a default), the
 national-CERT single-source carve-out list (`national_certs` — absent key
 = upstream default list, `[]` = carve-out disabled), the weekly's
-standing policy/regulatory watch (`policy_watch`), and the `deployment:`
-section (`visibility: public|private`, `site_url`). The defaults
-reproduce the historical Swiss-federal-SOC deployment; watchlists and
-triage ship empty/disabled, which makes every profile-driven behaviour a
-no-op.
+standing policy/regulatory watch (`policy_watch`), the `classification:`
+scheme (the NATO Admiralty code + the `triage_kinds` split), and the
+`deployment:` section (`site_url` only — there is no visibility/TLP flag).
+The defaults reproduce the historical Swiss-federal-SOC deployment;
+watchlists and triage ship empty/disabled, which makes those profile-driven
+behaviours no-ops.
 
 `tools/compose_prompts.py` (stdlib-only; `--check` / `--write` / `--dump` /
 `--selftest`; `--get dotted.key` for single values) renders the profile
@@ -214,8 +215,9 @@ spec) lives in the prompts, is deliberately org-neutral, and follows the
 normal versioning rule; the generated blocks carry values only and are
 exempt from version bumps. In entry output the profile surfaces as
 structured frontmatter: `org_triage: {category, rationale}` when a triage
-scheme is configured, `watchlist_hit: true` + the `watchlist` tag when a
-watchlist match drove inclusion.
+scheme is configured, `classification: {reliability, credibility}` (the NATO
+Admiralty code) on every non-triage entry, `watchlist_hit: true` + the
+`watchlist` tag when a watchlist match drove inclusion.
 
 The same decoupling exists on the site side: `config/branding.yaml`
 (loaded by `site/branding_config.py` into `site/build.py`) owns the
@@ -229,9 +231,10 @@ composes or fail-louds on push; `tools/check_run.py` carries a
 `profile-sync` WARN so a routine run surfaces stale composition; and
 CLAUDE.md forbids hand-editing the generated blocks.
 
-The `deployment:` section drives the TLP ceiling on closed-source
-citations and the Phase 7 site poll (`compose_prompts.py --get
-deployment.site_url`); see [`docs/private-deployment.md`](private-deployment.md).
+The `deployment:` section drives only the Phase 7 site poll
+(`compose_prompts.py --get deployment.site_url`); there is no TLP / visibility
+gate. For org-internal operation see
+[`docs/private-deployment.md`](private-deployment.md).
 
 ### `intel/` — closed-source drop folder
 
@@ -240,11 +243,11 @@ of front-mattered text documents; the runs detect in-window content in
 Phase 0 and spawn a conditional intake sub-agent (S5 on intel runs / W3
 weekly) that extracts items with mandatory verbatim evidence quotes and
 public-corroboration pivots. Entries cite the documents via
-`closed_sources` frontmatter records (`{title, provider, date, tlp, ref}`
-— referenced, never a fabricated URL). `check_run.py` gates TLP against
-the deployment visibility (`closed-source-tlp` FAIL on a public
-deployment) and traces citations back to drop files; the verifier `Read`s
-the drop files as ground truth for every closed-source claim. Contract:
+`closed_sources` frontmatter records (`{title, provider, date, ref}`
+— referenced, never a fabricated URL). There is no TLP gate — everything
+under `intel/` is fair game to process; `check_run.py` only traces citations
+back to drop files (`closed-source` WARN), and the verifier `Read`s the drop
+files as ground truth for every closed-source claim. Contract:
 [`intel/README.md`](../intel/README.md). Empty/absent `intel/` — the
 normal state — costs nothing.
 
@@ -318,7 +321,7 @@ trackers. Schema:
   "url": "https://...",
   "category": ["ch-eu", "vulns", ...],
   "tier": "essential | standard",         // essential = attempted every intel run
-  "reliability": "HIGH | MEDIUM | LOW",
+  "reliability": "A | B | C | D | E | F",  // NATO Admiralty source-reliability letter
   "language": ["en", "de", ...],
   "status": "active | candidate | demoted",
   "fetch_method": "rss | webfetch | api | bridge",
@@ -350,10 +353,12 @@ every edit is recorded in the run record's `sources_changed[]`.
   presence/binding, `priority` ⇔ `immediate_action`, cross-run CVE dedup
   (FAIL) + entity-key dedup (WARN), `update_of` resolution + cycle check,
   rolling-24 h composition report (informational), CVE sync with
-  `cves_seen.json`, IOC scan, closed-source
-  TLP ceiling, run-record completeness + prompt-version cross-check
-  against `prompts/CHANGELOG.md`, `sources.json` shape,
-  essential-coverage, and the `site/test_build.py` smoke tests. Fix
+  `cves_seen.json`, IOC scan, closed-source traceability to `intel/` (no TLP
+  gate), org-triage + Admiralty-classification vocabulary/placement,
+  run-record completeness + prompt-version cross-check
+  against `prompts/CHANGELOG.md`, `sources.json` shape (incl. Admiralty A–F
+  `reliability_codes`), essential-coverage, and the `site/test_build.py`
+  smoke tests. Fix
   recipes: [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md).
 - [`tools/build_prior_coverage.py`](../tools/build_prior_coverage.py) —
   Phase 0 helper: scans `entries/` for the last N days (14 on the intel run
@@ -557,8 +562,8 @@ window's operational entries) and its research fan-out (W1–W2 + W3).
  │ Phase 5.5 — mechanical gate                         │
  │  python3 tools/check_run.py "$RUN_ID"               │
  │  (schema/taxonomy/registry/dedup/budgets/evidence/  │
- │   priority⇔immediate_action/IOC/TLP/liveness/       │
- │   run-record completeness + site smoke tests)       │
+ │   priority⇔immediate_action/IOC/classification/     │
+ │   liveness/run-record completeness + site smoke)    │
  │  exit != 0 → fix and re-run; no verifier, no commit │
  └──────────┬─────────────────────────────────────────┘
             ▼

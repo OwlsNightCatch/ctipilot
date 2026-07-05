@@ -136,7 +136,7 @@ sources:
     publisher: "coollabsio GHSA"
     date: "2026-07-02"
     role: primary              # primary | corroborating — first source is the most primary
-closed_sources: []             # [{title, provider, date, tlp, ref}] — intel/ drop citations, never URLs
+closed_sources: []             # [{title, provider, date, ref}] — intel/ drop citations, never URLs (no TLP gate)
 evidence:                      # verbatim quotes binding claims to fetched sources
   - quote: "An authenticated remote command injection vulnerability (CWE-78) in Coolify…"
     publisher: "coollabsio GHSA"
@@ -153,7 +153,12 @@ weekly_section: null           # strategic entries only: explicit weekly render 
                                #  weekly-looking-ahead); unset -> kind-based default placement
 deep_dive: false               # true ⇒ this entry IS the deep-dive treatment
 deep_dive_category: null       # taxonomy-free rotation slug when deep_dive: true (see prompt)
-org_triage: null               # or {category: P1, rationale: "…"} when the org profile defines a scheme
+org_triage: null               # or {category: P1, rationale: "…"} on triage-kind entries when a scheme is defined
+classification: null           # null here (vulnerability is a triage kind → uses org_triage). EVERY
+                               # non-triage entry instead carries the NATO Admiralty code, e.g.:
+                               #   classification: {reliability: B, credibility: 2}
+                               # reliability A–F (of the sourcing) + credibility 1–6 (of the item),
+                               # assessed independently — config/org-profile.yaml `classification:`.
 watchlist_hit: false           # true only when inclusion was driven by an org-profile watchlist match
 actions: []                    # imperative, entry-specific defender actions (strings) — feed § Action Items
 migrated_from: null            # v2 provenance (briefs/YYYY-MM-DD.md) — migration tool only
@@ -196,6 +201,16 @@ No IOCs, no rule code, no vanity metrics, English only.
   ≤ 1 consolidated update per week unless something critical changes.
 - **`actions[]`** — only actions derived from this entry's own content.
   The rendered brief's § Action Items is the union over the window.
+- **`org_triage` / `classification`** — every entry carries exactly one
+  classification scheme, selected by kind. Triage kinds
+  (`classification.triage_kinds` in `config/org-profile.yaml`, default
+  `vulnerability`) carry `org_triage: {category, rationale}` and
+  `classification: null`; every other kind carries the NATO Admiralty
+  `classification: {reliability, credibility}` (letter A–F for the sourcing,
+  number 1–6 for the item, assessed independently) and `org_triage: null`.
+  Both schemes and the kind split are config-driven; the gate FAILs an
+  out-of-vocabulary code and the verifier flags mis-placement (F16 / F17).
+  There is no TLP gate anywhere — everything under `intel/` is processable.
 - **`priority` + `immediate_action`** — see next section.
 
 ### Priority — the notification surface
@@ -439,7 +454,9 @@ immediate_action consistency; entity refs resolve; registry integrity;
 update_of resolution; cross-run dedup; rolling-24 h composition (reported,
 not gated on a count); CVE sync with `cves_seen.json`; IOC scan; run-record completeness (incl. verification
 counters and prompt-version cross-check against `prompts/CHANGELOG.md`);
-`sources/sources.json` shape; TLP ceiling on closed-source citations; and
-the site smoke tests (`site/test_build.py`).
+`sources/sources.json` shape (incl. Admiralty A–F `reliability_codes`);
+closed-source citation traceability to `intel/` (no TLP gate); org-triage and
+Admiralty-classification vocabulary/placement; and the site smoke tests
+(`site/test_build.py`).
 
 

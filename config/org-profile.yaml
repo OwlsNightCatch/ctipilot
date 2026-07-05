@@ -4,9 +4,10 @@
 # WHAT THIS IS
 #   Everything organization-specific about the CTI routines lives here: who the
 #   briefs are for, which sector/region lens the research agents apply, which
-#   products and suppliers deserve a dedicated watchlist sweep, and how the
+#   products and suppliers deserve a dedicated watchlist sweep, how the
 #   organization categorizes vulnerabilities (so briefs carry an immediate
-#   org-triage rating on CVE items).
+#   org-triage rating on CVE items), and how every item is classified (the
+#   NATO Admiralty code for intelligence, org-triage for vulnerabilities).
 #
 # HOW IT REACHES THE AGENTS
 #   `python3 tools/compose_prompts.py --write` renders this file into the
@@ -154,6 +155,69 @@ vulnerability_triage:
   categories: []
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Classification — how every published item is classified. Two schemes ship,
+# and every entry carries exactly one of them:
+#
+#   1. Intelligence classification (the DEFAULT for every entry) — the NATO /
+#      Admiralty code: an independently-assessed source-reliability LETTER
+#      (A–F) and information-credibility NUMBER (1–6), written into each
+#      entry's `classification:` frontmatter and rendered as e.g. "B2".
+#   2. Vulnerability triage (see `vulnerability_triage` above) — used INSTEAD
+#      of the Admiralty code for the entry kinds listed in `triage_kinds`,
+#      because a reliability/credibility rating does not fit a CVE. Those
+#      entries carry `org_triage` instead of `classification`.
+#
+# Fully customizable: rename the code tokens, rewrite the definitions, or add
+# entry kinds to `triage_kinds`. Code tokens must be short (≤4 chars) and are
+# the values that appear in each entry's `classification:` frontmatter; the
+# gate (tools/check_run.py) FAILs any entry whose reliability/credibility code
+# is not defined here. Leave `intel_classification.reliability: []` (and
+# `credibility: []`) to disable the intelligence-classification requirement
+# entirely — then no entry carries `classification` and the gate does not ask
+# for one.
+
+classification:
+  # Entry kinds classified with the vulnerability-triage scheme (org_triage)
+  # instead of the Admiralty code. Everything else uses intel_classification.
+  triage_kinds:
+    - "vulnerability"
+  # NATO / Admiralty intelligence classification. `reliability` rates the
+  # SOURCE (its authority / track record); `credibility` rates the ITEM (its
+  # truth given corroboration). Assessed independently — a reliable source
+  # never by itself lifts the credibility of the report.
+  intel_classification:
+    name: "NATO Admiralty code"
+    # Conservative fallback when an item genuinely cannot be assessed further.
+    # Must be one reliability code followed by one credibility code.
+    default: "C3"
+    reliability:
+      - code: "A"
+        definition: "Completely reliable — authoritative primary / first-party source (a national CERT for its own jurisdiction, a vendor PSIRT for its own products); no history of error."
+      - code: "B"
+        definition: "Usually reliable — original research or reporting with consistent editorial standards and only minor, infrequent issues (most reputable research labs; large corroborating outlets)."
+      - code: "C"
+        definition: "Fairly reliable — some doubt about consistency, OR the source mainly aggregates / re-reports rather than originates. Corroboration recommended."
+      - code: "D"
+        definition: "Not usually reliable — significant doubt; carries unverified claims but has occasionally been valid."
+      - code: "E"
+        definition: "Unreliable — history of invalid information or propaganda."
+      - code: "F"
+        definition: "Reliability cannot be judged — no track record to evaluate."
+    credibility:
+      - code: "1"
+        definition: "Confirmed — corroborated by other independent sources; logical in itself; consistent with other information on the subject."
+      - code: "2"
+        definition: "Probably true — not independently confirmed; logical in itself; consistent with other information."
+      - code: "3"
+        definition: "Possibly true — not confirmed; reasonably logical; agrees with some other information."
+      - code: "4"
+        definition: "Doubtful — not confirmed; possible but not logical; uncorroborated."
+      - code: "5"
+        definition: "Improbable — not logical in itself; contradicted by other information."
+      - code: "6"
+        definition: "Truth cannot be judged — no basis exists to evaluate the information."
+
+# ─────────────────────────────────────────────────────────────────────────────
 # National-CERT single-source carve-out — the national CERTs / government
 # cybersecurity authorities THIS organization trusts as a single source when
 # they are the primary disclosing party for their own jurisdiction or an
@@ -193,18 +257,19 @@ policy_watch:
   - "sanctions and law-enforcement actions affecting publicly-known threat-actor infrastructure"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Deployment — where the built site lives and what may be published.
+# Deployment — where the built site lives.
 #
-# visibility: "public"  → brief publishes to the open internet (GitHub Pages).
-#             Closed-source citations above TLP:CLEAR FAIL the commit gate.
-#             "private" → repo + site are org-internal (private repo, locally
-#             hosted web server — see docs/private-deployment.md). Closed-
-#             source citations up to the drop file's TLP marking are allowed.
 # site_url:   URL the routine polls in its publish-verification phase to
 #             confirm the site rebuilt. Set to "" to skip site polling
-#             (typical for private deployments where the internal web server
+#             (typical for locally-hosted deployments where the web server
 #             pulls and rebuilds on its own schedule).
+#
+# There is NO visibility / TLP gate. This pipeline never filters on TLP or a
+# public/private flag: everything the agents can read — including every file
+# under intel/ — is fair game to process into entries and reports. Provenance
+# is still recorded (closed_sources citations), but nothing is withheld on the
+# basis of a TLP marking. Only place material in the repo / intel/ that you
+# are willing to have published wherever this deployment renders.
 
 deployment:
-  visibility: "public"
   site_url: "https://ctipilot.ch/"

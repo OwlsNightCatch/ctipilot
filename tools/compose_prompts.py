@@ -411,14 +411,70 @@ def validate_profile(profile: dict[str, Any],
     if not norm_categories:
         default_category = ""
 
-    # deployment — optional section; defaults preserve the historic
-    # public GitHub-Pages deployment.
+    # classification — how every item is classified. `triage_kinds` lists the
+    # entry kinds classified with the vulnerability-triage scheme (org_triage);
+    # everything else uses the Admiralty `intel_classification`. Optional
+    # section: an absent section keeps the upstream default (triage for
+    # `vulnerability`, Admiralty for everything else); empty code lists disable
+    # the intelligence-classification requirement entirely.
+    cl = profile.get("classification", {})
+    if not isinstance(cl, dict):
+        raise ProfileError("classification: must be a mapping")
+    triage_kinds = cl.get("triage_kinds", ["vulnerability"])
+    if not isinstance(triage_kinds, list) or any(
+            not isinstance(k, str) or not k.strip() for k in triage_kinds):
+        raise ProfileError("classification.triage_kinds: must be a list of non-empty strings")
+    triage_kinds = [k.strip() for k in triage_kinds]
+    ic = cl.get("intel_classification", {})
+    if not isinstance(ic, dict):
+        raise ProfileError("classification.intel_classification: must be a mapping")
+
+    def _codes(dim: str) -> list[dict[str, str]]:
+        raw = ic.get(dim, [])
+        if not isinstance(raw, list):
+            raise ProfileError(f"classification.intel_classification.{dim}: must be a list")
+        out_codes: list[dict[str, str]] = []
+        seen: set[str] = set()
+        for i, c in enumerate(raw):
+            ctx = f"classification.intel_classification.{dim}[{i}]"
+            if not isinstance(c, dict):
+                raise ProfileError(f"{ctx}: must be a mapping with code/definition")
+            code = _req_str(c, "code", ctx)
+            if len(code) > 4:
+                raise ProfileError(f"{ctx}.code {code!r}: max 4 chars")
+            if code in seen:
+                raise ProfileError(f"{ctx}.code {code!r}: duplicate")
+            seen.add(code)
+            out_codes.append({"code": code, "definition": _req_str(c, "definition", ctx)})
+        return out_codes
+
+    rel_codes = _codes("reliability")
+    cred_codes = _codes("credibility")
+    if bool(rel_codes) != bool(cred_codes):
+        raise ProfileError(
+            "classification.intel_classification: define BOTH reliability and credibility "
+            "codes, or neither (leave both empty to disable intelligence classification)")
+    ic_name = str(ic.get("name", "NATO Admiralty code")).strip() or "NATO Admiralty code"
+    ic_default = str(ic.get("default", "")).strip()
+    if ic_default and rel_codes and cred_codes:
+        rset = {c["code"] for c in rel_codes}
+        cset = {c["code"] for c in cred_codes}
+        if not any(ic_default.startswith(r) and ic_default[len(r):] in cset for r in rset):
+            raise ProfileError(
+                f"classification.intel_classification.default {ic_default!r} is not a defined "
+                "<reliability><credibility> code pair")
+
+    # deployment — optional section; only the publish-polling site URL now.
+    # There is no visibility / TLP gate: this pipeline never filters on TLP or
+    # a public/private flag (everything readable, including intel/, is fair
+    # game to process into entries and reports).
     dep = profile.get("deployment", {})
     if not isinstance(dep, dict):
         raise ProfileError("deployment: must be a mapping")
-    visibility = str(dep.get("visibility", "public")).strip().lower()
-    if visibility not in {"public", "private"}:
-        raise ProfileError(f"deployment.visibility {visibility!r} must be public or private")
+    if "visibility" in dep:
+        raise ProfileError(
+            "deployment.visibility is no longer supported — this pipeline does not filter on "
+            "TLP or a public/private flag; remove the key from config/org-profile.yaml")
     site_url = str(dep.get("site_url", "https://ctipilot.ch/")).strip()
     if site_url and not re.match(r"^https?://\S+$", site_url):
         raise ProfileError(f"deployment.site_url {site_url!r} must be an http(s) URL or empty")
@@ -450,8 +506,16 @@ def validate_profile(profile: dict[str, Any],
             "default_category": default_category,
             "categories": norm_categories,
         },
+        "classification": {
+            "triage_kinds": triage_kinds,
+            "intel_classification": {
+                "name": ic_name,
+                "default": ic_default,
+                "reliability": rel_codes,
+                "credibility": cred_codes,
+            },
+        },
         "deployment": {
-            "visibility": visibility,
             "site_url": site_url,
         },
         "national_certs": national_certs,
@@ -597,6 +661,51 @@ def _render_triage(profile: dict[str, Any]) -> list[str]:
     return out
 
 
+def _render_classification(profile: dict[str, Any]) -> list[str]:
+    """Intelligence-classification (Admiralty) scheme + the triage-kind split.
+    Rendered into the org-data block seen by the daily/weekly main agents and
+    the research agent."""
+    cl = profile["classification"]
+    ic = cl["intel_classification"]
+    triage = cl["triage_kinds"]
+    triage_phrase = ", ".join(f"`{k}`" for k in triage) if triage else "none"
+    if not ic["reliability"] or not ic["credibility"]:
+        return ["**Classification:** intelligence-classification codes are not configured — "
+                "leave `classification: null` on every entry (vulnerability-kind entries still "
+                "carry `org_triage`)."]
+    out = [f"**Classification — {ic['name']}:** every entry EXCEPT the triage kinds "
+           f"({triage_phrase}) carries `classification: {{reliability, credibility}}` in its "
+           "frontmatter — a source-reliability LETTER and an information-credibility NUMBER, "
+           "assessed independently and rendered together (e.g. `B2`). The triage kinds carry "
+           "`org_triage` instead (see the vulnerability-triage scheme below).", ""]
+    out.append("_Source reliability — rate the SOURCE (its authority + track record):_")
+    out.append("")
+    out.append("| Code | Meaning |")
+    out.append("|---|---|")
+    for c in ic["reliability"]:
+        out.append(f"| {c['code']} | {_cell(c['definition'])} |")
+    out.append("")
+    out.append("_Information credibility — rate the ITEM (its truth given corroboration):_")
+    out.append("")
+    out.append("| Code | Meaning |")
+    out.append("|---|---|")
+    for c in ic["credibility"]:
+        out.append(f"| {c['code']} | {_cell(c['definition'])} |")
+    out.append("")
+    out.append("Weight original / primary sources over news and aggregators: a first-party "
+               "authority (a national CERT for its own jurisdiction, a vendor PSIRT for its own "
+               "product) is A; original research labs and large corroborating outlets are "
+               "typically B; sources that mainly re-report are C or lower. The two axes are "
+               "independent — a reliable source does NOT by itself make an uncorroborated claim "
+               "credible: independent corroboration is what drives the credibility number toward "
+               "1, while a single uncorroborated claim from a reliable source is 2, not 1.")
+    if ic["default"]:
+        out.append("")
+        out.append(f"Conservative fallback when an item cannot be assessed further: "
+                   f"**{ic['default']}** (state why in the entry's sourcing note).")
+    return out
+
+
 def _render_org_data(profile: dict[str, Any]) -> str:
     org = profile["organization"]
     wl = profile["watchlist"]
@@ -607,15 +716,11 @@ def _render_org_data(profile: dict[str, Any]) -> str:
     head += (f" · **Home region:** {org['home_region']} · "
              f"**Coverage focus:** {org['region_focus']}")
     dep = profile["deployment"]
-    dep_line = (f"**Deployment:** {dep['visibility']} · **Site URL:** "
-                + (dep["site_url"] or "none (site polling disabled)"))
-    if dep["visibility"] == "public":
-        dep_line += (" — entries publish to the OPEN INTERNET: closed-source "
-                     "content above TLP:CLEAR must NEVER appear in them "
-                     "(`check_run.py` FAILs the commit).")
-    else:
-        dep_line += (" — private deployment: closed-source content up to the "
-                     "drop file's TLP marking may be cited (unlinked).")
+    dep_line = ("**Deployment · Site URL:** "
+                + (dep["site_url"] or "none (site polling disabled)")
+                + " — there is NO TLP / public-private gate: everything the agents can read, "
+                  "including every file under intel/, is fair game to process into entries and "
+                  "reports; nothing is withheld or downgraded on the basis of a TLP marking.")
     lines: list[str] = [GENERATED_NOTE, head, "",
                         f"**Constituency:** {_flow(org['description'])}", "",
                         dep_line, ""]
@@ -624,6 +729,8 @@ def _render_org_data(profile: dict[str, Any]) -> str:
     lines.extend(_render_suppliers(wl["suppliers"]))
     lines.append("")
     lines.extend(_render_interests(wl["interests"]))
+    lines.append("")
+    lines.extend(_render_classification(profile))
     lines.append("")
     lines.extend(_render_triage(profile))
     return "\n".join(lines)
@@ -658,16 +765,10 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
                      "this deployment — flag every single-source item "
                      "regardless of the source's authority.")
     lines.append("")
-    dep = profile["deployment"]
-    if dep["visibility"] == "public":
-        lines.append("**Deployment:** public — entries publish to the open "
-                     "internet. Any closed-source citation marked above TLP:CLEAR "
-                     "is a defect the mechanical gate also FAILs; flag it F7 "
-                     "(drop) with the TLP violation named.")
-    else:
-        lines.append("**Deployment:** private — closed-source citations up to the "
-                     "referenced drop file's TLP marking are acceptable. Verify "
-                     "each citation's TLP against the file's front-matter.")
+    lines.append("**Deployment:** no TLP / public-private gate — every file the agents can "
+                 "read (including everything under intel/) is fair game; nothing is withheld, "
+                 "downgraded, or flagged on the basis of a TLP marking. Do NOT raise TLP "
+                 "findings.")
     lines.append("")
     if wl["products"] or wl["suppliers"] or wl["interests"]:
         prods = ", ".join(f"{p['name']} ({p['vendor']})" for p in wl["products"]) or "none"
@@ -705,6 +806,27 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
     else:
         lines.append("**Org-triage scheme:** none configured — any non-null `org_triage` "
                      "block on an entry is a defect; flag it F16 (org-triage, editorial).")
+    lines.append("")
+    cl = profile["classification"]
+    ic = cl["intel_classification"]
+    triage = cl["triage_kinds"]
+    if ic["reliability"] and ic["credibility"]:
+        rels = ", ".join(c["code"] for c in ic["reliability"])
+        creds = ", ".join(c["code"] for c in ic["credibility"])
+        tk = ", ".join(f"`{k}`" for k in triage) if triage else "none"
+        lines.append(
+            f"**Classification ({ic['name']}):** every entry whose kind is NOT a triage kind "
+            f"({tk}) must carry `classification: {{reliability, credibility}}` with reliability "
+            f"∈ {{{rels}}} and credibility ∈ {{{creds}}}; triage-kind entries carry `org_triage` "
+            "instead and must NOT carry `classification`. Flag F17 (classification, editorial) "
+            "when: the block is missing on a non-triage entry; a code is outside the vocabulary; "
+            "the reliability letter plainly contradicts the cited source's nature (e.g. `A` on a "
+            "lone blog/forum post, or `A` on a source not in the A tier of sources.json); or the "
+            "credibility number is inconsistent with the corroboration the entry actually shows "
+            "(e.g. `1` on a single uncorroborated source, which should be 2).")
+    else:
+        lines.append("**Classification:** intelligence-classification codes are not configured — "
+                     "no entry should carry a `classification` block; flag any use F17.")
     return "\n".join(lines)
 
 
@@ -715,10 +837,10 @@ def _render_certs(profile: dict[str, Any]) -> str:
     lines: list[str] = [GENERATED_NOTE]
     if certs:
         lines.append(
-            "**National-CERT single-source carve-out list** — a HIGH-reliability "
-            "national CERT / government cybersecurity authority acting as the "
-            "primary disclosing party for its own jurisdiction or an advisory it "
-            "owns is acceptable as a single source: " + ", ".join(certs) + ". "
+            "**National-CERT single-source carve-out list** — a high-reliability "
+            "(Admiralty A / B) national CERT / government cybersecurity authority "
+            "acting as the primary disclosing party for its own jurisdiction or an "
+            "advisory it owns is acceptable as a single source: " + ", ".join(certs) + ". "
             "The list is deployment-configurable (`national_certs` in "
             "config/org-profile.yaml); treat it as the trust bar, illustrative "
             "rather than exhaustive for same-tier authorities."
@@ -904,6 +1026,26 @@ vulnerability_triage:
       name: "Scheduled"
       criteria: "everything else"
       response: "patch window"
+classification:
+  triage_kinds:
+    - "vulnerability"
+  intel_classification:
+    name: "NATO Admiralty code"
+    default: "C3"
+    reliability:
+      - code: "A"
+        definition: "Completely reliable"
+      - code: "B"
+        definition: "Usually reliable"
+      - code: "C"
+        definition: "Fairly reliable"
+    credibility:
+      - code: "1"
+        definition: "Confirmed"
+      - code: "2"
+        definition: "Probably true"
+      - code: "3"
+        definition: "Possibly true"
 """
 
 
@@ -934,22 +1076,42 @@ def selftest() -> int:
     tax = {"sectors": {"finance", "energy"}, "regions": {"dach"}}
     profile = validate_profile(parsed, tax)
     check(profile["vulnerability_triage"]["default_category"] == "P2", "triage default")
-    check(profile["deployment"] == {"visibility": "public",
-                                    "site_url": "https://ctipilot.ch/"},
-          "deployment defaults when section absent")
     import copy as _copy
+    check(profile["deployment"] == {"site_url": "https://ctipilot.ch/"},
+          "deployment defaults when section absent (no visibility key)")
     dep_variant = _copy.deepcopy(parsed)
-    dep_variant["deployment"] = {"visibility": "private", "site_url": ""}
+    dep_variant["deployment"] = {"site_url": ""}
     dp = validate_profile(dep_variant, tax)
-    check(dp["deployment"]["visibility"] == "private" and dp["deployment"]["site_url"] == "",
-          "private deployment with empty site_url accepted")
+    check(dp["deployment"]["site_url"] == "", "empty site_url accepted (site polling disabled)")
     dep_bad = _copy.deepcopy(parsed)
-    dep_bad["deployment"] = {"visibility": "internal"}
+    dep_bad["deployment"] = {"visibility": "public"}
     try:
         validate_profile(dep_bad, tax)
-        check(False, "invalid deployment.visibility rejected")
+        check(False, "deployment.visibility now rejected (TLP/visibility gate removed)")
     except ProfileError:
-        check(True, "invalid deployment.visibility rejected")
+        check(True, "deployment.visibility now rejected (TLP/visibility gate removed)")
+
+    # classification: parses, orders, and enforces its vocabulary.
+    ic_p = profile["classification"]["intel_classification"]
+    check([c["code"] for c in ic_p["reliability"]] == ["A", "B", "C"],
+          "admiralty reliability codes parsed in order")
+    check([c["code"] for c in ic_p["credibility"]] == ["1", "2", "3"],
+          "admiralty credibility codes parsed in order")
+    check(profile["classification"]["triage_kinds"] == ["vulnerability"], "triage_kinds parsed")
+    badcl = _copy.deepcopy(parsed)
+    badcl["classification"]["intel_classification"]["default"] = "Z9"
+    try:
+        validate_profile(badcl, tax)
+        check(False, "undefined classification default rejected")
+    except ProfileError:
+        check(True, "undefined classification default rejected")
+    onlyrel = _copy.deepcopy(parsed)
+    onlyrel["classification"]["intel_classification"]["credibility"] = []
+    try:
+        validate_profile(onlyrel, tax)
+        check(False, "reliability-without-credibility rejected")
+    except ProfileError:
+        check(True, "reliability-without-credibility rejected")
 
     # 3. Validation failures fail loud.
     import copy
@@ -977,6 +1139,12 @@ def selftest() -> int:
                             "research-audience", "org-data", "verify-context",
                             "org-certs", "org-policy-watch"},
           "all block names rendered")
+    check("NATO Admiralty code" in blocks_a["org-data"], "classification scheme rendered in org-data")
+    check("Usually reliable" in blocks_a["org-data"], "reliability code definitions rendered")
+    check("Classification (NATO Admiralty code)" in blocks_a["verify-context"],
+          "classification verification rendered in verify-context")
+    check("public-private gate" in blocks_a["org-data"] and "TLP:CLEAR" not in blocks_a["org-data"],
+          "TLP gate language removed from org-data")
 
     # 4b. national_certs / policy_watch: absent key → upstream default;
     # explicit values render; explicit [] disables.

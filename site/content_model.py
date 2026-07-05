@@ -531,6 +531,7 @@ ENTRY_DEFAULTS = {
     "deep_dive": False,
     "deep_dive_category": None,
     "org_triage": None,
+    "classification": None,
     "watchlist_hit": False,
     "actions": [],
     "migrated_from": None,
@@ -589,6 +590,19 @@ def parse_ts(value) -> datetime | None:
         return datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
     except ValueError:
         return None
+
+
+def classification_code(entry: dict) -> str:
+    """Render an entry's intelligence classification as a single token, e.g.
+    reliability `B` + credibility `2` -> ``B2``. Empty string when the entry
+    carries no `classification` block (vulnerability-kind entries use
+    `org_triage` instead)."""
+    c = entry.get("classification")
+    if not isinstance(c, dict):
+        return ""
+    rel = str(c.get("reliability") or "").strip()
+    cred = str(c.get("credibility") if c.get("credibility") is not None else "").strip()
+    return f"{rel}{cred}"
 
 
 # ---------------------------------------------------------------------------
@@ -776,10 +790,9 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
     for i, c in enumerate(closed):
         if not isinstance(c, dict) or not _is_str(c.get("title")) or not _is_str(c.get("provider")):
             err(f"closed_sources[{i}] requires title + provider")
-        elif c.get("tlp") is not None and str(c["tlp"]).upper() not in (
-            "CLEAR", "GREEN", "AMBER", "AMBER+STRICT", "RED",
-        ):
-            err(f"closed_sources[{i}].tlp {c.get('tlp')!r} is not a TLP 2.0 marking")
+        # No TLP validation or gating: this pipeline never filters on TLP.
+        # Everything the agents can read (including intel/) is fair game; a
+        # `tlp` key on a legacy drop is an ignored provenance annotation.
 
     # single-source consistency
     if len(sources) <= 1 and not closed and entry.get("verification") == "multi-source":
@@ -817,6 +830,21 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
     ot = entry.get("org_triage")
     if ot is not None and (not isinstance(ot, dict) or not _is_str(ot.get("category"))):
         err("org_triage must be null or {category, rationale}")
+
+    # classification — structural only (reliability letter + credibility
+    # number). Which entry kinds require it and the code vocabulary itself are
+    # config-driven and enforced by tools/check_run.py against the org profile
+    # (the same split as org_triage), so this layer stays profile-agnostic.
+    cls = entry.get("classification")
+    if cls is not None:
+        if not isinstance(cls, dict):
+            err("classification must be null or {reliability, credibility}")
+        else:
+            if not _is_str(cls.get("reliability")):
+                err("classification.reliability missing (source-reliability code)")
+            cred = cls.get("credibility")
+            if not (_is_str(cred) or isinstance(cred, int)):
+                err("classification.credibility missing (information-credibility code)")
 
     for i, a in enumerate(entry.get("actions") or []):
         if not _is_str(a):

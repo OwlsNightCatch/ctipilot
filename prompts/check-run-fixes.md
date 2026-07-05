@@ -23,7 +23,9 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `prompt-version` | Record's `prompt_version` ≠ newest `prompts/CHANGELOG.md` heading | If you edited a prompt this run: add the CHANGELOG entry + bump the banner. Otherwise correct the record to the current version |
 | `sources-touched` | No source has `last_successful_fetch` = run date | Phase 5 bookkeeping was skipped — update `sources/sources.json` for every source that contributed |
 | `sources-schema` | Malformed source record (e.g. `category` as string, `name` instead of `publisher`) | Use the canonical candidate shape in `prompts/cti-run.md` Phase 5 — `category` is ALWAYS a list; the field is ALWAYS `publisher` |
-| `closed-source-tlp` | Above-CLEAR closed-source citation on a public deployment | Remove the citation AND any detail only the restricted document supports; the document may only be a lead to public sources |
+| `classification` (code) | An entry's `classification.reliability` / `.credibility` is outside the configured vocabulary (A–F / 1–6) | Set a defined code — reliability from the cited source's own letter in `sources/sources.json`, credibility from corroboration (see the § Intel classification scheme) |
+| `classification` (WARN) | A non-triage entry missing `classification`, or a triage-kind entry carrying one | Add the Admiralty block to non-vulnerability entries; triage-kind entries use `org_triage` and keep `classification: null` |
+| `closed-source` (WARN) | A `closed_sources` citation doesn't trace to a file under `intel/` | Point `ref`/`title` at the actual drop file so the verifier can `Read` it (there is no TLP gate — everything in `intel/` is processable) |
 | `ioc-scan` | Hash / routable IP in an entry | Rewrite to the *behaviour*, not the indicator; version strings near the match are auto-suppressed, so a real hit is a real IOC |
 | `fetch-failure-bridge-required` | Known-403 source logged as failed without a bridge attempt | Re-fetch via `python3 tools/fetch_source.py <subcommand>`; the record's `attempted_methods` must show the bridge |
 | `test-build` | `site/test_build.py` failing | Read the test output tail — usually an entry that breaks a renderer assumption; fix the entry, not the test |
@@ -31,7 +33,7 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 WARNs worth acting on before Phase 5.7:
 `single-source-flag` (fix the `verification` value), `evidence-binding`
 (attribute quotes to a listed publisher), `aggregator-only` (find the
-primary), `org-triage` (align with the profile scheme), `essential-coverage`
-(disclose the miss in the run record). The `composition` line is
+primary), `org-triage` / `classification` (align with the profile scheme),
+`essential-coverage` (disclose the miss in the run record). The `composition` line is
 informational only (rolling-24 h entry/deep-dive/critical counts) — volume
 follows relevance, not a quota, so there is nothing there to fix.

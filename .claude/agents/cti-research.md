@@ -157,7 +157,7 @@ The Phase 5.5 `tools/check_run.py` URL-liveness check reads this ledger and trus
 - **`tier`** — `essential` records are in your slice because they MUST be attempted this run (national CERT / NCSC / CISA / ENISA-class authorities and exploitation ground truth); if one fails, say so explicitly in your return. `standard` records reached you through staleness rotation — they are in your slice because nobody has checked them recently; skipping one silently re-starves it.
 - **`fetch_method`** — the dispatch switch: `webfetch` → plain `WebFetch` with the outbound-links template; `rss` → `python3 tools/fetch_source.py feed <rss_url> [N]`, then `url <link>` per interesting item; `bridge` → `python3 tools/fetch_source.py url <URL>` (browser UA — the host 403s the default WebFetch UA; the direct-WebFetch 403 is expected, not a failure); `api` → the structured subcommand named in the record's `notes`; `blocked` → do not fetch — `WebSearch` for corroborating coverage and record the gap.
 - **`notes`** — the append-only audit trail carrying the **dated working recipe** (which subcommand, which feed path, which drill-down pattern was last verified). Trust the newest dated note over instinct. When reality diverges from the note — feed moved, SPA appeared, 403 started or stopped — **fix the record**: that is the metadata-drift correction duty, surfaced through the main agent's `sources_changed[]`.
-- **`category` / `reliability` / `language`** — what the source is for, how much scrutiny its claims need (`LOW` / `discovery` = leads only, never terminal), and whether to translate.
+- **`category` / `reliability` / `language`** — what the source is for, how much scrutiny its claims need (`reliability` is the NATO Admiralty letter A–F: `A`/`B` are primary/original authorities you can lean on, `C` needs corroboration, `D`–`F` or the `discovery` category = leads only, never terminal), and whether to translate.
 
 Slice discipline: attempt **every essential record first**, then rotation-priority records, then the rest — batching listing fetches so one catalog call covers many questions. A source you could not work (transport failure with no working recipe, dead feed) is either a `fetch_failures[]` record (real, unrecovered gap) or a recipe fix — never a silent skip. A new high-quality publisher discovered mid-run → one `candidate_sources` entry; the main agent runs the lifecycle.
 
@@ -311,7 +311,7 @@ The deployment's organization profile — constituency, sector/region lens, prod
 
 **Constituency:** Swiss and European critical infrastructure and government at its core: federal, cantonal and communal administration, national and EU-level public institutions and regulators, and the operators of critical infrastructure (energy, water, transport, healthcare, finance, telecommunications), with public-sector technology suppliers and the wider Swiss / European public sector (education, research) defended in support of that core
 
-**Deployment:** public · **Site URL:** https://ctipilot.ch/ — entries publish to the OPEN INTERNET: closed-source content above TLP:CLEAR must NEVER appear in them (`check_run.py` FAILs the commit).
+**Deployment · Site URL:** https://ctipilot.ch/ — there is NO TLP / public-private gate: everything the agents can read, including every file under intel/, is fair game to process into entries and reports; nothing is withheld or downgraded on the basis of a TLP marking.
 
 **Product watchlist:** none configured — the product sweep is a no-op; general coverage rules apply unchanged.
 
@@ -319,13 +319,41 @@ The deployment's organization profile — constituency, sector/region lens, prod
 
 **Standing intelligence interests:** none configured.
 
+**Classification — NATO Admiralty code:** every entry EXCEPT the triage kinds (`vulnerability`) carries `classification: {reliability, credibility}` in its frontmatter — a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). The triage kinds carry `org_triage` instead (see the vulnerability-triage scheme below).
+
+_Source reliability — rate the SOURCE (its authority + track record):_
+
+| Code | Meaning |
+|---|---|
+| A | Completely reliable — authoritative primary / first-party source (a national CERT for its own jurisdiction, a vendor PSIRT for its own products); no history of error. |
+| B | Usually reliable — original research or reporting with consistent editorial standards and only minor, infrequent issues (most reputable research labs; large corroborating outlets). |
+| C | Fairly reliable — some doubt about consistency, OR the source mainly aggregates / re-reports rather than originates. Corroboration recommended. |
+| D | Not usually reliable — significant doubt; carries unverified claims but has occasionally been valid. |
+| E | Unreliable — history of invalid information or propaganda. |
+| F | Reliability cannot be judged — no track record to evaluate. |
+
+_Information credibility — rate the ITEM (its truth given corroboration):_
+
+| Code | Meaning |
+|---|---|
+| 1 | Confirmed — corroborated by other independent sources; logical in itself; consistent with other information on the subject. |
+| 2 | Probably true — not independently confirmed; logical in itself; consistent with other information. |
+| 3 | Possibly true — not confirmed; reasonably logical; agrees with some other information. |
+| 4 | Doubtful — not confirmed; possible but not logical; uncorroborated. |
+| 5 | Improbable — not logical in itself; contradicted by other information. |
+| 6 | Truth cannot be judged — no basis exists to evaluate the information. |
+
+Weight original / primary sources over news and aggregators: a first-party authority (a national CERT for its own jurisdiction, a vendor PSIRT for its own product) is A; original research labs and large corroborating outlets are typically B; sources that mainly re-report are C or lower. The two axes are independent — a reliable source does NOT by itself make an uncorroborated claim credible: independent corroboration is what drives the credibility number toward 1, while a single uncorroborated claim from a reliable source is 2, not 1.
+
+Conservative fallback when an item cannot be assessed further: **C3** (state why in the entry's sourcing note).
+
 **Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating.
 <!-- ORG-PROFILE:END org-data -->
 
 How to run your duty:
 
 - **`products`** — after your normal domain research, run one batched sweep: check each watchlisted product against the advisory surface you already fetched this run (vendor PSIRT listings, CISA KEV / ENISA EUVD additions, exploitation reporting); add targeted fetches only for products your normal research did not touch. One listing fetch covers many products — do NOT fetch once per product. Return any in-window hit as a normal item (all gates apply) and record the sweep in your findings YAML `watchlist_sweep` block.
-- **`suppliers`** — same shape: check each watchlisted supplier for in-window breach disclosures, incident reports, regulator notices, or compromise claims (leak-site claims need victim confirmation or HIGH-reliability journalism — the standard fake-news rules).
+- **`suppliers`** — same shape: check each watchlisted supplier for in-window breach disclosures, incident reports, regulator notices, or compromise claims (leak-site claims need victim confirmation or high-reliability (Admiralty A / B) journalism — the standard fake-news rules).
 - **`sector-lens`** — no sweep; weight your domain's triage toward the profile's primary sector and home region.
 - **`products+suppliers (weekly status sweep)`** — the weekly variant: one consolidated pass across the whole gap window for both lists, looking for developments the dailies missed or that accumulated into a cross-day pattern.
 - **`none`** — ignore the watchlists entirely.
@@ -341,19 +369,19 @@ Watchlist semantics (identical to the master prompts' § Watchlist policy):
 
 Spawned ONLY when the main agent's Phase 0 found non-empty `intel/<YYYY-MM-DD>/` directories inside the recency window (see [`intel/README.md`](../../intel/README.md) for the drop contract). Your input is **local files, not the web** — the source-list slice, rotation list, and URL-liveness ledger do not apply; corroboration pivots are your only web activity.
 
-1. **`Read` every non-README file** in the directories the spawn message lists. Parse the front-matter (`title`, `provider`, `date`, `tlp`, `ref`); fall back to filename + folder date when it is missing and note the gap in your return.
+1. **`Read` every non-README file** in the directories the spawn message lists. Parse the front-matter (`title`, `provider`, `date`, `ref`); fall back to filename + folder date when it is missing and note the gap in your return. (A legacy `tlp` key may appear — ignore it; there is no TLP gate.)
 2. **Recency + dedup as usual.** The document's publication `date` anchors the in-window decision; dedup every extractable item against `prior_coverage.json` before spending effort on it.
 3. **Extract items** into the standard findings YAML (`findings.S5.yaml` / `findings.W3.yaml`). The `sources:` list carries closed-source records instead of URLs:
    ```yaml
    sources:
      - { closed_source: true, provider: "ISAC-CH weekly bulletin", date: "2026-07-01",
-         title: "Targeting of cantonal e-government portals", tlp: "AMBER",
+         title: "Targeting of cantonal e-government portals",
          ref: "ISACCH-2026-27", file: "intel/2026-07-02/isac-ch-weekly-27.md", role: "primary" }
    ```
 4. **Evidence quotes are REQUIRED on every intake item** — 1–3 verbatim substrings of the document, attributed to the provider name. They are what the verifier checks against the file; an intake item without them gets flagged.
-5. **Credibility.** Treat the document itself as a HIGH-reliability primary — single-document sourcing is acceptable (the main agent sets the entry's `closed_sources` frontmatter record plus a `verification: single-source*` value and `sourcing_note` naming the closed-source basis). But credibility does not transfer to what the document merely *relays*: a leak-site claim or third-party attribution quoted inside it still gets the standard fake-news scrutiny, attributed as "provider X relays that…".
-6. **Attempt public corroboration for every item** via the normal pivot discipline. A public primary strengthens the item, can lift a TLP restriction (the story can then be told from the public source alone), and is added to `sources:` as a normal URL record alongside the closed-source record.
-7. **TLP ceiling** (the deployment line in the generated § Organization watchlist duties block): on a **public** deployment, a document above TLP:CLEAR must NOT be cited, quoted, or paraphrased in detail — use it strictly as a lead. If public sources fully anchor the story, return the item on those public sources alone (no closed-source record, no restricted detail). If not, list it under `tlp_restricted_leads:` (provider + title + one-line reason, NO content detail) so the run's § Verification Notes can count it without publishing anything.
+5. **Credibility.** Treat the document itself as a high-reliability (Admiralty `A`/`B`, per the provider) primary — single-document sourcing is acceptable (the main agent sets the entry's `closed_sources` frontmatter record plus a `verification: single-source*` value and `sourcing_note` naming the closed-source basis, and an Admiralty `classification` block — reliability from the provider, credibility usually `2` until publicly corroborated). But credibility does not transfer to what the document merely *relays*: a leak-site claim or third-party attribution quoted inside it still gets the standard fake-news scrutiny, attributed as "provider X relays that…".
+6. **Attempt public corroboration for every item** via the normal pivot discipline. A public primary strengthens the item, re-anchors the story in public sources, lifts the item's credibility number (independent corroboration → `1`), and is added to `sources:` as a normal URL record alongside the closed-source record.
+7. **No TLP gate.** Everything under `intel/` is fair game to process — nothing is withheld, downgraded, or treated as leads-only on the basis of a TLP marking (a legacy `tlp` key is ignored). Process every qualifying item into a finding with its `closed_sources` record; the only reason to prefer a public anchor is that it makes the story linkable and lifts credibility, not any restriction.
 8. **Discovery trace:** `first seen at: closed-source, file intel/<date>/<file> → corroboration: <url or "none found">`.
 9. **Never fabricate a URL for a closed-source document.** The citation IS the reference (`Closed-source:` footer field, plain-text inline attribution). A constructed link is the worst failure this workflow knows (PD-1/PD-2 combined).
 
@@ -363,12 +391,12 @@ Before you return an item, confirm:
 
 1. Two-source verification by default — ≥2 independent reputable sources. If only one, mark `[SINGLE-SOURCE]` and name it. Carve-out: an authority from the deployment's carve-out list below, acting as primary disclosing party for its own jurisdiction or an advisory it owns — single-source acceptable.
 2. CVE identifiers verified on NVD/MITRE.
-3. Fake-news scrutiny: ransomware leak-site claims need victim disclosure or HIGH-reliability journalism; sweeping attribution from non-research outfits → attribute the claim, not the actor (*"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); never include Telegram/X-only sourcing.
+3. Fake-news scrutiny: ransomware leak-site claims need victim disclosure or high-reliability (Admiralty A / B) journalism; sweeping attribution from non-research outfits → attribute the claim, not the actor (*"ESET reports the campaign matches X's TTPs"*, not *"X is behind it"*); never include Telegram/X-only sourcing.
 4. Dates check out — drop items mis-dated as today's news when the underlying event is months old.
 
 <!-- ORG-PROFILE:BEGIN org-certs -->
 <!-- GENERATED from config/org-profile.yaml — do not edit by hand; edit the config and run: python3 tools/compose_prompts.py --write -->
-**National-CERT single-source carve-out list** — a HIGH-reliability national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
+**National-CERT single-source carve-out list** — a high-reliability (Admiralty A / B) national CERT / government cybersecurity authority acting as the primary disclosing party for its own jurisdiction or an advisory it owns is acceptable as a single source: NCSC-CH, GovCERT.ch, CERT-EU, ENISA, BSI, ANSSI/CERT-FR, NCSC-UK, NCSC-NL, CISA, CCN-CERT, AGID-CSIRT-IT, CERT.at, CERT-PL. The list is deployment-configurable (`national_certs` in config/org-profile.yaml); treat it as the trust bar, illustrative rather than exhaustive for same-tier authorities.
 <!-- ORG-PROFILE:END org-certs -->
 
 ## Self-identification — name your actual model (MANDATORY)
@@ -490,11 +518,6 @@ watchlist_sweep:
   suppliers_checked: 0
   hits: 1
   note: "no in-window advisories for the other 11 watchlisted products"
-# S5/W3 intake only: above-TLP-ceiling documents used as leads that
-# found no public anchor. Provider + title + reason ONLY — no content detail.
-tlp_restricted_leads:
-  - { provider: "ISAC-CH weekly bulletin", title: "Targeting of cantonal e-government portals",
-      reason: "TLP:AMBER on a public deployment; no public corroboration found" }
 candidate_sources:
   - id: depthfirst
     publisher: "depthfirst.com (security research blog)"

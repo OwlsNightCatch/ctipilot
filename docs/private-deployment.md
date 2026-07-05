@@ -3,18 +3,20 @@
 The stack runs unchanged as an **organization-internal** service: private
 GitHub repository, the same routines and publishing chain, and the reader
 site served by your own web server instead of GitHub Pages. This is the
-supported mode for closed-source intelligence above TLP:CLEAR
-(see [`intel/README.md`](../intel/README.md)).
+supported mode when the intelligence you handle — including anything dropped
+under [`intel/`](../intel/README.md) — should not be world-readable. The
+pipeline itself has **no TLP or visibility gate**: it processes everything it
+can read, so keeping material non-public is a function of the repo being
+private and the site being internally hosted, not of any config flag.
 
 ## What changes, what doesn't
 
 | Piece | Public (default) | Private |
 |---|---|---|
 | Repository | public | **private** (routines, auto-merge, compose workflows all work identically) |
-| `config/org-profile.yaml` `deployment.visibility` | `public` | `private` |
-| `deployment.site_url` | `https://ctipilot.ch/` | your internal URL, or `""` to skip site polling |
+| `config/org-profile.yaml` `deployment.site_url` | `https://ctipilot.ch/` | your internal URL, or `""` to skip site polling |
 | Site hosting | GitHub Pages via `deploy-site.yml` | internal web server pulling + building on a schedule |
-| Closed-source TLP ceiling (`check_run.py` gate) | TLP:CLEAR only | up to the drop file's marking |
+| TLP / visibility gate | none (removed) | none (removed) — privacy comes from the private repo + internal hosting |
 | Routine phases | identical | identical — only Phase 7's site poll adapts to `site_url` |
 
 `site/build.py` is stdlib-only and emits a fully static bundle into
@@ -32,19 +34,18 @@ the site works on an air-gapped network segment.
 2. **Disable GitHub Pages publishing**: either disable Pages in the repo
    settings, or delete/disable `.github/workflows/deploy-site.yml` (it is
    the only Pages-specific piece; nothing else references it).
-3. **Set the deployment profile** and compose:
+3. **Point the deployment at your host** and compose:
 
    ```sh
    # config/org-profile.yaml
    # deployment:
-   #   visibility: "private"
    #   site_url: "https://cti.intra.example.ch/"   # or "" to skip Phase 7 site polling
-   python3 tools/compose_prompts.py --write && git add -A config prompts .claude && git commit
+   python3 tools/compose_prompts.py --write && git add config prompts .claude && git commit
    ```
 
-   `visibility: private` lifts the TLP:CLEAR ceiling on closed-source
-   citations (the drop file's own marking becomes the limit) and tells the
-   verifier to judge accordingly. An empty `site_url` makes the routine's
+   There is no `visibility` key — the pipeline processes everything it can
+   read regardless; privacy is enforced by the private repo and internal
+   hosting, not a config flag. An empty `site_url` makes the routine's
    Phase 7 report `publish: ok (main — site polling disabled)` after the
    auto-merge lands, instead of polling a site it cannot reach.
 4. **Host the site internally — scheduled pull + build + serve.** On the
@@ -109,6 +110,8 @@ the site works on an air-gapped network segment.
   confusion.
 - **Feed scripts** (intel drops, source-health cron) need push access to the
   private repo — deploy keys or a machine PAT scoped to the repo.
-- **Back to public**: flip `visibility` to `public`, recompose, re-enable
-  `deploy-site.yml` — but first audit `intel/` and every published entry for
-  above-CLEAR closed-source content: git history is forever once public.
+- **Back to public**: re-enable `deploy-site.yml` and make the repo public —
+  but first audit `intel/` and every published entry, because the pipeline
+  applies no TLP filter and git history is forever once public. Anything you
+  would not want world-readable must be scrubbed from history before the repo
+  goes public.
