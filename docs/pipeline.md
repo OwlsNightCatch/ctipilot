@@ -264,6 +264,21 @@ protected from overflooding by the **gate**, not by a quota: every entry
 must earn its place, and a marginal item is dropped no matter how much room
 a numeric budget would have allowed.
 
+The gate is applied for two properties of **equal weight**:
+
+- **Sound** — everything published is relevant, accurate, and actionable;
+  very low false positives; no marginal, off-scope, or unverified item.
+- **Complete** — everything genuinely relevant to the reader's job is
+  published; very low false negatives; a reader relying on ctipilot.ch alone
+  has no blind spot on anything that matters to their work. The gate removes
+  noise, never signal — a relevant item is never dropped to keep the count
+  down (there is no count to keep down).
+
+A missed relevant item is as serious a failure as an included marginal one —
+and a silent one, since the reader never sees what they were not told — so
+completeness is verified deliberately (the intel run's Phase 2 completeness
+sweep; the verifier's coverage + missed-angle checks), not assumed.
+
 - Each `vulnerability` entry must demand action **beyond the regular patch
   cycle** — actively exploited, imminent mass exploitation, pre-auth RCE on
   an exposed edge with public PoC, or another out-of-band response. A CVE

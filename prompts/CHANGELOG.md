@@ -4,7 +4,7 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
-## 3.4 — 2026-07-05 (NATO Admiralty classification; source reliability A–F; no TLP / public-private gate)
+## 3.7 — 2026-07-05 (NATO Admiralty classification; source reliability A–F; no TLP / public-private gate)
 
 ### Why
 
@@ -19,6 +19,70 @@ Two operator directives. First, **every published item must carry an explicit, c
 ### What stays
 
 Every hard invariant: two-source verification with the national-CERT / victim carve-outs, no IOCs, entry immutability + `update_of` discipline, the entity registry, the mechanical gate + verifier loop, feature-branch publishing, relevance discipline (no volume cap), run-record-per-fire. `org_triage` is unchanged for vulnerabilities. Closed-source citations are still referenced-never-linked and must trace to a drop file the verifier can `Read`.
+
+## 3.6 — 2026-07-05 (CISA advisories/directives/news/ICS now genuinely fetchable — reader proxy + CSAF mirror)
+
+### Why
+
+v3.4 marked CISA advisories/directives/news as transport-blocked essentials and told the routine to substitute KEV + WebSearch — a *handled* state, but the advisory narrative, directive text, and ICS detail were still not being read. The operator's requirement is explicit: these are highly-relevant sources that must be **in the reports with full detail**. They are now reachable. `www.cisa.gov` Akamai-403s a direct fetch on every UA (unchanged), but two transports get the content: a **server-side reader proxy** (r.jina.ai fetches from its own egress, not ours) for the HTML bodies and feeds, and the **cisagov/CSAF GitHub mirror** (via `raw.githubusercontent.com`, which is not proxy-blocked) for fully-structured ICS/OT advisories.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 5 `needs-bridge` playbook** rewritten around the general principle "an anti-bot block calls for a **different transport for the same data**, not a demotion", with the three concrete transports now available: data mirror (github.com → OSV.dev), server-side reader proxy (cisa.gov → `cisa page`/`cisa feed` via r.jina.ai), and structured publisher feed (CISA ICS → `cisa csaf-recent`/`cisa csaf`). The `needs-demote` note now reserves the handled `bridge-blocked` state for content unreachable by *every* transport (Cloudflare Managed-Challenge hosts like group-ib.com / ccn-cert.cni.es), not CISA.
+- **`tools/fetch_source.py` (tooling):** new `cisa page` (direct → r.jina.ai reader fallback), `cisa feed <url> [N]` (RSS/Atom → item list via the reader), `cisa csaf-recent [N]` (dated ICS index from the CSAF mirror), and `cisa csaf <icsa-/icsma- id>` (full CSAF v2 JSON). `_jina_fetch` helper reuses the `fetch` SSRF defences and raises on a relayed Access-Denied (e.g. the deprecated `/blog.xml`).
+- **`tools/source_health.py` (tooling):** cisa-advisories/directives/news now probe `bridge-ok`; they remain in `TRANSPORT_BLOCKED_HANDLED` only as a transient reader-proxy-outage safety net; `_is_transport_block` also recognises an `Access-Denied` relay.
+- **`sources/sources.json` (metadata):** CISA source notes document the working recipes; failure counters reset. **`.claude/memory/source-fetch-blocks.md`:** CISA section rewritten from "blocked, substitute" to "reachable via reader proxy + CSAF mirror".
+- **Weekly bumped to v3.6 in lockstep** (shared Phase 5 machinery; no weekly-specific divergence changed).
+
+### What stays
+
+- **No hard invariant weakened.** A 403 still never demotes; the reader proxy is a transport, not a citation (the brief still cites the cisa.gov URL); `cisa-kev` JSON remains the exploited-vuln ground truth; the "NEVER WebFetch CISA directly" rule still holds (a direct fetch still 403s — the bridge is the path). No schema/gate change: `check_run.py`, the entry contract, and taxonomy are untouched; the new `cisa` subcommands are additive.
+
+---
+
+## 3.5 — 2026-07-05 (completeness: the brief must be sound *and* complete)
+
+### Why
+
+v3.3 replaced the count-based volume caps with a strict relevance/actionability gate, but its emphasis landed on *soundness* — drop marginal items, low false positives — with a closing "when in doubt, drop; marginal inclusions are the more corrosive failure" that biased the pipeline toward exclusion. For a reader who relies on ctipilot.ch as their single source that is only half the requirement: a genuinely-relevant item left out is a **blind spot**, and a silent one, since the reader never sees what they were not told. This release makes the two properties explicit and equal — the brief must be **sound** (only relevant / accurate / actionable content, very low false positives) *and* **complete** (every genuinely-relevant in-window item published, very low false negatives; no blind spot on anything that matters to the reader's job). A missed relevant item is exactly as serious a failure as an included marginal one.
+
+### What changed
+
+- **PD-11 (`prompts/cti-run.md`)** now frames the gate around two equal-weight properties — sound and complete — and defines each. The closing rule is rebalanced: the conservatism governs *scope and accuracy*, not how much relevant material gets in; doubt about *relevance to the constituency* resolves toward drop, but doubt about the *severity* of a clearly-relevant item resolves toward include-at-supported-priority, never omission. The volume paragraph gains "the gate removes noise, never signal". The Calibration paragraph notes that a false negative is the *silent* failure, so completeness is verified, not assumed. The Timeliness paragraph now reads "publish nothing else and, equally, leave nothing relevant unpublished".
+- **New Phase 2 completeness sweep:** after applying the relevance gate, the main agent re-reads the full findings set (including sub-agent `borderline` items) and confirms nothing genuinely relevant fell out for a non-scope reason; a scoped follow-up sub-agent is spawned if an omitted-but-relevant item needs a corroborating source. A new quality-gate checklist item ("sound AND complete") records it.
+- **Both verifier definitions (lockstep, byte-identical bodies):** the intel-run coverage check now verifies soundness and completeness with equal rigour and treats a relevant omission (F10 missed-angle / F8 too-thin) as weighing the same as a bad inclusion; the "Missed angles" check is reframed as a first-class completeness obligation with a "no gap found" verdict signal.
+- **`prompts/weekly-summary.md` (banner v3.5, lockstep):** the weekly volume directive adopts the same sound-and-complete framing.
+- **Docs synced:** `docs/pipeline.md` (§ Relevance discipline gains the sound/complete definitions), `README.md`, `CLAUDE.md` (the volume hard rule and hard-invariant #20 add the completeness half — "no blind spots").
+
+### What stays
+
+- **Everything from v3.3 and the v3.4 source-access self-healing change** — no hardcoded entry count; volume follows relevance; more runs never mean more content (dedup + `check_run.py` cross-run CVE-dedup FAIL); `critical` / deep-dive rarity governed by their qualitative bars; the vulnerability gate at "action beyond the regular patch cycle"; and the mandatory source-health repair contract.
+- **No mechanical-gate or schema change** — completeness is an editorial property (main-agent Phase 2 sweep + verifier coverage / missed-angle checks); `tools/check_run.py`, the entry contract, taxonomy, and the compose renderer are untouched. Completeness never licenses fabrication or LLM-knowledge: PD-1 stands — only what the run's sources support is published, and an omitted item is surfaced via a scoped follow-up sub-agent or a coverage-gap line, never invented.
+- Every other prime directive, the gate + verifier loop, entry immutability + `update_of` discipline, the entity registry, org-profile parameterization, and the publishing chain.
+
+---
+
+## 3.4 — 2026-07-05 (source-access self-healing: OSV bridge for GitHub advisories; CISA transport-block handled state)
+
+### Why
+
+`tools/source_health.py` had flagged the same four sources `UNSOLVED` for weeks and every run either *declined* or *deferred* the fix — the run records literally read "out of scope for this quiet maintenance run; logged here for a follow-up." The detection half of the self-healing loop worked; the repair half never fired, because the Phase-5 source-health instruction said act "**when safely possible**" and authoring a bridge recipe always read as unsafe / out-of-scope on a quiet run. Two distinct root causes sat under the flags, neither a UA problem: (1) **github-advisory** — `github.com` and `api.github.com` are blocked by the **egress proxy itself** (each session is bound to its configured repository; every other github.com path returns HTTP 403 `sessions are bound to their configured repositories`), so no UA / header recovers it; (2) **cisa-advisories / directives / news** — `www.cisa.gov` dynamic paths are blocked by **Akamai bot management** on the egress TLS / behavioural fingerprint (every UA / header combination 403s), with only the static KEV JSON reachable, and the hard rule forbids demoting a 403.
+
+### What changed
+
+- **`prompts/cti-run.md` Phase 5 (`state/source_health.json`):** the "act when safely possible" line is replaced by a **standing repair order** — a `needs-bridge` / `needs-demote` flag must be resolved the same run; authoring and testing a new `tools/fetch_source.py` recipe is explicitly in scope for any run, including a quiet one; "logged for a follow-up" is no longer an acceptable resolution. The two flag types carry concrete playbooks: `needs-bridge` → add / switch a recipe or route to a reachable **mirror carrying the same data** (github.com → OSV.dev); `needs-demote` → fix the recipe, and for content unreachable by every recipe under a 403 (CISA advisories), document the transport block in the source notes so the health probe classes it `bridge-blocked` (handled), not churning-unsolved.
+- **`tools/fetch_source.py` — new `osv` recipe (tooling, not prompt prose):** `osv vuln <GHSA-or-CVE>` (GET `/v1/vulns/{id}`) and `osv query <ecosystem> <package> [version]` (POST `/v1/query`) against `api.osv.dev`, the reachable full mirror of the GitHub Advisory Database. A minimal stdlib `_post_json` helper carries the same SSRF defences as `fetch`.
+- **`tools/source_health.py` (tooling):** github-advisory wired into `API_BRIDGE_CMD` (canary on the permanent Log4Shell GHSA id); new `bridge-blocked` class + `TRANSPORT_BLOCKED_HANDLED` set so a re-confirmed transport 403 on the CISA essentials maps to action `none` (handled) rather than `needs-demote`. A NON-transport recipe break still surfaces as `bridge-fail` → needs-demote, so real regressions are not masked.
+- **`sources/sources.json` (metadata drift):** github-advisory `fetch_method` webfetch → bridge with the OSV recipe documented in notes; the three CISA sources carry the confirmed Akamai root cause + KEV / WebSearch substitute; the stale `bridge` fetch-method description ("Host MUST be on the bridge ALLOWED_HOSTS list") corrected to reflect the current no-allowlist bridge.
+- **`.claude/memory/source-fetch-blocks.md`:** github.com egress-proxy block + OSV substitute recorded; the CISA section updated with the Akamai-fingerprint confirmation.
+
+### What stays
+
+- **No hard invariant weakened.** A 403 still never demotes; two-source verification, no-IOC, entry immutability, the mechanical gate, and the publishing chain are untouched. The change *tightens* the self-healing contract (repair is mandatory, not optional) rather than loosening any rule.
+- **No schema / gate change:** `tools/check_run.py`, the entry frontmatter contract, and taxonomy are untouched. The `osv` recipe and `bridge-blocked` class are additive.
+- **Weekly bumped to v3.4 in lockstep.** The source-health machinery is shared (edited once in `cti-run.md`); the weekly inherits Phase 5 verbatim, so no weekly-specific divergence changed.
+
+---
 
 ## 3.3 — 2026-07-05 (relevance discipline replaces hardcoded volume caps)
 
