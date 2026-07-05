@@ -94,9 +94,40 @@ API_BRIDGE_CMD: dict[str, list[str]] = {
     "cert-eu": ["cert-eu", "recent", "1"],
     "sec-disclosures-edgar": ["sec-edgar", "8k"],
     "ransomware-live": ["url", "https://api.ransomware.live/v2/recentvictims"],
+    # github.com/advisories is blocked by the egress proxy (repo-scoped session,
+    # not a UA refusal); the reachable substitute is OSV.dev, which mirrors the
+    # full GitHub Advisory Database. Canary on a permanent GHSA id (Log4Shell)
+    # verifies the OSV recipe still resolves.
+    "github-advisory": ["osv", "vuln", "GHSA-jfh8-c2jp-5v3q"],
 }
 # Minimum stdout bytes for a bridge invocation to count as "served content".
 BRIDGE_MIN_BYTES = 200
+
+# Sources whose bridge recipe is a KNOWN, re-confirmed transport block (Akamai
+# bot-management 403 on every UA/header combination) with NO reachable content
+# recipe, a documented substitute (KEV JSON + WebSearch corroboration), AND
+# which the lifecycle hard rule forbids demoting (a 403 is transport, not
+# death). For these, a bridge failure that is a transport block is a HANDLED
+# state (class `bridge-blocked`, action `none`) rather than an unsolved
+# `needs-demote` — so the routine stops re-flagging them every run. Documented
+# in sources/sources.json notes + .claude/memory/source-fetch-blocks.md. If the
+# block ever lifts, the probe returns `bridge-ok` on its own; if the recipe
+# breaks for a NON-transport reason (parse error / 404 / empty body) it still
+# surfaces as `bridge-fail` → needs-demote, so a real regression is not masked.
+TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
+    "cisa-advisories", "cisa-directives", "cisa-news",
+})
+
+
+def _is_transport_block(msg: str) -> bool:
+    """True iff a bridge failure message looks like a transport / anti-bot
+    block (HTTP 403/429/503 or an 'Access Denied' body) rather than a genuine
+    recipe break (parse error, 404, timeout, empty body)."""
+    m = (msg or "").lower()
+    return (
+        "403" in m or "429" in m or "503" in m
+        or "access denied" in m or "forbidden" in m
+    )
 
 
 def _ip_blocked(addr: str) -> bool:
@@ -243,7 +274,12 @@ def _bridge_check(source_id: str, url: str, *, timeout: float) -> tuple[str, str
             why = tail[-1][:140] if tail else f"rc={proc.returncode}, {len(out)} B"
         if attempt == 1:
             time.sleep(1.5)
-    return "bridge-fail", f"bridge `{' '.join(argv)}` failed: {why}"
+    detail = f"bridge `{' '.join(argv)}` failed: {why}"
+    # A known transport-blocked essential (403 never demotes, substitute
+    # documented) is a HANDLED state, not an unsolved recipe break.
+    if source_id in TRANSPORT_BLOCKED_HANDLED and _is_transport_block(why):
+        return "bridge-blocked", detail
+    return "bridge-fail", detail
 
 
 def _feed_ok(feed_url: str, *, timeout: float) -> bool:
@@ -322,6 +358,12 @@ def _action(status: str, fetch_method: str, cls: str, code: int | None) -> tuple
         return "none", "already demoted (handled)"
     if cls in _HEALTHY_CLASSES:
         return "none", ""
+    # Known transport-blocked essential: 403 on every UA (Akamai/anti-bot),
+    # no reachable content recipe, substitute documented, and the hard rule
+    # forbids demoting a 403. Handled — do not float it as unsolved.
+    if cls == "bridge-blocked":
+        return "none", ("transport-blocked essential (403 never demotes) — "
+                        "KEV JSON + WebSearch substitute; see sources.json notes")
     # A source already routed through the bridge whose bridge now fails, or any
     # `blocked` source that is still active, is an unsolved problem to fix/demote.
     if cls == "bridge-fail" or fetch_method == "blocked":
@@ -457,7 +499,7 @@ def main() -> int:
         by_action[r["action"]] = by_action.get(r["action"], 0) + 1
     print()
     print("# class breakdown:")
-    for cls in ("ok", "redirect-ok", "bridge-ok", "ua-blocked",
+    for cls in ("ok", "redirect-ok", "bridge-ok", "ua-blocked", "bridge-blocked",
                 "client-error", "server-error", "unreachable", "bridge-fail"):
         n = by_class.get(cls, 0)
         if n:

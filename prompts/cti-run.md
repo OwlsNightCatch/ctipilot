@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.4 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.5 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -389,7 +389,11 @@ Complete the frontmatter of `runs/<RUN_DATE>/<RUN_ID>.md`: `started`/`completed`
 python3 tools/source_health.py        # probes ALL sources via their actual recipes (~2–4 min)
 ```
 
-Act on the printed `UNSOLVED` list the same run when safely possible (`needs-bridge` → add/switch recipe; `needs-demote` → fix or demote), recording edits in `sources_changed[]`. Script-level error → note in the run record and continue; never block the run.
+**Act on the printed `UNSOLVED` list the same run — this is a standing repair order, not deferrable.** Authoring and testing a new `tools/fetch_source.py` recipe is explicitly in scope for any run, including a quiet one; "logged for a follow-up run" is not an acceptable resolution for a flagged source. For each flag:
+- **`needs-bridge`** (browser UA refused on a source not yet on the bridge) → add or switch its recipe. If the host itself is proxy / anti-bot blocked, route to a reachable **mirror carrying the same data** — e.g. `github.com` is blocked by the egress proxy (repo-scoped session, not a UA refusal), so GitHub-advisory content comes from OSV.dev: `python3 tools/fetch_source.py osv query <ecosystem> <package>` / `osv vuln <GHSA-or-CVE>`. Demote only if no reachable substitute exists **and** the failure is not a 403.
+- **`needs-demote`** (an implemented bridge/api recipe now fails) → fix the recipe. A 403 / anti-bot transport block **never** demotes (hard rule). If the content is genuinely unreachable by every recipe (e.g. CISA advisories/directives/news — Akamai 403s every UA; substitute the `cisa-kev` JSON API + WebSearch corroboration), document that in the source's `notes` so `source_health.py` classes it `bridge-blocked` (handled) instead of re-flagging it every run — don't leave it churning as unsolved.
+
+Record every edit in `sources_changed[]`. Script-level error → note in the run record and continue; never block the run.
 
 ---
 

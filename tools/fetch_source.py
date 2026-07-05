@@ -67,6 +67,9 @@ Usage:
     python3 tools/fetch_source.py msrc releases [N]                  # most-recent N monthly release tags
     # Microsoft Security Blog (RSS, with topic filter)
     python3 tools/fetch_source.py msft-secblog recent [N] [TOPIC]    # last N posts; TOPIC e.g. threat-intelligence
+    # OSV.dev — reachable mirror of the GitHub Advisory Database (github.com is egress-proxy-blocked; see the OSV section)
+    python3 tools/fetch_source.py osv vuln <GHSA-or-CVE>            # one advisory by GHSA or CVE id (full record)
+    python3 tools/fetch_source.py osv query <ecosystem> <package> [version]  # advisories affecting a package
 
 Examples:
     python3 tools/fetch_source.py ncsc-csh recent 5
@@ -85,6 +88,9 @@ Examples:
     python3 tools/fetch_source.py msrc release 2026-May 50 | jq '[.items[] | select(.exploited == "Yes")]'
     python3 tools/fetch_source.py msft-secblog recent 5 threat-intelligence | jq '.items[].link'
     python3 tools/fetch_source.py url https://hub.ivanti.com/s/article/May-2026-Security-Advisory-Ivanti-EPMM
+    python3 tools/fetch_source.py osv vuln GHSA-jfh8-c2jp-5v3q | jq '{id, aliases, summary}'
+    python3 tools/fetch_source.py osv query npm lodash | jq '.count'
+    python3 tools/fetch_source.py osv query PyPI requests 2.19.1 | jq '[.vulns[].id]'
 """
 
 from __future__ import annotations
@@ -1185,6 +1191,110 @@ def msft_secblog_recent(count: int = 20, topic: str | None = None) -> dict[str, 
     }
 
 
+# ── OSV.dev — reachable mirror of the GitHub Advisory Database ────────
+#
+# github.com and api.github.com are NOT reachable from the routine's egress:
+# the agent proxy binds each session to its configured repository and answers
+# every other github.com / api.github.com path with HTTP 403 and the JSON body
+# `{"message":"This GitHub API path is not available: sessions are bound to
+# their configured repositories. ..."}`. That includes `github.com/advisories`
+# and `api.github.com/advisories`. This is a proxy-POLICY block, not an
+# anti-bot / UA refusal — no browser UA, header set, or Sec-CH-UA hint recovers
+# it (re-confirmed 2026-07-05 across chrome/firefox/googlebot/curl/minimal).
+#
+# OSV.dev (`api.osv.dev`, operated by Google's OSS security team) ingests the
+# FULL GitHub Advisory Database — every GHSA id is present and aliased to its
+# CVE — and IS reachable from the routine's egress. It is the supported
+# substitute recipe for the `github-advisory` source. Two anonymous JSON
+# endpoints, both stdlib-fetchable:
+#
+#   GET  /v1/vulns/{id}   — one advisory by GHSA or CVE id. Full record:
+#                           summary, details (Markdown), severity (CVSS),
+#                           affected package ranges, references, aliases.
+#   POST /v1/query        — advisories affecting a package. Body:
+#                           {"package": {"ecosystem": "npm", "name": "lodash"}}
+#                           (add "version" to filter to one version). Returns
+#                           {"vulns": [ ...full records... ]}.
+#
+# The brief still cites the human-readable GitHub advisory URL
+# (https://github.com/advisories/<GHSA-ID>) — the bridge supplies the data, not
+# the citation. The routine's watchlist-driven model (research specific
+# vendors / products) maps cleanly onto the package-query endpoint; per-id
+# lookup covers drilldown from a GHSA / CVE surfaced by another source.
+OSV_API_BASE = "https://api.osv.dev"
+# GHSA ids are `GHSA-` + three 4-char groups; CVE ids are the standard form.
+# Both go into a URL path, so the pattern is also the path-safety gate.
+_OSV_ID_RE = re.compile(
+    r"^(?:GHSA-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}-[0-9a-zA-Z]{4}|CVE-\d{4}-\d{4,7})$"
+)
+
+
+def _post_json(url: str, payload: dict[str, Any], *, max_bytes: int = MAX_BODY_BYTES_JSON) -> Any:
+    """POST a JSON body and parse the JSON response, under the same SSRF
+    defences as `fetch` (`_check_url` + safe-redirect opener + body cap).
+    Kept minimal — the only POST endpoint the bridge uses is OSV's read-only
+    `/v1/query`, which takes no auth and mutates nothing."""
+    _check_url(url)
+    data = json.dumps(payload).encode("utf-8")
+    headers = {
+        "User-Agent": BROWSER_UA,
+        "Accept": "application/json",
+        "Accept-Encoding": "identity",
+        "Content-Type": "application/json",
+    }
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with _OPENER.open(req, timeout=DEFAULT_TIMEOUT) as resp:
+            body = _read_capped(resp, max_bytes)
+            code = resp.status
+    except urllib.error.HTTPError as e:
+        try:
+            body = _read_capped(e, max_bytes) if hasattr(e, "read") else b""
+        except RuntimeError:
+            body = b""
+        code = e.code
+    if code != 200:
+        raise RuntimeError(f"upstream HTTP {code} for {url}")
+    return json.loads(body.decode("utf-8", errors="replace"))
+
+
+def osv_vuln(vuln_id: str) -> Any:
+    """Fetch one OSV / GitHub-Advisory record by GHSA or CVE id."""
+    vid = vuln_id.strip()
+    if not _OSV_ID_RE.match(vid):
+        raise ValueError(
+            f"refused: invalid OSV id {vuln_id!r} "
+            "(expected GHSA-xxxx-xxxx-xxxx or CVE-YYYY-NNNN)"
+        )
+    return fetch_json(f"{OSV_API_BASE}/v1/vulns/{vid}")
+
+
+def osv_query(ecosystem: str, package: str, version: str | None = None) -> dict[str, Any]:
+    """Query OSV for advisories affecting `package` in `ecosystem`
+    (npm / PyPI / Go / Maven / crates.io / NuGet / RubyGems / Packagist / …).
+    Optionally filter to a single `version`. Returns the publisher's `vulns`
+    list wrapped with a flat `count` for convenience."""
+    if not re.match(r"^[A-Za-z0-9 ._+-]{1,60}$", ecosystem):
+        raise ValueError(f"refused: invalid ecosystem {ecosystem!r}")
+    if not package or len(package) > 200:
+        raise ValueError(f"refused: invalid package name {package!r}")
+    payload: dict[str, Any] = {"package": {"ecosystem": ecosystem, "name": package}}
+    if version:
+        if len(version) > 100:
+            raise ValueError(f"refused: invalid version {version!r}")
+        payload["version"] = version
+    data = _post_json(f"{OSV_API_BASE}/v1/query", payload)
+    vulns = data.get("vulns", []) if isinstance(data, dict) else []
+    return {
+        "source": "osv",
+        "ecosystem": ecosystem,
+        "package": package,
+        "version": version,
+        "count": len(vulns),
+        "vulns": vulns,
+    }
+
+
 # ── CLI ───────────────────────────────────────────────────────────────
 
 def main(argv: list[str]) -> int:
@@ -1285,6 +1395,16 @@ def main(argv: list[str]) -> int:
     p_msft_recent.add_argument("topic", nargs="?", default=None,
                                 help="topic slug, e.g. threat-intelligence | vulnerabilities-and-exploits | incident-response | ai-and-machine-learning")
 
+    # OSV.dev — reachable GitHub Advisory Database mirror (github.com is egress-proxy-blocked)
+    p_osv = sub.add_parser("osv", help="OSV.dev — GitHub Advisory Database mirror (reachable substitute for github.com/advisories)")
+    osv_sub = p_osv.add_subparsers(dest="osv_cmd", required=True)
+    p_osv_vuln = osv_sub.add_parser("vuln", help="one advisory by GHSA or CVE id (full record)")
+    p_osv_vuln.add_argument("id", help="GHSA-xxxx-xxxx-xxxx or CVE-YYYY-NNNN")
+    p_osv_query = osv_sub.add_parser("query", help="advisories affecting a package in an ecosystem")
+    p_osv_query.add_argument("ecosystem", help="npm | PyPI | Go | Maven | crates.io | NuGet | RubyGems | Packagist | …")
+    p_osv_query.add_argument("package", help="package name, e.g. lodash")
+    p_osv_query.add_argument("version", nargs="?", default=None, help="optional version filter")
+
     args = p.parse_args(argv)
 
     try:
@@ -1382,6 +1502,13 @@ def main(argv: list[str]) -> int:
             if args.msft_cmd == "recent":
                 json.dump(msft_secblog_recent(args.count, args.topic), sys.stdout, indent=2)
                 sys.stdout.write("\n")
+            return 0
+        if args.cmd == "osv":
+            if args.osv_cmd == "vuln":
+                json.dump(osv_vuln(args.id), sys.stdout, indent=2)
+            elif args.osv_cmd == "query":
+                json.dump(osv_query(args.ecosystem, args.package, args.version), sys.stdout, indent=2)
+            sys.stdout.write("\n")
             return 0
     except (RuntimeError, ValueError) as e:
         print(f"fetch_source: {e}", file=sys.stderr)
