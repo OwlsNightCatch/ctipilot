@@ -1,0 +1,101 @@
+domain: S1
+run_id: "2026-07-04T1809Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-04T18:11:19Z"
+ended_at: "2026-07-04T18:15:47Z"
+duration_seconds: 268
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 9
+  bridge_fetches: 9
+items:
+  - title: "\"Bad Epoll\" (CVE-2026-46242) — Linux kernel epoll use-after-free race gives unprivileged local users near-guaranteed root; hits Android"
+    sources:
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-46242", publisher: "NVD (kernel.org-sourced CNA record)", date: "2026-05-30", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html", publisher: "The Hacker News", date: "2026-07-03", role: "corroborating" }
+      - { url: "https://latesthackingnews.com/2026/07/04/bad-epoll-vulnerability/", publisher: "Latest Hacking News", date: "2026-07-04", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"CVE-2026 actively exploited vulnerability July 4 2026\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html → pivot: Latest Hacking News, URL https://latesthackingnews.com/2026/07/04/bad-epoll-vulnerability/ → primary: NVD/kernel.org CVE record, URL https://nvd.nist.gov/vuln/detail/CVE-2026-46242 (references git.kernel.org fix commits)"
+    summary: |
+      CVE-2026-46242 ("Bad Epoll", CVSS 3.1 7.8, CWE-416 Use-After-Free) is a race condition in the Linux
+      kernel's eventpoll subsystem, in the ep_remove() / ep_remove_file() path: the kernel clears the
+      file->f_ep pointer under a lock but continues using the same file object inside the critical
+      section, and a concurrent release path can free the watched struct eventpoll while it is still
+      being dereferenced (CWE-416). The published proof-of-concept sets up two epoll file descriptors that
+      monitor each other and closes both near-simultaneously to land inside a narrow (reported as
+      six-instruction) timing window; researcher Jaeyoung Chung's write-up and PoC (github.com/J-jaeyoung/bad-epoll)
+      report roughly 99% reliability escalating an unprivileged local account to root without crashing the
+      kernel, and claim the exploit can also be used to escape Chrome's renderer sandbox. Affected kernels
+      are 6.4 and newer that lack the fix; Android devices on 6.6-series kernels are affected, while Pixel 8
+      devices on 6.1-based kernels predate the vulnerable code path. The upstream fix (commit a6dc643c6931,
+      referencing kernel.org commits 2de4db145b29, 9324de74a3a5, ced39b6a8062, ef4ca02e9536) landed
+      upstream on 24 April 2026, but distribution and device-vendor backports are still catching up —
+      Debian's tracker reportedly marks bullseye/bookworm as not-affected (vulnerable code absent) while
+      newer branches still need the fix applied. No workaround exists because epoll cannot be disabled
+      without breaking core OS/browser functionality. As of the cited reporting, CISA's KEV catalog does
+      not list this CVE and no in-the-wild exploitation has been confirmed — this is a public-PoC LPE, not
+      a confirmed active-exploitation case.
+    region_nexus: "global; Linux kernel and Android are universally deployed across Swiss federal, cantonal and public-sector server/endpoint estates and Android-based government devices"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector (shared hosting, CI/CD, multi-user Linux, Android fleets)"
+    cves: [CVE-2026-46242]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Inside a function called ep_remove(), the kernel clears a pointer field on a file object. Then it keeps using that same file inside a critical section."
+        attribution: "Latest Hacking News"
+        source_url: "https://latesthackingnews.com/2026/07/04/bad-epoll-vulnerability/"
+      - quote: "The exploit loops the attempt until it lands, without ever crashing the kernel. The result hits root roughly 99% of the time on a vulnerable machine."
+        attribution: "Latest Hacking News"
+        source_url: "https://latesthackingnews.com/2026/07/04/bad-epoll-vulnerability/"
+      - quote: "There is no sign it has been used in real attacks: as of this writing, it is not on CISA's Known Exploited Vulnerabilities list."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html"
+    extended_notes: |
+      Detection concept: LPE via epoll race leaves little forensic trace (reported to rarely trigger KASAN,
+      the kernel's primary memory-error detector). Hunt for unprivileged processes rapidly opening/closing
+      paired epoll file descriptors (e.g. via auditd syscall auditing on epoll_create1/epoll_ctl/close with
+      tight timing loops), and for unexplained root-shell spawns from non-privileged parent processes on
+      multi-tenant Linux hosts, CI/CD runners, and shared hosting boxes (EDR process-lineage alerting).
+      MITRE ATT&CK: T1068 Exploitation for Privilege Escalation (local, kernel-level). Hardening: apply the
+      vendor/distro kernel backport carrying upstream commit a6dc643c6931 as soon as it ships; until then,
+      treat as an LPE risk primarily on systems where untrusted or lower-privileged local users have shell
+      access — audit and minimise the population of local/SSH/CI-runner accounts on affected kernels, since
+      no config-level workaround exists (epoll cannot be disabled). One outlet (The Hacker News) notes the
+      related, earlier bug CVE-2026-43074 in the same code area was found by an AI research tool
+      (Anthropic's "Mythos"), with Bad Epoll being the narrower-window variant it missed — flagged here as
+      context, not independently verified by this agent against Anthropic's own disclosure.
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation and requires local access (not pre-auth/network); included because of the public ~99%-reliable PoC, near-universal kernel/Android exposure, and imminent-exploitation profile (unpatched-by-most-distros LPE with public PoC) that the S1 mission specifically calls out."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per tasking; general coverage rules applied unchanged. General advisory surface (CISA KEV, NCSC-CH CSH, BSI, ANSSI/CERT-FR, NCSC-NL, CERT-EU, CERT-PL) checked this run and cross-referenced; no watchlisted-product hits possible since no list is configured."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "bridge (`cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`) returned HTTP 403 on attempt this run — consistent with sources.json's own 2026-07-04 note logging the same failure; no listing content retrieved. WebSearch used as fallback for KEV/advisory leads (found nothing new beyond CVE-2026-45659, already covered)."
+  - source_id: cisa-directives
+    reason: "bridge (`cisa page https://www.cisa.gov/news-events/directives`) returned HTTP 403 on attempt this run — same transport block as cisa-advisories. No in-window directive found via WebSearch fallback."
+  - source_id: industrialcyber-co
+    reason: "direct WebFetch of https://industrialcyber.co returned HTTP 403 this run (not previously flagged as a bridge/known-403 host in sources.json notes for this id — recipe may need a bridge fallback added). WebSearch fallback for ICS/OT advisories found nothing published inside the 8h window."
+  - source_id: tenable-research
+    reason: "guessed RSS path https://www.tenable.com/blog/rss.xml returned HTTP 404 — sources.json record lacks a specific rss_url for this id; did not find the correct feed path within time budget. No WebSearch fallback attempted for this specific source before time allocated to other essentials ran out."
+  - source_id: mozilla-mfsa
+    reason: "WebSearch found no Mozilla Foundation Security Advisory published inside the 8h window; most recent MFSA activity found dates to mid-June 2026. Not a transport failure, a quiet period."
+  - source_id: projectzero
+    reason: "no in-window (July 2026) content found via WebSearch; most recent indexed Project Zero post is from January 2026. Not treated as a fetch failure — plausible quiet period, not a transport block."
+cve_table:
+  - cve: CVE-2026-46242
+    product: "Linux kernel (eventpoll subsystem, affects kernels 6.4+ and Android 6.6-series)"
+    cvss: "7.8 (CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H)"
+    epss: null
+    kev: false
+    exploited: "no confirmed in-the-wild exploitation reported; public PoC available (github.com/J-jaeyoung/bad-epoll)"
+    patch: "upstream fix landed 2026-04-24 (kernel.org commit a6dc643c69311677c574a0f17a3f4d66a5f3744b, plus related commits 2de4db145b2992da496fea6c51f9839be678ae24, 9324de74a3a59b9fde9b62ee45ebaa71458ba2e5, ced39b6a8062bac5c18a1c3df85634107eb8664a, ef4ca02e95363e78977ca04340d44fe3b4b2b81f); distribution/vendor backports still rolling out as of 2026-07-04"
+    source: "https://nvd.nist.gov/vuln/detail/CVE-2026-46242"
