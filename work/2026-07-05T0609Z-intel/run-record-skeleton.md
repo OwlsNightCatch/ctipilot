@@ -1,0 +1,1 @@
+SKELETON — telemetry finalised in Phase 5. gap_hours=6, window_hours=8, developing=72. Intraday quiet window expected (0-4 entries). No intel drops → no S5. window24h: 3 research entries, 0 deep-dives, 0 critical, 0 high.

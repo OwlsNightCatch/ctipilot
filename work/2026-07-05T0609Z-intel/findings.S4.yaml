@@ -1,0 +1,52 @@
+domain: S4
+run_id: "2026-07-05T0609Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-05T06:11:50Z"
+ended_at: "2026-07-05T06:14:02Z"
+duration_seconds: 132
+self_telemetry:
+  webfetch_calls: 1
+  websearch_calls: 2
+  bridge_fetches: 12
+items: []
+# No items cleared the recency gate (window_hours: 8, anchor 2026-07-05T06:09Z,
+# freshest-source floor ~2026-07-04T22:09Z). Every candidate surfaced by the
+# slice's standard-tier sources was either (a) already in prior_coverage.json
+# (AdaptHealth SEC 8-K, Navient SEC 8-K, NetNut/Popa takedown, Kairos
+# extortion case study, TeamPCP FBI FLASH dev-tool poisoning, Aflac/Nissan/
+# NAIC ShinyHunters PeopleSoft thread, Medtronic ShinyHunters notification,
+# Citizen Lab Pegasus/MEP) or (b) freshest-source-dated 2026-07-03/07-04
+# outside the 8h floor with no fresh in-window delta. SEC EDGAR full-text
+# search for 8-K Item 1.05 (cybersecurity incident) filings for
+# 2026-07-04..2026-07-05 returned zero hits (checked via
+# tools/fetch_source.py sec-edgar 8k 2026-07-04 2026-07-05 -- total: 0).
+# ICO enforcement-action sitemap has no entries newer than 2026-06-23
+# (lastmod). UK ICO breach-notification news index and CISA news bridge
+# were also checked (see Fetch failures / Coverage gaps below).
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist configured for this deployment (config/org-profile.yaml has no supplier list) -- sweep is a no-op per org-profile duty semantics. General S4 coverage rules applied unchanged; no supplier-specific candidates surfaced in-window regardless."
+candidate_sources: []
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "WebFetch returned HTTP 403 on https://industrialcyber.co (listing page) this run -- contradicts sources.json note claiming plain WebFetch works; not retried per the no-more-than-one-retry rule. Recipe may need re-verification in a future run."
+  - source_id: sans-newsbites
+    reason: "Listing page https://www.sans.org/newsletters/newsbites/ is a Next.js SPA shell in this run's fetch -- no server-rendered /newsletters/newsbites/<roman>-<no> hrefs surfaced in the returned HTML (grepped for pattern, zero matches). Could not enumerate a current issue to drill into within budget."
+  - source_id: schneier
+    reason: "Not fetched this run -- time-budgeted toward higher-yield S4 sources (databreaches.net, krebs, risky.biz, SEC EDGAR, ICO); Schneier is analysis/policy commentary, rarely carries breaking incident disclosures per source notes."
+  - source_id: sans-isc
+    reason: "Feed content checked; freshest diary entry dated 2026-07-01, outside the 8h window floor (~2026-07-04T22:09Z) -- no in-window items."
+fetch_failures:
+  - id: cisa-news
+    url_tried: "https://www.cisa.gov/news-events/news"
+    fetch_method: "bridge:cisa page"
+    status_code: 403
+    error_class: transport-403
+    error_message: "fetch_source: upstream HTTP 403 for https://www.cisa.gov/news-events/news"
+    attempted_methods: ["bridge:cisa page"]
+    mitigation_applied: "none -- no working alternate found this run; source notes already flag this as a recurring transport block (does not demote per lifecycle rules)"
+    covered_anyway: false

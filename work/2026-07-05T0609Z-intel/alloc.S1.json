@@ -1,0 +1,339 @@
+{
+ "domain": "S1",
+ "essential_ids": [
+  "advisories-ncsc-nl",
+  "anssi-fr",
+  "bsi-de",
+  "cert-eu",
+  "cert-pl",
+  "cisa-advisories",
+  "cisa-directives",
+  "cisa-kev",
+  "ncsc-ch-security-hub",
+  "ncsc-uk"
+ ],
+ "standard_ids": [
+  "claroty-team82",
+  "jpcert",
+  "morphisec",
+  "mozilla-mfsa",
+  "projectzero",
+  "resecurity",
+  "shadowserver",
+  "socprime",
+  "tenable-research",
+  "trail-of-bits",
+  "trendmicro-research",
+  "truesec",
+  "trustwave-spiderlabs"
+ ],
+ "sources": [
+  {
+   "id": "advisories-ncsc-nl",
+   "publisher": "NCSC-NL \u2014 Security Advisories (RSS)",
+   "url": "https://advisories.ncsc.nl/rss/advisories",
+   "tier": "essential",
+   "fetch_method": "rss",
+   "reliability": "HIGH",
+   "language": [
+    "en",
+    "nl"
+   ],
+   "notes": "Dutch NCSC machine-readable advisory feed (added 2026-05-08). Returns CSAF/CVRF-style Cisco/Ivanti/Apache/MOVEit/PAN-OS advisories with publication and last-update dates. The HTML hub at https://www.ncsc.nl/actueel is navigation-only (STUB) so prefer this RSS. Cite advisories via https://advisories.ncsc.nl/advisory/{id}. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://advisories.ncsc.nl/rss/advisories 5 (listing) then `python3 tools/fetch_source.py ncsc-nl csaf <NCSC-ID>` for the full advisory body \u2014 the /advisory?id= URL is a JS client-side redirect shell, do NOT bridge it directly. AVOID: WebFetch / bridge `url https://advisories.ncsc.nl/advisory?id=...` returns a JS redirect stub, not the advisory; the redirect target /<year>/<id-lower>-<ver>.html also serves a JS index page. Use the `ncsc-nl csaf` API subcommand for the structured body..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "anssi-fr",
+   "publisher": "ANSSI / CERT-FR",
+   "url": "https://www.cert.ssi.gouv.fr/",
+   "tier": "essential",
+   "fetch_method": "api",
+   "reliability": "HIGH",
+   "language": [
+    "fr",
+    "en"
+   ],
+   "notes": "French national cybersecurity agency. WebFetch on the root works; for machine-readable lists prefer the RSS feeds at https://www.cert.ssi.gouv.fr/avis/feed/ (advisories) and https://www.cert.ssi.gouv.fr/alerte/feed/ (active-exploitation alerts). Drill into per-advisory pages /avis/{id}/ to extract CVE lists and affected versions (CVSS scores generally absent in CERT-FR text). 2026-05-08 audit: WebFetch returned CERTFR-2026-AVI-0552 Ivanti EPMM 2026-05-07. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-fr avis-recent 5 (advisories) and cert-fr actu-recent 5 (alerts); then bridge `url https://www.cert.ssi.gouv.fr/avis/{id}/` per-advisory for CVE list + affected versions. WebFetch on the root also works.. AVOID: Don't expect CVSS scores in CERT-FR text; they cite CVE IDs and affected versions only. No need to WebFetch the root when the avis/alerte feeds are cleaner.. | 2026-06-30: CERT-FR actu feed returned only entries up to 2026-06-19 (S2 reports feed appears stale since Nov 2025 via bridge actu-recent). No in-window items; quiet-period++. National CERT \u2014 not demoted (transport 200, content stale); flag feed-staleness for investigation.",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "bsi-de",
+   "publisher": "BSI Germany \u2014 CERT-Bund WID (RSS)",
+   "url": "https://wid.cert-bund.de/content/public/securityAdvisory/rss",
+   "tier": "essential",
+   "fetch_method": "rss",
+   "reliability": "HIGH",
+   "language": [
+    "de",
+    "en"
+   ],
+   "notes": "Federal Office for Information Security (Germany), CERT-Bund's WID advisory portal. The /portal/wid/kurzinformationen page is a JS-rendered SPA (WebFetch returns only the header). PRIMARY URL is the RSS feed. For per-advisory detail, fetch `https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-YYYY-NNNN`. **Never cite the kurzinformationen index** \u2014 always cite the per-advisory detail URL. 2026-05-08 audit: RSS returned 5 advisories all 2026-05-07 incl. LiteLLM, Checkmk, Linux Kernel. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://wid.cert-bund.de/content/public/securityAdvisory/rss 5  (then per-advisory body via api: python3 tools/fetch_source.py bsi-csaf WID-SEC-YYYY-NNNN). AVOID: Do NOT WebFetch the /portal/wid/kurzinformationen index \u2014 it is a JS-rendered SPA returning only the header. Never cite the index; cite the per-advisory securityadvisory?name=WID-SEC URL..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "cert-eu",
+   "publisher": "CERT-EU",
+   "url": "https://cert.europa.eu/publications/security-advisories",
+   "tier": "essential",
+   "fetch_method": "api",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Computer Emergency Response Team for EU institutions. URL CORRECTED 2026-05-08: /publications root is a navigation page only \u2014 sub-agents repeatedly returned a STUB. Drill into /publications/security-advisories/ (per-advisory entries with IDs like 2026-006) and /publications/threat-intelligence/ (monthly Cyber Briefs, e.g. cb26-05). Cite the per-advisory URL https://cert.europa.eu/publications/security-advisories/{YYYY-NNN}/ rather than the index. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cert-eu recent 5  (then webfetch per-advisory URL https://cert.europa.eu/publications/security-advisories/{YYYY-NNN}/ for body). AVOID: Do not cite /publications root \u2014 it is a navigation page. Use the per-advisory /security-advisories/{YYYY-NNN}/ URL..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "cert-pl",
+   "publisher": "CERT Polska / NASK",
+   "url": "https://cert.pl/en/news/",
+   "tier": "essential",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en",
+    "pl"
+   ],
+   "notes": "Polish CERT \u2014 strong on Russia-adjacent threats and OT incidents. 2026-05-08 audit: WebFetch returned 5 dated posts incl. 'Annual report 2025' 2026-04-08. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://cert.pl/en/news/ (listing) then webfetch the per-post cert.pl/en/posts/... URL for body. AVOID: No issues \u2014 WebFetch returns clean dated listing and substantive detail pages. No bridge needed..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "cisa-advisories",
+   "publisher": "CISA Cybersecurity Advisories",
+   "url": "https://www.cisa.gov/news-events/cybersecurity-advisories",
+   "tier": "essential",
+   "fetch_method": "bridge",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "US government joint advisories often co-signed with allied CERTs (UK NCSC, ACSC AU, NCSC-NZ, CCCS CA, BSI DE, CERT-EU). WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories  (then `cisa page <alert_url>` to drill). AVOID: WebFetch reliably HTTP 403 on cisa.gov \u2014 skip it entirely. Use the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again \u2014 consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge.",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "cisa-directives",
+   "publisher": "CISA Directives",
+   "url": "https://www.cisa.gov/news-events/directives",
+   "tier": "essential",
+   "fetch_method": "bridge",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Binding Operational Directives and Emergency Directives \u2014 high-priority defender signal. WebFetch HTTP 403 (re-confirmed 2026-05-08). REQUIRED: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/directives to discover /news-events/directives/{slug} hrefs, then `cisa page <full URL>` per directive for the body.. AVOID: WebFetch 403s the CISA UA \u2014 skip it, go straight to the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again \u2014 consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge.",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "cisa-kev",
+   "publisher": "CISA Known Exploited Vulnerabilities Catalog",
+   "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+   "tier": "essential",
+   "fetch_method": "api",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Authoritative for actively-exploited vulns with federal remediation deadlines. WebFetch is reliably HTTP 403 on this host (transport-side block on the routine UA, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py cisa-kev` returns the full KEV JSON catalog. Do NOT call WebFetch on cisa.gov; treat the 403 as a transport block \u2014 it never demotes the source. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py cisa-kev (full KEV JSON catalog, each entry is a drillable CVE record). AVOID: Do NOT WebFetch cisa.gov \u2014 reliably 403s the routine UA. The api subcommand is the only supported path..",
+   "last_successful_fetch": "2026-07-04"
+  },
+  {
+   "id": "ncsc-ch-security-hub",
+   "publisher": "NCSC Switzerland \u2014 Cyber Security Hub (CSH) / GovCERT.ch",
+   "url": "https://security-hub.ncsc.admin.ch/#/dashboard",
+   "tier": "essential",
+   "fetch_method": "api",
+   "reliability": "HIGH",
+   "language": [
+    "de",
+    "fr",
+    "it",
+    "en"
+   ],
+   "notes": "GovCERT.ch was MERGED INTO NCSC.ch in 2023; CSH replaces the legacy govcert.ch blog (frozen since 2023-09). The /govcert path on ncsc.admin.ch is a navigation page only. Substantive technical reports are now published on the CSH (TLP:CLEAR slice). The SPA at https://security-hub.ncsc.admin.ch/#/dashboard is JS-rendered (WebFetch returns only the 'CSH/Loading' shell). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py ncsc-csh recent 10` returns the listing + each post's full Markdown body in one call; `... ncsc-csh post <ID>` for one item. Cite the canonical SPA URL https://security-hub.ncsc.admin.ch/#/posts/{id}. Posts marked TLP:AMBER / TLP:RED MUST NEVER be fetched even if the API exposes them. (The legacy `govcert-ch` source ID was a duplicate of this entry and was removed 2026-05-08.) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api: python3 tools/fetch_source.py ncsc-csh recent 10  (returns listing + each TLP:CLEAR post's full Markdown body); python3 tools/fetch_source.py ncsc-csh post <ID> for one. Cite https://security-hub.ncsc.admin.ch/#/posts/{id}.. AVOID: WebFetch returns only the JS 'CSH/Loading' SPA shell \u2014 never WebFetch the dashboard. NEVER fetch TLP:AMBER/TLP:RED posts even if exposed..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "ncsc-uk",
+   "publisher": "NCSC UK",
+   "url": "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories",
+   "tier": "essential",
+   "fetch_method": "bridge",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "UK National Cyber Security Centre. /section/keep-up-to-date/threat-reports is a landing page with no actual reports listed. Substantive content lives at /section/keep-up-to-date/reports-advisories (joint advisories, CISA-co-signed) and /section/keep-up-to-date/malware-analysis-reports (technical malware analyses). Drill into individual reports for citation; never cite the landing page itself. NB: the RSS feed at /api/1/services/v1/report-rss-feed.xml has been observed to lag the HTML by months \u2014 prefer WebFetch on the HTML index. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge: python3 tools/fetch_source.py url https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories  (parse real article slugs from the index, then `url <article_url>`; article body is JS-rendered so read <title> + <meta description> + dates rather than <p> text). WebFetch the HTML index also works for discovery.. AVOID: RSS at /api/1/services/v1/report-rss-feed.xml lags ~13 months (newest item May 2025) \u2014 do NOT use it for recency. CRITICAL: WebFetch's AI summariser MANGLES the article slugs (it returned /news/alert-ncsc-issues-advice-following-global-targeting-fortinet... which 404s; the real slug is /news/advice-following-global-targeting-of-fortinet-firewalls-and-vpn-gateways). Always take the slug from the bridge index, not from WebFetch's reconstructed URL. Never cite the landing page itself..",
+   "last_successful_fetch": "2026-07-03"
+  },
+  {
+   "id": "claroty-team82",
+   "publisher": "Claroty Team82",
+   "url": "https://claroty.com/team82/research",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Claroty Team82 \u2014 OT / IoT vulnerability research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 research titles; per-post dates not surfaced on listing \u2014 drill into individual posts. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://claroty.com/team82/research for titles+URLs, then WebFetch the per-post /team82/research/<slug> URL for the date+body (listing has no dates).. AVOID: claroty.com/feed 410s and the bridge returns only the HTML shell with article hrefs but no rendered dates \u2014 don't rely on a feed; WebFetch the listing then drill each post for its date..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "jpcert",
+   "publisher": "JPCERT/CC (Japan)",
+   "url": "https://www.jpcert.or.jp/english/index.html",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en",
+    "ja"
+   ],
+   "notes": "Japan Computer Emergency Response Team Coordination Center \u2014 primary Asian-region government CTI; strong on DPRK / China-aligned campaigns and Patch-Tuesday alerts (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated alerts Feb 12 - Apr 15 2026 (~3 weeks behind). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.jpcert.or.jp/english/index.html (listing) then webfetch the per-advisory jvn.jp/en/jp/JVN<id>/ URL for CVE/CVSS detail. AVOID: No bridge needed \u2014 WebFetch works. Note most listed items are JVN advisories on jvn.jp (a separate host) \u2014 drill there, not on jpcert.or.jp..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "morphisec",
+   "publisher": "Morphisec Labs",
+   "url": "https://www.morphisec.com/blog/",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "MEDIUM",
+   "language": [
+    "en"
+   ],
+   "notes": "Israeli endpoint-security vendor; in-the-wild malware analysis (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 23 - May 7 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.morphisec.com/blog/ (listing) then webfetch the per-article URL for body; RSS available at https://www.morphisec.com/rss-feeds/. AVOID: Listing carries marketing/webinar posts interleaved with research \u2014 filter to the threat-research/malware-analysis titles. No bridge needed; plain WebFetch works..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "mozilla-mfsa",
+   "publisher": "Mozilla Foundation Security Advisories",
+   "url": "https://www.mozilla.org/en-US/security/advisories/",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Firefox / Thunderbird / Firefox ESR security advisories (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated MFSA-2026-NN advisories all 2026-05-07/08. Drill into per-MFSA pages for CVE list and credit. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.mozilla.org/en-US/security/advisories/ (listing of dated MFSA entries) then webfetch the per-MFSA page https://www.mozilla.org/en-US/security/advisories/mfsa2026-NN/ for CVE list. AVOID: Nothing to avoid \u2014 plain WebFetch works on both listing and detail. No bridge needed..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "projectzero",
+   "publisher": "Google Project Zero",
+   "url": "https://projectzero.google/",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Google's elite vulnerability research team. URL UPDATED 2026-05-08: legacy googleprojectzero.blogspot.com 301-redirects to projectzero.google. The Atom feed at /feed.xml is too large for WebFetch's content limit (>10 MB) \u2014 use the HTML index for the recent listing, or fetch the feed via the bridge if needed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 bridge feed: python3 tools/fetch_source.py feed https://projectzero.google/feed.xml 5 (canonical URLs) then webfetch the per-post projectzero.google/YYYY/MM/<slug>.html. WebFetch of the HTML index also works for the listing.. AVOID: Don't WebFetch the /feed.xml directly \u2014 it exceeds WebFetch's content limit; use the bridge feed subcommand for the feed. WebFetch's summariser rendered post URLs as 'project-zero.google' (hyphen) \u2014 the canonical host is projectzero.google (no hyphen, confirmed via the bridge feed); use the feed's verbatim links..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "resecurity",
+   "publisher": "Resecurity",
+   "url": "https://www.resecurity.com/blog",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "MEDIUM",
+   "language": [
+    "en"
+   ],
+   "notes": "US CTI firm; cybercrime, ransomware, initial-access broker reporting (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 dated articles Apr 14 - May 5 2026. Some marketing tone \u2014 discovery / corroborate. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.resecurity.com/blog (then webfetch per-article URL for body). AVOID: Nothing blocks it; webfetch works clean. Some marketing tone \u2014 corroborate before citing as sole source..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "shadowserver",
+   "publisher": "Shadowserver Foundation \u2014 News & Insights",
+   "url": "https://www.shadowserver.org/news-insights/",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Non-profit; exposure scanning telemetry and incident observations. Cadence is sparse \u2014 flag 'no items' rather than fetch failure when window is empty. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.shadowserver.org/news-insights/ (listing) then webfetch each shadowserver.org/news/<slug>/ report. AVOID: Sparse cadence \u2014 flag 'no items in window' rather than a fetch failure; the listing mixes very recent items with months-old ones..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "socprime",
+   "publisher": "SOC Prime",
+   "url": "https://socprime.com/blog/",
+   "tier": "standard",
+   "fetch_method": "rss",
+   "reliability": "MEDIUM",
+   "language": [
+    "en"
+   ],
+   "notes": "SOC Prime \u2014 Sigma-rule-focused threat-research blog (detection-engineering use case). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://socprime.com/blog/feed/ 5  (then webfetch per-post URL for detection guidance/body). AVOID: Nothing to avoid \u2014 WordPress feed and per-article WebFetch both work cleanly..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "tenable-research",
+   "publisher": "Tenable Research",
+   "url": "https://www.tenable.com/blog",
+   "tier": "standard",
+   "fetch_method": "rss",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Tenable vuln research; Patch Tuesday analysis. RSS at https://www.tenable.com/blog/feed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://www.tenable.com/blog/feed 5  (feed carries full HTML bodies inline; WebFetch the article URL only if more detail needed).. AVOID: The feed already includes substantive article bodies \u2014 often no separate per-article fetch is needed..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "trail-of-bits",
+   "publisher": "Trail of Bits",
+   "url": "https://blog.trailofbits.com/",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Audit / research firm; deep technical writeups, supply-chain and crypto research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 articles dated Apr 9 - May 5 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://blog.trailofbits.com/ (listing) then webfetch the per-article URL on the blog.trailofbits.com host (NOT the bare trailofbits.com variant). AVOID: The WebFetch listing renders article hrefs without the 'blog.' subdomain (https://trailofbits.com/2026/...) and those 404. Re-add the 'blog.' prefix when drilling: https://blog.trailofbits.com/2026/... resolves 200..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "trendmicro-research",
+   "publisher": "Trend Micro Research",
+   "url": "https://www.trendmicro.com/en_us/research.html",
+   "tier": "standard",
+   "fetch_method": "rss",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Trend Micro threat research. RSS at https://feeds.feedburner.com/TrendMicroResearch is a drop-in alternative. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://feeds.feedburner.com/TrendMicroResearch 5 (title+date+summary+link) then bridge: python3 tools/fetch_source.py url <article-url> for body (WebFetch 403s the article pages). AVOID: WebFetch 403s trendmicro.com article pages \u2014 for the body use the bridge 'url' (returns full article HTML with article:published_time meta). The feedburner RSS itself fetches fine without the bridge..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "truesec",
+   "publisher": "Truesec",
+   "url": "https://www.truesec.com/hub/blog",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Nordic IR firm (offices SE/DK/FI/DE); annual Threat Intelligence Report; strong European IR visibility. List view shows per-post dates and authors; drill into /hub/blog/{slug} for full posts. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.truesec.com/hub/blog then webfetch https://www.truesec.com/hub/blog/{slug} per post. List view shows per-post dates and authors.. AVOID: Nothing \u2014 WebFetch works cleanly on listing and article. No bridge needed..",
+   "last_successful_fetch": "2026-06-20"
+  },
+  {
+   "id": "trustwave-spiderlabs",
+   "publisher": "LevelBlue (formerly Trustwave) SpiderLabs",
+   "url": "https://www.levelblue.com/blogs/spiderlabs-blog",
+   "tier": "standard",
+   "fetch_method": "webfetch",
+   "reliability": "HIGH",
+   "language": [
+    "en"
+   ],
+   "notes": "Trustwave SpiderLabs was rebranded to LevelBlue in 2025. URL CORRECTED 2026-05-08: legacy https://www.trustwave.com/en-us/resources/blogs/spiderlabs-blog 301-redirects to www.levelblue.com/blogs/spiderlabs-blog. 2026-05-08 audit: WebFetch returned 5 dated 2026 posts latest 2026-05-07 (Vidar/AutoIt, LevelBlue TTP Briefing, Vect ransomware). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.levelblue.com/blogs/spiderlabs-blog (listing) then webfetch the per-post www.levelblue.com/blogs/spiderlabs-blog/<slug> for full malware/TTP analysis. AVOID: Don't use the legacy trustwave.com URL \u2014 it 301s to levelblue.com (already corrected in the source). WebFetch works directly, no bridge..",
+   "last_successful_fetch": "2026-06-20"
+  }
+ ]
+}
