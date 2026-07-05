@@ -24,7 +24,7 @@ Exit codes:
 Scope model:
     A "run scope" is the run record `runs/<date>/<run-id>.md` plus every
     entry whose `run_id` matches. Historical entries and records (other
-    run_ids) are loaded as *context* for the dedup / budget checks but are
+    run_ids) are loaded as *context* for the dedup / composition checks but are
     not re-validated strictly — EXCEPT in --all mode, where every entry gets
     schema validation and registry cross-checks (but never URL liveness:
     that would hammer hundreds of historical URLs) and run records carrying
@@ -787,7 +787,7 @@ def check_run_counters(run: dict[str, Any], run_entries: list[dict]) -> None:
     `deep_dive` must name a deep_dive: true entry from this run. Counter
     drift means the record was written before composition finished (or an
     entry was added/dropped after the record) — the Ops dashboard and the
-    volume-discipline audit both key on these numbers."""
+    rolling-24 h composition report both key on these numbers."""
     actual_pub = len(run_entries)
     actual_upd = len([e for e in run_entries if e.get("update_of")])
     pub = run.get("entries_published")
@@ -991,18 +991,22 @@ def check_update_targets(scope_entries: list[dict], entries_by_id: dict[str, dic
            else "no update entries in scope")
 
 
-def check_budgets(run: dict[str, Any], all_entries: list[dict]) -> None:
-    """Volume discipline (docs/pipeline.md § Volume discipline): more runs
-    must not mean more content. All WARN — a genuinely noisy day may exceed
-    the band, but the excess needs a run-record justification:
-      - > 14 operational entries in the rolling 24 h ending at run.completed;
-      - > 1 deep_dive: true entry on the run's UTC date;
-      - > 1 priority: critical entry in the rolling 24 h (the Immediate-
-        Action bar is intentionally extremely high — two criticals must
-        BOTH independently clear it)."""
+def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> None:
+    """Relevance discipline (docs/pipeline.md § Relevance discipline): entry
+    volume follows the strict relevance/actionability gate, NOT a numeric
+    target or ceiling. There is intentionally no count that fails or warns
+    here — how many entries a window carries is decided entirely by how much
+    of its signal clears PD-11, and more runs must not mean more content
+    (dedup enforces that, checked separately in check_dedup).
+
+    This function is purely informational: it reports the rolling-24 h
+    composition (operational count, deep dives on the run's UTC date,
+    criticals in the window) so the operator can see the shape of the window
+    at a glance. `priority: critical` and deep-dive rarity are governed by
+    their own qualitative bars in the prompt, not by a count here."""
     completed = cm.parse_ts(run.get("completed"))
     if completed is None:
-        warn("budget", "run completed timestamp unparseable — volume budgets skipped")
+        ok("composition", "run completed timestamp unparseable — composition report skipped")
         return
     lo = completed - timedelta(hours=24)
     window: list[dict] = []
@@ -1011,29 +1015,12 @@ def check_budgets(run: dict[str, Any], all_entries: list[dict]) -> None:
         if ts is not None and lo < ts <= completed:
             window.append(e)
     operational = [e for e in window if (e.get("horizon") or "operational") == "operational"]
-    flagged = False
-    if len(operational) > 14:
-        flagged = True
-        warn("budget",
-             f"{len(operational)} operational entries in the rolling 24 h ending "
-             f"{run.get('completed')} (soft ceiling 14) — the run record body must justify the excess")
     dd_today = [e for e in all_entries
                 if e.get("deep_dive") is True and e.get("date") == run.get("date")]
-    if len(dd_today) > 1:
-        flagged = True
-        warn("budget",
-             f"{len(dd_today)} deep_dive entries share UTC date {run.get('date')} "
-             f"({[e['id'] for e in dd_today]}) — ≤ 1 per day unless both independently clear the bar")
     critical = [e for e in window if e.get("priority") == "critical"]
-    if len(critical) > 1:
-        flagged = True
-        warn("budget",
-             f"{len(critical)} priority: critical entries in the rolling 24 h "
-             f"({[e['id'] for e in critical]}) — at most one under normal conditions")
-    if not flagged:
-        ok("budget",
-           f"rolling-24h volume in band ({len(operational)} operational, "
-           f"{len(dd_today)} deep-dive today, {len(critical)} critical)")
+    ok("composition",
+       f"rolling-24h composition (informational, not gated): {len(operational)} operational, "
+       f"{len(dd_today)} deep-dive on {run.get('date')}, {len(critical)} critical")
 
 
 def _scan_iocs(text: str) -> list[str]:
@@ -1923,7 +1910,7 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
                    *, skip_build_tests: bool) -> None:
     """--all mode body: whole-store validation. No URL liveness (hundreds of
     historical URLs — link rot on old entries is not a commit defect), no
-    volume budgets, no per-run dedup/counter cross-checks."""
+    rolling-24 h composition report, no per-run dedup/counter cross-checks."""
     entries_by_id = {e["id"]: e for e in entries}
     registry_keys = set(registry.keys())
 
@@ -2043,8 +2030,8 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     check_update_targets(run_entries, entries_by_id)
 
     if run is not None:
-        print("\n== volume budgets (rolling 24 h) ==")
-        check_budgets(run, entries)
+        print("\n== rolling-24h composition (informational) ==")
+        report_rolling_composition(run, entries)
 
     print("\n== IOC scan ==")
     check_no_iocs(run_entries)
@@ -2111,8 +2098,8 @@ def main() -> int:
                         "run record by `started`")
     p.add_argument("--all", action="store_true",
                    help="validate the whole content store (every entry + registry + every "
-                        "run record; skips liveness, budgets and per-run strict checks on "
-                        "migrated records)")
+                        "run record; skips liveness, composition report and per-run strict "
+                        "checks on migrated records)")
     p.add_argument("--no-build-tests", action="store_true",
                    help="skip running site/test_build.py")
     p.add_argument("--no-link-check", action="store_true",

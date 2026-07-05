@@ -28,8 +28,10 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `fetch-failure-bridge-required` | Known-403 source logged as failed without a bridge attempt | Re-fetch via `python3 tools/fetch_source.py <subcommand>`; the record's `attempted_methods` must show the bridge |
 | `test-build` | `site/test_build.py` failing | Read the test output tail — usually an entry that breaks a renderer assumption; fix the entry, not the test |
 
-WARNs worth acting on before Phase 5.7: `budget` (justify or cut),
+WARNs worth acting on before Phase 5.7:
 `single-source-flag` (fix the `verification` value), `evidence-binding`
 (attribute quotes to a listed publisher), `aggregator-only` (find the
 primary), `org-triage` (align with the profile scheme), `essential-coverage`
-(disclose the miss in the run record).
+(disclose the miss in the run record). The `composition` line is
+informational only (rolling-24 h entry/deep-dive/critical counts) — volume
+follows relevance, not a quota, so there is nothing there to fix.

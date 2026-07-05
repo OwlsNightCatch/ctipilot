@@ -83,7 +83,7 @@ The first push to `main` that touches the content store (`entries/`, `runs/`, `e
 
 In <https://claude.ai/code/routines>, create **two** routines against this repository:
 
-1. **Intel run** — **several times per working day is the intended pattern** (e.g. every 4–6 h). The prompt is cadence-agnostic and self-healing: each fire derives its window from the gap since the previous run record, so missed fires are caught up automatically and the operator can change the cron freely without touching the prompt. More fires mean lower latency, never more content — the volume budget is enforced per rolling 24 h across all runs. Prompt, exactly one line: `Read prompts/cti-run.md and execute it.`
+1. **Intel run** — **several times per working day is the intended pattern** (e.g. every 4–6 h). The prompt is cadence-agnostic and self-healing: each fire derives its window from the gap since the previous run record, so missed fires are caught up automatically and the operator can change the cron freely without touching the prompt. More fires mean lower latency, never more content — dedup ensures a re-scan republishes only the new delta, and entry volume follows a strict relevance/actionability gate, not a count. Prompt, exactly one line: `Read prompts/cti-run.md and execute it.`
 2. **Weekly run** — once per week, operator-chosen day/time. Prompt: `Read prompts/weekly-summary.md and execute it.` It refuses to fire twice for the same ISO week.
 3. **Permissions** — leave **Allow unrestricted branch pushes** *off*. The routines push to `claude/**` only; the auto-merge workflow promotes.
 4. **Sub-agent capability ceiling** — see § [Sub-agent capability ceiling](#sub-agent-capability-ceiling) below.

@@ -26,6 +26,30 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.3 — 2026-07-05 (relevance discipline replaces hardcoded volume caps)
+
+### Why
+
+Volume discipline, carried over from v2, gated the brief on numeric counts — a soft ceiling of 14 operational entries per rolling 24 h, ≤ 1 deep-dive entry per UTC day, ≤ 1 `priority: critical` per 24 h, and per-window "expected new-entry volume" bands keyed on `gap_hours`. A hard count is the wrong control in both directions: on a genuinely eventful day (several unrelated actively-exploited edge RCEs plus a home-region incident) it suppresses genuinely-relevant, actionable signal the reader needs for their job, and a later run surfacing more real signal has no room for it; meanwhile a count does nothing to keep *marginal* items from filling the quota on a quiet day. The anti-noise goal is right — too much information and a time-poor responder stops reading and remembers nothing — but a count was only a proxy for it. This release replaces the count-based cap with a strict relevance/actionability gate: how many entries a window carries is decided entirely by how much of its signal clears the bar. Volume becomes an emergent outcome, never a target or a ceiling.
+
+### What changed
+
+- **PD-11 rewritten (`prompts/cti-run.md`)** into a conservative relevance-and-actionability admission gate. An entry belongs only if it is relevant to *this* constituency AND clears one of: (a) it changes a near-term SOC patch/hunt/block/detect decision; (b) it is a vulnerability demanding action **beyond the regular patch cycle** — actively exploited, imminent mass exploitation, pre-auth RCE on an exposed edge with public PoC, or another out-of-band response (high CVSS alone does not qualify; a routine patch-cycle CVE is out of scope); (c) a confirmed incident / regulatory action / victim disclosure with a constituency nexus (region, sector, business or supply-chain relationship, shared target profile, or an actor that also plausibly targets the constituency) and a transferable operational lesson; (d) substantive primary technical analysis of a new or developing technique / tradecraft that improves an already-highly-skilled responder — never a product pitch or a rehash. When a candidate does not clearly clear one, drop it — marginal inclusions are the more common and more corrosive failure.
+- **All numeric volume caps removed** — the "Volume discipline" paragraph, the PD-7 recency-table "expected new-entry volume" numbers and `cap ~12`, the `priority: critical` ≤ 1/24 h line, and the Phase 3 ≤ 1-deep-dive-per-UTC-day cap. Replaced with: volume follows relevance (no target, no ceiling); more runs never mean more content (dedup); `critical` and deep-dive treatment stay rare because their qualitative bars are extreme, not because a count caps them. Phase 2's "budget check" step is now a "relevance & actionability gate" step; the Phase 0 `window24h` snapshot is reframed as coverage/awareness context, not a quota.
+- **`tools/check_run.py`:** `check_budgets()` → `report_rolling_composition()`. The rolling-24 h composition (operational / deep-dive / critical counts) is now reported informationally and never flags a count as an exceedance. The cross-run CVE-dedup FAIL — the mechanism behind "more runs must not mean more content" — is untouched.
+- **Both verifier definitions (lockstep, byte-identical bodies):** the intel-run whole-run coverage check drops the ≤ 1-deep-dive-per-day and daily-band language, tightens the vulnerability gate to "action beyond the regular patch cycle" (high CVSS alone insufficient), and adds "there is no entry-count band to police — flag only marginal *inclusions* (F7) and missed relevant items".
+- **`prompts/weekly-summary.md` (banner v3.3, lockstep):** the weekly "Volume" directive and quality-gate lines drop the 8–16 strategic-entry band and the "exactly 5–8 week-at-a-glance bullets" count; the weekly's volume now follows W-PD-1-cleared strategic signal with no count target.
+- **`prompts/verification.md`:** the quality-gate checklist drops "volume bands respected" and the deep-dive day budget, replaced with "every entry clears the strict relevance/actionability gate" and "deep-dive treatment reserved for an item that earns it".
+- **Docs synced:** `docs/pipeline.md` (§ Volume discipline → § Relevance discipline; § Priority critical line; § Why property 1; mechanical-gate list; `/brief/` rendering note), `docs/architecture.md`, `docs/operating.md`, `README.md`, `CLAUDE.md` (the "NEVER inflate volume" hard rule and hard-invariant #20 → relevance discipline), `prompts/check-run-fixes.md`, `entries/README.md`.
+
+### What stays
+
+- **The anti-overflooding goal is unchanged and, if anything, stronger** — the reader is now protected by a strict relevance/actionability bar rather than an arbitrary count. The standard is world-class CTI with very low false positives: a reader who reads only the brief learns everything relevant to their job as a highly technical responder, and nothing that isn't.
+- **"More runs must not mean more content" remains a hard invariant** — still enforced by dedup (PD-8) and `check_run.py`'s cross-run CVE-dedup FAIL. Cadence changes latency, never volume.
+- **The `priority: critical` bar, the deep-dive selection criteria + category rotation, the watchlist ≤ ⅓ anti-overshoot guideline, every other prime directive, the mechanical gate + verifier loop, entry immutability + `update_of` discipline, the entity registry, org-profile parameterization, and the publishing chain.**
+
+---
+
 ## 3.2 — 2026-07-05 (sharpened Swiss / European CI + government focus; breach / incident inclusion gate)
 
 ### Why

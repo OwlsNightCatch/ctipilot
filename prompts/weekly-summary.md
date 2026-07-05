@@ -33,7 +33,7 @@ PD-1 through PD-13 of [`prompts/cti-run.md`](cti-run.md) apply to every strategi
 
 - **Recency (replaces PD-7).** The unit is the **ISO week anchored on the most recent completed Sunday**: `week = ISO week of (today − weekday offset)`, covering Monday 00:00 UTC through Sunday 24:00. `window_days = days since the previous weekly run record` (default 7; a missed week self-heals to 14). W1/W2 receive `window_days`. A weekly run never fires twice for the same ISO week — if `runs/` already carries a `-weekly` record whose entries cover this week, stop and report `duplicate-week`.
 - **Dedup (replaces PD-8).** The weekly dedups against **prior weeklies' strategic entries** (not against operational entries — re-framing those is its job). An item already consolidated in a prior weekly returns only as a `weekly-long-running` status entry (or `update_of` note on the prior strategic entry) with a fresh in-window delta. Every included item passes W-PD-1.
-- **Volume (sharpens PD-11).** The week's strategic output stays in the v2 weekly band: typically 8–16 strategic entries total across the ten weekly sections, each section carrying what a v2 weekly section carried (1–4 items). Empty sections are legitimate and rendered as such. The looking-ahead list is items already in motion — **not predictions**.
+- **Volume (sharpens PD-11).** The week's strategic output follows the same relevance discipline as the intel run — volume tracks the week's genuinely-strategic signal, with **no entry-count target or ceiling** per section or overall. Publish exactly the strategic entries that clear W-PD-1; never pad a section to fill it, never cut a well-earned entry to hit a number. Empty sections are legitimate and rendered as such. The looking-ahead list is items already in motion — **not predictions**.
 - **Historical context (PD-14).** Strategic entries synthesising a topic whose prior public reporting is older than ~6 months open with a Background paragraph citing 2–3 prior reports. This is the weekly's home for the long arc; intel runs reserve it for deep dives.
 
 ---
@@ -142,7 +142,7 @@ All composition rules of `prompts/cti-run.md` Phase 4 apply (compose-after-retur
 - **`weekly-vuln-rollup`** entries carry per-CVE `cves[]` records with the CURRENT status (this week vs first coverage stated in the body) and `references` to the operational entries that first covered them.
 - **`weekly-long-running`** entries are ≤1 consolidated status paragraph per campaign, keyed on the campaign's registry entity; where the prior weekly already carried the campaign, write it as `update_of` that strategic entry.
 - **`weekly-looking-ahead`**: exactly ONE `outlook` entry — a focused, justified bullet list of items **already in motion** (each with an inline source and, where applicable, a `references` id). No predictions.
-- **Week at a glance is derived, not written** — the renderer builds it from the week's `critical`/`high` strategic entries (headline + summary). Calibrate `priority: high` to exactly the 5–8 bullets a v2 § 0 carried.
+- **Week at a glance is derived, not written** — the renderer builds it from the week's `critical`/`high` strategic entries (headline + summary). Calibrate `priority: high` to the genuinely week-defining items — a short, scannable set — not to a fixed bullet count.
 - The run record body carries the weekly verification & coverage notes (single-source items, drops with reasons, contradictions, stalled agents, `Coverage gaps:` / `Watchlist:` / `Closed-source intake:` lines).
 
 ---
@@ -158,8 +158,8 @@ All composition rules of `prompts/cti-run.md` Phase 4 apply (compose-after-retur
 - [ ] Every strategic entry answers W-PD-1 (named lens: on-fire / cross-day / strategic shift) and carries `weekly_section` + `references` where it builds on operational entries.
 - [ ] All shared gates from `prompts/cti-run.md` § Quality gates hold (links real, verification values correct, taxonomy/registry valid, `check_run.py` exit 0 before the verifier, ≥1 verification iteration, run record exists, publish verified).
 - [ ] Weekly dedup ran against prior weeklies; already-consolidated items appear only as long-running status updates with fresh deltas.
-- [ ] Volume in the v2 weekly band (8–16 strategic entries); looking-ahead is one `outlook` entry of items already in motion; empty sections left empty.
-- [ ] `priority: high` count ≈ the 5–8 week-at-a-glance bullets; `critical` only for a genuine stop-and-act item.
+- [ ] Volume follows the week's strategic signal (no count target or ceiling); every entry clears W-PD-1; looking-ahead is one `outlook` entry of items already in motion; empty sections left empty.
+- [ ] `priority: high` reserved for genuinely week-defining items (a short, scannable set); `critical` only for a genuine stop-and-act item.
 - [ ] No weekly fire for an already-covered ISO week (`duplicate-week` guard).
 
 ---

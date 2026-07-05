@@ -22,10 +22,13 @@ trend analytics) consumes the pipeline directly — no Markdown scraping.
 
 Two properties are non-negotiable and carried over from v2 unchanged:
 
-1. **More runs must not mean more content.** The rolling-24-hour volume of
-   published entries must stay in the same band as a v2 daily brief
-   (see § Volume discipline). A run that finds nothing new publishes
-   nothing but its run record — that is a healthy outcome.
+1. **More runs must not mean more content.** Entry volume is governed by a
+   strict relevance/actionability gate (see § Relevance discipline), not by a
+   numeric target or ceiling: the rolling-24-hour window carries exactly the
+   entries that clear that gate, however few or many that is. Firing more
+   often changes latency, never volume — dedup guarantees a re-scan of the
+   same window republishes only the new delta. A run that finds nothing new
+   publishes nothing but its run record — that is a healthy outcome.
 2. **Everything published passed the same gates** — two-source
    verification, fake-news guard, URL truth, taxonomy validation, the
    mechanical self-check, and the adversarial verifier loop.
@@ -208,9 +211,10 @@ No IOCs, no rule code, no vanity metrics, English only.
 enforced by `tools/check_run.py`). The bar for `critical` is ALL of: newly
 disclosed or newly weaponised; actively exploited right now or mass
 exploitation imminent / campaign underway with confirmed impact; defender
-action time-critical to the hour or day. At most one `critical` entry per
-rolling 24 h under normal conditions — a second one requires both to
-independently clear the bar.
+action time-critical to the hour or day. Criticals are rare *by
+construction* — that bar is extreme, not because a count caps them. Two
+`critical` entries in a rolling 24 h is legitimate only when each
+independently clears every element of the bar.
 
 ### Kinds — what renders where
 
@@ -232,24 +236,39 @@ section). `horizon: operational` entries come from intel runs;
 operational entries only; the weekly view renders the week's strategic
 entries plus the operational entries its `synthesis` entries `reference`.
 
-## Volume discipline — more runs, not more content
+## Relevance discipline — volume follows relevance, not cadence or a count
 
-The v2 daily calibration bands still govern, applied to the **rolling
-24-hour window across all runs**, not per run:
+Entry volume is **not fixed** — there is no per-run, per-day, or
+rolling-24-hour target or ceiling. The rolling 24-hour window across all
+runs carries exactly the entries that clear the intel run's strict
+relevance/actionability gate (`prompts/cti-run.md` PD-11), however few or
+many the window's genuine signal turns out to be. A quiet day is a handful
+of entries or none; a day with several unrelated actively-exploited edge
+RCEs plus a home-region incident is legitimately larger. The reader is
+protected from overflooding by the **gate**, not by a quota: every entry
+must earn its place, and a marginal item is dropped no matter how much room
+a numeric budget would have allowed.
 
-- 3–6 `threat`/`incident` entries, 1–4 `vulnerability` entries, 0–3
-  `research` entries, 0–3 update entries in a normal 24 h. Quiet windows
-  are smaller; a genuinely noisy day may exceed with the excess justified
-  in the run record.
-- **≤ 1 deep-dive entry per UTC day** across all runs (exceptionally 2 when
-  two items independently clear the bar — same exception as v2). Deep-dive
-  category rotation is derived from the last 30 days of `deep_dive: true`
-  entries.
-- Soft ceiling: > 14 operational entries in any rolling 24 h triggers a
-  `check_run.py` WARN and a mandatory run-record justification.
+- Each `vulnerability` entry must demand action **beyond the regular patch
+  cycle** — actively exploited, imminent mass exploitation, pre-auth RCE on
+  an exposed edge with public PoC, or another out-of-band response. A CVE
+  the normal patch cadence already handles, with no exploitation or
+  exposure-driven urgency, is out of scope even at high CVSS.
+- **Deep-dive treatment** is reserved for an item that earns the long form
+  (see the intel prompt's Phase 3 criteria); it is rare by construction, not
+  by quota. Category rotation is derived from the last 30 days of
+  `deep_dive: true` entries. Most UTC days carry one deep dive, some none;
+  a second on one day is legitimate only when it independently earns the
+  treatment, with the reason in the run record.
+- **`priority: critical`** is governed by its own extreme bar (§ Priority),
+  not by a count — criticals stay rare because the bar is high.
 - Every run reads the window's already-published entries first (including
-  earlier runs the same day) and publishes only the delta. An empty run
-  publishes only its run record.
+  earlier runs the same day) and publishes only the delta — so more runs
+  mean lower latency, never more content. An empty run publishes only its
+  run record.
+- `tools/check_run.py` reports the rolling-24-hour composition (operational
+  count, deep dives today, criticals) for the operator's awareness; it does
+  **not** flag a count as an exceedance.
 
 ## Entity registry — `entities/registry.yaml`
 
@@ -389,8 +408,8 @@ is built entirely from `runs/**` frontmatter.
   default window server-rendered (full content, no-JS readable); JS
   re-assembles the same section structure client-side from
   `data/briefbook.json` (last ~35 days of entries with server-pre-rendered
-  HTML bodies + full metadata + run-record notes). Section order and
-  volume match a v2 daily brief exactly: TL;DR (+ Immediate-Action
+  HTML bodies + full metadata + run-record notes). Section order matches
+  a v2 daily brief exactly: TL;DR (+ Immediate-Action
   callout) → Active Threats → Trending Vulnerabilities → Research →
   Updates → Deep Dive → Action Items → Verification Notes.
 - **`/briefs/YYYY-MM-DD/`** — static per-day archive page (that UTC day's
@@ -417,8 +436,8 @@ parses and every field is schema- and taxonomy-valid; folder-date/
 discovered_at/slug consistency; source-URL block-list + liveness (honouring
 `work/<run-id>/url-liveness.tsv`); evidence shape/presence; priority ⇔
 immediate_action consistency; entity refs resolve; registry integrity;
-update_of resolution; cross-run dedup; volume budgets; CVE sync with
-`cves_seen.json`; IOC scan; run-record completeness (incl. verification
+update_of resolution; cross-run dedup; rolling-24 h composition (reported,
+not gated on a count); CVE sync with `cves_seen.json`; IOC scan; run-record completeness (incl. verification
 counters and prompt-version cross-check against `prompts/CHANGELOG.md`);
 `sources/sources.json` shape; TLP ceiling on closed-source citations; and
 the site smoke tests (`site/test_build.py`).
