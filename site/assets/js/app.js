@@ -496,6 +496,7 @@
     } else if (scope === 'sources') {
       var cat = chipValue('source-cat');
       var stat = chipValue('source-status');
+      var rel = chipValue('source-rel');
       // Boolean-flag chip (toggle on/off, no "All" companion). Active =
       // show only stale-active rows; inactive = show every row.
       var staleChip = document.querySelector('[data-filter-chip="source-stale"].active');
@@ -503,13 +504,15 @@
       document.querySelectorAll('[data-filter-table="sources"] tbody tr').forEach(function (tr) {
         var cats = (tr.dataset.sourceCats || '').split(',').filter(Boolean);
         var st = tr.dataset.sourceStatus || '';
+        var rl = tr.dataset.sourceRel || '';
         var stale = tr.dataset.sourceStale || 'no';
         var matchCat = cat === 'all' || cats.indexOf(cat) >= 0;
         var matchStat = stat === 'all' || st === stat;
+        var matchRel = !rel || rel === 'all' || rl === rel;
         var matchStale = !staleOnly || stale === 'yes';
         var hay = tr.textContent.toLowerCase();
         var matchText = !q || hay.indexOf(q) >= 0;
-        tr.style.display = (matchCat && matchStat && matchStale && matchText) ? '' : 'none';
+        tr.style.display = (matchCat && matchStat && matchRel && matchStale && matchText) ? '' : 'none';
       });
     } else if (scope === 'entities') {
       var etype = chipValue('entity-type');

@@ -1362,18 +1362,59 @@ def render_cve_pill(cve: str, *, prefix: str = "") -> str:
     return " ".join(pieces) if pieces else f'<span class="pill pill-cve">{_escape(cve)}</span>'
 
 
-def reliability_badge(r: str) -> str:
-    """Source-reliability badge for the NATO Admiralty letters A–F. A/B read as
-    high-confidence (green), C as medium (amber), D–F as low (red). Tolerates
-    the legacy HIGH/MEDIUM/LOW tokens on any historical data."""
-    key = (r or "").strip().upper()
+# NATO Admiralty code meanings — the site is a renderer, and the letters/
+# numbers are fixed doctrine (source-reliability legend text is also read
+# live from sources.json `reliability_codes`; these back the badge tooltips
+# and the credibility axis, which lives in the org profile the site doesn't load).
+ADMIRALTY_RELIABILITY_MEANING = {
+    "A": "Completely reliable", "B": "Usually reliable", "C": "Fairly reliable",
+    "D": "Not usually reliable", "E": "Unreliable", "F": "Reliability cannot be judged",
+}
+ADMIRALTY_CREDIBILITY_MEANING = {
+    "1": "Confirmed by other sources", "2": "Probably true", "3": "Possibly true",
+    "4": "Doubtful", "5": "Improbable", "6": "Truth cannot be judged",
+}
+
+
+def reliability_tier_class(letter: str) -> str:
+    """Map a NATO Admiralty source-reliability letter to a badge severity
+    class: A/B → high (green), C → med (amber), D–F → low (red). Tolerates the
+    legacy HIGH/MEDIUM/LOW tokens on any historical data."""
+    key = (letter or "").strip().upper()
     if key in ("A", "B", "HIGH"):
-        cls = "badge--high"
-    elif key in ("C", "MEDIUM"):
-        cls = "badge--med"
-    else:
-        cls = "badge--low"
-    return f'<span class="badge {cls}">{_escape(r or "")}</span>'
+        return "badge--high"
+    if key in ("C", "MEDIUM"):
+        return "badge--med"
+    return "badge--low"
+
+
+def reliability_badge(r: str) -> str:
+    """Source-reliability badge for the NATO Admiralty letters A–F."""
+    meaning = ADMIRALTY_RELIABILITY_MEANING.get((r or "").strip().upper())
+    title = f' title="Admiralty source reliability — {_escape(meaning)}"' if meaning else ""
+    return f'<span class="badge {reliability_tier_class(r)}"{title}>{_escape(r or "")}</span>'
+
+
+def render_classification_badge(cls: dict[str, Any]) -> str:
+    """NATO Admiralty intelligence classification pill for an entry — the
+    source-reliability letter + information-credibility number rendered
+    together (e.g. `B2`), tinted by the reliability tier so confidence reads
+    at a glance, with the full doctrine meaning on hover."""
+    if not isinstance(cls, dict):
+        return ""
+    rel = str(cls.get("reliability") or "").strip().upper()
+    cred = str(cls.get("credibility") if cls.get("credibility") is not None else "").strip()
+    code = f"{rel}{cred}"
+    if not code:
+        return ""
+    rel_m = ADMIRALTY_RELIABILITY_MEANING.get(rel, "source reliability")
+    cred_m = ADMIRALTY_CREDIBILITY_MEANING.get(cred, "information credibility")
+    title = (f"NATO Admiralty classification — source reliability {rel} ({rel_m}); "
+             f"information credibility {cred} ({cred_m})")
+    return (
+        f'<span class="badge badge--classification {reliability_tier_class(rel)}" '
+        f'title="{_escape(title)}"><span class="badge__k">NATO</span>{_escape(code)}</span>'
+    )
 
 
 def status_badge(s: str) -> str:
@@ -1706,12 +1747,9 @@ def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
             f'<span class="badge badge--low" title="{_escape(entry.get("sourcing_note") or "verification status")}">'
             f'{_escape(VERIFICATION_BADGE_LABEL[ver])}</span>'
         )
-    code = content_model.classification_code(entry)
-    if code:
-        parts.append(
-            f'<span class="badge mono" title="NATO Admiralty classification — '
-            f'source reliability (A–F) + information credibility (1–6)">{_escape(code)}</span>'
-        )
+    _cls_badge = render_classification_badge(entry.get("classification"))
+    if _cls_badge:
+        parts.append(_cls_badge)
     if entry.get("deep_dive"):
         parts.append('<span class="badge badge--accent">deep dive</span>')
     if entry.get("watchlist_hit"):
@@ -3436,6 +3474,41 @@ def _stale_days_for_source(s: dict[str, Any], today: date) -> int:
         return -1
 
 
+def render_reliability_legend(reliability_codes: dict[str, Any] | None,
+                              present: set[str]) -> str:
+    """A key for the NATO Admiralty source-reliability letters, driven by
+    sources.json `reliability_codes` (falls back to the standard doctrine).
+    Only letters actually in use are shown, colour-coded to match the badges
+    and the reliability donut, so the A–F in the table and chart is legible."""
+    codes = reliability_codes if isinstance(reliability_codes, dict) and reliability_codes else {
+        k: f"{ADMIRALTY_RELIABILITY_MEANING[k]}." for k in "ABCDEF"
+    }
+    order = [c for c in ("A", "B", "C", "D", "E", "F") if c in codes]
+    order += [c for c in codes if c not in order]
+    items = []
+    for c in order:
+        if present and c not in present:
+            continue
+        tier = reliability_tier_class(c).replace("badge--", "")  # high | med | low
+        items.append(
+            f'<li class="rel-key__item rel-key__item--{tier}">'
+            f'<span class="rel-key__code">{_escape(c)}</span>'
+            f'<span class="rel-key__def">{_escape(str(codes[c]))}</span></li>'
+        )
+    if not items:
+        return ""
+    return (
+        '<details class="rel-key" open><summary>Source reliability — '
+        'NATO Admiralty scale (A–F)</summary>'
+        '<p class="rel-key__intro muted">Each source is rated for reliability on the NATO '
+        'Admiralty scale, weighting original / primary authorities over aggregators. Every '
+        'intelligence entry additionally carries a two-part Admiralty classification '
+        '(reliability letter + credibility number, e.g. <span class="badge badge--classification '
+        'badge--high"><span class="badge__k">NATO</span>B2</span>).</p>'
+        f'<ul class="rel-key__list">{"".join(items)}</ul></details>'
+    )
+
+
 def render_source_list_page(
     sources: list[dict[str, Any]],
     *,
@@ -3443,9 +3516,14 @@ def render_source_list_page(
     cachebust: str,
     prefix: str,
     canonical: str,
+    reliability_codes: dict[str, Any] | None = None,
 ) -> str:
     cats = sorted({c for s in sources for c in (s.get("category") or [])})
     stats = sorted({s.get("status") or "" for s in sources if s.get("status")})
+    rels_present = {(s.get("reliability") or "").strip().upper() for s in sources}
+    rels_present.discard("")
+    rel_order = [c for c in ("A", "B", "C", "D", "E", "F") if c in rels_present]
+    rel_order += sorted(rels_present - set(rel_order))
     today = datetime.now(timezone.utc).date()
 
     cat_chips = "".join(
@@ -3455,6 +3533,11 @@ def render_source_list_page(
     status_chips = "".join(
         f'<span class="chip" data-filter-chip="source-status" data-value="{_escape(s)}">{_escape(s)}</span>'
         for s in stats
+    )
+    rel_chips = "".join(
+        f'<span class="chip" data-filter-chip="source-rel" data-value="{_escape(c)}" '
+        f'title="{_escape(ADMIRALTY_RELIABILITY_MEANING.get(c, ""))}">{_escape(c)}</span>'
+        for c in rel_order
     )
 
     # (The "Stale active sources" dedicated section was removed; the
@@ -3484,6 +3567,7 @@ def render_source_list_page(
         rows.append(
             f'<tr data-source-cats="{_escape(",".join(s.get("category") or []))}" '
             f'data-source-status="{_escape(s.get("status") or "")}" '
+            f'data-source-rel="{_escape((s.get("reliability") or "").strip().upper())}" '
             f'data-source-stale="{stale_attr}">'
             f'<td>'
             f'<a href="{prefix}sources/{urllib.parse.quote(s["id"], safe="")}/"><strong>{_escape(s.get("publisher") or s["id"])}</strong></a>'
@@ -3504,11 +3588,19 @@ def render_source_list_page(
     ) if rows else '<div class="empty">No sources match.</div>'
 
     chart_block = render_sources_overview_charts(sources, prefix=prefix)
+    legend_block = render_reliability_legend(reliability_codes, rels_present)
+    rel_chip_row = (
+        '<div class="toolbar" style="margin-top:-0.5rem">'
+        '<span class="chip active" data-filter-chip="source-rel" data-value="all">All reliability</span>'
+        f'{rel_chips}</div>'
+    ) if rel_chips else ""
     body = f"""
 <h1>Sources</h1>
-<p class="subtitle">{len(sources)} curated source{'' if len(sources) == 1 else 's'}. Each source can be searched and shows the entries that have cited it.</p>
+<p class="subtitle">{len(sources)} curated source{'' if len(sources) == 1 else 's'}, each rated for reliability on the NATO Admiralty scale (A–F). Each source can be searched and shows the entries that have cited it.</p>
 
 {chart_block}
+
+{legend_block}
 
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="sources-q" type="search" placeholder="Filter by name, id, notes, URL…" autocomplete="off" spellcheck="false" data-filter-input="sources" />
@@ -3520,6 +3612,7 @@ def render_source_list_page(
   {status_chips}
   <span class="chip" data-filter-chip="source-stale" data-value="yes" title="Active sources whose last successful fetch is &gt; 7 days ago">Stale only</span>
 </div>
+{rel_chip_row}
 
 {table}
 """
@@ -6595,11 +6688,14 @@ def render_sources_overview_charts(
         "HIGH": _rel_high, "MEDIUM": _rel_med, "LOW": _rel_low,
         "—": "var(--text-muted)",
     }
+    # Order the donut/legend in doctrine order (A→F), legacy tokens after.
+    _rel_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5,
+                 "HIGH": 0, "MEDIUM": 2, "LOW": 4}
     rel_slices = [
         (k, float(v), reliability_color.get(k, "var(--text-muted)"))
-        for k, v in sorted(by_reliability.items(), key=lambda kv: (-kv[1], kv[0]))
+        for k, v in sorted(by_reliability.items(), key=lambda kv: (_rel_rank.get(kv[0], 9), kv[0]))
     ]
-    rel_donut = _ops_svg_donut(rel_slices, size=140, label="Sources by reliability")
+    rel_donut = _ops_svg_donut(rel_slices, size=140, label="Sources by reliability (Admiralty A–F)")
 
     # Top-12 most-cited sources — bias surface.
     top_cited = sorted(
@@ -8015,6 +8111,7 @@ def main() -> int:
         render_source_list_page(
             sources["sources"], site_url=site_url, cachebust=cachebust,
             prefix="../", canonical=site_url + "sources/",
+            reliability_codes=sources.get("reliability_codes"),
         ),
     )
 
