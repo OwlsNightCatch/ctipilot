@@ -5,14 +5,24 @@ Scans `entries/` for every entry whose folder date falls within the window
 (including entries published by EARLIER RUNS TODAY — multiple fires per day
 are first-class) and emits two artefacts under `work/<run-id>/`:
 
-  prior_coverage.json        full records — research sub-agents Read this in
-                             their isolated contexts for fetch-time dedup
-  prior_coverage_keys.json   keys-only digest — the main agent Reads this
-                             (no titles/headlines/URLs, minimal token cost)
+  prior_coverage.json        full records — the main agent AND the research
+                             sub-agents Read this. The main agent loads every
+                             in-window brief (title/headline/summary + keys)
+                             into context for content-level compose-time dedup
+                             (v3.1: 14-day window); sub-agents Read it in their
+                             isolated contexts for fetch-time dedup.
+  prior_coverage_keys.json   keys-only digest — the lean metadata index
+                             (no titles/headlines/summaries/URLs)
+
+The full record carries `summary` — the entry's own TL;DR — so that reading
+prior_coverage.json is equivalent to loading every brief in the window; that
+is what makes the main agent's in-context dedup a content check, not just a
+key match. Coverage OUTSIDE this window is caught by the store-wide metadata
+check (state/cves_seen.json + the mechanical gate), not by this file.
 
 Full record shape (one per entry):
   {id, kind, horizon, date, discovered_at, priority, title, headline,
-   cves[], entities[], primary_source_url, update_of, deep_dive,
+   summary, cves[], entities[], primary_source_url, update_of, deep_dive,
    deep_dive_category, weekly_section}
 
 Keys record shape:
@@ -58,6 +68,7 @@ def build_records(window_days: int, today: str) -> list:
             "priority": e.get("priority"),
             "title": e.get("title"),
             "headline": e.get("headline"),
+            "summary": e.get("summary"),
             "cves": [c.get("id") for c in (e.get("cves") or []) if isinstance(c, dict)],
             "entities": list(e.get("entities") or []),
             "primary_source_url": primary,
