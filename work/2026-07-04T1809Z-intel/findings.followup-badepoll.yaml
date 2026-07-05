@@ -1,0 +1,117 @@
+domain: followup-badepoll
+run_id: 2026-07-04T1809Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-04T18:18:37Z
+ended_at: 2026-07-04T18:21:50Z
+duration_seconds: 193
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 5
+  bridge_fetches: 4
+items:
+  - title: "\"Bad Epoll\" Linux kernel eventpoll use-after-free (CVE-2026-46242) — patch is 2 months old, public write-up/PoC just released"
+    sources:
+      - { url: "https://ubuntu.com/security/CVE-2026-46242", publisher: "Ubuntu Security Tracker (Canonical)", date: "2026-05-30", role: "primary" }
+      - { url: "https://security-tracker.debian.org/tracker/CVE-2026-46242", publisher: "Debian Security Tracker", date: "unknown (no date field on tracker page)", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html", publisher: "The Hacker News", date: "2026-07-03", role: "corroborating" }
+      - { url: "https://pbxscience.com/why-is-the-bad-epoll-linux-kernel-vulnerability-only-making-headlines-now-in-early-july/", publisher: "PBX Science", date: "2026-07-03", role: "corroborating" }
+      - { url: "https://latesthackingnews.com/2026/07/04/bad-epoll-vulnerability/", publisher: "Latest Hacking News", date: "2026-07-04", role: "corroborating" }
+    discovery_trace: "prior S1 findings named CVE-2026-46242 via NVD + thehackernews.com + latesthackingnews.com (no primary, no PoC date, no exploitation status) → this follow-up: WebSearch (\"CVE-2026-46242 Bad Epoll Linux kernel\") → WebSearch (\"CVE-2026-46242 eventpoll use-after-free kernel.org\") → attempted primary pivot to git.kernel.org commit a6dc643c69311677c574a0f17a3f4d66a5f3744b, URL https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=a6dc643c69311677c574a0f17a3f4d66a5f3744b and https://git.kernel.org/stable/c/a6dc643c69311677c574a0f17a3f4d66a5f3744b — BOTH blocked by kernel.org's Anubis anti-bot challenge (both direct WebFetch and tools/fetch_source.py bridge) → pivoted to distro trackers: fetched https://ubuntu.com/security/CVE-2026-46242 (primary, vendor advisory analog, names the CVE, gives CVSS 7.8 and per-package fix status) and https://security-tracker.debian.org/tracker/CVE-2026-46242 (primary, package fix versions) → for PoC/disclosure timing pivoted to https://pbxscience.com/why-is-the-bad-epoll-linux-kernel-vulnerability-only-making-headlines-now-in-early-july/ (published 2026-07-03, explicit dated timeline table) and re-fetched https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html (published 2026-07-03) for corroboration and exploitation-status statement → for CISA KEV status ran python3 tools/fetch_source.py cisa-kev and grepped the full catalog JSON for CVE-2026-46242 (absent) → separately consulted the researcher's own GitHub repository https://github.com/J-jaeyoung/bad-epoll and personal site https://j-jaeyoung.github.io/ for orientation only (NOT cited as a Source per instructions — raw PoC/README, not analysis); its README self-reported timeline (reported 2026-02-17, fix landed 2026-04-24) independently corroborates the pbxscience timeline table without being used as a citation."
+    summary: |
+      CVE-2026-46242 ("Bad Epoll", CWE-416, CVSS 7.8) is a use-after-free in the Linux kernel epoll
+      subsystem's ep_remove() (fs/eventpoll.c): the function clears file->f_ep under file->f_lock but
+      continues operating on the file object inside the critical section (hlist_del_rcu() /
+      spin_unlock()); a concurrent __fput() can observe a transient NULL, skip
+      eventpoll_release_file(), and free a struct eventpoll that is still referenced, corrupting kernel
+      memory via an attacker-controllable kmem_cache_free() against the wrong slab cache. The bug and a
+      sibling race (CVE-2026-43074, caught earlier by Anthropic's "Mythos" model per press reporting)
+      were both introduced by the same 2023 epoll commit. Researcher Jaeyoung Chung (PhD, Seoul National
+      University CompSec Lab) reported the bug to the kernel security team on 2026-02-17; a first patch
+      attempt was incomplete and the correct fix landed in mainline on 2026-04-24 (commit a6dc643c6931).
+      This week's news wave (2026-07-03/04) is driven by Chung's public root-cause write-up and a working
+      kernelCTF exploit achieving ~99% reliability by widening a ~6-instruction race window — NOT by a
+      new patch or new in-the-wild activity. Affects mainline Linux >=6.4 and distro kernels built on
+      that baseline; Debian bullseye/bookworm are unaffected/already fixed, trixie/forky required a
+      point-release bump; Ubuntu lists linux, linux-aws, linux-azure, linux-gcp, linux-oracle,
+      linux-raspi and HWE/OEM/FIPS variants across 24.04/25.10/26.04 as needing the fix. Android devices
+      on 6.6-series+ kernels (per press reporting) are also implicated because epoll cannot be disabled.
+      No vendor, CERT, or researcher has reported in-the-wild exploitation; the only public exploit code
+      is the kernelCTF submission, and the CVE is not present in the CISA KEV catalog as of 2026-07-04.
+    region_nexus: "global; no Switzerland/Europe-specific targeting reported"
+    primary_sector_nexus: "indirect — general Linux/Android fleet exposure, relevant to any public-sector Linux server or Android-managed-device estate"
+    sector: "cross-sector, public-sector, mobile/Android device management"
+    cves: [CVE-2026-46242]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of: (whatever entry id S1 assigned to CVE-2026-46242 this run) — resolves primary-source, PoC-date, and exploitation-status gaps S1 flagged"
+    evidence:
+      - quote: "eventpoll: fix ep_remove struct eventpoll / struct file UAF"
+        attribution: "Ubuntu Security Tracker"
+        source_url: "https://ubuntu.com/security/CVE-2026-46242"
+      - quote: "The upshot is an attacker-controllable kmem_cache_free() against the wrong slab cache."
+        attribution: "Ubuntu Security Tracker"
+        source_url: "https://ubuntu.com/security/CVE-2026-46242"
+      - quote: "The patch itself is nearly two months old. What changed this week is disclosure, not the code: Chung's public writeup laid out the full attack chain — from the initial use-after-free, to leaking kernel memory through /proc/self/fdinfo, to a working root shell — alongside working exploit code."
+        attribution: "PBX Science"
+        source_url: "https://pbxscience.com/why-is-the-bad-epoll-linux-kernel-vulnerability-only-making-headlines-now-in-early-july/"
+      - quote: "Apr 22–24, 2026 — Chung re-reports the remaining issue; a correct fix for Bad Epoll lands in mainline on Apr 24. / Early July 2026 — Chung publishes the full root-cause analysis, exploit writeup, and proof-of-concept."
+        attribution: "PBX Science (dated timeline table)"
+        source_url: "https://pbxscience.com/why-is-the-bad-epoll-linux-kernel-vulnerability-only-making-headlines-now-in-early-july/"
+      - quote: "There is no sign it has been used in real attacks: as of this writing, it is not on CISA's Known Exploited Vulnerabilities list, and the only working code is that kernelCTF proof of concept."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/new-bad-epoll-linux-kernel-flaw-lets.html"
+    extended_notes: |
+      DETECTION/HARDENING FOR MAIN AGENT COMPOSITION:
+      - Technique class: local privilege escalation via kernel memory corruption, CWE-416 Use-After-Free
+        in a kernel subsystem — maps to MITRE ATT&CK T1068 (Exploitation for Privilege Escalation),
+        https://attack.mitre.org/techniques/T1068/. Prerequisite: unprivileged local code execution
+        (attacker must already be able to run code as any local user, e.g. via a web-facing app account,
+        container escape starting point, or — per press reporting — a Chrome renderer-sandbox foothold
+        from a separate browser bug). No remote/pre-auth vector by itself.
+      - Vulnerable component: fs/eventpoll.c, function ep_remove() — race between file->f_ep clearing
+        under file->f_lock and a concurrent __fput()/eventpoll_release_file() path; exploit primitive
+        turns an 8-byte UAF write into a cross-cache UAF on a struct file, then uses
+        /proc/self/fdinfo to leak kernel addresses before a ROP-based privilege escalation (per press
+        summaries of the researcher's write-up — not independently verified against the write-up itself
+        in this pass since the repo was not cited as a source).
+      - Affected/patched precision: introduced by upstream commit 58c9b016e128 (April 2023); fixed by
+        a6dc643c6931 landing in mainline 2026-04-24. Ubuntu: linux, linux-aws, linux-azure,
+        linux-azure-fde, linux-gcp, linux-oracle, linux-nvidia, linux-raspi and HWE/OEM/FIPS variants
+        across 24.04 LTS, 25.10, 26.04 LTS need the backport. Debian: bullseye (5.10.223-1 / 5.10.259-1)
+        and bookworm (6.1.170-3 / 6.1.176-1) are marked not-affected/fixed; trixie needed 6.12.86-1 /
+        6.12.94-1; forky/sid fixed at 7.0.13-1 / 7.0.14-1 (kernel 7.0.10-1 or 7.1-rc1 carries the fix
+        upstream). No config toggle or module unload mitigates this — epoll cannot be disabled — so
+        patching/backport verification is the only lever.
+      - Defender takeaway: verify distro kernel package version against the vendor tracker entries
+        above rather than relying on the "6.4+" mainline cutout, since backport ranges vary. Because
+        exploitation requires only unprivileged local code execution and there is no config-based
+        mitigation, treat any newly-provisioned Linux 6.4+/Android 6.6+ fleet element as requiring the
+        kernel update on the same cadence as any other confirmed-fixed LPE; hunt-wise there is no
+        vendor-published detection signature (kernelCTF PoC only) — EDR/kernel-crash-log monitoring for
+        anomalous eventpoll/fdinfo access patterns from unprivileged processes is the only generic
+        behavioural angle available from public information, and no source in this pass supplied a
+        concrete telemetry hook (Sysmon/auditd rule) for it.
+      - This is explicitly NOT a fresh 0-day being patched now — the kernel fix has been in mainline
+        since 2026-04-24. The in-window news event is Chung's public write-up + working exploit release,
+        which is what changes the *actionability* calculus (a working, reliable local-root PoC is now
+        public) even though the underlying flaw was already fixed almost 10 weeks ago. Recommend framing
+        the entry as "public PoC/exploit-detail release for an already-patched kernel LPE" rather than
+        "newly disclosed vulnerability."
+    borderline: false
+poc_publication_date: "~2026-07-01 to 2026-07-03 (exact day not stated by any source fetched; earliest confirmed press coverage of the write-up is The Hacker News and PBX Science, both dated 2026-07-03; PBX Science's dated timeline table places it under 'Early July 2026' distinct from the 2026-04-24 patch date)"
+in_window: true
+itw_exploitation: "no — The Hacker News explicitly states the CVE is not on CISA's KEV list and the only working exploit code is the kernelCTF proof-of-concept; no vendor, CERT, or researcher source found reports in-the-wild exploitation"
+recommendation: include-with-primary
+watchlist_sweep: null
+candidate_sources:
+  - id: pbxscience
+    publisher: "PBX Science (pbxscience.com) — general tech/security blog, WordPress, moderate reliability, no track record established"
+    url: "https://pbxscience.com/"
+    category: research
+    why: "Produced the only dated, sourced timeline reconstruction distinguishing the April 2026 patch from the July 2026 disclosure/PoC release for CVE-2026-46242; useful discovery-lead source for 'why now' framing on delayed-disclosure stories, but treat as secondary/synthesis, not primary — verify independently per item."
+coverage_gaps:
+  - source_id: kernel.org (git.kernel.org)
+    reason: "Both https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=a6dc643c69311677c574a0f17a3f4d66a5f3744b and https://git.kernel.org/stable/c/a6dc643c69311677c574a0f17a3f4d66a5f3744b returned an Anubis anti-bot 'Making sure you're not a bot!' JS-challenge page via BOTH direct WebFetch and tools/fetch_source.py url bridge (bounded retry: one attempt each, both blocked). This is a NEW finding — kernel.org's git web frontend now sits behind Anubis proof-of-work challenges, which the existing fetch tooling cannot solve. Recommend: do not rely on git.kernel.org commit pages as a fetchable primary until a bridge/Anubis-solving path exists; distro security trackers (Ubuntu, Debian) are a viable substitute primary for CVE-level citations naming a specific kernel CVE."
