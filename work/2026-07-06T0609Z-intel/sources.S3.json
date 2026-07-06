@@ -1,0 +1,219 @@
+[
+ {
+  "id": "industrialcyber-co",
+  "publisher": "Industrial Cyber (industrialcyber.co)",
+  "url": "https://industrialcyber.co",
+  "rss_url": null,
+  "category": [
+   "ot-ics",
+   "news"
+  ],
+  "reliability": "C",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "Discovered via S2 2026-05-22 research. Covers EU/UK CNI enforcement, ICS/OT vulnerability disclosures; published in-depth analysis of South Staffordshire ICO fine and utility cyber oversight implications. Candidate \u2014 promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://industrialcyber.co (listing) then webfetch the per-article industrialcyber.co/<section>/<slug>/ for the full body. AVOID: Nothing to avoid \u2014 plain WebFetch works on both listing and articles. High publishing cadence (several items/day).. | 2026-07-05 admiralty audit: C \u2014 established OT/ICS trade journalism mixing original features with heavy re-reporting; keep active. NOTE: now UA-403s WebFetch AND the bridge (was WebFetch-OK); liveness confirmed via WebSearch only \u2014 fetch method needs re-work, not a demotion."
+ },
+ {
+  "id": "cisa-news",
+  "publisher": "CISA News",
+  "url": "https://www.cisa.gov/news-events/news",
+  "rss_url": null,
+  "category": [
+   "gov",
+   "news"
+  ],
+  "reliability": "A",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "bridge",
+  "notes": "CISA news index \u2014 broader announcements beyond formal advisories. WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/news`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/news (listing) then `cisa page <article_url>` for body. AVOID: WebFetch reliably HTTP 403 on cisa.gov \u2014 skip it entirely. Do not WebFetch any cisa.gov URL.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again \u2014 consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) \u2014 the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE \u2014 a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED \u2014 CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling \u2014 the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/news.xml` for recent items, then `cisa page <news_url>` for the body. (Note: /cisa/blog.xml is a deprecated feed \u2014 CISA returns Access Denied even server-side; do not use it.) | 2026-07-05 admiralty audit: A (primary-authority) \u2014 CISA News, first-party government communications; bridge 403 is a known transport block (no demotion), host confirmed live. Status stays active."
+ },
+ {
+  "id": "group-ib",
+  "publisher": "Group-IB",
+  "url": "https://www.group-ib.com/blog/",
+  "rss_url": null,
+  "category": [
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "blocked",
+  "notes": "Singapore-headquartered global CTI firm. WebFetch returns HTTP 403 (re-confirmed 2026-05-08); RSS at /blog/feed/ also 403. Bridge fetcher would need www.group-ib.com on its allowlist \u2014 not currently allowed because the publisher's WAF was observed to drop the bridge UA too in earlier tests. Surface as coverage gap. Retest periodically; recover to `active` if a CSAF/RSS becomes available. | 2026-06-20 full audit (v2. Remains a coverage gap; WebSearch-only discovery. Do NOT WebFetch or bridge \u2014 it will 503. Recover if a CSAF/RSS becomes available. | 2026-07-05 admiralty audit: B \u2014 global CTI vendor, original research. RECOVER demoted -> active: the WAF no longer drops the bridge UA (listing + article body both fetch 200; newest post 1 Jul 2026). Operator: change fetch_method blocked -> bridge."
+ },
+ {
+  "id": "intel471",
+  "publisher": "Intel 471 Blog",
+  "url": "https://www.intel471.com/blog",
+  "rss_url": "https://www.intel471.com/blog/feed",
+  "category": [
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "rss",
+  "notes": "Intel 471 \u2014 financial-cybercrime + access-broker intelligence; deep coverage of named CIB clusters. RSS at /blog/feed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://www.intel471.com/blog/feed 5  (then webfetch per-post /blog/<slug> for body) \u2014 or webfetch /blog directly. AVOID: Feed mixes original threat research (ransomware, threat-hunting) with CTI-program/marketing posts \u2014 filter for the research items.. | 2026-07-05 admiralty audit: B \u2014 original cybercrime/access-broker research; filter CTI-program marketing posts. HIGH->B, stays active."
+ },
+ {
+  "id": "prodaft",
+  "publisher": "PRODAFT \u2014 Reports",
+  "url": "https://www.prodaft.com/reports",
+  "rss_url": null,
+  "category": [
+   "ch-eu",
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "bridge",
+  "notes": "Swiss-Turkish CTI firm; reports index. WebFetch returns HTTP 403 (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py url https://www.prodaft.com/reports`. | 2026-06-20 full audit (v2.62): RECOVERED via the Chrome-138 UA. FETCH \u2192 `url https://www.prodaft.com/reports` (research reports) and `url https://www.prodaft.com/resources` both return 200; drill /blog/<slug>. WebFetch still 403 \u2014 use the bridge. url updated /reports; fetch_method stays bridge. | 2026-07-05 admiralty audit: B (HIGH->B) status active->active \u2014 independent CTI research lab, original threat-actor research; host live via bridge but SPA index needs a known /blog/<slug> to drill (could not auto-extract a dated report). Not a demotion."
+ },
+ {
+  "id": "sans-newsbites",
+  "publisher": "SANS NewsBites",
+  "url": "https://www.sans.org/newsletters/newsbites/",
+  "rss_url": null,
+  "category": [
+   "news"
+  ],
+  "reliability": "C",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "SANS NewsBites \u2014 bi-weekly editorial newsletter. NO RSS. Recipe: `url https://www.sans.org/newsletters/newsbites/` to discover /newsletters/newsbites/<roman>-<no> hrefs, then `url <full>` per issue. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.sans.org/newsletters/newsbites/ to discover /newsletters/newsbites/{roman}-{no} issue hrefs, then webfetch https://www.sans.org/newsletters/newsbites/{roman}-{no} per issue. NO RSS.. AVOID: The listing may surface issue links on the web.prod.marketing.sans.services host \u2014 rewrite to the canonical www.sans.org/newsletters/newsbites/{roman}-{no} (it resolves and serves the full issue).. | 2026-07-05 admiralty audit: C (was HIGH) \u2014 SANS-Institute editorial newsletter that curates/re-reports others' news with expert annotation; live but listing is a JS SPA (fetch via websearch/direct /newsletters/newsbites/{roman}-{no} issue URLs). Aggregator, so caps at C. Status stays active."
+ },
+ {
+  "id": "schneier",
+  "publisher": "Schneier on Security",
+  "url": "https://www.schneier.com/blog/",
+  "rss_url": "https://www.schneier.com/feed/atom/",
+  "category": [
+   "news"
+  ],
+  "reliability": "C",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "rss",
+  "notes": "Bruce Schneier; analytical/policy commentary. The /blog/ path now redirects to /. RSS at https://www.schneier.com/feed/atom/. (v2.55: rss_url verified \u2014 use `python3 tools/fetch_source.py feed https://www.schneier.com/feed/atom/ [N]`) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://www.schneier.com/feed/atom/ 5 (then webfetch per-article URL for body). AVOID: The /blog/ path redirects to / \u2014 use the atom feed for the dated index. Largely analysis/policy/commentary, not breaking advisories \u2014 treat as context, not primary.. | 2026-07-05 admiralty audit: C (was HIGH) \u2014 respected but commentary/policy blog that links to and comments on others' work; treat as context not primary. Status stays active."
+ },
+ {
+  "id": "scip-ch",
+  "publisher": "scip AG",
+  "url": "https://www.scip.ch/?labs",
+  "rss_url": null,
+  "category": [
+   "ch-eu",
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en",
+   "de"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "Swiss security firm, vulnerability and incident research. 2026-05-08 audit: WebFetch returned 5 dated SCIP Labs articles by named authors, latest 2026-04-30. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch (listing) https://www.scip.ch/?labs then webfetch the absolute article URL https://www.scip.ch/?labs.YYYYMMDD (listing shows relative ?labs.YYYYMMDD form \u2014 prepend host). AVOID: Listing item links are relative query-string anchors (/?labs.20260611) \u2014 build the absolute https://www.scip.ch/?labs.YYYYMMDD before drilling.. | 2026-07-05 admiralty audit: B \u2014 Swiss (CH-relevant) research lab, original author-attributed research; live and drillable. Status stays active."
+ },
+ {
+  "id": "shadowserver",
+  "publisher": "Shadowserver Foundation \u2014 News & Insights",
+  "url": "https://www.shadowserver.org/news-insights/",
+  "rss_url": null,
+  "category": [
+   "research",
+   "active-breaking"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "Non-profit; exposure scanning telemetry and incident observations. Cadence is sparse \u2014 flag 'no items' rather than fetch failure when window is empty. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.shadowserver.org/news-insights/ (listing) then webfetch each shadowserver.org/news/<slug>/ report. AVOID: Sparse cadence \u2014 flag 'no items in window' rather than a fetch failure; the listing mixes very recent items with months-old ones.. | 2026-07-05 admiralty audit: B \u2014 non-profit, first-hand scanning/sinkhole telemetry reports; live but sparse cadence (flag 'no items in window', not a failure). Status stays active."
+ },
+ {
+  "id": "socprime",
+  "publisher": "SOC Prime",
+  "url": "https://socprime.com/blog/",
+  "rss_url": "https://socprime.com/blog/feed/",
+  "category": [
+   "research",
+   "vulns"
+  ],
+  "reliability": "C",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "rss",
+  "notes": "SOC Prime \u2014 Sigma-rule-focused threat-research blog (detection-engineering use case). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 feed https://socprime.com/blog/feed/ 5  (then webfetch per-post URL for detection guidance/body). AVOID: Nothing to avoid \u2014 WordPress feed and per-article WebFetch both work cleanly.. | 2026-07-05 admiralty audit: C \u2014 re-reports others' CVE disclosures with added Sigma detection guidance; useful but corroborate before acting. Keep active."
+ },
+ {
+  "id": "team-cymru",
+  "publisher": "Team Cymru S2 Research",
+  "url": "https://www.team-cymru.com/blog",
+  "rss_url": null,
+  "category": [
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "Team Cymru \u2014 flow / passive-DNS telemetry; strong on adversary infrastructure tracking and DPRK IT-worker investigations (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 article titles incl. 'Targeting the Defense Industrial Base' and DPRK IT-worker analysis; per-post dates not surfaced on listing \u2014 drill into individual posts. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://www.team-cymru.com/blog (listing \u2014 note: dates NOT shown on listing) then webfetch per-post URL for body + date. AVOID: Don't rely on the listing for dates \u2014 they only appear on the individual /post/ pages. Drill each post to get the date.. | 2026-07-05 admiralty audit: B \u2014 original telemetry-based infrastructure research; live. Keep active. Listing omits dates \u2014 drill /post/ pages for the date."
+ },
+ {
+  "id": "tenable-research",
+  "publisher": "Tenable Research",
+  "url": "https://www.tenable.com/blog",
+  "rss_url": null,
+  "category": [
+   "vulns",
+   "research"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "rss",
+  "notes": "Tenable vuln research; Patch Tuesday analysis. RSS at https://www.tenable.com/blog/feed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 rss: python3 tools/fetch_source.py feed https://www.tenable.com/blog/feed 5  (feed carries full HTML bodies inline; WebFetch the article URL only if more detail needed).. AVOID: The feed already includes substantive article bodies \u2014 often no separate per-article fetch is needed.. | 2026-07-05 admiralty audit: B \u2014 original vendor vuln research with own telemetry; feed carries full bodies. Keep active."
+ },
+ {
+  "id": "trail-of-bits",
+  "publisher": "Trail of Bits",
+  "url": "https://blog.trailofbits.com/",
+  "rss_url": null,
+  "category": [
+   "research",
+   "vulns"
+  ],
+  "reliability": "B",
+  "tier": "standard",
+  "language": [
+   "en"
+  ],
+  "fetch_method": "webfetch",
+  "notes": "Audit / research firm; deep technical writeups, supply-chain and crypto research (added 2026-05-08). 2026-05-08 audit: WebFetch returned 5 articles dated Apr 9 - May 5 2026. Candidate \u2014 promote to active after 3 runs. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH \u2192 webfetch https://blog.trailofbits.com/ (listing) then webfetch the per-article URL on the blog.trailofbits.com host (NOT the bare trailofbits.com variant). AVOID: The WebFetch listing renders article hrefs without the 'blog.' subdomain (https://trailofbits.com/2026/...) and those 404. Re-add the 'blog.' prefix when drilling: https://blog.trailofbits.com/2026/... resolves 200.. | 2026-07-05 admiralty audit: B \u2014 original deep technical research; live. Keep active. Drill article URLs on the blog.trailofbits.com host."
+ }
+]

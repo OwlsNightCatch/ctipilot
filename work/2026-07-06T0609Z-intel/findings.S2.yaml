@@ -1,0 +1,80 @@
+domain: S2
+run_id: 2026-07-06T0609Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-06T06:12:20Z
+ended_at: 2026-07-06T06:17:25Z
+duration_seconds: 305
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 10
+  bridge_fetches: 12
+items: []
+# No items cleared the recency + relevance gate this run. Full source sweep
+# performed across the S2 slice (national CERTs/regulators of the home
+# region + regional press); every candidate lead found was either (a)
+# already covered in prior_coverage.json (14-day dedup index), (b) outside
+# the 24h/72h recency window with no in-window delta, or (c) a stale/
+# mis-dated search result. Details below.
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product/supplier watchlist configured (org profile has none). Applied the sector-lens qualitatively: weighted searches toward Swiss/EU public-sector and CI (energy/water/transport/health/finance/telco) government-authority content; nothing in-window cleared the relevance bar under that lens."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Fetched via bridge (ncsc-csh recent 30). Newest post is id 12741 (Citrix NetScaler / Kemp LoadMaster / Argo CD advisories), created 2026-07-03T07:25Z — outside the 24h window and just outside the 72h developing window (~71-73h old at anchor time). No CSH post newer than 2026-07-03 exists yet this run. Genuinely quiet, not a fetch failure."
+  - source_id: ncsc-ch-focus
+    reason: "Im Fokus / Wochenrückblick listing fetched (webfetch, both DE listing and EN Wochenrückblicke index). Latest weekly review is Week 26 (published 30.06.2026, Tuesday cadence) — Week 27 has not yet published as of this Monday-morning run. All content already reflected in prior 14-day coverage (fake Swiss Post QR phishing, booking-platform phishing, Cyber Europe 2026 exercise, EFK federal cyber-governance audit — all already in prior_coverage.json)."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent 8 returned advisories dated 23-25 June 2026 (Squid, Tenable Identity Exposure, cURL/libcurl, Azure Linux, GitLab, CPython, Chrome) — all outside window, all generic vuln-disclosure content better suited to S1. cert-fr actu-recent (alert bulletin feed) confirmed STALE since Nov 2025 (previously flagged 2026-06-30) — feed-staleness persists, flagging again for operator follow-up."
+  - source_id: bsi-de
+    reason: "WID-SEC RSS fetched (30 items); newest is a single Linux Kernel privilege-escalation UPDATE dated 2026-07-06T05:31Z (in-window by timestamp) but it is a routine [mittel]-severity kernel advisory update with no new CVE, no exploitation status change, and no CH/EU sector nexus stated — does not clear the actionability/relevance bar as a standalone item. All other BSI items dated 2026-07-03 or earlier, generic vuln disclosures (PHP, cURL, WatchGuard Firebox, Coolify, dnsmasq, etc.) — S1 territory, not sector/regional incident material, and outside window."
+  - source_id: cert-eu
+    reason: "cert-eu recent 8 (security-advisories RSS) newest item dated 10 June 2026 (Ivanti Sentry) — CERT-EU's advisory-series cadence is monthly-ish and nothing new published in the run window."
+  - source_id: ncsc-nl
+    reason: "advisories.ncsc.nl RSS newest items (NCSC-2026-0218/0219/0220) dated 1-3 July 2026 — GitHub Enterprise Server, Rancher, Cisco Catalyst Center. All generic vendor-patch advisories outside the recency window and without a CH/EU-sector-specific angle; S1 territory."
+  - source_id: ncsc-uk
+    reason: "Bridge/webfetch of reports-advisories listing returned a mixed-date list (items spanning Feb-Apr 2026) with no items resolving inside the recency window; the bridge index recipe's date extraction appears unreliable on this pass (listing dates did not match the documented 'take slug from bridge index' guidance cleanly) — treating as no in-window content rather than a fetch failure since the host responded 200."
+  - source_id: cert-pl
+    reason: "cert.pl/en/news/ listing newest item is the UNC1151/Ghostwriter Gmail-targeting post (12 June 2026) — outside window, and CERT Polska's own liboauth2 SSRF advisory (CVE-2026-54430, referenced via ENISA EUVD) is dated 2 July 2026 but is a generic library vuln without an incident/regional angle — S1 territory if pursued at all."
+  - source_id: cert-at
+    reason: "cert.at blog latest post 01 June 2026 (LLM security-implications essay) — cadence sparse as documented, nothing in window."
+  - source_id: enisa
+    reason: "enisa.europa.eu/news newest item 1 July 2026 (NIS360 survey call) — policy-cadence source, nothing in window; ENISA EUVD 'exploited'/'lastvulnerabilities' feeds checked for CH/EU sector nexus, found only generic CVEs (SharePoint CVE-2026-45659 already covered 2026-07-02, SimpleHelp, Cisco UCM) with no new regional angle."
+  - source_id: cisa-directives
+    reason: "Rotation-priority check per spawn instructions: bridge `cisa page https://www.cisa.gov/news-events/directives` SUCCEEDED (200, reader-proxy route) — the 403x3 pattern noted in the spawn message did not reproduce this run. Listed directives (ED 25-03 Cisco ASA, ED 26-03 Cisco SD-WAN, BOD 26-04) are all previously-known/dated before the window. Recording as a successful health-check, not a failure — source recipe note in sources.json already reflects 'RECOVERED' status from 2026-07-05."
+  - source_id: swisscybersecurity-net (candidate, not in current slice but checked via WebSearch/WebFetch)
+    reason: "Homepage fetched via WebFetch; top 10 items (05.07-22.06.2026) are all either citizen-facing scam alerts, generic vendor-research reprints (agentic ransomware, MFA-bypass, SharePoint CVE-2026-45659 already covered), or policy commentary with no new incident. No item cleared the bar."
+notes: |
+  Verified false leads during this run (dropped after check, logged for the
+  record so a future run does not re-chase them):
+  - "Bülach Cyberangriff" WebSearch hits are all from July 2022 (old ransomware
+    incident on the Swiss city of Bülach) — mis-dated by search relevance
+    ranking, not a 2026 event. Dropped.
+  - "Tchap" (French government secure-messenger DINUM/ANSSI breach) is real
+    but occurred 2026-06-07, disclosed/reported 2026-06-10 — well outside the
+    recency window; not in prior_coverage.json's 194-record scan (checked via
+    grep) but appears to be older than the 14-day dedup window covers, so it
+    is simply stale news, not a dedup miss.
+  - "Furtwangen" (German town, IT outage after external attack detected
+    2026-06-30, reported 2026-07-02) and a WebSearch-surfaced "Nürnberg DDoS,
+    9 July" item — the Nürnberg date is internally inconsistent with today's
+    anchor (2026-07-06) and could not be corroborated on a primary local
+    source in the time available; both dropped as insufficiently verified /
+    outside window rather than fabricated into findings.
+  - CVE-2026-45659 (Microsoft SharePoint deserialization RCE, CISA KEV-listed
+    2026-07-01) recurred across NCSC-CH CSH, ENISA EUVD, and Swiss trade press
+    (swisscybersecurity.net, 03.07.2026) this run — confirmed via
+    prior_coverage.json grep that this is already tracked as entry
+    2026-07-02/cve-2026-45659-microsoft-sharepoint-server-authenticated-des;
+    no material new delta found (Swiss trade-press piece adds no new fact
+    beyond the existing entry), so not resurfaced as an update.
+  Overall assessment: genuinely quiet 24-72h window for CH/EU national-CERT
+  and regional-press home-region/sector content specifically. The essential
+  tier-1 sources (NCSC-CH Security Hub + Im Fokus, ANSSI/CERT-FR, BSI,
+  CERT-EU, NCSC-NL, NCSC-UK, CERT-PL, CERT-AT, ENISA) were all attempted;
+  none produced an in-window item meeting the actionability/relevance gate
+  once already-covered and off-window candidates were excluded.

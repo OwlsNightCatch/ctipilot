@@ -1,0 +1,45 @@
+domain: S2b
+run_id: 2026-07-06T0609Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-06T06:35:00Z
+ended_at: 2026-07-06T06:36:24Z
+duration_seconds: 84
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 2
+items: []
+coverage_gaps: []
+notes: |
+  Scoped follow-up: checked NCSC-CH essential-source coverage gap on the home-region
+  national CERT's incidents feed.
+
+  1) source id `ncsc-ch-incidents` (NCSC Switzerland "Aktuelle Vorfälle" / current-incidents
+     page, https://www.ncsc.admin.ch/ncsc/de/home/aktuell/aktuelle-vorfaelle.html) — fetched
+     via bridge (`python3 tools/fetch_source.py url <url>`), HTTP 200. This page is a
+     consumer-fraud/scam-advisory listing, not an operational-incident feed. The newest
+     dated accordion entry is "Warnung vor SwissNovaChat / SwissNovaCare" (fake-subscription
+     billing scam, websites swissnovachat.ch / swissnovacare.com, operator listed as "Margot
+     Brands Ltd", Hong Kong) timestamped 01.07.2026 13:22 — this is MORE RECENT than the
+     07.04.2026 (7 April) latest-entry date recorded in sources.json's notes field (last
+     audited 2026-06-20), so the source record is stale and should be refreshed with this
+     newer observed date. However 2026-07-01 is outside both the 24h window (cutoff
+     2026-07-05T06:09Z) and the 72h developing window (cutoff 2026-07-03T06:09Z), and is a
+     low-severity consumer-fraud advisory with no CH-gov/CI nexus beyond generic phishing —
+     does not qualify as an item even if it were in-window. No entry created.
+  2) Cross-checked the NCSC-CH Cyber Security Hub (CSH) API (`ncsc-csh recent 20`) as the
+     other candidate "incidents" surface on ncsc.admin.ch. Confirms the spawn message's
+     premise: the newest post remains id 12741 ("[Advisory] Argo CD: Unauthenticated
+     unpatched RCE under specific conditions"), created 2026-07-03T07:25:33Z — already
+     covered per prior_coverage.json / prior S2 sweep. Posts 12740 (Kemp LoadMaster
+     CVE-2026-8037) and 12739 (Citrix NetScaler CVE-2026-8451) are also dated 2026-07-03
+     and older than 12741; no post newer than 12741 exists in the top-20 listing.
+  Conclusion: no in-window (24h, or 72h developing) NCSC-CH incident report beyond what
+  prior_coverage.json already lists. Both surfaces (Aktuelle Vorfälle + Cyber Security Hub)
+  were reached successfully — this is a confirmed-quiet result, not an unreached source.
+candidate_sources: []
+source_metadata_drift:
+  - id: ncsc-ch-incidents
+    field: notes
+    observation: "Latest dated entry on the Aktuelle Vorfälle page is now 01.07.2026 (SwissNovaChat/SwissNovaCare fake-subscription scam warning), not 07.04.2026 as the 2026-06-20 audit note states. Recommend updating the note's 'latest entry' date on next source-health pass; classification as consumer-fraud-only (not operational-incident) page still holds."
