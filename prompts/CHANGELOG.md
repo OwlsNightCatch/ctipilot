@@ -4,6 +4,21 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.11 — 2026-07-06 (correct v3.10: unrestricted broad search is the default — domain-scoping is anti-discovery, demoted to a narrow noise-cutting escape hatch)
+
+### Why
+
+v3.10 introduced `allowed_domains` scoping as a "scope to known primaries" lever and even suggested it as the fix for `WebSearch`'s US geolocation. Operator caught the mistake: **the research mission is discovery** — finding new vendor PSIRTs, newly-identified blogs, and fresh disclosures, plus the standing one-candidate-source duty — and pre-scoping a search to a known-domain allowlist blinds the agent to exactly the new sources it exists to surface. The default must be broad, unrestricted open-web search; domain filters conflict with that and belong only in narrow, deliberate noise-cutting situations.
+
+### What changed (`.claude/agents/cti-research.md` § WebSearch only)
+
+- **Lead bullet reframed from "scope to known primaries" to "search broad and unrestricted by default — discovery is the mission."** Explicit rule: **never pre-scope a discovery search to an allowlist.** `allowed_domains` / `blocked_domains` are demoted to narrow noise-cutting tools, never a discovery filter — `blocked_domains` to drop one SEO farm that keeps burying primaries, `allowed_domains` / `site:` **only** to re-find a specific canonical advisory you already know an authority published and whose page is drowned under aggregator copies. Default is unrestricted; pivot from the results.
+- **US-geolocation compensation corrected.** The fix for US-ranked results is the **in-language query terms** and the curated (geo-unlimited) source list as the primary home-region plan — **not** a domain restriction. Removed the v3.10 line that told the agent to pull up Swiss/European pages with `allowed_domains` scoped to the home-region authority (which would have suppressed everything else).
+
+### What stays
+
+Everything from v3.9/v3.10 and every hard invariant. The v3.10 "no fetch cap / don't ration for context" reinforcement and the `WebFetch` cross-host-redirect note are unchanged. No gate or policy touched (`check_run.py` unchanged, ORG-PROFILE blocks in-sync, verifier bodies byte-identical). This is a single-section correction to the search guidance so it serves discovery instead of fighting it.
+
 ## 3.10 — 2026-07-06 (fetch-coverage: no-cap + auto-compaction reinforcement; `WebSearch` `allowed_domains` scoping + US-geo compensation; `WebFetch` cross-host-redirect handling — all empirically confirmed against Claude Code 2.1.201)
 
 ### Why
