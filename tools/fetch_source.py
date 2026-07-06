@@ -26,20 +26,37 @@ The script will NEVER:
 - Fetch hidden / authenticated content (the agent must respect TLP).
 - Run third-party JS or load any other origin.
 
-Hosts the direct bridge cannot get content from (Cloudflare Managed
-Challenge / geo-WAF refuses every UA, re-confirmed in the 2026-06-20
-audit with the Chrome-138 UA + Sec-CH-UA client hints below). There is
-no archived-snapshot fallback — surface these as a coverage gap and use
-WebSearch to find a corroborating publisher instead:
-- www.group-ib.com → 503 Managed Challenge.
-- www.ccn-cert.cni.es → 403 geo-block from outside Spain.
-- www.coe.int, downloads.seppmail.com → blocked.
-Previously listed here but RECOVERED by the UA bump — use the feed path:
-databreaches.net (`feed https://databreaches.net/feed/`),
-www.darkreading.com (its /rss.xml), www.inside-it.ch (its /rss.xml).
+Fetch ladder recap: try `feed` (RSS) → the routine's WebFetch → `jina` (the
+r.jina.ai reader proxy) → `url` / a dedicated bridge recipe, and keep a backup.
+The `url` command folds the last two together (direct → reader auto-fallback).
+
+Hosts the direct bridge cannot get content from — but the `jina` reader CAN
+(it fetches from its own egress and runs page JS, defeating the anti-bot / geo
+gate that refuses our egress). Reach these with `jina <URL>` (or `url <URL>`,
+which auto-falls-back):
+- www.group-ib.com → Cloudflare gate on our egress; recovered (direct now 200; reader as backup).
+- www.ccn-cert.cni.es → geo-block from outside Spain; recovered via the reader.
+Hosts NO transport reaches (direct, reader, AND bridge all fail — HTTP 401
+even to the reader): www.coe.int, downloads.seppmail.com. There is no
+archived-snapshot fallback — surface these as a coverage gap and use WebSearch
+to find a corroborating publisher instead.
+Recovered earlier by the UA bump — use the feed path: databreaches.net
+(`feed https://databreaches.net/feed/`), www.darkreading.com (its /rss.xml),
+www.inside-it.ch (its /rss.xml).
+
+Fetch ladder (best-content-first — the same order the research agents follow):
+    1. RSS/Atom feed   → `feed <URL>` (structured, dated, carries outbound links)
+    2. direct WebFetch → the routine's WebFetch tool (agent-side; not this script)
+    3. jina reader     → `jina <URL>` (clean markdown; server-side egress bypasses
+                          anti-bot / WAF / geo blocks and executes page JS)
+    4. dedicated bridge→ the structured subcommands below (browser UA / publisher API)
+The `url` command folds tiers 2→3 into one call: it tries a direct browser-UA
+GET and AUTO-FALLS-BACK to the jina reader on a 403 / anti-bot / challenge body,
+so every page has a backup transport. Force one transport with `--direct` / `jina`.
 
 Usage:
-    python3 tools/fetch_source.py url <URL>                          # plain GET with browser UA, prints body
+    python3 tools/fetch_source.py url <URL> [--direct]               # direct browser-UA GET, auto-fallback to jina reader (prints body)
+    python3 tools/fetch_source.py jina <URL> [html]                  # force the r.jina.ai reader proxy (clean markdown; `html` for simplified HTML)
     python3 tools/fetch_source.py ncsc-csh list [N]                  # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
     python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
     python3 tools/fetch_source.py ncsc-csh recent [N]                # combined: list + each post's full content (default 10)
@@ -216,31 +233,26 @@ BROWSER_CLIENT_HINTS = {
 # layer-3 SSRF defences above remain the gate that matters.
 #
 # A small `CLOUDFLARE_BLOCKED_HOSTS` set is retained for documentation
-# only — the bridge can still attempt these hosts, but the failure is
-# expected (Cloudflare Managed Challenge ignores every UA). There is no
-# archived-snapshot fallback; the routine should surface these as a
-# coverage gap and use WebSearch to find a corroborating publisher.
+# only — the bridge can still attempt these hosts, but a DIRECT hit is
+# expected to fail. The `jina` reader proxy (server-side egress + page-JS
+# execution) now defeats most such gates, so the right response is usually
+# `jina <URL>` / `url <URL>` (auto-reader-fallback), not a coverage gap.
+# Only the hosts the reader ALSO fails on (401 even to r.jina.ai) are true
+# coverage gaps served by WebSearch.
 
-# Hosts known to sit behind Cloudflare's Managed Challenge ("Just a
-# moment...") or a geo/WAF block that ignores every UA. The bridge will
-# still attempt these; on a recurring 403/503 the agent should treat the
-# host as a coverage gap (WebSearch for a corroborating publisher) — or,
-# for the hosts noted below, use the feed/RSS path instead.
+# Hosts whose DIRECT fetch sits behind a Cloudflare Managed Challenge / geo /
+# WAF gate. The bridge still attempts them; the `url` command auto-falls-back
+# to the jina reader, which reaches most of these from its own egress.
 #
-# 2026-06-20 full-source audit: re-probed every entry with the
-# Chrome-138 UA + Sec-CH-UA client hints. RECOVERED and removed from the
-# set: databreaches.net (the /feed/ RSS now returns 200 — use
-# `feed https://databreaches.net/feed/`; the HTML homepage is still 403),
-# www.darkreading.com (the /rss.xml feed serves clean dated entries), and
-# www.inside-it.ch (the /rss.xml feed resolves via `url`). These three are
-# no longer dead — they just need their feed path, recorded in
-# sources/sources.json. Still genuinely blocked to every UA (kept below):
-# group-ib.com (503 Managed Challenge), ccn-cert.cni.es (403 geo-block
-# from outside Spain), coe.int, downloads.seppmail.com.
+# 2026-07-06 jina-fallback audit: the reader RECOVERED group-ib.com and
+# ccn-cert.cni.es (both once thought transport-dead) — group-ib now even
+# fetches direct; ccn-cert resolves via the reader. They moved to
+# fetch_method bridge / jina in sources.json and are no longer coverage gaps.
+# Kept below only the hosts NO transport reaches — the reader itself gets
+# HTTP 401: coe.int, downloads.seppmail.com. (Earlier UA-bump recoveries via
+# their feed path: databreaches.net, darkreading.com, inside-it.ch.)
 CLOUDFLARE_BLOCKED_HOSTS = frozenset({
     "www.coe.int", "coe.int",
-    "www.group-ib.com", "group-ib.com",
-    "www.ccn-cert.cni.es", "ccn-cert.cni.es",
     "downloads.seppmail.com",
 })
 
@@ -572,14 +584,48 @@ _CISA_FEED_ITEM_RE = re.compile(
 )
 
 
+# Markers that mean "this 200 body is an anti-bot interstitial / empty SPA
+# shell, not the real content". `smart_fetch` treats a direct hit that trips
+# any of these as a failure and falls through to the reader proxy — so a WAF
+# that serves its challenge with HTTP 200 (Cloudflare Managed Challenge does)
+# does not masquerade as success. Kept deliberately specific to avoid a false
+# positive on a page that merely quotes the word "access denied".
+def _looks_blocked(text: str) -> bool:
+    """True iff the fetched body looks like an anti-bot challenge / access-denied
+    interstitial rather than real page content (checked over the head only)."""
+    head = text[:2500].lower()
+    # Akamai "Access Denied" (CISA and others) — the denial always carries an
+    # edgesuite reference or the "don't have permission" boilerplate.
+    if "access denied" in head and (
+        "edgesuite" in head or "reference #" in head
+        or "don't have permission" in head or "permission to access" in head
+    ):
+        return True
+    # Cloudflare / generic JS interstitials.
+    cf_markers = (
+        "just a moment",
+        "attention required! | cloudflare",
+        "cf-browser-verification",
+        "checking your browser before accessing",
+        "enable javascript and cookies to continue",
+        "please enable javascript to view",
+        "verify you are human",
+    )
+    return any(m in head for m in cf_markers)
+
+
 def _jina_fetch(target_url: str, *, fmt: str | None = None,
                 max_bytes: int = MAX_BODY_BYTES_HTML) -> str:
     """Fetch `target_url` through the r.jina.ai reader proxy and return the
-    decoded body. The reader fetches server-side (its own egress), so it is
-    not subject to the Akamai bot-block on www.cisa.gov. `fmt` maps to Jina's
-    `X-Return-Format` header ('html' keeps simplified markup; default is
-    markdown). Same SSRF defences as `fetch` — the ORIGIN url is validated
-    (https, not an internal address) before it is handed to the reader."""
+    decoded body. The reader fetches server-side (its OWN egress), so it is not
+    subject to the anti-bot / WAF / geo blocks that 403 our egress fingerprint
+    (Akamai on www.cisa.gov, Cloudflare Managed Challenge on group-ib.com,
+    geo-gates such as ccn-cert.cni.es) AND it executes the page's JavaScript, so
+    a client-hydrated SPA that returns an empty shell to a plain GET comes back
+    with real content. `fmt` maps to Jina's `X-Return-Format` header ('html'
+    keeps simplified markup; default is clean markdown). Same SSRF defences as
+    `fetch` — the ORIGIN url is validated (https, not an internal address)
+    before it is handed to the reader."""
     _check_url(target_url)
     extra: dict[str, str] = {"X-Retain-Images": "none"}
     if fmt:
@@ -588,7 +634,7 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     if key:
         extra["Authorization"] = f"Bearer {key}"
     reader_url = JINA_READER_BASE + target_url
-    # The reader can cold-start / rate-limit / stall on a first hit; two tries
+    # The reader can cold-start / rate-limit / stall on a first hit; three tries
     # with a short backoff turn those blips into the real (usually 200) result.
     last = ""
     for attempt in (1, 2, 3):
@@ -602,12 +648,12 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
             code, body = 0, b""
         if code == 200:
             text = body.decode("utf-8", errors="replace")
-            # Some cisa.gov paths (e.g. the deprecated /blog.xml) return the
-            # Akamai "Access Denied" page even through the reader; surface that
-            # as a failure rather than handing back the denial page as content.
-            head = text[:800].lower()
-            if "access denied" in head and ("edgesuite" in head or "permission to access" in head):
-                raise RuntimeError(f"reader proxy relayed an upstream Access-Denied for {target_url}")
+            # Some paths (e.g. cisa.gov's deprecated /blog.xml) return the
+            # upstream Akamai "Access Denied" page even through the reader;
+            # surface that as a failure rather than handing back the denial
+            # page as content.
+            if _looks_blocked(text):
+                raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
             return text
         last = f"HTTP {code}" if code else last
         if attempt < 3:
@@ -615,21 +661,59 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     raise RuntimeError(f"reader proxy failed for {target_url}: {last}")
 
 
-def cisa_page(url: str) -> str:
-    """Fetch a cisa.gov page body. Tries the direct browser-UA fetch first
-    (so it auto-recovers the moment the Akamai block ever lifts) and falls
-    back to the r.jina.ai reader (clean markdown with the full body) on the
-    403 / anti-bot block that is currently the norm."""
+def jina_page(url: str, *, html: bool = False) -> str:
+    """Fetch ANY HTTPS page's body through the r.jina.ai reader proxy. This is
+    the operator-facing `jina <URL>` transport — tier 3 of the fetch ladder
+    (RSS → direct WebFetch → jina reader → dedicated bridge recipe). Prefer it
+    over a raw `url` fetch whenever the host anti-bot-blocks our egress, geo-
+    gates it, or serves a JS-only shell: the reader returns clean, readable
+    content (markdown by default; simplified HTML with `html=True`)."""
+    return _jina_fetch(url, fmt="html" if html else None)
+
+
+def smart_fetch(url: str) -> tuple[str, str]:
+    """Fetch an HTML page's body with an automatic fallback ladder so every
+    page has a backup transport. Tries, in order:
+
+      1. a direct browser-UA GET (`fetch`) — cheapest, no third party;
+      2. the r.jina.ai reader proxy (`_jina_fetch`) — server-side egress that
+         bypasses anti-bot / WAF / geo blocks and executes JavaScript.
+
+    Returns `(text, method)` where `method` ∈ {`direct`, `jina`}. A direct 200
+    whose body trips `_looks_blocked` (a WAF challenge served with HTTP 200) is
+    NOT accepted — it falls through to the reader. Raises RuntimeError only when
+    BOTH transports fail, with the reason from each so the caller can log it.
+    This backs the CLI `url` command (and `cisa page`)."""
+    direct_err = ""
     try:
         code, body, _ = fetch(
             url,
             accept="text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         )
         if code == 200 and len(body) > 500:
-            return body.decode("utf-8", errors="replace")
-    except Exception:  # noqa: BLE001 — fall through to the reader
-        pass
-    return _jina_fetch(url)
+            text = body.decode("utf-8", errors="replace")
+            if not _looks_blocked(text):
+                return text, "direct"
+            direct_err = "direct hit returned an anti-bot/challenge body"
+        else:
+            direct_err = f"direct HTTP {code}, {len(body)} B"
+    except Exception as e:  # noqa: BLE001 — fall through to the reader
+        direct_err = str(e)[:140]
+    try:
+        return _jina_fetch(url), "jina"
+    except Exception as e:  # noqa: BLE001
+        raise RuntimeError(
+            f"both transports failed for {url}: direct=({direct_err}); "
+            f"jina=({str(e)[:160]})"
+        ) from None
+
+
+def cisa_page(url: str) -> str:
+    """Fetch a cisa.gov page body via the standard ladder — a direct browser-UA
+    fetch first (so it auto-recovers the moment the Akamai block ever lifts),
+    then the r.jina.ai reader proxy (clean markdown with the full body) on the
+    403 / anti-bot block that is currently the norm."""
+    return smart_fetch(url)[0]
 
 
 def cisa_feed(feed_url: str, limit: int = 30) -> dict[str, Any]:
@@ -1153,19 +1237,63 @@ def sec_edgar_8k(start: str | None = None, end: str | None = None,
 #   - socprime.com/blog/feed/             (RSS 2.0)
 
 
+def _jina_feed_items(feed_url: str, limit: int) -> list[dict[str, str]]:
+    """Backup feed parse: fetch the feed through the r.jina.ai reader (which
+    renders each item as a `<hN><a href>title</a></hN>` heading) and extract
+    `{title, link}` items. Used when a direct feed GET is anti-bot-blocked or
+    the raw XML fails to parse — so an RSS source behind a WAF still has a
+    second transport. Same shape as `cisa_feed`, host-agnostic."""
+    html = _jina_fetch(feed_url, fmt="html")
+    items: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for m in _CISA_FEED_ITEM_RE.finditer(html):
+        link = m.group(1).strip()
+        title = re.sub(r"<[^>]+>", "", m.group(2)).strip()
+        if not link or not title or link in seen:
+            continue
+        seen.add(link)
+        items.append({"title": title, "link": link, "published": "", "summary": ""})
+        if len(items) >= max(1, int(limit)):
+            break
+    return items
+
+
 def feed_recent(feed_url: str, count: int = 20) -> dict[str, Any]:
     """Fetch any RSS/Atom feed and return the most-recent N items as
     `{source, feed, count, items: [{title, link, published, summary}]}`.
-    The agent then `url`-fetches per-article `link`s for the full body."""
-    body = fetch_text(
-        feed_url,
-        accept="application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
-    )
-    items = _parse_rss(body, limit=max(1, int(count)))
+    The agent then `url`-fetches per-article `link`s for the full body.
+
+    Backup transport: if the direct feed GET fails (anti-bot 403 / TLS / DNS)
+    or the raw body parses to zero items, fall through to the r.jina.ai reader
+    (`method: jina` in the result) so a feed behind a WAF is still readable."""
+    host = (urllib.parse.urlparse(feed_url).hostname or "").lower()
+    method = "direct"
+    items: list[dict[str, str]] = []
+    direct_err = ""
+    try:
+        body = fetch_text(
+            feed_url,
+            accept="application/rss+xml, application/atom+xml, application/xml, text/xml, */*;q=0.5",
+        )
+        items = _parse_rss(body, limit=max(1, int(count)))
+    except Exception as e:  # noqa: BLE001 — try the reader before giving up
+        direct_err = str(e)[:140]
+    if not items:
+        try:
+            items = _jina_feed_items(feed_url, max(1, int(count)))
+            method = "jina"
+        except Exception as e:  # noqa: BLE001
+            if direct_err:
+                raise RuntimeError(
+                    f"feed unreadable via both transports for {feed_url}: "
+                    f"direct=({direct_err}); jina=({str(e)[:140]})"
+                ) from None
+            # Direct parse succeeded but returned 0 items (empty feed) — that
+            # is a legitimate empty result, not a transport failure.
     # Use the hostname as a stable `source` field so a multi-feed run can
     # be sorted / aggregated downstream without re-parsing the URL.
-    host = (urllib.parse.urlparse(feed_url).hostname or "").lower()
-    return {"source": host or "feed", "feed": feed_url, "count": len(items), "items": items}
+    return {"source": host or "feed", "feed": feed_url, "method": method,
+            "count": len(items), "items": items}
 
 
 # ── Microsoft MSRC Update Guide ───────────────────────────────
@@ -1477,8 +1605,15 @@ def main(argv: list[str]) -> int:
     p = argparse.ArgumentParser(prog="fetch_source.py", description=__doc__)
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    p_url = sub.add_parser("url", help="plain GET with browser UA, prints body")
+    p_url = sub.add_parser("url", help="direct browser-UA GET with automatic r.jina.ai reader fallback, prints body")
     p_url.add_argument("url")
+    p_url.add_argument("--direct", action="store_true",
+                       help="direct browser-UA GET only — do NOT fall back to the jina reader (raw HTML/XML)")
+
+    p_jina = sub.add_parser("jina", help="force the r.jina.ai reader proxy — clean markdown; bypasses anti-bot/WAF/geo blocks and runs page JS")
+    p_jina.add_argument("url")
+    p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
+                        help="return format (default markdown; `html` keeps simplified markup)")
 
     p_csh = sub.add_parser("ncsc-csh", help="NCSC Switzerland Cyber Security Hub")
     csh_sub = p_csh.add_subparsers(dest="csh_cmd", required=True)
@@ -1592,7 +1727,18 @@ def main(argv: list[str]) -> int:
 
     try:
         if args.cmd == "url":
-            sys.stdout.write(fetch_text(args.url))
+            if args.direct:
+                sys.stdout.write(fetch_text(args.url))
+            else:
+                text, method = smart_fetch(args.url)
+                if method != "direct":
+                    # Tell the operator which transport served the body without
+                    # polluting stdout (which callers parse as page content).
+                    print(f"# fetched via {method} reader fallback", file=sys.stderr)
+                sys.stdout.write(text)
+            return 0
+        if args.cmd == "jina":
+            sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))
             return 0
         if args.cmd == "ncsc-csh":
             if args.csh_cmd == "list":

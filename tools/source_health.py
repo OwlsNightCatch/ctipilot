@@ -118,18 +118,23 @@ TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
     "cisa-advisories", "cisa-directives", "cisa-news",
 })
 
-# `fetch_method: blocked` hosts behind a Cloudflare Managed-Challenge (or an
-# equivalent geo / anti-bot gate) that NO transport reaches — the direct fetch
-# AND the bridge fetcher both return 403. The hard rule forbids demoting on a
+# `fetch_method: blocked` hosts that NO transport reaches — direct fetch, the
+# jina reader proxy, AND the bridge all fail (e.g. coe.int / downloads.seppmail.com
+# return HTTP 401 even to the reader). The hard rule forbids demoting on a
 # transport 403, and these are documented in sources.json notes as coverage
 # gaps served by WebSearch, so a probe 403/429 for one of them is a HANDLED
 # state (action `none`), never an unsolved `needs-demote` that churns every
 # sweep. A NON-transport break (404 / 5xx / dead host) still surfaces, so a
-# genuine removal is not masked. Documented hosts only — see sources.json notes
-# and .claude/memory/source-fetch-blocks.md.
-TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
-    "group-ib", "ccn-cert-es",
-})
+# genuine removal is not masked. Documented source-ids only — see sources.json
+# notes and .claude/memory/source-fetch-blocks.md.
+#
+# 2026-07-06 jina-fallback recovery: `group-ib` and `ccn-cert-es` were REMOVED
+# from this set — the r.jina.ai reader proxy reaches both (group-ib now fetches
+# direct too), so they moved to fetch_method bridge / jina and probe healthy.
+# The reader is the universal fallback; a host only belongs here if the reader
+# fails on it as well. Add one ONLY after confirming direct AND jina AND bridge
+# all fail (transport block, not death).
+TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset()
 
 
 def _ip_blocked(addr: str) -> bool:
@@ -249,13 +254,35 @@ def _classify(status: int | None, host: str) -> str:
     return f"http-{status}"
 
 
-def _bridge_check(source_id: str, url: str, *, timeout: float) -> tuple[str, str]:
-    """Invoke the documented bridge recipe for an `api` / `bridge` source and
-    report whether it still returns usable content. Returns `(class, detail)`
-    where class is `bridge-ok` or `bridge-fail`. This is how we verify the
-    sources that go through tools/fetch_source.py are still working, rather
-    than only HEAD-probing a URL that may be an SPA shell."""
-    argv = API_BRIDGE_CMD.get(source_id) or ["url", url]
+def _jina_reachable(url: str, *, timeout: float) -> bool:
+    """True iff the r.jina.ai reader proxy returns non-trivial content for
+    `url`. Used as the universal-fallback reachability probe: a source that
+    anti-bot-blocks / geo-gates / JS-shells our direct fetch is still
+    `reachable cleanly` if the reader gets its body (the `url` command's own
+    auto-fallback, and the agents' tier-3 transport, both go through this)."""
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(FETCH_SOURCE), "jina", url],
+            capture_output=True, text=True, timeout=max(timeout, 45.0),
+        )
+    except Exception:  # noqa: BLE001
+        return False
+    return proc.returncode == 0 and len((proc.stdout or "").strip()) >= BRIDGE_MIN_BYTES
+
+
+def _bridge_check(source_id: str, url: str, *, timeout: float,
+                  fetch_method: str = "bridge") -> tuple[str, str]:
+    """Invoke the documented bridge recipe for an `api` / `bridge` / `jina`
+    source and report whether it still returns usable content. Returns
+    `(class, detail)` where class is `bridge-ok` or `bridge-fail`. This is how
+    we verify the sources that go through tools/fetch_source.py are still
+    working, rather than only HEAD-probing a URL that may be an SPA shell.
+
+    `jina` sources force the reader recipe (`jina <url>`); `bridge` sources
+    with no dedicated subcommand use `url <url>`, which itself auto-falls-back
+    to the reader — so a bridge source behind a fresh WAF still probes ok."""
+    default = ["jina", url] if fetch_method == "jina" else ["url", url]
+    argv = API_BRIDGE_CMD.get(source_id) or default
     why = ""
     # One transient retry — the same Cloudflare/rate-limit blip handling as _check.
     for attempt in (1, 2):
@@ -342,7 +369,10 @@ def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, st
 
 
 # Probe classes that mean "reachable / handled" — no operator action needed.
-_HEALTHY_CLASSES = frozenset({"ok", "redirect-ok", "bridge-ok"})
+# `jina-ok` = a direct probe that anti-bot-blocked / geo-gated / JS-shelled,
+# but whose body the r.jina.ai reader proxy (the `url` auto-fallback, the
+# agents' tier-3 transport) reaches cleanly.
+_HEALTHY_CLASSES = frozenset({"ok", "redirect-ok", "bridge-ok", "jina-ok"})
 
 
 def _action(status: str, fetch_method: str, cls: str, code: int | None,
@@ -475,8 +505,9 @@ def main() -> int:
         #   api / bridge → exercise the documented tools/fetch_source.py recipe
         #   rss          → fetch the FEED (url may be a hostile homepage)
         #   webfetch/etc → browser-UA HEAD→GET of the url
-        if fetch_method in ("api", "bridge"):
-            cls, detail = _bridge_check(sid, url, timeout=max(args.timeout, 45.0))
+        if fetch_method in ("api", "bridge", "jina"):
+            cls, detail = _bridge_check(sid, url, timeout=max(args.timeout, 45.0),
+                                        fetch_method=fetch_method)
             status = None
             latency_ms = 0
             err = "" if cls == "bridge-ok" else detail
@@ -487,6 +518,16 @@ def main() -> int:
         else:
             status, latency_ms, err = _check(url, timeout=args.timeout)
             cls = _classify(status, host)
+            # Universal fallback: a direct probe that anti-bot-blocked (403/429)
+            # or was transport-unreachable may still be readable through the
+            # r.jina.ai reader — the same auto-fallback the `url` command and the
+            # agents' tier-3 transport use. If the reader reaches it, the source
+            # IS fetchable cleanly, so class it `jina-ok` (healthy) rather than
+            # floating it as an unsolved block.
+            if cls not in _HEALTHY_CLASSES and (status in (403, 429) or status is None):
+                if _jina_reachable(url, timeout=args.timeout):
+                    cls = "jina-ok"
+                    err = ""
         action, action_reason = _action(src_status, fetch_method, cls, status, sid)
         rec = {
             "id": sid,
@@ -517,7 +558,7 @@ def main() -> int:
         by_action[r["action"]] = by_action.get(r["action"], 0) + 1
     print()
     print("# class breakdown:")
-    for cls in ("ok", "redirect-ok", "bridge-ok", "ua-blocked", "bridge-blocked",
+    for cls in ("ok", "redirect-ok", "bridge-ok", "jina-ok", "ua-blocked", "bridge-blocked",
                 "client-error", "server-error", "unreachable", "bridge-fail"):
         n = by_class.get(cls, 0)
         if n:

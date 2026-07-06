@@ -4,6 +4,25 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.8 — 2026-07-06 (best-content-first fetch ladder + jina reader as a first-class transport; main-agent deep-read of the will-publish set)
+
+### Why
+
+Operator directive: **improve source fetching so every source returns clean, relevant content, and deep-read the sources that actually get published.** Two concrete changes back it. First, the r.jina.ai reader (jina-ai/reader) — until now wired only into the CISA path (`cisa page`/`cisa feed`) — is promoted to a **general-purpose transport** with its own `jina <URL>` subcommand and made the universal fallback: it fetches from its own egress and executes page JS, so it defeats anti-bot / WAF / geo blocks and hydrates JS-only SPAs on any host. A one-off audit confirmed it recovers two sources long marked `blocked` (`group-ib.com`, `ccn-cert.cni.es`). Second, a shallow read at compose time is where thin / imprecise entries come from, so the main agent now **re-reads each to-be-published primary in full** before composing.
+
+### What changed
+
+- **Fetch ladder codified (`.claude/agents/cti-research.md`, `sources/sources.json` `fetch_methods`).** The order every source is worked in is now explicit and always keeps a backup: **RSS → direct WebFetch → jina reader → dedicated bridge/API recipe**. `fetch_method` names the PRIMARY transport; escalate down the ladder on any failure before logging a coverage gap. New `jina` fetch_method (vocab entry added); `feed`/`url` document their auto-reader-fallback; empirical rule 4 now escalates a JS-empty page to the reader.
+- **`prompts/cti-run.md` Phase 4 — new "Deep-read the to-be-published primaries" step.** The main agent re-fetches (jina reader preferred — full body, clean markdown, lighter context) and reads in full the primary + key corroborator for **only** the triaged will-publish set, extracts specifics + evidence quotes, then drops the raw body. Anti-crash guard #9 (META #16) updated to admit this as its bounded Phase 4 exception (all main-agent fetching stays post-Phase-1, extract-and-drop; escalate to a scoped sub-agent if the set is large). Phase 5 `needs-bridge`/`needs-demote` playbook rewritten around the reader as the universal transport; the "unreachable by every transport" example moved from group-ib/ccn-cert (recovered) to coe.int/downloads.seppmail.com (401 even to the reader).
+- **`tools/fetch_source.py`:** `_jina_fetch` generalised (host-agnostic docstring; `_looks_blocked` challenge/access-denied detector); new `jina_page` + `smart_fetch` (direct → reader ladder); `url` gains the auto-reader-fallback (`--direct` to opt out) + new `jina <URL> [html]` subcommand; `cisa_page` refactored onto `smart_fetch`; `feed_recent` gains a reader fallback + `method` field. `CLOUDFLARE_BLOCKED_HOSTS` trimmed to the reader-unreachable hosts.
+- **`tools/source_health.py`:** new `jina-ok` healthy class + `_jina_reachable` probe; direct-probed sources that 403/unreachable are re-probed through the reader before being flagged; `jina` fetch_method routed through the bridge check; `TRANSPORT_BLOCKED_UNREACHABLE` emptied (group-ib/ccn-cert recovered).
+- **`sources/sources.json`:** `group-ib` `blocked → bridge`, `ccn-cert-es` `blocked → jina`; both with dated recovery recipes + backup transports; failure counters reset. **`.claude/agents/cti-verification*.md`** (both, in lockstep): stale "bridge enforces a host allow-list" corrected, and the verifier told to escalate to the reader before resting a finding on its own failed fetch. **`.claude/memory/source-fetch-blocks.md`** updated.
+- **Weekly bumped to v3.8 in lockstep** (shared Phase 4 / Phase 5 machinery; no weekly-specific divergence changed).
+
+### What stays
+
+Every hard invariant: no IOCs, two-source verification with the national-CERT / victim carve-outs, entry immutability + `update_of` discipline, the entity registry, the mechanical gate (`check_run.py` exit 0) + verifier loop, feature-branch publishing, relevance discipline (no volume cap), run-record-per-fire, memory commits. The reader is a **transport, not a citation** — the brief still cites the publisher's own URL; the reader supplies the data. A 403 still never demotes. Guard #9 is reinforced, not weakened: no fetching during Phase 1, no bulk raw-content accumulation — the deep read is bounded to the will-publish set and extract-and-drop.
+
 ## 3.7 — 2026-07-05 (NATO Admiralty classification; source reliability A–F; no TLP / public-private gate)
 
 ### Why
