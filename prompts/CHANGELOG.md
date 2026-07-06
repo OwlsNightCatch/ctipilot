@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.10 — 2026-07-06 (fetch-coverage: no-cap + auto-compaction reinforcement; `WebSearch` `allowed_domains` scoping + US-geo compensation; `WebFetch` cross-host-redirect handling — all empirically confirmed against Claude Code 2.1.201)
+
+### Why
+
+Follow-up to v3.9 under the operator directive to **ensure the research sub-agents can make enough fetches to cover everything possible** — verified empirically in the routine's own runtime rather than assumed. The environment probe (Claude Code **2.1.201**, session `CLAUDE_EFFORT=xhigh`) confirmed there is **no per-turn cap, no tool `max_uses`, no `maxTurns`, and no managed-settings restriction** on the sub-agents — the only ceiling is the wall-clock — and that **auto-compaction fires at 80 %** (`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=80`), so a research worker can sustain a high fetch count without hard-stopping on context. Live tool tests also confirmed `WebSearch` is enabled with a healthy diverse-domain result set (no over-narrow allowlist), exposes structured `allowed_domains` / `blocked_domains`, and is **US-geolocated**; and that `WebFetch` hands cross-host redirects back rather than following them. The prompt now tells the agent about the levers and limits it actually has, so it stops rationing and covers the full slice.
+
+### What changed (`.claude/agents/cti-research.md` only)
+
+- **§ Operational guardrails — "No fixed fetch budget" hardened.** Now states explicitly that the harness imposes no per-turn/total fetch cap and no turn cap (only the 45-min wall-clock), and that the agent must **not ration fetches to conserve context** — auto-compaction plus the extract-and-drop / findings-to-disk discipline sustain a high fetch count. Leaving a reachable primary un-fetched to save calls or context is named as the regression to avoid.
+- **§ WebSearch — structured domain scoping + US-geo compensation.** The `site:` bullet is generalised: `allowed_domains` / `blocked_domains` (structured `WebSearch` params) are the first-class way to force citation-grade results or suppress a noisy host; `site:` is the inline fallback. The native-language bullet now notes `WebSearch` is US-geolocated, so European/Swiss pages need the in-language query + `allowed_domains` scoping to surface, and reaffirms the curated (geo-unlimited) source list as the primary home-region collection plan with `WebSearch` as the gap-filler.
+- **§ WebFetch — cross-host-redirect handling.** New note: `WebFetch` returns a cross-host redirect URL instead of following it; re-call with the returned URL or escalate to the jina reader / bridge (which follow redirects server-side). An unfollowed redirect is silently-lost content.
+
+### What stays
+
+Everything from v3.9 and every hard invariant: the by-role effort/caps (research `xhigh`/45 min, verifiers `high`/30 min), no IOCs, two-source verification with carve-outs, entry immutability + `update_of`, the mechanical gate + verifier loop, feature-branch publishing, relevance discipline, run-record-per-fire, memory commits. No policy changed and no gate touched (`check_run.py` unchanged, ORG-PROFILE blocks in-sync, verifier bodies still byte-identical). These are prompt-level guidance refinements grounded in the confirmed runtime — the WebFetch outbound-links template and the fetch ladder are unchanged.
+
 ## 3.9 — 2026-07-06 (sub-agent reasoning effort raised — research `xhigh`, verifiers `high`; research wall-clock cap 30→45 min; WebSearch query-construction discipline; WebFetch completeness guard)
 
 ### Why
