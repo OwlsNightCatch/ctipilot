@@ -118,6 +118,19 @@ TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
     "cisa-advisories", "cisa-directives", "cisa-news",
 })
 
+# `fetch_method: blocked` hosts behind a Cloudflare Managed-Challenge (or an
+# equivalent geo / anti-bot gate) that NO transport reaches — the direct fetch
+# AND the bridge fetcher both return 403. The hard rule forbids demoting on a
+# transport 403, and these are documented in sources.json notes as coverage
+# gaps served by WebSearch, so a probe 403/429 for one of them is a HANDLED
+# state (action `none`), never an unsolved `needs-demote` that churns every
+# sweep. A NON-transport break (404 / 5xx / dead host) still surfaces, so a
+# genuine removal is not masked. Documented hosts only — see sources.json notes
+# and .claude/memory/source-fetch-blocks.md.
+TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
+    "group-ib", "ccn-cert-es",
+})
+
 
 def _ip_blocked(addr: str) -> bool:
     try:
@@ -332,7 +345,8 @@ def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, st
 _HEALTHY_CLASSES = frozenset({"ok", "redirect-ok", "bridge-ok"})
 
 
-def _action(status: str, fetch_method: str, cls: str, code: int | None) -> tuple[str, str]:
+def _action(status: str, fetch_method: str, cls: str, code: int | None,
+            source_id: str = "") -> tuple[str, str]:
     """Derive the operator action for a source from its lifecycle status, its
     configured fetch_method, and the probe outcome. The Ops dashboard floats
     ONLY sources whose action is not `none` — i.e. unsolved problems.
@@ -359,6 +373,15 @@ def _action(status: str, fetch_method: str, cls: str, code: int | None) -> tuple
     if cls == "bridge-blocked":
         return "none", ("transport-blocked essential (403 never demotes) — "
                         "KEV JSON + WebSearch substitute; see sources.json notes")
+    # Documented Cloudflare-Managed-Challenge / geo-blocked host with no reachable
+    # transport (direct fetch AND bridge both 403). A transport 403/429 is a
+    # handled coverage gap — the hard rule forbids demoting on a 403 — so it must
+    # not churn as unsolved. Only a NON-transport break (404 / 5xx / dead host)
+    # for such a host still falls through to needs-demote below.
+    if fetch_method == "blocked" and source_id in TRANSPORT_BLOCKED_UNREACHABLE \
+            and cls == "client-error" and code in (403, 429):
+        return "none", ("documented transport-blocked host (Cloudflare/geo 403 never "
+                        "demotes) — coverage gap, WebSearch substitute; see sources.json notes")
     # A source already routed through the bridge whose bridge now fails, or any
     # `blocked` source that is still active, is an unsolved problem to fix/demote.
     if cls == "bridge-fail" or fetch_method == "blocked":
@@ -464,7 +487,7 @@ def main() -> int:
         else:
             status, latency_ms, err = _check(url, timeout=args.timeout)
             cls = _classify(status, host)
-        action, action_reason = _action(src_status, fetch_method, cls, status)
+        action, action_reason = _action(src_status, fetch_method, cls, status, sid)
         rec = {
             "id": sid,
             "url": url,

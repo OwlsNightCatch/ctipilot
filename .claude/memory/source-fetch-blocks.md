@@ -41,6 +41,10 @@ Cite the human URL `https://github.com/advisories/<GHSA-ID>`; the bridge supplie
 
 **Health/lifecycle:** these probe `bridge-ok` now. They remain in `source_health.py TRANSPORT_BLOCKED_HANDLED` only as a transient-outage safety net (a reader-proxy blip is treated as a transport block → never demote). Reader proxy is anonymous by default; set `JINA_API_KEY` env if a run ever hits its rate limit.
 
+## Cloudflare Managed-Challenge / geo-gated hosts — unreachable by every transport (handled 2026-07-06)
+
+`ccn-cert.cni.es` (CCN-CERT Spain) and `www.group-ib.com` sit behind a **Cloudflare Managed-Challenge / geo gate** that 403s **both** direct `WebFetch` **and** `tools/fetch_source.py url` — no transport reaches them (WebSearch is the only fallback). Per rule A1 a 403 transport block **never demotes**, and re-flagging them every `source_health.py` sweep is pure churn. Both now sit in a **`TRANSPORT_BLOCKED_UNREACHABLE`** frozenset in `tools/source_health.py`: for these documented `fetch_method: blocked` hosts a probe 403/429 is classed **handled** (`action: none`, coverage gap) instead of `needs-demote`. A genuine non-transport break (404/5xx/dead host) still surfaces, so a real removal is not masked. Add a host to the set **only** after confirming direct AND bridge both 403 (transport block, not death); document it in the source's `sources.json` notes too. Recover them if a CSAF/RSS feed appears or the geo block relaxes.
+
 ## JS-rendered pages with no server content (recurring recipe gaps)
 
 Sources whose "recent items" live only in client-hydrated JS, so the fetcher gets an empty shell: NCSC-CH `aktuelle-vorfaelle.html`, OFAC recent-actions table, `sans.org/newsletters/newsbites/`, `prodaft.com/reports` (Next.js SPA). Pivot to their RSS/JSON endpoint where one exists, or a WebSearch pivot; flag as a recipe gap, never fabricate content.
