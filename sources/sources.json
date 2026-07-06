@@ -33,11 +33,13 @@
   "demoted": "Lowered reliability or paused after consecutive failed fetches; awaiting human review"
  },
  "fetch_methods": {
-  "webfetch": "Default. Claude Code's WebFetch tool fetches with its routine User-Agent and a small AI summarisation pass. Works on most publishers.",
-  "bridge": "Use `python3 tools/fetch_source.py <recipe>` (browser User-Agent, no JS, no auth) for publishers that 403 the routine UA or serve a JS-only shell. The bridge enforces no host allowlist — it works on any HTTPS host (layer-3 SSRF defences apply); many hosts have a dedicated subcommand (cisa-kev, ncsc-csh, enisa-euvd, bsi-csaf, msrc, osv, feed, url, …).",
-  "rss": "Use the documented RSS/Atom URL — many sites are JS-rendered SPAs whose listing page is empty to WebFetch but whose feed is plain XML.",
+  "_ladder": "Best-content-first fetch ladder — always try in this order and ALWAYS keep a backup transport: (1) rss — structured, dated, carries outbound links; (2) webfetch — Claude's WebFetch tool; (3) jina — the r.jina.ai reader proxy (clean markdown, server-side egress bypasses anti-bot/WAF/geo blocks and runs page JS); (4) bridge/api — dedicated fetch_source.py recipe (browser UA / publisher API). A record's `fetch_method` names the PRIMARY transport; the reader (jina) is the universal fallback available to every method, and `fetch_source.py url` auto-falls-back to it. `blocked` is reserved for content unreachable by every transport including the reader.",
+  "rss": "PREFERRED where a feed exists. Use the documented RSS/Atom URL (`rss_url`, else the record's notes) via `python3 tools/fetch_source.py feed <URL> [N]` — many sites are JS-rendered SPAs whose listing page is empty to WebFetch but whose feed is plain XML. `feed` auto-falls-back to the reader if the direct feed GET is WAF-blocked. Then drill each item `link` for the body.",
+  "webfetch": "Claude Code's WebFetch tool fetches with its routine User-Agent and a small AI summarisation pass (append the outbound-links template). Works on most publishers. On a 403 / anti-bot / JS-shell, escalate to `jina` then `bridge`.",
+  "jina": "Fetch through the r.jina.ai reader proxy: `python3 tools/fetch_source.py jina <URL>` (clean markdown; `jina <URL> html` for simplified HTML). The reader fetches from its OWN egress and executes page JS, so it bypasses anti-bot / WAF / geo blocks (Cloudflare, Akamai, geo-gates) and hydrates SPAs. The primary transport for hosts that block our egress directly but the reader reaches.",
+  "bridge": "Use `python3 tools/fetch_source.py <recipe>` (browser User-Agent, no auth) for publishers that 403 the routine UA or serve a JS-only shell. No host allowlist — works on any HTTPS host (layer-3 SSRF defences apply); many hosts have a dedicated subcommand (cisa page/feed/csaf, ncsc-csh, enisa-euvd, bsi-csaf, msrc, osv, feed, url, …). The generic `url <URL>` auto-falls-back to the jina reader on a challenge/403.",
   "api": "Bridge-fetcher subcommand for a structured endpoint (e.g. cisa-kev JSON, ncsc-csh dashboard/detail, osv vuln/query, msrc). Returns parsed JSON.",
-  "blocked": "Even the bridge gets 403 (Cloudflare / geo-IP / WAF). Surface as a coverage gap — do not retry."
+  "blocked": "Unreachable by EVERY transport — direct fetch, the jina reader, AND the bridge all fail (e.g. coe.int / downloads.seppmail.com return 401 even to the reader). Surface as a coverage gap and WebSearch for a corroborating publisher — do not retry."
  },
  "sources": [
   {
@@ -235,10 +237,10 @@
     "en"
    ],
    "status": "candidate",
-   "fetch_method": "blocked",
-   "last_successful_fetch": null,
-   "consecutive_failures": 2,
-   "notes": "Spanish national CERT under CNI. WebFetch returns HTTP 403; bridge fetcher ALSO returns 403 — Cloudflare / geo-IP gating from outside Spain or anti-bot protection. Surface as coverage gap in § 7 ('ccn-cert-es: 403 even with bridge fetcher'). NEVER demote on this transport block (Phase 5 rule A1). Retest periodically; recover if CCN-CERT publishes a CSAF feed at /.well-known/csaf/ or relaxes the geo block. | 2026-06-20 full audit (v2.well-known/csaf/ 403. Coverage gap; WebSearch-only. NEVER demote-on-transport beyond this; recover if the geo block relaxes or a CSAF feed appears. | 2026-07-05 admiralty audit: A (HIGH->A) reliability retained — national CERT authority is independent of transport. Recommend un-demote demoted->candidate: the block is a live-host 403 (geo/anti-bot), NOT a dead host/404/removed page, so per rule A1 it must not be demoted-on-transport; keep as coverage gap and recover if a CSAF feed at /.well-known/csaf/ appears or the geo block relaxes. | 2026-07-06 source_health handling: added to TRANSPORT_BLOCKED_UNREACHABLE in tools/source_health.py — direct + bridge both 403 (Cloudflare Managed-Challenge / geo-gate), so a probe 403 is now classed handled (action none, coverage gap, WebSearch substitute) instead of churning as needs-demote every sweep; still NEVER demote-on-403 (rule A1)."
+   "fetch_method": "jina",
+   "last_successful_fetch": "2026-07-06",
+   "consecutive_failures": 0,
+   "notes": "Spanish national CERT under CNI. WebFetch returns HTTP 403; bridge fetcher ALSO returns 403 — Cloudflare / geo-IP gating from outside Spain or anti-bot protection. Surface as coverage gap in § 7 ('ccn-cert-es: 403 even with bridge fetcher'). NEVER demote on this transport block (Phase 5 rule A1). Retest periodically; recover if CCN-CERT publishes a CSAF feed at /.well-known/csaf/ or relaxes the geo block. | 2026-06-20 full audit (v2.well-known/csaf/ 403. Coverage gap; WebSearch-only. NEVER demote-on-transport beyond this; recover if the geo block relaxes or a CSAF feed appears. | 2026-07-05 admiralty audit: A (HIGH->A) reliability retained — national CERT authority is independent of transport. Recommend un-demote demoted->candidate: the block is a live-host 403 (geo/anti-bot), NOT a dead host/404/removed page, so per rule A1 it must not be demoted-on-transport; keep as coverage gap and recover if a CSAF feed at /.well-known/csaf/ appears or the geo block relaxes. | 2026-07-06 source_health handling: added to TRANSPORT_BLOCKED_UNREACHABLE in tools/source_health.py — direct + bridge both 403 (Cloudflare Managed-Challenge / geo-gate), so a probe 403 is now classed handled (action none, coverage gap, WebSearch substitute) instead of churning as needs-demote every sweep; still NEVER demote-on-403 (rule A1). | 2026-07-06 jina-fallback recovery: RECOVERED — fetch_method blocked -> jina. Direct fetch still 403s (geo/anti-bot), but the r.jina.ai reader proxy fetches server-side and returns the full body (39 KB, homepage + advisory pages). RECIPE: `python3 tools/fetch_source.py jina https://www.ccn-cert.cni.es/en/<path>` (or `url <path>`, which auto-falls-back to the reader). Removed from source_health TRANSPORT_BLOCKED_UNREACHABLE — it is now reachable, probes jina-ok/bridge-ok. Backup: WebSearch if the reader ever 401s. Cite the ccn-cert.cni.es page; the reader supplies the data, not the citation."
   },
   {
    "id": "censys-blog",
@@ -937,10 +939,10 @@
     "en"
    ],
    "status": "active",
-   "fetch_method": "blocked",
-   "last_successful_fetch": null,
-   "consecutive_failures": 2,
-   "notes": "Singapore-headquartered global CTI firm. WebFetch returns HTTP 403 (re-confirmed 2026-05-08); RSS at /blog/feed/ also 403. Bridge fetcher would need www.group-ib.com on its allowlist — not currently allowed because the publisher's WAF was observed to drop the bridge UA too in earlier tests. Surface as coverage gap. Retest periodically; recover to `active` if a CSAF/RSS becomes available. | 2026-06-20 full audit (v2. Remains a coverage gap; WebSearch-only discovery. Do NOT WebFetch or bridge — it will 503. Recover if a CSAF/RSS becomes available. | 2026-07-05 admiralty audit: B — global CTI vendor, original research. RECOVER demoted -> active: the WAF no longer drops the bridge UA (listing + article body both fetch 200; newest post 1 Jul 2026). Operator: change fetch_method blocked -> bridge.",
+   "fetch_method": "bridge",
+   "last_successful_fetch": "2026-07-06",
+   "consecutive_failures": 0,
+   "notes": "Singapore-headquartered global CTI firm. WebFetch returns HTTP 403 (re-confirmed 2026-05-08); RSS at /blog/feed/ also 403. Bridge fetcher would need www.group-ib.com on its allowlist — not currently allowed because the publisher's WAF was observed to drop the bridge UA too in earlier tests. Surface as coverage gap. Retest periodically; recover to `active` if a CSAF/RSS becomes available. | 2026-06-20 full audit (v2. Remains a coverage gap; WebSearch-only discovery. Do NOT WebFetch or bridge — it will 503. Recover if a CSAF/RSS becomes available. | 2026-07-05 admiralty audit: B — global CTI vendor, original research. RECOVER demoted -> active: the WAF no longer drops the bridge UA (listing + article body both fetch 200; newest post 1 Jul 2026). Operator: change fetch_method blocked -> bridge. | 2026-07-06 jina-fallback recovery: DONE — fetch_method blocked -> bridge. RECIPE: `python3 tools/fetch_source.py url https://www.group-ib.com/blog/` returns 200 (~800 KB real blog, current posts); the `url` command auto-falls-back to the r.jina.ai reader (`jina <URL>`, ~128 KB) if the Cloudflare Managed-Challenge ever returns, so there are two working transports. Removed from source_health TRANSPORT_BLOCKED_UNREACHABLE; probes bridge-ok. RSS at /blog/feed/ still 403 — use the `url`/`jina` HTML path, drill per-article /blog/<slug>/.",
    "consecutive_fetch_failures": 1
   },
   {
