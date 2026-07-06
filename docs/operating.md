@@ -81,10 +81,11 @@ The first push to `main` that touches the content store (`entries/`, `runs/`, `e
 
 ### 4. Set up the routines
 
-In <https://claude.ai/code/routines>, create **two** routines against this repository:
+In <https://claude.ai/code/routines>, create these routines against this repository. The full, version-controlled text of every routine invocation prompt — plus a catalog of the in-repo prompts they load — lives in [`docs/routines.md`](routines.md); keep the live routine config in sync with it.
 
 1. **Intel run** — **several times per working day is the intended pattern** (e.g. every 4–6 h). The prompt is cadence-agnostic and self-healing: each fire derives its window from the gap since the previous run record, so missed fires are caught up automatically and the operator can change the cron freely without touching the prompt. More fires mean lower latency, never more content — dedup ensures a re-scan republishes only the new delta, and entry volume follows a strict relevance/actionability gate, not a count. Prompt, exactly one line: `Read prompts/cti-run.md and execute it.`
 2. **Weekly run** — once per week, operator-chosen day/time. Prompt: `Read prompts/weekly-summary.md and execute it.` It refuses to fire twice for the same ISO week.
+   - **Weekly backup run** *(optional resilience net)* — a second routine scheduled *after* the primary weekly slot that produces the weekly only if the primary did not. It checks whether a `-weekly` run record for the most-recently-completed ISO week reached `main` and exits if so, else runs the weekly. The pipeline has **no** `briefs/weekly/<week>.md` file, and the weekly targets the completed week (the week ending on the most recent Sunday), not the current calendar week — so the check keys on the run record's `week:` frontmatter, never a guessed file path or `date +%V` of today. Copy the exact prompt from [`docs/routines.md` § 1c](routines.md#1c-weekly-backup-run--resilience-net-for-the-weekly). Running the weekly is safe even in a race: `weekly-summary.md`'s Phase 0 `duplicate-week` guard is the authoritative backstop.
 3. **Permissions** — leave **Allow unrestricted branch pushes** *off*. The routines push to `claude/**` only; the auto-merge workflow promotes.
 4. **Sub-agent capability ceiling** — see § [Sub-agent capability ceiling](#sub-agent-capability-ceiling) below.
 5. **Environment variables for self-identification** — set both env vars in the routine container so every agent (main + sub-agents + verifiers) emits a precise `**Model:**` line:
