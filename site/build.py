@@ -112,6 +112,32 @@ FOOTER_TAGLINE = BRANDING["site"]["footer_tagline"].strip()
 SITE_LANG = BRANDING["site"]["lang"].strip()
 SITE_LOCALE = BRANDING["site"]["locale"].strip()
 
+# Navigation segment labels and the "latest" targets for the Daily / Weekly
+# segments. main() overwrites LATEST_DAY_REL / LATEST_WEEK_REL with the most
+# recent day / week page paths once they are known; the archive-index
+# fallbacks keep the nav valid before any brief exists. Overridable via
+# config/branding.yaml `site.nav`.
+NAV_LIVE_LABEL = (BRANDING["site"].get("nav_live") or "Live").strip()
+NAV_DAILY_LABEL = (BRANDING["site"].get("nav_daily") or "Daily").strip()
+NAV_WEEKLY_LABEL = (BRANDING["site"].get("nav_weekly") or "Weekly").strip()
+LATEST_DAY_REL = "briefs/"
+LATEST_WEEK_REL = "weekly/"
+
+# AI-provenance bar (dismissible strip under the topbar). The label copy may
+# carry inline HTML (e.g. a bold lead-in); the link points at the About page.
+AI_BAR_HTML = (
+    BRANDING["site"].get("ai_bar_html")
+    or "<b>AI-generated · no human review</b> — verify operationally critical "
+    "claims against the linked primary source."
+).strip()
+AI_BAR_LINK_LABEL = (BRANDING["site"].get("ai_bar_link_label") or "how it works →").strip()
+
+# Home hero copy (eyebrow / headline / subtitle). Overridable via
+# config/branding.yaml `site.hero_*`; the subtitle defaults to site.lede.
+HERO_EYEBROW = (BRANDING["site"].get("hero_eyebrow") or "Continuous cyber threat intelligence").strip()
+HERO_TITLE = (BRANDING["site"].get("hero_title") or "Read the signal, not the noise.").strip()
+HERO_SUBTITLE = (BRANDING["site"].get("hero_subtitle") or HOME_LEDE).strip()
+
 DEFAULT_SITE_URL = BRANDING["site"]["url"].rstrip("/") + "/"
 DEFAULT_GITHUB_REPO = BRANDING["site"]["github_repo"].strip()
 
@@ -1147,6 +1173,69 @@ _COPYRIGHT_NOTE_HTML = "\n        ".join(
 )
 
 
+def _nav_segments_html(pfx: str, active_nav: str) -> str:
+    """The Live / Daily / Weekly segmented control. Live → the rolling
+    brief; Daily → the latest day page; Weekly → the latest weekly page
+    (LATEST_DAY_REL / LATEST_WEEK_REL are set in main(); they fall back
+    to the archive index when no page exists yet)."""
+    def seg(nav_key: str, href: str, label: str, live_led: bool = False) -> str:
+        active = " active" if active_nav == nav_key else ""
+        led = '<span class="ld"><i></i></span>' if live_led else ""
+        return f'<a class="seg-btn{active}" href="{pfx}{href}">{led}{_escape(label)}</a>'
+    return (
+        seg("live", "brief/", NAV_LIVE_LABEL, live_led=True)
+        + seg("daily", LATEST_DAY_REL, NAV_DAILY_LABEL)
+        + seg("weekly", LATEST_WEEK_REL, NAV_WEEKLY_LABEL)
+    )
+
+
+def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
+    """Shared 'More' menu / mobile-drawer link set."""
+    gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
+    rows = [
+        (f"{pfx}briefs/", "Archive", "all briefs"),
+        (f"{pfx}entities/", "Entities", "actors · CVEs"),
+        (f"{pfx}sources/", "Sources", "~150"),
+        (f"{pfx}trends/", "Trends", "cohorts"),
+        (f"{pfx}ops/", "Ops", "runs"),
+    ]
+    tail = [
+        (f"{pfx}about/", "About", ""),
+        (f"{pfx}feeds/", "RSS feeds", "11"),
+    ]
+    def row(href: str, label: str, hint: str) -> str:
+        hint_html = f'<span class="mono">{_escape(hint)}</span>' if hint else ""
+        return f'<a href="{href}">{_escape(label)} {hint_html}</a>'
+    body = "".join(row(*r) for r in rows)
+    body += '<div class="sep"></div>' if not drawer else ""
+    body += "".join(row(*r) for r in tail)
+    body += (
+        f'<a href="{gh}" target="_blank" rel="noopener noreferrer">GitHub '
+        '<span class="mono"><span class="star">★</span> <span class="github-stars" id="github-stars-menu" hidden></span></span></a>'
+    )
+    return body
+
+
+def _display_popover_inner() -> str:
+    """Theme (system/light/dark) + reader-accommodation toggles. app.js /
+    theme.js reflect the active state onto these controls."""
+    return (
+        '<div class="dpop-row"><span class="dpop-l">Theme</span>'
+        '<div class="mini-seg" data-theme-seg>'
+        '<button type="button" data-theme-set="system">System</button>'
+        '<button type="button" data-theme-set="light">Light</button>'
+        '<button type="button" data-theme-set="dark">Dark</button>'
+        "</div></div>"
+        '<div class="sep"></div>'
+        '<button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-font-toggle>'
+        '<span class="dpop-tl"><b>Dyslexia-friendly</b><small>Legible font &amp; wider spacing</small></span>'
+        '<span class="sw"><i></i></span></button>'
+        '<button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-density-toggle>'
+        '<span class="dpop-tl"><b>Comfortable spacing</b><small>Looser line height</small></span>'
+        '<span class="sw"><i></i></span></button>'
+    )
+
+
 def base_template(
     *,
     title: str,
@@ -1159,11 +1248,13 @@ def base_template(
     rel_alternate: list[tuple[str, str, str]] | None = None,
     home_relative_prefix: str = "",
     body_class: str = "",
+    active_nav: str = "",
 ) -> str:
     """Return a complete HTML document.
 
     `home_relative_prefix` is "../" * depth — used to point relative asset
-    references back to the site root from a nested path.
+    references back to the site root from a nested path. `active_nav` is
+    one of "live" / "daily" / "weekly" (marks the active segment).
     """
     rel_alternate = rel_alternate or []
     alt_links = "".join(
@@ -1172,6 +1263,8 @@ def base_template(
     )
     pfx = home_relative_prefix
     body_attr = f' class="{_escape(body_class)}"' if body_class else ""
+    gh_url = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
+    segments = _nav_segments_html(pfx, active_nav)
     return f"""<!doctype html>
 <html lang="{_escape(SITE_LANG)}">
 <head>
@@ -1213,50 +1306,62 @@ def base_template(
 <body{body_attr}>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
-  <div class="bar-inner">
+  <div class="topbar-in">
     <a class="brand" href="{pfx}" aria-label="Home — {_escape(SITE_NAME)}">
-      <span class="brand-mark" aria-hidden="true">
-        {_brand_mark_html(pfx=pfx, cachebust=cachebust)}
-      </span>
-      <span class="brand-text">{_WORDMARK_HTML}</span>
+      <span class="brand-mark" aria-hidden="true">{_brand_mark_html(pfx=pfx, cachebust=cachebust)}</span>
+      <span class="brand-text"><strong>{_escape(WORDMARK_STRONG)}</strong><span class="tld">{_escape(WORDMARK_ACCENT)}</span></span>
     </a>
-
-    <form class="searchbox" role="search" data-search-form>
-      <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
-      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search    /" aria-label="Search" />
-      <kbd class="kbd-hint" aria-hidden="true">/</kbd>
-      <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
-    </form>
-
-    <a class="github-link" id="github-link" href="https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">
-      {GH_ICON_SVG}
-      <span class="github-stars" id="github-stars" hidden></span>
-    </a>
-
-    <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle colour theme" title="Theme: system">
-      {THEME_TOGGLE_SVG}
-    </button>
-
-    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation menu">
-      <span class="nav-toggle-bar" aria-hidden="true"></span>
-      <span class="nav-toggle-bar" aria-hidden="true"></span>
-      <span class="nav-toggle-bar" aria-hidden="true"></span>
-    </button>
-
-    <nav class="nav" id="primary-nav" aria-label="Primary">
-      <a href="{pfx}">Home</a>
-      <a href="{pfx}brief/">Brief</a>
-      <a href="{pfx}briefs/">Archive</a>
-      <a href="{pfx}weekly/">Weekly</a>
-      <a href="{pfx}entities/">Entities</a>
-      <a href="{pfx}sources/">Sources</a>
-      <a href="{pfx}trends/">Trends</a>
-      <a href="{pfx}ops/">Ops</a>
-      <a href="{pfx}about/">About</a>
-    </nav>
+    <div class="seg desktop-only" role="navigation" aria-label="Views">
+      {segments}
+    </div>
+    <div class="util desktop-only">
+      <button type="button" class="search" data-search-open aria-label="Search briefs, CVEs, entities">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search<span class="kbd">/</span>
+      </button>
+      <div class="more-wrap">
+        <button class="ib" type="button" data-display-toggle aria-label="Display and accessibility settings" title="Display &amp; accessibility" aria-expanded="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9" cy="17" r="2.2"></circle></svg></button>
+        <div class="menu dpop" data-display-menu hidden>{_display_popover_inner()}</div>
+      </div>
+      <div class="more-wrap">
+        <button class="morebtn" type="button" data-more-toggle aria-expanded="false">More<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <div class="menu" data-more-menu hidden>{_more_menu_links(pfx)}</div>
+      </div>
+      <a class="ghlink" id="github-link" href="{gh_url}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">{GH_ICON_SVG}<span class="github-stars" id="github-stars" hidden></span></a>
+    </div>
+    <div class="util mobile-only">
+      <button class="ib" type="button" data-drawer-toggle aria-label="Open menu" title="Menu" aria-expanded="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+    </div>
+  </div>
+  <div class="mseg mobile-only">
+    <div class="seg" role="navigation" aria-label="Views">{segments}</div>
+  </div>
+  <div class="drawer mobile-only" data-drawer hidden>
+    <button type="button" class="msearch" data-search-open><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>Search briefs, CVEs, entities…</button>
+    {_more_menu_links(pfx, drawer=True)}
+    <div class="dpop-row" style="padding:12px 6px 4px;border-top:1px solid var(--border-soft);margin-top:6px;"><span class="dpop-l">Theme</span><div class="mini-seg" data-theme-seg><button type="button" data-theme-set="system">System</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div></div>
+    <button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-font-toggle><span class="dpop-tl"><b>Dyslexia-friendly</b><small>Legible font &amp; spacing</small></span><span class="sw"><i></i></span></button>
+    <button class="dpop-toggle" type="button" role="switch" aria-checked="false" data-density-toggle><span class="dpop-tl"><b>Comfortable spacing</b><small>Looser line height</small></span><span class="sw"><i></i></span></button>
   </div>
 </header>
-<div class="read-progress" aria-hidden="true"></div>
+<div class="aibar" data-aibar hidden>
+  <div class="aibar-in">
+    <span class="idot" aria-hidden="true"></span>
+    <span>{AI_BAR_HTML}</span>
+    <a href="{pfx}about/">{_escape(AI_BAR_LINK_LABEL)}</a>
+    <button class="aiclose" type="button" data-ai-dismiss title="Dismiss — I understand" aria-label="Dismiss AI notice">✕</button>
+  </div>
+</div>
+<div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
+  <div class="search-modal__scrim" data-search-close></div>
+  <div class="search-modal__panel">
+    <form class="searchbox" role="search" data-search-form>
+      <label class="visually-hidden" for="q">Search briefs, CVEs, topics, sources</label>
+      <input id="q" type="search" autocomplete="off" spellcheck="false" placeholder="Search briefs, CVEs, entities, sources…" aria-label="Search" />
+      <kbd class="kbd-hint" aria-hidden="true">esc</kbd>
+      <ul id="suggestions" class="suggestions" role="listbox" hidden></ul>
+    </form>
+  </div>
+</div>
 <main id="main" class="main"><div class="view">{body}</div></main>
 <footer class="footer" role="contentinfo">
   <div class="footer-inner">
@@ -1975,6 +2080,100 @@ def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
     return text[:max_len].rsplit(" ", 1)[0].rstrip(",;:—- ") + "…"
 
 
+# ── new-design finding / timeline primitives ─────────────────────────
+# The design system renders one intelligence finding three ways: as an
+# editorial `.finding` (day / weekly pages, entity embeds, feeds), as a
+# `.tl-item` timeline row (the live rolling brief), and as the full entry
+# detail. These small helpers keep the priority / verification / badge
+# vocabulary consistent across all three.
+_PRI_LABEL = {"critical": "CRITICAL", "high": "HIGH", "notable": "NOTABLE", "routine": "ROUTINE"}
+_PRI_CLASS = {"critical": "crit", "high": "pri"}
+_PRI_DOT = {"critical": "var(--crit)", "high": "var(--accent)"}
+
+
+def _pri_of(entry: dict[str, Any]) -> str:
+    return (entry.get("priority") or "notable").lower()
+
+
+def _pri_label(entry: dict[str, Any]) -> str:
+    pr = _pri_of(entry)
+    return _PRI_LABEL.get(pr, pr.upper())
+
+
+def _pri_badge_class(entry: dict[str, Any]) -> str:
+    return _PRI_CLASS.get(_pri_of(entry), "")
+
+
+def _pri_dot(entry: dict[str, Any]) -> str:
+    return _PRI_DOT.get(_pri_of(entry), "var(--text-muted)")
+
+
+def _verif_meta(entry: dict[str, Any]) -> tuple[str, str]:
+    """(provenance-css-class, label) for a finding's verification state."""
+    ver = entry.get("verification")
+    if ver == "contradicted":
+        return ("p-crit", "contradicted")
+    if ver in VERIFICATION_BADGE_LABEL:
+        return ("p-warn", VERIFICATION_BADGE_LABEL[ver])
+    n = sum(1 for s in (entry.get("sources") or []) if isinstance(s, dict))
+    return ("p-ok", "multi-source") if n >= 2 else ("p-warn", "single-source")
+
+
+def _entry_exploited(entry: dict[str, Any]) -> bool:
+    tags = {str(t).lower() for t in (entry.get("tags") or [])}
+    if {"actively-exploited", "exploited", "in-the-wild"} & tags:
+        return True
+    return any(
+        ("exploit" in str(s).lower()) or (str(s).lower() == "kev")
+        for s in entry_cve_status_union(entry)
+    )
+
+
+def _cve_label(entry: dict[str, Any]) -> str:
+    cves = entry_cve_ids(entry)
+    if not cves:
+        return ""
+    return cves[0] + (f" +{len(cves) - 1}" if len(cves) > 1 else "")
+
+
+def _source_count(entry: dict[str, Any]) -> int:
+    return sum(1 for s in (entry.get("sources") or []) if isinstance(s, dict))
+
+
+def _fmt_stamp(ts_str: str | None) -> str:
+    """`2026-07-03T04:21:09Z` → `03 Jul 04:21Z` (compact timeline stamp)."""
+    ts = parse_ts(ts_str)
+    return ts.strftime("%d %b %H:%MZ") if ts else ""
+
+
+def render_prov_row(entry: dict[str, Any], *, prefix: str = "", lead_pri: bool = False,
+                    open_label: str = "Open finding ↗", refs_as_link: bool = True) -> str:
+    """The mono provenance strip under a finding — kind · CVE · stamp ·
+    N sources · verification · open-link."""
+    url = f"{prefix}{entry_url_path(entry)}"
+    v_class, v_label = _verif_meta(entry)
+    parts: list[str] = []
+    if lead_pri:
+        parts.append(f'<span class="p-pri">● {_escape(_pri_of(entry))}</span>')
+    if entry.get("kind"):
+        parts.append(f'<span>{_escape(str(entry["kind"]))}</span>')
+    cve = _cve_label(entry)
+    if cve:
+        parts.append(f'<span style="color:var(--info)">{_escape(cve)}</span>')
+    stamp = _fmt_stamp(entry.get("discovered_at"))
+    if stamp:
+        parts.append(f"<span>{_escape(stamp)}</span>")
+    n = _source_count(entry)
+    if n:
+        parts.append(f'<span>{n} source{"" if n == 1 else "s"}</span>')
+    parts.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
+    if refs_as_link:
+        parts.append(f'<a class="refs" href="{_escape(url)}">{_escape(open_label)}</a>')
+    else:
+        parts.append(f'<span class="refs">{_escape(open_label)}</span>')
+    return '<div class="prov">' + "".join(parts) + "</div>"
+
+
 def render_entry_card(
     entry: dict[str, Any],
     *,
@@ -1983,56 +2182,91 @@ def render_entry_card(
     base_url: str | None = None,
     entries_by_id: dict[str, dict[str, Any]] | None = None,
     heading_level: int = 3,
+    is_new: bool = False,
+    lead: bool = False,
 ) -> str:
-    """The canonical item card — used on /brief/, day pages, weekly
-    pages, entity-page embeds, feed bodies and briefbook.json. Carries
-    data-tags/data-regions/data-section so the existing filter chips
-    keep working, plus data-entry-id/data-priority/data-discovered for
-    brief.js."""
-    skey = section_key or entry_section_key(entry) or ""
+    """The canonical `.finding` — used on day pages, weekly pages,
+    entity-page embeds, feed bodies and briefbook.json. Carries
+    data-tags/data-regions/data-kind/data-priority/data-discovered so the
+    live filter chips + brief.js keep working. `section_key` is retained
+    for signature compatibility (findings are grouped by their section
+    server-side)."""
     url = f"{prefix}{entry_url_path(entry)}"
-    hl = max(2, min(int(heading_level), 4))
     body_html = enhance_brief_item_html(
         render_markdown(_entry_body_markdown(entry), base_url=base_url)
     )
     is_update = bool(entry.get("update_of"))
-    inner = (
-        render_entry_badges(entry, prefix=prefix)
-        + body_html
-        + render_entry_evidence(entry)
+    flag_txt = "↻ UPD" if is_update else ("NEW" if is_new else "")
+    flag_cls = "upd" if is_update else ""
+    flag_html = f'<span class="f-flag {flag_cls}">{_escape(flag_txt)}</span>' if flag_txt else ""
+    lead_html = (
+        render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
+        if is_update else ""
     )
     refs = [str(r) for r in (entry.get("references") or [])]
+    refs_html = ""
     if refs:
         ref_links = " · ".join(
-            f'<a href="{_escape(prefix)}entries/{_escape(r)}/" class="mono">{_escape(r)}</a>'
+            f'<a class="mono" href="{_escape(prefix)}entries/{_escape(r)}/">{_escape(r)}</a>'
             for r in refs
         )
-        inner += f'<p class="entry-references muted"><strong>Builds on:</strong> {ref_links}</p>'
-    if is_update:
-        inner = (
-            f'<blockquote class="callout-update">'
-            + render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
-            + inner
-            + "</blockquote>"
-        )
-    heading_html = (
-        f'<h{hl} id="{_escape(entry["slug"])}">'
-        f'<a class="item-link" href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a>'
-        f"</h{hl}>"
-    )
+        refs_html = f'<p class="entry-references"><strong>Builds on:</strong> {ref_links}</p>'
     return (
-        f'<article class="brief-item entry-card" '
+        f'<article class="finding entry-card{" lead" if lead else ""}" '
         f'data-entry-id="{_escape(entry["id"])}" '
         f'data-tags="{_escape(" ".join(entry.get("tags") or []))}" '
         f'data-regions="{_escape(" ".join(entry.get("regions") or []))}" '
-        f'data-section="{_escape(skey)}" '
-        f'data-priority="{_escape(entry.get("priority") or "notable")}" '
+        f'data-kind="{_escape(entry.get("kind") or "")}" '
+        f'data-priority="{_escape(_pri_of(entry))}" '
         f'data-discovered="{_escape(entry.get("discovered_at") or "")}">'
-        f"{heading_html}"
-        f"{inner}"
-        f"{render_entry_taxonomy(entry, prefix=prefix)}"
-        f"{render_entry_sources(entry)}"
+        f"{flag_html}"
+        f'<h3 class="f-h" id="{_escape(entry["slug"])}">'
+        f'<a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
+        f"{lead_html}{body_html}{render_entry_evidence(entry)}{refs_html}"
+        f"{render_prov_row(entry, prefix=prefix)}"
         f"</article>"
+    )
+
+
+def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: bool = False) -> str:
+    """One `.tl-item` row for the live rolling brief — rail (time + flag)
+    + a clickable body (badges, headline, one-line summary, provenance)."""
+    url = f"{prefix}{entry_url_path(entry)}"
+    stamp = _fmt_stamp(entry.get("discovered_at"))
+    is_update = bool(entry.get("update_of"))
+    flag = "↻ UPD" if is_update else ("NEW" if is_new else "")
+    flag_style = "color:var(--warn)" if is_update else ("color:var(--ok)" if is_new else "")
+    badges = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
+    cve = _cve_label(entry)
+    if cve:
+        badges.append(f'<span class="b cve">{_escape(cve)}</span>')
+    if _entry_exploited(entry):
+        badges.append('<span class="b exp">exploited</span>')
+    if is_update:
+        badges.append('<span class="b upd">update</span>')
+    summary = _inline_text(entry.get("summary") or entry.get("headline") or "")
+    return (
+        '<div class="tl-item">'
+        f'<div class="tl-rail"><span class="tl-node" style="background:{_pri_dot(entry)}"></span>'
+        f'<span class="time">{_escape(stamp)}</span>'
+        f'<span class="flag" style="{flag_style}">{_escape(flag)}</span></div>'
+        f'<a class="tl-body" href="{_escape(url)}">'
+        f'<div class="badges">{"".join(badges)}</div>'
+        f'<h3>{_escape(entry.get("title") or entry["id"])}</h3>'
+        f"<p>{summary}</p>"
+        f"{render_prov_row(entry, prefix=prefix, open_label='open ↗', refs_as_link=False)}"
+        "</a></div>"
+    )
+
+
+def render_run_divider(run_label: str, gap_note: str, count: int) -> str:
+    """The `.tl-run` divider between run groups in the live timeline."""
+    n_txt = f"{count} finding" + ("" if count == 1 else "s")
+    gap_txt = (gap_note + " · " if gap_note else "") + n_txt
+    return (
+        '<div class="tl-run"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+        f'<div class="run-h"><span class="rl">{_escape(run_label)}</span>'
+        f'<span class="rg">· run · {_escape(gap_txt)}</span></div></div>'
     )
 
 
@@ -2124,6 +2358,63 @@ def render_run_note(run: dict[str, Any], *, base_url: str | None = None) -> str:
     )
 
 
+# Clean, ordinal-free section titles for the editorial (.sect) headers.
+_NEW_SECT_TITLE = {
+    "active-threats": "Active threats, incidents & disclosures",
+    "trending-vulnerabilities": "Trending vulnerabilities",
+    "research": "Research & investigative reporting",
+    "updates": "Updates to prior coverage",
+    "deep-dive": "Deep dive",
+    "action-items": "Action items",
+}
+
+
+def _sect_title(key: str, fallback: str) -> str:
+    return _NEW_SECT_TITLE.get(key) or re.sub(r"^\s*\d+\.\s*", "", fallback)
+
+
+def _sect_header(num: int, title: str, count: int) -> str:
+    return (
+        '<div class="sect">'
+        f'<span class="n">{num:02d}</span>'
+        f'<span class="t">{_escape(title)}</span>'
+        f'<span class="c">{count} item{"" if count == 1 else "s"}</span>'
+        "</div>"
+    )
+
+
+def render_tldr_list(
+    picked: list[dict[str, Any]], *, prefix: str = "",
+    eyebrow: str = "TL;DR — the day in one read",
+) -> str:
+    """The numbered TL;DR list at the top of a day / weekly brief."""
+    if not picked:
+        return ""
+    lis: list[str] = []
+    for i, e in enumerate(picked, 1):
+        url = f"{prefix}{entry_url_path(e)}"
+        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
+        summ = _inline_text(e.get("summary") or "")
+        lis.append(
+            f'<li><span class="num">{i:02d}</span>'
+            f"<span><b>{_inline_text(headline)}.</b> {summ} "
+            f'<a href="{_escape(url)}">→</a></span></li>'
+        )
+    return (
+        '<div class="tldr">'
+        f'<span class="eyebrow eyebrow--muted">{_escape(eyebrow)}</span>'
+        f'<ol>{"".join(lis)}</ol></div>'
+    )
+
+
+def _verif_block(runs: list[dict[str, Any]], *, base_url: str | None = None,
+                 heading: str, empty: str) -> str:
+    """The `.verif` provenance block at the foot of a day / weekly brief."""
+    notes = [render_run_note(r, base_url=base_url) for r in runs or []]
+    inner = "".join(notes) if notes else f"<p>{empty}</p>"
+    return f'<div class="verif"><div class="vh">{heading}</div>{inner}</div>'
+
+
 def render_brief_sections(
     entries: list[dict[str, Any]],
     runs: list[dict[str, Any]],
@@ -2147,14 +2438,6 @@ def render_brief_sections(
     ops = operational_entries(entries)
     by_id = entries_by_id or {e["id"]: e for e in ops}
 
-    def card(e: dict[str, Any], skey: str) -> str:
-        if card_html_by_id is not None and e["id"] in card_html_by_id:
-            return card_html_by_id[e["id"]]
-        return render_entry_card(
-            e, prefix=prefix, section_key=skey, base_url=base_url,
-            entries_by_id=by_id,
-        )
-
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in ops:
         skey = entry_section_key(e)
@@ -2163,16 +2446,13 @@ def render_brief_sections(
     for skey in buckets:
         buckets[skey].sort(key=entry_sort_key)
 
-    picked_tldr = select_tldr_entries(ops)
-    criticals = [e for e in ops if e.get("priority") == "critical"]
+    out: list[str] = [render_tldr_list(select_tldr_entries(ops), prefix=prefix)]
 
-    out: list[str] = []
+    num = 0
     for key, title in DAILY_SECTIONS:
-        if key == "tldr":
-            inner = render_tldr_bullets(picked_tldr, prefix=prefix)
-            for e in sorted(criticals, key=entry_sort_key):
-                inner += render_immediate_action_callout(e, prefix=prefix)
-        elif key == "action-items":
+        if key in ("tldr", "verification-notes"):
+            continue
+        if key == "action-items":
             rows: list[str] = []
             for e in sorted(ops, key=entry_sort_key):
                 url = f"{prefix}{entry_url_path(e)}"
@@ -2191,20 +2471,32 @@ def render_brief_sections(
                         '<span class="action-ref__go" aria-hidden="true">→</span></a>'
                         "</li>"
                     )
-            inner = (
-                f'<ul class="action-list">{"".join(rows)}</ul>' if rows else _empty_stub_html()
+            if not rows:
+                continue
+            num += 1
+            out.append(
+                _sect_header(num, _sect_title(key, title), len(rows))
+                + f'<ul class="action-list">{"".join(rows)}</ul>'
             )
-        elif key == "verification-notes":
-            notes = [render_run_note(r, base_url=base_url) for r in runs or []]
-            inner = "".join(notes) if notes else _empty_stub_html()
-        else:
-            section_entries = buckets.get(key, [])
-            inner = (
-                "".join(card(e, key) for e in section_entries)
-                if section_entries else _empty_stub_html()
+            continue
+        section_entries = buckets.get(key, [])
+        if not section_entries:
+            continue
+        num += 1
+        findings = "".join(
+            render_entry_card(
+                e, prefix=prefix, section_key=key, base_url=base_url,
+                entries_by_id=by_id, lead=(e.get("priority") == "critical"),
             )
-        out.append(_section_shell(key, title, inner,
-                                  collapsed=(key == "verification-notes")))
+            for e in section_entries
+        )
+        out.append(_sect_header(num, _sect_title(key, title), len(section_entries)) + findings)
+
+    out.append(_verif_block(
+        runs, base_url=base_url,
+        heading="Verification &amp; coverage notes",
+        empty="Every essential source was fetched; no single-source or contradicted items in this window.",
+    ))
     return "".join(out)
 
 
@@ -2217,9 +2509,9 @@ def render_weekly_sections(
     entries_by_id: dict[str, dict[str, Any]] | None = None,
 ) -> str:
     """The weekly 12-section structure (v2 order and headings) over the
-    week's STRATEGIC entries. § 0 'Week at a glance' is derived: one
-    bullet per critical/high strategic entry (headline + summary).
-    `runs` are the week's weekly-kind run records."""
+    week's STRATEGIC entries, rendered as editorial findings. § 0 'Week
+    at a glance' is a derived TL;DR (one bullet per critical/high
+    strategic entry). `runs` are the week's weekly-kind run records."""
     strat = strategic_entries(week_entries)
     by_id = entries_by_id or {e["id"]: e for e in strat}
     buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -2233,25 +2525,30 @@ def render_weekly_sections(
         if e.get("priority") in ("critical", "high")
     ]
 
-    out: list[str] = []
+    out: list[str] = [render_tldr_list(glance, prefix=prefix, eyebrow="Week at a glance")]
+
+    num = 0
     for key, title in WEEKLY_STRUCTURE:
-        if key == "weekly-glance":
-            inner = render_tldr_bullets(glance, prefix=prefix)
-        elif key == "verification-notes":
-            notes = [render_run_note(r, base_url=base_url) for r in runs or []]
-            inner = "".join(notes) if notes else _empty_stub_html()
-        else:
-            section_entries = buckets.get(key, [])
-            inner = (
-                "".join(
-                    render_entry_card(e, prefix=prefix, section_key=key,
-                                      base_url=base_url, entries_by_id=by_id)
-                    for e in section_entries
-                )
-                if section_entries else _empty_stub_html()
+        if key in ("weekly-glance", "verification-notes"):
+            continue
+        section_entries = buckets.get(key, [])
+        if not section_entries:
+            continue
+        num += 1
+        findings = "".join(
+            render_entry_card(
+                e, prefix=prefix, section_key=key, base_url=base_url,
+                entries_by_id=by_id, lead=(e.get("priority") == "critical"),
             )
-        out.append(_section_shell(key, title, inner,
-                                  collapsed=(key == "verification-notes")))
+            for e in section_entries
+        )
+        out.append(_sect_header(num, _sect_title(key, title), len(section_entries)) + findings)
+
+    out.append(_verif_block(
+        runs, base_url=base_url,
+        heading="About this weekly",
+        empty="Strategic entries synthesise the week's operational findings — each links the daily entries it draws on.",
+    ))
     return "".join(out)
 
 
@@ -2427,6 +2724,131 @@ def render_runs_overview(
     )
 
 
+def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
+    """The ACT NOW — CRITICAL callout at the top of a live / day brief,
+    built from the window's single highest-severity critical entry."""
+    url = f"{prefix}{entry_url_path(entry)}"
+    meta_bits: list[str] = []
+    cve = _cve_label(entry)
+    if cve:
+        meta_bits.append(cve)
+    if _entry_exploited(entry):
+        meta_bits.append("exploited")
+    n = _source_count(entry)
+    if n:
+        meta_bits.append(f"{n} source" + ("" if n == 1 else "s"))
+    stamp = _fmt_stamp(entry.get("discovered_at"))
+    if stamp:
+        meta_bits.append(stamp)
+    title = _inline_text(entry.get("headline") or entry.get("title") or entry["id"])
+    summary = _inline_text(entry.get("summary") or "")
+    ia = entry.get("immediate_action")
+    imp = ""
+    if isinstance(ia, dict) and str(ia.get("action") or "").strip():
+        imp = f' <span class="imp">{_inline_text(str(ia["action"]).strip())}</span>'
+    return (
+        f'<a class="actnow" href="{_escape(url)}">'
+        '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>ACT NOW — CRITICAL'
+        f'<span class="meta">{_escape(" · ".join(meta_bits))}</span></div>'
+        f'<div class="actnow-body"><h2>{title}</h2>'
+        f"<p>{summary}{imp}</p>"
+        '<span class="go">Open the full advisory to act →</span></div></a>'
+    )
+
+
+def _filter_defs(entries: list[dict[str, Any]]) -> tuple[list[str], list[str], list[str]]:
+    kinds: list[str] = []
+    seen: set[str] = set()
+    for e in entries:
+        k = e.get("kind")
+        if k and k not in seen:
+            seen.add(k)
+            kinds.append(k)
+    tags = sorted({t for e in entries for t in (e.get("tags") or [])})
+    regions = sorted({r for e in entries for r in (e.get("regions") or [])})
+    return kinds, tags, regions
+
+
+def render_filter_toggle() -> str:
+    return (
+        '<button class="ftoggle" type="button" data-filter-toggle aria-expanded="false">'
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>'
+        'Filter<span class="fcount" data-filter-count hidden>0</span>'
+        '<svg class="fchev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+        'stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>'
+        "</button>"
+    )
+
+
+def render_filter_bar(entries: list[dict[str, Any]]) -> str:
+    """The collapsible chip filter bar (Criticality / Kind / Topic /
+    Region). Chips carry data-fk / data-fv; brief.js matches them against
+    each finding's data-priority / data-kind / data-tags / data-regions."""
+    kinds, tags, regions = _filter_defs(entries)
+
+    def grp(label: str, fk: str, items: list[str], cap: bool = False) -> str:
+        if not items:
+            return ""
+        chips = "".join(
+            f'<button class="fchip" type="button" data-fk="{_escape(fk)}" '
+            f'data-fv="{_escape(str(v))}">{_escape(str(v).capitalize() if cap else str(v))}</button>'
+            for v in items
+        )
+        return f'<div class="fgroup"><span class="fg-l">{_escape(label)}</span>{chips}</div>'
+
+    return (
+        '<div class="filterbar inline" data-filterbar><div class="filterbar-in">'
+        + grp("Criticality", "priority", ["critical", "high", "notable"], cap=True)
+        + grp("Kind", "kind", kinds, cap=True)
+        + grp("Topic", "tag", tags[:12])
+        + grp("Region", "region", regions, cap=True)
+        + '<button class="fclear" type="button" data-filter-clear hidden>Clear ✕</button>'
+        "</div></div>"
+    )
+
+
+def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
+                        *, prefix: str) -> str:
+    """Run-grouped, reverse-chronological timeline for the live brief."""
+    if not ops:
+        return (
+            '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
+            "No findings in this window — a quiet window is a healthy outcome. "
+            "Load older findings to reach further back.</div>"
+        )
+    runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
+    ordered = sorted(
+        ops, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
+    )
+    groups: list[tuple[str, list[dict[str, Any]]]] = []
+    for e in ordered:
+        rid = str(e.get("run_id") or "")
+        if groups and groups[-1][0] == rid:
+            groups[-1][1].append(e)
+        else:
+            groups.append((rid, [e]))
+    rows: list[str] = []
+    prev_ts: datetime | None = None
+    for gi, (rid, es) in enumerate(groups):
+        r = runs_by_id.get(rid)
+        ts = (
+            parse_ts((r or {}).get("completed") or (r or {}).get("started"))
+            or parse_ts(es[0].get("discovered_at"))
+        )
+        label = ts.strftime("%d %b %H:%MZ") if ts else (rid or "run")
+        gap = ""
+        if prev_ts and ts:
+            dh = (prev_ts - ts).total_seconds() / 3600.0
+            if dh >= 1:
+                gap = f"gap {round(dh)}h"
+        prev_ts = ts
+        rows.append(render_run_divider(label, gap, len(es)))
+        for e in es:
+            rows.append(render_timeline_item(e, prefix=prefix, is_new=(gi == 0)))
+    return "".join(rows)
+
+
 def render_live_brief_page(
     window_entries: list[dict[str, Any]],
     window_runs: list[dict[str, Any]],
@@ -2441,105 +2863,32 @@ def render_live_brief_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/brief/ — the dynamic window brief. The default window (last
-    24 h relative to the build's reference moment) is fully
-    server-rendered; brief.js re-renders #brief-sections client-side
-    from data/briefbook.json when the reader changes the window."""
-    ops = sorted(operational_entries(window_entries), key=entry_sort_key)
+    """/brief/ — the live rolling brief. The default 24 h window is
+    server-rendered as a run-grouped timeline; brief.js re-renders it
+    client-side from data/briefbook.json when the reader changes the
+    window (the range <select> or the "load older findings" button)."""
+    ops = operational_entries(window_entries)
     n = len(ops)
-    cve_count = len({c for e in ops for c in entry_cve_ids(e)})
-    toc_html = _brief_filter_aside(ops)
-
-    # The server-rendered default is an explicit clock window ending at the
-    # build's reference moment (the newest published signal): [ref-24h, ref].
-    # It is presented as a plain From→To range in European DD.MM.YYYY HH:MM
-    # form — no "anchor" concept. brief.js re-computes presets against the
-    # visitor's real clock and always fills the boxes with the exact range.
-    win_to = ref_ts
-    win_from = ref_ts - timedelta(hours=DEFAULT_WINDOW_HOURS)
-    from_str = win_from.strftime("%d.%m.%Y %H:%M")
-    to_str = win_to.strftime("%d.%m.%Y %H:%M")
-    range_label = f"{from_str} &rarr; {to_str} UTC"
-
-    meta_items = (
-        '<div class="brief-meta">'
-        '<div class="brief-meta__item brief-meta__item--lead brief-meta__item--live">'
-        '<span class="brief-meta__label">Type</span>'
-        '<span class="brief-meta__value"><span class="brief-meta__type brief-meta__type--live">live</span></span></div>'
-        '<div class="brief-meta__item"><span class="brief-meta__label">Window</span>'
-        f'<span class="brief-meta__value" data-window-label>last {DEFAULT_WINDOW_HOURS} h</span></div>'
-        '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>'
-        f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-entries>{n}</span></span></div>'
-        '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">CVEs</span>'
-        f'<span class="brief-meta__value"><span class="brief-meta__count" data-window-cves>{cve_count}</span></span></div>'
-        "</div>"
+    critical = next(
+        (e for e in sorted(ops, key=entry_sort_key) if e.get("priority") == "critical"),
+        None,
     )
-
-    chips = "".join(
-        f'<button type="button" class="chip{" active" if h == DEFAULT_WINDOW_HOURS else ""}" '
-        f'data-window-hours="{h}">{h}h</button>'
+    updated = ref_ts.strftime("%d %b %H:%M")
+    from_str = (ref_ts - timedelta(hours=DEFAULT_WINDOW_HOURS)).strftime("%d.%m.%Y %H:%M")
+    to_str = ref_ts.strftime("%d.%m.%Y %H:%M")
+    options = "".join(
+        f'<option value="{h}"{" selected" if h == DEFAULT_WINDOW_HOURS else ""}>last {h} h</option>'
         for h in BRIEF_WINDOW_CHOICES
     )
-    control_bar = (
-        '<div class="brief-controls" data-brief-controls>'
-        '<div class="brief-controls__row brief-controls__row--presets">'
-        '<span class="brief-controls__label" id="brief-window-label">Window</span>'
-        '<div class="brief-seg" role="group" aria-labelledby="brief-window-label">'
-        f"{chips}"
-        "</div>"
-        "</div>"
-        '<div class="brief-controls__row brief-controls__row--range">'
-        '<label class="brief-field"><span class="brief-field__label">From</span>'
-        '<input type="text" inputmode="numeric" class="input brief-field__input" '
-        f'data-window-from value="{_escape(from_str)}" placeholder="DD.MM.YYYY HH:MM" '
-        'autocomplete="off" spellcheck="false" '
-        'aria-label="Range start — UTC, format DD.MM.YYYY HH:MM" /></label>'
-        '<label class="brief-field"><span class="brief-field__label">To</span>'
-        '<input type="text" inputmode="numeric" class="input brief-field__input" '
-        f'data-window-to value="{_escape(to_str)}" placeholder="DD.MM.YYYY HH:MM" '
-        'autocomplete="off" spellcheck="false" '
-        'aria-label="Range end — UTC, format DD.MM.YYYY HH:MM" /></label>'
-        '<span class="brief-field__tz">UTC</span>'
-        '<button type="button" class="brief-range-apply" data-window-apply>Apply</button>'
-        "</div>"
-        f'<p class="brief-controls__status" data-window-status>'
-        f"Showing {n} entr{'y' if n == 1 else 'ies'} &middot; {range_label}</p>"
-        "</div>"
-    )
-    console_note = (
-        '<p class="muted brief-controls__note">Times are UTC. Presets are measured back from '
-        "now; edit From / To for an exact range. Without JavaScript this page shows the last "
-        f"{DEFAULT_WINDOW_HOURS} h up to the newest published signal.</p>"
-    )
-    runs_overview = render_runs_overview(
-        all_entries if all_entries is not None else window_entries,
-        all_runs if all_runs is not None else window_runs,
-        prefix=prefix,
-    )
-    # The metadata band + window controls + recent-runs readout read as one
-    # cohesive console panel directly under the title — a single full-width
-    # card so the left content column never opens with a height-mismatch void.
-    console = (
-        '<section class="brief-console" aria-label="Window summary and controls">'
-        f"{meta_items}"
-        f"{control_bar}"
-        f"{console_note}"
-        f"{runs_overview}"
-        "</section>"
-    )
 
-    # Data island: the grouping constants brief.js needs, embedded as a
-    # non-executable JSON <script> (CSP-safe — application/json never runs).
+    # Data island: the constants brief.js needs to re-group + re-render the
+    # timeline from data/briefbook.json (CSP-safe application/json — never runs).
     config = {
         "briefbook_url": "data/briefbook.json",
         "default_hours": DEFAULT_WINDOW_HOURS,
         "window_choices": list(BRIEF_WINDOW_CHOICES),
         "lens_regions": list(ORG_LENS_REGIONS),
         "priority_rank": PRIORITY_RANK,
-        "kind_section": {k: v for k, v in KIND_DAILY_SECTION.items() if v},
-        "sections": [
-            {"key": k, "title": t, "anchor": slugify(t)} for k, t in DAILY_SECTIONS
-        ],
         "empty_stub": SECTION_EMPTY_STUB,
         "generated_at": ref_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "reference_ts": ref_ts.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -2550,46 +2899,56 @@ def render_live_brief_page(
         + "</script>"
     )
 
-    sections_html = render_brief_sections(
-        ops, window_runs,
-        prefix=prefix, base_url=canonical,
-        entries_by_id=entries_by_id,
-        card_html_by_id=card_html_by_id,
-    )
+    actnow = render_actnow(critical, prefix=prefix) if critical else ""
+    timeline = _live_timeline_html(ops, window_runs, prefix=prefix)
 
     body = f"""
-<header class="brief-page-head">
-  <h1>Live brief</h1>
-</header>
-<article class="brief-layout brief-layout--live" data-brief-page data-filter="brief">
-  {console}
-  {data_island}
-  <div class="brief-main">
-    <details class="toc-mobile" data-filter="brief">
-      <summary>On this page</summary>
-      <div class="toc-mobile-body aside-toc">{toc_html}</div>
-    </details>
-    {_ai_notice_html()}
-    <div class="brief-prose" id="brief-sections" data-default-hours="{DEFAULT_WINDOW_HOURS}">{sections_html}</div>
+<div class="livehead">
+  <span class="livedot" aria-hidden="true"><em></em><i></i></span>
+  <span class="streaming">STREAMING</span>
+  <span class="live-updated">· updated {updated} UTC</span>
+</div>
+<h1 class="vtitle">The rolling brief</h1>
+<p class="vsub">Everything verified in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. Read top to bottom, or load older findings to reach further back.</p>
+{actnow}
+<div class="feedhead">
+  <h2>Latest findings</h2>
+  <div class="feedhead-tools">{render_filter_toggle()}</div>
+</div>
+{render_filter_bar(ops)}
+<div class="rangebar">
+  <div class="rangefields">
+    <span class="rf-label">FROM</span>
+    <span class="rf"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg><span data-window-from>{from_str}</span></span>
+    <span class="rf-arrow">→</span>
+    <span class="rf-label">TO</span>
+    <span class="rf"><span data-window-to>{to_str}</span> <span class="rf-note">now</span></span>
+    <span class="rf"><select data-window-select aria-label="Reading window">{options}</select></span>
   </div>
-  <aside class="aside-toc aside-toc--desktop" aria-label="In this brief" data-filter="brief">
-    {toc_html}
-  </aside>
-</article>
+  <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · <span data-window-count>{n}</span> findings · UTC</span>
+</div>
+{data_island}
+<div id="brief-timeline" data-brief-timeline data-default-hours="{DEFAULT_WINDOW_HOURS}">
+{timeline}
+</div>
+<button class="loadbtn" type="button" data-window-more><span class="plus" aria-hidden="true">+</span>Load older findings — extend the range by 24 h</button>
+<div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}briefs/">open the day archive ↗</a></div>
 """
-    top = ops[0] if ops else None
+    top = critical or (sorted(ops, key=entry_sort_key)[0] if ops else None)
     description = (
-        f"Live CTI brief — {n} entries in the current 24 h window."
+        f"Live CTI brief — {n} entries in the current {DEFAULT_WINDOW_HOURS} h window."
         + (f" Top: {top.get('headline') or ''}" if top else "")
     )[:300]
     return base_template(
-        title=f"Live brief — {SITE_NAME}",
+        title=f"The rolling brief — {SITE_NAME}",
         description=description,
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="live",
         extra_head=f'<script defer src="{prefix}assets/js/brief.js?v={cachebust}"></script>',
     )
 
@@ -2603,6 +2962,20 @@ def _escape_json_island(payload: str) -> str:
     )
 
 
+def _datenav_html(*, prefix: str, prev_rel: str, next_rel: str, label: str) -> str:
+    """‹ prev · <label> · next › date navigator (day + weekly headers).
+    `prev_rel` is the OLDER page, `next_rel` the NEWER; empty → disabled."""
+    left = (
+        f'<a href="{prefix}{prev_rel}" aria-label="Older">‹</a>' if prev_rel
+        else '<span class="navbtn disabled" aria-hidden="true">‹</span>'
+    )
+    right = (
+        f'<a href="{prefix}{next_rel}" aria-label="Newer">›</a>' if next_rel
+        else '<span class="navbtn disabled" aria-hidden="true">›</span>'
+    )
+    return f'<div class="datenav">{left}<span class="d">{_escape(label)}</span>{right}</div>'
+
+
 def render_day_page(
     day: str,
     day_entries: list[dict[str, Any]],
@@ -2613,70 +2986,60 @@ def render_day_page(
     cachebust: str,
     prefix: str,
     canonical: str,
+    prev_day: str | None = None,
+    next_day: str | None = None,
 ) -> str:
-    """/briefs/YYYY-MM-DD/ — static day archive: the UTC day's
-    operational entries in the canonical daily structure + that day's
-    run-record notes. Preserves the v2 daily-brief reading experience
-    and URL shape."""
+    """/briefs/YYYY-MM-DD/ — the settled record for one UTC day: the
+    day's operational entries in the canonical daily editorial structure
+    plus that day's run-record notes."""
     ops = sorted(operational_entries(day_entries), key=entry_sort_key)
-    sections_html = render_brief_sections(
-        ops, day_runs, prefix=prefix, base_url=canonical,
-        entries_by_id=entries_by_id,
-    )
-    toc_html = _brief_filter_aside(ops)
     n = len(ops)
-    cve_count = len({c for e in ops for c in entry_cve_ids(e)})
-    runs_label = f"{len(day_runs)} run{'' if len(day_runs) == 1 else 's'}"
-
-    meta_items = (
-        '<div class="brief-meta">'
-        '<div class="brief-meta__item brief-meta__item--lead">'
-        '<span class="brief-meta__label">Type</span>'
-        '<span class="brief-meta__value"><span class="brief-meta__type">daily</span></span></div>'
-        '<div class="brief-meta__item"><span class="brief-meta__label">Date</span>'
-        f'<span class="brief-meta__value"><span class="mono">{_escape(day)}</span></span></div>'
-        '<div class="brief-meta__item"><span class="brief-meta__label">Runs</span>'
-        f'<span class="brief-meta__value">{_escape(runs_label)}</span></div>'
-        '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>'
-        f'<span class="brief-meta__value"><span class="brief-meta__count">{n}</span></span></div>'
-        + (
-            '<div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">CVEs</span>'
-            f'<span class="brief-meta__value"><span class="brief-meta__count">{cve_count}</span></span></div>'
-            if cve_count else ""
-        )
-        + "</div>"
+    n_runs = len(day_runs)
+    critical = next((e for e in ops if e.get("priority") == "critical"), None)
+    try:
+        dt = datetime.strptime(day, "%Y-%m-%d")
+        long_date = f"{dt.strftime('%A')}, {dt.day} {dt.strftime('%B %Y')}"
+        short_date = dt.strftime("%a · %d %b %Y")
+    except ValueError:
+        long_date = day
+        short_date = day
+    datenav = _datenav_html(
+        prefix=prefix,
+        prev_rel=f"briefs/{prev_day}/" if prev_day else "",
+        next_rel=f"briefs/{next_day}/" if next_day else "",
+        label=short_date,
     )
-
-    title = f"CTI Daily Brief — {day}"
+    actnow = render_actnow(critical, prefix=prefix) if critical else ""
+    sections_html = render_brief_sections(
+        ops, day_runs, prefix=prefix, base_url=canonical, entries_by_id=entries_by_id,
+    )
+    findings_word = "finding" if n == 1 else "findings"
+    runs_word = "run" if n_runs == 1 else "runs"
     body = f"""
-<header class="brief-page-head">
-  <h1>{_escape(title)}</h1>
-</header>
-<article class="brief-layout" data-brief="{_escape(day)}">
-  {meta_items}
-  <div class="brief-main">
-    <details class="toc-mobile" data-filter="brief">
-      <summary>On this page</summary>
-      <div class="toc-mobile-body aside-toc">{toc_html}</div>
-    </details>
-    {_ai_notice_html()}
-    <div class="brief-prose">{sections_html}</div>
-  </div>
-  <aside class="aside-toc aside-toc--desktop" aria-label="In this brief" data-filter="brief">
-    {toc_html}
-  </aside>
-</article>
+<div class="briefhead">
+  {datenav}
+  <a class="allbriefs" href="{prefix}briefs/">All daily briefs ↗</a>
+</div>
+<span class="eyebrow">Daily brief · UTC day</span>
+<h1 class="vtitle">{_escape(long_date)}</h1>
+<p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word} — the settled record for this UTC day, in the classic brief order.</p>
+{actnow}
+<div class="ftoolrow">{render_filter_toggle()}</div>
+{render_filter_bar(ops)}
+{sections_html}
 """
     tldr = select_tldr_entries(ops)
     description = (tldr[0].get("summary") or "").strip()[:280] if tldr else f"Daily CTI brief for {day}."
     return base_template(
-        title=title,
+        title=f"CTI Daily Brief — {day}",
         description=description or f"Daily CTI brief for {day}.",
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="daily",
     )
 
 
@@ -2688,63 +3051,52 @@ def render_days_index_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/briefs/ — index of day pages grouped by month, newest first."""
-    groups: dict[str, dict[str, Any]] = {}
+    """/briefs/ — the day archive: every published day page, newest
+    first, as an `.arc` list with a live text filter."""
+    rows: list[str] = []
     for day in sorted(days.keys(), reverse=True):
-        key = day[:7]
+        entries = days[day]
+        n = len(entries)
+        cves = len({c for e in entries for c in entry_cve_ids(e)})
+        crit = sum(1 for e in entries if e.get("priority") == "critical")
+        top = select_tldr_entries(entries)
+        hint = (top[0].get("headline") or "") if top else ""
         try:
-            label = datetime.strptime(day, "%Y-%m-%d").strftime("%B %Y")
+            short = datetime.strptime(day, "%Y-%m-%d").strftime("%a %d %b %Y")
         except ValueError:
-            label = key
-        groups.setdefault(key, {"label": label, "days": []})["days"].append(day)
-
-    section_html: list[str] = []
-    for grp in groups.values():
-        items_html = ""
-        for day in grp["days"]:
-            entries = days[day]
-            n = len(entries)
-            cves = len({c for e in entries for c in entry_cve_ids(e)})
-            crit = sum(1 for e in entries if e.get("priority") == "critical")
-            top = select_tldr_entries(entries)
-            hint = (top[0].get("headline") or "") if top else ""
-            haystack = " ".join(
-                [day, hint] + [e.get("title") or "" for e in entries]
-                + [c for e in entries for c in entry_cve_ids(e)]
-            ).lower()
-            items_html += (
-                f'<li data-brief-kind="daily" data-brief-haystack="{_escape(haystack)}">'
-                "<span>"
-                f'<a class="e-title" href="{prefix}briefs/{_escape(day)}/">CTI Daily Brief — {_escape(day)}</a>'
-                '<div class="e-meta">'
-                f'<span class="e-tag">daily</span>'
-                + (
-                    f'<span>{n} entr{"y" if n == 1 else "ies"}</span>'
-                    if n
-                    else '<span class="muted">quiet window — run record only</span>'
-                )
-                + (f"<span>{cves} CVE{'' if cves == 1 else 's'}</span>" if cves else "")
-                + (f'<span class="badge badge--crit">{crit} critical</span>' if crit else "")
-                + "</div>"
-                + (f'<div class="e-meta"><span class="muted">{_inline_text(hint[:160])}</span></div>' if hint else "")
-                + "</span>"
-                f'<span class="mono muted">{_escape(day)}</span>'
-                "</li>"
-            )
-        section_html.append(
-            f'<section style="margin-top:1.4rem"><h2 class="section-head">{_escape(grp["label"])}</h2>'
-            f'<ul class="entity-list" data-filter-list="briefs">{items_html}</ul></section>'
+            short = day
+        haystack = " ".join(
+            [day, hint] + [e.get("title") or "" for e in entries]
+            + [c for e in entries for c in entry_cve_ids(e)]
+        ).lower()
+        if n:
+            count_txt = f"{n} finding" + ("" if n == 1 else "s") + (f" · {crit} critical" if crit else "")
+            sub = _inline_text(hint[:150]) or (f"{cves} CVE" + ("" if cves == 1 else "s") if cves else "")
+        else:
+            count_txt = "run record only"
+            sub = "Quiet window — the run record is the artifact."
+        rows.append(
+            f'<a class="arc" href="{prefix}briefs/{_escape(day)}/" '
+            f'data-brief-kind="daily" data-brief-haystack="{_escape(haystack)}">'
+            f'<span class="arc-d">{_escape(short)}</span>'
+            f'<span class="arc-b"><span class="arc-t">CTI Daily Brief — {_escape(day)}</span>'
+            f'<span class="arc-s">{sub}</span></span>'
+            f'<span class="arc-c">{_escape(count_txt)}</span></a>'
         )
 
     n_days = len(days)
+    listing = (
+        f'<div class="arclist" data-filter-list="briefs">{"".join(rows)}</div>'
+        if rows else '<div class="section-empty">No entries published yet.</div>'
+    )
     body = f"""
-<h1>Daily briefs</h1>
-<p class="subtitle">{n_days} archived day page{'' if n_days == 1 else 's'}, newest first. Each day page renders that UTC day's published entries in the canonical brief structure. For the rolling window view, read the <a href="{prefix}brief/">live brief</a>.</p>
-
-<div class="toolbar">
+<span class="eyebrow">Archive · daily briefs</span>
+<h1 class="vtitle">All daily briefs</h1>
+<p class="vsub">Every published brief, newest first — one page per UTC day. For the rolling window view, read the <a href="{prefix}brief/">live brief</a>.</p>
+<div class="toolbar" style="margin-top:22px;">
   <input class="input" id="briefs-q" type="search" placeholder="Filter by date, headline, or CVE…" autocomplete="off" spellcheck="false" data-filter-input="briefs" />
 </div>
-{''.join(section_html) or '<div class="empty">No entries published yet.</div>'}
+{listing}
 """
     return base_template(
         title=f"Daily briefs — {SITE_NAME}",
@@ -2754,10 +3106,27 @@ def render_days_index_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="daily",
     )
 
 
 # === WEEKLY PAGES (v3) =================================================
+
+
+def _week_range_label(week: str) -> str:
+    """`2026-W27` → `2026-W27 · 30 Jun – 6 Jul`."""
+    try:
+        year, wk = week.split("-W")
+        monday = date.fromisocalendar(int(year), int(wk), 1)
+        sunday = date.fromisocalendar(int(year), int(wk), 7)
+        if monday.month == sunday.month:
+            span = f"{monday.day}–{sunday.day} {sunday.strftime('%b')}"
+        else:
+            span = f"{monday.strftime('%d %b')} – {sunday.strftime('%d %b')}"
+        return f"{week} · {span}"
+    except (ValueError, TypeError):
+        return week
 
 
 def render_weekly_page(
@@ -2770,47 +3139,62 @@ def render_weekly_page(
     cachebust: str,
     prefix: str,
     canonical: str,
+    prev_week: str | None = None,
+    next_week: str | None = None,
 ) -> str:
-    """/weekly/YYYY-Www/ — the week's strategic entries in the v2
-    12-section weekly structure, referenced operational entries linked
-    in place (each card's `Builds on:` line)."""
+    """/weekly/YYYY-Www/ — the week's strategic entries in the weekly
+    editorial structure, with the "if you did nothing this week" lead and
+    referenced operational entries linked in place."""
     strat = strategic_entries(week_entries)
-    sections_html = render_weekly_sections(
-        strat, week_runs, prefix=prefix, base_url=canonical,
-        entries_by_id=entries_by_id,
-    )
     n = len(strat)
-    title = f"CTI Weekly Summary — {week}"
+    glance = [e for e in sorted(strat, key=entry_sort_key)
+              if e.get("priority") in ("critical", "high")]
+    lead_entry = glance[0] if glance else None
+    lead_html = ""
+    if lead_entry:
+        lead_summary = _inline_text(lead_entry.get("summary") or lead_entry.get("headline") or "")
+        lead_url = f"{prefix}{entry_url_path(lead_entry)}"
+        lead_html = (
+            '<a class="actnow actnow--flat" href="' + _escape(lead_url) + '">'
+            '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>IF YOU DID NOTHING THIS WEEK</div>'
+            f'<div class="actnow-body"><p>{lead_summary}</p></div></a>'
+        )
+    sections_html = render_weekly_sections(
+        strat, week_runs, prefix=prefix, base_url=canonical, entries_by_id=entries_by_id,
+    )
+    datenav = _datenav_html(
+        prefix=prefix,
+        prev_rel=f"weekly/{prev_week}/" if prev_week else "",
+        next_rel=f"weekly/{next_week}/" if next_week else "",
+        label=_week_range_label(week),
+    )
+    try:
+        wk_num = int(week.split("-W")[1])
+        wk_title = f"Week {wk_num}"
+    except (ValueError, IndexError):
+        wk_title = week
     body = f"""
-<header class="brief-page-head">
-  <h1>{_escape(title)}</h1>
-</header>
-<article class="brief-layout" data-brief="{_escape(week)}">
-  <div class="brief-meta">
-    <div class="brief-meta__item brief-meta__item--lead">
-      <span class="brief-meta__label">Type</span>
-      <span class="brief-meta__value"><span class="brief-meta__type">weekly</span></span></div>
-    <div class="brief-meta__item"><span class="brief-meta__label">ISO week</span>
-      <span class="brief-meta__value"><span class="mono">{_escape(week)}</span></span></div>
-    <div class="brief-meta__item brief-meta__item--count"><span class="brief-meta__label">Entries</span>
-      <span class="brief-meta__value"><span class="brief-meta__count">{n}</span></span></div>
-  </div>
-  <div class="brief-main">
-    {_ai_notice_html()}
-    <div class="brief-prose">{sections_html}</div>
-  </div>
-</article>
+<div class="briefhead">
+  {datenav}
+  <a class="allbriefs" href="{prefix}weekly/">All weekly briefs ↗</a>
+</div>
+<span class="eyebrow">Weekly brief · ISO week</span>
+<h1 class="vtitle">{_escape(wk_title)}</h1>
+<p class="vsub">The strategic arc across the week's operational findings — what to fix if you act only once, the multi-day chains, and the policy horizon.</p>
+{lead_html}
+{sections_html}
 """
-    glance = [e for e in strat if e.get("priority") in ("critical", "high")]
     description = (glance[0].get("summary") or "").strip()[:280] if glance else f"Weekly CTI summary — {week}."
     return base_template(
-        title=title,
+        title=f"CTI Weekly Summary — {week}",
         description=description or f"Weekly CTI summary — {week}.",
         body=body,
         canonical=canonical,
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="weekly",
     )
 
 
@@ -2822,31 +3206,31 @@ def render_weekly_index_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/weekly/ — index of weekly pages, newest first."""
-    items_html = ""
+    """/weekly/ — the weekly archive: every weekly summary, newest first."""
+    rows: list[str] = []
     for week in sorted(weeks.keys(), reverse=True):
         entries = strategic_entries(weeks[week])
         n = len(entries)
         top = [e for e in sorted(entries, key=entry_sort_key)
                if e.get("priority") in ("critical", "high")]
         hint = (top[0].get("headline") or "") if top else ""
-        items_html += (
-            "<li><span>"
-            f'<a class="e-title" href="{prefix}weekly/{_escape(week)}/">CTI Weekly Summary — {_escape(week)}</a>'
-            '<div class="e-meta">'
-            f'<span class="e-tag">weekly</span>'
-            f'<span>{n} strategic entr{"y" if n == 1 else "ies"}</span>'
-            "</div>"
-            + (f'<div class="e-meta"><span class="muted">{_inline_text(hint[:160])}</span></div>' if hint else "")
-            + "</span>"
-            f'<span class="mono muted">{_escape(week)}</span>'
-            "</li>"
+        rows.append(
+            f'<a class="arc" href="{prefix}weekly/{_escape(week)}/">'
+            f'<span class="arc-d">{_escape(week)}</span>'
+            f'<span class="arc-b"><span class="arc-t">CTI Weekly Summary — {_escape(_week_range_label(week))}</span>'
+            f'<span class="arc-s">{_inline_text(hint[:150])}</span></span>'
+            f'<span class="arc-c">{n} strategic</span></a>'
         )
     n_weeks = len(weeks)
+    listing = (
+        f'<div class="arclist">{"".join(rows)}</div>'
+        if rows else '<div class="section-empty">No weekly summaries yet.</div>'
+    )
     body = f"""
-<h1>Weekly summaries</h1>
-<p class="subtitle">{n_weeks} weekly summar{'y' if n_weeks == 1 else 'ies'}, newest first — the strategic lens over each ISO week: multi-day chains, research and threat-actor developments, annual reports, policy, and the look ahead.</p>
-{('<ul class="entity-list">' + items_html + '</ul>') if items_html else '<div class="empty">No weekly summaries yet.</div>'}
+<span class="eyebrow">Archive · weekly briefs</span>
+<h1 class="vtitle">All weekly briefs</h1>
+<p class="vsub">Every published weekly, newest first — one page per ISO week: the strategic lens over multi-day chains, research, annual reports, policy, and the look ahead.</p>
+{listing}
 """
     return base_template(
         title=f"Weekly summaries — {SITE_NAME}",
@@ -2856,10 +3240,82 @@ def render_weekly_index_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="weekly",
     )
 
 
 # === PER-ENTRY PERMALINK (v3) ==========================================
+
+
+def render_detail_badges(entry: dict[str, Any]) -> str:
+    """The `.badges` strip at the top of an entry-detail page."""
+    parts = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
+    cve = _cve_label(entry)
+    if cve:
+        parts.append(f'<span class="b cve">{_escape(cve)}</span>')
+    if _entry_exploited(entry):
+        parts.append('<span class="b exp">exploited</span>')
+    if entry.get("update_of"):
+        parts.append('<span class="b upd">update</span>')
+    if entry.get("kind"):
+        parts.append(f'<span class="b">{_escape(str(entry["kind"]))}</span>')
+    if entry.get("deep_dive"):
+        parts.append('<span class="b">deep dive</span>')
+    if entry.get("watchlist_hit"):
+        parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
+    cls = render_classification_badge(entry.get("classification"))
+    if cls:
+        parts.append(cls)
+    return '<div class="badges">' + "".join(parts) + "</div>"
+
+
+def render_detail_sources(entry: dict[str, Any]) -> str:
+    """The `.srclist` on an entry-detail page — open-web sources with
+    roles + closed-source citations (referenced, never linked)."""
+    rows: list[str] = []
+    for i, s in enumerate(entry.get("sources") or []):
+        if not isinstance(s, dict):
+            continue
+        url = _escape(_safe_url(str(s.get("url") or "")))
+        label = _escape(str(s.get("publisher") or s.get("url") or "source"))
+        role = _escape(str(s.get("role") or ("primary" if i == 0 else "corroborating")))
+        rows.append(
+            f'<a class="src" href="{url}" target="_blank" rel="noopener noreferrer">'
+            f'{label}<span class="role">{role}</span><span class="arw" aria-hidden="true">↗</span></a>'
+        )
+    for c in entry.get("closed_sources") or []:
+        if not isinstance(c, dict):
+            continue
+        extras = [str(b) for b in (c.get("provider"), c.get("date")) if b]
+        if c.get("ref"):
+            extras.append(f"ref: {c['ref']}")
+        label = _escape("“" + str(c.get("title", "")) + "”" + (f" ({', '.join(extras)})" if extras else ""))
+        rows.append(f'<span class="src">{label}<span class="role">closed source</span></span>')
+    if not rows:
+        return ""
+    return '<div class="esec"><h4>Sources</h4><div class="srclist">' + "".join(rows) + "</div></div>"
+
+
+def render_detail_scope(entry: dict[str, Any], *, registry: dict[str, dict[str, Any]],
+                        prefix: str) -> str:
+    """Entities + tags/regions/CVEs as `.echip`s on an entry-detail page."""
+    chips: list[str] = []
+    for key in entry.get("entities") or []:
+        ent = registry.get(key) or {}
+        chips.append(
+            f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
+            f'{_escape(ent.get("name") or str(key))}</a>'
+        )
+    for cid in entry_cve_ids(entry):
+        chips.append(f'<a class="echip" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a>')
+    for t in entry.get("tags") or []:
+        chips.append(f'<a class="echip" href="{prefix}tags/{_escape(t)}/">{_escape(t)}</a>')
+    for r in entry.get("regions") or []:
+        chips.append(f'<a class="echip" href="{prefix}regions/{_escape(r)}/">{_escape(r)}</a>')
+    if not chips:
+        return ""
+    return '<div class="esec"><h4>Entities &amp; scope</h4><div class="echips">' + "".join(chips) + "</div></div>"
 
 
 def render_entry_page(
@@ -2960,22 +3416,58 @@ def render_entry_page(
     ia_html = render_immediate_action_callout(entry, prefix=prefix)
     update_lead = render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
 
+    emeta_parts: list[str] = []
+    disc = _fmt_discovered(entry.get("discovered_at"))
+    if disc:
+        emeta_parts.append(f"<span>{_escape(disc)}</span>")
+    if rid:
+        emeta_parts.append(
+            f'<a class="mono" href="{prefix}ops/#run={urllib.parse.quote(rid, safe="")}">run {_escape(rid)}</a>'
+        )
+    nsrc = _source_count(entry)
+    if nsrc:
+        emeta_parts.append(f'<span>{nsrc} source' + ("" if nsrc == 1 else "s") + "</span>")
+    v_class, v_label = _verif_meta(entry)
+    emeta_parts.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
+    emeta = (
+        '<div class="emeta">' + "".join(emeta_parts)
+        + '<button class="share" type="button" data-copy-link aria-label="Copy link to this finding">'
+        '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">'
+        '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M16 6l-4-4-4 4M12 2v13"></path></svg>Copy link</button></div>'
+    )
+
+    actions = [a for a in (entry.get("actions") or []) if isinstance(a, str) and a.strip()]
+    actions_html = (
+        '<div class="esec"><h4>Defender actions</h4><ul class="action-list">'
+        + "".join(
+            '<li class="action-list__item"><div class="action-list__body">'
+            f"{render_inline(a.strip(), base_url=canonical)}</div></li>"
+            for a in actions
+        )
+        + "</ul></div>"
+    ) if actions else ""
+
+    chain_html = (
+        '<div class="esec"><h4>Update chain</h4><ul class="entity-list">'
+        + "".join(chain_bits) + "</ul></div>"
+    ) if chain_bits else ""
+
     body = f"""
-<article class="single-item entry-page">
-  <p class="subtitle"><a href="{prefix}">Home</a> · <a href="{prefix}brief/">Live brief</a> · <a href="{_escape(parent_url)}">{_escape(parent_label)}</a></p>
-  <h1>{_escape(entry.get("title") or entry["id"])}</h1>
-  {render_entry_badges(entry, prefix=prefix)}
-  {entities_html}
-  {run_html}
-  {ia_html}
-  {update_lead}
-  <div class="brief-prose">{body_html}</div>
-  {render_entry_evidence(entry)}
-  {actions_html}
-  {chain_html}
-  {render_entry_taxonomy(entry, prefix=prefix)}
-  {render_entry_sources(entry, with_roles=True)}
-</article>
+<a class="back" href="{_escape(parent_url)}">← Back to {_escape(parent_label)}</a>
+{render_detail_badges(entry)}
+<h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
+{emeta}
+<div class="ebody">
+{ia_html}
+{update_lead}
+{body_html}
+{render_entry_evidence(entry)}
+</div>
+{actions_html}
+{render_detail_sources(entry)}
+{render_detail_scope(entry, registry=registry, prefix=prefix)}
+{chain_html}
+<div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding — verify operationally critical claims against the linked primary source.</p></div>
 """
     description = (entry.get("summary") or "").strip()[:280] or (entry.get("headline") or "")[:280]
     return base_template(
@@ -2986,6 +3478,8 @@ def render_entry_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        body_class="reading",
+        active_nav="daily" if is_op else "weekly",
     )
 
 
@@ -3068,89 +3562,93 @@ def render_home_page(
     cachebust: str,
     canonical: str,
 ) -> str:
-    """Home — hero + three feature cards, each leading with its TL;DR:
-    (1) the current day's live entries, (2) the previous — now completed —
-    day's brief, (3) the latest weekly summary."""
+    """Home — hero + three brief cards (Live / Daily / Weekly), each
+    leading with the one thing that matters in that window."""
     redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
 
-    # (1) Live — the current day's entries, still being appended to.
-    if today:
-        live_ops = sorted(operational_entries(today_entries), key=entry_sort_key)
-        live_tldr = _home_tldr_list(select_tldr_entries(live_ops))
-        live_card = (
-            '<section class="home-today home-today--live">'
-            '<p class="home-today-eyebrow">Live — today</p>'
-            f"<h2>CTI Daily Brief — {_escape(today)}</h2>"
-            f'<p class="muted">{len(live_ops)} entr{"y" if len(live_ops) == 1 else "ies"} '
-            f"published so far today — updates through the day.</p>"
-            + (live_tldr or '<p class="muted">A quiet day so far — no new verified signal yet.</p>')
-            + '<p class="home-today-cta"><a class="cta" href="brief/">Open the live brief →</a></p>'
-            "</section>"
-        )
-    else:
-        live_card = (
-            '<section class="home-today home-today--live">'
-            '<p class="home-today-eyebrow">Live — today</p>'
-            '<p class="muted">No entries published yet — the first pipeline run will open today\'s brief.</p>'
-            '<p class="home-today-cta"><a class="cta" href="brief/">Open the live brief →</a></p>'
-            "</section>"
-        )
+    def _lead(entries: list[dict[str, Any]]) -> tuple[str, str] | None:
+        picked = select_tldr_entries(entries)
+        if not picked:
+            return None
+        e = picked[0]
+        head = (e.get("headline") or e.get("title") or "").strip().strip("*").rstrip(".")
+        return head, (e.get("summary") or "").strip()
 
-    # (2) Latest completed day — the day before today, now finalised.
+    # (1) Live — the current day's rolling window.
+    live_ops = sorted(operational_entries(today_entries or []), key=entry_sort_key)
+    n_live = len(live_ops)
+    crit_live = sum(1 for e in live_ops if e.get("priority") == "critical")
+    lead = _lead(live_ops)
+    if lead and lead[0]:
+        live_bp = f'<b>If you read one thing:</b> {_inline_text(lead[0])}' + (f" — {_inline_text(lead[1])}" if lead[1] else "")
+    else:
+        live_bp = "The rolling brief — everything verified in the last 24 hours, held to a constant relevance bar."
+    live_go = (
+        (f"{n_live} findings" + (f" · {crit_live} critical" if crit_live else "") + " · rolling 24h →")
+        if n_live else "rolling 24h →"
+    )
+    live_card = (
+        '<a class="bcard live" href="brief/">'
+        '<div class="bh"><span class="livedot" aria-hidden="true"><em></em><i></i></span>'
+        '<span class="bt">Live</span><span class="bm">rolling 24h</span></div>'
+        f'<p class="bp">{live_bp}</p>'
+        f'<span class="bgo">{_escape(live_go)}</span></a>'
+    )
+
+    # (2) Latest completed day.
     if prev_day:
         day_ops = sorted(operational_entries(prev_day_entries), key=entry_sort_key)
-        day_tldr = _home_tldr_list(select_tldr_entries(day_ops))
+        n_day = len(day_ops)
         day_card = (
-            '<section class="home-today home-today--daily">'
-            '<p class="home-today-eyebrow">Completed daily brief</p>'
-            f"<h2>CTI Daily Brief — {_escape(prev_day)}</h2>"
-            f'<p class="muted">{len(day_ops)} entr{"y" if len(day_ops) == 1 else "ies"} '
-            f"published on {_escape(prev_day)}.</p>"
-            + (day_tldr or "")
-            + f'<p class="home-today-cta"><a class="cta" href="briefs/{_escape(prev_day)}/">Read the day page →</a></p>'
-            "</section>"
+            f'<a class="bcard" href="briefs/{_escape(prev_day)}/">'
+            f'<div class="bh"><span class="bt">Daily</span><span class="bm">{_escape(prev_day)}</span></div>'
+            '<p class="bp">The settled record of the day — Active Threats, Trending Vulnerabilities, '
+            'Research &amp; Updates in the classic brief order.</p>'
+            f'<span class="bgo">{n_day} finding' + ("" if n_day == 1 else "s") + ' · UTC day →</span></a>'
         )
     else:
         day_card = (
-            '<section class="home-today home-today--daily">'
-            '<p class="home-today-eyebrow">Completed daily brief</p>'
-            '<p class="muted">No completed day yet — the previous day\'s brief appears here once a new day begins.</p>'
-            "</section>"
+            '<a class="bcard" href="briefs/">'
+            '<div class="bh"><span class="bt">Daily</span><span class="bm">archive</span></div>'
+            '<p class="bp">The settled per-day record — each UTC day\'s findings in the classic brief order.</p>'
+            '<span class="bgo">open the day archive →</span></a>'
         )
 
     # (3) Latest weekly summary.
     if latest_week:
         strat = sorted(strategic_entries(latest_week_entries), key=entry_sort_key)
-        glance = [e for e in strat if e.get("priority") in ("critical", "high")][:6]
+        wlead = _lead([e for e in strat if e.get("priority") in ("critical", "high")] or strat)
+        if wlead and wlead[1]:
+            weekly_bp = f'<b>If you did nothing this week:</b> {_inline_text(wlead[1])}'
+        elif wlead and wlead[0]:
+            weekly_bp = f'<b>If you did nothing this week:</b> {_inline_text(wlead[0])}'
+        else:
+            weekly_bp = "The strategic arc across the week's operational findings — chains, sector patterns, and the policy horizon."
         weekly_card = (
-            '<section class="home-today home-today--weekly">'
-            '<p class="home-today-eyebrow">This week\'s summary</p>'
-            f"<h2>CTI Weekly Summary — {_escape(latest_week)}</h2>"
-            f'<p class="muted">{len(strat)} strategic entr{"y" if len(strat) == 1 else "ies"} this ISO week.</p>'
-            + (_home_tldr_list(glance) or "")
-            + f'<p class="home-today-cta"><a class="cta" href="weekly/{_escape(latest_week)}/">Read the full weekly →</a></p>'
-            "</section>"
+            f'<a class="bcard" href="weekly/{_escape(latest_week)}/">'
+            f'<div class="bh"><span class="bt">Weekly</span><span class="bm">{_escape(latest_week)}</span></div>'
+            f'<p class="bp">{weekly_bp}</p>'
+            '<span class="bgo">the strategic arc →</span></a>'
         )
     else:
         weekly_card = (
-            '<section class="home-today home-today--weekly">'
-            '<p class="home-today-eyebrow">This week\'s summary</p>'
-            '<p class="muted">No weekly summary yet — published Sundays.</p>'
-            "</section>"
+            '<a class="bcard" href="weekly/">'
+            '<div class="bh"><span class="bt">Weekly</span><span class="bm">Sundays</span></div>'
+            '<p class="bp">The weekly strategic lens — multi-day chains, sector patterns and the policy horizon.</p>'
+            '<span class="bgo">the strategic arc →</span></a>'
         )
 
     body = f"""
-<section class="home-hero">
-  <h1>{_escape(SITE_NAME)}</h1>
-  <p class="lede">{_escape(HOME_LEDE)}</p>
-</section>
-
-<div class="home-today-grid home-today-grid--three">
+<div class="hero">
+  <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
+  <h1>{_escape(HERO_TITLE)}</h1>
+  <p>{_escape(HERO_SUBTITLE)}</p>
+</div>
+<div class="briefgrid">
 {live_card}
 {day_card}
 {weekly_card}
 </div>
-
 {redirect_js}
 """
     return base_template(
@@ -3161,6 +3659,7 @@ def render_home_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix="",
+        body_class="home",
     )
 
 
@@ -3223,6 +3722,12 @@ def build_briefbook(
             "entities": list(e.get("entities") or []),
             "cve_ids": entry_cve_ids(e),
             "cve_status": entry_cve_status_union(e),
+            "cve_label": _cve_label(e),
+            "run_id": e.get("run_id"),
+            "source_count": _source_count(e),
+            "exploited": _entry_exploited(e),
+            "verification_label": _verif_meta(e)[1],
+            "verification_class": _verif_meta(e)[0],
             "update_of": e.get("update_of"),
             "updated_by": updated_by.get(e["id"], []),
             "deep_dive": bool(e.get("deep_dive")),
@@ -7802,6 +8307,12 @@ def main() -> int:
     # "is there a page for this date?" link decision.
     day_pages = set(days) | daily_run_dates(runs)
     week_pages = set(weeks) | weekly_run_weeks(runs)
+    # Point the Daily / Weekly topbar segments at the most recent pages.
+    global LATEST_DAY_REL, LATEST_WEEK_REL
+    if day_pages:
+        LATEST_DAY_REL = f"briefs/{max(day_pages)}/"
+    if week_pages:
+        LATEST_WEEK_REL = f"weekly/{max(week_pages)}/"
     ref = reference_ts(entries, runs)
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
     entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -7893,7 +8404,8 @@ def main() -> int:
     # ---- Day pages + index ---------------------------------------------
     # Iterate the union: content days AND days that only ran (a page for a
     # quiet day renders 0 entries + that day's run-notes).
-    for day in sorted(day_pages):
+    _day_seq = sorted(day_pages)
+    for _i, day in enumerate(_day_seq):
         day_entries = days.get(day, [])
         rel_url = f"briefs/{day}/"
         emit_html(
@@ -7905,6 +8417,8 @@ def main() -> int:
                 cachebust=cachebust,
                 prefix="../../",
                 canonical=site_url + rel_url,
+                prev_day=_day_seq[_i - 1] if _i > 0 else None,
+                next_day=_day_seq[_i + 1] if _i + 1 < len(_day_seq) else None,
             ),
             lastmod=day,
         )
@@ -7921,9 +8435,8 @@ def main() -> int:
     )
 
     # ---- Weekly pages + index + legacy redirects ------------------------
-    for week in sorted(week_pages):
-        if not is_safe_path_segment(week):
-            continue
+    _week_seq = [w for w in sorted(week_pages) if is_safe_path_segment(w)]
+    for _wi, week in enumerate(_week_seq):
         week_entries = weeks.get(week, [])
         rel_url = f"weekly/{week}/"
         emit_html(
@@ -7935,6 +8448,8 @@ def main() -> int:
                 cachebust=cachebust,
                 prefix="../../",
                 canonical=site_url + rel_url,
+                prev_week=_week_seq[_wi - 1] if _wi > 0 else None,
+                next_week=_week_seq[_wi + 1] if _wi + 1 < len(_week_seq) else None,
             ),
             lastmod=max((e["date"] for e in week_entries), default=""),
         )

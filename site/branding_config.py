@@ -89,6 +89,20 @@ DEFAULTS: dict[str, Any] = {
         "github_repo": "OwlsNightCatch/ctipilot",
         "lang": "en",
         "locale": "en_US",
+        # Topbar segment labels (Live / Daily / Weekly views). Empty → the
+        # built-in labels.
+        "nav_live": "",
+        "nav_daily": "",
+        "nav_weekly": "",
+        # Home hero copy. Empty → the built-in defaults (hero_subtitle
+        # inherits `lede` when empty).
+        "hero_eyebrow": "",
+        "hero_title": "",
+        "hero_subtitle": "",
+        # Dismissible AI-provenance bar under the topbar. ai_bar_html may
+        # carry inline HTML (e.g. a bold lead-in). Empty → built-in copy.
+        "ai_bar_html": "",
+        "ai_bar_link_label": "",
     },
     "logo": {
         "header_mark": "",
@@ -343,6 +357,34 @@ def _css_decls(section: dict[str, str], keys: tuple[str, ...]) -> list[str]:
     ]
 
 
+def _hex_to_rgb(color: str) -> str | None:
+    """`#e85d75` / `#e57` → `232, 93, 117`, else None (can't derive from a
+    named colour / var / rgba)."""
+    c = color.strip().lstrip("#")
+    if len(c) == 3:
+        c = "".join(ch * 2 for ch in c)
+    if len(c) != 6:
+        return None
+    try:
+        return f"{int(c[0:2], 16)}, {int(c[2:4], 16)}, {int(c[4:6], 16)}"
+    except ValueError:
+        return None
+
+
+def _rgb_decls(section: dict[str, str]) -> list[str]:
+    """Derive --accent-rgb / --info-rgb from an overridden accent / info hex
+    so a rebrand's accent propagates to every translucent rgba() usage
+    (badges, focus rings, callouts) without a second config value."""
+    out: list[str] = []
+    for src_key, rgb_name in (("accent", "accent-rgb"), ("info", "info-rgb")):
+        hexv = section.get(src_key, "").strip()
+        if hexv:
+            rgb = _hex_to_rgb(hexv)
+            if rgb:
+                out.append(f"  --{rgb_name}: {rgb};")
+    return out
+
+
 def render_branding_css(branding: dict[str, Any]) -> str:
     """CSS custom-property override block for every non-empty theme value.
     Empty string when nothing is overridden (the upstream-default state) —
@@ -357,8 +399,9 @@ def render_branding_css(branding: dict[str, Any]) -> str:
         _css_decls(theme["fonts"], ("sans", "serif", "mono"))
         + _css_decls(theme["tokens"], ("radius", "radius_lg", "topbar_h"))
         + _css_decls(theme["dark"], _THEME_COLOR_KEYS)
+        + _rgb_decls(theme["dark"])
     )
-    light_lines = _css_decls(theme["light"], _THEME_COLOR_KEYS)
+    light_lines = _css_decls(theme["light"], _THEME_COLOR_KEYS) + _rgb_decls(theme["light"])
     if not root_lines and not light_lines:
         return ""
     parts: list[str] = [

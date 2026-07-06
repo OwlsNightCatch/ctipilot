@@ -42,6 +42,10 @@
   --radius:       6px;
   --radius-lg:    10px;
   --topbar-h:     56px;
+  /* RGB triples for translucent accent/info fills (badges, focus rings,
+     callouts, chart SVGs). Kept in sync with --accent / --info above. */
+  --accent-rgb:   232, 93, 117;
+  --info-rgb:     121, 192, 255;
   --mono: ui-monospace, SFMono-Regular, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -65,6 +69,7 @@
     --selection:    #b6e3ff;
     --topbar-bg:    rgba(255, 255, 255, 0.92);
     --shadow:       0 1px 0 rgba(27, 31, 35, 0.04), 0 8px 24px rgba(140, 149, 159, 0.2);
+    --accent-rgb:   182, 43, 70;
   }
 }
 :root[data-theme="light"] {
@@ -85,9 +90,42 @@
   --selection:    #b6e3ff;
   --topbar-bg:    rgba(255, 255, 255, 0.92);
   --shadow:       0 1px 0 rgba(27, 31, 35, 0.04), 0 8px 24px rgba(140, 149, 159, 0.2);
+  --accent-rgb:   182, 43, 70;
+}
+
+/* ── opt-in reader accommodations (set as attributes on <html> by
+      theme.js, wired like the light/dark toggle) ───────────────────── */
+:root[data-font="dyslexic"] {
+  --sans: "OpenDyslexic", "Atkinson Hyperlegible", "Comic Sans MS", "Trebuchet MS", Verdana, sans-serif;
+  --mono: var(--sans);
+}
+:root[data-font="dyslexic"] body { letter-spacing: 0.008em; word-spacing: 0.05em; }
+:root[data-font="dyslexic"] p,
+:root[data-font="dyslexic"] .f-p,
+:root[data-font="dyslexic"] .tl-body p,
+:root[data-font="dyslexic"] .ebody p,
+:root[data-font="dyslexic"] .vsub,
+:root[data-font="dyslexic"] .bcard .bp { line-height: 1.9; }
+:root[data-density="comfortable"] .f-p,
+:root[data-density="comfortable"] .tl-body p,
+:root[data-density="comfortable"] .ebody p,
+:root[data-density="comfortable"] .vsub,
+:root[data-density="comfortable"] .actnow-body p,
+:root[data-density="comfortable"] .bcard .bp { line-height: 1.95; }
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; min-width: 0; }
+
+/* The [hidden] attribute must always win over a component's own display
+   rule (menus, drawer, AI bar, filter count, search modal all toggle it). */
+[hidden] { display: none !important; }
 
 html {
   scroll-behavior: smooth;
@@ -162,371 +200,222 @@ img, svg { max-width: 100%; height: auto; }
 }
 .skip:focus { transform: translateY(0); }
 
+/* ── keyframes ──────────────────────────────────────────────────── */
+@keyframes ctiPing  { 0% { transform: scale(1); opacity: 0.5; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+@keyframes ctiPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes ctiRise  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes ctiSpin  { to { transform: rotate(360deg); } }
+
 /* ── topbar ──────────────────────────────────────────────────────── */
 
 .topbar {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 0; z-index: 60;
   background: var(--topbar-bg);
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
   border-bottom: 1px solid var(--border);
 }
-
-/* Mobile-first layout. Each top-bar element is a direct grid child of
-   .bar-inner so we can place them with grid-area names. The nav and the
-   searchbox live in panel rows that only appear when the hamburger is
-   open. On tablet+, searchbox moves up to the top row alongside the
-   theme + hamburger; on desktop, nav also moves to the top row and the
-   hamburger disappears. */
-.bar-inner {
+.topbar-in {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0.55rem 0.85rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  grid-template-areas: "brand github theme menu";
-  gap: 0.5rem 0.4rem;
+  display: flex;
   align-items: center;
+  gap: 16px;
+  padding: 12px 26px;
 }
 
-/* Mobile: search hidden in top row; appears in panel-search row when open. */
-.bar-inner > .searchbox { display: none; grid-area: search; }
-.bar-inner > .nav       { display: none; grid-area: nav; }
-
-.bar-inner.is-open {
-  grid-template-areas:
-    "brand github theme menu"
-    "search search search search"
-    "nav nav nav nav";
-}
-.bar-inner.is-open > .searchbox {
-  display: block;
-  margin-top: 0.45rem;
-  padding-top: 0.45rem;
-  border-top: 1px solid var(--border-soft);
-}
-.bar-inner.is-open > .nav { display: flex; }
-
+/* Brand — signal mark + wordmark. */
 .brand {
-  grid-area: brand;
-  display: inline-flex; align-items: center; gap: 0.55rem;
-  color: var(--text); text-decoration: none;
-  min-width: 0;
-  overflow: hidden;
+  display: flex; align-items: center; gap: 9px;
+  font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--text);
+  flex: 0 0 auto; user-select: none; cursor: pointer;
 }
-.brand:hover { text-decoration: none; color: var(--text); }
-/* Brand mark — refined SVG signal-pulse glyph (no boxed background).
-   The pulse motif (concentric arcs + focal dot) reads as
-   "transmission / detection" — appropriate for an intel feed — and
-   stays legible at the small topbar size. Coloured in accent at rest;
-   subtle scale on hover. */
-.brand-mark {
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  color: var(--accent);
-  flex: 0 0 auto;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s linear;
-}
-.brand-mark svg {
-  width: 22px;
-  height: 22px;
-  display: block;
-  filter: drop-shadow(0 0 6px rgba(232, 93, 117, 0.35));
-}
-.brand:hover .brand-mark {
-  transform: scale(1.05);
-  color: var(--accent-soft);
-}
-.brand-text {
-  min-width: 0;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0;
-  letter-spacing: -0.012em;
-}
-.brand-text strong {
-  font-size: 0.98rem;
-  font-weight: 600;
-  line-height: 1.1;
-  white-space: nowrap;
-  color: var(--text);
-  font-family: var(--sans);
-}
-.brand-text em {
-  font-style: normal;
-  font-size: 0.98rem;
-  font-weight: 500;
-  line-height: 1.1;
-  color: var(--text-muted);
-  white-space: nowrap;
-  font-family: var(--mono);
-  letter-spacing: 0.01em;
-}
-/* (The .brand-status pulsing live-LED dot was removed at user
-   request — felt out of place. The pulse-arc SVG mark itself is a
-   sufficient "live signal" hint.) */
+.brand:hover { color: var(--text); text-decoration: none; }
+.brand .brand-mark { display: inline-grid; place-items: center; color: var(--accent); transition: transform 0.2s var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)); }
+.brand .brand-mark svg { display: block; filter: drop-shadow(0 0 6px rgba(var(--accent-rgb), 0.38)); }
+.brand:hover .brand-mark { transform: scale(1.05); }
+.brand .brand-text strong { font-weight: 700; }
+.brand .tld { font-family: var(--mono); font-weight: 500; color: var(--text-muted); font-size: 13px; }
 
-/* Mobile: hide the subtitle to keep the bar compact. */
-@media (max-width: 479px) {
-  .brand-text small { display: none; }
-}
-
-/* Topbar action icons — modern ghost-style buttons. No resting border or
-   background; only a subtle tinted disc appears on hover. The trio
-   (GitHub, theme, hamburger) reads as a single quiet cluster on the
-   right. The hamburger inherits the same chrome on mobile. */
-.theme-toggle, .nav-toggle {
-  display: inline-grid;
-  place-items: center;
-  width: 34px; height: 34px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  flex: 0 0 auto;
-  transition: color 0.12s linear, background 0.12s linear, border-color 0.12s linear;
-}
-.theme-toggle { grid-area: theme; }
-.nav-toggle   { grid-area: menu; }
-
-.github-link {
-  grid-area: github;
+/* Segmented Live / Daily / Weekly nav. */
+.seg {
   display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  height: 34px;
-  padding: 0 0.45rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-muted);
-  text-decoration: none;
-  flex: 0 0 auto;
-  font-size: 0.78rem;
-  font-weight: 500;
-  transition: color 0.12s linear, background 0.12s linear, border-color 0.12s linear;
-}
-.github-link:hover {
-  color: var(--text);
-  background: var(--bg-elev);
-  border-color: var(--border-soft);
-  text-decoration: none;
-}
-.github-icon { width: 15px; height: 15px; flex: 0 0 auto; fill: currentColor; }
-.github-stars {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--text-soft);
-}
-.github-stars::before {
-  content: '★';
-  color: var(--warn);
-  font-size: 0.85rem;
-  line-height: 1;
-}
-/* On very narrow phones drop the count, keep just the icon — the
-   topbar grid only has so much room. */
-@media (max-width: 419px) {
-  .github-stars { display: none; }
-  .github-link { padding: 0; width: 38px; justify-content: center; }
-}
-.theme-toggle:hover, .nav-toggle:hover {
-  color: var(--text);
-  background: var(--bg-elev);
-  border-color: var(--border-soft);
-}
-.theme-toggle:active, .nav-toggle:active, .github-link:active {
   background: var(--bg-elev-2);
-}
-
-.theme-icon { width: 16px; height: 16px; display: none; }
-.theme-toggle[data-theme="system"] .theme-icon--system { display: block; }
-.theme-toggle[data-theme="light"]  .theme-icon--light  { display: block; }
-.theme-toggle[data-theme="dark"]   .theme-icon--dark   { display: block; }
-
-.nav-toggle {
-  gap: 5px;
-  grid-auto-flow: row;
-  padding: 9px;
-}
-.nav-toggle-bar {
-  display: block;
-  width: 18px; height: 2px;
-  background: currentColor;
-  border-radius: 2px;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(2) { opacity: 0; }
-.nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-/* Searchbox — full-width inside its container. */
-.searchbox {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-}
-.searchbox input {
-  width: 100%;
-  padding: 0.5rem 1.85rem 0.5rem 0.7rem;
-  background: var(--bg-elev);
-  color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font: inherit;
-  font-size: 0.85rem;
-  outline: none;
+  border-radius: 11px;
+  padding: 3px; gap: 2px;
+}
+.seg-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 16px; border: 0; background: transparent;
+  color: var(--text-soft); font-weight: 600; font-size: 13px;
+  border-radius: 8px; cursor: pointer; white-space: nowrap; user-select: none;
+  text-decoration: none;
+  transition: color 0.12s linear, background 0.12s linear;
+}
+.seg-btn:hover { color: var(--text); text-decoration: none; }
+.seg-btn.active { background: var(--accent); color: var(--accent-fg); }
+.seg-btn.active:hover { color: var(--accent-fg); }
+.seg-btn .ld { position: relative; display: inline-grid; place-items: center; width: 7px; height: 7px; }
+.seg-btn .ld i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: block; }
+.seg-btn.active .ld i { animation: ctiPulse 1.6s ease-in-out infinite; }
+
+.util { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+
+/* Search trigger (opens the search form). */
+.search {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--bg-elev-2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 8px 12px;
+  color: var(--text-muted); font-size: 13px; width: 196px;
+  cursor: text; user-select: none;
+}
+.search svg { flex: 0 0 auto; }
+.search .kbd { margin-left: auto; font-family: var(--mono); font-size: 10px; background: var(--kbd-bg); border-radius: 4px; padding: 1px 6px; color: var(--text-muted); }
+
+/* Icon button (display/accessibility, mobile menu). */
+.ib {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; border-radius: 9px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-muted); cursor: pointer;
+  transition: all 0.12s linear;
+}
+.ib:hover, .ib.open { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
+
+.ghlink { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); text-decoration: none; font-size: 12px; padding: 0 8px; height: 36px; border-radius: 9px; }
+.ghlink:hover { color: var(--text); background: var(--bg-elev); text-decoration: none; }
+.ghlink .github-icon { width: 15px; height: 15px; fill: currentColor; }
+.ghlink .star { color: var(--warn); }
+.ghlink .mono { color: var(--text-soft); }
+
+.more-wrap { position: relative; }
+.morebtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 36px; padding: 0 13px; border-radius: 9px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--text-soft); font-weight: 600; font-size: 13px; cursor: pointer;
+  user-select: none; transition: all 0.12s linear;
+}
+.morebtn:hover, .morebtn.open { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
+.morebtn svg { transition: transform 0.15s ease; opacity: 0.75; }
+.morebtn.open svg { transform: rotate(180deg); }
+
+.menu {
+  position: absolute; right: 0; top: 46px;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow);
+  padding: 7px; min-width: 210px;
+  display: flex; flex-direction: column; z-index: 80;
+  animation: ctiRise 0.14s ease-out;
+}
+.menu[hidden] { display: none; }
+.search-modal[hidden], .aibar[hidden] { display: none; }
+.menu a {
+  padding: 10px 12px; border-radius: 8px; text-decoration: none;
+  color: var(--text-soft); font-size: 13.5px;
+  display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+}
+.menu a:hover { background: var(--bg-elev-2); color: var(--text); text-decoration: none; }
+.menu a .mono { font-size: 10.5px; color: var(--text-muted); }
+.menu .sep { height: 1px; background: var(--border-soft); margin: 6px 6px; }
+
+/* Display & accessibility popover. */
+.dpop { min-width: 252px; padding: 8px; }
+.dpop-row { display: flex; flex-direction: column; gap: 9px; padding: 6px 6px 4px; }
+.dpop-l { font-family: var(--mono); font-size: 10px; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-muted); }
+.mini-seg { display: flex; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; gap: 2px; }
+.mini-seg button { flex: 1; border: 0; background: transparent; color: var(--text-soft); font-size: 12px; font-weight: 600; padding: 7px 6px; border-radius: 6px; cursor: pointer; transition: background 0.12s, color 0.12s; }
+.mini-seg button:hover { color: var(--text); }
+.mini-seg button.active { background: var(--accent); color: var(--accent-fg); }
+.dpop-toggle { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: transparent; padding: 10px 8px; border-radius: 9px; cursor: pointer; text-align: left; }
+.dpop-toggle:hover { background: var(--bg-elev-2); }
+.dpop-tl { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.dpop-tl b { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.dpop-tl small { font-size: 11px; color: var(--text-muted); }
+.sw { width: 40px; height: 23px; border-radius: 999px; background: var(--bg-elev-2); border: 1px solid var(--border); position: relative; transition: background 0.15s, border-color 0.15s; flex: 0 0 auto; }
+.sw i { position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: var(--text-muted); transition: transform 0.15s, background 0.15s; }
+.sw.on { background: var(--accent); border-color: var(--accent); }
+.sw.on i { transform: translateX(17px); background: var(--accent-fg); }
+
+/* Searchbox (lives inside the search modal + mobile drawer). */
+.searchbox { position: relative; width: 100%; min-width: 0; }
+.searchbox input {
+  width: 100%; padding: 0.6rem 2rem 0.6rem 0.8rem;
+  background: var(--bg-elev-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 9px;
+  font: inherit; font-size: 0.95rem; outline: none;
   transition: border-color 0.1s linear, box-shadow 0.1s linear;
 }
 .searchbox input::placeholder { color: var(--text-muted); }
-.searchbox input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(232, 93, 117, 0.18);
-}
-.searchbox .kbd-hint {
-  position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  background: var(--kbd-bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  color: var(--text-muted);
-  pointer-events: none;
-}
+.searchbox input:focus { border-color: var(--accent); box-shadow: var(--focus-ring, 0 0 0 3px rgba(var(--accent-rgb), 0.18)); }
+.searchbox .kbd-hint { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-family: var(--mono); font-size: 0.7rem; background: var(--kbd-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text-muted); pointer-events: none; }
 .searchbox input:focus + .kbd-hint { display: none; }
 
+/* Search suggestions dropdown (search.js). */
 .suggestions {
-  position: absolute;
-  left: 0; right: 0; top: calc(100% + 4px);
-  margin: 0; padding: 0.25rem;
-  list-style: none;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  max-height: min(60vh, 480px);
-  overflow-y: auto;
-  z-index: 60;
+  position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+  margin: 0; padding: 0.25rem; list-style: none;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow);
+  max-height: min(60vh, 480px); overflow-y: auto; z-index: 80;
 }
-.suggestions li {
-  padding: 0.45rem 0.55rem;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.55rem;
-  align-items: center;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.suggestions li:hover, .suggestions li[aria-selected="true"] {
-  background: var(--bg-elev-2);
-}
-.suggestions .kind-pill {
-  font-family: var(--mono); font-size: 0.7rem;
-  padding: 1px 6px; border-radius: 4px;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  min-width: 48px; text-align: center;
-}
+.suggestions li { padding: 0.45rem 0.55rem; display: grid; grid-template-columns: auto 1fr; gap: 0.55rem; align-items: center; border-radius: 6px; cursor: pointer; }
+.suggestions li:hover, .suggestions li[aria-selected="true"] { background: var(--bg-elev-2); }
+.suggestions .kind-pill { font-family: var(--mono); font-size: 0.7rem; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--border); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; min-width: 48px; text-align: center; }
 .suggestions .s-title { font-weight: 500; color: var(--text); font-size: 0.85rem; }
-.suggestions .s-hint  { color: var(--text-muted); font-size: 0.75rem; }
-.suggestions .s-row   { display: grid; gap: 0; min-width: 0; }
+.suggestions .s-hint { color: var(--text-muted); font-size: 0.75rem; }
+.suggestions .s-row { display: grid; gap: 0; min-width: 0; }
 .suggestions .s-row > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* Nav: stacked vertically when shown inside the open hamburger panel.
-   Becomes inline on desktop. */
-.nav {
-  flex-direction: column;
-  gap: 0.15rem;
+/* Full-screen search overlay (opened from the search trigger / "/"). */
+.search-modal { position: fixed; inset: 0; z-index: 90; display: none; }
+.search-modal.open { display: block; animation: ctiRise 0.14s ease-out; }
+.search-modal__scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.45); }
+.search-modal__panel {
+  position: relative; max-width: 640px; margin: 12vh auto 0;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow); padding: 14px;
 }
-.nav a {
-  padding: 0.6rem 0.75rem;
-  color: var(--text-soft);
-  border-radius: var(--radius);
-  font-size: 0.92rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-}
-.nav a:hover { background: var(--bg-elev); color: var(--text); text-decoration: none; }
-.nav a.active {
-  color: var(--text);
-  background: var(--bg-elev);
-  box-shadow: inset 0 -2px 0 var(--accent);
-}
+.search-modal__panel .searchbox input { font-size: 1rem; padding: 0.7rem 0.9rem; }
 
-/* Tablet: search slides into the top row, beside the theme toggle.
-   Hamburger stays — nav still drops down in a panel when wide-but-short. */
-@media (min-width: 640px) {
-  .bar-inner {
-    grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto auto auto;
-    grid-template-areas: "brand search github theme menu";
-    gap: 0.5rem 0.5rem;
-  }
-  .bar-inner > .searchbox { display: block; }
-  .searchbox { width: 100%; max-width: 320px; }
-  .bar-inner.is-open {
-    grid-template-areas:
-      "brand search github theme menu"
-      "nav nav nav nav nav";
-  }
-  .bar-inner.is-open > .searchbox {
-    margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
-  }
-}
+/* ── AI provenance bar ───────────────────────────────────────────── */
+.aibar { border-bottom: 1px solid var(--border-soft); background: var(--bg); }
+.aibar-in { max-width: 1280px; margin: 0 auto; padding: 7px 26px; display: flex; align-items: center; gap: 9px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.aibar .idot { width: 6px; height: 6px; border-radius: 50%; background: var(--info); flex: 0 0 auto; }
+.aibar b { color: var(--text-soft); font-weight: 600; }
+.aibar a { margin-left: auto; color: var(--link); text-decoration: none; flex: 0 0 auto; }
+.aibar a:hover { text-decoration: underline; }
+.aiclose { border: 0; background: transparent; color: var(--text-muted); cursor: pointer; font-size: 12px; line-height: 1; padding: 3px 7px; border-radius: 5px; margin-left: 10px; flex: 0 0 auto; }
+.aiclose:hover { background: var(--bg-elev-2); color: var(--text); }
+.aibar[hidden] { display: none; }
 
-/* Desktop: nav inline; no hamburger.
-   Empirical content widths (measured in the live preview at 1100px):
-     brand ~236px (logo + ctipilot.ch + subtitle)
-     nav   ~458px (7 links @ 0.7rem padding, 0.88rem font)
-     search ~264px (min-width 200px, max 320px)
-     github  ~70px
-     theme    38px
-     padding 32px (1rem each side)
-     gaps     51px (4 × 0.8rem)
-   total: ~1149px — so 1100px is too tight; the grid algorithm overlaps
-   nav and search columns when the content budget exceeds the viewport.
-   Bumped to 1180px which gives a comfortable ~30px of breathing room.
-   Below 1180px the tablet hamburger handles things and search stays
-   inline.
-   `min-width: 0` on each row child plus `minmax(0, …)` track sizes
-   keeps the layout robust if a future nav item bumps the total. */
-@media (min-width: 1180px) {
-  .bar-inner {
-    grid-template-columns: auto minmax(0, auto) minmax(0, 1fr) auto auto;
-    grid-template-areas: "brand nav search github theme";
-    padding: 0.55rem 1rem;
-    column-gap: 0.8rem;
-  }
-  .bar-inner > .nav,
-  .bar-inner.is-open > .nav {
-    display: flex !important;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.2rem;
-    min-width: 0;
-  }
-  .nav a { padding: 0.5rem 0.7rem; font-size: 0.88rem; }
-  .nav-toggle { display: none; }
-  .searchbox {
-    max-width: 320px;
-    min-width: 200px;
-    justify-self: end;
-    width: 24vw;
-  }
-  .bar-inner.is-open {
-    grid-template-areas: "brand nav search github theme";
-  }
+/* ── mobile drawer + segment row ─────────────────────────────────── */
+.mobile-only { display: none; }
+.mseg { display: none; }
+.drawer { display: none; }
+@media (max-width: 860px) {
+  .desktop-only { display: none !important; }
+  .mobile-only { display: block; }
+  .topbar-in { padding: 11px 16px; gap: 12px; }
+  .aibar-in { padding: 7px 16px; font-size: 10px; gap: 7px; }
+  .aibar a { display: none; }
+  .aiclose { margin-left: auto; }
+  .mseg { display: flex; padding: 11px 16px 2px; max-width: 1280px; margin: 0 auto; }
+  .mseg .seg { flex: 1; }
+  .mseg .seg-btn { flex: 1; justify-content: center; padding: 10px; }
+  .drawer { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 14px; background: var(--bg-elev); border-bottom: 1px solid var(--border); max-width: 1280px; margin: 0 auto; animation: ctiRise 0.14s ease-out; }
+  .drawer[hidden] { display: none; }
+  .drawer .msearch { display: flex; align-items: center; gap: 9px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 9px; padding: 11px 13px; color: var(--text-muted); font-size: 14px; margin-bottom: 6px; cursor: text; }
+  .drawer a { padding: 12px; border-radius: 9px; text-decoration: none; color: var(--text-soft); font-size: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .drawer a:hover, .drawer a:active { background: var(--bg-elev-2); color: var(--text); text-decoration: none; }
+  .drawer a .mono { font-size: 10.5px; color: var(--text-muted); }
+  .drawer .drow { display: flex; gap: 8px; margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+  .drawer .drow a { flex: 1; justify-content: center; background: var(--bg-elev-2); }
+}
+@media (min-width: 861px) {
+  .drawer[hidden] { display: none; }
 }
 
 /* ── main / view ─────────────────────────────────────────────────── */
@@ -866,687 +755,308 @@ a.badge:hover { color: var(--text); border-color: var(--accent-soft); text-decor
 .rel-key__item--low  .rel-key__code { color: var(--crit); border-color: rgba(255, 107, 107, 0.4); }
 .rel-key__def { color: var(--text-soft); }
 
-/* ── brief detail ───────────────────────────────────────────────── */
+/* ── reading-page layout: focused column widths ─────────────────── */
+/* The topbar / AI bar / footer stay full-width (1280 inner). The
+   reading views constrain the content column for a comfortable measure;
+   wide utility pages (ops, trends, sources, entities) keep the full
+   1280 column via the default (no body class). */
+body.reading .view { max-width: 768px; margin: 0 auto; }
+body.reading .main { padding-top: 2.2rem; }
+body.home .view { max-width: 1080px; margin: 0 auto; }
+body.home .main { padding-top: 3rem; }
 
-/* Brief layout — single column on phone, content + 260px aside on desktop.
-   The aside width is the source of truth for the Copy-as-Markdown button
-   width on desktop (`width: var(--aside-w)`) so the button anchors
-   visually on top of the aside card as a stack. */
-:root { --aside-w: 260px; }
-
-/* Brief layout — single column on phone (metadata, copy, toc, prose
-   stack), 2×2 grid on desktop (metadata top-left, copy top-right
-   aligned to metadata height; prose bottom-left, sticky aside bottom-
-   right). The H1 sits in its own header above this grid so the title
-   line is unencumbered. */
-.brief-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-@media (min-width: 1000px) {
-  .brief-layout {
-    grid-template-columns: minmax(0, 1fr) var(--aside-w);
-    grid-template-areas:
-      "meta copy"
-      "main aside";
-    column-gap: 2rem;
-    row-gap: 1.2rem;
-  }
-  .brief-layout > .brief-meta {
-    grid-area: meta;
-    margin-bottom: 0;
-  }
-  .brief-layout > .brief-page-head__actions--desktop {
-    grid-area: copy;
-    align-self: stretch;
-    width: 100%;
-    margin: 0;
-    /* The .md-split inside this wrapper uses `isolation: isolate` to
-       hide the seam between the primary button and the caret, which
-       creates a stacking context that traps the dropdown menu at
-       z:30 — so the menu rendered BEHIND the sticky aside-toc that
-       follows in the same grid. Promote this wrapper to its own
-       higher stacking context (z:40) so the menu lifts above the
-       aside when it opens. */
-    position: relative;
-    z-index: 40;
-  }
-  .brief-layout > .brief-main { grid-area: main; }
-  .brief-layout > .aside-toc--desktop { grid-area: aside; }
-}
-
-/* Live brief: the metadata band + window controls are unified into a
-   single full-width "console" card that spans BOTH columns above the
-   content/aside row. This retires the old 2×2 grid where the short
-   metadata strip shared a row with the taller window controls — a
-   mismatch that opened the left content column with a large void. */
-@media (min-width: 1000px) {
-  .brief-layout--live {
-    grid-template-areas:
-      "console console"
-      "main    aside";
-  }
-  .brief-layout--live > .brief-console { grid-area: console; }
-}
-
-/* Brief page header. Title on the left, Copy-as-Markdown split button on
-   the right. On desktop the button sits exactly above the aside column
-   (`width: var(--aside-w)`), so the visual hierarchy reads as two stacked
-   cards on the right edge — Copy button + "On this page". On mobile the
-   button stretches full-width under the title. */
-/* Page-head — title alone on its own line. The Copy-as-Markdown button
-   has been moved into the .brief-layout grid (next to the metadata
-   strip on desktop, after the metadata strip on mobile). */
-.brief-page-head {
-  margin: 0 0 1rem;
-}
-.brief-page-head h1 {
-  margin: 0;
-  min-width: 0;
-  line-height: 1.18;
-  letter-spacing: -0.01em;
-}
-.brief-page-head__actions {
-  display: flex;
-  align-items: stretch;
-}
-/* Desktop: copy button stretches to match the metadata strip's height
-   in the same grid row. .md-split fills the box. */
-@media (min-width: 1000px) {
-  .brief-page-head__actions--desktop .md-split {
-    width: 100%;
-    height: 100%;
-    display: flex;
-  }
-  .brief-page-head__actions--desktop .md-split__primary {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-}
-
-.brief-meta {
-  font-size: 0.83rem;
-  color: var(--text-muted);
-  display: flex; gap: 0.5rem 0.85rem; flex-wrap: wrap;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-.brief-meta strong { color: var(--text-soft); font-weight: 500; }
-.brief-meta .meta-actions { margin-left: auto; display: flex; gap: 0.4rem; flex-wrap: wrap; }
-
-/* GitHub-style split-button: primary action + caret that opens a menu.
-   Sized as a card (38px min-height) so it matches the aside-toc visual
-   weight on desktop, plus comfortable tap targets on mobile. */
-.md-split {
-  position: relative;
-  display: inline-flex;
-  align-items: stretch;
-  font-size: 0.85rem;
-  min-height: 38px;
-  border-radius: var(--radius);
-  /* Hide the seam between primary + caret so the pair reads as one card. */
-  isolation: isolate;
-}
-.md-split__primary,
-.md-split__caret {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0 0.85rem;
-  font: inherit;
-  font-weight: 500;
-  color: var(--text-soft);
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  cursor: pointer;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: background 0.1s linear, color 0.1s linear, border-color 0.1s linear;
-}
-.md-split__primary {
-  border-radius: var(--radius) 0 0 var(--radius);
-}
-.md-split__caret {
-  border-left: 0;
-  border-radius: 0 var(--radius) var(--radius) 0;
-  padding: 0 0.6rem;
-  flex: 0 0 auto;
-}
-.md-split__primary:hover,
-.md-split__caret:hover {
-  color: var(--text);
-  background: var(--bg-elev-2);
-  border-color: var(--border);
-  text-decoration: none;
-}
-.md-split:hover .md-split__primary,
-.md-split:hover .md-split__caret {
-  /* Synced hover so the seam doesn't visually break. */
-  background: var(--bg-elev-2);
-  color: var(--text);
-}
-.md-split__primary:focus-visible,
-.md-split__caret:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-  z-index: 2;
-}
-.md-split__icon,
-.md-split__chevron {
-  width: 14px;
-  height: 14px;
-  flex: none;
-}
-.md-split__caret[aria-expanded="true"] .md-split__chevron {
-  transform: rotate(180deg);
-}
-.md-split__label {
-  /* Truncate gracefully when the button is constrained narrow. */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-
-.md-split__menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  z-index: 30;
-  min-width: 240px;
-  max-width: min(320px, calc(100vw - 2rem));
-  padding: 4px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.md-split__menu[hidden] { display: none; }
-
-.md-split__item {
-  display: grid;
-  grid-template-rows: auto auto;
-  gap: 1px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-soft);
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-  font: inherit;
-  width: 100%;
-}
-.md-split__item:hover,
-.md-split__item:focus-visible {
-  background: var(--bg-elev-2);
-  color: var(--text);
-  text-decoration: none;
-  outline: none;
-}
-.md-split__item-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 500;
-}
-.md-split__item-sub {
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-.md-split__ext {
-  width: 11px;
-  height: 11px;
-  flex: none;
-  opacity: 0.7;
-}
-
-@media (max-width: 540px) {
-  .md-split__menu {
-    right: auto;
-    left: 0;
-    min-width: 220px;
-  }
-}
-
-/* The brief content rule: it must always render in the available space.
-   Anything that wants to be wider gets contained inside its own scroll
-   wrapper (tables, pre). Inline code, links, and plain prose break long
-   tokens at any character if needed (no horizontal page scroll, ever). */
-.brief-prose {
-  font-size: 0.96rem;
-  line-height: 1.65;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-  hyphens: auto;
-  /* Critical: the prose container itself must never push wider than its grid track. */
-  min-width: 0;
-  max-width: 100%;
-}
-.brief-prose * { min-width: 0; max-width: 100%; }
-.brief-prose h1 { display: none; } /* page already has its own H1 */
-.brief-prose h2 {
-  margin-top: 2rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--border-soft);
-  font-size: 1.2rem;
-  scroll-margin-top: calc(var(--topbar-h) + 16px);
-}
-.brief-prose h3 {
-  margin-top: 1.6rem;
-  font-size: 1rem;
-  scroll-margin-top: calc(var(--topbar-h) + 16px);
-}
-.brief-prose h4 { margin-top: 1.2rem; font-size: 0.95rem; }
-.brief-prose p, .brief-prose li { color: var(--text-soft); }
-.brief-prose strong { color: var(--text); }
-.brief-prose blockquote {
-  border-left: 3px solid var(--accent);
-  background: var(--bg-elev-2);
-  margin: 1rem 0;
-  padding: 0.6rem 1rem;
-  color: var(--text-soft);
-  border-radius: 0 var(--radius) var(--radius) 0;
-  font-size: 0.92rem;
-}
-.brief-prose blockquote p:first-child { margin-top: 0; }
-.brief-prose blockquote p:last-child  { margin-bottom: 0; }
-
-.brief-prose hr {
-  border: 0; border-top: 1px solid var(--border-soft);
-  margin: 1.5rem 0;
-}
-
-.brief-prose code {
-  background: var(--bg-elev-2);
-  padding: 1px 5px; border-radius: 3px;
-  font-size: 0.85em;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-}
-.brief-prose pre {
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border-soft);
-  padding: 0.8rem 1rem;
-  border-radius: var(--radius);
-  overflow-x: auto;
-  font-size: 0.82rem;
-  -webkit-overflow-scrolling: touch;
-  max-width: 100%;
-}
-.brief-prose pre code {
-  background: none; padding: 0;
-  word-break: normal;
-  overflow-wrap: normal;
-  white-space: pre;
-}
-
-/* Tables: scrollable container so the page never grows. */
-.brief-prose table {
+/* ── shared reading primitives ──────────────────────────────────── */
+.eyebrow {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent);
   display: block;
-  width: 100%;
-  max-width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-  margin: 1rem 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  white-space: normal;
 }
-.brief-prose th, .brief-prose td {
-  border: 1px solid var(--border-soft);
-  padding: 0.4rem 0.6rem; text-align: left;
-  vertical-align: top;
+.eyebrow--muted { color: var(--text-muted); }
+.vtitle {
+  font-size: 40px; line-height: 1.04; font-weight: 800;
+  letter-spacing: -0.035em; margin: 8px 0 0; color: var(--text);
 }
-.brief-prose thead th {
-  background: var(--bg-elev-2);
-  color: var(--text);
-  font-weight: 600;
-}
+.vsub { font-size: 16px; line-height: 1.6; color: var(--text-soft); margin: 12px 0 0; max-width: 620px; }
 
-.brief-prose a {
+.livehead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.livedot { position: relative; display: inline-grid; place-items: center; width: 9px; height: 9px; }
+.livedot i { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); display: block; }
+.livedot em { position: absolute; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); animation: ctiPing 1.9s ease-out infinite; }
+.streaming { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; color: var(--ok); }
+.live-updated { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.newpill { font-family: var(--mono); font-size: 11px; color: var(--accent-soft); background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.28); border-radius: 999px; padding: 3px 10px; }
+
+/* ── ACT NOW critical callout ───────────────────────────────────── */
+.actnow {
+  display: block; text-decoration: none;
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  border-radius: 13px; overflow: hidden; margin: 26px 0 44px;
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.06);
+  cursor: pointer; user-select: none;
+  transition: box-shadow 0.14s, border-color 0.14s;
+}
+.actnow:hover { box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.1); border-color: var(--accent); text-decoration: none; }
+.actnow-strip { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 9px; background: var(--accent); color: var(--accent-fg); padding: 9px 18px; font-family: var(--mono); font-weight: 700; font-size: 12px; letter-spacing: 0.11em; }
+.actnow-strip .adot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-fg); animation: ctiPulse 1.5s ease-in-out infinite; }
+.actnow-strip .meta { margin-left: auto; font-weight: 500; letter-spacing: 0.04em; opacity: 0.85; }
+.actnow-body { padding: 17px 20px 18px; background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.09), transparent); }
+.actnow-body h2 { margin: 0 0 8px; font-size: 23px; line-height: 1.24; font-weight: 700; letter-spacing: -0.02em; color: var(--text); border: 0; padding: 0; }
+.actnow-body p { margin: 0; font-size: 15.5px; line-height: 1.65; color: var(--text-soft); }
+.actnow-body .imp { color: var(--text); font-weight: 600; }
+.actnow-body .go { display: inline-flex; align-items: center; gap: 5px; margin-top: 12px; font-family: var(--mono); font-size: 12px; color: var(--accent-soft); font-weight: 600; }
+/* "If you did nothing this week" weekly variant. */
+.actnow--flat { border-color: var(--border); box-shadow: none; cursor: default; }
+.actnow--flat:hover { box-shadow: none; border-color: var(--border); }
+.actnow--flat .actnow-strip { background: var(--text); color: var(--bg); }
+.actnow--flat .actnow-strip .adot { background: var(--bg); }
+.actnow--flat .actnow-body { background: transparent; }
+.actnow--flat .actnow-body p { font-size: 16.5px; line-height: 1.7; }
+
+/* ── feed head + filters ────────────────────────────────────────── */
+.feedhead { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 2px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.feedhead h2 { margin: 0; font-size: 14px; font-family: var(--mono); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); border: 0; }
+.feedhead-tools { display: flex; align-items: center; gap: 12px; }
+
+.ftoolrow { display: flex; justify-content: flex-end; margin-top: 20px; }
+.ftoggle { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; padding: 5px 11px; border-radius: 8px; cursor: pointer; transition: all 0.12s; }
+.ftoggle:hover { background: var(--bg-elev-2); color: var(--text-soft); }
+.ftoggle.active { color: var(--text); border-color: var(--accent); }
+.ftoggle svg { opacity: 0.8; }
+.ftoggle .fcount { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--accent); color: var(--accent-fg); font-size: 10px; font-weight: 600; }
+.ftoggle .fchev { transition: transform 0.15s ease; }
+.ftoggle.active .fchev { transform: rotate(180deg); }
+
+.filterbar { overflow: hidden; }
+.filterbar-in { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.fgroup { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.fg-l { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.11em; text-transform: uppercase; color: var(--text-muted); }
+.fchip { border: 1px solid var(--border); background: var(--bg-elev); color: var(--text-soft); font-size: 11.5px; font-family: var(--mono); padding: 4px 11px; border-radius: 999px; cursor: pointer; transition: all 0.12s; }
+.fchip:hover { border-color: var(--accent); color: var(--text); }
+.fchip.on { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600; }
+.fclear { margin-left: auto; border: 0; background: transparent; color: var(--link); font-family: var(--mono); font-size: 11.5px; cursor: pointer; padding: 4px 6px; }
+.fclear:hover { text-decoration: underline; }
+.filterbar.inline { max-height: 0; opacity: 0; margin: 0; border: 1px solid transparent; border-radius: 12px; background: var(--bg-elev); transition: max-height 0.22s ease, opacity 0.18s ease, margin 0.22s ease, border-color 0.18s ease; }
+.filterbar.inline.open { max-height: 360px; opacity: 1; margin: 10px 0 14px; border-color: var(--border); }
+.filterbar.inline .filterbar-in { padding: 12px 15px; gap: 14px; }
+
+/* ── range bar (window controls) ────────────────────────────────── */
+.rangebar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 22px; }
+.rangefields { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rf-label { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.09em; color: var(--text-muted); }
+.rf { display: inline-flex; align-items: center; gap: 7px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; font-family: var(--mono); font-size: 12px; color: var(--text); cursor: pointer; }
+.rf svg { color: var(--text-muted); }
+.rf-arrow { color: var(--text-muted); }
+.rf-note { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-left: 2px; }
+.rf select { background: transparent; border: 0; color: var(--text); font: inherit; font-family: var(--mono); font-size: 12px; cursor: pointer; outline: none; }
+
+/* ── timeline (live rolling brief) ──────────────────────────────── */
+.tl-item, .tl-run { display: grid; grid-template-columns: 96px 1fr; }
+.tl-rail { position: relative; border-right: 2px solid var(--border); padding: 0 18px 30px 0; text-align: right; }
+.tl-rail .time { font-family: var(--mono); font-size: 11px; color: var(--text); display: block; }
+.tl-rail .flag { font-family: var(--mono); font-size: 9px; font-weight: 600; display: block; margin-top: 3px; }
+.tl-node { position: absolute; right: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--text-muted); }
+.tl-body { padding: 0 0 30px 22px; min-width: 0; cursor: pointer; text-decoration: none; display: block; }
+.tl-body:hover { text-decoration: none; }
+.tl-body h3 { margin: 0 0 7px; font-size: 19px; line-height: 1.3; font-weight: 700; letter-spacing: -0.015em; color: var(--text); transition: color 0.12s; border: 0; }
+.tl-body:hover h3 { color: var(--accent-soft); }
+.tl-body p { margin: 0; font-size: 15px; line-height: 1.62; color: var(--text-soft); }
+.tl-run .rail-e { border-right: 2px solid var(--border); }
+.tl-run .run-h { padding: 0 0 16px 22px; display: flex; align-items: center; gap: 10px; }
+.tl-run .run-h .rl { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--text); }
+.tl-run .run-h .rg { font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); }
+.runnode { position: absolute; right: -6px; top: 3px; width: 10px; height: 10px; border-radius: 2px; background: var(--text-muted); border: 2px solid var(--bg); }
+
+.badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; align-items: center; }
+.b { font-family: var(--mono); font-size: 10.5px; padding: 2px 8px; border-radius: 5px; border: 1px solid var(--border); color: var(--text-soft); background: var(--bg-elev-2); text-decoration: none; }
+a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoration: none; }
+.b.pri { color: var(--accent-fg); background: var(--accent); border-color: var(--accent); font-weight: 600; font-size: 9.5px; letter-spacing: 0.05em; }
+.b.crit { color: var(--accent-fg); background: var(--crit); border-color: var(--crit); font-weight: 600; font-size: 9.5px; }
+.b.cve { color: var(--info); background: rgba(var(--info-rgb), 0.1); border-color: rgba(var(--info-rgb), 0.24); }
+.b.exp { color: var(--crit); background: rgba(255, 107, 107, 0.1); border-color: rgba(255, 107, 107, 0.26); }
+.b.upd { color: var(--warn); background: rgba(255, 216, 102, 0.1); border-color: rgba(255, 216, 102, 0.26); }
+
+.prov { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; margin-top: 13px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.prov .p-ok { color: var(--ok); } .prov .p-warn { color: var(--warn); } .prov .p-crit { color: var(--crit); }
+.prov .p-pri { color: var(--accent); font-weight: 600; }
+.prov .refs { margin-left: auto; color: var(--link); text-decoration: none; cursor: pointer; }
+.prov .refs:hover { text-decoration: underline; }
+
+.loadmore { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 26px 0 0; margin-left: 96px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.loadmore .sp { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: ctiSpin 0.8s linear infinite; }
+.loadmore.end a { color: var(--link); text-decoration: none; cursor: pointer; }
+.loadbtn { display: inline-flex; align-items: center; gap: 9px; margin: 26px 0 0 96px; padding: 12px 20px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; color: var(--text-soft); font-family: var(--mono); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: border-color 0.12s, color 0.12s; user-select: none; }
+.loadbtn:hover { border-color: var(--accent); color: var(--text); }
+.loadbtn .plus { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--bg-elev-2); color: var(--accent-soft); font-size: 13px; }
+
+/* ── editorial section + finding (daily / weekly) ───────────────── */
+.sect { display: flex; align-items: center; gap: 13px; margin: 58px 0 8px; padding-bottom: 13px; border-bottom: 2px solid var(--border); }
+.sect .n { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.26); border-radius: 7px; padding: 3px 9px; }
+.sect .t { font-family: var(--sans); font-size: 23px; font-weight: 700; letter-spacing: -0.02em; text-transform: none; color: var(--text); margin: 0; border: 0; }
+.sect .c { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+
+.finding { padding: 26px 0; border-bottom: 1px solid var(--border-soft); }
+.finding.lead { border-left: 2px solid var(--accent); padding-left: 20px; margin-left: -22px; }
+.f-flag { font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: var(--ok); display: inline-block; margin-bottom: 8px; }
+.f-flag.upd { color: var(--warn); }
+.f-h { font-size: 23px; line-height: 1.26; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 12px; color: var(--text); border: 0; }
+.f-h a { color: inherit; text-decoration: none; transition: color 0.12s; }
+.f-h a:hover { color: var(--accent-soft); text-decoration: none; }
+.f-p, .finding > p { font-size: 16px; line-height: 1.72; color: var(--text-soft); margin: 0; max-width: 640px; }
+.finding > p + p, .f-p + .f-p { margin-top: 13px; }
+.finding .cve { font-family: var(--mono); font-size: 14px; color: var(--info); }
+.finding .att { font-family: var(--mono); font-size: 13.5px; color: var(--text-muted); }
+
+/* ── brief header (daily / weekly date nav) ─────────────────────── */
+.briefhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.datenav { display: inline-flex; align-items: center; gap: 4px; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 10px; padding: 4px; }
+.datenav a, .datenav span.navbtn { border: 0; background: transparent; color: var(--text-muted); width: 32px; height: 32px; border-radius: 7px; cursor: pointer; font-size: 17px; line-height: 32px; text-align: center; text-decoration: none; display: inline-block; }
+.datenav a:hover { background: var(--bg-elev-2); color: var(--text); text-decoration: none; }
+.datenav .navbtn.disabled { opacity: 0.35; pointer-events: none; }
+.datenav .d { font-family: var(--mono); font-size: 13px; color: var(--text); padding: 0 14px; font-weight: 500; white-space: nowrap; }
+.allbriefs { font-family: var(--mono); font-size: 12px; color: var(--link); text-decoration: none; cursor: pointer; white-space: nowrap; }
+.allbriefs:hover { text-decoration: underline; }
+
+/* ── TL;DR list ─────────────────────────────────────────────────── */
+.tldr { margin: 8px 0 0; }
+.tldr ol { margin: 14px 0 0; padding: 0; list-style: none; }
+.tldr li { display: flex; gap: 14px; align-items: baseline; padding: 13px 0; border-top: 1px solid var(--border-soft); font-size: 16px; line-height: 1.55; color: var(--text-soft); }
+.tldr li:last-child { border-bottom: 1px solid var(--border-soft); }
+.tldr li .num { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--accent); width: 22px; flex: 0 0 auto; }
+.tldr li b { color: var(--text); }
+.tldr li a { color: var(--link); }
+
+/* ── verification / provenance block ────────────────────────────── */
+.verif { margin-top: 44px; padding-top: 18px; border-top: 2px solid var(--text); }
+.verif .vh { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 10px; }
+.verif p { margin: 0 0 10px; font-family: var(--mono); font-size: 12px; line-height: 1.75; color: var(--text-soft); }
+.verif p:last-child { margin-bottom: 0; }
+.verif .run-note { margin-bottom: 14px; }
+.verif .run-note__head { font-size: 12px; margin: 0 0 4px; font-family: var(--mono); color: var(--text); }
+
+/* ── entry detail (shareable permalink) ─────────────────────────── */
+.back { display: inline-flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12px; color: var(--text-muted); text-decoration: none; cursor: pointer; margin-bottom: 22px; }
+.back:hover { color: var(--text); text-decoration: none; }
+.etitle { font-size: 33px; line-height: 1.14; font-weight: 800; letter-spacing: -0.03em; margin: 12px 0 0; color: var(--text); }
+.emeta { display: flex; align-items: center; gap: 13px; flex-wrap: wrap; margin: 16px 0 0; font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+.emeta .share { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; color: var(--text); font-family: var(--mono); font-size: 12px; cursor: pointer; }
+.emeta .share:hover { border-color: var(--accent); color: var(--accent-soft); }
+.ebody { margin-top: 26px; }
+.ebody > p { font-size: 17px; line-height: 1.78; color: var(--text-soft); margin: 0 0 16px; max-width: 640px; }
+.ebody .cve { font-family: var(--mono); font-size: 15px; color: var(--info); }
+.ebody .att { font-family: var(--mono); font-size: 14px; color: var(--text-muted); }
+.esec { margin-top: 30px; }
+.esec h4 { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; border: 0; }
+.srclist { display: flex; flex-direction: column; gap: 8px; }
+.src { display: flex; align-items: center; gap: 10px; text-decoration: none; background: var(--bg-elev); border: 1px solid var(--border); border-radius: 9px; padding: 11px 14px; color: var(--text); font-size: 14px; }
+.src:hover { border-color: var(--accent); text-decoration: none; }
+.src .role { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.src .arw { color: var(--link); }
+.echips { display: flex; gap: 7px; flex-wrap: wrap; }
+.echip { font-family: var(--mono); font-size: 11.5px; color: var(--text-soft); background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; text-decoration: none; }
+.echip:hover { border-color: var(--accent); color: var(--text); text-decoration: none; }
+
+/* ── archive list ───────────────────────────────────────────────── */
+.arclist { display: flex; flex-direction: column; margin-top: 24px; }
+.arc { display: flex; align-items: baseline; gap: 16px; text-decoration: none; padding: 16px 0; border-top: 1px solid var(--border-soft); cursor: pointer; }
+.arc:last-child { border-bottom: 1px solid var(--border-soft); }
+.arc:hover { text-decoration: none; }
+.arc:hover .arc-t { color: var(--accent-soft); }
+.arc .arc-d { font-family: var(--mono); font-size: 12.5px; color: var(--text); flex: 0 0 118px; }
+.arc .arc-b { min-width: 0; display: flex; flex-direction: column; }
+.arc .arc-t { display: block; font-size: 15.5px; font-weight: 600; color: var(--text); margin: 0 0 3px; transition: color 0.12s; }
+.arc .arc-s { display: block; font-size: 14px; color: var(--text-soft); line-height: 1.5; margin: 0; }
+.arc .arc-c { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text-muted); flex: 0 0 auto; white-space: nowrap; }
+
+/* ── prose typography for rendered-markdown entry bodies ────────── */
+/* Entry bodies are generated Markdown (bare <p>/<ul>/<h*>/<blockquote>/
+   <pre>/<table>). Scope typography to the reading containers + a generic
+   .prose (static docs). */
+.prose, .finding, .ebody, .tl-body { min-width: 0; }
+.prose > :first-child, .ebody > :first-child, .finding > *:first-child { margin-top: 0; }
+.prose p { font-size: 16px; line-height: 1.72; color: var(--text-soft); margin: 0 0 14px; max-width: 640px; }
+.prose h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 34px 0 12px; color: var(--text); border: 0; }
+.prose h3 { font-size: 18px; font-weight: 700; margin: 26px 0 10px; color: var(--text); }
+.prose h4 { font-size: 15px; font-weight: 700; margin: 22px 0 8px; color: var(--text); }
+.prose ul, .prose ol, .ebody ul, .ebody ol, .finding ul, .finding ol {
+  margin: 0 0 14px; padding-left: 1.3rem; color: var(--text-soft); font-size: 16px; line-height: 1.7; max-width: 640px;
+}
+.prose li, .ebody li, .finding li { margin: 6px 0; }
+.prose li::marker, .ebody li::marker, .finding li::marker { color: var(--text-muted); }
+.prose a, .ebody a, .finding a, .tl-body a { color: var(--link); }
+.prose strong, .ebody strong, .finding strong { color: var(--text); font-weight: 600; }
+.prose blockquote, .ebody blockquote, .finding blockquote {
+  margin: 16px 0; padding: 2px 0 2px 16px; border-left: 3px solid var(--border);
+  color: var(--text-soft);
+}
+.prose code:not(pre code), .ebody code:not(pre code), .finding code:not(pre code) {
+  font-family: var(--mono); font-size: 0.88em; background: var(--bg-elev-2);
+  border: 1px solid var(--border-soft); border-radius: 4px; padding: 1px 5px;
   word-break: break-word;
-  overflow-wrap: anywhere;
 }
+.prose pre, .ebody pre, .finding pre {
+  background: var(--bg-elev-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 16px 0;
+}
+.prose pre code, .ebody pre code, .finding pre code { background: transparent; border: 0; padding: 0; white-space: pre; }
+.prose .table-wrap, .ebody .table-wrap, .finding .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 16px 0; }
+.prose table, .ebody table, .finding table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.prose th, .prose td, .ebody th, .ebody td, .finding th, .finding td { border: 1px solid var(--border-soft); padding: 7px 10px; text-align: left; vertical-align: top; }
+.prose th, .ebody th, .finding th { color: var(--text-muted); font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.prose img, .ebody img, .finding img { max-width: 100%; height: auto; }
 
-.brief-prose ul, .brief-prose ol { padding-left: 1.4rem; }
-.brief-prose li + li { margin-top: 0.2rem; }
+/* Update lead + evidence citations reused inside findings / detail. */
+.update-lead { font-family: var(--mono); font-size: 13px; color: var(--warn); margin: 0 0 14px; }
+.update-lead a { color: var(--warn); }
+.entry-cite { margin: 16px 0; padding: 12px 16px; background: var(--bg-elev); border: 1px solid var(--border-soft); border-left: 3px solid var(--border); border-radius: 0 8px 8px 0; }
+.entry-cite__quote { margin: 0 0 6px; font-size: 15px; line-height: 1.6; color: var(--text); }
+.entry-cite figcaption, .entry-cite__cite { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.entry-references { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+.entry-references a { color: var(--link); }
 
-.brief-prose mark {
-  background: rgba(255, 216, 102, 0.25);
-  color: inherit;
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-/* ── "On this page" sidebar (desktop) + mobile collapsible.
-   Card-style panel with three blocks separated by hairlines:
-     1. Section list (title + per-section visibility toggle)
-     2. Filter groups (tags + regions, expandable)
-     3. References (CVEs, topics, sources, expandable)
-   Typography is consistent: every block opens with a 0.7rem uppercase
-   muted label so the eye lands on the same anchor in each section.
-   Padding is generous (1rem 1.05rem) so the card reads as a discrete
-   surface, matching the Copy-as-Markdown button above it on desktop. */
-
-.aside-toc {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1rem 1.05rem 0.95rem;
-  font-size: 0.88rem;
-  min-width: 0;
-  /* Each direct-child block (section list, filters, references) gets its
-     own dividing rule via :not(:first-child) below. */
-}
-@media (min-width: 1000px) {
-  .aside-toc {
-    /* No nested scroll. Sticky-flow only: the aside scrolls with the page,
-       and on tall briefs the bottom of the aside is reached by scrolling
-       the body — never by an inner scrollbar. */
-    position: sticky;
-    top: calc(var(--topbar-h) + 16px);
-    align-self: start;
-  }
-}
-
-/* Block-level dividers between the three logical blocks (sections / filters /
-   refs). The H3 "On this page" sits at the top with no top divider; every
-   subsequent block (.toc-filters, <details> for refs) gets a hairline. */
-.aside-toc > * + * {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-/* Block label — the 0.7rem uppercase muted anchor used by every section
-   header inside the aside (and by .toc-filters > details > summary). */
-.aside-toc h3,
-.aside-toc .aside-toc__label {
-  margin: 0 0 0.55rem;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  font-weight: 700;
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  justify-content: space-between;
-}
-
-/* Section list — primary navigation inside the aside. Each row links to
-   an anchor and carries a small eye-toggle to hide the section. */
-.aside-toc ul.toc-sections {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.05rem;
-}
-.aside-toc ul.toc-sections li { margin: 0; }
-.aside-toc ul.toc-sections a.toc-link {
-  display: block;
-  padding: 0.4rem 0.55rem;
-  border-radius: 5px;
-  color: var(--text-soft);
-  font-size: 0.86rem;
-  line-height: 1.4;
-  border-left: 2px solid transparent;
-  transition: color 0.1s linear, background 0.1s linear, border-color 0.1s linear;
-}
-.aside-toc ul.toc-sections a.toc-link:hover {
-  color: var(--text);
-  background: var(--bg-elev-2);
-  text-decoration: none;
-  border-left-color: var(--accent);
-}
-
-/* References block (`<details><summary>References (N)</summary>`). Same
-   uppercase summary style as the filter-group summaries so the visual
-   anchor is consistent. */
-.aside-toc details:not(.filter-group) {
-  /* The "+ *" rule above already supplies the divider + spacing. */
-}
-.aside-toc details:not(.filter-group) > summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-  font-weight: 700;
-  padding: 0;
-  user-select: none;
-}
-.aside-toc details:not(.filter-group) > summary::-webkit-details-marker { display: none; }
-.aside-toc details:not(.filter-group) > summary::after {
-  content: '+';
-  color: var(--text-muted);
-  font-family: var(--mono);
-  font-weight: 500;
-  font-size: 1rem;
-  line-height: 1;
-}
-.aside-toc details:not(.filter-group)[open] > summary::after { content: '−'; }
-.aside-toc details:not(.filter-group) ul {
-  list-style: none;
-  padding: 0.65rem 0 0;
-  margin: 0;
-  display: grid;
-  gap: 0.2rem;
-}
-.aside-toc details:not(.filter-group) li { margin: 0; }
-.aside-toc details:not(.filter-group) a {
-  color: var(--text-soft);
-  font-size: 0.84rem;
-  display: inline-block;
-  padding: 0.15rem 0;
-  word-break: break-word;
-}
-.aside-toc details:not(.filter-group) a:hover { color: var(--accent-soft); text-decoration: none; }
-.aside-toc details:not(.filter-group) a.mono { font-family: var(--mono); font-size: 0.78rem; }
-.aside-toc details:not(.filter-group) .badge { margin-left: 0.3rem; }
-
-/* Mobile collapsible TOC: shown above the brief body. Same visual
-   language as the desktop aside (card, padding, divider rules) — the
-   collapsible chrome is just a comfortable summary row. */
-.toc-mobile {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  margin: 0.4rem 0 1.2rem;
-  font-size: 0.9rem;
-  min-width: 0;
-}
-.toc-mobile > summary {
-  cursor: pointer;
-  padding: 0.85rem 1.05rem;
-  min-height: 44px;            /* tap target ≥ 44px (iOS HIG) */
-  font-weight: 600;
-  color: var(--text);
-  list-style: none;
-  display: flex; align-items: center; justify-content: space-between;
-  user-select: none;
-}
-.toc-mobile > summary::-webkit-details-marker { display: none; }
-.toc-mobile > summary::after {
-  content: '';
-  width: 10px; height: 10px;
-  border-right: 2px solid var(--text-muted);
-  border-bottom: 2px solid var(--text-muted);
-  transform: rotate(45deg) translate(-2px, -2px);
-  transition: transform 0.15s ease;
-}
-.toc-mobile[open] > summary::after { transform: rotate(225deg) translate(-2px, -2px); }
-.toc-mobile-body {
-  padding: 0;
-  border-top: 1px solid var(--border-soft);
-}
-.toc-mobile-body.aside-toc {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  padding: 0.5rem 0.85rem 0.95rem;
-}
-@media (min-width: 1000px) { .toc-mobile { display: none; } }
-@media (max-width: 999px)  { .aside-toc.aside-toc--desktop { display: none; } }
-
-.callout {
-  background: var(--bg-elev);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  padding: 0.6rem 0.85rem;
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  margin: 0.5rem 0;
-}
-.callout strong { color: var(--text); }
-
-/* Citation list on the CVE detail page — one row per cited URL, with the
-   row itself being the clickable thing (one-tap pivot to the article).
-   The visual hierarchy: host name (bold) → article label → muted full
-   URL. A second muted line below offers the source-profile + brief
-   links so the reader can also stay inside the site. */
-.cite-list {
-  list-style: none;
-  padding: 0;
-  margin: 0.4rem 0 0;
-  display: grid;
-  gap: 0.5rem;
-}
-.cite {
-  display: grid;
-  gap: 0.2rem;
-  padding: 0.7rem 0.85rem;
-  background: var(--bg-elev-2);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  min-width: 0;
-}
-.cite:hover { border-color: var(--accent); }
-.cite-link {
-  display: grid;
-  gap: 0.15rem;
-  text-decoration: none !important;
-  color: var(--text);
-  min-width: 0;
-}
-.cite-link:hover { color: var(--accent-soft); text-decoration: none; }
-.cite-link:hover .cite-host { color: var(--accent-soft); }
-.cite-host {
-  font-weight: 600;
-  font-size: 0.92rem;
-  color: var(--link);
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-.cite-label {
-  font-size: 0.85rem;
-  color: var(--text-soft);
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}
-.cite-url {
-  font-family: var(--mono);
-  font-size: 0.74rem;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}
-.cite-meta {
-  font-size: 0.78rem;
-  margin-top: 0.2rem;
-  word-wrap: break-word;
-}
-.cite-meta a { color: var(--text-soft); }
-.cite-meta a:hover { color: var(--text); }
-.cite .badge { vertical-align: middle; }
-
-.timeline-strip {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin: 0.4rem 0 0.2rem;
-}
-.timeline-strip a {
-  font-family: var(--mono); font-size: 0.78rem;
-  padding: 2px 7px; border-radius: 3px;
-  background: var(--bg-elev-2); color: var(--text-soft);
-  border: 1px solid var(--border-soft);
-}
-.timeline-strip a.current {
-  background: var(--accent); color: var(--accent-fg); border-color: var(--accent); font-weight: 600;
-}
-.timeline-strip a:hover { color: var(--text); text-decoration: none; }
-
+/* ── toast (copy-link confirmation) ─────────────────────────────── */
 .toast {
-  position: fixed;
-  left: 50%; bottom: 1.5rem;
-  transform: translateX(-50%);
-  background: var(--bg-elev);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.55rem 0.95rem;
-  font-size: 0.85rem;
-  z-index: 200;
-  box-shadow: var(--shadow);
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  pointer-events: none;
-  max-width: calc(100vw - 2rem);
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+  background: var(--bg-elev); color: var(--text);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.6rem 1rem; font-size: 0.85rem; box-shadow: var(--shadow);
+  opacity: 0; transition: opacity 0.15s ease; pointer-events: none;
+  max-width: calc(100vw - 2rem); z-index: 95;
 }
 .toast.show { opacity: 1; }
 
-/* "Cited in this brief" footer — replaces the old in-sidebar lists. */
-.brief-cited {
-  margin-top: 2.5rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--border-soft);
-  display: grid;
-  gap: 1rem;
-}
-@media (min-width: 720px) {
-  .brief-cited { grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-}
-@media (min-width: 1000px) {
-  .brief-cited { grid-template-columns: 1fr 1fr 1fr; }
-}
-.brief-cited section {
-  background: var(--bg-elev);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  padding: 0.85rem 1rem;
-  min-width: 0;
-}
-.brief-cited h3 {
-  margin: 0 0 0.5rem; font-size: 0.72rem;
-  text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
-  font-weight: 600;
-}
-.brief-cited ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 0.3rem;
-}
-.brief-cited li {
-  font-size: 0.85rem;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
+/* ── empty / section stub ───────────────────────────────────────── */
+.section-empty { color: var(--text-muted); font-size: 14px; }
+
+/* ── mobile ─────────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  body.reading .view, body.home .view { max-width: none; }
+  .vtitle { font-size: 28px; letter-spacing: -0.03em; }
+  .vsub { font-size: 15px; }
+  .actnow { margin: 22px 0 34px; }
+  .actnow-body h2 { font-size: 19px; }
+  .actnow-body p { font-size: 14.5px; }
+  .actnow-strip { padding: 9px 14px; font-size: 10.5px; letter-spacing: 0.07em; }
+  .actnow-strip .meta { flex-basis: 100%; margin-left: 0; margin-top: 2px; font-size: 10px; }
+  .f-h { font-size: 20px; }
+  .f-p, .finding > p { font-size: 15.5px; }
+  .etitle { font-size: 26px; }
+  .ebody > p { font-size: 16px; }
+  .sect { margin: 40px 0 6px; }
+  .sect .t { font-size: 19px; }
+  .tl-item, .tl-run { grid-template-columns: 16px 1fr; }
+  .tl-rail { padding: 0; }
+  .tl-rail .time, .tl-rail .flag { display: none; }
+  .tl-node { right: -7px; top: 3px; width: 11px; height: 11px; }
+  .runnode { right: -6px; }
+  .tl-body { padding: 0 0 26px 16px; }
+  .tl-run .run-h { padding: 0 0 14px 16px; }
+  .tl-body h3 { font-size: 18px; }
+  .tl-body p { font-size: 14.5px; }
+  .loadmore, .loadbtn { margin-left: 16px; }
+  .feedhead h2 { font-size: 12px; }
+  .arc { flex-wrap: wrap; }
+  .arc .arc-d { flex-basis: 100%; margin-bottom: 2px; }
+  .arc .arc-c { margin-left: 0; }
 }
 
 /* ── empty state ────────────────────────────────────────────────── */
@@ -2247,137 +1757,34 @@ button.chip-section[aria-pressed="false"] {
   .item-header h3 { font-size: 1rem; }
 }
 
-/* ── decluttered home (v2.x) ─────────────────────────────────────────
-   Replaces the old home-banner gradient + stat-grid layout with a clean
-   three-section home: hero / today / recent. The previous classes are
-   kept above this block for the print stylesheet and any historical
-   pages that still reference them. */
-/* Home page sections fill the main column width like every other page
-   (briefs list, cves list, sources list, ...) so navigating between
-   sections never visibly changes the content column width. Inner
-   readability is provided by the prose itself (the bullets are short
-   and the date / heading sit on their own lines). */
-.home-hero,
-.home-today,
-.home-today-grid,
-.home-recent,
-.home-recent-grid,
-.home-empty { max-width: none; }
-.home-hero { margin: 0.5rem 0 2rem; }
-.home-hero h1 {
-  margin: 0 0 0.4rem;
-  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.1rem);
-  letter-spacing: -0.01em;
-}
-.home-hero .lede {
-  margin: 0;
-  color: var(--text-soft);
-  font-size: 1rem;
-  line-height: 1.55;
-}
-/* Two-column feature row — daily on the left, weekly on the right. The
-   grid collapses to one column below 880px so each card keeps its
-   full-width reading rhythm on phones / narrow tablets. Equal-height
-   columns via grid; the CTA at the bottom of each card stays aligned. */
-.home-today-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2.4rem;
-  align-items: stretch;
-}
-.home-today-grid > .home-today {
-  margin-bottom: 0;
-  display: flex;
-  flex-direction: column;
-  padding: 1.2rem 1.3rem 1.3rem;
-  background: var(--bg-elev, transparent);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-}
-.home-today-grid > .home-today > h2,
-.home-today-grid > .home-today > .muted,
-.home-today-grid > .home-today > ul {
-  /* Children stack normally; the CTA is pushed to the bottom of the
-     card with margin-top:auto so two cards with unequal TL;DR lengths
-     keep their CTAs visually aligned. */
-}
-.home-today-grid > .home-today > .home-today-cta { margin-top: auto; }
-.home-today--weekly { border-left: 3px solid var(--accent, var(--border)); }
-.home-today {
-  margin-bottom: 2.4rem;
-}
-.home-today-eyebrow {
-  margin: 0 0 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-muted);
-}
-.home-today > h2 {
-  margin: 0 0 0.3rem;
-  font-size: clamp(1.15rem, 1rem + 0.5vw, 1.35rem);
-  font-weight: 600;
-  letter-spacing: -0.005em;
-  /* Heading is plain text, not a link — the CTA below is the single
-     click target for the latest brief in this section. */
-}
-.home-today > .muted {
-  font-size: 0.85rem;
-  margin: 0 0 1rem;
-}
-.home-today ul {
-  margin: 0 0 1.2rem;
-  padding-left: 1.2rem;
-}
-.home-today ul li { margin-bottom: 0.6rem; line-height: 1.5; }
-.home-today-cta { margin: 0; }
-@media (max-width: 880px) {
-  .home-today-grid {
-    grid-template-columns: 1fr;
-    gap: 1.2rem;
-  }
-}
-/* Recent-briefs row — daily and weekly indexes side-by-side on
-   desktop, stacked on narrow viewports. Same break point as the
-   feature row for visual rhythm. */
-.home-recent-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-}
-@media (max-width: 880px) {
-  .home-recent-grid {
-    grid-template-columns: 1fr;
-    gap: 1.2rem;
-  }
-}
-.home-recent {
-  border-top: 1px solid var(--border-soft);
-  padding-top: 1.4rem;
-}
-.home-recent h3 {
-  margin: 0 0 0.6rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-.home-recent-list { list-style: none; padding: 0; margin: 0; }
-.home-recent-list li {
-  padding: 0.4rem 0;
-  border-bottom: 1px solid var(--border-soft);
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-.home-recent-list li:last-child { border-bottom: 0; }
-.home-recent-list li > a { font-weight: 500; }
-.home-empty { color: var(--text-muted); margin-top: 1.5rem; }
+/* ── home — hero + brief-card grid ──────────────────────────────── */
+.hero { margin: 0 0 4px; }
+.hero h1 { font-size: clamp(2rem, 1.4rem + 3vw, 52px); line-height: 1.02; font-weight: 800; letter-spacing: -0.04em; margin: 14px 0 0; color: var(--text); max-width: 12ch; }
+.hero p { font-size: 18px; line-height: 1.6; color: var(--text-soft); margin: 18px 0 0; max-width: 560px; }
 
-/* Brief-meta strip — small inline tag badge for the parsed
-   Classification field (TLP:CLEAR, etc.) */
+.briefgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px; }
+.bcard {
+  display: flex; flex-direction: column; text-decoration: none;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 13px; padding: 22px;
+  transition: border-color 0.14s; cursor: pointer; user-select: none;
+}
+.bcard:hover { border-color: var(--accent); text-decoration: none; }
+.bcard.live { border-left: 2px solid var(--accent); }
+.bcard .bh { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.bcard .bt { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+.bcard .bm { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--text-muted); }
+.bcard .bp { font-size: 14.5px; line-height: 1.58; color: var(--text-soft); margin: 0 0 16px; flex: 1; }
+.bcard .bp b { color: var(--text); font-weight: 600; }
+.bcard .bgo { font-family: var(--mono); font-size: 12px; color: var(--link); }
+
+@media (max-width: 860px) {
+  .briefgrid { grid-template-columns: 1fr; gap: 12px; }
+  .hero h1 { font-size: 34px; }
+  .hero p { font-size: 16px; }
+}
+
+/* Brief-meta strip — small inline tag badge for parsed Classification. */
 .brief-meta .meta-tag {
   display: inline-block;
   padding: 0.05rem 0.4rem;

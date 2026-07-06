@@ -55,6 +55,7 @@ from build import (  # noqa: E402
     entry_section_key,
     is_safe_path_segment,
     parse_taxonomy,
+    render_actnow,
     render_brief_sections,
     render_cve_pill,
     render_day_page,
@@ -370,16 +371,17 @@ day_entries = [E_NOTE, E_HIGH, E_CRIT, E_UPD, E_DEEP]
 by_id = {e["id"]: e for e in ALL_ENTRIES}
 html = render_brief_sections(day_entries, [RUN], prefix="", entries_by_id=by_id)
 
-assert_in("empty section carries the stub", SECTION_EMPTY_STUB, html)
-assert_in("every daily section renders", 'data-section="research"', html)
-assert_in("TL;DR bullet carries strong headline", "<strong>Headline coolify-rce.</strong>", html)
+assert_in("TL;DR block renders", 'class="tldr"', html)
+assert_in("editorial section header renders", 'class="sect"', html)
+assert_in("TL;DR bullet carries strong headline", "<b>Headline coolify-rce.</b>", html)
 crit_pos = html.find("Headline coolify-rce")
 high_pos = html.find("Headline fortibleed-campaign")
 assert_true("TL;DR: critical bullet precedes high", 0 <= crit_pos < high_pos)
-assert_in("immediate-action callout present", "Immediate action", html)
-assert_in("callout carries the action", "Upgrade to v4.0.0-beta.469 immediately.", html)
-assert_in("callout quotes evidence", "actively exploited in the wild", html)
-assert_in("update rendered as callout blockquote", 'class="callout-update"', html)
+actnow = render_actnow(E_CRIT, prefix="")
+assert_in("ACT NOW callout present", "ACT NOW — CRITICAL", actnow)
+assert_in("ACT NOW carries the action", "Upgrade to v4.0.0-beta.469 immediately.", actnow)
+assert_in("finding quotes evidence", "actively exploited in the wild", html)
+assert_in("update flagged on the finding", 'class="f-flag upd"', html)
 assert_in("update lead links the original", "originally covered", html)
 assert_in("update body retained after prefix strip", "A public PoC has now surfaced.", html)
 assert_true(
@@ -387,7 +389,7 @@ assert_true(
     "<strong>UPDATE (originally covered 2026-07-03)" not in html,
 )
 assert_in("update lead href", 'href="entries/2026-07-03/coolify-rce/"', html)
-assert_in("deep-dive entry in its section", 'data-section="deep-dive"', html)
+assert_in("deep-dive section renders", ">Deep dive<", html)
 assert_in("action item present", "Patch Coolify to ≥ v4.0.0-beta.469.", html)
 assert_in("action finding-ref link", 'class="action-ref"', html)
 assert_in("action finding-ref carries a short label", 'class="action-ref__label"', html)
@@ -398,9 +400,9 @@ assert_in("verification badge absent for multi-source", 'data-priority="critical
 card = render_entry_card(E_CRIT, prefix="", entries_by_id=by_id)
 assert_in("card keeps data-tags", 'data-tags="vulnerabilities rce actively-exploited"', card)
 assert_in("card keeps data-regions", 'data-regions="global"', card)
-assert_in("card keeps data-section", 'data-section="trending-vulnerabilities"', card)
+assert_in("card keeps data-kind", 'data-kind="vulnerability"', card)
 assert_in("card links the permalink", 'href="entries/2026-07-03/coolify-rce/"', card)
-assert_in("card carries sources line", "Example PSIRT", card)
+assert_in("card carries provenance row", 'class="prov"', card)
 assert_in("card renders evidence citation", 'class="entry-cite"', card)
 assert_in("card citation carries attribution", 'class="entry-cite__attr"', card)
 assert_in("cve pill on card", "CVE-2026-34038", card)
@@ -465,9 +467,9 @@ archive_html = render_days_index_page(archive_days, site_url="https://x.example/
                                       canonical="https://x.example/briefs/")
 assert_in("archive lists the quiet day", "briefs/2026-07-05/", archive_html)
 assert_in("archive marks the quiet day as run-record-only",
-          "quiet window — run record only", archive_html)
+          "run record only", archive_html)
 assert_in("archive still counts a content day's entries",
-          "5 entries", archive_html)
+          "5 findings", archive_html)
 
 # The quiet day's page renders (0 entries) and surfaces its run-note.
 by_id_all = {e["id"]: e for e in ALL_ENTRIES}
@@ -475,7 +477,7 @@ quiet_page = render_day_page("2026-07-05", [], [QUIET_RUN], entries_by_id=by_id_
                              site_url="https://x.example/", cachebust="t",
                              prefix="../../", canonical="https://x.example/briefs/2026-07-05/")
 assert_in("quiet day page names the run", "2026-07-05T0009Z-intel", quiet_page)
-assert_in("quiet day page reports zero entries", 'brief-meta__count">0<', quiet_page)
+assert_in("quiet day page reports zero entries", "0 verified findings", quiet_page)
 
 # ---------------------------------------------------------------------
 # briefbook.json / alerts.json shapes
@@ -495,7 +497,7 @@ for field in ("id", "url", "date", "discovered_at", "kind", "horizon", "priority
 assert_eq("briefbook cve_ids", be["cve_ids"], ["CVE-2026-34038"])
 assert_eq("briefbook cve_status union", be["cve_status"], ["exploited", "patch-available"])
 assert_eq("briefbook updated_by chain", be["updated_by"], ["2026-07-03/coolify-rce-update"])
-assert_in("briefbook html is the day-page card", 'class="brief-item entry-card"', be["html"])
+assert_in("briefbook html is the finding card", 'class="finding entry-card"', be["html"])
 assert_eq("briefbook IA block", be["immediate_action"]["title"], "Patch Coolify now")
 assert_eq("briefbook run count", len(book["runs"]), 1)
 br = book["runs"][0]

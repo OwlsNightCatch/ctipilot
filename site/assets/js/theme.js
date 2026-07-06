@@ -1,65 +1,74 @@
-/* theme.js — light/dark/system theme toggle.
+/* theme.js — reader display & accessibility preferences.
 
-   Reads `cti.briefs.theme` from localStorage and applies it to <html>
-   before the rest of the SPA boots. Wires the topbar button to cycle
-   system → light → dark → system on click. The CSS targets
-   [data-theme="light"] / [data-theme="dark"] explicitly; absence of the
-   attribute means "follow prefers-color-scheme".
+   Manages three <html> attributes, each persisted in localStorage and
+   applied synchronously on script execution (before first paint, so no
+   flash of the wrong state):
 
-   Loaded with `defer` like every other script, but its first job runs
-   synchronously when the script body executes — that's before the SPA
-   makes the first paint, so there is no flash of the wrong theme. */
+     data-theme     = "light" | "dark"     (absent → follow prefers-color-scheme)
+     data-font      = "dyslexic"           (absent → default font)
+     data-density   = "comfortable"        (absent → default line-height)
 
+   Wires the display/accessibility popover + the mobile drawer copies:
+     [data-theme-set="system|light|dark"]  segmented buttons
+     [data-font-toggle]                     dyslexia-friendly switch
+     [data-density-toggle]                  comfortable-spacing switch
+*/
 (function () {
   'use strict';
 
-  const KEY = 'cti.briefs.theme';
-  const ORDER = ['system', 'light', 'dark'];
+  var TKEY = 'ctipilot_theme', FKEY = 'ctipilot_font', DKEY = 'ctipilot_density';
+  var THEMES = ['system', 'light', 'dark'];
 
-  function read() {
-    try {
-      const v = localStorage.getItem(KEY);
-      return ORDER.includes(v) ? v : 'system';
-    } catch (_) {
-      return 'system';
-    }
+  function ls(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : v; } catch (_) { return d; } }
+  function save(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+
+  var theme = ls(TKEY, 'system');
+  if (THEMES.indexOf(theme) < 0) theme = 'system';
+  var dys = ls(FKEY, '0') === '1';
+  var comfy = ls(DKEY, '0') === '1';
+
+  function apply() {
+    var h = document.documentElement;
+    if (theme === 'light' || theme === 'dark') h.setAttribute('data-theme', theme);
+    else h.removeAttribute('data-theme');
+    if (dys) h.setAttribute('data-font', 'dyslexic'); else h.removeAttribute('data-font');
+    if (comfy) h.setAttribute('data-density', 'comfortable'); else h.removeAttribute('data-density');
   }
 
-  function write(v) {
-    try { localStorage.setItem(KEY, v); } catch (_) {}
+  // Apply immediately (before paint).
+  apply();
+
+  function sync() {
+    document.querySelectorAll('[data-theme-set]').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-theme-set') === theme);
+    });
+    document.querySelectorAll('[data-font-toggle]').forEach(function (b) {
+      b.setAttribute('aria-checked', dys ? 'true' : 'false');
+      var sw = b.querySelector('.sw'); if (sw) sw.classList.toggle('on', dys);
+    });
+    document.querySelectorAll('[data-density-toggle]').forEach(function (b) {
+      b.setAttribute('aria-checked', comfy ? 'true' : 'false');
+      var sw = b.querySelector('.sw'); if (sw) sw.classList.toggle('on', comfy);
+    });
   }
 
-  function apply(v) {
-    const html = document.documentElement;
-    if (v === 'light' || v === 'dark') html.setAttribute('data-theme', v);
-    else html.removeAttribute('data-theme');
+  function wire() {
+    sync();
+    document.querySelectorAll('[data-theme-set]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        theme = b.getAttribute('data-theme-set'); save(TKEY, theme); apply(); sync();
+      });
+    });
+    document.querySelectorAll('[data-font-toggle]').forEach(function (b) {
+      b.addEventListener('click', function () { dys = !dys; save(FKEY, dys ? '1' : '0'); apply(); sync(); });
+    });
+    document.querySelectorAll('[data-density-toggle]').forEach(function (b) {
+      b.addEventListener('click', function () { comfy = !comfy; save(DKEY, comfy ? '1' : '0'); apply(); sync(); });
+    });
   }
 
-  // Apply immediately on script execution (before paint).
-  let current = read();
-  apply(current);
+  if (document.readyState !== 'loading') wire();
+  else document.addEventListener('DOMContentLoaded', wire);
 
-  function cycle() {
-    const i = ORDER.indexOf(current);
-    current = ORDER[(i + 1) % ORDER.length];
-    apply(current);
-    write(current);
-    syncButton();
-  }
-
-  function syncButton() {
-    const btn = document.getElementById('theme-toggle');
-    if (!btn) return;
-    btn.dataset.theme = current;
-    btn.title = 'Theme: ' + current + ' (click to change)';
-    btn.setAttribute('aria-label', 'Theme: ' + current + ' (click to change)');
-  }
-
-  document.addEventListener('DOMContentLoaded', () => {
-    syncButton();
-    const btn = document.getElementById('theme-toggle');
-    if (btn) btn.addEventListener('click', cycle);
-  });
-
-  window.Theme = { get: () => current, cycle };
+  window.Theme = { get: function () { return theme; } };
 })();

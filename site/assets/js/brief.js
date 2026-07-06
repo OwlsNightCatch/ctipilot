@@ -1,14 +1,15 @@
-/* brief.js — dynamic window logic for /brief/ (v3 pipeline).
+/* brief.js — the live rolling brief's client-side windowing.
  *
- * The page ships with the default 24 h window fully server-rendered, so
- * everything below is progressive enhancement: window chips (6/12/24/48/
- * 72 h), a "since date" input, and URL params (?hours=N / ?since=DATE).
- * On first control use (or on load when a URL param is present) the
- * script fetches data/briefbook.json ONCE and re-assembles the same
- * section structure client-side. Entries carry server-pre-rendered card
- * HTML — the client does pure grouping + concatenation, NO Markdown
- * parsing. Grouping constants come from the #brief-config JSON data
- * island (type application/json — never executed, CSP-safe).
+ * The /brief/ page is server-rendered for the default 24 h window as a
+ * run-grouped timeline. This script re-renders that timeline from
+ * data/briefbook.json when the reader changes the window (the range
+ * <select> or the "Load older findings" button), and re-applies the
+ * active chip filters (kept in sync via the `cti:filterchange` event
+ * dispatched by app.js). It mirrors the server markup exactly
+ * (render_timeline_item / render_run_divider in site/build.py).
+ *
+ * Progressive enhancement: without JS the page shows the server-rendered
+ * 24 h timeline and every link still works.
  */
 (function () {
   'use strict';
@@ -20,520 +21,176 @@
     return (m && m.getAttribute('content')) || '';
   }
 
-  var CFG = null;
-  var bookPromise = null;
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var PRI_LABEL = { critical: 'CRITICAL', high: 'HIGH', notable: 'NOTABLE', routine: 'ROUTINE' };
+  var PRI_CLASS = { critical: 'crit', high: 'pri' };
+  var PRI_DOT = { critical: 'var(--crit)', high: 'var(--accent)' };
 
-  function readConfig() {
-    var el = document.getElementById('brief-config');
-    if (!el) return null;
-    try { return JSON.parse(el.textContent); } catch (_) { return null; }
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+  function stamp(d) { return pad(d.getUTCDate()) + ' ' + MONTHS[d.getUTCMonth()] + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + 'Z'; }
+  function euro(d) { return pad(d.getUTCDate()) + '.' + pad(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() + ' ' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;').replaceAll("'", '&#39;');
   }
-
-  function ensureBook() {
-    if (bookPromise) return bookPromise;
-    bookPromise = fetch(sitePrefix() + (CFG.briefbook_url || 'data/briefbook.json'))
-      .then(function (r) {
-        if (!r.ok) throw new Error('http ' + r.status);
-        return r.json();
-      });
-    return bookPromise;
-  }
-
-  // DOM handles, resolved in init().
-  var chips = null, fromInput = null, toInput = null, applyBtn = null;
-  var HOUR_MS = 3600 * 1000;
 
   function init() {
-    var root = document.getElementById('brief-sections');
-    var controls = document.querySelector('[data-brief-controls]');
-    CFG = readConfig();
-    if (!root || !controls || !CFG) return;
+    var cfgEl = document.getElementById('brief-config');
+    var container = document.querySelector('[data-brief-timeline]');
+    if (!cfgEl || !container) return;
+    var cfg;
+    try { cfg = JSON.parse(cfgEl.textContent); } catch (_) { return; }
 
-    chips = controls.querySelectorAll('[data-window-hours]');
-    fromInput = controls.querySelector('[data-window-from]');
-    toInput = controls.querySelector('[data-window-to]');
-    applyBtn = controls.querySelector('[data-window-apply]');
+    var refTs = new Date(cfg.reference_ts);
+    var defaultHours = cfg.default_hours || 24;
+    var hours = defaultHours;
+    var filterSets = { priority: [], kind: [], tag: [], region: [] };
+    var data = null;
 
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        var hours = parseInt(chip.getAttribute('data-window-hours'), 10);
-        if (!(hours > 0)) return;
-        setActiveChip(chips, chip);
-        applyWindow({ hours: hours });
+    var select = document.querySelector('[data-window-select]');
+    var more = document.querySelector('[data-window-more]');
+    var endMsg = document.querySelector('[data-window-end]');
+    var fromEl = document.querySelector('[data-window-from]');
+    var toEl = document.querySelector('[data-window-to]');
+    var statusEl = document.querySelector('[data-window-status]');
+    var countEl = document.querySelector('[data-window-count]');
+
+    if (toEl) toEl.textContent = euro(refTs);
+
+    function passesFilter(e) {
+      var s = filterSets;
+      if (s.priority.length && s.priority.indexOf(e.priority) < 0) return false;
+      if (s.kind.length && s.kind.indexOf(e.kind) < 0) return false;
+      if (s.tag.length && !s.tag.some(function (t) { return (e.tags || []).indexOf(t) >= 0; })) return false;
+      if (s.region.length && !s.region.some(function (r) { return (e.regions || []).indexOf(r) >= 0; })) return false;
+      return true;
+    }
+
+    function relUrl(e) {
+      // briefbook url is prefixed for the /brief/ page ("../entries/…/"); strip
+      // that and re-apply the live sitePrefix so it resolves anywhere.
+      return (e.url || '').replace(/^(\.\.\/)+/, '');
+    }
+
+    function runItem(e, isNew) {
+      var badges = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
+      if (e.cve_label) badges.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
+      if (e.exploited) badges.push('<span class="b exp">exploited</span>');
+      if (e.update_of) badges.push('<span class="b upd">update</span>');
+      var d = e.discovered_at ? new Date(e.discovered_at) : refTs;
+      var flag = e.update_of ? '↻ UPD' : (isNew ? 'NEW' : '');
+      var flagStyle = e.update_of ? 'color:var(--warn)' : (isNew ? 'color:var(--ok)' : '');
+      var prov = ['<div class="prov">'];
+      if (e.kind) prov.push('<span>' + esc(e.kind) + '</span>');
+      if (e.cve_label) prov.push('<span style="color:var(--info)">' + esc(e.cve_label) + '</span>');
+      prov.push('<span>' + esc(stamp(d)) + '</span>');
+      if (e.source_count) prov.push('<span>' + e.source_count + ' source' + (e.source_count === 1 ? '' : 's') + '</span>');
+      prov.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
+      prov.push('<span class="refs">open ↗</span></div>');
+      return '<div class="tl-item">'
+        + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
+        + '<span class="time">' + esc(stamp(d)) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
+        + '<a class="tl-body" href="' + esc(sitePrefix() + relUrl(e)) + '">'
+        + '<div class="badges">' + badges.join('') + '</div>'
+        + '<h3>' + esc(e.title || e.id) + '</h3><p>' + esc(e.summary || e.headline || '') + '</p>'
+        + prov.join('') + '</a></div>';
+    }
+
+    function runDivider(label, gap, count) {
+      var n = count + ' finding' + (count === 1 ? '' : 's');
+      var g = (gap ? gap + ' · ' : '') + n;
+      return '<div class="tl-run"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+        + '<div class="run-h"><span class="rl">' + esc(label) + '</span><span class="rg">· run · ' + esc(g) + '</span></div></div>';
+    }
+
+    function render() {
+      if (!data) return;
+      var since = new Date(refTs.getTime() - hours * 3600000);
+      var runsById = {};
+      (data.runs || []).forEach(function (r) { if (r.run_id) runsById[r.run_id] = r; });
+
+      var ops = (data.entries || []).filter(function (e) {
+        if ((e.horizon || 'operational') !== 'operational') return false;
+        var d = e.discovered_at ? new Date(e.discovered_at) : null;
+        if (!d || d < since || d > refTs) return false;
+        return passesFilter(e);
       });
-    });
-
-    if (applyBtn) applyBtn.addEventListener('click', applyCustomRange);
-    [fromInput, toInput].forEach(function (inp) {
-      if (!inp) return;
-      inp.addEventListener('change', applyCustomRange);
-      inp.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); applyCustomRange(); }
+      ops.sort(function (a, b) {
+        var da = a.discovered_at || '', db = b.discovered_at || '';
+        if (da !== db) return da < db ? 1 : -1;
+        return a.id < b.id ? 1 : -1;
       });
-    });
 
-    // ?hours=N  or  ?from=DD.MM.YYYY HH:MM&to=DD.MM.YYYY HH:MM  on load.
-    var params = new URLSearchParams(window.location.search);
-    var pHours = parseInt(params.get('hours') || '', 10);
-    var pFrom = parseEU(params.get('from')), pTo = parseEU(params.get('to'));
-    if (pFrom != null && pTo != null) {
-      setActiveChip(chips, null);
-      applyWindow({ from: pFrom, to: pTo }, { replaceUrl: false });
-      return;
-    }
-    if (pHours > 0) {
-      var matched = null;
-      chips.forEach(function (c) {
-        if (parseInt(c.getAttribute('data-window-hours'), 10) === pHours) matched = c;
+      // has-older ignores active filters (it's a window boundary, not a filter).
+      var hasOlder = (data.entries || []).some(function (e) {
+        if ((e.horizon || 'operational') !== 'operational') return false;
+        var d = e.discovered_at ? new Date(e.discovered_at) : null;
+        return d && d < since;
       });
-      setActiveChip(chips, matched);
-      applyWindow({ hours: pHours }, { replaceUrl: false });
-      return;
-    }
 
-    // No params: the server rendered [ref − default_hours, ref]. Normalise
-    // the From/To boxes to that reference range without a fetch. If the
-    // visitor's real clock has moved materially past the build's reference
-    // moment, re-render the default against real "now" so the range shown
-    // is honest (this is the only case that triggers the briefbook fetch
-    // on load).
-    var refMs = parseTs(CFG.reference_ts || CFG.generated_at);
-    var dh = CFG.default_hours || 24;
-    if (refMs != null) fillBoxes(refMs - dh * HOUR_MS, refMs);
-    if (refMs != null && (Date.now() - refMs) > HOUR_MS) {
-      applyWindow({ hours: dh }, { replaceUrl: false });
-    }
-  }
-
-  function setActiveChip(chips, active) {
-    chips.forEach(function (c) { c.classList.toggle('active', c === active); });
-  }
-
-  function markInvalid(inp, bad) {
-    if (!inp) return;
-    inp.classList.toggle('is-invalid', !!bad);
-    if (bad) inp.setAttribute('aria-invalid', 'true');
-    else inp.removeAttribute('aria-invalid');
-  }
-
-  function applyCustomRange() {
-    var fMs = parseEU(fromInput && fromInput.value);
-    var tMs = parseEU(toInput && toInput.value);
-    markInvalid(fromInput, fMs == null);
-    markInvalid(toInput, tMs == null);
-    if (fMs == null || tMs == null) return;
-    if (fMs > tMs) { var s = fMs; fMs = tMs; tMs = s; } // tolerate reversed entry
-    setActiveChip(chips, null);
-    applyWindow({ from: fMs, to: tMs });
-  }
-
-  function applyWindow(win, opts) {
-    opts = opts || {};
-    ensureBook().then(function (book) {
-      var bounds = renderWindow(book, win);
-      fillBoxes(bounds.since, bounds.until);
-      if (opts.replaceUrl !== false && window.history && history.replaceState) {
-        var q = win.hours
-          ? ('?hours=' + win.hours)
-          : ('?from=' + encodeURIComponent(fmtEU(bounds.since)) +
-             '&to=' + encodeURIComponent(fmtEU(bounds.until)));
-        history.replaceState(null, '', q);
-      }
-    }).catch(function () {
-      var status = document.querySelector('[data-window-status]');
-      if (status) status.textContent = 'could not load the entry book — showing the default window';
-    });
-  }
-
-  // ── date helpers (European DD.MM.YYYY HH:MM, interpreted as UTC) ─────
-
-  function pad2(n) { return (n < 10 ? '0' : '') + n; }
-
-  function fmtEU(ms) {
-    var d = new Date(ms);
-    return pad2(d.getUTCDate()) + '.' + pad2(d.getUTCMonth() + 1) + '.' + d.getUTCFullYear() +
-      ' ' + pad2(d.getUTCHours()) + ':' + pad2(d.getUTCMinutes());
-  }
-
-  // Parse "DD.MM.YYYY", "DD.MM.YYYY HH:MM" (also tolerates / or - separators
-  // and a T between date and time). Returns a UTC epoch-ms, or null.
-  function parseEU(s) {
-    if (!s) return null;
-    var m = String(s).trim().match(
-      /^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})(?:[ T,]+(\d{1,2}):(\d{2}))?$/);
-    if (!m) return null;
-    var day = +m[1], mon = +m[2], yr = +m[3];
-    var hr = m[4] != null ? +m[4] : 0, mi = m[5] != null ? +m[5] : 0;
-    if (mon < 1 || mon > 12 || day < 1 || day > 31 || hr > 23 || mi > 59) return null;
-    var ms = Date.UTC(yr, mon - 1, day, hr, mi, 0, 0);
-    var d = new Date(ms); // reject overflow like 31.02.2026
-    if (d.getUTCFullYear() !== yr || d.getUTCMonth() !== mon - 1 || d.getUTCDate() !== day) return null;
-    return ms;
-  }
-
-  function fillBoxes(sinceMs, untilMs) {
-    if (fromInput) { fromInput.value = fmtEU(sinceMs); markInvalid(fromInput, false); }
-    if (toInput) { toInput.value = fmtEU(untilMs); markInvalid(toInput, false); }
-  }
-
-  // ── window filter ───────────────────────────────────────────────────
-
-  function parseTs(s) {
-    var t = Date.parse(s || '');
-    return isNaN(t) ? null : t;
-  }
-
-  // Absolute [since, until] epoch-ms bounds. Presets are measured back from
-  // the visitor's real clock; an explicit range uses the parsed boxes.
-  function windowBounds(win) {
-    var until, since, hours = null;
-    if (win.from != null && win.to != null) {
-      since = win.from; until = win.to;
-    } else {
-      hours = win.hours || (CFG.default_hours || 24);
-      until = Date.now();
-      since = until - hours * HOUR_MS;
-    }
-    return {
-      since: since, until: until, hours: hours,
-      label: fmtEU(since) + ' → ' + fmtEU(until) + ' UTC'
-    };
-  }
-
-  function inWindow(book, bounds) {
-    var out = [];
-    (book.entries || []).forEach(function (e) {
-      var ts = parseTs(e.discovered_at);
-      if (ts !== null && ts >= bounds.since && ts <= bounds.until) out.push(e);
-    });
-    return out;
-  }
-
-  // ── grouping (mirrors build.py render_brief_sections) ───────────────
-
-  function lensHit(e) {
-    var lens = CFG.lens_regions || [];
-    return (e.regions || []).some(function (r) { return lens.indexOf(r) >= 0; });
-  }
-
-  function prioRank(e) {
-    var pr = CFG.priority_rank || {};
-    var v = pr[e.priority];
-    return typeof v === 'number' ? v : 2;
-  }
-
-  function sortEntries(list) {
-    return list.slice().sort(function (a, b) {
-      var la = lensHit(a) ? 0 : 1, lb = lensHit(b) ? 0 : 1;
-      if (la !== lb) return la - lb;
-      var pa = prioRank(a), pb = prioRank(b);
-      if (pa !== pb) return pa - pb;
-      var ta = a.discovered_at || '', tb = b.discovered_at || '';
-      if (ta !== tb) return ta < tb ? 1 : -1; // newest first
-      return (a.id || '') < (b.id || '') ? -1 : 1;
-    });
-  }
-
-  function byRecency(list) {
-    return list.slice().sort(function (a, b) {
-      var ta = a.discovered_at || '', tb = b.discovered_at || '';
-      if (ta !== tb) return ta < tb ? 1 : -1;
-      return (a.id || '') < (b.id || '') ? -1 : 1;
-    });
-  }
-
-  function sectionKeyOf(e) {
-    if (e.update_of) return 'updates';
-    if (e.deep_dive) return 'deep-dive';
-    return (CFG.kind_section || {})[e.kind] || null;
-  }
-
-  function selectTldr(ops) {
-    var recent = byRecency(ops);
-    var crit = recent.filter(function (e) { return e.priority === 'critical'; });
-    var high = recent.filter(function (e) { return e.priority === 'high'; });
-    var picked = crit.concat(high);
-    if (picked.length < 3) {
-      var notable = recent.filter(function (e) { return e.priority === 'notable'; });
-      picked = picked.concat(notable.slice(0, 3 - picked.length));
-    }
-    return picked.slice(0, 6);
-  }
-
-  // ── DOM builders (textContent only — no HTML string interpolation) ──
-
-  function el(tag, cls, text) {
-    var n = document.createElement(tag);
-    if (cls) n.className = cls;
-    if (text != null) n.textContent = text;
-    return n;
-  }
-
-  // Migrated v2 headlines/summaries can carry literal Markdown emphasis
-  // markers. We render text via textContent (no HTML), so just strip the
-  // markers — this is cosmetic cleanup, not Markdown parsing.
-  function plainText(s) {
-    return String(s == null ? '' : s)
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/(^|\s)\*([^*\n]+)\*(?=[\s.,;:]|$)/g, '$1$2');
-  }
-
-  function emptyStub() {
-    var p = el('p', 'muted section-empty');
-    p.appendChild(el('em', null, CFG.empty_stub || 'No qualifying items in window — this section is intentionally left empty.'));
-    return p;
-  }
-
-  function sectionShell(sec) {
-    var section = el('section', 'brief-section');
-    section.setAttribute('data-section', sec.key);
-    section.id = sec.anchor;
-    var h2 = el('h2');
-    var a = el('a', 'section-anchor', sec.title);
-    a.setAttribute('href', '#' + sec.anchor);
-    h2.appendChild(a);
-    section.appendChild(h2);
-    var body = el('div', 'brief-section__body');
-    body.id = sec.anchor + '-body';
-    section.appendChild(body);
-    return { section: section, body: body };
-  }
-
-  function tldrList(picked) {
-    if (!picked.length) return emptyStub();
-    var ul = el('ul');
-    picked.forEach(function (e) {
-      var li = el('li');
-      var headline = plainText(e.headline || e.title || e.id).replace(/\.+$/, '');
-      li.appendChild(el('strong', null, headline + '.'));
-      li.appendChild(document.createTextNode(' ' + plainText(e.summary || '') + ' '));
-      var a = el('a', null, '→');
-      a.setAttribute('href', e.url);
-      li.appendChild(a);
-      ul.appendChild(li);
-    });
-    return ul;
-  }
-
-  function immediateActionCallout(e) {
-    var ia = e.immediate_action || {};
-    var aside = el('aside', 'callout callout--action immediate-action');
-    aside.setAttribute('role', 'note');
-    aside.setAttribute('data-entry-id', e.id);
-    aside.appendChild(el('span', 'callout__label', 'Immediate action'));
-    var body = el('div', 'callout__body');
-    var p = el('p');
-    p.appendChild(el('strong', null, ia.title || ''));
-    p.appendChild(document.createTextNode(' — ' + (ia.action || '') + ' '));
-    var a = el('a', null, plainText(e.headline || e.title || e.id) + ' →');
-    a.setAttribute('href', e.url);
-    p.appendChild(a);
-    body.appendChild(p);
-    if (ia.evidence_quote) {
-      var fig = el('figure', 'entry-cite entry-cite--inline');
-      fig.appendChild(el('p', 'entry-cite__quote', ia.evidence_quote));
-      if (ia.evidence_publisher) {
-        fig.appendChild(el('figcaption', 'entry-cite__attr', ia.evidence_publisher));
-      }
-      body.appendChild(fig);
-    }
-    aside.appendChild(body);
-    return aside;
-  }
-
-  function shortEntryLabel(e) {
-    var cves = e.cve_ids || [];
-    if (cves.length) return cves[0] + (cves.length > 1 ? ' +' + (cves.length - 1) : '');
-    var text = plainText(e.headline || e.title || e.id).replace(/^\*+|\*+$/g, '').trim();
-    var MAX = 52;
-    if (text.length <= MAX) return text;
-    return text.slice(0, MAX).replace(/\s+\S*$/, '').replace(/[,;:—-]+$/, '') + '…';
-  }
-
-  function actionItemsList(ops) {
-    var rows = [];
-    sortEntries(ops).forEach(function (e) {
-      (e.actions || []).forEach(function (act) {
-        if (typeof act !== 'string' || !act.trim()) return;
-        rows.push({ entry: e, action: act.trim() });
+      var groups = [];
+      ops.forEach(function (e) {
+        var rid = e.run_id || '';
+        if (groups.length && groups[groups.length - 1].rid === rid) groups[groups.length - 1].items.push(e);
+        else groups.push({ rid: rid, items: [e] });
       });
-    });
-    if (!rows.length) return emptyStub();
-    var ul = el('ul', 'action-list');
-    rows.forEach(function (row) {
-      var li = el('li', 'action-list__item');
-      li.setAttribute('data-entry-id', row.entry.id);
-      li.appendChild(el('div', 'action-list__body', row.action));
-      var label = shortEntryLabel(row.entry);
-      var a = el('a', 'action-ref');
-      a.setAttribute('href', row.entry.url);
-      a.setAttribute('aria-label', 'Open finding: ' + label);
-      a.appendChild(el('span', 'action-ref__tag', 'Finding'));
-      a.appendChild(el('span', 'action-ref__label', label));
-      var go = el('span', 'action-ref__go', '→');
-      go.setAttribute('aria-hidden', 'true');
-      a.appendChild(go);
-      li.appendChild(a);
-      ul.appendChild(li);
-    });
-    return ul;
-  }
 
-  function runNote(run) {
-    var div = el('div', 'run-note');
-    div.setAttribute('data-run-id', run.run_id || '?');
-    var h3 = el('h3', 'run-note__head');
-    h3.appendChild(el('span', 'mono', run.run_id || '?'));
-    var bits = [];
-    if (run.model) bits.push(run.model);
-    if (typeof run.window_hours === 'number') bits.push('window ' + run.window_hours + ' h');
-    if (typeof run.entries_published === 'number') {
-      bits.push(run.entries_published + (run.entries_published === 1 ? ' entry published' : ' entries published'));
-    }
-    if (bits.length) h3.appendChild(el('span', 'muted', ' — ' + bits.join(' · ')));
-    div.appendChild(h3);
-    var body = el('div', 'run-note__body');
-    // run.html is server-rendered, sanitised HTML from our own build.
-    body.insertAdjacentHTML('beforeend', run.html || '');
-    div.appendChild(body);
-    return div;
-  }
-
-  // ── chrome sync (meta banner counts + aside filter chips) ────────────
-
-  function setAll(sel, text) {
-    document.querySelectorAll(sel).forEach(function (n) { n.textContent = text; });
-  }
-
-  function uniqueSorted(list, key) {
-    var set = {};
-    list.forEach(function (e) {
-      (e[key] || []).forEach(function (v) { set[v] = true; });
-    });
-    return Object.keys(set).sort();
-  }
-
-  function buildChip(facetAttr, v) {
-    var b = el('button', 'filter-chip');
-    b.type = 'button';
-    b.setAttribute(facetAttr, v);
-    b.setAttribute('aria-pressed', 'true');
-    b.setAttribute('title', 'Toggle ' + v);
-    b.textContent = v;
-    return b;
-  }
-
-  function buildFilterGroup(label, facetAttr, values) {
-    var d = el('details', 'filter-group');
-    d.open = true;
-    var s = el('summary', null, label + ' ');
-    var count = el('span', 'filter-count');
-    count.appendChild(el('span', 'muted', '(' + values.length + ')'));
-    s.appendChild(count);
-    d.appendChild(s);
-    var row = el('div', 'filter-chip-row');
-    values.forEach(function (v) { row.appendChild(buildChip(facetAttr, v)); });
-    d.appendChild(row);
-    return d;
-  }
-
-  // Rebuild the aside Tags/Regions chips so they match the entries the
-  // new window actually shows, then hand filtering back to filter.min.js.
-  function rebuildFilters(ops) {
-    var tags = uniqueSorted(ops, 'tags');
-    var regions = uniqueSorted(ops, 'regions');
-    document.querySelectorAll('[data-filter="brief"] .toc-filters').forEach(function (host) {
-      host.textContent = '';
-      if (tags.length) host.appendChild(buildFilterGroup('Tags', 'data-filter-tag', tags));
-      if (regions.length) host.appendChild(buildFilterGroup('Regions', 'data-filter-region', regions));
-      var reset = el('button', 'filter-reset', 'Reset filters');
-      reset.type = 'button';
-      reset.setAttribute('data-action', 'clear-filters');
-      reset.hidden = true;
-      host.appendChild(reset);
-      var status = el('p', 'filter-status');
-      status.setAttribute('data-role', 'filter-status');
-      status.hidden = true;
-      host.appendChild(status);
-    });
-    if (window.CTIBrief && typeof window.CTIBrief.rebind === 'function') {
-      window.CTIBrief.rebind();
-    }
-  }
-
-  function updateMeta(ops, win) {
-    setAll('[data-window-entries]', String(ops.length));
-    setAll('[data-window-cves]', String(uniqueSorted(ops, 'cve_ids').length));
-    var label = win.hours ? ('last ' + win.hours + ' h') : 'custom range';
-    setAll('[data-window-label]', label);
-  }
-
-  // ── render ───────────────────────────────────────────────────────────
-
-  function renderWindow(book, win) {
-    var bounds = windowBounds(win);
-    var root = document.getElementById('brief-sections');
-    if (!root) return bounds;
-    var entries = inWindow(book, bounds);
-    var ops = entries.filter(function (e) { return (e.horizon || 'operational') === 'operational'; });
-    var runs = (book.runs || []).filter(function (r) {
-      var ts = parseTs(r.completed || r.started);
-      return ts !== null && ts >= bounds.since && ts <= bounds.until;
-    });
-
-    // group
-    var buckets = {};
-    ops.forEach(function (e) {
-      var k = sectionKeyOf(e);
-      if (!k) return;
-      (buckets[k] = buckets[k] || []).push(e);
-    });
-    Object.keys(buckets).forEach(function (k) { buckets[k] = sortEntries(buckets[k]); });
-
-    var picked = selectTldr(ops);
-    var criticals = sortEntries(ops.filter(function (e) { return e.priority === 'critical'; }));
-
-    var frag = document.createDocumentFragment();
-    (CFG.sections || []).forEach(function (sec) {
-      var shell = sectionShell(sec);
-      if (sec.key === 'tldr') {
-        shell.body.appendChild(tldrList(picked));
-        criticals.forEach(function (e) {
-          if (e.immediate_action) shell.body.appendChild(immediateActionCallout(e));
-        });
-      } else if (sec.key === 'action-items') {
-        shell.body.appendChild(actionItemsList(ops));
-      } else if (sec.key === 'verification-notes') {
-        if (runs.length) {
-          runs.forEach(function (r) { shell.body.appendChild(runNote(r)); });
-        } else {
-          shell.body.appendChild(emptyStub());
-        }
+      var activeCount = filterSets.priority.length + filterSets.kind.length + filterSets.tag.length + filterSets.region.length;
+      var html = '';
+      if (!ops.length) {
+        html = '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
+          + 'No findings in this window' + (activeCount ? ' matching the active filters' : '')
+          + '. Load older findings to reach further back.</div>';
       } else {
-        var list = buckets[sec.key] || [];
-        if (list.length) {
-          list.forEach(function (e) {
-            // e.html is the server-rendered card — grouping + concatenation only.
-            shell.body.insertAdjacentHTML('beforeend', e.html || '');
-          });
-        } else {
-          shell.body.appendChild(emptyStub());
-        }
+        var prevTs = null;
+        groups.forEach(function (g, gi) {
+          var r = runsById[g.rid];
+          var ts = r && (r.completed || r.started) ? new Date(r.completed || r.started)
+            : (g.items[0].discovered_at ? new Date(g.items[0].discovered_at) : refTs);
+          var gap = '';
+          if (prevTs) {
+            var dh = (prevTs.getTime() - ts.getTime()) / 3600000;
+            if (dh >= 1) gap = 'gap ' + Math.round(dh) + 'h';
+          }
+          prevTs = ts;
+          html += runDivider(stamp(ts), gap, g.items.length);
+          g.items.forEach(function (e) { html += runItem(e, gi === 0); });
+        });
       }
-      frag.appendChild(shell.section);
-    });
+      container.innerHTML = html;
 
-    root.textContent = '';
-    root.appendChild(frag);
-
-    var status = document.querySelector('[data-window-status]');
-    if (status) {
-      status.textContent = 'Showing ' + ops.length
-        + (ops.length === 1 ? ' entry · ' : ' entries · ') + bounds.label;
+      if (fromEl) fromEl.textContent = euro(since);
+      if (statusEl) statusEl.textContent = 'last ' + hours + 'h';
+      if (countEl) countEl.textContent = String(ops.length);
+      if (endMsg) endMsg.hidden = hasOlder;
+      if (more) more.hidden = !hasOlder;
     }
 
-    updateMeta(ops, win);
-    rebuildFilters(ops);
-    return bounds;
+    function load() {
+      fetch(sitePrefix() + (cfg.briefbook_url || 'data/briefbook.json'))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j) { data = j; render(); } })
+        .catch(function () { /* keep the server-rendered timeline */ });
+    }
+
+    if (select) select.addEventListener('change', function () {
+      hours = parseInt(select.value, 10) || defaultHours;
+      render();
+    });
+    if (more) more.addEventListener('click', function () {
+      hours += 24;
+      if (select) {
+        var has = Array.prototype.some.call(select.options, function (o) { return parseInt(o.value, 10) === hours; });
+        if (has) select.value = String(hours);
+      }
+      render();
+    });
+
+    document.addEventListener('cti:filterchange', function (e) {
+      if (e.detail && e.detail.sets) { filterSets = e.detail.sets; if (data) render(); }
+    });
+
+    load();
   }
 })();
