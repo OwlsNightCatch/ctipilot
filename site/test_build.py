@@ -841,6 +841,43 @@ _badges = build.render_entry_badges(
 assert_true("entry badges carry the classification code", ">B2<" in _badges)
 
 # ---------------------------------------------------------------------
+# Ops dashboard — model self-identification canonicalisation
+# ---------------------------------------------------------------------
+print("== ops model canonicalisation ==")
+_cm = build._ops_canonical_model
+_ml = build._ops_model_label
+# Friendly names — with or without the "Claude"/"Anthropic" prefix.
+assert_eq("cm: friendly with prefix", _cm("Claude Opus 4.8"), "Claude Opus 4.8")
+assert_eq("cm: anthropic prefix dropped", _cm("Anthropic Claude Opus 4.8"), "Claude Opus 4.8")
+assert_eq("cm: context suffix dropped", _cm("Claude Opus 4.8 (1M context)"), "Claude Opus 4.8")
+# The reported bug: a sub-agent that reported "Sonnet 5" (no "Claude" prefix)
+# used to fold to "unknown"; it must now resolve.
+assert_eq("cm: prefix optional", _cm("Sonnet 5"), "Claude Sonnet 5")
+# Canonical model ids resolve directly (the id the sub-agents reported).
+assert_eq("cm: model-id no minor", _cm("claude-sonnet-5"), "Claude Sonnet 5")
+assert_eq("cm: model-id with minor", _cm("claude-opus-4-8"), "Claude Opus 4.8")
+assert_eq("cm: model-id date suffix dropped", _cm("claude-haiku-4-5-20251001"), "Claude Haiku 4.5")
+assert_eq("cm: new family future-proof", _cm("Claude Fable 5"), "Claude Fable 5")
+# Genuine identification gaps still fold to "unknown" (they surface the gap).
+assert_eq("cm: tier-only id is a gap", _cm("opus-tier"), "unknown")
+assert_eq("cm: env-var fallback friendly is a gap", _cm("Anthropic Claude (Opus-tier)"), "unknown")
+assert_eq("cm: verifier fallback is a gap", _cm("Anthropic Claude (Opus-tier verifier)"), "unknown")
+assert_eq("cm: not-determined fallback is a gap",
+          _cm("Anthropic Claude (specific model not determined)"), "unknown")
+assert_eq("cm: prose is a gap", _cm("manual full-source audit session"), "unknown")
+assert_eq("cm: bare Claude is a gap", _cm("Claude 4"), "unknown")
+assert_eq("cm: empty is a gap", _cm(""), "unknown")
+assert_eq("cm: non-string is a gap", _cm(None), "unknown")
+# _ops_model_label — friendly preferred, model_id is the fallback.
+assert_eq("ml: friendly wins", _ml("Sonnet 5", "claude-sonnet-5"), "Claude Sonnet 5")
+assert_eq("ml: id recovers a vague friendly",
+          _ml("Anthropic Claude (Opus-tier)", "claude-opus-4-8"), "Claude Opus 4.8")
+assert_eq("ml: both vague → unknown (the env-var gap)",
+          _ml("Anthropic Claude (Opus-tier)", "opus-tier"), "unknown")
+assert_eq("ml: id alone recovers an empty friendly", _ml("", "claude-sonnet-5"), "Claude Sonnet 5")
+assert_eq("ml: friendly alone still works", _ml("Sonnet 5"), "Claude Sonnet 5")
+
+# ---------------------------------------------------------------------
 # Result
 # ---------------------------------------------------------------------
 print()
