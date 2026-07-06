@@ -5055,26 +5055,55 @@ def _ops_canonical_model(name: Any) -> str:
     """Collapse a self-reported model string to a canonical family+version tag
     for the Ops dashboard. Self-identification lives in the agents (the prompts
     say nothing about this normalisation) · here we just fold the harmless
-    variants together so the "Models in use" view is legible:
+    variants together so the "Models in use" view is legible. Accepts either a
+    friendly name (with OR without the "Claude"/"Anthropic" prefix) or a
+    canonical model id — a sub-agent that reports `model: "Sonnet 5"` /
+    `model_id: "claude-sonnet-5"` is identifying itself, not leaving a gap:
 
         "Claude Opus 4.8"                        → "Claude Opus 4.8"
         "Anthropic Claude Opus 4.8"              → "Claude Opus 4.8"
         "Claude Opus 4.8 (1M context)"           → "Claude Opus 4.8"
         "Anthropic Claude Opus 4.8 (1M context)" → "Claude Opus 4.8"
+        "Sonnet 5"                               → "Claude Sonnet 5"  (prefix optional)
+        "claude-sonnet-5"                        → "Claude Sonnet 5"  (canonical id)
+        "claude-opus-4-8"                        → "Claude Opus 4.8"
+        "claude-haiku-4-5-20251001"              → "Claude Haiku 4.5" (date suffix dropped)
         "Claude Fable 5"                         → "Claude Fable 5"   (future-proof)
 
-    Anything that doesn't self-identify as `Claude <Family> <Version>` —
-    "unknown", "manual full-source audit session", "Anthropic Claude (specific
-    model not determined)", "" · folds to "unknown". No model list is hardcoded,
-    so a new family/version works without a code change."""
+    Anything that doesn't resolve to `<Family> <Version>` — "unknown", the
+    tier-only fallback "opus-tier", "manual full-source audit session",
+    "Anthropic Claude (specific model not determined)", "" · folds to "unknown".
+    No model list is hardcoded, so a new family/version works without a code
+    change."""
     if not isinstance(name, str):
         return "unknown"
-    s = re.sub(r"^\s*anthropic\s+", "", name.strip(), flags=re.I)  # drop vendor prefix
-    s = re.sub(r"\s*\([^)]*\)\s*", " ", s).strip()                 # drop "(1M context)" etc.
-    m = re.match(r"(?i)^claude\s+([a-z]+)\s+(\d+(?:\.\d+)?)\b", s)
-    if not m:
+    s = name.strip()
+    # Canonical model-id form: `claude-<family>-<major>[-<minor>][-<date>]`.
+    # A bare tier label like "opus-tier" has no numeric version → no match.
+    mid = re.match(r"(?i)^claude-([a-z]+)-(\d+)(?:-(\d+))?\b", s)
+    if mid:
+        ver = mid.group(2) + (f".{mid.group(3)}" if mid.group(3) else "")
+        return f"Claude {mid.group(1).capitalize()} {ver}"
+    s = re.sub(r"^\s*anthropic\s+", "", s, flags=re.I)  # drop vendor prefix
+    s = re.sub(r"\s*\([^)]*\)\s*", " ", s).strip()       # drop "(1M context)" etc.
+    # Friendly form: "<Family> <Version>" with an optional leading "Claude".
+    m = re.match(r"(?i)^(?:claude\s+)?([a-z]+)\s+(\d+(?:\.\d+)?)\b", s)
+    if not m or m.group(1).lower() == "claude":  # "Claude 4" alone → not identifiable
         return "unknown"
     return f"Claude {m.group(1).capitalize()} {m.group(2)}"
+
+
+def _ops_model_label(model: Any, model_id: Any = None) -> str:
+    """Resolve a run/sub-agent record's model to a canonical Ops tag, preferring
+    the self-reported friendly `model` but falling back to the canonical
+    `model_id` when the friendly string doesn't resolve. Returns "unknown" only
+    when neither field identifies a `<Family> <Version>` — the genuine
+    identification gap the Ops page surfaces (e.g. the env-var fallback pair
+    "Anthropic Claude (Opus-tier)" / "opus-tier")."""
+    label = _ops_canonical_model(model)
+    if label == "unknown" and model_id:
+        label = _ops_canonical_model(model_id)
+    return label
 
 
 def _ops_color_for_model(name: str, assigned: dict[str, str]) -> str:
@@ -5210,19 +5239,18 @@ def render_ops_page(
     # the canonical tag, excluding the "unknown" bucket (not a real model).
     distinct_models: set[str] = set()
     for r in runs_desc:
-        for cand in [r.get("model")]:
-            c = _ops_canonical_model(cand)
-            if c != "unknown":
-                distinct_models.add(c)
+        c = _ops_model_label(r.get("model"), r.get("model_id"))
+        if c != "unknown":
+            distinct_models.add(c)
         for a in (r.get("sub_agents") or {}).values():
             if not isinstance(a, dict):
                 continue
-            c = _ops_canonical_model(a.get("model"))
+            c = _ops_model_label(a.get("model"), a.get("model_id"))
             if c != "unknown":
                 distinct_models.add(c)
         for it in ((r.get("verification") or {}).get("iterations") or []):
             if isinstance(it, dict):
-                c = _ops_canonical_model(it.get("model"))
+                c = _ops_model_label(it.get("model"), it.get("model_id"))
                 if c != "unknown":
                     distinct_models.add(c)
 
@@ -5252,21 +5280,22 @@ def render_ops_page(
     model_role_counts: dict[str, dict[str, int]] = {}  # model → {main, research, verify}
     palette: dict[str, str] = {}
 
-    def _bump(role: str, name: str | None) -> None:
-        # Canonicalise so all variants of a model fold into one slice; the
-        # "unknown" bucket is kept (it surfaces identification gaps).
-        canon = _ops_canonical_model(name)
+    def _bump(role: str, model: Any, model_id: Any = None) -> None:
+        # Canonicalise so all variants of a model fold into one slice, and fall
+        # back to the canonical model_id when the friendly name is vague; the
+        # "unknown" bucket is kept (it surfaces genuine identification gaps).
+        canon = _ops_model_label(model, model_id)
         bucket = model_role_counts.setdefault(canon, {"main": 0, "research": 0, "verify": 0})
         bucket[role] += 1
 
     for r in runs_desc:
-        _bump("main", r.get("model"))
+        _bump("main", r.get("model"), r.get("model_id"))
         for a in (r.get("sub_agents") or {}).values():
             if isinstance(a, dict):
-                _bump("research", a.get("model"))
+                _bump("research", a.get("model"), a.get("model_id"))
         for it in ((r.get("verification") or {}).get("iterations") or []):
             if isinstance(it, dict):
-                _bump("verify", it.get("model"))
+                _bump("verify", it.get("model"), it.get("model_id"))
 
     donut_slices: list[tuple[str, float, str]] = []
     for name, roles in sorted(model_role_counts.items(), key=lambda kv: -sum(kv[1].values())):
@@ -5937,7 +5966,7 @@ def _ops_render_verification_iterations(
         n = it.get("n", "?")
         verdict = (it.get("verdict") or "").upper() or "?"
         verdict_kind = "ok" if verdict == "CLEAN" else "warn"
-        model = _ops_canonical_model(it.get("model"))
+        model = _ops_model_label(it.get("model"), it.get("model_id"))
         t_count = it.get("truth", 0)
         e_count = it.get("editorial", 0)
         a_count = it.get("advisory", 0)
@@ -6084,8 +6113,8 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     rid = str(run.get("run_id") or date)
     kind = run.get("kind", "intel")
     day_pages = day_pages or set()
-    main_name = _ops_canonical_model(run.get("model"))
     main_id = run.get("model_id") or ""
+    main_name = _ops_model_label(run.get("model"), main_id)
     main_colour = _ops_color_for_model(main_name, palette)
     pv = (run.get("prompt_version") or "?").lstrip("v")
     duration = _ops_format_duration(run.get("duration_seconds"))
@@ -6227,7 +6256,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             '</div>'
         )
     if data.get("returned") is False:
-        model_name = _ops_canonical_model(data.get("model"))
+        model_name = _ops_model_label(data.get("model"), data.get("model_id"))
         return (
             f'<div class="ops-sa-card ops-sa-card--stalled">'
             f'<div class="ops-sa-card__head"><strong>{_escape(key)}</strong>'
@@ -6237,8 +6266,8 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
             '</div>'
         )
 
-    model_name = _ops_canonical_model(data.get("model"))
     model_id = data.get("model_id") or ""
+    model_name = _ops_model_label(data.get("model"), model_id)
     colour = _ops_color_for_model(model_name, palette)
     used = _ops_count_sources(data.get("sources_used"))
     attempted = _ops_count_sources(data.get("sources_attempted"))
@@ -6399,7 +6428,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         used = _ops_count_sources(a.get("sources_used"))
         attempted = _ops_count_sources(a.get("sources_attempted"))
         items = a.get("items_returned") or 0
-        m = _ops_canonical_model(a.get("model"))
+        m = _ops_model_label(a.get("model"), a.get("model_id"))
         colour = _ops_color_for_model(m, palette) if m else "var(--text-muted)"
         # runs-table cells show the items-returned headline only;
         # source coverage moved to a tooltip on the cell. The inline
@@ -6432,7 +6461,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             if failures
             else '<span class="muted">0</span>'
         )
-        main_name = _ops_canonical_model(r.get("model"))
+        main_name = _ops_model_label(r.get("model"), r.get("model_id"))
         main_colour = _ops_color_for_model(main_name, palette)
         verif_iters = r.get("verification_iterations")
         verif_residual = r.get("verification_residual_count") or 0
