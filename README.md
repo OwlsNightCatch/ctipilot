@@ -104,6 +104,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── pipeline.md            # NORMATIVE v3 data model (entries, registry, runs)
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
+│   ├── routines.md            # Catalog of every routine + in-repo prompt (incl. backup)
 │   ├── customization.md       # Downstream fork / rebrand guide
 │   ├── private-deployment.md  # Host the whole stack org-internally
 │   └── analytics.md           # What we measure, what we don't

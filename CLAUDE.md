@@ -100,6 +100,7 @@ prompts/CHANGELOG.md               # editorial-policy audit trail (bump on every
 prompts/verification.md            # two-source / fake-news verification policy
 prompts/entry-template.md          # canonical entry + run-record skeletons
 prompts/check-run-fixes.md         # fix recipes for common check_run.py FAILs
+docs/routines.md                   # catalog of every routine invocation prompt + in-repo prompt (incl. weekly backup)
 docs/pipeline.md                   # NORMATIVE v3 data model (entries, registry, runs)
 config/org-profile.yaml            # org profile (compose_prompts.py renders it into the prompts)
 config/branding.yaml               # site branding profile
