@@ -305,18 +305,31 @@
     var link = document.getElementById('github-link');
     var stars = document.getElementById('github-stars');
     var starsMenu = document.getElementById('github-stars-menu');
+    function show(n) {
+      var txt = formatStars(n);
+      [stars, starsMenu].forEach(function (el) { if (el) { el.textContent = txt; el.hidden = false; } });
+      if (link) link.title = 'View source on GitHub · ' + n + ' stars';
+    }
+    var repoUrl = null;
     try {
       var r = await fetch(sitePrefix() + 'data/site.json');
-      if (!r.ok) return;
-      var s = await r.json();
-      var gh = s.github || {};
-      if (gh.url && link) link.setAttribute('href', gh.url);
-      if (typeof gh.stars === 'number') {
-        var txt = formatStars(gh.stars);
-        [stars, starsMenu].forEach(function (el) { if (el) { el.textContent = txt; el.hidden = false; } });
-        if (link) link.title = 'View source on GitHub · ' + gh.stars + ' stars';
+      if (r.ok) {
+        var gh = (await r.json()).github || {};
+        if (gh.url) { repoUrl = gh.url; if (link) link.setAttribute('href', gh.url); }
+        if (typeof gh.stars === 'number') { show(gh.stars); return; }
       }
-    } catch (_) { /* fail open */ }
+    } catch (_) { /* fall through to the live API */ }
+    // No build-time star count (offline build): fetch it live from GitHub.
+    var repo = null;
+    var m = (repoUrl || (link && link.getAttribute('href')) || '').match(/github\.com\/([^/]+\/[^/?#]+)/);
+    if (m) repo = m[1].replace(/\.git$/, '');
+    if (!repo) return;
+    try {
+      var gr = await fetch('https://api.github.com/repos/' + repo);
+      if (!gr.ok) return;
+      var gj = await gr.json();
+      if (typeof gj.stargazers_count === 'number') show(gj.stargazers_count);
+    } catch (_) { /* fail open: icon-only is fine */ }
   }
   function formatStars(n) {
     if (n < 1000) return String(n);

@@ -65,7 +65,7 @@ parts and defers to that spec for every field-level question.
                            └────────────┬───────────────┘
                                         ▼
                               GitHub Pages reader
-                              /brief/ renders the entry store
+                              /live/ renders the entry store
                               over a reader-chosen time window
                               (real HTML pages — no SPA)
 ```
@@ -456,16 +456,20 @@ pipeline's output and never writes back.
 
 A stdlib-only Python static-site generator (`site/build.py`, on top of
 `site/content_model.py`) emits a real HTML page for every URL. **The brief
-is a query**: `/brief/` is the dynamic window brief — the default window
-(last 24 h) ships server-rendered and fully no-JS-readable;
-`assets/js/brief.js` re-assembles the identical section structure
-client-side from `data/briefbook.json` (the last ~35 days of entries with
-pre-rendered card HTML) when the reader picks a 6 / 12 / 24 / 48 / 72 h
-chip or a since-date. Page inventory:
+is a query**: `/live/` is the live rolling brief — a run-grouped,
+reverse-chronological timeline of the last 24 h in which **every run
+appears, including quiet (0-finding) ones**. The default window ships
+server-rendered and fully no-JS-readable; `assets/js/brief.js` re-renders
+the timeline client-side from `data/briefbook.json` (the last ~35 days of
+entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
+72 h) or loads older findings. Page inventory:
 
-- `/` home · `/brief/` the dynamic brief · `/briefs/YYYY-MM-DD/` static
-  day archives (+ `/briefs/` month-grouped index) · `/weekly/YYYY-Www/`
-  weekly pages rendered from the week's strategic entries.
+- `/` home (Live / Daily / Weekly brief cards) · `/live/` the live rolling
+  brief · `/daily/YYYY-MM-DD/` one settled page per **completed** UTC day
+  in the classic editorial section order (the still-rolling day lives only
+  in `/live/`) · `/daily/` the newest-first completed-day archive ·
+  `/weekly/YYYY-Www/` weekly pages rendered from the week's strategic
+  entries (+ `/weekly/` archive).
 - `/entries/YYYY-MM-DD/<slug>/` per-entry permalinks (metadata badges,
   update chain, producing-run link).
 - `/entities/<key>/` unified entity pages from the registry + CVE
@@ -481,7 +485,7 @@ chip or a since-date. Page inventory:
   slices (`feed-public-sector.xml`, `feed-healthcare.xml`,
   `feed-finance.xml`, `feed-energy.xml`, `feed-ot-ics.xml`,
   `feed-defense.xml`, `feed-telco.xml`, `feed-education.xml`).
-- Data islands: `data/briefbook.json` (the `/brief/` client payload —
+- Data islands: `data/briefbook.json` (the `/live/` client payload —
   Phase 7 polls it for the run id), `data/alerts.json` (last 7 days of
   `critical`/`high` entries with headline, summary, `immediate_action`,
   entities, CVEs — the notification-hook surface), `data/search.json`,
@@ -492,7 +496,7 @@ The site is read-only with respect to the rest of the repo: it reads
 `docs/*.md`, `prompts/*.md` and `site/taxonomy.yaml`, and writes only
 under `site/_site/` (gitignored locally; force-pushed to `gh-pages` by
 CI). JavaScript only enhances — with JS disabled every page, including
-the default `/brief/` window, is fully readable. Internals:
+the default `/live/` window, is fully readable. Internals:
 [`site/README.md`](../site/README.md).
 
 [`site/taxonomy.yaml`](../site/taxonomy.yaml) is the controlled vocabulary

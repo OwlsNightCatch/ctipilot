@@ -4,7 +4,7 @@ Loaded into every Claude Code session here (interactive or routine). The master 
 
 ## What this repo is
 
-Autonomous CTI pipeline for a Swiss federal SOC (by default — the deployment is organization-parameterizable via `config/org-profile.yaml`). A scheduled Claude Code routine reads `prompts/cti-run.md` on each fire — **multiple fires per day are first-class** — researches the window's threat landscape via parallel sub-agents, and publishes each verified finding as its own entry file `entries/YYYY-MM-DD/<slug>.md` plus one run record `runs/YYYY-MM-DD/<run-id>.md`. A weekly routine (`prompts/weekly-summary.md`) adds `horizon: strategic` entries. **There is no brief file** — the brief is *rendered* from entries over a reader-chosen time window (default: last 24 h) at [https://ctipilot.ch/brief/](https://ctipilot.ch/brief/); the site rebuilds on every push to `main` that touches the content store. The normative data model is [docs/pipeline.md](docs/pipeline.md).
+Autonomous CTI pipeline for a Swiss federal SOC (by default — the deployment is organization-parameterizable via `config/org-profile.yaml`). A scheduled Claude Code routine reads `prompts/cti-run.md` on each fire — **multiple fires per day are first-class** — researches the window's threat landscape via parallel sub-agents, and publishes each verified finding as its own entry file `entries/YYYY-MM-DD/<slug>.md` plus one run record `runs/YYYY-MM-DD/<run-id>.md`. A weekly routine (`prompts/weekly-summary.md`) adds `horizon: strategic` entries. **There is no brief file** — the brief is *rendered* from entries over a reader-chosen time window (default: last 24 h) at [https://ctipilot.ch/live/](https://ctipilot.ch/live/); the site rebuilds on every push to `main` that touches the content store. The normative data model is [docs/pipeline.md](docs/pipeline.md).
 
 Audience is Tier 2/3 IR / threat hunters / detection engineers — assume MITRE ATT&CK fluency, no executive hedging, no IOCs, no vanity metrics.
 
@@ -110,7 +110,7 @@ sources/sources.json               # ~150 curated CTI sources (autonomous lifecy
 state/cves_seen.json               # flat CVE dedup index
 state/source_health.json           # bounded source-health history
 site/content_model.py              # reference parser/validator (entries, registry, runs)
-site/build.py                      # static-site generator (dynamic /brief/, day pages, weekly, ops, feeds)
+site/build.py                      # static-site generator (dynamic /live/, day pages, weekly, ops, feeds)
 site/taxonomy.yaml                 # controlled vocabulary for entry frontmatter
 tools/check_run.py                 # Phase 5.5 gate (must exit 0)
 tools/build_prior_coverage.py      # entry-store dedup index builder

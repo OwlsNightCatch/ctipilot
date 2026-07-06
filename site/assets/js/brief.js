@@ -73,34 +73,53 @@
       return (e.url || '').replace(/^(\.\.\/)+/, '');
     }
 
+    function badgesHtml(e) {
+        var b = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
+        if (e.cve_label && e.cve_ids && e.cve_ids.length) {
+          b.push('<a class="b cve" href="' + esc(sitePrefix() + 'cves/' + e.cve_ids[0] + '/') + '">' + esc(e.cve_label) + '</a>');
+        } else if (e.cve_label) {
+          b.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
+        }
+        if (e.exploited) b.push('<span class="b exp">exploited</span>');
+        if (e.update_of) b.push('<span class="b upd">update</span>');
+        return '<div class="badges">' + b.join('') + '</div>';
+    }
+
+    function sourceLine(e) {
+        var srcs = e.sources_min || [];
+        if (!srcs.length) return '';
+        var bits = srcs.map(function (s) {
+          return '<a href="' + esc(s.url) + '" target="_blank" rel="noopener noreferrer">' + esc(s.publisher) + '</a>';
+        });
+        return '<div class="f-sources"><span class="f-sources__l">Sources:</span> ' + bits.join(' · ') + '</div>';
+    }
+
     function runItem(e, isNew) {
-      var badges = ['<span class="b ' + (PRI_CLASS[e.priority] || '') + '">' + esc(PRI_LABEL[e.priority] || String(e.priority).toUpperCase()) + '</span>'];
-      if (e.cve_label) badges.push('<span class="b cve">' + esc(e.cve_label) + '</span>');
-      if (e.exploited) badges.push('<span class="b exp">exploited</span>');
-      if (e.update_of) badges.push('<span class="b upd">update</span>');
       var d = e.discovered_at ? new Date(e.discovered_at) : refTs;
-      var flag = e.update_of ? '↻ UPD' : (isNew ? 'NEW' : '');
+      var flag = e.update_of ? 'UPD' : (isNew ? 'NEW' : '');
       var flagStyle = e.update_of ? 'color:var(--warn)' : (isNew ? 'color:var(--ok)' : '');
       var prov = ['<div class="prov">'];
       if (e.kind) prov.push('<span>' + esc(e.kind) + '</span>');
-      if (e.cve_label) prov.push('<span style="color:var(--info)">' + esc(e.cve_label) + '</span>');
       prov.push('<span>' + esc(stamp(d)) + '</span>');
-      if (e.source_count) prov.push('<span>' + e.source_count + ' source' + (e.source_count === 1 ? '' : 's') + '</span>');
       prov.push('<span class="' + esc(e.verification_class || 'p-warn') + '">' + esc(e.verification_label || '') + '</span>');
-      prov.push('<span class="refs">open ↗</span></div>');
+      prov.push('<a class="refs" href="' + esc(sitePrefix() + relUrl(e)) + '">open ↗</a></div>');
       return '<div class="tl-item">'
         + '<div class="tl-rail"><span class="tl-node" style="background:' + (PRI_DOT[e.priority] || 'var(--text-muted)') + '"></span>'
         + '<span class="time">' + esc(stamp(d)) + '</span><span class="flag" style="' + flagStyle + '">' + esc(flag) + '</span></div>'
-        + '<a class="tl-body" href="' + esc(sitePrefix() + relUrl(e)) + '">'
-        + '<div class="badges">' + badges.join('') + '</div>'
-        + '<h3>' + esc(e.title || e.id) + '</h3><p>' + esc(e.summary || e.headline || '') + '</p>'
-        + prov.join('') + '</a></div>';
+        + '<div class="tl-body">'
+        + badgesHtml(e)
+        + '<h3 class="tl-title"><a href="' + esc(sitePrefix() + relUrl(e)) + '">' + esc(e.title || e.id) + '</a></h3>'
+        + '<p>' + esc(e.summary || e.headline || '') + '</p>'
+        + prov.join('')
+        + sourceLine(e)
+        + '</div></div>';
     }
 
     function runDivider(label, gap, count) {
-      var n = count + ' finding' + (count === 1 ? '' : 's');
+      var n = count === 0 ? 'quiet window' : count + ' finding' + (count === 1 ? '' : 's');
       var g = (gap ? gap + ' · ' : '') + n;
-      return '<div class="tl-run"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+      var cls = count === 0 ? 'tl-run tl-run--quiet' : 'tl-run';
+      return '<div class="' + cls + '"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
         + '<div class="run-h"><span class="rl">' + esc(label) + '</span><span class="rg">· run · ' + esc(g) + '</span></div></div>';
     }
 
@@ -129,33 +148,47 @@
         return d && d < since;
       });
 
-      var groups = [];
-      ops.forEach(function (e) {
-        var rid = e.run_id || '';
-        if (groups.length && groups[groups.length - 1].rid === rid) groups[groups.length - 1].items.push(e);
-        else groups.push({ rid: rid, items: [e] });
-      });
+      // Group in-window entries by run_id.
+      var byRun = {};
+      ops.forEach(function (e) { (byRun[e.run_id || ''] = byRun[e.run_id || ''] || []).push(e); });
+
+      // EVERY run in the window gets a divider (incl. 0-finding quiet runs),
+      // union with any run referenced by an in-window entry.
+      var runTs = function (rid) {
+        var r = runsById[rid];
+        if (r && (r.completed || r.started)) return new Date(r.completed || r.started);
+        var es = byRun[rid] || [];
+        return es.length && es[0].discovered_at ? new Date(es[0].discovered_at) : new Date(0);
+      };
+      var inWindowRuns = (data.runs || []).filter(function (r) {
+        if (!r.run_id) return false;
+        var t = r.completed || r.started ? new Date(r.completed || r.started) : null;
+        return t && t >= since && t <= refTs;
+      }).map(function (r) { return r.run_id; });
+      var keyset = {};
+      inWindowRuns.concat(Object.keys(byRun)).forEach(function (k) { if (k) keyset[k] = 1; });
+      var keys = Object.keys(keyset).sort(function (a, b) { return runTs(b) - runTs(a); });
+      var firstNonEmpty = keys.filter(function (k) { return (byRun[k] || []).length; })[0];
 
       var activeCount = filterSets.priority.length + filterSets.kind.length + filterSets.tag.length + filterSets.region.length;
       var html = '';
-      if (!ops.length) {
+      if (!keys.length) {
         html = '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
-          + 'No findings in this window' + (activeCount ? ' matching the active filters' : '')
+          + 'No runs in this window' + (activeCount ? ' matching the active filters' : '')
           + '. Load older findings to reach further back.</div>';
       } else {
         var prevTs = null;
-        groups.forEach(function (g, gi) {
-          var r = runsById[g.rid];
-          var ts = r && (r.completed || r.started) ? new Date(r.completed || r.started)
-            : (g.items[0].discovered_at ? new Date(g.items[0].discovered_at) : refTs);
+        keys.forEach(function (rid) {
+          var ts = runTs(rid);
           var gap = '';
-          if (prevTs) {
+          if (prevTs && ts.getTime() > 0) {
             var dh = (prevTs.getTime() - ts.getTime()) / 3600000;
             if (dh >= 1) gap = 'gap ' + Math.round(dh) + 'h';
           }
-          prevTs = ts;
-          html += runDivider(stamp(ts), gap, g.items.length);
-          g.items.forEach(function (e) { html += runItem(e, gi === 0); });
+          if (ts.getTime() > 0) prevTs = ts;
+          var items = byRun[rid] || [];
+          html += runDivider(stamp(ts), gap, items.length);
+          items.forEach(function (e) { html += runItem(e, rid === firstNonEmpty); });
         });
       }
       container.innerHTML = html;

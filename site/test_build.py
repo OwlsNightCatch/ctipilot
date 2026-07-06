@@ -378,10 +378,10 @@ crit_pos = html.find("Headline coolify-rce")
 high_pos = html.find("Headline fortibleed-campaign")
 assert_true("TL;DR: critical bullet precedes high", 0 <= crit_pos < high_pos)
 actnow = render_actnow(E_CRIT, prefix="")
-assert_in("ACT NOW callout present", "ACT NOW — CRITICAL", actnow)
+assert_in("ACT NOW callout present", "ACT NOW · CRITICAL", actnow)
 assert_in("ACT NOW carries the action", "Upgrade to v4.0.0-beta.469 immediately.", actnow)
 assert_in("finding quotes evidence", "actively exploited in the wild", html)
-assert_in("update flagged on the finding", 'class="f-flag upd"', html)
+assert_in("update flagged on the finding", 'class="b upd">update', html)
 assert_in("update lead links the original", "originally covered", html)
 assert_in("update body retained after prefix strip", "A public PoC has now surfaced.", html)
 assert_true(
@@ -465,7 +465,7 @@ archive_days = {d: entries_by_day(ALL_ENTRIES).get(d, []) for d in day_universe}
 archive_html = render_days_index_page(archive_days, site_url="https://x.example/",
                                       cachebust="t", prefix="../",
                                       canonical="https://x.example/briefs/")
-assert_in("archive lists the quiet day", "briefs/2026-07-05/", archive_html)
+assert_in("archive lists the quiet day", "daily/2026-07-05/", archive_html)
 assert_in("archive marks the quiet day as run-record-only",
           "run record only", archive_html)
 assert_in("archive still counts a content day's entries",

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the static-site bundle for GitHub Pages (CTI pipeline v3 SSG).
 
-Inputs (read-only — the v3 content model, see docs/pipeline.md):
+Inputs (read-only · the v3 content model, see docs/pipeline.md):
     entries/YYYY-MM-DD/<slug>.md   per-finding entry files (via site/content_model.py)
     entities/registry.yaml         global entity registry
     runs/YYYY-MM-DD/<run-id>.md    per-run records (telemetry + verification notes)
@@ -12,13 +12,12 @@ Inputs (read-only — the v3 content model, see docs/pipeline.md):
     README.md / docs/*.md / prompts/*.md   rendered under /about/
 
 Outputs (written under site/_site/):
-    /                              home — live-brief / latest-day / latest-weekly cards
-    /brief/                        THE DYNAMIC BRIEF — default 24 h window server-rendered;
+    /                              home: live / latest-completed-day / latest-weekly cards
+    /live/                         the live rolling brief: default 24 h window server-rendered;
                                    assets/js/brief.js re-renders from data/briefbook.json
-    /briefs/                       day-page index, grouped by month
-    /briefs/YYYY-MM-DD/            static day archive (canonical daily structure)
-    /weekly/ + /weekly/YYYY-Www/   weekly index + weekly pages (v2 12-section structure)
-    /briefs/weekly/YYYY-Www/       meta-refresh redirect stubs → /weekly/YYYY-Www/
+    /daily/                        completed-day index (archive), newest first
+    /daily/YYYY-MM-DD/             one completed UTC day (canonical daily structure)
+    /weekly/ + /weekly/YYYY-Www/   weekly index + weekly pages (12-section structure)
     /entries/YYYY-MM-DD/<slug>/    per-entry permalinks (badges, update chain, run link)
     /entities/ /entities/<key>/    unified entity pages (registry + CVE universe)
     /cves/ /topics/                type-filtered entity list views (+ legacy redirects)
@@ -120,14 +119,14 @@ SITE_LOCALE = BRANDING["site"]["locale"].strip()
 NAV_LIVE_LABEL = (BRANDING["site"].get("nav_live") or "Live").strip()
 NAV_DAILY_LABEL = (BRANDING["site"].get("nav_daily") or "Daily").strip()
 NAV_WEEKLY_LABEL = (BRANDING["site"].get("nav_weekly") or "Weekly").strip()
-LATEST_DAY_REL = "briefs/"
+LATEST_DAY_REL = "daily/"
 LATEST_WEEK_REL = "weekly/"
 
 # AI-provenance bar (dismissible strip under the topbar). The label copy may
 # carry inline HTML (e.g. a bold lead-in); the link points at the About page.
 AI_BAR_HTML = (
     BRANDING["site"].get("ai_bar_html")
-    or "<b>AI-generated · no human review</b> — verify operationally critical "
+    or "<b>AI-generated · no human review</b> · verify operationally critical "
     "claims against the linked primary source."
 ).strip()
 AI_BAR_LINK_LABEL = (BRANDING["site"].get("ai_bar_link_label") or "how it works →").strip()
@@ -322,7 +321,7 @@ def url_prefix_of(url: str) -> str:
 
 
 def rfc822(ts: datetime) -> str:
-    """RFC 822 timestamp string — `Wed, 02 Oct 2002 15:00:00 +0000`."""
+    """RFC 822 timestamp string · `Wed, 02 Oct 2002 15:00:00 +0000`."""
     return ts.astimezone(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
 
 
@@ -410,7 +409,7 @@ _INLINE_AUTOLINK_RE = re.compile(r"(?<![\(\"<\w])(https?://[^\s<>\)]+)")
 
 def _escape(s: str) -> str:
     """HTML-escape a string. Used everywhere except inside `<code>` (which
-    is also escaped — the rule is uniform)."""
+    is also escaped · the rule is uniform)."""
     return (
         s.replace("&", "&amp;")
         .replace("<", "&lt;")
@@ -434,7 +433,7 @@ def _safe_url(url: str) -> str:
     """Return `url` unchanged if its scheme is on the allowlist, an anchor /
     relative path is acceptable too. Otherwise return '#' so the link
     becomes inert (defence-in-depth alongside CSP). Whitespace and control
-    characters are stripped — they can be used to obfuscate `javascript:`
+    characters are stripped · they can be used to obfuscate `javascript:`
     payloads (e.g. `java\\nscript:alert(1)`)."""
     if not url:
         return "#"
@@ -502,7 +501,7 @@ def render_inline(s: str, *, base_url: str | None = None) -> str:
     """Render Markdown inline constructs to HTML.
 
     `base_url` (when given) absolutises relative links so the result is
-    self-contained (used by RSS body rendering — RSS readers don't have a
+    self-contained (used by RSS body rendering · RSS readers don't have a
     base URL to resolve against).
     """
     # Strip ASCII control characters at the parse boundary, same reasoning
@@ -626,7 +625,7 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
         - ordered lists (`1. `)
         - blockquotes (`> `)
         - fenced code blocks (```)
-        - indented code blocks (4 spaces) — minimal
+        - indented code blocks (4 spaces) · minimal
         - horizontal rules (`---` or `***`)
         - pipe tables
         - inline-only fallback for everything else.
@@ -848,7 +847,7 @@ def enhance_brief_item_html(html: str) -> str:
     stylesheet can give it dedicated visual weight (accent border, label
     badge) without changing how the agent writes briefs.
 
-    Idempotent — calling twice has no effect because the regex requires
+    Idempotent · calling twice has no effect because the regex requires
     the surrounding `<p>` wrapper which only appears in fresh-rendered
     Markdown."""
 
@@ -1038,8 +1037,13 @@ UMAMI_SNIPPET = (
     'data-exclude-search="true"></script>'
 ) if ANALYTICS_ENABLED else ""
 
+# api.github.com is allowed in connect-src so the topbar GitHub badge can
+# fetch the live star count client-side when the build-time fetch had no
+# network (data/site.json then carries no `stars`). It is a public,
+# unauthenticated, read-only endpoint; no analytics or tracking concern.
+_CSP_GITHUB_API = "https://api.github.com"
 _CSP_SCRIPT_SRC = "'self'" + (f" {UMAMI_SCRIPT_HOST}" if ANALYTICS_ENABLED else "")
-_CSP_CONNECT_SRC = "'self'" + (
+_CSP_CONNECT_SRC = "'self' " + _CSP_GITHUB_API + (
     f" {UMAMI_SCRIPT_HOST} {UMAMI_BEACON_HOST}" if ANALYTICS_ENABLED else ""
 )
 CSP_META = (
@@ -1065,13 +1069,13 @@ if ANALYTICS_ENABLED:
     )
     for _retired_host in UMAMI_RETIRED_HOSTS:
         assert _retired_host not in CSP_META, (
-            f"retired Umami host {_retired_host!r} reappeared in the CSP — it no longer "
+            f"retired Umami host {_retired_host!r} reappeared in the CSP · it no longer "
             f"receives beacons; the live host is {UMAMI_BEACON_HOST!r}. See UMAMI_RETIRED_HOSTS."
         )
 else:
     assert UMAMI_SNIPPET == "" and "umami" not in CSP_META, (
         "analytics.provider is 'none' but an analytics host survived into the "
-        "snippet or CSP — the off switch must remove every third-party origin"
+        "snippet or CSP · the off switch must remove every third-party origin"
     )
 
 GH_ICON_SVG = (
@@ -1149,7 +1153,7 @@ def _favicon_href(*, pfx: str, cachebust: str) -> str:
 def _branding_css_links(*, pfx: str, cachebust: str) -> str:
     """Extra stylesheet <link>s after styles.css: the generated theme
     override (assets/css/branding.css) and the operator's free-form
-    site/branding/custom.css — each only when it exists."""
+    site/branding/custom.css · each only when it exists."""
     links = ""
     if BRANDING_CSS:
         links += f'\n<link rel="stylesheet" href="{pfx}assets/css/branding.css?v={cachebust}" />'
@@ -1183,7 +1187,7 @@ def _nav_segments_html(pfx: str, active_nav: str) -> str:
         led = '<span class="ld"><i></i></span>' if live_led else ""
         return f'<a class="seg-btn{active}" href="{pfx}{href}">{led}{_escape(label)}</a>'
     return (
-        seg("live", "brief/", NAV_LIVE_LABEL, live_led=True)
+        seg("live", "live/", NAV_LIVE_LABEL, live_led=True)
         + seg("daily", LATEST_DAY_REL, NAV_DAILY_LABEL)
         + seg("weekly", LATEST_WEEK_REL, NAV_WEEKLY_LABEL)
     )
@@ -1192,8 +1196,9 @@ def _nav_segments_html(pfx: str, active_nav: str) -> str:
 def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     """Shared 'More' menu / mobile-drawer link set."""
     gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
+    # No "Archive" here: the daily / weekly archives are reached from the
+    # Daily / Weekly views themselves (each page links "All … briefs").
     rows = [
-        (f"{pfx}briefs/", "Archive", "all briefs"),
         (f"{pfx}entities/", "Entities", "actors · CVEs"),
         (f"{pfx}sources/", "Sources", "~150"),
         (f"{pfx}trends/", "Trends", "cohorts"),
@@ -1252,7 +1257,7 @@ def base_template(
 ) -> str:
     """Return a complete HTML document.
 
-    `home_relative_prefix` is "../" * depth — used to point relative asset
+    `home_relative_prefix` is "../" * depth · used to point relative asset
     references back to the site root from a nested path. `active_nav` is
     one of "live" / "daily" / "weekly" (marks the active segment).
     """
@@ -1288,9 +1293,9 @@ def base_template(
 <meta name="twitter:title" content="{_escape(title)}" />
 <meta name="twitter:description" content="{_escape(description)}" />
 <link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />{_branding_css_links(pfx=pfx, cachebust=cachebust)}
-<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Daily" href="{pfx}feed.xml" />
-<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Weekly" href="{pfx}feed-weekly.xml" />
-<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} — Per item" href="{pfx}feed-items.xml" />
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Daily" href="{pfx}feed.xml" />
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Weekly" href="{pfx}feed-weekly.xml" />
+<link rel="alternate" type="application/rss+xml" title="{_escape(SITE_NAME)} · Per item" href="{pfx}feed-items.xml" />
 <link rel="sitemap" type="application/xml" href="{pfx}sitemap.xml" />
 <link rel="icon" href="{_favicon_href(pfx=pfx, cachebust=cachebust)}" />
 {alt_links}
@@ -1307,7 +1312,7 @@ def base_template(
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar">
   <div class="topbar-in">
-    <a class="brand" href="{pfx}" aria-label="Home — {_escape(SITE_NAME)}">
+    <a class="brand" href="{pfx}" aria-label="Home · {_escape(SITE_NAME)}">
       <span class="brand-mark" aria-hidden="true">{_brand_mark_html(pfx=pfx, cachebust=cachebust)}</span>
       <span class="brand-text"><strong>{_escape(WORDMARK_STRONG)}</strong><span class="tld">{_escape(WORDMARK_ACCENT)}</span></span>
     </a>
@@ -1348,7 +1353,7 @@ def base_template(
     <span class="idot" aria-hidden="true"></span>
     <span>{AI_BAR_HTML}</span>
     <a href="{pfx}about/">{_escape(AI_BAR_LINK_LABEL)}</a>
-    <button class="aiclose" type="button" data-ai-dismiss title="Dismiss — I understand" aria-label="Dismiss AI notice">✕</button>
+    <button class="aiclose" type="button" data-ai-dismiss title="Dismiss · I understand" aria-label="Dismiss AI notice">✕</button>
   </div>
 </div>
 <div class="search-modal" data-search-modal role="dialog" aria-modal="true" aria-label="Search">
@@ -1364,66 +1369,13 @@ def base_template(
 </div>
 <main id="main" class="main"><div class="view">{body}</div></main>
 <footer class="footer" role="contentinfo">
-  <div class="footer-inner">
-    <div class="footer-grid">
-      <section class="footer-brand">
-        <a class="footer-brand__home" href="{pfx}" aria-label="{_escape(SITE_NAME)} home">
-          {_footer_mark_html(pfx=pfx, cachebust=cachebust)}
-          <span class="footer-brand__title">
-            <strong>{_escape(SITE_NAME)}</strong>{_FOOTER_TAGLINE_HTML}
-          </span>
-        </a>
-        <p class="footer-brand__lede">
-          {_FOOTER_LEDE_HTML}
-        </p>
-        <p class="footer-brand__notice">
-          <span class="footer-brand__notice-label">AI-generated · no human review</span>
-          <a href="{pfx}about/">How this works →</a>
-        </p>
-      </section>
-
-      <nav class="footer-col" aria-label="Read">
-        <h4 class="footer-col__label">Read</h4>
-        <ul>
-          <li><a href="{pfx}brief/">Live brief</a></li>
-          <li><a href="{pfx}briefs/">Day archive</a></li>
-          <li><a href="{pfx}weekly/">Weekly summaries</a></li>
-          <li><a href="{pfx}entities/">Entities</a></li>
-          <li><a href="{pfx}sources/">Sources</a></li>
-          <li><a href="{pfx}trends/">Trends</a></li>
-          <li><a href="{pfx}ops/">Operations</a></li>
-        </ul>
-      </nav>
-
-      <nav class="footer-col" aria-label="Subscribe">
-        <h4 class="footer-col__label">Subscribe</h4>
-        <ul>
-          <li><a href="{pfx}feed.xml">RSS — Daily</a></li>
-          <li><a href="{pfx}feed-weekly.xml">RSS — Weekly</a></li>
-          <li><a href="{pfx}feed-items.xml">RSS — Per item</a></li>
-          <li><a href="{pfx}feeds/">All feeds + sectors</a></li>
-        </ul>
-      </nav>
-
-      <nav class="footer-col" aria-label="About">
-        <h4 class="footer-col__label">About</h4>
-        <ul>
-          <li><a href="{pfx}about/">How this works</a></li>
-          <li><a href="{pfx}about/prompts/changelog/">Editorial policy</a></li>
-          <li><a href="{pfx}about/prompts/verification/">Verification</a></li>
-          <li><a href="https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}" target="_blank" rel="noopener noreferrer">Source on GitHub ↗</a></li>
-        </ul>
-      </nav>
-    </div>
-
-    <div class="footer-bottom">
-      <p class="footer-bottom__copy">
-        © {datetime.now(timezone.utc).year} {_escape(SITE_NAME)} — {_COPYRIGHT_NOTE_HTML}
-      </p>
-      <p class="footer-bottom__build" id="footer-meta">
-        <span class="mono">build {_escape(cachebust[:8])}</span>
-      </p>
-    </div>
+  <div class="foot">
+    <span>© {datetime.now(timezone.utc).year} {_escape(SITE_NAME)}</span>
+    <a href="{pfx}about/prompts/verification/">Verification policy</a>
+    <a href="{pfx}about/">How this works</a>
+    <a href="{pfx}feeds/">RSS</a>
+    <a href="{gh_url}" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <span class="foot-end" id="footer-meta">build {_escape(cachebust[:7])} · no cookies · no tracking</span>
   </div>
 </footer>
 </body>
@@ -1447,7 +1399,7 @@ def render_cve_pill(cve: str, *, prefix: str = "") -> str:
     """Render one or more CVE pills.
 
     The footer's `CVE:` field is a single string that may contain a
-    comma-separated list (multi-CVE entries — e.g. an Ivanti EPMM
+    comma-separated list (multi-CVE entries · e.g. an Ivanti EPMM
     auth-bypass + admin-RCE chain reported as one item). Render one
     clickable pill per individual CVE-YYYY-NNNNN id, otherwise the
     pill links to a non-existent slug like `cves/CVE-A, CVE-B/` and
@@ -1496,12 +1448,12 @@ def reliability_tier_class(letter: str) -> str:
 def reliability_badge(r: str) -> str:
     """Source-reliability badge for the NATO Admiralty letters A–F."""
     meaning = ADMIRALTY_RELIABILITY_MEANING.get((r or "").strip().upper())
-    title = f' title="Admiralty source reliability — {_escape(meaning)}"' if meaning else ""
+    title = f' title="Admiralty source reliability · {_escape(meaning)}"' if meaning else ""
     return f'<span class="badge {reliability_tier_class(r)}"{title}>{_escape(r or "")}</span>'
 
 
 def render_classification_badge(cls: dict[str, Any]) -> str:
-    """NATO Admiralty intelligence classification pill for an entry — the
+    """NATO Admiralty intelligence classification pill for an entry · the
     source-reliability letter + information-credibility number rendered
     together (e.g. `B2`), tinted by the reliability tier so confidence reads
     at a glance, with the full doctrine meaning on hover."""
@@ -1514,7 +1466,7 @@ def render_classification_badge(cls: dict[str, Any]) -> str:
         return ""
     rel_m = ADMIRALTY_RELIABILITY_MEANING.get(rel, "source reliability")
     cred_m = ADMIRALTY_CREDIBILITY_MEANING.get(cred, "information credibility")
-    title = (f"NATO Admiralty classification — source reliability {rel} ({rel_m}); "
+    title = (f"NATO Admiralty classification · source reliability {rel} ({rel_m}); "
              f"information credibility {cred} ({cred_m})")
     return (
         f'<span class="badge badge--classification {reliability_tier_class(rel)}" '
@@ -1583,16 +1535,16 @@ SECTION_SHORT: dict[str, str] = {
 # entry); `verification-notes` renders the week's run-record bodies.
 WEEKLY_STRUCTURE: list[tuple[str, str]] = [
     ("weekly-glance", "0. Week at a glance"),
-    ("weekly-top-stories", "1. Highest-impact events — what's on fire if no one acted"),
+    ("weekly-top-stories", "1. Highest-impact events · what's on fire if no one acted"),
     ("weekly-multi-day", "2. Multi-day campaigns and chains"),
     ("weekly-vuln-rollup", "3. Vulnerability roll-up"),
     ("weekly-sector-patterns", "4. Sector & victim patterns"),
     ("weekly-incidents-recap", "5. Incidents & disclosures recap"),
     ("weekly-research", "6. Research & threat-actor developments"),
     ("weekly-annual-reports", "7. Annual / periodic threat reports"),
-    ("weekly-long-running", "8. Long-running campaigns — status update"),
+    ("weekly-long-running", "8. Long-running campaigns · status update"),
     ("weekly-policy", "9. Policy & regulatory horizon"),
-    ("weekly-looking-ahead", "10. Looking ahead — what to watch next week"),
+    ("weekly-looking-ahead", "10. Looking ahead · what to watch next week"),
     ("verification-notes", "11. Verification & coverage notes"),
 ]
 
@@ -1606,7 +1558,7 @@ VERIFICATION_BADGE_LABEL = {
 
 def entry_url_path(entry: dict[str, Any]) -> str:
     """Site-root-relative permalink path for an entry, with trailing
-    slash — `entries/2026-07-03/coolify-cve-2026-34038-rce/`."""
+    slash · `entries/2026-07-03/coolify-cve-2026-34038-rce/`."""
     return f"entries/{entry['date']}/{entry['slug']}/"
 
 
@@ -1729,7 +1681,7 @@ def entries_by_week(entries: list[dict[str, Any]]) -> dict[str, list[dict[str, A
 
 
 def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
-    """UTC dates (YYYY-MM-DD) of every non-weekly fire — the days that ran,
+    """UTC dates (YYYY-MM-DD) of every non-weekly fire · the days that ran,
     whatever they published. Unioned with the content days so an all-quiet
     day (0 entries) still gets a page, an archive slot and resolvable
     run-links: a quiet window is a first-class outcome, not an absence."""
@@ -1740,7 +1692,7 @@ def daily_run_dates(runs: list[dict[str, Any]]) -> set[str]:
 
 
 def weekly_run_weeks(runs: list[dict[str, Any]]) -> set[str]:
-    """ISO weeks (YYYY-Www) of every weekly fire — the weeks that ran,
+    """ISO weeks (YYYY-Www) of every weekly fire · the weeks that ran,
     the strategic-cadence analogue of `daily_run_dates`."""
     out = {_iso_week_of(str(r.get("date"))) for r in runs if r.get("kind") == "weekly"}
     out.discard(None)
@@ -1828,7 +1780,7 @@ def _fmt_discovered(ts_str: str | None) -> str:
 def render_priority_badge(priority: str) -> str:
     cls = {
         "critical": "badge--crit",
-        "high": "badge--low",       # red-ish accent — leads the window
+        "high": "badge--low",       # red-ish accent · leads the window
         "notable": "badge--med",
         "routine": "badge--high",
     }.get(priority or "", "badge--med")
@@ -1839,7 +1791,7 @@ def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
     """Top status strip on an entry card: priority, kind, discovered-at
     timestamp, and the status badges (verification single-source*, deep
     dive, watchlist, org-triage). The taxonomy pills (tags / regions /
-    CVEs) render BELOW the entry body via `render_entry_taxonomy` — the
+    CVEs) render BELOW the entry body via `render_entry_taxonomy` · the
     v2 footer placement, restored."""
     parts: list[str] = [render_priority_badge(entry.get("priority") or "notable")]
     parts.append(f'<span class="badge">{_escape(entry.get("kind") or "")}</span>')
@@ -1869,7 +1821,7 @@ def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
 
 
 def render_entry_taxonomy(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """Below-the-entry metadata pills — tag / region / CVE — the v2
+    """Below-the-entry metadata pills · tag / region / CVE · the v2
     footer, restored under each item. Empty entries render nothing."""
     pills: list[str] = []
     for t in entry.get("tags") or []:
@@ -1885,7 +1837,7 @@ def render_entry_taxonomy(entry: dict[str, Any], *, prefix: str = "") -> str:
 
 def _entry_source_by_publisher(entry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """publisher (lower-cased) -> its source dict, from the entry's own
-    source list — lets an evidence quote link back to the article it was
+    source list · lets an evidence quote link back to the article it was
     taken from."""
     out: dict[str, dict[str, Any]] = {}
     for s in entry.get("sources") or []:
@@ -1918,7 +1870,7 @@ def _cite_attribution_html(pub: str, src_by_pub: dict[str, dict[str, Any]]) -> s
 
 def render_entry_evidence(entry: dict[str, Any]) -> str:
     """Verbatim source quotes rendered as a distinct "cited from the
-    reporting" block — deliberately neutral so it never reads as the
+    reporting" block · deliberately neutral so it never reads as the
     pipeline's own voice (that is the accent Defender-takeaway callout).
     Consecutive quotes from the same publisher are grouped under a single
     attribution, so a source is cited once no matter how many lines it
@@ -1958,7 +1910,7 @@ def render_entry_evidence(entry: dict[str, Any]) -> str:
 
 
 def render_entry_sources(entry: dict[str, Any], *, with_roles: bool = False) -> str:
-    """Sources line (aside.item-footer) — open-web sources with roles +
+    """Sources line (aside.item-footer) · open-web sources with roles +
     closed-source citations (never linked; cited by reference only)."""
     parts: list[str] = []
     srcs = entry.get("sources") or []
@@ -2023,7 +1975,7 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
         f'data-entry-id="{_escape(entry["id"])}">'
         '<span class="callout__label">Immediate action</span>'
         '<div class="callout__body">'
-        f'<p><strong>{_escape(str(ia.get("title") or ""))}</strong> — '
+        f'<p><strong>{_escape(str(ia.get("title") or ""))}</strong> · '
         f'{_escape(str(ia.get("action") or "").strip())} '
         f'<a href="{_escape(url)}">{_inline_text(entry.get("headline") or entry.get("title") or entry["id"])} →</a></p>'
         f"{quote_html}"
@@ -2041,7 +1993,7 @@ def render_update_lead(entry: dict[str, Any], *, prefix: str = "",
     label = orig.get("title") if orig else target
     tdate = target.split("/", 1)[0]
     return (
-        '<p class="update-lead"><strong>UPDATE</strong> — originally covered '
+        '<p class="update-lead"><strong>UPDATE</strong> · originally covered '
         f'<a href="{_escape(prefix)}entries/{_escape(target)}/">'
         f'{_escape(str(label))}</a> <span class="mono muted">({_escape(tdate)})</span></p>'
     )
@@ -2146,32 +2098,68 @@ def _fmt_stamp(ts_str: str | None) -> str:
     return ts.strftime("%d %b %H:%MZ") if ts else ""
 
 
-def render_prov_row(entry: dict[str, Any], *, prefix: str = "", lead_pri: bool = False,
-                    open_label: str = "Open finding ↗", refs_as_link: bool = True) -> str:
-    """The mono provenance strip under a finding — kind · CVE · stamp ·
-    N sources · verification · open-link."""
+def render_prov_row(entry: dict[str, Any], *, prefix: str = "",
+                    open_label: str = "Open finding ↗") -> str:
+    """The mono provenance strip under a finding: kind · stamp ·
+    verification · open-link. (CVE lives in the top badges; the source
+    list lives in its own clickable row below.)"""
     url = f"{prefix}{entry_url_path(entry)}"
     v_class, v_label = _verif_meta(entry)
     parts: list[str] = []
-    if lead_pri:
-        parts.append(f'<span class="p-pri">● {_escape(_pri_of(entry))}</span>')
     if entry.get("kind"):
         parts.append(f'<span>{_escape(str(entry["kind"]))}</span>')
-    cve = _cve_label(entry)
-    if cve:
-        parts.append(f'<span style="color:var(--info)">{_escape(cve)}</span>')
     stamp = _fmt_stamp(entry.get("discovered_at"))
     if stamp:
         parts.append(f"<span>{_escape(stamp)}</span>")
-    n = _source_count(entry)
-    if n:
-        parts.append(f'<span>{n} source{"" if n == 1 else "s"}</span>')
     parts.append(f'<span class="{v_class}">{_escape(v_label)}</span>')
-    if refs_as_link:
-        parts.append(f'<a class="refs" href="{_escape(url)}">{_escape(open_label)}</a>')
-    else:
-        parts.append(f'<span class="refs">{_escape(open_label)}</span>')
+    parts.append(f'<a class="refs" href="{_escape(url)}">{_escape(open_label)}</a>')
     return '<div class="prov">' + "".join(parts) + "</div>"
+
+
+def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False) -> str:
+    """The `.badges` strip at the top of a finding / timeline row / entry
+    detail. Priority, CVE (linked to its page), exploited, update; `full`
+    adds kind / deep-dive / watchlist / classification (entry detail)."""
+    parts = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
+    cves = entry_cve_ids(entry)
+    if cves:
+        label = _cve_label(entry)
+        parts.append(
+            f'<a class="b cve" href="{prefix}cves/{_escape(cves[0])}/">{_escape(label)}</a>'
+        )
+    if _entry_exploited(entry):
+        parts.append('<span class="b exp">exploited</span>')
+    if entry.get("update_of"):
+        parts.append('<span class="b upd">update</span>')
+    if full:
+        if entry.get("kind"):
+            parts.append(f'<span class="b">{_escape(str(entry["kind"]))}</span>')
+        if entry.get("deep_dive"):
+            parts.append('<span class="b">deep dive</span>')
+        if entry.get("watchlist_hit"):
+            parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
+        cls = render_classification_badge(entry.get("classification"))
+        if cls:
+            parts.append(cls)
+    return '<div class="badges">' + "".join(parts) + "</div>"
+
+
+def render_source_line(entry: dict[str, Any], *, prefix: str = "") -> str:
+    """A compact, clickable 'Sources: a · b · c' row rendered at the foot
+    of every finding / timeline row. Closed sources are cited, not linked."""
+    bits: list[str] = []
+    for s in entry.get("sources") or []:
+        if not isinstance(s, dict):
+            continue
+        url = _escape(_safe_url(str(s.get("url") or "")))
+        label = _escape(str(s.get("publisher") or s.get("url") or "source"))
+        bits.append(f'<a href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>')
+    for c in entry.get("closed_sources") or []:
+        if isinstance(c, dict) and c.get("title"):
+            bits.append(f'<span class="src-closed">{_escape(str(c["title"]))}</span>')
+    if not bits:
+        return ""
+    return '<div class="f-sources"><span class="f-sources__l">Sources:</span> ' + " · ".join(bits) + "</div>"
 
 
 def render_entry_card(
@@ -2185,7 +2173,7 @@ def render_entry_card(
     is_new: bool = False,
     lead: bool = False,
 ) -> str:
-    """The canonical `.finding` — used on day pages, weekly pages,
+    """The canonical `.finding` · used on day pages, weekly pages,
     entity-page embeds, feed bodies and briefbook.json. Carries
     data-tags/data-regions/data-kind/data-priority/data-discovered so the
     live filter chips + brief.js keep working. `section_key` is retained
@@ -2196,9 +2184,6 @@ def render_entry_card(
         render_markdown(_entry_body_markdown(entry), base_url=base_url)
     )
     is_update = bool(entry.get("update_of"))
-    flag_txt = "↻ UPD" if is_update else ("NEW" if is_new else "")
-    flag_cls = "upd" if is_update else ""
-    flag_html = f'<span class="f-flag {flag_cls}">{_escape(flag_txt)}</span>' if flag_txt else ""
     lead_html = (
         render_update_lead(entry, prefix=prefix, entries_by_id=entries_by_id)
         if is_update else ""
@@ -2219,52 +2204,52 @@ def render_entry_card(
         f'data-kind="{_escape(entry.get("kind") or "")}" '
         f'data-priority="{_escape(_pri_of(entry))}" '
         f'data-discovered="{_escape(entry.get("discovered_at") or "")}">'
-        f"{flag_html}"
+        f"{render_badges(entry, prefix=prefix)}"
         f'<h3 class="f-h" id="{_escape(entry["slug"])}">'
         f'<a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
         f"{lead_html}{body_html}{render_entry_evidence(entry)}{refs_html}"
         f"{render_prov_row(entry, prefix=prefix)}"
+        f"{render_source_line(entry, prefix=prefix)}"
         f"</article>"
     )
 
 
 def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: bool = False) -> str:
-    """One `.tl-item` row for the live rolling brief — rail (time + flag)
-    + a clickable body (badges, headline, one-line summary, provenance)."""
+    """One `.tl-item` row for the live rolling brief: rail (time + flag) +
+    a body of badges (priority/CVE-link/exploited/update), a linked
+    headline, a one-line summary, provenance, and a clickable source row.
+    The body is a <div> (not an <a>) so the CVE badge, headline and source
+    links are all independently clickable."""
     url = f"{prefix}{entry_url_path(entry)}"
     stamp = _fmt_stamp(entry.get("discovered_at"))
     is_update = bool(entry.get("update_of"))
-    flag = "↻ UPD" if is_update else ("NEW" if is_new else "")
+    flag = "UPD" if is_update else ("NEW" if is_new else "")
     flag_style = "color:var(--warn)" if is_update else ("color:var(--ok)" if is_new else "")
-    badges = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
-    cve = _cve_label(entry)
-    if cve:
-        badges.append(f'<span class="b cve">{_escape(cve)}</span>')
-    if _entry_exploited(entry):
-        badges.append('<span class="b exp">exploited</span>')
-    if is_update:
-        badges.append('<span class="b upd">update</span>')
     summary = _inline_text(entry.get("summary") or entry.get("headline") or "")
     return (
         '<div class="tl-item">'
         f'<div class="tl-rail"><span class="tl-node" style="background:{_pri_dot(entry)}"></span>'
         f'<span class="time">{_escape(stamp)}</span>'
         f'<span class="flag" style="{flag_style}">{_escape(flag)}</span></div>'
-        f'<a class="tl-body" href="{_escape(url)}">'
-        f'<div class="badges">{"".join(badges)}</div>'
-        f'<h3>{_escape(entry.get("title") or entry["id"])}</h3>'
+        '<div class="tl-body">'
+        f"{render_badges(entry, prefix=prefix)}"
+        f'<h3 class="tl-title"><a href="{_escape(url)}">{_escape(entry.get("title") or entry["id"])}</a></h3>'
         f"<p>{summary}</p>"
-        f"{render_prov_row(entry, prefix=prefix, open_label='open ↗', refs_as_link=False)}"
-        "</a></div>"
+        f"{render_prov_row(entry, prefix=prefix, open_label='open ↗')}"
+        f"{render_source_line(entry, prefix=prefix)}"
+        "</div></div>"
     )
 
 
 def render_run_divider(run_label: str, gap_note: str, count: int) -> str:
-    """The `.tl-run` divider between run groups in the live timeline."""
-    n_txt = f"{count} finding" + ("" if count == 1 else "s")
+    """The `.tl-run` divider between run groups in the live timeline.
+    A 0-finding run is a first-class outcome: it still gets a divider,
+    labelled 'quiet window'."""
+    n_txt = "quiet window" if count == 0 else f"{count} finding" + ("" if count == 1 else "s")
     gap_txt = (gap_note + " · " if gap_note else "") + n_txt
+    cls = "tl-run tl-run--quiet" if count == 0 else "tl-run"
     return (
-        '<div class="tl-run"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
+        f'<div class="{cls}"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
         f'<div class="run-h"><span class="rl">{_escape(run_label)}</span>'
         f'<span class="rg">· run · {_escape(gap_txt)}</span></div></div>'
     )
@@ -2273,7 +2258,7 @@ def render_run_divider(run_label: str, gap_note: str, count: int) -> str:
 # === CANONICAL BRIEF ASSEMBLER (v3) ====================================
 
 SECTION_EMPTY_STUB = (
-    "No qualifying items in window — this section is intentionally left empty."
+    "No qualifying items in window · this section is intentionally left empty."
 )
 
 
@@ -2351,7 +2336,7 @@ def render_run_note(run: dict[str, Any], *, base_url: str | None = None) -> str:
     return (
         f'<div class="run-note" data-run-id="{_escape(rid)}">'
         f'<h3 class="run-note__head"><span class="mono">{_escape(rid)}</span>'
-        + (f' <span class="muted">— {header_meta}</span>' if header_meta else "")
+        + (f' <span class="muted">· {header_meta}</span>' if header_meta else "")
         + "</h3>"
         f'<div class="run-note__body">{body_html}</div>'
         "</div>"
@@ -2385,7 +2370,7 @@ def _sect_header(num: int, title: str, count: int) -> str:
 
 def render_tldr_list(
     picked: list[dict[str, Any]], *, prefix: str = "",
-    eyebrow: str = "TL;DR — the day in one read",
+    eyebrow: str = "TL;DR · the day in one read",
 ) -> str:
     """The numbered TL;DR list at the top of a day / weekly brief."""
     if not picked:
@@ -2409,10 +2394,25 @@ def render_tldr_list(
 
 def _verif_block(runs: list[dict[str, Any]], *, base_url: str | None = None,
                  heading: str, empty: str) -> str:
-    """The `.verif` provenance block at the foot of a day / weekly brief."""
+    """The `.verif` provenance block at the foot of a day / weekly brief.
+    Collapsed by default (a <details>); each run's notes are rendered as a
+    cleanly separated block, revealed on click."""
     notes = [render_run_note(r, base_url=base_url) for r in runs or []]
     inner = "".join(notes) if notes else f"<p>{empty}</p>"
-    return f'<div class="verif"><div class="vh">{heading}</div>{inner}</div>'
+    count = len(notes)
+    summary_meta = (
+        f'<span class="verif-count">{count} run' + ("" if count == 1 else "s") + "</span>"
+        if count else '<span class="verif-count">notes</span>'
+    )
+    return (
+        '<details class="verif">'
+        f'<summary class="vh">{heading}{summary_meta}'
+        '<svg class="verif-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" '
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+        '<path d="M6 9l6 6 6-6"></path></svg></summary>'
+        f'<div class="verif-body">{inner}</div>'
+        "</details>"
+    )
 
 
 def render_brief_sections(
@@ -2425,7 +2425,7 @@ def render_brief_sections(
     card_html_by_id: dict[str, str] | None = None,
 ) -> str:
     """THE shared server-side assembler for the canonical daily / window
-    brief structure — used by /brief/ (default window), every day page,
+    brief structure · used by /brief/ (default window), every day page,
     and the daily RSS bodies; mirrored client-side by
     site/assets/js/brief.js. `entries` must already be scoped to the
     window/day (operational horizon). `runs` are the window's run
@@ -2547,7 +2547,7 @@ def render_weekly_sections(
     out.append(_verif_block(
         runs, base_url=base_url,
         heading="About this weekly",
-        empty="Strategic entries synthesise the week's operational findings — each links the daily entries it draws on.",
+        empty="Strategic entries synthesise the week's operational findings · each links the daily entries it draws on.",
     ))
     return "".join(out)
 
@@ -2620,7 +2620,7 @@ def _ai_notice_html() -> str:
         "</svg>"
         "<span>AI-generated · no human review</span>"
         "</span>"
-        '<div class="brief-notice__body">Autonomous CTI pipeline output — every entry passed '
+        '<div class="brief-notice__body">Autonomous CTI pipeline output · every entry passed '
         "two-source verification, the mechanical self-check and an adversarial verifier loop, "
         "but no human reviewed it before publication.</div>"
         "</aside>"
@@ -2637,7 +2637,7 @@ def render_runs_overview(
     """A compact readout of the last `limit` pipeline fires: when each
     finished, how many items it published and the per-brief-section
     breakdown. Entries are mapped to their fire via the `run_id` they
-    carry in frontmatter. Static (window-independent) — the panel is the
+    carry in frontmatter. Static (window-independent) · the panel is the
     same whatever reading window the visitor picks."""
     counts_by_run: dict[str, Counter] = defaultdict(Counter)
     strategic_by_run: Counter = Counter()
@@ -2689,7 +2689,7 @@ def render_runs_overview(
         )
         day = str(r.get("date") or "")
         run_label = (
-            f'<a class="runs-row__run" href="{_escape(prefix)}briefs/{_escape(day)}/">'
+            f'<a class="runs-row__run" href="{_escape(prefix)}daily/{_escape(day)}/">'
             f'<span class="runs-row__kind runs-row__kind--{_escape(kind)}">{_escape(kind)}</span></a>'
             if day
             else f'<span class="runs-row__kind runs-row__kind--{_escape(kind)}">{_escape(kind)}</span>'
@@ -2725,7 +2725,7 @@ def render_runs_overview(
 
 
 def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """The ACT NOW — CRITICAL callout at the top of a live / day brief,
+    """The ACT NOW · CRITICAL callout at the top of a live / day brief,
     built from the window's single highest-severity critical entry."""
     url = f"{prefix}{entry_url_path(entry)}"
     meta_bits: list[str] = []
@@ -2748,7 +2748,7 @@ def render_actnow(entry: dict[str, Any], *, prefix: str = "") -> str:
         imp = f' <span class="imp">{_inline_text(str(ia["action"]).strip())}</span>'
     return (
         f'<a class="actnow" href="{_escape(url)}">'
-        '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>ACT NOW — CRITICAL'
+        '<div class="actnow-strip"><span class="adot" aria-hidden="true"></span>ACT NOW · CRITICAL'
         f'<span class="meta">{_escape(" · ".join(meta_bits))}</span></div>'
         f'<div class="actnow-body"><h2>{title}</h2>'
         f"<p>{summary}{imp}</p>"
@@ -2810,42 +2810,55 @@ def render_filter_bar(entries: list[dict[str, Any]]) -> str:
 
 def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
                         *, prefix: str) -> str:
-    """Run-grouped, reverse-chronological timeline for the live brief."""
-    if not ops:
-        return (
-            '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
-            "No findings in this window — a quiet window is a healthy outcome. "
-            "Load older findings to reach further back.</div>"
+    """Run-grouped, reverse-chronological timeline for the live brief.
+    EVERY run in the window gets a divider, including 0-finding runs
+    (shown as 'quiet window'); no run is hidden just because it published
+    nothing."""
+    entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for e in ops:
+        entries_by_run[str(e.get("run_id") or "")].append(e)
+    for k in entries_by_run:
+        entries_by_run[k].sort(
+            key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
         )
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
-    ordered = sorted(
-        ops, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
-    )
-    groups: list[tuple[str, list[dict[str, Any]]]] = []
-    for e in ordered:
-        rid = str(e.get("run_id") or "")
-        if groups and groups[-1][0] == rid:
-            groups[-1][1].append(e)
-        else:
-            groups.append((rid, [e]))
+
+    _floor = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+    def run_ts(rid: str) -> datetime:
+        r = runs_by_id.get(rid)
+        t = parse_ts((r or {}).get("completed") or (r or {}).get("started"))
+        if t:
+            return t
+        es = entries_by_run.get(rid) or []
+        return parse_ts(es[0].get("discovered_at")) or _floor if es else _floor
+
+    # Union of runs in the window AND runs referenced by an in-window entry.
+    keys = [k for k in (set(runs_by_id) | set(entries_by_run)) if k]
+    if not keys:
+        return (
+            '<div class="section-empty" style="padding:40px 0 0;margin-left:96px;">'
+            "No runs in this window. A quiet window is a healthy outcome; "
+            "load older findings to reach further back.</div>"
+        )
+    keys.sort(key=run_ts, reverse=True)
+    first_nonempty = next((k for k in keys if entries_by_run.get(k)), None)
+
     rows: list[str] = []
     prev_ts: datetime | None = None
-    for gi, (rid, es) in enumerate(groups):
-        r = runs_by_id.get(rid)
-        ts = (
-            parse_ts((r or {}).get("completed") or (r or {}).get("started"))
-            or parse_ts(es[0].get("discovered_at"))
-        )
-        label = ts.strftime("%d %b %H:%MZ") if ts else (rid or "run")
+    for rid in keys:
+        ts = run_ts(rid)
+        label = ts.strftime("%d %b %H:%MZ") if ts != _floor else (rid or "run")
         gap = ""
-        if prev_ts and ts:
+        if prev_ts and ts != _floor:
             dh = (prev_ts - ts).total_seconds() / 3600.0
             if dh >= 1:
                 gap = f"gap {round(dh)}h"
-        prev_ts = ts
+        prev_ts = ts if ts != _floor else prev_ts
+        es = entries_by_run.get(rid, [])
         rows.append(render_run_divider(label, gap, len(es)))
         for e in es:
-            rows.append(render_timeline_item(e, prefix=prefix, is_new=(gi == 0)))
+            rows.append(render_timeline_item(e, prefix=prefix, is_new=(rid == first_nonempty)))
     return "".join(rows)
 
 
@@ -2863,7 +2876,7 @@ def render_live_brief_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/brief/ — the live rolling brief. The default 24 h window is
+    """/brief/ · the live rolling brief. The default 24 h window is
     server-rendered as a run-grouped timeline; brief.js re-renders it
     client-side from data/briefbook.json when the reader changes the
     window (the range <select> or the "load older findings" button)."""
@@ -2908,39 +2921,38 @@ def render_live_brief_page(
   <span class="streaming">STREAMING</span>
   <span class="live-updated">· updated {updated} UTC</span>
 </div>
-<h1 class="vtitle">The rolling brief</h1>
-<p class="vsub">Everything verified in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. Read top to bottom, or load older findings to reach further back.</p>
+<p class="vsub live-lede">Everything verified in the last {DEFAULT_WINDOW_HOURS} hours, held to a constant relevance bar. Read top to bottom, or load older findings to reach further back.</p>
 {actnow}
-<div class="feedhead">
-  <h2>Latest findings</h2>
-  <div class="feedhead-tools">{render_filter_toggle()}</div>
-</div>
-{render_filter_bar(ops)}
 <div class="rangebar">
   <div class="rangefields">
     <span class="rf-label">FROM</span>
-    <span class="rf"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg><span data-window-from>{from_str}</span></span>
+    <span class="rf rf--date"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M3 9h18M8 2v4M16 2v4"></path></svg><span data-window-from>{from_str}</span></span>
     <span class="rf-arrow">→</span>
     <span class="rf-label">TO</span>
-    <span class="rf"><span data-window-to>{to_str}</span> <span class="rf-note">now</span></span>
-    <span class="rf"><select data-window-select aria-label="Reading window">{options}</select></span>
+    <span class="rf rf--date"><span data-window-to>{to_str}</span> <span class="rf-note">now</span></span>
+    <span class="rf rf--select"><select data-window-select aria-label="Reading window">{options}</select></span>
   </div>
   <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · <span data-window-count>{n}</span> findings · UTC</span>
 </div>
+<div class="feedhead feedhead--section">
+  <h1 class="feedhead-title">Latest findings</h1>
+  <div class="feedhead-tools">{render_filter_toggle()}</div>
+</div>
+{render_filter_bar(ops)}
 {data_island}
 <div id="brief-timeline" data-brief-timeline data-default-hours="{DEFAULT_WINDOW_HOURS}">
 {timeline}
 </div>
-<button class="loadbtn" type="button" data-window-more><span class="plus" aria-hidden="true">+</span>Load older findings — extend the range by 24 h</button>
-<div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}briefs/">open the day archive ↗</a></div>
+<button class="loadbtn" type="button" data-window-more><span class="plus" aria-hidden="true">+</span>Load older findings · extend the window by 24 h</button>
+<div class="loadmore end" data-window-end hidden>Reached the start of the retained window · <a href="{prefix}daily/">open the day archive ↗</a></div>
 """
     top = critical or (sorted(ops, key=entry_sort_key)[0] if ops else None)
     description = (
-        f"Live CTI brief — {n} entries in the current {DEFAULT_WINDOW_HOURS} h window."
+        f"Live CTI brief: {n} entries in the current {DEFAULT_WINDOW_HOURS} h window."
         + (f" Top: {top.get('headline') or ''}" if top else "")
     )[:300]
     return base_template(
-        title=f"The rolling brief — {SITE_NAME}",
+        title=f"Live · {SITE_NAME}",
         description=description,
         body=body,
         canonical=canonical,
@@ -2989,7 +3001,7 @@ def render_day_page(
     prev_day: str | None = None,
     next_day: str | None = None,
 ) -> str:
-    """/briefs/YYYY-MM-DD/ — the settled record for one UTC day: the
+    """/briefs/YYYY-MM-DD/ · the settled record for one UTC day: the
     day's operational entries in the canonical daily editorial structure
     plus that day's run-record notes."""
     ops = sorted(operational_entries(day_entries), key=entry_sort_key)
@@ -3005,8 +3017,8 @@ def render_day_page(
         short_date = day
     datenav = _datenav_html(
         prefix=prefix,
-        prev_rel=f"briefs/{prev_day}/" if prev_day else "",
-        next_rel=f"briefs/{next_day}/" if next_day else "",
+        prev_rel=f"daily/{prev_day}/" if prev_day else "",
+        next_rel=f"daily/{next_day}/" if next_day else "",
         label=short_date,
     )
     actnow = render_actnow(critical, prefix=prefix) if critical else ""
@@ -3018,11 +3030,11 @@ def render_day_page(
     body = f"""
 <div class="briefhead">
   {datenav}
-  <a class="allbriefs" href="{prefix}briefs/">All daily briefs ↗</a>
+  <a class="allbriefs" href="{prefix}daily/">All daily briefs ↗</a>
 </div>
 <span class="eyebrow">Daily brief · UTC day</span>
 <h1 class="vtitle">{_escape(long_date)}</h1>
-<p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word} — the settled record for this UTC day, in the classic brief order.</p>
+<p class="vsub">{n} verified {findings_word} from {n_runs} {runs_word} · the settled record for this UTC day, in the classic brief order.</p>
 {actnow}
 <div class="ftoolrow">{render_filter_toggle()}</div>
 {render_filter_bar(ops)}
@@ -3031,7 +3043,7 @@ def render_day_page(
     tldr = select_tldr_entries(ops)
     description = (tldr[0].get("summary") or "").strip()[:280] if tldr else f"Daily CTI brief for {day}."
     return base_template(
-        title=f"CTI Daily Brief — {day}",
+        title=f"CTI Daily Brief · {day}",
         description=description or f"Daily CTI brief for {day}.",
         body=body,
         canonical=canonical,
@@ -3051,7 +3063,7 @@ def render_days_index_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/briefs/ — the day archive: every published day page, newest
+    """/briefs/ · the day archive: every published day page, newest
     first, as an `.arc` list with a live text filter."""
     rows: list[str] = []
     for day in sorted(days.keys(), reverse=True):
@@ -3074,12 +3086,12 @@ def render_days_index_page(
             sub = _inline_text(hint[:150]) or (f"{cves} CVE" + ("" if cves == 1 else "s") if cves else "")
         else:
             count_txt = "run record only"
-            sub = "Quiet window — the run record is the artifact."
+            sub = "Quiet window · the run record is the artifact."
         rows.append(
-            f'<a class="arc" href="{prefix}briefs/{_escape(day)}/" '
+            f'<a class="arc" href="{prefix}daily/{_escape(day)}/" '
             f'data-brief-kind="daily" data-brief-haystack="{_escape(haystack)}">'
             f'<span class="arc-d">{_escape(short)}</span>'
-            f'<span class="arc-b"><span class="arc-t">CTI Daily Brief — {_escape(day)}</span>'
+            f'<span class="arc-b"><span class="arc-t">CTI Daily Brief · {_escape(day)}</span>'
             f'<span class="arc-s">{sub}</span></span>'
             f'<span class="arc-c">{_escape(count_txt)}</span></a>'
         )
@@ -3092,14 +3104,14 @@ def render_days_index_page(
     body = f"""
 <span class="eyebrow">Archive · daily briefs</span>
 <h1 class="vtitle">All daily briefs</h1>
-<p class="vsub">Every published brief, newest first — one page per UTC day. For the rolling window view, read the <a href="{prefix}brief/">live brief</a>.</p>
+<p class="vsub">Every published brief, newest first · one page per UTC day. For the rolling window view, read the <a href="{prefix}live/">live brief</a>.</p>
 <div class="toolbar" style="margin-top:22px;">
   <input class="input" id="briefs-q" type="search" placeholder="Filter by date, headline, or CVE…" autocomplete="off" spellcheck="false" data-filter-input="briefs" />
 </div>
 {listing}
 """
     return base_template(
-        title=f"Daily briefs — {SITE_NAME}",
+        title=f"Daily briefs · {SITE_NAME}",
         description=f"{n_days} archived daily brief day pages, newest first.",
         body=body,
         canonical=canonical,
@@ -3142,7 +3154,7 @@ def render_weekly_page(
     prev_week: str | None = None,
     next_week: str | None = None,
 ) -> str:
-    """/weekly/YYYY-Www/ — the week's strategic entries in the weekly
+    """/weekly/YYYY-Www/ · the week's strategic entries in the weekly
     editorial structure, with the "if you did nothing this week" lead and
     referenced operational entries linked in place."""
     strat = strategic_entries(week_entries)
@@ -3180,14 +3192,14 @@ def render_weekly_page(
 </div>
 <span class="eyebrow">Weekly brief · ISO week</span>
 <h1 class="vtitle">{_escape(wk_title)}</h1>
-<p class="vsub">The strategic arc across the week's operational findings — what to fix if you act only once, the multi-day chains, and the policy horizon.</p>
+<p class="vsub">The strategic arc across the week's operational findings · what to fix if you act only once, the multi-day chains, and the policy horizon.</p>
 {lead_html}
 {sections_html}
 """
-    description = (glance[0].get("summary") or "").strip()[:280] if glance else f"Weekly CTI summary — {week}."
+    description = (glance[0].get("summary") or "").strip()[:280] if glance else f"Weekly CTI summary · {week}."
     return base_template(
-        title=f"CTI Weekly Summary — {week}",
-        description=description or f"Weekly CTI summary — {week}.",
+        title=f"CTI Weekly Summary · {week}",
+        description=description or f"Weekly CTI summary · {week}.",
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -3206,7 +3218,7 @@ def render_weekly_index_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/weekly/ — the weekly archive: every weekly summary, newest first."""
+    """/weekly/ · the weekly archive: every weekly summary, newest first."""
     rows: list[str] = []
     for week in sorted(weeks.keys(), reverse=True):
         entries = strategic_entries(weeks[week])
@@ -3217,7 +3229,7 @@ def render_weekly_index_page(
         rows.append(
             f'<a class="arc" href="{prefix}weekly/{_escape(week)}/">'
             f'<span class="arc-d">{_escape(week)}</span>'
-            f'<span class="arc-b"><span class="arc-t">CTI Weekly Summary — {_escape(_week_range_label(week))}</span>'
+            f'<span class="arc-b"><span class="arc-t">CTI Weekly Summary · {_escape(_week_range_label(week))}</span>'
             f'<span class="arc-s">{_inline_text(hint[:150])}</span></span>'
             f'<span class="arc-c">{n} strategic</span></a>'
         )
@@ -3229,11 +3241,11 @@ def render_weekly_index_page(
     body = f"""
 <span class="eyebrow">Archive · weekly briefs</span>
 <h1 class="vtitle">All weekly briefs</h1>
-<p class="vsub">Every published weekly, newest first — one page per ISO week: the strategic lens over multi-day chains, research, annual reports, policy, and the look ahead.</p>
+<p class="vsub">Every published weekly, newest first · one page per ISO week: the strategic lens over multi-day chains, research, annual reports, policy, and the look ahead.</p>
 {listing}
 """
     return base_template(
-        title=f"Weekly summaries — {SITE_NAME}",
+        title=f"Weekly summaries · {SITE_NAME}",
         description=f"{n_weeks} weekly CTI summaries, newest first.",
         body=body,
         canonical=canonical,
@@ -3248,30 +3260,8 @@ def render_weekly_index_page(
 # === PER-ENTRY PERMALINK (v3) ==========================================
 
 
-def render_detail_badges(entry: dict[str, Any]) -> str:
-    """The `.badges` strip at the top of an entry-detail page."""
-    parts = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
-    cve = _cve_label(entry)
-    if cve:
-        parts.append(f'<span class="b cve">{_escape(cve)}</span>')
-    if _entry_exploited(entry):
-        parts.append('<span class="b exp">exploited</span>')
-    if entry.get("update_of"):
-        parts.append('<span class="b upd">update</span>')
-    if entry.get("kind"):
-        parts.append(f'<span class="b">{_escape(str(entry["kind"]))}</span>')
-    if entry.get("deep_dive"):
-        parts.append('<span class="b">deep dive</span>')
-    if entry.get("watchlist_hit"):
-        parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
-    cls = render_classification_badge(entry.get("classification"))
-    if cls:
-        parts.append(cls)
-    return '<div class="badges">' + "".join(parts) + "</div>"
-
-
 def render_detail_sources(entry: dict[str, Any]) -> str:
-    """The `.srclist` on an entry-detail page — open-web sources with
+    """The `.srclist` on an entry-detail page · open-web sources with
     roles + closed-source citations (referenced, never linked)."""
     rows: list[str] = []
     for i, s in enumerate(entry.get("sources") or []):
@@ -3331,7 +3321,7 @@ def render_entry_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """/entries/YYYY-MM-DD/<slug>/ — full metadata badge block, body,
+    """/entries/YYYY-MM-DD/<slug>/ · full metadata badge block, body,
     evidence, actions, sources with roles, the update chain, entity
     links, and the part-of-run link."""
     body_html = enhance_brief_item_html(
@@ -3339,12 +3329,20 @@ def render_entry_page(
     )
     is_op = (entry.get("horizon") or "operational") == "operational"
     day = entry["date"]
-    parent_url = (
-        f"{prefix}briefs/{day}/" if (is_op and day in day_pages)
-        else f"{prefix}weekly/{iso_week_of_entry(entry)}/" if not is_op and iso_week_of_entry(entry)
-        else f"{prefix}briefs/"
-    )
-    parent_label = f"Daily brief {day}" if is_op else f"Weekly {iso_week_of_entry(entry) or ''}"
+    # Operational entries from a completed day link back to that day page;
+    # entries from the still-rolling day (no day page yet) link to Live.
+    if is_op and day in day_pages:
+        parent_url = f"{prefix}daily/{day}/"
+        parent_label = f"Daily brief {day}"
+    elif not is_op and iso_week_of_entry(entry):
+        parent_url = f"{prefix}weekly/{iso_week_of_entry(entry)}/"
+        parent_label = f"Weekly {iso_week_of_entry(entry)}"
+    elif is_op:
+        parent_url = f"{prefix}live/"
+        parent_label = "the live brief"
+    else:
+        parent_url = f"{prefix}daily/"
+        parent_label = "the daily archive"
 
     # --- update chain -------------------------------------------------
     chain_bits: list[str] = []
@@ -3454,7 +3452,7 @@ def render_entry_page(
 
     body = f"""
 <a class="back" href="{_escape(parent_url)}">← Back to {_escape(parent_label)}</a>
-{render_detail_badges(entry)}
+{render_badges(entry, prefix=prefix, full=True)}
 <h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
 {emeta}
 <div class="ebody">
@@ -3467,7 +3465,7 @@ def render_entry_page(
 {render_detail_sources(entry)}
 {render_detail_scope(entry, registry=registry, prefix=prefix)}
 {chain_html}
-<div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding — verify operationally critical claims against the linked primary source.</p></div>
+<div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
 """
     description = (entry.get("summary") or "").strip()[:280] or (entry.get("headline") or "")[:280]
     return base_template(
@@ -3492,7 +3490,7 @@ def render_embedded_entries_section(
     entries_by_id: dict[str, dict[str, Any]] | None = None,
     limit: int = 20,
 ) -> str:
-    """Full entry cards embedded on an entity page (newest first) — the
+    """Full entry cards embedded on an entity page (newest first) · the
     v3 replacement for the v2 brief-item embeds."""
     if not entries:
         return (
@@ -3517,7 +3515,7 @@ def render_embedded_entries_section(
         for e in shown
     )
     more = (
-        f'<p class="muted">+ {len(ordered) - limit} earlier entries — see the timeline above.</p>'
+        f'<p class="muted">+ {len(ordered) - limit} earlier entries · see the timeline above.</p>'
         if len(ordered) > limit else ""
     )
     return (
@@ -3530,7 +3528,7 @@ def render_embedded_entries_section(
 
 
 def _home_tldr_list(picked: list[dict[str, Any]], *, cap_chars: int = 240) -> str:
-    """Compact TL;DR bullet list for a home feature card — headline +
+    """Compact TL;DR bullet list for a home feature card · headline +
     (length-capped) summary + a permalink arrow, one bullet per picked
     entry."""
     lis: list[str] = []
@@ -3562,7 +3560,7 @@ def render_home_page(
     cachebust: str,
     canonical: str,
 ) -> str:
-    """Home — hero + three brief cards (Live / Daily / Weekly), each
+    """Home · hero + three brief cards (Live / Daily / Weekly), each
     leading with the one thing that matters in that window."""
     redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
 
@@ -3580,15 +3578,15 @@ def render_home_page(
     crit_live = sum(1 for e in live_ops if e.get("priority") == "critical")
     lead = _lead(live_ops)
     if lead and lead[0]:
-        live_bp = f'<b>If you read one thing:</b> {_inline_text(lead[0])}' + (f" — {_inline_text(lead[1])}" if lead[1] else "")
+        live_bp = f'<b>If you read one thing:</b> {_inline_text(lead[0])}' + (f" · {_inline_text(lead[1])}" if lead[1] else "")
     else:
-        live_bp = "The rolling brief — everything verified in the last 24 hours, held to a constant relevance bar."
+        live_bp = "The rolling brief · everything verified in the last 24 hours, held to a constant relevance bar."
     live_go = (
         (f"{n_live} findings" + (f" · {crit_live} critical" if crit_live else "") + " · rolling 24h →")
         if n_live else "rolling 24h →"
     )
     live_card = (
-        '<a class="bcard live" href="brief/">'
+        '<a class="bcard live" href="live/">'
         '<div class="bh"><span class="livedot" aria-hidden="true"><em></em><i></i></span>'
         '<span class="bt">Live</span><span class="bm">rolling 24h</span></div>'
         f'<p class="bp">{live_bp}</p>'
@@ -3600,17 +3598,17 @@ def render_home_page(
         day_ops = sorted(operational_entries(prev_day_entries), key=entry_sort_key)
         n_day = len(day_ops)
         day_card = (
-            f'<a class="bcard" href="briefs/{_escape(prev_day)}/">'
+            f'<a class="bcard" href="daily/{_escape(prev_day)}/">'
             f'<div class="bh"><span class="bt">Daily</span><span class="bm">{_escape(prev_day)}</span></div>'
-            '<p class="bp">The settled record of the day — Active Threats, Trending Vulnerabilities, '
+            '<p class="bp">The settled record of the day · Active Threats, Trending Vulnerabilities, '
             'Research &amp; Updates in the classic brief order.</p>'
             f'<span class="bgo">{n_day} finding' + ("" if n_day == 1 else "s") + ' · UTC day →</span></a>'
         )
     else:
         day_card = (
-            '<a class="bcard" href="briefs/">'
+            '<a class="bcard" href="daily/">'
             '<div class="bh"><span class="bt">Daily</span><span class="bm">archive</span></div>'
-            '<p class="bp">The settled per-day record — each UTC day\'s findings in the classic brief order.</p>'
+            '<p class="bp">The settled per-day record · each UTC day\'s findings in the classic brief order.</p>'
             '<span class="bgo">open the day archive →</span></a>'
         )
 
@@ -3623,7 +3621,7 @@ def render_home_page(
         elif wlead and wlead[0]:
             weekly_bp = f'<b>If you did nothing this week:</b> {_inline_text(wlead[0])}'
         else:
-            weekly_bp = "The strategic arc across the week's operational findings — chains, sector patterns, and the policy horizon."
+            weekly_bp = "The strategic arc across the week's operational findings · chains, sector patterns, and the policy horizon."
         weekly_card = (
             f'<a class="bcard" href="weekly/{_escape(latest_week)}/">'
             f'<div class="bh"><span class="bt">Weekly</span><span class="bm">{_escape(latest_week)}</span></div>'
@@ -3634,7 +3632,7 @@ def render_home_page(
         weekly_card = (
             '<a class="bcard" href="weekly/">'
             '<div class="bh"><span class="bt">Weekly</span><span class="bm">Sundays</span></div>'
-            '<p class="bp">The weekly strategic lens — multi-day chains, sector patterns and the policy horizon.</p>'
+            '<p class="bp">The weekly strategic lens · multi-day chains, sector patterns and the policy horizon.</p>'
             '<span class="bgo">the strategic arc →</span></a>'
         )
 
@@ -3652,7 +3650,7 @@ def render_home_page(
 {redirect_js}
 """
     return base_template(
-        title=f"{SITE_NAME} — {TAGLINE}",
+        title=f"{SITE_NAME} · {TAGLINE}",
         description=HOME_META_DESCRIPTION,
         body=body,
         canonical=canonical,
@@ -3674,7 +3672,7 @@ def build_briefbook(
     prefix: str = "../",
     card_html_by_id: dict[str, str] | None = None,
 ) -> dict[str, Any]:
-    """data/briefbook.json — the last BRIEFBOOK_WINDOW_DAYS days of
+    """data/briefbook.json · the last BRIEFBOOK_WINDOW_DAYS days of
     entries (both horizons; brief.js filters operational) and runs, each
     entry carrying the SAME server-rendered card HTML the day pages use.
     `prefix` is /brief/'s path back to the site root (the only consumer
@@ -3725,6 +3723,11 @@ def build_briefbook(
             "cve_label": _cve_label(e),
             "run_id": e.get("run_id"),
             "source_count": _source_count(e),
+            "sources_min": [
+                {"publisher": str(s.get("publisher") or s.get("url") or "source"),
+                 "url": _safe_url(str(s.get("url") or ""))}
+                for s in (e.get("sources") or []) if isinstance(s, dict)
+            ],
             "exploited": _entry_exploited(e),
             "verification_label": _verif_meta(e)[1],
             "verification_class": _verif_meta(e)[0],
@@ -3743,7 +3746,7 @@ def build_briefbook(
     for r in runs_in_window(runs, since, None):
         out_runs.append({
             "run_id": r.get("run_id"),
-            "url": f"{prefix}briefs/{r.get('date')}/",
+            "url": f"{prefix}daily/{r.get('date')}/",
             "date": r.get("date"),
             "kind": r.get("kind"),
             "started": r.get("started"),
@@ -3779,7 +3782,7 @@ def build_alerts(
     ref_ts: datetime,
     site_url: str,
 ) -> dict[str, Any]:
-    """data/alerts.json — last ALERTS_WINDOW_DAYS days of critical/high
+    """data/alerts.json · last ALERTS_WINDOW_DAYS days of critical/high
     entries; the notification-hook surface."""
     since = ref_ts - timedelta(days=ALERTS_WINDOW_DAYS)
     window = content_model.entries_in_window(entries, since, None)
@@ -3835,7 +3838,7 @@ def render_cve_list_page(
         # of brief names lives on `briefs`. Iterate the flat list here.
         names = c.get("briefs") or []
         app_links = "".join(
-            f'<a href="{prefix}briefs/{_escape(n)}/" class="mono" style="margin-right:0.4rem">{_escape(n)}</a>'
+            f'<a href="{prefix}daily/{_escape(n)}/" class="mono" style="margin-right:0.4rem">{_escape(n)}</a>'
             for n in names
         )
         rows.append(
@@ -3867,7 +3870,7 @@ def render_cve_list_page(
 {table}
 """
     return base_template(
-        title=f"CVEs — {SITE_NAME}",
+        title=f"CVEs · {SITE_NAME}",
         description=f"{len(cves)} CVEs referenced across all briefs.",
         body=body,
         canonical=canonical,
@@ -3906,7 +3909,7 @@ def render_topic_list_page(
             for f in t.get("flags", [])
         )
         brief_links = "".join(
-            f'<a href="{prefix}briefs/{_escape(b)}/" class="mono" style="margin-left:0.35rem">{_escape(b)}</a>'
+            f'<a href="{prefix}daily/{_escape(b)}/" class="mono" style="margin-left:0.35rem">{_escape(b)}</a>'
             for b in (t.get("briefs", []) or [])[:5]
         )
         rows.append(
@@ -3931,7 +3934,7 @@ def render_topic_list_page(
     chart_block = render_overview_charts(topics, prefix=prefix, label="topics")
     body = f"""
 <h1>Topics</h1>
-<p class="subtitle">Actors, campaigns, malware, tools, incidents, reports, trends and policy items tracked across the pipeline. The badge marks entities covered on more than one day — these are the "stories that unfolded".</p>
+<p class="subtitle">Actors, campaigns, malware, tools, incidents, reports, trends and policy items tracked across the pipeline. The badge marks entities covered on more than one day · these are the "stories that unfolded".</p>
 
 {chart_block}
 
@@ -3952,8 +3955,8 @@ def render_topic_list_page(
 {list_html}
 """
     return base_template(
-        title=f"Topics — {SITE_NAME}",
-        description=f"{len(topics)} tracked topics — CVEs, actors, campaigns, incidents, tools.",
+        title=f"Topics · {SITE_NAME}",
+        description=f"{len(topics)} tracked topics · CVEs, actors, campaigns, incidents, tools.",
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -4003,7 +4006,7 @@ def render_reliability_legend(reliability_codes: dict[str, Any] | None,
     if not items:
         return ""
     return (
-        '<details class="rel-key" open><summary>Source reliability — '
+        '<details class="rel-key" open><summary>Source reliability · '
         'NATO Admiralty scale (A–F)</summary>'
         '<p class="rel-key__intro muted">Each source is rated for reliability on the NATO '
         'Admiralty scale, weighting original / primary authorities over aggregators. Every '
@@ -4122,7 +4125,7 @@ def render_source_list_page(
 {table}
 """
     return base_template(
-        title=f"Sources — {SITE_NAME}",
+        title=f"Sources · {SITE_NAME}",
         description=f"{len(sources)} curated CTI sources.",
         body=body,
         canonical=canonical,
@@ -4225,8 +4228,8 @@ def render_source_page(
 {appearances_block}
 """
     return base_template(
-        title=f"{source.get('publisher') or source['id']} — Source",
-        description=f"{source.get('publisher') or source['id']} — {', '.join(cats) or 'curated CTI source'}",
+        title=f"{source.get('publisher') or source['id']} · Source",
+        description=f"{source.get('publisher') or source['id']} · {', '.join(cats) or 'curated CTI source'}",
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -4360,11 +4363,11 @@ TREND_COHORTS: list[dict[str, Any]] = branding_config.trend_cohorts(
 )
 
 TRENDS_PAGE_DESCRIPTION = (
-    "Weekly trend dashboard across all CTI briefs — ransomware, "
+    "Weekly trend dashboard across all CTI briefs · ransomware, "
     "actively-exploited vulnerabilities, public-sector, OT/ICS, "
     "supply-chain, AI-abuse, Switzerland + Europe, nation-state."
     if TREND_COHORTS is _DEFAULT_TREND_COHORTS
-    else "Weekly trend dashboard across all CTI briefs — "
+    else "Weekly trend dashboard across all CTI briefs · "
     + ", ".join(c["title"] for c in TREND_COHORTS) + "."
 )
 
@@ -4382,7 +4385,7 @@ def _trends_cohort_note(prefix: str) -> str:
             f'slicing, use the per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>'
         )
     return (
-        "<p>The cohorts are coarse on purpose — they mirror the deployment's "
+        "<p>The cohorts are coarse on purpose · they mirror the deployment's "
         "trend cohorts in config/branding.yaml. For finer slicing, use the "
         f'per-tag list pages under <a href="{prefix}tags/">/tags/</a>.</p>'
     )
@@ -4405,8 +4408,8 @@ def _iso_week_str(date_iso: str) -> str | None:
 
 def _item_matches_cohort(footer: dict[str, Any], cohort: dict[str, Any]) -> bool:
     """Returns True when a parsed footer dict matches the cohort spec.
-    Cohort match modes: `any` — at least one of the listed tags / sectors /
-    regions appears in the footer. `all` — every listed tag must be in the
+    Cohort match modes: `any` · at least one of the listed tags / sectors /
+    regions appears in the footer. `all` · every listed tag must be in the
     footer's tags (sectors / regions ignored)."""
     tags = set(footer.get("tags") or [])
     sectors = set(footer.get("sectors") or [])
@@ -4463,15 +4466,15 @@ def render_feeds_page(*, site_url: str, cachebust: str,
     page no longer carries chip-style per-feed links. `<head>` rel=alternate
     autodiscovery for the three main feeds is unchanged."""
     main_feeds: list[tuple[str, str, str]] = [
-        ("feed.xml", "Daily — one item per day page, last 30",
+        ("feed.xml", "Daily · one item per day page, last 30",
          "One item per archived day. Description carries the day's TL;DR bullets; <code>&lt;content:encoded&gt;</code> carries the full day-page HTML. Categories carry the day's CVEs."),
-        ("feed-weekly.xml", "Weekly — every weekly summary, last 30",
+        ("feed-weekly.xml", "Weekly · every weekly summary, last 30",
          "One item per weekly page. Same shape as daily."),
-        ("feed-items.xml", "Per entry — every published finding, last 50",
-         "One item per pipeline entry. <code>&lt;pubDate&gt;</code> is the entry's <code>discovered_at</code> — true discovery latency. Categories carry tags + regions + CVE status + CVE ids."),
+        ("feed-items.xml", "Per entry · every published finding, last 50",
+         "One item per pipeline entry. <code>&lt;pubDate&gt;</code> is the entry's <code>discovered_at</code> · true discovery latency. Categories carry tags + regions + CVE status + CVE ids."),
     ]
     sector_feeds: list[tuple[str, str, str]] = [
-        (fname, f"Sector — {title}", description)
+        (fname, f"Sector · {title}", description)
         for fname, _accept_sectors, _accept_tags, title, description
         in SECTOR_FEED_SLICES
     ]
@@ -4490,7 +4493,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
     body = f"""
 <header>
   <h1>RSS feeds</h1>
-  <p class="subtitle">Eleven feeds in total. The three main feeds carry every day page, weekly page and entry; the eight sector slices filter the per-entry feed to the audience you care about. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> — the moment the pipeline verified the finding, not a publish schedule. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants — every link is plain canonical.</p>
+  <p class="subtitle">Eleven feeds in total. The three main feeds carry every day page, weekly page and entry; the eight sector slices filter the per-entry feed to the audience you care about. <code>&lt;pubDate&gt;</code> derives from each entry's <code>discovered_at</code> · the moment the pipeline verified the finding, not a publish schedule. <code>&lt;content:encoded&gt;</code> carries full HTML; categories carry tags / regions / CVE / status. No UTM parameters, no per-source variants · every link is plain canonical.</p>
 </header>
 
 <section style="margin-top:1.4rem">
@@ -4510,7 +4513,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 </section>
 """
     return base_template(
-        title=f"RSS feeds — {SITE_NAME}",
+        title=f"RSS feeds · {SITE_NAME}",
         description=FEEDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -4527,7 +4530,7 @@ def _actor_timeline_strip(entity: dict[str, Any]) -> str:
     first and last coverage dates. Hover tooltip names the brief. Renders
     above the existing Story timeline; falls back to empty string for
     entity types where the strip would add no signal (CVE, vulnerability-
-    trend — those use a different sparkline shape already)."""
+    trend · those use a different sparkline shape already)."""
     etype = (entity.get("type") or "").lower()
     if etype not in ("actor", "campaign", "incident", "tool", "annual-report"):
         return ""
@@ -4556,7 +4559,7 @@ def _actor_timeline_strip(entity: dict[str, Any]) -> str:
         offset_pct = max(0.0, min(100.0, (here - first).days / span_days * 100.0))
         bp = a.get("brief_path") or ""
         title = (a.get("delta_summary") or "").strip()
-        title_full = f"{d_iso}" + (f" — {title}" if title else "")
+        title_full = f"{d_iso}" + (f" · {title}" if title else "")
         dots.append(
             f'<span class="actor-timeline__dot" style="left:{offset_pct:.2f}%" title="{_escape(title_full)}"></span>'
         )
@@ -4599,9 +4602,9 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         prompts/CHANGELOG.md       → <prefix>about/prompts/changelog/
         prompts/<name>.md          → <prefix>about/prompts/<name>/
         prompts/                   → <prefix>about/prompts/
-        briefs/                    → <prefix>briefs/
-        briefs/<name>.md           → <prefix>briefs/<name>/   (only daily / weekly)
-        briefs/weekly/<name>.md    → <prefix>briefs/weekly/<name>/
+        briefs/ or brief/          → <prefix>daily/ or <prefix>live/
+        briefs/<date>.md           → <prefix>daily/<date>/   (renamed route)
+        briefs/weekly/<name>.md    → <prefix>weekly/<name>/
         anything else relative     → https://github.com/<repo>/blob/main/<path>
                                      (state files, source list, scripts, etc.)
     """
@@ -4644,15 +4647,17 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
         # Legacy day-brief doc links → the day-page URL (same URL shape).
         m = re.match(r"^briefs/(\d{4}-\d{2}-\d{2})(?:\.md|/)?$", p)
         if m:
-            return prefix + f"briefs/{m.group(1)}/" + frag
+            return prefix + f"daily/{m.group(1)}/" + frag
         # Legacy weekly doc links → the /weekly/ page.
         m = re.match(r"^briefs/weekly/(\d{4}-W\d{2})(?:\.md|/)?$", p)
         if m:
             return prefix + f"weekly/{m.group(1)}/" + frag
-        if p == "briefs/" or p == "briefs":
-            return prefix + "briefs/" + frag
+        if p in ("briefs/", "briefs", "daily/", "daily"):
+            return prefix + "daily/" + frag
+        if p in ("brief/", "brief", "live/", "live"):
+            return prefix + "live/" + frag
         if p in ("entries/", "entries"):
-            return prefix + "briefs/" + frag
+            return prefix + "daily/" + frag
         if p in ("runs/", "runs"):
             return prefix + "ops/" + frag
         # Everything else (state/, sources/, tools/, scripts/, .github/) —
@@ -4708,17 +4713,17 @@ def render_static_doc(
 def render_trends_page(entries: list[dict[str, Any]], *,
                         site_url: str, cachebust: str,
                         prefix: str, canonical: str) -> str:
-    """/trends/ — the cohort sparkline dashboard, bucketing ENTRIES by
+    """/trends/ · the cohort sparkline dashboard, bucketing ENTRIES by
     the ISO week of discovered_at. Cohorts match on the entry's own
     tags / sectors / regions frontmatter (no footer parsing)."""
     ops = operational_entries(entries)
     if not ops:
         body = (
             "<h1>Trends</h1>"
-            '<p class="muted">No entries yet — trend dashboard is empty.</p>'
+            '<p class="muted">No entries yet · trend dashboard is empty.</p>'
         )
         return base_template(
-            title=f"Trends — {SITE_NAME}",
+            title=f"Trends · {SITE_NAME}",
             description="Weekly trend dashboard across all published entries.",
             body=body,
             canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -4739,7 +4744,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
     if not weeks_sorted:
         body = '<h1>Trends</h1><p class="muted">No weekly buckets yet.</p>'
         return base_template(
-            title=f"Trends — {SITE_NAME}",
+            title=f"Trends · {SITE_NAME}",
             description="Weekly trend dashboard across all published entries.",
             body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
@@ -4793,7 +4798,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
 </section>
 """
     return base_template(
-        title=f"Trends — {SITE_NAME}",
+        title=f"Trends · {SITE_NAME}",
         description=TRENDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -5000,7 +5005,7 @@ def _ops_svg_heatmap(rows: list[tuple[str, list[tuple[float, str]]]], *, cell: i
 
     With only a few runs in the window the heatmap cells dwarf the row
     labels visually if the cell size is small, so we default to a 22 px
-    cell — comfortable on desktop, still legible on narrow viewports
+    cell · comfortable on desktop, still legible on narrow viewports
     because the wrapping `<div class="ops-heatmap-wrap">` provides
     horizontal scroll."""
     if not rows:
@@ -5049,7 +5054,7 @@ _MODEL_PALETTE: list[str] = BRANDING["charts"]["model_palette"] or [
 def _ops_canonical_model(name: Any) -> str:
     """Collapse a self-reported model string to a canonical family+version tag
     for the Ops dashboard. Self-identification lives in the agents (the prompts
-    say nothing about this normalisation) — here we just fold the harmless
+    say nothing about this normalisation) · here we just fold the harmless
     variants together so the "Models in use" view is legible:
 
         "Claude Opus 4.8"                        → "Claude Opus 4.8"
@@ -5060,7 +5065,7 @@ def _ops_canonical_model(name: Any) -> str:
 
     Anything that doesn't self-identify as `Claude <Family> <Version>` —
     "unknown", "manual full-source audit session", "Anthropic Claude (specific
-    model not determined)", "" — folds to "unknown". No model list is hardcoded,
+    model not determined)", "" · folds to "unknown". No model list is hardcoded,
     so a new family/version works without a code change."""
     if not isinstance(name, str):
         return "unknown"
@@ -5107,13 +5112,13 @@ def _verification_clean_publish(run: dict[str, Any]) -> bool:
     The canonical signal is ``verification_residual_count == 0``: per the
     run-log schema it is ``0`` on a clean publish and ``> 0`` only when the
     iteration cap was hit with NEEDS_FIXES still outstanding. This is
-    independent of how many iterations it took — a brief that reached CLEAN
+    independent of how many iterations it took · a brief that reached CLEAN
     after remediation published just as clean as one that passed on the first
     pass. The earlier definition required ``verification_iterations == 1``,
     which conflated "clean on the first try" with "published clean" and
     undercounted the rate badly (it counted only the single-pass runs and
     dropped every brief that reached CLEAN after one or more remediation
-    rounds — the bulk of all runs).
+    rounds · the bulk of all runs).
 
     Returns ``False`` for runs where verification never ran / was not recorded
     (``verification_iterations is None``) so they are excluded from the rate
@@ -5142,7 +5147,7 @@ def render_ops_page(
     `sources/sources.json`. Renders KPI tiles, charts (inline SVG, no JS),
     per-run tables, sub-agent telemetry, verification breakdown. Every
     visualisation degrades gracefully when a (migrated, sparse) record is
-    missing optional blocks — em-dash cells, never a crash.
+    missing optional blocks · em-dash cells, never a crash.
     """
     all_runs = list(runs_input or [])
     day_pages = day_pages or set()
@@ -5455,18 +5460,18 @@ def render_ops_page(
 
 <section class="ops-cluster" id="health">
   <h2 class="ops-cluster__head">Health</h2>
-  <p class="ops-cluster__intro">Global overview across all {run_count_label}. The top row is the operator's first look — run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime. Below: source-accessibility action items, then a compact model split and sub-agent fetch summary for the whole window.</p>
+  <p class="ops-cluster__intro">Global overview across all {run_count_label}. The top row is the operator's first look · run freshness, verification quality, and sub-agent reliability; the secondary tiles cover cadence, volume, and runtime. Below: source-accessibility action items, then a compact model split and sub-agent fetch summary for the whole window.</p>
   {primary_kpis}
   {secondary_kpis}
 
   <div class="ops-subsection">
-    <h3 class="ops-subhead">Source accessibility — needs attention</h3>
+    <h3 class="ops-subhead">Source accessibility · needs attention</h3>
     {source_health_html}
   </div>
 
   <div class="ops-subsection">
     <h3 class="ops-subhead">Models in use <span class="muted" style="font-weight:400">· {distinct_models_str} distinct</span></h3>
-    <p class="ops-subtitle"><strong>{distinct_models_str} distinct Claude model(s)</strong> signed work across all runs ({_escape(distinct_models_sub)}) — main agent, research sub-agents, verifiers. Variants of a model (vendor prefix, 1M-context suffix) fold into one tag; agents that did not self-identify fold into <code>unknown</code>. The split surfaces runtime-config changes and any sub-agent that forgot to self-identify.</p>
+    <p class="ops-subtitle"><strong>{distinct_models_str} distinct Claude model(s)</strong> signed work across all runs ({_escape(distinct_models_sub)}) · main agent, research sub-agents, verifiers. Variants of a model (vendor prefix, 1M-context suffix) fold into one tag; agents that did not self-identify fold into <code>unknown</code>. The split surfaces runtime-config changes and any sub-agent that forgot to self-identify.</p>
     <div class="ops-models">
       <div class="ops-models__chart">{donut_html}</div>
       <div class="ops-models__table">{models_table_html}</div>
@@ -5482,13 +5487,13 @@ def render_ops_page(
 
 <section class="ops-cluster" id="runlog">
   <h2 class="ops-cluster__head">Run log</h2>
-  <p class="ops-cluster__intro">Every recorded run, newest first — duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. Shows 10 per page by default; use the selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
+  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. Shows 10 per page by default; use the selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
   {runs_table_html}
 </section>
 
 <section class="ops-cluster" id="latest">
   <h2 class="ops-cluster__head">Run detail</h2>
-  <p class="ops-cluster__intro">Everything about a single run in one place — pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>that run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Global source-accessibility action items live in the <a href="#health">Health</a> section above — distinct from a single run's coverage gaps.</p>
+  <p class="ops-cluster__intro">Everything about a single run in one place · pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>that run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Global source-accessibility action items live in the <a href="#health">Health</a> section above · distinct from a single run's coverage gaps.</p>
   {run_detail_html}
 </section>
 
@@ -5497,7 +5502,7 @@ def render_ops_page(
 </p>
 """
     return base_template(
-        title=f"Operations dashboard — {SITE_NAME}",
+        title=f"Operations dashboard · {SITE_NAME}",
         description="Live agent telemetry: run cadence, durations, model split, sub-agent allocation, verification verdicts, fetch failures, source-rotation health.",
         body=body,
         canonical=canonical,
@@ -5571,7 +5576,7 @@ def _ops_render_run_sources_changed(run: dict[str, Any], *, prefix: str) -> str:
     return (
         '<div class="ops-latest__failures">'
         '<h3 class="ops-mini-head">Sources changed (this run)</h3>'
-        '<p class="muted ops-latest__failures-help">Edits this run made to <code>sources/sources.json</code> — '
+        '<p class="muted ops-latest__failures-help">Edits this run made to <code>sources/sources.json</code> · '
         'promotions, demotions, new candidates, and fetch-method / category / reliability / url corrections '
         '(the run record&#39;s <code>sources_changed[]</code>). Paginated; 10 per page.</p>'
         f'{body}</div>'
@@ -5586,7 +5591,7 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
     `state/source_health.json` (written by tools/source_health.py, which probes
     EVERY source with the bridge's UA and exercises the api/bridge recipes).
 
-    The panel floats only sources whose derived `action` is not `none` — i.e.
+    The panel floats only sources whose derived `action` is not `none` · i.e.
     sources that need a dedicated bridge fetcher (browser UA refused, not yet on
     the bridge) or need demotion (dead/erroring, or an already-implemented
     bridge recipe now failing). It deliberately does NOT list healthy sources,
@@ -5596,7 +5601,7 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
         return (
             '<div class="empty"><p>No <code>state/source_health.json</code> snapshot yet.</p>'
             '<p class="muted">Written by <code>tools/source_health.py</code> (run at the end of every '
-            'routine + a weekly GitHub Action) — a periodic accessibility probe of every source that '
+            'routine + a weekly GitHub Action) · a periodic accessibility probe of every source that '
             'also verifies the api/bridge recipes still work.</p></div>'
         )
     latest = source_health.get("latest") or {}
@@ -5605,18 +5610,18 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
     flagged = [r for r in latest.values()
                if isinstance(r, dict) and r.get("action") not in (None, "", "none")]
     intro = (
-        f'<p class="ops-subtitle">Periodic probe of all <strong>{total}</strong> sources — snapshot '
+        f'<p class="ops-subtitle">Periodic probe of all <strong>{total}</strong> sources · snapshot '
         f'<span class="mono">{_escape(str(fetched_at))}</span>. Uses the bridge\'s browser UA and '
         f'exercises the <code>api</code>/<code>bridge</code> recipes, so "reachable here" means '
         f'"reachable via the configured fetch method". Only <strong>unsolved problems</strong> are '
-        f'listed below — healthy sources, already-demoted sources, and sources already served by a '
+        f'listed below · healthy sources, already-demoted sources, and sources already served by a '
         f'working bridge are omitted.</p>'
     )
     if not flagged:
         return (
             intro
             + '<p class="ops-pill ops-pill--ok" style="display:inline-block">✓ All '
-            + f'{total} sources reachable via their configured fetch method — nothing needs a '
+            + f'{total} sources reachable via their configured fetch method · nothing needs a '
             + 'dedicated bridge or demotion.</p>'
         )
 
@@ -5652,12 +5657,12 @@ def _ops_render_source_health(source_health: dict[str, Any] | None, *, prefix: s
         intro
         + _group(needs_bridge, "Needs a dedicated bridge fetcher (or demotion)",
                  "A browser-grade UA is refused on these, but they are not yet routed through "
-                 "<code>tools/fetch_source.py</code>. Build a dedicated bridge recipe — or demote if "
+                 "<code>tools/fetch_source.py</code>. Build a dedicated bridge recipe · or demote if "
                  "even the bridge can't reach them.")
-        + _group(needs_demote, "Failing — fix the recipe or demote",
+        + _group(needs_demote, "Failing · fix the recipe or demote",
                  "Dead / erroring sources, or sources whose already-implemented "
                  "<code>api</code>/<code>bridge</code> recipe is now failing. Update the URL/recipe, or demote.")
-        + _group(other, "Review", "Unexpected probe outcome — inspect.")
+        + _group(other, "Review", "Unexpected probe outcome · inspect.")
     )
 
 
@@ -5701,20 +5706,20 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
     """render the (now-strict) fetch_failures shape as a "Coverage
     gaps" table. Each row is a source the brief needed but couldn't get
     via any recipe (bridge / corroborating alternate publisher), so the row's
-    intrinsic meaning is "operator should look at this — content was
+    intrinsic meaning is "operator should look at this · content was
     missing." Earlier versions of this table doubled as a bridge-use log;
     those were split out into `bridge_uses[]` (rendered separately).
 
     Soft-signal handling: a record with `covered_anyway: true` survived
     in the data only because an older sub-agent prompt logged a recovered
-    fetch here — the agent prompts tell sub-agents not to do this, but the table
-    still tolerates such records and tags them yellow ("recovered — does
+    fetch here · the agent prompts tell sub-agents not to do this, but the table
+    still tolerates such records and tags them yellow ("recovered · does
     not belong here") so the operator can quickly
     distinguish current-shape from drift.
     """
     if not failures:
         return (
-            '<p class="muted">No coverage gaps in this run — every source '
+            '<p class="muted">No coverage gaps in this run · every source '
             'the brief needed returned usable content via its documented '
             'recipe.</p>'
         )
@@ -5749,7 +5754,7 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         elif fetch_method:
             method_chain_html = f'<span class="ops-pill ops-pill--neutral">{_escape(fetch_method)}</span>'
         else:
-            method_chain_html = '<span class="muted mono">—</span>'
+            method_chain_html = '<span class="muted mono">–</span>'
 
         url_html = (
             f'<a class="mono" href="{_escape(_safe_url(url_tried))}" target="_blank" rel="noopener noreferrer">{_escape(url_tried[:80])}</a>'
@@ -5764,11 +5769,11 @@ def _ops_render_fetch_failures(failures: list[dict[str, Any]], *, prefix: str) -
         # Source cell — with the soft-signal badge when applicable.
         sid_extra = ""
         if is_legacy:
-            sid_extra = '<div class="muted" style="font-size:0.72rem">legacy shape — needs detail</div>'
+            sid_extra = '<div class="muted" style="font-size:0.72rem">legacy shape · needs detail</div>'
         elif soft_signal:
             sid_extra = (
                 '<div class="muted" style="font-size:0.72rem;color:var(--warn)">'
-                'covered via alternate — should NOT be in this list'
+                'covered via alternate · should NOT be in this list'
                 '</div>'
             )
 
@@ -5848,7 +5853,7 @@ def _ops_render_bridge_uses(uses: list[dict[str, Any]] | None) -> str:
     return (
         '<div class="ops-bridge-uses">'
         '<h3 class="ops-mini-head">Bridge invocations (this run)</h3>'
-        f'<p class="muted">{total} bridge call{"s" if total != 1 else ""} this run — '
+        f'<p class="muted">{total} bridge call{"s" if total != 1 else ""} this run · '
         'these are <em>successful</em> bridge fetches (separate from "Coverage gaps" above).</p>'
         f'<div class="ops-bridge-uses__chips">{"".join(outcome_chips)}</div>'
         f'<ul class="ops-bridge-uses__methods">{"".join(method_lines)}</ul>'
@@ -5881,7 +5886,7 @@ def _ops_render_verification_iterations(
     Previously only the FINAL iteration's findings rendered (the
     cap-breach signal). The dashboard renders every iteration's `findings[]`
     that is non-empty so the operator can walk the verifier's full
-    debugging trail — what did iter-1 flag, what did the main agent fix,
+    debugging trail · what did iter-1 flag, what did the main agent fix,
     what did iter-2 then flag, etc.
 
     The chip row remains the at-a-glance roll-up; the per-iteration
@@ -5892,7 +5897,7 @@ def _ops_render_verification_iterations(
             chip = (
                 f'<p class="muted">{legacy_count} iteration{"s" if (legacy_count or 0) != 1 else ""} · '
                 f'{legacy_residual or 0} residual{"s" if (legacy_residual or 0) != 1 else ""} '
-                '(legacy scalar — per-iteration breakdown not recorded)</p>'
+                '(legacy scalar · per-iteration breakdown not recorded)</p>'
             )
             return chip, ""
         return '<p class="muted">No verification telemetry recorded.</p>', ""
@@ -5939,7 +5944,7 @@ def _ops_render_verification_iterations(
         dur = _ops_format_duration(it.get("duration_seconds"))
         is_final = iter_idx == final_idx
         cap_breach_badge = (
-            ' <span class="ops-pill ops-pill--crit" title="cap-breach safety valve fired — brief published at iteration 5 without CLEAN">cap-breach</span>'
+            ' <span class="ops-pill ops-pill--crit" title="cap-breach safety valve fired · brief published at iteration 5 without CLEAN">cap-breach</span>'
             if is_final and verdict == "NEEDS_FIXES" else ""
         )
 
@@ -5979,7 +5984,7 @@ def _ops_render_verification_iterations(
             f'Iteration <span class="mono">#{_escape(str(n))}</span> '
             f'<span class="ops-pill ops-pill--{verdict_kind}">{_escape(verdict)}</span>'
             f'{cap_breach_badge}'
-            f' <span class="muted">— {len(findings)} finding{"s" if len(findings) != 1 else ""} '
+            f' <span class="muted">· {len(findings)} finding{"s" if len(findings) != 1 else ""} '
             f'(truth={t_count}, editorial={e_count}, advisory={a_count}) · '
             f'<span class="mono">{_escape(model)}</span>'
             f'{f" · {_escape(dur)}" if dur else ""}'
@@ -6030,14 +6035,14 @@ def _ops_render_verification_iterations(
     if has_any_findings or cap_breach_note:
         intro = (
             '<p class="muted ops-verif-intro">'
-            'Per-iteration finding detail. Each table is one verifier pass — what was flagged, '
+            'Per-iteration finding detail. Each table is one verifier pass · what was flagged, '
             'how the main agent remediated it, and the outcome. Walking the tables top-to-bottom '
             'shows the verifier\'s debugging trail across iterations.'
             '</p>'
         )
         findings_html = (
             '<div class="ops-latest__verification">'
-            f'<h3 class="ops-mini-head">Verification findings — all iterations</h3>'
+            f'<h3 class="ops-mini-head">Verification findings · all iterations</h3>'
             + intro
             + "".join(iter_tables)
             + cap_breach_note
@@ -6050,7 +6055,7 @@ def _ops_render_verification_iterations(
 def _ops_run_picker_label(run: dict[str, Any]) -> str:
     """One-line label for a run in the run-detail <select>.
 
-    `<run_id> · <kind> · <verdict>` — e.g. "2026-07-03T0412Z-intel · intel ·
+    `<run_id> · <kind> · <verdict>` · e.g. "2026-07-03T0412Z-intel · intel ·
     CLEAN". Multiple runs per day make the date alone ambiguous, so the
     label leads with the run id. The verdict mirrors the clean-publish
     definition: residual == 0 ⇒ CLEAN, else NEEDS_FIXES with the residual
@@ -6072,7 +6077,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
                                    prefix: str,
                                    day_pages: set[str] | None = None,
                                    run_entries: list[dict[str, Any]] | None = None) -> str:
-    """Detailed panel for one run — main-agent model, every sub-agent's
+    """Detailed panel for one run · main-agent model, every sub-agent's
     contribution + telemetry, verification roll-up, plus the entries the
     run published. The 'one glance, full picture' card."""
     date = run.get("date") or "?"
@@ -6123,7 +6128,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         entries_block = (
             '<div class="ops-latest__failures">'
             '<h3 class="ops-mini-head">Entries published (this run)</h3>'
-            '<p class="muted">Empty run — no new verified signal; only the run record was published (a healthy outcome).</p>'
+            '<p class="muted">Empty run · no new verified signal; only the run record was published (a healthy outcome).</p>'
             "</div>"
         )
 
@@ -6159,7 +6164,7 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
 <div class="ops-latest">
   <div class="ops-latest__head">
     <div>
-      {f'<a class="ops-latest__date mono" href="{prefix}briefs/{_escape(date)}/">{_escape(rid)}</a>' if date in day_pages else f'<span class="ops-latest__date mono">{_escape(rid)}</span>'}
+      {f'<a class="ops-latest__date mono" href="{prefix}daily/{_escape(date)}/">{_escape(rid)}</a>' if date in day_pages else f'<span class="ops-latest__date mono">{_escape(rid)}</span>'}
       <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span>
       <span class="ops-pill ops-pill--accent">prompt v{_escape(pv)}</span>
     </div>
@@ -6322,7 +6327,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
     # the number as a quality score.
     sources_tooltip = (
         f"sub-agent was given a {attempted}-source slice in its spawn message; "
-        "cited the listed N. quiet-day slices legitimately cite few — this is "
+        "cited the listed N. quiet-day slices legitimately cite few · this is "
         "coverage telemetry, not a quality score."
     )
     if attempted:
@@ -6388,7 +6393,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
 
     def _sa_cell(a: dict[str, Any] | None) -> str:
         if not a:
-            return '<span class="muted">—</span>'
+            return '<span class="muted">–</span>'
         if a.get("returned") is False:
             return '<span class="ops-pill ops-pill--crit">stalled</span>'
         used = _ops_count_sources(a.get("sources_used"))
@@ -6420,7 +6425,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         cells = "".join(f'<td>{_sa_cell(sa.get(k))}</td>' for k in keys)
         # Pad weekly rows out to four sub-agent columns so columns align.
         if kind == "weekly":
-            cells += '<td><span class="muted">—</span></td><td><span class="muted">—</span></td>'
+            cells += '<td><span class="muted">–</span></td><td><span class="muted">–</span></td>'
         failures = len(r.get("fetch_failures") or [])
         failures_html = (
             f'<span class="ops-pill ops-pill--warn">{failures}</span>'
@@ -6432,7 +6437,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         verif_iters = r.get("verification_iterations")
         verif_residual = r.get("verification_residual_count") or 0
         if verif_iters is None:
-            verif_html = '<span class="muted">—</span>'
+            verif_html = '<span class="muted">–</span>'
         elif verif_residual:
             verif_html = (
                 f'<span class="ops-pill ops-pill--crit" '
@@ -6464,7 +6469,7 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         rid = str(r.get("run_id") or r.get("date") or "?")
         rdate = str(r.get("date") or "")
         date_cell = (
-            f'<a href="{prefix}briefs/{_escape(rdate)}/" title="{_escape(rid)}">{_escape(rdate)}</a>'
+            f'<a href="{prefix}daily/{_escape(rdate)}/" title="{_escape(rid)}">{_escape(rdate)}</a>'
             if rdate in day_pages
             else f'<span title="{_escape(rid)}">{_escape(rdate or "?")}</span>'
         )
@@ -6615,7 +6620,7 @@ _DEFAULT_SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], s
         ("energy", "water", "manufacturing", "transport"),
         ("ot-ics",),
         "OT / ICS",
-        "Items affecting operational-technology / industrial-control-system environments — energy, water, manufacturing, transport, and any item tagged ot-ics.",
+        "Items affecting operational-technology / industrial-control-system environments · energy, water, manufacturing, transport, and any item tagged ot-ics.",
     ),
     (
         "feed-defense.xml",
@@ -6647,11 +6652,11 @@ SECTOR_FEED_SLICES: list[tuple[str, tuple[str, ...], tuple[str, ...], str, str]]
 )
 
 FEEDS_PAGE_DESCRIPTION = (
-    "All RSS feeds — daily, weekly, per item, plus eight sector-specific "
+    "All RSS feeds · daily, weekly, per item, plus eight sector-specific "
     "slices (public sector, healthcare, finance, energy, OT/ICS, defense, "
     "telco, education)."
     if SECTOR_FEED_SLICES is _DEFAULT_SECTOR_FEED_SLICES
-    else "All RSS feeds — daily, weekly, per item, plus "
+    else "All RSS feeds · daily, weekly, per item, plus "
     f"{len(SECTOR_FEED_SLICES)} sector-specific slices "
     "(" + ", ".join(s[3] for s in SECTOR_FEED_SLICES) + ")."
 )
@@ -6679,14 +6684,14 @@ def build_daily_feed(
     site_url: str,
     ref_ts: datetime,
 ) -> tuple[str, datetime]:
-    """feed.xml — one item per DAY page: title `CTI Daily Brief — <date>`,
+    """feed.xml · one item per DAY page: title `CTI Daily Brief · <date>`,
     description = the day's TL;DR bullets, content = the day page's body
     HTML. Last FEED_DAILY_MAX days."""
     items_xml: list[str] = []
     most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
     for day in sorted(days.keys(), reverse=True)[:FEED_DAILY_MAX]:
         day_entries = sorted(operational_entries(days[day]), key=entry_sort_key)
-        url = f"{site_url}briefs/{day}/"
+        url = f"{site_url}daily/{day}/"
         by_id = {e["id"]: e for e in day_entries}
         body_html = render_brief_sections(
             day_entries, runs_by_day.get(day, []),
@@ -6699,7 +6704,7 @@ def build_daily_feed(
         pub = _day_pub_ts(day_entries)
         items_xml.append(
             "<item>"
-            f"<title>{_escape(f'CTI Daily Brief — {day}')}</title>"
+            f"<title>{_escape(f'CTI Daily Brief · {day}')}</title>"
             f"<link>{_escape(url)}</link>"
             f'<guid isPermaLink="true">{_escape(url)}</guid>'
             f"<pubDate>{rfc822(pub)}</pubDate>"
@@ -6712,7 +6717,7 @@ def build_daily_feed(
         if pub > most_recent:
             most_recent = pub
     feed = _channel_rss(
-        title=f"{SITE_NAME} — Daily ({TAGLINE})",
+        title=f"{SITE_NAME} · Daily ({TAGLINE})",
         link=site_url,
         self_link=site_url + "feed.xml",
         description=FEED_DAILY_DESCRIPTION,
@@ -6729,7 +6734,7 @@ def build_weekly_feed(
     site_url: str,
     ref_ts: datetime,
 ) -> tuple[str, datetime]:
-    """feed-weekly.xml — one item per weekly page, last FEED_WEEKLY_MAX."""
+    """feed-weekly.xml · one item per weekly page, last FEED_WEEKLY_MAX."""
     items_xml: list[str] = []
     most_recent = datetime.fromtimestamp(0, tz=timezone.utc)
     for week in sorted(weeks.keys(), reverse=True)[:FEED_WEEKLY_MAX]:
@@ -6747,7 +6752,7 @@ def build_weekly_feed(
         pub = _day_pub_ts(strat)
         items_xml.append(
             "<item>"
-            f"<title>{_escape(f'CTI Weekly Summary — {week}')}</title>"
+            f"<title>{_escape(f'CTI Weekly Summary · {week}')}</title>"
             f"<link>{_escape(url)}</link>"
             f'<guid isPermaLink="true">{_escape(url)}</guid>'
             f"<pubDate>{rfc822(pub)}</pubDate>"
@@ -6760,7 +6765,7 @@ def build_weekly_feed(
         if pub > most_recent:
             most_recent = pub
     feed = _channel_rss(
-        title=f"{SITE_NAME} — Weekly ({TAGLINE})",
+        title=f"{SITE_NAME} · Weekly ({TAGLINE})",
         link=site_url,
         self_link=site_url + "feed-weekly.xml",
         description=FEED_WEEKLY_DESCRIPTION,
@@ -6809,7 +6814,7 @@ def build_items_feed(
     site_url: str,
     ref_ts: datetime,
 ) -> tuple[str, datetime]:
-    """feed-items.xml — one item per ENTRY, last FEED_ITEMS_MAX, newest
+    """feed-items.xml · one item per ENTRY, last FEED_ITEMS_MAX, newest
     first by discovered_at (true discovery latency)."""
     by_id = {e["id"]: e for e in entries}
     ordered = sorted(
@@ -6824,7 +6829,7 @@ def build_items_feed(
         if ts and ts > most_recent:
             most_recent = ts
     feed = _channel_rss(
-        title=f"{SITE_NAME} — Per item",
+        title=f"{SITE_NAME} · Per item",
         link=site_url,
         self_link=site_url + "feed-items.xml",
         description=FEED_ITEMS_DESCRIPTION,
@@ -6840,7 +6845,7 @@ def build_sector_feeds(
     site_url: str,
     ref_ts: datetime,
 ) -> list[tuple[str, str, datetime]]:
-    """The 8 sector slices — the per-entry feed filtered on entry
+    """The 8 sector slices · the per-entry feed filtered on entry
     sectors / tags (SECTOR_FEED_SLICES, branding-overridable). Returns
     `[(filename, xml, most_recent_ts), …]`."""
     by_id = {e["id"]: e for e in entries}
@@ -6867,7 +6872,7 @@ def build_sector_feeds(
             if ts and ts > most_recent:
                 most_recent = ts
         feed = _channel_rss(
-            title=f"{SITE_NAME} — {title_suffix}",
+            title=f"{SITE_NAME} · {title_suffix}",
             link=site_url,
             self_link=site_url + fname,
             description=description,
@@ -6903,7 +6908,7 @@ def _fill_weekly_timeline(buckets: list[tuple[str, int]]) -> list[tuple[str, int
     """Take a sparse `[(YYYY-Www, count)]` list and fill in zero counts
     for every ISO week between min and max so the sparkline shows the
     coverage rhythm rather than a single dot. If only one bucket
-    exists, return it as-is — the sparkline helper handles that."""
+    exists, return it as-is · the sparkline helper handles that."""
     if len(buckets) < 2:
         return buckets
     from datetime import date as _date, timedelta as _td
@@ -6938,7 +6943,7 @@ def render_redirect_page(
     """Minimal HTML meta-refresh stub. Used at /cves/<id>/ and
     /topics/<key>/ now that the canonical URL is /entities/<key>/.
 
-    Plain HTML, not the full base_template — these pages are never
+    Plain HTML, not the full base_template · these pages are never
     indexed (canonical points elsewhere), and we don't want the navbar /
     analytics overhead of a full render for what's essentially a
     redirect."""
@@ -7114,14 +7119,14 @@ def render_sources_overview_charts(
 
     Surfaces the kind of structural questions an operator should be
     asking weekly:
-      - Status / reliability / category distribution — does the source
+      - Status / reliability / category distribution · does the source
         list lean toward news outlets or national CERTs?
-      - Most-cited sources (top 12) — which sources do briefs actually
+      - Most-cited sources (top 12) · which sources do briefs actually
         rely on? An over-narrow distribution is a citation-bias risk.
-      - Cited-count per category bars — are HIGH-reliability categories
+      - Cited-count per category bars · are HIGH-reliability categories
         (national CERT, vendor PSIRT) under-cited relative to their
         share of the source list? That's the lopsided-coverage signal.
-      - Active-but-never-cited count — sources kept on the active list
+      - Active-but-never-cited count · sources kept on the active list
         that aren't pulling weight; rotation candidates.
     """
     if not sources:
@@ -7227,7 +7232,7 @@ def render_sources_overview_charts(
             '<h3 class="section-head" style="margin-top:0">Most-cited sources</h3>'
             '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
             'Top 12 by brief-appearance count. A narrow distribution here is a '
-            'citation-bias risk — look for diversity of publisher and category.'
+            'citation-bias risk · look for diversity of publisher and category.'
             '</p>'
             f'{bar_svg}'
             f'<ul class="ops-legend">{legend_lis}</ul>'
@@ -7299,7 +7304,7 @@ def render_entities_index_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """Unified /entities/ index — every entity, every type, with the
+    """Unified /entities/ index · every entity, every type, with the
     same KPI strip + chart row that the per-page renderer uses, and a
     type-filter chip toolbar above a single ranked list."""
     types = sorted({e.get("type", "") for e in entities if e.get("type")})
@@ -7338,7 +7343,7 @@ def render_entities_index_page(
 
     body = f"""
 <h1>Entities</h1>
-<p class="subtitle">{len(entities)} CVEs, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The badge marks items covered in more than one brief — these are the "stories that unfolded".</p>
+<p class="subtitle">{len(entities)} CVEs, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The badge marks items covered in more than one brief · these are the "stories that unfolded".</p>
 
 {chart_block}
 
@@ -7351,7 +7356,7 @@ def render_entities_index_page(
 {list_html}
 """
     return base_template(
-        title=f"Entities — {SITE_NAME}",
+        title=f"Entities · {SITE_NAME}",
         description=f"{len(entities)} tracked entities across all briefs.",
         body=body,
         canonical=canonical,
@@ -7401,7 +7406,7 @@ def _resolve_source_id(prefixes: list[tuple[str, str, str]],
 
 def _entry_link_records(entry: dict[str, Any]) -> list[dict[str, str]]:
     """Frontmatter sources + inline body links of one entry, deduped by
-    URL (frontmatter wins — it carries the publisher label)."""
+    URL (frontmatter wins · it carries the publisher label)."""
     seen: dict[str, dict[str, str]] = {}
     for s in entry.get("sources") or []:
         if not isinstance(s, dict):
@@ -7431,9 +7436,9 @@ def _entry_link_records(entry: dict[str, Any]) -> list[dict[str, str]]:
 def annotate_sources(sources_raw: dict[str, Any],
                      entries: list[dict[str, Any]]) -> dict[str, Any]:
     """Attach per-source citation telemetry derived from entries:
-    `appearances` (sorted dates, newest first — drives the list page and
+    `appearances` (sorted dates, newest first · drives the list page and
     the cadence sparkline) and `entry_refs` ([{id, title, date}], newest
-    first — drives the per-source page)."""
+    first · drives the per-source page)."""
     prefixes = _source_prefix_index(sources_raw)
     dates: dict[str, set[str]] = defaultdict(set)
     refs: dict[str, dict[str, dict[str, str]]] = defaultdict(dict)
@@ -7681,7 +7686,7 @@ def render_entity_page(
     prefix: str,
     canonical: str,
 ) -> str:
-    """Single renderer for every entity type — CVE + every registry type
+    """Single renderer for every entity type · CVE + every registry type
     (actor, campaign, malware, tool, incident, report, trend, policy).
     Same layout as v2: header pills → KPI tiles → coverage strip →
     story timeline (entry permalinks; the update_of chain lives on the
@@ -7731,7 +7736,7 @@ def render_entity_page(
         + _ops_kpi_tile(
             "Coverage timeline",
             str(len(apps)),
-            sub=f"first {entity.get('first_covered', '—') or '—'} → last {entity.get('last_covered', '—') or '—'}",
+            sub=f"first {entity.get('first_covered', '–') or '–'} → last {entity.get('last_covered', '–') or '–'}",
             kind="accent",
             chart=spark_html,
         )
@@ -7845,7 +7850,7 @@ def render_entity_page(
             "</a>"
             '<div class="cite-meta muted">'
             + (f'<a href="{prefix}sources/{urllib.parse.quote(source_id, safe="")}/">source profile</a> · ' if source_id else "")
-            + "cited in " + (entry_links or '<span class="muted">—</span>')
+            + "cited in " + (entry_links or '<span class="muted">–</span>')
             + "</div></li>"
         )
     citations_block = ""
@@ -7916,7 +7921,7 @@ def render_entity_page(
     matching_entries or [],
     heading=f"Entries about {title}",
     empty_text=(
-        "No published entry references this entity yet — entries match by "
+        "No published entry references this entity yet · entries match by "
         "registry key, by the entity's name or a public alias appearing in "
         "the entry title or body, or (for CVE entities) by exact CVE id."
     ),
@@ -7925,7 +7930,7 @@ def render_entity_page(
 )}
 """
     return base_template(
-        title=f"{title} — {etype or 'entity'}",
+        title=f"{title} · {etype or 'entity'}",
         description=(entity.get("summary") or title)[:280],
         body=body,
         canonical=canonical,
@@ -8073,11 +8078,11 @@ def self_check(
     <script> (CSP-fatal), Markdown-renderer placeholder leakage (the
     renderer's fixed-point regressed), XML parse error in a feed,
     secret-shaped token leaked into output. Warnings are cosmetic /
-    quality signals — Umami snippet count mismatch on a non-redirect
+    quality signals · Umami snippet count mismatch on a non-redirect
     page, raw `**Markdown**` or `[..](http..)` surviving into RSS
     `<content:encoded>`, UTM parameters in URLs. They get printed but
     do not abort the build, because the deploy-site workflow blocking
-    on a cosmetic regression has historically caused outages — see
+    on a cosmetic regression has historically caused outages · see
     the 2026-05-10 incident where the build failed on a sub-agent's
     verbatim `**Model:**` self-id string inside a `<code>` block."""
     errors: list[str] = []
@@ -8127,7 +8132,7 @@ def self_check(
             umami_warnings.append(str(path.relative_to(OUT)))
         if inline_script_re.search(data_island_re.sub("", text)):
             errors.append(
-                f"inline <script> body in {path.relative_to(OUT)} — "
+                f"inline <script> body in {path.relative_to(OUT)} · "
                 "CSP would refuse to execute it. Move to an external file under assets/js/."
             )
         # Markdown-renderer placeholder leakage: `\x00CODE0\x00` markers
@@ -8140,7 +8145,7 @@ def self_check(
             # exact placeholder shape and not part of a real word.
             if "\x00" in text or re.search(r"(?<![A-Za-z])CODE\d+(?![A-Za-z])", text):
                 errors.append(
-                    f"markdown placeholder leak in {path.relative_to(OUT)} — "
+                    f"markdown placeholder leak in {path.relative_to(OUT)} · "
                     "inline-code or link substitution is broken (renderer fixed-point regressed)"
                 )
     if umami_warnings:
@@ -8151,7 +8156,7 @@ def self_check(
         else:
             warnings.append(
                 f"umami <script> tag count != {expected_umami_count} in {len(umami_warnings)} pages "
-                f"(first: {umami_warnings[0]}) — analytics misconfig, page content unaffected"
+                f"(first: {umami_warnings[0]}) · analytics misconfig, page content unaffected"
             )
     # No raw `**Markdown**` survives in any RSS content. Cosmetic — feed
     # readers still parse and display the content; the regression is
@@ -8186,7 +8191,7 @@ def self_check(
         if fp.exists():
             errs = _xml_validate(fp.read_text(encoding="utf-8"))
             for e in errs:
-                errors.append(f"feed {fp.name}: XML parse error — {e}")
+                errors.append(f"feed {fp.name}: XML parse error · {e}")
     # No UTM parameters in any URL on the site. Cosmetic / privacy-tracking
     # hygiene; not a delivery failure.
     utm_re = re.compile(r"[?&]utm_[a-z_]+=", re.IGNORECASE)
@@ -8201,7 +8206,7 @@ def self_check(
         else:
             warnings.append(
                 f"UTM parameter present in URL inside {len(utm_pages)} pages "
-                f"(first: {utm_pages[0]}) — strip and reissue"
+                f"(first: {utm_pages[0]}) · strip and reissue"
             )
 
     # No known-shape secret tokens in any emitted file. CRITICAL — failing
@@ -8305,15 +8310,19 @@ def main() -> int:
     # only, never an empty item); the union drives page generation, the
     # archive indexes, the search index, the home marquee, and every
     # "is there a page for this date?" link decision.
-    day_pages = set(days) | daily_run_dates(runs)
+    ref = reference_ts(entries, runs)
+    # Daily = COMPLETED UTC days only. The current (rolling) day is served
+    # exclusively by the Live view; it gets no /daily/<today>/ page and is
+    # absent from the day archive until it completes. Weekly keeps every week.
+    today = ref.strftime("%Y-%m-%d")
+    day_pages = {d for d in (set(days) | daily_run_dates(runs)) if d < today}
     week_pages = set(weeks) | weekly_run_weeks(runs)
     # Point the Daily / Weekly topbar segments at the most recent pages.
     global LATEST_DAY_REL, LATEST_WEEK_REL
     if day_pages:
-        LATEST_DAY_REL = f"briefs/{max(day_pages)}/"
+        LATEST_DAY_REL = f"daily/{max(day_pages)}/"
     if week_pages:
         LATEST_WEEK_REL = f"weekly/{max(week_pages)}/"
-    ref = reference_ts(entries, runs)
     runs_by_id = {str(r.get("run_id")): r for r in runs if r.get("run_id")}
     entries_by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for e in entries:
@@ -8386,7 +8395,7 @@ def main() -> int:
     window_entries = content_model.entries_in_window(entries, window_since, None)
     window_runs = runs_in_window(runs, window_since, None)
     emit_html(
-        "brief/",
+        "live/",
         render_live_brief_page(
             window_entries, window_runs,
             all_entries=entries, all_runs=runs,
@@ -8396,7 +8405,7 @@ def main() -> int:
             site_url=site_url,
             cachebust=cachebust,
             prefix="../",
-            canonical=site_url + "brief/",
+            canonical=site_url + "live/",
         ),
         lastmod=ref.strftime("%Y-%m-%d"),
     )
@@ -8407,7 +8416,7 @@ def main() -> int:
     _day_seq = sorted(day_pages)
     for _i, day in enumerate(_day_seq):
         day_entries = days.get(day, [])
-        rel_url = f"briefs/{day}/"
+        rel_url = f"daily/{day}/"
         emit_html(
             rel_url,
             render_day_page(
@@ -8423,13 +8432,13 @@ def main() -> int:
             lastmod=day,
         )
     emit_html(
-        "briefs/",
+        "daily/",
         render_days_index_page(
             {d: days.get(d, []) for d in day_pages},
             site_url=site_url,
             cachebust=cachebust,
             prefix="../",
-            canonical=site_url + "briefs/",
+            canonical=site_url + "daily/",
         ),
         lastmod=max(day_pages) if day_pages else "",
     )
@@ -8453,16 +8462,6 @@ def main() -> int:
             ),
             lastmod=max((e["date"] for e in week_entries), default=""),
         )
-        # Legacy URL shape /briefs/weekly/YYYY-Www/ → /weekly/YYYY-Www/.
-        emit_html(
-            f"briefs/weekly/{week}/",
-            render_redirect_page(
-                target_url=f"/{rel_url}",
-                title=f"{week} — moved",
-                site_url=site_url,
-                cachebust=cachebust,
-            ),
-        )
     emit_html(
         "weekly/",
         render_weekly_index_page(
@@ -8473,15 +8472,6 @@ def main() -> int:
             canonical=site_url + "weekly/",
         ),
         lastmod=max(weeks) if weeks else "",
-    )
-    emit_html(
-        "briefs/weekly/",
-        render_redirect_page(
-            target_url="/weekly/",
-            title="Weekly summaries — moved",
-            site_url=site_url,
-            cachebust=cachebust,
-        ),
     )
 
 
@@ -8574,7 +8564,7 @@ def main() -> int:
             stub_rel,
             render_redirect_page(
                 target_url=f"/{rel_url}",
-                title=f"{ekey} — moved",
+                title=f"{ekey} · moved",
                 site_url=site_url,
                 cachebust=cachebust,
             ),
@@ -8636,9 +8626,12 @@ def main() -> int:
     # most recent run even when it published nothing; "prev_day" = the most
     # recent completed day before it. Entry lists come from `days`, so a
     # quiet day renders the card's built-in "quiet day so far" copy.
+    # Home cards: Live = the rolling window (window_entries); Daily = the
+    # latest COMPLETED day page (day_pages already excludes the rolling day).
     day_keys = sorted(day_pages, reverse=True)
-    today = day_keys[0] if day_keys else None
-    prev_day = day_keys[1] if len(day_keys) > 1 else None
+    latest_completed = day_keys[0] if day_keys else None
+    today = latest_completed          # unused for display; kept for signature
+    prev_day = latest_completed
     latest_week = max(weeks) if weeks else None
     recent_entries = sorted(
         entries, key=lambda e: (str(e.get("discovered_at") or ""), e["id"]), reverse=True
@@ -8655,7 +8648,7 @@ def main() -> int:
         "",
         render_home_page(
             today=today,
-            today_entries=days.get(today, []) if today else [],
+            today_entries=window_entries,
             prev_day=prev_day,
             prev_day_entries=days.get(prev_day, []) if prev_day else [],
             latest_week=latest_week,
@@ -8685,18 +8678,18 @@ def main() -> int:
         title = p.stem.replace("-", " ").capitalize()
         about_landing_md += f"- [{title}](docs/{p.stem}.md)\n"
     about_landing_md += "\n## [Prompts](prompts/)\n\n"
-    about_landing_md += "Everything the pipeline loads at runtime — the run prompts, the verification policy, the entry template, the check-run fix recipes, and the version-history changelog.\n\n"
+    about_landing_md += "Everything the pipeline loads at runtime · the run prompts, the verification policy, the entry template, the check-run fix recipes, and the version-history changelog.\n\n"
     for p in prompt_files:
         title = p.stem.replace("-", " ").capitalize()
         about_landing_md += f"- [{title}](prompts/{p.stem}.md)\n"
-    about_landing_md += "- [Prompt CHANGELOG](prompts/CHANGELOG.md) — version-by-version evolution\n\n"
+    about_landing_md += "- [Prompt CHANGELOG](prompts/CHANGELOG.md) · version-by-version evolution\n\n"
     about_landing_md += "---\n\n## README\n\n"
     about_landing_md += readme
     emit_html(
         "about/",
         render_static_doc(
             md_text=about_landing_md,
-            title=f"About — {SITE_NAME}",
+            title=f"About · {SITE_NAME}",
             description="What this project is, how the entries are produced, and how to read them.",
             prefix="../",
             canonical=site_url + "about/",
@@ -8705,7 +8698,7 @@ def main() -> int:
         ),
     )
     if docs_files:
-        docs_index_md = "# Documentation\n\nSystem reference for operators, contributors, and curious readers. Pure docs — none of the files here are loaded by the prompt at runtime (that material lives under [`prompts/`](../prompts/)).\n\n"
+        docs_index_md = "# Documentation\n\nSystem reference for operators, contributors, and curious readers. Pure docs · none of the files here are loaded by the prompt at runtime (that material lives under [`prompts/`](../prompts/)).\n\n"
         for p in docs_files:
             title = p.stem.replace("-", " ").capitalize()
             docs_index_md += f"- [**{title}**](../docs/{p.stem}.md)\n"
@@ -8713,7 +8706,7 @@ def main() -> int:
             "about/docs/",
             render_static_doc(
                 md_text=docs_index_md,
-                title=f"Documentation — {SITE_NAME}",
+                title=f"Documentation · {SITE_NAME}",
                 description="System reference: pipeline model, architecture, operating, customization.",
                 prefix="../../",
                 canonical=site_url + "about/docs/",
@@ -8728,8 +8721,8 @@ def main() -> int:
                 rel_url,
                 render_static_doc(
                     md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
-                    title=f"{title} — {SITE_NAME}",
-                    description=f"{title} — system documentation.",
+                    title=f"{title} · {SITE_NAME}",
+                    description=f"{title} · system documentation.",
                     prefix="../../../",
                     canonical=site_url + rel_url,
                     site_url=site_url,
@@ -8751,7 +8744,7 @@ def main() -> int:
         prompts_index_md += "Every substantive prompt edit ships with a [CHANGELOG](../prompts/CHANGELOG.md) entry explaining *why* the editorial policy shifted. Recent versions:\n\n"
         if changelog_path.exists():
             cl_text = changelog_path.read_text(encoding="utf-8", errors="replace")
-            version_headings = re.findall(r"^## (\d+\.\d+ — \d{4}-\d{2}-\d{2}.*)$", cl_text, re.MULTILINE)
+            version_headings = re.findall(r"^## (\d+\.\d+ · \d{4}-\d{2}-\d{2}.*)$", cl_text, re.MULTILINE)
             for h in version_headings[:10]:
                 prompts_index_md += f"- {h}\n"
             prompts_index_md += "\n[Full version history →](../prompts/CHANGELOG.md)\n"
@@ -8759,7 +8752,7 @@ def main() -> int:
             "about/prompts/",
             render_static_doc(
                 md_text=prompts_index_md,
-                title=f"Prompts — {SITE_NAME}",
+                title=f"Prompts · {SITE_NAME}",
                 description="The prompts the pipeline loads at runtime, plus their version-history changelog.",
                 prefix="../../",
                 canonical=site_url + "about/prompts/",
@@ -8774,8 +8767,8 @@ def main() -> int:
                 rel_url,
                 render_static_doc(
                     md_text=_read_text_capped(p, MAX_BRIEF_BYTES),
-                    title=f"{title} — {SITE_NAME}",
-                    description=f"{title} — runtime prompt / policy.",
+                    title=f"{title} · {SITE_NAME}",
+                    description=f"{title} · runtime prompt / policy.",
                     prefix="../../../",
                     canonical=site_url + rel_url,
                     site_url=site_url,
@@ -8787,8 +8780,8 @@ def main() -> int:
                 "about/prompts/changelog/",
                 render_static_doc(
                     md_text=_read_text_capped(changelog_path, MAX_BRIEF_BYTES),
-                    title=f"Prompt CHANGELOG — {SITE_NAME}",
-                    description="Editorial-policy audit trail — every prompt-version change explained.",
+                    title=f"Prompt CHANGELOG · {SITE_NAME}",
+                    description="Editorial-policy audit trail · every prompt-version change explained.",
                     prefix="../../../",
                     canonical=site_url + "about/prompts/changelog/",
                     site_url=site_url,
@@ -8847,23 +8840,23 @@ def main() -> int:
   <h1 style="margin-top:0.2rem">That page is not on this site.</h1>
   <p class="subtitle" style="margin-top:0.6rem">
     The link you followed may be wrong, the page may have moved, or the entry that referenced it may have been corrected.
-    <strong>CVE pages take a single ID</strong> — multi-CVE links like <code>cves/CVE-X,&nbsp;CVE-Y/</code> are not valid.
+    <strong>CVE pages take a single ID</strong>; multi-CVE links like <code>cves/CVE-X,&nbsp;CVE-Y/</code> are not valid.
   </p>
 
   <div class="panel" style="margin-top:1.2rem">
     <h3 style="margin-top:0">Common ways here</h3>
     <ul style="margin-top:0.4rem">
       <li><strong>Renamed CVE / source / entity page.</strong> Use the search box above (also at the top of every page).</li>
-      <li><strong>Old bookmark.</strong> Weekly pages moved from <code>/briefs/weekly/…</code> to <code>/weekly/…</code>; day pages keep their URLs.</li>
-      <li><strong>Multi-CVE link from an older entry.</strong> Each CVE has its own page — use the search box or the
+      <li><strong>Reading the brief.</strong> The rolling window is at <code>/live/</code>, completed days at <code>/daily/</code>, weekly summaries at <code>/weekly/</code>.</li>
+      <li><strong>Multi-CVE link from an older entry.</strong> Each CVE has its own page; use the search box or the
         <a href="{site_base_path}cves/">full CVE list</a>.</li>
     </ul>
   </div>
 
   <div class="row" style="gap:0.8rem;flex-wrap:wrap;margin-top:1.4rem">
     <a class="cta" href="{site_base_path}">Return home</a>
-    <a class="cta cta--secondary" href="{site_base_path}brief/">Live brief</a>
-    <a class="cta cta--secondary" href="{site_base_path}briefs/">Day archive</a>
+    <a class="cta cta--secondary" href="{site_base_path}live/">Live brief</a>
+    <a class="cta cta--secondary" href="{site_base_path}daily/">Day archive</a>
     <a class="cta cta--secondary" href="{site_base_path}entities/">Entities</a>
     <a class="cta cta--secondary" href="{site_base_path}ops/">Operations</a>
   </div>
@@ -8877,7 +8870,7 @@ def main() -> int:
 </section>
 """
     err = base_template(
-        title=f"404 — Not found · {SITE_NAME}",
+        title=f"404 · Not found · {SITE_NAME}",
         description="The page you requested is not on this site. Search or use the suggested links to find what you were looking for.",
         body=err_body,
         canonical=site_url + "404.html",
@@ -8946,16 +8939,16 @@ def main() -> int:
         search_idx.append({
             "kind": "day",
             "id": day,
-            "title": f"CTI Daily Brief — {day}",
+            "title": f"CTI Daily Brief · {day}",
             "hint": (tldr[0].get("headline") or "")[:240] if tldr else f"{len(day_ops)} entries",
-            "route": f"briefs/{day}/",
+            "route": f"daily/{day}/",
             "tags": sorted({c for e in day_ops for c in entry_cve_ids(e)})[:6],
         })
     for week in sorted(week_pages, reverse=True):
         search_idx.append({
             "kind": "weekly",
             "id": week,
-            "title": f"CTI Weekly Summary — {week}",
+            "title": f"CTI Weekly Summary · {week}",
             "hint": f"{len(weeks.get(week, []))} strategic entries",
             "route": f"weekly/{week}/",
             "tags": [],

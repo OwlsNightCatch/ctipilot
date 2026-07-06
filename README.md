@@ -4,14 +4,14 @@
 
 A **continuous Cyber Threat Intelligence pipeline** covering cyber threats targeting Switzerland and Europe with a public-sector focus (national/cantonal/federal administration, regulators, critical infrastructure, healthcare, education, public-sector technology suppliers). Audience: Tier 2/3 incident responders, threat hunters, detection engineers. Output is **always in English**.
 
-The intel run fires **multiple times per day**; each fire publishes only the *new* verified signal since the previous fire, as individual entry files under `entries/YYYY-MM-DD/`. A weekly strategic run adds the longer arc. **There is no brief file — the brief is a query**: [`/brief/`](https://ctipilot.ch/brief/) renders the entry store over a reader-chosen time window (default: the last 24 hours), and the rolling 24 h reads as one coherent brief regardless of how many runs produced it — every entry held to a constant, strict relevance bar. Its volume follows the window's genuine signal (no fixed count); more runs mean lower latency, never more content.
+The intel run fires **multiple times per day**; each fire publishes only the *new* verified signal since the previous fire, as individual entry files under `entries/YYYY-MM-DD/`. A weekly strategic run adds the longer arc. **There is no brief file — the brief is a query**: [`/live/`](https://ctipilot.ch/live/) renders the entry store over a reader-chosen time window (default: the last 24 hours), and the rolling 24 h reads as one coherent brief regardless of how many runs produced it — every entry held to a constant, strict relevance bar. Its volume follows the window's genuine signal (no fixed count); more runs mean lower latency, never more content.
 
 The repository is the single source of truth for the workflow: prompts, source list, the entry store, the entity registry, per-run records, and every policy document are version-controlled. The normative data model is [`docs/pipeline.md`](docs/pipeline.md).
 
 ## Where to read
 
-- **The brief:** [https://ctipilot.ch/brief/](https://ctipilot.ch/brief/) — the current intelligence window, assembled from the per-finding entries. Pick a wider window (6 / 12 / 24 / 48 / 72 h chips) or a start date; the default 24 h window is server-rendered and fully readable without JavaScript. Section structure matches a classic daily brief: TL;DR (+ Immediate-Action callout when one exists) → Active Threats → Trending Vulnerabilities → Research → Updates → Deep Dive → Action Items → Verification Notes.
-- **Day archives:** `https://ctipilot.ch/briefs/YYYY-MM-DD/` — one static page per UTC day, the browsable historical record.
+- **The brief:** [https://ctipilot.ch/live/](https://ctipilot.ch/live/) — the current intelligence window, assembled from the per-finding entries. Pick a wider window (6 / 12 / 24 / 48 / 72 h chips) or a start date; the default 24 h window is server-rendered and fully readable without JavaScript. Section structure matches a classic daily brief: TL;DR (+ Immediate-Action callout when one exists) → Active Threats → Trending Vulnerabilities → Research → Updates → Deep Dive → Action Items → Verification Notes.
+- **Day archives:** `https://ctipilot.ch/daily/YYYY-MM-DD/` — one static page per UTC day, the browsable historical record.
 - **Weekly:** `https://ctipilot.ch/weekly/YYYY-Www/` — the week's strategic entries in the 12-section weekly structure, with the operational entries they synthesise linked in place.
 - **Everything else:** per-entry permalinks (`/entries/<date>/<slug>/`), entity pages (`/entities/<key>/` — actors, campaigns, malware, tools, incidents, reports, plus every CVE), source catalogue (`/sources/`), tag/region indexes, the `/trends/` dashboard and the `/ops/` run-telemetry dashboard.
 - **GitHub:** the entries are Markdown files under [`entries/`](entries/) — frontmatter metadata + analysis body, each readable natively on GitHub. Run records live under [`runs/`](runs/).
@@ -40,12 +40,12 @@ The site deploys automatically on every push to `main` that touches the content 
 
 ## Reader features
 
-- **The dynamic brief.** `/brief/` is a rendering over the entry store: default last-24 h window server-rendered (view source and you can read it), client-side re-windowing from `data/briefbook.json` (the last ~35 days of entries) when you pick a different window or a since-date.
+- **The dynamic brief.** `/live/` is a rendering over the entry store: default last-24 h window server-rendered (view source and you can read it), client-side re-windowing from `data/briefbook.json` (the last ~35 days of entries) when you pick a different window or a since-date.
 - **Per-entry permalinks.** Every finding is a first-class page at `/entries/<date>/<slug>/` with its full metadata badges, update chain, and a link to the run record that produced it.
 - **Notification surface.** `data/alerts.json` carries the last 7 days of `critical`/`high` entries with headline, summary, immediate-action block, entities and CVEs — machine-readable input for paging hooks and chat integrations. A `priority: critical` entry always carries a structured `immediate_action` block; the bar for `critical` is deliberately extreme — reserved for genuine stop-and-act items, so criticals stay rare by construction, not by a count cap.
 - **Entity registry pages.** Every actor, campaign, malware family, tool, incident and report the pipeline tracks is canonical in [`entities/registry.yaml`](entities/registry.yaml) and rendered at `/entities/<key>/` with coverage timeline, KPI tiles and co-occurrence links; aliases resolve to one page ("UNC6240" and "ShinyHunters" are the same entity, mechanically).
 - **Update chains.** Entries are immutable; developments arrive as new entries with `update_of` links, so every story's evolution is browsable — the permalink of the original always leads forward.
-- **Static HTML.** Every page contains its full content on first paint. JavaScript only enhances: window re-rendering on `/brief/`, search autocomplete, filter chips, theme cycle, copy-link.
+- **Static HTML.** Every page contains its full content on first paint. JavaScript only enhances: window re-rendering on `/live/`, search autocomplete, filter chips, theme cycle, copy-link.
 - **Topbar search** across day pages, weeklies, entries, entities (every type) and sources — press `/` anywhere. CVE ids match as a single token.
 - **Verification badges.** Single-source entries carry their `verification` value (`single-source`, `single-source-national-cert`, `single-source-victim`, `contradicted`) as reader-visible badges, auditable across the site.
 - **Operations dashboard** at `/ops/` — recent runs from `runs/**` frontmatter: per-run gap/window, entries published, sub-agent allocation, fetch failures, verification iterations + residuals, prompt version.
@@ -95,7 +95,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── source_candidates.py   # Cited-but-untracked publisher surfacing
 │   └── source_health.py       # Recipe-level source accessibility probe
 ├── site/                      # GitHub Pages reader (static-site generator, stdlib-only)
-│   ├── build.py               # SSG entrypoint — dynamic /brief/, day/weekly pages, feeds, ops
+│   ├── build.py               # SSG entrypoint — dynamic /live/, day/weekly pages, feeds, ops
 │   ├── content_model.py       # THE shared parser/validator for entries, registry, runs
 │   ├── taxonomy.yaml          # Controlled vocabulary for entry frontmatter
 │   ├── test_build.py          # Stdlib-only smoke tests

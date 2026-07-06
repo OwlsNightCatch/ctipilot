@@ -4,9 +4,11 @@ A static, dependency-free GitHub Pages site that renders the pipeline's
 content store server-side: per-finding **entries** (`entries/`), per-run
 records (`runs/`), and the global **entity registry**
 (`entities/registry.yaml`), cross-linked with the source list. The
-signature page is **`/brief/`** — the brief is a *query*: the reader picks
-a time window (default last 24 h) and the page assembles the canonical
-brief structure from the entries in that window. Read-only: the agentic
+signature page is **`/live/`** — the brief is a *query*: the reader picks
+a time window (default last 24 h) and the page renders a run-grouped
+timeline of every run in that window (quiet 0-finding runs included).
+`/daily/` archives each **completed** UTC day; `/weekly/` the strategic
+weeks. Read-only: the agentic
 workflow (`prompts/`, `entries/`, `runs/`, `entities/`, `state/`,
 `sources/`) is the source of truth; this folder only **publishes** what
 the pipeline produces.
@@ -15,12 +17,16 @@ The deployed site lives at <https://ctipilot.ch/>.
 
 ## Architecture (v3 — static-site generator + one dynamic page)
 
-Every URL is a real HTML page rendered at build time. JavaScript is
-progressive enhancement only (topbar search autocomplete, GitHub-stars
-badge, list-page filter chips, day-page tag/region/section toggles, theme
-cycle — plus `/brief/`'s window selector). With JS disabled the site is
-fully readable — `/brief/` serves its server-rendered default 24 h window;
-only re-windowing needs JS.
+Every URL is a real HTML page rendered at build time. The topbar is a
+segmented **Live / Daily / Weekly** control plus a search modal, a display
+& accessibility popover (light / dark / system theme, dyslexia-friendly
+font, comfortable spacing), a More menu, and a GitHub-stars badge; the
+footer is a single minimal row. JavaScript is progressive enhancement only
+(search modal + autocomplete, GitHub-stars fetch, finding chip filters,
+theme / accessibility toggles, AI-bar dismiss, copy-link, and `/live/`'s
+window selector + load-older). With JS disabled the site is fully readable:
+`/live/` serves its server-rendered default 24 h timeline; only re-windowing
+and the chip filters need JS.
 
 ```
 site/
@@ -44,14 +50,16 @@ site/
 │                          # alerts shape, feeds, branding contract).
 ├── README.md              # this file
 └── assets/
-    ├── css/styles.css     # Dark-first stylesheet, light/dark/system, print
+    ├── css/styles.css     # Dark-first stylesheet: light/dark/system theme,
+    │                      # dyslexia-friendly + comfortable-spacing modes, print
     ├── js/
-    │   ├── theme.js       # Reads/writes data-theme; cycles system → light → dark
+    │   ├── theme.js       # data-theme (system/light/dark) + data-font (dyslexic)
+    │   │                  # + data-density (comfortable); applied before paint
     │   ├── search.js      # Token-prefix scoring across data/search.json
-    │   ├── app.js         # Topbar wiring, list-page filters, copy-link, mobile nav
-    │   └── brief.js       # /brief/ window selector — re-assembles the brief
-    │                      # client-side from data/briefbook.json (pre-rendered
-    │                      # HTML cards; no client-side Markdown parsing)
+    │   ├── app.js         # Topbar menus/drawer/display popover, search modal,
+    │   │                  # AI-bar dismiss, copy-link, finding chip filters
+    │   └── brief.js       # /live/ window selector + load-older: re-renders the
+    │                      # run-grouped timeline from data/briefbook.json
     └── vendor/
         ├── HASHES         # SHA-256 + SHA-384 known-good hashes; build aborts on mismatch
         ├── marked.min.js  # vendored, unused at runtime (kept integrity-pinned)
@@ -93,16 +101,17 @@ _site/
 ├── about/…                               # README, docs/ (incl. pipeline.md), prompts/, changelog
 └── data/
     ├── briefbook.json                    # last ~35 days of entries + runs with pre-rendered
-    │                                     #   HTML cards — the /brief/ client data
+    │                                     #   HTML cards — the /live/ client data
     ├── alerts.json                       # last 7 days of critical/high entries with
     │                                     #   immediate_action metadata — the notification-hook surface
     ├── search.json · site.json · build_manifest.json
 ```
 
 Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`,
-`.well-known/security.txt`, `CNAME`, and `/briefs/weekly/…` →
-`/weekly/…` redirect stubs. URL layout is **permanent** — never renamed,
-never repathed.
+`.well-known/security.txt`, and `CNAME`. The reading routes are `/live/`
+(rolling), `/daily/` (completed days), and `/weekly/`; the design refresh
+renamed the earlier `/brief/` and `/briefs/` routes and keeps no legacy
+redirects for them.
 
 ## Cross-references
 

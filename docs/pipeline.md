@@ -433,18 +433,21 @@ is built entirely from `runs/**` frontmatter.
 
 ## Rendering — the brief is a query
 
-- **`/brief/`** — the dynamic brief. Reader picks *last N hours* (6 / 12 /
-  24 / 48 / 72) or *since a date*; default **24 h**. The page ships with the
-  default window server-rendered (full content, no-JS readable); JS
-  re-assembles the same section structure client-side from
-  `data/briefbook.json` (last ~35 days of entries with server-pre-rendered
-  HTML bodies + full metadata + run-record notes). Section order matches
-  a v2 daily brief exactly: TL;DR (+ Immediate-Action
-  callout) → Active Threats → Trending Vulnerabilities → Research →
-  Updates → Deep Dive → Action Items → Verification Notes.
-- **`/briefs/YYYY-MM-DD/`** — static per-day archive page (that UTC day's
-  operational entries in the same structure). The browsable historical
-  record; daily RSS keys on these.
+- **`/live/`** — the live rolling brief, rendered as a run-grouped,
+  reverse-chronological **timeline**. Reader picks *last N hours* (6 / 12 /
+  24 / 48 / 72) via the window selector or loads older findings; default
+  **24 h**. **Every run in the window appears, including quiet (0-finding)
+  ones.** The default window ships server-rendered (full content, no-JS
+  readable); JS re-renders the timeline client-side from
+  `data/briefbook.json` (last ~35 days of entries + run records). Each
+  timeline row carries priority / CVE / exploited badges, a linked
+  headline, provenance, and a clickable source list.
+- **`/daily/YYYY-MM-DD/`** — one settled page per **completed** UTC day
+  (the still-rolling day lives only in `/live/`), in the classic editorial
+  section order: TL;DR → Active Threats → Trending Vulnerabilities →
+  Research → Updates → Deep Dive → Action Items, with a collapsible
+  Verification block. `/daily/` is the newest-first archive; daily RSS keys
+  on these.
 - **`/weekly/YYYY-Www/`** — static weekly page: the week's strategic
   entries in the 12-section weekly structure, with referenced operational
   entries linked in place.
