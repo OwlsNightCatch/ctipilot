@@ -520,7 +520,7 @@ window's operational entries) and its research fan-out (W1–W2 + W3).
                                │ detect intel/<date>/ drops (⇒ S5)      │
                                └──────────┬────────────────────────────┘
                                           │ spawn in parallel (isolated
-                                          ▼ contexts; 30-min hard cap)
+                                          ▼ contexts; xhigh effort, 45-min cap)
  ┌────────────────────────────────────────────────────┐
  │ S1 active threats & trending vulns  (+product sweep)│
  │ S2 home region & sector                             │

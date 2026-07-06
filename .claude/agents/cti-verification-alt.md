@@ -3,6 +3,7 @@ name: cti-verification-alt
 description: Sonnet-pinned variant of `cti-verification`. Identical operational system prompt; only the YAML model frontmatter differs (sonnet vs. opus). The intel-run / weekly main agent rotates between this and the default verifier across iterations of Phase 5.7 — odd iterations on `cti-verification` (opus), even iterations on `cti-verification-alt` (sonnet) — so model-specific blind spots are caught when the next iteration runs on a different model. Same gatekeeper contract, same finding categories F1–F17, same return format, same 30-min hard cap. Same read-only tool set.
 tools: Read, WebFetch, WebSearch, Bash, Grep, Glob
 model: sonnet
+effort: high
 color: red
 ---
 

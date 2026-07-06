@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.8 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.9 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -28,7 +28,7 @@ The single most important property is that **every fire ends with a written, com
 Anti-crash guards (priority order):
 
 1. **Always write the run record.** Even if Phase 1 returns nothing or Phase 5.7 drops every candidate, write the record with full telemetry and a verification-notes body explaining what happened. Entries only exist for verified findings.
-2. **Hard-cap every sub-agent at 30 min wall-clock; do not pre-empt before that.** There is no soft cap below it — depth over speed (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Time-boxing). Past 30 min, abandon and proceed without the sub-agent; log the gap in the run record. Same cap applies to the Phase 5.7 verifier and to follow-up research sub-agents.
+2. **Hard-cap sub-agents by role — research sub-agents at 45 min wall-clock, the Phase 5.7 verifier at 30 min; do not pre-empt before the cap.** There is no soft cap below it — depth over speed (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Time-boxing). Research sub-agents run at `xhigh` reasoning effort and the verifiers at `high` (set in each definition's frontmatter, applied automatically — you do not pass effort in the spawn message); the 45-min research cap exists so deeper per-pivot reasoning does not cost source coverage, while the verifier stays at 30 min because its loop runs sequentially up to five times and publish latency is the mission. Past the cap, abandon and proceed without the sub-agent; log the gap in the run record. Follow-up research sub-agents take the 45-min research cap.
 3. **One `Write` per entry file.** Entries are small (typically 40–120 lines) — a single `Write` per entry is safe and atomic. The run record is written skeleton-then-`Edit` (frontmatter first, body sections appended) if it grows long. Never batch more than ~5 file writes in one assistant turn (anti-stream-timeout).
 4. **Persist intermediate state often** under `work/<run-id>/<step>.json` (version-controlled — Phase 6 commits the whole directory). After every meaningful unit of work, write the partial result so a later step can resume.
 5. **Drop raw HTML once extracted.** Long page text bloats context.
@@ -62,7 +62,7 @@ Anti-crash guards (priority order):
    | ≤ 12 h | Intraday | Only the genuinely-new signal since the last fire; most intraday windows are quiet and produce zero — that is healthy, not a miss | none |
    | 12 – 30 h | Standard | The window's new, relevant signal, whatever its true size | none |
    | 30 – 96 h | Catch-up | The new, relevant signal accumulated over the gap, first-coverage flagged with publication timestamps; prioritise by exploitation severity if time-boxed | `Coverage window: catch-up of N h (previous run <run-id>)` |
-   | > 96 h | Major gap | The new, relevant signal over the gap, worked exploitation-first; anything the 30-min caps left unresearched is disclosed as residual | `Coverage window: major gap of N h; residual rolled into next run` |
+   | > 96 h | Major gap | The new, relevant signal over the gap, worked exploitation-first; anything the 45-min research caps left unresearched is disclosed as residual | `Coverage window: major gap of N h; residual rolled into next run` |
 
    The table is keyed on `gap_hours` (how much genuinely-new time has elapsed), not on `window_hours` — the window is always ≥ 24 h now, but on a sub-daily fire most of that 24 h has already been covered by earlier runs, so the **new** signal still tracks the gap. There is **no numeric entry target or ceiling** in any row: how many entries a window produces is decided entirely by how much of that window's signal clears the strict relevance/actionability gate (PD-11) — never by a count. Dedup, not a narrow window, is what keeps a 4-fires-a-day cadence from re-publishing coverage; strict relevance, not a cap, is what keeps any window from overflooding the reader.
 
@@ -175,7 +175,7 @@ Rules: the two axes are set **independently** — a reliable source never by its
 
 ## Execution environment
 
-Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost; the repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Publishing chain: commit on the feature branch → sync with `origin/main` (auto-resolution: `state/*.json` + `entities/registry.yaml` → ours, `sources/sources.json` → theirs) → push the feature branch (retry-with-backoff) → [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) promotes to `main` → [`deploy-site.yml`](../.github/workflows/deploy-site.yml) rebuilds gh-pages → Phase 7 verifies the run record is on main AND the site rebuilt. **Direct pushes to `main` are forbidden by repo policy.** Slow national-CERT pages are normal. Hard 30-min per-sub-agent cap. 403 on git push is permission, not transient — don't retry that. **Model is configurable by the runtime** — self-identify from `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` (§ Self-identification).
+Claude Code routine on Anthropic-managed cloud infrastructure. Fresh container each fire with repo cloned. **Ephemeral** — anything not committed is lost; the repo is your only durable memory. Runtime checks out feature branch `claude/<adjective>-<name>-<id>`. Publishing chain: commit on the feature branch → sync with `origin/main` (auto-resolution: `state/*.json` + `entities/registry.yaml` → ours, `sources/sources.json` → theirs) → push the feature branch (retry-with-backoff) → [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) promotes to `main` → [`deploy-site.yml`](../.github/workflows/deploy-site.yml) rebuilds gh-pages → Phase 7 verifies the run record is on main AND the site rebuilt. **Direct pushes to `main` are forbidden by repo policy.** Slow national-CERT pages are normal. Hard per-sub-agent caps (45 min research / 30 min verification). 403 on git push is permission, not transient — don't retry that. **Model is configurable by the runtime** — self-identify from `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` (§ Self-identification).
 
 Working directory:
 
@@ -262,9 +262,9 @@ If any script fails, surface the error and stop.
 
 ---
 
-## Phase 1 — Parallel research (S1–S4, plus conditional S5 intake; up to 30 min wall-clock each)
+## Phase 1 — Parallel research (S1–S4, plus conditional S5 intake; up to 45 min wall-clock each)
 
-Spawn **all Phase 1 sub-agents in a single message** — S1–S4 always, plus **S5 when Phase 0 step 7 found intel files** — via parallel `Agent` calls with `subagent_type: cti-research` ([`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context). The definition embeds the full operational system prompt — defender-vantage opener, link discipline, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template, discovery-trace requirements, findings-YAML return contract, `**Model:**` self-identification. **Do not duplicate that content in the spawn message.**
+Spawn **all Phase 1 sub-agents in a single message** — S1–S4 always, plus **S5 when Phase 0 step 7 found intel files** — via parallel `Agent` calls with `subagent_type: cti-research` ([`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md), isolated context). The definition embeds the full operational system prompt — defender-vantage opener, link discipline, MANDATORY bridge-fetcher rules for known-403 hosts, `WebFetch` outbound-links template, `WebSearch` query-construction discipline, discovery-trace requirements, findings-YAML return contract, `**Model:**` self-identification. **Do not duplicate that content in the spawn message.** Each spawn also inherits `xhigh` reasoning effort and the 45-min hard cap from the definition (frontmatter + § Time-boxing) — never pass an effort or a cap in the spawn message.
 
 **Capture each sub-agent's reported model AND its start/end timestamps** from the mandatory return header lines (`**Model:**`, `**Timestamps:**`, optional `**Self-telemetry:**`) — verbatim into the run record's `sub_agents.<Sn>` block. Missing line → `"unknown"` / `null`; never invent values.
 
@@ -299,7 +299,7 @@ While sub-agents run, the main agent does no source fetching (anti-crash guard #
 
 ## Phase 2 — Verification & triage pass (~5 min, main context)
 
-**Trigger:** as soon as all returning sub-agents have returned (a sub-agent is returned exactly when its `.ended_at` checkpoint file exists in `work/<run-id>/`). Stalled past 30 min → abandon, log the gap. Do **not** wait indefinitely.
+**Trigger:** as soon as all returning sub-agents have returned (a sub-agent is returned exactly when its `.ended_at` checkpoint file exists in `work/<run-id>/`). Stalled past 45 min → abandon, log the gap. Do **not** wait indefinitely.
 
 For every candidate item in the findings YAMLs:
 
@@ -342,7 +342,7 @@ The reader doesn't know about sub-agents, phases, or this prompt — never let w
 
 ### Deep-read the to-be-published primaries (main-agent re-fetch — WILL-PUBLISH set ONLY)
 
-Before composing, **re-fetch and read in full the primary source (and the key corroborating article) for every item that survived Phase 2/3 triage and will be published.** The sub-agents worked under a 30-min clock across a whole domain; you are now composing the published record for a handful of items, and a shallow read is where thin, imprecise, or subtly-wrong entries come from. This step is what turns a findings-YAML summary into an entry a Tier 2/3 responder can act on — exact vulnerable component, prerequisites, affected/patched versions, exploitation status, the load-bearing quotes.
+Before composing, **re-fetch and read in full the primary source (and the key corroborating article) for every item that survived Phase 2/3 triage and will be published.** The sub-agents worked under a 45-min clock across a whole domain; you are now composing the published record for a handful of items, and a shallow read is where thin, imprecise, or subtly-wrong entries come from. This step is what turns a findings-YAML summary into an entry a Tier 2/3 responder can act on — exact vulnerable component, prerequisites, affected/patched versions, exploitation status, the load-bearing quotes.
 
 - **Scope is the WILL-PUBLISH set only** — never the whole research return. Typically a few items; that boundedness is what keeps this within the anti-crash guards (§ guard #9, which permits it as the Phase 4 exception). If the will-publish set is large (say > ~8 items) or the primaries are heavy, spawn a scoped `cti-research` follow-up sub-agent to do the deep read and return enriched findings, rather than pulling it all into your own context.
 - **Use the best transport, best content first** (§ [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) Fetch tooling reference): prefer the **jina reader** (`python3 tools/fetch_source.py jina <URL>`) — it returns the full body as clean markdown, which reads in complete technical detail and keeps your working context lighter than raw HTML — falling to `url <URL>` (auto-reader-fallback) or the host's structured recipe. Always keep a backup transport; a single failed fetch is never the end of the read.
@@ -351,7 +351,7 @@ Before composing, **re-fetch and read in full the primary source (and the key co
 
 ### Compose-after-return discipline (anti-fabrication)
 
-**Do not compose any entry until every Phase 1 sub-agent has either returned or hit the 30-min cap** (`.ended_at` checkpoint files are the gate — no file ⇒ no entry composition). Never pre-fill entry content from returns you have only inferred; substantive prose pretending to come from an unreturned sub-agent is forbidden. This mechanical gate exists because a past run fabricated "S1 returned: …" text — including invented CVE IDs — before any sub-agent had returned.
+**Do not compose any entry until every Phase 1 sub-agent has either returned or hit the 45-min cap** (`.ended_at` checkpoint files are the gate — no file ⇒ no entry composition). Never pre-fill entry content from returns you have only inferred; substantive prose pretending to come from an unreturned sub-agent is forbidden. This mechanical gate exists because a past run fabricated "S1 returned: …" text — including invented CVE IDs — before any sub-agent had returned.
 
 ### Compose strictly from the findings files (anti-embellishment)
 
@@ -493,7 +493,7 @@ Decision rules (priority order):
 4. NEEDS_FIXES with `truth + editorial ≤ 2` and no F1/F4 → apply remediations, publish (early exit); log the residuals.
 5. Iteration 5 without CLEAN → publish anyway (fail-open safety valve); `verification_residual_count = final truth + editorial` (never 0 on a NEEDS_FIXES final iteration).
 
-Remediation per finding type (v2 table, adapted to entries): broken/generic URL → re-pivot to a specific fresh URL or drop the entry; claim-not-supported → narrow the claim or fix the citation; hallucinated fact → drop the fact and whatever it props up; missing citation → add or rewrite; strengthen-primary → re-pivot, reorder `sources[]`; **drop** → `git rm` the entry file, decrement counters, remove orphaned `cves_seen` records, log in the run record; needs-more-research → ≤3 follow-up `cti-research` sub-agents, scoped, 30-min cap; contradiction → run-record line + `verification: contradicted` on the entry; missed angle → one targeted sub-agent if it would clear the inclusion gates, else a coverage-gap line; priority-miscalibration (F16 scope in v3 includes priority/org-triage drift) → adjust `priority`/`org_triage` to what the cited facts support; F13 analytical-link-as-fact → soften to the source's claim or re-cite; F14 quantifier-without-source → the source's number, "several", or omission; F15 name-collision → explicit disambiguation in the body, or restructure as `update_of`.
+Remediation per finding type (v2 table, adapted to entries): broken/generic URL → re-pivot to a specific fresh URL or drop the entry; claim-not-supported → narrow the claim or fix the citation; hallucinated fact → drop the fact and whatever it props up; missing citation → add or rewrite; strengthen-primary → re-pivot, reorder `sources[]`; **drop** → `git rm` the entry file, decrement counters, remove orphaned `cves_seen` records, log in the run record; needs-more-research → ≤3 follow-up `cti-research` sub-agents, scoped, 45-min cap; contradiction → run-record line + `verification: contradicted` on the entry; missed angle → one targeted sub-agent if it would clear the inclusion gates, else a coverage-gap line; priority-miscalibration (F16 scope in v3 includes priority/org-triage drift) → adjust `priority`/`org_triage` to what the cited facts support; F13 analytical-link-as-fact → soften to the source's claim or re-cite; F14 quantifier-without-source → the source's number, "several", or omission; F15 name-collision → explicit disambiguation in the body, or restructure as `update_of`.
 
 After remediation: **re-run `python3 tools/check_run.py`**, fix FAILs, then re-spawn fresh (iteration N+1). Record every iteration in the run record's `verification.iterations[]` (model, timestamps, verdict, truth/editorial/advisory counts, rich `findings[]` with remediation outcomes).
 

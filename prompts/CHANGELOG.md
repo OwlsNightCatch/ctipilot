@@ -4,6 +4,23 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.9 — 2026-07-06 (sub-agent reasoning effort raised — research `xhigh`, verifiers `high`; research wall-clock cap 30→45 min; WebSearch query-construction discipline; WebFetch completeness guard)
+
+### Why
+
+Operator directive: **make every sub-agent world-class at its task — raise reasoning effort, and tune web fetch / web search so they return all the relevant information.** Two changes back it. First, reasoning effort is now pinned per role in each sub-agent definition's frontmatter — `xhigh` for the `cti-research` workers (deep multi-pivot collection and fact/claim/inference separation reward maximal reasoning) and `high` for both verifiers (adversarial cold-reading is reasoning-heavy but fetch-bound). Because higher effort spends more thinking per turn and the research workers make 30–50 tool calls apiece, the research hard cap rises **30 → 45 min** so deeper reasoning does not cost source coverage; the verifier cap stays **30 min** (its loop runs sequentially up to five times, and publish latency is the mission). Second, `WebFetch` was already heavily tuned (the outbound-links template + the best-content-first fetch ladder), but `WebSearch` had only a one-line "issue 4–10 queries" note — the quiet way a run misses in-window signal. It now has a full query-construction-and-result discipline, and `WebFetch` gains an explicit guard against the summariser silently truncating long advisories.
+
+### What changed
+
+- **`.claude/agents/cti-research.md`** — frontmatter `effort: xhigh` added; § Time-boxing hard cap 30 → **45 min** (and the self-monitor "start composing" nudge 25 → 40 min), with the raised cap tied explicitly to the `xhigh` effort; all four in-body "30-min budget" references updated to 45. New **§ WebSearch — query construction & result discipline** (specific-over-broad identifiers, `site:` pinning of known primaries, native-language DE/FR/IT queries that lead English by days, recency bias with on-fetch date verification, reformulate-before-declaring-empty, dedup-before-drill, never-cite-the-search). New **WebFetch completeness guard** in the outbound-links section: the small-model summariser can truncate a long affected-version matrix or a multi-item listing — set N generously and drill, or use the jina reader for the full body, and never infer "unaffected" from an absence in a summarised fetch.
+- **`.claude/agents/cti-verification.md` + `.claude/agents/cti-verification-alt.md`** — frontmatter `effort: high` added to both (verifier bodies stay byte-identical; only `model:` still differs between the two). Verifier 30-min cap unchanged.
+- **`prompts/cti-run.md`** — banner v3.8 → **v3.9**. Anti-crash guard #2 reworded from a single "30-min every sub-agent" cap to a **by-role** cap (research 45 min at `xhigh`, verifier 30 min at `high`), documenting that effort/cap are fixed in the definitions and never passed in the spawn message. Every research-cap reference updated by role (execution-environment note, gap-table residual row, Phase 1 heading + intro, Phase 2 trigger, Phase 4 deep-read rationale, compose-after-return gate, Phase 5.7 follow-up-research remediation → 45 min; the two verifier references stay 30 min). Phase 1 intro now also lists the WebSearch discipline among the embedded contract.
+- **`prompts/weekly-summary.md`** — banner v3.8 → **v3.9** in lockstep; the shared-guard reference and the W1–W2/W3 horizon-research cap references updated to the by-role caps (45-min research / 30-min verification).
+
+### What stays
+
+Every hard invariant: no IOCs, two-source verification with the national-CERT / victim carve-outs, entry immutability + `update_of` discipline, the entity registry, the mechanical gate (`check_run.py` exit 0) + the verifier loop (5-iteration fail-open cap, model rotation), feature-branch publishing, relevance discipline (sound AND complete, no volume cap), run-record-per-fire, memory commits. Effort and the wall-clock cap are **operational tuning, not policy** — no gate enforces a duration, `check_run.py` is untouched, and the ORG-PROFILE managed blocks are unchanged (`compose_prompts.py --check` stays in-sync). The two verifier definitions remain byte-identical below their H1; the WebFetch outbound-links template and the fetch ladder are unchanged — the WebSearch section complements them, it does not replace anything.
+
 ## 3.8 — 2026-07-06 (best-content-first fetch ladder + jina reader as a first-class transport; main-agent deep-read of the will-publish set)
 
 ### Why

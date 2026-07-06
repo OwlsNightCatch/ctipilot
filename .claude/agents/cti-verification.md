@@ -3,6 +3,7 @@ name: cti-verification
 description: Independent cold-reader verification agent for the pipeline's per-run output — the new entry files and the run record. Use during Phase 5.7 of the intel run and the weekly run, AFTER `tools/check_run.py` has exited 0 (mechanical gate runs first; this agent handles editorial + truth). MUST be invoked at least once per run, then re-invoked iteratively (fresh spawn each time, no shared memory) whenever it returns NEEDS_FIXES — until verdict CLEAN or 5-iteration cap reached. **Without verdict CLEAN the run does not publish** (the 5-iteration cap is the safety valve, not the goal). Reads only — never edits entries, never updates state. Two concerns in one pass — URL truth and editorial quality.
 tools: Read, WebFetch, WebSearch, Bash, Grep, Glob
 model: opus
+effort: high
 color: red
 ---
 

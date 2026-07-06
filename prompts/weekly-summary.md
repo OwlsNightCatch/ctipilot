@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.8 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.9 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -23,7 +23,7 @@ You are a senior cyber threat intelligence officer producing the weekly strategi
 
 ## CRITICAL: this run must produce a committed run record
 
-Identical invariant to the intel run: **every fire ends with a written, committed, pushed run record** (`runs/<date>/<run-id>.md`, `run_id = <date>T<HHMM>Z-weekly`). Strategic entries are conditional on the week's signal; the record is not. All nine anti-crash guards from `prompts/cti-run.md` § CRITICAL apply verbatim (30-min sub-agent cap; one `Write` per entry; ≤5 file writes per turn; persist to `work/<run-id>/`; bounded retries; publishing chain non-negotiable; **main agent does no source fetching while W1/W2 run**).
+Identical invariant to the intel run: **every fire ends with a written, committed, pushed run record** (`runs/<date>/<run-id>.md`, `run_id = <date>T<HHMM>Z-weekly`). Strategic entries are conditional on the week's signal; the record is not. All nine anti-crash guards from `prompts/cti-run.md` § CRITICAL apply verbatim (45-min research / 30-min verification sub-agent caps, with research at `xhigh` and verifiers at `high`; one `Write` per entry; ≤5 file writes per turn; persist to `work/<run-id>/`; bounded retries; publishing chain non-negotiable; **main agent does no source fetching while W1/W2 run**).
 
 ---
 
@@ -129,7 +129,7 @@ This phase reads local files only — no fetching, no speculation beyond what en
 
 ---
 
-## Phase 2 — Horizon research (W1–W2, plus conditional W3; up to 30 min each)
+## Phase 2 — Horizon research (W1–W2, plus conditional W3; up to 45 min each)
 
 Spawn in a single message via `Agent` calls with `subagent_type: cti-research` — same spawn-envelope contract as the intel run (run id, `window_days`, domain, source slice, dedup paths incl. `entities/registry.yaml`, rotation list, ISO date + week, ledger path, watchlist tasking) and the same `**Model:**` / `**Timestamps:**` capture into the run record.
 
@@ -156,7 +156,7 @@ Standing policy / regulatory watch for Swiss federal SOC (Switzerland and Europe
 
 ## Phase 3 — Verification & triage (~5 min, main context)
 
-Trigger on all `.ended_at` checkpoints (or 30-min cap). Triages BOTH the Phase 1 working lists AND the W1/W2/W3 returns, per candidate: (1) URL spot-checks; (2) two-source / carve-out → `verification`; (3) fake-news guard; (4) CVE verification; (5) **weekly dedup** — against prior weeklies' strategic entries, then W-PD-1; (6) recency re-check on `window_days`; (7) rank by exploitation > home-region/coverage-focus nexus > primary-sector nexus > cross-day-pattern strength > horizon significance; assign `priority` (`critical` is exceptional on a weekly — the bar is unchanged; `high` drives the week-at-a-glance). Persist `work/<run-id>/triage.json`.
+Trigger on all `.ended_at` checkpoints (or 45-min cap). Triages BOTH the Phase 1 working lists AND the W1/W2/W3 returns, per candidate: (1) URL spot-checks; (2) two-source / carve-out → `verification`; (3) fake-news guard; (4) CVE verification; (5) **weekly dedup** — against prior weeklies' strategic entries, then W-PD-1; (6) recency re-check on `window_days`; (7) rank by exploitation > home-region/coverage-focus nexus > primary-sector nexus > cross-day-pattern strength > horizon significance; assign `priority` (`critical` is exceptional on a weekly — the bar is unchanged; `high` drives the week-at-a-glance). Persist `work/<run-id>/triage.json`.
 
 ---
 
