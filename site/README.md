@@ -113,6 +113,37 @@ Plus `.nojekyll`, `404.html`, `sitemap.xml`, `robots.txt`,
 renamed the earlier `/brief/` and `/briefs/` routes and keeps no legacy
 redirects for them.
 
+## Discoverability (SEO + machine-readability)
+
+Every page ships from `base_template()` with a full search/social/AI head:
+`<title>`, meta description, `<link rel=canonical>`, per-page-type
+OpenGraph + Twitter cards, and schema.org **JSON-LD** data islands
+(`<script type="application/ld+json">` — non-executable, so the CSP
+`script-src 'self'` self-check exempts them; every string is
+unicode-escaped so entry text can't break out of the element). The
+structured-data builders are the `_ld_*` helpers just above
+`base_template`; each render function passes a small `seo=` dict
+(`og_type`, `breadcrumb`, `article`, `json_ld`):
+
+| Page | `og:type` | JSON-LD |
+|---|---|---|
+| Home | `website` | `WebSite` + `Organization` |
+| Entry permalink | `article` | `Article` / `TechArticle` (dates from `discovered_at`, `keywords` from tags+regions, `about` → CVEs/entities) + `BreadcrumbList` |
+| Day / weekly brief | `article` | `CollectionPage` + `ItemList` of the brief's entries + `BreadcrumbList` |
+| Index / entity / source / tag / region | `website` | `CollectionPage` (+ `ItemList` where cheap) + `BreadcrumbList` |
+
+Identity fields (`WebSite`/`Organization` name, publisher, `sameAs`)
+resolve from the branding constants — never a literal — so a fork
+rebrands from `config/branding.yaml`. Breadcrumb trails are explicit
+(not URL-derived) so every crumb points at a page that exists.
+`sitemap.xml` lists only canonical, indexable URLs: the legacy
+`noindex` meta-refresh redirect stubs (`/cves/<id>/`, `/topics/<key>/`)
+are written for back-compat but excluded (`emit_html(..., index=False)`).
+`robots.txt` is fully permissive (`Allow: /` for every crawler, including
+AI agents) and points at the sitemap. No `og:image` ships by default (the
+site is deliberately image-free); the `seo["image"]` hook lets a fork add
+one. No `llms.txt` — Google Search ignores it and it adds nothing.
+
 ## Cross-references
 
 All joins are computed at build time from frontmatter — there is no
