@@ -53,7 +53,7 @@ The site deploys automatically on every push to `main` that touches the content 
 - **Print stylesheet** — `Cmd/Ctrl+P` produces a clean, link-annotated PDF for handover.
 - **Light / dark / system theme toggle**, persisted per device.
 - **Privacy-by-design analytics** — Umami Cloud (no cookies, no fingerprinting), aggregate counts only; `analytics.provider: "none"` in `config/branding.yaml` turns it off entirely. See [`docs/analytics.md`](docs/analytics.md).
-- **SEO** — per-page `<title>` / description / OpenGraph + canonical URLs, sitemap.xml, robots.txt.
+- **SEO / machine-readability** — per-page `<title>` / meta description / canonical URL, per-page-type OpenGraph + Twitter cards (`og:type` `article` on entries and day/weekly briefs, `website` elsewhere; `article:published_time` from `discovered_at`), and schema.org **JSON-LD** on every page: `Article`/`TechArticle` per entry (dates, `keywords`, `about` → CVEs/entities), `WebSite` + `Organization` on the home page, `CollectionPage` + `ItemList` on brief and index pages, and a `BreadcrumbList` site-wide. Plus `sitemap.xml` (canonical indexable URLs only — the legacy `noindex` redirect stubs are excluded), a fully permissive `robots.txt` welcoming every crawler and AI agent, and `.well-known/security.txt`. The structured data helps both search engines surface rich results and AI answer engines ground responses in source-linked content.
 
 ## What this repo contains
 

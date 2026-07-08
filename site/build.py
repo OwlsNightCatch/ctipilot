@@ -1241,6 +1241,152 @@ def _display_popover_inner() -> str:
     )
 
 
+# === STRUCTURED DATA (JSON-LD) ==========================================
+# schema.org JSON-LD emitted as non-executable <script type="application/ld+json">
+# data islands. They help Google understand each page (Article dates, site
+# identity, breadcrumbs) and give AI answer engines a clean, grounded model of
+# the content. The build's inline-<script> CSP self-check already exempts the
+# ld+json type, and every string is unicode-escaped below so entry-derived
+# text can never break out of the <script> element. Identity fields come from
+# the branding constants — never a literal — so a fork rebrands from config.
+
+
+def _json_ld_script(obj: dict[str, Any]) -> str:
+    """Serialize one JSON-LD object into a non-executable ld+json data island.
+
+    `<`, `>` and `&` are unicode-escaped (valid JSON) so an entry title or
+    summary containing markup can never terminate the <script> element or
+    inject executable content."""
+    payload = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+    payload = (
+        payload.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    )
+    return f'<script type="application/ld+json">{payload}</script>'
+
+
+def _ld_org(site_url: str) -> dict[str, Any]:
+    """The publisher/author Organization node (the autonomous pipeline).
+
+    Used as both `author` and `publisher` on Article nodes — authorship is
+    honestly the pipeline itself (disclosed site-wide via the AI-provenance
+    bar and each entry's PROVENANCE block)."""
+    gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
+    return {"@type": "Organization", "name": SITE_NAME, "url": site_url, "sameAs": [gh]}
+
+
+def _ld_breadcrumb(trail: list[tuple[str, str]]) -> dict[str, Any]:
+    """A BreadcrumbList from an explicit (name, absolute-url) trail. Explicit
+    (not URL-derived) so every crumb points at a page that actually exists —
+    several path prefixes (e.g. /entries/, /tags/) have no landing page."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "name": name, "item": url}
+            for i, (name, url) in enumerate(trail)
+        ],
+    }
+
+
+def _ld_website(site_url: str) -> dict[str, Any]:
+    """The WebSite entity — declares the site's name, canonical URL, language
+    and publisher for the home page (helps search engines resolve the site
+    name shown in results)."""
+    return {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": SITE_NAME,
+        "url": site_url,
+        "description": HOME_META_DESCRIPTION,
+        "inLanguage": SITE_LANG,
+        "publisher": {"@type": "Organization", "name": SITE_NAME, "url": site_url},
+    }
+
+
+def _ld_home(site_url: str) -> list[dict[str, Any]]:
+    org = {"@context": "https://schema.org", **_ld_org(site_url)}
+    return [_ld_website(site_url), org]
+
+
+def _ld_article(
+    entry: dict[str, Any],
+    *,
+    canonical: str,
+    site_url: str,
+    registry: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """An Article/TechArticle node for a per-finding entry permalink.
+
+    datePublished/dateModified are the entry's `discovered_at` (entries are
+    immutable — corrections ship as new `update_of` entries, so the two are
+    equal). `about` links the CVEs and registered entities the finding
+    concerns; `keywords` carries the tags and regions."""
+    title = str(entry.get("title") or entry["id"])
+    published = str(entry.get("discovered_at") or "")
+    kind = str(entry.get("kind") or "")
+    atype = "TechArticle" if kind in ("vulnerability", "research") else "Article"
+    about: list[dict[str, Any]] = [
+        {"@type": "Thing", "name": cid} for cid in entry_cve_ids(entry)
+    ]
+    for key in entry.get("entities") or []:
+        name = ((registry or {}).get(key) or {}).get("name") or str(key)
+        about.append({"@type": "Thing", "name": name})
+    obj: dict[str, Any] = {
+        "@context": "https://schema.org",
+        "@type": atype,
+        "headline": title[:110],
+        "name": title,
+        "description": (entry.get("summary") or entry.get("headline") or "").strip()[:300],
+        "url": canonical,
+        "mainEntityOfPage": {"@type": "WebPage", "@id": canonical},
+        "datePublished": published,
+        "dateModified": published,
+        "inLanguage": SITE_LANG,
+        "isAccessibleForFree": True,
+        "author": _ld_org(site_url),
+        "publisher": _ld_org(site_url),
+    }
+    keywords = list(entry.get("tags") or []) + list(entry.get("regions") or [])
+    if keywords:
+        obj["keywords"] = ", ".join(str(k) for k in keywords)
+    if about:
+        obj["about"] = about
+    return obj
+
+
+def _ld_collection(
+    *,
+    name: str,
+    description: str,
+    canonical: str,
+    site_url: str,
+    items: list[tuple[str, str]] | None = None,
+) -> dict[str, Any]:
+    """A CollectionPage node for a day/weekly brief or an index page. `items`
+    is an optional (absolute-url, name) list, rendered as a bounded ItemList
+    so answer engines can enumerate the entries a listing page collects."""
+    obj: dict[str, Any] = {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "name": name,
+        "url": canonical,
+        "description": description,
+        "inLanguage": SITE_LANG,
+        "isPartOf": {"@type": "WebSite", "name": SITE_NAME, "url": site_url},
+    }
+    if items:
+        capped = items[:50]
+        obj["mainEntity"] = {
+            "@type": "ItemList",
+            "numberOfItems": len(items),
+            "itemListElement": [
+                {"@type": "ListItem", "position": i + 1, "url": u, "name": n}
+                for i, (u, n) in enumerate(capped)
+            ],
+        }
+    return obj
+
+
 def base_template(
     *,
     title: str,
@@ -1254,6 +1400,7 @@ def base_template(
     home_relative_prefix: str = "",
     body_class: str = "",
     active_nav: str = "",
+    seo: dict[str, Any] | None = None,
 ) -> str:
     """Return a complete HTML document.
 
@@ -1270,6 +1417,45 @@ def base_template(
     body_attr = f' class="{_escape(body_class)}"' if body_class else ""
     gh_url = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
     segments = _nav_segments_html(pfx, active_nav)
+
+    # --- SEO / social / structured-data head fragments ------------------
+    seo = seo or {}
+    robots = seo.get("robots") or "index, follow, max-image-preview:large"
+    og_type = seo.get("og_type") or "website"
+    image = (seo.get("image") or "").strip()
+    article = seo.get("article") or {}
+    json_ld: list[dict[str, Any]] = list(seo.get("json_ld") or [])
+    crumbs = seo.get("breadcrumb") or []
+    if crumbs:
+        json_ld.append(_ld_breadcrumb(crumbs))
+
+    tw_card = "summary_large_image" if image else "summary"
+    image_tags = (
+        f'<meta property="og:image" content="{_escape(image)}" />'
+        f'<meta name="twitter:image" content="{_escape(image)}" />'
+        if image
+        else ""
+    )
+    article_bits: list[str] = []
+    if article:
+        if article.get("published"):
+            article_bits.append(
+                f'<meta property="article:published_time" content="{_escape(str(article["published"]))}" />'
+            )
+        if article.get("modified"):
+            article_bits.append(
+                f'<meta property="article:modified_time" content="{_escape(str(article["modified"]))}" />'
+            )
+        if article.get("section"):
+            article_bits.append(
+                f'<meta property="article:section" content="{_escape(str(article["section"]))}" />'
+            )
+        article_bits.append(f'<meta property="article:author" content="{_escape(SITE_NAME)}" />')
+        for tg in article.get("tags") or []:
+            article_bits.append(f'<meta property="article:tag" content="{_escape(str(tg))}" />')
+    article_tags = "".join(article_bits)
+    ld_tags = "".join(_json_ld_script(o) for o in json_ld)
+
     return f"""<!doctype html>
 <html lang="{_escape(SITE_LANG)}">
 <head>
@@ -1281,15 +1467,15 @@ def base_template(
 <meta name="referrer" content="strict-origin-when-cross-origin" />
 <title>{_escape(title)}</title>
 <meta name="description" content="{_escape(description)}" />
-<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="robots" content="{_escape(robots)}" />
 <link rel="canonical" href="{_escape(canonical)}" />
 <meta property="og:site_name" content="{_escape(SITE_NAME)}" />
-<meta property="og:type" content="article" />
+<meta property="og:type" content="{_escape(og_type)}" />
 <meta property="og:title" content="{_escape(title)}" />
 <meta property="og:description" content="{_escape(description)}" />
 <meta property="og:url" content="{_escape(canonical)}" />
-<meta property="og:locale" content="{_escape(SITE_LOCALE)}" />
-<meta name="twitter:card" content="summary" />
+<meta property="og:locale" content="{_escape(SITE_LOCALE)}" />{image_tags}{article_tags}
+<meta name="twitter:card" content="{tw_card}" />
 <meta name="twitter:title" content="{_escape(title)}" />
 <meta name="twitter:description" content="{_escape(description)}" />
 <link rel="stylesheet" href="{pfx}assets/css/styles.css?v={cachebust}" />{_branding_css_links(pfx=pfx, cachebust=cachebust)}
@@ -1306,6 +1492,7 @@ def base_template(
 <script defer src="{pfx}assets/js/search.js?v={cachebust}"></script>
 <script defer src="{pfx}assets/js/app.js?v={cachebust}"></script>
 <script defer src="{pfx}assets/vendor/filter.min.js?v={cachebust}"></script>
+{ld_tags}
 {extra_head}
 </head>
 <body{body_attr}>
@@ -2962,6 +3149,7 @@ def render_live_brief_page(
         body_class="reading",
         active_nav="live",
         extra_head=f'<script defer src="{prefix}assets/js/brief.js?v={cachebust}"></script>',
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("Live", canonical)]},
     )
 
 
@@ -3042,9 +3230,11 @@ def render_day_page(
 """
     tldr = select_tldr_entries(ops)
     description = (tldr[0].get("summary") or "").strip()[:280] if tldr else f"Daily CTI brief for {day}."
+    description = description or f"Daily CTI brief for {day}."
+    day_items = [(site_url + entry_url_path(e), e.get("title") or e["id"]) for e in ops]
     return base_template(
         title=f"CTI Daily Brief · {day}",
-        description=description or f"Daily CTI brief for {day}.",
+        description=description,
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -3052,6 +3242,24 @@ def render_day_page(
         home_relative_prefix=prefix,
         body_class="reading",
         active_nav="daily",
+        seo={
+            "og_type": "article",
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("Daily", site_url + "daily/"),
+                (day, canonical),
+            ],
+            "article": {"published": day, "modified": day, "section": "Daily brief"},
+            "json_ld": [
+                _ld_collection(
+                    name=f"CTI Daily Brief · {day}",
+                    description=description,
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=day_items,
+                )
+            ],
+        },
     )
 
 
@@ -3120,6 +3328,21 @@ def render_days_index_page(
         home_relative_prefix=prefix,
         body_class="reading",
         active_nav="daily",
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Daily", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Daily briefs · {SITE_NAME}",
+                    description=f"{n_days} archived daily brief day pages, newest first.",
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=[
+                        (site_url + f"daily/{d}/", f"CTI Daily Brief · {d}")
+                        for d in sorted(days.keys(), reverse=True)
+                    ],
+                )
+            ],
+        },
     )
 
 
@@ -3197,9 +3420,14 @@ def render_weekly_page(
 {sections_html}
 """
     description = (glance[0].get("summary") or "").strip()[:280] if glance else f"Weekly CTI summary · {week}."
+    description = description or f"Weekly CTI summary · {week}."
+    week_items = [
+        (site_url + entry_url_path(e), e.get("title") or e["id"])
+        for e in sorted(strat, key=entry_sort_key)
+    ]
     return base_template(
         title=f"CTI Weekly Summary · {week}",
-        description=description or f"Weekly CTI summary · {week}.",
+        description=description,
         body=body,
         canonical=canonical,
         site_url=site_url,
@@ -3207,6 +3435,24 @@ def render_weekly_page(
         home_relative_prefix=prefix,
         body_class="reading",
         active_nav="weekly",
+        seo={
+            "og_type": "article",
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("Weekly", site_url + "weekly/"),
+                (week, canonical),
+            ],
+            "article": {"section": "Weekly summary"},
+            "json_ld": [
+                _ld_collection(
+                    name=f"CTI Weekly Summary · {week}",
+                    description=description,
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=week_items,
+                )
+            ],
+        },
     )
 
 
@@ -3254,6 +3500,21 @@ def render_weekly_index_page(
         home_relative_prefix=prefix,
         body_class="reading",
         active_nav="weekly",
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Weekly", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Weekly summaries · {SITE_NAME}",
+                    description=f"{n_weeks} weekly CTI summaries, newest first.",
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=[
+                        (site_url + f"weekly/{w}/", f"CTI Weekly Summary · {w}")
+                        for w in sorted(weeks.keys(), reverse=True)
+                    ],
+                )
+            ],
+        },
     )
 
 
@@ -3468,6 +3729,21 @@ def render_entry_page(
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
 """
     description = (entry.get("summary") or "").strip()[:280] or (entry.get("headline") or "")[:280]
+    # Breadcrumb trail (absolute URLs) mirroring the entry's real parent
+    # navigation — every crumb points at a page that exists.
+    trail: list[tuple[str, str]] = [(SITE_NAME, site_url)]
+    if is_op and day in day_pages:
+        trail.append(("Daily", site_url + "daily/"))
+        trail.append((day, site_url + f"daily/{day}/"))
+    elif (not is_op) and iso_week_of_entry(entry):
+        wk = iso_week_of_entry(entry)
+        trail.append(("Weekly", site_url + "weekly/"))
+        trail.append((wk, site_url + f"weekly/{wk}/"))
+    elif is_op:
+        trail.append(("Live", site_url + "live/"))
+    else:
+        trail.append(("Daily", site_url + "daily/"))
+    trail.append((entry.get("title") or entry["id"], canonical))
     return base_template(
         title=entry.get("title") or entry["id"],
         description=description,
@@ -3478,6 +3754,19 @@ def render_entry_page(
         home_relative_prefix=prefix,
         body_class="reading",
         active_nav="daily" if is_op else "weekly",
+        seo={
+            "og_type": "article",
+            "breadcrumb": trail,
+            "article": {
+                "published": entry.get("discovered_at"),
+                "modified": entry.get("discovered_at"),
+                "section": entry.get("kind"),
+                "tags": list(entry.get("tags") or []) + list(entry.get("regions") or []),
+            },
+            "json_ld": [
+                _ld_article(entry, canonical=canonical, site_url=site_url, registry=registry)
+            ],
+        },
     )
 
 
@@ -3658,6 +3947,7 @@ def render_home_page(
         cachebust=cachebust,
         home_relative_prefix="",
         body_class="home",
+        seo={"og_type": "website", "json_ld": _ld_home(site_url)},
     )
 
 
@@ -3877,6 +4167,17 @@ def render_cve_list_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("CVEs", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"CVEs · {SITE_NAME}",
+                    description=f"{len(cves)} CVEs referenced across all briefs.",
+                    canonical=canonical,
+                    site_url=site_url,
+                )
+            ],
+        },
     )
 
 
@@ -3962,6 +4263,17 @@ def render_topic_list_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Topics", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Topics · {SITE_NAME}",
+                    description=f"{len(topics)} tracked topics · CVEs, actors, campaigns, incidents, tools.",
+                    canonical=canonical,
+                    site_url=site_url,
+                )
+            ],
+        },
     )
 
 
@@ -4132,6 +4444,17 @@ def render_source_list_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Sources", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Sources · {SITE_NAME}",
+                    description=f"{len(sources)} curated CTI sources.",
+                    canonical=canonical,
+                    site_url=site_url,
+                )
+            ],
+        },
     )
 
 
@@ -4235,6 +4558,13 @@ def render_source_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("Sources", site_url + "sources/"),
+                (source.get("publisher") or source["id"], canonical),
+            ],
+        },
     )
 
 
@@ -4274,6 +4604,17 @@ def render_index_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), (title, canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=title,
+                    description=description,
+                    canonical=canonical,
+                    site_url=site_url,
+                )
+            ],
+        },
     )
 
 
@@ -4518,6 +4859,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("RSS feeds", canonical)]},
     )
 
 
@@ -4696,6 +5038,18 @@ def render_static_doc(
   <div class="brief-prose">{rendered}</div>
 </article>
 """
+    # Breadcrumb derived from the canonical path — every /about/** intermediate
+    # segment has a real landing page, so the cumulative crumb URLs all resolve.
+    _label_map = {"about": "About", "docs": "Documentation", "prompts": "Prompts", "changelog": "CHANGELOG"}
+    trail: list[tuple[str, str]] = [(SITE_NAME, site_url)]
+    if canonical.startswith(site_url):
+        segs = [s for s in canonical[len(site_url):].split("/") if s]
+        acc = site_url
+        for i, seg in enumerate(segs):
+            acc = acc + seg + "/"
+            is_last = i == len(segs) - 1
+            name = title.split(" · ")[0] if is_last else _label_map.get(seg, seg.replace("-", " ").capitalize())
+            trail.append((name, canonical if is_last else acc))
     return base_template(
         title=title,
         description=description,
@@ -4704,6 +5058,7 @@ def render_static_doc(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={"breadcrumb": trail if len(trail) > 1 else None},
     )
 
 
@@ -4728,6 +5083,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
             body=body,
             canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
+            seo={"breadcrumb": [(SITE_NAME, site_url), ("Trends", canonical)]},
         )
 
     week_buckets: dict[str, dict[str, int]] = {c["key"]: {} for c in TREND_COHORTS}
@@ -4748,6 +5104,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
             description="Weekly trend dashboard across all published entries.",
             body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
+            seo={"breadcrumb": [(SITE_NAME, site_url), ("Trends", canonical)]},
         )
 
     cards: list[str] = []
@@ -4803,6 +5160,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("Trends", canonical)]},
     )
 
 
@@ -5538,6 +5896,7 @@ def render_ops_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("Operations", canonical)]},
     )
 
 
@@ -7392,6 +7751,17 @@ def render_entities_index_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [(SITE_NAME, site_url), ("Entities", canonical)],
+            "json_ld": [
+                _ld_collection(
+                    name=f"Entities · {SITE_NAME}",
+                    description=f"{len(entities)} tracked entities across all briefs.",
+                    canonical=canonical,
+                    site_url=site_url,
+                )
+            ],
+        },
     )
 
 
@@ -7958,6 +8328,10 @@ def render_entity_page(
     entries_by_id=entries_by_id,
 )}
 """
+    ent_items = [
+        (site_url + entry_url_path(e), e.get("title") or e["id"])
+        for e in (matching_entries or [])
+    ]
     return base_template(
         title=f"{title} · {etype or 'entity'}",
         description=(entity.get("summary") or title)[:280],
@@ -7966,6 +8340,22 @@ def render_entity_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        seo={
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("Entities", site_url + "entities/"),
+                (title, canonical),
+            ],
+            "json_ld": [
+                _ld_collection(
+                    name=f"{title} · {etype or 'entity'}",
+                    description=(entity.get("summary") or title)[:280],
+                    canonical=canonical,
+                    site_url=site_url,
+                    items=ent_items,
+                )
+            ],
+        },
     )
 
 
@@ -8388,11 +8778,17 @@ def main() -> int:
     manifest_pages: dict[str, dict[str, Any]] = {}
     sitemap: list[tuple[str, str]] = []
 
-    def emit_html(rel_url: str, html: str, *, lastmod: str = "") -> None:
+    def emit_html(rel_url: str, html: str, *, lastmod: str = "", index: bool = True) -> None:
         """`rel_url` looks like 'briefs/2026-07-03/' or '' for home. The
         path on disk becomes `<rel_url>index.html`, with percent-encoded
         characters decoded back to literal form (GitHub Pages decodes
-        `%3A` → `:` before file lookup)."""
+        `%3A` → `:` before file lookup).
+
+        `index=False` writes the page but keeps it OUT of sitemap.xml — used
+        for the `noindex` meta-refresh redirect stubs (legacy /cves/<id>/ and
+        /topics/<key>/ URLs). A sitemap must list only canonical, indexable
+        URLs; shipping ~840 noindex redirects in it wastes crawl budget and
+        muddies Search Console coverage."""
         rel_path = rel_url + "index.html" if rel_url.endswith("/") or rel_url == "" else rel_url
         if rel_url == "":
             rel_path = "index.html"
@@ -8413,7 +8809,8 @@ def main() -> int:
         atomic_write_text(out_path, html)
         h = hashlib.sha256(html.encode("utf-8")).hexdigest()
         manifest_pages[rel_url or "/"] = {"path": fs_path, "hash": h}
-        sitemap.append((site_url + rel_url, lastmod))
+        if index:
+            sitemap.append((site_url + rel_url, lastmod))
 
     # ---- /brief/ — the dynamic window brief + briefbook ----------------
     card_html_by_id: dict[str, str] = {}
@@ -8598,6 +8995,7 @@ def main() -> int:
                 cachebust=cachebust,
             ),
             lastmod=(ent.get("last_covered") or "")[:10],
+            index=False,  # noindex meta-refresh redirect — not a canonical URL
         )
 
     # ---- Source pages ------------------------------------------------------
@@ -8906,6 +9304,7 @@ def main() -> int:
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=site_base_path,
+        seo={"robots": "noindex, follow"},
     )
     atomic_write_text(OUT / "404.html", err)
 
