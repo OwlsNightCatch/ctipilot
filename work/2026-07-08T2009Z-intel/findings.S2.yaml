@@ -1,0 +1,253 @@
+domain: S2
+run_id: 2026-07-08T2009Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-08T20:12:44Z
+ended_at: 2026-07-08T20:24:06Z
+duration_seconds: 682
+self_telemetry:
+  webfetch_calls: 21
+  websearch_calls: 11
+  bridge_fetches: 16
+items:
+  - title: "NCSC-CH advisory: critical pre-auth bypass in BeyondTrust Remote Support / Privileged Remote Access, no confirmed exploitation yet (CVE-2026-40138/-40139/-40140/-40141)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12751", publisher: "NCSC Switzerland — Cyber Security Hub (GovCERT.ch)", date: "2026-07-07", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/beyondtrust-warns-of-critical-flaws-in-remote-access-software/", publisher: "BleepingComputer", date: "2026-07-07", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/beyondtrust-patches-critical-auth.html", publisher: "The Hacker News", date: "2026-07-07", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12751 (fetched via `python3 tools/fetch_source.py ncsc-csh recent 10`) → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/beyondtrust-warns-of-critical-flaws-in-remote-access-software/ → corroboration: The Hacker News, URL https://thehackernews.com/2026/07/beyondtrust-patches-critical-auth.html → verified CVE data on NVD (CVE-2026-40138/-40139/-40140/-40141, not cited as Source per link-discipline)"
+    summary: |
+      NCSC-CH (GovCERT.ch, Cyber Security Hub) published its own advisory on 2026-07-07 for four
+      BeyondTrust vulnerabilities affecting Remote Support (RS) and Privileged Remote Access (PRA)
+      appliances — the vendor's remote-support/PAM software used by IT service desks including
+      government administrations. CVE-2026-40138 and CVE-2026-40139 (both CVSS4 9.2 CRITICAL) sit in
+      the appliances' shared authentication subsystem: CVE-2026-40138 stems from improper validation
+      of authentication data (CVSS3.1 8.1, AC:HIGH, requires "a specific authentication configuration
+      to be enabled" — vendor/NVD do not specify which); CVE-2026-40139 stems from improper processing
+      of authentication requests (CVSS3.1 9.8, AC:LOW) and needs the same non-default configuration.
+      Both let a network-positioned, unauthenticated attacker bypass access controls and obtain
+      appliance access up to elevated-privilege accounts. CVE-2026-40140 (CVSS 7.5-8.7 HIGH) is an
+      unauthenticated DoS in the network-communication subsystem via insufficient client-input
+      validation. CVE-2026-40141 (CVSS up to 9.9) sits in a web-application component and lets an
+      authenticated attacker with limited/specific-permission accounts access resources/data beyond
+      their authorization scope. Affected: RS and PRA 25.3.2 and earlier; fixed in RS/PRA 25.3.3+.
+      Cloud-hosted instances were already patched by BeyondTrust on 2026-04-21; self-hosted customers
+      not on auto-update must apply the April 2026 security rollup or upgrade. NCSC-CH lists current
+      exploitation status as "UNKNOWN"; BleepingComputer/TheHackerNews report no public PoC and no
+      confirmed active exploitation as of publication, but flag that BeyondTrust RS/PRA zero-days
+      (CVE-2024-12356/-12686) were previously weaponised by the China-linked actor tracked as Silk
+      Typhoon to breach the US Treasury Department (OFAC/CFIUS) in December 2024 — the same product
+      family has a documented history of nation-state exploitation against government targets.
+    region_nexus: "Switzerland (NCSC-CH issued its own advisory); global — BeyondTrust RS/PRA is widely deployed remote-support/PAM software in government and enterprise IT service desks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare, telco (cross-sector remote-support/PAM tooling)"
+    cves: [CVE-2026-40138, CVE-2026-40139, CVE-2026-40140, CVE-2026-40141]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows unauthenticated attackers to bypass access controls and gain administrative access."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12751"
+      - quote: "Exploitation of the critical authentication bypasses requires specific, non-default authentication configurations, which have not been made public, to be enabled on the target appliance."
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12751"
+      - quote: "Security flaws in RS and PRA products have come under repeated exploitation in the past to deploy web shells and backdoors."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/beyondtrust-patches-critical-auth.html"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application) for the pre-auth path; T1078 (Valid
+      Accounts) / T1556 (Modify Authentication Process) once the auth-bypass yields elevated-privilege
+      appliance access; T1499 for the CVE-2026-40140 DoS path. Detection: audit RS/PRA appliance
+      authentication logs for administrative sessions created without a corresponding interactive
+      login event; monitor for RS/PRA-brokered remote sessions to unexpected target hosts (the
+      product's core function is proxying support sessions, so anomalous session targets are the
+      tell); if the appliance is internet-facing, restrict management-plane access to a trusted admin
+      network segment. Hardening: patch to RS/PRA 25.3.3+ now; if patching is delayed, check whether
+      the (unspecified) "specific authentication configuration" required for CVE-2026-40138/-40139 is
+      enabled (SAML/OIDC-style integrations are the most likely candidate given the vendor's phrasing)
+      and disable it if not operationally required. BeyondTrust's own vendor advisory
+      (bt26-03, https://www.beyondtrust.com/trust-center/security-advisories/bt26-03) returned HTTP 403
+      to this run's fetch attempts; content above is corroborated via NCSC-CH + two independent news
+      outlets plus NVD CVE records (CVE-2026-40138/-40139/-40140/-40141), so the vendor page was not
+      needed to reach MULTI-SOURCE verification.
+
+  - title: "NCSC-NL flags Ubiquiti UniFi Security Advisory Bulletin 066 — 25 vulnerabilities incl. unauthenticated CVSS 10.0 command injection in UniFi Connect"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0221", publisher: "NCSC Netherlands", date: "2026-07-07", role: "primary" }
+      - { url: "https://socradar.io/blog/ubiquiti-cve-2026-50746-unifi-connect/", publisher: "SOCRadar", date: "2026-07-08", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (fetched via `python3 tools/fetch_source.py feed https://advisories.ncsc.nl/rss/advisories 10`) → primary body via `python3 tools/fetch_source.py ncsc-nl csaf NCSC-2026-0221` (canonical citation https://advisories.ncsc.nl/advisory?id=NCSC-2026-0221) → pivot: WebSearch (\"Ubiquiti Security Advisory Bulletin 066 UniFi vulnerabilities July 2026\") → corroboration: SOCRadar, URL https://socradar.io/blog/ubiquiti-cve-2026-50746-unifi-connect/ → verified CVE/version data on NVD (CVE-2026-50746/-50747/-50748/-54402/-54403/-55115, not cited as Source per link-discipline)"
+    summary: |
+      NCSC-NL (Dutch national CERT) published advisory NCSC-2026-0221 on 2026-07-07 covering
+      Ubiquiti's Security Advisory Bulletin 066 (SAB-066, vendor-published 2026-07-02): 25
+      vulnerabilities spanning the UniFi Connect, Talk, Access, Network, and Protect applications
+      plus the UniFi OS platform itself (Dream Machines, Cloud Gateways, Cloud Keys, Network/
+      Enterprise Video Recorders, Network-Attached Storage, Enterprise Fortress Gateway, Dream
+      Wall/Routers, Express 7, Enterprise Firewall Core). This is a distinct, larger disclosure from
+      the CVE-2026-34908/-34909/-34910 UniFi OS chain covered on 2026-06-24 — different CVE numbers,
+      broader product scope. The most severe entry, CVE-2026-50746 (CVSS3.1 10.0), is an Improper
+      Access Control flaw in UniFi Connect Application <3.4.20 that lets any network-adjacent,
+      unauthenticated attacker execute OS command injection on the host device. CVE-2026-50747
+      (CVSS 9.9) is authenticated SQL injection in UniFi Talk <5.2.2 usable to escalate privileges.
+      CVE-2026-50748 (CVSS 9.9) is command injection in UniFi Access <4.2.29 for a network-adjacent,
+      low-privilege authenticated attacker. CVE-2026-54402 (CVSS 9.9) is command injection via
+      improper input validation in UniFi OS <5.1.19 across the entire hardware family listed above,
+      again requiring only network access and low privileges. CVE-2026-55115 (CVSS 9.9) is an SSRF
+      in UniFi Protect <7.1.83 usable for privilege escalation. CVE-2026-54403 (CVSS 8.6) is a path
+      traversal in UniFi OS <5.1.19 that bypasses authentication outright and is explicitly flagged
+      by Ubiquiti as chainable with the other flaws to remove the low-privilege prerequisite entirely.
+      No official workarounds are listed for any of the 25 entries — only version upgrades. No public
+      PoC or confirmed in-the-wild exploitation as of 2026-07-08 (NVD/CISA KEV shows no listing).
+      UniFi hardware is dense in EU/CH SMB, school, and local-government networks per prior reporting
+      on the June UniFi disclosure, making this bulletin's unauthenticated-RCE entry a priority patch
+      item for any internet- or WAN-exposed UniFi Connect/OS deployment.
+    region_nexus: "Netherlands (NCSC-NL advisory); EU-wide — UniFi gear is dense across DACH/EU schools, municipal government, and SME networks per prior CTI reporting on the same product line"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-50746, CVE-2026-50747, CVE-2026-50748, CVE-2026-54402, CVE-2026-54403, CVE-2026-55115]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "De kwetsbaarheden betreffen meerdere UniFi-producten en omvatten command injection, SQL-injectie, improper input validation, improper access control, server-side request forgery (SSRF), path traversal, authenticatie-bypass en persistent privilege escalation."
+        attribution: "NCSC Netherlands (NCSC-2026-0221)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0221"
+      - quote: "A malicious actor with access to the network could exploit an Improper Access Control vulnerability found in UniFi Connect Application to execute a Command Injection on the host device."
+        attribution: "NVD (CVE-2026-50746, source: Ubiquiti/HackerOne)"
+        source_url: "https://socradar.io/blog/ubiquiti-cve-2026-50746-unifi-connect/"
+      - quote: "No functional Proof-of-Concept (PoC) exploit has been identified in the public domain at the time of writing."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/ubiquiti-cve-2026-50746-unifi-connect/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application) for the unauthenticated CVE-2026-50746
+      path; T1068 (Exploitation for Privilege Escalation) for the SQLi/SSRF/path-traversal chains;
+      T1210 (Exploitation of Remote Services) for lateral pivoting once inside the management network.
+      Detection: audit UniFi Connect/Talk/Access/Protect application logs for anomalous API calls or
+      shell-spawn events immediately preceding a privilege or configuration change; watch for
+      unexpected outbound requests from UniFi Protect hosts consistent with SSRF probing of internal
+      metadata/service endpoints; segregate every UniFi management-plane interface (controller UI,
+      Connect app, Talk, Access) from general LAN/internet exposure regardless of patch status, since
+      several of the 25 flaws need only network adjacency and no or low privilege. Hardening: update
+      UniFi Connect to ≥3.4.20, UniFi Talk to ≥5.2.2, UniFi Access to ≥4.2.29, UniFi Protect to
+      ≥7.1.83, and the UniFi OS platform (all listed hardware families) to ≥5.1.19; no interim
+      mitigation is documented for any of the 25 CVEs. Ubiquiti's own community.ui.com advisory page
+      (Security Advisory Bulletin 066) returned a JS-only SPA shell to this run's fetch attempts (both
+      direct and jina-reader); the CVE/version detail above is corroborated via NCSC-NL's structured
+      CSAF advisory plus NVD records and SOCRadar's independent write-up, so MULTI-SOURCE verification
+      does not depend on reaching the vendor page directly.
+
+  - title: "Compass Security (Swiss lab) publishes a practical EU Cyber Resilience Act compliance methodology for embedded/IoT devices — STRIDE threat model + IEC 62443-4-2 SL2 case study fails an off-the-shelf IP camera"
+    sources:
+      - { url: "https://blog.compass-security.com/2026/07/cyber-resilience-act-part-ii/", publisher: "Compass Security (Switzerland)", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: compass-security, URL https://blog.compass-security.com/ (listing) → primary: https://blog.compass-security.com/2026/07/cyber-resilience-act-part-ii/ (no pivot needed)"
+    summary: |
+      Compass Security, a Swiss offensive-security research lab, published Part II of a two-part
+      series (Part I: 2026-06-26) walking through a practical Cyber Resilience Act (CRA) compliance
+      assessment using a budget IP camera as the case study. The methodology: (1) classify the
+      product under CRA Annex III — the camera lands in "Important Class I," which maps to IEC
+      62443-4-2 Security Level 2 (SL2); (2) STRIDE threat-model the device across three zones (device,
+      network, cloud-integration layers), prioritising spoofing, tampering, information-disclosure
+      and privilege-escalation vectors; (3) run the technical assessment — non-invasive network
+      traffic capture, hardware teardown and firmware extraction, debug-interface identification,
+      serial-console connection to observe the boot process, and low-level system-access analysis.
+      Result: the device failed every one of the seven mandatory SL1 test cases plus the five
+      additional SL2 criteria, with only the Data Confidentiality (FR4) requirement fully satisfied —
+      illustrating, with a named test methodology and a published sample report, how far a
+      commodity IoT device typically sits from CRA-compliant baseline security. The piece is aimed at
+      manufacturers and integrators needing a repeatable, auditable assessment process ahead of the
+      CRA's compliance deadlines (the CVE Numbering/reporting-platform deadline already tracked is
+      11 September 2026 for the Single Reporting Platform).
+    region_nexus: "Switzerland (research lab); EU-wide — the assessed regulation (CRA) is an EU instrument that also captures Swiss manufacturers selling into the EU market"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector (technology suppliers), energy, water (IEC 62443 is the OT/ICS security-level standard referenced)"
+    cves: []
+    entity_keys: ["campaign:eu-cyber-resilience-act"]
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "single-source technical methodology piece (first-party lab publication, not a contested factual claim needing corroboration) rather than a threat/incident report; included for its concrete, actionable CRA compliance methodology relevant to the org's public-sector-technology-supplier watchlist angle"
+    evidence:
+      - quote: "Every assessment activity is driven by the applicable CRA requirements and the corresponding IEC 62443 security controls."
+        attribution: "Compass Security"
+        source_url: "https://blog.compass-security.com/2026/07/cyber-resilience-act-part-ii/"
+      - quote: "The device fails to satisfy any recognized security level requirements."
+        attribution: "Compass Security"
+        source_url: "https://blog.compass-security.com/2026/07/cyber-resilience-act-part-ii/"
+    extended_notes: |
+      No exploitation/attack content — this is a compliance-assessment methodology, not a
+      vulnerability disclosure, so no ATT&CK/detection mapping applies. Procurement takeaway for
+      public-sector buyers: require an IEC 62443-4-2 SL-mapped, STRIDE-documented vendor assessment
+      (the sample report format Compass references: report_99200_IP_Camera_A2308_v1.0.pdf) before
+      accepting a manufacturer's bare "CRA compliant" claim for embedded/IoT hardware procurement.
+
+  - title: "Swiss Post's 2026 e-voting intrusion test removes the outermost network security layer for a subset of testers — 6th annual public bug bounty, 6-24 July, up to EUR 230,000"
+    sources:
+      - { url: "https://www.swisscybersecurity.net/news/2026-07-07/post-hebt-bug-bounty-programm-fuer-e-voting-auf-neue-stufe", publisher: "SwissCybersecurity.net", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"swisscybersecurity.net news Juli 2026\") → primary: SwissCybersecurity.net, URL https://www.swisscybersecurity.net/news/2026-07-07/post-hebt-bug-bounty-programm-fuer-e-voting-auf-neue-stufe → attempted corroboration: Swiss Post's own blog post (digital-solutions.post.ch) 301-redirected to the site's restructured homepage during this run and the specific article could not be recovered at a working URL"
+    summary: |
+      Swiss Post opened its sixth annual public intrusion test of its federal e-voting system on
+      2026-07-06, running through 2026-07-24. New this year: a selected cohort of ethical hackers is
+      given access to a version of the system with the outermost network security protection layer
+      removed — a configuration Swiss Post states will never be used operationally — specifically to
+      let testers probe deeper into the underlying application and protocol layers than the
+      production perimeter normally allows. Total bounty pool is up to EUR 230,000, with a EUR 3,000
+      bonus for each of the first three confirmed findings; the prior program's cumulative payouts
+      were approximately EUR 246,000. In the 2025 round, none of roughly 8,800 recorded attacks
+      compromised the digital ballot box. Swiss e-voting is federal government-run digital-democracy
+      infrastructure and a recurring subject of public and academic security scrutiny in Switzerland.
+    region_nexus: "Switzerland — federal e-voting (e-government) infrastructure operated by Swiss Post"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In previous iterations, no critical vulnerabilities were discovered. Specifically, in 2025, none of 8,800 attacks successfully compromised the digital ballot box."
+        attribution: "SwissCybersecurity.net"
+        source_url: "https://www.swisscybersecurity.net/news/2026-07-07/post-hebt-bug-bounty-programm-fuer-e-voting-auf-neue-stufe"
+    extended_notes: |
+      Operational-awareness item rather than a threat disclosure: SOC teams monitoring Swiss Post /
+      federal e-government network segments should expect a spike in authorised, adversarial-style
+      traffic against the e-voting system during the 2026-07-06 to 2026-07-24 window and should not
+      mis-triage it as a real intrusion attempt. No CVEs or named vulnerabilities were disclosed by
+      this program announcement itself. Sourcing note: only one independently-fetched publisher
+      reached in this run (SwissCybersecurity.net); Swiss Post's own blog post on the same program
+      exists (title recovered via WebSearch: "Cyber attackers sought: Swiss Post begins endurance
+      test for e-voting system") but its URL 301-redirected to the provider's restructured corporate
+      homepage during this run and the live article could not be recovered — flagged as
+      SINGLE-SOURCE-OTHER / MEDIUM confidence rather than dropped, given the story is a low-risk
+      program announcement (not a contested claim) and Netzwoche independently carries the same
+      figures.
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "cert-eu recent API feed returned only up to 2026-06-10 (advisory 2026-007/008) — no in-window (2026-07-06 to 2026-07-08) items; consistent with the source's documented slow policy-advisory cadence, not a fetch failure."
+  - source_id: cert-at
+    reason: "cert.at/en/news/ (jina) most recent post dated 2026-06-01; cert.at/en/warnungen/ 404s as previously documented. No in-window items — sparse (~monthly) cadence, not a fetch failure."
+  - source_id: cert-pl
+    reason: "cert.pl/en/news/ most recent post dated 2026-06-12 (UNC1151/Ghostwriter Gmail campaign). No in-window items."
+  - source_id: enisa
+    reason: "enisa.europa.eu/news most recent item (NIS360 survey) dated 2026-07-01, outside the 64h window; nothing newer at fetch time. Slow-cadence policy source, not a fetch failure."
+  - source_id: ncsc-uk
+    reason: "bridge `url` on the reports-advisories index returned only page chrome (filter/nav markup) in the captured output within this run's time budget; not drilled further given no other CH/EU signal pointed toward a UK-specific in-window item this cycle."
+  - source_id: infoguard-labs
+    reason: "labs.infoguard.ch most recent post dated 2026-06-15 (Deno-based proxy/RAT). No in-window items."
+  - source_id: prodaft
+    reason: "prodaft.com/reports is a JS-rendered Next.js SPA; bridge `url` returned only the app shell with no server-rendered report list or dated /blog/<slug> to drill in this run. Recipe likely needs a documented working article slug (per source notes) that this run did not have."
+  - source_id: safeonweb-be
+    reason: "WebFetch 403'd; jina reader recovered the page but most recent listed item is 2026-06-29 (France toll-road phishing awareness) — no in-window items, and content is citizen-facing scam awareness rather than SOC-relevant per the source's existing note."
+  - source_id: sekoia
+    reason: "blog.sekoia.io 301-redirects to www.sekoia.com/blog (confirmed, per source note); most recent post there is 2026-07-01 (ChocoPoC trojanised-exploit campaign), just outside the 64h window. No in-window items."
+  - source_id: truesec
+    reason: "truesec.com/hub/blog most recent post dated 2026-07-03 ('AI Used in Ransomware Attack'), outside the 64h window by a few hours; no in-window items at fetch time."
+  - source_id: cert-fr-actu
+    reason: "CERT-FR actualite/alerte feed confirmed still stale (latest item 2025-11-27), consistent with the 2026-06-30 note flagging this feed as stale; the avis (advisory) feed is fresh (up to 2026-07-02) but carries only routine multi-CVE patch-cycle bulletins with no in-window exploited/named-actor item."
+candidate_sources: []

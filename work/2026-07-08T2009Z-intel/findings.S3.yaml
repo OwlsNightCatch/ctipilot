@@ -1,0 +1,337 @@
+domain: S3
+run_id: "2026-07-08T2009Z-intel"
+model: "Claude Opus 4.8"
+model_id: "claude-opus-4-8"
+started_at: "2026-07-08T20:12:53Z"
+ended_at: "2026-07-08T20:31:36Z"
+duration_seconds: 1123
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 24
+  bridge_fetches: 9
+
+items:
+  - title: "CrySome RAT freight-phishing infection chain: AMSI bypass, ICMLuaUtil UAC bypass and an open-source Defender-disruption tool"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/from-phishing-to-persistence-a-crysome-rat-infection-chain-analysis", publisher: "LevelBlue (Trustwave) SpiderLabs", date: "2026-07-06", role: "primary" }
+    discovery_trace: "first seen at: trustwave-spiderlabs, URL https://www.levelblue.com/blogs/spiderlabs-blog (listing) -> primary: LevelBlue SpiderLabs, URL https://www.levelblue.com/blogs/spiderlabs-blog/from-phishing-to-persistence-a-crysome-rat-infection-chain-analysis (no further pivot needed; corroboration search WebSearch(\"CrySome RAT freight phishing malware\") found only unrelated generic CrySome RAT capability write-ups from March 2026, not this specific campaign)"
+    summary: |
+      LevelBlue SpiderLabs (Sean Shirley, Kyle Sopt) documented a multi-stage infection chain
+      delivering CrySome RAT, a subscription-based .NET remote access trojan sold via a public
+      web portal, through spear-phishing emails impersonating freight-rate confirmations.
+      Victims land on a fake portal hosting a batch-file downloader that launches PowerShell
+      with an AMSI bypass to fetch a stage-1 binary (ElevatorShellCode.exe), which performs a
+      UAC bypass via the ICMLuaUtil COM interface (T1548.002). Stage 2 (stage.ps1) adds
+      Microsoft Defender exclusions and drops WinDefCtl — an open-source Defender-disruption
+      utility masquerading as svchost.exe from %TEMP% — to disable Defender's real-time
+      protection (T1562.001) before launching CrySome RAT. Persistence is a scheduled task
+      ("CrysomeLoader") re-firing every five minutes (T1053.005). The RAT beacons to
+      193.26.115[.]42:5555 and provides hidden VNC, arbitrary command execution, and
+      credential theft from Chromium browsers (Chrome, Edge, Brave) via injection of
+      abe_decrypt.dll to defeat Chrome's App-Bound Encryption (T1555.003). LevelBlue notes the
+      operators combine almost entirely open-source/off-the-shelf components (AMSI bypass,
+      WinDefCtl, the CrySome builder) rather than custom development, and recommends detecting
+      the individual behavioral stages rather than final-payload signatures.
+    region_nexus: "no named region in the lure; freight/logistics phishing theme is globally transferable"
+    primary_sector_nexus: "indirect"
+    sector: "transport, private-sector logistics"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:crysome-rat", type: tool, name: "CrySome RAT",
+          aliases: [],
+          summary: ".NET remote-access trojan sold via a public subscription portal; deployed in a freight-rate-confirmation phishing chain with AMSI bypass, ICMLuaUtil UAC bypass and the open-source WinDefCtl Defender-disruption utility (LevelBlue SpiderLabs, 2026-07-06)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "By combining an AMSI bypass, an open-source Defender tampering utility, and the modular CrySome RAT client, the operators minimize custom development while still achieving privilege escalation, defense evasion, persistence, credential theft, and remote access."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/from-phishing-to-persistence-a-crysome-rat-infection-chain-analysis"
+      - quote: "The actor then targeted host defenses by executing WinDefCtl, an open-source Defender disruption utility, masquerading as svchost.exe from %TEMP%."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/from-phishing-to-persistence-a-crysome-rat-infection-chain-analysis"
+      - quote: "Rather than relying solely on malware signatures, detecting the individual behaviors throughout the chain provides multiple opportunities to disrupt the intrusion before the final RAT becomes established."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/from-phishing-to-persistence-a-crysome-rat-infection-chain-analysis"
+    extended_notes: |
+      Detection: process-chain telemetry (Sysmon EID 1) for batch->powershell with AMSI-bypass
+      indicators; ICMLuaUtil/CMSTPLUA COM-object instantiation outside expected system
+      processes as a UAC-bypass signal; EID 13 registry writes to
+      Software\Microsoft\Windows Defender\Exclusions; process-image path mismatch for
+      svchost.exe launched from %TEMP% instead of System32; scheduled-task creation (EID 4698)
+      named "CrysomeLoader" on a 5-minute trigger; egress to non-standard high TCP port 5555.
+      Hardening: Defender tamper protection enforced via policy so exclusion paths cannot be
+      added by a standard admin token; alert on ICMLuaUtil COM abuse; ensure Chrome/Edge
+      App-Bound Encryption is enabled and block untrusted processes from opening browser
+      process handles (mitigates abe_decrypt.dll-style credential theft).
+      ATT&CK: T1566 Phishing, T1204.002 User Execution: Malicious File, T1059.001 PowerShell,
+      T1562.001 Impair Defenses, T1548.002 Bypass User Account Control, T1053.005 Scheduled
+      Task, T1555.003 Credentials from Web Browsers, T1219 Remote Access Software.
+
+  - title: "Cisco Talos: China-nexus UAT-7810 expands its ORB network with LONGLEASH/DOGLEASH/JARLEASH, exploiting unpatched Ruckus and ASUS routers"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-7810/", publisher: "Cisco Talos", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: WebSearch(\"Talos OR Sekoia OR ESET OR Kaspersky new research \\\"July 7\\\" OR \\\"July 8\\\" 2026 malware campaign analysis\") -> pivot: blog.talosintelligence.com listing, URL https://blog.talosintelligence.com/ -> primary: Cisco Talos, URL https://blog.talosintelligence.com/uat-7810/ (corroboration check WebSearch(\"UAT-7810 Talos ORB network\") found only same-day rewrites of the Talos post by TheHackerNews/Infosecurity Magazine, not independent research -- treated as single-source)"
+    summary: |
+      Cisco Talos (Jungsoo An, Asheer Malhotra, Vanja Svajcer, Brandon White) profiled UAT-7810,
+      a China-nexus actor Talos assesses with high confidence is tasked with building and
+      maintaining Operational Relay Box (ORB) networks — relay/proxy infrastructure built from
+      compromised networking gear that secondary China-nexus APTs (Talos names UAT-5918,
+      previously documented targeting Taiwanese critical infrastructure) use to launder the
+      origin of their operations against high-value targets. Initial access is primarily
+      exploitation of known, unpatched vulnerabilities in Ruckus wireless routers
+      (CVE-2020-22653, CVE-2020-22658, CVE-2023-25717) and ASUS AiCloud routers
+      (CVE-2025-2492) — a tactic UAT-7810 has used since 2025 rather than a fresh zero-day.
+      The malware suite, internally named "ff-agent", now includes LONGLEASH — an enhanced
+      successor to the previously known SHORTLEASH backdoor, adding reverse-shell and
+      HTTP/DNS/SOCKS/TCP/ICMP/UDP multi-protocol proxying — plus two newly documented
+      components: DOGLEASH, a passive C-based Linux backdoor for command execution and file
+      manipulation, and JARLEASH, a Java-based admin tool for file management, FTP/SFTP and
+      netcat-style access. The malware is built with Boost.Asio, custom protobuf encoding and
+      MbedTLS-based TLS proxying, compiled for MIPS/ARM/x64 to cover heterogeneous embedded
+      router firmware, and includes a self-deletion routine that erases the implant and all
+      traces if tampering or a suspicious connection is detected.
+    region_nexus: "compromised router infrastructure is global; feeds attacks against high-value targets — previously Taiwanese critical infrastructure via secondary actor UAT-5918"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector, critical infrastructure (via secondary-actor targeting through the ORB relay)"
+    cves: ["CVE-2020-22653", "CVE-2020-22658", "CVE-2023-25717", "CVE-2025-2492"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uat-7810", type: actor, name: "UAT-7810", aliases: [],
+          summary: "China-nexus threat actor Cisco Talos assesses with high confidence builds and maintains Operational Relay Box (ORB) networks by exploiting unpatched Ruckus and ASUS AiCloud routers; infrastructure is leveraged by secondary China-nexus APTs including UAT-5918 (Cisco Talos, 2026-07-07)." }
+      - { key: "actor:uat-5918", type: actor, name: "UAT-5918", aliases: [],
+          summary: "China-nexus APT previously documented by Cisco Talos targeting critical infrastructure in Taiwan; named by Talos as a secondary consumer of UAT-7810's ORB network infrastructure." }
+      - { key: "tool:longleash-orb-malware-suite", type: tool, name: "LONGLEASH / SHORTLEASH ORB malware suite (incl. DOGLEASH, JARLEASH, LEASHTEST)", aliases: ["ff-agent"],
+          summary: "UAT-7810's ORB-network malware suite: LONGLEASH (enhanced successor to SHORTLEASH, multi-protocol HTTP/DNS/SOCKS/TCP/ICMP/UDP proxying), DOGLEASH (C-based Linux backdoor), JARLEASH (Java-based admin/relay tool) and LEASHTEST (MIPS test utility); internally named 'ff-agent' (Cisco Talos, 2026-07-07)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Talos assesses with high confidence that UAT-7810 is a China-nexus threat actor based on the infrastructure that it provides to secondary China-nexus APTs such as UAT-5918."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-7810/"
+      - quote: "UAT-7810 is most likely tasked with establishing Operational Relay Box (ORB) networks that can then be leveraged by associated secondary threat actors to conduct their own malicious attacks against high value targets."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-7810/"
+      - quote: "Talos has observed UAT-7810 primarily exploit known vulnerabilities in unpatched Ruckus wireless routers, a tactic UAT-7810 has used since 2025."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-7810/"
+      - quote: "The executor contains functionality to remove the implant and all traces from the server if a suspicious connection or tampering is detected."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-7810/"
+    extended_notes: |
+      Detection is network-telemetry-based, not EDR-based, since the malware resides on
+      SOHO/embedded CPE rather than managed endpoints: baseline and alert on
+      multi-protocol relay/fan-out behavior (simultaneous HTTP/DNS/SOCKS/TCP/ICMP/UDP traffic)
+      from a single consumer-grade router or AP; treat inbound connections FROM
+      residential/SOHO IP ranges into VPN or remote-access portals as a stronger signal than
+      IP reputation alone, since ORB infrastructure exists specifically to launder attacker
+      origin. Hardening: patch or retire EoL Ruckus wireless APs and ASUS AiCloud-enabled
+      routers exposed to the four named CVEs; disable unneeded remote-management interfaces
+      on edge/CPE devices.
+      ATT&CK: T1190 Exploit Public-Facing Application, T1584.008 Compromise Infrastructure:
+      Network Devices, T1090.003 Multi-hop Proxy, T1573.002 Encrypted Channel, T1071
+      Application Layer Protocol (custom protobuf), T1070 Indicator Removal (self-deletion).
+
+  - title: "Unit 42: Factory-v3 loader-builder abuses fraudulent code-signing and 491 MB file inflation to smuggle Vidar stealer and XMRig past sandboxes"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: WebFetch listing https://unit42.paloaltonetworks.com/ -> primary: Unit 42, URL https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/ (no further pivot needed; no independent corroborating source found)"
+    summary: |
+      Unit 42 (Bharath Nannaka, Pranay Kumar Chhaparwal) documented a financially motivated
+      malvertising campaign, active since April 2026, distributing Vidar stealer and the
+      XMRig cryptominer via loaders built with "Factory-v3", a malware-as-a-service Go
+      loader-builder. Victims are lured to password-protected .bin archives masquerading as
+      cracked software; the extracted Go-compiled loaders (43 analyzed samples, 27 unique
+      build UUIDs, defeating hash-based detection) are signed with fraudulent Authenticode
+      certificates impersonating real companies (first JustWatch GmbH, later BleacherReport).
+      The loaders strip PE metadata (zeroed TimeDateStamp, imports reduced to kernel32.dll
+      only, obfuscated V###### type names) and DLL-sideload via a fake MpClient.dll export
+      that hijacks Windows Defender's DLL search order, executing as NisSrv.exe from AppData.
+      Before dropping the payload, the loader patches AMSI in memory — loading amsi.dll,
+      resolving AmsiScanBuffer and overwriting its first six bytes to force an E_INVALIDARG
+      return. A distinct evasion trick, "file inflation," appends hundreds of megabytes of
+      null bytes to push loader file size as high as 491 MB, exceeding the 50-100 MB
+      upload/detonation limits of many automated sandboxes. Persistence uses registry Run
+      keys, scheduled tasks and startup-folder batch scripts. Each victim is fingerprinted via
+      an 8-character HWID (hash of the C: volume serial number) appended to an auth_token, and
+      the operator — tracked via a Telegram channel branded "X3D MINER" — monitors yield
+      through those notifications. Victims are concentrated in the US and EU.
+    region_nexus: "US and EU victim concentration"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (consumer/enterprise endpoints via malvertising and pirated-software lures)"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:factory-v3-loader-builder", type: tool, name: "Factory-v3", aliases: [],
+          summary: "Malware-as-a-service Go loader-builder used to deliver Vidar stealer and XMRig miner via fraudulent Authenticode code-signing and fake MpClient.dll DLL sideloading; operator tracked via a Telegram channel branded 'X3D MINER' (Unit 42, 2026-07-07)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Loaders in Clusters A and C append hundreds of megabytes of null bytes after the last PE section, pushing the total file size to as high as 491 MB"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/"
+      - quote: "The routine loads amsi.dll, resolves the AmsiScanBuffer variable and overwrites its first six bytes with a patch. This patch forces the function to return E_INVALIDARG"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/"
+      - quote: "The builder generates a unique binary per build. For example, we observed 27 unique build UUIDs across 43 samples, defeating hash-based detection"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/"
+      - quote: "Each victim's C:\\ volume serial number is hashed into an 8-character HWID that is appended to the auth_token field"
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/vidar-stealer-xmrig-miner-campaign-analysis/"
+    extended_notes: |
+      Detection: flag PE files with anomalously large file size relative to apparent code
+      size (section-table-size vs. file-size mismatch is a strong file-inflation heuristic
+      sandbox vendors should tune for); monitor for DLL search-order hijacks that target
+      Defender's own binaries (MpClient.dll load-path anomalies; NisSrv.exe running from a
+      non-standard %AppData% path rather than its legitimate ProgramData location); hunt for
+      AMSI in-memory-patch signatures (AmsiScanBuffer first-six-bytes overwrite) via EDR
+      AMSI-provider telemetry. Hardening: validate Authenticode signer identity against
+      expected vendor/product (JustWatch GmbH / BleacherReport impersonation is a clear
+      signer/product mismatch signal an EDR/AV code-signing policy can flag); block endpoint
+      egress to Telegram Bot API from processes not tied to an approved collaboration client.
+      ATT&CK: T1204.002 User Execution: Malicious File, T1553.002 Subvert Trust Controls: Code
+      Signing Certificates, T1574.002 DLL Side-Loading, T1027 Obfuscated Files or Information,
+      T1562.001 Impair Defenses, T1547.001 Registry Run Keys/Startup Folder, T1053.005
+      Scheduled Task, T1555 Credentials from Password Stores, T1496 Resource Hijacking.
+
+  - title: "CVE-2026-20744 — Hydro-Québec EV-charging network backend: unauthenticated OCPP WebSocket endpoint enables privilege escalation (CVSS 9.8)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-188-01", publisher: "CISA (ICS Advisory ICSA-26-188-01)", date: "2026-07-07", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-188-01.json", publisher: "CISA CSAF machine-readable advisory", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: bridge cisa csaf-recent (structured enumeration of new ICS advisories) -> primary: CISA, URL https://www.cisa.gov/news-events/ics-advisories/icsa-26-188-01 and raw CSAF JSON URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-188-01.json (corroboration check WebSearch found only same-day rewrites by ISSSource/SecurityWeek of the CISA advisory, not independent research)"
+    summary: |
+      CISA published ICS advisory ICSA-26-188-01 for the backend of Hydro-Québec's "Le
+      Circuit Electrique" EV-charging network, disclosing three flaws reported by an
+      anonymous researcher. The headline flaw, CVE-2026-20744 (CVSS v3.1 9.8 / CVSS v4.0 9.3,
+      CWE-284 Improper Access Control), is in the charging-station WebSocket endpoint that
+      speaks OCPP (Open Charge Point Protocol, the industry-standard charge-point-to-backend
+      management protocol): the endpoint accepts connections with no authentication, letting a
+      remote unauthenticated actor escalate privileges against the backend. Two companion
+      flaws compound the exposure: CVE-2026-42952 (CVSS 7.5, CWE-307 Improper Restriction of
+      Excessive Authentication Attempts) — no throttling on repeated authentication attempts,
+      enabling denial-of-service; and CVE-2026-44383 (CVSS 7.5, CWE-613 Insufficient Session
+      Expiration) — the backend allows multiple simultaneous connections under the same
+      charging-station identifier, letting an attacker spin up multiple malicious OCPP client
+      instances to overwhelm it. All affected product instances are listed as "<June_2026";
+      there is no version-numbered software patch — Hydro-Québec's remediation is
+      operational/configuration-level: OCPP has been disabled on most charging stations, and
+      authentication systems were added for the remainder still reliant on it. CISA states no
+      known public exploitation has been reported. The advisory scopes to Canada
+      (Transportation Systems sector), but the underlying weakness class — an unauthenticated
+      OCPP WebSocket management channel — is a protocol-implementation pattern relevant to any
+      EV-charging network operator, since OCPP is the near-universal charge-point management
+      standard also used across Swiss/EU public charging infrastructure.
+    region_nexus: "Canada; directly transferable to Swiss/EU EV-charging network operators given OCPP's near-universal adoption as the charge-point management protocol"
+    primary_sector_nexus: "indirect"
+    sector: "energy, transport"
+    cves: ["CVE-2026-20744", "CVE-2026-42952", "CVE-2026-44383"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The charging station websocket endpoint accepts connections without proper authentication, which could lead to privilege escalation."
+        attribution: "CISA (ICSA-26-188-01)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-188-01"
+      - quote: "Hydro-Québec has updated the majority of charging stations to disable OCPP, mitigating the risk of exploitation. Hydro-Québec has also implemented authentication systems to mitigate the issue for certain charging stations which are still reliant on OCPP."
+        attribution: "CISA / Hydro-Québec"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-188-01"
+      - quote: "No known public exploitation specifically targeting these vulnerabilities has been reported to CISA at this time."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-188-01"
+    extended_notes: |
+      Detection/hardening for any operator running an OCPP central-system backend: verify the
+      WebSocket upgrade handshake enforces mutual TLS or HTTP Basic Auth per the OCPP
+      1.6/2.0.1 security profile (Security Profile 2/3) rather than accepting unauthenticated
+      ws:// upgrades; rate-limit and lock out repeated OCPP BootNotification/Authorize
+      attempts per source IP; enforce one active session per charge-point identity (reject or
+      close duplicate concurrent connections claiming the same ChargePointId) to close the
+      CVE-2026-44383 class; since charging hardware carries no endpoint agent, detection is
+      necessarily network/backend-telemetry-based — log and alert on OCPP session churn or
+      connection-count anomalies per charge-point ID.
+      ATT&CK: T1190 Exploit Public-Facing Application, T1110 Brute Force (companion
+      auth-throttling gap), T1499 Endpoint Denial of Service (session-exhaustion via duplicate
+      charge-point IDs).
+
+  - title: "Krebs on Security: a commercial exploit-acquisition startup advertising $10K-$7M zero-day payouts is run by convicted fraudsters"
+    sources:
+      - { url: "https://krebsonsecurity.com/2026/07/felons-fraudsters-flog-offensive-cybersecurity-startup/", publisher: "Krebs on Security", date: "2026-07-08", role: "primary" }
+    discovery_trace: "first seen at: WebSearch(\"Krebs on Security OR 404 Media investigation July 2026\") -> primary: Krebs on Security, URL https://krebsonsecurity.com/2026/07/felons-fraudsters-flog-offensive-cybersecurity-startup/ (direct primary, no pivot needed)"
+    summary: |
+      Brian Krebs investigated IRIS C2, a Virginia-based startup operated through Calvexa
+      Group LLC that publicly advertises payouts of $10,000 to $7 million to vulnerability
+      researchers and exploit developers for zero-day submissions, marketed for government
+      exploit-acquisition contracts. Krebs identifies the operators as Jacob Wohl and Jack
+      Burkman, both with extensive documented histories of telecommunications/robocall fraud
+      (a $5.1M FCC fine), securities fraud, a $1M civil-rights settlement, and prior
+      fabricated-intelligence-company and pseudonymous AI-lobbying ventures (LobbyMatic). Wohl
+      claims IRIS C2 employs 40 people while acknowledging no formal security background. The
+      piece carries no technical vulnerability or TTP content; its value is procurement/vendor-
+      risk awareness — any government or public-sector body evaluating exploit-acquisition or
+      offensive-security vendors should be aware that entities with no security track record
+      and principals with felony fraud histories are actively soliciting in this market.
+    region_nexus: "US-based company; relevant to any government (including Swiss/EU public-sector bodies) evaluating exploit-acquisition or offensive-security vendors"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector (procurement/vendor-risk awareness)"
+    cves: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Attract the very best vulnerability researchers and exploit developers in the world to join our company."
+        attribution: "Krebs on Security (quoting IRIS C2 marketing material)"
+        source_url: "https://krebsonsecurity.com/2026/07/felons-fraudsters-flog-offensive-cybersecurity-startup/"
+      - quote: "Payouts range from $10,000 to $7 million depending on target, reliability, and operational value."
+        attribution: "Krebs on Security"
+        source_url: "https://krebsonsecurity.com/2026/07/felons-fraudsters-flog-offensive-cybersecurity-startup/"
+      - quote: "I know more about tech than anyone. My background has always been extremely technical."
+        attribution: "Jacob Wohl (quoted by Krebs on Security)"
+        source_url: "https://krebsonsecurity.com/2026/07/felons-fraudsters-flog-offensive-cybersecurity-startup/"
+    extended_notes: |
+      No technical detection/hardening content applies — this is a procurement/vendor-risk
+      awareness item, not a TTP or vulnerability disclosure. Included for public-sector
+      readers who evaluate or contract with exploit-acquisition/offensive-security vendors.
+    borderline: true
+    borderline_reason: "investigative journalism on vendor/procurement risk (a commercial exploit-broker run by convicted fraudsters); no technical vulnerability, TTP, or detection content for Tier2/3 responders -- included for public-sector vendor-risk awareness only, main agent should make the final call."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: prodaft
+    reason: "SPA index (Next.js) returns only the evergreen 'Latest Report' (Wazawaka, undated) and older historical reports list via jina; /blog path 403s on both direct and bridge. No in-window dated content surfaced despite trying /reports and /blog."
+  - source_id: trellix
+    reason: "Both direct WebFetch and jina reader return only the site navigation shell for /blogs/ and /blogs/research/ -- the actual post list appears to load via client-side JS fetch that jina does not trigger. No article list or dates surfaced; recipe needs rework (possible sitemap.xml probe)."
+  - source_id: withsecure-labs
+    reason: "Listing page (WebFetch) returned 10 items all dated 'May 2026' with month-level granularity only; no items reached the July 6-8 window. Consistent with prior note that landing shows month-level dates only -- would need per-post drill to confirm none are more recent, not done this run due to low yield expectation."
+  - source_id: shadowserver
+    reason: "News & Insights listing checked; most recent item dated 2026-06-25 (StealC historical-bot special report), outside the 64h window. Cadence sparse as previously noted -- no fetch failure, just no in-window items."
+  - source_id: sans-newsbites
+    reason: "Direct fetch (both plain url and jina reader) of the canonical /newsletters/newsbites/xxviii-49 URL failed (connection reset / jina 422) or resolved to an ad-tracker redirect; WebFetch on the same URL succeeded and yielded the full issue -- recipe should prefer WebFetch over jina/url bridge for this specific host going forward."
+  - source_id: industrialcyber-co
+    reason: "Confirmed still fully blocked -- direct WebFetch 403s and jina reader also relays the upstream Cloudflare-class block/challenge (both direct=403 and jina=blocked on a specific article URL tested this run). WebSearch substitute used per rotation-priority note; found only a February 2026 Dragos annual report re-hash (out of window), no in-window original content recoverable even via search snippets."
+  - source_id: socprime
+    reason: "RSS feed fetched cleanly; latest item dated 2026-06-19, outside the 64h window. No fetch issue, just stale relative to window."
+  - source_id: trendmicro-research
+    reason: "Feedburner RSS fetched cleanly; latest item dated 2026-06-29, outside the 64h window. No fetch issue, just stale relative to window."
+  - source_id: schneier
+    reason: "Atom feed fetched cleanly with items through 2026-07-08, but content is exclusively policy/commentary (AI-hacking-risk Five Eyes statement discussion, quantum-safe-crypto certification, Outsider/Gemini lawsuit commentary) rather than original technical threat research -- none cleared the S3 bar for substantive primary technical analysis; the Outsider/Gemini and France PQC items may be of interest to W2 (policy) if not already covered."
+  - source_id: cisa-news
+    reason: "cisa feed https://www.cisa.gov/news.xml fetched cleanly via the jina-backed bridge; two OT-relevant items found (Zero Trust for OT joint guide, Automatic Tank Gauge hardening fact sheet) but both were confirmed via WebSearch to be dated April 2026 and June 2026 respectively -- recycled/evergreen news items, not in-window, dropped per recency discipline."
+  - source_id: truesec
+    reason: "Listing fetched; most recent item 'AI Used in Ransomware Attack' (2026-07-03) is Truesec's own commentary/caveat-analysis of Sysdig's JADEPUFFER finding (already covered in prior_coverage.json, entity actor:jadepuffer) -- a repackaging of another lab's finding per the mission's own guidance, not a new primary source; dropped."
+
+near_misses_outside_window:
+  - "Check Point Research 'Browser-Only Ransomware: From LLM Hallucinations to a Practical Attack Technique' (research.checkpoint.com, published 2026-07-01) -- strong technical find (AI-generated browser-native ransomware via Chromium File System Access API, cross-platform) but publication date falls before the 64h/86h window cutoffs; not included."
+  - "'Bad Epoll' Linux kernel LPE CVE-2026-46242 (TheHackerNews, published 2026-07-03; researcher Jaeyoung Chung, github.com/J-jaeyoung/bad-epoll) -- use-after-free in epoll affecting kernels 5.10-6.11, ~99% reliable exploit, notable Anthropic-Mythos-AI-found-sibling-bug angle (CVE-2026-43074) -- outside window cutoff (2026-07-06T04:09Z)."
+  - "ChocoPoC RAT campaign (YesWeHack/Sekoia joint report, published 2026-07-01; TheHackerNews coverage 2026-07-02) -- trojanized PoC exploit repos on GitHub/PyPI targeting vulnerability researchers via Mapbox dead-drop C2 with domain fronting -- outside window."
+  - "PolinRider DPRK-nexus supply-chain campaign (Socket Threat Research Team, published 2026-07-04; TheHackerNews coverage same date) -- 108 malicious packages/162 artifacts across npm/Packagist/Go/Chrome extensions, VS Code folderOpen auto-run abuse, DEV#POPPER/OmniStealer payloads -- outside window (developing_window_hours cutoff 2026-07-05T06:09Z)."
+  - "ClickFix 3,000-live-payload analysis by researcher Bert-Jan Pals (kqlquery.com, published 2026-07-01; TheHackerNews coverage 2026-07-07) -- API-driven payload-generation backend, Downloads-folder AMSI-bypass technique, Windows+X/Terminal launch-path shift away from RunMRU -- primary research dated outside window; the TheHackerNews relay is in-window but is a rewrite, not a fresh primary source, so not included per corroboration/recycled-news discipline."
+  - "Dragos 2026 OT/ICS Cybersecurity Year in Review (three new OT threat groups: SYLVANITE, PYROXENE, AZURITE; PLC_Controller.exe Siemens S7-300/400 STOP-mode tool) -- confirmed via WebSearch to have originally published 2026-02-17; industrialcyber.co's follow-up feature is undated relative to the original but not a fresh finding -- well outside window, dropped despite strong OT/ICS relevance."
+  - "Kaspersky ICS CERT 'Threat landscape for industrial automation systems. Q1 2026' -- Securelist blog listing showed this dated 2026-07-07, but the underlying ics-cert.kaspersky.com report is dated 2026-06-09 (confirmed via direct fetch of the byline) -- classic recycled-news trap; dropped."
