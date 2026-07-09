@@ -703,11 +703,20 @@ def _load_org_profile() -> dict[str, Any] | None:
 # --- Run-scope checks --------------------------------------------------------
 
 
-def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path) -> None:
+def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path,
+                     pre_verify: bool = False) -> None:
     """The run record `runs/<date>/<run-id>.md` exists and passes
     content_model.validate_run_record (identity, timestamps, counters,
     sub_agents block, verification iterations + residual arithmetic,
-    non-empty verification-notes body)."""
+    non-empty verification-notes body).
+
+    With `pre_verify=True` (the gate run BEFORE Phase 5.7 has spawned any
+    verifier), verification-block completeness errors are downgraded to
+    WARN: `verification.iterations` cannot be populated before the first
+    verifier iteration returns, and demanding it here would either block
+    the run or — worse — invite a fabricated verification block. Every
+    other error stays a FAIL. The plain (no-flag) invocation between fix
+    iterations and before commit re-enforces the full contract."""
     if run is None:
         fail("run-record",
              f"runs/<date>/{run_id}.md missing — entries reference run_id {run_id!r} "
@@ -717,7 +726,15 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
     errs = cm.validate_run_record(run)
     if errs:
         for e in errs:
-            fail("run-record", e)
+            if pre_verify and "verification" in e:
+                warn("run-record(pre-verify)",
+                     f"{e} — expected before Phase 5.7; populated by the verifier loop "
+                     "(FAILs without --pre-verify)")
+            else:
+                fail("run-record", e)
+        if pre_verify and all("verification" in e for e in errs):
+            ok("run-record", "record passes validate_run_record apart from the "
+               "pre-verification block (expected at this stage)")
     else:
         ok("run-record", "record passes content_model.validate_run_record")
 
@@ -1988,7 +2005,8 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
 
 
 def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
-               skip_link_check: bool, content_root: Path) -> int:
+               skip_link_check: bool, content_root: Path,
+               pre_verify: bool = False) -> int:
     entries_dir = content_root / "entries"
     runs_dir = content_root / "runs"
     registry_path = content_root / "entities" / "registry.yaml"
@@ -2051,7 +2069,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     print(f"\nrun scope: {run_id} · {len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'}\n")
 
     print("== run record ==")
-    check_run_record(run, run_id, content_root)
+    check_run_record(run, run_id, content_root, pre_verify=pre_verify)
 
     if run is not None:
         print("\n== prompt-version vs CHANGELOG ==")
@@ -2155,9 +2173,19 @@ def main() -> int:
                    help="resolve entries/, runs/ and entities/registry.yaml under PATH "
                         "instead of the repo root (self-test fixtures); state, sources, "
                         "taxonomy, prompts, work/ and intel/ always resolve in the repo")
+    p.add_argument("--pre-verify", action="store_true",
+                   help="Phase 5.5 gate run BEFORE the first Phase 5.7 verifier spawn: "
+                        "verification-block completeness errors on the run record "
+                        "(empty verification.iterations, missing verdict/residual) are "
+                        "WARNs instead of FAILs — they can only be populated by the "
+                        "verifier loop. Never use between fix iterations or before "
+                        "commit; the plain invocation enforces the full contract there")
     args = p.parse_args()
     if args.all and args.run_id:
         print("FATAL: --all and an explicit run id are mutually exclusive")
+        return 2
+    if args.all and args.pre_verify:
+        print("FATAL: --pre-verify applies to a single run's pre-Phase-5.7 gate, not --all")
         return 2
     content_root = Path(args.root).resolve() if args.root else ROOT
     return run_checks(
@@ -2166,6 +2194,7 @@ def main() -> int:
         skip_build_tests=args.no_build_tests,
         skip_link_check=args.no_link_check,
         content_root=content_root,
+        pre_verify=args.pre_verify,
     )
 
 

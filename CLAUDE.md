@@ -43,7 +43,7 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 - **NEVER call `WebFetch` without the outbound-links template** (verbatim in `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md`) — the default summariser drops every URL.
 - **NEVER cite a homepage, listing index, news category, or NVD/MITRE per-CVE page as a source.** `check_run.py` FAILs these patterns. Use the specific article / advisory / vendor PSIRT URL.
 - **NEVER skip `tools/check_run.py` before commit.** Phase 5.5. Exit 0 required.
-- **NEVER block the run on a sub-agent.** Sub-agents stalled past the 30-min hard cap are abandoned, not waited on. **Failing to write the run record is the worst outcome.**
+- **NEVER block the run on a sub-agent.** Sub-agents stalled past their per-role hard cap (45 min research / 30 min verification) are abandoned, not waited on. **Failing to write the run record is the worst outcome.**
 
 ## Auto-memory mechanics (only what's non-obvious)
 
@@ -56,10 +56,10 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 Three named sub-agents — isolated context, model bound by YAML frontmatter (operator-rebindable):
 
 - **`cti-research`** — Phase 1 (intel run) / Phase 2 (weekly) parallel research workers, one per domain (S1–S4 + conditional S5 intake; W1–W2 + conditional W3). Reads the prior-coverage index AND `entities/registry.yaml` before fetching; returns findings YAMLs with `entity_keys` / `new_entities` / `novelty: update-of:<entry-id>`. Opens every return with the mandatory `**Model:**` line.
-- **`cti-verification`** — Phase 5.7 cold-reader verifier (**Opus default**). Scope: the run's new entries + run record. Read-only; looped fresh-spawn until CLEAN or 5-iteration cap. Finding categories F1–F16 incl. frontmatter⇔body agreement and priority calibration.
+- **`cti-verification`** — Phase 5.7 cold-reader verifier (**Opus default**). Scope: the run's new entries + run record. Read-only; looped fresh-spawn until CLEAN or 5-iteration cap. Finding categories F1–F17 incl. frontmatter⇔body agreement, priority calibration, and Admiralty-classification drift.
 - **`cti-verification-alt`** — Sonnet rotation variant, byte-identical body below its header note. Spawned on even iterations. **When you edit one verifier definition, you MUST regenerate the other in the same commit.**
 
-**Self-identification primary source: env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID`** (set in the routine container); fallback is reasoning from runtime context, never a training-data guess. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents.
+**Self-identification primary source: env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID`** (set in the routine container); fallback is reasoning from runtime context, never a training-data guess. **Caveat: the env vars are container-scoped** — they carry the main-agent default and cannot see a sub-agent definition's `model:` pin, so a pinned sub-agent reports the container default even when the harness runs it on the pinned model; uniform sub-agent reports are a measurement limitation, never proof that pinning/rotation failed. **NEVER spawn `general-purpose` for research or verification** — use the named sub-agents.
 
 ## Branching and publishing — feature branch only
 

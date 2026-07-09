@@ -943,6 +943,46 @@ def ncsc_nl_csaf(advisory_id: str, version: int = 1) -> Any:
 # `defusedxml`-style guards on the parser.
 
 import xml.etree.ElementTree as _ET  # noqa: E402  (after _check_url above)
+from datetime import datetime, timezone  # noqa: E402
+from email.utils import parsedate_to_datetime  # noqa: E402
+
+
+def _parse_feed_date(value: str) -> datetime | None:
+    """Best-effort parse of an RSS/Atom timestamp (RFC 822 `pubDate` or
+    ISO 8601 `published`/`dc:date`) to an aware UTC datetime; None when
+    empty or unparseable. Naive datetimes are assumed UTC."""
+    v = (value or "").strip()
+    if not v:
+        return None
+    try:
+        dt = parsedate_to_datetime(v)
+        if dt is not None:
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        pass
+    try:
+        dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def _newest_first(items: list[dict[str, str]], limit: int) -> list[dict[str, str]]:
+    """Order feed items newest-first, then truncate to `limit`.
+
+    Some feeds serve items oldest-first in document order (observed on the
+    CERT-FR avis/actualite feeds 2026-07-09: a plain `feed <url> 20` call
+    returned Nov-2025 archive entries instead of the current bulletin), so
+    slicing the first N without sorting silently returns the archive tail.
+    Sort by parsed `published` descending whenever at least one item carries
+    a parseable date; undated items sort last, keeping document order among
+    themselves (list.sort is stable). A feed with no parseable dates at all
+    keeps its document order unchanged."""
+    keyed = [(_parse_feed_date(it.get("published", "")), it) for it in items]
+    if any(k is not None for k, _ in keyed):
+        floor = datetime.min.replace(tzinfo=timezone.utc)
+        keyed.sort(key=lambda kv: kv[0] or floor, reverse=True)
+    return [it for _, it in keyed][:limit]
 
 
 def _parse_rss(body: str, *, limit: int = 20) -> list[dict[str, str]]:
@@ -978,19 +1018,19 @@ def _parse_rss(body: str, *, limit: int = 20) -> list[dict[str, str]]:
         channel = root.find("channel")
         if channel is None:
             raise ValueError("malformed RSS — no <channel>")
-        for it in channel.findall("item")[:limit]:
+        for it in channel.findall("item"):
             items.append({
                 "title":     (it.findtext("title") or "").strip(),
                 "link":      (it.findtext("link") or "").strip(),
                 "published": (it.findtext("pubDate") or it.findtext("{http://purl.org/dc/elements/1.1/}date") or "").strip(),
                 "summary":   (it.findtext("description") or "").strip(),
             })
-        return items
+        return _newest_first(items, limit)
 
     # ── Atom 1.0 (namespace `http://www.w3.org/2005/Atom`) ────────────
     if local == "feed" and ns_uri.lower() == "http://www.w3.org/2005/atom":
         ns = "{http://www.w3.org/2005/Atom}"
-        for it in root.findall(f"{ns}entry")[:limit]:
+        for it in root.findall(f"{ns}entry"):
             # Atom <link> can repeat with different rel/type; prefer rel="alternate".
             href = ""
             for link_el in it.findall(f"{ns}link"):
@@ -1010,7 +1050,7 @@ def _parse_rss(body: str, *, limit: int = 20) -> list[dict[str, str]]:
                 "published": (it.findtext(f"{ns}published") or it.findtext(f"{ns}updated") or "").strip(),
                 "summary":   summary,
             })
-        return items
+        return _newest_first(items, limit)
 
     # ── RSS 1.0 / RDF Site Summary (namespace `…/rdf-syntax-ns#`) ─────
     # Used by Slashdot, some heise feeds (legacy), and a few CMSs. <item>
@@ -1018,14 +1058,14 @@ def _parse_rss(body: str, *, limit: int = 20) -> list[dict[str, str]]:
     if local == "rdf" and ns_uri.endswith("rdf-syntax-ns#"):
         rss10_ns = "{http://purl.org/rss/1.0/}"
         dc_ns    = "{http://purl.org/dc/elements/1.1/}"
-        for it in root.findall(f"{rss10_ns}item")[:limit]:
+        for it in root.findall(f"{rss10_ns}item"):
             items.append({
                 "title":     (it.findtext(f"{rss10_ns}title") or "").strip(),
                 "link":      (it.findtext(f"{rss10_ns}link") or "").strip(),
                 "published": (it.findtext(f"{dc_ns}date") or "").strip(),
                 "summary":   (it.findtext(f"{rss10_ns}description") or "").strip(),
             })
-        return items
+        return _newest_first(items, limit)
 
     raise ValueError(f"unrecognised feed root: {raw_tag!r}")
 

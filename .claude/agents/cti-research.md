@@ -80,7 +80,7 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.started_at
 
 Substitute `<your-domain>` with the domain id from your spawn message (e.g. `S1`, `S2`, `W1`). The main agent passes the `<run-id>` in the spawn message and pre-creates `work/<run-id>/`.
 
-**As your very last action**, before composing your return, capture an UTC ISO 8601 end timestamp the same way:
+**At the end of your run**, capture an UTC ISO 8601 end timestamp the same way — but **ONLY AFTER your findings file is on disk** (write order below):
 
 ```bash
 date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.ended_at
@@ -90,7 +90,7 @@ date -u +"%Y-%m-%dT%H:%M:%SZ" | tee work/<run-id>/<your-domain>.ended_at
 
 If you cannot capture a timestamp (Bash tool unavailable in your environment, clock skew detected, the very first or very last action of your turn was forced into a different shape), write `unknown` for that field and the main agent records it verbatim — never invent a timestamp.
 
-**Writing `.ended_at` is the completion signal the main agent waits on.** The main agent's compose-after-return gate blocks all entry composition until each research sub-agent has either written `.ended_at` *or* has been running past the 45-min cap. A return that doesn't write `.ended_at` stalls composition unnecessarily and forces the main agent into the 45-min abandon-and-proceed fallback, which surfaces in the run record as a coverage gap. **Always write `.ended_at`** — even if you have nothing material to return, an empty return with `.ended_at` written is operationally distinguishable from a stall.
+**Writing `.ended_at` is the completion signal the main agent waits on — so the mandatory write order at the end of your run is: (1) `findings.<your-domain>.yaml`, (2) `.ended_at`, (3) the compact summary return.** `.ended_at` means "my findings are complete on disk"; writing it before the findings file creates a race where the main agent's Phase 2 trigger fires on the checkpoint and reads a missing or half-written findings file (observed on the 2026-07-09 run: S1 wrote `.ended_at` at 04:25:22Z and the findings YAML only afterwards, forcing the main agent to poll). The main agent's compose-after-return gate blocks all entry composition until each research sub-agent has either written `.ended_at` *or* has been running past the 45-min cap. A return that doesn't write `.ended_at` stalls composition unnecessarily and forces the main agent into the 45-min abandon-and-proceed fallback, which surfaces in the run record as a coverage gap. **Always write `.ended_at`** — even if you have nothing material to return, write an empty-items findings YAML first and then `.ended_at`; that is operationally distinguishable from a stall.
 
 ## Source-link discipline (MANDATORY — read twice)
 
@@ -440,6 +440,8 @@ echo "friendly=${CLAUDE_FRIENDLY_NAME} id=${CLAUDE_MODEL_ID}"
 ```
 
 **Fallback (env vars unset):** reason about your own identity from your runtime context (what the host harness set as your model id) and surface that. Do not pattern-match a placeholder name from training data — when in doubt, write `Anthropic Claude (specific model not determined)` and the main agent will surface that string verbatim.
+
+**Scope caveat — the env vars are container-scoped, not agent-scoped.** They describe the routine container's default (main-agent) model. This definition pins its own `model:` in the YAML frontmatter, and the harness applies that pin when it spawns you — the env vars **cannot see that pin**, so on a container whose default differs from your pin they will report the default, not your actual runtime model. Report the env values verbatim anyway (they are the only harness-provided identity signal you have), but never present them as *proof* of your runtime model, and never assert — in your return or anywhere else — that model pinning or rotation "failed" on the basis of env-var readings alone: from inside the sandbox that discrepancy is unresolvable, and the main agent records your reported values alongside the definition that spawned you and treats any mismatch as an ambiguity, not a fact.
 
 **Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Immediately follow with a **mandatory `**Timestamps:**` line** carrying the start + end UTC ISO 8601 stamps you captured in § Timestamps above. Use this exact shape:
 

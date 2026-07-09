@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.11 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.12 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -36,6 +36,8 @@ Anti-crash guards (priority order):
 7. **Publishing chain (Phase 6 + 7) is non-negotiable.** Commit on feature branch → sync with `origin/main` (auto-resolve `state/*.json` + `entities/registry.yaml` → ours, `sources/sources.json` → theirs) → push feature branch (retry up to 3×) → auto-merge action promotes → verify run record on main AND site rebuilt. Direct pushes to `main` are forbidden.
 8. **Take time on quality, not retries.** A correct 25-min run beats a 90-min retry-loop one.
 9. **Main agent does NO source fetching during Phase 1 (anti-classifier-trip).** While the `cti-research` sub-agents are running, the main agent MUST NOT call `WebFetch`, `WebSearch`, or `python3 tools/fetch_source.py`. Source-fetching is the sub-agents' exclusive job in Phase 1; their isolated contexts absorb the raw advisory / breach / enforcement content so the main agent's working context stays compositional. Two failure modes prevented: (a) duplicate work; (b) classifier trip — accumulated raw CTI content in the main context has killed runs mid-flight with `API Error … Usage Policy` and no published output (the worst guard-1 violation). Main-agent exceptions (all AFTER Phase 1 sub-agents have returned, so no concurrency with active research): Phase 2 single-URL spot-checks; the **Phase 4 deep-read re-fetch of the WILL-PUBLISH set only** (the small triaged set — re-read each published item's primary in full via the jina reader, extract, then drop the raw body; escalate to a scoped sub-agent if the set is large); Phase 5.7 verification-fix re-fetches of one flagged URL; Phase 7 publish polling. The invariant is specifically **no fetching *during Phase 1* and no bulk raw-content accumulation** — a bounded, extract-and-drop deep read of the handful of items you are about to publish is the intended path, not a violation. Anything beyond these: spawn another sub-agent. Hardened as META hard invariant #16.
+
+10. **Scheduler and hook noise never restarts or short-circuits the run.** Two recurring distractions, both handled the same way — acknowledge, hold course: (a) **Fallback wakeups/heartbeats.** If you schedule one while waiting on sub-agents (a reasonable hedge against a hung spawn), **cancel it the moment the wait ends** (all sub-agents returned or capped) — completion notifications re-invoke you anyway. If a stale wakeup still fires *after* this run published, verify the run record is on `main`, stop the loop, and end the turn: **a leftover heartbeat is never a new fire** — real cadence comes only from the operator's scheduler, and a self-triggered re-fire would re-scan ground just swept for a near-certain zero delta. (b) **Mid-run stop-hook / "commit your work" nudges.** These never override the publishing chain: nothing is committed before Phase 6 — the run commits atomically (entries + record + state + work/ together) after the gate and the verifier loop. State briefly that the run is mid-pipeline and continue; never push a partial run to satisfy a hook.
 
 ---
 
@@ -301,6 +303,8 @@ While sub-agents run, the main agent does no source fetching (anti-crash guard #
 
 **Trigger:** as soon as all returning sub-agents have returned (a sub-agent is returned exactly when its `.ended_at` checkpoint file exists in `work/<run-id>/`). Stalled past 45 min → abandon, log the gap. Do **not** wait indefinitely.
 
+**Findings-file guard:** the sub-agent contract writes `findings.<domain>.yaml` *before* `.ended_at`, so the checkpoint means "findings are complete on disk". If `.ended_at` exists but the findings file is missing, treat it as an in-flight return, not an empty one: wait for that agent's completion notification (or re-check once shortly after) before triaging. Only if the file never appears does the domain count as returned-empty — log it in the run record.
+
 For every candidate item in the findings YAMLs:
 
 1. **Spot-check URLs.** Confirm each link was actually fetched by a sub-agent in this run (`url-liveness.tsv` + the findings record's discovery trace). Re-fetch the primary on doubt — one or two URLs at most. **Drop the item** if a cited URL 404s, redirects to a homepage, lands on a generic listing, or carries unrelated content. **A URL the agent never fetched is fabricated** — drop and note in the run record.
@@ -400,6 +404,8 @@ echo "friendly=${CLAUDE_FRIENDLY_NAME:-} id=${CLAUDE_MODEL_ID:-}"
 ```
 Use both verbatim in the run record (`model`, `model_id`). Fallback (unset): reason about your identity from runtime context; if you cannot pin it, write `Anthropic Claude (specific model not determined)` / `unknown` — never invent. Sub-agent and verifier models come **verbatim** from their `**Model:**` return lines. The site's AI-content notice is rendered from run-record data — a wrong model claim here is a published falsehood.
 
+**Sub-agent reports are container-scoped — interpret them accordingly.** The env vars describe the routine container's default model; a sub-agent definition's `model:` frontmatter pin (research `sonnet`, verifier rotation `opus`/`sonnet`) is applied by the harness at spawn time and is **invisible to the env vars**, so a pinned sub-agent reading them will report the container default even when it actually runs on the pinned model. Record each sub-agent's and verifier iteration's reported values verbatim (the run record's per-iteration `subagent_type` already preserves which definition — and thus which model pin — was spawned). When every sub-agent reports the same env-derived model despite differing definition pins, that is an **expected measurement limitation, not evidence the pinning or rotation failed** — do NOT report a rotation failure as fact in the run record, the notes, or an operator notification; if you mention it at all, state it as "env-reported; the definition's model pin is not independently verifiable at runtime".
+
 ### Style rules
 
 Always English. Inline links only. No IOCs. No vanity metrics. No emojis. Deep technical register (exact component / function / RPC / endpoint names, exact event IDs, exact flow names, exact versions). Hedge only when the source hedges. No filler (*"in today's evolving threat landscape"*). Source titles in original language with English gloss when not self-evident.
@@ -451,8 +457,13 @@ Record every edit in `sources_changed[]`. Script-level error → note in the run
 **Single command.** Run after Phase 5, fix every `FAIL`, re-run until exit code 0. Read-only — drift is what *you* fix.
 
 ```bash
-python3 tools/check_run.py "$RUN_ID"        # this run's entries + record + store invariants
+# The FIRST gate run — before any Phase 5.7 verifier has spawned:
+python3 tools/check_run.py "$RUN_ID" --pre-verify
+# Between verifier fix-iterations and before commit — full contract:
+python3 tools/check_run.py "$RUN_ID"
 ```
+
+`--pre-verify` downgrades exactly one class of FAIL to WARN: the run record's verification-block completeness (`verification.iterations` empty, missing verdict/residual) — those fields **can only be populated by the Phase 5.7 loop**, so demanding them before the first verifier spawn is unsatisfiable. Everything else FAILs as usual. **Never hand-write a verification block to satisfy the plain gate before a verifier has actually run** — that is a fabricated record, the worst possible "fix". Once iteration 1 is recorded, drop the flag: every subsequent run uses the plain invocation, which enforces the full contract (including the residual arithmetic) through to commit.
 
 Validates (see [`docs/pipeline.md`](../docs/pipeline.md) § The mechanical gate): frontmatter schema + taxonomy on every new entry; folder-date/discovered_at/slug consistency; blocked-URL patterns + live liveness (honouring the `url-liveness.tsv` ledger); evidence shape and presence; priority ⇔ immediate_action consistency; entity keys resolve in the registry; registry integrity (alias collisions); `update_of` resolution + cycle check; **cross-run dedup** (a non-update entry sharing CVE ids with the last 14 days FAILs); rolling-24 h composition report (informational — no count is flagged); CVE sync with `cves_seen.json`; IOC scan; run-record completeness incl. verification counters and the prompt-version cross-check against `prompts/CHANGELOG.md`; `sources/sources.json` shape; closed-source TLP ceiling; `site/test_build.py` smoke tests.
 
@@ -478,7 +489,7 @@ After Phase 5.5 exits 0, this run's output goes through an independent cold-read
 | 1, 3, 5 | `cti-verification` | `opus` |
 | 2, 4 | `cti-verification-alt` | `sonnet` |
 
-Both definitions carry the identical operational system prompt (finding categories F1–F16, return contract, composed organization context, read-only tools, 30-min cap); only the model pin differs. Fresh spawn each iteration — no shared memory.
+Both definitions carry the identical operational system prompt (finding categories F1–F17, return contract, composed organization context, read-only tools, 30-min cap); only the model pin differs. Fresh spawn each iteration — no shared memory. (Rotation caveat: verifiers self-report from container-scoped env vars, which cannot see the definitions' model pins — uniform reports across iterations are a measurement limitation, not proof the rotation failed; see § Self-identification.)
 
 Spawn message: (1) **scope** — this run's `run_id`, the list of new entry paths, and the run-record path; (2) iteration number; (3) dedup-context paths (`prior_coverage.json`, `entities/registry.yaml`); (4) the run record's telemetry (so the verifier can judge missed angles from source coverage); (5) confirmation that `check_run.py` exited 0; (6) **even iterations only:** the prior-iteration deltas block — every finding from the previous iteration plus the remediation you applied (`code / entry / summary / remediation_applied / verify_in_this_iteration`), so the alternate model verifies the fixes instead of re-deriving cold and flip-flopping. Odd iterations read genuinely cold.
 
@@ -636,7 +647,7 @@ Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — 
 - [ ] Deep-dive treatment reserved for an item that earns it; category rotation applied; Background paragraph when PD-10 applies.
 - [ ] All entities linked via registry keys; new entities registered with sourced definitions; no duplicate/alias collisions.
 - [ ] `entities/registry.yaml`, `state/cves_seen.json`, `sources/sources.json`, `state/source_health.json` updated; run record complete (telemetry + notes + parseable lines).
-- [ ] **`python3 tools/check_run.py "$RUN_ID"` exits 0 BEFORE the first Phase 5.7 spawn** and after every fix iteration.
+- [ ] **`python3 tools/check_run.py "$RUN_ID" --pre-verify` exits 0 BEFORE the first Phase 5.7 spawn**, and the plain invocation exits 0 after every fix iteration and before commit.
 - [ ] **Phase 5.7 ran ≥1 iteration**; CLEAN or documented fail-open; counters recorded.
 - [ ] **Run record exists at `runs/<date>/<run-id>.md`** — even on a zero-entry run, even with sub-agent failures.
 - [ ] **Phase 7 ran** — the `publish:` line reports the actual poll result, not a guess.

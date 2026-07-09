@@ -146,7 +146,11 @@ byte-identically in the same commit).
 | [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) | **Verifier, Sonnet rotation variant.** Byte-identical operational body to `cti-verification.md`; only the model frontmatter differs. Spawned on **even** iterations so model-specific blind spots surface. |
 
 Self-identification for all sub-agents comes from the `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` env
-vars set in the routine container (fallback: reason from runtime context). Never spawn
+vars set in the routine container (fallback: reason from runtime context). The env vars are
+**container-scoped**: they carry the main-agent default and cannot see a definition's `model:` pin,
+so a pinned sub-agent (e.g. the Sonnet verifier rotation slot) reports the container default even
+when the harness runs it on the pinned model — uniform reports across sub-agents are a measurement
+limitation, not evidence the pinning or rotation failed. Never spawn
 `general-purpose` for research or verification — use the named sub-agents; keep the live routine
 allow-list matched to these definitions (see [`docs/operating.md` § Sub-agent capability ceiling](operating.md#sub-agent-capability-ceiling)).
 

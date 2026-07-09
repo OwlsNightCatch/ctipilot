@@ -2172,13 +2172,22 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
 
 def render_update_lead(entry: dict[str, Any], *, prefix: str = "",
                        entries_by_id: dict[str, dict[str, Any]] | None = None) -> str:
-    """`originally covered <link>` lead paragraph for update entries."""
+    """`originally covered <link>` lead paragraph for update entries.
+
+    When an index is provided and the target is not in it, the reference is
+    dangling (a handful of migrated records point at ids that never shipped)
+    — render it as plain text instead of a dead link to a 404 page."""
     target = str(entry.get("update_of") or "")
     if not target:
         return ""
     orig = (entries_by_id or {}).get(target)
     label = orig.get("title") if orig else target
     tdate = target.split("/", 1)[0]
+    if entries_by_id is not None and orig is None:
+        return (
+            '<p class="update-lead"><strong>UPDATE</strong> · originally covered '
+            f'{_escape(str(label))} <span class="mono muted">({_escape(tdate)})</span></p>'
+        )
     return (
         '<p class="update-lead"><strong>UPDATE</strong> · originally covered '
         f'<a href="{_escape(prefix)}entries/{_escape(target)}/">'
@@ -3610,12 +3619,21 @@ def render_entry_page(
     target = str(entry.get("update_of") or "")
     if target:
         orig = entries_by_id.get(target)
-        chain_bits.append(
-            '<li><span class="e-tag">updates</span> '
-            f'<a href="{prefix}entries/{_escape(target)}/">'
-            f'{_escape((orig or {}).get("title") or target)}</a>'
-            f' <span class="mono muted">{_escape(target.split("/", 1)[0])}</span></li>'
-        )
+        if orig is None:
+            # Dangling reference (a few migrated records point at ids that
+            # never shipped) — plain text, never a dead link to a 404.
+            chain_bits.append(
+                '<li><span class="e-tag">updates</span> '
+                f'{_escape(target)}'
+                f' <span class="mono muted">{_escape(target.split("/", 1)[0])}</span></li>'
+            )
+        else:
+            chain_bits.append(
+                '<li><span class="e-tag">updates</span> '
+                f'<a href="{prefix}entries/{_escape(target)}/">'
+                f'{_escape(orig.get("title") or target)}</a>'
+                f' <span class="mono muted">{_escape(target.split("/", 1)[0])}</span></li>'
+            )
     for uid in updated_by.get(entry["id"], []):
         upd = entries_by_id.get(uid)
         chain_bits.append(
