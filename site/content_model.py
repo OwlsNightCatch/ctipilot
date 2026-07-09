@@ -111,6 +111,8 @@ ENTITY_KEY_RE = re.compile(
 )
 ENTRY_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}/[a-z0-9][a-z0-9-]{0,59}$")
 CVE_ID_RE = re.compile(r"^CVE-\d{4}-\d{4,7}$")
+# MITRE ATT&CK technique id (entry `techniques[]`) — T#### or T####.###
+TECHNIQUE_ID_RE = re.compile(r"^T\d{4}(\.\d{3})?$")
 
 
 def slugify(text: str) -> str:
@@ -746,6 +748,14 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
             err(f"entity key {key!r} is not `<type>:<slug>`")
         elif registry_keys is not None and key not in registry_keys:
             err(f"entity key {key!r} not present in entities/registry.yaml")
+
+    # machine-readable triage layer (optional fields; strict when present)
+    for t in entry.get("techniques") or []:
+        if not isinstance(t, str) or not TECHNIQUE_ID_RE.match(t):
+            err(f"techniques value {t!r} is not an ATT&CK technique id (T#### or T####.###)")
+    for p in entry.get("affected_products") or []:
+        if not _is_str(p):
+            err(f"affected_products value {p!r} is not a non-empty string")
 
     # CVE records
     for cve in entry.get("cves") or []:

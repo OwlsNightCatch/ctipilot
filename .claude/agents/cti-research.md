@@ -499,6 +499,13 @@ items:
     primary_sector_nexus: "indirect"
     sector: "telco, public-sector"
     cves: [CVE-2026-20182]
+    # MITRE ATT&CK ids the sources map (or unambiguous mappings) —
+    # T####[.###]; the composer mirrors these into the entry's
+    # `techniques[]` frontmatter. Omit or [] when none apply.
+    techniques: [T1190]
+    # Official vendor product names the item concerns (what an alert or
+    # asset inventory would name) — feeds `affected_products[]`.
+    affected_products: ["Cisco Catalyst SD-WAN"]
     # Registry keys for entities the registry already knows (any alias
     # counts — check aliases before deciding an entity is new).
     entity_keys: []
@@ -609,11 +616,12 @@ Audience is **highly technical** (Tier 2/3 IR, threat hunters, detection enginee
 For every item, where the source supports:
 
 - **Exact vulnerable component / attack surface** — name the file / function / RPC interface / endpoint / config switch / handler / protocol parser / virtual server / service the source identifies. Whatever the source states; never substitute generic phrasing.
-- **Technique class with MITRE ATT&CK technique IDs** when the source provides them or mapping is unambiguous: `T1190 Exploit Public-Facing Application`, `T1059.001 PowerShell`, `T1505.003 Web Shell`, `T1557.001 LLMNR/NBT-NS Poisoning`, `T1068 Exploitation for Privilege Escalation`, `T1078.004 Cloud Accounts`, `T1556.006 MFA`, `T1611 Escape to Host`. Link to `attack.mitre.org`.
+- **Technique class with MITRE ATT&CK technique IDs** when the source provides them or mapping is unambiguous: `T1190 Exploit Public-Facing Application`, `T1059.001 PowerShell`, `T1505.003 Web Shell`, `T1557.001 LLMNR/NBT-NS Poisoning`, `T1068 Exploitation for Privilege Escalation`, `T1078.004 Cloud Accounts`, `T1556.006 MFA`, `T1611 Escape to Host`. Link to `attack.mitre.org`. Return the mapped ids as the item's `techniques:` list (they become the entry's machine-readable `techniques[]` frontmatter) AND tie each id to the specific behavior in your summary text — the composer weaves ids at the behavior, never as a bare list.
 - **Exploitation prerequisites** — auth state; default-config or only-when-X-is-enabled; prior foothold; auth scheme abused (NTLM relay, OAuth device-code, SAML response forgery, S4U2Self); privilege required.
 - **Affected and patched versions** to vendor-stated precision (`<= 14.1-12.30`, `before 2024.4`, `9.x prior to 9.6.10`, `cumulative update CU14 + KB5034762`). Don't round.
 - **Observed exploitation status** with named clusters when the source provides one (UNC####, Storm-####, TA####, APT##, CL-###-####, espionage-actor codename, ransomware-affiliate). Cite the source that named the cluster — never carry a cluster name without that source.
-- **Concrete defender takeaway tied to the specificity.** Detection: which event ID / log source / EDR telemetry / network artefact surfaces this — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts only.
+- **Concrete defender takeaway tied to the specificity — telemetry class first, platform artifact as the anchor.** Detection: name the *telemetry class* in vendor-neutral terms (process-creation events with parent lineage, authentication/session logs, web/app access logs, DNS/egress traffic, cloud control-plane audit records, mail flow, persistence/config artifacts) and then the concrete platform anchor the source supports — `Sysmon EID 1` with parent-image filter, `4624 Logon Type 9` for `S4U2Self` chains, `4663` on `ntds.dit`, `4769` ticket-request anomalies, web-server access logs for the specific endpoint, identity-protection / EDR alert-name patterns, DFIR collection-target categories. The class makes the finding portable to any stack (and to automated triage agents); the anchor makes it concrete. Hardening: which config toggle / GPO / registry value / Conditional Access policy / WAF rule / patch removes the attack path. **No IOCs** — *behavioural* hunt and detection concepts only.
+- **Behavioral manifestation and benign lookalikes — where the source states them.** Capture the *observable sequence* (what fires in which telemetry, in what order) and anything the source says about legitimate activity that produces similar telemetry plus the discriminating features (path, parent, signing state, account type, destination class, sequence, volume). These feed the entry's `**Triage:**` line — the single highest-value field for a reader (or triage agent) deciding whether an alert matches this attack. Surface only what the source supports or what follows mechanically from the stated mechanism; never speculate a lookalike.
 - **Affected sectors and regions** so the main agent can populate the footer's `Tags` / `Region` / `Sector` fields, not filler prose.
 
 A worked-good fragment showing this depth lives in [`prompts/entry-template.md`](../../prompts/entry-template.md) — illustrative npm supply-chain compromise (osascript / powershell.exe -enc launched from npm/node parent-process trees, DoH C2, mapped to `T1195.002` / `T1071.004`, with detection + hardening tied to the specifics).
