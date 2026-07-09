@@ -354,6 +354,11 @@ entities:
       One-to-three sentence definition: who/what this is, first public
       reporting, why the pipeline tracks it.
     first_seen: "2026-05-12"   # first pipeline coverage (entry date)
+    related: []                # optional: curated registry keys this entity is
+                               # linked to (actor↔campaign↔tool↔incident edges);
+                               # rendered symmetrically on entity pages
+    # merged_into: <key>       # optional: tombstone — this record was merged
+                               # into the named canonical entity (see below)
 ```
 
 Entity types: `actor | campaign | malware | tool | incident | report |
@@ -368,6 +373,37 @@ registry entities — `state/cves_seen.json` and per-entry `cves[]` carry the
 CVE model. Regions, sectors and theme tags stay in `site/taxonomy.yaml`.
 Definitions follow sourcing rules: the `summary` states only what cited
 public reporting supports (attribution stays claim-attributed).
+
+**Naming convention (uniform across the registry):** `name` is the concise
+canonical entity name only — the name of the actor/campaign/tool itself,
+never the reporting vendor, never a headline sentence, never a list of
+alternates. Every other public name goes in `aliases` (which feeds both
+dedup matching and the site's phrase-based entry↔entity attachment).
+`summary` is the 1–3-sentence English definition carrying the
+who/what/so-what plus the attributing source and date.
+
+**Merging duplicates — `merged_into` tombstones.** Because keys are
+permanent and published entries are immutable, a duplicate entity is never
+deleted while any entry references it. Instead the losing record becomes a
+tombstone: it keeps its key and gains `merged_into: <canonical-key>`.
+Semantics enforced by `content_model.validate_registry` (surfaced as FAILs
+by `check_run.py`): the target must exist and must not itself be a
+tombstone (no chains); tombstones are exempt from the name/alias collision
+check (their labels legitimately move to the canonical record). Consumers
+resolve through tombstones via `content_model.resolve_entity_key`: the site
+attaches a tombstone's entries to the canonical entity's page (the
+tombstone keeps a stub permalink pointing forward), and cross-run dedup
+treats old and canonical keys as the same entity. New entries MUST
+reference the canonical key, never a tombstone. An entity referenced by
+zero entries (orphan) that turns out to be a duplicate may simply be
+deleted — fold its names into the canonical record's `aliases` first.
+
+**Curated relations — `related`.** Optional list of registry keys linking
+the entity into the threat graph (an actor to its campaigns, tooling and
+attributed incidents; a campaign to its malware). Targets must exist and
+must be canonical (not tombstones). Edges are rendered symmetrically and
+survive independently of entry co-occurrence; keep them evidence-bound —
+only link entities whose connection cited reporting supports.
 
 ## Run records — `runs/YYYY-MM-DD/<run-id>.md`
 
