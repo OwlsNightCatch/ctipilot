@@ -1,0 +1,207 @@
+domain: S3
+run_id: 2026-07-09T1211Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-09T12:14:02Z
+ended_at: 2026-07-09T12:33:06Z
+duration_seconds: 1144
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 6
+  bridge_fetches: 35
+items:
+  - title: "RedHook Android RAT abuses ADB Wireless Debugging to self-grant shell-level (uid 2000) privileges without an exploit"
+    sources:
+      - { url: "https://www.group-ib.com/blog/redhook-android-rat-upgraded/", publisher: "Group-IB", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: group-ib-blog (not in curated slice; discovered via source-list expansion), URL https://www.group-ib.com/blog/ → primary: Group-IB, URL https://www.group-ib.com/blog/redhook-android-rat-upgraded/ (no pivot needed beyond confirming the article body via jina reader after a transient 502)"
+    summary: |
+      Group-IB documents a significantly upgraded variant of RedHook, an Android RAT first
+      documented by Cyble in July 2025 and previously focused on Vietnamese banking users.
+      The new capability of note is self-service privilege abuse via ADB (Android Debug Bridge)
+      Wireless Debugging: after tricking the victim into granting Accessibility Service permission
+      (via a fake "required setup" walkthrough on a phished government/financial site), the malware
+      uses Accessibility-driven UI automation to silently enable Developer Options and Wireless
+      Debugging, then embeds its own ADB client to connect to the device's own ADB daemon over the
+      loopback interface (127.0.0.1) — no PC or USB cable needed. It launches a Shizuku-derived
+      privileged server binary ("libmx.so") that runs under shell uid 2000, from which it can grant
+      itself arbitrary runtime permissions, execute shell commands as uid 2000, and set
+      WRITE_SECURE_SETTINGS to modify Settings.Secure/Settings.Global directly. Group-IB states
+      explicitly "there is no exploit here" — this is abuse of a legitimate developer feature, not
+      a vulnerability. Persistence combines a 1x1-pixel foreground activity, silent MediaSession
+      audio, a foreground-service WakeLock, mutual cross-process rebinding (bindService with
+      BIND_AUTO_CREATE) between two services that resurrect each other, oom_score_adj tuning to
+      -1000, memory-page pinning via mlock(), and a BOOT_COMPLETED receiver that silently
+      re-establishes Wireless ADB and the privileged helper on every reboot. C2 is via WebSocket
+      (screen streaming) with a parallel RTMP stream once shell privileges are obtained, bypassing
+      the MediaProjection consent dialog entirely. The command set has grown to 53 distinct
+      server-issued commands. Distribution has expanded from Vietnam to Indonesia, via spoofed
+      government/financial sites with APK payloads hosted on GitHub repos and AWS S3 buckets to
+      improve delivery reliability. OEM-specific (Google, Huawei, Meizu, Oppo, Samsung, Vivo,
+      Xiaomi) UI-automation routines for enabling Wireless ADB are present in the code but not yet
+      invoked, suggesting future broadening of device coverage.
+    region_nexus: "Vietnam and Indonesia (confirmed targeting); the technique — Accessibility-driven self-enablement of ADB Wireless Debugging to obtain shell-uid privileges with no exploit — is directly transferable to any Android fleet, including Swiss/EU mobile-banking and BYOD/MDM-managed public-sector deployments"
+    primary_sector_nexus: "indirect"
+    sector: "finance, mobile/BYOD (cross-sector)"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:redhook-android-rat", type: tool, name: "RedHook", aliases: [],
+          summary: "Android RAT first documented by Cyble (July 2025) targeting Vietnamese banking users; Group-IB's July 2026 update documents self-service privilege escalation via ADB Wireless Debugging abuse, expanded to Indonesia (Group-IB, 2026-07-09)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This, however, is the first time we have seen it used by a malware to abuse privileges on a victim's device."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/redhook-android-rat-upgraded/"
+      - quote: "By leveraging ADB, the malware gains shell-level privileges (uid 2000) and uses them to silently install and uninstall applications, modify secure settings, and grant sensitive permissions without user interaction or confirmation dialogs."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/redhook-android-rat-upgraded/"
+      - quote: "There is no exploit here, \"merely\" turning a debugging interface into a path to shell-level privileges."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/redhook-android-rat-upgraded/"
+    extended_notes: |
+      Detection/hunt angle for defenders (MITRE ATT&CK for Mobile): the described behaviours map to
+      T1453 Abuse Accessibility Features (Persistence/Privilege Escalation) for the UI-automation
+      chain, T1541 Foreground Persistence for the 1x1-pixel-activity/silent-audio/WakeLock trio,
+      T1512 Video Capture and T1417 Input Capture (.001 Keylogging/.002 GUI Input Capture) for
+      screen-streaming and keylogging, and — closest available mapping, no exact sub-technique
+      exists yet for ADB-wireless-debugging self-enablement specifically — T1626 Abuse Elevation
+      Control Mechanism for the shell-uid privilege grab. EMM/MDM-relevant hunt signal: any
+      non-system app programmatically flipping Settings.Global "adb_wifi_enabled" / enabling
+      Developer Options without an interactive ADB pairing flow initiated by IT, or an app process
+      binding a loopback ADB connection to 127.0.0.1, is anomalous on a managed fleet and should
+      alert. Hardening: enterprise MDM policies should disable Developer Options / USB and Wireless
+      debugging on managed devices by default (Android Enterprise DevicePolicyManager
+      setDebuggingFeaturesAllowed / equivalent restriction), and flag apps requesting
+      BIND_ACCESSIBILITY_SERVICE outside an approved allowlist.
+
+  - title: "Nozomi Networks Labs: two new Golang IoT/Linux DDoS botnet families (Apex2, c2c/\"meow\") show faster, more modular botnet development cycles"
+    sources:
+      - { url: "https://www.nozominetworks.com/blog/spring-botnet-floods-golang-malware-targets-exposed-iot-systems", publisher: "Nozomi Networks Labs", date: "2026-07-06", role: "primary" }
+      - { url: "https://industrialcyber.co/ransomware/nozomi-identifies-apex2-and-c2c-golang-malware-driving-faster-iot-botnet-attacks-raising-risks-for-ot-environments/", publisher: "Industrial Cyber", date: "2026-07-09", role: "corroborating (re-report, surfaced the story into today's window)" }
+      - { url: "https://www.ilcorrieredellasicurezza.it/analisi-sulle-botnet-di-primavera-il-malware-golang-prende-di-mira-i-sistemi-iot-esposti/", publisher: "Il Corriere della Sicurezza (IT)", date: "2026-07-09", role: "corroborating (re-report)" }
+    discovery_trace: "first seen at: industrialcyber-co (rotation-priority slice source; direct-fetch and jina both 403/challenge-blocked, but its own RSS feed https://industrialcyber.co/feed/ was reachable), URL https://industrialcyber.co/ransomware/nozomi-identifies-apex2-and-c2c-golang-malware-driving-faster-iot-botnet-attacks-raising-risks-for-ot-environments/ → pivot: WebSearch (\"Apex2 nozomi networks blog botnet Golang malware analysis\") → pivot: Il Corriere della Sicurezza IT translation, URL https://www.ilcorrieredellasicurezza.it/analisi-sulle-botnet-di-primavera-il-malware-golang-prende-di-mira-i-sistemi-iot-esposti/ (carried the direct link to the primary) → primary: Nozomi Networks Labs, URL https://www.nozominetworks.com/blog/spring-botnet-floods-golang-malware-targets-exposed-iot-systems"
+    summary: |
+      Nozomi Networks Labs' AI-assisted honeypot triage flagged two Golang-based DDoS botnet
+      samples this spring that stand out from the routine volume of Mirai-derived variants Nozomi
+      already tracks: Apex2 and c2c (also seen distributed under the filename "meow"). Apex2 is a
+      direct structural evolution of the earlier "Apex" botnet: infection begins with Telnet
+      connections and credential brute-forcing against honeypots, followed by download-and-execute
+      of the Golang payload, which registers with its C2 over a plaintext protocol (hostname
+      OS/architecture) and supports Linux (arm, arm64, mipsle, ppc64) and Windows (386, amd64)
+      builds. It exposes named flood-attack commands including "cf" (an HTTP(S) flood specifically
+      tuned to bypass Cloudflare protection via randomized User-Agent lists and long keep-alive
+      timeouts), "udp"/"pps", "discord"/"game" (game-server/Discord-targeted UDP floods), and three
+      TLS-flood variants ("tls", "tlsplus", "tlsplusbypass"). c2c/"meow" is architecturally simpler:
+      a Golang flooder with no built-in self-propagation module — a separate SSH scanner
+      component handles credential brute-forcing and delivery — that authenticates to a hardcoded
+      C2 with the string "ChangeMe123!" over plaintext JSON-over-TCP, checks for passwordless sudo
+      (running "sudo -n true") to self-escalate, then persists by copying itself to
+      /usr/local/bin/cpufreqd and registering a fake systemd unit at
+      /etc/systemd/system/cpufreqd.service masquerading as a "CPU Frequency Daemon". It supports ten
+      flood-module types (icmp, dnsudp, udp, http, directhttp, fasthttp, betterhttp, tcp,
+      tcphandshake, dnstcp) with configurable duration and port randomization. Nozomi's stated
+      point for defenders: neither family is sophisticated — both rely on commodity Golang tooling,
+      weak/default credentials, and exposed Telnet/SSH management interfaces rather than novel
+      exploitation — and that lack of sophistication does not reduce the risk at scale.
+    region_nexus: "global; both families were caught via internet-facing honeypots with no regional targeting stated. Directly relevant to Swiss/European OT-adjacent and IoT/embedded-Linux estates that expose Telnet or SSH management interfaces to the internet — a persistent finding across ICS/OT exposure surveys for the energy, water, and transport sectors in this constituency's remit"
+    primary_sector_nexus: "direct"
+    sector: "energy, water, transport, telco (OT-adjacent/embedded-Linux and IoT exposure), public-sector (any exposed Linux estate)"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:apex2-botnet", type: tool, name: "Apex2", aliases: ["Apex"],
+          summary: "Golang-based IoT/Linux/Windows DDoS botnet, a structural evolution of the earlier Apex botnet, delivered via Telnet brute-force; supports Cloudflare-bypass HTTP flood, UDP, game-server, and TLS flood commands (Nozomi Networks Labs, 2026-07-06)." }
+      - { key: "tool:c2c-meow-flooder", type: tool, name: "c2c / \"meow\"", aliases: ["c2c", "meow", "qwiklabs/c2c"],
+          summary: "Simpler standalone Golang DDoS flooder targeting SSH-exposed Linux hosts, paired with a separate SSH-scanner component; escalates via passwordless-sudo check and persists as a fake systemd service (\"cpufreqd\") (Nozomi Networks Labs, 2026-07-06)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "While Apex2 represents a more structured evolution of an existing botnet targeting both Windows and Linux machines, c2c demonstrates how relatively simple components can be combined into an operational campaign. In both cases, the emphasis is not on sophistication, but on speed, reuse and scalability."
+        attribution: "Nozomi Networks Labs"
+        source_url: "https://www.nozominetworks.com/blog/spring-botnet-floods-golang-malware-targets-exposed-iot-systems"
+      - quote: "It checks whether passwordless sudo is available by running sudo -n true and evaluating the return value. If successful, it relaunches itself with increased privileges, copies to /usr/local/bin/cpufreqd, and creates a fake systemd service named \"CPU Frequency Daemon\""
+        attribution: "Nozomi Networks Labs"
+        source_url: "https://www.nozominetworks.com/blog/spring-botnet-floods-golang-malware-targets-exposed-iot-systems"
+      - quote: "Organisations should expect a steady stream of simple but effective botnets targeting exposed Linux and IoT systems, particularly where weak credentials, internet-facing services, and limited outbound visibility persist."
+        attribution: "Nozomi Networks Labs"
+        source_url: "https://www.nozominetworks.com/blog/spring-botnet-floods-golang-malware-targets-exposed-iot-systems"
+    extended_notes: |
+      Recency note: Nozomi's own post is dated 2026-07-06 (~3 days before this run) — inside the
+      spawn message's developing_window_hours:72 allowance, and it only entered the run's visible
+      window via a rotation-priority curated source (Industrial Cyber) re-reporting it today
+      (2026-07-09). No prior-coverage or registry match found for Apex2/Apex, c2c, or "meow" as
+      malware names — treated as new signal, not an update.
+      ATT&CK mapping: T1110 Brute Force (.001/.003) for Telnet/SSH credential attacks; T1105
+      Ingress Tool Transfer for the wget/curl-style download-and-execute stage; T1498 Network
+      Denial of Service (.001 Direct Network Flood) for the flood command sets; T1095 Non-Application
+      Layer Protocol for the plaintext-TCP/JSON C2 channel; T1548.003 Abuse Elevation Control
+      Mechanism: Sudo and Sudo Caching for the passwordless-sudo self-escalation in c2c; T1543.002
+      Create or Modify System Process: Systemd Service plus T1036.005 Masquerading: Match Legitimate
+      Name or Location for the fake "cpufreqd"/"CPU Frequency Daemon" persistence mechanism.
+      Detection hooks: outbound plaintext TCP to non-standard ports carrying JSON, systemd units
+      created outside normal package-manager/config-management workflows (auditd exec/systemd
+      unit-file-write monitoring), and repeated Telnet/SSH auth failures followed immediately by a
+      successful login and an outbound wget/curl within seconds. Hardening: the mitigations Nozomi
+      states are unremarkable but concrete — remove Telnet/SSH exposure to the internet on IoT and
+      embedded-Linux devices, eliminate default/weak credentials, and segment IoT/OT-adjacent Linux
+      systems from business-critical networks with restricted outbound connectivity.
+watchlist_sweep: null
+candidate_sources:
+  - id: group-ib-blog
+    publisher: "Group-IB Blog (Threat Intelligence)"
+    url: "https://www.group-ib.com/blog/"
+    category: research
+    why: "Reliable original threat-intel research lab (mobile malware, ransomware TTP overlap analyses, e.g. today's RedHook Android RAT deep-dive); not currently in sources.json but repeatedly surfaces primary technical research relevant to this pipeline's audience."
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Direct WebFetch (403), jina reader (upstream block/challenge relayed), and bridge `url` (both direct and jina fallback) ALL failed on every individual article URL tried on this host today. The site's own RSS feed (https://industrialcyber.co/feed/) WAS reachable via `python3 tools/fetch_source.py feed <url>` and returned full item titles/summaries/links, so the rotation-priority duty was still worked (one item extracted and traced to primary: Nozomi Apex2/c2c). Recommend updating the source-list recipe/notes for industrialcyber-co to `feed https://industrialcyber.co/feed/` as the primary working transport, since every direct/jina article-page fetch attempted in this run 403'd or hit an anti-bot challenge."
+  - source_id: xlab-qianxin
+    reason: "RSS reachable; latest item dated 2026-06-30, outside the 24h window. No in-window items."
+  - source_id: fox-it-blog
+    reason: "jina-fetched listing reachable; latest post dated 2026-05-22, outside window."
+  - source_id: sonatype
+    reason: "RSS reachable; latest item dated 2026-07-06, outside window."
+  - source_id: seqrite-labs
+    reason: "RSS reachable; latest item dated 2026-07-07 05:28 UTC, just outside the 24h window boundary. No in-window items."
+  - source_id: flatt-security
+    reason: "jina-fetched listing reachable; latest post dated 2026-06-01, outside window."
+  - source_id: exodus-intelligence
+    reason: "RSS reachable; latest item dated 2026-07-06, outside window."
+  - source_id: sophos-xops
+    reason: "RSS returned 0 items via jina fallback; drilled the listing page directly via jina reader instead — latest posts dated 2026-07-07 and 2026-07-06, both outside the 24h window."
+  - source_id: huntress
+    reason: "RSS reachable; latest item dated 2026-06-30, outside window."
+  - source_id: sansec-research
+    reason: "jina-fetched listing reachable; latest item dated Jul 2nd, outside window."
+  - source_id: sygnia
+    reason: "jina-fetched listing reachable; only in-window item (\"Inside an AI-Assisted Cloud Attack\", 2026-07-08) duplicates the Sygnia AI-orchestrated AWS intrusion item already covered by the 2026-07-09T04:09Z run today — not re-surfaced per instructions."
+  - source_id: volexity
+    reason: "jina-fetched listing reachable; latest post dated 2026-06-04, outside window."
+  - source_id: zimperium-zlabs
+    reason: "jina-fetched listing reachable; latest post (RedWing MaaS) dated 2026-07-07, outside the 24h window by roughly a day."
+  - source_id: aikido-security
+    reason: "jina-fetched listing reachable; latest post dated 2026-06-30, outside window."
+notes: |
+  This run is 8 hours after the prior same-day fire (2026-07-09T04:09Z), which had already absorbed
+  the day's freshest research output (ESET H1-2026 report, Cavern Manticore, Mandiant ADFS DPAPI,
+  Sygnia AI-orchestrated AWS intrusion, git signature malleability, GhostApproval). Every curated
+  slice source plus a wide expansion set of high-value labs (Talos, Unit 42, Mandiant/GTIG,
+  Kaspersky GReAT, Check Point Research, Microsoft Security Blog, ESET WeLiveSecurity, Trend Micro,
+  watchTowr Labs, GreyNoise, Elastic Security Labs, CrowdStrike, Wiz, Rapid7, Sekoia, Claroty Team82,
+  JPCERT/CC, The DFIR Report, KrebsOnSecurity, 404 Media) were checked; nearly all had their freshest
+  in-window content already covered by the prior run, or their freshest post predated the 24h window.
+  Two genuinely new, technically substantive items were found and are returned above (RedHook Android
+  RAT ADB-privilege-abuse update; Nozomi Networks Labs' Apex2/c2c Golang IoT botnet research). One
+  borderline item (Krebs on Security's "Felons, Fraudsters Flog Offensive Cybersecurity Startup",
+  2026-07-08, an expose on a shady zero-day-acquisition startup run by convicted felons) was reviewed
+  and DROPPED — no CVE, no technique, no detection/hunt-actionable content for a Tier 2/3 SOC
+  audience; it is an ethics/market-integrity story, not technical threat research. A Sekoia/YesWeHack
+  piece on "ChocoPoC" (trojanised CVE-PoC GitHub repos delivering a Python RAT to vulnerability
+  researchers via malicious PyPI dependencies) was found and is technically excellent, but its own
+  page metadata states Published Time 2026-07-01T12:00:00Z — 8 days stale — and was DROPPED per the
+  strict recency floor despite appearing on the blog's front-page "latest" listing dated July 8
+  (ambiguous — likely a last-modified bump, not a genuine content update); flagging for the next W1
+  weekly run if it remains uncovered.

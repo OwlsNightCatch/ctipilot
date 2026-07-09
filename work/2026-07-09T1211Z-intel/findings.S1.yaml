@@ -1,0 +1,183 @@
+domain: S1
+run_id: 2026-07-09T1211Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-09T12:13:29Z
+ended_at: 2026-07-09T12:24:40Z
+duration_seconds: 671
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 5
+  bridge_fetches: 20
+items:
+  - title: "CVE-2026-56291 — Balbooa Forms for Joomla: third unauthenticated file-upload RCE zero-day in the same extension class inside two weeks"
+    sources:
+      - { url: "https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/", publisher: "mySites.guru", date: "2026-07-08", role: primary }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-56291", publisher: "NVD/MITRE", date: "2026-07-09", role: corroborating }
+      - { url: "https://www.balbooa.com/joomla-forms", publisher: "Balbooa (vendor)", date: "2026-07-09", role: corroborating }
+    discovery_trace: >
+      first seen at: ncsc-ch-security-hub bridge dashboard sweep (checking for continuation of the 7 July Joomla
+      page-builder KEV wave) → cross-checked against ENISA EUVD "criticals" feed, URL
+      https://euvd.enisa.europa.eu/ (via `tools/fetch_source.py enisa-euvd recent criticals`), which listed
+      EUVD-2026-42573 / CVE-2026-56291 published 2026-07-09T09:53Z → primary: mySites.guru disclosure post, URL
+      https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/ → verified: NVD record, URL
+      https://nvd.nist.gov/vuln/detail/CVE-2026-56291 (published 2026-07-09, CVSS 4.0 10.0, CWE-434) → prior-wave
+      context confirmed against this store's own 2026-07-08 entry
+      entries/2026-07-08/joomla-page-builder-cve-2026-48908-56290-kev-zerodays.md (CVE-2026-48908 / CVE-2026-56290,
+      the first two extensions in the same class, both KEV-listed 7 July).
+    summary: |
+      A third unrelated Joomla third-party extension has been disclosed with the identical unauthenticated
+      arbitrary-file-upload-to-RCE flaw class inside two weeks. Balbooa Forms (component `com_baforms`), a
+      drag-and-drop form builder for Joomla used for contact/registration/survey forms, exposes its frontend
+      attachment-upload handler (`index.php?option=com_baforms&task=form.uploadAttachmentFile`) to any anonymous
+      visitor with no authentication, no CSRF token, and no allow-list check on the uploaded file's extension —
+      Joomla's built-in filename sanitiser strips dangerous characters but does not block a `.php` extension, so
+      an attacker-supplied `shell.php` is written as-is into the component's public upload folder
+      (`images/baforms/uploads/` by default) and can then be requested directly to execute (CWE-434). No account
+      of any kind is required at any point in the chain. Affected: Balbooa Forms up to and including 2.4.0;
+      fixed in 2.4.1, released 9 July 2026. This was a genuine zero-day — mySites.guru was brought the flaw via a
+      Hetzner hosting-abuse report and a customer's raw access log showing an already-successful exploit attempt
+      before any patch existed, and the researchers state the same attacks are continuing against unpatched
+      sites. No public PoC has been released; Joomla's own CNA CVSS 4.0 vector marks the threat-metric group
+      `E:A` (Attacked) and `U:Red` (highest urgency). This is the third occurrence of exactly this vulnerability
+      class in the Joomla third-party-extension ecosystem within roughly two weeks — following JoomShaper SP
+      Page Builder (CVE-2026-48908) and Joomlack Page Builder CK (CVE-2026-56290), both added to CISA KEV on 7
+      July and both covered by this pipeline on 2026-07-08 — and all three were surfaced by the same research
+      outfit (mySites.guru). The pattern is now a defender action item in its own right: inventory every
+      anonymous-facing upload endpoint across a Joomla estate's third-party components, not just the three named
+      so far.
+    region_nexus: "global; Joomla with third-party page-builder/form extensions is common on Swiss/EU municipal, SME and public-sector sites"
+    primary_sector_nexus: "direct — public-sector and municipal websites are a documented Joomla-extension demographic"
+    sector: "public-sector, technology"
+    cves: [CVE-2026-56291]
+    entity_keys: []
+    new_entities:
+      - key: "trend:joomla-extension-file-upload-rce-wave"
+        type: trend
+        name: "Joomla third-party-extension unauthenticated file-upload RCE wave"
+        aliases: []
+        summary: >
+          Three unrelated Joomla third-party extensions — JoomShaper SP Page Builder (CVE-2026-48908),
+          Joomlack Page Builder CK (CVE-2026-56290), and Balbooa Forms (CVE-2026-56291) — disclosed within
+          roughly two weeks (late June–9 July 2026) with the identical unauthenticated arbitrary-file-upload-
+          to-RCE flaw class (CWE-434); all three surfaced by researcher mySites.guru, the first two already
+          CISA KEV-listed and exploited as zero-days, the third exploited pre-patch and discovered via a
+          hosting-abuse report.
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This was a zero-day: it was already being exploited in the wild when we found it, before any patch existed, and those attacks are still going on now against sites that have not updated."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/"
+      - quote: "The flaw was an unauthenticated file upload with no file-type allow-list."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/"
+      - quote: "That log showed a POST request to the Balbooa Forms upload handler that had no business succeeding the way it did."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/"
+    extended_notes: |
+      MITRE ATT&CK: T1190 (Exploit Public-Facing Application) for the initial upload/execution; T1505.003 (Web
+      Shell) once the uploaded .php file is used for persistence. No PR (privilege required), no UI (user
+      interaction) per the CVSS 4.0 vector (AV:N/AC:L/AT:N/PR:N/UI:N).
+
+      Detection: web-server / WAF access logs for POST requests to
+      `index.php?option=com_baforms&task=form.uploadAttachmentFile` (or the equivalent upload-task endpoint for
+      any other third-party Joomla component) that return HTTP 200, followed by a GET to a newly created file
+      with an executable extension (.php/.phtml/.php5) under `images/baforms/uploads/` or any other
+      component-specific upload directory — the same detection shape used for the two prior KEV entries in this
+      wave. File-integrity monitoring on `images/*/uploads/` directories for unexpected .php files is a
+      cross-extension hunt, not specific to Balbooa.
+
+      Hardening: update Balbooa Forms to ≥2.4.1 immediately and treat every 2.4.0-or-earlier install as
+      possibly-compromised (check for stray files and unexpected Joomla admin accounts — this is the same
+      persistence pattern documented for CVE-2026-48908/56290). Structurally, deny PHP execution inside
+      upload-only directories (images/, media/ subpaths) at the web-server level (nginx `location` block /
+      Apache `.htaccess` with `php_admin_flag engine off`) regardless of vendor patch status — this closes the
+      entire recurring bug class rather than one component at a time. Any organisation running Joomla should
+      inventory every third-party extension offering anonymous-facing file upload (forms, galleries, page
+      builders) and verify extension-based (not just MIME-sniffed) allow-list validation.
+  # No other items cleared the recency + relevance bar this run. Candidates checked and dropped as either
+  # already covered by the 04:09Z run today or lacking confirmed exploitation / in-window freshness:
+  # - CVE-2026-53359 (Linux KVM "Januscape" VM escape) — flagged by NCSC-CH at 2026-07-09T10:39Z, but the
+  #   underlying CVE was already published as a full entry by the 04:09Z run today (same CVE, same
+  #   bleepingcomputer primary) — duplicate, not resurfaced.
+  # - CVE-2026-40138/-40139/-40140/-40141 (BeyondTrust RS/PRA pre-auth bypass) — NCSC-CH post from 2026-07-07,
+  #   already covered by the 2026-07-08T20:35Z run — duplicate.
+  # - CVE-2026-15113 (Chrome Autofill UAF, Android) — routine July 8 Chrome stable-channel patch; "Reported by
+  #   Google" (internal fuzzing/research find), no ITW-exploitation language in the release notes, EPSS 0.0 —
+  #   does not clear the imminent-exploitation bar.
+  # - CVE-2026-15158 (Blocksy Companion WordPress plugin, CVSS 9.8) — Wordfence-disclosed responsibly, EPSS 0.0,
+  #   no exploitation evidence, and only exploitable with a narrow premium-extension combination active — too
+  #   thin to include without confirmed exploitation.
+  # - CVE-2026-60124 (MISP EventsController::importModule() authorization bypass, CVSS 5.3) — moderate integrity
+  #   issue (read-only API key can write event data), no exploitation evidence, published 2026-07-08T13:30Z —
+  #   fell inside the *previous* run's own window and was not surfaced then; too low-severity to revive now.
+  # - Cisco ISE CVE-2026-20181 / CVE-2026-20190 (critical RCE/info-disclosure, cisco-sa-ise-multi-G5WP8vv) —
+  #   underlying disclosure is from 2026-06-17; no confirmed in-the-wild exploitation per Cisco's advisory or
+  #   any secondary source found; outside the recency window with no fresh delta.
+  # - FreeRDP planar-decoder heap overflow CVE-2026-45700 (BSI WID-SEC-2026-2264) — responsible disclosure only,
+  #   requires a malicious RDP *server* (client-side attack surface), no ITW evidence; routine patch-cycle item.
+  # - GitLab multi-CVE bundle (BSI WID-SEC-2026-2265) — authenticated-attacker-only, no exploitation evidence;
+  #   routine patch-cycle item.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn instructions; general vulnerability coverage (CISA KEV, ENISA EUVD, NCSC-CH, BSI, ANSSI, NCSC-NL, Cisco PSIRT, vendor/research blogs) was worked as normal and is reflected in the items/dropped-candidates above."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-uk
+    reason: >
+      https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories is a cookie-consent-gated Drupal SPA;
+      both direct WebFetch and the jina reader (`tools/fetch_source.py jina <url>`) returned only the
+      Cookiebot consent-banner shell, no advisory listing content. Two transports attempted, both thin/blocked
+      per the ladder discipline; no third rung available for this source in the current toolset. Recommend a
+      structured-endpoint recipe (sitemap or RSS probe) be added to this source's sources.json notes.
+  - source_id: cert-eu
+    reason: >
+      https://cert.europa.eu/publications/security-advisories-rss (via `tools/fetch_source.py cert-eu recent 15`)
+      returned only 6 stale items, freshest dated 2026-06-10 (advisory 2026-007). The feed appears to not have
+      published a new numbered advisory since early June; no in-window CERT-EU content this run.
+  - source_id: jpcert
+    reason: "https://www.jpcert.or.jp/english/index.html freshest listed alert is 2026-06-10; no in-window content."
+  - source_id: cert-pl
+    reason: >
+      RSS feed reachable and current (freshest item 2026-07-09T11:55+01:00) but every item this run is a
+      narrow-scope, unexploited CVE in low-profile/niche software (SOPlanning, GNU patch, OpenIDC liboauth2,
+      MyComplianceOffice, KTM System e-BOK, fzf, Redeight CMS, Raytha CMS) — checked, none cleared the
+      relevance/actionability bar for this audience.
+  - source_id: rapid7-research
+    reason: "Blog reachable via WebFetch; 15 most recent items are all non-technical/marketing or routine Metasploit-module roundups with no in-window CVE/threat content clearing the bar."
+  - source_id: zdi
+    reason: "Blog reachable; freshest substantive post is 2026-07-01 (Apple June review) — outside the 24h window, no in-window items."
+  - source_id: vulncheck
+    reason: "Blog reachable; freshest post is 2026-06-25 (NVIDIA GEN3C) — outside the 24h window."
+  - source_id: horizon3-ai
+    reason: "Blog reachable; freshest post is 2026-06-12 (SimpleHelp IOCs) — outside the 24h window."
+  - source_id: sansec-research
+    reason: "Research page reachable; freshest post is 2026-07-02 (Amasty Magento patches) — outside the 24h window."
+  - source_id: aikido-security
+    reason: "Blog reachable; freshest security-technical post is 2026-07-06 (Rocket.Chat ObjectId) — outside the 24h window; today's items are non-technical (buyer's guide, event roundup)."
+  - source_id: socket-dev-blog
+    reason: "Blog reachable; freshest post is 2026-07-08 (Go-module malware-lure network, pnpm 11.10) — just outside the 24h window (previous run at 04:09Z would have already had the opportunity to surface it); no genuinely new items since 04:09Z today."
+  - source_id: sonatype
+    reason: "RSS feed URL https://www.sonatype.com/blog returned zero items via both direct feed parse and jina fallback — likely not a real feed endpoint (landing page, not /feed or /rss); recipe needs correction in sources.json."
+  - source_id: calif-codex
+    reason: "RSS feed URL https://blog.calif.io returned zero items via both direct feed parse and jina fallback — same issue as sonatype, likely landing page not feed URL."
+  - source_id: keycloak
+    reason: "https://www.keycloak.org/security is Keycloak's vulnerability-DISCLOSURE-POLICY page, not an advisories index — no CVE list present; the actual advisories live on the project's blog/GitHub releases, which this recipe does not point to."
+  - source_id: flatt-security
+    reason: "Research page reachable; freshest post is 2026-06-01 (Claude Code GitHub-issue supply chain) — outside the 24h window."
+  - source_id: exodus-intelligence
+    reason: "Blog feed returned zero items via direct parse; WebFetch fallback showed freshest post 2026-07-06 (Windows Installer folder-delete LPE) — outside the 24h window."
+cve_table:
+  - cve: CVE-2026-56291
+    product: "Balbooa Forms for Joomla (com_baforms)"
+    cvss: "10.0 (CVSS 4.0, CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A/AU:Y/U:Red)"
+    epss: "0.0 (very recently assigned; not yet scored)"
+    kev: "not yet KEV-listed (disclosed 2026-07-08/09)"
+    exploited: "yes — zero-day, exploited before patch per mySites.guru (discovered via Hetzner hosting-abuse report / customer access log); attacks continuing against unpatched sites; no public PoC"
+    patch: "Balbooa Forms 2.4.1 (released 2026-07-09)"
+    source: "https://mysites.guru/blog/balbooa-forms-unauthenticated-file-upload-flaw/"
