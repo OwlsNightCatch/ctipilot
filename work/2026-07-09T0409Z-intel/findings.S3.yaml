@@ -1,0 +1,225 @@
+domain: S3
+run_id: 2026-07-09T0409Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-09T04:12:30Z
+ended_at: 2026-07-09T04:22:10Z
+duration_seconds: 580
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 6
+  bridge_fetches: 24
+items:
+  - title: "\"Ghost in the Database\": Mandiant recovers active ADFS token-signing keys from Machine DPAPI, bypassing the WID/DKM Golden SAML extraction path"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi", publisher: "Mandiant (Google Cloud Blog / GTIG)", date: "2026-07-07", role: primary }
+      - { url: "https://itbrief.co.uk/story/mandiant-finds-way-to-recover-active-adfs-signing-keys", publisher: "itbrief.co.uk", date: "2026-07-08", role: corroborating }
+      - { url: "https://securitybrief.com.au/story/mandiant-finds-way-to-recover-active-adfs-signing-keys", publisher: "securitybrief.com.au", date: "2026-07-08", role: corroborating }
+    discovery_trace: "first seen at: WebSearch (\"Mandiant GTIG ADFS DPAPI signing keys blog\") → pivot: itbrief.co.uk, URL https://itbrief.co.uk/story/mandiant-finds-way-to-recover-active-adfs-signing-keys → primary: Mandiant / Google Cloud Blog (via jina reader on cloud.google.com/blog/topics/threat-intelligence listing), URL https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi"
+    summary: |
+      During a red-team engagement, Mandiant found that ADFS deployments with AutoCertificateRollover disabled and certificates manually rotated can leave the active token-signing private key exposed via Windows Machine DPAPI even after the standard Golden SAML extraction path (WID database + DKM decryption) fails. In this drift state the WID configuration database retains a stale "ghost" certificate record — decryptable but rejected by Entra ID with AADSTS500172 — while the ADFS service actually signs tokens with a newer certificate whose private key sits in the machine-scoped CAPI store (C:\ProgramData\Microsoft\Crypto\RSA\MachineKeys\), protected by Machine DPAPI (the DPAPI_SYSTEM LSA secret plus S-1-5-18 machine masterkeys) rather than a user-bound DPAPI context. A SYSTEM-level attacker can recover this key with a tool such as SharpDPAPI /machine without touching LSASS or the live ADFS process — reducing visibility to defenses that watch only credential-dumping/process-memory access. The recovered key was used to forge a Global Administrator SAML assertion that Entra ID accepted, bypassing MFA and conditional access entirely. The drift condition itself is observable: ADFS Event ID 385 fires when the WID record and the actively used signing certificate diverge, and self-resolves only if AutoCertificateRollover is re-enabled.
+    region_nexus: "global; ADFS remains widely deployed for on-prem/hybrid identity federation across Swiss and EU public-sector and enterprise environments migrating to Entra ID"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, energy, healthcare, telco"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:adfs-machine-dpapi-key-recovery", type: tool, name: "Machine DPAPI ADFS signing-key recovery (\"Ghost in the Database\")",
+          aliases: ["Ghost in the Database"],
+          summary: "Mandiant-documented technique to recover an active ADFS token-signing private key from the machine-scoped Windows CAPI key store via Machine DPAPI when the WID configuration database has drifted from the actively-used signing certificate (AutoCertificateRollover disabled, manual rotation) — enables Golden SAML forgery without LSASS or ADFS-process interaction (Mandiant, 2026-07-07)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Attackers who obtain the active private key can forge SAML assertions for any user in a federated environment"
+        attribution: "Mandiant (Google Cloud Blog)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi"
+      - quote: "The recovered key was used to forge a SAML assertion impersonating a Global Administrator identity, which Entra ID accepted as a valid authentication assertion"
+        attribution: "Mandiant (Google Cloud Blog)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi"
+      - quote: "SACL-Based Object Access Monitoring: Configure object access auditing via SACLs on C:\\ProgramData\\Microsoft\\Crypto\\RSA\\MachineKeys\\ ... this generates Security Event ID 4663 for file access attempts"
+        attribution: "Mandiant (Google Cloud Blog)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi"
+    extended_notes: |
+      MITRE ATT&CK: T1606.002 (Forge Web Credentials: SAML Tokens), T1552 (Unsecured Credentials — DPAPI), T1078.004 (Valid Accounts: Cloud Accounts). Detection concepts beyond the Event ID 4663 SACL: correlate ADFS token-issuance/claims-processing audit events (Event IDs 299, 1200-series) against Entra ID sign-in logs for federated sign-ins with no matching upstream authentication context; baseline claim sets/IP ranges/user-agents per relying-party trust for privileged accounts. Hardening: migrate token-signing certs to an HSM (removes the Machine DPAPI extraction path entirely), run ADFS under gMSA, treat ADFS hosts as Tier 0 (equivalent to domain controllers), and when rotating manually always run Set-AdfsCertificate (not just certificate installation) — verify with Get-AdfsCertificate and watch for recurrence of Event ID 385. Published slightly outside the strict 24h/8h intraday gate (2026-07-07 14:00 UTC, ~38h before this run) but not surfaced by any prior run in the 14-day dedup index — included as a genuine gap-fill within the 72h developing window given its direct relevance to identity-infrastructure defenders.
+    borderline: true
+    borderline_reason: "publication ~38h before this run's fire time — outside the 24h/8h intraday gate but within the 72h developing window; no prior run surfaced it and no dedup match exists"
+
+  - title: "GhostApproval: symlink-following + confirmation-dialog UI misrepresentation lets malicious repos achieve pre-auth RCE against 6 major AI coding assistants"
+    sources:
+      - { url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants", publisher: "Wiz Research", date: "2026-07-08", role: primary }
+    discovery_trace: "first seen at: WebFetch (Wiz Research blog listing), URL https://www.wiz.io/blog → primary: Wiz Research, URL https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants (no pivot needed)"
+    summary: |
+      Wiz Research found a systematic vulnerability pattern, GhostApproval, across six major AI coding assistants: Amazon Q Developer, Anthropic Claude Code, Augment, Cursor, Google Antigravity and Windsurf. Each agent can be tricked by a malicious repository into following a symbolic link (CWE-61) that points outside the workspace sandbox — e.g. a file named project_settings.json that is actually a symlink to ~/.ssh/authorized_keys — and writing attacker-controlled content to the resolved target. In several tools (most clearly Claude Code and Augment) the failure compounds into CWE-451 (UI misrepresentation of critical information): the agent's own internal reasoning explicitly identifies the true target ("this is a symbolic link to the Claude settings file") yet the confirmation dialog shown to the user still asks to approve an edit to the harmless-looking filename, turning informed consent into a rubber stamp. Windsurf and Amazon Q exhibited pre-authorization writes — the file modification happens before the Accept/Reject dialog even renders, making the confirmation an "Undo" button rather than a gate. Severity ranged from disputed UI issue (Anthropic, closed as informative, though v2.1.32 already shipped a symlink warning before the report) to critical pre-auth RCE (Augment: silent read+write, no dialog at all; Windsurf: write-before-prompt). AWS (CVE-2026-12958, language server < 1.69.0, fixed in 1.69.0) and Cursor (CVE-2026-50549, < 3.0, fixed in 3.0) issued CVEs; Google fixed without a CVE; Augment and Windsurf remain in-progress as of publication.
+    region_nexus: "global; AI coding assistants are in active use across Swiss/EU public-sector and enterprise development shops"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: ["CVE-2026-12958", "CVE-2026-50549"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:ghostapproval-ai-coding-assistant-symlink", type: tool, name: "GhostApproval",
+          aliases: [],
+          summary: "Wiz Research's name for a symlink-following (CWE-61) + confirmation-UI misrepresentation (CWE-451) vulnerability pattern affecting Amazon Q Developer, Anthropic Claude Code, Augment, Cursor, Google Antigravity and Windsurf, letting a malicious repository write outside the AI coding agent's workspace sandbox (Wiz Research, 2026-07-08)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "a malicious repository can trick the agent into accessing arbitrary files outside the workspace sandbox, potentially achieving remote code execution on the developer's machine"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants"
+      - quote: "the agent's internal reasoning explicitly recognizes the dangerous target, yet the confirmation prompt shown to the user conceals this information entirely"
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants"
+      - quote: "Windsurf presented a particularly dangerous variant. The agent writes file modifications directly to disk before the Accept/Reject buttons appear in the UI."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants"
+    extended_notes: |
+      MITRE ATT&CK: T1195.002 (Supply Chain Compromise — repository-delivered), T1222 (File and Directory Permissions Modification via symlink), T1552.004 (Unsecured Credentials — SSH keys via authorized_keys write). Detection concepts: monitor for git-clone operations that create symlinks resolving outside the repository root (Wiz's own sensor alerts at clone time); monitor writes to ~/.ssh/authorized_keys, shell rc files (.zshrc/.bashrc) and other sensitive dotfiles regardless of the writing process, elevating severity when the writer is an AI coding-assistant process. Hardening for defenders standing up these tools: canonicalize/resolve symlink targets before rendering any confirmation dialog; explicitly flag when a resolved path falls outside the workspace; never perform the underlying write before explicit user authorization (treat the confirmation as a gate, not an undo mechanism); patch to Cursor >= 3.0 and Amazon Q language server >= 1.69.0 now. Full responsible-disclosure timeline in the source runs Feb-Jul 2026; public disclosure itself is 2026-07-08.
+
+  - title: "Sygnia: an AI-orchestrated AWS cloud intrusion moved from initial access to broad compromise in ~72 hours using only known techniques — four access keys used in parallel from one source in the same second"
+    sources:
+      - { url: "https://www.sygnia.co/blog/inside-an-ai-assisted-cloud-attack/", publisher: "Sygnia", date: "2026-07-08", role: primary }
+    discovery_trace: "first seen at: jina reader on Sygnia blog listing, URL https://www.sygnia.co/blog/ → primary: Sygnia, URL https://www.sygnia.co/blog/inside-an-ai-assisted-cloud-attack/ (no pivot needed)"
+    summary: |
+      Sygnia's incident-response investigation of a financially-motivated AWS cloud intrusion found no novel malware or zero-day — every individual technique maps to a long-tracked MITRE ATT&CK ID — but the operationalization was materially faster than typical manual intrusions, which Sygnia attributes to AI-assisted or agentic tooling. After obtaining an initial access key via a weakness in an internet-facing application, the actor ran four parallel workstreams (secrets theft across ECS/EC2 environment variables, CI/CD runner env vars for GitHub and Bitbucket, S3 plaintext secrets, Secrets Manager, and SSM Parameter Store; backdoor/persistence via new IAM users, EC2/ECS reverse shells, and modified deployment files; RDS data exfiltration via several hundred distinct SQL queries across dozens of databases; and reversible impact actions — S3 access denial, ECS scaled to zero, SQS purges — used purely as extortion leverage) that repeated on every newly obtained credential rather than progressing as a single linear kill chain. The most striking single artefact: four different AWS access keys belonging to four separate accounts were used from the same source IP and user-agent within the same observed second — activity Sygnia assesses is very hard to explain as manual operation. Multiple artefacts (scripts, structured reporting output, commit messages and branch names framing the activity as an authorized "pentest"/"red team" with a fabricated CEO sign-off) are consistent with LLM-generated tooling and content, including possible prompt-framing intended to reduce refusal from AI assistants being abused by the operator. Sygnia maps the case onto the same ATT&CK tactic distribution (Execution, Discovery, Credential Access, Collection, Defense Evasion) that Anthropic's June 2026 LLM ATT&CK Navigator research found concentrated in banned AI-abuse accounts.
+    region_nexus: "global; cloud/CI-CD identity-sprawl attack surface is directly relevant to any organization running AWS + GitHub/Bitbucket CI/CD, including Swiss/EU public-sector cloud migrations"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, telco, energy"
+    cves: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In one observed second, four different access keys belonging to four separate accounts were used from the same source IP address and the same user-agent"
+        attribution: "Sygnia"
+        source_url: "https://www.sygnia.co/blog/inside-an-ai-assisted-cloud-attack/"
+      - quote: "The intrusion progressed from initial access to broad cloud compromise within approximately 72 hours."
+        attribution: "Sygnia"
+        source_url: "https://www.sygnia.co/blog/inside-an-ai-assisted-cloud-attack/"
+      - quote: "multiple attacker-created artifacts were framed as part of a \"pentest\" or a \"red team\" ... including references suggesting the activity was approved by a non-existent CEO"
+        attribution: "Sygnia"
+        source_url: "https://www.sygnia.co/blog/inside-an-ai-assisted-cloud-attack/"
+    extended_notes: |
+      MITRE ATT&CK per Sygnia's own mapping: T1059 (scripting), T1651 (Cloud Administration Command), T1609/T1648 (Container/Serverless Execution), T1677 (Cloud Application Integration / CI/CD pipeline abuse), T1552/T1528 (credential/token harvesting), T1087/T1580/T1619 (account/cloud-infra/GCP-storage discovery re-run per new key), T1578 (modify cloud compute infra), T1078 (valid accounts). Detection/hunt takeaway for Tier 2/3: the ATT&CK-mappable individual actions are not the signal — the orchestration behavior is: alert on the same source IP/user-agent pair authenticating with multiple distinct IAM access keys/accounts within a tight time window (seconds), and on repeated re-execution of the same discovery/secrets-harvesting playbook triggered by newly-minted credentials. Hardening: assume any exposed credential is used immediately and at scale — automate secrets rotation, IP-allowlist cloud management planes, enforce MFA on privileged/external access, and pre-build containment playbooks (network isolation + credential rotation + session revocation) that can execute in minutes, not hours, since manual response cannot keep pace with this operational tempo.
+
+  - title: "ANNUAL REPORT — ESET Threat Report H1 2026: first Android malware using generative AI at runtime (PromptSpy/Gemini), ClickFix detections more than double, QR phishing at record levels, 100+ EDR-killers catalogued"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/", publisher: "ESET / WeLiveSecurity", date: "2026-07-08", role: primary }
+      - { url: "https://www.globenewswire.com/news-release/2026/07/08/3323874/0/en/ESET-Threat-Report-AI-boosts-cyber-attackers-efficiency.html", publisher: "GlobeNewswire (ESET press release)", date: "2026-07-08", role: corroborating }
+    discovery_trace: "first seen at: WebFetch (ESET WeLiveSecurity listing), URL https://www.welivesecurity.com/en/ → pivot: WebSearch (\"ESET Threat Report H1 2026 welivesecurity\") → primary: ESET / WeLiveSecurity, URL https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/"
+    summary: |
+      ESET's semi-annual threat-landscape report (telemetry December 2025-May 2026) flags four developments a Tier 2/3 team should track. First, ESET analysed roughly 900,000 "AI skills" (small functional components used by AI agents) and found tens of thousands suspicious and thousands outright malicious, calling out a rapidly expanding attack surface in the emerging agentic-AI ecosystem. Second, ESET identified PromptSpy, described as the first known Android malware to use generative AI (specifically Google's Gemini) inside its own execution flow to interpret UI elements and adapt behaviour across devices at runtime rather than relying on hardcoded logic — following the first AI-powered ransomware disclosed in 2025. Third, ClickFix (the fake-error-message social-engineering technique) has expanded beyond fake CAPTCHA prompts into AI-themed help pages, browser extensions and cloud-authentication scenarios, with ESET detections more than doubling between H2 2025 and H1 2026. Fourth, QR-code phishing ("quishing") reached record levels, with roughly 11% of all ESET-detected phishing emails in H1 2026 using QR codes to move victim interaction to mobile devices and evade cursory inspection. Ransomware activity continued unabated with over 100 distinct EDR-killer tools now catalogued by ESET, though a declining share of victims are reportedly paying.
+    region_nexus: "global; ESET telemetry-derived, directly informs Swiss/EU threat-landscape baselining"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, healthcare, telco"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "report:eset-threat-report-h1-2026", type: report, name: "ESET Threat Report H1 2026",
+          aliases: [],
+          summary: "ESET's semi-annual threat-landscape report (Dec 2025-May 2026 telemetry), published 2026-07-08: first Android malware using generative AI at runtime (PromptSpy/Gemini), ClickFix detections more than doubling H2 2025->H1 2026, record-level QR-code phishing (~11% of detected phishing emails), and 100+ distinct EDR-killer tools documented in the wild (ESET, 2026-07-08)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ESET researchers identified PromptSpy, the first known Android malware to use generative AI in its execution flow"
+        attribution: "ESET / WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/"
+      - quote: "ESET detections of this vector more than doubled between H2 2025 and H1 2026"
+        attribution: "ESET / WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/"
+      - quote: "ESET Research has documented over 100 EDR killers used in the wild, with new variants appearing regularly"
+        attribution: "ESET / WeLiveSecurity"
+        source_url: "https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/"
+    extended_notes: |
+      PD-9 periodic-report flag: this is ESET's semi-annual (H1/H2) threat report cadence; prior edition in this same series would be "ESET Threat Report H2 2025". Detection/hardening takeaway for defenders: prioritize EDR-killer detection (process/driver-tampering telemetry, protected-process violations) over signature-based ransomware-binary detection given the 100+ catalogued killer-tool count; treat QR codes in email bodies as a first-class phishing indicator requiring the same scrutiny as embedded URLs; flag "AI help page" / browser-extension-install ClickFix lures alongside the already-known fake-CAPTCHA variant in user-awareness material.
+
+  - title: "Cavern Manticore (Iran MOIS/OilRig-Lyceum nexus): a modular .NET C2 that weaponizes three different compilation formats as an anti-analysis layer, deployed via SysAid RMM abuse"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/", publisher: "Check Point Research", date: "2026-07-06", role: primary }
+    discovery_trace: "first seen at: bridge feed fetch on research.checkpoint.com/feed/ → primary: Check Point Research, URL https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/ (no pivot needed)"
+    summary: |
+      Check Point Research documented Cavern Manticore, an Iran MOIS-linked APT it assesses shares technical overlap with MuddyWater and OilRig's Lyceum subgroup, targeting Israeli government and IT-sector organizations. The group's namesake framework, Cavern, is a modular post-exploitation C2 built entirely on .NET but deliberately compiled into three different binary formats across its components — pure .NET Framework/IL-only (mhm.dll file-ops/DPAPI-decrypt module, db.dll SQL browser, ode.dll LDAP/AD-recon module), Mixed-Mode C++/CLI IL+Native (the uxtheme.dll Cavern Agent core), and .NET 8 NativeAOT native-only (n-HTCommp.dll HTTPS/WebSocket transport, n-ten.dll network recon/SMB-brute-force, n-sws.dll SOCKS5/WSS tunnel module). The compilation-format diversity itself is the anti-analysis layer: each format demands a different reverse-engineering toolchain, and NativeAOT strips framework symbols and resolves security-sensitive P/Invoke calls (WNetAddConnection2, NetShareEnum, NetLocalGroupGetMembers) through runtime descriptor tables rather than the PE import table, hiding capability from import-based triage. In the observed intrusion chain, the actor abused SysAid's legitimate software-update/deployment feature (not a SysAid vulnerability) to push a WinDirStat DLL-sideloading package that loads the trojanized uxtheme.dll as the Cavern Agent, which exports 83 functions mimicking the real Windows theming library — 82 are empty stubs, and the one live export (EnableThemeDialogTexture) is the actual C2 entry point, creating a sandbox trap for automated analysis that only invokes default exports. The agent isolates each loaded module in its own .NET AppDomain (via a MarshalByRefObject proxy) so modules can be unloaded cleanly after execution, leaving minimal forensic residue — a technique not commonly seen in commodity loaders. Most samples score zero or very-low detection on VirusTotal.
+    region_nexus: "primary targeting is Israeli government/IT; transferable relevance is the anti-analysis technique class and RMM-software-feature-abuse initial-access pattern, applicable to any organization running SysAid or similar RMM/deployment tooling in Swiss/EU government and critical-infrastructure environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:cavern-manticore", type: actor, name: "Cavern Manticore",
+          aliases: [],
+          summary: "Cavern Manticore — Iran MOIS-linked APT targeting Israeli government and IT-sector organizations, sharing technical/infrastructure overlap with MuddyWater and OilRig's Lyceum subgroup; operates the modular .NET C2 framework 'Cavern' (Check Point Research, 2026-07-06)." }
+      - { key: "tool:cavern-c2-framework", type: tool, name: "Cavern",
+          aliases: [],
+          summary: "Cavern — modular post-exploitation .NET C2 framework (agent + specialized modules for file/DPAPI, SQL, LDAP, network and tunneling operations) used by Cavern Manticore; deliberately compiled across three .NET formats (IL-only, Mixed-Mode C++/CLI, NativeAOT) as an anti-analysis layer, with per-module AppDomain isolation and DLL-sideload delivery via RMM software-update abuse (Check Point Research, 2026-07-06)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Cavern Manticore is an Iran MOIS (Ministry of Intelligence and Security)-linked actor, with links to the OilRig subgroup named Lyceum"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/"
+      - quote: "the compilation format itself becomes the anti-analysis layer, since each of the three formats has to be reversed with a different toolchain"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/"
+      - quote: "SysAid was not compromised, and no SysAid vulnerability was involved. The attacker had already gained access to the victim environment and abused a legitimate software-deployment feature"
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/"
+    extended_notes: |
+      MITRE ATT&CK: T1574.002 (DLL Side-Loading), T1027 (Obfuscated Files or Information — via compilation-format diversity rather than packing), T1620 (Reflective Code Loading — AppDomain-isolated module loading), T1219 (Remote Access Software — RMM/SysAid abuse for lateral deployment), T1055 (Process Injection concepts absent — no injection observed; native P/Invoke resolution instead). Detection/hunt takeaway: hunt for uxtheme.dll outside its legitimate System32 location, especially loaded by non-standard parent processes (WinDirStat.exe is not a normal uxtheme.dll consumer); flag RMM/software-deployment-tool (SysAid and equivalents) push actions that stage executables to non-standard ProgramData paths; for reverse engineers, note the specific tooling gap — NativeAOT .NET 8 binaries need dedicated metadata-recovery tooling (the researchers ported washi1337's ghidra-nativeaot plugin to IDA Pro, published as ida-nativeaot on GitHub) since standard .NET decompilers do not handle Native-only compiled output. Published 2026-07-06, ~40h before this run — outside the 24h/8h intraday gate but within the 72h developing window; no prior-run coverage found in the 14-day dedup index or entity registry.
+    borderline: true
+    borderline_reason: "publication ~40h before this run's fire time — outside the 24h/8h intraday gate but within the 72h developing window; primary targeting is Israeli government (not Swiss/EU), included for the transferable anti-analysis technique class and RMM-abuse initial-access pattern"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Standing Cloudflare-class block/challenge on industrialcyber.co reproduced even via the jina reader proxy (\"reader proxy relayed an upstream block/challenge\"). Per spawn-message note this is a known transport issue, not grounds for demotion. WebSearch was not separately run for OT/ICS-specific in-window items given time budget; flagged here for a future run to retry or find an alternate OT/ICS source."
+  - source_id: zimperium-zlabs
+    reason: "jina fetch of https://zimperium.com/blog returned only mega-menu navigation chrome, not the actual post listing (SPA/heavy-nav rendering issue) within available time; no in-window items confirmed either way. Needs a structured listing approach (sitemap or dedicated feed URL) in a future run."
+  - source_id: aikido-security
+    reason: "jina fetch of https://www.aikido.dev/blog returned only site navigation/mega-menu chrome, not the post listing, within available time budget; no in-window items confirmed either way."
+  - source_id: flatt-security
+    reason: "Checked — latest post is 2026-06-01 (\"Poisoning Claude Code: One GitHub Issue to Break the Supply Chain\"), outside the 72h developing window. No in-window items."
+  - source_id: fox-it-blog
+    reason: "Checked via jina — latest post is 2026-05-22 (RemotePE Lazarus RAT, already in registry as tool:... from a prior run). No in-window items."
+  - source_id: sansec-research
+    reason: "Checked — latest post is 2026-07-02 (Amasty Magento extensions patch), outside the 72h developing window. No in-window items."
+  - source_id: volexity
+    reason: "Checked — latest post is 2026-06-04 (VerdantBamboo/BRICKSTORM). No in-window items."
+  - source_id: greynoise
+    reason: "Checked via WebFetch — latest post is 2026-06-17. No in-window items."
+  - source_id: huntress
+    reason: "Checked via RSS — latest post is 2026-06-30, all content marketing/best-practice pieces, no substantive new threat-research write-up in window."
+  - source_id: exodus-intelligence
+    reason: "Checked via RSS — most recent post (2026-07-06, Windows Installer msi.dll TempPackages LPE) covers a vulnerability already patched April 2025 (CVE-2025-27727); a retrospective exploitation write-up, not a new/current threat — excluded as low urgency for defenders, not a coverage gap in the strict sense but noted here for completeness."
+  - source_id: xlab-qianxin
+    reason: "Checked via RSS — latest post is 2026-06-30 (RustDuck botnet). No in-window items."
+  - source_id: sonatype
+    reason: "Checked via RSS — latest posts are opinion/thought-leadership pieces on AI and open-source security (2026-07-01, 2026-07-06), not primary technical threat research. No qualifying in-window items."
+  - source_id: seqrite-labs
+    reason: "Checked via jina — Operation DragonReturn (China-nexus DcRAT campaign vs. Indian tax infrastructure) initially appeared dated 2026-07-07 on the blog listing render but the post's own Published Time metadata is 2026-06-26 (listing-page date/teaser misalignment); excluded as out-of-window once the true date was confirmed on the article page itself."
+  - source_id: dfirreport
+    reason: "Checked via RSS — latest post is 2026-06-29 (Bumblebee/AdaptixC2->Akira). No in-window items."
+  - source_id: watchtowr
+    reason: "Checked via RSS — latest post is 2026-07-02 (Adobe ColdFusion APSB26-68), already covered by prior runs per dedup context. No new in-window items."
+  - source_id: checkpoint-research
+    reason: "Checked via RSS beyond the Cavern Manticore item (included above) — remaining recent posts (weekly Threat Intelligence Report digests, Browser-Only Ransomware LLM-hallucination piece from 2026-07-01) are outside the 72h window or are roll-up digests, not primaries."
+  - source_id: talos
+    reason: "Checked via RSS — most recent substantive post is UAT-7810 (2026-07-07), already covered per dedup context; no other in-window items."
+  - source_id: unit42
+    reason: "Checked via WebFetch — most recent items are the already-covered Factory-v3 post and a WebAuthn/RDP-client engineering tutorial (2026-07-02, not threat research). No in-window items beyond what's excluded."
+  - source_id: sentinellabs
+    reason: "Checked via WebFetch — latest post is 2026-07-02 (LLM agent context-engineering tooling post, not threat research). No in-window threat-research items."
+  - source_id: kaspersky-securelist
+    reason: "Checked via WebFetch — latest post is the Q1 2026 industrial-automation-systems threat-statistics report (2026-07-07), a quarterly telemetry-stats digest rather than a substantive technical analysis; judged below the bar for a standalone item (no novel technique/tradecraft) and not flagged as a periodic report given its narrower quarterly-stats format differs from the annual/semi-annual reports PD-9 targets."
+  - source_id: sekoia
+    reason: "Checked via WebFetch (after a 301 redirect to sekoia.com/blog) — latest in-window item (ChocoPoC trojanised-exploit campaign vs. vulnerability researchers) is dated 2026-07-01, outside the 72h developing window from this run's fire time."
+  - source_id: crowdstrike
+    reason: "Checked via WebFetch — the \"prompt injection techniques\" post initially appeared dated 2026-07-07 on the category-listing render, but the article's own Published Time metadata is 2026-05-20 (listing-page date mismatch); excluded once confirmed out of window via jina fetch of the article itself."
+  - source_id: wiz-blog
+    reason: "Checked beyond the GhostApproval item (included above) — other recent Wiz posts (Wiz ASM auto-recon, Wiz MCP, WizOS, PQC executive-order commentary) are product-launch/policy-commentary content, not threat research."
+  - source_id: mandiant-gtig
+    reason: "Checked full RSS history beyond the ADFS/DPAPI item (included above) back to mid-April 2026 — no other in-window (<=72h) posts; next-most-recent is the Residential Proxy Networks disruption post from 2026-07-02."

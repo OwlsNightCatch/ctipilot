@@ -1,0 +1,296 @@
+domain: S1
+run_id: 2026-07-09T0409Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-09T04:12:07Z
+ended_at: 2026-07-09T04:25:22Z
+duration_seconds: 795
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 6
+  bridge_fetches: 17
+
+items:
+  - title: "GhostApproval: a symlink trust-boundary flaw lets six AI coding assistants write outside the workspace sandbox (CVE-2026-12958, CVE-2026-50549)"
+    sources:
+      - { url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants", publisher: "Wiz Research", date: "2026-07-08", role: "primary" }
+      - { url: "https://github.com/aws/language-servers/security/advisories/GHSA-6v3r-4p5c-mrp5", publisher: "AWS / GitHub Security Advisory (GHSA-6v3r-4p5c-mrp5)", date: "2026-06-23", role: "corroborating" }
+      - { url: "https://github.com/cursor/cursor/security/advisories/GHSA-3v8f-48vw-3mjx", publisher: "Cursor / GitHub Security Advisory (GHSA-3v8f-48vw-3mjx)", date: "2026-06-05", role: "corroborating" }
+    discovery_trace: "first seen at: wiz-blog (rotation source), URL https://www.wiz.io/blog (listing page, title only) → primary: Wiz Research, URL https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants → pivot: AWS GitHub Security Advisory, URL https://github.com/aws/language-servers/security/advisories/GHSA-6v3r-4p5c-mrp5 → pivot: Cursor GitHub Security Advisory, URL https://github.com/cursor/cursor/security/advisories/GHSA-3v8f-48vw-3mjx"
+    summary: |
+      Wiz Research published GhostApproval on 8 July, a systematic vulnerability pattern combining CWE-61
+      (symlink following) with CWE-451 (UI misrepresentation of critical information) that they found present,
+      in varying severity, in six AI coding assistants: Amazon Q Developer, Cursor, Google Antigravity, Augment,
+      Cognition Labs' Windsurf, and Anthropic's Claude Code. Attack scenario: a malicious repository plants a
+      symlink inside the workspace that resolves to a sensitive path outside it (e.g. `~/.ssh/authorized_keys`),
+      then a README/prompt instructs the agent to "update" the symlinked filename; the agent's confirmation dialog
+      displays the symlink's in-workspace name rather than the resolved target, so the user approves what looks
+      like a harmless local edit while the agent actually writes to the true target — enabling persistent,
+      passwordless SSH access or other host compromise. AWS (CVE-2026-12958, missing symlink validation in
+      Language Servers for AWS / @aws/lsp-codewhisperer before 1.69.0 / 0.0.117, CVSS 8.5 High, fixed) and Cursor
+      (CVE-2026-50549, sandbox escape via symlink + failed path canonicalization, Critical, fixed in Cursor 3.0)
+      both shipped patches and CVEs; Google fixed Antigravity (CVE pending at publication). Augment and Windsurf
+      acknowledged the report but had not patched at publication (Wiz tested Augment 0.754.3 and Windsurf 1.9566
+      as still vulnerable, including pre-authorization writes in Windsurf where files were altered on disk before
+      the Accept/Reject dialog appeared). Anthropic rejected the report as "outside our threat model" — its
+      rationale is that a user who starts a Claude Code session in a directory has already extended trust to
+      that directory — though Anthropic notes it shipped a symlink warning in the Edit/Write permission dialog
+      in v2.1.32 (5 Feb 2026) as unrelated proactive hardening.
+    region_nexus: "global — affects any organisation whose developers use these AI coding assistants, including Swiss/EU public-sector and CI/CD environments"
+    primary_sector_nexus: "indirect (software-development tooling risk, cuts across all sectors including public-sector engineering teams)"
+    sector: "public-sector, finance, energy, telco, healthcare (any sector running developer workstations with AI coding-assistant tooling)"
+    cves: [CVE-2026-12958, CVE-2026-50549]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The user approves what they believe is a harmless local edit; the agent writes to a sensitive file outside of the project workspace."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants"
+      - quote: "This falls outside our current threat model. When the user first starts Claude Code in a directory, they must confirm that they trust the directory prior to starting the session."
+        attribution: "Anthropic (via Wiz Research)"
+        source_url: "https://www.wiz.io/blog/ghostapproval-a-trust-boundary-gap-in-ai-coding-assistants"
+      - quote: "Missing symlink validation in Language Servers for AWS may allow an arbitrary file write outside of the workspace trust boundary."
+        attribution: "AWS GitHub Security Advisory GHSA-6v3r-4p5c-mrp5"
+        source_url: "https://github.com/aws/language-servers/security/advisories/GHSA-6v3r-4p5c-mrp5"
+      - quote: "A malicious agent could write arbitrary files outside the workspace under the user's privileges. This enables non-sandboxed Remote Code Execution."
+        attribution: "Cursor GitHub Security Advisory GHSA-3v8f-48vw-3mjx"
+        source_url: "https://github.com/cursor/cursor/security/advisories/GHSA-3v8f-48vw-3mjx"
+    extended_notes: |
+      Detection: monitor for symlinks inside newly-cloned/opened repositories that resolve outside the
+      workspace root (`readlink -f` mismatch against workspace prefix), and treat any file-write from an
+      AI-coding-assistant agent process (Amazon Q, Cursor, Windsurf, Augment, Claude Code helper processes)
+      targeting dotfiles/credential paths (`~/.ssh/*`, shell rc files, cloud credential files) as high-severity
+      regardless of the tool's own confirmation-dialog history. Hardening: patch to AWS language-servers >=1.69.0
+      / @aws/lsp-codewhisperer >=0.0.117 and Cursor >=3.0 immediately; for Augment and Windsurf there is no fix
+      yet — restrict these tools from running against untrusted/external repositories until patched; confirm
+      confirmation dialogs resolve to canonical paths before trusting "Accept" prompts as an authorization gate
+      rather than an undo button. ATT&CK: T1036 Masquerading (symlink disguised as workspace file), T1548
+      Abuse Elevation Control Mechanism (defeating the human-in-the-loop consent gate).
+
+  - title: "Januscape (CVE-2026-53359): a 16-year-old KVM/x86 shadow-MMU use-after-free enables guest-to-host VM escape on Intel and AMD"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/linux/new-januscape-linux-kernel-flaw-allows-vm-escape-on-intel-amd-devices/", publisher: "BleepingComputer", date: "2026-07-07", role: "primary" }
+      - { url: "https://github.com/V4bel/Januscape", publisher: "Hyunwoo Kim (V4bel) — researcher technical write-up and PoC repository", date: "2026-07-07", role: "primary" }
+      - { url: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=81ccda30b4e8", publisher: "Linux kernel upstream (fix commit)", date: "2026-06-16", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer (forced-current source), URL https://www.bleepingcomputer.com/news/security/ (listing) → article https://www.bleepingcomputer.com/news/linux/new-januscape-linux-kernel-flaw-allows-vm-escape-on-intel-amd-devices/ → pivot: researcher repository, URL https://github.com/V4bel/Januscape → pivot: kernel fix commit, URL https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=81ccda30b4e8 (verified against NVD CVE-2026-53359)"
+    summary: |
+      Researcher Hyunwoo Kim (V4bel) disclosed Januscape (CVE-2026-53359), a use-after-free in the shadow MMU
+      emulation of KVM/x86 (arch/x86/kvm/mmu/mmu.c) that lay dormant in the Linux kernel for roughly 16 years
+      (root cause traced back to a 2010 commit) before being fixed on 16 June 2026 (upstream commit 81ccda30b4e8,
+      backported to 6.1.177, 6.6.144, 6.12.95, 6.18.38 and 7.1.3). The bug fires when `kvm_mmu_get_child_sp()`
+      reuses a shadow page without comparing its role, producing a mismatched direct/indirect flag and an
+      incorrect GFN computation; orphaned rmap entries survive memslot deletion and are later dereferenced after
+      the backing memory has been freed. This is a genuine guest-to-host escape: a root user inside a KVM guest
+      (any tenant VM) can trigger the UAF from purely guest-side actions, on both Intel and AMD hosts — the
+      researcher describes it as "the first guest-to-host exploit research triggerable on both" vendors. Januscape
+      was used as a live 0-day submission against Google's kvmCTF bug-bounty program. A public PoC that panics
+      the host kernel (denial of service against every co-tenant on the same physical host) is released; a full
+      working host-compromise/RCE exploit exists but the researcher is deliberately withholding it.
+    region_nexus: "global — any KVM-based multi-tenant hosting/cloud/virtualization environment, including public and private cloud used by Swiss/EU public-sector and CI infrastructure"
+    primary_sector_nexus: "indirect (virtualization/cloud infrastructure underpinning public-sector and critical-infrastructure hosting)"
+    sector: "public-sector, finance, energy, telco, healthcare (anyone operating or renting KVM-backed virtualization/cloud capacity)"
+    cves: [CVE-2026-53359]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "With guest-side actions alone, an attacker can compromise the host that runs their VM. For example, an attacker who has rented just a single instance on a public cloud could panic the host kernel to take down every other tenant VM on the same physical machine (DoS), or run code with root privilege on the host to take over the host and all the guests on it (RCE)."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/linux/new-januscape-linux-kernel-flaw-allows-vm-escape-on-intel-amd-devices/"
+      - quote: "This guest-to-host escape flaw stems from a use-after-free weakness in the shadow MMU emulation of KVM/x86."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/linux/new-januscape-linux-kernel-flaw-allows-vm-escape-on-intel-amd-devices/"
+      - quote: "This is the first guest-to-host exploit research triggerable on both Intel and AMD"
+        attribution: "Hyunwoo Kim (V4bel), Januscape repository"
+        source_url: "https://github.com/V4bel/Januscape"
+    extended_notes: |
+      Prerequisites: root inside the guest VM (or ability to load a kernel module in-guest); host must run an
+      unfixed kernel version with KVM enabled (nested virtualization not required — this is direct guest-to-host,
+      not nested-guest escape). Detection: host-side host-kernel-panic/oops monitoring correlated with a specific
+      guest's activity; on shared multi-tenant KVM hosts, unexplained host reboots co-occurring with a single
+      tenant's VM are the DoS signature; full-RCE exploitation (not yet public) would manifest as unexpected
+      host-level process execution or new host accounts with no corresponding host-admin action. Hardening:
+      patch host kernels to the fixed versions above immediately (6.1.177 / 6.6.144 / 6.12.95 / 6.18.38 / 7.1.3
+      or later) — this is a host-kernel patch, not a guest-side mitigation; there is no config-level workaround
+      since the flaw is in core KVM shadow-paging logic. ATT&CK: T1611 Escape to Host.
+    borderline: false
+
+  - title: "Signature malleability lets attackers mint a second GitHub 'Verified' commit with a different hash — defeats hash-based blocklists (no CVE, public PoC tool)"
+    sources:
+      - { url: "https://thehackernews.com/2026/07/github-verified-commits-can-be.html", publisher: "The Hacker News", date: "2026-07-08", role: "primary" }
+      - { url: "https://arxiv.org/abs/2607.02820", publisher: "Jacob Ginesin (Carnegie Mellon University / Cure53) — arXiv preprint 'Git Hash Chain Malleability'", date: "2026-07-02", role: "primary" }
+      - { url: "https://github.com/JakeGinesin/git-chain-malleator", publisher: "Jacob Ginesin — public exploitation tool (git-chain-malleator)", date: "2026-07-02", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews (forced-current RSS), URL https://feeds.feedburner.com/TheHackersNews (feed listing) → article https://thehackernews.com/2026/07/github-verified-commits-can-be.html → primary: arXiv preprint, URL https://arxiv.org/abs/2607.02820 → pivot: public PoC tool, URL https://github.com/JakeGinesin/git-chain-malleator"
+    summary: |
+      Jacob Ginesin (Carnegie Mellon PhD student, Cure53 auditor) published research on 2 July showing that
+      Git/GitHub's "Verified" commit badge is not a unique identifier: given any signed commit, an attacker
+      without the signing key can mint a second, distinct commit with an identical tree, identical author/date
+      metadata, and a valid signature that still shows "Verified" — differing only in its resulting hash. The
+      root cause is signature malleability, not a hash collision. Three malleation routes are demonstrated:
+      (1) for ECDSA, the classical algebraic symmetry that transforms a valid signature pair (r,s) into (r, n−s)
+      using only public curve parameters, yielding a second equally-valid signature over the same payload with
+      different bytes and therefore a different commit hash; (2) for RSA and EdDSA under OpenPGP, appending an
+      ignorable experimental subpacket in the unhashed subpacket region defined in RFC 4880 §5.2.3; (3) an
+      analogous X.509/S-MIME path. GitHub does not normalize or canonicalize a signature before verifying it —
+      no strict encoding enforcement on S/MIME, no stripping of the manipulable OpenPGP fields, and non-canonical
+      ECDSA values are accepted as-is. Practical impact: hash-based incident-response controls and push-protection
+      rules that block a known-malicious commit by its SHA can be trivially bypassed by re-pushing an identical
+      "ghost twin" commit under a fresh, equally "Verified" hash that isn't on the blocklist. Ginesin reported
+      the issue to GNU/Git in January and to GitHub in March 2026; as of publication neither has shipped a fix.
+      No CVE has been assigned. A public exploitation tool implementing all three attacks, plus two demo
+      repositories where the malleated commits still show "Verified" on GitHub, is released.
+    region_nexus: "global — affects any organisation relying on Git commit-hash allow/deny-listing or 'Verified' badges as a supply-chain integrity control, including government CI/CD pipelines"
+    primary_sector_nexus: "indirect (software supply-chain integrity control affecting public-sector and critical-infrastructure development pipelines)"
+    sector: "public-sector, finance, energy, telco, healthcare (any organisation operating Git-based CI/CD with signed-commit or hash-blocklist controls)"
+    cves: []
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Given any signed commit, someone without the signing key can mint a second commit with the same files, author, and date, and a valid signature, GitHub still stamps 'Verified.'"
+        attribution: "The Hacker News, summarising Jacob Ginesin's research"
+        source_url: "https://thehackernews.com/2026/07/github-verified-commits-can-be.html"
+      - quote: "A commit's hash is computed over everything inside it, including the raw bytes of the signature in its header. Many signatures can be rewritten into a different but still-valid form."
+        attribution: "The Hacker News, summarising Jacob Ginesin's research"
+        source_url: "https://thehackernews.com/2026/07/github-verified-commits-can-be.html"
+      - quote: "GitHub does not normalize a signature before checking it. No strict encoding on S/MIME, no stripping of those OpenPGP fields, and non-canonical ECDSA values accepted as-is."
+        attribution: "The Hacker News, summarising Jacob Ginesin's research"
+        source_url: "https://thehackernews.com/2026/07/github-verified-commits-can-be.html"
+    extended_notes: |
+      Detection/hunt: any incident-response or push-protection control that keys off a specific commit SHA
+      (rather than tree hash + author + content diff) should be treated as bypassable — hunt for repeat pushes
+      of content-identical trees under new commit hashes following a known-bad-commit takedown. Hardening: do
+      not rely on commit-hash blocklisting alone for supply-chain integrity; pair "Verified" status with content-
+      level diffing/allowlisting, and treat "Verified" as authorship provenance only, not as commit-identity
+      uniqueness. No vendor fix exists yet at either the Git or GitHub level. ATT&CK: T1195.002 Compromise
+      Software Supply Chain (control-bypass primitive, not a standalone technique).
+    borderline: true
+    borderline_reason: "no CVE assigned and no vendor fix yet; included because it's a public-PoC research finding with concrete supply-chain integrity/detection implications directly in scope of S1's exploit-research mandate, corroborated by an independent primary (arXiv) and news source"
+
+  - title: "CVE-2026-11405 — hidden authentication backdoor in Tenda router firmware httpd binary; no patch, vendor unresponsive"
+    sources:
+      - { url: "https://kb.cert.org/vuls/id/213560", publisher: "CERT/CC (VU#213560)", date: "2026-07-06", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/hidden-backdoor-in-tenda-router-firmware-grants-admin-access/", publisher: "BleepingComputer", date: "2026-07-07", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer (forced-current source), URL https://www.bleepingcomputer.com/news/security/ (listing) → article https://www.bleepingcomputer.com/news/security/hidden-backdoor-in-tenda-router-firmware-grants-admin-access/ → primary: CERT/CC advisory, URL https://kb.cert.org/vuls/id/213560 (verified against NVD CVE-2026-11405)"
+    summary: |
+      CERT/CC published VU#213560 on 6 July describing a hidden authentication backdoor (CVE-2026-11405, CVSS
+      3.1 9.8 Critical, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) in the `login()` function of the `/bin/httpd`
+      web-server binary shipped in multiple Tenda router firmware images. After the normal MD5-based credential
+      check fails, the function reads an alternate password from device configuration key `sys.rzadmin.password`
+      and performs a plaintext string comparison against it; any username paired with that backdoor password
+      is granted role=2 (full administrative) access to the web management interface regardless of the configured
+      admin credentials. Affected firmware/models named in the advisory: US_FH1201V1.0BR_V1.2.0.14(408)_EN_TD,
+      US_W15EV1.0br_V15.11.0.5(1068_1567_841)_EN_TDE, US_AC10V1.0re_V15.03.06.46_multi_TDE01,
+      US_AC5V1.0RTL_V15.03.06.48_multi_TDE01, and US_AC6V2.0RTL_V15.03.06.51_multi_T. The finding was reported by
+      an anonymous researcher; CERT/CC states it was unable to reach Tenda to coordinate disclosure, and no patch
+      is available as of publication. No active exploitation has been reported, but CISA/CERT/CC caution that
+      internet-exposed management interfaces on these models should be assumed reachable by scanning within days.
+    region_nexus: "global — Tenda is a Shenzhen-based budget/SMB router vendor with broad consumer and small-business deployment; no specific CH/EU government nexus, included for the transferable hardcoded-backdoor detection/hardening lesson applicable to any CPE/network-appliance estate"
+    primary_sector_nexus: "indirect (transferable CPE-hardening lesson; low direct relevance to Swiss federal/critical-infrastructure core given the product's consumer/SMB market position)"
+    sector: "telco, SMB/consumer networking equipment"
+    cves: [CVE-2026-11405]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The web server binary /bin/httpd contains an undocumented backdoor authentication mechanism in the login() function."
+        attribution: "CERT/CC (VU#213560)"
+        source_url: "https://kb.cert.org/vuls/id/213560"
+      - quote: "Successful exploitation grants full administrative access to the device's web interface, regardless of the configured administrator account credentials."
+        attribution: "CERT/CC (VU#213560)"
+        source_url: "https://www.bleepingcomputer.com/news/security/hidden-backdoor-in-tenda-router-firmware-grants-admin-access/"
+      - quote: "No patch is currently available, and Tenda users are advised to disable the remote web management panel to prevent internet access to the vulnerable interface."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/hidden-backdoor-in-tenda-router-firmware-grants-admin-access/"
+    extended_notes: |
+      Prerequisites: network access (LAN or, if remote management is enabled, WAN) to the device's web
+      management interface; no valid credentials required, and CWE-912 (Hidden Functionality)/CWE-798-class
+      hardcoded-credential detection applies. Detection: any admin login on affected models where the presented
+      username does not match a provisioned account, or where authentication succeeds despite a prior failed
+      MD5 check in device logs, is a strong indicator; edge/perimeter monitoring for unsolicited inbound HTTP(S)
+      to router management ports from WAN-side sources is the general CPE-hardening control. Hardening: disable
+      remote/WAN-side web management, change the LAN-side default management IP/subnet, and treat unpatched
+      Tenda FH1201/W15E/AC10/AC5/AC6 units as untrusted until (if ever) a vendor fix ships — CERT/CC reports it
+      could not reach the vendor at all. ATT&CK: T1133 External Remote Services / T1078 Valid Accounts (backdoor
+      credential functions as a permanently valid, undocumented account).
+    borderline: true
+    borderline_reason: "critical CVSS and CERT/CC-sourced, but Tenda is a consumer/SMB router brand with no direct Swiss/EU public-sector or critical-infrastructure nexus; included for the transferable hardcoded-backdoor detection/hardening lesson, not because the specific product is watchlisted"
+
+cve_table:
+  - cve: CVE-2026-53359
+    product: "Linux kernel — KVM/x86 shadow MMU (arch/x86/kvm/mmu/mmu.c)"
+    cvss: null
+    epss: null
+    kev: false
+    exploited: "public PoC causes host kernel panic (DoS); full guest-to-host RCE exploit exists but is deliberately withheld by the researcher; no confirmed in-the-wild exploitation"
+    patch: "fixed upstream commit 81ccda30b4e8 (16 Jun 2026); backported to 6.1.177, 6.6.144, 6.12.95, 6.18.38, 7.1.3 and later"
+    source: "https://www.bleepingcomputer.com/news/linux/new-januscape-linux-kernel-flaw-allows-vm-escape-on-intel-amd-devices/"
+  - cve: CVE-2026-11405
+    product: "Tenda router firmware (FH1201, W15E, AC10, AC5, AC6 V2) — /bin/httpd login() backdoor"
+    cvss: 9.8
+    epss: null
+    kev: false
+    exploited: "no confirmed in-the-wild exploitation; hidden backdoor identified by an anonymous researcher and coordinated (unsuccessfully, vendor unreachable) by CERT/CC"
+    patch: "none available; vendor unresponsive"
+    source: "https://kb.cert.org/vuls/id/213560"
+  - cve: CVE-2026-12958
+    product: "AWS Language Servers / Amazon Q Developer (@aws/lsp-codewhisperer)"
+    cvss: 8.5
+    epss: null
+    kev: false
+    exploited: "researcher-disclosed (Wiz Research, GhostApproval); no confirmed in-the-wild exploitation"
+    patch: "language-servers >=1.69.0 / @aws/lsp-codewhisperer >=0.0.117"
+    source: "https://github.com/aws/language-servers/security/advisories/GHSA-6v3r-4p5c-mrp5"
+  - cve: CVE-2026-50549
+    product: "Cursor Desktop IDE — sandbox escape via symlink + failed path canonicalization"
+    cvss: null
+    epss: null
+    kev: false
+    exploited: "researcher-disclosed (Cato AI Labs / Maor Dokhanian, surfaced via Wiz Research GhostApproval); no confirmed in-the-wild exploitation"
+    patch: "Cursor >=3.0"
+    source: "https://github.com/cursor/cursor/security/advisories/GHSA-3v8f-48vw-3mjx"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across this run's essential/rotation/forced-current source slice (CISA KEV, ENISA EUVD, NCSC-NL, NCSC-CH CSH, BSI WID, CERT-FR, CERT-EU, NCSC-UK, CERT-PL, Cisco PSIRT, ZDI, Exodus Intelligence, VulnCheck, Wiz, Socket, Sonatype, Aikido, Sansec, MSRC, hackernews, bleepingcomputer)."
+
+candidate_sources:
+  - id: wiz-blog-ghostapproval-class
+    publisher: "Wiz Research (already in rotation slice as wiz-blog) — no new source proposed this run"
+    url: "https://www.wiz.io/blog"
+    category: research
+    why: "already tracked in sources.json rotation slice; no new candidate to propose this run"
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "https://www.cisa.gov/news-events/cybersecurity-advisories is a JS-rendered filter/listing page; both direct fetch and jina reader returned only the filter UI shell, no advisory list items. CISA KEV catalog (structured API, bridge subcommand cisa-kev) was fetched successfully and shows no new KEV additions since dateReleased 2026-07-07T18:28:17Z / catalogVersion 2026.07.07 (no dateAdded >= 2026-07-08 entries) — so ground-truth exploitation-catalog coverage is complete even though the advisories listing page itself could not be traversed. Recipe gap: no structured listing endpoint (equivalent to enisa-euvd/ncsc-csh recent) exists for this CISA page in the bridge tool; a non-KEV Cybersecurity Advisory/Alert published in-window may have been missed."
+  - source_id: cisa-directives
+    reason: "https://www.cisa.gov/news-events/directives is the same JS-rendered filter/listing shell as cisa-advisories; no structured bridge endpoint available. No directive-specific in-window signal found via other means (BleepingComputer/Hacker News carried no CISA directive story in-window)."
+  - source_id: cisa-news
+    reason: "not separately probed this run beyond the KEV API and ICS advisories listing (also JS-shell, same recipe gap) — deprioritised in favour of the higher-yield KEV/ENISA EUVD/NCSC-CH/BSI/CERT-FR/rotation sweep given the 45-min budget; no evidence any missed CISA-news item was in-window based on cross-checks against BleepingComputer/Hacker News coverage of the same window."
+  - source_id: cert-eu
+    reason: "RSS feed (cert.europa.eu/publications/security-advisories-rss) returned only through advisory 2026-008 (10 June 2026) — feed appears to update infrequently/in batches; no in-window (post 2026-07-08T20:09Z) item found. Not a transport failure (200 OK, content returned), just stale content on the feed."
+  - source_id: cert-fr
+    reason: "avis-recent bridge (paginated, capped at 40 items) reached through CERTFR-2026-AVI-0847 (08 July, Joomla) with no later item; actu-recent bulletin feed was stale (Nov 2025 era, unrelated to current window) — CERT-FR's actuality-bulletin RSS appears to be a different/older cached endpoint. avis-recent items for HPE Aruba Networking (CERTFR-2026-AVI-0846) and Synacor Zimbra Collaboration (CERTFR-2026-AVI-0844) were seen in the listing but not drilled into for full advisory detail given time budget and no indication of active exploitation or KEV status in the summary text."
+  - source_id: sansec-research
+    reason: "sansec.io/research fetched successfully (jina reader) but freshest item was 'Amasty mass disclosure' dated 2 July 2026 — no in-window item found."
+  - source_id: vulncheck
+    reason: "vulncheck.com/blog/rss.xml returned 0 items via jina fallback (empty feed parse); WebFetch of the HTML blog page succeeded and showed nothing newer than 25 June 2026 (no in-window item)."
+  - source_id: socket-dev-blog
+    reason: "socket.dev/blog/rss.xml returned 0 items via jina fallback; WebFetch of the HTML blog page succeeded and surfaced in-window items (Operation Muck and Load, npm v12 changes, pnpm 11.10) which were reviewed but assessed as better fitting S3/S4 (malware-campaign/supply-chain-incident research rather than S1's CERT/PSIRT/KEV/PoC vulnerability mandate) and not carried into this domain's findings — flagging here so the main agent can confirm S3/S4 picked them up or treat as a cross-domain gap."
+  - source_id: calif-codex
+    reason: "blog.calif.io/rss.xml returned 0 items via jina fallback; no WebFetch fallback attempted given low prior yield and time budget — logged as an unconfirmed feed-health issue for source-health tracking, not a hard failure (200-class response, empty parse)."
+  - source_id: jpcert
+    reason: "not fetched this run — deprioritised behind the higher-yield essential/forced-current sources within the 45-minute budget; no evidence of a missed in-window item based on cross-checks against other regional CERT feeds."
