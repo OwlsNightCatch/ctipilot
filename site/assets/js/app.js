@@ -418,6 +418,7 @@
         var scope = facet.startsWith('brief-') ? 'briefs'
           : facet.startsWith('topic-') ? 'topics'
           : facet.startsWith('source-') ? 'sources'
+          : facet.startsWith('cve-') ? 'cves'
           : facet.startsWith('entity-') ? 'entities' : null;
         if (scope) applyListFilters(scope);
       });
@@ -440,9 +441,11 @@
         a.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
       });
     } else if (scope === 'cves') {
+      var cveYear = chipValue('cve-year');
       document.querySelectorAll('[data-filter-table="cves"] tbody tr').forEach(function (tr) {
+        var matchYear = cveYear === 'all' || (tr.dataset.cveYear || '') === cveYear;
         var hay = tr.textContent.toLowerCase();
-        tr.style.display = (!q || hay.indexOf(q) >= 0) ? '' : 'none';
+        tr.style.display = (matchYear && (!q || hay.indexOf(q) >= 0)) ? '' : 'none';
       });
     } else if (scope === 'topics') {
       var ttype = chipValue('topic-type'), tflag = chipValue('topic-flag');

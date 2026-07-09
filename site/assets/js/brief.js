@@ -196,6 +196,22 @@
       if (fromEl) fromEl.textContent = euro(since);
       if (statusEl) statusEl.textContent = 'last ' + hours + 'h';
       if (countEl) countEl.textContent = String(ops.length);
+      var nCrit = 0, nHigh = 0, nUpd = 0;
+      ops.forEach(function (e) {
+        if (e.priority === 'critical') nCrit++;
+        if (e.priority === 'high') nHigh++;
+        if (e.update_of) nUpd++;
+      });
+      var mixEls = {
+        '[data-window-crit]': nCrit,
+        '[data-window-high]': nHigh,
+        '[data-window-upd]': nUpd,
+        '[data-window-total]': ops.length
+      };
+      Object.keys(mixEls).forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el) el.textContent = String(mixEls[sel]);
+      });
       if (endMsg) endMsg.hidden = hasOlder;
       if (more) more.hidden = !hasOlder;
     }

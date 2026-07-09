@@ -20,8 +20,10 @@ The deployed site lives at <https://ctipilot.ch/>.
 Every URL is a real HTML page rendered at build time. The topbar is a
 segmented **Live / Daily / Weekly** control plus a search modal, a display
 & accessibility popover (light / dark / system theme, dyslexia-friendly
-font, comfortable spacing), a More menu, and a GitHub-stars badge; the
-footer is a single minimal row. JavaScript is progressive enhancement only
+font, comfortable spacing), a More menu, and a GitHub-stars badge; a
+second **knowledge-base subnav** row (desktop) links the pivot surfaces —
+Entities · CVEs · Sources · Trends · Operations — with the active surface
+highlighted; the footer is a single minimal row. JavaScript is progressive enhancement only
 (search modal + autocomplete, GitHub-stars fetch, finding chip filters,
 theme / accessibility toggles, AI-bar dismiss, copy-link, and `/live/`'s
 window selector + load-older). With JS disabled the site is fully readable:
