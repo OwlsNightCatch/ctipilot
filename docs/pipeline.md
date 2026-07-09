@@ -376,6 +376,14 @@ complete machine-readable telemetry record (the v2 `run_log.json` entry,
 relocated); the body is the human-readable **verification & coverage
 notes** — the v2 brief § 7, relocated to a dedicated, per-run home.
 
+Run records are immutable once their fire completes, with exactly two
+same-fire in-place updates permitted: the same-minute retry (idempotent
+run_id) and the **Phase 7 publish-status amendment** — after the publish
+poll, the fire updates `publish_status`/`publish_checked_at`/`publish_note`
+in place, commits `run: <run-id> publish-status`, and re-pushes the feature
+branch (fire-and-forget; auto-merge promotes it). No other field is ever
+edited after commit, and no later fire edits an earlier fire's record.
+
 ```yaml
 ---
 schema: 1
@@ -411,6 +419,17 @@ bridge_uses: []                # {id, method, outcome}
 sources_changed: []            # {id, change, from, to, reason}
 entities_added: []             # registry keys added this run
 entries_dropped_by_verification: 0
+publish_status: pending        # pending | ok | main-only — machine-auditable publish outcome.
+                               # Written `pending` at the Phase 6 commit; the SAME fire amends
+                               # it in place after Phase 7's poll (ok = run record on main AND
+                               # site rebuilt, or site polling disabled; main-only = record on
+                               # main but the site rebuild never confirmed) and pushes the
+                               # amendment. A record still `pending` on main means the fire died
+                               # before Phase 7 or the amendment push failed — an operator signal
+                               # either way. Absent on records that predate v3.14.
+publish_checked_at: null       # UTC timestamp of the Phase 7 poll that set publish_status
+publish_note: null             # free-text reason detail (e.g. "site polling disabled",
+                               # "auto-merge pending at deadline")
 verification_iterations: 1
 verification_residual_count: 0 # never 0 when the final iteration was NEEDS_FIXES
 verification:

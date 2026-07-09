@@ -35,7 +35,7 @@ on:
     paths:
       - "config/org-profile.yaml"
       - "tools/compose_prompts.py"
-      - "prompts/daily-cti-brief.md"
+      - "prompts/cti-run.md"
       - "prompts/weekly-summary.md"
       - "prompts/verification.md"
       - ".claude/agents/cti-research.md"
@@ -69,8 +69,23 @@ jobs:
           fi
           git init -q .
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
-          git fetch --no-tags --depth 1 origin "$REF_BRANCH"
-          git checkout -q -B "$REF_BRANCH" FETCH_HEAD
+          # Race with auto-merge-claude.yml: both workflows fire on the same
+          # push to claude/**, and auto-merge can merge AND DELETE the branch
+          # before this job's fetch runs ("couldn't find remote ref", observed
+          # 2026-07-09). Branch gone ⇒ its content was promoted to main, so
+          # fall back to checking the promoted result there instead of failing.
+          if git fetch --no-tags --depth 1 origin "$REF_BRANCH"; then
+            git checkout -q -B "$REF_BRANCH" FETCH_HEAD
+          elif [ "${REF_BRANCH#claude/}" != "$REF_BRANCH" ] \
+               && ! git ls-remote --exit-code --heads origin "$REF_BRANCH" >/dev/null 2>&1; then
+            echo "::notice::$REF_BRANCH was already merged and deleted by auto-merge-claude.yml — checking the promoted result on main instead."
+            git fetch --no-tags --depth 1 origin main
+            git checkout -q -B main FETCH_HEAD
+            echo "COMPOSE_REF=main" >> "$GITHUB_ENV"
+          else
+            echo "::error::could not fetch $REF_BRANCH (branch still exists — transient fetch failure?)"
+            exit 1
+          fi
           git config user.name  "Claude Code"
           git config user.email "noreply@anthropic.com"
 
@@ -84,6 +99,9 @@ jobs:
           REF_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          # The clone step may have fallen back to main (branch already
+          # merged + deleted by auto-merge) — honour that for branch logic.
+          REF_BRANCH="${COMPOSE_REF:-$REF_BRANCH}"
 
           set +e
           python3 tools/compose_prompts.py --check
@@ -121,7 +139,7 @@ jobs:
 
           # Operator branch — compose and push the result back.
           python3 tools/compose_prompts.py --write
-          git add prompts/daily-cti-brief.md prompts/weekly-summary.md \
+          git add prompts/cti-run.md prompts/weekly-summary.md \
                   prompts/verification.md \
                   .claude/agents/cti-research.md \
                   .claude/agents/cti-verification.md \

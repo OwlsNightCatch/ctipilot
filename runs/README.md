@@ -2,7 +2,12 @@
 
 One Markdown record per pipeline fire, at `runs/<YYYY-MM-DD>/<run-id>.md`
 (`run_id = <YYYY-MM-DD>T<HHMM>Z-<intel|weekly>` — multiple runs per day are
-first-class). Written by the run's final phase, immutable once committed.
+first-class). Written by the run's final phase, immutable once the fire
+completes — the only sanctioned in-place updates are same-fire: the
+same-minute retry and the Phase 7 publish-status amendment
+(`publish_status` / `publish_checked_at` / `publish_note`, v3.14+; a record
+still `pending` on main means the fire died before Phase 7 or its
+amendment push failed).
 
 Two halves (normative contract in [`docs/pipeline.md`](../docs/pipeline.md)):
 

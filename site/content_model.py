@@ -922,6 +922,10 @@ def validate_run_record(run: dict) -> list:
               "verification_residual_count"):
         if not isinstance(run.get(f), int):
             err(f"`{f}` must be an integer")
+    # Machine-auditable publish outcome (v3.14; optional — absent on older records)
+    ps = run.get("publish_status")
+    if ps is not None and ps not in ("pending", "ok", "main-only"):
+        err(f"publish_status {ps!r} not in ('pending', 'ok', 'main-only')")
     subs = run.get("sub_agents")
     if not isinstance(subs, dict) or not subs:
         err("sub_agents block missing or empty")

@@ -19,7 +19,7 @@ Phase 0 needs into one small JSON:
       },
       "runs": {                        # from runs/** (content_model)
         "count": 71,
-        "last_run": {"run_id", "kind", "date", "started", "completed"},
+        "last_run": {"run_id", "kind", "date", "started", "completed", "publish_status"},
         "fetch_gaps_in_window": [{"id", "runs_failing", "last_status"}]
       },
       "window24h": {                   # budget snapshot from entries/**
@@ -102,7 +102,8 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
     out["runs"] = {
         "count": len(runs),
         "last_run": (
-            {k: last.get(k) for k in ("run_id", "kind", "date", "started", "completed")}
+            {k: last.get(k) for k in ("run_id", "kind", "date", "started",
+                                      "completed", "publish_status")}
             if last else None
         ),
         "fetch_gaps_in_window": [

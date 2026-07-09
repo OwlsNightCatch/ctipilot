@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.13 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.14 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -244,7 +244,7 @@ Tools: `Read`, `WebSearch`, `WebFetch`, `Agent` (sub-agent spawn), `Bash`, `Writ
 
 2. **`Read work/${RUN_ID}/prior_coverage.json` in full — load every in-window brief into context.** These are the last 14 days of entries as `{id, kind, priority, title, headline, summary, cves, entities, discovered_at, update_of, deep_dive, …}` — each `summary` is the entry's own TL;DR, so reading this file is loading every brief in the window. This is your dedup index for Phase 2 and the new-entry-vs-update decision in Phase 4: a candidate is checked against **all** of these entries (every run in the window, not just the latest). Coverage **outside** the 14-day window is handled by the metadata check — the store-wide CVE index in `state-summary.json` (step 3, `cves.ids`) plus the mechanical gate — not by an in-context read. (`prior_coverage_keys.json` is the same set stripped to keys, available for a cheap `jq` filter when you need one.)
 
-3. **`Read work/${RUN_ID}/state-summary.json`** — `cves.ids` (all known CVE ids), `cves.recent`, `sources.active_ids`, `runs.last_run` (run_id + started — your gap anchor), `runs.fetch_gaps_in_window` (rotation-priority candidates), and the rolling-24h coverage snapshot (`window24h.entries_by_kind`, `window24h.deep_dives_today`, `window24h.critical_count` — what earlier runs already published, for dedup and situational awareness, **not** a quota to fill or a ceiling to stay under).
+3. **`Read work/${RUN_ID}/state-summary.json`** — `cves.ids` (all known CVE ids), `cves.recent`, `sources.active_ids`, `runs.last_run` (run_id + started — your gap anchor; if its `publish_status` is still `pending`, the previous fire died before Phase 7 or its publish-status amendment never landed — add one line to this run's notes so the operator sees it), `runs.fetch_gaps_in_window` (rotation-priority candidates), and the rolling-24h coverage snapshot (`window24h.entries_by_kind`, `window24h.deep_dives_today`, `window24h.critical_count` — what earlier runs already published, for dedup and situational awareness, **not** a quota to fill or a ceiling to stay under).
 
 4. **`Read entities/registry.yaml`** — the global entity registry (keys, names, aliases). You will pass the registry PATH to sub-agents (they read it themselves) and use it in Phase 4 to link entities canonically. Keep the alias table in mind: a candidate naming "UNC6240" is the `actor:shinyhunters` story.
 
@@ -448,12 +448,15 @@ Transitions: discovery → `candidate` (**hard cap: one new candidate per run**)
 date -u +"%Y-%m-%dT%H:%M:%SZ" | tee "work/${RUN_ID}/main.ended_at"
 ```
 
-Complete the frontmatter of `runs/<RUN_DATE>/<RUN_ID>.md`: `started`/`completed`/`duration_seconds` from the checkpoint files; `model`/`model_id` (§ Self-identification); `prompt_version` from this prompt's banner; `gap_hours`/`window_hours`; `entries_published` / `entries_updated` (must equal the files you actually wrote); `deep_dive` (entry id or null); full `sub_agents` blocks (models, timestamps, `sources_attempted`/`sources_used`/`items_returned`/`returned`, telemetry — verbatim from returns, `unknown`/`null` when unreported); `fetch_failures[]` (rich shape, ONLY real unrecovered failures — every record ends `covered_anyway: false`); `bridge_uses[]`; `sources_changed[]`; `entities_added[]`; `entries_dropped_by_verification`; verification counters (updated during Phase 5.7). **Idempotent retry:** if the record file already exists for this `run_id`, update it in place; never write a second record for the same fire.
+Complete the frontmatter of `runs/<RUN_DATE>/<RUN_ID>.md`: `started`/`completed`/`duration_seconds` from the checkpoint files; `model`/`model_id` (§ Self-identification); `prompt_version` from this prompt's banner; `gap_hours`/`window_hours`; `entries_published` / `entries_updated` (must equal the files you actually wrote); `deep_dive` (entry id or null); full `sub_agents` blocks (models, timestamps, `sources_attempted`/`sources_used`/`items_returned`/`returned`, telemetry — verbatim from returns, `unknown`/`null` when unreported); `fetch_failures[]` (rich shape, ONLY real unrecovered failures — every record ends `covered_anyway: false`); `bridge_uses[]`; `sources_changed[]`; `entities_added[]`; `entries_dropped_by_verification`; **`publish_status: pending` + `publish_checked_at: null` + `publish_note: null`** (the machine-auditable publish outcome — Phase 7 amends these in place after its poll); verification counters (updated during Phase 5.7). **Idempotent retry:** if the record file already exists for this `run_id`, update it in place; never write a second record for the same fire.
 
 ### `state/source_health.json`
 
 ```bash
-python3 tools/source_health.py        # probes ALL sources via their actual recipes (~2–4 min)
+python3 tools/source_health.py        # probes ALL sources via their actual recipes — parallel
+                                      # workers, 7-min default budget; on exhaustion it still
+                                      # writes a complete snapshot (un-probed sources carry the
+                                      # previous result forward, flagged carried_forward)
 ```
 
 **Act on the printed `UNSOLVED` list the same run — this is a standing repair order, not deferrable.** Authoring and testing a new `tools/fetch_source.py` recipe is explicitly in scope for any run, including a quiet one; "logged for a follow-up run" is not an acceptable resolution for a flagged source. For each flag:
@@ -643,7 +646,20 @@ if [ "$LANDED" = "true" ] && [ -n "$SITE_URL" ]; then
 fi
 ```
 
-Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — site polling disabled)` (empty `site_url`) · `publish: main-only` (deploy-site likely failed — operator checks Actions) · `publish: pending (<reason>)` (auto-merge running / conflict / push failed / unknown). Never delete the local commit or re-push during verification — it is read-only.
+Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — site polling disabled)` (empty `site_url`) · `publish: main-only` (deploy-site likely failed — operator checks Actions) · `publish: pending (<reason>)` (auto-merge running / conflict / push failed / unknown). Never delete the local commit or re-push during the poll itself — the poll is read-only.
+
+### 7c — publish-status amendment (machine-auditable outcome)
+
+The stdout report above is ephemeral; the record on `main` must carry the outcome too. After the poll resolves, update this run's record **in place** (the one sanctioned post-commit record update — hard invariant #19): set `publish_status` (`ok` when the record landed AND the site rebuilt or site polling is disabled; `main-only` when the record landed but the site rebuild never confirmed; leave `pending` otherwise), `publish_checked_at` (UTC now), and `publish_note` (the human clause — e.g. `site polling disabled`, `auto-merge pending at deadline`). Then one amendment commit and push, **fire-and-forget**:
+
+```bash
+git add "$run_record"
+git commit -m "run: ${RUN_ID} publish-status: ${PUBLISH_STATUS}"
+git push origin "$current_branch" || { sleep 5; git push origin "$current_branch"; } \
+    || echo "publish-status amendment push failed — record stays 'pending' on main (operator signal)"
+```
+
+Do **not** re-enter the Phase 7 poll for the amendment — auto-merge promotes it on its own, and the next fire's state digest (`runs.last_run.publish_status`) is the check: a record still `pending` on main means this amendment never landed or the fire died before Phase 7, and the next run notes it. A failed amendment push is logged, never retried beyond the one backoff, and never blocks run completion.
 
 
 ---
@@ -663,7 +679,7 @@ Report exactly one outcome: `publish: ok` (both legs) · `publish: ok (main — 
 - [ ] **`python3 tools/check_run.py "$RUN_ID" --pre-verify` exits 0 BEFORE the first Phase 5.7 spawn**, and the plain invocation exits 0 after every fix iteration and before commit.
 - [ ] **Phase 5.7 ran ≥1 iteration**; CLEAN or documented fail-open; counters recorded.
 - [ ] **Run record exists at `runs/<date>/<run-id>.md`** — even on a zero-entry run, even with sub-agent failures.
-- [ ] **Phase 7 ran** — the `publish:` line reports the actual poll result, not a guess.
+- [ ] **Phase 7 ran** — the `publish:` line reports the actual poll result, not a guess; the 7c publish-status amendment was committed and pushed (or its failure logged).
 
 ---
 
@@ -706,7 +722,7 @@ The agent has full authority to modify this prompt, the source list, documentati
 16. **Main agent does NO source fetching during Phase 1** (anti-classifier-trip; exceptions: Phase 2 spot-checks, Phase 5.7 single-URL re-fetches, Phase 7 polling).
 17. **Watchlist anti-overshoot + triage/classification truthfulness** (≤ ⅓ guideline; `org_triage` and the Admiralty `classification` derive only from cited facts; ORG-PROFILE blocks never hand-edited).
 18. **Closed-source citation discipline** (referenced never linked; every claim traces to a drop file the verifier can `Read`). No TLP or public/private gate — everything under `intel/` is fair game to process; nothing is withheld on the basis of a TLP marking.
-19. **Entries are immutable once committed** — corrections and developments are new `update_of` entries; the run record is the only file a retry may update in place.
+19. **Entries are immutable once committed** — corrections and developments are new `update_of` entries; the run record is the only file the same fire may update in place (the same-minute retry, and the Phase 7 publish-status amendment — nothing else, and never a later fire).
 20. **Relevance discipline** — entry volume is governed by the strict relevance/actionability gate (PD-11), never a numeric target or ceiling; every entry must earn its place, more runs must never mean more content (dedup), and the reader must never be overflooded with marginal items.
 
 ### Encouraged self-edits
