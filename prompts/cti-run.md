@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.15 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.16 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -387,6 +387,8 @@ Unchanged v2 bar, intentionally extremely high. ALL must be true: newly disclose
 
 Every named actor / campaign / malware family / tool / incident / report in an entry is linked via `entities:` using the registry key — check names AND aliases before concluding an entity is new. Genuinely new entities: add to `entities/registry.yaml` in Phase 5 (key, type, name, aliases from the source's naming, 1–3 sentence sourced `summary`, `first_seen` = today) and record them in the run record's `entities_added`. Never create a second key for a known entity; add the newly-observed alias to the existing record instead.
 
+Registry conventions (normative detail: `docs/pipeline.md` § Entity registry): `name` is the concise canonical entity name only — never the reporting vendor, never a headline; alternates go in `aliases`. A record carrying `merged_into: <key>` is a **tombstone** — never reference it in a new entry's `entities:`; use its canonical target. When linking related knowledge (an actor's campaign / tooling / attributed incident, where the cited source states the connection), extend the entity's optional `related: []` key list — evidence-bound curated graph edges, append-only.
+
 ### Technical depth (sub-agent-owned vocabulary)
 
 Each entry carries the technical specificity the linked source supports: vulnerable component / attack surface, technique class with MITRE ATT&CK IDs, exploitation prerequisites, affected + patched versions to vendor precision, exploitation status with named cluster, concrete behavioural detection + hardening. The prescriptive vocabulary lives in [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Technical depth — carry the sub-agent's specificity faithfully; never invent detail on top. **Better to write less than to fabricate plausible-sounding specifics** (PD-1).
@@ -430,7 +432,7 @@ State is updated **before** the mechanical gate (Phase 5.5) and the verifier (Ph
 
 ### `entities/registry.yaml`
 
-Append every genuinely new entity from Phase 4's entity-linking pass (key, type, name, aliases, nexus when publicly attributed, sourced 1–3-sentence summary, `first_seen`: today). Add newly-observed aliases to existing records (append-only). Record every addition in the run record's `entities_added[]`. Never rename or delete a key.
+Append every genuinely new entity from Phase 4's entity-linking pass (key, type, name, aliases, nexus when publicly attributed, sourced 1–3-sentence summary, `first_seen`: today). Add newly-observed aliases to existing records (append-only), and extend `related: []` when a cited source establishes an actor↔campaign↔tool↔incident connection. Record every addition in the run record's `entities_added[]`. Never rename or delete a key; a discovered duplicate is tombstoned with `merged_into: <canonical-key>` (docs/pipeline.md § Entity registry), never re-pointed by editing published entries.
 
 ### `state/cves_seen.json`
 

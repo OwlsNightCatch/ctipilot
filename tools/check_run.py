@@ -900,7 +900,8 @@ def _update_chain_ids(entry: dict, entries_by_id: dict[str, dict]) -> set[str]:
 
 
 def check_dedup(run: dict[str, Any], run_entries: list[dict],
-                all_entries: list[dict], entries_by_id: dict[str, dict]) -> None:
+                all_entries: list[dict], entries_by_id: dict[str, dict],
+                registry: dict[str, Any] | None = None) -> None:
     """Cross-run dedup — the mechanical stage-4 of the pipeline's dedup
     ladder (docs/pipeline.md § Dedup across runs). For each NON-update entry
     of this run: FAIL when any of its cves[].id appears in ANY entry from
@@ -942,7 +943,10 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
             continue  # update entries are exempt from the overlap scan — the link IS the dedup
         chain = _update_chain_ids(e, entries_by_id)
         e_cves = _entry_cve_ids(e)
-        e_ents = {str(k) for k in (e.get("entities") or []) if k}
+        # Resolve merged_into tombstones so an old entry's key and its
+        # canonical successor still register as the same entity.
+        reg = registry or {}
+        e_ents = {cm.resolve_entity_key(reg, str(k)) for k in (e.get("entities") or []) if k}
         for p in prior:
             if p["id"] in chain:
                 continue
@@ -952,7 +956,8 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
                     f"{e['id']}: CVE(s) {sorted(overlap)} already covered by {p['id']} — "
                     f"ship as update_of with a genuine delta, or drop")
             if not p.get("update_of"):
-                ent_overlap = e_ents & {str(k) for k in (p.get("entities") or []) if k}
+                ent_overlap = e_ents & {cm.resolve_entity_key(reg, str(k))
+                                        for k in (p.get("entities") or []) if k}
                 if ent_overlap:
                     entity_hits.append(
                         f"{e['id']}: entity {sorted(ent_overlap)} also on {p['id']} — "
@@ -2119,7 +2124,7 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
         check_entry_run_binding(run, run_entries)
 
         print("\n== cross-run dedup (14-day window) ==")
-        check_dedup(run, run_entries, entries, entries_by_id)
+        check_dedup(run, run_entries, entries, entries_by_id, registry)
 
     print("\n== update-chain integrity ==")
     check_update_targets(run_entries, entries_by_id)

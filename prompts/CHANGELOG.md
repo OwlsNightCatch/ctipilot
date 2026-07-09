@@ -4,6 +4,25 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.16 — 2026-07-09 (entity-registry graph overhaul: uniform naming convention, `merged_into` tombstones, curated `related` edges)
+
+### Why
+
+Operator-directed review of the full entity registry (376 records) found systemic quality drift that undermined the registry's purpose as the pipeline's threat graph: `name` fields carrying reporting-vendor names instead of entity names ("Netcraft", "Symantec", "Check Point" as *campaign* names), headline sentences truncated mid-word as names, aliases packed into `name` strings while `aliases: []` stayed empty (breaking both dedup alias-matching and the site's phrase-based entry↔entity attachment), `nexus` null on publicly-attributed APTs, duplicate entities (the same actor/campaign registered twice under different keys — e.g. The Gentlemen as two actor records, the Klue/Icarus Salesforce breach as two campaigns), and clear-cut regulatory items typed `campaign:`/`incident:`. There was also no supported way to merge duplicates (keys are permanent, entries immutable) or to record actor↔campaign↔tool↔incident relations the co-occurrence engine can't see.
+
+### What changed
+
+- **Data model (`docs/pipeline.md` § Entity registry, `entities/README.md`)** — two optional registry fields: `merged_into: <canonical-key>` turns a duplicate record into a tombstone (key stays resolvable for the immutable entries that reference it; new entries must use the canonical key; no chains; tombstones exempt from the alias-collision check), and `related: []` carries curated, evidence-bound graph edges rendered symmetrically on entity pages. Plus an explicit uniform naming convention: `name` = concise canonical entity name only; every alternate public name in `aliases`; `summary` = 1–3-sentence attributed English definition.
+- **`site/content_model.py`** — `resolve_entity_key()` helper; `validate_registry` enforces `merged_into` / `related` semantics (existing canonical targets, no chains, no self-references) and skips tombstones in the collision check.
+- **`site/build.py`** — tombstones never phrase-match; explicit entry references resolve through tombstones so the canonical entity's page carries the full story timeline; tombstone permalinks stay live as stubs pointing at the canonical entity; entity pills / detail chips / JSON-LD resolve to canonical; `/entities/` index hides tombstones; curated `related` edges merge (symmetric, `linked` badge) into the co-occurrence-derived Related-entities block and survive its top-8 cap.
+- **`tools/check_run.py`** — cross-run dedup resolves entity keys through tombstones (an old entry's tombstoned key and a new entry's canonical key register as the same entity).
+- **`prompts/cti-run.md`** — banner → v3.16. § Entity linking + Phase 5 registry lifecycle: naming convention pointer, never reference a tombstone in new entries, `related` maintenance (append-only, evidence-bound). `prompts/weekly-summary.md` → v3.16 in lockstep (no weekly divergence — entity linking is shared machinery).
+- **`entities/registry.yaml`** — full editorial pass over all records applying the convention (names, aliases, nexus, summaries), duplicate merges (tombstones for referenced keys, deletion for orphans), type corrections (orphan keys renamed; referenced mistyped keys tombstoned to correctly-typed successors), and curated `related` edges for the established clusters (ShinyHunters, TeamPCP/Shai-Hulud, The Gentlemen, Nightmare Eclipse, Fox Tempest, Kimsuky, MuddyWater, Gamaredon, and others).
+
+### What stays
+
+Registry keys referenced by any published entry remain resolvable forever — no entry was edited (immutability intact). `schema: 1` unchanged; both new fields are optional and additive, so pre-3.16 registry shapes stay valid. The dedup ladder, entity-linking hard rule (one key per real-world entity), mechanical gate, verifier loop, and all hard invariants unchanged. F1–F17, verifier bodies, and ORG-PROFILE blocks untouched.
+
 ## 3.15 — 2026-07-09 (pin-aware sub-agent self-identification: harness-injected prompt line replaces container-scoped env vars as the primary source)
 
 ### Why

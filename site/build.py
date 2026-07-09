@@ -1365,6 +1365,7 @@ def _ld_article(
         {"@type": "Thing", "name": cid} for cid in entry_cve_ids(entry)
     ]
     for key in entry.get("entities") or []:
+        key = content_model.resolve_entity_key(registry or {}, str(key))
         name = ((registry or {}).get(key) or {}).get("name") or str(key)
         about.append({"@type": "Thing", "name": name})
     obj: dict[str, Any] = {
@@ -3638,6 +3639,7 @@ def render_detail_scope(entry: dict[str, Any], *, registry: dict[str, dict[str, 
     """Entities + tags/regions/CVEs as `.echip`s on an entry-detail page."""
     chips: list[str] = []
     for key in entry.get("entities") or []:
+        key = content_model.resolve_entity_key(registry, str(key))
         ent = registry.get(key) or {}
         chips.append(
             f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
@@ -3726,6 +3728,7 @@ def render_entry_page(
     # --- entities ------------------------------------------------------
     ent_bits: list[str] = []
     for key in entry.get("entities") or []:
+        key = content_model.resolve_entity_key(registry, str(key))
         ent = registry.get(key) or {}
         ent_bits.append(
             f'<a class="pill pill-tag" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
@@ -8028,7 +8031,9 @@ def render_entities_index_page(
 ) -> str:
     """Unified /entities/ index · every entity, every type, with the
     same KPI strip + chart row that the per-page renderer uses, and a
-    type-filter chip toolbar above a single ranked list."""
+    type-filter chip toolbar above a single ranked list. Merged
+    tombstones keep their permalink page but are hidden from the index."""
+    entities = [e for e in entities if not e.get("merged_into")]
     type_counts: dict[str, int] = {}
     for e in entities:
         t = e.get("type", "") or ""
@@ -8251,11 +8256,20 @@ def build_entities(
     matched: dict[str, list[dict[str, Any]]] = defaultdict(list)
 
     # --- registry entities: explicit key + phrase matching -------------
+    # Tombstones (`merged_into`) never match: their names/aliases live on
+    # the canonical record, and explicit references to a tombstoned key
+    # resolve to the canonical entity so old (immutable) entries keep
+    # feeding the surviving node of the graph.
     specs = []
     for key, ent in registry.items():
+        if ent.get("merged_into"):
+            continue
         specs.append((key, _registry_phrases(ent)))
     for e in entries:
-        explicit = set(str(k) for k in (e.get("entities") or []))
+        explicit = set(
+            content_model.resolve_entity_key(registry, str(k))
+            for k in (e.get("entities") or [])
+        )
         haystack = ((e.get("title") or "") + "\n" + (e.get("headline") or "")
                     + "\n" + (e.get("body") or "")).lower()
         for key, phrases in specs:
@@ -8338,6 +8352,8 @@ def build_entities(
             "summary": ent.get("summary") or "",
             "aliases": list(ent.get("aliases") or []),
             "nexus": ent.get("nexus"),
+            "merged_into": ent.get("merged_into") or "",
+            "curated_related": list(ent.get("related") or []),
             **rec,
         })
 
@@ -8411,6 +8427,32 @@ def compute_related_entities(
             })
         rows.sort(key=lambda r: (-r["count"], r["title"].lower()))
         ent["related_entities"] = rows[:8]
+
+    # Curated registry edges (`related:` in registry.yaml) are symmetric
+    # and survive regardless of co-occurrence or the top-8 cap.
+    curated_pairs: set[tuple[str, str]] = set()
+    for ent in entities:
+        for rk in ent.get("curated_related") or []:
+            if rk in by_key and rk != ent["key"]:
+                curated_pairs.add((ent["key"], rk))
+                curated_pairs.add((rk, ent["key"]))
+    for a, b in sorted(curated_pairs):
+        ent = by_key.get(a)
+        other = by_key.get(b)
+        if not ent or not other or ent.get("merged_into"):
+            continue
+        rows = ent.setdefault("related_entities", [])
+        hit = next((r for r in rows if r["key"] == b), None)
+        if hit:
+            hit["curated"] = True
+            continue
+        rows.append({
+            "key": b,
+            "type": other.get("type") or "",
+            "title": other.get("title") or b,
+            "count": co.get(a, {}).get(b, 0),
+            "curated": True,
+        })
 
 
 # === ENTITY DETAIL PAGE (v3) ===========================================
@@ -8575,12 +8617,21 @@ def render_entity_page(
         rows: list[str] = []
         for r in related:
             other_url = f'{prefix}entities/{urllib.parse.quote(r["key"], safe="")}/'
+            curated_badge = (
+                '<span class="badge badge--accent" title="Curated link from the entity registry">linked</span>'
+                if r.get("curated") else ""
+            )
+            count_marker = (
+                f'<span class="e-apps" title="Number of entries where both entities co-appear">×{r["count"]}</span>'
+                if r.get("count") else ""
+            )
             rows.append(
                 "<li>"
                 f'<span><a class="e-title" href="{other_url}">{_escape(r["title"])}</a>'
-                f'<span class="e-apps" title="Number of entries where both entities co-appear">×{r["count"]}</span>'
+                f"{count_marker}"
                 f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "—")}</span>'
-                f'<span class="mono">{_escape(r["key"])}</span></div>'
+                f'<span class="mono">{_escape(r["key"])}</span>'
+                f"{curated_badge}</div>"
                 "</span></li>"
             )
         related_block = (
@@ -8653,6 +8704,16 @@ def render_entity_page(
         f'<p class="subtitle" style="max-width:60rem">{_escape(entity["summary"])}</p>'
         if entity.get("summary") else ""
     )
+    merged_html = ""
+    if entity.get("merged_into"):
+        target = entity["merged_into"]
+        target_url = f'{prefix}entities/{urllib.parse.quote(target, safe="")}/'
+        merged_html = (
+            '<p class="subtitle"><span class="badge badge--accent">merged</span> '
+            "This entity was merged into "
+            f'<a href="{target_url}" class="mono">{_escape(target)}</a> — '
+            "coverage continues there.</p>"
+        )
 
     actor_timeline_html = _actor_timeline_strip(entity)
 
@@ -8722,6 +8783,7 @@ def render_entity_page(
   · <span class="mono">{_escape(key)}</span>
   {flag_badges}
 </p>
+{merged_html}
 {summary_html}
 {alias_html}
 

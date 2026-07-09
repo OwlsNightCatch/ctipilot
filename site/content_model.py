@@ -626,6 +626,21 @@ def load_registry(path: Path = REGISTRY_PATH) -> dict:
     return out
 
 
+def resolve_entity_key(registry: dict, key: str) -> str:
+    """Follow a `merged_into` tombstone to its canonical key (single hop).
+
+    Registry keys are permanent (immutable entries reference them), so a
+    duplicate entity is merged by tombstoning it: the record keeps its key
+    and gains `merged_into: <canonical-key>`. Consumers call this helper so
+    old references keep resolving to the surviving entity."""
+    ent = registry.get(key)
+    if isinstance(ent, dict):
+        merged = ent.get("merged_into")
+        if isinstance(merged, str) and merged in registry:
+            return merged
+    return key
+
+
 # ---------------------------------------------------------------------------
 # Run-record loading
 # ---------------------------------------------------------------------------
@@ -883,6 +898,41 @@ def validate_registry(registry: dict) -> list:
         aliases = ent.get("aliases")
         if aliases is not None and not _is_str_list(aliases):
             errs.append(f"{key}: aliases must be a list of strings")
+        merged = ent.get("merged_into")
+        if merged is not None:
+            if not isinstance(merged, str) or not ENTITY_KEY_RE.match(merged):
+                errs.append(f"{key}: merged_into {merged!r} is not `<type>:<kebab-slug>`")
+            elif merged == key:
+                errs.append(f"{key}: merged_into points at itself")
+            elif merged not in registry:
+                errs.append(f"{key}: merged_into {merged!r} not present in the registry")
+            elif registry[merged].get("merged_into"):
+                errs.append(
+                    f"{key}: merged_into target {merged!r} is itself a tombstone "
+                    "(chains are not allowed — point at the canonical key)"
+                )
+        related = ent.get("related")
+        if related is not None:
+            if not _is_str_list(related):
+                errs.append(f"{key}: related must be a list of registry keys")
+            else:
+                for rk in related:
+                    if not ENTITY_KEY_RE.match(rk):
+                        errs.append(f"{key}: related key {rk!r} is not `<type>:<kebab-slug>`")
+                    elif rk == key:
+                        errs.append(f"{key}: related key points at itself")
+                    elif rk not in registry:
+                        errs.append(f"{key}: related key {rk!r} not present in the registry")
+                    elif registry[rk].get("merged_into"):
+                        errs.append(
+                            f"{key}: related key {rk!r} is a merged tombstone — "
+                            f"point at {registry[rk]['merged_into']!r}"
+                        )
+        if merged:
+            # Tombstones keep their historical name/aliases, which now
+            # legitimately live on the canonical record too — exempt them
+            # from the global collision check.
+            continue
         for label in [ent.get("name")] + list(aliases or []):
             if not isinstance(label, str):
                 continue
