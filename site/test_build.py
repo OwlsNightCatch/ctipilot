@@ -50,6 +50,7 @@ from build import (  # noqa: E402
     build_update_chains,
     compute_related_entities,
     daily_run_dates,
+    enhance_brief_item_html,
     entries_by_day,
     entries_by_week,
     entry_section_key,
@@ -142,6 +143,38 @@ assert_in("heading rendered", "<h1", md_html)
 assert_in("list rendered", "<li>a</li>", md_html)
 assert_in("fence rendered", "<pre><code", md_html)
 assert_not_in("no raw bold survives", "**b**", md_html)
+
+print("== enhance_brief_item_html (Defender-takeaway callout) ==")
+lead_html = enhance_brief_item_html(
+    "<p><strong>Defender takeaway:</strong> patch now.</p>"
+)
+assert_in("leading label promoted to aside",
+          '<aside class="callout callout--takeaway"', lead_html)
+assert_in("label badge rendered",
+          '<span class="callout__label">Defender takeaway</span>', lead_html)
+assert_in("body carried into callout", "patch now.", lead_html)
+assert_not_in("no leftover empty paragraph", "<p></p>", lead_html)
+mid_html = enhance_brief_item_html(
+    "<p>Narrative prose with <strong>bold</strong> inline. "
+    "<strong>Defender takeaway:</strong> rotate the keys.</p>"
+)
+assert_in("mid-paragraph label promoted to aside",
+          '<aside class="callout callout--takeaway"', mid_html)
+assert_in("preceding prose kept as its own paragraph",
+          "<p>Narrative prose with <strong>bold</strong> inline.</p>", mid_html)
+assert_in("takeaway body carried into callout", "rotate the keys.", mid_html)
+two_para = enhance_brief_item_html(
+    "<p>First paragraph, no label.</p>\n"
+    "<p><strong>Detection guidance:</strong> watch process trees.</p>"
+)
+assert_in("label-free paragraph untouched",
+          "<p>First paragraph, no label.</p>", two_para)
+assert_in("detection label maps to detection class",
+          'class="callout callout--detection"', two_para)
+assert_eq("idempotent on second pass",
+          enhance_brief_item_html(mid_html), mid_html)
+plain = "<p>No callout label anywhere in this text.</p>"
+assert_eq("paragraph without label passes through", enhance_brief_item_html(plain), plain)
 
 print("== _safe_url ==")
 assert_eq("javascript: neutered", _safe_url("javascript:alert(1)"), "#")

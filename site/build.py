@@ -811,11 +811,13 @@ def render_markdown(md: str, *, base_url: str | None = None) -> str:
 # These are conventional editorial markers in the daily/weekly brief:
 # the "Defender takeaway" line is the operationally-actionable summary
 # closing every item, "Action items" / "Detection guidance" / "Hunting
-# hints" are occasional auxiliary callouts. By promoting the leading
-# `<strong>Label:</strong>` paragraph into `<aside class="callout
+# hints" are occasional auxiliary callouts. By promoting the
+# `<strong>Label:</strong>` run into `<aside class="callout
 # callout--takeaway">…</aside>`, the brief reader gets a visual anchor
 # at the bottom of each item without the agent having to learn new
-# Markdown syntax.
+# Markdown syntax. The label may open the paragraph or sit mid-paragraph
+# (single-paragraph entry bodies close with the takeaway inline); any
+# prose before the label stays behind as its own <p>.
 _CALLOUT_LABELS = {
     "defender takeaway":  "callout--takeaway",
     "defender note":      "callout--takeaway",
@@ -829,7 +831,7 @@ _CALLOUT_LABELS = {
     "hunting hint":       "callout--detection",
 }
 _CALLOUT_LABEL_RE = re.compile(
-    r"<p>\s*<strong>\s*("
+    r"<p>(?P<pre>(?:(?!</p>).)*?)<strong>\s*(?P<label>"
     + "|".join(re.escape(lbl) for lbl in _CALLOUT_LABELS)
     + r")\s*[:—–-]\s*</strong>(?P<rest>.*?)</p>",
     re.IGNORECASE | re.DOTALL,
@@ -837,28 +839,34 @@ _CALLOUT_LABEL_RE = re.compile(
 
 
 def enhance_brief_item_html(html: str) -> str:
-    """Promote leading `**Defender takeaway:**`-style paragraphs inside
+    """Promote `**Defender takeaway:**`-style bold-label runs inside
     rendered brief items into structured callout asides.
 
     The agent writes the operational summary at the close of each item
-    as a Markdown paragraph that opens with a bold label. The renderer
-    has already turned that into `<p><strong>Label:</strong> …</p>`.
-    Lift it into an `<aside class="callout callout--takeaway">` so the
+    with a bold label — either as its own paragraph or, in
+    single-paragraph entry bodies, mid-paragraph after the narrative.
+    The renderer has already turned that into
+    `<p>[…prose… ]<strong>Label:</strong> …</p>`. Lift the labelled run
+    into an `<aside class="callout callout--takeaway">` so the
     stylesheet can give it dedicated visual weight (accent border, label
-    badge) without changing how the agent writes briefs.
+    badge) without changing how the agent writes briefs; any prose
+    before the label is re-emitted as its own `<p>`.
 
     Idempotent · calling twice has no effect because the regex requires
-    the surrounding `<p>` wrapper which only appears in fresh-rendered
-    Markdown."""
+    the `<strong>Label:</strong>` run inside a `<p>` wrapper, and the
+    transform leaves the label inside an `<aside>` instead."""
 
     def _wrap(m: re.Match[str]) -> str:
-        raw_label = m.group(1).strip()
+        raw_label = m.group("label").strip()
         cls = _CALLOUT_LABELS.get(raw_label.lower(), "callout--takeaway")
         # Title-case the label so "defender takeaway" → "Defender takeaway"
         # but preserve "Defender Takeaway" if the agent already cased it.
         display = raw_label if raw_label[:1].isupper() else raw_label.capitalize()
+        pre = m.group("pre").strip()
+        pre_html = f"<p>{pre}</p>" if pre else ""
         rest = m.group("rest").strip()
         return (
+            f'{pre_html}'
             f'<aside class="callout {cls}" role="note">'
             f'<span class="callout__label">{_escape(display)}</span>'
             f'<div class="callout__body">{rest}</div>'
