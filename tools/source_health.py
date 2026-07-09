@@ -27,6 +27,14 @@ Usage:
     python3 tools/source_health.py                # health-check every active source
     python3 tools/source_health.py --dry-run      # print results, don't write state
     python3 tools/source_health.py --timeout 15   # per-request timeout in seconds
+    python3 tools/source_health.py --workers 10   # parallel probe workers (default 10)
+    python3 tools/source_health.py --budget 420   # overall wall-clock budget in seconds
+                                                  # (default 420; 0 = unlimited). On
+                                                  # exhaustion the sweep still WRITES a
+                                                  # complete snapshot: un-probed sources
+                                                  # carry the previous snapshot's result
+                                                  # forward (`carried_forward: true`) so
+                                                  # `latest` never silently shrinks.
 """
 
 from __future__ import annotations
@@ -41,6 +49,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -86,8 +95,15 @@ FETCH_SOURCE = ROOT / "tools" / "fetch_source.py"
 # mapped also falls back to `url <url>`.
 API_BRIDGE_CMD: dict[str, list[str]] = {
     "cisa-kev": ["cisa-kev"],
-    "cisa-advisories": ["cisa", "page", "https://www.cisa.gov/news-events/cybersecurity-advisories"],
-    "cisa-news": ["cisa", "page", "https://www.cisa.gov/news-events/news"],
+    # 2026-07-09 structured-listing recipes: the /news-events/* listing pages
+    # are JS shells (client-rendered from a Drupal view) — `cisa page` on them
+    # returns only the filter UI. The Drupal RSS endpoints carry the same
+    # listings fully structured and fetch cleanly through `cisa feed` (reader
+    # proxy). Directives has no feed; its listing DOES hydrate through the
+    # reader (grep /news-events/directives/ hrefs), and new directives are
+    # announced in news.xml as well.
+    "cisa-advisories": ["cisa", "feed", "https://www.cisa.gov/cybersecurity-advisories/all.xml", "3"],
+    "cisa-news": ["cisa", "feed", "https://www.cisa.gov/news.xml", "3"],
     "cisa-directives": ["cisa", "page", "https://www.cisa.gov/news-events/directives"],
     "ncsc-ch-security-hub": ["ncsc-csh", "recent", "1"],
     "anssi-fr": ["cert-fr", "avis-recent", "1"],
@@ -360,9 +376,16 @@ def _rss_check(s: dict[str, Any], host: str, *, timeout: float) -> tuple[str, st
             u = base + suf
             if u not in seen:
                 seen.add(u); candidates.append(u)
+    # Per-source cap: up to 9 candidates × 25 s each is a 4-minute worst case
+    # for ONE source — the historical way a full sweep blew its wall-clock
+    # budget. Stop walking suffix guesses after ~75 s; the explicit rss_url /
+    # url candidates run first, so a real feed is found long before the cap.
+    t0 = time.monotonic()
     for feed_url in candidates:
         if _feed_ok(feed_url, timeout=max(timeout, 25.0)):
             return "bridge-ok", f"feed ok: {feed_url}", None
+        if time.monotonic() - t0 > 75.0:
+            break
     # No feed worked — classify the homepage fetch so a real outage still shows.
     status, _lat, err = _check(s.get("url", ""), timeout=timeout)
     return _classify(status, host), (err or "no working feed found"), status
@@ -441,6 +464,13 @@ def main() -> int:
                    help="per-request timeout in seconds (default 12)")
     p.add_argument("--history-cap", type=int, default=12,
                    help="how many runs to retain per source (default 12)")
+    p.add_argument("--workers", type=int, default=10,
+                   help="parallel probe workers (default 10)")
+    p.add_argument("--budget", type=float, default=420.0,
+                   help="overall wall-clock budget in seconds (default 420; 0 = "
+                        "unlimited). On exhaustion, un-probed sources carry the "
+                        "previous snapshot's result forward and the snapshot "
+                        "still writes complete.")
     args = p.parse_args()
 
     if not SOURCES_JSON.exists():
@@ -492,12 +522,9 @@ def main() -> int:
             print(f"# WARN pre-flight: {msg[:160]}")
     print()
 
-    results: list[dict[str, Any]] = []
-    for s in sources:
+    def _probe(s: dict[str, Any]) -> dict[str, Any]:
         sid = s.get("id", "")
         url = s.get("url", "")
-        if not url:
-            continue
         src_status = s.get("status", "")
         fetch_method = s.get("fetch_method", "")
         host = (urlparse(url).hostname or "").lower()
@@ -544,11 +571,95 @@ def main() -> int:
         }
         if err:
             rec["error"] = err
+        return rec
+
+    # Previous snapshot's `latest` — carried forward for sources the budget
+    # doesn't reach, so the written snapshot always covers EVERY source.
+    prev_latest: dict[str, Any] = {}
+    if STATE_JSON.exists():
+        try:
+            prev_latest = dict(json.loads(
+                STATE_JSON.read_text(encoding="utf-8")).get("latest") or {})
+        except Exception:  # noqa: BLE001
+            prev_latest = {}
+
+    # Parallel sweep with an overall wall-clock budget. Sequentially, 150+
+    # sources × (retry + jina fallback + 45 s bridge subprocesses) has blown
+    # every in-run budget it was given (observed 2026-06-21, 2026-07-05,
+    # 2026-07-08); parallel workers bring the typical sweep to ~2–4 min and
+    # the budget guarantees a bounded, complete write even on a bad day.
+    # NOTE: probes already running at the deadline are bounded by their own
+    # subprocess timeouts (≤ ~90 s), so worst-case overrun ≈ one probe.
+    t_sweep0 = time.monotonic()
+    deadline = (t_sweep0 + args.budget) if args.budget > 0 else None
+    results_by_id: dict[str, dict[str, Any]] = {}
+    budget_hit = False
+    pool = ThreadPoolExecutor(max_workers=max(1, args.workers))
+    try:
+        pending = {pool.submit(_probe, s): s.get("id", "") for s in sources}
+        while pending:
+            budget_left = None if deadline is None else deadline - time.monotonic()
+            if budget_left is not None and budget_left <= 0:
+                budget_hit = True
+                break
+            done, _ = wait(set(pending), timeout=budget_left,
+                           return_when=FIRST_COMPLETED)
+            if not done:
+                budget_hit = True
+                break
+            for fut in done:
+                sid = pending.pop(fut)
+                try:
+                    rec = fut.result()
+                except Exception as e:  # noqa: BLE001 — a probe crash is data, not fatal
+                    rec = {"id": sid, "url": "", "host": "", "status": "",
+                           "fetch_method": "", "status_code": None, "latency_ms": 0,
+                           "class": "unreachable", "action": "needs-demote",
+                           "action_reason": f"probe crashed: {str(e)[:120]}",
+                           "fetched_at": fetched_at, "error": str(e)[:160]}
+                results_by_id[rec["id"]] = rec
+                st_disp = str(rec["status_code"]) if rec["status_code"] is not None else "—"
+                flag = "" if rec["action"] == "none" else f"  ⚠ {rec['action']}"
+                print(f"  [{rec['class']:>13}] {st_disp:>3}  {rec['latency_ms']:>5} ms  "
+                      f"{rec['id']:<32}  {rec['host']}{flag}")
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    # Assemble the complete result set in source order: fresh probes first
+    # choice, previous snapshot carried forward second, `not-probed` last.
+    results: list[dict[str, Any]] = []
+    carried = 0
+    unprobed_new = 0
+    for s in sources:
+        sid = s.get("id", "")
+        if sid in results_by_id:
+            results.append(results_by_id[sid])
+            continue
+        prev = prev_latest.get(sid)
+        if isinstance(prev, dict) and prev.get("id") == sid:
+            rec = dict(prev)
+            rec["carried_forward"] = True
+            carried += 1
+        else:
+            rec = {"id": sid, "url": s.get("url", ""),
+                   "host": (urlparse(s.get("url", "")).hostname or "").lower(),
+                   "status": s.get("status", ""),
+                   "fetch_method": s.get("fetch_method", ""),
+                   "status_code": None, "latency_ms": 0, "class": "not-probed",
+                   "action": "none",
+                   "action_reason": "probe budget exhausted before this source; no prior snapshot to carry",
+                   "fetched_at": fetched_at}
+            unprobed_new += 1
         results.append(rec)
-        # Human-readable line.
-        st_disp = str(status) if status is not None else "—"
-        flag = "" if action == "none" else f"  ⚠ {action}"
-        print(f"  [{cls:>13}] {st_disp:>3}  {latency_ms:>5} ms  {sid:<32}  {host}{flag}")
+    if budget_hit:
+        print(f"\n# WARN budget: {args.budget:.0f}s budget exhausted after "
+              f"{time.monotonic() - t_sweep0:.0f}s — probed {len(results_by_id)}/"
+              f"{len(sources)}; carried forward {carried} from the previous "
+              f"snapshot; {unprobed_new} not-probed (no prior)")
+    else:
+        print(f"\n# sweep complete: {len(results_by_id)}/{len(sources)} probed "
+              f"in {time.monotonic() - t_sweep0:.0f}s "
+              f"(workers={args.workers}, budget={args.budget:.0f}s)")
 
     # Group counts for quick top-line.
     by_class: dict[str, int] = {}
@@ -559,7 +670,7 @@ def main() -> int:
     print()
     print("# class breakdown:")
     for cls in ("ok", "redirect-ok", "bridge-ok", "jina-ok", "ua-blocked", "bridge-blocked",
-                "client-error", "server-error", "unreachable", "bridge-fail"):
+                "client-error", "server-error", "unreachable", "bridge-fail", "not-probed"):
         n = by_class.get(cls, 0)
         if n:
             print(f"  {n:>3}× {cls}")

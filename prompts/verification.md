@@ -71,7 +71,8 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] Every entry's `verification` value is correct: `multi-source` needs ≥2 independent sources; carve-outs named in `sourcing_note`.
 - [ ] Classification set correctly: every non-triage-kind entry carries a valid Admiralty `classification` (reliability A–F tracking the cited source's own letter; credibility 1–6 tracking corroboration, assessed independently); triage-kind entries carry `org_triage` and `classification: null`.
 - [ ] CVE identifiers verified against NVD/MITRE; `cves[]` records complete (type/vector/auth/status).
-- [ ] `evidence[]` present and verbatim on every critical-priority and exploited-status entry.
+- [ ] `evidence[]` present and verbatim on every critical-priority and exploited-status entry — each quote a **contiguous** substring of a fetched page (no ellipsis splices, no re-hedging; two passages = two records).
+- [ ] `techniques[]` carries every ATT&CK id the body maps and nothing the body doesn't describe; ids woven into prose at the behavior they name (no bare ID lists); `affected_products[]` names only products the cited sources name; any `**Triage:**` discriminator follows from the cited mechanism (omitted, never invented, when the sources give no basis).
 - [ ] All entity references resolve in `entities/registry.yaml` (aliases checked); new entities registered with sourced definitions.
 - [ ] `priority` calibrated (critical ⇔ immediate_action bar; high ⇔ TL;DR-worthy); every entry clears the strict relevance/actionability gate (no count target or ceiling).
 - [ ] Deep-dive treatment reserved for an item that earns it; category rotation applied.

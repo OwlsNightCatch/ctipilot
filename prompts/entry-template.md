@@ -18,11 +18,16 @@ MITRE ATT&CK IDs, exploitation prerequisites, affected and patched versions
 to vendor-stated precision, named campaign clusters, behavioural detection
 and hardening tied to the specificity (no IOCs, no rule code).
 
-> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DoH traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). Mapped to `T1195.002 Supply Chain Compromise: Compromise Software Supply Chain` and `T1071.004 Application Layer Protocol: DNS`. Detection concepts: alert on unsigned `osascript` / `powershell.exe -enc` invocations from `node` / `npm` / `npx` parent-process trees (Sysmon EID 1 + parent-image filter); inventory installed `@org/*` package versions across developer endpoints; block egress DoH resolvers other than the corporate ones. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
+> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DoH traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). The install-time execution is a supply-chain compromise (`T1195.002`) and the DoH channel is DNS-based application-layer C2 (`T1071.004`) — both IDs tied to the behavior in prose, mirrored in `techniques[]`. Detection concepts, telemetry-class first: in process-creation telemetry with parent lineage (e.g. Sysmon EID 1, auditd `execve`, EDR process events), alert on script interpreters (`osascript`, `powershell.exe -enc`) spawning from `node` / `npm` / `npx` parent trees; inventory installed `@org/*` package versions across developer endpoints; in egress telemetry, surface DoH resolvers other than the corporate ones. **Triage:** developer machines legitimately spawn interpreters from `node` trees during builds — the discriminators are the DoH egress to a non-corporate resolver in the same process tree and reads of browser cookie stores by a non-browser process; either alone is weak, the sequence is the signal. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
 
 The example is purely illustrative — actual depth is whatever the linked
 primary source supports. **Better to write less than to fabricate
-plausible-sounding specifics** (PD-1).
+plausible-sounding specifics** (PD-1). Note the shape: telemetry class
+leads and platform-native names (Sysmon EID 1) are *examples*, so any
+stack — and an automated triage agent — can map the behavior; ATT&CK IDs
+sit at the behavior they name, never in a bare list; the `**Triage:**`
+discriminator derives mechanically from the cited mechanism and is
+omitted entirely when the sources give no honest basis for one.
 
 ---
 
@@ -52,6 +57,8 @@ tags: [vulnerabilities, rce, actively-exploited, cisa-kev]
 regions: [global]
 sectors: [technology]
 entities: []
+techniques: [T1190, T1505.003]   # every ATT&CK id the body maps (T####[.###]); [] when none
+affected_products: ["{Vendor} {Product}"]   # official product names; [] when not product-specific
 cves:
   - id: CVE-YYYY-NNNNN
     cvss: "9.8"
@@ -73,6 +80,8 @@ sources:
     role: corroborating
 closed_sources: []
 evidence:
+  # contiguous verbatim substring of a fetched page — no ellipses, no
+  # splicing, no re-hedging; two passages = two records
   - quote: "verbatim exploitation-status quote from a fetched page"
     publisher: "Vendor PSIRT"
 verification: multi-source
@@ -122,7 +131,10 @@ Variants:
 - **threat / incident** — same skeleton with `kind: threat` (campaign /
   actor activity) or `kind: incident` (breach / disclosure), usually
   `cves: []`, `org_triage: null` + a `classification` block (above), body
-  ends with a `**Defender takeaway:**` line.
+  ends with a `**Defender takeaway:**` line and — where the cited
+  mechanism supports a benign-lookalike discriminator — a `**Triage:**`
+  line adjacent to it (see `prompts/cti-run.md` Phase 4 § Triage-ready
+  behavioral description; omit rather than invent).
 - **critical entry** — `priority: critical` plus:
 
   ```yaml

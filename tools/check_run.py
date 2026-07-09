@@ -1924,21 +1924,54 @@ def check_entry_id_uniqueness(entries: list[dict]) -> None:
 def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]) -> None:
     """--all: every update_of and references[] value must resolve to an
     existing entry file (globally). Per-run mode covers update_of via the
-    dedup check; this is the store-wide sweep."""
-    bad: list[str] = []
+    dedup check; this is the store-wide sweep.
+
+    Severity follows commit state (same pattern as check_prompt_version): a
+    dangling link on an UNCOMMITTED (new/modified) entry FAILs — this is the
+    moment it must be fixed, the target was mistyped or never written. A
+    dangling link on an already-committed entry WARNs: entries are immutable
+    once committed, so a historical dangling link is normally unrepairable in
+    place, and a permanent FAIL would keep `--all` red forever — training the
+    operator to ignore it and masking NEW failures. The WARN keeps the defect
+    visible without poisoning the exit code. (The four 2026-05/06 dangling
+    links from the v2->v3 migration were repaired on 2026-07-09 by a one-time
+    operator-authorized immutability exception — frontmatter `update_of`
+    repointed to the surviving migrated targets, bodies untouched; see
+    .claude/memory/entry-immutability-exceptions.md.)"""
+    dirty: set[str] | None = None
+    try:
+        proc = subprocess.run(
+            ["git", "status", "--porcelain", "--", "entries/"],
+            capture_output=True, text=True, cwd=ROOT, timeout=15)
+        if proc.returncode == 0:
+            dirty = {ln[3:].strip().strip('"') for ln in proc.stdout.splitlines() if ln.strip()}
+    except Exception:
+        dirty = None  # git unavailable (fixture root) → conservative: treat all as uncommitted
+    entry_rel = lambda e: f"entries/{e.get('id', '')}.md"  # noqa: E731 — id is YYYY-MM-DD/slug
+
+    bad_new: list[str] = []
+    bad_old: list[str] = []
     for e in entries:
+        problems = []
         upd = e.get("update_of")
         if upd and str(upd) not in entries_by_id:
-            bad.append(f"{e['id']}: update_of {upd!r} does not resolve")
+            problems.append(f"{e['id']}: update_of {upd!r} does not resolve")
         for ref in e.get("references") or []:
             if str(ref) not in entries_by_id:
-                bad.append(f"{e['id']}: references value {ref!r} does not resolve")
-    if bad:
-        for b in bad[:12]:
-            fail("references", b)
-        if len(bad) > 12:
-            fail("references", f"(+{len(bad) - 12} more unresolved links)")
-    else:
+                problems.append(f"{e['id']}: references value {ref!r} does not resolve")
+        if not problems:
+            continue
+        committed = dirty is not None and entry_rel(e) not in dirty
+        (bad_old if committed else bad_new).extend(problems)
+    for b in bad_new[:12]:
+        fail("references", b)
+    if len(bad_new) > 12:
+        fail("references", f"(+{len(bad_new) - 12} more unresolved links on uncommitted entries)")
+    for b in bad_old[:12]:
+        warn("references", b + " — committed/immutable, grandfathered (WARN, not FAIL)")
+    if len(bad_old) > 12:
+        warn("references", f"(+{len(bad_old) - 12} more grandfathered unresolved links)")
+    if not bad_new and not bad_old:
         ok("references", "all update_of / references links resolve to existing entries")
 
 

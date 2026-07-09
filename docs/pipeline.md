@@ -121,6 +121,12 @@ tags: [vulnerabilities, rce, patch-available]   # taxonomy themes ∪ nexus
 regions: [global]              # taxonomy regions
 sectors: [technology]          # taxonomy sectors (may be empty)
 entities: []                   # registry keys, e.g. [actor:shinyhunters, campaign:fortibleed]
+techniques: []                 # MITRE ATT&CK ids the body maps (T####[.###]) — machine
+                               # retrieval layer; every id must name a behavior the body
+                               # actually describes; [] when the entry maps none
+affected_products: []          # official product names ("Vendor Product" strings — what an
+                               # alert or asset inventory would name); [] when not
+                               # product-specific
 cves:                          # [] when the entry carries no CVE
   - id: CVE-2026-34038
     cvss: "9.9"                # string; "n/a" when unassigned
@@ -166,10 +172,16 @@ migrated_from: null            # v2 provenance (briefs/YYYY-MM-DD.md) — migrat
 
 Body: the full analysis in Markdown. Inline source links at the point of
 claim (`([Publisher, YYYY-MM-DD](URL))`), defender takeaway, detection and
-hardening concepts, MITRE ATT&CK IDs — the same technical register and
-depth as a v2 brief item. Deep-dive entries carry the complete deep-dive
-narrative (Background paragraph, kill chain, hunt concepts, mitigation).
-No IOCs, no rule code, no vanity metrics, English only.
+hardening concepts, MITRE ATT&CK IDs woven at the behavior they name —
+the same technical register and depth as a v2 brief item, described as
+observable behavior (telemetry classes in vendor-neutral terms; platform
+artifacts as examples) so a human analyst or an automated triage agent
+can match an alert against it. Threat/incident/research bodies close with
+`**Defender takeaway:**` and, where the cited mechanism supports a
+benign-lookalike discriminator, a `**Triage:**` line. Deep-dive entries
+carry the complete deep-dive narrative (Background paragraph, kill chain,
+hunt concepts, mitigation). No IOCs, no rule code, no vanity metrics,
+English only.
 ```
 
 ### Field semantics and hard rules
@@ -185,7 +197,23 @@ No IOCs, no rule code, no vanity metrics, English only.
   same commit. Never invent a second key for a known entity — check aliases.
 - **`cves[]`** — one record per CVE, always with `type`/`vector`/`auth`/
   `status` from the taxonomy. Multi-CVE items carry one record per CVE
-  (the v2 "per-CVE breakdown" is now structural).
+  (the v2 "per-CVE breakdown" is now structural). Axis semantics: `vector`
+  encodes the victim-interaction requirement (`zero-click` = attacker-
+  initiated, no victim interaction — independent of auth state), `auth`
+  encodes the authentication precondition; an authenticated, no-interaction
+  bug is correctly `vector: zero-click` + `auth: post-auth`.
+- **`techniques[]`** — the entry's MITRE ATT&CK technique ids, validated
+  against `T####`/`T####.###`. This is the machine retrieval layer for
+  alert-triage consumers (human or agent): given an alert mapped to a
+  technique, the matching entries are a field lookup, not a full-text
+  search. Every id must correspond to a behavior the body describes in
+  prose (bare ID lists in prose are a defect — ids are woven at the
+  behavior they name); an id no cited source supports is a hallucination.
+- **`affected_products[]`** — official vendor product names as plain
+  strings (`"Citrix NetScaler ADC"`, `"Adobe ColdFusion"`), the names an
+  alert, asset inventory, or CMDB would carry. Generalizes the CVE-only
+  `affected`/`fixed` version fields to campaign/threat entries; empty when
+  the entry is not product-specific.
 - **`sources[]`** — ≥ 1 unless `closed_sources` is non-empty. First entry is
   the most primary (vendor PSIRT > vendor research blog > research-lab post >
   regulator filing > victim disclosure > national CERT/CSIRT > MITRE/NVD >
@@ -201,6 +229,13 @@ No IOCs, no rule code, no vanity metrics, English only.
   ≤ 1 consolidated update per week unless something critical changes.
 - **`actions[]`** — only actions derived from this entry's own content.
   The rendered brief's § Action Items is the union over the window.
+- **`migrated_from`** — non-null marks a v2-brief import. Migrated entries
+  may carry placeholder `evidence[]`, empty `entities`/`actions`/
+  `techniques`, and news-register bodies; **machine consumers (triage
+  agents, exporters) should treat `migrated_from != null` as a
+  lower-fidelity tier** and prefer native v3 entries when both cover a
+  topic. Entries are immutable, so the migrated tail is never upgraded in
+  place.
 - **`org_triage` / `classification`** — every entry carries exactly one
   classification scheme, selected by kind. Triage kinds
   (`classification.triage_kinds` in `config/org-profile.yaml`, default
@@ -341,6 +376,14 @@ complete machine-readable telemetry record (the v2 `run_log.json` entry,
 relocated); the body is the human-readable **verification & coverage
 notes** — the v2 brief § 7, relocated to a dedicated, per-run home.
 
+Run records are immutable once their fire completes, with exactly two
+same-fire in-place updates permitted: the same-minute retry (idempotent
+run_id) and the **Phase 7 publish-status amendment** — after the publish
+poll, the fire updates `publish_status`/`publish_checked_at`/`publish_note`
+in place, commits `run: <run-id> publish-status`, and re-pushes the feature
+branch (fire-and-forget; auto-merge promotes it). No other field is ever
+edited after commit, and no later fire edits an earlier fire's record.
+
 ```yaml
 ---
 schema: 1
@@ -376,6 +419,17 @@ bridge_uses: []                # {id, method, outcome}
 sources_changed: []            # {id, change, from, to, reason}
 entities_added: []             # registry keys added this run
 entries_dropped_by_verification: 0
+publish_status: pending        # pending | ok | main-only — machine-auditable publish outcome.
+                               # Written `pending` at the Phase 6 commit; the SAME fire amends
+                               # it in place after Phase 7's poll (ok = run record on main AND
+                               # site rebuilt, or site polling disabled; main-only = record on
+                               # main but the site rebuild never confirmed) and pushes the
+                               # amendment. A record still `pending` on main means the fire died
+                               # before Phase 7 or the amendment push failed — an operator signal
+                               # either way. Absent on records that predate v3.14.
+publish_checked_at: null       # UTC timestamp of the Phase 7 poll that set publish_status
+publish_note: null             # free-text reason detail (e.g. "site polling disabled",
+                               # "auto-merge pending at deadline")
 verification_iterations: 1
 verification_residual_count: 0 # never 0 when the final iteration was NEEDS_FIXES
 verification:
