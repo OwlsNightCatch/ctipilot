@@ -1930,11 +1930,14 @@ def check_references_resolve(entries: list[dict], entries_by_id: dict[str, dict]
     dangling link on an UNCOMMITTED (new/modified) entry FAILs — this is the
     moment it must be fixed, the target was mistyped or never written. A
     dangling link on an already-committed entry WARNs: entries are immutable
-    once committed, so a historical dangling link (four exist from 2026-05/06)
-    can never be repaired in place, and a permanent FAIL would keep `--all`
-    red forever — training the operator to ignore it and masking NEW
-    failures. The WARN keeps the defect visible without poisoning the exit
-    code."""
+    once committed, so a historical dangling link is normally unrepairable in
+    place, and a permanent FAIL would keep `--all` red forever — training the
+    operator to ignore it and masking NEW failures. The WARN keeps the defect
+    visible without poisoning the exit code. (The four 2026-05/06 dangling
+    links from the v2->v3 migration were repaired on 2026-07-09 by a one-time
+    operator-authorized immutability exception — frontmatter `update_of`
+    repointed to the surviving migrated targets, bodies untouched; see
+    .claude/memory/entry-immutability-exceptions.md.)"""
     dirty: set[str] | None = None
     try:
         proc = subprocess.run(

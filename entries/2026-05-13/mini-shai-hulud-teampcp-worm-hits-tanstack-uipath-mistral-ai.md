@@ -41,7 +41,7 @@ evidence: []
 verification: multi-source
 sourcing_note: null
 confidence: high
-update_of: 2026-05-10/pcpjack-modular-cloud-credential-theft-worm-displaces-teampc
+update_of: 2026-05-04/teampcp-pcpjack-cloud-worm-successor-evicting-prior-operator
 references: []
 deep_dive: false
 deep_dive_category: null
