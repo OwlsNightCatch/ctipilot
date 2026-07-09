@@ -261,8 +261,10 @@ normal state — costs nothing.
   `WebFetch` outbound-links template, the `tools/fetch_source.py` contract
   for known-403 hosts, the intelligence-methodology tradecraft, the
   findings-YAML return contract, and the mandatory `**Model:**`
-  self-identification line (env vars `CLAUDE_FRIENDLY_NAME` /
-  `CLAUDE_MODEL_ID`, runtime-context fallback). Before fetching, each
+  self-identification line (primary source: the harness-injected model line
+  in the agent's own system prompt, which sees the definition's `model:`
+  pin; env vars `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` as marked
+  container-default fallback). Before fetching, each
   worker reads `work/<run-id>/prior_coverage.json` (which includes entries
   earlier runs published *today* — an afternoon fire never re-researches
   the morning's entries) and `entities/registry.yaml` (canonical names +

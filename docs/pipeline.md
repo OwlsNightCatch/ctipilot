@@ -393,7 +393,7 @@ date: "2026-07-03"
 started: "2026-07-03T04:12:03Z"
 completed: "2026-07-03T04:31:40Z"
 duration_seconds: 1177
-model: "…"                     # main-agent friendly name (env-var self-identification)
+model: "…"                     # main-agent friendly name (self-ID: harness prompt line; env vars as marked fallback)
 model_id: "…"
 prompt_version: "v3.1"
 window_hours: 24               # gap-derived recency window this run covered (24 h floor)

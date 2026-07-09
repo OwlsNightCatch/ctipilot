@@ -431,17 +431,17 @@ Before you return an item, confirm:
 
 The main agent and the sub-agents may run on different models — the runtime decides per role and the agents can't see each other's runtime configuration. The site's AI-content notice and the run record need to record **which model actually ran each sub-agent** — without your self-report, the main agent has no reliable way to recover that, and the published record ends up overstating uniformity.
 
-**Authoritative source: the harness env vars `CLAUDE_FRIENDLY_NAME` and `CLAUDE_MODEL_ID`.** The operator sets these in the routine container so every agent picks them up; they're more reliable than asking the model to reason about its own identity (sub-agents have demonstrably pattern-matched stale training-data names — e.g. "Claude Sonnet 4.5" with model id `claude-sonnet-4-6` — when left to derive their own friendly name). **Read both env vars via Bash as your very first identity action and use them verbatim**:
+**Authoritative source: the model line the harness injects into YOUR OWN system prompt / runtime context** — the line of the form `You are powered by the model named <friendly name>. The exact model ID is <model-id>.` The harness generates that line per-agent at spawn time, from the same resolution that applies this definition's `model:` frontmatter pin, so it names your **actual runtime model — pin included** (verified empirically 2026-07-09: a probe of this definition returned "Sonnet 5" / `claude-sonnet-5` from its prompt line, matching the `sonnet` pin, while the container env vars reported the Opus main-agent default). Quote the friendly name and model id from that line **verbatim** — never the name you'd *expect* the pin to resolve to, never a training-data guess.
+
+**Fallback 1 — no such line in your context: the container env vars.**
 
 ```bash
-CLAUDE_FRIENDLY_NAME="${CLAUDE_FRIENDLY_NAME:-}"
-CLAUDE_MODEL_ID="${CLAUDE_MODEL_ID:-}"
-echo "friendly=${CLAUDE_FRIENDLY_NAME} id=${CLAUDE_MODEL_ID}"
+echo "friendly=${CLAUDE_FRIENDLY_NAME:-} id=${CLAUDE_MODEL_ID:-}"
 ```
 
-**Fallback (env vars unset):** reason about your own identity from your runtime context (what the host harness set as your model id) and surface that. Do not pattern-match a placeholder name from training data — when in doubt, write `Anthropic Claude (specific model not determined)` and the main agent will surface that string verbatim.
+These are **container-scoped, not agent-scoped**: the operator sets them once for the routine container and they carry the **main-agent default** — they cannot see this definition's `model:` pin, so on a container whose default differs from the pin they mis-describe you. When you must fall back to them, append the marker ` — container default, env fallback` inside the parentheses after the model id (exact shape below) so the run record preserves the provenance, and never present the value as proof of your runtime model.
 
-**Scope caveat — the env vars are container-scoped, not agent-scoped.** They describe the routine container's default (main-agent) model. This definition pins its own `model:` in the YAML frontmatter, and the harness applies that pin when it spawns you — the env vars **cannot see that pin**, so on a container whose default differs from your pin they will report the default, not your actual runtime model. Report the env values verbatim anyway (they are the only harness-provided identity signal you have), but never present them as *proof* of your runtime model, and never assert — in your return or anywhere else — that model pinning or rotation "failed" on the basis of env-var readings alone: from inside the sandbox that discrepancy is unresolvable, and the main agent records your reported values alongside the definition that spawned you and treats any mismatch as an ambiguity, not a fact.
+**Fallback 2 — neither source available:** write `Anthropic Claude (specific model not determined)` and the main agent will surface that string verbatim. Do not pattern-match a placeholder name from training data (sub-agents have demonstrably invented stale names — e.g. "Claude Sonnet 4.5" with model id `claude-sonnet-4-6` — when left to derive their own friendly name).
 
 **Open every return with a `**Model:**` line as the first non-blank line of your response**, before any item, before any heading. Immediately follow with a **mandatory `**Timestamps:**` line** carrying the start + end UTC ISO 8601 stamps you captured in § Timestamps above. Use this exact shape:
 
@@ -450,7 +450,13 @@ echo "friendly=${CLAUDE_FRIENDLY_NAME} id=${CLAUDE_MODEL_ID}"
 **Timestamps:** started_at=YYYY-MM-DDTHH:MM:SSZ · ended_at=YYYY-MM-DDTHH:MM:SSZ · duration_seconds=NNN
 ```
 
-The friendly name is the human-facing label for your model (the form a release blog post would use; the env var `CLAUDE_FRIENDLY_NAME` carries this verbatim when set); the canonical id is the slug your harness identifies you by (env var `CLAUDE_MODEL_ID`). The main agent parses these two lines and stores them under `sub_agents.<your-domain>.model` / `.started_at` / `.ended_at` / `.duration_seconds` in the run record; skipping either line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
+On the env-var fallback (Fallback 1) the Model line carries the provenance marker inside the parentheses:
+
+```
+**Model:** {env friendly name} (`{env model-id}` — container default, env fallback)
+```
+
+The friendly name is the human-facing label for your model (the form a release blog post would use; the harness-injected prompt line carries it verbatim); the canonical id is the slug the harness identifies you by (same line). The main agent parses these two lines and stores them under `sub_agents.<your-domain>.model` / `.started_at` / `.ended_at` / `.duration_seconds` in the run record; skipping either line forces the main agent to record `unknown` and the Ops dashboard renders a yellow warning badge for that sub-agent.
 
 `duration_seconds` is integer seconds derived from `ended_at − started_at`; if either timestamp is `unknown`, write `unknown` here too. Never invent values.
 

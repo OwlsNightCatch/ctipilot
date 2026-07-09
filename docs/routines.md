@@ -145,12 +145,15 @@ byte-identically in the same commit).
 | [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries + run record. Read-only; re-spawned fresh until CLEAN or the 5-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F17). Spawned on **odd** iterations. |
 | [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) | **Verifier, Sonnet rotation variant.** Byte-identical operational body to `cti-verification.md`; only the model frontmatter differs. Spawned on **even** iterations so model-specific blind spots surface. |
 
-Self-identification for all sub-agents comes from the `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` env
-vars set in the routine container (fallback: reason from runtime context). The env vars are
-**container-scoped**: they carry the main-agent default and cannot see a definition's `model:` pin,
-so a pinned sub-agent (e.g. the Sonnet verifier rotation slot) reports the container default even
-when the harness runs it on the pinned model — uniform reports across sub-agents are a measurement
-limitation, not evidence the pinning or rotation failed. Never spawn
+Self-identification for every agent (main + sub-agents) comes primarily from the model line the
+harness injects into that agent's own system prompt (`You are powered by the model named … The
+exact model ID is …`) — generated per-agent at spawn time, it reflects the definition's `model:`
+pin (verified empirically 2026-07-09). Fallback: the `CLAUDE_FRIENDLY_NAME` / `CLAUDE_MODEL_ID` env
+vars set in the routine container. The env vars are **container-scoped**: they carry the main-agent
+default and cannot see a definition's `model:` pin, so an env-fallback report (marked
+`— container default, env fallback` on the `**Model:**` line) shows the container default even
+when the harness runs the agent on its pinned model — uniformity among such fallback reports is a
+measurement limitation, not evidence the pinning or rotation failed. Never spawn
 `general-purpose` for research or verification — use the named sub-agents; keep the live routine
 allow-list matched to these definitions (see [`docs/operating.md` § Sub-agent capability ceiling](operating.md#sub-agent-capability-ceiling)).
 
