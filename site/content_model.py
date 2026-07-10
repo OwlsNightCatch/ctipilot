@@ -21,6 +21,7 @@ inline `[a, b]` lists and `{k: v}` mappings of plain scalars only,
 
 from __future__ import annotations
 
+import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -31,6 +32,7 @@ ENTRIES_DIR = ROOT / "entries"
 RUNS_DIR = ROOT / "runs"
 REGISTRY_PATH = ROOT / "entities" / "registry.yaml"
 TAXONOMY_PATH = ROOT / "site" / "taxonomy.yaml"
+ATTACK_DATASET_PATH = ROOT / "attack" / "enterprise-attack.json"
 
 # ---------------------------------------------------------------------------
 # Controlled structural enums (editorial vocabularies live in site/taxonomy.yaml)
@@ -520,6 +522,8 @@ ENTRY_DEFAULTS = {
     "regions": [],
     "sectors": [],
     "entities": [],
+    "techniques": [],
+    "affected_products": [],
     "cves": [],
     "sources": [],
     "closed_sources": [],
@@ -639,6 +643,71 @@ def resolve_entity_key(registry: dict, key: str) -> str:
         if isinstance(merged, str) and merged in registry:
             return merged
     return key
+
+
+# ---------------------------------------------------------------------------
+# MITRE ATT&CK dataset (attack/enterprise-attack.json — see attack/README.md)
+# ---------------------------------------------------------------------------
+
+
+def load_attack_dataset(path: Path = ATTACK_DATASET_PATH) -> dict | None:
+    """Load the pinned ATT&CK dataset written by tools/attack_data.py.
+
+    Returns the whole dataset dict ({attack_version, tactics, techniques, …})
+    or None when the file is absent. Consumers must not hardcode tactic or
+    technique tables — releases rename tactics and revoke techniques, and
+    the pin is updated via `tools/attack_data.py --update`."""
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def resolve_technique_id(attack_techniques: dict, tid: str, max_hops: int = 5) -> str:
+    """Follow ATT&CK `revoked_by` forwarding to the surviving technique id.
+
+    The ATT&CK analogue of `resolve_entity_key`: entries are immutable, so a
+    T-id cited before MITRE revoked it must keep resolving. Returns the input
+    unchanged when the id is unknown or not revoked-forwarded."""
+    seen = set()
+    cur = tid
+    while max_hops > 0:
+        max_hops -= 1
+        rec = attack_techniques.get(cur)
+        nxt = rec.get("revoked_by") if isinstance(rec, dict) else None
+        if not nxt or nxt in seen or nxt not in attack_techniques:
+            return cur
+        seen.add(cur)
+        cur = nxt
+    return cur
+
+
+# T-ids as they appear in prose bodies (legacy entries predate the
+# `techniques[]` frontmatter field and carry their mappings in prose only).
+PROSE_TECHNIQUE_RE = re.compile(r"\bT\d{4}(?:\.\d{3})?\b")
+
+
+def entry_technique_ids(entry: dict, attack_techniques: dict | None = None) -> list:
+    """Effective ATT&CK technique ids for an entry, sorted.
+
+    Union of the canonical `techniques[]` frontmatter field and T-ids
+    extracted from the body prose (the only mapping surface of entries that
+    predate the field — entries are immutable, so prose extraction stays
+    permanently). Prose-extracted ids are kept only when the pinned dataset
+    knows them (guards against T-shaped false positives); frontmatter ids
+    are kept unconditionally — they may be newer than the pin, which
+    `tools/check_run.py` surfaces as a WARN, never silently drops. When a
+    dataset is provided, revoked ids resolve forward via `revoked_by`."""
+    ids = set()
+    for t in entry.get("techniques") or []:
+        if isinstance(t, str) and TECHNIQUE_ID_RE.match(t):
+            ids.add(t)
+    body = entry.get("body") or ""
+    for m in PROSE_TECHNIQUE_RE.findall(body):
+        if attack_techniques is None or m in attack_techniques:
+            ids.add(m)
+    if attack_techniques:
+        ids = {resolve_technique_id(attack_techniques, t) for t in ids}
+    return sorted(ids)
 
 
 # ---------------------------------------------------------------------------

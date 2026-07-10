@@ -152,6 +152,25 @@ never rename). Alias collisions and unresolved keys FAIL
 `tools/check_run.py`. The site renders `/entities/<key>/` pages from it.
 Contract pointer: [`entities/README.md`](../entities/README.md).
 
+### `attack/enterprise-attack.json` — the pinned MITRE ATT&CK dataset
+
+The one ATT&CK Enterprise release every consumer renders and validates
+against — a compact, committed extraction (technique id → name, tactics,
+definition, sub-technique parentage, lifecycle flags with `revoked_by`
+forwarding) from the official `mitre-attack/attack-stix-data` STIX
+releases. `tools/attack_data.py` is the only writer (`--check` compares the
+pin against the upstream latest, `--update` rewrites it, `--selftest`
+verifies invariants — also enforced by `check_run.py`). Entry
+`techniques[]` frontmatter is validated against it; `site/build.py`
+derives evidence-bound entity/CVE → technique profiles from entries
+(frontmatter ∪ legacy in-prose T-ids via
+`content_model.entry_technique_ids`), renders the entity-page ATT&CK
+sections and the `/attack/` overlap matrix, and exports per-entity ATT&CK
+Navigator layers. Revoked techniques are kept and forwarded — the ATT&CK
+analogue of registry tombstones, because immutable entries keep citing old
+ids. Normative: [`docs/pipeline.md`](pipeline.md) § The ATT&CK layer;
+contract: [`attack/README.md`](../attack/README.md).
+
 ### `runs/` — per-run records
 
 One file per fire at `runs/<YYYY-MM-DD>/<run-id>.md`, with
@@ -359,7 +378,10 @@ every edit is recorded in the run record's `sources_changed[]`.
   gate), org-triage + Admiralty-classification vocabulary/placement,
   run-record completeness + prompt-version cross-check
   against `prompts/CHANGELOG.md`, `sources.json` shape (incl. Admiralty A–F
-  `reliability_codes`), essential-coverage, and the `site/test_build.py`
+  `reliability_codes`), essential-coverage, the ATT&CK layer (pinned
+  dataset present + invariant-clean is a FAIL; unknown/revoked
+  `techniques[]` ids and prose-mapped ids missing from the frontmatter are
+  WARNs), and the `site/test_build.py`
   smoke tests. Fix
   recipes: [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md).
 - [`tools/build_prior_coverage.py`](../tools/build_prior_coverage.py) —
@@ -376,6 +398,12 @@ every edit is recorded in the run record's `sources_changed[]`.
   compact state digest (known CVE ids, active sources, last run + gap
   anchor, fetch-gap rotation candidates, and the rolling-24 h budget
   snapshot — what earlier runs already consumed).
+- [`tools/attack_data.py`](../tools/attack_data.py) — builds and updates
+  the pinned MITRE ATT&CK dataset `attack/enterprise-attack.json` from the
+  official `mitre-attack/attack-stix-data` releases: `--check` (pin vs
+  upstream latest — a weekly-run duty), `--update [--version X.Y]`
+  (rewrite + printed change summary for the commit body), `--selftest`
+  (offline invariants), `--info`. See § `attack/enterprise-attack.json`.
 - [`tools/fetch_source.py`](../tools/fetch_source.py) — stdlib-only HTTP
   bridge that re-issues requests with a current desktop-Chrome UA +
   matching client-hint headers. Solves the recurring 403 / 302-to-login on
@@ -475,8 +503,13 @@ entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
 - `/entries/YYYY-MM-DD/<slug>/` per-entry permalinks (metadata badges,
   update chain, producing-run link).
 - `/entities/<key>/` unified entity pages from the registry + CVE
-  universe; `/cves/` and `/topics/` type-filtered list views (legacy
-  per-id URLs are meta-refresh redirect stubs to the canonical).
+  universe — including the derived ATT&CK-technique section and a
+  per-entity Navigator layer (`attack-layer.json`); `/cves/` and
+  `/topics/` type-filtered list views (legacy per-id URLs are
+  meta-refresh redirect stubs to the canonical).
+- `/attack/` the ATT&CK coverage matrix (pinned release, store-wide heat,
+  per-technique definitions + evidence directory, client-side
+  multi-entity TTP overlap over `data/attack.json`).
 - `/sources/` + `/sources/<id>/`, `/tags/<t>/`, `/regions/<r>/`,
   `/trends/` (entries-per-ISO-week cohort dashboard), `/ops/` (run
   telemetry from `runs/**`), `/feeds/`, `/about/**` (README, docs,

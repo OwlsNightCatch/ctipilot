@@ -40,6 +40,8 @@ entries/YYYY-MM-DD/<slug>.md   # one finding per file; folder = UTC date of disc
 entries/README.md              # short contract pointer (this file is normative)
 entities/registry.yaml         # global entity registry: actors, campaigns, malware, tools, incidents, reports
 entities/README.md             # registry contract pointer
+attack/enterprise-attack.json  # pinned MITRE ATT&CK release (see § The ATT&CK layer)
+attack/README.md               # ATT&CK dataset contract + update procedure
 runs/YYYY-MM-DD/<run-id>.md    # one run record per fire: frontmatter = telemetry, body = verification notes
 runs/README.md                 # run-record contract pointer
 state/cves_seen.json           # flat fast-lookup CVE index (kept from v2)
@@ -121,9 +123,11 @@ tags: [vulnerabilities, rce, patch-available]   # taxonomy themes ∪ nexus
 regions: [global]              # taxonomy regions
 sectors: [technology]          # taxonomy sectors (may be empty)
 entities: []                   # registry keys, e.g. [actor:shinyhunters, campaign:fortibleed]
-techniques: []                 # MITRE ATT&CK ids the body maps (T####[.###]) — machine
-                               # retrieval layer; every id must name a behavior the body
-                               # actually describes; [] when the entry maps none
+techniques: []                 # MITRE ATT&CK ids the sources support (T####[.###]) — the
+                               # CANONICAL mapping surface (active ids per the pinned
+                               # attack/enterprise-attack.json); every id must name a behavior
+                               # the body describes in prose (inline T-ids only where
+                               # essential); [] when the entry maps none
 affected_products: []          # official product names ("Vendor Product" strings — what an
                                # alert or asset inventory would name); [] when not
                                # product-specific
@@ -172,8 +176,10 @@ migrated_from: null            # v2 provenance (briefs/YYYY-MM-DD.md) — migrat
 
 Body: the full analysis in Markdown. Inline source links at the point of
 claim (`([Publisher, YYYY-MM-DD](URL))`), defender takeaway, detection and
-hardening concepts, MITRE ATT&CK IDs woven at the behavior they name —
-the same technical register and depth as a v2 brief item, described as
+hardening concepts — ATT&CK mappings live in `techniques[]`, and an inline
+T-id appears in prose only where essential (deep-dive kill chains, a
+mapping that is itself the finding) — the same technical register and
+depth as a v2 brief item, described as
 observable behavior (telemetry classes in vendor-neutral terms; platform
 artifacts as examples) so a human analyst or an automated triage agent
 can match an alert against it. Threat/incident/research bodies close with
@@ -203,12 +209,23 @@ English only.
   encodes the authentication precondition; an authenticated, no-interaction
   bug is correctly `vector: zero-click` + `auth: post-auth`.
 - **`techniques[]`** — the entry's MITRE ATT&CK technique ids, validated
-  against `T####`/`T####.###`. This is the machine retrieval layer for
-  alert-triage consumers (human or agent): given an alert mapped to a
-  technique, the matching entries are a field lookup, not a full-text
-  search. Every id must correspond to a behavior the body describes in
-  prose (bare ID lists in prose are a defect — ids are woven at the
-  behavior they name); an id no cited source supports is a hallucination.
+  against `T####`/`T####.###` (format — FAIL) and against the pinned
+  ATT&CK dataset `attack/enterprise-attack.json` (existence + lifecycle —
+  WARN; see § The ATT&CK layer). This is the **canonical mapping
+  surface**: the machine retrieval layer for alert-triage consumers
+  (given an alert mapped to a technique, the matching entries are a field
+  lookup), and the sole input to the derived entity/CVE TTP profiles, the
+  `/attack/` matrix and the Navigator-layer exports — a technique missing
+  here is invisible to all of them. Use active ids only (revoked ids
+  resolve forward via `revoked_by`, but new entries reference survivors).
+  Every id must correspond to a behavior the body describes **in plain
+  prose**; inline T-ids in the body appear only where essential, and a
+  bare ID list in prose is a defect. An id no cited source supports is a
+  hallucination. Entries that predate this field (the migrated/early-v3
+  tail) carry their mappings as in-prose T-ids only; consumers derive
+  their effective set via `content_model.entry_technique_ids` (frontmatter
+  ∪ dataset-known prose ids) — entries are immutable, so that derivation
+  path is permanent.
 - **`affected_products[]`** — official vendor product names as plain
   strings (`"Citrix NetScaler ADC"`, `"Adobe ColdFusion"`), the names an
   alert, asset inventory, or CMDB would carry. Generalizes the CVE-only
@@ -405,6 +422,47 @@ must be canonical (not tombstones). Edges are rendered symmetrically and
 survive independently of entry co-occurrence; keep them evidence-bound —
 only link entities whose connection cited reporting supports.
 
+## The ATT&CK layer — pinned dataset + derived TTP mappings
+
+CVEs, actors, campaigns and every other entity get their MITRE ATT&CK
+technique profile **by derivation, never by assertion**: an entity maps a
+technique exactly when a published entry ties them together. The layer has
+three parts:
+
+1. **The pinned dataset — `attack/enterprise-attack.json`** (contract:
+   [attack/README.md](../attack/README.md); writer: `tools/attack_data.py`).
+   A compact, committed extraction of one specific ATT&CK Enterprise
+   release: technique id → name, tactics, first-paragraph definition,
+   sub-technique parentage, platforms, and lifecycle flags. Pinning matters
+   because releases drift — v19 renamed Defense Evasion into Stealth +
+   Defense Impairment (new TA0112) and every release revokes ids.
+   Revoked/deprecated techniques are **kept, flagged**, with `revoked_by`
+   forwarding — the ATT&CK analogue of the registry's `merged_into`
+   tombstones, and for the same reason: entries are immutable, so an id
+   cited before MITRE revoked it must keep resolving
+   (`content_model.resolve_technique_id`). Updating the pin is an explicit,
+   diff-reviewed act: `tools/attack_data.py --check` (drift detection;
+   weekly-run duty) / `--update` (rewrite + change summary for the commit
+   body) / `--selftest` (offline invariants; also enforced by
+   `check_run.py`).
+2. **Per-entry effective techniques —
+   `content_model.entry_technique_ids`.** The union of the entry's
+   `techniques[]` frontmatter (canonical, v3.17+) and dataset-known T-ids
+   in its body prose (the only mapping surface of the immutable pre-v3.17
+   store), revoked ids resolved forward. Exposed per entry in
+   `data/briefbook.json` and `data/alerts.json` as `techniques[]`.
+3. **Derived aggregations (`site/build.py`).** Per entity AND per CVE:
+   `{technique id: [supporting entry ids]}` — evidence-bound, rendered as
+   the entity page's ATT&CK section (grouped by tactic in official matrix
+   order, definitions from the pin, entry links) and exported as a
+   per-entity **ATT&CK Navigator layer** (`entities/<key>/attack-layer.json`,
+   layer format 4.5, score = supporting-entry count). The `/attack/` page
+   renders the full matrix heat-shaded by store-wide coverage, carries the
+   per-technique definitions-and-evidence directory, and offers the
+   client-side multi-entity overlap view (union / overlap≥2 /
+   common-to-all) over `data/attack.json` — Navigator-layer semantics
+   without leaving the site, plus layer export of any comparison.
+
 ## Run records — `runs/YYYY-MM-DD/<run-id>.md`
 
 One file per fire, written in the run's final phase. Frontmatter is the
@@ -546,10 +604,14 @@ is built entirely from `runs/**` frontmatter.
   `discovered_at` — true discovery latency, not commit time) + the eight
   sector slices + daily/weekly digest feeds.
 - **`data/alerts.json`** — last 7 days of `critical`/`high` entries with
-  headline, summary, immediate_action, entities, CVEs: the notification-
-  hook surface.
+  headline, summary, immediate_action, entities, CVEs, techniques: the
+  notification-hook surface.
+- **`/attack/` + `data/attack.json` + `entities/<key>/attack-layer.json`**
+  — the ATT&CK coverage matrix, its client-side overlap dataset, and the
+  per-entity Navigator layer exports (§ The ATT&CK layer).
 - **Entity pages, trends, ops, search** — all derived from entries +
-  registry + runs, same URLs as v2.
+  registry + runs, same URLs as v2. Entity/CVE pages carry the derived
+  ATT&CK section; covered techniques are searchable.
 
 ## The mechanical gate — `tools/check_run.py`
 
@@ -564,7 +626,9 @@ not gated on a count); CVE sync with `cves_seen.json`; IOC scan; run-record comp
 counters and prompt-version cross-check against `prompts/CHANGELOG.md`);
 `sources/sources.json` shape (incl. Admiralty A–F `reliability_codes`);
 closed-source citation traceability to `intel/` (no TLP gate); org-triage and
-Admiralty-classification vocabulary/placement; and the site smoke tests
-(`site/test_build.py`).
+Admiralty-classification vocabulary/placement; the ATT&CK layer (pinned
+dataset present + invariant-clean — FAIL; `techniques[]` ids unknown /
+revoked / deprecated in the pin, or prose-mapped ids missing from the
+frontmatter — WARN); and the site smoke tests (`site/test_build.py`).
 
 

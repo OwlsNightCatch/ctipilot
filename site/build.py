@@ -1236,6 +1236,7 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     # Daily / Weekly views themselves (each page links "All … briefs").
     rows = [
         (f"{pfx}entities/", "Entities", "actors · CVEs"),
+        (f"{pfx}attack/", "ATT&CK", "matrix"),
         (f"{pfx}sources/", "Sources", "~150"),
         (f"{pfx}trends/", "Trends", "cohorts"),
         (f"{pfx}ops/", "Ops", "runs"),
@@ -3647,6 +3648,11 @@ def render_detail_scope(entry: dict[str, Any], *, registry: dict[str, dict[str, 
         )
     for cid in entry_cve_ids(entry):
         chips.append(f'<a class="echip" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a>')
+    for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES):
+        chips.append(
+            f'<a class="echip echip--atk" href="{prefix}attack/#{_escape(tid)}" '
+            f'title="{_escape(attack_technique_label(tid))}">{_escape(tid)}</a>'
+        )
     for t in entry.get("tags") or []:
         chips.append(f'<a class="echip" href="{prefix}tags/{_escape(t)}/">{_escape(t)}</a>')
     for r in entry.get("regions") or []:
@@ -4283,6 +4289,7 @@ def build_briefbook(
             "cve_ids": entry_cve_ids(e),
             "cve_status": entry_cve_status_union(e),
             "cve_label": _cve_label(e),
+            "techniques": content_model.entry_technique_ids(e, ATTACK_TECHNIQUES),
             "run_id": e.get("run_id"),
             "source_count": _source_count(e),
             "sources_min": sources_min,
@@ -4330,7 +4337,9 @@ ALERTS_COMMENT = (
     "`immediate_action` is non-null exactly when priority is critical. "
     "URLs are absolute. Schema: {id, url, priority, headline, summary, "
     "discovered_at, immediate_action:{title,action}|null, cve_ids[], "
-    "entities[], tags[], sectors[], regions[]}. See docs/pipeline.md."
+    "entities[], techniques[], tags[], sectors[], regions[]}. "
+    "techniques[] carries the entry's MITRE ATT&CK ids (frontmatter + "
+    "prose-derived, revoked ids resolved forward). See docs/pipeline.md."
 )
 
 
@@ -4363,6 +4372,7 @@ def build_alerts(
             ),
             "cve_ids": entry_cve_ids(e),
             "entities": list(e.get("entities") or []),
+            "techniques": content_model.entry_technique_ids(e, ATTACK_TECHNIQUES),
             "tags": list(e.get("tags") or []),
             "sectors": list(e.get("sectors") or []),
             "regions": list(e.get("regions") or []),
@@ -8254,6 +8264,10 @@ def build_entities(
     compute_related_entities)."""
     prefixes = _source_prefix_index(sources_raw)
     matched: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    # Effective ATT&CK technique ids per entry (frontmatter ∪ prose,
+    # revoked ids resolved forward) — aggregated per entity below so every
+    # entity/CVE page and the /attack/ matrix stay evidence-bound.
+    tech_by_entry = techniques_by_entry(entries)
 
     # --- registry entities: explicit key + phrase matching -------------
     # Tombstones (`merged_into`) never match: their names/aliases live on
@@ -8323,6 +8337,10 @@ def build_entities(
             h = (c.get("host") or "").strip()
             if h:
                 host_counts[h] = host_counts.get(h, 0) + 1
+        tech: dict[str, list[str]] = {}
+        for e in ents:
+            for tid in tech_by_entry.get(e["id"], ()):
+                tech.setdefault(tid, []).append(e["id"])
         dates = [a["date"] for a in apps]
         return {
             "appearances": apps,
@@ -8336,6 +8354,7 @@ def build_entities(
             "last_covered": dates[-1] if dates else "",
             "related_entities": [],
             "external_refs": [],
+            "techniques": {t: sorted(set(v)) for t, v in tech.items()},
         }
 
     entities: list[dict[str, Any]] = []
@@ -8561,6 +8580,13 @@ def render_entity_page(
             "Co-occurring entities",
             str(len(entity.get("related_entities", []) or [])),
             sub="see Related entities below" if entity.get("related_entities") else "no co-occurrence",
+            kind="neutral",
+        )
+        + _ops_kpi_tile(
+            "ATT&CK techniques",
+            str(len(entity.get("techniques") or {})),
+            sub=(f"pinned v{ATTACK_VERSION} · see below" if entity.get("techniques")
+                 else "no mapped behavior yet"),
             kind="neutral",
         )
         + "</div>"
@@ -8793,6 +8819,8 @@ def render_entity_page(
 
 {pivot_block}
 
+{render_entity_attack_section(entity, prefix=prefix)}
+
 <h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
 {timeline_block}
 
@@ -8844,6 +8872,493 @@ def render_entity_page(
                     site_url=site_url,
                     items=ent_items,
                 )
+            ],
+        },
+    )
+
+
+# === MITRE ATT&CK LAYER =================================================
+#
+# attack/enterprise-attack.json (written by tools/attack_data.py, contract
+# in attack/README.md) pins the ATT&CK release the whole site renders
+# against — tactic table, technique names, definitions, lifecycle flags.
+# Entity/CVE → technique mappings are DERIVED, evidence-bound: the union of
+# each referencing entry's `techniques[]` frontmatter and its in-prose
+# T-ids (`content_model.entry_technique_ids`), revoked ids resolved forward.
+# Everything below degrades to nothing when the dataset is absent so the
+# site still builds — tools/check_run.py is what FAILs a missing dataset.
+
+ATTACK = content_model.load_attack_dataset() or {}
+ATTACK_TECHNIQUES: dict[str, dict[str, Any]] = ATTACK.get("techniques") or {}
+ATTACK_TACTICS: list[dict[str, Any]] = ATTACK.get("tactics") or []
+ATTACK_VERSION: str = str(ATTACK.get("attack_version") or "")
+NAVIGATOR_LAYER_VERSION = "4.5"   # layer-format version understood by the
+                                  # ATT&CK Navigator (mitre-attack/attack-navigator)
+
+
+def techniques_by_entry(entries: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """{entry id: [technique ids]} for every entry, empty without a dataset."""
+    if not ATTACK_TECHNIQUES:
+        return {}
+    return {
+        e["id"]: content_model.entry_technique_ids(e, ATTACK_TECHNIQUES)
+        for e in entries
+    }
+
+
+def attack_technique_label(tid: str) -> str:
+    """Navigator-style display name: sub-techniques as `Parent: Sub`."""
+    rec = ATTACK_TECHNIQUES.get(tid) or {}
+    name = str(rec.get("name") or tid)
+    if rec.get("subtechnique"):
+        parent = ATTACK_TECHNIQUES.get(str(rec.get("parent") or "")) or {}
+        if parent.get("name"):
+            return f"{parent['name']}: {name}"
+    return name
+
+
+def group_techniques_by_tactic(tids: list[str]) -> list[tuple[dict[str, Any], list[str]]]:
+    """[(tactic record, [technique ids])] in official matrix order; a
+    technique appears under every tactic it maps (like the Navigator).
+    Ids the pinned dataset does not know land under a synthetic
+    `unmapped` bucket at the end instead of being dropped."""
+    buckets: dict[str, list[str]] = {t["shortname"]: [] for t in ATTACK_TACTICS}
+    unmapped: list[str] = []
+    for tid in sorted(tids):
+        rec = ATTACK_TECHNIQUES.get(tid)
+        placed = False
+        for short in (rec or {}).get("tactics") or []:
+            if short in buckets:
+                buckets[short].append(tid)
+                placed = True
+        if not placed:
+            unmapped.append(tid)
+    out: list[tuple[dict[str, Any], list[str]]] = [
+        (t, buckets[t["shortname"]]) for t in ATTACK_TACTICS if buckets[t["shortname"]]
+    ]
+    if unmapped:
+        out.append((
+            {"shortname": "unmapped", "name": "Not in pinned ATT&CK release",
+             "id": "", "definition": "", "url": ""},
+            unmapped,
+        ))
+    return out
+
+
+def _attack_lifecycle_badge(tid: str) -> str:
+    rec = ATTACK_TECHNIQUES.get(tid) or {}
+    if rec.get("revoked"):
+        fwd = rec.get("revoked_by")
+        return (f'<span class="badge badge--low" title="Revoked by MITRE'
+                + (f'; superseded by {_escape(str(fwd))}' if fwd else "")
+                + '">revoked</span>')
+    if rec.get("deprecated"):
+        return '<span class="badge badge--low" title="Deprecated by MITRE">deprecated</span>'
+    return ""
+
+
+def render_entity_attack_section(entity: dict[str, Any], *, prefix: str) -> str:
+    """The entity page's `ATT&CK techniques` section: evidence-bound TTPs
+    grouped by tactic (matrix order), each with the pinned release's
+    definition and the entries that support it, plus the Navigator-layer
+    export and a jump into the overlap matrix."""
+    tech: dict[str, list[str]] = entity.get("techniques") or {}
+    if not tech or not ATTACK_TECHNIQUES:
+        return ""
+    key = str(entity.get("key") or "")
+    evidence_entries = {eid for eids in tech.values() for eid in eids}
+    groups = group_techniques_by_tactic(list(tech))
+    group_blocks: list[str] = []
+    for tac, tids in groups:
+        rows: list[str] = []
+        for tid in tids:
+            rec = ATTACK_TECHNIQUES.get(tid) or {}
+            eids = sorted(set(tech.get(tid) or []), reverse=True)
+            entry_links = " · ".join(
+                f'<a href="{prefix}entries/{_escape(eid)}/" class="mono">{_escape(eid)}</a>'
+                for eid in eids[:6]
+            ) + (f' <span class="muted">+{len(eids) - 6} more</span>' if len(eids) > 6 else "")
+            mitre_link = (
+                f' · <a href="{_escape(_safe_url(str(rec.get("url") or "")))}" target="_blank" '
+                f'rel="noopener noreferrer">ATT&CK page ↗</a>'
+            ) if rec.get("url") else ""
+            definition = str(rec.get("definition") or "").strip()
+            def_html = f"<p>{_escape(definition)}</p>" if definition else ""
+            rows.append(
+                '<details class="atk-row">'
+                f'<summary><span class="mono atk-id">{_escape(tid)}</span>'
+                f'<span class="atk-name">{_escape(attack_technique_label(tid))}</span>'
+                f'<span class="badge badge--low" title="Published entries mapping this technique">×{len(eids)}</span>'
+                f"{_attack_lifecycle_badge(tid)}</summary>"
+                f'<div class="atk-def">{def_html}'
+                f'<p class="muted">Evidence: {entry_links}{mitre_link}</p>'
+                "</div></details>"
+            )
+        group_blocks.append(
+            '<div class="atk-group">'
+            f'<h4 class="atk-tactic">{_escape(str(tac.get("name") or ""))}'
+            + (f' <span class="mono muted">{_escape(str(tac.get("id") or ""))}</span>'
+               if tac.get("id") else "")
+            + f"</h4>{''.join(rows)}</div>"
+        )
+    matrix_href = f'{prefix}attack/?sel={urllib.parse.quote(key, safe="")}'
+    return (
+        '<div class="ops-section" id="attack">'
+        '<h2 class="section-head" style="margin-top:1.5rem">ATT&CK techniques</h2>'
+        '<p class="muted" style="margin-top:0.3rem">'
+        f"{len(tech)} technique{'s' if len(tech) != 1 else ''} observed across "
+        f"{len(evidence_entries)} entr{'ies' if len(evidence_entries) != 1 else 'y'} — "
+        "derived from entry metadata and body evidence, never asserted without a "
+        f"published entry behind it · pinned to MITRE ATT&CK v{_escape(ATTACK_VERSION)} · "
+        f'<a href="{_escape(matrix_href)}">compare on the matrix</a> · '
+        '<a href="attack-layer.json" download>Navigator layer (JSON)</a>'
+        "</p>"
+        + "".join(group_blocks)
+        + "</div>"
+    )
+
+
+def attack_navigator_layer(entity: dict[str, Any]) -> dict[str, Any] | None:
+    """An ATT&CK Navigator layer (layer format 4.5) for one entity's
+    evidence-bound techniques — score = number of published entries mapping
+    the technique; comments carry the entry ids. Importable at
+    https://mitre-attack.github.io/attack-navigator/ ."""
+    tech: dict[str, list[str]] = entity.get("techniques") or {}
+    if not tech or not ATTACK_VERSION:
+        return None
+    max_score = max(len(v) for v in tech.values())
+    records: list[dict[str, Any]] = []
+    parents_with_subs: set[str] = set()
+    for tid, eids in sorted(tech.items()):
+        uniq = sorted(set(eids))
+        records.append({
+            "techniqueID": tid,
+            "score": len(uniq),
+            "comment": "entries: " + ", ".join(uniq),
+        })
+        rec = ATTACK_TECHNIQUES.get(tid) or {}
+        if rec.get("subtechnique") and rec.get("parent"):
+            parents_with_subs.add(str(rec["parent"]))
+    scored = {r["techniqueID"] for r in records}
+    for r in records:
+        if r["techniqueID"] in parents_with_subs:
+            r["showSubtechniques"] = True
+    for parent in sorted(parents_with_subs - scored):
+        records.append({"techniqueID": parent, "showSubtechniques": True})
+    return {
+        "name": f"{entity.get('title') or entity.get('key')} — {SITE_NAME} coverage",
+        "versions": {
+            "attack": ATTACK_VERSION.split(".")[0],
+            "layer": NAVIGATOR_LAYER_VERSION,
+            "navigator": "5.1.0",
+        },
+        "domain": "enterprise-attack",
+        "description": (
+            f"Evidence-bound MITRE ATT&CK techniques observed in {SITE_NAME} "
+            f"entries referencing {entity.get('title') or entity.get('key')}. "
+            "Score = number of published entries mapping the technique. "
+            f"Pinned dataset: ATT&CK v{ATTACK_VERSION}."
+        ),
+        "sorting": 3,
+        "layout": {"layout": "side", "showID": True, "showName": True},
+        "hideDisabled": False,
+        "techniques": records,
+        "gradient": {
+            "colors": ["#ffe766", "#ff6666"],
+            "minValue": 0,
+            "maxValue": max_score,
+        },
+        "legendItems": [],
+        "metadata": [
+            {"name": "source", "value": SITE_NAME},
+            {"name": "entity", "value": str(entity.get("key") or "")},
+            {"name": "attack_version", "value": ATTACK_VERSION},
+        ],
+    }
+
+
+def build_attack_data_payload(
+    entities_list: list[dict[str, Any]], *, generated_at: str
+) -> dict[str, Any]:
+    """data/attack.json — the client-side dataset for /attack/'s overlap
+    view (assets/js/attack.js): the pinned release's active technique
+    universe + matrix order, and every entity's derived technique counts.
+    Definitions stay server-rendered (they live in the page HTML), keeping
+    this payload lean."""
+    techniques: dict[str, dict[str, Any]] = {}
+    for tid, rec in ATTACK_TECHNIQUES.items():
+        if rec.get("revoked") or rec.get("deprecated"):
+            continue
+        techniques[tid] = {
+            "name": rec.get("name"),
+            "tactics": list(rec.get("tactics") or []),
+            "parent": rec.get("parent"),
+        }
+    ents: list[dict[str, Any]] = []
+    for ent in entities_list:
+        tech = ent.get("techniques") or {}
+        if not tech or ent.get("merged_into"):
+            continue
+        ents.append({
+            "key": ent["key"],
+            "type": ent.get("type") or "",
+            "title": ent.get("title") or ent["key"],
+            "techniques": {tid: len(set(eids)) for tid, eids in sorted(tech.items())},
+        })
+    ents.sort(key=lambda r: (-len(r["techniques"]), str(r["title"]).lower()))
+    return {
+        "attack_version": ATTACK_VERSION,
+        "generated_at": generated_at,
+        "tactics": [
+            {"id": t.get("id"), "shortname": t.get("shortname"), "name": t.get("name")}
+            for t in ATTACK_TACTICS
+        ],
+        "techniques": techniques,
+        "entities": ents,
+    }
+
+
+def render_attack_matrix_page(
+    entities_list: list[dict[str, Any]],
+    attack_usage: dict[str, list[str]],
+    *,
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+) -> str:
+    """/attack/ — the Navigator-style coverage matrix. Server-rendered:
+    the full enterprise matrix in official tactic order, cells heat-shaded
+    by store-wide entry coverage, plus a per-technique evidence directory
+    (definitions, entities, entries) that doubles as the no-JS fallback.
+    assets/js/attack.js adds the interactive part: multi-select entities
+    (actors / campaigns / malware / CVEs) and shade the matrix by how many
+    of the selection use each technique — ATT&CK-Navigator-layer semantics
+    without leaving the site. `attack_usage` is {technique id: [entry ids]}
+    across the whole store."""
+    if not ATTACK_TECHNIQUES:
+        body = (
+            "<h1>ATT&CK coverage matrix</h1>"
+            '<p class="subtitle">The pinned ATT&CK dataset '
+            "(<code>attack/enterprise-attack.json</code>) is missing — run "
+            "<code>python3 tools/attack_data.py --update</code>.</p>"
+        )
+        return base_template(
+            title="ATT&CK matrix", description="ATT&CK coverage matrix.",
+            body=body, canonical=canonical, site_url=site_url,
+            cachebust=cachebust, home_relative_prefix=prefix,
+        )
+
+    active = {
+        tid: rec for tid, rec in ATTACK_TECHNIQUES.items()
+        if not rec.get("revoked") and not rec.get("deprecated")
+    }
+    children: dict[str, list[str]] = defaultdict(list)
+    for tid, rec in active.items():
+        if rec.get("subtechnique") and rec.get("parent"):
+            children[str(rec["parent"])].append(tid)
+
+    def rollup_entries(parent: str) -> set[str]:
+        out = set(attack_usage.get(parent) or [])
+        for sub in children.get(parent, []):
+            out.update(attack_usage.get(sub) or [])
+        return out
+
+    def heat_class(n: int) -> str:
+        if n >= 8:
+            return "h4"
+        if n >= 4:
+            return "h3"
+        if n >= 2:
+            return "h2"
+        if n >= 1:
+            return "h1"
+        return "h0"
+
+    # --- The matrix ------------------------------------------------------
+    covered_parents = 0
+    columns: list[str] = []
+    for tac in ATTACK_TACTICS:
+        short = tac["shortname"]
+        parents = sorted(
+            (tid for tid, rec in active.items()
+             if not rec.get("subtechnique") and short in (rec.get("tactics") or [])),
+            key=lambda t: str(active[t].get("name") or t).lower(),
+        )
+        cells: list[str] = []
+        col_covered = 0
+        for tid in parents:
+            rec = active[tid]
+            n = len(rollup_entries(tid))
+            if n:
+                col_covered += 1
+            subs = children.get(tid, [])
+            covered_subs = sum(1 for s in subs if attack_usage.get(s))
+            sub_hint = (
+                f'<span class="atk-sub" title="{covered_subs} of {len(subs)} sub-techniques covered">'
+                f"▸{covered_subs}/{len(subs)}</span>"
+            ) if subs else ""
+            tooltip = str(rec.get("definition") or "")[:220]
+            cells.append(
+                f'<a class="atk-cell {heat_class(n)}" href="#{_escape(tid)}" '
+                f'data-tid="{_escape(tid)}" data-subs="{_escape(",".join(subs))}" '
+                f'title="{_escape(tooltip)}">'
+                f'<span class="atk-cell-name">{_escape(str(rec.get("name") or tid))}</span>'
+                f'<span class="atk-cell-meta"><span class="mono">{_escape(tid)}</span>'
+                + (f'<span class="atk-count" title="Published entries mapping this technique or a sub-technique">{n}</span>' if n else "")
+                + f"{sub_hint}</span>"
+                '<span class="atk-dots" data-dots></span></a>'
+            )
+        covered_parents += col_covered
+        columns.append(
+            '<div class="atk-col">'
+            f'<div class="atk-colhead"><b>{_escape(str(tac.get("name") or ""))}</b>'
+            f'<span class="muted">{col_covered}/{len(parents)} · <span class="mono">{_escape(str(tac.get("id") or ""))}</span></span>'
+            f"</div>{''.join(cells)}</div>"
+        )
+
+    # --- Per-technique evidence directory (no-JS fallback + anchors) -----
+    ent_by_tid: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for ent in entities_list:
+        if ent.get("merged_into"):
+            continue
+        for tid, eids in (ent.get("techniques") or {}).items():
+            ent_by_tid[tid].append({"ent": ent, "count": len(set(eids))})
+    directory_blocks: list[str] = []
+    for tac, tids in group_techniques_by_tactic(sorted(attack_usage)):
+        rows: list[str] = []
+        for tid in tids:
+            rec = ATTACK_TECHNIQUES.get(tid) or {}
+            eids = sorted(set(attack_usage.get(tid) or []), reverse=True)
+            holders = sorted(ent_by_tid.get(tid, []),
+                             key=lambda r: (-r["count"], str(r["ent"].get("title") or "").lower()))
+            chips = " ".join(
+                f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(h["ent"]["key"]), safe="")}/">'
+                f'{_escape(str(h["ent"].get("title") or h["ent"]["key"]))}'
+                f' <span class="mono">×{h["count"]}</span></a>'
+                for h in holders[:8]
+            ) + (f' <span class="muted">+{len(holders) - 8} more</span>' if len(holders) > 8 else "")
+            entry_links = " · ".join(
+                f'<a href="{prefix}entries/{_escape(eid)}/" class="mono">{_escape(eid)}</a>'
+                for eid in eids[:5]
+            ) + (f' <span class="muted">+{len(eids) - 5} more</span>' if len(eids) > 5 else "")
+            definition = str(rec.get("definition") or "").strip()
+            mitre_link = (
+                f' · <a href="{_escape(_safe_url(str(rec.get("url") or "")))}" target="_blank" '
+                'rel="noopener noreferrer">ATT&CK page ↗</a>'
+            ) if rec.get("url") else ""
+            rows.append(
+                f'<details class="atk-row" id="{_escape(tid)}">'
+                f'<summary><span class="mono atk-id">{_escape(tid)}</span>'
+                f'<span class="atk-name">{_escape(attack_technique_label(tid))}</span>'
+                f'<span class="badge badge--low">×{len(eids)}</span>'
+                f"{_attack_lifecycle_badge(tid)}</summary>"
+                f'<div class="atk-def">'
+                + (f"<p>{_escape(definition)}</p>" if definition else "")
+                + (f'<p class="atk-holders">{chips}</p>' if chips else "")
+                + f'<p class="muted">Evidence: {entry_links}{mitre_link}</p>'
+                "</div></details>"
+            )
+        directory_blocks.append(
+            '<div class="atk-group">'
+            f'<h3 class="atk-tactic">{_escape(str(tac.get("name") or ""))}'
+            + (f' <span class="mono muted">{_escape(str(tac.get("id") or ""))}</span>'
+               if tac.get("id") else "")
+            + f"</h3>{''.join(rows)}</div>"
+        )
+
+    n_active_parents = sum(1 for r in active.values() if not r.get("subtechnique"))
+    n_covered = len([t for t in attack_usage if t in active])
+    n_covered_subs = sum(
+        1 for t in attack_usage if active.get(t, {}).get("subtechnique")
+    )
+    mapped_entities = [e for e in entities_list
+                       if (e.get("techniques") and not e.get("merged_into"))]
+
+    config = {
+        "data_url": "data/attack.json",
+        "max_selection": 8,
+    }
+    data_island = (
+        '<script type="application/json" id="attack-config">'
+        + _escape_json_island(json.dumps(config, sort_keys=True))
+        + "</script>"
+    )
+
+    body = f"""
+<h1>ATT&CK coverage matrix</h1>
+<p class="subtitle" style="max-width:64rem">
+  Every technique this pipeline has evidence for, on the full MITRE ATT&CK Enterprise matrix.
+  Mappings are derived from published entries only — an entity or CVE maps a technique exactly
+  when a published entry ties them together. Pick entities below to compare their TTP overlap
+  the way an ATT&CK Navigator layer would show it.
+</p>
+<p class="muted">
+  Pinned dataset: <strong>MITRE ATT&CK Enterprise v{_escape(ATTACK_VERSION)}</strong>
+  (upstream {_escape(str(ATTACK.get("upstream_modified") or ""))[:10]})
+  · {n_covered} of {len(active)} active techniques covered
+  ({n_covered - n_covered_subs} of {n_active_parents} parent · {n_covered_subs} sub)
+  · {len(mapped_entities)} entities with mappings
+  · updated via <code>tools/attack_data.py</code>
+  · definitions © <a href="https://attack.mitre.org/resources/legal-and-branding/terms-of-use/"
+      target="_blank" rel="noopener noreferrer">The MITRE Corporation</a>
+</p>
+
+<div class="atk-picker panel" data-attack-picker hidden>
+  <div class="atk-picker-head">
+    <label for="atk-q"><strong>Compare entities</strong> — actors, campaigns, malware, incidents, CVEs</label>
+    <div class="atk-modes" role="group" aria-label="Overlap mode">
+      <button type="button" class="mini-btn active" data-atk-mode="any" title="Shade techniques used by at least one selected entity">union</button>
+      <button type="button" class="mini-btn" data-atk-mode="overlap" title="Shade only techniques shared by two or more selected entities">overlap ≥2</button>
+      <button type="button" class="mini-btn" data-atk-mode="all" title="Shade only techniques common to every selected entity">common to all</button>
+    </div>
+  </div>
+  <input id="atk-q" type="search" autocomplete="off" spellcheck="false"
+         placeholder="Type an actor / campaign / malware / CVE… (e.g. Akira, ShinyHunters, CVE-2026-34038)" />
+  <ul class="atk-suggest" data-atk-suggest hidden></ul>
+  <div class="atk-chips" data-atk-chips></div>
+  <div class="atk-picker-foot muted">
+    <span data-atk-status>No selection — cells show store-wide coverage heat.</span>
+    <button type="button" class="mini-btn" data-atk-export hidden
+            title="Download the current selection as an ATT&CK Navigator layer (format {NAVIGATOR_LAYER_VERSION})">export Navigator layer</button>
+    <button type="button" class="mini-btn" data-atk-clear hidden>clear</button>
+  </div>
+</div>
+<noscript><p class="muted">Interactive entity comparison needs JavaScript — the coverage
+heat map and the per-technique evidence directory below work without it. Per-entity
+Navigator layers are downloadable from each entity page.</p></noscript>
+
+<div class="atk-matrix-wrap" tabindex="0" aria-label="ATT&CK matrix — horizontally scrollable">
+  <div class="atk-matrix">{''.join(columns)}</div>
+</div>
+<p class="muted atk-legend">
+  Cell shading = published-entry coverage of the technique or its sub-techniques
+  (<span class="atk-swatch h1"></span>1 · <span class="atk-swatch h2"></span>2–3 ·
+   <span class="atk-swatch h3"></span>4–7 · <span class="atk-swatch h4"></span>8+).
+  ▸ marks covered/total sub-techniques. Click a cell for definition and evidence.
+</p>
+
+<h2 class="section-head" style="margin-top:2rem">Covered techniques — definitions &amp; evidence</h2>
+{''.join(directory_blocks) or '<p class="muted">No technique evidence in the store yet.</p>'}
+{data_island}
+"""
+    return base_template(
+        title=f"ATT&CK coverage matrix · v{ATTACK_VERSION}",
+        description=(
+            f"MITRE ATT&CK Enterprise v{ATTACK_VERSION} coverage matrix — "
+            "evidence-bound technique mappings for every tracked actor, campaign, "
+            "malware family and CVE, with Navigator-style multi-entity overlap."
+        ),
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+        extra_head=f'<script defer src="{prefix}assets/js/attack.js?v={cachebust}"></script>',
+        seo={
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("ATT&CK matrix", canonical),
             ],
         },
     )
@@ -9265,6 +9780,15 @@ def main() -> int:
     cves_list = [e for e in entities_list if e.get("type") == "cve"]
     topics_list = [e for e in entities_list if e.get("type") != "cve"]
 
+    # Store-wide ATT&CK usage: {technique id: [entry ids]} — drives the
+    # /attack/ matrix heat, the technique directory, and the search index.
+    tech_by_entry_all = techniques_by_entry(entries)
+    attack_usage: dict[str, list[str]] = defaultdict(list)
+    for eid, tids in tech_by_entry_all.items():
+        for tid in tids:
+            attack_usage[tid].append(eid)
+    attack_usage = {t: sorted(set(v)) for t, v in attack_usage.items()}
+
     manifest_pages: dict[str, dict[str, Any]] = {}
     sitemap: list[tuple[str, str]] = []
 
@@ -9472,6 +9996,15 @@ def main() -> int:
             ),
             lastmod=(ent.get("last_covered") or "")[:10],
         )
+        # Evidence-bound ATT&CK Navigator layer for every mapped entity —
+        # sits next to the page (…/attack-layer.json) so the page's
+        # download link is a plain relative href.
+        layer = attack_navigator_layer(ent)
+        if layer is not None:
+            atomic_write_text(
+                OUT / urllib.parse.unquote(rel_url) / "attack-layer.json",
+                json.dumps(layer, indent=1, sort_keys=True),
+            )
         if ent.get("type") == "cve" and CVE_RE.fullmatch(ekey):
             stub_rel = f"cves/{ekey}/"
         else:
@@ -9560,6 +10093,7 @@ def main() -> int:
         "entities": len(entities_list),
         "cves": len(cves_list),
         "sources": len(sources["sources"]),
+        "attack_techniques_covered": len(attack_usage),
     }
     emit_html(
         "",
@@ -9732,6 +10266,15 @@ def main() -> int:
         lastmod=ref.strftime("%Y-%m-%d"),
     )
     emit_html(
+        "attack/",
+        render_attack_matrix_page(
+            entities_list, attack_usage,
+            site_url=site_url, cachebust=cachebust,
+            prefix="../", canonical=site_url + "attack/",
+        ),
+        lastmod=ref.strftime("%Y-%m-%d"),
+    )
+    emit_html(
         "feeds/",
         render_feeds_page(
             site_url=site_url, cachebust=cachebust,
@@ -9834,6 +10377,12 @@ def main() -> int:
     atomic_write_text(
         OUT / "data" / "alerts.json", json.dumps(alerts, indent=2, sort_keys=True)
     )
+    attack_payload = build_attack_data_payload(
+        entities_list, generated_at=ref.strftime("%Y-%m-%dT%H:%M:%SZ")
+    )
+    atomic_write_text(
+        OUT / "data" / "attack.json", json.dumps(attack_payload, sort_keys=True)
+    )
 
     # ---- Manifest --------------------------------------------------------
     manifest = {
@@ -9890,6 +10439,20 @@ def main() -> int:
             "hint": f"{ent.get('type', '')} · last covered {ent.get('last_covered') or '?'}",
             "route": f"entities/{urllib.parse.quote(ent['key'], safe='')}/",
             "tags": [ent.get("type") or ""] + (ent.get("flags") or []),
+        })
+    for tid in sorted(attack_usage):
+        rec = ATTACK_TECHNIQUES.get(tid) or {}
+        tac_names = ", ".join(
+            t.get("name") or "" for t in ATTACK_TACTICS
+            if t.get("shortname") in (rec.get("tactics") or [])
+        )
+        search_idx.append({
+            "kind": "technique",
+            "id": tid,
+            "title": f"{tid} · {attack_technique_label(tid)}",
+            "hint": (tac_names + " · " + str(rec.get("definition") or ""))[:240],
+            "route": f"attack/#{tid}",
+            "tags": list(rec.get("tactics") or []),
         })
     for s in sources["sources"]:
         cats_str = ", ".join(s.get("category") or [])

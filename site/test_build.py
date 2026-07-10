@@ -911,6 +911,82 @@ assert_eq("ml: id alone recovers an empty friendly", _ml("", "claude-sonnet-5"),
 assert_eq("ml: friendly alone still works", _ml("Sonnet 5"), "Claude Sonnet 5")
 
 # ---------------------------------------------------------------------
+# MITRE ATT&CK mapping — dataset-driven derivation, aggregation, exports
+# ---------------------------------------------------------------------
+# Runs against the committed pin (attack/enterprise-attack.json). The
+# section self-skips when the dataset is absent so a fresh fork without
+# the pin still gets a green baseline (check_run.py is what enforces the
+# dataset's presence).
+print("== ATT&CK mapping ==")
+if build.ATTACK_TECHNIQUES:
+    _TT = build.ATTACK_TECHNIQUES
+    # entry_technique_ids: frontmatter ∪ prose, dataset-filtered.
+    _fixture = {"techniques": ["T1190"],
+                "body": "Execution via T1059 scripts; junk token T9999 must drop."}
+    _got = content_model.entry_technique_ids(_fixture, _TT)
+    assert_true("frontmatter + prose union", {"T1190", "T1059"}.issubset(set(_got)))
+    assert_true("unknown prose T-token filtered by the pin", "T9999" not in _got)
+    assert_true("no dataset → frontmatter only",
+                content_model.entry_technique_ids(_fixture, {}) == ["T1190"])
+    # revoked_by forwarding (the ATT&CK analogue of registry tombstones).
+    _revoked = next((t for t, r in sorted(_TT.items())
+                     if r.get("revoked") and r.get("revoked_by")), None)
+    if _revoked:
+        _fwd = content_model.resolve_technique_id(_TT, _revoked)
+        assert_true("revoked id resolves forward to a survivor",
+                    _fwd != _revoked and not _TT[_fwd].get("revoked"))
+        _got2 = content_model.entry_technique_ids(
+            {"techniques": [], "body": f"prose cites {_revoked} here"}, _TT)
+        assert_true("prose revoked id lands on the survivor",
+                    _fwd in _got2 and _revoked not in _got2)
+    # Entity aggregation is evidence-bound: technique -> supporting entry ids.
+    _e_hi = dict(E_HIGH)
+    _e_hi["techniques"] = ["T1190"]
+    _ents_atk, _m_atk = build_entities(REGISTRY, [_e_hi], CVES_SEEN, SOURCES_RAW, day_pages)
+    _fox_atk = {e["key"]: e for e in _ents_atk}["actor:testfox"]
+    assert_eq("entity aggregates techniques with entry evidence",
+              _fox_atk["techniques"].get("T1190"), [_e_hi["id"]])
+    # Navigator layer export.
+    _layer = build.attack_navigator_layer(_fox_atk)
+    assert_true("layer scores the technique by evidence count",
+                any(t.get("techniqueID") == "T1190" and t.get("score") == 1
+                    for t in _layer["techniques"]))
+    assert_eq("layer pins the ATT&CK major version",
+              _layer["versions"]["attack"], build.ATTACK_VERSION.split(".")[0])
+    assert_eq("layer format version", _layer["versions"]["layer"],
+              build.NAVIGATOR_LAYER_VERSION)
+    # Entity page section.
+    _sec = build.render_entity_attack_section(_fox_atk, prefix="../../")
+    assert_in("entity section names the technique", "T1190", _sec)
+    assert_in("entity section links the Navigator layer", "attack-layer.json", _sec)
+    assert_in("entity section links the overlap matrix",
+              "attack/?sel=actor%3Atestfox", _sec)
+    assert_in("entity section carries the pinned version", build.ATTACK_VERSION, _sec)
+    # Matrix page (server-rendered heat + directory + data island).
+    _page = build.render_attack_matrix_page(
+        _ents_atk, {"T1190": [_e_hi["id"]]},
+        site_url="https://example.test/", cachebust="cb",
+        prefix="../", canonical="https://example.test/attack/")
+    assert_in("matrix renders the covered cell", 'data-tid="T1190"', _page)
+    assert_in("matrix renders every tactic column",
+              build.ATTACK_TACTICS[-1]["name"], _page)
+    assert_in("matrix shows the pinned version", build.ATTACK_VERSION, _page)
+    assert_in("matrix embeds the JS config island", 'id="attack-config"', _page)
+    assert_in("directory row anchors the technique", 'id="T1190"', _page)
+    # Client payload.
+    _payload = build.build_attack_data_payload(_ents_atk, generated_at="2026-07-09T00:00:00Z")
+    _pl_fox = next(e for e in _payload["entities"] if e["key"] == "actor:testfox")
+    assert_eq("payload carries evidence counts", _pl_fox["techniques"], {"T1190": 1})
+    assert_true("payload excludes revoked/deprecated techniques",
+                all(not _TT[t].get("revoked") and not _TT[t].get("deprecated")
+                    for t in _payload["techniques"]))
+    assert_eq("payload tactic order matches the pin",
+              [t["shortname"] for t in _payload["tactics"]],
+              [t["shortname"] for t in build.ATTACK_TACTICS])
+else:
+    print("  (skipped — attack/enterprise-attack.json not present)")
+
+# ---------------------------------------------------------------------
 # Result
 # ---------------------------------------------------------------------
 print()

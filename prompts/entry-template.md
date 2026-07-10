@@ -13,19 +13,23 @@ file only shows the rendered shape.
 ## Worked-good body fragment (illustrative, not topic guidance)
 
 This is the technical specificity every entry body must carry where the
-source supports it — exact vulnerable component path, technique class with
-MITRE ATT&CK IDs, exploitation prerequisites, affected and patched versions
-to vendor-stated precision, named campaign clusters, behavioural detection
-and hardening tied to the specificity (no IOCs, no rule code).
+source supports it — exact vulnerable component path, technique class
+described as behavior (the MITRE ATT&CK ids live in `techniques[]`
+frontmatter, inline in prose only where essential), exploitation
+prerequisites, affected and patched versions to vendor-stated precision,
+named campaign clusters, behavioural detection and hardening tied to the
+specificity (no IOCs, no rule code).
 
-> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DoH traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). The install-time execution is a supply-chain compromise (`T1195.002`) and the DoH channel is DNS-based application-layer C2 (`T1071.004`) — both IDs tied to the behavior in prose, mirrored in `techniques[]`. Detection concepts, telemetry-class first: in process-creation telemetry with parent lineage (e.g. Sysmon EID 1, auditd `execve`, EDR process events), alert on script interpreters (`osascript`, `powershell.exe -enc`) spawning from `node` / `npm` / `npx` parent trees; inventory installed `@org/*` package versions across developer endpoints; in egress telemetry, surface DoH resolvers other than the corporate ones. **Triage:** developer machines legitimately spawn interpreters from `node` trees during builds — the discriminators are the DoH egress to a non-corporate resolver in the same process tree and reads of browser cookie stores by a non-browser process; either alone is weak, the sequence is the signal. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
+> A supply-chain compromise injected a malicious post-install script into the fictitious npm `@org/x-cli` package across versions 4.2.7 → 4.3.1; the script invokes `osascript` on macOS / `powershell.exe -enc` on Windows to harvest browser cookie jars from each browser's per-profile cookie store on disk and exfiltrates them via DNS-over-HTTPS to an attacker-operated edge-serverless resolver — TLS-encrypted, blends with normal browser DoH traffic, evades classic egress proxies that don't terminate DoH ([Vendor primary, YYYY-MM-DD](url)). The install-time execution is a supply-chain compromise of the package's install hook and the DoH channel is DNS-based application-layer command-and-control — both mapped in this entry's `techniques[]` frontmatter (`T1195.002`, `T1071.004`), which is where machine consumers and the ATT&CK matrix read them; the prose stays readable without the numbers. Detection concepts, telemetry-class first: in process-creation telemetry with parent lineage (e.g. Sysmon EID 1, auditd `execve`, EDR process events), alert on script interpreters (`osascript`, `powershell.exe -enc`) spawning from `node` / `npm` / `npx` parent trees; inventory installed `@org/*` package versions across developer endpoints; in egress telemetry, surface DoH resolvers other than the corporate ones. **Triage:** developer machines legitimately spawn interpreters from `node` trees during builds — the discriminators are the DoH egress to a non-corporate resolver in the same process tree and reads of browser cookie stores by a non-browser process; either alone is weak, the sequence is the signal. Hardening: pin npm dependencies via lockfile + `--ignore-scripts`; require signed packages for the affected scope. Affected versions: 4.2.7 through 4.3.1; fixed in 4.3.2.
 
 The example is purely illustrative — actual depth is whatever the linked
 primary source supports. **Better to write less than to fabricate
 plausible-sounding specifics** (PD-1). Note the shape: telemetry class
 leads and platform-native names (Sysmon EID 1) are *examples*, so any
-stack — and an automated triage agent — can map the behavior; ATT&CK IDs
-sit at the behavior they name, never in a bare list; the `**Triage:**`
+stack — and an automated triage agent — can map the behavior; ATT&CK ids
+live in `techniques[]` frontmatter (the canonical mapping surface,
+validated against the pinned `attack/enterprise-attack.json`) and appear
+inline only where essential, never as a bare list; the `**Triage:**`
 discriminator derives mechanically from the cited mechanism and is
 omitted entirely when the sources give no honest basis for one.
 
@@ -57,7 +61,10 @@ tags: [vulnerabilities, rce, actively-exploited, cisa-kev]
 regions: [global]
 sectors: [technology]
 entities: []
-techniques: [T1190, T1505.003]   # every ATT&CK id the body maps (T####[.###]); [] when none
+techniques: [T1190, T1505.003]   # every source-supported ATT&CK id (T####[.###]) — the canonical
+                                 # mapping surface; ACTIVE ids per attack/enterprise-attack.json;
+                                 # the body describes each behavior (inline ids only where
+                                 # essential); [] when none
 affected_products: ["{Vendor} {Product}"]   # official product names; [] when not product-specific
 cves:
   - id: CVE-YYYY-NNNNN

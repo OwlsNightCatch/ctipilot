@@ -22,6 +22,7 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 | Compact state digest | `python3 tools/run_summary.py --out work/<run-id>/state-summary.json` |
 | Bridge fetcher for known-403 hosts | `python3 tools/fetch_source.py {cisa-kev \| ncsc-csh recent N \| url <URL>}` |
 | Validate the org profile / re-render it into the prompts | `python3 tools/compose_prompts.py --check` / `--write` (also `--dump`, `--selftest`) |
+| ATT&CK pin: freshness / update / invariants | `python3 tools/attack_data.py {--check \| --update [--version X.Y] \| --selftest \| --info}` (contract: [attack/README.md](attack/README.md)) |
 
 `tools/check_run.py` MUST exit 0 before any commit that adds entries or a run record. The script is read-only; drift is what *you* fix.
 
@@ -39,7 +40,8 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 - **NEVER hand-edit an `ORG-PROFILE` managed block.** Organization values live in `config/org-profile.yaml`; `python3 tools/compose_prompts.py --write` regenerates the blocks in both master prompts, `prompts/verification.md`, and all three agent definitions. Any session that edits the config MUST compose and commit the composed files in the same commit.
 - **NEVER reintroduce a site-identity literal into `site/build.py`.** Every site name / tagline / color / analytics value comes from `config/branding.yaml` via `site/branding_config.py`. Fork contract: [docs/customization.md](docs/customization.md).
 - **NEVER put IOCs in an entry.** No hashes, no IPs, no attacker domains, no YARA/Sigma/Suricata. Entries are *knowledge* — TTPs, campaigns, vulnerabilities, detection concepts.
-- **ALWAYS compose entries triage-ready and vendor-agnostic.** The entry store is a threat-knowledge base for two readers of equal rank: human Tier 2/3 responders AND automated SOC/triage agents matching live alerts against it. Attacker activity is described as *observable behavior* — telemetry classes in vendor-neutral terms (platform artifacts as examples, never rule code), ATT&CK IDs woven into prose at the behavior they name (never bare ID lists) and mirrored in `techniques[]` frontmatter, official product names in `affected_products[]`, and a `**Triage:**` benign-lookalike discriminator where the cited mechanism supports one — omitted, never invented, where it doesn't. Master rules: `prompts/cti-run.md` Phase 4 § Triage-ready behavioral description.
+- **ALWAYS compose entries triage-ready and vendor-agnostic.** The entry store is a threat-knowledge base for two readers of equal rank: human Tier 2/3 responders AND automated SOC/triage agents matching live alerts against it. Attacker activity is described as *observable behavior* — telemetry classes in vendor-neutral terms (platform artifacts as examples, never rule code), official product names in `affected_products[]`, and a `**Triage:**` benign-lookalike discriminator where the cited mechanism supports one — omitted, never invented, where it doesn't. Master rules: `prompts/cti-run.md` Phase 4 § Triage-ready behavioral description.
+- **ALWAYS map ATT&CK in `techniques[]` metadata — keep T-ids out of prose unless essential.** `techniques[]` is the canonical, complete mapping surface (every technique the sources support, **active ids** per the pinned `attack/enterprise-attack.json`); entity/CVE TTP profiles, the `/attack/` overlap matrix and the Navigator-layer exports are all derived from it, evidence-bound. The body describes each mapped behavior in plain language and must read complete without a single T-number — inline ids only where they genuinely earn their place (deep-dive kill chains, a mapping that is itself the finding); bare ID lists are a defect. The pin is versioned: NEVER hand-edit the dataset, NEVER hardcode tactic/technique tables (releases rename tactics — v19 replaced Defense Evasion); update via `tools/attack_data.py --update` (weekly runs `--check` and surface drift). `check_run.py` FAILs a missing/broken pin and WARNs on unknown/revoked ids and unmirrored prose ids.
 - **NEVER `WebFetch` CISA / NCSC.ch directly** — both reliably 403 the routine UA. Use `python3 tools/fetch_source.py`.
 - **NEVER call `WebFetch` without the outbound-links template** (verbatim in `.claude/agents/cti-research.md` and `.claude/agents/cti-verification.md`) — the default summariser drops every URL.
 - **NEVER cite a homepage, listing index, news category, or NVD/MITRE per-CVE page as a source.** `check_run.py` FAILs these patterns. Use the specific article / advisory / vendor PSIRT URL.
@@ -107,6 +109,7 @@ config/org-profile.yaml            # org profile (compose_prompts.py renders it 
 config/branding.yaml               # site branding profile
 entries/YYYY-MM-DD/<slug>.md       # per-finding intelligence entries (immutable)
 entities/registry.yaml             # global entity registry (actors, campaigns, malware, …)
+attack/enterprise-attack.json      # pinned MITRE ATT&CK release (generated — tools/attack_data.py)
 runs/YYYY-MM-DD/<run-id>.md        # per-run records: telemetry frontmatter + verification notes
 sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; tier field)
 state/cves_seen.json               # flat CVE dedup index
@@ -115,6 +118,7 @@ site/content_model.py              # reference parser/validator (entries, regist
 site/build.py                      # static-site generator (dynamic /live/, day pages, weekly, ops, feeds)
 site/taxonomy.yaml                 # controlled vocabulary for entry frontmatter
 tools/check_run.py                 # Phase 5.5 gate (must exit 0)
+tools/attack_data.py               # ATT&CK dataset builder/updater (--check/--update/--selftest)
 tools/build_prior_coverage.py      # entry-store dedup index builder
 tools/run_summary.py               # compact state digest (+ 24 h budget snapshot)
 tools/migrate_briefs.py            # one-shot v2→v3 migration (kept for provenance)

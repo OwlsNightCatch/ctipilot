@@ -1614,6 +1614,115 @@ def _triage_kinds(profile: dict[str, Any] | None) -> set[str]:
     return {"vulnerability"}
 
 
+def check_attack_dataset() -> dict[str, Any]:
+    """attack/enterprise-attack.json is present and passes the
+    tools/attack_data.py invariants. FAIL when missing or broken — the
+    pinned ATT&CK release is what entity TTP sections, the /attack/ matrix
+    and the technique-id checks below all render and validate against
+    (contract: attack/README.md). Always resolved in the repo, like
+    state/ and sources/ — never under --root."""
+    rel = "attack/enterprise-attack.json"
+    path = ROOT / "attack" / "enterprise-attack.json"
+    if not path.exists():
+        fail("attack-dataset",
+             f"{rel} missing — run `python3 tools/attack_data.py --update`")
+        return {}
+    try:
+        ds = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:  # noqa: BLE001
+        fail("attack-dataset", f"{rel} unparseable: {e}")
+        return {}
+    try:
+        tools_dir = str(ROOT / "tools")
+        if tools_dir not in sys.path:
+            sys.path.insert(0, tools_dir)
+        import attack_data
+        errs = attack_data.selftest(ds)
+    except Exception as e:  # noqa: BLE001
+        errs = [f"cannot run tools/attack_data.py invariants: {e}"]
+    if errs:
+        for e in errs[:20]:
+            fail("attack-dataset", e)
+        if len(errs) > 20:
+            fail("attack-dataset", f"… and {len(errs) - 20} more invariant violations")
+        return {}
+    c = ds.get("counts") or {}
+    ok("attack-dataset",
+       f"ATT&CK v{ds.get('attack_version')} · {c.get('techniques_active')} active "
+       f"techniques · {c.get('tactics')} tactics")
+    return ds
+
+
+def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
+                         *, store_mode: bool = False) -> None:
+    """Entry technique ids vs the pinned ATT&CK release. All WARNs — id
+    *format* is already a FAIL in entry schema; these are release-drift and
+    completeness signals:
+
+      - `techniques[]` id unknown to the pin → typo, or the pin is older
+        than the id (run `tools/attack_data.py --check`)
+      - id revoked/deprecated upstream → forward pointer to the survivor
+      - run scope only: the body names ATT&CK ids in prose but
+        `techniques[]` is empty → the machine retrieval layer is missing
+        its mirror (prompts v3.17+ compose frontmatter-first)
+
+    In --all/store mode only the frontmatter-id checks run: legacy entries
+    are immutable, carry prose-only mappings by design (the site derives
+    them), and would drown the report otherwise."""
+    techniques = attack.get("techniques") or {}
+    if not techniques:
+        warn("attack-mapping", "skipped — no usable ATT&CK dataset (see attack-dataset)")
+        return
+    version = attack.get("attack_version")
+    n_issues = 0
+    n_mapped = 0
+    for e in scope_entries:
+        eid = e.get("id", "<unknown>")
+        fm = [t for t in (e.get("techniques") or []) if isinstance(t, str)]
+        if fm:
+            n_mapped += 1
+        for t in fm:
+            rec = techniques.get(t)
+            if rec is None:
+                n_issues += 1
+                warn("attack-mapping",
+                     f"{eid}: techniques[] id {t} unknown to pinned ATT&CK v{version} — "
+                     "typo, or the pin is stale (python3 tools/attack_data.py --check)")
+            elif rec.get("revoked"):
+                n_issues += 1
+                fwd = rec.get("revoked_by")
+                warn("attack-mapping",
+                     f"{eid}: techniques[] id {t} is revoked upstream"
+                     + (f" — superseded by {fwd}; reference the surviving id" if fwd else ""))
+            elif rec.get("deprecated"):
+                n_issues += 1
+                warn("attack-mapping", f"{eid}: techniques[] id {t} is deprecated upstream")
+        if store_mode:
+            continue
+        prose = sorted({
+            m for m in cm.PROSE_TECHNIQUE_RE.findall(e.get("body") or "")
+            if m in techniques
+        })
+        if prose and not fm:
+            n_issues += 1
+            head = ", ".join(prose[:5]) + (" …" if len(prose) > 5 else "")
+            warn("attack-mapping",
+                 f"{eid}: body names {len(prose)} ATT&CK id(s) ({head}) but techniques[] "
+                 "is empty — mirror every mapped behavior into the frontmatter "
+                 "(machine retrieval layer)")
+        else:
+            missing = [t for t in prose if t not in set(fm)]
+            if fm and missing:
+                n_issues += 1
+                warn("attack-mapping",
+                     f"{eid}: prose ids missing from techniques[]: {', '.join(missing[:8])}")
+    if not n_issues:
+        scope_word = "entries" if len(scope_entries) != 1 else "entry"
+        ok("attack-mapping",
+           f"{len(scope_entries)} {scope_word} consistent with pinned ATT&CK v{version} "
+           f"({n_mapped} carrying techniques[])")
+
+
 def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
     """org_triage consistency with the profiled triage scheme (WARN, not
     FAIL — v2 origin: check_org_triage ~line 2818). When the org profile
@@ -2032,6 +2141,10 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
     print("\n== all: CVE sync ==")
     check_cve_sync(entries, parsed_state.get("cves_seen.json"), scope_label="store")
 
+    print("\n== all: ATT&CK dataset + techniques[] ids ==")
+    attack_ds = check_attack_dataset()
+    check_attack_mapping(entries, attack_ds, store_mode=True)
+
     print("\n== all: run records ==")
     check_all_run_records(runs)
 
@@ -2160,6 +2273,10 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== CVE sync ==")
     check_cve_sync(run_entries, parsed_state.get("cves_seen.json"))
+
+    print("\n== ATT&CK dataset + technique mapping ==")
+    attack_ds = check_attack_dataset()
+    check_attack_mapping(run_entries, attack_ds)
 
     if run is not None:
         print("\n== sources.json bookkeeping ==")
