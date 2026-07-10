@@ -1,0 +1,150 @@
+domain: S3
+run_id: "2026-07-10T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-10T04:13:40Z"
+ended_at: "2026-07-10T04:23:36Z"
+duration_seconds: 596
+self_telemetry:
+  webfetch_calls: 17
+  websearch_calls: 13
+  bridge_fetches: 11
+items:
+  - title: "Huntress reconstructs a repeatable CitrixBleed 2 (CVE-2025-5777) to DragonForce ransomware kill chain run by an initial access broker (STAC3725)"
+    sources:
+      - { url: "https://www.huntress.com/blog/citrixbleed-2-dragonforce-ransomware", publisher: "Huntress", date: "2026-07-09", role: "primary" }
+      - { url: "https://www.itsecurityguru.org/2026/07/09/citrixbleed-2-exploited-in-repeatable-attack-chain-culminating-in-dragonforce-ransomware-researchers-find/", publisher: "IT Security Guru", date: "2026-07-09", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2025-5777", publisher: "NVD/MITRE", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://www.sophos.com/en-us/blog/qemu-abused-to-evade-detection-and-enable-ransomware-delivery", publisher: "Sophos X-Ops", date: "2026-02", role: "background" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml → primary: Huntress, URL https://www.huntress.com/blog/citrixbleed-2-dragonforce-ransomware → pivot: IT Security Guru, URL https://www.itsecurityguru.org/2026/07/09/citrixbleed-2-exploited-in-repeatable-attack-chain-culminating-in-dragonforce-ransomware-researchers-find/ → pivot: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2025-5777 → pivot: Sophos (STAC3725 background), URL https://www.sophos.com/en-us/blog/qemu-abused-to-evade-detection-and-enable-ransomware-delivery"
+    summary: |
+      Huntress reconstructed a single, mechanically consistent attack chain across at least six unrelated victims in H1 2026, beginning with exploitation of CVE-2025-5777 ("CitrixBleed 2") — a pre-auth memory-overread in NetScaler ADC/Gateway when configured as a Gateway (VPN/ICA-Proxy/CVPN/RDP-Proxy) or AAA virtual server. Malformed POST requests to the login endpoint with an empty login form field cause the appliance to serialise ~127 bytes of adjacent process memory into the response; sprayed at volume this yields live session tokens that fully bypass MFA because the hijacked session was already authenticated (one reconstructed case: legitimate LDAP+MFA logon, then the same session driven from the attacker's IP 21 minutes later with zero authentication events from that IP). Huntress ruled out the alternate NetScaler session-management flaw CVE-2026-4368 because affected builds and the required already-authenticated race condition didn't match. Post-compromise, every case used the same unsigned local-privilege-escalation tool: it plants a registry symbolic link (REG_LINK) under a device-class key that redirects into the Group Policy state hierarchy; triggering gpupdate makes the SYSTEM-context Group Policy engine write through the planted link, corrupting a protected config, and starting the built-in AppMgmt service causes the Service Control Manager to relaunch the attacker binary as SYSTEM — at which point a backdoor admin account is created via net user / net localgroup Administrators. The tool then restores the original registry state to remove forensic artefacts. Persistence rode on ScreenConnect and Zoho Assist (one case: Netbird+Atera), echoing infrastructure Sophos separately tracks as STAC3725. In the most advanced case the operator used PsExec, Impacket and Mimikatz for lateral movement/credential access before deploying DragonForce ransomware, contained to a single host. Huntress assesses high confidence this is a productised initial-access-broker runbook (identical LPE technique, rogue-account names, and C2 hostnames recurring across victims) rather than independent opportunistic attacks, and explicitly declines firm DragonForce-affiliate attribution given IAB/affiliate tactic overlap. Citrix's fixed versions: NetScaler ADC/Gateway 14.1 before 14.1-47.46, 13.1 before 13.1-59.19, 13.1-FIPS/NDcPP before 13.1-37.236, 12.1-FIPS before 12.1-55.328-FIPS.
+    region_nexus: "global; NetScaler ADC/Gateway is a widely deployed remote-access gateway across Swiss/EU public-sector and critical-infrastructure networks (this CVE has been KEV-listed and under active exploitation since July 2025)"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, healthcare, finance, telco"
+    cves: ["CVE-2025-5777"]
+    techniques: ["T1190", "T1550.001", "T1068", "T1112", "T1136.001", "T1098", "T1219", "T1003", "T1570", "T1486", "T1070"]
+    affected_products: ["Citrix NetScaler ADC", "Citrix NetScaler Gateway"]
+    entity_keys: ["actor:dragonforce"]
+    new_entities:
+      - { key: "campaign:stac3725-citrixbleed2-iab-dragonforce", type: campaign, name: "STAC3725 / CitrixBleed 2-to-DragonForce IAB chain", aliases: ["CitrixBleed 2 initial-access-broker runbook"], summary: "A repeatable initial-access-broker attack chain first tracked by Sophos as STAC3725: CVE-2025-5777 (CitrixBleed 2) session-token theft, a registry-symlink/AppMgmt local-privilege-escalation tool, ScreenConnect/Zoho Assist persistence, and — in the most progressed case documented by Huntress — DragonForce ransomware deployment (Huntress, 2026-07-09; Sophos, 2026-02)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "By spraying enough of those requests, an adversary can then sift through the heap fragments for valid session tokens of someone who is currently logged in."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/citrixbleed-2-dragonforce-ransomware"
+      - quote: "The cleanup serves to evade detection: by leaving the registry indistinguishable from its pre-exploit state, the tool removes the artifacts a responder would normally key on."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/citrixbleed-2-dragonforce-ransomware"
+      - quote: "Huntress assesses with high confidence that the activity is the work of an initial access broker (IAB) weaponising CVE-2025-5777 to gain footholds in Citrix environments before selling or handing off access, ultimately for the purpose of ransomware deployment."
+        attribution: "IT Security Guru (relaying Huntress)"
+        source_url: "https://www.itsecurityguru.org/2026/07/09/citrixbleed-2-exploited-in-repeatable-attack-chain-culminating-in-dragonforce-ransomware-researchers-find/"
+    extended_notes: |
+      Triage: a fully-authenticated session driven from an attacker IP with zero prior successful authentication events from that IP is the discriminator Huntress used to confirm token theft over credential compromise — portable to any NetScaler-fronted SSO/VPN environment. Hunt: audit for local admin accounts created outside change-management, unexpected ScreenConnect/Zoho Assist installs, and gpupdate-adjacent AppMgmt service starts correlating with new SYSTEM processes. Harden: patch NetScaler immediately, forward NetScaler logs to a SIEM (on-device logs rotate fast), and terminate all active sessions post-patch since harvested tokens survive patching.
+
+  - title: "Huntress: root-cause analysis of Conditional Access policy gaps behind two 2026 M365 account-takeover campaigns (device-code phishing and ROPC token-spray)"
+    sources:
+      - { url: "https://www.huntress.com/blog/conditional-access-misconfigurations", publisher: "Huntress", date: "2026-07-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/azure-cli-password-spray-hits-at-least.html", publisher: "The Hacker News", date: "2026-07-01", role: "corroborating" }
+      - { url: "https://www.huntress.com/blog/lshiy-password-spray-attack", publisher: "Huntress", date: "2026-07-01", role: "corroborating" }
+    discovery_trace: "first seen at: huntress, URL https://www.huntress.com/blog/rss.xml → primary: Huntress, URL https://www.huntress.com/blog/conditional-access-misconfigurations → pivot: The Hacker News, URL https://thehackernews.com/2026/07/azure-cli-password-spray-hits-at-least.html → pivot: Huntress (original LSHIY writeup), URL https://www.huntress.com/blog/lshiy-password-spray-attack"
+    summary: |
+      Huntress published a comparative root-cause analysis of two separate 2026 Microsoft 365 account-takeover campaigns that both defeated Conditional Access (CA) policies requiring MFA — not by breaking MFA, but by routing around the auth paths CA actually inspects. Campaign 1 ("Railway", March 2026, 344 orgs) used device-code phishing: victims are talked into entering a legitimate Microsoft device-authorization code, handing the attacker a valid OAuth token (up to 90 days) without ever triggering interactive/MFA checks. Campaign 2 ("LSHIY", disclosed by Huntress 2026-07-01, active June 12-26 from LSHIY LLC's IPv6 range AS32167) ran 81M+ login attempts against Azure CLI using the deprecated Resource Owner Password Credentials (ROPC) OAuth flow, compromising at least 78 accounts across 64 orgs; ROPC posts credentials straight to the /token endpoint and never touches the authorization endpoint where most CA policies are enforced. Of the 78 compromised accounts, 55 had active CA policies requiring MFA — Huntress's forensic breakdown of why they failed: MFA scoped to specific apps (e.g. Admin Portals) while omitting Azure CLI/other cloud-resource apps by default; MFA scoped to specific user groups (e.g. admins) leaving standard users unprotected; and MFA enforced only for "untrusted" locations, bypassed by attacker IPs that geolocated inconsistently to the US. The article's core lesson for defenders: "MFA configured narrowly enough leaves gaps that are predictable, findable, and worth 81 million login attempts to exploit" — CA policy scope (all cloud apps/all client types, not an allow-list) is the actual control surface, not MFA presence.
+    region_nexus: "global; Microsoft 365 / Entra ID Conditional Access is the dominant enterprise identity-protection control across Swiss/EU public-sector and enterprise tenants"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, telco"
+    cves: []
+    techniques: ["T1528", "T1110.003", "T1078.004", "T1556.006"]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID Conditional Access", "Azure CLI"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:lshiy-ropc-azure-cli-password-spray-2026", type: campaign, name: "LSHIY LLC Azure CLI ROPC token-spray campaign", aliases: ["LSHIY password spray"], summary: "81M+ login attempts against Azure CLI via the deprecated ROPC OAuth flow from LSHIY LLC infrastructure (AS32167), compromising 78 M365 accounts across 64 orgs June 12-26 2026 by bypassing Conditional Access policies that don't cover the ROPC path (Huntress, 2026-07-01/07-09)." }
+      - { key: "campaign:railway-device-code-phishing-m365-2026", type: campaign, name: "Railway device-code phishing campaign", aliases: [], summary: "March 2026 device-code phishing campaign against 344 organisations that harvested Microsoft 365 OAuth tokens by exploiting the device-authorization flow's lack of interactive MFA prompt (Huntress, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Device code phishing is effective because it doesn't try to beat MFA. It sidesteps it."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/conditional-access-misconfigurations"
+      - quote: "Of the 78 compromised accounts, 55 had active Conditional Access policies requiring MFA."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/conditional-access-misconfigurations"
+      - quote: "One glaring error here is that legacy protocols like ROPC can bypass some poorly-configured CAPs entirely since they don't go through the authorization endpoint where policies are enforced."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/azure-cli-password-spray-hits-at-least.html"
+    extended_notes: |
+      Triage: a successful sign-in to a legacy-auth client (Azure CLI, ROPC) or a device-code completion event with no corresponding interactive MFA challenge in the same session is the discriminator — legitimate developer Azure CLI usage from a known device/IP is the benign lookalike; volume (thousands of attempts) and single-source ASN concentration (LSHIY's AS32167 IPv6 range) are what separated the malicious spray from normal use. Hardening: block/restrict the OAuth device-authorization flow tenant-wide (or to named accounts that need it), and ensure CA policies target "All cloud apps" and "All client types" rather than an explicit per-app allow-list that silently omits CLI/legacy-auth resources.
+
+  - title: "Sonatype Q2 2026 Open Source Malware Index (PERIODIC REPORT — quarterly): 1.8M cumulative malicious packages, npm at 96.6% of quarterly volume, PyPI/NuGet skew toward secrets exfiltration"
+    sources:
+      - { url: "https://www.sonatype.com/blog/q2-2026-open-source-malware-index-attackers-abuse-developer-trust", publisher: "Sonatype", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: sonatype, URL https://www.sonatype.com/blog/rss.xml → primary: Sonatype, URL https://www.sonatype.com/blog/q2-2026-open-source-malware-index-attackers-abuse-developer-trust"
+    summary: |
+      PERIODIC REPORT — Sonatype Q2 2026 Open Source Malware Index. Sonatype Research reached 1.8 million cumulative malicious open-source packages logged; npm alone accounted for 96.6% of Q2's quarterly detections, driven by repository-abuse and trojan-class activity at scale (Shai-Hulud Miasma follow-on waves, the 176-package internal-namespace dependency-confusion campaign, Atomic Arch's AUR compromise, and malicious PyTorch Lightning packages on PyPI are cited as the quarter's headline campaigns — several already covered in this pipeline). The two genuinely new defender-relevant technical deltas: (1) execution has moved upstream of runtime — "modern open source malware often executes during installation, build, or CI/CD automation rather than waiting for application runtime," via install-time hooks such as binding.gyp native-module builds and package.json lifecycle scripts (preinstall/postinstall), meaning traditional application-layer scanning misses the point of compromise; and (2) ecosystem-specific behavioural skew — nearly 87% of all non-npm malicious-package activity concentrated in just two ecosystems, PyPI (48.5%) and NuGet (38.0%), with those two ecosystems disproportionately carrying secrets-exfiltration payloads (2,155 and 1,962 logged instances respectively) and dropper payloads, versus npm's volume-driven trojan/worm pattern. Sonatype also notes credential theft increasingly functions as a distribution mechanism rather than an end state — stolen npm publish tokens are used to re-inject malicious code into the victim's own maintained packages and re-publish, cascading compromise across the dependency graph.
+    region_nexus: "global; open-source dependency risk applies to any Swiss/EU public-sector or enterprise CI/CD pipeline consuming npm/PyPI/NuGet packages"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: ["T1195.001", "T1195.002", "T1059", "T1552.001"]
+    affected_products: []
+    entity_keys: ["campaign:atomic-arch-aur-supply-chain-2026"]
+    new_entities:
+      - { key: "report:sonatype-oss-malware-index-q2-2026", type: report, name: "Sonatype Q2 2026 Open Source Malware Index", aliases: [], summary: "Sonatype's quarterly statistical roundup of malicious open-source packages logged across ecosystems (1.8M cumulative as of Q2 2026); npm 96.6% of quarterly volume, PyPI/NuGet skewed toward secrets exfiltration and dropper payloads (Sonatype, 2026-07-09)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "At the end of Q2 2026, Sonatype Research reached 1.8 million malicious packages logged."
+        attribution: "Sonatype"
+        source_url: "https://www.sonatype.com/blog/q2-2026-open-source-malware-index-attackers-abuse-developer-trust"
+      - quote: "Modern open source malware often executes during installation, build, or CI/CD automation rather than waiting for application runtime."
+        attribution: "Sonatype"
+        source_url: "https://www.sonatype.com/blog/q2-2026-open-source-malware-index-attackers-abuse-developer-trust"
+      - quote: "Nearly 87% of all non-npm malicious package activity occurred in just two ecosystems: PyPI (48.5%) and NuGet (38.0%)."
+        attribution: "Sonatype"
+        source_url: "https://www.sonatype.com/blog/q2-2026-open-source-malware-index-attackers-abuse-developer-trust"
+    extended_notes: |
+      Hardening takeaway: scanning must cover the build/CI stage (SCA at install-time, not just at the deployed-artifact stage), since the reported execution point is preinstall/postinstall/binding.gyp — a fully built and running application can be clean while the build pipeline that produced it was already compromised.
+
+  - title: "SentinelLabs: China-nexus and India-nexus (Bitter/TAG-179) espionage actors independently compromised Pakistani police infrastructure, weaponising a citizen-facing Complaint Management System as a watering hole"
+    sources:
+      - { url: "https://www.sentinelone.com/labs/one-target-china-india-espionage-converge-on-pakistani-law-enforcement/", publisher: "SentinelLabs (SentinelOne)", date: "2026-07-09", role: "primary" }
+      - { url: "https://tribune.com.pk/story/2617353/china-india-linked-hacking-groups-targeted-pakistani-law-enforcement-report-says", publisher: "The Express Tribune", date: "2026-07-09", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"SentinelLabs SentinelOne research July 2026\") → primary: SentinelLabs, URL https://www.sentinelone.com/labs/one-target-china-india-espionage-converge-on-pakistani-law-enforcement/ → pivot: The Express Tribune, URL https://tribune.com.pk/story/2617353/china-india-linked-hacking-groups-targeted-pakistani-law-enforcement-report-says"
+    summary: |
+      SentinelLabs documented sustained, independent cyberespionage (Feb 2024-Apr 2026) by both a suspected China-nexus actor and an India-nexus actor (TAG-179, aka Mysterious Elephant / Bitter / APT-C-08) against the same set of Pakistani law-enforcement bodies — Balochistan Police, Khyber Pakhtunkhwa Police, Islamabad Police and the Punjab Safe Cities Authority — each pursuing its own stakes in Pakistan's internal-security picture. Initial access came through compromised network appliances and web-application servers; the notable technique is that the China-nexus actor planted implants directly in the Balochistan Police's public-facing Complaint Management System (CMS), a portal used by both police staff and ordinary citizens, turning trusted e-government infrastructure into a malware-delivery watering hole. Two CMS implant variants were deployed: a Rust stager and a .NET executable masquerading as security/portal-update software (`cms_plugin.exe`, both variants downloading from 193.42.25[.]65 and displaying "Update Complete! Please refresh the page" to the victim); the .NET variant reflectively loads AsyncRAT configured against its own separate C2 infrastructure. China-nexus tradecraft also included PlugX and ShadowPad backdoors; the India-nexus actor (Bitter/TAG-179) used Remcos; both used Cobalt Strike as commodity tooling. SentinelOne ties the CMS-implant samples to a Chinese-speaking developer via a shared `D:\codedome` build-path artefact. SentinelOne's own framing: "multiple cyberespionage actors operate against law enforcement institutions of a single state — the convergence itself is a signal of target value" (Aleksandar Milenkoski). China's embassy denied wrongdoing; Khyber Pakhtunkhwa Police stated no core system was confirmed compromised.
+    region_nexus: "South Asia (Pakistan) — no direct Swiss/European nexus; surfaced for the transferable technique class"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: ["T1189", "T1584.004", "T1620", "T1027", "T1071.001"]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:bitter", type: actor, name: "Bitter", aliases: ["TAG-179", "Mysterious Elephant", "APT-C-08"], summary: "India-nexus espionage actor observed by SentinelLabs deploying Remcos against Pakistani law-enforcement targets 2024-2026, also tracked by Kaspersky under 'Mysterious Elephant' (SentinelLabs, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Targets Pakistani law-enforcement systems with no direct Swiss/European nexus; included because the technique class — a nation-state actor weaponising a citizen-facing e-government CMS/complaint portal as a watering hole reaching both staff and the public via a disguised 'update' lure with reflectively-loaded RAT — is directly transferable to any government running similar public-facing e-services infrastructure, including Swiss/EU public-sector portals."
+    evidence:
+      - quote: "A suspected China-nexus actor planted implants in one of the web applications, which serves both police staff and citizens, weaponizing a tool of Pakistan's police digitalization against its users."
+        attribution: "SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/one-target-china-india-espionage-converge-on-pakistani-law-enforcement/"
+      - quote: "These indicators point to a Chinese-speaking developer behind the samples linked by the `D:\\codedome` prefix, including the one deployed on the Balochistan Police CMS application."
+        attribution: "SentinelLabs"
+        source_url: "https://www.sentinelone.com/labs/one-target-china-india-espionage-converge-on-pakistani-law-enforcement/"
+      - quote: "Multiple cyberespionage actors operate against law enforcement institutions of a single state, the convergence itself is a signal of target value."
+        attribution: "Aleksandar Milenkoski, SentinelOne (via The Express Tribune)"
+        source_url: "https://tribune.com.pk/story/2617353/china-india-linked-hacking-groups-targeted-pakistani-law-enforcement-report-says"
+    extended_notes: |
+      Triage/hunt takeaway generalisable beyond this incident: any public-facing government portal that also serves internal staff is a watering-hole target of equal value to a direct internal-network intrusion — monitor for unexpected executable downloads or "update" prompts served from portal-adjacent infrastructure, and treat citizen-facing e-government CMS instances as Tier-1 assets for integrity monitoring, not just availability monitoring.
+
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Rotation-priority source still unreachable — direct WebFetch (403), jina reader ('reader proxy relayed an upstream block/challenge'), and bridge `url` (403 on both direct and jina fallback) all failed. No in-window OT/ICS coverage recovered from this source this run; recommend re-evaluating transport recipe (possible persistent anti-bot deployment) or demoting rotation priority."

@@ -1,0 +1,127 @@
+domain: S2
+run_id: 2026-07-10T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T04:13:19Z
+ended_at: 2026-07-10T04:23:51Z
+duration_seconds: 632
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 15
+  bridge_fetches: 25
+items:
+  - title: "Nextcloud GmbH hosting misconfiguration exposes 367,000 internal records, including German government (MSB NRW) staff email addresses and client setup scripts with hardcoded DB credentials"
+    sources:
+      - { url: "https://cybernews.com/security/nextcloud-cloud-provider-data-leak/", publisher: "Cybernews", date: "2026-07-08", role: "primary" }
+      - { url: "https://www.heise.de/en/news/Open-database-Nextcloud-GmbH-fixes-potential-data-leak-11358446.html", publisher: "heise online", date: "2026-07-09", role: "corroborating" }
+      - { url: "https://www.inside-it.ch/datenleck-bei-nextcloud-20260709", publisher: "Inside IT Switzerland", date: "2026-07-09", role: "corroborating" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 'Datenleck bei Nextcloud', 2026-07-09) → primary: Cybernews, URL https://cybernews.com/security/nextcloud-cloud-provider-data-leak/ (2026-07-08, full disclosure timeline) → corroboration: heise online, URL https://www.heise.de/en/news/Open-database-Nextcloud-GmbH-fixes-potential-data-leak-11358446.html (2026-07-09, German-market pickup, title/keywords confirmed: Elasticsearch, Fehlkonfiguration, Nextcloud)"
+    summary: |
+      Cybernews researchers discovered a publicly exposed, unauthenticated Elasticsearch cluster on 18 May 2026
+      belonging to Nextcloud GmbH — the German company behind the self-hosted collaboration platform positioned
+      as part of "Euro-Office", a European alternative to Microsoft 365/Google Workspace increasingly cited for
+      public-sector and GDPR-sensitive deployments. The exposure is a hosting-infrastructure misconfiguration on
+      Nextcloud's own corporate systems, not a vulnerability in the open-source Nextcloud server software, and
+      no customer-operated Nextcloud instances were affected. The cluster held 7.92 GB / ~367,000 records in a
+      single index of internal business data: unencrypted invoices (exposing employee and client email addresses,
+      including partner-hosting-provider staff at IONOS and STRATO, and — notably — email addresses belonging to
+      MSB NRW, the Ministry of Schools and Education of the German state of North Rhine-Westphalia), signed
+      contracts and partnership terms, .eml files with full email content, beta-feature signup lists (full names
+      and work emails), and shell/Python setup-and-management scripts written for client deployments, some
+      containing hardcoded database credentials. Nextcloud closed the exposure two days after Cybernews' initial
+      contact (25-27 May 2026) and reported the incident to its state data-protection authority; the company
+      states it found no evidence of unauthorized access beyond the researchers' own discovery, though an
+      unauthenticated, internet-reachable Elasticsearch index is exactly the kind of target continuously found by
+      automated internet-wide scanning (Shodan/Censys-class tooling), so prior undetected access cannot be ruled
+      out. Cybernews' own risk assessment: the leaked invoices/contracts/email content give an attacker
+      ready-made pretexting material to impersonate Nextcloud or a named client in convincing spearphishing, and
+      the exposed client setup scripts — while not sufficient alone for a full compromise — could help an
+      attacker infer a specific customer's Nextcloud deployment architecture to look for exploitable
+      misconfigurations. The nearly two-month gap between discovery (18 May) and this public report (8 July)
+      reflects Cybernews' standard responsible-disclosure/vendor-response cycle, not a stale story.
+    region_nexus: "Germany (Nextcloud GmbH headquartered in Berlin); direct exposure of a German state-ministry (NRW) email domain; EU-wide relevance given Nextcloud's positioning as a public-sector Euro-Office/GDPR-aligned alternative"
+    primary_sector_nexus: "direct — exposed data names a German public-sector body (MSB NRW) as a client whose staff email addresses were in the leaked invoices"
+    sector: "public-sector, technology-supplier"
+    cves: []
+    techniques: ["T1596.005", "T1566"]
+    affected_products: ["Nextcloud GmbH hosting infrastructure (corporate Elasticsearch cluster) — NOT the Nextcloud Server open-source product"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:nextcloud-gmbh-elasticsearch-exposure-2026", type: incident, name: "Nextcloud GmbH corporate Elasticsearch data exposure",
+          aliases: [], summary: "Misconfigured, unauthenticated Elasticsearch cluster belonging to Nextcloud GmbH exposed 367K internal business records (invoices, contracts, client setup scripts with hardcoded credentials) from 18 to 27 May 2026, discovered and publicly reported by Cybernews on 2026-07-08; exposed data named German state ministry MSB NRW as an affected client." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "On May 18th, our research team discovered an exposed dataset containing 367,000 records. An investigation revealed that the cluster, with nearly 8GB of data, contained internal Nextcloud data."
+        attribution: "Cybernews"
+        source_url: "https://cybernews.com/security/nextcloud-cloud-provider-data-leak/"
+      - quote: "The issue was caused by a misconfiguration of our hosting infrastructure and is not related to the Nextcloud solution. No other Nextcloud servers belonging to our customers, partners or other users have been affected by this issue"
+        attribution: "Nextcloud spokesperson, quoted by Cybernews"
+        source_url: "https://cybernews.com/security/nextcloud-cloud-provider-data-leak/"
+      - quote: "Among the external email domains, the team found IONOS and STRATO, two established web hosting providers, as well as German government institutions, such as MSB NRW (Ministry of Schools and Education of the State of North Rhine-Westphalia)."
+        attribution: "Cybernews"
+        source_url: "https://cybernews.com/security/nextcloud-cloud-provider-data-leak/"
+    extended_notes: |
+      Detection/hardening angle for defenders operating similar Elasticsearch/OpenSearch-backed internal
+      tooling: the telemetry class that would have caught this earlier is external attack-surface monitoring
+      (continuous internet-facing-asset scanning for unauthenticated management/data ports — Elasticsearch
+      defaults to TCP 9200/9300 with no auth unless X-Pack/OpenSearch security is explicitly enabled) rather than
+      any host-based control, since the exposure was purely a network-reachability misconfiguration. Hardening
+      lever: bind Elasticsearch/OpenSearch clusters to internal-only network interfaces or a VPC, enable
+      authentication plugins by default in deployment templates, and treat "hardcoded credentials in
+      infrastructure-as-code / setup scripts" as a secrets-management finding to remediate regardless of whether
+      the script itself is ever exposed. For organisations that are Nextcloud customers (a meaningful share of
+      the EU public sector given its GDPR/data-sovereignty positioning): the actionable takeaway is not a patch,
+      but heightened scrutiny of unsolicited invoice- or contract-themed emails referencing Nextcloud or its
+      hosting-partner ecosystem (IONOS, STRATO) in the near term, since the leaked material is realistic
+      pretexting fodder — this is a T1566 Phishing enablement risk, not a confirmed campaign.
+    borderline: true
+    borderline_reason: "moderate-severity, no confirmed exploitation, and the exposure sits on Nextcloud's own corporate side rather than customer-operated instances — included primarily for the EU public-sector supplier nexus (named German ministry client) and the transferable Elasticsearch-exposure hardening lesson."
+watchlist_sweep:
+  duty: sector-lens
+  note: "No product/supplier watchlist configured; sector-lens duty applied by weighting search toward Swiss/EU public-sector, healthcare, energy, water, transport, finance, telco angles per the standing mission — reflected in the item returned and in the extensive negative-result sweep documented in coverage_gaps below."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-focus
+    reason: "Fetched via jina (im-fokus.html); newest post (Woche 27, 2026-07-07) is generic summer-travel-safety awareness content, no new technical finding in the 24-72h window."
+  - source_id: ncsc-ch-incidents
+    reason: "Fetched via jina (aktuelle-vorfaelle.html); newest entry dated 2026-07-01 (SwissNovaChat/SwissNovaCare subscription-trap warning), outside the recency window and low technical depth (consumer-fraud awareness, not a CI/gov-relevant TTP)."
+  - source_id: ncsc-ch-security-hub
+    reason: "Fetched via bridge (ncsc-csh recent 15); all recent posts (Linux kernel VM-escape CVE-2026-53359 07-09, BeyondTrust auth-bypass 07-07, Argo CD RCE 07-03, Kemp LoadMaster 07-03, Citrix NetScaler 07-03) are generic global vulnerability advisories curated for Swiss constituents, not Swiss-specific incidents — these fall in S1's vulnerability-landscape lane, not S2's home-region/sector lane, so not duplicated here."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent and actu-recent fetched via bridge; latest ACT bulletin (CERTFR-2026-ACT-029, 2026-07-06) and all AVI advisories in the window are routine multi-product vulnerability bulletins (Chrome, Wireshark, GitLab, Juniper, Palo Alto, etc.) with no France-specific incident or sector-targeting angle distinct from the global vuln feed."
+  - source_id: bsi-de
+    reason: "WID-SEC RSS fetched; entirely routine vulnerability-advisory volume (rclone, GitLab, n8n, PAN-OS, Juniper, etc.), no BSI-specific incident bulletin or sector warning in window."
+  - source_id: advisories-ncsc-nl
+    reason: "NCSC-NL advisories RSS fetched; same pattern — routine vulnerability advisories (UniFi, Rancher, GitHub Enterprise, Cisco Catalyst Center, Adobe ColdFusion, Citrix), no NL-specific incident in window."
+  - source_id: cert-eu
+    reason: "CERT-EU security-advisories RSS fetched; feed is stale for this window — newest entry (2026-008, Ivanti Sentry) dated 2026-06-10, no in-window advisory."
+  - source_id: cert-pl
+    reason: "Fetched via jina; newest post (UNC1151/Ghostwriter Gmail-targeting campaign, June 2026) already covered in prior runs' dedup list — no new CERT Polska item in window."
+  - source_id: enisa
+    reason: "ENISA news listing fetched via jina; newest items (NIS360 survey call, 1 July 2026) are programme/survey announcements, not threat or incident content; no in-window advisory."
+  - source_id: ncsc-uk
+    reason: "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories returned only a cookie-consent-manager shell via both direct WebFetch and jina reader — no article listing content surfaced through either transport; genuine recipe gap, not a content judgment."
+  - source_id: cert-at
+    reason: "https://www.cert.at/en/ (webfetch) returned only nav chrome; https://www.cert.at/en/aktuelles and https://www.cert.at/en/warnungen/ both 404'd; https://www.cert.at/de/aktuelles 403'd. Recovered partial content via https://www.cert.at/en/news (CERT.at's own blog), but the newest post there is dated 1 June 2026 (LLM security implications) — no in-window content. Recipe for this source needs correction: the working news/warnings path was not found this run."
+  - source_id: govcert-at
+    reason: "RSS feed https://www.govcert.gv.at/rss.xml returned 0 items via jina fallback — feed appears empty or the URL has moved; recipe needs correction."
+  - source_id: ncsc-ie
+    reason: "Fetched via jina; content present but entirely routine vulnerability advisories (BeyondTrust, Joomla), same pattern as other national advisory feeds — no Ireland-specific incident."
+  - source_id: synacktiv
+    reason: "Publications listing fetched via jina; newest posts (KYC age-verification bypass 07-06, RBCD cross-domain part 2 07-02) fall outside the 72h developing window as of this run; no in-window technical research."
+  - source_id: kudelski-security
+    reason: "Research-blog listing fetched via jina; page returned only repeated '2026' year-headers with no article titles/dates rendered — JS-hydration issue, genuine recipe gap."
+  - source_id: intrinsec
+    reason: "Blog listing fetched via jina; page returned cookie-consent banner and site navigation only, no article list rendered — genuine recipe gap (likely JS-rendered listing)."
+  - source_id: ncc-research
+    reason: "https://www.nccgroup.com/research-blog/ redirects to https://www.nccgroup.com/research/; bridge fetch of the canonical URL returned only page CSS/meta, no article listing rendered — genuine recipe gap."
+  - source_id: lab52
+    reason: "Feed fetched via jina fallback; returned 6 entries but with empty published/summary fields (dates not recoverable from the feed), and titles (GRU unit 67606, EasterBunny/APT29, DRILLAPP/Laundry Bear) read as prior-period research already likely covered — could not confirm any in-window item without dates."
+  - source_id: le-monde-info
+    reason: "Not fetched this run — deprioritised in favour of the extensive WebSearch sweep for French-language CH/EU coverage (cyberattaque + collectivité/hôpital/administration queries), which surfaced only stories already in the dedup list (Groupe 3R) or outside the recency window."
+  - source_id: jpcert
+    reason: "Not fetched this run — JPCERT is outside the CH/EU home-region focus and was deprioritised given the extensive time already spent on essential-tier CH/EU sources with thin yield."
+  - source_id: google-tag
+    reason: "Not fetched this run — deprioritised after the essential-tier sweep and WebSearch rounds returned thin in-window CH/EU signal; time budget prioritised breadth of CH/EU authority + press coverage over this global research source."
