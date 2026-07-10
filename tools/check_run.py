@@ -1614,6 +1614,48 @@ def _triage_kinds(profile: dict[str, Any] | None) -> set[str]:
     return {"vulnerability"}
 
 
+def _triage_scheme_configured(profile: dict[str, Any] | None) -> bool:
+    """Whether the org profile defines vulnerability-triage categories. The
+    triage-kind exemption from the Admiralty classification applies ONLY
+    while a scheme exists — with none configured, triage kinds carry the
+    Admiralty block like every other kind (v3.18: no entry ships unrated)."""
+    vt = (profile or {}).get("vulnerability_triage") or {}
+    return any(isinstance(c, dict) and c.get("id") for c in (vt.get("categories") or []))
+
+
+# Rating + ATT&CK-mapping completeness became MANDATORY (FAIL, not WARN) for
+# entries composed from prompt v3.18 on (prompts/CHANGELOG.md § 3.18).
+# Entries are immutable, so records from earlier prompt versions keep the
+# old WARN severity — history stays green, the future is gated.
+RATING_ENFORCED_FROM = (3, 18)
+
+# ATT&CK completeness by kind: these kinds inherently describe attacker
+# behavior (a campaign, an intrusion, an exploitable vulnerability's access
+# vector), so an empty `techniques[]` is a composition defect, never a
+# judgment call. Research/annual-report usually map but may legitimately
+# carry no TTP content (statistics, governance) → WARN. Strategic kinds
+# (policy, synthesis, outlook) may map nothing at all.
+ATTACK_REQUIRED_KINDS = {"threat", "incident", "vulnerability"}
+ATTACK_EXPECTED_KINDS = {"research", "annual-report"}
+
+_PV_RE = re.compile(r"^v?(\d+)\.(\d+)")
+
+
+def _prompt_version_tuple(pv: Any) -> tuple[int, int] | None:
+    """`v3.18` / `3.18(.x)` → (3, 18); None when unparseable."""
+    m = _PV_RE.match(str(pv or "").strip())
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _rating_enforced(run: dict[str, Any] | None) -> bool:
+    """True when this run's prompt version is subject to the v3.18 hard
+    gates (missing rating / missing behavior-kind ATT&CK mapping → FAIL)."""
+    if run is None:
+        return False
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    return v is not None and v >= RATING_ENFORCED_FROM
+
+
 def check_attack_dataset() -> dict[str, Any]:
     """attack/enterprise-attack.json is present and passes the
     tools/attack_data.py invariants. FAIL when missing or broken — the
@@ -1654,21 +1696,26 @@ def check_attack_dataset() -> dict[str, Any]:
 
 
 def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
-                         *, store_mode: bool = False) -> None:
-    """Entry technique ids vs the pinned ATT&CK release. All WARNs — id
-    *format* is already a FAIL in entry schema; these are release-drift and
-    completeness signals:
+                         *, store_mode: bool = False, enforce: bool = False) -> None:
+    """Entry technique ids vs the pinned ATT&CK release, plus mapping
+    COMPLETENESS. Id *format* is already a FAIL in entry schema; here:
 
-      - `techniques[]` id unknown to the pin → typo, or the pin is older
-        than the id (run `tools/attack_data.py --check`)
-      - id revoked/deprecated upstream → forward pointer to the survivor
+      - `techniques[]` id unknown to the pin → WARN (typo, or the pin is
+        older than the id — run `tools/attack_data.py --check`)
+      - id revoked/deprecated upstream → WARN (forward pointer to survivor)
       - run scope only: the body names ATT&CK ids in prose but
-        `techniques[]` is empty → the machine retrieval layer is missing
-        its mirror (prompts v3.17+ compose frontmatter-first)
+        `techniques[]` is empty / incomplete → WARN (the machine retrieval
+        layer is missing its mirror; prompts v3.17+ compose frontmatter-first)
+      - run scope only: a behavior-kind entry (ATTACK_REQUIRED_KINDS) with
+        an EMPTY `techniques[]` → FAIL under `enforce` (v3.18: threat /
+        incident / vulnerability entries always support at least the access
+        or exploitation vector — an empty mapping is a composition defect),
+        WARN on pre-v3.18 records; research/annual-report empty → WARN.
 
-    In --all/store mode only the frontmatter-id checks run: legacy entries
-    are immutable, carry prose-only mappings by design (the site derives
-    them), and would drown the report otherwise."""
+    In --all/store mode only the frontmatter-id checks run here: legacy
+    entries are immutable and carry prose-only mappings by design (the site
+    derives them). Store-wide completeness for v3.18+ runs is enforced by
+    check_store_ratings."""
     techniques = attack.get("techniques") or {}
     if not techniques:
         warn("attack-mapping", "skipped — no usable ATT&CK dataset (see attack-dataset)")
@@ -1699,6 +1746,18 @@ def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
                 warn("attack-mapping", f"{eid}: techniques[] id {t} is deprecated upstream")
         if store_mode:
             continue
+        kind = str(e.get("kind") or "")
+        if not fm and kind in ATTACK_REQUIRED_KINDS:
+            n_issues += 1
+            msg = (f"{eid}: {kind} entry with empty techniques[] — attacker-behavior "
+                   "kinds always support at least one mapping (the access or "
+                   "exploitation vector); map every technique the sources support")
+            (fail if enforce else warn)("attack-mapping", msg)
+        elif not fm and kind in ATTACK_EXPECTED_KINDS:
+            n_issues += 1
+            warn("attack-mapping",
+                 f"{eid}: {kind} entry with empty techniques[] — map the described "
+                 "tradecraft unless the piece genuinely carries no TTP content")
         prose = sorted({
             m for m in cm.PROSE_TECHNIQUE_RE.findall(e.get("body") or "")
             if m in techniques
@@ -1723,14 +1782,17 @@ def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
            f"({n_mapped} carrying techniques[])")
 
 
-def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
-    """org_triage consistency with the profiled triage scheme (WARN, not
-    FAIL — v2 origin: check_org_triage ~line 2818). When the org profile
-    defines vulnerability_triage categories, every triage-kind entry of this
-    run should carry org_triage with a defined category id; when no scheme is
-    configured, any non-null org_triage is drift. Criteria *consistency* (does
-    the category follow from the cited facts?) is the verifier's F16 concern —
-    this check is mechanical only."""
+def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None,
+                     *, enforce: bool = False) -> None:
+    """org_triage consistency with the profiled triage scheme. When the org
+    profile defines vulnerability_triage categories, every triage-kind entry
+    of this run MUST carry org_triage with a defined category id — FAIL under
+    `enforce` (v3.18: no entry ships unrated), WARN on pre-v3.18 records.
+    When no scheme is configured, any non-null org_triage is drift (WARN) and
+    the rating duty moves to check_classification (triage kinds then carry
+    the Admiralty block). Criteria *consistency* (does the category follow
+    from the cited facts?) is the verifier's F16 concern — this check is
+    mechanical only."""
     if profile is None:
         ok("org-triage", "org profile not available — n/a")
         return
@@ -1755,34 +1817,47 @@ def check_org_triage(run_entries: list[dict], profile: dict[str, Any] | None) ->
             else:
                 found += 1
     if problems:
+        # A missing/unknown rating on a scheme-configured deployment is a
+        # hard defect from v3.18; scheme-less drift stays a WARN either way.
+        sev = fail if (enforce and cats) else warn
         for p in problems[:8]:
-            warn("org-triage", p)
+            sev("org-triage", p)
         if len(problems) > 8:
-            warn("org-triage", f"(+{len(problems) - 8} more)")
+            sev("org-triage", f"(+{len(problems) - 8} more)")
     elif not cats:
-        ok("org-triage", "no triage scheme configured and no org_triage values present")
+        ok("org-triage", "no triage scheme configured and no org_triage values present "
+                         "(triage kinds carry the Admiralty classification instead)")
     else:
         ok("org-triage", f"{found} org_triage block(s), all category ids valid")
 
 
-def check_classification(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
+def check_classification(run_entries: list[dict], profile: dict[str, Any] | None,
+                         *, enforce: bool = False) -> None:
     """Intelligence-classification (NATO Admiralty) consistency with the
-    profile's configured scheme. Same severity model as check_org_triage:
-    WARN on a missing block (or a block on a triage-kind entry) so historical
-    pre-scheme entries and the record-only latest run stay green; FAIL on an
-    out-of-vocabulary reliability/credibility code (a real defect on a fresh
-    entry). Whether the letter fits the source and the number fits the
-    corroboration is the verifier's F17 concern — this is mechanical only."""
+    profile's configured scheme.
+
+    Which entries MUST carry the block: every non-triage kind always; the
+    triage kinds too when NO vulnerability-triage scheme is configured
+    (v3.18 — the triage-kind exemption exists only while a triage scheme
+    does, so no entry ever ships unrated). A missing block on a required
+    entry is a FAIL under `enforce` (v3.18+ runs) and a WARN on earlier
+    records — historical pre-scheme entries are immutable and stay green.
+    An out-of-vocabulary reliability/credibility code is always a FAIL (a
+    real defect on a fresh entry). Whether the letter fits the source and
+    the number fits the corroboration is the verifier's F17 concern — this
+    is mechanical only."""
     if profile is None:
         ok("classification", "org profile not available — n/a")
         return
     cl = profile.get("classification") or {}
     ic = cl.get("intel_classification") or {}
     triage_kinds = _triage_kinds(profile)
+    triage_scheme = _triage_scheme_configured(profile)
     rel_codes = {str(c.get("code")) for c in (ic.get("reliability") or []) if isinstance(c, dict)}
     cred_codes = {str(c.get("code")) for c in (ic.get("credibility") or []) if isinstance(c, dict)}
     configured = bool(rel_codes and cred_codes)
     fails: list[str] = []
+    missing: list[str] = []
     warns: list[str] = []
     found = 0
     for e in run_entries:
@@ -1792,12 +1867,17 @@ def check_classification(run_entries: list[dict], profile: dict[str, Any] | None
             if cls is not None:
                 warns.append(f"{e['id']}: classification present but no intel-classification scheme is configured")
             continue
-        if kind in triage_kinds:
+        if kind in triage_kinds and triage_scheme:
+            # A configured triage scheme owns these kinds (org_triage).
             if cls is not None:
                 warns.append(f"{e['id']}: {kind} (triage-kind) entry carries classification — triage kinds use org_triage, not the Admiralty code")
             continue
         if not isinstance(cls, dict):
-            warns.append(f"{e['id']}: {kind} entry missing classification (Admiralty reliability + credibility)")
+            hint = (" (no triage scheme is configured, so triage kinds carry the "
+                    "Admiralty block too — no entry ships unrated)"
+                    if kind in triage_kinds else "")
+            missing.append(f"{e['id']}: {kind} entry missing classification "
+                           f"(Admiralty reliability + credibility){hint}")
             continue
         rel = str(cls.get("reliability") or "")
         cred = str(cls.get("credibility") if cls.get("credibility") is not None else "")
@@ -1812,15 +1892,42 @@ def check_classification(run_entries: list[dict], profile: dict[str, Any] | None
             found += 1
     for p in fails:
         fail("classification", p)
+    missing_sev = fail if enforce else warn
+    for p in missing[:8]:
+        missing_sev("classification", p)
+    if len(missing) > 8:
+        missing_sev("classification", f"(+{len(missing) - 8} more)")
     for p in warns[:8]:
         warn("classification", p)
     if len(warns) > 8:
         warn("classification", f"(+{len(warns) - 8} more)")
-    if not fails and not warns:
+    if not fails and not missing and not warns:
         if not configured:
             ok("classification", "no intel-classification scheme configured and no classification values present")
         else:
             ok("classification", f"{found} entr{'y' if found == 1 else 'ies'} carry a valid Admiralty classification")
+
+
+def check_store_ratings(entries: list[dict], runs: list[dict],
+                        profile: dict[str, Any] | None,
+                        attack: dict[str, Any]) -> None:
+    """--all: every entry belonging to a v3.18+ run must carry its rating
+    (the Admiralty classification, or org_triage per the profile's
+    triage-kind split) and, on behavior kinds, a non-empty ATT&CK mapping.
+    Pre-v3.18 entries are immutable history and stay green — this sweep is
+    what keeps `--all` permanently guarding every future report."""
+    enforced = {str(r.get("run_id")) for r in runs if _rating_enforced(r)}
+    scoped = [e for e in entries if str(e.get("run_id") or "") in enforced]
+    v = f"v{RATING_ENFORCED_FROM[0]}.{RATING_ENFORCED_FROM[1]}"
+    if not scoped:
+        ok("store-ratings", f"no entries from {v}+ runs yet — nothing to enforce")
+        return
+    ok("store-ratings",
+       f"{len(scoped)} entr{'y' if len(scoped) == 1 else 'ies'} from "
+       f"{len(enforced)} {v}+ run(s) under the always-rated / always-mapped gate")
+    check_org_triage(scoped, profile, enforce=True)
+    check_classification(scoped, profile, enforce=True)
+    check_attack_mapping(scoped, attack, enforce=True)
 
 
 def check_sources_touched(run: dict[str, Any], sources_data: dict[str, Any] | None) -> None:
@@ -2143,7 +2250,15 @@ def run_all_checks(entries: list[dict], runs: list[dict], taxonomy: dict,
 
     print("\n== all: ATT&CK dataset + techniques[] ids ==")
     attack_ds = check_attack_dataset()
-    check_attack_mapping(entries, attack_ds, store_mode=True)
+    # v3.18+ entries get the full (completeness-enforcing) pass below;
+    # legacy entries get the id-drift pass only.
+    enforced_run_ids = {str(r.get("run_id")) for r in runs if _rating_enforced(r)}
+    legacy_entries = [e for e in entries
+                      if str(e.get("run_id") or "") not in enforced_run_ids]
+    check_attack_mapping(legacy_entries, attack_ds, store_mode=True)
+
+    print("\n== all: rating + mapping completeness (always-classified gate) ==")
+    check_store_ratings(entries, runs, _load_org_profile(), attack_ds)
 
     print("\n== all: run records ==")
     check_all_run_records(runs)
@@ -2265,18 +2380,22 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     print("\n== closed-source citations (traceability, no TLP gate) ==")
     check_closed_sources(run_entries, profile)
 
+    # From prompt v3.18, a missing rating or a missing behavior-kind ATT&CK
+    # mapping is a hard gate failure; earlier records keep WARN severity.
+    enforce_ratings = _rating_enforced(run)
+
     print("\n== org-triage ==")
-    check_org_triage(run_entries, profile)
+    check_org_triage(run_entries, profile, enforce=enforce_ratings)
 
     print("\n== classification (NATO Admiralty) ==")
-    check_classification(run_entries, profile)
+    check_classification(run_entries, profile, enforce=enforce_ratings)
 
     print("\n== CVE sync ==")
     check_cve_sync(run_entries, parsed_state.get("cves_seen.json"))
 
     print("\n== ATT&CK dataset + technique mapping ==")
     attack_ds = check_attack_dataset()
-    check_attack_mapping(run_entries, attack_ds)
+    check_attack_mapping(run_entries, attack_ds, enforce=enforce_ratings)
 
     if run is not None:
         print("\n== sources.json bookkeeping ==")

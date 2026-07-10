@@ -24,3 +24,7 @@ type: project
 ## v3.2 addition (2026-07-10)
 
 - **Entry detail pages** now render a first-class `ATT&CK mapping` section (`render_entry_attack_section`, anchor `#attack-mapping`): techniques grouped by tactic, resolved names + pinned definitions, overlap-matrix + MITRE links; the pivot-rail chips show `Tid + name` and jump to it. Derived via `entry_technique_ids` (frontmatter ∪ prose), so legacy prose-only entries get the section too.
+
+## v3.18 addition (2026-07-10) — always mapped
+
+- **Empty `techniques[]` on `threat`/`incident`/`vulnerability` is a check_run FAIL from prompt v3.18** (WARN on `research`/`annual-report`; `policy`/`synthesis`/`outlook` exempt). Version-gated on the run record's `prompt_version` — pre-3.18 records keep WARN so `--all` stays green on immutable history; `--all` gains a `store-ratings` sweep that re-enforces for every v3.18+ run forever. Rationale: behavior kinds always have a mappable access/exploitation vector (RCE→T1190, phishing→T1566, LPE→T1068); completeness of *evidence-supported* mappings, never invention.

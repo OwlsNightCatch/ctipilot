@@ -25,7 +25,10 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `sources-touched` | No source has `last_successful_fetch` = run date | Phase 5 bookkeeping was skipped — update `sources/sources.json` for every source that contributed |
 | `sources-schema` | Malformed source record (e.g. `category` as string, `name` instead of `publisher`) | Use the canonical candidate shape in `prompts/cti-run.md` Phase 5 — `category` is ALWAYS a list; the field is ALWAYS `publisher` |
 | `classification` (code) | An entry's `classification.reliability` / `.credibility` is outside the configured vocabulary (A–F / 1–6) | Set a defined code — reliability from the cited source's own letter in `sources/sources.json`, credibility from corroboration (see the § Intel classification scheme) |
-| `classification` (WARN) | A non-triage entry missing `classification`, or a triage-kind entry carrying one | Add the Admiralty block to non-vulnerability entries; triage-kind entries use `org_triage` and keep `classification: null` |
+| `classification` (missing rating) | A v3.18+ entry ships with neither rating — a non-triage entry missing `classification`, or (no triage scheme configured) a triage-kind entry missing it too | Add the Admiralty block: reliability from the cited source's letter, credibility from corroboration. Every entry carries exactly one rating — never zero |
+| `classification` (triage-kind drift, WARN) | A triage-kind entry carries `classification` while a configured triage scheme owns that kind | Move the rating to `org_triage` per the scheme and set `classification: null` |
+| `org-triage` | Scheme configured but a v3.18+ triage-kind entry misses `org_triage`, or names an undefined category | Apply the scheme's criteria to the entry's cited facts and set `org_triage: {category, rationale}`; no matching criteria → the scheme's default with the reason stated |
+| `attack-mapping` (empty techniques[]) | A v3.18+ `threat`/`incident`/`vulnerability` entry has an empty `techniques[]` | Map every technique the sources support — at minimum the access/exploitation vector (exposed-service RCE → T1190, phishing → T1566, LPE → T1068, …); evidence-bound, never invented; active ids per `attack/enterprise-attack.json` |
 | `closed-source` (WARN) | A `closed_sources` citation doesn't trace to a file under `intel/` | Point `ref`/`title` at the actual drop file so the verifier can `Read` it (there is no TLP gate — everything in `intel/` is processable) |
 | `ioc-scan` | Hash / routable IP in an entry | Rewrite to the *behaviour*, not the indicator; version strings near the match are auto-suppressed, so a real hit is a real IOC |
 | `fetch-failure-bridge-required` | Known-403 source logged as failed without a bridge attempt | Re-fetch via `python3 tools/fetch_source.py <subcommand>`; the record's `attempted_methods` must show the bridge |
@@ -34,7 +37,8 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 WARNs worth acting on before Phase 5.7:
 `single-source-flag` (fix the `verification` value), `evidence-binding`
 (attribute quotes to a listed publisher), `aggregator-only` (find the
-primary), `org-triage` / `classification` (align with the profile scheme),
+primary), `attack-mapping` on `research`/`annual-report` (map the described
+tradecraft unless the piece genuinely carries no TTP content),
 `essential-coverage` (disclose the miss in the run record). The `composition` line is
 informational only (rolling-24 h entry/deep-dive/critical counts) — volume
 follows relevance, not a quota, so there is nothing there to fix.

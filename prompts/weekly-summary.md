@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.17 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.18 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -56,7 +56,7 @@ Same composed profile as the intel run — the block below is generated from [`c
 
 **Standing intelligence interests:** none configured.
 
-**Classification — NATO Admiralty code:** every entry EXCEPT the triage kinds (`vulnerability`) carries `classification: {reliability, credibility}` in its frontmatter — a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). The triage kinds carry `org_triage` instead (see the vulnerability-triage scheme below).
+**Classification — NATO Admiralty code:** EVERY entry — including the triage kinds (`vulnerability`), because no vulnerability-triage scheme is configured — carries `classification: {reliability, credibility}` in its frontmatter: a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). **No entry ships unrated** — `tools/check_run.py` FAILs a missing rating.
 
 _Source reliability — rate the SOURCE (its authority + track record):_
 
@@ -84,7 +84,7 @@ Weight original / primary sources over news and aggregators: a first-party autho
 
 Conservative fallback when an item cannot be assessed further: **C3** (state why in the entry's sourcing note).
 
-**Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating.
+**Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating. Vulnerability-kind entries instead carry the Admiralty `classification` block like every other kind (see § Classification above) — **no entry ships unrated**; `tools/check_run.py` FAILs a missing rating.
 <!-- ORG-PROFILE:END org-data -->
 
 ---

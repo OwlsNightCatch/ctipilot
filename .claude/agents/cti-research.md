@@ -347,7 +347,7 @@ The deployment's organization profile — constituency, sector/region lens, prod
 
 **Standing intelligence interests:** none configured.
 
-**Classification — NATO Admiralty code:** every entry EXCEPT the triage kinds (`vulnerability`) carries `classification: {reliability, credibility}` in its frontmatter — a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). The triage kinds carry `org_triage` instead (see the vulnerability-triage scheme below).
+**Classification — NATO Admiralty code:** EVERY entry — including the triage kinds (`vulnerability`), because no vulnerability-triage scheme is configured — carries `classification: {reliability, credibility}` in its frontmatter: a source-reliability LETTER and an information-credibility NUMBER, assessed independently and rendered together (e.g. `B2`). **No entry ships unrated** — `tools/check_run.py` FAILs a missing rating.
 
 _Source reliability — rate the SOURCE (its authority + track record):_
 
@@ -375,7 +375,7 @@ Weight original / primary sources over news and aggregators: a first-party autho
 
 Conservative fallback when an item cannot be assessed further: **C3** (state why in the entry's sourcing note).
 
-**Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating.
+**Vulnerability-triage scheme:** none configured — leave `org_triage: null` everywhere; do not invent a rating. Vulnerability-kind entries instead carry the Admiralty `classification` block like every other kind (see § Classification above) — **no entry ships unrated**; `tools/check_run.py` FAILs a missing rating.
 <!-- ORG-PROFILE:END org-data -->
 
 How to run your duty:
@@ -507,7 +507,11 @@ items:
     cves: [CVE-2026-20182]
     # MITRE ATT&CK ids the sources map (or unambiguous mappings) —
     # T####[.###]; the composer mirrors these into the entry's
-    # `techniques[]` frontmatter. Omit or [] when none apply.
+    # `techniques[]` frontmatter. A vulnerability / incident / campaign
+    # item ALWAYS maps at least its access or exploitation vector (an
+    # exposed-service RCE is T1190, a phishing lure T1566, an LPE T1068,
+    # ...) — the gate FAILs an unmapped behavior-kind entry. Omit or []
+    # only when the item genuinely carries no attacker behavior.
     techniques: [T1190]
     # Official vendor product names the item concerns (what an alert or
     # asset inventory would name) — feeds `affected_products[]`.

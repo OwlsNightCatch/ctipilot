@@ -647,7 +647,11 @@ def _render_triage(profile: dict[str, Any]) -> list[str]:
     org = profile["organization"]
     if not vt["categories"]:
         return ["**Vulnerability-triage scheme:** none configured — leave "
-                "`org_triage: null` everywhere; do not invent a rating."]
+                "`org_triage: null` everywhere; do not invent a rating. "
+                "Vulnerability-kind entries instead carry the Admiralty "
+                "`classification` block like every other kind (see § Classification "
+                "above) — **no entry ships unrated**; `tools/check_run.py` FAILs a "
+                "missing rating."]
     out = [f"**Vulnerability-triage scheme ({org['short_name']}):**"
            + (f" {_flow(vt['intro'])}" if vt["intro"] else ""), ""]
     out.extend(_render_triage_table(vt))
@@ -664,20 +668,33 @@ def _render_triage(profile: dict[str, Any]) -> list[str]:
 def _render_classification(profile: dict[str, Any]) -> list[str]:
     """Intelligence-classification (Admiralty) scheme + the triage-kind split.
     Rendered into the org-data block seen by the daily/weekly main agents and
-    the research agent."""
+    the research agent. The triage-kind exemption applies only while a
+    vulnerability-triage scheme actually exists — with none configured, EVERY
+    entry (triage kinds included) carries the Admiralty block, so no entry
+    ever ships unrated."""
     cl = profile["classification"]
     ic = cl["intel_classification"]
     triage = cl["triage_kinds"]
     triage_phrase = ", ".join(f"`{k}`" for k in triage) if triage else "none"
+    scheme_configured = bool(profile["vulnerability_triage"]["categories"])
     if not ic["reliability"] or not ic["credibility"]:
         return ["**Classification:** intelligence-classification codes are not configured — "
                 "leave `classification: null` on every entry (vulnerability-kind entries still "
                 "carry `org_triage`)."]
-    out = [f"**Classification — {ic['name']}:** every entry EXCEPT the triage kinds "
-           f"({triage_phrase}) carries `classification: {{reliability, credibility}}` in its "
-           "frontmatter — a source-reliability LETTER and an information-credibility NUMBER, "
-           "assessed independently and rendered together (e.g. `B2`). The triage kinds carry "
-           "`org_triage` instead (see the vulnerability-triage scheme below).", ""]
+    if scheme_configured and triage:
+        head = (f"**Classification — {ic['name']}:** every entry EXCEPT the triage kinds "
+                f"({triage_phrase}) carries `classification: {{reliability, credibility}}` in its "
+                "frontmatter — a source-reliability LETTER and an information-credibility NUMBER, "
+                "assessed independently and rendered together (e.g. `B2`). The triage kinds carry "
+                "`org_triage` instead (see the vulnerability-triage scheme below).")
+    else:
+        head = (f"**Classification — {ic['name']}:** EVERY entry — including the triage kinds "
+                f"({triage_phrase}), because no vulnerability-triage scheme is configured — "
+                "carries `classification: {reliability, credibility}` in its frontmatter: a "
+                "source-reliability LETTER and an information-credibility NUMBER, assessed "
+                "independently and rendered together (e.g. `B2`). **No entry ships unrated** — "
+                "`tools/check_run.py` FAILs a missing rating.")
+    out = [head, ""]
     out.append("_Source reliability — rate the SOURCE (its authority + track record):_")
     out.append("")
     out.append("| Code | Meaning |")
@@ -814,12 +831,23 @@ def _render_verify_context(profile: dict[str, Any]) -> str:
         rels = ", ".join(c["code"] for c in ic["reliability"])
         creds = ", ".join(c["code"] for c in ic["credibility"])
         tk = ", ".join(f"`{k}`" for k in triage) if triage else "none"
+        if vt["categories"] and triage:
+            scope_sentence = (
+                f"every entry whose kind is NOT a triage kind ({tk}) must carry "
+                f"`classification: {{reliability, credibility}}` with reliability ∈ {{{rels}}} "
+                f"and credibility ∈ {{{creds}}}; triage-kind entries carry `org_triage` instead "
+                "and must NOT carry `classification`. Flag F17 (classification, editorial) when: "
+                "the block is missing on a non-triage entry")
+        else:
+            scope_sentence = (
+                f"EVERY entry — including the triage kinds ({tk}), because no vulnerability-"
+                f"triage scheme is configured — must carry `classification: {{reliability, "
+                f"credibility}}` with reliability ∈ {{{rels}}} and credibility ∈ {{{creds}}}; "
+                "no entry ships unrated. Flag F17 (classification, editorial) when: the block "
+                "is missing on ANY entry")
         lines.append(
-            f"**Classification ({ic['name']}):** every entry whose kind is NOT a triage kind "
-            f"({tk}) must carry `classification: {{reliability, credibility}}` with reliability "
-            f"∈ {{{rels}}} and credibility ∈ {{{creds}}}; triage-kind entries carry `org_triage` "
-            "instead and must NOT carry `classification`. Flag F17 (classification, editorial) "
-            "when: the block is missing on a non-triage entry; a code is outside the vocabulary; "
+            f"**Classification ({ic['name']}):** " + scope_sentence
+            + "; a code is outside the vocabulary; "
             "the reliability letter plainly contradicts the cited source's nature (e.g. `A` on a "
             "lone blog/forum post, or `A` on a source not in the A tier of sources.json); or the "
             "credibility number is inconsistent with the corroboration the entry actually shows "
@@ -1143,6 +1171,24 @@ def selftest() -> int:
     check("Usually reliable" in blocks_a["org-data"], "reliability code definitions rendered")
     check("Classification (NATO Admiralty code)" in blocks_a["verify-context"],
           "classification verification rendered in verify-context")
+    # The triage-kind exemption exists only while a triage scheme does: with
+    # a scheme (the fixture) the split rule renders; without one (variant)
+    # the no-unrated-entry Admiralty fallback must be spelled out for the
+    # composer AND the verifier.
+    check("EXCEPT the triage kinds" in blocks_a["org-data"],
+          "configured triage scheme renders the org_triage split")
+    check("must NOT carry `classification`" in blocks_a["verify-context"],
+          "verify-context keeps the split rule when a scheme is configured")
+    variant_nts = _copy.deepcopy(parsed)
+    variant_nts["vulnerability_triage"] = {"intro": "", "default_category": "",
+                                           "categories": []}
+    vb_nts = render_blocks(validate_profile(variant_nts, tax))
+    check("No entry ships unrated" in vb_nts["org-data"]
+          and "including the triage kinds" in vb_nts["org-data"],
+          "org-data states the no-scheme Admiralty fallback")
+    check("no entry ships unrated" in vb_nts["verify-context"]
+          and "missing on ANY entry" in vb_nts["verify-context"],
+          "verify-context requires a rating on every entry when no triage scheme exists")
     check("public-private gate" in blocks_a["org-data"] and "TLP:CLEAR" not in blocks_a["org-data"],
           "TLP gate language removed from org-data")
 

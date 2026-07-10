@@ -64,7 +64,9 @@ entities: []
 techniques: [T1190, T1505.003]   # every source-supported ATT&CK id (T####[.###]) — the canonical
                                  # mapping surface; ACTIVE ids per attack/enterprise-attack.json;
                                  # the body describes each behavior (inline ids only where
-                                 # essential); [] when none
+                                 # essential); NEVER [] on threat/incident/vulnerability (the
+                                 # access/exploitation vector is always mappable — check_run
+                                 # FAILs an empty mapping); [] only on kinds with no TTP content
 affected_products: ["{Vendor} {Product}"]   # official product names; [] when not product-specific
 cves:
   - id: CVE-YYYY-NNNNN
@@ -98,8 +100,10 @@ update_of: null
 references: []
 deep_dive: false
 deep_dive_category: null
-org_triage: null
-classification: null
+org_triage: null                 # triage block when the org profile configures a scheme
+classification:                  # with NO triage scheme configured (the shipped default),
+  reliability: A                 # vulnerability entries carry the Admiralty block like
+  credibility: 1                 # every other kind — no entry ships unrated
 watchlist_hit: false
 actions:
   - "Patch {Product} to ≥ {version} now; {rotation / isolation / hunt step tied to this entry's facts}."
@@ -111,13 +115,16 @@ affects, detection + hardening — inline links at point of claim, worked-good
 depth. No metadata footer line — frontmatter carries all metadata.}
 ````
 
-**Classification.** The `vulnerability` skeleton above is a triage kind
-(`classification.triage_kinds`), so it carries `org_triage` (a triage block
-when a scheme is configured) and `classification: null`. **Every other kind
-carries the NATO Admiralty classification instead of `org_triage`** — a
-source-reliability letter (A–F) and an information-credibility number (1–6),
-assessed independently (the reliability of the source never inflates the
-credibility of the item):
+**Classification — every entry carries exactly one rating, never zero.**
+The `vulnerability` skeleton above is a triage kind
+(`classification.triage_kinds`): **when the org profile configures a triage
+scheme** it carries `org_triage` and `classification: null`; **when no scheme
+is configured** (the shipped default) it carries the NATO Admiralty
+`classification` block like every other kind — `tools/check_run.py` FAILs an
+entry with neither rating. **Every non-triage kind always carries the NATO
+Admiralty classification** — a source-reliability letter (A–F) and an
+information-credibility number (1–6), assessed independently (the reliability
+of the source never inflates the credibility of the item):
 
 ```yaml
 org_triage: null
