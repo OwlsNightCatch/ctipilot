@@ -1,0 +1,156 @@
+domain: S1
+run_id: 2026-07-10T1228Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T12:31:07Z
+ended_at: 2026-07-10T12:42:18Z
+duration_seconds: 671
+self_telemetry:
+  webfetch_calls: 17
+  websearch_calls: 3
+  bridge_fetches: 28
+
+items:
+  - title: "Gitea Docker image auth bypass (CVE-2026-20896) now confirmed actively exploited — NCSC-CH advisory"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12755", publisher: "NCSC-CH Cyber Security Hub", date: "2026-07-10", role: "primary" }
+      - { url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4", publisher: "GitHub Security Advisory (Gitea Limited, vendor CNA)", date: "2026-06-21", role: "primary" }
+      - { url: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4/", publisher: "Gitea Project blog", date: "2026-06-21", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html", publisher: "The Hacker News (citing Sysdig)", date: "2026-07-06", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-20896", publisher: "NVD", date: "2026-07-07", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12755 (bridge: python3 tools/fetch_source.py ncsc-csh recent 10) → primary: Gitea vendor advisory, URL https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4 → primary: Gitea release blog, URL https://blog.gitea.com/release-of-1.26.3-and-1.26.4/ → corroborating: The Hacker News (Sysdig telemetry), URL https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html → verification: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-20896"
+    summary: |
+      Gitea's official Docker images (not the binary/tarball distributions) shipped an app.ini template that hard-codes REVERSE_PROXY_TRUSTED_PROXIES = * instead of the documented loopback-only default (127.0.0.0/8, ::1/128). Any deployment with reverse-proxy authentication enabled (ENABLE_REVERSE_PROXY_AUTHENTICATION = true) therefore trusts the X-WEBAUTH-USER header from any source IP that can reach the container's HTTP port directly — not only from the intended authenticating proxy — letting an unauthenticated network attacker impersonate any account, including administrators, with no password or token (CVE-2026-20896, CVSS 3.1 9.8, CWE-287 Improper Authentication). Gitea fixed the default in 1.26.3 (released 2026-06-21), making reverse-proxy trust admin-opt-in.
+      The Hacker News reported on 2026-07-06 (13 days after disclosure) that Sysdig had observed only reconnaissance-stage probing from a single ProtonVPN-sourced IP (159.26.98[.]241) against internet-facing Gitea instances, explicitly noting "it has not so far progressed to any exploitation or attack progress" at that time, with roughly 6,200 internet-facing Gitea instances estimated at risk. NCSC-CH's advisory, published 2026-07-10, now classifies the current exploitation status as "Actively Exploited, Proof of Concept Available" — a delta from the recon-only picture four days earlier — though NCSC-CH's post does not itself detail the new exploitation telemetry beyond the status label, so treat the escalation from probing to confirmed exploitation as a national-CERT assessment pending further public detail.
+      Detection-relevant specifics: the vulnerable trust boundary is entirely at the reverse-proxy layer — Gitea's own authentication code is not flawed, the Docker image's default config just trusts a spoofable client-supplied header from any source. A public PoC (github.com/rz1027/CVE-2026-20896) targets exactly this header-injection path.
+    region_nexus: "global; Gitea (self-hosted Git/CI) is common in Swiss and EU public-sector, academic and SME software-development environments (already flagged for a separate act_runner container-escape CVE in this pipeline on 2026-06-27/28)"
+    primary_sector_nexus: "indirect — public-sector and academic self-hosted DevOps infrastructure"
+    sector: "public-sector, education"
+    cves: [CVE-2026-20896]
+    techniques: [T1190]
+    affected_products: ["Gitea (Docker image, official gitea/gitea images)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows unauthenticated attackers to gain full administrative control of Gitea instances via a single custom HTTP header."
+        attribution: "NCSC-CH Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12755"
+      - quote: "Current exploitation status: Actively Exploited, Proof of Concept Available"
+        attribution: "NCSC-CH Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12755"
+      - quote: "Any process that can reach the Gitea container's HTTP port directly — not through the intended authenticating proxy — can impersonate any user"
+        attribution: "GitHub Security Advisory GHSA-f75j-4cw6-rmx4 (Gitea Limited)"
+        source_url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4"
+      - quote: "While we saw the first action from an IP from the ProtonVPN service, 159.26.98[.]241, it has not so far progressed to any exploitation or attack progress."
+        attribution: "Sysdig (Michael Clark), via The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html"
+    extended_notes: |
+      Detection concept (no IOCs): any Gitea deployment fronted by a reverse proxy should have proxy-layer logs (nginx/Traefik/HAProxy access logs, or the container network policy) cross-checked against Gitea's own audit/sign-in event log for X-WEBAUTH-USER-authenticated sessions whose originating IP does not match the configured trusted-proxy CIDR — any hit is by construction a spoofed header, since the trusted-proxy check is exactly what's bypassed. Hardening: set REVERSE_PROXY_TRUSTED_PROXIES explicitly to the proxy's IP/CIDR (never *) and network-isolate the Gitea container's HTTP port so only the reverse proxy can reach it; upgrade to >=1.26.3 (1.26.4 is current, fixes a regression from 1.26.3). Prerequisite for exploitation: ENABLE_REVERSE_PROXY_AUTHENTICATION = true — deployments that authenticate directly against Gitea's own login form (not via a reverse-proxy header) are not exploitable via this path even on a vulnerable image.
+
+  - title: "Keycloak 26.7.0 patches four CVEs incl. TOCTOU admin-role privilege escalation to realm-admin (CVE-2026-9796) — EU public sector's dominant IdP"
+    sources:
+      - { url: "https://www.keycloak.org/2026/07/keycloak-2670-released", publisher: "Keycloak Project release notes", date: "2026-07-09", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/releases/tag/26.7.0", publisher: "GitHub — keycloak/keycloak release 26.7.0", date: "2026-07-09", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-9796", publisher: "NVD", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: "first seen at: keycloak (RSS), URL https://www.keycloak.org/rss.xml → item https://www.keycloak.org/2026/07/keycloak-2670-released → primary: GitHub release notes, URL https://github.com/keycloak/keycloak/releases/tag/26.7.0 → verification: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-9796"
+    summary: |
+      Keycloak 26.7.0 (released 2026-07-09) ships fixes for four CVEs. The headline is CVE-2026-9796 (CVSS 3.1 6.5 medium, CWE-367 Time-of-check Time-of-use race condition, GHSA-pq65-77rc-7r8c): an authenticated administrator who already holds the manage-clients role in a realm can win a race in Keycloak's name-based admin-role check — during the window between the permission check and its use, the attacker renames their OAuth client, and the system incorrectly binds the composite realm-admin role to the attacker. The escalation to full realm-admin (control over every user and every client in the realm) persists after the attacker's original manage-clients role is revoked and survives a server reboot, making it a durable backdoor from a mid-tier admin role rather than a one-shot privilege check bypass.
+      Three companion CVEs land in the same release: CVE-2026-9689 (CVSS 4.2, CWE-1288, GHSA-wcvj-vpvw-9rr5) — HTTP Parameter Pollution in the OIDC redirect_uri parameter lets a remote attacker manipulate the authentication response when a client is configured to accept broad redirect URIs (requires user interaction); CVE-2026-9798 (GHSA-q6h7-xxp7-7429) — the CIBA (Client-Initiated Backchannel Authentication) flow bypasses brute-force account lockout, reopening credential-stuffing/brute-force exposure that lockout policy is meant to close; and CVE-2026-11986 (GHSA-6w3v-mcfh-m3q7) — Keycloak's Fine-Grained Admin Permissions v1 (FGAP v1) authorization model allows unassigning any role, an integrity/authorization-boundary flaw in the permissions model itself.
+      Keycloak is the dominant open-source identity-and-access platform across European public administration and the upstream of Red Hat Build of Keycloak — a token/role-model flaw here collapses trust assumptions across every federated relying party, the same context flagged for the CVE-2026-11800 JWT algorithm-confusion entry covered on 2026-06-28.
+    region_nexus: "europe; Keycloak is the dominant open-source IdP across EU/Swiss public administration"
+    primary_sector_nexus: "direct — identity infrastructure underpinning public-sector federated login"
+    sector: "public-sector, finance, healthcare, education"
+    cves: [CVE-2026-9796, CVE-2026-9689, CVE-2026-9798, CVE-2026-11986]
+    techniques: [T1068, T1110]
+    affected_products: ["Keycloak", "Red Hat Build of Keycloak (RHBK, upstream-affected — confirm vendor errata separately)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Admin role rename TOCTOU bypasses checkAdminRoles — realm-wide escalation from manage-clients admin/rbac"
+        attribution: "Keycloak Project (GHSA-pq65-77rc-7r8c)"
+        source_url: "https://github.com/keycloak/keycloak/releases/tag/26.7.0"
+      - quote: "A flaw was found in Keycloak. An authenticated administrator with the manage-clients role can exploit a Time-of-check to time-of-use (TOCTOU) vulnerability in the name-based admin role checks."
+        attribution: "NVD (CVE-2026-9796 CNA description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-9796"
+      - quote: "HTTP Parameter Pollution in OIDC redirect URI allows response parameter duplication"
+        attribution: "Keycloak Project (GHSA-wcvj-vpvw-9rr5)"
+        source_url: "https://github.com/keycloak/keycloak/releases/tag/26.7.0"
+    extended_notes: |
+      Note the CVE-2026-9796 NVD published-date is 2026-05-28 — the flaw was assigned/disclosed roughly six weeks before the fix shipped; the in-window news is the 26.7.0 release landing the patch, not a new disclosure. Detection concept for CVE-2026-9796 (no IOCs): correlate Keycloak admin-event log CLIENT rename operations (UPDATE on clients resource) performed by principals holding only manage-clients — not realm-admin — against subsequent role-mapping changes or realm-admin-scoped API calls from the same principal; any realm-admin action from an account whose static role grant is manage-clients-only is the discriminator. For CVE-2026-9798, monitor CIBA backchannel authentication endpoint request volume per user identifier — a lockout policy that isn't triggering despite repeated failures on the CIBA flow (vs. the standard flow, where it does trigger) is the tell. Hardening: upgrade to 26.7.0 (or the matching Red Hat Build of Keycloak / Red Hat SSO erratum once published), audit which principals hold manage-clients and treat it as equivalent to realm-admin until patched, and review FGAP v1 role-unassignment usage if fine-grained admin permissions are in use.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in org-profile.yaml — sweep is a no-op per spawn message; general coverage rules applied unchanged. Confirmed no new CISA KEV additions in-window (catalogVersion 2026.07.07, no dateAdded >= 2026-07-08); ENISA EUVD exploited/criticals/lastvulnerabilities listings checked in full, no new entries beyond items already dropped as duplicates of prior coverage."
+
+cve_table:
+  - cve: CVE-2026-20896
+    product: "Gitea (Docker image)"
+    cvss: "9.8"
+    epss: null
+    kev: false
+    exploited: "NCSC-CH assesses actively exploited (2026-07-10); Sysdig observed only reconnaissance-stage scanning as of 2026-07-06 (contradiction noted, see summary)"
+    patch: "1.26.3 (2026-06-21); current 1.26.4"
+    source: "https://security-hub.ncsc.admin.ch/#/posts/12755"
+  - cve: CVE-2026-9796
+    product: "Keycloak"
+    cvss: "6.5"
+    epss: null
+    kev: false
+    exploited: "not reported exploited"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-9689
+    product: "Keycloak"
+    cvss: "4.2"
+    epss: null
+    kev: false
+    exploited: "not reported exploited"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-9798
+    product: "Keycloak"
+    cvss: null
+    epss: null
+    kev: false
+    exploited: "not reported exploited"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-11986
+    product: "Keycloak"
+    cvss: null
+    epss: null
+    kev: false
+    exploited: "not reported exploited"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "WebFetch listing returned clean but newest item dated 2026-06-12 (UNC1151/Ghostwriter Gmail campaign, already covered 2026-07-09) — no in-window items."
+  - source_id: jpcert
+    reason: "WebFetch listing newest item 2026-06-17 — no in-window items."
+  - source_id: horizon3-ai
+    reason: "WebFetch listing newest item 2026-06-12 — no in-window items."
+  - source_id: sansec-research
+    reason: "WebFetch listing newest item 2026-07-02 (Amasty Magento disclosure) — outside 24h window, no in-window items."
+  - source_id: flatt-security
+    reason: "WebFetch listing newest item 2026-06-01 — no in-window items."
+  - source_id: cisco-psirt
+    reason: "RSS newest substantive advisory dated 2026-07-06 (Cisco ISE RCE/info-disclosure, CVE-2026-20181/20190, disclosed 2026-06-17, no confirmed exploitation) — outside 24h window and not a fresh delta; only in-window item is a routine July-15 advance notification with no disclosed content yet."
+  - source_id: zdi
+    reason: "RSS newest items dated 2026-07-08 — all low/medium severity consumer-software 0-days (Ollama DoS, Glary Utilities LPE, AnyDesk DoS, Lorex camera Pwn2Own entries), none rising to the relevance bar for this constituency."
+  - source_id: vulncheck
+    reason: "RSS feed returned zero items (both direct and jina-fallback); WebFetch not separately attempted this run given time budget — treat as recipe check needed, not logged as fetch_failures since feed responded 200 with empty item list rather than an error."
+  - source_id: calif-codex
+    reason: "Feed (direct, after jina RSS variant returned empty) newest item dated 2026-07-01 (CVE-2026-50052 Squid) — outside 24h window."

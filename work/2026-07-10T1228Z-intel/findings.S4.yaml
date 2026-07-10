@@ -1,0 +1,136 @@
+domain: S4
+run_id: 2026-07-10T1228Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T12:32:03Z
+ended_at: 2026-07-10T12:43:51Z
+duration_seconds: 708
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 8
+  bridge_fetches: 4
+items:
+  - title: "\"Helix\" data-extortion group bypasses Conditional Access with device-code vishing to bulk-exfiltrate SharePoint libraries"
+    sources:
+      - { url: "https://reliaquest.com/blog/threat-spotlight-helix-new-name-in-data-extortion-ecosystem", publisher: "ReliaQuest", date: "2026-07-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-helix-vishing-group-emerges-in-sharepoint-data-theft-attacks/", publisher: "BleepingComputer", date: "2026-07-09", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/new-helix-vishing-group-emerges-in-sharepoint-data-theft-attacks/ -> primary: ReliaQuest, URL https://reliaquest.com/blog/threat-spotlight-helix-new-name-in-data-extortion-ecosystem"
+    summary: |
+      ReliaQuest documents a new data-extortion cluster it calls Helix, assessed as a likely rebrand/continuation of the BlackFile (UNC6671) and ShinyHunters (UNC6240) extortion ecosystems based on shared infrastructure and technique overlap. Initial access is voice phishing: operators impersonate a target's direct manager, spoofing the caller-ID to match, and talk the victim into completing an Entra ID device-code authentication flow in Chrome — this captures a valid session token (T1528 Steal Application Access Token) without ever touching the account password, and the device-code flow itself sidesteps Conditional Access policies that would otherwise block an unfamiliar sign-in. Within minutes of the fraudulent sign-in, the operators register a new Microsoft Authenticator app against the compromised identity from the same residential-proxy IP used for the sign-in (T1098.005 Device Registration), establishing MFA-backed persistence that looks like ordinary user behavior. Enumeration and exfiltration are then fully automated: a Python tool using a `python-requests/2.28.1` user-agent issues `contentclass:STS_Site` and wildcard SharePoint search queries to inventory every reachable site/library before bulk-downloading content (T1213.002 Data from Information Repositories: SharePoint). ReliaQuest ties Helix to BlackFile via shared hosting (an exfiltration IP four addresses away, on the same AS 51852 / Private Layer INC) and a shared domain registrar (NICENIC) previously seen in ShinyHunters/Scattered Spider infrastructure; no specific named victims are disclosed in the primary write-up. ReliaQuest states disabling device-code authentication is the single highest-impact mitigation, alongside correlating unfamiliar sign-ins with new MFA-device registrations and SharePoint bulk-download volume within short time windows.
+    region_nexus: "global; SharePoint + Entra ID Conditional Access is the default identity/collaboration stack across Swiss and EU public-sector and enterprise tenants, so the bypass is directly reachable there"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector"
+    cves: []
+    techniques: [T1566.004, T1528, T1098.005, T1213.002]
+    affected_products: ["Microsoft SharePoint", "Microsoft Entra ID", "Microsoft 365"]
+    entity_keys: ["actor:unc6671", "actor:shinyhunters"]
+    new_entities:
+      - { key: "actor:helix-extortion", type: actor, name: "Helix", aliases: [],
+          summary: "Data-extortion cluster documented by ReliaQuest (2026-07-09), assessed as a likely continuation of BlackFile (UNC6671) / ShinyHunters (UNC6240) infrastructure and tradecraft; uses manager-impersonation vishing to drive Entra ID device-code phishing, bypassing Conditional Access, followed by rapid MFA-device registration and automated SharePoint enumeration/bulk exfiltration." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Helix likely emerged from the 'BlackFile' and 'ShinyHunters' ecosystem. Groups fragment and rebrand, but the techniques and infrastructure persist across every iteration."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-helix-new-name-in-data-extortion-ecosystem"
+      - quote: "Device code phishing then sidesteps Conditional Access policies, and automated tools enumerate and mass-download SharePoint libraries before bulk exfiltration triggers an alert."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-helix-new-name-in-data-extortion-ecosystem"
+      - quote: "Disabling device code authentication is the single highest-impact action."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-helix-new-name-in-data-extortion-ecosystem"
+    extended_notes: |
+      Triage note for the composer: benign lookalike discriminator per the source — legitimate device-code use is rare in modern tenants (mostly CLI/headless auth flows); the discriminating features are (1) an unfamiliar or manager-impersonation-preceded phone call immediately before the sign-in, (2) a NEW MFA authenticator registered within minutes of a device-code sign-in from a residential-proxy IP the account has never used, (3) SharePoint search queries using `contentclass:STS_Site` / wildcard patterns at automation speed with a `python-requests` user-agent rather than a browser UA, and (4) bulk-download volume disproportionate to the user's normal SharePoint usage baseline. Any one of these alone can be benign (IT staff use device-code auth for headless scripts; users do sometimes get new phones); the co-occurrence within a short window is the signal. Detection telemetry classes: Entra ID sign-in logs (auth method = device code), MFA-registration audit events, SharePoint/Graph API access logs, and network egress logging for the automation user-agent pattern.
+
+  - title: "DOJ: former DigitalMint ransomware negotiator secretly fed BlackCat/ALPHV victims' insurance limits and negotiating positions to the extortionists to inflate ransoms"
+    sources:
+      - { url: "https://www.justice.gov/opa/pr/florida-ransomware-negotiator-who-extorted-and-attacked-multiple-us-victims-sentenced-prison", publisher: "U.S. Department of Justice", date: "2026-07-09", role: "primary" }
+      - { url: "https://cyberscoop.com/digitalmint-ransomware-negotiator-angelo-martino-sentenced/", publisher: "CyberScoop", date: "2026-07-09", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/us-ransomware-negotiator-gets-4-years-in-prison-for-blackcat-attacks/", publisher: "BleepingComputer", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/us-ransomware-negotiator-gets-4-years-in-prison-for-blackcat-attacks/ -> pivot: cyberscoop, URL https://cyberscoop.com/digitalmint-ransomware-negotiator-angelo-martino-sentenced/ -> primary: DOJ, URL https://www.justice.gov/opa/pr/florida-ransomware-negotiator-who-extorted-and-attacked-multiple-us-victims-sentenced-prison"
+    summary: |
+      The US Department of Justice sentenced Angelo John Martino III, a former ransomware negotiator at incident-response firm DigitalMint, to 70 months in prison for conspiring with BlackCat/ALPHV affiliates against the very clients he was hired to represent. While negotiating on victims' behalf, Martino covertly shared each company's confidential negotiating position and cyber-insurance policy limits with the BlackCat operators, letting the attackers calibrate ransom demands to extract the maximum a victim could pay; DOJ ties this scheme to five extorted US companies (nonprofit, financial-services, hospitality and medical-sector victims) totalling $75.3M in ransom, plus a further $1.3M from a separate BlackCat deployment Martino ran with two co-conspirators (Kevin Tyler Martin, Ryan Clifford Goldberg — both also incident-response/red-team professionals, sentenced to 4 years each in April 2026). Law enforcement seized roughly $10M in assets (real estate, cryptocurrency, luxury goods) purchased with the proceeds. This is not a new intrusion technique; it is a documented, adjudicated case of insider betrayal inside the ransomware-response supply chain itself — the negotiator a victim organization retains to reduce its exposure was, in five of nine attempted extortions, working for the attacker.
+    region_nexus: "US legal case with no direct Swiss/EU victim; the structural risk is not jurisdiction-specific — any organisation (including Swiss/EU public-sector and CI operators) that retains a third-party ransomware-negotiation/incident-response firm during an extortion event is exposed to the same single-point-of-trust failure"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector, financial, healthcare, non-profit"
+    cves: []
+    techniques: [T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:blackcat-alphv", type: actor, name: "BlackCat / ALPHV", aliases: ["ALPHV", "BlackCat"],
+          summary: "Ransomware-as-a-service brand active through at least 2023-2025; the DOJ's Martino case documents affiliate collusion with a victim-side ransomware negotiator to inflate extortion payments (DOJ, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Angelo Martino sold out the very victims he was hired to represent, handing their confidential negotiating positions to BlackCat actors to drive up ransoms and enrich himself"
+        attribution: "Brett Leatherman, FBI (via CyberScoop)"
+        source_url: "https://cyberscoop.com/digitalmint-ransomware-negotiator-angelo-martino-sentenced/"
+      - quote: "Martino had also shared confidential information about victims' insurance policy limits and negotiation positions with operators."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/us-ransomware-negotiator-gets-4-years-in-prison-for-blackcat-attacks/"
+      - quote: "This was not a crime of opportunity or momentary weakness; it was a sustained abuse of a fiduciary-like relationship driven by a single purpose: greed"
+        attribution: "US prosecutors (via CyberScoop)"
+        source_url: "https://cyberscoop.com/digitalmint-ransomware-negotiator-angelo-martino-sentenced/"
+    extended_notes: |
+      Operational takeaway for SOC/IR management, not a hunt signal: when engaging a ransomware-negotiation or IR retainer, segregate negotiator-to-attacker and negotiator-to-client communication channels with independent audit logging, avoid letting a single individual control both sides of a negotiation without oversight, and treat the sharing of insurance-limit figures with any external party as a need-to-know-controlled disclosure. This is a governance/vendor-risk lesson, not a technical detection concept — flagging as borderline for the main agent given the US-only venue.
+    borderline: true
+    borderline_reason: "US DOJ case with no Swiss/EU victim named; included for the transferable vendor-trust/insider-risk lesson to any organisation that retains a ransomware negotiation or IR firm during an extortion event — main agent to weigh fit against daily-vs-weekly placement."
+
+  - title: "Signal username deactivation/reuse let an impersonator run The Intercept's tip line for four months, illustrating a persona-hijack risk for any org's secure-tipline account"
+    sources:
+      - { url: "https://freedom.press/digisec/blog/lessons-from-the-intercepts-signal-tipline-username-breach/", publisher: "Freedom of the Press Foundation", date: "2026-07-08", role: "primary" }
+      - { url: "https://www.dropsitenews.com/p/intercept-signal-tip-line-breach-hack", publisher: "Drop Site News", date: "2026-07-08", role: "primary (original break)" }
+      - { url: "https://cyberinsider.com/the-intercepts-signal-tipline-username-was-hijacked-for-months/", publisher: "CyberInsider", date: "2026-07-09", role: "corroborating" }
+    discovery_trace: "first seen at: cyberinsider, URL https://cyberinsider.com -> pivot: cyberinsider article, URL https://cyberinsider.com/the-intercepts-signal-tipline-username-was-hijacked-for-months/ -> primary: Freedom of the Press Foundation, URL https://freedom.press/digisec/blog/lessons-from-the-intercepts-signal-tipline-username-breach/"
+    summary: |
+      Drop Site News and Freedom of the Press Foundation (FPF) document that the Signal username The Intercept publicly advertised for its confidential tip line (TheIntercept.01) was taken over by an impersonator from at least February through June 2026, who actively solicited sources roughly 100 times between April and May while the fraudulent account remained listed on The Intercept's official tip page. FPF's analysis, citing Signal-Server source (`RemoveExpiredAccountsCommand.java`), identifies the takeover mechanism as a platform design property rather than a vulnerability: Signal usernames become claimable again after (1) roughly 120 days of account inactivity triggering automatic deactivation, (2) a ~one-week grace window after a voluntary username change during which the old username is released, or (3) a SIM-swap against the phone number tied to the account. This is a persona/impersonation technique class (T1684.001), not an intrusion of Signal itself or of The Intercept's systems — no Signal security flaw was exploited — but it directly threatens confidentiality and safety for whistleblowers/confidential sources who believed they were contacting the legitimate outlet. FPF's hardening guidance: keep tipline accounts continuously active, avoid changing a publicly advertised username, secure the underlying phone number with a carrier PIN against SIM-swapping, and enable Signal's Registration Lock PIN.
+    region_nexus: "global platform-design issue; directly applicable to any Swiss/EU public-sector, ombudsman, or journalism-adjacent whistleblower/tipline channel run over Signal (a messaging platform increasingly recommended for government and investigative secure-communications use)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector"
+    cves: []
+    techniques: [T1684.001, T1586]
+    affected_products: ["Signal"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Signal's code suggests that accounts are automatically deactivated after 120 days, at which point you will also lose access to your username."
+        attribution: "Freedom of the Press Foundation"
+        source_url: "https://freedom.press/digisec/blog/lessons-from-the-intercepts-signal-tipline-username-breach/"
+      - quote: "If you change your username, after about a week, someone else can snag it."
+        attribution: "Freedom of the Press Foundation"
+        source_url: "https://freedom.press/digisec/blog/lessons-from-the-intercepts-signal-tipline-username-breach/"
+      - quote: "The fraudulent account reportedly began soliciting tips from potential sources as early as February 2026 and actively promoted the compromised username across social media."
+        attribution: "CyberInsider"
+        source_url: "https://cyberinsider.com/the-intercepts-signal-tipline-username-was-hijacked-for-months/"
+    extended_notes: |
+      Confidence set to MEDIUM because FPF itself presents three "plausible" root-cause mechanisms without confirming which one actually occurred in this case (inactivity deactivation vs. username-change window vs. SIM-swap) — the lesson (keep tipline accounts active, lock registration, don't rotate the public username) holds regardless of which mechanism fired. No technical detection telemetry applies here (this is a platform/process control, not a network-observable behavior); the hardening lever is the actionable takeaway.
+    borderline: true
+    borderline_reason: "US newsroom (The Intercept) victim, not a Swiss/EU organisation; included because the platform-design risk (Signal username reuse after inactivity/rename) is directly transferable to any Swiss/EU public-sector or investigative body operating a Signal-based secure tipline."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no supplier watchlist — sweep is a no-op per spawn instructions; general coverage rules applied unchanged. No supplier-breach signal surfaced incidentally during normal S4 research this run."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "Direct WebFetch returned HTTP 403 (known-403 host); bridge fetch (tools/fetch_source.py url) returned the page shell successfully but it is a JS-rendered listing with no server-rendered news items in the static HTML captured — no in-window ICO enforcement items could be confirmed via this route this run. No alternate corroborating source found for fresh ICO action in window."
+  - source_id: cnil-fr
+    reason: "Reachable; most recent item (EDPB anonymisation/web-scraping guidance, 2026-07-09) is guidance, not an enforcement/breach notice, and falls outside S4's incident/disclosure remit — no in-window CNIL enforcement action found."
+  - source_id: databreaches-net
+    reason: "Feed reachable; most recent item published 2026-07-09T10:33Z falls just outside the 24h window (window starts 2026-07-09T12:28Z); no genuinely new in-window items."
+  - source_id: troyhunt
+    reason: "Feed reachable; most recent post (Weekly Update 511) published 2026-07-08, outside the 24h window; no in-window items."
+  - note: "Spain arrest of an alleged CyberArmy of Russia Reborn (CARR) / Z-Pentest / NoName057(16) supporter (FBI tip, published via The Record / BleepingComputer / SecurityAffairs on 2026-07-07/08) is a strong EU law-enforcement action directly relevant to a pro-Russian hacktivist ecosystem that has repeatedly targeted Swiss/EU critical infrastructure with DDoS — but every source found for it predates the 24h window (published 2 to 3 days before this run) and no fresher delta was located. Dropped per recency discipline; flagging in case an earlier run's S4/S2 slice missed it entirely (grep of prior_coverage.json for \"z-pentest\"/\"palencia\"/\"cyberarmy of russia\" returned zero matches, i.e. this appears genuinely uncovered so far, just stale for today's window)."
+  - note: "ransomware.live recentvictims sweep covered 2026-07-05 through 2026-07-10; two Swiss-tagged victims (PB Fiduciaire SA / bravox, 2026-07-07; ENB Versich / payload, 2026-07-05) and one EU-public-sector claim (The commune of Castries, France / payload, 2026-07-09T13:27Z) were checked. Castries falls inside the 24h window but carries only leak-site-tracker sourcing (ransomware.live, hookphish, ThreatMon, X/Twitter) with no victim statement or high-reliability journalism — dropped per the fake-news / leak-site-corroboration gate. The two Swiss victims are both outside the 24h window (07-05 and 07-07)."
+  - note: "SEC EDGAR full-text search for 8-K Item 1.05 filings (cybersecurity incident disclosures) in the 2026-07-01 to 2026-07-10 range returned only 3 hits, all filed 2026-07-02 or 2026-07-06 — outside the 24h window. No in-window Item 1.05 filings found."

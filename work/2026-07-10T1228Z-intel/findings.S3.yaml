@@ -1,0 +1,263 @@
+domain: S3
+run_id: 2026-07-10T1228Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T12:31:46Z
+ended_at: 2026-07-10T12:45:41Z
+duration_seconds: 835
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 4
+  bridge_fetches: 26
+
+items:
+  - title: "GoldFactory's GoldPickaxe mobile banking trojan returns, abusing Android's SessionInstaller API and AES-encrypted dynamic DEX loading (Zimperium zLabs)"
+    sources:
+      - { url: "https://zimperium.com/blog/goldpickaxe-returns-when-your-biometric-information-is-as-important-as-your-money", publisher: "Zimperium zLabs", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: zimperium-zlabs, URL https://zimperium.com/blog/rss.xml → primary: Zimperium zLabs, URL https://zimperium.com/blog/goldpickaxe-returns-when-your-biometric-information-is-as-important-as-your-money (no pivot needed)"
+    summary: |
+      Zimperium zLabs documented a new GoldPickaxe variant (GoldFactory lineage, first profiled by
+      Group-IB in 2024) distributed via phishing sites spoofing the Chinese video platform KuaiBo.
+      The dropper abuses the legitimate Android SessionInstaller API — normally used for split-APK
+      and self-update installs — to silently install the payload package without triggering the
+      conspicuous "install unknown apps" system prompt a manual sideload would show. Once installed,
+      the payload decrypts an AES-encrypted DEX blob (payload_dex.bin) and dynamically loads it at
+      runtime, so static/signature scanners see only an encrypted blob rather than executable code;
+      a companion native library encrypts C2 traffic. The malware abuses Accessibility Services and
+      the Media Projection API for screen scraping/recording, layers a fake lock-screen over the
+      real one to harvest PIN/pattern/password unlock credentials, and uses the device camera to
+      capture biometric/ID-document imagery — on top of routine SMS, contact and call-log theft.
+      Zimperium found 19 samples across five countries, with a hardcoded target list of 118
+      distinct Indonesian banking/e-wallet/financial apps; Indonesia is the primary target, with
+      secondary samples touching Malaysia, Singapore, Saudi Arabia and the US. No European or Swiss
+      targeting is reported, but the technique class — legitimate installer-API abuse to dodge the
+      sideload warning, encrypted dynamic code loading to dodge static AV, and fake-lock-screen
+      credential capture — is directly transferable to any mobile-banking threat model.
+    region_nexus: "Southeast Asia primary (Indonesia; also Malaysia, Singapore, Saudi Arabia, US samples) — no confirmed European/Swiss targeting; technique class (SessionInstaller-API sideload evasion, encrypted dynamic DEX loading, fake lock-screen credential capture) is directly transferable to any mobile-banking deployment, including Swiss/EU institutions."
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1566, T1027, T1140, T1056.002, T1573.001]
+    affected_products: ["Android (SessionInstaller API abuse; no OS-level vulnerability — legitimate API misuse)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:goldfactory", type: actor, name: "GoldFactory", aliases: [],
+          summary: "Financially motivated mobile-malware operator first profiled by Group-IB (2024) for the GoldDigger/GoldPickaxe banking-trojan family targeting APAC mobile-banking users; Zimperium documents a returning GoldPickaxe variant with new evasion techniques (Zimperium zLabs, 2026-07-09)." }
+      - { key: "tool:goldpickaxe", type: tool, name: "GoldPickaxe", aliases: [],
+          summary: "Android banking trojan (GoldFactory family) that harvests biometric/ID imagery, SMS, credentials via a fake lock-screen, and banking-app data; 2026 variant abuses the SessionInstaller API for silent install and AES-encrypted dynamic DEX loading for static-detection evasion (Zimperium zLabs, 2026-07-09)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Rather than relying on legacy installation methods that trigger conspicuous system prompts, the dropper utilizes the legitimate Android SessionInstaller API."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/goldpickaxe-returns-when-your-biometric-information-is-as-important-as-your-money"
+      - quote: "The malware is engineered to harvest lock screen credentials and exfiltrate sensitive SMS logs, contact lists, and critical biometric data."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/goldpickaxe-returns-when-your-biometric-information-is-as-important-as-your-money"
+      - quote: "The threat actors are primarily focusing their efforts on the Southeast Asian market, specifically targeting users of mobile banking, e-wallets, and financial applications."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/goldpickaxe-returns-when-your-biometric-information-is-as-important-as-your-money"
+    extended_notes: |
+      Single-source (Zimperium); no independent corroboration found in-window. Detection concept:
+      mobile EDR/MTD telemetry on PackageInstaller/SessionInstaller session-commit events originating
+      from non-Play-Store install sources; Accessibility-Service enablement immediately following a
+      sideloaded install; apps simultaneously requesting Camera + SMS + Accessibility + Overlay
+      permissions. Hardening: MDM/UEM policy blocking unknown-source installs and SessionInstaller-API
+      use outside the managed app-distribution channel; Play Protect; permission-combination alerting
+      in EMM.
+    borderline: true
+    borderline_reason: "Primary targeting is Southeast Asia with no confirmed European/Swiss victim; included for transferable technique value (installer-API sideload evasion, encrypted dynamic DEX loading) to mobile-banking-app defenders in the finance sector."
+
+  - title: "RedWing: a Russia-focused Android spyware-as-a-service that defeats voice-based 2FA via SIM call-forwarding codes (Zimperium zLabs)"
+    sources:
+      - { url: "https://zimperium.com/blog/redwing-a-mobile-malware-as-a-service-operation", publisher: "Zimperium zLabs", date: "2026-07-07", role: "primary" }
+    discovery_trace: "first seen at: zimperium-zlabs, URL https://zimperium.com/blog/rss.xml → primary: Zimperium zLabs, URL https://zimperium.com/blog/redwing-a-mobile-malware-as-a-service-operation (no pivot needed)"
+    summary: |
+      Zimperium zLabs documented RedWing, a commercial-grade Android spyware Malware-as-a-Service
+      operation sold via a Telegram bot with tiered subscription pricing and a server-side dropper
+      constructor panel that mimics legitimate app-store listings (Google Play, Galaxy Store,
+      AppGallery, RuStore) to make phishing-distributed droppers look genuine. RedWing's operators
+      overlap with the previously documented "Oblivion" Android RAT (dropper-stage and overlay
+      similarities). Once installed, RedWing deploys fraudulent banking overlays and uses regex-based
+      extraction (OTP: ^\d{4,8}$, card number: ^\d{13,19}$, CVV: ^\d{3,4}$) to automatically harvest
+      credentials as victims type them. Its most notable capability is abusing USSD call-forwarding
+      codes (*21*) to silently redirect the victim's voice calls at the SIM/carrier level — defeating
+      banks' voice-callback OTP fallback, which many institutions still treat as a stronger
+      authentication factor than SMS. A unified C2 panel drives phishing campaigns and overlay
+      injection across a target list of 82 Russian financial institutions without requiring new APK
+      releases per campaign. Zimperium frames the operation's low barrier to entry (documentation,
+      demo videos, referral incentives) as what makes it dangerous beyond its immediate Russian
+      target set.
+    region_nexus: "Russia-focused (82 named Russian financial institutions); the MaaS commoditization model and the SIM call-forwarding 2FA-bypass technique are directly transferable to any region using voice-callback OTP as a banking authentication fallback, including Swiss/EU institutions."
+    primary_sector_nexus: "indirect"
+    sector: "finance"
+    cves: []
+    techniques: [T1566, T1056.002, T1071.001]
+    affected_products: ["Android (no OS vulnerability — social-engineered install + carrier-level USSD call-forwarding abuse)"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:redwing-android-maas", type: tool, name: "RedWing", aliases: [],
+          summary: "Android spyware-as-a-service sold via Telegram bot with a server-side dropper-constructor panel; overlaps with the Oblivion Android RAT; targets 82 Russian financial institutions with banking overlays and USSD-based call-forwarding hijacking of voice-based 2FA (Zimperium zLabs, 2026-07-07)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "RedWing is a fully developed, commercial-grade MaaS product with seller documentation, videos, and a bot-driven subscription model that provides a low entry barrier for novice attackers."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/redwing-a-mobile-malware-as-a-service-operation"
+      - quote: "By deploying fraudulent banking overlays and exploiting SMS permissions to intercept 2FA messages, RedWing poses a severe and direct threat to financial institutions."
+        attribution: "Zimperium zLabs"
+        source_url: "https://zimperium.com/blog/redwing-a-mobile-malware-as-a-service-operation"
+    extended_notes: |
+      Single-source (Zimperium); published 2026-07-07, ~60h before this run (within the 72h
+      developing window, outside the strict 24h window — included as still-fresh, no prior
+      coverage found). Detection concept: carrier/telecom-side monitoring of USSD call-forwarding
+      code (*21*) invocation immediately following a sideloaded-app install event; mobile EDR
+      alerting on apps that both request SMS-read permission and programmatically dial USSD
+      sequences. Hardening: bank-side move away from voice-callback OTP as a standalone fallback
+      factor toward app-based/hardware-token MFA that does not depend on carrier call routing.
+    borderline: true
+    borderline_reason: "Primary targeting is Russian financial institutions with no confirmed European/Swiss victim; included for the transferable MaaS-commoditization and SIM call-forwarding 2FA-bypass technique, relevant to finance-sector defenders relying on voice-OTP fallback."
+
+  - title: "npm supply-chain compromise of @injectivelabs/sdk-ts hides a wallet-key stealer inside fake 'telemetry', evading install-time scanners via runtime-triggered credential-API hooking (Aikido Security)"
+    sources:
+      - { url: "https://www.aikido.dev/blog/compromised-injectivelabs-exfiltrates-keys", publisher: "Aikido Security", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: aikido-security, URL https://www.aikido.dev/blog/rss.xml → primary: Aikido Security, URL https://www.aikido.dev/blog/compromised-injectivelabs-exfiltrates-keys (no pivot needed)"
+    summary: |
+      Aikido Security published a technical breakdown (2026-07-09) of a compromise of
+      @injectivelabs/sdk-ts (an npm package with ~50,000 weekly downloads, part of the Injective
+      blockchain SDK ecosystem). The underlying compromise event occurred on 2026-06-08 via
+      what Aikido assesses as a GitHub account takeover (commits came from an account with an
+      established contribution history); the malicious 1.20.21 release was live for under an hour
+      before the maintainer reverted it, but in that window the attacker also republished the same
+      1.20.21 version number, pinned to the poisoned SDK, across 17 other packages in the
+      @injectivelabs scope — so any project depending on any of the 17 (not just sdk-ts directly)
+      resolved the stealer transitively. The payload itself is notable for what it does NOT do:
+      it carries no install-time (postinstall) hook at all, so scanners and sandboxes that only
+      watch lifecycle scripts saw a clean package. Instead, two one-line hooks were inserted into
+      the SDK's own key-derivation entry points, PrivateKey.fromMnemonic and PrivateKey.fromHex —
+      the exact functions an application calls to turn a seed phrase or raw hex string into a
+      usable wallet — so the secret is captured on every legitimate derivation call at runtime.
+      The hook function is documented in its own doc-comment as "anonymized usage metrics for SDK
+      optimization"; the exfiltration destination is stored as a character-code array and rebuilt
+      only at runtime, defeating plaintext string search of the bundle, and decodes to
+      testnet.archival.chain.grpc-web.injective[.]network — a subdomain crafted to look like
+      Injective's own gRPC-web infrastructure. Captured mnemonics/keys are base64-batched and sent
+      via the X-Request-Id HTTP header (not the request body) with a application/grpc-web+proto
+      content-type, so the exfil traffic is indistinguishable on the wire from a normal Injective
+      SDK network call; every failure path uses a silent empty catch so a blocked send never
+      surfaces an error. npm's own download counter shows only 310 downloads of the malicious
+      version before removal (against ~87 dependent packages), and Aikido notes containment was
+      incomplete at time of writing — the malicious version remained deprecated-but-downloadable
+      on npm and the release artifacts were still present on GitHub.
+    region_nexus: "global — npm/Node.js ecosystem; no specific European or Swiss victim named, but the technique class (runtime-triggered, lifecycle-hook-free credential hooking; protocol-mimicking exfil channel) applies to any organisation, including Swiss/EU public-sector software suppliers, consuming npm dependencies."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance"
+    cves: []
+    techniques: [T1195.002, T1056.004, T1132, T1071.001]
+    affected_products: ["npm package @injectivelabs/sdk-ts (and 17 dependent @injectivelabs scope packages, all version 1.20.21)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:injectivelabs-npm-sdk-ts-supply-chain-2026", type: incident, name: "@injectivelabs/sdk-ts npm supply-chain compromise (2026)", aliases: [],
+          summary: "GitHub-account-takeover-driven npm supply-chain compromise (2026-06-08) of @injectivelabs/sdk-ts and 17 dependent packages, injecting a runtime-triggered (no install-hook) wallet-key stealer disguised as telemetry that hooks PrivateKey.fromMnemonic/fromHex and exfiltrates via a gRPC-web-mimicking channel; disclosed by Aikido Security 2026-07-09." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The malicious `1.20.21`was published at 22:59 GMT+2 on June 8, 2026, the maintainer reverted the change at 23:18, and a clean version was published at 23:48."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/compromised-injectivelabs-exfiltrates-keys"
+      - quote: "Each hook fires before the real derivation runs, so the secret is captured on every legitimate call"
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/compromised-injectivelabs-exfiltrates-keys"
+      - quote: "Because the trigger is key derivation at runtime and not a lifecycle script, install-time scanners and sandboxes that only watch postinstall see a clean package."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/compromised-injectivelabs-exfiltrates-keys"
+    extended_notes: |
+      Underlying compromise event is from 2026-06-08 (contained same day); this Aikido write-up
+      is the first public technical disclosure and is fresh (published/last-updated 2026-07-09),
+      hence treated as new in-window signal per the "freshest describing source" recency rule, not
+      as an update-of any prior entry (no prior coverage found for this event). Detection concept:
+      SCA/SBOM diffing of shipped npm package artifacts against their declared source (byte-diff
+      dist/ build output vs. repository source, since the injected code lived only in the compiled
+      artifact); runtime egress monitoring for wallet/crypto-SDK processes making outbound HTTPS
+      calls to domains not matching the SDK's documented API endpoints, particularly ones carrying
+      unusual data in custom request headers. Hardening: pin exact dependency versions and verify
+      via provenance/build attestation (npm provenance, Sigstore) rather than trusting the registry
+      alone; audit transitive dependencies, not just direct ones, since 17 of 18 compromised
+      packages carried no malicious code of their own.
+
+  - title: "SANS ISC: \"comment stuffing\" pads an HTML phishing attachment to 2.5 MB to dilute or exhaust AI/NLP-based email-security scanners"
+    sources:
+      - { url: "https://isc.sans.edu/diary/33144", publisher: "SANS Internet Storm Center", date: "2026-07-10", role: "primary" }
+    discovery_trace: "first seen at: sans-isc, URL https://isc.sans.edu/rssfeed_full.xml → primary: SANS Internet Storm Center, URL https://isc.sans.edu/diary/33144 (no pivot needed)"
+    summary: |
+      A SANS Internet Storm Center diary (2026-07-10, Jan Kopriva) analyzes a phishing email
+      carrying an oversized (.xls.html-styled) HTML attachment of roughly 2.5 MB. Decompressed,
+      the file is ~431 KB, of which the actual functional phishing payload — the credential-
+      harvesting HTML/JS logic — accounts for only about 11 KB; the remainder is a single HTML
+      comment containing roughly 430,000 repeated "X" characters placed after the functional
+      payload. The author's working hypothesis is that this padding is deliberately engineered to
+      defeat AI/NLP-based email-security classifiers in one of two ways: by diluting the malicious
+      content's statistical weight within a large low-entropy block until a probability-based
+      classifier's confidence drops below its flagging threshold, or by inflating the sheer token
+      count an LLM-based scanner must process until it exceeds a processing time/token budget and
+      the scan degrades or times out before reaching the actual payload. The diary notes the
+      padding does not help the file blend in with statistically normal benign content either,
+      since 430,000 repetitions of a single character is itself an anomalous, low-entropy pattern
+      that a well-tuned classifier could flag on its own. Other anomalies in the message (headers
+      suggesting a homemade sending script rather than standard mail infrastructure) support the
+      assessment that this was a deliberately engineered evasion attempt rather than an accidental
+      artifact.
+    region_nexus: "global — technique is agnostic to region or sector; directly relevant to any organisation deploying AI/NLP-based email security, an increasingly common control across Swiss/EU public-sector and enterprise mail gateways."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, energy, telco"
+    cves: []
+    techniques: [T1566.001, T1027.001]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The padding is also about as low-entropy as any data can get, which means it wouldn't help the file blend in with benign content on a statistical level either."
+        attribution: "SANS Internet Storm Center (Jan Kopriva)"
+        source_url: "https://isc.sans.edu/diary/33144"
+      - quote: "If a message contains enough innocuous material, the weight of the malicious portion can be diluted to the point where the model no longer flags it with sufficient confidence."
+        attribution: "SANS Internet Storm Center (Jan Kopriva)"
+        source_url: "https://isc.sans.edu/diary/33144"
+      - quote: "The padding may serve a second, cruder purpose – inflating the sheer volume of data (and, for an LLM, the number of tokens) that has to be processed."
+        attribution: "SANS Internet Storm Center (Jan Kopriva)"
+        source_url: "https://isc.sans.edu/diary/33144"
+    extended_notes: |
+      Single sample, author's own hypothesis (clearly hedged, not a confirmed campaign) — treat the
+      "designed to evade AI scanners" framing as an assessment, not a confirmed fact. Detection
+      concept: mail-gateway telemetry class — flag HTML/XLS-disguised attachments where a single
+      repeated-character run or a single HTML comment exceeds a size threshold (e.g. >50 KB of a
+      single repeated byte/character), a discriminator independent of whatever AI/NLP scoring the
+      gateway also runs; decompressed-vs-declared-size ratio outliers. Hardening: attachment
+      pre-processing that strips or truncates oversized comments/padding before AI-based scoring,
+      and a non-AI fallback rule keyed on the anomalous size/entropy signature described above so
+      the control does not rely solely on the classifier being defeated.
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Rotation-priority source (7 runs failing). Both direct fetch and jina reader ('python3 tools/fetch_source.py jina https://industrialcyber.co') returned an upstream block/challenge this run too. WebSearch found only generic/older category pages (Forescout riskiest-devices report, S4x26 recap) with no in-window (24-72h) item; no substantive fresh OT/ICS item recovered."
+  - source_id: dragos
+    reason: "Feed https://www.dragos.com/blog/feed/ returned upstream 404; jina reader timed out. WebSearch surfaced only the Dragos 2026 OT Cybersecurity Year-in-Review, which is a February 2026 annual report already outside the recency window and not corroborated as freshly re-published in-window."
+  - source_id: nozomi-networks
+    reason: "Feed https://www.nozominetworks.com/blog/feed resolved via jina reader but returned zero items (empty parse) — likely a feed-format/JS-rendering mismatch; no in-window items recovered this run."
+  - source_id: flatt-security
+    reason: "RSS feed (https://flatt.tech/research/feed) returned zero items via jina; direct listing page (https://flatt.tech/research) has no visible publication dates on the index and no items could be confirmed in-window without dated per-article fetches, which time did not permit this run."
+  - source_id: calif-codex
+    reason: "Feed https://blog.calif.io/rss/ 404'd direct and 401'd via jina; confirmed via the Substack archive page (https://blog.calif.io/archive) that the most recent post (\"MAD Bugs: My Cousin Vinyl\", 2026-07-01) is outside the 24-72h window — no in-window item, not a transport failure."
+  - source_id: trendmicro-research
+    reason: "Feed https://www.trendmicro.com/en_us/research.xml returned zero items via jina (likely JS-rendered listing); no alternate feed URL attempted this run."
+  - source_id: sansec-research
+    reason: "Listing page fetched via bridge (https://sansec.io/research); the two most-recent-looking entries checked (jtl-shop-ssti-rce, stripe-api-skimmer-infrastructure) dated 2026-06-17 and 2026-06-04 respectively — both outside window, not a transport failure."

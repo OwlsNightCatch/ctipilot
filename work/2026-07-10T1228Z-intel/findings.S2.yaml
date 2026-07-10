@@ -1,0 +1,106 @@
+domain: S2
+run_id: 2026-07-10T1228Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T12:31:28Z
+ended_at: 2026-07-10T12:44:42Z
+duration_seconds: 794
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 4
+  bridge_fetches: 12
+items:
+  - title: "NCSC-CH flags Gitea Docker image auth bypass (CVE-2026-20896) — first scan activity seen 13 days after disclosure"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12755", publisher: "NCSC-CH Security Hub", date: "2026-07-10", role: "primary" }
+      - { url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4", publisher: "GitHub Security Advisory (go-gitea/gitea)", date: "2026-06-21", role: "primary" }
+      - { url: "https://blog.gitea.com/release-of-1.26.3-and-1.26.4/", publisher: "Gitea", date: "2026-06-21", role: "primary" }
+      - { url: "https://www.securityweek.com/critical-gitea-flaw-under-active-exploitation-researchers-warn", publisher: "SecurityWeek", date: "2026-07-07", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html", publisher: "The Hacker News", date: "2026-07-06", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12755 (bridge: ncsc-csh recent 15) → primary: Gitea vendor blog, URL https://blog.gitea.com/release-of-1.26.3-and-1.26.4/ → primary: GitHub Security Advisory, URL https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4 → corroborating: SecurityWeek, URL https://www.securityweek.com/critical-gitea-flaw-under-active-exploitation-researchers-warn (fetched via jina reader after direct WebFetch 403) → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html"
+    summary: |
+      NCSC-CH's Security Hub published an advisory today (2026-07-10, 08:55 UTC) flagging CVE-2026-20896
+      (CVSS 9.8) as "Actively Exploited, Proof of Concept Available" — a critical authentication-bypass flaw
+      in Gitea's official Docker images. The vulnerable component is the shipped app.ini template, which
+      hard-codes REVERSE_PROXY_TRUSTED_PROXIES = "*" instead of a loopback-only allowlist. When an admin
+      enables ENABLE_REVERSE_PROXY_AUTHENTICATION = true to sit Gitea behind an authenticating reverse
+      proxy, the wildcard means Gitea accepts the X-WEBAUTH-USER header from ANY source IP, not just the
+      proxy's loopback connection — any process that can reach the container's HTTP port directly (bypassing
+      the intended proxy) can set that header to impersonate any user whose login name is known or
+      guessable, admin accounts included. No password or token is required — a single crafted HTTP header
+      is sufficient. Affected: Gitea Docker images <=1.26.2; fixed in 1.26.3 (patch makes reverse-proxy
+      auth opt-in), with 1.26.4 shipping a related hotfix — vendor "strongly recommends upgrading directly
+      to 1.26.4." Prerequisites: official Gitea Docker image with ENABLE_REVERSE_PROXY_AUTHENTICATION=true
+      and network reachability to the container's HTTP port (i.e. the proxy is bypassable, e.g. exposed
+      directly or via a misrouted network segment). Exploitation status is contested between sources: NCSC-CH's
+      advisory states "Actively Exploited"; the primary research (Sysdig, via The Hacker News and
+      SecurityWeek) is more precise — Sysdig's Michael Clark says sensors caught a single scan/probe hit
+      from a ProtonVPN-associated "VPN-exit scanner" IP (159.26.98[.]241) 13 days after disclosure, sending
+      the spoofed header but with "no password, no token, one header" and, per Clark, "it has not so far
+      progressed to any exploitation or attack progress" beyond that probe. SecurityWeek's headline frames
+      this as "active exploitation" while its body quote is closer to reconnaissance/credential-testing.
+      Sysdig counted ~6,200 internet-facing Gitea instances; how many run the vulnerable Docker default is
+      unknown. Impact of a successful compromise: full read/write on all repositories (private included) —
+      source code, accidentally committed secrets (API keys, DB credentials, deploy tokens), CI/CD config
+      and deploy keys.
+    region_nexus: "Switzerland (NCSC-CH Security Hub advisory) and EU-wide — Gitea/self-hosted Git-with-CI is common in Swiss/EU public-sector, academic and SME IT estates"
+    primary_sector_nexus: "indirect — self-hosted Git/CI infrastructure used across public administration and research/education IT"
+    sector: "public-sector, research/education, general enterprise IT"
+    cves: [CVE-2026-20896]
+    techniques: [T1190]
+    affected_products: ["Gitea (official Docker images)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Current exploitation status: Actively Exploited, Proof of Concept Available"
+        attribution: "NCSC-CH Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12755"
+      - quote: "The Gitea Docker images ship an app.ini template that hard-codes: REVERSE_PROXY_TRUSTED_PROXIES = *"
+        attribution: "GitHub Security Advisory GHSA-f75j-4cw6-rmx4 (rz1027 / bircni)"
+        source_url: "https://github.com/go-gitea/gitea/security/advisories/GHSA-f75j-4cw6-rmx4"
+      - quote: "Any process that can reach the Gitea container's HTTP port directly — not through the intended authenticating proxy — can impersonate any user whose login name is known or guessable."
+        attribution: "Security researcher Ali Mustafa (rz1027), quoted via SecurityWeek"
+        source_url: "https://www.securityweek.com/critical-gitea-flaw-under-active-exploitation-researchers-warn"
+      - quote: "While we saw the first action from an IP from the ProtonVPN service, 159.26.98[.]241, it has not so far progressed to any exploitation or attack progress."
+        attribution: "Michael Clark, Sysdig Sr. Director of Threat Research, quoted via The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html"
+    extended_notes: |
+      Confidence marked MEDIUM rather than HIGH because of the exploitation-status contradiction between
+      the NCSC-CH advisory ("Actively Exploited") and the primary research it cites indirectly (Sysdig via
+      THN/SecurityWeek), which describes a single scan/probe hit rather than a confirmed successful
+      compromise or follow-on activity. Both readings are surfaced rather than reconciled — defenders
+      should treat this as "scanning/probing confirmed, compromise unconfirmed" and prioritise patching
+      over incident response. Detection angle: any Gitea deployment using ENABLE_REVERSE_PROXY_AUTHENTICATION
+      should audit inbound HTTP requests carrying an X-WEBAUTH-USER (or configured reverse-proxy auth
+      header) that did NOT originate from the trusted proxy's loopback/internal address — this is the
+      telemetry class (web/app access logs on the Gitea container plus network flow logs distinguishing
+      proxy-origin vs. direct-to-container traffic) that would catch both the disclosed PoC and the
+      observed scanning IP. Hardening: upgrade to Gitea >=1.26.3/1.26.4 (removes the wildcard default and
+      makes reverse-proxy auth opt-in with an explicit trusted-proxy allowlist); in the interim, ensure the
+      Gitea container's HTTP port is not directly reachable except through the intended authenticating
+      reverse proxy (network policy / firewall rule), and explicitly set REVERSE_PROXY_TRUSTED_PROXIES to
+      the proxy's actual address rather than relying on the shipped default.
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "sector-lens duty applied as a weighting only (no product/supplier sweep configured); the Gitea finding was weighted up because self-hosted Git/CI is common public-sector and research/education infrastructure, and because it was sourced directly from NCSC-CH (home-region CERT)."
+candidate_sources:
+  - id: swisscybersecurity-net
+    publisher: "SwissCybersecurity.net (Swiss IT/security trade press, co-published with Netzwoche and IT-Markt)"
+    url: "https://www.swisscybersecurity.net/"
+    category: regional-press
+    why: "Surfaced via WebSearch for Swiss-specific in-window signal; carries a monthly Swiss IT-threat-landscape recap and vendor-survey coverage (e.g. Swiss Post Cybersecurity's first Threat Landscape Report, 2026-07-09). Not yet in sources.json; useful recurring home-region trade-press channel, though its own content this run was awareness/survey-level (vanity-metric-adjacent) rather than technical, so no item was drawn from it today."
+coverage_gaps:
+  - source_id: ncsc-ch-incidents
+    reason: "https://www.ncsc.admin.ch/ncsc/de/home/aktuell/aktuelle-vorfaelle.html returns a JS-templated shell via both plain WebFetch and direct bridge fetch (tools/fetch_source.py url); the jina reader call timed out after 120s with no output. Could not confirm whether this page carried in-window content distinct from the im-fokus weekly bulletins and the Security Hub feed already checked. Recommend a future run retry the jina reader with a longer timeout or probe for a structured/API endpoint."
+  - source_id: cisa-advisories
+    reason: "Rotation-priority source (2 prior runs failing) recovered this run: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories` returned full listing content (200, no failure). However the freshest listed item was dated 2026-07-07, three days outside the 24h window — no in-window CISA advisory/alert content to report. Not logging as a fetch_failures entry since the fetch itself succeeded; noting here as a quiet-source observation and to confirm the recipe now works."
+  - source_id: govcert-at
+    reason: "The sources.json record's recipe (RSS at https://www.cert.at/cert-at.de.warnings.rss_2.0.xml) was followed successfully (200); freshest item was 2026-06-22, well outside window. No in-window content, not a fetch failure."
+  - source_id: oneconsult-ch
+    reason: "WebFetch of https://www.oneconsult.com/en/news-events/news/ returned only navigation/footer chrome, no dated news items visible to the summariser. Possible JS-rendered listing; not escalated to jina given low prior signal from this source and time budget — flagging for a future run to try the jina reader or locate a feed."
