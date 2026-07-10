@@ -1,0 +1,216 @@
+domain: S3
+run_id: 2026-07-10T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T20:12:23Z
+ended_at: 2026-07-10T20:25:21Z
+duration_seconds: 778
+self_telemetry:
+  webfetch_calls: 17
+  websearch_calls: 16
+  bridge_fetches: 13
+items:
+  - title: "Forg365: an AI-drafting Microsoft 365 PhaaS bundles device-code and AiTM phishing with a silent SSO-cookie-refresh browser extension"
+    sources:
+      - { url: "https://zerobec.com/blog/inside-forg365-telegram-distributed-sneaky2fa-style-phaas", publisher: "ZeroBEC", date: "2026-07-09", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-forg365-phishing-platform-uses-ai-to-target-microsoft-365-accounts/", publisher: "BleepingComputer", date: "2026-07-09", role: "corroborating" }
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-forg365-ai-phishing-service-20260710-csa-s/", publisher: "Cloud Security Alliance (CSA Labs)", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-forg365-ai-phishing-service-20260710-csa-s/ -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-forg365-phishing-platform-uses-ai-to-target-microsoft-365-accounts/ -> primary: ZeroBEC, URL https://zerobec.com/blog/inside-forg365-telegram-distributed-sneaky2fa-style-phaas"
+    summary: |
+      ZeroBEC documented Forg365, a Telegram-distributed, commercially maintained ($400/month, $3,800/year, 5-day trial) Microsoft 365 phishing-as-a-service platform that packages two independent credential-theft paths behind one operator panel (currently hosted at logfriend[.]com/login): a device-authorization-grant (RFC 8628) branch that shows a Microsoft-styled verification-code page and drives the legitimate Microsoft Authentication Broker flow, and an AiTM branch that classifies inbound traffic via route tokens/session cookies to decide whether to serve the phishing page or a benign decoy. Both paths converge on a valid, MFA-satisfied OAuth refresh token or session cookie because the victim -- not the attacker -- completes the real Microsoft authentication. The panel folds an AI lure-drafting assistant directly into the same console used to manage SMTP rotation (Amazon SES), OAuth-app configuration, AES-encrypted/anti-bot SVG redirectors, token vaulting, and a keyword-alert mailbox-monitoring feature. Persistence after initial compromise is handled by a companion browser extension, ForgCookie (Chrome/Edge/Brave), which silently triggers OAuth flows to refresh the stolen Microsoft SSO cookie before it expires, so operator access survives without the victim re-authenticating. ZeroBEC's Entra telemetry traced device-code activity to a Comcast/Xfinity residential IP and a Forg365 backend node hosted in Kyiv, Ukraine that later performed Microsoft Graph device-registration calls. ZeroBEC assesses Forg365 as a "Kali365-class" platform (functional overlap with the FBI-profiled Kali365 and with Sneaky2FA) but found no evidence of common ownership. This is a distinct commercial kit from the Huntress-documented "Railway"/EvilTokens device-code campaign covered earlier today -- same abused primitive, different operator and product.
+    region_nexus: "global; Microsoft 365 is the dominant productivity/identity platform across Swiss and EU public-sector and critical-infrastructure tenants"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, telco"
+    cves: []
+    techniques: [T1566.002, T1528, T1539, T1176]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:forg365-phaas", type: tool, name: "Forg365", aliases: ["ForgCookie"],
+          summary: "Telegram-distributed, commercially maintained Microsoft 365 phishing-as-a-service platform combining OAuth device-code phishing and AiTM session-cookie theft with an in-panel AI lure-drafting assistant and a browser-extension (ForgCookie) that silently refreshes stolen Microsoft SSO cookies for persistence (ZeroBEC, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Forg365 is a mature Microsoft 365-focused phishing-as-a-service platform that combines device-auth phishing, AiTM delivery, AntiBot evasion, campaign delivery, session persistence, AI-assisted lure creation, and post-compromise mailbox operations inside a commercial operator ecosystem."
+        attribution: "ZeroBEC"
+        source_url: "https://zerobec.com/blog/inside-forg365-telegram-distributed-sneaky2fa-style-phaas"
+      - quote: "ForgCookie, the browser extension associated with the platform, is designed for Microsoft SSO cookie refresh, browser-based access, and persistent session workflows after compromise."
+        attribution: "ZeroBEC"
+        source_url: "https://zerobec.com/blog/inside-forg365-telegram-distributed-sneaky2fa-style-phaas"
+      - quote: "multifactor authentication does not stop the attack because the victim, not the attacker, is the one completing the MFA challenge"
+        attribution: "Cloud Security Alliance (CSA Labs)"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-forg365-ai-phishing-service-20260710-csa-s/"
+    extended_notes: |
+      Detection: audit Entra sign-in logs for device-code authentication events (Microsoft Graph sign-in logs, "Authentication Requirement" / device-code client-id patterns); block via Conditional Access "Authentication Flows" condition -> Device Code Flow -> Grant: Block, unless a legitimate CLI/shared-device use case requires it. For the AiTM path, watch for anomalous OAuth app consent grants and new mailbox forwarding rules immediately following a sign-in, and for browser-extension installs matching ForgCookie's SSO-cookie-refresh behavior on managed endpoints. Any account with suspected compromise needs `revokeSignInSessions` (Entra ID) -- a password reset alone does not invalidate a device-code-derived refresh token or an AiTM-stolen session cookie. Benign lookalike: legitimate device-code use is real (CLI tools, smart-TV apps, headless devices) -- the discriminator is a verification-code prompt reached via an unsolicited phone call/lure rather than a user-initiated CLI login flow.
+    borderline: false
+  - title: "Open WebUI's six broken-access-control CVEs since November 2025 form one recurring authorization-architecture pattern, not six isolated bugs"
+    sources:
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-open-webui-access-control-cves-20260710-cs/", publisher: "Cloud Security Alliance (CSA Labs)", date: "2026-07-10", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-hp5m-24vp-vq2q", publisher: "GitHub Security Advisories (open-webui/open-webui)", date: "2026-05", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-4r4w-2wgp-w7cj", publisher: "GitHub Security Advisories (open-webui/open-webui)", date: "2026-06", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-open-webui-access-control-cves-20260710-cs/ -> pivot: GitHub Security Advisories, URL https://github.com/advisories/GHSA-hp5m-24vp-vq2q and URL https://github.com/advisories/GHSA-4r4w-2wgp-w7cj (both independently fetched and confirmed this run; a third attempt to independently verify Cato Networks' CVE-2025-64496 write-up returned only a cookie-consent shell on both WebFetch and jina reader and was dropped from Sources per source-link discipline)"
+    summary: |
+      CSA Labs synthesizes six distinct broken-access-control CVEs disclosed in the self-hosted Open WebUI LLM front-end between November 2025 and June 2026 into a single architectural pattern: authorization decided ad hoc per-endpoint rather than through one centrally enforced policy layer. The most severe, CVE-2025-64496 (CVSS 7.3, Cato Networks/Vitaly Simonovich), chains a Direct Connections client-side flaw -- the client evaluates server-sent events of type "execute" via JavaScript's `new Function()`, treating output from an attacker-controlled model server as executable code in the victim's authenticated browser session -- with the workspace.tools feature's unsandboxed Python `exec()`, letting a hostile model server escalate from session-token theft to full RCE on the Open WebUI host for any session holding the workspace.tools permission (patched 0.6.35). Four more affect the 0.9.x line: CVE-2026-44556 (CVSS 7.1) lets any authenticated user reach any model configured on the instance via the `/api/openai/responses` proxy, which validates only session state, not per-model access grants; CVE-2026-44557 (CVSS 4.3) exposes the full knowledge-base metadata collection to any logged-in user via an incomplete collection-name allowlist; CVE-2026-44564 (CVSS 5.4) lets a read-only Socket.IO collaboration-room member emit `ydoc:document:update` events because the handler checks room membership, not write permission; CVE-2026-54015 (CVSS 6.4) is a prompt-version-history IDOR where the endpoint validates the parent prompt-ID in the URL but not the caller-supplied history-ID, enabling cross-prompt read/delete. CVE-2025-63681 (CVSS 2.1, unauthorized task cancellation via `/api/tasks/stop/`) remains unpatched as of publication. Fixed versions: 0.6.35 (CVE-2025-64496), 0.9.0 (CVE-2026-44556, CVE-2026-44557, CVE-2026-44564), 0.9.6 (CVE-2026-54015).
+    region_nexus: "global; Open WebUI is widely self-hosted by security-conscious teams (incl. public-sector/research bodies) wanting to keep LLM interactions off third-party SaaS"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education, technology"
+    cves: ["CVE-2025-64496", "CVE-2026-44556", "CVE-2026-44557", "CVE-2026-44564", "CVE-2026-54015", "CVE-2025-63681"]
+    techniques: [T1190, T1539, T1059.006]
+    affected_products: ["Open WebUI"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the client trusted server-sent events of type \"execute\" and evaluated their contents using JavaScript's new Function() constructor -- effectively treating output from an untrusted, attacker-controlled model server as executable code running inside the victim's authenticated browser session"
+        attribution: "Cloud Security Alliance (CSA Labs), citing Cato Networks"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-open-webui-access-control-cves-20260710-cs/"
+      - quote: "CVE-2025-63681 ... remains unpatched as of this writing; upgrading to the latest version does not close this cluster's exposure completely"
+        attribution: "Cloud Security Alliance (CSA Labs)"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-open-webui-access-control-cves-20260710-cs/"
+      - quote: "Every feature Open WebUI has added since late 2025 ... has needed its own bespoke answer to that question, and in five documented cases the answer implemented was incomplete."
+        attribution: "Cloud Security Alliance (CSA Labs)"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-open-webui-access-control-cves-20260710-cs/"
+    extended_notes: |
+      Detection/hardening: confirm instances run >= 0.9.6; audit which accounts hold `workspace.tools` (the permission that converts client-side token theft into server-side RCE) and revoke from any account not authoring executable functions; disable/restrict Direct Connections to only fully-trusted model servers; place the admin interface and API behind an authenticating reverse proxy / SSO gateway / VPN rather than exposing directly, since CVE-2025-63681 has no released patch and the underlying engineering pattern (authorization decided per-endpoint) means further instances of the same class are plausible. Log and alert on the OpenAI proxy router, task-management, and Socket.IO collaboration endpoints for authenticated users reaching resources outside expected scope.
+    borderline: false
+  - title: "WP-SHELLSTORM: a Chinese-speaking webshell access-brokerage crew's own open, unauthenticated staging server exposes 27 weaponized CVEs and a parallel Nacos/Spring-Boot cloud-credential-theft track"
+    sources:
+      - { url: "https://socradar.io/blog/wp-shellstorm-expose-1-4m-wordpress-sites/", publisher: "SOCRadar", date: "2026-07-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/exposed-hacker-server-reveals-wp.html", publisher: "The Hacker News", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"threat research blog July 10 2026 malware analysis\") -> pivot: SOCRadar, URL https://socradar.io/blog/wp-shellstorm-expose-1-4m-wordpress-sites/ -> corroborating: The Hacker News, URL https://thehackernews.com/2026/07/exposed-hacker-server-reveals-wp.html (independently cites a second research group, Ctrl-Alt-Intel, with an overlapping but distinct victim count)"
+    summary: |
+      SOCRadar's Threat Intelligence Team found a Python SimpleHTTPServer instance left open with no authentication for 22 days on a US-hosted VPS, exposing the complete toolkit, target lists, bash history, and C2 configuration of a webshell access-brokerage operation it names WP-SHELLSTORM. The crew built automated scanners that fired 27 weaponized CVEs at ~1.4 million domains (WordPress and Joomla plugin targets pulled from FOFA), with the Breeze Cache Cleaner plugin flaw (CVE-2026-3844) the single most productive exploit -- fired at 45,000+ targets, backdooring 17,000+ of them -- followed by a ThemeREX Addons vulnerability. Backdoors deployed include a heavily obfuscated `down.php` PHP webshell (BestShell derivative) and Godzilla-framework variants; a second, parallel track uses the Nacos authentication-bypass CVE-2021-29441 plus JDumpSpider to extract cloud credentials and database connection strings from Java heap dumps on Apache Nacos / XXL-Job / Spring Boot infrastructure, and drops the SNOWLIGHT WebSocket dropper and the VShell implant (VShell is separately tracked in China-nexus intrusion sets such as UNC5174) with process-masquerading capabilities. Victim-count estimates diverge between the two independent research teams -- SOCRadar counts ~5,700 currently live webshells; Ctrl-Alt-Intel's separate deduplicated analysis (cited by The Hacker News) found 25,195 sites with confirmed or validated compromise evidence -- both agree the operation is financially motivated cybercrime rather than nation-state espionage, assessed with Chinese-speaking operator attribution from handle/language artifacts in the exposed toolkit.
+    region_nexus: "global; any self-hosted WordPress/Joomla estate or exposed Apache Nacos/XXL-Job/Spring Boot instance in Swiss/EU public-sector and SME environments is a candidate target given the FOFA-sourced, breadth-first targeting model"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, technology"
+    cves: ["CVE-2026-3844", "CVE-2021-29441", "CVE-2026-48907", "CVE-2026-3300", "CVE-2020-25213"]
+    techniques: [T1190, T1505.003, T1036]
+    affected_products: ["WordPress (Breeze Cache Cleaner plugin, ThemeREX Addons plugin)", "Joomla (JCE plugin)", "Apache Nacos", "XXL-Job", "Spring Boot"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:wp-shellstorm", type: actor, name: "WP-SHELLSTORM", aliases: [],
+          summary: "SOCRadar designation for a financially motivated, Chinese-speaking webshell access-brokerage crew whose own unauthenticated staging server (exposed for 22 days) revealed automated exploitation of 27 CVEs against ~1.4M WordPress/Joomla domains plus a parallel Apache Nacos/Spring Boot cloud-credential-theft track (SOCRadar, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "a Python SimpleHTTPServer instance, left open for 22 days, exposed the full toolkit, logs, and target lists"
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/wp-shellstorm-expose-1-4m-wordpress-sites/"
+      - quote: "over 1.4 million targeted domains, 27 CVEs weaponized, more than 5,700 active webshells"
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/wp-shellstorm-expose-1-4m-wordpress-sites/"
+      - quote: "Ctrl-Alt-Intel's deduplicated count found 25,195 sites with confirmed or validated compromise evidence, while SOCRadar ... put the live figure at 5,700-plus"
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/exposed-hacker-server-reveals-wp.html"
+    extended_notes: |
+      Detection: hunt for the specific plugin-CVE signatures listed (Breeze Cache Cleaner CVE-2026-3844 is the highest-yield); web-server access logs for admin-ajax/plugin-endpoint requests from scanner-pattern user agents at volume; file-integrity monitoring for newly-dropped PHP files in wp-content/uploads or plugin directories (webshell class, vendor-neutral telemetry: unexpected PHP file creation events, not a specific hash). For the Java-stack track, monitor Nacos/XXL-Job for unauthenticated admin API access and heap-dump generation events outside routine diagnostics. Hardening: patch the named plugins/CVEs; do not expose Nacos console or XXL-Job admin interfaces to the internet.
+    borderline: false
+  - title: "MODBEACON: Silver Fox's Rust-based modular RAT reuses the Xray/V2Ray anti-censorship transport layer for gRPC-tunneled, harder-to-fingerprint C2"
+    sources:
+      - { url: "https://thehackernews.com/2026/07/new-modbeacon-rat-uses-grpc-streaming.html", publisher: "The Hacker News", date: "2026-07-10", role: "primary (aggregator; original QiAnXin research post not independently reachable this run)" }
+    discovery_trace: "first seen at: WebSearch (\"new threat actor cluster named July 10 2026\") -> pivot: WebSearch (\"Silver Fox MODBEACON Rust RAT\") -> primary attempted: QiAnXin threat-intel blog (multiple site: searches on ti.qianxin.com / redqueen.qianxin.com / blog.xlab.qianxin.com returned no MODBEACON-specific page reachable this run; blog.xlab.qianxin.com's RSS feed latest entry (2026-06-30, RustDuck) does not cover MODBEACON) -> settled on The Hacker News, URL https://thehackernews.com/2026/07/new-modbeacon-rat-uses-grpc-streaming.html, which directly quotes and attributes to QiAnXin"
+    summary: |
+      Chinese cybersecurity vendor QiAnXin (as relayed by The Hacker News) attributes a new, previously undocumented modular Rust-based RAT it names MODBEACON to Silver Fox (aka SwimSnake/Valley Thief/UTG-Q-1000/Void Arachne), the China-linked cybercrime cluster whose core operators China reportedly arrested earlier in 2026 (67 individuals) but which continues operating through a distributor network. One campaign observed mid-June 2026 saw a Silver Fox-affiliated distributor deliver MODBEACON via SEO-poisoned counterfeit software installers against technology, education, and state-owned-enterprise targets, alongside the group's established Gh0st RAT and WinOS/ValleyRAT variants. MODBEACON's architecture separates loader and beacon components with an injectable configuration and a plugin-based capability model; its most notable engineering feature is C2 transport built by reusing the transport layer of the open-source Xray/V2Ray anti-censorship proxy framework, tunneling encrypted command-and-control over gRPC streaming -- a choice that blends with legitimate HTTP/2-based traffic and complicates protocol-signature-based C2 detection. Core capabilities per the reporting: host fingerprinting, in-memory plugin loading, heartbeat/keepalive messaging, and persistence via scheduled tasks; C2 infrastructure is fronted by Amazon and Cloudflare CDN.
+    region_nexus: "primarily Asia-Pacific targeting reported to date; transferable relevance is the C2-transport tradecraft (gRPC-over-Xray/V2Ray tunneling) for any org's C2-detection engineering"
+    primary_sector_nexus: "indirect"
+    sector: "technology, education, public-sector"
+    cves: []
+    techniques: [T1608.006, T1071.001, T1027, T1053.005]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:silver-fox", type: actor, name: "Silver Fox", aliases: ["SwimSnake", "Valley Thief", "UTG-Q-1000", "Void Arachne", "银狐"],
+          summary: "China-linked financially-motivated cybercrime cluster active since ~2022/2020, operating through a distributor network delivering Gh0st RAT / WinOS (ValleyRAT) variants via SEO-poisoned counterfeit installers; 67 operators were reportedly arrested in China in 2026 but distributor activity continues, including delivery of the new MODBEACON RAT (QiAnXin, 2026-07-10 via The Hacker News)." }
+      - { key: "malware:modbeacon", type: tool, name: "MODBEACON", aliases: [],
+          summary: "Previously undocumented modular Rust-based RAT attributed to Silver Fox, notable for tunneling gRPC-streamed C2 over a reused Xray/V2Ray anti-censorship proxy transport layer; separates loader/beacon, supports in-memory plugin loading (QiAnXin, 2026-07-10 via The Hacker News)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The Trojan is a professional and private C2 framework: the loader and beacon are separated, the configuration is injectable, the beacon employs a plugin-based architecture."
+        attribution: "QiAnXin, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/new-modbeacon-rat-uses-grpc-streaming.html"
+      - quote: "The overall engineering quality is high. Its core highlight is the reuse of the transport layer from an open-source anti-censorship proxy framework (Xray/V2Ray)."
+        attribution: "QiAnXin, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/new-modbeacon-rat-uses-grpc-streaming.html"
+      - quote: "These distributors conduct activities across Asia using counterfeit software installers distributed through SEO campaigns, leveraging variants of Gh0st RAT and WinOS."
+        attribution: "QiAnXin, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/new-modbeacon-rat-uses-grpc-streaming.html"
+    extended_notes: |
+      Included with reduced confidence: only aggregator source available -- QiAnXin's own research blog post could not be located/reached this run (xlab.qianxin.com RSS feed's latest item as of this run is 2026-06-30 and does not cover MODBEACON; ti.qianxin.com / redqueen.qianxin.com searches returned no reachable MODBEACON page). Detection concept: hunt for gRPC/HTTP2-framed outbound traffic to non-standard destinations from endpoints with no legitimate gRPC application, especially where the TLS/ALPN fingerprint matches Xray/V2Ray client libraries rather than a browser or known gRPC service client; flag scheduled-task creation paired with recent execution of a counterfeit/cracked-software installer.
+    borderline: true
+    borderline_reason: "single reachable source is an aggregator (The Hacker News) relaying an unreached QiAnXin primary; included per PD given the transferable C2-transport tradecraft (gRPC-over-Xray/V2Ray) despite the sourcing gap."
+  - title: "Wiz's autonomous 'Red Agent' and XBOW show production-speed AI pentesting finding real BOLA/SSRF/JWT-alg:none flaws that manual testing missed"
+    sources:
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-ai-autonomous-red-team-agent-findings-2026/", publisher: "Cloud Security Alliance (CSA Labs)", date: "2026-07-10", role: "primary (synthesis)" }
+      - { url: "https://www.wiz.io/blog/red-agent-pov-bola", publisher: "Wiz", date: "2026-06-29", role: "primary" }
+      - { url: "https://www.wiz.io/blog/introducing-the-wiz-red-agent", publisher: "Wiz", date: "2026-04-22", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-ai-autonomous-red-team-agent-findings-2026/ -> primary: Wiz, URL https://www.wiz.io/blog/red-agent-pov-bola"
+    summary: |
+      CSA Labs synthesizes Wiz's own case-study disclosures about its commercial autonomous pentesting agent "Red Agent" (public preview since 2026-04-22) with XBOW's independently developed autonomous agent, both of which reason over live application logic rather than replaying static payloads. In its most detailed disclosed case, Wiz's Red Agent found a critical broken object-level authorization (BOLA) flaw in a major airline's public GraphQL booking API within 15 minutes and with no credentials: it parsed client-side JavaScript to learn the session-acquisition flow, minted an anonymous session via two API calls, then abused GraphQL's built-in introspection to enumerate 514 queries and 428 mutations reachable from that session. Submitting sequential integer booking IDs to resolvers that checked session validity but never checked per-object entitlement returned complete, unredacted passenger records (name, DOB, contact details, masked payment data, up to two years of itineraries) -- and the same anonymous session carried write access sufficient to cancel bookings or reroute passengers. Aggregate Red Agent statistics across ~1,000 customer environments in its first month: access-control failures (the BOLA class) were 54% of all findings; exposed secrets accounted for 61% of critical/high-severity findings; SQL injection findings were >52% critical/high; and among JWT bypasses specifically, 63.9% involved the trivially-fixable `alg:none` signature-verification bypass. XBOW, operating independently against real HackerOne bug-bounty targets, reached #1 on HackerOne's US researcher leaderboard (nearly 1,060 submitted reports, 130 resolved, 303 validated) and, in a separate benchmark, matched a 20-year veteran pentester's 85% solve rate on a 104-challenge suite in 28 minutes versus the human's ~40 hours.
+    region_nexus: "global; directly relevant to any org running public-facing GraphQL/REST APIs, cloud-hosted services, or JWT-based auth -- the vulnerability classes found (BOLA, SSRF, JWT alg:none) are commodity misconfigurations, not novel techniques"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, transport, technology"
+    cves: []
+    techniques: [T1190, T1552.005]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:wiz-red-agent", type: tool, name: "Wiz Red Agent", aliases: [],
+          summary: "Wiz's autonomous AI pentesting agent (public preview since 2026-04-22) that reasons over live application logic to discover and validate exploitable vulnerabilities in production without a human directing each step; reported >17,000 findings across ~1,000 customer environments in its first month (Wiz, 2026)." }
+      - { key: "tool:xbow", type: tool, name: "XBOW", aliases: [],
+          summary: "Independently developed autonomous penetration-testing agent that reached #1 on HackerOne's US researcher leaderboard submitting real vulnerability reports against production bug-bounty targets, and matched a veteran human pentester's benchmark solve rate in a fraction of the time (XBOW, 2026)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Downstream API resolvers failed to validate these roles when processing data requests."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/red-agent-pov-bola"
+      - quote: "By submitting sequential booking numbers to these unprotected resolvers, the Red Agent gained unauthenticated access to the passenger database."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/red-agent-pov-bola"
+      - quote: "Access control failures ... accounted for 54 percent of all discoveries ... Exposed secrets ... made up 61 percent of the findings rated critical or high severity ... 63.9 percent involved the alg:none misconfiguration"
+        attribution: "Cloud Security Alliance (CSA Labs), citing Wiz aggregate data"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-ai-autonomous-red-team-agent-findings-2026/"
+    extended_notes: |
+      Actionable for defenders regardless of vendor: audit every endpoint accepting a user-supplied or sequential identifier for per-object (not just per-session) authorization checks; disable/restrict GraphQL introspection in production for any schema exposing sensitive queries/mutations; explicitly reject the JWT `alg:none` path and any unsigned/weakly-signed token in validation configuration; treat exposed secrets in code/config as the most common root cause of critical findings and prioritize automated secrets-scanning in CI/CD with short-lived credentials. Strategic point for the org: the same reasoning capability autonomous red-team agents use is equally available to adversaries, so the interval between a system going live and its weaknesses being found is compressing regardless of who is doing the finding.
+    borderline: false
+candidate_sources: []
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Rotation-priority source's RSS feed was reachable via jina reader, but both individual article pages examined (healthcare-ransomware H1-2026 resilience report and CYFIRMA ransomware-ecosystem summary) 403'd on every transport (direct WebFetch, jina reader, and bridge url). Logged as fetch_failures below. Both articles appeared to be industry-report summaries (ZeroFox/CYFIRMA weekly intelligence report roll-ups) rather than primary technical research, so the loss is low-value but the source itself remains only partially workable this run."
+  - source_id: xlab-qianxin
+  - source_id: fox-it-blog
+  - source_id: seqrite-labs
+  - source_id: flatt-security
+  - source_id: exodus-intelligence
+  - source_id: sophos-xops
+  - source_id: sansec-research
+  - source_id: sygnia
+  - source_id: volexity
+  - source_id: calif-codex
+    reason: "All nine sources above were fetched successfully (RSS or WebFetch) but their most recent items predate the intraday-rescan cutoff (last run finished ~12:53Z) by 1-9 days, with no fresh delta found; no items surfaced from these for this return. sygnia's 2026-07-08 post was independently confirmed as already covered (Sygnia AI-orchestrated AWS intrusion, prior_coverage 2026-07-09)."
+fetch_failures:
+  - id: industrialcyber-co
+    url_tried: "https://industrialcyber.co/ransomware/healthcare-ransomware-attacks-remain-resilient-in-h1-2026-as-extortion-groups-broaden-attacks-across-supply-chain/"
+    fetch_method: "webfetch"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403; jina reader also relayed an upstream block/challenge for the same URL; bridge url (direct+jina fallback) also failed"
+    attempted_methods: [webfetch, "bridge:jina", "bridge:url"]
+    mitigation_applied: "none -- this specific article (a healthcare-ransomware H1-2026 resilience summary) could not be corroborated via WebSearch to a reachable primary; likely a rehash of a ZeroFox/CYFIRMA-style vendor report rather than primary research, so impact is low, but logged as an unrecovered gap on the rotation-priority source"
+    covered_anyway: false
+  - id: industrialcyber-co
+    url_tried: "https://industrialcyber.co/ransomware/cyfirma-custom-malware-initial-access-brokers-and-raas-drive-decentralized-resilient-ransomware-ecosystem/"
+    fetch_method: "webfetch"
+    status_code: 403
+    error_class: transport-403
+    error_message: "direct HTTP 403; jina reader also relayed an upstream block/challenge for the same URL; bridge url (direct+jina fallback) also failed"
+    attempted_methods: [webfetch, "bridge:jina", "bridge:url"]
+    mitigation_applied: "none -- this specific article (a CYFIRMA ransomware-ecosystem summary) could not be corroborated via WebSearch to a reachable primary beyond secondary search snippets; note industrialcyber.co's own /feed/ RSS was independently reachable via jina reader and yielded item titles/dates for the rotation-priority accounting"
+    covered_anyway: false

@@ -1,0 +1,74 @@
+domain: S1
+run_id: 2026-07-10T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-10T20:12:03Z
+ended_at: 2026-07-10T20:18:53Z
+duration_seconds: 410
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 4
+  bridge_fetches: 18
+items:
+  - title: "CVE-2026-48939 — iCagenda Joomla extension: unauthenticated file-upload RCE exploited as a zero-day, added to CISA KEV today"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/10/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-07-10", role: "primary" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV Catalog", date: "2026-07-10", role: "primary" }
+      - { url: "https://mysites.guru/blog/icagenda-zero-day-file-upload-rce/", publisher: "mySites.guru", date: "2026-06-15 (updated 2026-06-23)", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-48939", publisher: "NVD", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://github.com/Polosss/By-Poloss..-..CVE-2026-48939", publisher: "GitHub (PoC)", date: "2026", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog → CVE-2026-48939 newly listed (dateAdded 2026-07-10, not present in earlier runs today) → corroborating: CISA's own dated alert, URL https://www.cisa.gov/news-events/alerts/2026/07/10/cisa-adds-two-known-exploited-vulnerabilities-catalog (confirms exactly two additions today: CVE-2026-48939 and the already-covered CVE-2026-56291) → primary technical write-up: mySites.guru, URL https://mysites.guru/blog/icagenda-zero-day-file-upload-rce/ → corroborating: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-48939 → corroborating PoC: GitHub, URL https://github.com/Polosss/By-Poloss..-..CVE-2026-48939"
+    summary: |
+      CISA added CVE-2026-48939 to the KEV catalog today (2026-07-10, confirmed via CISA's own dated alert naming exactly two additions), covering iCagenda, a widely used Joomla events/calendar extension. The flaw is in the extension's public-facing frontend event-submission ("register for event") controller: the file-attachment upload feature enforced access restrictions only at the view layer, not the controller layer, and applied no file-extension allow-list, so any unauthenticated visitor could POST a PHP file through the public submission form. Uploaded files land directly under the web root at /images/icagenda/frontend/attachments/, where they are immediately executable as PHP — a classic unrestricted-file-upload-to-RCE chain (CWE-434). Affected versions run 3.2.1–3.9.14 and 4.0.0–4.0.7; iCagenda shipped fixes as 3.9.15 and 4.0.8 on 2026-06-15/16, moving upload validation onto Joomla's own MediaHelper allow-list (rejecting .php and other dangerous extensions) and relocating access enforcement to the controller. Per the researcher who first documented it (mySites.guru), the flaw was already being exploited in the wild before any fix existed — a genuine zero-day — with log evidence showing a purpose-built scanning client (user agent `icagenda-batch/1.0`) grabbing a session, POSTing the malicious upload to the submission endpoint, then immediately fetching the dropped shell. CVSS 4.0 is 10.0 (AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A/AU:Y/U:Red); CVSS 3.1 is 9.8. A public PoC (GitHub, Polosss/By-Poloss..-..CVE-2026-48939; also shinthink/CVE-2026-48939) is available. CISA's due date for FCEB remediation is 2026-07-13.
+    region_nexus: "global (any Joomla site running the iCagenda calendar/booking extension); relevant to Swiss/EU public-sector and municipal websites that commonly run Joomla-based event/booking portals"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector (web-facing CMS infrastructure)"
+    cves: [CVE-2026-48939]
+    techniques: [T1190, T1505.003]
+    affected_products: ["iCagenda (Joomla extension)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "iCagenda contains an unrestricted upload of file with dangerous type vulnerability that allows the upload of arbitrary files in the file attachment feature, ultimately resulting in PHP code upload and execution."
+        attribution: "CISA KEV Catalog"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+      - quote: "The user agent was `icagenda-batch/1.0`, which tells you this is tooling built specifically to grind through lists of Joomla sites running iCagenda."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/icagenda-zero-day-file-upload-rce/"
+      - quote: "A flaw being actively used in the wild, with no fixed version to update to, is the definition of a zero day."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/icagenda-zero-day-file-upload-rce/"
+    extended_notes: |
+      Detection concept (telemetry class first): web/application access logs on the Joomla frontend — look for anonymous-session POST requests to the com_icagenda front-end event-submission/upload endpoint immediately followed by a GET request fetching a .php path under /images/icagenda/frontend/attachments/ (or any web-writable uploads directory outside the deployed application baseline). The `icagenda-batch/1.0` user-agent string the researcher observed is a concrete but trivially evadable indicator of the specific scanning tool; the durable discriminator is file-integrity monitoring on upload directories flagging any newly created executable-extension file. Process-telemetry angle: the PHP-FPM/Apache worker serving that uploaded file spawning a shell child process shortly after being requested is a strong post-exploitation signal.
+      Triage / benign-lookalike: on a patched (4.0.8/3.9.15) instance, MediaHelper's allow-list means legitimate event submissions can only ever attach non-executable types (images, PDFs, docs) — so on an unpatched instance, ANY .php (or double-extension, e.g. .php.jpg) file appearing under the iCagenda attachments path is not something a legitimate calendar/event submission could produce, making it a clean discriminator once the attachments-directory baseline is known.
+      Hardening: patch to 4.0.8 (current branch) or 3.9.15 (legacy branch) immediately — this was exploited before a fix existed, so patching alone does not retroactively remediate a prior compromise. If immediate patching isn't possible, disable or remove the public event-submission/attachment feature, or block anonymous POSTs to the submission endpoint at a WAF/reverse proxy. Any Joomla site with iCagenda installed should be checked for pre-existing shells under /images/icagenda/frontend/attachments/ regardless of current patch status, given the confirmed pre-patch zero-day exploitation window.
+cve_table:
+  - cve: CVE-2026-48939
+    product: "iCagenda extension for Joomla"
+    cvss: "10.0 (CVSS 4.0) / 9.8 (CVSS 3.1)"
+    epss: null
+    kev: true
+    exploited: true
+    patch: "3.9.15 (legacy branch) / 4.0.8 (current branch), released 2026-06-15/16"
+    source: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product or supplier watchlist configured for this deployment (org-profile.yaml); no-op sweep per spawn instructions. General coverage rules applied unchanged across all essential + rotation sources fetched this run."
+candidate_sources: []
+coverage_gaps:
+  - source_id: rapid7-research
+    reason: "Both candidate RSS paths (https://www.rapid7.com/blog/index.xml and https://www.rapid7.com/rss/blog.xml) returned empty/404 via direct fetch and jina fallback; no Rapid7 content reachable this run. See Fetch failures section."
+  - source_id: github-advisory
+    reason: "https://github.com/advisories is a fully client-rendered SPA; even via jina reader the response is only the site navigation shell with no advisory list items. No structured API subcommand exists for this source in tools/fetch_source.py. Recipe gap, not a one-off failure — recommend adding a GitHub Advisory GraphQL/REST API subcommand."
+  - source_id: ncsc-uk
+    reason: "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories fetched successfully (200) via jina, but the returned content is a fixed highlights page (in-page table-of-contents anchors to items like 'APT28 exploit routers', 'Cisco Catalyst SD-WAN exploitation') with no reliable publication-date markers distinguishing genuinely new entries from weeks-old ones. No in-window item could be confidently identified from this page; treated as thin/stale rather than a hard failure."
+  - source_id: cisa-advisories
+    reason: "The page URL (https://www.cisa.gov/news-events/cybersecurity-advisories) returns only filter/facet UI in static HTML, no enumerated advisory list. Switched to the RSS feed (https://www.cisa.gov/cybersecurity-advisories/all.xml) instead, which worked well and surfaced the in-window CISA KEV alert used as this run's primary. Recommend updating the source record's working recipe to prefer the RSS feed over the page URL."
+  - source_id: cert-pl
+    reason: "https://cert.pl/en/news/ returned only stale items (most recent dated 12 June 2026); no in-window content."
