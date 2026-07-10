@@ -1201,6 +1201,34 @@ def _nav_segments_html(pfx: str, active_nav: str) -> str:
     )
 
 
+def _subnav_html(pfx: str, active_page: str) -> str:
+    """Second topbar row: the knowledge-base pivot surfaces (entities,
+    CVEs, sources, trends, ops). Desktop-only — the mobile drawer carries
+    the same links via `_more_menu_links(drawer=True)`. `active_page`
+    marks the current surface ("entities" / "cves" / "sources" /
+    "trends" / "ops" / "feeds" / "about" / "")."""
+    items = [
+        ("entities", "entities/", "Entities"),
+        ("cves", "cves/", "CVEs"),
+        ("sources", "sources/", "Sources"),
+        ("trends", "trends/", "Trends"),
+        ("ops", "ops/", "Operations"),
+    ]
+    current = ' aria-current="page"'
+    links = "".join(
+        f'<a class="subnav-link{" active" if active_page == key else ""}" '
+        f'href="{pfx}{href}"{current if active_page == key else ""}>{_escape(label)}</a>'
+        for key, href, label in items
+    )
+    return (
+        '<nav class="subnav desktop-only" aria-label="Knowledge base">'
+        '<div class="subnav-in">'
+        '<span class="subnav-l">Knowledge base</span>'
+        f"{links}"
+        "</div></nav>"
+    )
+
+
 def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     """Shared 'More' menu / mobile-drawer link set."""
     gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
@@ -1410,6 +1438,7 @@ def base_template(
     home_relative_prefix: str = "",
     body_class: str = "",
     active_nav: str = "",
+    active_page: str = "",
     seo: dict[str, Any] | None = None,
 ) -> str:
     """Return a complete HTML document.
@@ -1534,6 +1563,7 @@ def base_template(
       <button class="ib" type="button" data-drawer-toggle aria-label="Open menu" title="Menu" aria-expanded="false"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
     </div>
   </div>
+  {_subnav_html(pfx, active_page)}
   <div class="mseg mobile-only">
     <div class="seg" role="navigation" aria-label="Views">{segments}</div>
   </div>
@@ -2354,11 +2384,18 @@ def render_source_line(entry: dict[str, Any], *, prefix: str = "") -> str:
     """A compact, clickable 'Sources: a · b · c' row rendered at the foot
     of every finding / timeline row. Closed sources are cited, not linked."""
     bits: list[str] = []
+    seen_pubs: set[str] = set()
     for s in entry.get("sources") or []:
         if not isinstance(s, dict):
             continue
         url = _escape(_safe_url(str(s.get("url") or "")))
-        label = _escape(str(s.get("publisher") or s.get("url") or "source"))
+        raw_label = str(s.get("publisher") or s.get("url") or "source")
+        # Two articles from the same publisher collapse to one link — a
+        # compact footer row, not a citation list (the entry page has that).
+        if raw_label in seen_pubs:
+            continue
+        seen_pubs.add(raw_label)
+        label = _escape(raw_label)
         bits.append(f'<a href="{url}" target="_blank" rel="noopener noreferrer">{label}</a>')
     for c in entry.get("closed_sources") or []:
         if isinstance(c, dict) and c.get("title"):
@@ -2565,13 +2602,28 @@ def _sect_title(key: str, fallback: str) -> str:
 
 
 def _sect_header(num: int, title: str, count: int) -> str:
+    anchor = slugify(title)
     return (
-        '<div class="sect">'
+        f'<div class="sect" id="{_escape(anchor)}">'
         f'<span class="n">{num:02d}</span>'
         f'<span class="t">{_escape(title)}</span>'
         f'<span class="c">{count} item{"" if count == 1 else "s"}</span>'
         "</div>"
     )
+
+
+def _secnav_html(items: list[tuple[str, int]]) -> str:
+    """In-page jump row rendered under the TL;DR of a day / weekly brief:
+    one chip per rendered section (anchor = slugified title) with its
+    item count. Empty when fewer than two sections rendered."""
+    if len(items) < 2:
+        return ""
+    chips = "".join(
+        f'<a class="secnav-chip" href="#{_escape(slugify(t))}">{_escape(t)}'
+        f' <span class="secnav-n">{n}</span></a>'
+        for t, n in items
+    )
+    return f'<nav class="secnav" aria-label="Sections">{chips}</nav>'
 
 
 def render_tldr_list(
@@ -2653,6 +2705,7 @@ def render_brief_sections(
         buckets[skey].sort(key=entry_sort_key)
 
     out: list[str] = [render_tldr_list(select_tldr_entries(ops), prefix=prefix)]
+    secnav_items: list[tuple[str, int]] = []
 
     num = 0
     for key, title in DAILY_SECTIONS:
@@ -2684,6 +2737,7 @@ def render_brief_sections(
                 _sect_header(num, _sect_title(key, title), len(rows))
                 + f'<ul class="action-list">{"".join(rows)}</ul>'
             )
+            secnav_items.append((_sect_title(key, title), len(rows)))
             continue
         section_entries = buckets.get(key, [])
         if not section_entries:
@@ -2697,7 +2751,9 @@ def render_brief_sections(
             for e in section_entries
         )
         out.append(_sect_header(num, _sect_title(key, title), len(section_entries)) + findings)
+        secnav_items.append((_sect_title(key, title), len(section_entries)))
 
+    out.insert(1, _secnav_html(secnav_items))
     out.append(_verif_block(
         runs, base_url=base_url,
         heading="Verification &amp; coverage notes",
@@ -2732,6 +2788,7 @@ def render_weekly_sections(
     ]
 
     out: list[str] = [render_tldr_list(glance, prefix=prefix, eyebrow="Week at a glance")]
+    secnav_items: list[tuple[str, int]] = []
 
     num = 0
     for key, title in WEEKLY_STRUCTURE:
@@ -2749,7 +2806,9 @@ def render_weekly_sections(
             for e in section_entries
         )
         out.append(_sect_header(num, _sect_title(key, title), len(section_entries)) + findings)
+        secnav_items.append((_sect_title(key, title), len(section_entries)))
 
+    out.insert(1, _secnav_html(secnav_items))
     out.append(_verif_block(
         runs, base_url=base_url,
         heading="About this weekly",
@@ -3088,6 +3147,9 @@ def render_live_brief_page(
     window (the range <select> or the "load older findings" button)."""
     ops = operational_entries(window_entries)
     n = len(ops)
+    n_crit = sum(1 for e in ops if e.get("priority") == "critical")
+    n_high = sum(1 for e in ops if e.get("priority") == "high")
+    n_upd = sum(1 for e in ops if e.get("update_of"))
     critical = next(
         (e for e in sorted(ops, key=entry_sort_key) if e.get("priority") == "critical"),
         None,
@@ -3139,6 +3201,12 @@ def render_live_brief_page(
     <span class="rf rf--select"><select data-window-select aria-label="Reading window">{options}</select></span>
   </div>
   <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · <span data-window-count>{n}</span> findings · UTC</span>
+</div>
+<div class="pulserow" aria-label="Window summary">
+  <span class="pulse pulse--crit"><b data-window-crit>{n_crit}</b> critical</span>
+  <span class="pulse pulse--high"><b data-window-high>{n_high}</b> high</span>
+  <span class="pulse"><b data-window-upd>{n_upd}</b> updates</span>
+  <span class="pulse pulse--total"><b data-window-total>{n}</b> in window</span>
 </div>
 <div class="feedhead feedhead--section">
   <h1 class="feedhead-title">Latest findings</h1>
@@ -3746,8 +3814,82 @@ def render_entry_page(
         + "".join(chain_bits) + "</ul></div>"
     ) if chain_bits else ""
 
+    # --- Pivot rail (sticky aside on wide screens) ----------------------
+    # Every hunting pivot the entry carries, grouped and linked: CVEs with
+    # their status, entities, ATT&CK techniques (→ MITRE), affected
+    # products, tags / regions / sectors. On narrow screens the rail
+    # stacks below the body.
+    def _rail_group(label: str, inner: str) -> str:
+        if not inner:
+            return ""
+        return (
+            f'<div class="erail-group"><h4 class="erail-l">{_escape(label)}</h4>'
+            f"{inner}</div>"
+        )
+
+    cve_rows: list[str] = []
+    for cv in entry.get("cves") or []:
+        if not isinstance(cv, dict) or not cv.get("id"):
+            continue
+        cid = str(cv["id"])
+        st_chips = "".join(
+            f'<span class="b{" exp" if str(st) in ("exploited", "cisa-kev") else ""}">{_escape(str(st))}</span>'
+            for st in (cv.get("status") or [])
+        )
+        cvss = f'<span class="mono muted">CVSS {_escape(str(cv["cvss"]))}</span>' if cv.get("cvss") else ""
+        cve_rows.append(
+            '<div class="erail-cve">'
+            f'<a class="mono" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a> {cvss}'
+            + (f'<div class="erail-cve__st">{st_chips}</div>' if st_chips else "")
+            + "</div>"
+        )
+    rail_cves = _rail_group("CVEs", "".join(cve_rows))
+
+    ent_chips = "".join(
+        f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
+        f'{_escape((registry.get(key) or {}).get("name") or str(key))}</a>'
+        for key in entry.get("entities") or []
+    )
+    rail_entities = _rail_group("Entities", f'<div class="echips">{ent_chips}</div>' if ent_chips else "")
+
+    tech_chips = "".join(
+        f'<a class="echip echip--tech" href="https://attack.mitre.org/techniques/{_escape(str(t).replace(".", "/"))}/"'
+        f' target="_blank" rel="noopener noreferrer">{_escape(str(t))}</a>'
+        for t in entry.get("techniques") or []
+    )
+    rail_tech = _rail_group("ATT&CK techniques", f'<div class="echips">{tech_chips}</div>' if tech_chips else "")
+
+    prod_chips = "".join(
+        f'<span class="echip">{_escape(str(p))}</span>'
+        for p in entry.get("affected_products") or []
+    )
+    rail_products = _rail_group("Affected products", f'<div class="echips">{prod_chips}</div>' if prod_chips else "")
+
+    tax_chips = "".join(
+        f'<a class="echip" href="{prefix}tags/{_escape(t)}/">{_escape(t)}</a>'
+        for t in entry.get("tags") or []
+    ) + "".join(
+        f'<a class="echip" href="{prefix}regions/{_escape(r)}/">{_escape(r)}</a>'
+        for r in entry.get("regions") or []
+    ) + "".join(
+        f'<span class="echip echip--muted">{_escape(str(sc))}</span>'
+        for sc in entry.get("sectors") or []
+    )
+    rail_tax = _rail_group("Tags · regions · sectors", f'<div class="echips">{tax_chips}</div>' if tax_chips else "")
+
+    rail = (
+        '<aside class="erail" aria-label="Pivots">'
+        + rail_cves + rail_entities + rail_tech + rail_products + rail_tax
+        + "</aside>"
+    )
+    has_rail = bool(cve_rows or ent_chips or tech_chips or prod_chips or tax_chips)
+    if not has_rail:
+        rail = ""
+
     body = f"""
 <a class="back" href="{_escape(parent_url)}">← Back to {_escape(parent_label)}</a>
+<div class="entry-layout{' entry-layout--rail' if has_rail else ''}">
+<div class="entry-main">
 {render_badges(entry, prefix=prefix, full=True)}
 <h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
 {emeta}
@@ -3759,9 +3901,12 @@ def render_entry_page(
 </div>
 {actions_html}
 {render_detail_sources(entry)}
-{render_detail_scope(entry, registry=registry, prefix=prefix)}
+{render_detail_scope(entry, registry=registry, prefix=prefix) if not has_rail else ""}
 {chain_html}
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
+</div>
+{rail}
+</div>
 """
     description = (entry.get("summary") or "").strip()[:280] or (entry.get("headline") or "")[:280]
     # Breadcrumb trail (absolute URLs) mirroring the entry's real parent
@@ -3787,7 +3932,7 @@ def render_entry_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
-        body_class="reading",
+        body_class="reading entry-detail" if has_rail else "reading",
         active_nav="daily" if is_op else "weekly",
         seo={
             "og_type": "article",
@@ -3812,10 +3957,14 @@ def render_embedded_entries_section(
     empty_text: str,
     prefix: str,
     entries_by_id: dict[str, dict[str, Any]] | None = None,
-    limit: int = 20,
+    limit: int = 3,
 ) -> str:
-    """Full entry cards embedded on an entity page (newest first) · the
-    v3 replacement for the v2 brief-item embeds."""
+    """Entries embedded on an entity page (newest first). The newest
+    `limit` entries carry their full analysis inline (a reader landing on
+    a CVE/actor page sees the latest state without a hop); everything
+    older renders as a compact pivot card — title, badges, summary,
+    permalink — so entity pages stay scannable instead of re-publishing
+    the whole store."""
     if not entries:
         return (
             f'<h2 class="section-head" style="margin-top:1.5rem">{_escape(heading)}</h2>'
@@ -3826,7 +3975,7 @@ def render_embedded_entries_section(
         key=lambda e: (str(e.get("discovered_at") or ""), e.get("id") or ""),
         reverse=True,
     )
-    shown = ordered[:limit]
+    shown, rest = ordered[:limit], ordered[limit:]
     cards = "".join(
         '<article class="embedded-item">'
         '<header class="embedded-item__head">'
@@ -3838,13 +3987,28 @@ def render_embedded_entries_section(
         + "</div></article>"
         for e in shown
     )
-    more = (
-        f'<p class="muted">+ {len(ordered) - limit} earlier entries · see the timeline above.</p>'
-        if len(ordered) > limit else ""
-    )
+    minis = ""
+    if rest:
+        mini_cards = "".join(
+            '<a class="mini-card" href="' + f"{prefix}{entry_url_path(e)}" + '">'
+            '<span class="mini-card__meta">'
+            f'<span class="mono">{_escape(e["date"])}</span>'
+            f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
+            + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
+            + ('<span class="b upd">update</span>' if e.get("update_of") else "")
+            + "</span>"
+            f'<span class="mini-card__t">{_escape(e.get("title") or e["id"])}</span>'
+            f'<span class="mini-card__s">{_inline_text((e.get("summary") or e.get("headline") or "").strip())}</span>'
+            "</a>"
+            for e in rest
+        )
+        minis = (
+            f'<h3 class="section-head mini-head">Earlier coverage ({len(rest)})</h3>'
+            f'<div class="mini-grid">{mini_cards}</div>'
+        )
     return (
         f'<h2 class="section-head" style="margin-top:1.5rem">{_escape(heading)} ({len(ordered)})</h2>'
-        f'<div class="embedded-items">{cards}{more}</div>'
+        f'<div class="embedded-items">{cards}</div>{minis}'
     )
 
 
@@ -3883,9 +4047,14 @@ def render_home_page(
     site_url: str,
     cachebust: str,
     canonical: str,
+    counts: dict[str, int] | None = None,
+    last_updated: str = "",
 ) -> str:
-    """Home · hero + three brief cards (Live / Daily / Weekly), each
-    leading with the one thing that matters in that window."""
+    """Home · hero (copy + live platform-status panel), three brief cards
+    (Live / Daily / Weekly), and the knowledge-base pivot band. `counts`
+    carries the store-wide totals (entries/entities/cves/sources) and
+    `last_updated` the reference timestamp string shown in the status
+    panel."""
     redirect_js = f'<script src="assets/js/spa-redirect.js?v={cachebust}"></script>'
 
     def _lead(entries: list[dict[str, Any]]) -> tuple[str, str] | None:
@@ -3960,16 +4129,77 @@ def render_home_page(
             '<span class="bgo">the strategic arc →</span></a>'
         )
 
+    # --- Platform-status panel (right of the hero copy) -----------------
+    c = counts or {}
+    n_crit_live = crit_live
+    n_high_live = sum(1 for e in live_ops if e.get("priority") == "high")
+    win_mix = []
+    if n_crit_live:
+        win_mix.append(f'<span class="hs-crit">{n_crit_live} critical</span>')
+    if n_high_live:
+        win_mix.append(f'<span class="hs-high">{n_high_live} high</span>')
+    win_mix_html = " · ".join(win_mix) if win_mix else '<span class="muted">no critical items</span>'
+    stat_rows = [
+        ("live/", f"{n_live}", "findings · last 24 h", win_mix_html),
+    ]
+    for href, key, label in (
+        ("entities/", "entities", "tracked entities"),
+        ("cves/", "cves", "CVEs on file"),
+        ("sources/", "sources", "curated sources"),
+    ):
+        if c.get(key):
+            stat_rows.append((href, f"{c[key]:,}", label, ""))
+    status_lis = "".join(
+        f'<a class="hs-row" href="{href}"><span class="hs-v">{v}</span>'
+        f'<span class="hs-l">{_escape(label)}'
+        + (f'<span class="hs-sub">{sub}</span>' if sub else "")
+        + "</span></a>"
+        for href, v, label, sub in stat_rows
+    )
+    status_panel = (
+        '<aside class="hero-status" aria-label="Platform status">'
+        '<div class="hs-head"><span class="livedot" aria-hidden="true"><em></em><i></i></span>'
+        '<span class="hs-t">Platform status</span>'
+        + (f'<span class="hs-stamp">updated {_escape(last_updated)}</span>' if last_updated else "")
+        + f"</div>{status_lis}</aside>"
+    )
+
+    # --- Knowledge-base pivot band --------------------------------------
+    pivots = [
+        ("entities/", "Entities", c.get("entities"),
+         "Actors, campaigns, malware, incidents · every key is a pivot."),
+        ("cves/", "CVEs", c.get("cves"),
+         "Every vulnerability on file with its full appearance trail."),
+        ("sources/", "Sources", c.get("sources"),
+         "The curated source list, reliability-rated and health-probed."),
+        ("trends/", "Trends", None,
+         "Weekly cohort movement: ransomware, KEV, sector targeting."),
+        ("ops/", "Operations", None,
+         "Pipeline telemetry: runs, models, verification verdicts."),
+    ]
+    pivot_tiles = "".join(
+        f'<a class="pivot" href="{href}"><span class="pivot-h">{_escape(t)}'
+        + (f'<span class="pivot-n">{n:,}</span>' if n else "")
+        + f'</span><span class="pivot-p">{_escape(desc)}</span></a>'
+        for href, t, n, desc in pivots
+    )
+
     body = f"""
-<div class="hero">
-  <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
-  <h1>{_escape(HERO_TITLE)}</h1>
-  <p>{_escape(HERO_SUBTITLE)}</p>
+<div class="hero hero--split">
+  <div class="hero-copy">
+    <span class="eyebrow">{_escape(HERO_EYEBROW)}</span>
+    <h1>{_escape(HERO_TITLE)}</h1>
+    <p>{_escape(HERO_SUBTITLE)}</p>
+  </div>
+  {status_panel}
 </div>
 <div class="briefgrid">
 {live_card}
 {day_card}
 {weekly_card}
+</div>
+<div class="pivotband" aria-label="Knowledge base">
+{pivot_tiles}
 </div>
 {redirect_js}
 """
@@ -4028,6 +4258,19 @@ def build_briefbook(
             html = render_entry_card(e, prefix=prefix, entries_by_id=by_id)
             if card_html_by_id is not None:
                 card_html_by_id[e["id"]] = html
+        # Sources deduped by publisher (first occurrence wins) — the client
+        # timeline's source row is a compact footer, mirroring
+        # render_source_line's dedup.
+        sources_min: list[dict[str, str]] = []
+        _seen_pubs: set[str] = set()
+        for s in e.get("sources") or []:
+            if not isinstance(s, dict):
+                continue
+            pub = str(s.get("publisher") or s.get("url") or "source")
+            if pub in _seen_pubs:
+                continue
+            _seen_pubs.add(pub)
+            sources_min.append({"publisher": pub, "url": _safe_url(str(s.get("url") or ""))})
         out_entries.append({
             "id": e["id"],
             "url": prefix + entry_url_path(e),
@@ -4049,11 +4292,7 @@ def build_briefbook(
             "techniques": content_model.entry_technique_ids(e, ATTACK_TECHNIQUES),
             "run_id": e.get("run_id"),
             "source_count": _source_count(e),
-            "sources_min": [
-                {"publisher": str(s.get("publisher") or s.get("url") or "source"),
-                 "url": _safe_url(str(s.get("url") or ""))}
-                for s in (e.get("sources") or []) if isinstance(s, dict)
-            ],
+            "sources_min": sources_min,
             "exploited": _entry_exploited(e),
             "verification_label": _verif_meta(e)[1],
             "verification_class": _verif_meta(e)[0],
@@ -4160,31 +4399,47 @@ def render_cve_list_page(
     prefix: str,
     canonical: str,
 ) -> str:
+    def _cve_year(cid: str) -> str:
+        m = re.match(r"^CVE-(\d{4})-", cid or "")
+        return m.group(1) if m else ""
+
+    year_counts: dict[str, int] = {}
     rows = []
     for c in cves:
-        # Unified entity model: `appearances` is now the structured list
+        # Unified entity model: `appearances` is the structured list
         # `[{date, section, brief_path, delta_summary}]`; the flat list
-        # of brief names lives on `briefs`. Iterate the flat list here.
+        # of brief names lives on `briefs`.
         names = c.get("briefs") or []
-        app_links = "".join(
-            f'<a href="{prefix}daily/{_escape(n)}/" class="mono" style="margin-right:0.4rem">{_escape(n)}</a>'
-            for n in names
-        )
+        n_days = len(names)
+        latest = names[0] if names else ""
+        coverage = (
+            f'<a href="{prefix}daily/{_escape(latest)}/" class="mono">{_escape(latest)}</a>'
+            + (f' <span class="muted">+{n_days - 1} more</span>' if n_days > 1 else "")
+        ) if latest else '<span class="muted">—</span>'
+        year = _cve_year(c["id"])
+        if year:
+            year_counts[year] = year_counts.get(year, 0) + 1
         rows.append(
-            f'<tr>'
+            f'<tr data-cve-year="{_escape(year)}">'
             f'<td class="cve-id"><a href="{prefix}entities/{_escape(c["id"])}/">{_escape(c["id"])}</a></td>'
             f'<td>{_escape(c.get("title", "") or "")}</td>'
             f'<td class="mono muted">{_escape(c.get("first_seen", "") or "")}</td>'
             f'<td class="mono muted">{_escape(c.get("last_seen", "") or "")}</td>'
-            f'<td>{app_links}</td>'
+            f'<td>{coverage}</td>'
             f'</tr>'
         )
     table = (
         '<div class="data-wrap"><table class="data" data-filter-table="cves">'
-        '<thead><tr><th>CVE</th><th>Title</th><th>First seen</th><th>Last seen</th><th>Appears in</th></tr></thead>'
+        '<thead><tr><th>CVE</th><th>Title</th><th>First seen</th><th>Last seen</th><th>Latest coverage</th></tr></thead>'
         '<tbody>' + "".join(rows) + '</tbody>'
         '</table></div>'
     ) if rows else '<div class="empty">No CVEs match.</div>'
+
+    year_chips = "".join(
+        f'<span class="chip" data-filter-chip="cve-year" data-value="{_escape(y)}">{_escape(y)}'
+        f' <span class="chip-n">{n}</span></span>'
+        for y, n in sorted(year_counts.items(), reverse=True)
+    )
 
     chart_block = render_overview_charts(cves, prefix=prefix, label="CVEs")
     body = f"""
@@ -4196,10 +4451,15 @@ def render_cve_list_page(
 <div class="toolbar" style="margin-top:1rem">
   <input class="input" id="cves-q" type="search" placeholder="Filter by CVE id, title, or brief date…" autocomplete="off" spellcheck="false" data-filter-input="cves" />
 </div>
+<div class="toolbar" style="margin-top:-0.5rem">
+  <span class="chip active" data-filter-chip="cve-year" data-value="all">All years</span>
+  {year_chips}
+</div>
 {table}
 """
     return base_template(
         title=f"CVEs · {SITE_NAME}",
+        active_page="cves",
         description=f"{len(cves)} CVEs referenced across all briefs.",
         body=body,
         canonical=canonical,
@@ -4245,7 +4505,7 @@ def render_topic_list_page(
     for t in topics:
         n = len(t.get("briefs", []))
         flag_badges = "".join(
-            f'<span class="badge badge--low" title="Verification flag">{_escape(f)}</span>'
+            f'<span class="badge" title="Verification flag">{_escape(f.lower())}</span>'
             for f in t.get("flags", [])
         )
         brief_links = "".join(
@@ -4296,6 +4556,7 @@ def render_topic_list_page(
 """
     return base_template(
         title=f"Topics · {SITE_NAME}",
+        active_page="entities",
         description=f"{len(topics)} tracked topics · CVEs, actors, campaigns, incidents, tools.",
         body=body,
         canonical=canonical,
@@ -4477,6 +4738,7 @@ def render_source_list_page(
 """
     return base_template(
         title=f"Sources · {SITE_NAME}",
+        active_page="sources",
         description=f"{len(sources)} curated CTI sources.",
         body=body,
         canonical=canonical,
@@ -4591,6 +4853,7 @@ def render_source_page(
 """
     return base_template(
         title=f"{source.get('publisher') or source['id']} · Source",
+        active_page="sources",
         description=f"{source.get('publisher') or source['id']} · {', '.join(cats) or 'curated CTI source'}",
         body=body,
         canonical=canonical,
@@ -4894,6 +5157,7 @@ def render_feeds_page(*, site_url: str, cachebust: str,
 """
     return base_template(
         title=f"RSS feeds · {SITE_NAME}",
+        active_page="feeds",
         description=FEEDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -5118,6 +5382,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         )
         return base_template(
             title=f"Trends · {SITE_NAME}",
+        active_page="trends",
             description="Weekly trend dashboard across all published entries.",
             body=body,
             canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -5140,6 +5405,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         body = '<h1>Trends</h1><p class="muted">No weekly buckets yet.</p>'
         return base_template(
             title=f"Trends · {SITE_NAME}",
+        active_page="trends",
             description="Weekly trend dashboard across all published entries.",
             body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
@@ -5153,6 +5419,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         total_recent = int(sum(values))
         last_week_count = int(values[-1]) if values else 0
         delta = ""
+        delta_cls = ""
         if len(values) >= 2:
             prev = values[-2]
             now = values[-1]
@@ -5160,23 +5427,41 @@ def render_trends_page(entries: list[dict[str, Any]], *,
                 delta = "no change"
             elif prev == 0 and now > 0:
                 delta = "new this week (was 0)"
+                delta_cls = " trends-card__delta--up"
             else:
                 pct = (now - prev) / prev * 100 if prev else 0
                 arrow = "▲" if now > prev else ("▼" if now < prev else "→")
                 delta = f"{arrow} {pct:+.0f}% vs prior week"
+                delta_cls = (
+                    " trends-card__delta--up" if now > prev
+                    else (" trends-card__delta--down" if now < prev else "")
+                )
         spark_html = _ops_svg_sparkline(
             values,
             label=f"{cohort['title']} (last {len(weeks_sorted)} weeks)",
             width=240, height=44,
         )
-        cards.append(
-            '<div class="trends-card">'
+        # Pivot target: the cohort's first tag page (or region page) so a
+        # tile click lands on the matching item list.
+        pivot_href = ""
+        if cohort.get("tags"):
+            pivot_href = f'{prefix}tags/{cohort["tags"][0]}/'
+        elif cohort.get("regions"):
+            pivot_href = f'{prefix}regions/{cohort["regions"][0]}/'
+        inner = (
             f'<p class="trends-card__title">{_escape(cohort["title"])}</p>'
             f'<p class="trends-card__value">{last_week_count}</p>'
-            f'<p class="trends-card__sub">{_escape(delta)} · {total_recent} over last {len(weeks_sorted)} wk</p>'
+            f'<p class="trends-card__sub"><span class="trends-card__delta{delta_cls}">{_escape(delta)}</span>'
+            f' · {total_recent} over last {len(weeks_sorted)} wk</p>'
             f"{spark_html}"
-            "</div>"
         )
+        if pivot_href:
+            inner += '<span class="trends-card__go">view items →</span>'
+            cards.append(
+                f'<a class="trends-card trends-card--link" href="{_escape(pivot_href)}">{inner}</a>'
+            )
+        else:
+            cards.append(f'<div class="trends-card">{inner}</div>')
 
     weeks_label = f"{weeks_sorted[0]} → {weeks_sorted[-1]}"
     body = f"""
@@ -5195,6 +5480,7 @@ def render_trends_page(entries: list[dict[str, Any]], *,
 """
     return base_template(
         title=f"Trends · {SITE_NAME}",
+        active_page="trends",
         description=TRENDS_PAGE_DESCRIPTION,
         body=body,
         canonical=canonical, site_url=site_url, cachebust=cachebust,
@@ -5655,6 +5941,15 @@ def render_ops_page(
     duration_series = [r.get("duration_seconds") or 0 for r in runs_asc]
     items_series = [r.get("entries_published") or 0 for r in runs_asc]
     failures_series = [len(r.get("fetch_failures") or []) for r in runs_asc]
+    # Runs per calendar day (chronological) — the cadence chart. A flat
+    # one-bar-per-run series would render as a solid wall; this shows the
+    # actual multiple-fires-per-day rhythm.
+    _rpd: dict[str, int] = {}
+    for r in runs_asc:
+        d = str(r.get("date") or "")[:10]
+        if d:
+            _rpd[d] = _rpd.get(d, 0) + 1
+    runs_per_day_series = [float(v) for _, v in sorted(_rpd.items())]
 
     # Verification stacks: clean outcome (green) + remediation rounds (yellow)
     # + residuals (red). Green marks a clean publish regardless of how many
@@ -5827,7 +6122,7 @@ def render_ops_page(
     primary_kpis = (
         '<div class="ops-kpi-row">'
         + _ops_kpi_tile("Last run", last_run_label,
-                        sub=f"{total_failures} fetch failure{'s' if total_failures != 1 else ''} in window",
+                        sub=f"{len(daily_runs)} intel · {len(weekly_runs)} weekly in window",
                         kind=("warn" if days_since_last > 1 else "ok"),
                         primary=True)
         + _ops_kpi_tile("Verification clean-rate", clean_rate_str, sub=clean_rate_sub,
@@ -5850,10 +6145,10 @@ def render_ops_page(
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile("Total runs (window)", str(min(total_runs, len(runs_desc))),
                         sub=f"{len(daily_runs)} intel · {len(weekly_runs)} weekly",
-                        chart=_ops_svg_bars([1] * len(runs_desc) if runs_desc else [],
+                        chart=_ops_svg_bars(runs_per_day_series,
                                               width=140, height=28,
                                               color="var(--accent)", track="var(--bg)",
-                                              label="Run cadence"))
+                                              label="Runs per day (chronological)"))
         + _ops_kpi_tile("Avg duration",
                         _ops_format_duration(avg_duration),
                         sub=f"min {_ops_format_duration(min(durations) if durations else 0)} · "
@@ -5929,6 +6224,7 @@ def render_ops_page(
 """
     return base_template(
         title=f"Operations dashboard · {SITE_NAME}",
+        active_page="ops",
         description="Live agent telemetry: run cadence, durations, model split, sub-agent allocation, verification verdicts, fetch failures, source-rotation health.",
         body=body,
         canonical=canonical,
@@ -7461,24 +7757,24 @@ def render_overview_charts(
     type_slices = [(k, float(v), _entity_palette_color(k, assigned)) for k, v in type_pairs]
     donut_html = _ops_svg_donut(type_slices, size=140, label=f"{label} by type")
 
-    # Per-year bars when CVE-heavy (only show if we have ≥ 2 distinct years).
+    # Per-year ranked bars when CVE-heavy (only if ≥ 2 distinct years).
+    # Labelled inline bars — an unlabeled SVG bar row next to a value
+    # list made the sub-1% years invisible.
     bars_block = ""
     if len(by_year) >= 2:
-        year_pairs = sorted(by_year.items(), key=lambda kv: kv[0])
-        bar_svg = _ops_svg_bars([float(v) for _, v in year_pairs], width=320, height=80,
-                                 label="CVE entries by year")
-        legend_lis = "".join(
-            f'<li class="ops-legend__item">'
-            f'<span class="ops-legend__swatch" style="background:var(--accent-soft)"></span>'
-            f'<span class="ops-legend__label">{_escape(y)}</span>'
-            f'<span class="ops-legend__value mono">{n}</span></li>'
+        year_pairs = sorted(by_year.items(), key=lambda kv: kv[0], reverse=True)
+        max_y = max(v for _, v in year_pairs) or 1
+        bar_rows = "".join(
+            f'<li class="rankbar">'
+            f'<span class="rankbar__label mono">{_escape(y)}</span>'
+            f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(2, round(n / max_y * 100))}%"></span></span>'
+            f'<span class="rankbar__value mono">{n}</span></li>'
             for y, n in year_pairs
         )
         bars_block = (
             '<div class="ops-chart-card">'
             '<h3 class="section-head" style="margin-top:0">By year</h3>'
-            f'{bar_svg}'
-            f'<ul class="ops-legend">{legend_lis}</ul>'
+            f'<ul class="rankbar-list">{bar_rows}</ul>'
             '</div>'
         )
 
@@ -7502,10 +7798,17 @@ def render_overview_charts(
         )
 
     # KPI strip.
+    if len(by_type) > 1:
+        total_sub = f"{len(by_type)} types"
+    elif by_year:
+        years_sorted = sorted(by_year)
+        total_sub = f"{years_sorted[0]} – {years_sorted[-1]}"
+    else:
+        total_sub = ""
     kpi_html = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile(f"Total {label}", str(total),
-                         sub=f"{len(by_type)} types", kind="accent")
+                         sub=total_sub, kind="accent")
         + _ops_kpi_tile("Recent (30 d)", str(last_30d_count),
                          sub="entities with new coverage in window",
                          kind="ok" if last_30d_count else "neutral")
@@ -7518,12 +7821,16 @@ def render_overview_charts(
         + '</div>'
     )
 
-    donut_block = (
-        '<div class="ops-chart-card">'
-        '<h3 class="section-head" style="margin-top:0">By type</h3>'
-        f'{donut_html}'
-        '</div>'
-    )
+    # A single-type set (e.g. /cves/) makes the type donut a meaningless
+    # 100% ring — drop it and let the year bars / sparkline carry the row.
+    donut_block = ""
+    if len(by_type) > 1:
+        donut_block = (
+            '<div class="ops-chart-card">'
+            '<h3 class="section-head" style="margin-top:0">By type</h3>'
+            f'{donut_html}'
+            '</div>'
+        )
 
     return (
         '<section class="ops-section">'
@@ -7600,16 +7907,21 @@ def render_sources_overview_charts(
         + _ops_kpi_tile("Demoted", str(n_demoted),
                          sub="kept for audit history",
                          kind="neutral")
-        + _ops_kpi_tile("Citation density",
+        + _ops_kpi_tile("Citations",
                          f"{sum(c for _, _, c in citations_by_source)}",
                          sub=f"avg {sum(c for _, _, c in citations_by_source) / max(n_active, 1):.1f} per active source")
         + '</div>'
     )
 
-    # Status donut.
-    assigned_a: dict[str, str] = {}
+    # Status donut — semantic status colours (never the categorical
+    # palette: "active" must read healthy, "demoted" must read inert).
+    status_color = {
+        "active": "var(--ok)",
+        "candidate": "var(--info)",
+        "demoted": "var(--text-muted)",
+    }
     status_slices = [
-        (k, float(v), _entity_palette_color(k, assigned_a))
+        (k, float(v), status_color.get(k, "var(--warn)"))
         for k, v in sorted(by_status.items(), key=lambda kv: -kv[1])
     ]
     status_donut = _ops_svg_donut(status_slices, size=140, label="Sources by status")
@@ -7641,17 +7953,14 @@ def render_sources_overview_charts(
     )[:12]
     top_block = ""
     if top_cited:
-        bar_svg = _ops_svg_bars(
-            [float(c) for _, _, c in top_cited], width=320, height=80,
-            label="Top-cited sources",
-        )
-        legend_lis = "".join(
-            f'<li class="ops-legend__item">'
-            f'<span class="ops-legend__swatch" style="background:var(--accent-soft)"></span>'
-            f'<span class="ops-legend__label">'
-            f'<a href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(pub[:40])}</a>'
-            f'</span>'
-            f'<span class="ops-legend__value mono">{n}</span></li>'
+        # Ranked labelled bar list (label + inline bar + value per row) —
+        # reads better than an unlabeled bar chart above a swatch legend.
+        max_n = max(n for _, _, n in top_cited) or 1
+        bar_rows = "".join(
+            f'<li class="rankbar">'
+            f'<a class="rankbar__label" href="{prefix}sources/{urllib.parse.quote(sid, safe="")}/">{_escape(pub[:42])}</a>'
+            f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(4, round(n / max_n * 100))}%"></span></span>'
+            f'<span class="rankbar__value mono">{n}</span></li>'
             for sid, pub, n in top_cited
         )
         top_block = (
@@ -7661,8 +7970,7 @@ def render_sources_overview_charts(
             'Top 12 by brief-appearance count. A narrow distribution here is a '
             'citation-bias risk · look for diversity of publisher and category.'
             '</p>'
-            f'{bar_svg}'
-            f'<ul class="ops-legend">{legend_lis}</ul>'
+            f'<ul class="rankbar-list">{bar_rows}</ul>'
             '</div>'
         )
 
@@ -7685,7 +7993,7 @@ def render_sources_overview_charts(
                 f'<tr><td><a href="{prefix}sources/?cat={_escape(cat)}">{_escape(cat)}</a></td>'
                 f'<td class="mono">{src_count}</td>'
                 f'<td class="mono">{cit_count}</td>'
-                f'<td class="mono">{ratio:.1f}{kind_pill}</td></tr>'
+                f'<td class="mono">{ratio:.1f} {kind_pill}</td></tr>'
             )
         cat_block = (
             '<div class="ops-chart-card" style="grid-column:1/-1">'
@@ -7736,30 +8044,36 @@ def render_entities_index_page(
     type-filter chip toolbar above a single ranked list. Merged
     tombstones keep their permalink page but are hidden from the index."""
     entities = [e for e in entities if not e.get("merged_into")]
-    types = sorted({e.get("type", "") for e in entities if e.get("type")})
+    type_counts: dict[str, int] = {}
+    for e in entities:
+        t = e.get("type", "") or ""
+        if t:
+            type_counts[t] = type_counts.get(t, 0) + 1
     type_chips = "".join(
-        f'<span class="chip" data-filter-chip="entity-type" data-value="{_escape(t)}">{_escape(t)}</span>'
-        for t in types
+        f'<span class="chip" data-filter-chip="entity-type" data-value="{_escape(t)}">{_escape(t)}'
+        f' <span class="chip-n">{n}</span></span>'
+        for t, n in sorted(type_counts.items(), key=lambda kv: (-kv[1], kv[0]))
     )
 
     rows: list[str] = []
     for e in entities:
-        n = len(e.get("briefs") or [])
+        n = len(e.get("appearances") or [])
         flag_badges = "".join(
-            f'<span class="badge badge--low" title="Verification flag">{_escape(f)}</span>'
+            f'<span class="badge" title="Verification flag seen on referencing entries">{_escape(f.lower())}</span>'
             for f in (e.get("flags") or [])
         )
         url = _entity_url(e, prefix=prefix)
+        etype = e.get("type", "") or ""
         rows.append(
-            '<li data-entity-type="' + _escape(e.get("type", "") or "") + '" '
+            '<li data-entity-type="' + _escape(etype) + '" '
             'data-entity-flags="' + _escape(",".join(e.get("flags") or [])) + '">'
             f'<span>'
+            f'<span class="e-tag e-tag--{_escape(etype or "none")}">{_escape(etype or "—")}</span> '
             f'<a class="e-title" href="{url}">{_escape(e.get("title") or e["key"])}</a>'
-            f'<div class="e-meta">'
-            f'<span class="e-tag">{_escape(e.get("type", "") or "—")}</span>'
+            + (f'<span class="e-apps" title="Appears in {n} entries">×{n}</span>' if n > 1 else '')
+            + f'<div class="e-meta">'
             f'<span class="mono">{_escape(e["key"])}</span>'
             f'<span>last covered {_escape(e.get("last_covered", "") or "—")}</span>'
-            + (f'<span class="badge badge--accent" title="Story unfolds across {n} briefs">×{n} appearances</span>' if n > 1 else '')
             + flag_badges
             + '</div></span>'
             '</li>'
@@ -7772,7 +8086,7 @@ def render_entities_index_page(
 
     body = f"""
 <h1>Entities</h1>
-<p class="subtitle">{len(entities)} CVEs, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The badge marks items covered in more than one brief · these are the "stories that unfolded".</p>
+<p class="subtitle">{len(entities)} CVEs, actors, campaigns, incidents, tools, advisories, and reports tracked across briefs. The ×N marker counts entries referencing an entity · multi-entry entities are the "stories that unfolded".</p>
 
 {chart_block}
 
@@ -7786,6 +8100,7 @@ def render_entities_index_page(
 """
     return base_template(
         title=f"Entities · {SITE_NAME}",
+        active_page="entities",
         description=f"{len(entities)} tracked entities across all briefs.",
         body=body,
         canonical=canonical,
@@ -8192,7 +8507,11 @@ def render_entity_page(
         eid = a.get("entry_id") or ""
         e_title = a.get("entry_title") or eid or "?"
         section = a.get("section") or ""
-        delta = a.get("delta_summary") or ""
+        delta = (a.get("delta_summary") or "").strip()
+        # A delta that just repeats the title is noise — show it only when
+        # it actually adds information.
+        if delta and delta.rstrip(".") == str(e_title).strip().rstrip("."):
+            delta = ""
         link = f'{prefix}entries/{_escape(eid)}/' if eid else "#"
         timeline_lis.append(
             "<li><span>"
@@ -8217,6 +8536,19 @@ def render_entity_page(
     src_dist = entity.get("source_distribution", {}) or {}
     hosts = {c.get("host") for c in citations if c.get("host")}
 
+    # Priority mix across the matching entries (the KPI a triage reader
+    # actually wants: how hot is this entity's coverage).
+    pri_counts: dict[str, int] = {}
+    for me in (matching_entries or []):
+        p = str(me.get("priority") or "routine")
+        pri_counts[p] = pri_counts.get(p, 0) + 1
+    pri_order = ["critical", "high", "notable", "routine"]
+    pri_top = next((p for p in pri_order if pri_counts.get(p)), "—")
+    pri_sub = " · ".join(
+        f"{pri_counts[p]} {p}" for p in pri_order if pri_counts.get(p)
+    ) or "no matching entries"
+    pri_kind = "crit" if pri_counts.get("critical") else ("warn" if pri_counts.get("high") else "neutral")
+
     kpi_html = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile(
@@ -8227,10 +8559,10 @@ def render_entity_page(
             chart=spark_html,
         )
         + _ops_kpi_tile(
-            "Entries",
-            str(len(apps)),
-            sub=f"{len({a.get('date') for a in apps})} distinct days",
-            kind="neutral",
+            "Peak priority",
+            _escape(pri_top),
+            sub=pri_sub,
+            kind=pri_kind,
         )
         + _ops_kpi_tile(
             "Sources cited",
@@ -8260,25 +8592,24 @@ def render_entity_page(
         + "</div>"
     )
 
-    # --- Section distribution bars ------------------------------------
+    # --- Section distribution (labelled rank bars) ---------------------
     section_block = ""
     if sd:
         items_sorted = sorted(sd.items(), key=lambda kv: -kv[1])
-        bar_svg = _ops_svg_bars([float(v) for _, v in items_sorted], width=320, height=80,
-                                 label="Section distribution")
-        legend_lis = "".join(
-            f'<li class="ops-legend__item">'
-            f'<span class="ops-legend__swatch" style="background:var(--accent-soft)"></span>'
-            f'<span class="ops-legend__label">{_escape(k or "—")}</span>'
-            f'<span class="ops-legend__value mono">{v}</span></li>'
+        max_v = max(v for _, v in items_sorted) or 1
+        bar_rows = "".join(
+            f'<li class="rankbar">'
+            f'<span class="rankbar__label">{_escape(k or "—")}</span>'
+            f'<span class="rankbar__track"><span class="rankbar__fill" style="width:{max(4, round(v / max_v * 100))}%"></span></span>'
+            f'<span class="rankbar__value mono">{v}</span></li>'
             for k, v in items_sorted
         )
         section_block = (
             '<div class="ops-section">'
             '<h3 class="section-head">Where this entity is cited</h3>'
             '<div class="ops-charts-row">'
-            f'<div class="ops-chart-card">{bar_svg}'
-            f'<ul class="ops-legend">{legend_lis}</ul>'
+            '<div class="ops-chart-card">'
+            f'<ul class="rankbar-list">{bar_rows}</ul>'
             "</div></div></div>"
         )
 
@@ -8290,7 +8621,13 @@ def render_entity_page(
         if tail:
             head.append(("other", sum(v for _, v in tail)))
         assigned: dict[str, str] = {}
-        slices = [(k, float(v), _entity_palette_color(k, assigned)) for k, v in head]
+        # "other" (the folded tail) always renders neutral so it never
+        # collides with a real host's categorical colour.
+        slices = [
+            (k, float(v),
+             "var(--text-muted)" if k == "other" else _entity_palette_color(k, assigned))
+            for k, v in head
+        ]
         donut_html = _ops_svg_donut(slices, size=140, label="Source distribution")
         donut_block = (
             '<div class="ops-section">'
@@ -8306,20 +8643,21 @@ def render_entity_page(
         rows: list[str] = []
         for r in related:
             other_url = f'{prefix}entities/{urllib.parse.quote(r["key"], safe="")}/'
-            count_badge = (
-                f'<span class="badge badge--low" title="Number of entries where both entities co-appear">×{r["count"]}</span>'
-                if r.get("count") else ""
-            )
             curated_badge = (
                 '<span class="badge badge--accent" title="Curated link from the entity registry">linked</span>'
                 if r.get("curated") else ""
             )
+            count_marker = (
+                f'<span class="e-apps" title="Number of entries where both entities co-appear">×{r["count"]}</span>'
+                if r.get("count") else ""
+            )
             rows.append(
                 "<li>"
                 f'<span><a class="e-title" href="{other_url}">{_escape(r["title"])}</a>'
-                f'<div class="e-meta"><span class="e-tag">{_escape(r.get("type") or "—")}</span>'
+                f"{count_marker}"
+                f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "—")}</span>'
                 f'<span class="mono">{_escape(r["key"])}</span>'
-                f"{count_badge}{curated_badge}</div>"
+                f"{curated_badge}</div>"
                 "</span></li>"
             )
         related_block = (
@@ -8357,8 +8695,10 @@ def render_entity_page(
     citations_block = ""
     if cite_items:
         citations_block = (
-            f'<h2 class="section-head" style="margin-top:1.5rem">All cited sources ({len(citations)})</h2>'
+            '<details class="cite-details">'
+            f'<summary class="section-head">All cited sources <span class="verif-count">({len(citations)})</span></summary>'
             f'<ul class="cite-list">{"".join(cite_items)}</ul>'
+            "</details>"
         )
 
     # --- External references (CVE only) --------------------------------
@@ -8374,8 +8714,9 @@ def render_entity_page(
         )
 
     # --- Header ----------------------------------------------------------
+    # Verification flags are context, not alarms — neutral badge styling.
     flag_badges = "".join(
-        f'<span class="badge badge--low" title="Verification status seen on referencing entries">{_escape(f)}</span>'
+        f'<span class="badge" title="Verification status seen on referencing entries">{_escape(f.lower())}</span>'
         for f in (entity.get("flags") or [])
     )
     alias_html = ""
@@ -8402,6 +8743,65 @@ def render_entity_page(
 
     actor_timeline_html = _actor_timeline_strip(entity)
 
+    # --- Pivot chips: ATT&CK techniques + affected products + tags ------
+    # Aggregated across the matching entries so the entity page carries
+    # every hunting pivot in one place (technique ids link to MITRE).
+    tech_counts: dict[str, int] = {}
+    prod_counts: dict[str, int] = {}
+    tag_counts: dict[str, int] = {}
+    for me in (matching_entries or []):
+        for t in me.get("techniques") or []:
+            t = str(t).strip()
+            if t:
+                tech_counts[t] = tech_counts.get(t, 0) + 1
+        for pr in me.get("affected_products") or []:
+            pr = str(pr).strip()
+            if pr:
+                prod_counts[pr] = prod_counts.get(pr, 0) + 1
+        for tg in me.get("tags") or []:
+            tg = str(tg).strip()
+            if tg:
+                tag_counts[tg] = tag_counts.get(tg, 0) + 1
+
+    def _chiprow(title: str, chips: list[str]) -> str:
+        if not chips:
+            return ""
+        return (
+            '<div class="pivot-group">'
+            f'<span class="pivot-group__l">{_escape(title)}</span>'
+            f'<div class="echips">{"".join(chips)}</div></div>'
+        )
+
+    tech_chips = []
+    for t, n in sorted(tech_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:24]:
+        mitre = "https://attack.mitre.org/techniques/" + t.replace(".", "/") + "/"
+        cnt = f' <span class="echip-n">×{n}</span>' if n > 1 else ""
+        tech_chips.append(
+            f'<a class="echip echip--tech" href="{_escape(mitre)}" target="_blank" '
+            f'rel="noopener noreferrer" title="Open {_escape(t)} on attack.mitre.org">{_escape(t)}{cnt}</a>'
+        )
+    prod_chips = [
+        f'<span class="echip">{_escape(p)}</span>'
+        for p, _n in sorted(prod_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:16]
+    ]
+    tag_chips = [
+        f'<a class="echip" href="{prefix}tags/{_escape(tg)}/">{_escape(tg)}'
+        + (f' <span class="echip-n">×{n}</span>' if n > 1 else "") + "</a>"
+        for tg, n in sorted(tag_counts.items(), key=lambda kv: (-kv[1], kv[0]))[:16]
+    ]
+    pivot_block = ""
+    pivot_rows = (
+        _chiprow("ATT&CK techniques", tech_chips)
+        + _chiprow("Affected products", prod_chips)
+        + _chiprow("Tags", tag_chips)
+    )
+    if pivot_rows:
+        pivot_block = (
+            '<div class="pivot-panel">'
+            '<h2 class="section-head">Hunting pivots</h2>'
+            f"{pivot_rows}</div>"
+        )
+
     body = f"""
 <h1{' class="mono"' if etype == 'cve' else ''}>{_escape(title)}</h1>
 <p class="subtitle">
@@ -8416,6 +8816,8 @@ def render_entity_page(
 {kpi_html}
 
 {actor_timeline_html}
+
+{pivot_block}
 
 {render_entity_attack_section(entity, prefix=prefix)}
 
@@ -8449,6 +8851,7 @@ def render_entity_page(
     ]
     return base_template(
         title=f"{title} · {etype or 'entity'}",
+        active_page="entities",
         description=(entity.get("summary") or title)[:280],
         body=body,
         canonical=canonical,
@@ -9704,6 +10107,8 @@ def main() -> int:
             site_url=site_url,
             cachebust=cachebust,
             canonical=site_url,
+            counts=counts,
+            last_updated=ref.strftime("%d %b %H:%M UTC"),
         ),
         lastmod=ref.strftime("%Y-%m-%d"),
     )
