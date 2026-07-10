@@ -390,7 +390,7 @@
    ],
    "status": "active",
    "fetch_method": "bridge",
-   "last_successful_fetch": "2026-07-08",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "US government joint advisories often co-signed with allied CERTs (UK NCSC, ACSC AU, NCSC-NZ, CCCS CA, BSI DE, CERT-EU). WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories  (then `cisa page <alert_url>` to drill). AVOID: WebFetch reliably HTTP 403 on cisa.gov — skip it entirely. Use the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again — consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) — the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE — a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED — CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling — the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works via the reader-proxy recipe: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` to discover items (title+link), then `cisa page <advisory_url>` for the full body. For ICS/OT advisories prefer the fully-structured CSAF mirror: `cisa csaf-recent [N]` (dated index) + `cisa csaf <icsa-YY-DDD-NN>`. | 2026-07-05 admiralty audit: A (primary-authority) — CISA advisories; bridge 403 is a known transport block (does NOT demote per lifecycle rules), host confirmed live via KEV. Status stays active. | 2026-07-09 structured-listing recipe (v3.14): the /news-events/cybersecurity-advisories listing is a JS shell — `cisa page` on it returns only the filter UI. REQUIRED listing fetch: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml 20` (structured {title,link} items, newest first); drill each item with `cisa page <link>`. Confirmed working 2026-07-09.",
    "last_covered_in_brief": "2026-06-20",
@@ -605,10 +605,10 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-03",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "Falcon Counter Adversary Operations / Falcon Intelligence threat reporting. URL CORRECTED 2026-05-08: legacy /blog/category/threat-intel-research/ now 301-redirects to /en-us/blog/category.counter-adversary-operations/ — using the redirected URL avoids an unnecessary hop. 2026-05-08 audit: WebFetch returned 5 dated posts latest 2026-05-06 on OverWatch, CORDIAL/SNARKY SPIDER. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://www.crowdstrike.com/blog/category/counter-adversary-operations/ (listing, dates inline) then webfetch each /en-us/blog/<slug>/ article. AVOID: Do NOT use /en-us/blog/category/counter-adversary-operations/ — that variant 404s. The stored /blog/category/... URL is the correct listing; individual article URLs DO carry the /en-us/ prefix.. | 2026-07-05 admiralty audit: B — vendor threat-intel lab, original adversary research from own telemetry; live and drillable, no change (active).",
-   "consecutive_quiet_periods": 1,
+   "consecutive_quiet_periods": 0,
    "consecutive_fetch_failures": 0,
    "last_covered_in_brief": "2026-06-11"
   },
@@ -1555,7 +1555,7 @@
    ],
    "status": "active",
    "fetch_method": "api",
-   "last_successful_fetch": "2026-07-08",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "GovCERT.ch was MERGED INTO NCSC.ch in 2023; CSH replaces the legacy govcert.ch blog (frozen since 2023-09). The /govcert path on ncsc.admin.ch is a navigation page only. Substantive technical reports are now published on the CSH (TLP:CLEAR slice). The SPA at https://security-hub.ncsc.admin.ch/#/dashboard is JS-rendered (WebFetch returns only the 'CSH/Loading' shell). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py ncsc-csh recent 10` returns the listing + each post's full Markdown body in one call; `... ncsc-csh post <ID>` for one item. Cite the canonical SPA URL https://security-hub.ncsc.admin.ch/#/posts/{id}. Posts marked TLP:AMBER / TLP:RED MUST NEVER be fetched even if the API exposes them. (The legacy `govcert-ch` source ID was a duplicate of this entry and was removed 2026-05-08.) | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api: python3 tools/fetch_source.py ncsc-csh recent 10  (returns listing + each TLP:CLEAR post's full Markdown body); python3 tools/fetch_source.py ncsc-csh post <ID> for one. Cite https://security-hub.ncsc.admin.ch/#/posts/{id}.. AVOID: WebFetch returns only the JS 'CSH/Loading' SPA shell — never WebFetch the dashboard. NEVER fetch TLP:AMBER/TLP:RED posts even if exposed.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active — GovCERT.ch/Swiss national CERT, home authority, current (03.07.2026) TLP:CLEAR advisories via API. Justified A: primary national CERT and the deployment's ground truth.",
    "consecutive_quiet_periods": 0,
@@ -2249,7 +2249,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-08",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "Cisco's threat intelligence team. Has previously returned HTTP 403 on the routine UA (last seen 2026-05-06; recovered 2026-05-07 and confirmed working 2026-05-08). If WebFetch returns 403 again, route through `python3 tools/fetch_source.py url https://blog.talosintelligence.com/` rather than retrying. RSS at /rss/ also works. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch (listing) https://blog.talosintelligence.com/ then webfetch per-article slug URL; if WebFetch 403s, route bridge: python3 tools/fetch_source.py url https://blog.talosintelligence.com/ ; RSS at /rss/ also works. AVOID: Has intermittently 403'd the routine UA in the past — if WebFetch returns 403, go straight to the bridge rather than retrying the same UA.. | 2026-07-05 admiralty audit: B — original Cisco threat-research lab; live. Keep active.",
    "last_covered_in_brief": "2026-07-02"
@@ -2308,7 +2308,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-03",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "Cybersecurity journalism owned by Recorded Future. The homepage / lists recent dated articles. /news/cybercrime is a navigation/podcast hub with NO articles — never cite this path. Article slugs are top-level — do not GUESS slugs from headlines; always start at the homepage and follow the actual link. RSS at https://therecord.media/feed. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://therecord.media/ (homepage) OR feed https://therecord.media/feed 5, then webfetch the top-level /<slug> article. AVOID: Never cite /news/cybercrime (navigation/podcast hub, no articles); do not GUESS slugs from headlines — follow the actual link from homepage/feed. | 2026-07-05 admiralty audit: B — original, corroborated cybersecurity journalism; live. Keep active. Follow homepage/feed links, never guess slugs or cite /news/cybercrime.",
    "consecutive_quiet_periods": 0,
@@ -2634,7 +2634,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-06-29",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
    "notes": "Primary disclosure outlet for supply-chain security findings (TeamPCP/Mini Shai-Hulud, node-ipc, GemStuffer). Multiple in-window primaries in W21 run. Proposed by W1 sub-agent. | 2026-05-26: contributed TrapDoor + Packagist supply-chain primaries (S1, S3). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://socket.dev/blog (listing) then webfetch the per-article socket.dev/blog/<slug> URL for body (full technical analysis renders). AVOID: Nothing to avoid — plain WebFetch works on listing and article. Listing mixes product-announcement posts (Socket MCP/Firewall) with the supply-chain research — filter to the package-compromise titles.. | 2026-07-05 admiralty audit: B — original supply-chain research from own scanning telemetry; reputable vendor lab. No status change (active).",
    "last_covered_in_brief": "2026-06-27"
@@ -2689,10 +2689,12 @@
     "en"
    ],
    "status": "active",
-   "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-06-20",
+   "fetch_method": "rss",
+   "last_successful_fetch": "2026-07-09",
    "consecutive_failures": 0,
-   "notes": "Discovered via S2 2026-05-22 research. Covers EU/UK CNI enforcement, ICS/OT vulnerability disclosures; published in-depth analysis of South Staffordshire ICO fine and utility cyber oversight implications. Candidate — promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://industrialcyber.co (listing) then webfetch the per-article industrialcyber.co/<section>/<slug>/ for the full body. AVOID: Nothing to avoid — plain WebFetch works on both listing and articles. High publishing cadence (several items/day).. | 2026-07-05 admiralty audit: C — established OT/ICS trade journalism mixing original features with heavy re-reporting; keep active. NOTE: now UA-403s WebFetch AND the bridge (was WebFetch-OK); liveness confirmed via WebSearch only — fetch method needs re-work, not a demotion."
+   "notes": "Discovered via S2 2026-05-22 research. Covers EU/UK CNI enforcement, ICS/OT vulnerability disclosures; published in-depth analysis of South Staffordshire ICO fine and utility cyber oversight implications. Candidate — promote to active after 3 runs with content contribution. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://industrialcyber.co (listing) then webfetch the per-article industrialcyber.co/<section>/<slug>/ for the full body. AVOID: Nothing to avoid — plain WebFetch works on both listing and articles. High publishing cadence (several items/day).. | 2026-07-05 admiralty audit: C — established OT/ICS trade journalism mixing original features with heavy re-reporting; keep active. NOTE: now UA-403s WebFetch AND the bridge (was WebFetch-OK); liveness confirmed via WebSearch only — fetch method needs re-work, not a demotion. | 2026-07-09 (v3.16 2009Z run): article pages + listing 403 WebFetch / 401 jina-reader on every transport (confirmed again S1/S3/S4), BUT the WordPress RSS feed https://industrialcyber.co/feed/ returns full items 200. Switched fetch_method webfetch->rss with rss_url set (re-applying the 1211Z fix that was lost in a sources.json --theirs merge). Fetch the feed; do NOT retry direct article/listing WebFetch.",
+   "rss_url": "https://industrialcyber.co/feed/",
+   "consecutive_fetch_failures": 0
   },
   {
    "id": "searchlight-cyber",
