@@ -11,7 +11,7 @@ type: project
 ## What the shape is (master rules: `prompts/cti-run.md` Phase 4 § Triage-ready behavioral description)
 
 1. **Attack flow as observable behavior** — attacker steps in order, each tied to a telemetry class named vendor-neutrally (process lineage, auth/session events, web/app access logs, DNS/egress, cloud control-plane audit, mail flow, persistence artifacts); platform-native anchors (Windows event IDs, paths) as examples only; never rule code or query syntax.
-2. **ATT&CK woven, never listed** — IDs inline at the behavior they name; bare ID lists are a defect (humans can't grasp them, agents get the list from frontmatter anyway). Machine layer: frontmatter `techniques[]` (validated `T####[.###]` by `content_model.py`).
+2. **ATT&CK in metadata, prose only where essential** (v3.17 inverted the old "woven" rule) — `techniques[]` frontmatter is the canonical, complete mapping surface (active ids per the pinned `attack/enterprise-attack.json`); the body describes each behavior in plain language and must read complete without T-numbers; inline ids only where they earn their place (deep-dive kill chains, mapping-as-the-finding); bare ID lists remain a defect. Full conventions: [attack-layer.md](attack-layer.md).
 3. **`affected_products[]`** — official "Vendor Product" strings so an alert/asset-inventory name is a field lookup, not full-text search.
 4. **`**Triage:**` line** (threat/incident/research kinds; vulnerability entries fold it into the Detection clause) — benign lookalike + discriminator (path, parent, signing, account type, destination class, sequence, volume). **Omit rather than invent** — must derive mechanically from the cited mechanism (PD-1; an invented discriminator is F4).
 

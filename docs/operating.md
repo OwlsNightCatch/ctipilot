@@ -112,6 +112,35 @@ Guardrails you get for free: watchlist matches only *lower the relevance bar* (t
 
 **Closed-source feeds:** point your provider-export / ISAC-download script at the `intel/<YYYY-MM-DD>/` drop-folder contract ([`intel/README.md`](../intel/README.md)) — the next fire ingests the documents via a dedicated intake sub-agent and cites them via `closed_sources` frontmatter records (referenced, never linked). There is no TLP gate: everything you drop is fair game to process, so the control is what you place in the repo. **Private hosting:** to run the whole stack org-internally (private repo, internal web server on a scheduled pull → build → serve loop) so nothing is world-readable, follow [`docs/private-deployment.md`](private-deployment.md).
 
+## Updating the MITRE ATT&CK pin
+
+Every ATT&CK-facing feature — entry `techniques[]` validation, the entity
+and CVE TTP sections, the [`/attack/`](https://ctipilot.ch/attack/)
+coverage matrix and its Navigator-layer exports — renders against one
+pinned release committed at
+[`attack/enterprise-attack.json`](../attack/enterprise-attack.json)
+(contract: [`attack/README.md`](../attack/README.md)). The weekly routine
+runs `python3 tools/attack_data.py --check` on every fire and records the
+result in its run record, so a stale pin surfaces on its own; any session
+(routine or operator) may perform the update:
+
+```sh
+python3 tools/attack_data.py --check      # exit 1 = newer upstream release exists
+python3 tools/attack_data.py --update     # fetch latest, rewrite the dataset, print the delta
+python3 tools/attack_data.py --selftest   # offline invariants on the committed file
+python3 site/build.py && python3 site/test_build.py
+```
+
+Commit the regenerated JSON on a feature branch with the printed change
+summary (new / renamed / newly-revoked techniques, tactic changes) in the
+commit body. Never hand-edit the dataset and never hardcode tactic or
+technique tables anywhere — releases genuinely drift (v19 replaced Defense
+Evasion with Stealth + Defense Impairment). Revoked ids keep resolving
+via `revoked_by` forwarding, so updating the pin never breaks the
+immutable entry store; after an update, `tools/check_run.py` WARNs
+(`attack-mapping`) wherever a *new* entry still references a
+revoked/deprecated id.
+
 ## Source-health snapshot
 
 [`tools/source_health.py`](../tools/source_health.py) is an independent health-check of every source, probed via its *actual recipe* (feed discovery for RSS sources, the documented `tools/fetch_source.py` subcommand for bridge/API sources, browser-UA HEAD→GET for the rest). Records per-source status into `state/source_health.json` (bounded history, 12 runs). Runs as the [`source-health`](../.github/workflows/source-health.yml) GitHub Action on Sundays at 04:30 UTC, on manual `workflow_dispatch`, and at the end of every routine fire.
