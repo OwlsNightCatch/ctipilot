@@ -1,0 +1,115 @@
+domain: S1
+run_id: 2026-07-09T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-09T20:11:23Z
+ended_at: 2026-07-09T20:21:32Z
+duration_seconds: 609
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 6
+  bridge_fetches: 24
+items:
+  - title: "CISA/OpenPLC: authenticated arbitrary file write in the legacy web UI escalates to native code execution via the runtime's auto-compile pipeline (CVE-2026-14480, CVSS 9.9)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01", publisher: "CISA (ICS Advisory ICSA-26-190-01)", date: "2026-07-09", role: "primary" }
+      - { url: "https://www.cve.org/CVERecord?id=CVE-2026-14480", publisher: "CVE.org", date: "2026-07-09", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/cybersecurity-advisories/all.xml (RSS feed listing, item 'OpenPLC v3' dated day-190/2026 = 2026-07-09) → primary: CISA ICS Advisory, URL https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01 (no further pivot needed — CISA is the disclosing authority and cites the CVE.org record directly)"
+    summary: |
+      CISA published a fresh ICS advisory (initial release 2026-07-09, no prior revision) for OpenPLC Runtime v3, the widely deployed open-source PLC runtime used across Critical Manufacturing, Energy, Transportation Systems, and Water/Wastewater per CISA's own sector tagging. CVE-2026-14480 (CWE-73, External Control of File Name or Path) is an authenticated arbitrary file-write in the legacy web UI's program-upload workflow: the application stores an attacker-supplied filename (the `prog_file` parameter) directly into the `Programs.File` database field and later uses that value as the destination write path without validation or restriction. Because the underlying file-write call (Python `os.path.join()`) honors an attacker-controlled absolute path, any authenticated user can write arbitrary files anywhere the OpenPLC webserver process can reach. The escalation path is specific to OpenPLC's build model: all `.cpp` source files inside the runtime's core directory are automatically compiled into the executable runtime binary, so writing a malicious `.cpp` file into that directory and then triggering a normal program-compile-and-start operation (an expected operator action, not an exploit primitive) executes attacker code as the OpenPLC runtime user. CVSS 3.1 9.9 (AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H), CVSS 4.0 8.7. Reported to CISA by researcher Grady DeRosa; CISA states no known public exploitation at this time. The advisory does not cite a fixed release version — CISA's only stated mitigations are the generic ICS hardening set (network segmentation, no direct internet exposure, VPN-only remote access), so treat this as unpatched until OpenPLC project guidance says otherwise.
+    region_nexus: "global; OpenPLC is commonly deployed in Swiss/EU critical-infrastructure and industrial/academic environments across the additional sectors this deployment tracks (energy, water, transport)"
+    primary_sector_nexus: "indirect (OT/ICS underpinning energy, water, transport — additional sectors in scope)"
+    sector: "energy, water, transport, manufacturing, ics-ot"
+    cves: [CVE-2026-14480]
+    techniques: [T1190]
+    affected_products: ["OpenPLC v3", "OpenPLC Runtime"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation of this vulnerability could allow an authenticated attacker to write arbitrary files to the filesystem and escalate this into arbitrary native code execution through the normal OpenPLC program compilation process, potentially resulting in code execution as the OpenPLC runtime user."
+        attribution: "CISA (ICS Advisory ICSA-26-190-01)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01"
+      - quote: "In the default build pipeline, all C++ source files within the OpenPLC runtime core directory are automatically compiled into the executable runtime binary."
+        attribution: "CISA (ICS Advisory ICSA-26-190-01)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01"
+      - quote: "No known public exploitation specifically targeting this vulnerability has been reported to CISA at this time."
+        attribution: "CISA (ICS Advisory ICSA-26-190-01)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01"
+    extended_notes: |
+      Detection concept (telemetry class first): file-integrity/creation monitoring on the OpenPLC runtime core source directory (watch for new/modified .cpp files outside normal maintainer deploys) and process-creation telemetry for the compiler toolchain (gcc/g++) being invoked by the OpenPLC webserver process or its child processes rather than by an operator-driven CI/build pipeline — parent-process lineage (webserver → compiler) is the discriminator vs. legitimate program deployment (engineer-initiated compile via authorized workstation/session). Hardening: disable/retire the legacy web UI program-upload path if not required; restrict web UI access to an out-of-band management network per CISA's standing ICS guidance; if authentication cannot be scoped to trusted operators only, treat the runtime as compromised-by-design until network isolation is enforced.
+      Also reviewed in this run and DROPPED as republications of already-disclosed (non-fresh) advisories, not fresh in-window items: CISA ICSA-26-190-02 (Schneider Electric PowerChute Serial Shutdown, CVE-2026-2399 et al., CVSS 6.1 — initial disclosure 2026-04-14, today's CISA page is "Initial Republication") and ICSA-26-190-03 (Schneider Electric Easergy MiCOM Px40, CVE-2026-4832, CVSS 5.3 — initial disclosure 2026-04-14, today is CISA's third revision / republication of Schneider's CPCERT advisory).
+  - title: "Compromised @injectivelabs/sdk-ts npm package (v1.20.21) hooks private-key/mnemonic derivation and exfiltrates via a legitimate-looking Injective Labs infrastructure endpoint"
+    sources:
+      - { url: "https://socket.dev/blog/compromised-injective-sdk-npm-package", publisher: "Socket Security", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: socket-dev-blog, URL https://socket.dev/blog (listing page, featured post) → primary: Socket Security, URL https://socket.dev/blog/compromised-injective-sdk-npm-package (no further pivot needed — Socket is the discovering/reporting party)"
+    summary: |
+      Socket Security detected a malicious release of `@injectivelabs/sdk-ts@1.20.21` published to npm on 2026-07-08 (~50,000 weekly downloads; part of Injective Labs' official TypeScript SDK). The compromise traces to commits pushed through the GitHub account of a developer with an established contribution history to the upstream `injective-ts` repo — the actor first tested access via a `test-backdoor-check` branch (2026-06-08 20:06 GMT+2), then published the malicious `1.20.21` release at 22:59 GMT+2 the same evening; the true account owner appears to have detected and reverted the compromise within roughly 40 minutes, publishing a clean version at 23:48 GMT+2, but the malicious release artifacts remained present on the GitHub Releases page and the npm package version was only deprecated (not removed) at time of Socket's writing. The actor additionally published version `1.20.21` across 17 other `@injectivelabs`-scoped packages that pin/depend on the compromised SDK version, widening blast radius to transitive consumers who never installed `sdk-ts` directly. Mechanism: the malicious code (in `dist/esm/accounts-jQ1GSgaW.js` / `dist/cjs/accounts-Cy0p4lLW.cjs`) hooks the `fromMnemonic` and `fromHex` key-derivation functions with a call to a `trackKeyDerivation` function that records the full mnemonic phrase or private-key material, base64-encodes it, and POSTs it to `https://testnet.archival.chain.grpc-web.injective.network` — a real Injective Labs-owned public endpoint, chosen specifically so the exfil traffic blends with legitimate SDK network usage. Execution is deferred to runtime (not install-time), a deliberate anti-detection choice since most supply-chain scanners key on install-script behavior.
+    region_nexus: "global npm ecosystem; no confirmed Swiss/EU-specific targeting, but transferable as a live example of runtime-triggered (not install-time) npm supply-chain credential theft relevant to any CI/dependency-scanning posture"
+    primary_sector_nexus: "none"
+    sector: "software-supply-chain"
+    cves: []
+    techniques: [T1195.002, T1567]
+    affected_products: ["@injectivelabs/sdk-ts (npm)", "@injectivelabs scoped packages (17 additional, version 1.20.21)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:injective-sdk-npm-supply-chain-2026-07", type: incident, name: "Injective SDK npm supply-chain compromise (2026-07)",
+          aliases: [], summary: "Compromise of a maintainer GitHub account used to publish a malicious @injectivelabs/sdk-ts@1.20.21 npm release (and 17 dependent @injectivelabs packages) that hooks private-key/mnemonic derivation functions and exfiltrates wallet secrets to a legitimate Injective Labs public endpoint to blend with normal traffic (Socket Security, 2026-07-09)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "genuinely fresh and technically detailed runtime-triggered npm supply-chain compromise, but single-sourced (Socket only) and the affected ecosystem (Injective/crypto-wallet tooling) has no direct Swiss/EU public-sector or CI nexus stated by the source — included for the transferable technique (deferred/runtime-triggered supply-chain backdoor blending exfil with legitimate vendor infrastructure), not for sector relevance"
+    evidence:
+      - quote: "@injectivelabs/sdk-ts@1.20.21 records private keys and mnemonics, enabling wallet compromise via 17 scoped packages pinned to the malicious version."
+        attribution: "Socket Security"
+        source_url: "https://socket.dev/blog/compromised-injective-sdk-npm-package"
+      - quote: "The malicious code is located in /dist/esm/accounts-jQ1GSgaW.js and /dist/cjs/accounts-Cy0p4lLW.cjs files. The functions fromMnemonic and fromHex used in regular workflows to generate private keys are hooked with a call to the trackKeyDerivation function."
+        attribution: "Socket Security"
+        source_url: "https://socket.dev/blog/compromised-injective-sdk-npm-package"
+      - quote: "By using public infrastructure endpoints belonging to InjectiveLabs, the threat actor blends the network traffic generated during exfiltration with the network traffic generated during typical usage of InjectiveLabs' software products."
+        attribution: "Socket Security"
+        source_url: "https://socket.dev/blog/compromised-injective-sdk-npm-package"
+    extended_notes: |
+      Detection concept: egress/DNS telemetry for build and developer workstations connecting to *.injective.network (or any vendor-owned endpoint) from a process context that does not match normal application runtime (e.g., a CI job or a backend service invoking wallet-derivation code that should never originate outbound traffic to that host) is the generalizable hook; more broadly, dependency-pinning drift (17 packages bumping to the same patch version simultaneously, all newly published) is a supply-chain-scanner signal independent of this specific vendor. Hardening: pin npm dependencies to reviewed/known-good hashes (lockfile integrity), and treat "the same maintainer account published N packages at once" as a review trigger regardless of account reputation.
+cve_table:
+  - cve: CVE-2026-14480
+    product: "OpenPLC v3 / OpenPLC Runtime"
+    cvss: "9.9 (v3.1) / 8.7 (v4.0)"
+    epss: "not stated in advisory"
+    kev: false
+    exploited: "No known public exploitation reported to CISA at this time"
+    patch: "No fixed release version cited in the CISA advisory; mitigate via network segmentation / VPN-only remote access (advisory gives no vendor-fix version)"
+    source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-190-01"
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no products/suppliers configured in this deployment's watchlist (org-profile.yaml) — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across all essential + rotation sources fetched this run"
+candidate_sources: []
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Rotation-priority source (missed 2+ recent runs) remains unreachable on every transport rung: direct WebFetch 403, jina reader 401 (fetch_source.py jina https://industrialcyber.co/news/ -> 'reader proxy failed: HTTP 401'). WebSearch surfaced only generic/stale headline leads with no fetchable article URL. Matches the existing sources.json note ('now UA-403s WebFetch AND the bridge') — this is a genuine standing fetch-recipe gap, not a one-off failure; recommend re-scoping the record's fetch_method or dropping to discovery-only until a working transport is found."
+  - source_id: ncsc-uk
+    reason: "Reports & advisories listing page has no items newer than 2026-04-07 (APT28 router DNS hijacking); no in-window (24h) UK NCSC content this run."
+  - source_id: cert-eu
+    reason: "Most recent CERT-EU security advisory (2026-008, Ivanti Sentry) is dated 2026-06-10; no in-window items."
+  - source_id: vulncheck
+    reason: "Most recent blog post dated 2026-06-25 (NVIDIA GEN3C pickle RCE); no in-window items."
+  - source_id: sansec-research
+    reason: "Most recent research post dated 2026-07-02 (Amasty Magento extension patches); no in-window items."
+  - source_id: aikido-security
+    reason: "Most recent blog post dated 2026-06-30; no in-window items."
+  - source_id: exodus-intelligence
+    reason: "Feed returned zero items via feed parser (blog.exodusintel.com listing not machine-readable via the feed subcommand); not re-tried via jina given time budget — recipe may need a direct RSS path."
+  - source_id: calif-codex
+    reason: "Feed returned zero items via feed parser (blog.calif.io); same as exodus-intelligence, recipe may need a direct RSS/Atom URL rather than the bare domain."
+  - source_id: rapid7-research
+    reason: "Feed returned zero items via feed parser against the bare blog listing URL; not re-tried via jina given time budget."
+  - source_id: bsi-de
+    reason: "BSI WID portal page (wid.cert-bund.de/portal/...) is a JS-only Angular shell not renderable by direct fetch or bridge; used the RSS feed + bsi-csaf structured subcommand instead, which worked (FreeRDP CVE detail retrieved via bsi-csaf WID-SEC-2026-2264) — recipe works, just documenting the portal-page dead end so a future run doesn't re-try plain WebFetch on the portal URL."
+  - source_id: msrc
+    reason: "CVE-2026-50656 (RoguePlanet, Microsoft Defender EoP) reviewed following an NCSC-CH CSH post update dated 2026-07-09, but MSRC's own page states 'Released: Jun 16, 2026' — the underlying disclosure is ~3 weeks old with no fresh in-window development beyond a metadata/CVE-ID assignment note; dropped per recency rules (freshest substantive source is outside window)."

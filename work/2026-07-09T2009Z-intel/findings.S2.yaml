@@ -1,0 +1,75 @@
+domain: S2
+run_id: 2026-07-09T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-09T20:11:31Z
+ended_at: 2026-07-09T20:22:10Z
+duration_seconds: 639
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 15
+  bridge_fetches: 18
+items:
+  - title: "NCSC-CH update: Microsoft ships the fix for \"RoguePlanet\" (CVE-2026-50656), the Nightmare Eclipse researcher's unpatched Defender-engine privilege-escalation zero-day"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12622", publisher: "NCSC-CH / GovCERT.ch Cyber Security Hub", date: "2026-07-09", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656", publisher: "Microsoft Security Response Center", date: "2026-07-08", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12622 (fetched via `python3 tools/fetch_source.py ncsc-csh recent 15`) → primary: Microsoft MSRC, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656 (fetched via `python3 tools/fetch_source.py msrc cve CVE-2026-50656`)"
+    summary: |
+      NCSC-CH's running tracker post on the "Nightmare Eclipse" (aka Chaotic Eclipse) researcher's 2026 zero-day PoC-drop series was updated on 2026-07-09 to record that a CVE has finally been assigned to RoguePlanet: CVE-2026-50656, a local privilege-escalation vulnerability (CWE-59, Improper Link Resolution Before File Access / "link following") in the Microsoft Malware Protection Engine that underpins Microsoft Defender, System Center Endpoint Protection and Microsoft Security Essentials. The researcher originally disclosed RoguePlanet as an unpatched zero-day on 2026-06-10, describing "a race condition within Microsoft Defender" that lets a local attacker "execute arbitrary code or spawn a command shell with SYSTEM-level privileges" — at that point NCSC-CH logged the exploitation status as "Proof of Concept Available, no patch available." MSRC's own record shows the CVE itself was actually first published 2026-06-16 (CVSS 3.1 7.8, AV:L/AC:L/PR:L/UI:N, "Exploitation More Likely") and remained in "no fix" status for over three weeks; a second MSRC revision dated 2026-07-08 confirms Microsoft has now shipped an engine update that closes the hole. Affected/patched versions are stated to vendor precision: last vulnerable Malware Protection Engine build 1.1.26050.11, first fixed build 1.1.26060.3008. Because the Malware Protection Engine typically auto-updates multiple times a day, most estates will already be current, but any environment where engine updates are pinned, WSUS-gated, air-gapped, or centrally deferred (System Center Endpoint Protection deployments, offline/segmented OT-adjacent networks) should explicitly verify the installed engine version rather than assume auto-remediation occurred. The researcher has separately threatened a further zero-day release on 14 July 2026, and two other PoCs from the same series (GreenPlasma/CVE-2026-50507 CTFMON LPE, and the BitLocker/WinRE bypass GreatXML) remain without a confirmed vendor fix as of this NCSC-CH update.
+    region_nexus: "Switzerland (surfaced and tracked by NCSC-CH/GovCERT.ch as part of an ongoing advisory); global impact on any Windows estate running Microsoft Defender"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2026-50656"]
+    techniques: ["T1068"]
+    affected_products: ["Microsoft Defender (Microsoft Malware Protection Engine / mpengine.dll)", "Microsoft System Center Endpoint Protection", "Microsoft System Center 2012 (R2) Endpoint Protection", "Microsoft Security Essentials"]
+    entity_keys:
+      - "actor:nightmare-eclipse"
+      - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
+      - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A privilege escalation affecting Microsoft Defender. Successful exploitation allows a local attacker to execute arbitrary code or spawn a command shell with SYSTEM-level privileges. The exploit leverages a race condition within Microsoft Defender"
+        attribution: "NCSC-CH / GovCERT.ch Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12622"
+      - quote: "Microsoft has released an update to the Microsoft Malware Protection Engine that addresses the vulnerability identified by CVE-2026-50656."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656"
+      - quote: "Improper link resolution before file access ('link following') in Microsoft Defender allows an authorized attacker to elevate privileges locally."
+        attribution: "Microsoft Security Response Center"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-50656"
+    extended_notes: |
+      This closes out (partially) a saga the registry already tracks under actor:nightmare-eclipse / trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06 — no prior standalone entry for RoguePlanet appears in the 14-day prior_coverage index, so this is filed as `novelty: new` rather than an explicit update_of; the main agent may fold it into the existing entity thread instead of a standalone entry if that reads better editorially. Detection concept: telemetry class is process-creation/child-process lineage — hunt for MsMpEng.exe (or the Malware Protection Engine's scanning host process) spawning an unexpected child process with SYSTEM token outside the normal signature/engine-update cadence, and for symlink/junction creation races targeting paths Defender is actively scanning. Hardening: verify the installed engine build via `Get-MpComputerStatus` (AMEngineVersion field) is >= 1.1.26060.3008; do not rely on assumption of automatic update on WSUS-gated, offline, or OT-adjacent Windows estates.
+    borderline: true
+    borderline_reason: "narrow single-host LPE closure story (not new active exploitation, not itself sector-targeted) — included because it is a home-region-authority (NCSC-CH) in-window update on an entity the registry already actively tracks, with a threatened further zero-day release from the same actor on 2026-07-14."
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-ch-focus
+    reason: "'Im Fokus' weekly-review page's newest post is Week 27 (2026-07-07), general consumer-scam awareness content only (holiday travel tips) — no fresh technical/threat item in the 24h window; fetched via jina, confirmed no update since."
+  - source_id: ncsc-ch-incidents
+    reason: "'Aktuelle Vorfälle' consumer-fraud-warning page's newest entry is dated 2026-07-01 (SwissNovaChat/SwissNovaCare billing scam) — nothing new in-window."
+  - source_id: cert-eu
+    reason: "CERT-EU security-advisories RSS feed's newest item is 2026-008 (Ivanti Sentry), published 2026-06-10 — feed appears not to have been updated in-window; no in-window CERT-EU advisory found."
+  - source_id: cert-at
+    reason: "CERT.at homepage's newest blog post is dated 2026-06-01 (LLM cybersecurity implications) — nothing in-window."
+  - source_id: cert-pl
+    reason: "CERT Polska news listing's newest item (UNC1151/Ghostwriter Gmail phishing, 2026-06-12) is already covered in prior_coverage.json (2026-07-09/unc1151-ghostwriter-gmail-realtime-2fa-phishing) from an earlier run today — nothing new in-window found."
+  - source_id: ncsc-uk
+    reason: "'Reports & advisories' listing page's newest dated advisory is APT28 router DNS hijacking (publish date 7 Apr 2026); the 'In the news' sidebar's newest item is 22 Jun 2026 — page has evidently not been refreshed with an in-window item; JS-heavy cookie-consent shell required the jina reader to read past the banner."
+  - source_id: enisa
+    reason: "ENISA news page's featured items are from 28 May 2026 and 8 December 2025 — no in-window ENISA press release found."
+  - source_id: cnil-fr
+    reason: "Newest CNIL item is the EDPB anonymisation/web-scraping-for-AI and blockchain guidance, published 2026-07-09 — genuinely in-window but assessed as policy/strategic-guidance content without the technical actionability this daily domain's audience needs (no vulnerable component, no detection/hardening lever); considered better suited to the weekly W2 (strategic & policy) domain than a daily S2 item, so not filed as a finding."
+  - source_id: govcert-at
+    reason: "Standard-tier rotation source; WebSearch found no dedicated in-window GovCERT Austria advisory (search surfaced only the site's static about-pages); not independently fetched via a direct feed/page this run given time budget — logging as an honest gap rather than a fetch_failures entry (no transport was attempted and failed; the search simply returned no on-point in-window lead)."
+  - source_id: ncsc-ie
+    reason: "Standard-tier rotation source; not fetched this run due to time budget after the essential-source sweep and targeted WebSearch passes turned up no Swiss/EU in-window signal requiring the extra pivot — logged as a gap, not attempted."
+  - source_id: infoguard-ch
+    reason: "Standard-tier rotation source; not fetched this run — same time-budget reasoning as above."
+  - source_id: le-monde-info
+    reason: "Standard-tier rotation source; not fetched this run — same time-budget reasoning as above."
+  - note: "Extensive targeted WebSearch sweeps in German, French and Italian (NCSC/BACS Warnung, cyberattaque/piratage Suisse, attacco informatico Ticino, Krankenhaus/hospital Europe) surfaced only already-covered stories (Groupe 3R/Akira, PDAG Aargau, Deutsche Bank/Unsafe, Nayax, BeyondTrust CVE-2026-40138/-40139, CVE-2026-53359/Januscape — all already present in the 14-day prior_coverage index from earlier runs today) or recycled/out-of-window items caught and dropped on date verification: the Le Temps 'Salt DDoS' critical-infrastructure piece (actually published 2026-05-17, not fresh), the Radio Lac 'federal administration hacked' piece (actually published 2026-01-10 — over a year old), the Austrian Interior Ministry mail-server breach (actually August/September 2025), and a 'Romania hospital ransomware' hit that traced back to the well-known February 2024 Hipocrate/BackMyData incident being recycled by a low-reliability aggregator. This confirms the classic recycled-news trap the methodology warns about but yielded no qualifying in-window item beyond the one filed above."
