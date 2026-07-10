@@ -196,22 +196,43 @@
       if (fromEl) fromEl.textContent = euro(since);
       if (statusEl) statusEl.textContent = 'last ' + hours + 'h';
       if (countEl) countEl.textContent = String(ops.length);
-      var nCrit = 0, nHigh = 0, nUpd = 0;
+      var nCrit = 0, nHigh = 0, nUpd = 0, nExp = 0;
+      var kinds = {};
       ops.forEach(function (e) {
         if (e.priority === 'critical') nCrit++;
         if (e.priority === 'high') nHigh++;
         if (e.update_of) nUpd++;
+        if (e.exploited) nExp++;
+        var k = e.kind || 'other';
+        kinds[k] = (kinds[k] || 0) + 1;
       });
       var mixEls = {
         '[data-window-crit]': nCrit,
         '[data-window-high]': nHigh,
         '[data-window-upd]': nUpd,
+        '[data-window-exp]': nExp,
         '[data-window-total]': ops.length
       };
       Object.keys(mixEls).forEach(function (sel) {
         var el = document.querySelector(sel);
-        if (el) el.textContent = String(mixEls[sel]);
+        if (!el) return;
+        el.textContent = String(mixEls[sel]);
+        var tile = el.closest('.pulse-t');
+        if (tile && sel !== '[data-window-total]') {
+          tile.classList.toggle('pulse-t--zero', mixEls[sel] === 0);
+        }
       });
+      var kindsEl = document.querySelector('[data-window-kinds]');
+      if (kindsEl) {
+        var kindKeys = Object.keys(kinds).sort(function (a, b) {
+          return (kinds[b] - kinds[a]) || (a < b ? -1 : 1);
+        });
+        kindsEl.innerHTML = kindKeys.length
+          ? kindKeys.map(function (k) {
+              return '<span class="pulse-kind"><b>' + kinds[k] + '</b> ' + esc(k) + '</span>';
+            }).join('')
+          : '<span class="pulse-kind pulse-kind--empty">quiet window</span>';
+      }
       if (endMsg) endMsg.hidden = hasOlder;
       if (more) more.hidden = !hasOlder;
     }

@@ -20,10 +20,12 @@ The deployed site lives at <https://ctipilot.ch/>.
 Every URL is a real HTML page rendered at build time. The topbar is a
 segmented **Live / Daily / Weekly** control plus a search modal, a display
 & accessibility popover (light / dark / system theme, dyslexia-friendly
-font, comfortable spacing), a More menu, and a GitHub-stars badge; a
-second **knowledge-base subnav** row (desktop) links the pivot surfaces —
-Entities · CVEs · Sources · Trends · Operations — with the active surface
-highlighted; the footer is a single minimal row. JavaScript is progressive enhancement only
+font, comfortable spacing), and a GitHub-stars badge; a second
+**knowledge-base subnav** row (desktop) links every pivot surface exactly
+once — Entities · CVEs · ATT&CK · Sources · Trends · Operations on the
+left, Feeds · About right-aligned — with the active surface highlighted
+(there is no desktop "More" menu; the mobile drawer carries the same
+links); the footer is a single minimal row. JavaScript is progressive enhancement only
 (search modal + autocomplete, GitHub-stars fetch, finding chip filters,
 theme / accessibility toggles, AI-bar dismiss, copy-link, and `/live/`'s
 window selector + load-older). With JS disabled the site is fully readable:
@@ -93,7 +95,8 @@ _site/
 ├── cves/ · topics/                       # type-filtered views + legacy redirect stubs
 ├── sources/{index.html,<id>/…}           # source list + detail (entry-based citations)
 ├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry indexes
-├── trends/index.html                     # cohort sparklines, entries per ISO week
+├── trends/index.html                     # momentum analysis: cohort tiles (complete-week deltas),
+│                                         #   cohort×week matrix, entity + ATT&CK technique momentum
 ├── ops/index.html                        # operations dashboard, built from runs/** frontmatter
 ├── feeds/index.html                      # feed discovery
 ├── feed.xml                              # one item per day page (last 30)

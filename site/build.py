@@ -1202,44 +1202,60 @@ def _nav_segments_html(pfx: str, active_nav: str) -> str:
 
 
 def _subnav_html(pfx: str, active_page: str) -> str:
-    """Second topbar row: the knowledge-base pivot surfaces (entities,
-    CVEs, sources, trends, ops). Desktop-only — the mobile drawer carries
-    the same links via `_more_menu_links(drawer=True)`. `active_page`
-    marks the current surface ("entities" / "cves" / "sources" /
+    """Second topbar row: every pivot surface, exactly once. Primary
+    knowledge-base surfaces on the left, secondary site links (feeds,
+    about) right-aligned. Desktop-only — the mobile drawer carries the
+    same links via `_more_menu_links(drawer=True)`. `active_page` marks
+    the current surface ("entities" / "cves" / "attack" / "sources" /
     "trends" / "ops" / "feeds" / "about" / "")."""
     items = [
         ("entities", "entities/", "Entities"),
         ("cves", "cves/", "CVEs"),
+        ("attack", "attack/", "ATT&amp;CK"),
         ("sources", "sources/", "Sources"),
         ("trends", "trends/", "Trends"),
         ("ops", "ops/", "Operations"),
     ]
+    tail_items = [
+        ("feeds", "feeds/", "Feeds"),
+        ("about", "about/", "About"),
+    ]
     current = ' aria-current="page"'
-    links = "".join(
-        f'<a class="subnav-link{" active" if active_page == key else ""}" '
-        f'href="{pfx}{href}"{current if active_page == key else ""}>{_escape(label)}</a>'
-        for key, href, label in items
-    )
+
+    def link(key: str, href: str, label: str, extra_cls: str = "") -> str:
+        active = " active" if active_page == key else ""
+        cur = current if active_page == key else ""
+        return (
+            f'<a class="subnav-link{extra_cls}{active}" '
+            f'href="{pfx}{href}"{cur}>{label}</a>'
+        )
+
+    links = "".join(link(k, h, l) for k, h, l in items)
+    tail = "".join(link(k, h, l, " subnav-link--aux") for k, h, l in tail_items)
     return (
         '<nav class="subnav desktop-only" aria-label="Knowledge base">'
         '<div class="subnav-in">'
-        '<span class="subnav-l">Knowledge base</span>'
         f"{links}"
+        f'<span class="subnav-spring" aria-hidden="true"></span>'
+        f"{tail}"
         "</div></nav>"
     )
 
 
 def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
-    """Shared 'More' menu / mobile-drawer link set."""
+    """Mobile-drawer link set — mirrors the desktop subnav (which is
+    hidden on mobile), plus the site links. Desktop has no 'More' menu:
+    every surface lives in the subnav, exactly once."""
     gh = f"https://github.com/{os.environ.get('GITHUB_REPO', DEFAULT_GITHUB_REPO)}"
     # No "Archive" here: the daily / weekly archives are reached from the
     # Daily / Weekly views themselves (each page links "All … briefs").
     rows = [
-        (f"{pfx}entities/", "Entities", "actors · CVEs"),
+        (f"{pfx}entities/", "Entities", "actors · malware"),
+        (f"{pfx}cves/", "CVEs", "tracked"),
         (f"{pfx}attack/", "ATT&CK", "matrix"),
-        (f"{pfx}sources/", "Sources", "~150"),
-        (f"{pfx}trends/", "Trends", "cohorts"),
-        (f"{pfx}ops/", "Ops", "runs"),
+        (f"{pfx}sources/", "Sources", "curated"),
+        (f"{pfx}trends/", "Trends", "analysis"),
+        (f"{pfx}ops/", "Operations", "runs"),
     ]
     tail = [
         (f"{pfx}about/", "About", ""),
@@ -1552,10 +1568,6 @@ def base_template(
       <div class="more-wrap">
         <button class="ib" type="button" data-display-toggle aria-label="Display and accessibility settings" title="Display &amp; accessibility" aria-expanded="false"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2.2"></circle><circle cx="9" cy="17" r="2.2"></circle></svg></button>
         <div class="menu dpop" data-display-menu hidden>{_display_popover_inner()}</div>
-      </div>
-      <div class="more-wrap">
-        <button class="morebtn" type="button" data-more-toggle aria-expanded="false">More<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></button>
-        <div class="menu" data-more-menu hidden>{_more_menu_links(pfx)}</div>
       </div>
       <a class="ghlink" id="github-link" href="{gh_url}" target="_blank" rel="noopener noreferrer" aria-label="GitHub repository" title="View source on GitHub">{GH_ICON_SVG}<span class="github-stars" id="github-stars" hidden></span></a>
     </div>
@@ -3150,6 +3162,15 @@ def render_live_brief_page(
     n_crit = sum(1 for e in ops if e.get("priority") == "critical")
     n_high = sum(1 for e in ops if e.get("priority") == "high")
     n_upd = sum(1 for e in ops if e.get("update_of"))
+    n_exp = sum(1 for e in ops if _entry_exploited(e))
+    kind_counts: dict[str, int] = {}
+    for e in ops:
+        k = str(e.get("kind") or "other")
+        kind_counts[k] = kind_counts.get(k, 0) + 1
+    kind_chips = "".join(
+        f'<span class="pulse-kind"><b>{v}</b> {_escape(k)}</span>'
+        for k, v in sorted(kind_counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    ) or '<span class="pulse-kind pulse-kind--empty">quiet window</span>'
     critical = next(
         (e for e in sorted(ops, key=entry_sort_key) if e.get("priority") == "critical"),
         None,
@@ -3200,14 +3221,18 @@ def render_live_brief_page(
     <span class="rf rf--date"><span data-window-to>{to_str}</span> <span class="rf-note">now</span></span>
     <span class="rf rf--select"><select data-window-select aria-label="Reading window">{options}</select></span>
   </div>
-  <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · <span data-window-count>{n}</span> findings · UTC</span>
+  <span class="rf-note"><span data-window-status>last {DEFAULT_WINDOW_HOURS}h</span> · UTC</span>
 </div>
-<div class="pulserow" aria-label="Window summary">
-  <span class="pulse pulse--crit"><b data-window-crit>{n_crit}</b> critical</span>
-  <span class="pulse pulse--high"><b data-window-high>{n_high}</b> high</span>
-  <span class="pulse"><b data-window-upd>{n_upd}</b> updates</span>
-  <span class="pulse pulse--total"><b data-window-total>{n}</b> in window</span>
-</div>
+<section class="pulsepanel" aria-label="Window at a glance">
+  <div class="pulsegrid">
+    <div class="pulse-t"><b data-window-total>{n}</b><span>findings</span></div>
+    <div class="pulse-t pulse-t--crit{' pulse-t--zero' if not n_crit else ''}"><b data-window-crit>{n_crit}</b><span>critical</span></div>
+    <div class="pulse-t pulse-t--high{' pulse-t--zero' if not n_high else ''}"><b data-window-high>{n_high}</b><span>high</span></div>
+    <div class="pulse-t pulse-t--exp{' pulse-t--zero' if not n_exp else ''}"><b data-window-exp>{n_exp}</b><span>exploited in the wild</span></div>
+    <div class="pulse-t pulse-t--upd{' pulse-t--zero' if not n_upd else ''}"><b data-window-upd>{n_upd}</b><span>updates to prior coverage</span></div>
+  </div>
+  <div class="pulsekinds"><span class="pulsekinds-l">Categories</span><span class="pulsekinds-chips" data-window-kinds>{kind_chips}</span></div>
+</section>
 <div class="feedhead feedhead--section">
   <h1 class="feedhead-title">Latest findings</h1>
   <div class="feedhead-tools">{render_filter_toggle()}</div>
@@ -4595,30 +4620,33 @@ def _stale_days_for_source(s: dict[str, Any], today: date) -> int:
 
 
 def render_reliability_legend(reliability_codes: dict[str, Any] | None,
-                              present: set[str]) -> str:
+                              counts: dict[str, int]) -> str:
     """A key for the NATO Admiralty source-reliability letters, driven by
     sources.json `reliability_codes` (falls back to the standard doctrine).
-    Only letters actually in use are shown, colour-coded to match the badges
-    and the reliability donut, so the A–F in the table and chart is legible."""
-    codes = reliability_codes if isinstance(reliability_codes, dict) and reliability_codes else {
-        k: f"{ADMIRALTY_RELIABILITY_MEANING[k]}." for k in "ABCDEF"
-    }
-    order = [c for c in ("A", "B", "C", "D", "E", "F") if c in codes]
-    order += [c for c in codes if c not in order]
+    ALL six letters are always shown — the scale is doctrine and reads
+    incomplete otherwise — with the current source count per letter;
+    letters with no sources render muted."""
+    codes = reliability_codes if isinstance(reliability_codes, dict) and reliability_codes else {}
+    order = list("ABCDEF") + [c for c in codes if c not in set("ABCDEF")]
     items = []
     for c in order:
-        if present and c not in present:
-            continue
+        definition = str(codes.get(c) or f"{ADMIRALTY_RELIABILITY_MEANING.get(c, c)}.")
         tier = reliability_tier_class(c).replace("badge--", "")  # high | med | low
+        n = counts.get(c, 0)
+        zero_cls = " rel-key__item--zero" if not n else ""
+        count_html = (
+            f'<span class="rel-key__count mono">{n} source{"" if n == 1 else "s"}</span>'
+            if n else '<span class="rel-key__count rel-key__count--zero mono">none tracked</span>'
+        )
         items.append(
-            f'<li class="rel-key__item rel-key__item--{tier}">'
+            f'<li class="rel-key__item rel-key__item--{tier}{zero_cls}">'
             f'<span class="rel-key__code">{_escape(c)}</span>'
-            f'<span class="rel-key__def">{_escape(str(codes[c]))}</span></li>'
+            f'<span class="rel-key__def">{_escape(definition)} {count_html}</span></li>'
         )
     if not items:
         return ""
     return (
-        '<details class="rel-key" open><summary>Source reliability · '
+        '<details class="rel-key"><summary>Source reliability · '
         'NATO Admiralty scale (A–F)</summary>'
         '<p class="rel-key__intro muted">Each source is rated for reliability on the NATO '
         'Admiralty scale, weighting original / primary authorities over aggregators. Every '
@@ -4640,10 +4668,13 @@ def render_source_list_page(
 ) -> str:
     cats = sorted({c for s in sources for c in (s.get("category") or [])})
     stats = sorted({s.get("status") or "" for s in sources if s.get("status")})
-    rels_present = {(s.get("reliability") or "").strip().upper() for s in sources}
-    rels_present.discard("")
-    rel_order = [c for c in ("A", "B", "C", "D", "E", "F") if c in rels_present]
-    rel_order += sorted(rels_present - set(rel_order))
+    rel_counts: dict[str, int] = {}
+    for s in sources:
+        r = (s.get("reliability") or "").strip().upper()
+        if r:
+            rel_counts[r] = rel_counts.get(r, 0) + 1
+    rel_order = [c for c in ("A", "B", "C", "D", "E", "F") if c in rel_counts]
+    rel_order += sorted(set(rel_counts) - set(rel_order))
     today = datetime.now(timezone.utc).date()
 
     cat_chips = "".join(
@@ -4669,12 +4700,16 @@ def render_source_list_page(
     rows = []
     for s in sources:
         appearances = s.get("appearances", []) or []
-        app_links = "".join(
-            f'<span class="mono" style="margin-right:0.3rem">{_escape(n)}</span>'
-            for n in appearances[:6]
+        n_cites = len(s.get("entry_refs") or [])
+        last_cited = appearances[0] if appearances else ""
+        cite_cell = (
+            f'<span class="mono">{n_cites}</span>' if n_cites
+            else '<span class="muted mono">0</span>'
         )
-        if len(appearances) > 6:
-            app_links += f' <span class="muted">+{len(appearances) - 6}</span>'
+        last_cell = (
+            f'<span class="mono">{_escape(last_cited)}</span>' if last_cited
+            else '<span class="muted">never</span>'
+        )
         cat_tags = "".join(
             f'<span class="e-tag">{_escape(c)}</span>'
             for c in (s.get("category") or [])
@@ -4696,19 +4731,20 @@ def render_source_list_page(
             f'<td>{reliability_badge(s.get("reliability") or "")}</td>'
             f'<td>{status_badge(s.get("status") or "")}</td>'
             f'<td><div class="e-meta">{cat_tags}</div></td>'
-            f'<td>{app_links}</td>'
+            f'<td class="num">{cite_cell}</td>'
+            f'<td>{last_cell}</td>'
             '</tr>'
         )
 
     table = (
         '<div class="data-wrap"><table class="data" data-filter-table="sources">'
-        '<thead><tr><th>Publisher</th><th>Reliability</th><th>Status</th><th>Categories</th><th>Cited in</th></tr></thead>'
+        '<thead><tr><th>Publisher</th><th>Reliability</th><th>Status</th><th>Categories</th><th>Citations</th><th>Last cited</th></tr></thead>'
         '<tbody>' + "".join(rows) + '</tbody>'
         '</table></div>'
     ) if rows else '<div class="empty">No sources match.</div>'
 
     chart_block = render_sources_overview_charts(sources, prefix=prefix)
-    legend_block = render_reliability_legend(reliability_codes, rels_present)
+    legend_block = render_reliability_legend(reliability_codes, rel_counts)
     rel_chip_row = (
         '<div class="toolbar" style="margin-top:-0.5rem">'
         '<span class="chip active" data-filter-chip="source-rel" data-value="all">All reliability</span>'
@@ -5328,6 +5364,7 @@ def _rewrite_about_links(html: str, *, prefix: str) -> str:
 def render_static_doc(
     *, md_text: str, title: str, description: str, prefix: str, canonical: str,
     site_url: str, cachebust: str, subtitle: str | None = None,
+    active_page: str = "",
 ) -> str:
     # No base_url here — we want relative repo paths like
     # `prompts/verification.md` to stay relative so _rewrite_about_links
@@ -5361,6 +5398,7 @@ def render_static_doc(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        active_page=active_page,
         seo={"breadcrumb": trail if len(trail) > 1 else None},
     )
 
@@ -5369,11 +5407,24 @@ def render_static_doc(
 
 
 def render_trends_page(entries: list[dict[str, Any]], *,
+                        entities: list[dict[str, Any]],
+                        ref_ts: datetime,
                         site_url: str, cachebust: str,
                         prefix: str, canonical: str) -> str:
-    """/trends/ · the cohort sparkline dashboard, bucketing ENTRIES by
-    the ISO week of discovered_at. Cohorts match on the entry's own
-    tags / sectors / regions frontmatter (no footer parsing)."""
+    """/trends/ · the analysis dashboard, bucketing ENTRIES by the ISO
+    week of discovered_at.
+
+    Statistical honesty rule: the current ISO week is always PARTIAL
+    while the pipeline is running, so it is never compared against a
+    complete week — every delta on this page is latest-complete-week vs
+    the week before it, and the running week is shown separately as
+    "so far". (The old week-over-week delta made every tile read as a
+    decline until Sunday night.)
+
+    Beyond the cohort tiles the page carries the surfaces an operator
+    doing actor tracking actually pivots on: a cohort × week matrix,
+    entity momentum (most-active + first-seen), and ATT&CK technique
+    momentum — each row linking to its entity / tag / matrix page."""
     ops = operational_entries(entries)
     if not ops:
         body = (
@@ -5382,13 +5433,17 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         )
         return base_template(
             title=f"Trends · {SITE_NAME}",
-        active_page="trends",
+            active_page="trends",
             description="Weekly trend dashboard across all published entries.",
             body=body,
             canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
             seo={"breadcrumb": [(SITE_NAME, site_url), ("Trends", canonical)]},
         )
+
+    ref_date = ref_ts.date()
+    iso_now = ref_date.isocalendar()
+    current_week = f"{iso_now[0]:04d}-W{iso_now[1]:02d}"
 
     week_buckets: dict[str, dict[str, int]] = {c["key"]: {} for c in TREND_COHORTS}
     week_set: set[str] = set()
@@ -5400,60 +5455,64 @@ def render_trends_page(entries: list[dict[str, Any]], *,
                 bucket = week_buckets[cohort["key"]]
                 bucket[week] = bucket.get(week, 0) + 1
 
-    weeks_sorted = sorted(week_set)[-16:]
-    if not weeks_sorted:
-        body = '<h1>Trends</h1><p class="muted">No weekly buckets yet.</p>'
+    week_set.discard("unknown")
+    complete_weeks = sorted(w for w in week_set if w < current_week)[-12:]
+    if not complete_weeks:
+        body = '<h1>Trends</h1><p class="muted">No complete weekly buckets yet.</p>'
         return base_template(
             title=f"Trends · {SITE_NAME}",
-        active_page="trends",
+            active_page="trends",
             description="Weekly trend dashboard across all published entries.",
             body=body, canonical=canonical, site_url=site_url, cachebust=cachebust,
             home_relative_prefix=prefix,
             seo={"breadcrumb": [(SITE_NAME, site_url), ("Trends", canonical)]},
         )
 
+    def _cohort_pivot(cohort: dict[str, Any]) -> str:
+        if cohort.get("tags"):
+            return f'{prefix}tags/{cohort["tags"][0]}/'
+        if cohort.get("regions"):
+            return f'{prefix}regions/{cohort["regions"][0]}/'
+        return ""
+
+    # ---- cohort tiles: complete-week deltas + partial-week note --------
     cards: list[str] = []
     for cohort in TREND_COHORTS:
         bucket = week_buckets[cohort["key"]]
-        values = [float(bucket.get(w, 0)) for w in weeks_sorted]
+        values = [float(bucket.get(w, 0)) for w in complete_weeks]
+        partial = int(bucket.get(current_week, 0))
         total_recent = int(sum(values))
-        last_week_count = int(values[-1]) if values else 0
+        last_complete = int(values[-1]) if values else 0
         delta = ""
         delta_cls = ""
         if len(values) >= 2:
-            prev = values[-2]
-            now = values[-1]
+            prev, now = values[-2], values[-1]
             if prev == 0 and now == 0:
-                delta = "no change"
-            elif prev == 0 and now > 0:
-                delta = "new this week (was 0)"
+                delta = "→ flat"
+            elif prev == 0:
+                delta = "▲ new (was 0)"
                 delta_cls = " trends-card__delta--up"
             else:
-                pct = (now - prev) / prev * 100 if prev else 0
+                pct = (now - prev) / prev * 100
                 arrow = "▲" if now > prev else ("▼" if now < prev else "→")
-                delta = f"{arrow} {pct:+.0f}% vs prior week"
+                delta = f"{arrow} {pct:+.0f}%"
                 delta_cls = (
                     " trends-card__delta--up" if now > prev
                     else (" trends-card__delta--down" if now < prev else "")
                 )
         spark_html = _ops_svg_sparkline(
             values,
-            label=f"{cohort['title']} (last {len(weeks_sorted)} weeks)",
+            label=f"{cohort['title']} (last {len(complete_weeks)} complete weeks)",
             width=240, height=44,
         )
-        # Pivot target: the cohort's first tag page (or region page) so a
-        # tile click lands on the matching item list.
-        pivot_href = ""
-        if cohort.get("tags"):
-            pivot_href = f'{prefix}tags/{cohort["tags"][0]}/'
-        elif cohort.get("regions"):
-            pivot_href = f'{prefix}regions/{cohort["regions"][0]}/'
+        pivot_href = _cohort_pivot(cohort)
         inner = (
             f'<p class="trends-card__title">{_escape(cohort["title"])}</p>'
-            f'<p class="trends-card__value">{last_week_count}</p>'
+            f'<p class="trends-card__value">{last_complete}</p>'
             f'<p class="trends-card__sub"><span class="trends-card__delta{delta_cls}">{_escape(delta)}</span>'
-            f' · {total_recent} over last {len(weeks_sorted)} wk</p>'
+            f' vs prior complete week · <b>{partial}</b> so far this week</p>'
             f"{spark_html}"
+            f'<p class="trends-card__sub trends-card__sub--foot">{total_recent} over {len(complete_weeks)} complete wk</p>'
         )
         if pivot_href:
             inner += '<span class="trends-card__go">view items →</span>'
@@ -5463,18 +5522,179 @@ def render_trends_page(entries: list[dict[str, Any]], *,
         else:
             cards.append(f'<div class="trends-card">{inner}</div>')
 
-    weeks_label = f"{weeks_sorted[0]} → {weeks_sorted[-1]}"
+    # ---- cohort × week matrix (the drill-down numbers) ------------------
+    matrix_weeks = complete_weeks[-8:]
+    def _wk_label(w: str) -> str:
+        return w.split("-")[-1]  # "2026-W27" → "W27"
+    head_cells = "".join(
+        f'<th class="num" title="{_escape(w)}">{_escape(_wk_label(w))}</th>'
+        for w in matrix_weeks
+    ) + f'<th class="num trend-partial" title="{_escape(current_week)} · running week, incomplete">{_escape(_wk_label(current_week))}*</th>'
+    matrix_rows = []
+    for cohort in TREND_COHORTS:
+        bucket = week_buckets[cohort["key"]]
+        pivot_href = _cohort_pivot(cohort)
+        name = cohort["title"].replace(" items / week", "").replace(" / week", "")
+        label = (
+            f'<a href="{_escape(pivot_href)}">{_escape(name)}</a>'
+            if pivot_href else _escape(name)
+        )
+        cells = "".join(
+            f'<td class="num">{bucket.get(w, 0) or "<span class=muted>0</span>"}</td>'
+            for w in matrix_weeks
+        )
+        cells += f'<td class="num trend-partial">{bucket.get(current_week, 0) or "<span class=muted>0</span>"}</td>'
+        matrix_rows.append(f'<tr><td>{label}</td>{cells}</tr>')
+    matrix_html = (
+        '<div class="data-wrap"><table class="data trend-matrix">'
+        f'<thead><tr><th>Cohort</th>{head_cells}</tr></thead>'
+        f'<tbody>{"".join(matrix_rows)}</tbody></table></div>'
+        f'<p class="chart-note muted">* {_escape(current_week)} is the running week — incomplete by definition, never compared against complete weeks.</p>'
+    )
+
+    # ---- entity momentum: the actor-tracking surface --------------------
+    d30 = (ref_date - timedelta(days=30)).isoformat()
+    d60 = (ref_date - timedelta(days=60)).isoformat()
+    skip_types = {"cve", "annual-report", "report"}
+    momentum: list[tuple[dict[str, Any], int, int, str]] = []
+    fresh: list[tuple[dict[str, Any], str, int]] = []
+    for ent in entities:
+        etype = (ent.get("type") or "").lower()
+        if etype in skip_types:
+            continue
+        dates = sorted(a.get("date") or "" for a in ent.get("appearances") or [])
+        if not dates:
+            continue
+        recent = sum(1 for d in dates if d >= d30)
+        prior = sum(1 for d in dates if d60 <= d < d30)
+        if recent:
+            momentum.append((ent, recent, prior, dates[-1]))
+        first = ent.get("first_covered") or dates[0]
+        if first >= d30:
+            fresh.append((ent, first, len(dates)))
+    momentum.sort(key=lambda t: (-t[1], -(t[1] - t[2]), t[0].get("title", "").lower()))
+    fresh.sort(key=lambda t: (t[1], t[0].get("title", "").lower()), reverse=True)
+
+    def _etag(etype: str) -> str:
+        return (
+            f'<span class="e-tag e-tag--{_escape(etype or "none")}">'
+            f'{_escape(etype or "—")}</span>'
+        )
+
+    def _delta_cell(recent: int, prior: int) -> str:
+        if prior == 0 and recent > 0:
+            return '<span class="trend-up mono">new</span>'
+        diff = recent - prior
+        if diff > 0:
+            return f'<span class="trend-up mono">▲ +{diff}</span>'
+        if diff < 0:
+            return f'<span class="trend-down mono">▼ {diff}</span>'
+        return '<span class="muted mono">→ 0</span>'
+
+    momentum_rows = "".join(
+        f'<tr><td><a href="{_entity_url(ent, prefix=prefix)}">{_escape(ent.get("title") or ent["key"])}</a></td>'
+        f'<td>{_etag((ent.get("type") or "").lower())}</td>'
+        f'<td class="num mono">{recent}</td>'
+        f'<td class="num mono muted">{prior}</td>'
+        f'<td>{_delta_cell(recent, prior)}</td>'
+        f'<td class="mono muted">{_escape(last)}</td></tr>'
+        for ent, recent, prior, last in momentum[:12]
+    )
+    momentum_panel = (
+        '<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">Most active entities · last 30 days</h3>'
+        '<p class="chart-note muted">Actors, malware, campaigns and tools by entry count, '
+        'vs the 30 days before. Click through for the full dossier, timeline and TTP profile.</p>'
+        '<div class="data-wrap"><table class="data">'
+        '<thead><tr><th>Entity</th><th>Type</th><th class="num">30d</th><th class="num">Prior 30d</th><th>Δ</th><th>Last seen</th></tr></thead>'
+        f'<tbody>{momentum_rows}</tbody></table></div>'
+        '</div>'
+    ) if momentum_rows else ""
+
+    fresh_rows = "".join(
+        f'<tr><td><a href="{_entity_url(ent, prefix=prefix)}">{_escape(ent.get("title") or ent["key"])}</a></td>'
+        f'<td>{_etag((ent.get("type") or "").lower())}</td>'
+        f'<td class="mono">{_escape(first)}</td>'
+        f'<td class="num mono">{n}</td></tr>'
+        for ent, first, n in fresh[:12]
+    )
+    fresh_panel = (
+        '<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">New entities · first tracked in the last 30 days</h3>'
+        '<p class="chart-note muted">Names that entered the knowledge base recently — the threats '
+        'a reader (human or agent) is least likely to know yet.</p>'
+        '<div class="data-wrap"><table class="data">'
+        '<thead><tr><th>Entity</th><th>Type</th><th>First covered</th><th class="num">Entries</th></tr></thead>'
+        f'<tbody>{fresh_rows}</tbody></table></div>'
+        '</div>'
+    ) if fresh_rows else ""
+
+    # ---- ATT&CK technique momentum --------------------------------------
+    tech_panel = ""
+    if ATTACK_TECHNIQUES:
+        d28 = (ref_date - timedelta(days=28)).isoformat()
+        d56 = (ref_date - timedelta(days=56)).isoformat()
+        tech_recent: dict[str, int] = {}
+        tech_prior: dict[str, int] = {}
+        for e in ops:
+            d = str(e.get("date") or "")
+            if d >= d28:
+                target = tech_recent
+            elif d >= d56:
+                target = tech_prior
+            else:
+                continue
+            for tid in content_model.entry_technique_ids(e, ATTACK_TECHNIQUES):
+                target[tid] = target.get(tid, 0) + 1
+        top_tech = sorted(
+            tech_recent.items(),
+            key=lambda kv: (-kv[1], -(kv[1] - tech_prior.get(kv[0], 0)), kv[0]),
+        )[:12]
+        if top_tech:
+            tech_rows = "".join(
+                f'<tr><td><a class="mono" href="{prefix}attack/#{_escape(tid)}">{_escape(tid)}</a></td>'
+                f'<td>{_escape(attack_technique_label(tid))}</td>'
+                f'<td class="num mono">{n}</td>'
+                f'<td class="num mono muted">{tech_prior.get(tid, 0)}</td>'
+                f'<td>{_delta_cell(n, tech_prior.get(tid, 0))}</td></tr>'
+                for tid, n in top_tech
+            )
+            tech_panel = (
+                '<div class="ops-chart-card" style="grid-column:1/-1">'
+                '<h3 class="section-head" style="margin-top:0">ATT&amp;CK technique momentum · last 28 days</h3>'
+                '<p class="chart-note muted">Techniques by count of entries mapping them '
+                f'(<code>techniques[]</code> frontmatter, pinned ATT&amp;CK v{_escape(ATTACK_VERSION)}), '
+                'vs the 28 days before. Click a technique id for its evidence in the coverage matrix.</p>'
+                '<div class="data-wrap"><table class="data">'
+                '<thead><tr><th>Technique</th><th>Name</th><th class="num">28d</th><th class="num">Prior 28d</th><th>Δ</th></tr></thead>'
+                f'<tbody>{tech_rows}</tbody></table></div>'
+                '</div>'
+            )
+
+    weeks_label = f"{complete_weeks[0]} → {complete_weeks[-1]}"
     body = f"""
 <header>
   <h1>Trends</h1>
-  <p class="subtitle muted">Weekly counts of published entries by threat class, across {len(ops)} operational entries ({weeks_label}). Pure post-hoc analytics from entry frontmatter.</p>
+  <p class="subtitle muted">Momentum analysis over {len(ops)} operational entries. Deltas compare the latest <em>complete</em> ISO week against the week before it ({weeks_label}); the running week {current_week} is shown separately and never compared — a half-finished week is not a decline.</p>
 </header>
 <section>
   <div class="trends-grid">{''.join(cards)}</div>
 </section>
 <section style="margin-top:1.5rem">
+  <h2 class="section-head">Cohort × week detail</h2>
+  {matrix_html}
+</section>
+<section style="margin-top:1.5rem">
+  <h2 class="section-head">Entity momentum</h2>
+  <div class="trend-panels">
+    {momentum_panel}
+    {fresh_panel}
+    {tech_panel}
+  </div>
+</section>
+<section style="margin-top:1.5rem">
   <h2 class="section-head">How to read this</h2>
-  <p>Each tile counts entries whose frontmatter carries the relevant taxonomy values. Tiles aggregate over the ISO week of the entry's <code>discovered_at</code>. The "vs prior week" delta is week-over-week.</p>
+  <p>Cohort tiles count entries whose frontmatter carries the relevant taxonomy values, bucketed by the ISO week of <code>discovered_at</code>. Entity momentum counts entries linked to each registry entity; technique momentum counts entries mapping each ATT&amp;CK id. Everything is post-hoc analytics over published entries — no separate data source.</p>
   {_trends_cohort_note(prefix)}
 </section>
 """
@@ -7849,20 +8069,11 @@ def render_sources_overview_charts(
     *,
     prefix: str,
 ) -> str:
-    """Bias-detection chart strip for the /sources/ overview page.
-
-    Surfaces the kind of structural questions an operator should be
-    asking weekly:
-      - Status / reliability / category distribution · does the source
-        list lean toward news outlets or national CERTs?
-      - Most-cited sources (top 12) · which sources do briefs actually
-        rely on? An over-narrow distribution is a citation-bias risk.
-      - Cited-count per category bars · are HIGH-reliability categories
-        (national CERT, vendor PSIRT) under-cited relative to their
-        share of the source list? That's the lopsided-coverage signal.
-      - Active-but-never-cited count · sources kept on the active list
-        that aren't pulling weight; rotation candidates.
-    """
+    """Structure snapshot for the /sources/ overview page: a KPI strip
+    plus three equal panels — status mix, the FULL NATO Admiralty A–F
+    reliability distribution (zero-count letters stay visible so the
+    scale reads complete), and the most-cited sources (citation-bias
+    surface)."""
     if not sources:
         return '<div class="empty muted">No sources yet.</div>'
 
@@ -7870,7 +8081,6 @@ def render_sources_overview_charts(
     by_status: dict[str, int] = {}
     by_reliability: dict[str, int] = {}
     by_category: dict[str, int] = {}
-    citations_by_category: dict[str, int] = {}
     citations_by_source: list[tuple[str, str, int]] = []  # (id, publisher, count)
     active_uncited = 0
     n_active = n_demoted = n_candidate = 0
@@ -7884,15 +8094,16 @@ def render_sources_overview_charts(
             n_demoted += 1
         elif status == "candidate":
             n_candidate += 1
-        by_reliability[s.get("reliability") or "—"] = by_reliability.get(s.get("reliability") or "—", 0) + 1
-        cats = s.get("category") or []
-        n_apps = len(s.get("appearances") or [])
-        for c in cats:
+        rel = (s.get("reliability") or "—").strip().upper()
+        by_reliability[rel] = by_reliability.get(rel, 0) + 1
+        for c in s.get("category") or []:
             by_category[c] = by_category.get(c, 0) + 1
-            citations_by_category[c] = citations_by_category.get(c, 0) + n_apps
+        n_apps = len(s.get("entry_refs") or []) or len(s.get("appearances") or [])
         if s.get("status") == "active" and n_apps == 0:
             active_uncited += 1
         citations_by_source.append((s.get("id", ""), s.get("publisher", "") or s.get("id", ""), n_apps))
+
+    total_citations = sum(c for _, _, c in citations_by_source)
 
     # KPI strip.
     kpi_html = (
@@ -7907,54 +8118,82 @@ def render_sources_overview_charts(
         + _ops_kpi_tile("Demoted", str(n_demoted),
                          sub="kept for audit history",
                          kind="neutral")
-        + _ops_kpi_tile("Citations",
-                         f"{sum(c for _, _, c in citations_by_source)}",
-                         sub=f"avg {sum(c for _, _, c in citations_by_source) / max(n_active, 1):.1f} per active source")
+        + _ops_kpi_tile("Citations", str(total_citations),
+                         sub=f"avg {total_citations / max(n_active, 1):.1f} per active source")
         + '</div>'
     )
 
-    # Status donut — semantic status colours (never the categorical
-    # palette: "active" must read healthy, "demoted" must read inert).
+    def _dist_rows(rows: list[tuple[str, int, str, str]], denom: int) -> str:
+        """rows: (label_html, count, fill_css_color, row_extra_class)."""
+        out = []
+        for label_html, count, color, extra in rows:
+            pct = round(count / denom * 100) if denom else 0
+            width = max(3, pct) if count else 0
+            out.append(
+                f'<li class="rankbar{extra}">'
+                f'<span class="rankbar__label">{label_html}</span>'
+                f'<span class="rankbar__track"><span class="rankbar__fill" '
+                f'style="width:{width}%;background:{color}"></span></span>'
+                f'<span class="rankbar__value mono">{count}</span></li>'
+            )
+        return f'<ul class="rankbar-list">{"".join(out)}</ul>'
+
+    # Panel 1 — status mix, semantic colours (active must read healthy,
+    # demoted must read inert).
     status_color = {
         "active": "var(--ok)",
         "candidate": "var(--info)",
         "demoted": "var(--text-muted)",
     }
-    status_slices = [
-        (k, float(v), status_color.get(k, "var(--warn)"))
+    status_rows = [
+        (_escape(k), v, status_color.get(k, "var(--warn)"), "")
         for k, v in sorted(by_status.items(), key=lambda kv: -kv[1])
     ]
-    status_donut = _ops_svg_donut(status_slices, size=140, label="Sources by status")
+    status_panel = (
+        '<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">By status</h3>'
+        '<p class="chart-note muted">Lifecycle state of every tracked source.</p>'
+        + _dist_rows(status_rows, total)
+        + '</div>'
+    )
 
-    # Reliability donut — fixed colour mapping for the NATO Admiralty letters
-    # (A/B green, C amber, D–F red); legacy HIGH/MEDIUM/LOW kept for old data.
+    # Panel 2 — the complete Admiralty scale. Letters with zero sources
+    # are rendered muted (never dropped): the scale is doctrine, and an
+    # analyst must see at a glance that nothing below C is in the list.
     _rel_high = BRANDING["charts"]["reliability_high"].strip() or "#56d364"
     _rel_med = BRANDING["charts"]["reliability_medium"].strip() or "#ffd866"
     _rel_low = BRANDING["charts"]["reliability_low"].strip() or "#e85d75"
-    reliability_color = {
-        "A": _rel_high, "B": _rel_high, "C": _rel_med,
-        "D": _rel_low, "E": _rel_low, "F": _rel_low,
-        "HIGH": _rel_high, "MEDIUM": _rel_med, "LOW": _rel_low,
-        "—": "var(--text-muted)",
-    }
-    # Order the donut/legend in doctrine order (A→F), legacy tokens after.
-    _rel_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4, "F": 5,
-                 "HIGH": 0, "MEDIUM": 2, "LOW": 4}
-    rel_slices = [
-        (k, float(v), reliability_color.get(k, "var(--text-muted)"))
-        for k, v in sorted(by_reliability.items(), key=lambda kv: (_rel_rank.get(kv[0], 9), kv[0]))
-    ]
-    rel_donut = _ops_svg_donut(rel_slices, size=140, label="Sources by reliability (Admiralty A–F)")
+    rel_color = {"A": _rel_high, "B": _rel_high, "C": _rel_med,
+                 "D": _rel_low, "E": _rel_low, "F": _rel_low}
+    rel_rows = []
+    for letter in "ABCDEF":
+        count = by_reliability.get(letter, 0)
+        meaning = ADMIRALTY_RELIABILITY_MEANING.get(letter, "")
+        label = (
+            f'<span class="rel-letter rel-letter--{reliability_tier_class(letter).replace("badge--", "")}"'
+            f' title="{_escape(meaning)}">{letter}</span>'
+            f'<span class="rel-word">{_escape(meaning.split(" — ")[0] if " — " in meaning else meaning)}</span>'
+        )
+        rel_rows.append((label, count, rel_color[letter], "" if count else " rankbar--zero"))
+    legacy = {k: v for k, v in by_reliability.items() if k not in set("ABCDEF")}
+    for k, v in sorted(legacy.items()):
+        rel_rows.append((_escape(k), v, "var(--text-muted)", ""))
+    rel_panel = (
+        '<div class="ops-chart-card">'
+        '<h3 class="section-head" style="margin-top:0">By reliability · NATO Admiralty A–F</h3>'
+        '<p class="chart-note muted">Full scale shown — zero-count letters stay visible. '
+        'The pipeline keeps nothing below C on the active list.</p>'
+        + _dist_rows(rel_rows, total)
+        + '</div>'
+    )
 
-    # Top-12 most-cited sources — bias surface.
+    # Panel 3 — most-cited sources (top 12), the citation-bias surface.
     top_cited = sorted(
         [t for t in citations_by_source if t[2] > 0],
         key=lambda t: (-t[2], t[1].lower()),
     )[:12]
-    top_block = ""
+    top_panel = ""
     if top_cited:
-        # Ranked labelled bar list (label + inline bar + value per row) —
-        # reads better than an unlabeled bar chart above a swatch legend.
         max_n = max(n for _, _, n in top_cited) or 1
         bar_rows = "".join(
             f'<li class="rankbar">'
@@ -7963,69 +8202,22 @@ def render_sources_overview_charts(
             f'<span class="rankbar__value mono">{n}</span></li>'
             for sid, pub, n in top_cited
         )
-        top_block = (
+        top_panel = (
             '<div class="ops-chart-card">'
             '<h3 class="section-head" style="margin-top:0">Most-cited sources</h3>'
-            '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
-            'Top 12 by brief-appearance count. A narrow distribution here is a '
-            'citation-bias risk · look for diversity of publisher and category.'
-            '</p>'
+            '<p class="chart-note muted">Top 12 by citing-entry count. A narrow '
+            'distribution here is a citation-bias risk.</p>'
             f'<ul class="rankbar-list">{bar_rows}</ul>'
             '</div>'
         )
 
-    # Per-category citation bars — bias detector. Shows total citations
-    # per category alongside source count to surface lopsided coverage
-    # (e.g. many news sources but few national CERT citations).
-    cat_pairs = sorted(by_category.items(), key=lambda kv: -citations_by_category.get(kv[0], 0))[:14]
-    cat_block = ""
-    if cat_pairs:
-        # Two stacked metrics per category: source count + citation count.
-        # Render as a side-by-side legend table — easier to read than dual bars.
-        rows = []
-        for cat, src_count in cat_pairs:
-            cit_count = citations_by_category.get(cat, 0)
-            ratio = cit_count / max(src_count, 1)
-            kind_pill = '<span class="badge badge--low" title="cited fewer than 0.5 times per active source on average">under-cited</span>' if ratio < 0.5 else (
-                '<span class="badge badge--accent" title="cited heavily relative to source count">heavy</span>' if ratio > 3 else ''
-            )
-            rows.append(
-                f'<tr><td><a href="{prefix}sources/?cat={_escape(cat)}">{_escape(cat)}</a></td>'
-                f'<td class="mono">{src_count}</td>'
-                f'<td class="mono">{cit_count}</td>'
-                f'<td class="mono">{ratio:.1f} {kind_pill}</td></tr>'
-            )
-        cat_block = (
-            '<div class="ops-chart-card" style="grid-column:1/-1">'
-            '<h3 class="section-head" style="margin-top:0">Citations per category</h3>'
-            '<p class="muted" style="font-size:0.78rem;margin:0 0 0.3rem">'
-            '<code>citations / sources</code> &lt; 0.5 means a category has many sources but few citations '
-            '(over-supplied); &gt; 3 means heavy concentration on a small number of sources.'
-            '</p>'
-            '<div class="data-wrap"><table class="data">'
-            '<thead><tr><th>Category</th><th>Sources</th><th>Citations</th><th>Ratio</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody>'
-            '</table></div>'
-            '</div>'
-        )
-
-    # Fetch-failure sparklines live on /ops/ (run-log table + Coverage
-    # gaps), not on the source-catalogue page.
-
     return (
         '<section class="ops-section">'
         f'{kpi_html}'
-        '<div class="ops-charts-row">'
-        f'<div class="ops-chart-card">'
-        '<h3 class="section-head" style="margin-top:0">By status</h3>'
-        f'{status_donut}'
-        '</div>'
-        f'<div class="ops-chart-card">'
-        '<h3 class="section-head" style="margin-top:0">By reliability</h3>'
-        f'{rel_donut}'
-        '</div>'
-        f'{top_block}'
-        f'{cat_block}'
+        '<div class="src-panels">'
+        f'{status_panel}'
+        f'{rel_panel}'
+        f'{top_panel}'
         '</div>'
         '</section>'
     )
@@ -9354,6 +9546,7 @@ Navigator layers are downloadable from each entity page.</p></noscript>
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
+        active_page="attack",
         extra_head=f'<script defer src="{prefix}assets/js/attack.js?v={cachebust}"></script>',
         seo={
             "breadcrumb": [
@@ -10148,6 +10341,7 @@ def main() -> int:
             canonical=site_url + "about/",
             site_url=site_url,
             cachebust=cachebust,
+            active_page="about",
         ),
     )
     if docs_files:
@@ -10165,6 +10359,7 @@ def main() -> int:
                 canonical=site_url + "about/docs/",
                 site_url=site_url,
                 cachebust=cachebust,
+                active_page="about",
             ),
         )
         for p in docs_files:
@@ -10180,6 +10375,7 @@ def main() -> int:
                     canonical=site_url + rel_url,
                     site_url=site_url,
                     cachebust=cachebust,
+                    active_page="about",
                 ),
             )
 
@@ -10211,6 +10407,7 @@ def main() -> int:
                 canonical=site_url + "about/prompts/",
                 site_url=site_url,
                 cachebust=cachebust,
+                active_page="about",
             ),
         )
         for p in prompt_files:
@@ -10226,6 +10423,7 @@ def main() -> int:
                     canonical=site_url + rel_url,
                     site_url=site_url,
                     cachebust=cachebust,
+                    active_page="about",
                 ),
             )
         if changelog_path.exists():
@@ -10239,6 +10437,7 @@ def main() -> int:
                     canonical=site_url + "about/prompts/changelog/",
                     site_url=site_url,
                     cachebust=cachebust,
+                    active_page="about",
                 ),
             )
 
@@ -10260,7 +10459,8 @@ def main() -> int:
     emit_html(
         "trends/",
         render_trends_page(
-            entries, site_url=site_url, cachebust=cachebust,
+            entries, entities=entities_list, ref_ts=ref,
+            site_url=site_url, cachebust=cachebust,
             prefix="../", canonical=site_url + "trends/",
         ),
         lastmod=ref.strftime("%Y-%m-%d"),

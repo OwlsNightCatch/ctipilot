@@ -291,16 +291,6 @@ img, svg { max-width: 100%; height: auto; }
 .ghlink .mono { color: var(--text-soft); }
 
 .more-wrap { position: relative; }
-.morebtn {
-  display: inline-flex; align-items: center; gap: 6px;
-  height: 36px; padding: 0 13px; border-radius: 9px;
-  border: 1px solid transparent; background: transparent;
-  color: var(--text-soft); font-weight: 600; font-size: 13px; cursor: pointer;
-  user-select: none; transition: all 0.12s linear;
-}
-.morebtn:hover, .morebtn.open { background: var(--bg-elev); border-color: var(--border); color: var(--text); }
-.morebtn svg { transition: transform 0.15s ease; opacity: 0.75; }
-.morebtn.open svg { transform: rotate(180deg); }
 
 .menu {
   position: absolute; right: 0; top: 46px;
@@ -903,7 +893,7 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 .f-h a:hover { color: var(--accent-soft); text-decoration: none; }
 .f-p, .finding > p { font-size: 16px; line-height: 1.72; color: var(--text-soft); margin: 0; max-width: 640px; }
 .finding > p + p, .f-p + .f-p { margin-top: 13px; }
-.finding .cve { font-family: var(--mono); font-size: 14px; color: var(--info); }
+.finding .cve:not(.b) { font-family: var(--mono); font-size: 14px; color: var(--info); }
 .finding .att { font-family: var(--mono); font-size: 13.5px; color: var(--text-muted); }
 
 /* ── brief header (daily / weekly date nav) ─────────────────────── */
@@ -942,7 +932,7 @@ a.b:hover { border-color: var(--accent-soft); color: var(--text); text-decoratio
 .emeta .share:hover { border-color: var(--accent); color: var(--accent-soft); }
 .ebody { margin-top: 26px; }
 .ebody > p { font-size: 17px; line-height: 1.78; color: var(--text-soft); margin: 0 0 16px; max-width: 640px; }
-.ebody .cve { font-family: var(--mono); font-size: 15px; color: var(--info); }
+.ebody .cve:not(.b) { font-family: var(--mono); font-size: 15px; color: var(--info); }
 .ebody .att { font-family: var(--mono); font-size: 14px; color: var(--text-muted); }
 .esec { margin-top: 30px; }
 .esec h4 { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 0 12px; border: 0; }
@@ -2403,6 +2393,25 @@ button.chip-section[aria-pressed="false"] {
 .trends-card__sub {
   font-size: 0.78rem;
   color: var(--muted);
+}
+.trends-card__sub b { color: var(--text); font-feature-settings: var(--num-feat); }
+.trends-card__sub--foot { margin-top: 0.3rem; font-size: 0.72rem; }
+
+/* ---------- /trends/ analysis panels ---------- */
+.trend-panels {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem; margin: 0.6rem 0 0.4rem;
+}
+@media (max-width: 980px) { .trend-panels { grid-template-columns: 1fr; } }
+.trend-up { color: var(--ok); font-size: 0.8rem; white-space: nowrap; }
+.trend-down { color: var(--crit); font-size: 0.8rem; white-space: nowrap; }
+.trend-panels td.mono, .trend-panels th.num { white-space: nowrap; }
+.trend-matrix td.num, .trend-matrix th.num {
+  text-align: right; font-family: var(--mono); font-size: 0.8rem;
+}
+.trend-matrix .trend-partial {
+  color: var(--text-muted); font-style: italic;
+  border-left: 1px dashed var(--border);
 }
 
 
@@ -4430,11 +4439,7 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
   overflow-x: auto; scrollbar-width: none;
 }
 .subnav-in::-webkit-scrollbar { display: none; }
-.subnav-l {
-  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-muted); margin-right: 10px; white-space: nowrap;
-}
+.subnav-spring { flex: 1 1 auto; min-width: 12px; }
 .subnav-link {
   font-size: 12.5px; font-weight: 600; color: var(--text-soft);
   text-decoration: none; padding: 3px 10px; border-radius: 7px;
@@ -4447,6 +4452,8 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
   background: rgba(var(--accent-rgb), 0.08);
   border-color: rgba(var(--accent-rgb), 0.22);
 }
+.subnav-link--aux { color: var(--text-muted); font-weight: 500; }
+.subnav-link--aux:hover { color: var(--text); }
 
 /* ---------- home: split hero + platform status panel ---------- */
 .hero--split {
@@ -4512,20 +4519,53 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
 }
 .pivot-p { font-size: 12px; line-height: 1.5; color: var(--text-muted); }
 
-/* ---------- live window pulse row ---------- */
-.pulserow {
-  display: flex; flex-wrap: wrap; gap: 8px;
-  margin: -8px 0 20px;
-}
-.pulse {
-  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+/* ---------- live window pulse panel ----------
+   A stat card in its own right, visually distinct from the rangebar
+   date-filter control above it: what landed inside the active window,
+   by severity, exploitation status, and entry category. Every number
+   is re-rendered client-side by brief.js when the window changes. */
+.pulsepanel {
   background: var(--bg-elev); border: 1px solid var(--border-soft);
-  border-radius: 999px; padding: 4px 12px;
+  border-radius: 13px; padding: 16px 18px 13px;
+  margin: 14px 0 26px;
 }
-.pulse b { color: var(--text); font-weight: 700; font-feature-settings: var(--num-feat); }
-.pulse--crit b { color: var(--crit); }
-.pulse--high b { color: var(--warn); }
-.pulse--total { margin-left: auto; }
+.pulsegrid {
+  display: grid; gap: 10px 22px;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+}
+.pulse-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pulse-t b {
+  font-family: var(--sans); font-size: 26px; font-weight: 700;
+  line-height: 1.1; color: var(--text);
+  font-feature-settings: var(--num-feat); letter-spacing: -0.02em;
+}
+.pulse-t span {
+  font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-muted);
+  line-height: 1.45;
+}
+.pulse-t--crit b { color: var(--crit); }
+.pulse-t--high b { color: var(--warn); }
+.pulse-t--exp b { color: var(--crit); }
+.pulse-t--upd b { color: var(--text-soft); }
+.pulse-t--zero b { color: var(--text-muted); }
+.pulsekinds {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin-top: 13px; padding-top: 11px;
+  border-top: 1px solid var(--border-soft);
+}
+.pulsekinds-l {
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+}
+.pulsekinds-chips { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.pulse-kind {
+  font-family: var(--mono); font-size: 11px; color: var(--text-muted);
+  background: var(--bg-elev-2); border: 1px solid var(--border-soft);
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.pulse-kind b { color: var(--text); font-weight: 700; font-feature-settings: var(--num-feat); }
+.pulse-kind--empty { font-style: italic; }
 
 /* ---------- day / weekly section jump chips ---------- */
 .secnav {
@@ -4633,6 +4673,30 @@ details.verif[open] > summary .verif-chev { transform: rotate(180deg); }
   min-width: 3px;
 }
 .rankbar__value { font-size: 11.5px; color: var(--text-muted); min-width: 2.5ch; text-align: right; }
+.rankbar--zero .rankbar__label, .rankbar--zero .rankbar__value { opacity: 0.45; }
+table.data td.num { font-feature-settings: var(--num-feat); }
+.rankbar--zero .rankbar__fill { min-width: 0; }
+
+/* ---------- /sources/ overview panels ---------- */
+.src-panels {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem; margin: 0.6rem 0 0.4rem;
+}
+@media (max-width: 980px) { .src-panels { grid-template-columns: 1fr; } }
+.chart-note { font-size: 0.76rem; margin: 0 0 0.35rem; }
+.rel-letter {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 5px;
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  border: 1px solid var(--border); margin-right: 7px; flex: none;
+}
+.rel-letter--high { color: var(--ok);   border-color: rgba(86, 211, 100, 0.4); }
+.rel-letter--med  { color: var(--warn); border-color: rgba(255, 216, 102, 0.4); }
+.rel-letter--low  { color: var(--crit); border-color: rgba(232, 93, 117, 0.4); }
+.rel-word { font-size: 12px; color: var(--text-soft); }
+.rel-key__count { font-size: 0.72rem; color: var(--accent-soft); margin-left: 0.4rem; white-space: nowrap; }
+.rel-key__count--zero { color: var(--text-muted); font-style: italic; }
+.rel-key__item--zero { opacity: 0.6; }
 
 /* ---------- chip / list-page polish ---------- */
 .chip-n { font-family: var(--mono); font-size: 10px; opacity: 0.75; }
