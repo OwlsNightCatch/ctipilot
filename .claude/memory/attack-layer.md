@@ -20,3 +20,7 @@ type: project
 - Composition rule inversion (v3.17): the old "ATT&CK woven, never listed" rule pushed ids INTO prose while `techniques[]` stayed empty on 888/888 entries — the machine layer never materialized. New rule: metadata complete + prose readable without T-numbers (inline only where essential). The check_run WARN ("prose ids missing from techniques[]") is the enforcement nudge for new runs.
 - Prose T-id extraction filters through the pin (`m in attack_techniques`) to kill T-shaped false positives; frontmatter ids are kept even when unknown to the pin (may be newer than the pin — WARN, never silently dropped).
 - Site build degrades gracefully without the dataset (features render to nothing); the mechanical gate is what makes the pin mandatory. `site/test_build.py` § "ATT&CK mapping" self-skips when the pin is absent.
+
+## v3.2 addition (2026-07-10)
+
+- **Entry detail pages** now render a first-class `ATT&CK mapping` section (`render_entry_attack_section`, anchor `#attack-mapping`): techniques grouped by tactic, resolved names + pinned definitions, overlap-matrix + MITRE links; the pivot-rail chips show `Tid + name` and jump to it. Derived via `entry_technique_ids` (frontmatter ∪ prose), so legacy prose-only entries get the section too.

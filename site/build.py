@@ -1658,18 +1658,70 @@ def render_cve_pill(cve: str, *, prefix: str = "") -> str:
     return " ".join(pieces) if pieces else f'<span class="pill pill-cve">{_escape(cve)}</span>'
 
 
-# NATO Admiralty code meanings — the site is a renderer, and the letters/
-# numbers are fixed doctrine (source-reliability legend text is also read
-# live from sources.json `reliability_codes`; these back the badge tooltips
-# and the credibility axis, which lives in the org profile the site doesn't load).
-ADMIRALTY_RELIABILITY_MEANING = {
+# Intelligence-classification scheme (NATO Admiralty by default). The
+# scheme — its display name and the reliability/credibility code
+# definitions — lives in config/org-profile.yaml `classification:` (the same
+# block compose_prompts.py renders into the pipeline prompts), so the badges
+# and legends the site renders can never drift from what the agents were
+# instructed to assess. The NATO doctrine text below is only the fallback
+# for a fork that ships without a profile.
+_NATO_RELIABILITY_FALLBACK = {
     "A": "Completely reliable", "B": "Usually reliable", "C": "Fairly reliable",
     "D": "Not usually reliable", "E": "Unreliable", "F": "Reliability cannot be judged",
 }
-ADMIRALTY_CREDIBILITY_MEANING = {
+_NATO_CREDIBILITY_FALLBACK = {
     "1": "Confirmed by other sources", "2": "Probably true", "3": "Possibly true",
     "4": "Doubtful", "5": "Improbable", "6": "Truth cannot be judged",
 }
+ORG_PROFILE_PATH = ROOT / "config" / "org-profile.yaml"
+
+
+def _load_classification_scheme() -> tuple[str, dict[str, str], dict[str, str]]:
+    """(scheme name, {reliability code: definition}, {credibility code:
+    definition}) from the org profile; NATO doctrine fallback when the
+    profile is absent or unparseable (the site must always build)."""
+    try:
+        doc = content_model.parse_yaml_subset(
+            ORG_PROFILE_PATH.read_text(encoding="utf-8")
+        )
+        ic = ((doc or {}).get("classification") or {}).get("intel_classification") or {}
+        rel = {
+            str(r["code"]): str(r.get("definition") or "")
+            for r in ic.get("reliability") or [] if isinstance(r, dict) and r.get("code")
+        }
+        cred = {
+            str(c["code"]): str(c.get("definition") or "")
+            for c in ic.get("credibility") or [] if isinstance(c, dict) and c.get("code")
+        }
+        if rel and cred:
+            return (str(ic.get("name") or "NATO Admiralty code"), rel, cred)
+    except (OSError, content_model.YamlSubsetError, KeyError, TypeError):
+        pass
+    return ("NATO Admiralty code", dict(_NATO_RELIABILITY_FALLBACK),
+            dict(_NATO_CREDIBILITY_FALLBACK))
+
+
+(CLASSIFICATION_SCHEME_NAME,
+ ADMIRALTY_RELIABILITY_MEANING,
+ ADMIRALTY_CREDIBILITY_MEANING) = _load_classification_scheme()
+
+# Badge kicker — the short mark in front of the code (`NATO B2`). The first
+# word of the configured scheme name, so a renamed scheme relabels the badge.
+CLASSIFICATION_KICKER = (CLASSIFICATION_SCHEME_NAME.split() or ["NATO"])[0].upper()
+
+
+def _meaning_short(definition: str) -> str:
+    """`Completely reliable — authoritative primary…` → `Completely reliable`
+    (the org profile's definitions carry a long rationale after an em-dash;
+    badges and legends want the short label, tooltips the full text)."""
+    return definition.split("—", 1)[0].strip() or definition.strip()
+
+
+def _chrome_text(s: str) -> str:
+    """Sanitize a config-sourced string for UI chrome (tooltips, labels):
+    the site's chrome never uses em dashes (operator standing instruction;
+    `.claude/memory/ui-writing-style.md`) — swap them for the separator glyph."""
+    return " · ".join(part.strip() for part in s.split("—")) if "—" in s else s
 
 
 def reliability_tier_class(letter: str) -> str:
@@ -1687,29 +1739,71 @@ def reliability_tier_class(letter: str) -> str:
 def reliability_badge(r: str) -> str:
     """Source-reliability badge for the NATO Admiralty letters A–F."""
     meaning = ADMIRALTY_RELIABILITY_MEANING.get((r or "").strip().upper())
-    title = f' title="Admiralty source reliability · {_escape(meaning)}"' if meaning else ""
+    title = (
+        f' title="Admiralty source reliability · {_escape(_meaning_short(meaning))}"'
+        if meaning else ""
+    )
     return f'<span class="badge {reliability_tier_class(r)}"{title}>{_escape(r or "")}</span>'
 
 
-def render_classification_badge(cls: dict[str, Any]) -> str:
-    """NATO Admiralty intelligence classification pill for an entry · the
-    source-reliability letter + information-credibility number rendered
-    together (e.g. `B2`), tinted by the reliability tier so confidence reads
-    at a glance, with the full doctrine meaning on hover."""
+def classification_meta(cls: Any) -> dict[str, str] | None:
+    """Render-ready view of an entry's `classification` block: the collapsed
+    code (`B2`), the reliability tier (`high|med|low`), the per-axis codes
+    with their configured short labels + full definitions, and the composed
+    tooltip. None when the entry carries no classification (triage-kind
+    entries use `org_triage`; pre-scheme entries carry nothing)."""
     if not isinstance(cls, dict):
-        return ""
+        return None
     rel = str(cls.get("reliability") or "").strip().upper()
     cred = str(cls.get("credibility") if cls.get("credibility") is not None else "").strip()
-    code = f"{rel}{cred}"
-    if not code:
+    if not rel and not cred:
+        return None
+    rel_def = ADMIRALTY_RELIABILITY_MEANING.get(rel, "")
+    cred_def = ADMIRALTY_CREDIBILITY_MEANING.get(cred, "")
+    rel_short = _meaning_short(rel_def) if rel_def else "source reliability"
+    cred_short = _meaning_short(cred_def) if cred_def else "information credibility"
+    title = (
+        f"{CLASSIFICATION_SCHEME_NAME} · source reliability {rel}: {rel_short} · "
+        f"information credibility {cred}: {cred_short}"
+    )
+    return {
+        "code": f"{rel}{cred}",
+        "tier": reliability_tier_class(rel).removeprefix("badge--"),
+        "reliability": rel,
+        "reliability_short": rel_short,
+        "reliability_def": rel_def,
+        "credibility": cred,
+        "credibility_short": cred_short,
+        "credibility_def": cred_def,
+        "title": title,
+    }
+
+
+def render_classification_badge(cls: Any) -> str:
+    """The intelligence-classification badge (`NATO B2`) rendered in every
+    finding's `.badges` strip — live timeline, day/weekly cards and the
+    entry detail all carry it, tinted by the source-reliability tier so how
+    much to trust the item reads at a glance; the configured scheme's full
+    meaning sits on hover."""
+    meta = classification_meta(cls)
+    if not meta:
         return ""
-    rel_m = ADMIRALTY_RELIABILITY_MEANING.get(rel, "source reliability")
-    cred_m = ADMIRALTY_CREDIBILITY_MEANING.get(cred, "information credibility")
-    title = (f"NATO Admiralty classification · source reliability {rel} ({rel_m}); "
-             f"information credibility {cred} ({cred_m})")
     return (
-        f'<span class="badge badge--classification {reliability_tier_class(rel)}" '
-        f'title="{_escape(title)}"><span class="badge__k">NATO</span>{_escape(code)}</span>'
+        f'<span class="b cls cls-{meta["tier"]}" title="{_escape(meta["title"])}">'
+        f'<span class="k">{_escape(CLASSIFICATION_KICKER)}</span>{_escape(meta["code"])}</span>'
+    )
+
+
+def render_org_triage_badge(ot: Any) -> str:
+    """Triage-kind entries (vulnerabilities by default) are rated with the
+    org's triage scheme instead of the Admiralty code — surface that rating
+    with the same badge weight, rationale on hover."""
+    if not isinstance(ot, dict) or not ot.get("category"):
+        return ""
+    title = str(ot.get("rationale") or "Organization triage rating")
+    return (
+        f'<span class="b tri" title="{_escape(title)}">'
+        f'<span class="k">TRIAGE</span>{_escape(str(ot["category"]))}</span>'
     )
 
 
@@ -2016,64 +2110,6 @@ def _fmt_discovered(ts_str: str | None) -> str:
     return "discovered " + ts.strftime("%Y-%m-%d %H:%M") + " UTC"
 
 
-def render_priority_badge(priority: str) -> str:
-    cls = {
-        "critical": "badge--crit",
-        "high": "badge--low",       # red-ish accent · leads the window
-        "notable": "badge--med",
-        "routine": "badge--high",
-    }.get(priority or "", "badge--med")
-    return f'<span class="badge {cls}">{_escape(priority or "notable")}</span>'
-
-
-def render_entry_badges(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """Top status strip on an entry card: priority, kind, discovered-at
-    timestamp, and the status badges (verification single-source*, deep
-    dive, watchlist, org-triage). The taxonomy pills (tags / regions /
-    CVEs) render BELOW the entry body via `render_entry_taxonomy` · the
-    v2 footer placement, restored."""
-    parts: list[str] = [render_priority_badge(entry.get("priority") or "notable")]
-    parts.append(f'<span class="badge">{_escape(entry.get("kind") or "")}</span>')
-    disc = _fmt_discovered(entry.get("discovered_at"))
-    if disc:
-        parts.append(f'<span class="entry-discovered mono muted">{_escape(disc)}</span>')
-    ver = entry.get("verification")
-    if ver in VERIFICATION_BADGE_LABEL:
-        parts.append(
-            f'<span class="badge badge--low" title="{_escape(entry.get("sourcing_note") or "verification status")}">'
-            f'{_escape(VERIFICATION_BADGE_LABEL[ver])}</span>'
-        )
-    _cls_badge = render_classification_badge(entry.get("classification"))
-    if _cls_badge:
-        parts.append(_cls_badge)
-    if entry.get("deep_dive"):
-        parts.append('<span class="badge badge--accent">deep dive</span>')
-    if entry.get("watchlist_hit"):
-        parts.append('<span class="badge badge--accent" title="Included via an org-profile watchlist match">watchlist</span>')
-    ot = entry.get("org_triage")
-    if isinstance(ot, dict) and ot.get("category"):
-        parts.append(
-            f'<span class="badge badge--cve" title="{_escape(str(ot.get("rationale") or "org triage"))}">'
-            f'{_escape(str(ot["category"]))}</span>'
-        )
-    return '<div class="entry-badges">' + " ".join(parts) + "</div>"
-
-
-def render_entry_taxonomy(entry: dict[str, Any], *, prefix: str = "") -> str:
-    """Below-the-entry metadata pills · tag / region / CVE · the v2
-    footer, restored under each item. Empty entries render nothing."""
-    pills: list[str] = []
-    for t in entry.get("tags") or []:
-        pills.append(render_tag_pill(t, prefix=prefix))
-    for r in entry.get("regions") or []:
-        pills.append(render_region_pill(r, prefix=prefix))
-    for cid in entry_cve_ids(entry):
-        pills.append(render_cve_pill(cid, prefix=prefix))
-    if not pills:
-        return ""
-    return '<div class="entry-taxonomy">' + " ".join(pills) + "</div>"
-
-
 def _entry_source_by_publisher(entry: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """publisher (lower-cased) -> its source dict, from the entry's own
     source list · lets an evidence quote link back to the article it was
@@ -2366,8 +2402,11 @@ def render_prov_row(entry: dict[str, Any], *, prefix: str = "",
 
 def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False) -> str:
     """The `.badges` strip at the top of a finding / timeline row / entry
-    detail. Priority, CVE (linked to its page), exploited, update; `full`
-    adds kind / deep-dive / watchlist / classification (entry detail)."""
+    detail. Priority, CVE (linked to its page), exploited, update, and the
+    reliability rating — the Admiralty classification (or the org-triage
+    rating on triage-kind entries) rides on EVERY card so how much to trust
+    an item reads at a glance in the live, daily and weekly views alike;
+    `full` adds kind / deep-dive / watchlist (entry detail)."""
     parts = [f'<span class="b {_pri_badge_class(entry)}">{_escape(_pri_label(entry))}</span>']
     cves = entry_cve_ids(entry)
     if cves:
@@ -2379,6 +2418,12 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
         parts.append('<span class="b exp">exploited</span>')
     if entry.get("update_of"):
         parts.append('<span class="b upd">update</span>')
+    cls = render_classification_badge(entry.get("classification"))
+    if cls:
+        parts.append(cls)
+    tri = render_org_triage_badge(entry.get("org_triage"))
+    if tri:
+        parts.append(tri)
     if full:
         if entry.get("kind"):
             parts.append(f'<span class="b">{_escape(str(entry["kind"]))}</span>')
@@ -2386,9 +2431,6 @@ def render_badges(entry: dict[str, Any], *, prefix: str = "", full: bool = False
             parts.append('<span class="b">deep dive</span>')
         if entry.get("watchlist_hit"):
             parts.append('<span class="b" title="Included via an org-profile watchlist match">watchlist</span>')
-        cls = render_classification_badge(entry.get("classification"))
-        if cls:
-            parts.append(cls)
     return '<div class="badges">' + "".join(parts) + "</div>"
 
 
@@ -3660,31 +3702,108 @@ def render_detail_sources(entry: dict[str, Any]) -> str:
     return '<div class="esec"><h4>Sources</h4><div class="srclist">' + "".join(rows) + "</div></div>"
 
 
-def render_detail_scope(entry: dict[str, Any], *, registry: dict[str, dict[str, Any]],
-                        prefix: str) -> str:
-    """Entities + tags/regions/CVEs as `.echip`s on an entry-detail page."""
-    chips: list[str] = []
-    for key in entry.get("entities") or []:
-        key = content_model.resolve_entity_key(registry, str(key))
-        ent = registry.get(key) or {}
-        chips.append(
-            f'<a class="echip" href="{prefix}entities/{urllib.parse.quote(str(key), safe="")}/">'
-            f'{_escape(ent.get("name") or str(key))}</a>'
-        )
-    for cid in entry_cve_ids(entry):
-        chips.append(f'<a class="echip" href="{prefix}cves/{_escape(cid)}/">{_escape(cid)}</a>')
-    for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES):
-        chips.append(
-            f'<a class="echip echip--atk" href="{prefix}attack/#{_escape(tid)}" '
-            f'title="{_escape(attack_technique_label(tid))}">{_escape(tid)}</a>'
-        )
-    for t in entry.get("tags") or []:
-        chips.append(f'<a class="echip" href="{prefix}tags/{_escape(t)}/">{_escape(t)}</a>')
-    for r in entry.get("regions") or []:
-        chips.append(f'<a class="echip" href="{prefix}regions/{_escape(r)}/">{_escape(r)}</a>')
-    if not chips:
+def render_entry_attack_section(entry: dict[str, Any], *, prefix: str) -> str:
+    """The entry-detail `ATT&CK mapping` section: every technique the entry
+    maps (frontmatter `techniques[]` ∪ prose T-ids, revoked ids resolved
+    forward), grouped by tactic in official matrix order. Each row carries
+    the resolved technique name, the pinned release's definition, the MITRE
+    page, and a jump into the site's own overlap matrix — the mapped
+    behavior readable in one place, not a bare id list."""
+    tids = content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
+    if not tids or not ATTACK_TECHNIQUES:
         return ""
-    return '<div class="esec"><h4>Entities &amp; scope</h4><div class="echips">' + "".join(chips) + "</div></div>"
+    rows_by_group: list[str] = []
+    for tac, group_tids in group_techniques_by_tactic(tids):
+        rows: list[str] = []
+        for tid in group_tids:
+            rec = ATTACK_TECHNIQUES.get(tid) or {}
+            definition = str(rec.get("definition") or "").strip()
+            def_html = f"<p>{_escape(definition)}</p>" if definition else ""
+            links: list[str] = [
+                f'<a href="{prefix}attack/#{_escape(tid)}">overlap matrix</a>'
+            ]
+            if rec.get("url"):
+                links.append(
+                    f'<a href="{_escape(_safe_url(str(rec.get("url") or "")))}" '
+                    'target="_blank" rel="noopener noreferrer">ATT&CK page ↗</a>'
+                )
+            rows.append(
+                '<details class="atk-row">'
+                f'<summary><span class="mono atk-id">{_escape(tid)}</span>'
+                f'<span class="atk-name">{_escape(attack_technique_label(tid))}</span>'
+                f"{_attack_lifecycle_badge(tid)}</summary>"
+                f'<div class="atk-def">{def_html}'
+                f'<p class="muted">{" · ".join(links)}</p>'
+                "</div></details>"
+            )
+        rows_by_group.append(
+            '<div class="atk-group">'
+            f'<h5 class="atk-tactic">{_escape(str(tac.get("name") or ""))}'
+            + (f' <span class="mono muted">{_escape(str(tac.get("id") or ""))}</span>'
+               if tac.get("id") else "")
+            + f"</h5>{''.join(rows)}</div>"
+        )
+    intro = (
+        f'<p class="muted atk-intro">{len(tids)} technique{"s" if len(tids) != 1 else ""} '
+        f"mapped from the cited reporting · MITRE ATT&CK v{_escape(ATTACK_VERSION)}</p>"
+    )
+    return (
+        '<div class="esec esec--attack" id="attack-mapping"><h4>ATT&amp;CK mapping</h4>'
+        + intro + "".join(rows_by_group) + "</div>"
+    )
+
+
+def render_detail_assessment(entry: dict[str, Any]) -> str:
+    """The `Assessment` group at the top of the entry-detail pivot rail —
+    the one-glance answer to "how reliable is this?": the Admiralty
+    classification spelled out per axis (or the org-triage rating on
+    triage-kind entries), then the verification state and the analyst
+    confidence. The sourcing note, when present, explains the rating."""
+    rows: list[str] = []
+    meta = classification_meta(entry.get("classification"))
+    if meta:
+        rows.append(
+            '<div class="assess-code">'
+            + render_classification_badge(entry.get("classification"))
+            + f'<span class="assess-scheme">{_escape(CLASSIFICATION_SCHEME_NAME)}</span></div>'
+        )
+        rows.append(
+            f'<div class="assess-row" title="{_escape(_chrome_text(meta["reliability_def"]))}">'
+            f'<span class="assess-l">Source reliability</span>'
+            f'<span class="assess-v"><b class="mono">{_escape(meta["reliability"])}</b> '
+            f'{_escape(meta["reliability_short"])}</span></div>'
+        )
+        rows.append(
+            f'<div class="assess-row" title="{_escape(_chrome_text(meta["credibility_def"]))}">'
+            f'<span class="assess-l">Info credibility</span>'
+            f'<span class="assess-v"><b class="mono">{_escape(meta["credibility"])}</b> '
+            f'{_escape(meta["credibility_short"])}</span></div>'
+        )
+    ot = entry.get("org_triage")
+    if isinstance(ot, dict) and ot.get("category"):
+        rows.append(
+            '<div class="assess-code">' + render_org_triage_badge(ot) + "</div>"
+        )
+        if ot.get("rationale"):
+            rows.append(
+                f'<div class="assess-row"><span class="assess-l">Rationale</span>'
+                f'<span class="assess-v">{_escape(str(ot["rationale"]))}</span></div>'
+            )
+    v_class, v_label = _verif_meta(entry)
+    rows.append(
+        f'<div class="assess-row"><span class="assess-l">Verification</span>'
+        f'<span class="assess-v {v_class}">{_escape(v_label)}</span></div>'
+    )
+    conf = str(entry.get("confidence") or "").strip()
+    if conf:
+        rows.append(
+            f'<div class="assess-row"><span class="assess-l">Confidence</span>'
+            f'<span class="assess-v">{_escape(conf)}</span></div>'
+        )
+    note = str(entry.get("sourcing_note") or "").strip()
+    if note:
+        rows.append(f'<p class="assess-note">{_escape(note)}</p>')
+    return "".join(rows)
 
 
 def render_entry_page(
@@ -3877,10 +3996,13 @@ def render_entry_page(
     )
     rail_entities = _rail_group("Entities", f'<div class="echips">{ent_chips}</div>' if ent_chips else "")
 
+    # Effective ids (frontmatter ∪ prose, revoked → forward) with resolved
+    # names — a T-number alone is not a visible mapping. Chips jump to the
+    # in-body mapping section; the MITRE links live there.
     tech_chips = "".join(
-        f'<a class="echip echip--tech" href="https://attack.mitre.org/techniques/{_escape(str(t).replace(".", "/"))}/"'
-        f' target="_blank" rel="noopener noreferrer">{_escape(str(t))}</a>'
-        for t in entry.get("techniques") or []
+        f'<a class="echip echip--tech" href="#attack-mapping">'
+        f'<span class="mono">{_escape(tid)}</span> {_escape(attack_technique_label(tid))}</a>'
+        for tid in content_model.entry_technique_ids(entry, ATTACK_TECHNIQUES)
     )
     rail_tech = _rail_group("ATT&CK techniques", f'<div class="echips">{tech_chips}</div>' if tech_chips else "")
 
@@ -3902,18 +4024,19 @@ def render_entry_page(
     )
     rail_tax = _rail_group("Tags · regions · sectors", f'<div class="echips">{tax_chips}</div>' if tax_chips else "")
 
+    # The assessment group always renders (every entry has a verification
+    # state), so the rail — and the two-column detail layout — is universal.
+    rail_assess = _rail_group("Assessment", render_detail_assessment(entry))
+
     rail = (
-        '<aside class="erail" aria-label="Pivots">'
-        + rail_cves + rail_entities + rail_tech + rail_products + rail_tax
+        '<aside class="erail" aria-label="Assessment &amp; pivots">'
+        + rail_assess + rail_cves + rail_entities + rail_tech + rail_products + rail_tax
         + "</aside>"
     )
-    has_rail = bool(cve_rows or ent_chips or tech_chips or prod_chips or tax_chips)
-    if not has_rail:
-        rail = ""
 
     body = f"""
 <a class="back" href="{_escape(parent_url)}">← Back to {_escape(parent_label)}</a>
-<div class="entry-layout{' entry-layout--rail' if has_rail else ''}">
+<div class="entry-layout entry-layout--rail">
 <div class="entry-main">
 {render_badges(entry, prefix=prefix, full=True)}
 <h1 class="etitle">{_escape(entry.get("title") or entry["id"])}</h1>
@@ -3925,8 +4048,8 @@ def render_entry_page(
 {render_entry_evidence(entry)}
 </div>
 {actions_html}
+{render_entry_attack_section(entry, prefix=prefix)}
 {render_detail_sources(entry)}
-{render_detail_scope(entry, registry=registry, prefix=prefix) if not has_rail else ""}
 {chain_html}
 <div class="verif"><div class="vh">PROVENANCE</div><p>AI-generated · no human review · this permalink is the shareable record for the finding · verify operationally critical claims against the linked primary source.</p></div>
 </div>
@@ -3957,7 +4080,7 @@ def render_entry_page(
         site_url=site_url,
         cachebust=cachebust,
         home_relative_prefix=prefix,
-        body_class="reading entry-detail" if has_rail else "reading",
+        body_class="reading entry-detail",
         active_nav="daily" if is_op else "weekly",
         seo={
             "og_type": "article",
@@ -4021,6 +4144,8 @@ def render_embedded_entries_section(
             f'<span class="b {_pri_badge_class(e)}">{_escape(_pri_label(e))}</span>'
             + ('<span class="b exp">exploited</span>' if _entry_exploited(e) else "")
             + ('<span class="b upd">update</span>' if e.get("update_of") else "")
+            + render_classification_badge(e.get("classification"))
+            + render_org_triage_badge(e.get("org_triage"))
             + "</span>"
             f'<span class="mini-card__t">{_escape(e.get("title") or e["id"])}</span>'
             f'<span class="mini-card__s">{_inline_text((e.get("summary") or e.get("headline") or "").strip())}</span>'
@@ -4328,6 +4453,17 @@ def build_briefbook(
             "watchlist_hit": bool(e.get("watchlist_hit")),
             "verification": e.get("verification"),
             "classification": content_model.classification_code(e) or None,
+            # Server-rendered rating badges so the client timeline shows the
+            # exact same Admiralty / org-triage pill as the server markup
+            # (single badge implementation; brief.js only concatenates).
+            "classification_html": render_classification_badge(e.get("classification")) or None,
+            "org_triage": (
+                {"category": str(e["org_triage"].get("category") or ""),
+                 "rationale": str(e["org_triage"].get("rationale") or "")}
+                if isinstance(e.get("org_triage"), dict) and e["org_triage"].get("category")
+                else None
+            ),
+            "org_triage_html": render_org_triage_badge(e.get("org_triage")) or None,
             "immediate_action": ia_out,
             "html": html,
         })
@@ -4362,9 +4498,11 @@ ALERTS_COMMENT = (
     "`immediate_action` is non-null exactly when priority is critical. "
     "URLs are absolute. Schema: {id, url, priority, headline, summary, "
     "discovered_at, immediate_action:{title,action}|null, cve_ids[], "
-    "entities[], techniques[], tags[], sectors[], regions[]}. "
+    "entities[], techniques[], tags[], sectors[], regions[], "
+    "verification, classification|null, org_triage:{category,rationale}|null}. "
     "techniques[] carries the entry's MITRE ATT&CK ids (frontmatter + "
-    "prose-derived, revoked ids resolved forward). See docs/pipeline.md."
+    "prose-derived, revoked ids resolved forward); classification is the "
+    "collapsed Admiralty code (e.g. B2). See docs/pipeline.md."
 )
 
 
@@ -4401,6 +4539,14 @@ def build_alerts(
             "tags": list(e.get("tags") or []),
             "sectors": list(e.get("sectors") or []),
             "regions": list(e.get("regions") or []),
+            "verification": e.get("verification"),
+            "classification": content_model.classification_code(e) or None,
+            "org_triage": (
+                {"category": str(e["org_triage"].get("category") or ""),
+                 "rationale": str(e["org_triage"].get("rationale") or "")}
+                if isinstance(e.get("org_triage"), dict) and e["org_triage"].get("category")
+                else None
+            ),
         })
     return {
         "_comment": ALERTS_COMMENT,
@@ -4630,7 +4776,7 @@ def render_reliability_legend(reliability_codes: dict[str, Any] | None,
     order = list("ABCDEF") + [c for c in codes if c not in set("ABCDEF")]
     items = []
     for c in order:
-        definition = str(codes.get(c) or f"{ADMIRALTY_RELIABILITY_MEANING.get(c, c)}.")
+        definition = _chrome_text(str(codes.get(c) or f"{ADMIRALTY_RELIABILITY_MEANING.get(c, c)}."))
         tier = reliability_tier_class(c).replace("badge--", "")  # high | med | low
         n = counts.get(c, 0)
         zero_cls = " rel-key__item--zero" if not n else ""
@@ -4645,14 +4791,15 @@ def render_reliability_legend(reliability_codes: dict[str, Any] | None,
         )
     if not items:
         return ""
+    example_badge = render_classification_badge({"reliability": "B", "credibility": 2})
     return (
         '<details class="rel-key"><summary>Source reliability · '
         'NATO Admiralty scale (A–F)</summary>'
         '<p class="rel-key__intro muted">Each source is rated for reliability on the NATO '
         'Admiralty scale, weighting original / primary authorities over aggregators. Every '
         'intelligence entry additionally carries a two-part Admiralty classification '
-        '(reliability letter + credibility number, e.g. <span class="badge badge--classification '
-        'badge--high"><span class="badge__k">NATO</span>B2</span>).</p>'
+        f'(reliability letter + credibility number, e.g. {example_badge}): the same badge '
+        'is shown on every finding in the live, daily and weekly views.</p>'
         f'<ul class="rel-key__list">{"".join(items)}</ul></details>'
     )
 

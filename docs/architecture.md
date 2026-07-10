@@ -236,7 +236,12 @@ exempt from version bumps. In entry output the profile surfaces as
 structured frontmatter: `org_triage: {category, rationale}` when a triage
 scheme is configured, `classification: {reliability, credibility}` (the NATO
 Admiralty code) on every non-triage entry, `watchlist_hit: true` + the
-`watchlist` tag when a watchlist match drove inclusion.
+`watchlist` tag when a watchlist match drove inclusion. `site/build.py`
+reads the profile's `classification:` block directly at build time (NATO
+doctrine fallback when absent) so the rating badge on every finding card,
+its tooltip, the `/sources/` legend and the entry-detail assessment panel
+render the configured scheme's own name and definitions — the published
+badges can never drift from what the agents were instructed to assess.
 
 The same decoupling exists on the site side: `config/branding.yaml`
 (loaded by `site/branding_config.py` into `site/build.py`) owns the

@@ -525,7 +525,8 @@ for field in ("id", "url", "date", "discovered_at", "kind", "horizon", "priority
               "headline", "summary", "title", "tags", "regions", "sectors",
               "entities", "cve_ids", "cve_status", "update_of", "updated_by",
               "deep_dive", "actions", "watchlist_hit", "verification",
-              "immediate_action", "html"):
+              "techniques", "classification", "classification_html",
+              "org_triage", "org_triage_html", "immediate_action", "html"):
     assert_true(f"briefbook entry field `{field}`", field in be)
 assert_eq("briefbook cve_ids", be["cve_ids"], ["CVE-2026-34038"])
 assert_eq("briefbook cve_status union", be["cve_status"], ["exploited", "patch-available"])
@@ -868,10 +869,75 @@ assert_eq("classification_code B2",
           "B2")
 assert_eq("classification_code empty when absent",
           content_model.classification_code({}), "")
-_badges = build.render_entry_badges(
-    {"priority": "high", "kind": "incident", "discovered_at": "2026-07-05T00:00:00Z",
-     "classification": {"reliability": "B", "credibility": 2}})
-assert_true("entry badges carry the classification code", ">B2<" in _badges)
+# The scheme (name + code definitions) comes from config/org-profile.yaml —
+# the same block the pipeline prompts are composed from — with a NATO
+# doctrine fallback, so the badges can never drift from the assessed scheme.
+assert_true("classification scheme has a name", bool(build.CLASSIFICATION_SCHEME_NAME))
+assert_true("scheme kicker derived from the name",
+            build.CLASSIFICATION_KICKER == build.CLASSIFICATION_SCHEME_NAME.split()[0].upper())
+assert_true("reliability meanings loaded", "A" in build.ADMIRALTY_RELIABILITY_MEANING)
+assert_true("credibility meanings loaded", "2" in build.ADMIRALTY_CREDIBILITY_MEANING)
+assert_eq("meaning short-label strips the rationale",
+          build._meaning_short("Usually reliable — original research…"), "Usually reliable")
+_cm = build.classification_meta({"reliability": "B", "credibility": 2})
+assert_eq("classification_meta code", _cm["code"], "B2")
+assert_eq("classification_meta tier", _cm["tier"], "high")
+assert_true("classification_meta tooltip carries both axes",
+            "source reliability B" in _cm["title"] and "information credibility 2" in _cm["title"])
+assert_eq("classification_meta none when absent", build.classification_meta(None), None)
+
+# The classification badge rides on EVERY card (live / daily / weekly), not
+# just the entry detail — render_badges without full= must carry it.
+E_CLS = mk_entry("classified-incident", kind="incident",
+                 classification={"reliability": "B", "credibility": 2})
+_badges = build.render_badges(E_CLS, prefix="")
+assert_in("card badges carry the classification code", ">B2</span>", _badges)
+assert_in("classification badge tier-tinted", 'class="b cls cls-high"', _badges)
+assert_in("classification badge carries the scheme kicker",
+          f'<span class="k">{build.CLASSIFICATION_KICKER}</span>', _badges)
+assert_in("classification badge on the finding card",
+          'class="b cls cls-high"', render_entry_card(E_CLS, prefix=""))
+assert_in("classification badge on the live timeline row",
+          'class="b cls cls-high"', build.render_timeline_item(E_CLS, prefix=""))
+assert_not_in("no classification badge without a rating",
+              "b cls", build.render_badges(mk_entry("unrated"), prefix=""))
+
+# Triage-kind entries (vulnerabilities) surface the org-triage rating with
+# the same badge weight instead of the Admiralty code.
+E_TRI = mk_entry("triaged-vuln",
+                 org_triage={"category": "act-now", "rationale": "Exploited, exposed fleet."})
+_tri_badges = build.render_badges(E_TRI, prefix="")
+assert_in("org-triage badge on cards", ">act-now</span>", _tri_badges)
+assert_in("org-triage rationale on hover", 'title="Exploited, exposed fleet."', _tri_badges)
+
+# Entry-detail assessment block: both axes spelled out + verification +
+# confidence, so "how reliable is this?" reads without a legend.
+_assess = build.render_detail_assessment(E_CLS)
+assert_in("assessment names the scheme",
+          build.CLASSIFICATION_SCHEME_NAME.split()[0], _assess)
+assert_in("assessment spells out source reliability", "Source reliability", _assess)
+assert_in("assessment spells out info credibility", "Info credibility", _assess)
+assert_in("assessment carries verification", "Verification", _assess)
+assert_in("assessment carries confidence", "Confidence", _assess)
+_assess_tri = build.render_detail_assessment(E_TRI)
+assert_in("triage assessment carries the rating", "act-now", _assess_tri)
+assert_in("triage assessment carries the rationale", "Exploited, exposed fleet.", _assess_tri)
+
+# briefbook.json ships the server-rendered rating badges so brief.js renders
+# the identical pill client-side (single badge implementation, no drift).
+_book_cls = build_briefbook([E_CLS, E_TRI], [], ref_ts=REF_TS, prefix="../")
+_bb = {x["id"]: x for x in _book_cls["entries"]}
+assert_eq("briefbook classification code", _bb[E_CLS["id"]]["classification"], "B2")
+assert_in("briefbook classification_html is the badge",
+          'class="b cls cls-high"', _bb[E_CLS["id"]]["classification_html"])
+assert_eq("briefbook org_triage block",
+          _bb[E_TRI["id"]]["org_triage"],
+          {"category": "act-now", "rationale": "Exploited, exposed fleet."})
+assert_in("briefbook org_triage_html is the badge",
+          ">act-now</span>", _bb[E_TRI["id"]]["org_triage_html"])
+assert_eq("briefbook rating fields null when unrated",
+          (_bb[E_TRI["id"]]["classification"], _bb[E_CLS["id"]]["org_triage"]),
+          (None, None))
 
 # ---------------------------------------------------------------------
 # Ops dashboard — model self-identification canonicalisation
@@ -983,6 +1049,23 @@ if build.ATTACK_TECHNIQUES:
     assert_eq("payload tactic order matches the pin",
               [t["shortname"] for t in _payload["tactics"]],
               [t["shortname"] for t in build.ATTACK_TACTICS])
+    # Entry-detail ATT&CK mapping section: every mapped technique with its
+    # resolved name + definition, grouped by tactic — visible on the report
+    # itself, not just as a bare id list.
+    _e_atk = mk_entry("atk-mapped", kind="incident", techniques=["T1190"],
+                      body="Initial access via exploitation. Execution via T1059 scripts.")
+    _esec = build.render_entry_attack_section(_e_atk, prefix="../../")
+    assert_in("entry section anchors for the rail chips", 'id="attack-mapping"', _esec)
+    assert_in("entry section carries the technique id", ">T1190</span>", _esec)
+    assert_in("entry section resolves the technique name",
+              build.attack_technique_label("T1190"), _esec)
+    assert_in("entry section includes prose-derived ids", ">T1059</span>", _esec)
+    assert_in("entry section groups by tactic", 'class="atk-tactic"', _esec)
+    assert_in("entry section links the overlap matrix", "attack/#T1190", _esec)
+    assert_in("entry section links the MITRE page", "attack.mitre.org", _esec)
+    assert_in("entry section carries the pinned version", build.ATTACK_VERSION, _esec)
+    assert_eq("no techniques → no section",
+              build.render_entry_attack_section(mk_entry("no-atk"), prefix=""), "")
 else:
     print("  (skipped — attack/enterprise-attack.json not present)")
 
