@@ -4,6 +4,25 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.20 — 2026-07-11 (typed entity relationships replace the untyped `related` list; interactive threat graph at /graph/)
+
+### Why
+
+The registry's `related: []` was a flat, untyped, direction-less key list: it could say two entities were connected but never *how* ("Akira → Groupe 3R" could be attribution, tooling, or coincidence) or *on what evidence*. That capped what the entity pages, dedup reasoning, and any downstream consumer could do with the graph — and it left analysts with no way to visually investigate how an actor, a campaign, a CVE and a piece of tooling hang together. Operator-directed rework: make every relationship typed, directed, and evidence-bound, and give analysts a graph exploration surface over the whole store.
+
+### What changed
+
+- **`relations[]` replaces `related` (no backward compatibility).** Each edge: `{to, type, source, note}` — a controlled 10-type vocabulary (`attributed-to`, `uses`, `exploits`, `part-of`, `variant-of`, `successor-of`, `collaborates-with`, `overlaps-with`, `documented-in`, `related-to`) with per-type direction and endpoint constraints (`content_model.RELATION_TYPES`); `source` is the entry id whose cited reporting establishes the edge (REQUIRED — every curated edge is evidence-bound and dated by its entry). Normative: `docs/pipeline.md` § Relationships. All legacy edges migrated to typed, sourced form (81 → 71 canonical-direction edges after mirror-dedup; 2 dropped for having no in-store evidence); `validate_registry` FAILs a leftover `related`, an unknown type, an endpoint-constraint violation, a tombstone endpoint, a duplicate edge, or an unresolvable source entry; `check_run.py` WARNs when a source entry neither keys nor names an endpoint.
+- **Derived edges are first-class and explicit.** Entry co-occurrence, entity↔CVE, and entity↔technique connections are computed at render time, always carrying their supporting entries — the two edge classes (curated = source-stated; derived = store-implied) are kept visually and semantically distinct everywhere.
+- **`/graph/` + `data/graph.json`** — self-contained (strict-CSP, no external libraries) interactive canvas over all canonical entities, connected CVEs and mapped ATT&CK techniques (toggleable layer): type filters, search, hover neighbourhoods, node detail panel with per-edge provenance, drag/pin, neighbourhood isolation, shortest-path tracing between two pinned nodes, `?focus=`/`?to=` deep links, server-rendered most-connected directory as the no-JS fallback. Entity pages render typed relations grouped by reading ("uses", "attributed activity", …) with source-entry links, plus the derived co-occurring list, and link into the graph.
+- **Phase 4 § Entity linking / Phase 5 § registry** rewritten for the typed model: relate only what a source states, `overlaps-with` never upgraded beyond the claim, duplicate edges never added, evolved relationships update `type`/`source`/`note` in place, tombstoning moves edges to the canonical record.
+- **Phrase-attachment fixes in `site/build.py`:** word-boundary confirmation (a substring match like "Lace" inside "necklace" no longer attaches an entity and pollutes co-occurrence) and case-sensitive short-acronym matching ("INC", "CRA", "888" are no longer unmatchable in prose).
+- **Research-agent contract: `relation_suggestions`** (`.claude/agents/cti-research.md` § Entity registry + findings-YAML skeleton) — when a fetched source explicitly states a connection between tracked entities, the sub-agent returns `{subject, object, basis}` with the claiming source; the main agent maps suggestions onto the typed vocabulary and owns the registry write. Suggest-only, never inferred — the same claim-attribution discipline as everywhere else.
+
+### What stays
+
+Everything else: the entity registry as the single entity namespace, permanent keys, alias discipline, `merged_into` tombstone semantics, CVEs never registry entities, the ATT&CK derivation layer, and every other phase contract. The relationship rework changes how connections are *recorded and explored*, not what gets covered or how it is verified. Entries untouched (immutability intact); the weekly file needs no edit — it inherits Phase 4/5 via its runtime read of `cti-run.md`, and its banner moves to v3.20 in lockstep.
+
 ## 3.19 — 2026-07-11 (action items get a do-now bar: fewer, concrete, finding-derived; empty is the normal case — quality over quantity across the whole brief)
 
 ### Why

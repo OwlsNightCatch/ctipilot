@@ -375,9 +375,12 @@ entities:
       One-to-three sentence definition: who/what this is, first public
       reporting, why the pipeline tracks it.
     first_seen: "2026-05-12"   # first pipeline coverage (entry date)
-    related: []                # optional: curated registry keys this entity is
-                               # linked to (actor↔campaign↔tool↔incident edges);
-                               # rendered symmetrically on entity pages
+    relations:                 # optional: typed, directed, evidence-bound
+                               # graph edges (§ Relationships below)
+      - to: "tool:shinysp1d3r-ransomware"
+        type: uses             # controlled vocabulary — direction matters
+        source: "2026-06-14/some-entry-slug"   # entry that establishes the edge
+        note: "one-clause basis (optional)"
     # merged_into: <key>       # optional: tombstone — this record was merged
                                # into the named canonical entity (see below)
 ```
@@ -415,16 +418,120 @@ resolve through tombstones via `content_model.resolve_entity_key`: the site
 attaches a tombstone's entries to the canonical entity's page (the
 tombstone keeps a stub permalink pointing forward), and cross-run dedup
 treats old and canonical keys as the same entity. New entries MUST
-reference the canonical key, never a tombstone. An entity referenced by
-zero entries (orphan) that turns out to be a duplicate may simply be
-deleted — fold its names into the canonical record's `aliases` first.
+reference the canonical key, never a tombstone. When tombstoning, move the
+losing record's `relations[]` onto the canonical record (dropping edges the
+canonical record already carries, and retargeting registry-wide edges that
+pointed at the loser); a tombstone carries no relations, and no relation
+targets one. An entity referenced by zero entries (orphan) that turns out
+to be a duplicate may simply be deleted — fold its names into the
+canonical record's `aliases` and migrate its edges first.
 
-**Curated relations — `related`.** Optional list of registry keys linking
-the entity into the threat graph (an actor to its campaigns, tooling and
-attributed incidents; a campaign to its malware). Targets must exist and
-must be canonical (not tombstones). Edges are rendered symmetrically and
-survive independently of entry co-occurrence; keep them evidence-bound —
-only link entities whose connection cited reporting supports.
+## Relationships — the threat graph
+
+Entity relationships are **typed, directed, evidence-bound edges** carried
+in each registry record's optional `relations[]` list. They replaced the
+untyped `related: []` key list (removed without backward compatibility);
+`validate_registry` FAILs a record that still carries `related`. The graph
+has exactly two edge classes, and every edge's derivation is explicit:
+
+1. **Curated edges** (`relations[]` in the registry) — a connection a
+   cited source *states*: "this actor operates this campaign", "this
+   campaign deploys this malware". Each edge names its relationship type
+   from the controlled vocabulary below and cites the entry whose sourced
+   reporting establishes it.
+2. **Derived edges** (computed by `site/build.py`, never stored) — a
+   connection the entry store *implies*: two entities referenced by the
+   same entry (co-occurrence, weight = shared-entry count), an entity and
+   a CVE carried by the same entry, an entity and an ATT&CK technique via
+   the derived TTP profiles (§ The ATT&CK layer). Derived edges are
+   recomputed on every build and always carry their supporting entry ids —
+   they can never drift from the store.
+
+Curated edges assert *what happened*; derived edges surface *what the
+store connects*. Renderers keep the two visually distinct (curated edges
+carry their type label; derived edges are labelled by their derivation),
+and an analyst reading any edge can always answer "why does this edge
+exist?" — either "entry X's cited source states it" or "these N entries
+reference both".
+
+### Curated edge shape
+
+```yaml
+relations:
+  - to: "actor:shinyhunters"      # target registry key — MUST exist, MUST be
+                                  # canonical (never a tombstone)
+    type: attributed-to           # controlled vocabulary below
+    source: "2026-06-14/<slug>"   # entry id whose cited reporting establishes
+                                  # the connection — MUST resolve; the entry's
+                                  # date doubles as the edge's first-seen date
+    note: "GTIG attributes the wave to ShinyHunters"   # optional one-clause basis
+```
+
+### Relationship vocabulary (controlled — `content_model.RELATION_TYPES`)
+
+Directed types read **subject → object**: the edge lives on the *subject's*
+record and `to` names the object. Renderers show every edge from both ends
+(the object's page shows the inverse reading). Symmetric types are stored
+**once**, on either endpoint — declaring the mirror edge too is a FAIL
+(duplicate), and renderers/exports surface it on both endpoints anyway.
+
+| `type` | subject types → object types | reading (inverse reading) |
+|---|---|---|
+| `attributed-to` | campaign, incident, malware, tool → actor | subject is attributed to actor (actor's attributed activity) |
+| `uses` | actor, campaign, incident → malware, tool | subject deploys/operates the malware or tool (used by) |
+| `exploits` | actor, campaign, incident → trend | subject exploits the named vulnerability/technique wave (exploited by). CVE-level exploitation is a **derived** edge — the entry that carries both the entity and the `cves[]` record is the evidence; CVEs are not registry entities. |
+| `part-of` | incident, campaign → campaign, trend | subject belongs to the larger campaign/wave (includes) |
+| `variant-of` | malware, tool → malware, tool | subject is a variant/fork/derivative of the object (has variant) |
+| `successor-of` | actor→actor, campaign→campaign, malware→malware, tool→tool, policy→policy | subject continues/rebrands/replaces the object (succeeded by) |
+| `collaborates-with` | actor ↔ actor (symmetric) | the two actors cooperate (shared operations, hand-offs) |
+| `overlaps-with` | actor, campaign, malware, tool ↔ same set (symmetric) | cited reporting states technical/infrastructure/TTP overlap **short of** attribution or identity |
+| `documented-in` | any non-report type → report | the report profiles the subject (documents) |
+| `related-to` | any ↔ any (symmetric) | fallback — a source-stated connection none of the typed relations fits; prefer a typed relation whenever one applies |
+
+Semantics guardrails: `attributed-to` is for *responsibility claims* (keep
+the claim attributed in the `note`/entry, per the sourcing rules);
+`overlaps-with` is the honest middle ground when researchers report shared
+infrastructure or tooling without asserting identity — never upgrade an
+overlap claim to `attributed-to` or `successor-of` beyond what the cited
+source states. A suspected *same entity* is not a relation at all — that is
+an alias or a `merged_into` tombstone.
+
+### Hard rules (enforced by `content_model.validate_registry`, surfaced as FAILs by `check_run.py`)
+
+- `type` must be in the vocabulary; subject/object entity types must
+  satisfy the type's endpoint constraints.
+- `to` must exist, must be canonical (not a tombstone), and must not be
+  the record itself. Tombstones must not carry `relations[]` — move edges
+  to the canonical record when merging.
+- `source` is REQUIRED and must be a valid entry id (`YYYY-MM-DD/<slug>`)
+  that resolves to an existing entry — this is what makes every curated
+  edge evidence-bound and dates it. `check_run.py` additionally WARNs when
+  the source entry references neither endpoint in its `entities[]` (the
+  edge is still legal — the establishing entry may predate one endpoint's
+  registration — but the mismatch is worth an operator's glance).
+- No duplicate edges: the same `(subject, type, object)` — for symmetric
+  types the same unordered pair — appears once in the whole registry. New
+  corroboration of an existing edge does not add a second edge; material
+  evolution of the *relationship* (e.g. overlap upgraded to attribution by
+  new reporting) **replaces** the edge's `type`/`source`/`note` in place —
+  relations are registry state, not immutable entries.
+- Relations are otherwise append-only in spirit: edges are added when a
+  cited source establishes a connection, in the same commit as the entry
+  that carries the evidence.
+
+### The graph rendering — `/graph/` + `data/graph.json`
+
+The full graph ships as `data/graph.json` and renders at `/graph/` as an
+interactive, self-contained (strict-CSP, no external libraries) canvas
+exploration surface for analysts: force-directed layout over all canonical
+entities and covered CVEs (ATT&CK techniques as a toggleable layer),
+type-filtering, search, hover-highlighting of neighborhoods, a node detail
+panel (summary, typed relations, supporting entries), and shortest-path
+tracing between two pinned nodes — "how is this actor connected to this
+CVE?" answered visually, every hop backed by an edge whose provenance is
+one click away. Entity pages render the same edges in prose form: typed
+curated relations grouped by relationship reading, each with its source
+entry link, followed by the derived co-occurrence list.
 
 ## The ATT&CK layer — pinned dataset + derived TTP mappings
 
@@ -613,6 +720,10 @@ is built entirely from `runs/**` frontmatter.
 - **`/attack/` + `data/attack.json` + `entities/<key>/attack-layer.json`**
   — the ATT&CK coverage matrix, its client-side overlap dataset, and the
   per-entity Navigator layer exports (§ The ATT&CK layer).
+- **`/graph/` + `data/graph.json`** — the interactive threat graph over
+  all canonical entities, covered CVEs and (toggleable) ATT&CK techniques:
+  curated typed edges + derived co-occurrence/CVE/technique edges, each
+  with its provenance (§ Relationships).
 - **Entity pages, trends, ops, search** — all derived from entries +
   registry + runs, same URLs as v2. Entity/CVE pages carry the derived
   ATT&CK section; covered techniques are searchable.
@@ -624,7 +735,9 @@ before the verifier spawns and before every commit. Validates: frontmatter
 parses and every field is schema- and taxonomy-valid; folder-date/
 discovered_at/slug consistency; source-URL block-list + liveness (honouring
 `work/<run-id>/url-liveness.tsv`); evidence shape/presence; priority ⇔
-immediate_action consistency; entity refs resolve; registry integrity;
+immediate_action consistency; entity refs resolve; registry integrity
+(incl. typed-relation vocabulary, endpoint constraints, canonical targets
+and source-entry resolution — § Relationships);
 update_of resolution; cross-run dedup; rolling-24 h composition (reported,
 not gated on a count); CVE sync with `cves_seen.json`; IOC scan; run-record completeness (incl. verification
 counters and prompt-version cross-check against `prompts/CHANGELOG.md`);

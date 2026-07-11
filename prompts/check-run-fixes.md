@@ -13,6 +13,7 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `entry-schema` (verification) | `multi-source` with <2 sources | Set the correct `verification` value (`single-source*`) + `sourcing_note`, or add the genuinely independent second source you already fetched |
 | `entry-schema` (entities) | Entity key not in `entities/registry.yaml` | Register the entity (key, type, name, aliases, sourced summary, first_seen) — or fix the key to the existing entity (check aliases first) |
 | `registry` | Alias/name collision or malformed registry record | Merge the duplicate into the existing key (aliases append-only); never mint a second key for a known entity |
+| `registry` (relations) | Unknown relation type, endpoint-type violation, tombstone endpoint, duplicate edge, missing/unresolvable `source` entry, or a leftover untyped `related` key | Follow `docs/pipeline.md` § Relationships: vocabulary type + canonical direction, `to` = canonical key, symmetric edges stored once, `source` = the entry id whose cited reporting establishes the edge; migrate any `related` list to typed `relations[]` |
 | `dedup` | Non-update entry shares CVEs with the last 14 days | Either convert to an update note (`update_of: <prior entry id>`, body = delta only) or delete the entry (it's covered) |
 | `update-target` | `update_of` unresolved, later-dated, or cyclic | Point at the real prior entry id (`YYYY-MM-DD/slug`); chains must run backwards in time |
 | `cve-sync` | CVE in an entry but not in `state/cves_seen.json` | Append the CVE record to `cves_seen.json` (id, title, primary_source_url, first_seen, last_seen) |
@@ -35,6 +36,9 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `test-build` | `site/test_build.py` failing | Read the test output tail — usually an entry that breaks a renderer assumption; fix the entry, not the test |
 
 WARNs worth acting on before Phase 5.7:
+`registry-relations` (the edge's `source` entry neither keys nor names an
+endpoint — confirm the entry actually establishes the connection, or point
+`source` at the one that does),
 `single-source-flag` (fix the `verification` value), `evidence-binding`
 (attribute quotes to a listed publisher), `aggregator-only` (find the
 primary), `attack-mapping` on `research`/`annual-report` (map the described

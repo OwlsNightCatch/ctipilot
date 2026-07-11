@@ -417,11 +417,16 @@ def check_taxonomy_loadable() -> dict[str, set]:
     return tax
 
 
-def check_registry(registry_path: Path) -> dict[str, dict]:
+def check_registry(registry_path: Path, entries: list | None = None) -> dict[str, dict]:
     """entities/registry.yaml loads and passes content_model.validate_registry
     (key format, type/prefix match, name+summary present, alias-collision
-    detection). Every error is a FAIL — a broken registry breaks every
-    entry's `entities:` resolution and the entity pages downstream."""
+    detection, typed-relation vocabulary/endpoint constraints/canonical
+    targets/duplicate edges/source-entry resolution). Every error is a FAIL —
+    a broken registry breaks every entry's `entities:` resolution, the entity
+    pages, and the threat graph downstream. Advisory layer: a curated edge
+    whose source entry references neither endpoint in its `entities[]` WARNs
+    (legal — the establishing entry may predate an endpoint's registration —
+    but worth an operator's glance)."""
     rel = Path(*registry_path.parts[-2:])  # entities/registry.yaml, root-agnostic
     if not registry_path.exists():
         # A store with zero entities is legitimate on day one; entries that
@@ -433,12 +438,68 @@ def check_registry(registry_path: Path) -> dict[str, dict]:
     except Exception as e:  # noqa: BLE001
         fail("registry", f"{rel} unparseable: {e}")
         return {}
-    errs = cm.validate_registry(registry)
+    entry_ids = {e["id"] for e in entries} if entries is not None else None
+    errs = cm.validate_registry(registry, entry_ids=entry_ids)
     if errs:
         for e in errs:
             fail("registry", e)
     else:
-        ok("registry", f"{len(registry)} entit{'y' if len(registry) == 1 else 'ies'}, keys/aliases consistent")
+        edges = cm.registry_relations(registry)
+        ok("registry", f"{len(registry)} entit{'y' if len(registry) == 1 else 'ies'}, "
+                       f"{len(edges)} curated relation(s), keys/aliases consistent")
+    if entries is not None:
+        by_id = {e["id"]: e for e in entries}
+
+        # Generic words that carry no identity in an entity name — a match on
+        # these alone never counts as a mention.
+        _generic = {"breach", "ransomware", "incident", "campaign", "attack",
+                    "data", "cloud", "leak", "site", "listing", "group",
+                    "wave", "the", "and", "confirms", "corporate", "false",
+                    "flag", "report", "analysis", "advisory", "disclosure"}
+
+        def _mentions(en: dict, key: str, keys: set) -> bool:
+            """Explicit entities[] key, or the entity's name/aliases appear in
+            the entry text — full-label match, or ≥ half of the name's
+            distinctive tokens (story-entities carry descriptive names that
+            rarely appear verbatim)."""
+            if key in keys:
+                return True
+            ent = registry.get(key) or {}
+            raw = (str(en.get("title") or "") + " " + str(en.get("headline") or "")
+                   + " " + str(en.get("body") or ""))
+            hay = raw.lower()
+            words = set(re.findall(r"[a-z0-9]+", hay))
+            for label in [ent.get("name") or ""] + list(ent.get("aliases") or []):
+                low = label.lower().strip()
+                if len(low) >= 4 and re.search(
+                        r"(?<![a-z0-9])" + re.escape(low) + r"(?![a-z0-9])", hay):
+                    return True
+                # short all-caps acronyms ("INC", "CRA") — case-sensitive
+                if 2 <= len(label.strip()) <= 3 and re.fullmatch(
+                        r"[A-Z0-9]+", label.strip()) and re.search(
+                        r"(?<![A-Za-z0-9])" + re.escape(label.strip())
+                        + r"(?![A-Za-z0-9])", raw):
+                    return True
+                # per-label distinctive-token coverage (≥ half)
+                tokens = {t for t in re.findall(r"[a-z0-9]+", low)
+                          if len(t) >= 4 and t not in _generic}
+                if tokens and len(tokens & words) * 2 >= len(tokens):
+                    return True
+            return False
+
+        for edge in cm.registry_relations(registry):
+            src = edge.get("source")
+            en = by_id.get(src) if isinstance(src, str) else None
+            if en is None:
+                continue  # missing/unresolvable source already FAILed above
+            keys = {cm.resolve_entity_key(registry, k) for k in en.get("entities") or []}
+            missing = [k for k in (edge["subject"], edge["object"])
+                       if not _mentions(en, k, keys)]
+            if missing:
+                warn("registry-relations",
+                     f"{edge['subject']} -[{edge['type']}]-> {edge['object']}: "
+                     f"source entry {src} neither keys nor names {', '.join(missing)} "
+                     "— confirm the entry actually establishes this edge")
     return registry
 
 
@@ -2370,15 +2431,17 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     print("\n== store: taxonomy ==")
     taxonomy = check_taxonomy_loadable()
 
-    print("\n== store: entity registry ==")
-    registry = check_registry(registry_path)
-
     print("\n== store: sources.json schema (shape + controlled-vocab) ==")
     check_sources_schema(sources_data)
 
     print("\n== store: content parse ==")
     entries, entry_errors = collect_entries_tolerant(entries_dir, content_root)
     runs, run_errors = collect_runs_tolerant(runs_dir, content_root)
+
+    # Registry after content parse: relation source-entry resolution needs
+    # the entry-id set.
+    print("\n== store: entity registry ==")
+    registry = check_registry(registry_path, entries)
     for err in entry_errors:
         fail("entry-parse", f"entries/{err}")
     for err in run_errors:

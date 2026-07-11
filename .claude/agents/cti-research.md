@@ -328,6 +328,7 @@ The spawn message also names `entities/registry.yaml` — the global registry of
 
 1. **Name known entities by registry key.** When your item involves an entity the registry knows — under ANY of its aliases — return the registry key in the item's `entity_keys` list (e.g. a "UNC6240" report is `actor:shinyhunters` if that alias is registered). This is what keeps one real-world thing from fragmenting into several tracked things.
 2. **Propose genuinely new entities** via a `new_entities` record (suggested key per the `<type>:<kebab-slug>` grammar, type, name, aliases the sources use, and a 1–2-sentence sourced definition). The main agent owns the registry write — never edit the registry yourself.
+3. **Flag source-stated relationships** via a `relation_suggestions` record when a fetched source explicitly states a connection between two tracked (or newly-proposed) entities — attribution ("X attributes the campaign to Y"), tooling ("the group deploys Z"), overlap ("infrastructure overlap with W"), succession/rebrand, or a report profiling an entity. Quote-anchor the claim (the `basis` clause) and name the claiming source. Suggest only what the source states — never infer a connection yourself; the main agent maps suggestions onto the typed vocabulary (`docs/pipeline.md` § Relationships) and owns the registry write.
 
 ## Organization watchlist duties
 
@@ -524,6 +525,13 @@ items:
     new_entities:
       - { key: "actor:uat-8616", type: actor, name: "UAT-8616", aliases: [],
           summary: "Cisco Talos cluster designation for the actor exploiting CVE-2026-20182 (Talos, 2026-05-14)." }
+    # ONLY when a fetched source explicitly states a connection between two
+    # tracked/proposed entities (omit otherwise). `basis` = the source's own
+    # claim in one clause + who claims it; the main agent maps this onto the
+    # typed relation vocabulary and owns the registry write.
+    relation_suggestions:
+      - { subject: "actor:uat-8616", object: "tool:examplekit",
+          basis: "Talos: the cluster deploys ExampleKit for persistence (Talos, 2026-05-14)" }
     verification: MULTI-SOURCE
     confidence: HIGH
     novelty: new             # new | update-of:<entry-id> | duplicate

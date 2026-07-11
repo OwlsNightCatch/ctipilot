@@ -45,6 +45,7 @@ from build import (  # noqa: E402
     build_alerts,
     build_briefbook,
     build_entities,
+    build_graph_payload,
     build_items_feed,
     build_sector_feeds,
     build_update_chains,
@@ -326,6 +327,7 @@ E_UPD = mk_entry(
     "coolify-rce-update", kind="vulnerability", priority="notable",
     ts="2026-07-03T08:00:00Z",
     update_of="2026-07-03/coolify-rce",
+    entities=["tool:foxkit"],
     body="**UPDATE (originally covered 2026-07-03):** A public PoC has now surfaced.",
     cves=[{"id": "CVE-2026-34038", "cvss": "9.9", "epss": None, "type": "rce",
            "vector": "zero-click", "auth": "post-auth",
@@ -589,6 +591,16 @@ REGISTRY = {
         "key": "actor:testfox", "type": "actor", "name": "TestFox",
         "aliases": ["FOXCAT-9"], "nexus": None,
         "summary": "Fixture actor for tests.", "first_seen": "2026-06-01",
+        "relations": [
+            {"to": "tool:foxkit", "type": "uses",
+             "source": None,  # patched below to a real fixture entry id
+             "note": "fixture edge"},
+        ],
+    },
+    "tool:foxkit": {
+        "key": "tool:foxkit", "type": "tool", "name": "FoxKit",
+        "aliases": [], "nexus": None,
+        "summary": "Fixture tool for tests.", "first_seen": "2026-06-01",
     },
 }
 CVES_SEEN = {"cves": [
@@ -601,6 +613,7 @@ SOURCES_RAW = {"sources": [
      "reliability": "A", "status": "active"},
 ]}
 day_pages = set(days)
+REGISTRY["actor:testfox"]["relations"][0]["source"] = E_HIGH["id"]
 ents, matched = build_entities(REGISTRY, ALL_ENTRIES, CVES_SEEN, SOURCES_RAW, day_pages)
 by_key = {e["key"]: e for e in ents}
 fox = by_key["actor:testfox"]
@@ -617,9 +630,32 @@ assert_eq("historical cve keeps its dates",
 assert_true("citations resolve to curated source ids",
             any(c.get("source_id") == "example-psirt"
                 for c in by_key["CVE-2026-34038"]["citations"]))
-compute_related_entities(ents, matched)
+co = compute_related_entities(ents, matched)
 assert_true("co-occurrence links actor to nothing (no shared entries)",
             fox["related_entities"] == [] or isinstance(fox["related_entities"], list))
+foxkit = by_key["tool:foxkit"]
+fox_rel = [r for r in fox["relation_rows"] if r["key"] == "tool:foxkit"]
+kit_rel = [r for r in foxkit["relation_rows"] if r["key"] == "actor:testfox"]
+assert_true("typed relation renders on the subject", fox_rel and fox_rel[0]["label"] == "uses")
+assert_true("typed relation renders inversely on the object",
+            kit_rel and kit_rel[0]["label"] == "used by")
+assert_eq("relation row carries its source entry", fox_rel[0]["source"], E_HIGH["id"])
+
+graph = build_graph_payload(ents, matched, co, generated_at="2026-07-03T00:00:00Z")
+g_nodes = {n["id"]: n for n in graph["nodes"]}
+assert_true("graph carries entity nodes", "actor:testfox" in g_nodes and "tool:foxkit" in g_nodes)
+rel_edges = [e for e in graph["edges"] if e["kind"] == "relation"]
+assert_true("graph carries the curated typed edge",
+            any(e["source"] == "actor:testfox" and e["target"] == "tool:foxkit"
+                and e["type"] == "uses" and e["entry"] == E_HIGH["id"] for e in rel_edges))
+cve_edges = [e for e in graph["edges"] if e["kind"] == "cve"]
+assert_true("graph derives entity-CVE edges from shared entries",
+            any(e["target"] == "CVE-2026-34038" for e in cve_edges))
+assert_true("connected CVE becomes a graph node", "CVE-2026-34038" in g_nodes)
+assert_true("unconnected historical CVE stays out of the graph",
+            "CVE-2025-0001" not in g_nodes)
+assert_true("relation vocabulary ships in the payload",
+            graph["relation_types"].get("uses", {}).get("inverse") == "used by")
 
 src = annotate_sources(SOURCES_RAW, ALL_ENTRIES)["sources"][0]
 assert_true("source appearances carry dates", "2026-07-03" in src["appearances"])

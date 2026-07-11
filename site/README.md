@@ -91,7 +91,9 @@ _site/
 │                                         #   12-section weekly structure (§ 0 derived)
 ├── entries/YYYY-MM-DD/<slug>/index.html  # per-entry permalink: badge strip, evidence, sources
 │                                         #   with roles, update chain, entity links, run link
-├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs)
+├── entities/{index.html,<key>/…}         # unified entity pages (registry + CVEs) — typed
+│                                         #   relationships + derived co-occurrence sections
+├── graph/index.html                      # interactive threat graph (canvas, assets/js/graph.js)
 ├── cves/ · topics/                       # type-filtered views + legacy redirect stubs
 ├── sources/{index.html,<id>/…}           # source list + detail (entry-based citations)
 ├── tags/<tag>/ · regions/<region>/       # per-tag / per-region entry indexes
@@ -109,6 +111,9 @@ _site/
     │                                     #   HTML cards — the /live/ client data
     ├── alerts.json                       # last 7 days of critical/high entries with
     │                                     #   immediate_action metadata — the notification-hook surface
+    ├── graph.json                        # the threat graph: entity/CVE/technique nodes +
+    │                                     #   curated typed edges (with source entries) +
+    │                                     #   derived co-occurrence/CVE/technique edges
     ├── search.json · site.json · build_manifest.json
 ```
 
@@ -157,7 +162,8 @@ scraping and no state-file joining:
 | Join | Source |
 |---|---|
 | Entry → sections | `kind` (+ `update_of` → Updates, `deep_dive` → Deep Dive, `weekly_section` for strategic entries) via `content_model.KIND_DAILY_SECTION` / `KIND_WEEKLY_SECTION` |
-| Entity → entries | explicit `entities:` registry keys, plus name/alias phrase matching against titles/bodies |
+| Entity → entries | explicit `entities:` registry keys, plus word-boundary name/alias phrase matching against titles/bodies (short all-caps acronyms match case-sensitively) |
+| Entity ↔ entity | curated typed `relations[]` (registry; each edge cites its establishing entry) + derived same-entry co-occurrence — rendered on entity pages and `/graph/` |
 | CVE → entries | `cves[].id` frontmatter records (+ `state/cves_seen.json` for historical context) |
 | Source → entries | longest-prefix URL match between `sources.json#url` and `sources[]` records |
 | Tag / Region | `tags:` / `regions:` frontmatter (taxonomy-validated) |

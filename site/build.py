@@ -1210,6 +1210,7 @@ def _subnav_html(pfx: str, active_page: str) -> str:
     "trends" / "ops" / "feeds" / "about" / "")."""
     items = [
         ("entities", "entities/", "Entities"),
+        ("graph", "graph/", "Graph"),
         ("cves", "cves/", "CVEs"),
         ("attack", "attack/", "ATT&amp;CK"),
         ("sources", "sources/", "Sources"),
@@ -1251,6 +1252,7 @@ def _more_menu_links(pfx: str, *, drawer: bool = False) -> str:
     # Daily / Weekly views themselves (each page links "All … briefs").
     rows = [
         (f"{pfx}entities/", "Entities", "actors · malware"),
+        (f"{pfx}graph/", "Graph", "threat graph"),
         (f"{pfx}cves/", "CVEs", "tracked"),
         (f"{pfx}attack/", "ATT&CK", "matrix"),
         (f"{pfx}sources/", "Sources", "curated"),
@@ -8559,16 +8561,53 @@ def annotate_sources(sources_raw: dict[str, Any],
     return {**sources_raw, "sources": enriched}
 
 
-def _registry_phrases(ent: dict[str, Any]) -> list[str]:
-    """Case-folded match phrases for a registry entity: name + aliases
-    (min length 4 to avoid noise matches)."""
-    phrases: list[str] = []
+def _registry_phrases(ent: dict[str, Any]) -> tuple[list[str], list[str]]:
+    """Match phrases for a registry entity → `(folded, acronyms)`.
+
+    `folded` — case-folded name + aliases, min length 4. Callers must
+    confirm a substring hit at a word boundary (a raw `in` match lets
+    "Lace" attach to "necklace" and pollute co-occurrence).
+    `acronyms` — short all-caps/digit labels (2–3 chars, e.g. "INC",
+    "CRA", "888") matched case-sensitively at word boundaries, so
+    short-named entities are not silently unmatchable in prose."""
+    folded: list[str] = []
+    acronyms: list[str] = []
     for label in [ent.get("name")] + list(ent.get("aliases") or []):
-        if isinstance(label, str):
-            p = label.strip().lower()
-            if len(p) >= 4 and p not in phrases:
-                phrases.append(p)
-    return phrases
+        if not isinstance(label, str):
+            continue
+        raw = label.strip()
+        p = raw.lower()
+        if len(p) >= 4 and p not in folded:
+            folded.append(p)
+        elif 2 <= len(raw) <= 3 and re.fullmatch(r"[A-Z0-9]+", raw) and raw not in acronyms:
+            acronyms.append(raw)
+    return folded, acronyms
+
+
+_WORD_BOUNDARY_CACHE: dict[tuple[str, bool], "re.Pattern[str]"] = {}
+
+
+def _phrase_hits(haystack_folded: str, haystack_raw: str,
+                 folded: list[str], acronyms: list[str]) -> bool:
+    """Word-boundary phrase match: substring prefilter (cheap), then a
+    boundary-anchored regex confirm (correct)."""
+    for p in folded:
+        if p in haystack_folded:
+            pat = _WORD_BOUNDARY_CACHE.get((p, False))
+            if pat is None:
+                pat = re.compile(r"(?<![a-z0-9])" + re.escape(p) + r"(?![a-z0-9])")
+                _WORD_BOUNDARY_CACHE[(p, False)] = pat
+            if pat.search(haystack_folded):
+                return True
+    for a in acronyms:
+        if a in haystack_raw:
+            pat = _WORD_BOUNDARY_CACHE.get((a, True))
+            if pat is None:
+                pat = re.compile(r"(?<![A-Za-z0-9])" + re.escape(a) + r"(?![A-Za-z0-9])")
+                _WORD_BOUNDARY_CACHE[(a, True)] = pat
+            if pat.search(haystack_raw):
+                return True
+    return False
 
 
 def _entry_appearance(entry: dict[str, Any]) -> dict[str, Any]:
@@ -8617,16 +8656,18 @@ def build_entities(
     for key, ent in registry.items():
         if ent.get("merged_into"):
             continue
-        specs.append((key, _registry_phrases(ent)))
+        folded, acronyms = _registry_phrases(ent)
+        specs.append((key, folded, acronyms))
     for e in entries:
         explicit = set(
             content_model.resolve_entity_key(registry, str(k))
             for k in (e.get("entities") or [])
         )
-        haystack = ((e.get("title") or "") + "\n" + (e.get("headline") or "")
-                    + "\n" + (e.get("body") or "")).lower()
-        for key, phrases in specs:
-            if key in explicit or any(p in haystack for p in phrases):
+        haystack_raw = ((e.get("title") or "") + "\n" + (e.get("headline") or "")
+                        + "\n" + (e.get("body") or ""))
+        haystack = haystack_raw.lower()
+        for key, folded, acronyms in specs:
+            if key in explicit or _phrase_hits(haystack, haystack_raw, folded, acronyms):
                 matched[key].append(e)
 
     # --- CVE entities ---------------------------------------------------
@@ -8711,7 +8752,7 @@ def build_entities(
             "aliases": list(ent.get("aliases") or []),
             "nexus": ent.get("nexus"),
             "merged_into": ent.get("merged_into") or "",
-            "curated_related": list(ent.get("related") or []),
+            "relations": [dict(r) for r in (ent.get("relations") or []) if isinstance(r, dict)],
             **rec,
         })
 
@@ -8753,9 +8794,20 @@ def build_entities(
 def compute_related_entities(
     entities: list[dict[str, Any]],
     entries_by_entity_key: dict[str, list[dict[str, Any]]],
-) -> None:
-    """Co-occurrence: two entities are related when they appear in the
-    same entry; score = count of distinct shared entries, top 8."""
+) -> dict[str, dict[str, int]]:
+    """Fill each entity's two relationship surfaces (docs/pipeline.md
+    § Relationships) and return the co-occurrence index `{a: {b: count}}`:
+
+    - `relation_rows` — the CURATED typed edges (registry `relations[]`),
+      seen from this entity's side: outgoing edges under the type's
+      forward reading, incoming edges under its inverse reading,
+      symmetric edges on both endpoints. Every row carries the relation
+      type, reading label, note, and the establishing source entry.
+    - `related_entities` — the DERIVED co-occurrence list: two entities
+      referenced by the same entry; score = count of distinct shared
+      entries, top 8. Curated neighbours are marked (`curated: True`) so
+      the renderer can dedupe, but they no longer masquerade as
+      co-occurrence rows — the typed edge is its own surface."""
     entry_to_keys: dict[str, set[str]] = defaultdict(set)
     for k, ents in entries_by_entity_key.items():
         for e in ents:
@@ -8768,10 +8820,51 @@ def compute_related_entities(
             for b in klist[i + 1:]:
                 co[a][b] += 1
                 co[b][a] += 1
+
+    # --- curated typed edges, rendered from both endpoints --------------
+    for ent in entities:
+        ent.setdefault("relation_rows", [])
+    for ent in entities:
+        for rel in ent.get("relations") or []:
+            rtype = str(rel.get("type") or "")
+            spec = content_model.RELATION_TYPES.get(rtype)
+            other = by_key.get(str(rel.get("to") or ""))
+            if spec is None or other is None:
+                continue  # validate_registry rejects these; render defensively
+
+            def _row(target: dict[str, Any], label: str, direction: str) -> dict[str, Any]:
+                return {
+                    "key": target["key"],
+                    "type": target.get("type") or "",
+                    "title": target.get("title") or target["key"],
+                    "rel_type": rtype,
+                    "label": label,
+                    "direction": direction,
+                    "source": rel.get("source"),
+                    "note": rel.get("note"),
+                    "count": co.get(ent["key"], {}).get(target["key"], 0),
+                }
+
+            if spec["symmetric"]:
+                ent["relation_rows"].append(_row(other, spec["label"], "sym"))
+                other["relation_rows"].append(_row(ent, spec["label"], "sym"))
+            else:
+                ent["relation_rows"].append(_row(other, spec["label"], "out"))
+                other["relation_rows"].append(_row(ent, spec["inverse"], "in"))
+    label_order = [s["label"] for s in content_model.RELATION_TYPES.values()]
+    label_order += [s["inverse"] for s in content_model.RELATION_TYPES.values()]
+    for ent in entities:
+        ent["relation_rows"].sort(key=lambda r: (
+            label_order.index(r["label"]) if r["label"] in label_order else 99,
+            r["title"].lower(),
+        ))
+
+    # --- derived co-occurrence (top 8) -----------------------------------
     for k, related_counts in co.items():
         ent = by_key.get(k)
         if not ent:
             continue
+        curated_neighbours = {r["key"] for r in ent.get("relation_rows") or []}
         rows = []
         for other_key, n in related_counts.items():
             other = by_key.get(other_key)
@@ -8782,35 +8875,11 @@ def compute_related_entities(
                 "type": other.get("type") or "",
                 "title": other.get("title") or other_key,
                 "count": n,
+                "curated": other_key in curated_neighbours,
             })
         rows.sort(key=lambda r: (-r["count"], r["title"].lower()))
         ent["related_entities"] = rows[:8]
-
-    # Curated registry edges (`related:` in registry.yaml) are symmetric
-    # and survive regardless of co-occurrence or the top-8 cap.
-    curated_pairs: set[tuple[str, str]] = set()
-    for ent in entities:
-        for rk in ent.get("curated_related") or []:
-            if rk in by_key and rk != ent["key"]:
-                curated_pairs.add((ent["key"], rk))
-                curated_pairs.add((rk, ent["key"]))
-    for a, b in sorted(curated_pairs):
-        ent = by_key.get(a)
-        other = by_key.get(b)
-        if not ent or not other or ent.get("merged_into"):
-            continue
-        rows = ent.setdefault("related_entities", [])
-        hit = next((r for r in rows if r["key"] == b), None)
-        if hit:
-            hit["curated"] = True
-            continue
-        rows.append({
-            "key": b,
-            "type": other.get("type") or "",
-            "title": other.get("title") or b,
-            "count": co.get(a, {}).get(b, 0),
-            "curated": True,
-        })
+    return {a: dict(bs) for a, bs in co.items()}
 
 
 # === ENTITY DETAIL PAGE (v3) ===========================================
@@ -8975,7 +9044,50 @@ def render_entity_page(
             "</div>"
         )
 
-    # --- Related entities ------------------------------------------------
+    # --- Relationships (curated typed edges) ----------------------------
+    graph_url = f'{prefix}graph/?focus={urllib.parse.quote(entity["key"], safe="")}'
+    relation_rows = entity.get("relation_rows", []) or []
+    relations_block = ""
+    if relation_rows:
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for r in relation_rows:
+            grouped.setdefault(r["label"], []).append(r)
+        group_html: list[str] = []
+        for label, rows_g in grouped.items():
+            items: list[str] = []
+            for r in rows_g:
+                other_url = f'{prefix}entities/{urllib.parse.quote(r["key"], safe="")}/'
+                src = r.get("source") or ""
+                src_html = (
+                    f' · <a class="mono" href="{prefix}entries/{_escape(str(src))}/" '
+                    f'title="Entry whose cited reporting establishes this relationship">{_escape(str(src).split("/", 1)[0])}</a>'
+                    if src else ""
+                )
+                note_html = (
+                    f'<div class="muted" style="font-size:0.82rem">{_escape(str(r["note"]))}</div>'
+                    if r.get("note") else ""
+                )
+                items.append(
+                    "<li>"
+                    f'<span><a class="e-title" href="{other_url}">{_escape(r["title"])}</a>'
+                    f'<div class="e-meta"><span class="e-tag e-tag--{_escape((r.get("type") or "none"))}">{_escape(r.get("type") or "—")}</span>'
+                    f'<span class="mono">{_escape(r["key"])}</span>'
+                    f'<span class="muted">evidence{src_html}</span></div>'
+                    f"{note_html}</span></li>"
+                )
+            group_html.append(
+                f'<h3 class="rel-group-head">{_escape(label)}</h3>'
+                f'<ul class="entity-list">{"".join(items)}</ul>'
+            )
+        relations_block = (
+            '<h2 class="section-head" style="margin-top:1.5rem">Relationships '
+            f'<a class="mini-btn" href="{graph_url}" title="Open this entity in the interactive threat graph">explore in graph</a></h2>'
+            '<p class="muted" style="margin-top:0.2rem">Typed, source-stated connections from the '
+            "entity registry — each edge cites the entry whose reporting establishes it.</p>"
+            + "".join(group_html)
+        )
+
+    # --- Co-occurring entities (derived) ---------------------------------
     related = entity.get("related_entities", []) or []
     related_block = ""
     if related:
@@ -8983,7 +9095,7 @@ def render_entity_page(
         for r in related:
             other_url = f'{prefix}entities/{urllib.parse.quote(r["key"], safe="")}/'
             curated_badge = (
-                '<span class="badge badge--accent" title="Curated link from the entity registry">linked</span>'
+                '<span class="badge badge--accent" title="Also connected by a typed relationship above">linked</span>'
                 if r.get("curated") else ""
             )
             count_marker = (
@@ -9000,8 +9112,15 @@ def render_entity_page(
                 "</span></li>"
             )
         related_block = (
-            '<h2 class="section-head" style="margin-top:1.5rem">Related entities</h2>'
+            '<h2 class="section-head" style="margin-top:1.5rem">Co-occurring entities</h2>'
+            '<p class="muted" style="margin-top:0.2rem">Derived — referenced by the same entries; '
+            "×N counts the shared entries.</p>"
             f'<ul class="entity-list">{"".join(rows)}</ul>'
+        )
+    if not relations_block and not related_block:
+        related_block = (
+            '<p class="muted" style="margin-top:1.2rem">'
+            f'<a class="mini-btn" href="{graph_url}">explore in graph</a></p>'
         )
 
     # --- Cited sources ---------------------------------------------------
@@ -9163,6 +9282,7 @@ def render_entity_page(
 <h2 class="section-head" style="margin-top:1.5rem">Story timeline</h2>
 {timeline_block}
 
+{relations_block}
 {section_block}
 {donut_block}
 {related_block}
@@ -9704,6 +9824,275 @@ Navigator layers are downloadable from each entity page.</p></noscript>
     )
 
 
+# === THREAT GRAPH (/graph/ + data/graph.json) ==========================
+
+
+def build_graph_payload(
+    entities_list: list[dict[str, Any]],
+    entries_by_entity_key: dict[str, list[dict[str, Any]]],
+    co: dict[str, dict[str, int]],
+    *,
+    generated_at: str,
+) -> dict[str, Any]:
+    """data/graph.json — the full threat graph for /graph/ (assets/js/graph.js).
+
+    Nodes: every canonical registry entity, every CVE connected to at least
+    one entity, and every ATT&CK technique with at least one entity mapping
+    (techniques are a toggleable layer). Edges carry their derivation
+    (docs/pipeline.md § Relationships): `relation` = curated typed edge with
+    its source entry; `co-occurrence` / `cve` / `technique` = derived,
+    with the supporting entry ids/counts. The client renders curated and
+    derived edges distinctly and can answer "why does this edge exist?"
+    for every line it draws."""
+    by_key = {e["key"]: e for e in entities_list}
+    entity_nodes: dict[str, dict[str, Any]] = {}
+    for ent in entities_list:
+        if ent.get("type") == "cve" or ent.get("merged_into"):
+            continue
+        entity_nodes[ent["key"]] = {
+            "id": ent["key"],
+            "kind": "entity",
+            "type": ent.get("type") or "",
+            "label": ent.get("title") or ent["key"],
+            "nexus": ent.get("nexus") or None,
+            "entries": len(ent.get("appearances") or []),
+            "first": ent.get("first_covered") or "",
+            "last": ent.get("last_covered") or "",
+        }
+
+    edges: list[dict[str, Any]] = []
+    curated_pairs: set[frozenset[str]] = set()
+    for ent in entities_list:
+        for rel in ent.get("relations") or []:
+            to = str(rel.get("to") or "")
+            rtype = str(rel.get("type") or "")
+            spec = content_model.RELATION_TYPES.get(rtype)
+            if spec is None or ent["key"] not in entity_nodes or to not in entity_nodes:
+                continue
+            curated_pairs.add(frozenset((ent["key"], to)))
+            edges.append({
+                "source": ent["key"],
+                "target": to,
+                "kind": "relation",
+                "type": rtype,
+                "label": spec["label"],
+                "inverse": spec["inverse"],
+                "symmetric": spec["symmetric"],
+                "entry": rel.get("source") or "",
+                "note": rel.get("note") or "",
+                "count": co.get(ent["key"], {}).get(to, 0),
+            })
+
+    # Derived edges. `co` covers every attachment surface (explicit keys +
+    # word-boundary phrase matches + CVE ids), so slice it by node class.
+    cve_nodes: dict[str, dict[str, Any]] = {}
+
+    def _cve_exploited(cid: str) -> bool:
+        for e in entries_by_entity_key.get(cid, []):
+            for c in e.get("cves") or []:
+                if isinstance(c, dict) and c.get("id") == cid and \
+                        "exploited" in (c.get("status") or []):
+                    return True
+        return False
+
+    seen_pairs: set[frozenset[str]] = set()
+    for a, others in sorted(co.items()):
+        for b, n in sorted(others.items()):
+            pair = frozenset((a, b))
+            if len(pair) != 2 or pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            a_is_ent, b_is_ent = a in entity_nodes, b in entity_nodes
+            a_is_cve = content_model.CVE_ID_RE.match(a) is not None
+            b_is_cve = content_model.CVE_ID_RE.match(b) is not None
+            shared = sorted(
+                {e["id"] for e in entries_by_entity_key.get(a, [])}
+                & {e["id"] for e in entries_by_entity_key.get(b, [])},
+                reverse=True,
+            )[:6]
+            if a_is_ent and b_is_ent:
+                if pair in curated_pairs:
+                    continue  # the typed edge already carries the count
+                edges.append({
+                    "source": a, "target": b, "kind": "co-occurrence",
+                    "count": n, "entries": shared,
+                })
+            elif (a_is_ent and b_is_cve) or (b_is_ent and a_is_cve):
+                ekey, cid = (a, b) if a_is_ent else (b, a)
+                cent = by_key.get(cid)
+                if cent is None:
+                    continue
+                if cid not in cve_nodes:
+                    cve_nodes[cid] = {
+                        "id": cid,
+                        "kind": "cve",
+                        "type": "cve",
+                        "label": cid,
+                        "title": cent.get("title") or cid,
+                        "exploited": _cve_exploited(cid),
+                        "entries": len(cent.get("appearances") or []),
+                        "first": cent.get("first_covered") or "",
+                        "last": cent.get("last_covered") or "",
+                    }
+                edges.append({
+                    "source": ekey, "target": cid, "kind": "cve",
+                    "count": n, "entries": shared,
+                })
+            # CVE↔CVE pairs (same-advisory clusters) are deliberately skipped.
+
+    # ATT&CK technique layer (toggleable client-side; default off).
+    tech_nodes: dict[str, dict[str, Any]] = {}
+    for ent in entities_list:
+        if ent["key"] not in entity_nodes:
+            continue
+        for tid, eids in sorted((ent.get("techniques") or {}).items()):
+            rec = ATTACK_TECHNIQUES.get(tid) or {}
+            if rec.get("revoked") or rec.get("deprecated"):
+                continue
+            if tid not in tech_nodes:
+                tech_nodes[tid] = {
+                    "id": tid,
+                    "kind": "technique",
+                    "type": "technique",
+                    "label": tid,
+                    "title": str(rec.get("name") or tid),
+                    "entries": 0,  # filled below: number of mapped entities
+                }
+            edges.append({
+                "source": ent["key"], "target": tid, "kind": "technique",
+                "count": len(set(eids)), "entries": sorted(set(eids), reverse=True)[:6],
+            })
+    for tid, node in tech_nodes.items():
+        node["entries"] = sum(
+            1 for e in edges if e["kind"] == "technique" and e["target"] == tid
+        )
+
+    nodes = list(entity_nodes.values()) + list(cve_nodes.values()) + list(tech_nodes.values())
+    return {
+        "generated_at": generated_at,
+        "relation_types": {
+            t: {"label": s["label"], "inverse": s["inverse"], "symmetric": s["symmetric"]}
+            for t, s in content_model.RELATION_TYPES.items()
+        },
+        "nodes": nodes,
+        "edges": edges,
+    }
+
+
+def render_graph_page(
+    graph_payload: dict[str, Any],
+    *,
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+) -> str:
+    """/graph/ — the interactive threat graph. Server-rendered fallback: a
+    top-connected-entities directory (fully usable without JS); graph.js
+    adds the canvas force-layout exploration surface."""
+    nodes = graph_payload.get("nodes") or []
+    edges = graph_payload.get("edges") or []
+    deg: dict[str, int] = defaultdict(int)
+    for e in edges:
+        if e.get("kind") == "technique":
+            continue
+        deg[e["source"]] += 1
+        deg[e["target"]] += 1
+    ent_nodes = [n for n in nodes if n.get("kind") == "entity"]
+    top = sorted(ent_nodes, key=lambda n: (-deg.get(n["id"], 0), n["label"].lower()))[:20]
+    n_rel = sum(1 for e in edges if e.get("kind") == "relation")
+    n_co = sum(1 for e in edges if e.get("kind") == "co-occurrence")
+    n_cve = sum(1 for e in edges if e.get("kind") == "cve")
+
+    top_rows = "".join(
+        "<li>"
+        f'<span><a class="e-title" href="{prefix}entities/{urllib.parse.quote(n["id"], safe="")}/">'
+        f'{_escape(n["label"])}</a>'
+        f'<div class="e-meta"><span class="e-tag e-tag--{_escape(n["type"] or "none")}">{_escape(n["type"])}</span>'
+        f'<span class="mono">{_escape(n["id"])}</span>'
+        f'<span class="e-apps">×{deg.get(n["id"], 0)} connections</span></div></span></li>'
+        for n in top
+    )
+
+    config = {"data_url": "data/graph.json"}
+    data_island = (
+        '<script type="application/json" id="graph-config">'
+        + _escape_json_island(json.dumps(config, sort_keys=True))
+        + "</script>"
+    )
+    body = f"""
+<h1>Threat graph</h1>
+<p class="subtitle" style="max-width:64rem">
+  Every tracked entity, covered CVE and mapped ATT&amp;CK technique as one connected graph.
+  Solid edges are <strong>curated relationships</strong> — typed, source-stated connections
+  ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
+  Dashed edges are <strong>derived</strong> — entities referenced by the same entries, or an
+  entity and a CVE carried by the same entry. Click a node for its detail panel, drag to
+  rearrange, pin two nodes to trace the shortest path between them.
+</p>
+<p class="muted">
+  {len(ent_nodes)} entities · {sum(1 for n in nodes if n.get("kind") == "cve")} CVEs ·
+  {sum(1 for n in nodes if n.get("kind") == "technique")} techniques ·
+  {n_rel} curated relations · {n_co + n_cve} derived edges ·
+  edge model: <a href="{prefix}about/docs/pipeline/">docs/pipeline.md § Relationships</a>
+</p>
+
+<div class="graph-shell panel" data-graph-shell hidden>
+  <div class="graph-toolbar">
+    <input id="graph-q" type="search" autocomplete="off" spellcheck="false"
+           placeholder="Find an actor / campaign / malware / CVE / technique…" />
+    <ul class="atk-suggest" data-graph-suggest hidden></ul>
+    <div class="graph-toggles" role="group" aria-label="Node layers">
+      <button type="button" class="mini-btn active" data-graph-layer="entity">entities</button>
+      <button type="button" class="mini-btn active" data-graph-layer="cve">CVEs</button>
+      <button type="button" class="mini-btn" data-graph-layer="technique">techniques</button>
+    </div>
+    <div class="graph-toggles" role="group" aria-label="Edge classes">
+      <button type="button" class="mini-btn active" data-graph-edges="relation">curated</button>
+      <button type="button" class="mini-btn active" data-graph-edges="derived">derived</button>
+    </div>
+    <button type="button" class="mini-btn" data-graph-reset>reset</button>
+  </div>
+  <div class="graph-stage">
+    <canvas data-graph-canvas aria-label="Threat graph — interactive canvas"></canvas>
+    <aside class="graph-panel" data-graph-panel hidden></aside>
+  </div>
+  <p class="muted graph-hint" data-graph-status>
+    Scroll to zoom · drag the canvas to pan · drag a node to pin it ·
+    click = details · shift-click a second node = shortest path · double-click = isolate neighbourhood · Esc = clear.
+  </p>
+</div>
+<noscript><p class="muted">The interactive graph needs JavaScript — the directory below
+lists the most-connected entities; every entity page carries the same relationships in
+list form.</p></noscript>
+
+<h2 class="section-head" style="margin-top:2rem">Most connected entities</h2>
+<ul class="entity-list">{top_rows}</ul>
+{data_island}
+"""
+    return base_template(
+        title="Threat graph",
+        description=(
+            "Interactive threat graph over every tracked actor, campaign, malware family, "
+            "incident, CVE and ATT&CK technique — curated, source-stated relationships plus "
+            "derived co-occurrence edges, explorable for visual investigations."
+        ),
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+        active_page="graph",
+        extra_head=f'<script defer src="{prefix}assets/js/graph.js?v={cachebust}"></script>',
+        seo={
+            "breadcrumb": [
+                (SITE_NAME, site_url),
+                ("Threat graph", canonical),
+            ],
+        },
+    )
+
+
 # === SITE ASSETS COPY ==================================================
 
 def copy_assets() -> None:
@@ -10031,7 +10420,9 @@ def main() -> int:
         return 3
 
     # ---- Fail-loud schema validation (entries + registry) -------------
-    fatal_errors: list[str] = list(validate_registry(registry))
+    fatal_errors: list[str] = list(
+        validate_registry(registry, entry_ids={e["id"] for e in entries})
+    )
     registry_keys = set(registry)
     for e in entries:
         fatal_errors.extend(validate_entry(e, taxonomy, registry_keys=registry_keys))
@@ -10116,7 +10507,7 @@ def main() -> int:
     entities_list, entries_by_entity_key = build_entities(
         registry, entries, cves_raw, sources_raw, day_pages
     )
-    compute_related_entities(entities_list, entries_by_entity_key)
+    cooccurrence = compute_related_entities(entities_list, entries_by_entity_key)
     cves_list = [e for e in entities_list if e.get("type") == "cve"]
     topics_list = [e for e in entities_list if e.get("type") != "cve"]
 
@@ -10621,6 +11012,19 @@ def main() -> int:
         ),
         lastmod=ref.strftime("%Y-%m-%d"),
     )
+    graph_payload = build_graph_payload(
+        entities_list, entries_by_entity_key, cooccurrence,
+        generated_at=ref.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    )
+    emit_html(
+        "graph/",
+        render_graph_page(
+            graph_payload,
+            site_url=site_url, cachebust=cachebust,
+            prefix="../", canonical=site_url + "graph/",
+        ),
+        lastmod=ref.strftime("%Y-%m-%d"),
+    )
     emit_html(
         "feeds/",
         render_feeds_page(
@@ -10729,6 +11133,9 @@ def main() -> int:
     )
     atomic_write_text(
         OUT / "data" / "attack.json", json.dumps(attack_payload, sort_keys=True)
+    )
+    atomic_write_text(
+        OUT / "data" / "graph.json", json.dumps(graph_payload, sort_keys=True)
     )
 
     # ---- Manifest --------------------------------------------------------

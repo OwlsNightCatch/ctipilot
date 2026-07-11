@@ -1,10 +1,22 @@
 ---
-name: Entity registry graph conventions (v3.16)
-description: merged_into tombstones, related edges, and the naming convention introduced by the 2026-07-09 registry overhaul
+name: Entity registry graph conventions (v3.16 → v3.20)
+description: merged_into tombstones, typed relations[] edges (v3.20), the /graph/ surface, and the naming convention from the 2026-07-09 registry overhaul
 type: project
 ---
 
-# Entity registry graph (v3.16, 2026-07-09)
+# Typed relationships + threat graph (v3.20, 2026-07-11)
+
+Operator-directed rework (branch `claude/cti-entity-relationships-graph-qb9j9j`) — supersedes the v3.16 `related: []` model below:
+
+- **`relations[]` replaced `related` with NO backward compatibility** — `check_run.py` FAILs a leftover `related` key. Edge shape: `{to, type, source, note}`; 10-type vocabulary with direction + endpoint constraints in `content_model.RELATION_TYPES` (normative prose: `docs/pipeline.md` § Relationships). `source` (REQUIRED) = the entry id whose cited reporting establishes the edge — this is what makes every curated edge evidence-bound and dated. Symmetric types (`collaborates-with`, `overlaps-with`, `related-to`) are stored ONCE, on either endpoint; the mirror declaration is a duplicate-edge FAIL. Directed types live on the SUBJECT record — `attributed-to` sits on the campaign/incident/malware/tool pointing AT the actor, so most legacy actor→incident edges flipped in migration.
+- **Semantics guardrails**: relate only what a cited source states; `overlaps-with` is the honest middle ground and is never upgraded to `attributed-to`/`successor-of` beyond the claim; a suspected same-entity is an alias or a `merged_into` tombstone, never a relation. New corroboration ≠ new edge; a materially evolved relationship updates the edge's `type`/`source`/`note` in place (relations are registry state, not immutable entries). Tombstoning moves the loser's edges to the canonical record.
+- **Derived edges never stored**: entry co-occurrence, entity↔CVE, entity↔technique are computed by `site/build.py` each build with supporting entry ids. Curated vs derived stay visually distinct everywhere.
+- **Analyst surfaces**: `/graph/` (canvas force layout over entities + connected CVEs + technique layer; search, filters, detail panel with per-edge provenance, shortest-path tracing, `?focus=`/`?to=` deep links; `assets/js/graph.js` + `data/graph.json`) and the entity pages' grouped "Relationships" section (typed rows with source-entry links) above the derived "Co-occurring entities" list.
+- **Research agents** may return `relation_suggestions: [{subject, object, basis}]` for source-stated connections; the main agent maps them onto the vocabulary and owns the registry write.
+- **`check_run.py` advisory**: `registry-relations` WARN when an edge's source entry neither keys nor names an endpoint (token-based name matching; short all-caps acronyms like "INC" match case-sensitively).
+- Migration note: 81 untyped edges → 71 typed canonical-direction edges; 2 dropped (`actor:oceanlotus`→`tool:zichatbot`, `actor:scarcruft`→`tool:birdcall`) because no in-store entry supports them (pre-v3 coverage only) — re-add with a source when an entry covers them.
+
+# Entity registry graph (v3.16, 2026-07-09 — historical; `related` since retired)
 
 Operator-directed overhaul of `entities/registry.yaml` (interactive session, branch `claude/cti-pilot-graph-review-tu722w`). What every future session must know:
 

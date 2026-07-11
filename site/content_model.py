@@ -89,6 +89,77 @@ RUN_KINDS = ("intel", "weekly")
 ENTITY_TYPES = ("actor", "campaign", "malware", "tool", "incident", "report", "trend", "policy")
 SOURCE_ROLES = ("primary", "corroborating")
 
+# Typed entity relationships — the registry's curated threat-graph edges
+# (docs/pipeline.md § Relationships, normative). Directed types read
+# subject → object and live on the SUBJECT's registry record; symmetric
+# types are stored once, on either endpoint. `label` is the forward
+# reading rendered on the subject's page, `inverse` the reading rendered
+# on the object's page. `same_type` additionally requires both endpoints
+# to share one entity type.
+_NON_REPORT_TYPES = tuple(t for t in ENTITY_TYPES if t != "report")
+RELATION_TYPES = {
+    "attributed-to": {
+        "subjects": ("campaign", "incident", "malware", "tool"),
+        "objects": ("actor",),
+        "symmetric": False, "same_type": False,
+        "label": "attributed to", "inverse": "attributed activity",
+    },
+    "uses": {
+        "subjects": ("actor", "campaign", "incident"),
+        "objects": ("malware", "tool"),
+        "symmetric": False, "same_type": False,
+        "label": "uses", "inverse": "used by",
+    },
+    "exploits": {
+        "subjects": ("actor", "campaign", "incident"),
+        "objects": ("trend",),
+        "symmetric": False, "same_type": False,
+        "label": "exploits", "inverse": "exploited by",
+    },
+    "part-of": {
+        "subjects": ("incident", "campaign"),
+        "objects": ("campaign", "trend"),
+        "symmetric": False, "same_type": False,
+        "label": "part of", "inverse": "includes",
+    },
+    "variant-of": {
+        "subjects": ("malware", "tool"),
+        "objects": ("malware", "tool"),
+        "symmetric": False, "same_type": False,
+        "label": "variant of", "inverse": "has variant",
+    },
+    "successor-of": {
+        "subjects": ("actor", "campaign", "malware", "tool", "policy"),
+        "objects": ("actor", "campaign", "malware", "tool", "policy"),
+        "symmetric": False, "same_type": True,
+        "label": "successor of", "inverse": "succeeded by",
+    },
+    "collaborates-with": {
+        "subjects": ("actor",),
+        "objects": ("actor",),
+        "symmetric": True, "same_type": True,
+        "label": "collaborates with", "inverse": "collaborates with",
+    },
+    "overlaps-with": {
+        "subjects": ("actor", "campaign", "malware", "tool"),
+        "objects": ("actor", "campaign", "malware", "tool"),
+        "symmetric": True, "same_type": False,
+        "label": "overlaps with", "inverse": "overlaps with",
+    },
+    "documented-in": {
+        "subjects": _NON_REPORT_TYPES,
+        "objects": ("report",),
+        "symmetric": False, "same_type": False,
+        "label": "documented in", "inverse": "documents",
+    },
+    "related-to": {
+        "subjects": ENTITY_TYPES,
+        "objects": ENTITY_TYPES,
+        "symmetric": True, "same_type": False,
+        "label": "related to", "inverse": "related to",
+    },
+}
+
 # Which daily-brief render section a kind maps to (operational horizon).
 # Orthogonal overrides at render time: update_of -> "updates",
 # deep_dive -> "deep-dive". Strategic-only kinds map to None for the
@@ -630,6 +701,41 @@ def load_registry(path: Path = REGISTRY_PATH) -> dict:
     return out
 
 
+def registry_relations(registry: dict) -> list:
+    """Flatten every curated `relations[]` edge into one record per edge:
+
+        {"subject", "object", "type", "source", "note", "symmetric",
+         "label", "inverse"}
+
+    Storage direction is preserved (subject = the record carrying the
+    edge). Malformed edges are skipped — `validate_registry` is the layer
+    that rejects them; this helper is for renderers/exporters operating on
+    an already-validated registry."""
+    out = []
+    for key, ent in registry.items():
+        if not isinstance(ent, dict) or ent.get("merged_into"):
+            continue
+        for rel in ent.get("relations") or []:
+            if not isinstance(rel, dict):
+                continue
+            rtype = rel.get("type")
+            spec = RELATION_TYPES.get(rtype)
+            to = rel.get("to")
+            if spec is None or not isinstance(to, str) or to not in registry:
+                continue
+            out.append({
+                "subject": key,
+                "object": to,
+                "type": rtype,
+                "source": rel.get("source"),
+                "note": rel.get("note"),
+                "symmetric": spec["symmetric"],
+                "label": spec["label"],
+                "inverse": spec["inverse"],
+            })
+    return out
+
+
 def resolve_entity_key(registry: dict, key: str) -> str:
     """Follow a `merged_into` tombstone to its canonical key (single hop).
 
@@ -949,10 +1055,15 @@ def validate_entry(entry: dict, taxonomy: dict, registry_keys=None) -> list:
     return errs
 
 
-def validate_registry(registry: dict) -> list:
-    """Validate the loaded registry ({key: entity}); returns error list."""
+def validate_registry(registry: dict, entry_ids=None) -> list:
+    """Validate the loaded registry ({key: entity}); returns error list.
+
+    `entry_ids` (optional set of existing entry ids) additionally verifies
+    that every curated relation's `source` entry exists — pass it whenever
+    the entry store is loaded (build, gate)."""
     errs = []
     seen_names: dict = {}
+    seen_edges: dict = {}
     for key, ent in registry.items():
         if not ENTITY_KEY_RE.match(key):
             errs.append(f"registry key {key!r} is not `<type>:<kebab-slug>`")
@@ -980,23 +1091,94 @@ def validate_registry(registry: dict) -> list:
                     f"{key}: merged_into target {merged!r} is itself a tombstone "
                     "(chains are not allowed — point at the canonical key)"
                 )
-        related = ent.get("related")
-        if related is not None:
-            if not _is_str_list(related):
-                errs.append(f"{key}: related must be a list of registry keys")
-            else:
-                for rk in related:
-                    if not ENTITY_KEY_RE.match(rk):
-                        errs.append(f"{key}: related key {rk!r} is not `<type>:<kebab-slug>`")
-                    elif rk == key:
-                        errs.append(f"{key}: related key points at itself")
-                    elif rk not in registry:
-                        errs.append(f"{key}: related key {rk!r} not present in the registry")
-                    elif registry[rk].get("merged_into"):
-                        errs.append(
-                            f"{key}: related key {rk!r} is a merged tombstone — "
-                            f"point at {registry[rk]['merged_into']!r}"
+        if "related" in ent:
+            errs.append(
+                f"{key}: carries the retired untyped `related` key — "
+                "migrate to typed `relations[]` (docs/pipeline.md § Relationships)"
+            )
+        relations = ent.get("relations")
+        if relations is not None and not isinstance(relations, list):
+            errs.append(f"{key}: relations must be a list of edge mappings")
+            relations = None
+        if relations and merged:
+            errs.append(
+                f"{key}: tombstone carries relations[] — move the edges to "
+                f"the canonical record {merged!r}"
+            )
+        subj_type = key.split(":", 1)[0]
+        for i, rel in enumerate(relations or []):
+            where = f"{key}: relations[{i}]"
+            if not isinstance(rel, dict):
+                errs.append(f"{where} is not a mapping")
+                continue
+            unknown = set(rel) - {"to", "type", "source", "note"}
+            if unknown:
+                errs.append(f"{where}: unknown field(s) {sorted(unknown)}")
+            rtype = rel.get("type")
+            spec = RELATION_TYPES.get(rtype)
+            if spec is None:
+                errs.append(
+                    f"{where}: type {rtype!r} not in the relation vocabulary "
+                    f"{tuple(RELATION_TYPES)}"
+                )
+            to = rel.get("to")
+            if not isinstance(to, str) or not ENTITY_KEY_RE.match(to):
+                errs.append(f"{where}: to {to!r} is not `<type>:<kebab-slug>`")
+                to = None
+            elif to == key:
+                errs.append(f"{where}: edge points at itself")
+                to = None
+            elif to not in registry:
+                errs.append(f"{where}: target {to!r} not present in the registry")
+                to = None
+            elif registry[to].get("merged_into"):
+                errs.append(
+                    f"{where}: target {to!r} is a merged tombstone — "
+                    f"point at {registry[to]['merged_into']!r}"
+                )
+                to = None
+            if spec is not None and to is not None:
+                obj_type = to.split(":", 1)[0]
+                if subj_type not in spec["subjects"]:
+                    errs.append(
+                        f"{where}: `{rtype}` does not accept subject type "
+                        f"`{subj_type}` (allowed: {spec['subjects']})"
+                    )
+                elif obj_type not in spec["objects"]:
+                    errs.append(
+                        f"{where}: `{rtype}` does not accept object type "
+                        f"`{obj_type}` (allowed: {spec['objects']})"
+                    )
+                elif spec["same_type"] and subj_type != obj_type:
+                    errs.append(
+                        f"{where}: `{rtype}` requires both endpoints to share "
+                        f"one entity type (got `{subj_type}` → `{obj_type}`)"
+                    )
+                pair = (
+                    frozenset((key, to)) if spec["symmetric"] else (key, to)
+                )
+                dup_key = (rtype, pair)
+                if dup_key in seen_edges:
+                    errs.append(
+                        f"{where}: duplicate `{rtype}` edge with {to!r} "
+                        f"(first declared on {seen_edges[dup_key]}"
+                        + (
+                            " — symmetric edges are stored once, on either endpoint)"
+                            if spec["symmetric"] else ")"
                         )
+                    )
+                seen_edges.setdefault(dup_key, key)
+            src = rel.get("source")
+            if not isinstance(src, str) or not ENTRY_ID_RE.match(src):
+                errs.append(
+                    f"{where}: source {src!r} is not an entry id "
+                    "(YYYY-MM-DD/slug) — every curated edge is evidence-bound"
+                )
+            elif entry_ids is not None and src not in entry_ids:
+                errs.append(f"{where}: source entry {src!r} does not exist")
+            note = rel.get("note")
+            if note is not None and not _is_str(note):
+                errs.append(f"{where}: note must be null or a non-empty string")
         if merged:
             # Tombstones keep their historical name/aliases, which now
             # legitimately live on the canonical record too — exempt them

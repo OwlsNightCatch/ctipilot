@@ -21,9 +21,18 @@ Contract (normative version in [`docs/pipeline.md`](../docs/pipeline.md)):
   `tools/check_run.py`.
 - `summary` is a 1–3 sentence sourced definition. Attribution claims stay
   claim-attributed ("GTIG attributes…"), same as everywhere else.
-- `related` (optional) carries curated registry keys linking the entity
-  into the threat graph (actor ↔ campaign ↔ tool ↔ incident); targets must
-  be existing canonical keys.
+- `relations` (optional) carries the entity's curated threat-graph edges:
+  typed, directed, evidence-bound records `{to, type, source, note}` —
+  `type` from the controlled vocabulary (`attributed-to`, `uses`,
+  `exploits`, `part-of`, `variant-of`, `successor-of`,
+  `collaborates-with`, `overlaps-with`, `documented-in`, `related-to`;
+  direction + endpoint constraints in `docs/pipeline.md` § Relationships),
+  `to` an existing canonical key, `source` the entry id whose cited
+  reporting establishes the connection. Symmetric types are stored once,
+  on either endpoint. The untyped `related` list is retired —
+  `check_run.py` FAILs it. Derived edges (entry co-occurrence,
+  entity↔CVE, entity↔technique) are computed at render time and never
+  stored. Rendered on entity pages and explorable at `/graph/`.
 - `merged_into` (optional) marks a duplicate record as a tombstone pointing
   at its canonical entity. Tombstoned keys stay resolvable (published
   entries reference them) but new entries must use the canonical key.

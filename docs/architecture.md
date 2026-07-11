@@ -148,8 +148,14 @@ anything; the dedup gate matches candidates against keys *and* aliases, so
 "UNC6240" and "ShinyHunters" can never become two separately-tracked
 things. The main agent appends new entities in the same commit as the
 entries that first reference them; keys are permanent (extend aliases,
-never rename). Alias collisions and unresolved keys FAIL
-`tools/check_run.py`. The site renders `/entities/<key>/` pages from it.
+never rename). Each record may carry typed, directed, evidence-bound
+`relations[]` edges (`{to, type, source, note}` — controlled vocabulary,
+`source` = the establishing entry id; `docs/pipeline.md` § Relationships);
+derived edges (entry co-occurrence, entity↔CVE, entity↔technique) are
+computed at render time, never stored. Alias collisions, unresolved keys,
+and malformed relations FAIL `tools/check_run.py`. The site renders
+`/entities/<key>/` pages from it and the interactive threat graph at
+`/graph/` (`data/graph.json`).
 Contract pointer: [`entities/README.md`](../entities/README.md).
 
 ### `attack/enterprise-attack.json` — the pinned MITRE ATT&CK dataset
