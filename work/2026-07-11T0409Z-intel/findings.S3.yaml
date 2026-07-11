@@ -1,0 +1,181 @@
+domain: S3
+run_id: "2026-07-11T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-11T04:11:23Z"
+ended_at: "2026-07-11T04:22:09Z"
+duration_seconds: 646
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 8
+  bridge_fetches: 2
+
+items:
+  - title: "Microsoft: GigaWiper — a Golang backdoor that folds a disk wiper, a fake-ransomware encryptor and a multi-pass secure-wipe module into one implant"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/07/09/gigawiper-anatomy-of-a-destructive-backdoor-assembled-from-multiple-malware/", publisher: "Microsoft Threat Intelligence", date: "2026-07-09", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/new-gigawiper-espionage-destructive/", publisher: "Infosecurity Magazine", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/news/new-gigawiper-espionage-destructive/ → primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/07/09/gigawiper-anatomy-of-a-destructive-backdoor-assembled-from-multiple-malware/"
+    summary: |
+      Microsoft Threat Intelligence detected GigaWiper in October 2025 — a Golang destructive backdoor built by folding at least three previously separate malware families into one implant's on-demand command set (20 commands total), rather than writing a single-purpose tool. Command 1 (WipeMain) enumerates physical drives via WMI, overwrites raw disk content in 0xA00000-byte chunks, and removes partition metadata via DeviceIoControl/IOCTL_DISK_CREATE_DISK before forcing a reboot, while preserving the Windows-installation drive. Command 3 (RanMain/BigBangExtortMain) is lifted near-verbatim from Crucio ransomware code (a family CISA's December 2023 AA23-335A ties to IRGC-affiliated actors) — it AES-CBC-encrypts files with per-run random keys/IVs that are never saved, so this is destruction dressed as extortion: no ransom note is dropped. Command 12 (WipeCMain) reimplements the C-based FlockWiper (first seen on VirusTotal June 2025) in Go, multi-pass wiping only the Windows drive with alternating 0x00/0xFF/random byte patterns; PDB-path and function-naming overlap ("GRAT" strings) tie the two together. C2 skips ordinary HTTP for legitimate business services — RabbitMQ/AMQP for tasking (with a fanout "All" exchange for broadcast and topic-routed queues for targeted commands), Redis for result/status polling, and MinIO for exfiltration — plus a keylogger and screen-recording module (records only while the session is unlocked and active, storing PNGs under C:\ProgramData\output). Persistence is a scheduled task ("OneDrive Update," run every minute plus at logon) tracked via a HKCU\SOFTWARE\OneDrive\Environment counter key. Binary Defense, citing GTIG, assesses the activity as likely Iran-nexus targeting Israeli organizations; Microsoft's own writeup withholds attribution beyond the Crucio/FlockWiper code lineage.
+    region_nexus: "global tooling; observed targeting assessed Israel (Binary Defense/GTIG); transferable disk-wipe/EDR-blind TTPs relevant to any Windows CI environment"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (any Windows estate); historically IRGC-adjacent destructive tooling has hit energy/government targets"
+    cves: []
+    techniques: [T1485, T1561.001, T1561.002, T1489, T1685.005, T1053.005, T1113, T1071, T1567.002, T1112]
+    affected_products: ["Windows (any version reachable by the backdoor)"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:gigawiper", type: tool, name: "GigaWiper", aliases: ["BLUERABBIT"],
+          summary: "Golang destructive backdoor combining a disk wiper, a Crucio-derived fake-ransomware encryptor and a FlockWiper-derived secure-wipe module behind a 20-command RabbitMQ/Redis/MinIO C2; detected by Microsoft Threat Intelligence, first observed October 2025 (Microsoft, 2026-07-09)." }
+      - { key: "tool:crucio-ransomware", type: tool, name: "Crucio", aliases: [],
+          summary: "Ransomware family CISA's AA23-335A (Dec 2023) ties to IRGC-affiliated actors; its encryption routine was reused near-verbatim inside GigaWiper's fake-ransomware destruction command (Microsoft, 2026-07-09)." }
+      - { key: "tool:flockwiper", type: tool, name: "FlockWiper", aliases: [],
+          summary: "C-based disk wiper first seen on VirusTotal June 2025; reimplemented in Go inside GigaWiper's WipeCMain command (Microsoft, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "GigaWiper is an amalgamation of separate malware families that were folded into GigaWiper as on-demand backdoor commands, giving threat actors the flexibility to choose their mode of destruction."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/09/gigawiper-anatomy-of-a-destructive-backdoor-assembled-from-multiple-malware/"
+      - quote: "GigaWiper command 3 is heavily based on Crucio's code, leading to the assessment that the same threat actor developed both malware families."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/09/gigawiper-anatomy-of-a-destructive-backdoor-assembled-from-multiple-malware/"
+      - quote: "The key and initialization vector (IV) that the malware uses to encrypt files are random and are not saved anywhere"
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/09/gigawiper-anatomy-of-a-destructive-backdoor-assembled-from-multiple-malware/"
+    extended_notes: |
+      Detection angle for hunters: the persistence footprint (scheduled task literally named "OneDrive Update" plus a HKCU\SOFTWARE\OneDrive\Environment registry counter) is a concrete, low-noise hunt pivot — legitimate OneDrive sync tasks do not live under that registry path. The C2 fingerprint (outbound RabbitMQ/AMQP + Redis + MinIO to the same low-reputation host, especially from a host with no legitimate business reason to speak any of the three) is a second high-value pivot; egress-proxy/firewall logs are the right telemetry class since none of these protocols are typically permitted outbound from a standard workstation. Benign lookalike: OneDrive itself does run scheduled sync tasks, but never under a task literally named "OneDrive Update" nor with a HKCU\SOFTWARE\OneDrive\Environment key — check the real OneDrive task name/path in your environment as the discriminator.
+
+  - title: "AI Now Institute \"Friendly Fire\": prompt injection hijacks Claude Code and Codex CLI defensive/auto-review modes into remote code execution"
+    sources:
+      - { url: "https://ainowinstitute.org/publications/friendly-fire-exploit-brief", publisher: "AI Now Institute", date: "2026-07-08", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/anthropic-openai-report-exploit/", publisher: "Infosecurity Magazine", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/news/anthropic-openai-report-exploit/ → primary: AI Now Institute, URL https://ainowinstitute.org/publications/friendly-fire-exploit-brief"
+    summary: |
+      AI Now Institute researchers Boyan Milanov and Heidy Khlaaf published a PoC ("Friendly Fire") achieving remote code execution against Claude Code CLI (versions 2.1.116/2.1.196/2.1.198/2.1.199, models Sonnet 4.6, Sonnet 5, Opus 4.8) and OpenAI Codex CLI (version 0.142.4, GPT-5.5) when the agent is used in its out-of-the-box "auto-mode"/"auto-review" defensive code-review configuration — no custom hooks, skills, MCP servers, or config-file tampering required. The chain is two-layer indirect prompt injection embedded entirely in a target library's own files: a malicious binary (code_policies) is paired with a decoy, legitimate-looking Go source file (code_policies.go) and a shell script (security.sh) so the agent's own code-inspection step "validates" the binary as safe; a README.md then references security.sh in innocuous-sounding language that steers the agent to execute it as part of "the security review," launching the malicious binary. Demonstrated against a modified geopy (Python geocoding library) and stated to transfer to other target libraries and other models without modification; alternate injection surfaces include CLAUDE.md and agent.md files. The researchers explicitly reject sandboxing as sufficient mitigation, since RCE inside the sandbox can itself be used to attempt escape (citing CVE-2026-39861 and CVE-2026-25725 as evidence sandbox escapes from agent RCE are a live class), and instead recommend never pointing an agent with code-execution ability at untrusted data.
+    region_nexus: "global; any org (including Swiss/EU public sector) using Claude Code or Codex CLI in auto/auto-review mode for security review of third-party or open-source code"
+    primary_sector_nexus: "direct"
+    sector: "cross-sector — any developer/SOC tooling org adopting agentic AI code-review"
+    cves: []
+    techniques: [T1204.002]
+    affected_products: ["Anthropic Claude Code CLI (2.1.116, 2.1.196, 2.1.198, 2.1.199) with Claude Sonnet 4.6/Sonnet 5/Opus 4.8", "OpenAI Codex CLI (0.142.4) with GPT-5.5"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:friendly-fire-ai-agent-defensive-hijack", type: campaign, name: "Friendly Fire (AI Now Institute exploit)", aliases: [],
+          summary: "AI Now Institute PoC: two-layer indirect prompt injection embedded in a code repository's own files hijacks Claude Code and Codex CLI's defensive auto-mode/auto-review code-inspection workflow into executing an attacker binary, achieving RCE with no hooks/plugins/config changes required (AI Now Institute, 2026-07-08)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Our attack only requires an out-of-the-box configuration of Claude Code in 'auto-mode' or Codex in 'auto-review' and leverages prompt injections disseminated across a library's source code that target AI-enabled cyber defense without the need for hooks, skills, plugins, MCP servers, or configuration files as an injection vector."
+        attribution: "AI Now Institute (Milanov & Khlaaf)"
+        source_url: "https://ainowinstitute.org/publications/friendly-fire-exploit-brief"
+      - quote: "When Claude Code or Codex proceed to analyze the source code, the prompt injections steer each respective agent to presume that the malicious binary is necessary to perform the security review, thereby executing the binary and failing to detect it as harmful."
+        attribution: "AI Now Institute (Milanov & Khlaaf)"
+        source_url: "https://ainowinstitute.org/publications/friendly-fire-exploit-brief"
+      - quote: "Sandboxing mitigations for agents with access to arbitrary shell commands, especially in the context of safety-critical environments, are not sufficient given that an RCE itself may allow attackers to circumvent such constrained environments."
+        attribution: "AI Now Institute (Milanov & Khlaaf)"
+        source_url: "https://ainowinstitute.org/publications/friendly-fire-exploit-brief"
+    extended_notes: |
+      This is the third distinct AI-coding-agent prompt-injection RCE class the pipeline has logged in under two weeks (Mozilla 0DIN's DNS-TXT reverse-shell chain, 2026-06-29 — campaign:0din-ai-coding-agent-indirect-pi-dns-txt; Wiz GhostApproval's symlink+confirmation-UI trust-boundary bypass across six coding assistants, 2026-07-09 — tool:ghostapproval-ai-coding-assistant-symlink). Friendly Fire is a different mechanism from both (dual-file legitimacy pairing + README-steered auto-execution against the *security-review* workflow specifically, rather than general file-write or reverse-shell staging) — genuinely new, not a duplicate — but the accumulating pattern (three independent research groups, three distinct injection mechanisms, all against the same handful of agentic coding tools within one fortnight) is itself the story worth a defender's attention if adopting AI-assisted code review for any Swiss/EU public-sector development pipeline. ATT&CK note: enterprise-attack.json (pinned dataset) has no dedicated "AI agent prompt injection" technique yet; T1204.002 (Malicious File) is the closest active mapping — the agent's own inspection routine is tricked into treating a malicious file as safe to execute, which is the essence of that technique even though the "user" here is the AI agent rather than a human.
+
+  - title: "Symantec/Broadcom: GodDamn ransomware (Hyadina/Beast/Monster lineage) uses a Microsoft-signed malicious kernel driver \"PoisonX\" to blind EDR before encryption"
+    sources:
+      - { url: "https://www.security.com/threat-intelligence/goddamn-ransomware-beast-rebrand", publisher: "Symantec Threat Hunter Team (Broadcom)", date: "2026-07-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/goddamn-ransomware-uses-poisonx-driver.html", publisher: "The Hacker News", date: "2026-07-09", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/ransomware-removes-cybersecurity/", publisher: "Infosecurity Magazine", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/news/ransomware-removes-cybersecurity/ → primary: Symantec/Broadcom, URL https://www.security.com/threat-intelligence/goddamn-ransomware-beast-rebrand → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/goddamn-ransomware-uses-poisonx-driver.html"
+    summary: |
+      Symantec's Threat Hunter Team (Broadcom) documented GodDamn, first observed 2026-05-21, as the third rebrand from a developer it tracks as Hyadina — Monster (March 2022, Delphi, 32-bit Windows) → Beast (June 2024, cross-platform incl. Linux/ESXi) → GodDamn, which shares heavy code overlap with Beast. The investigated intrusion (May 29–June 3, 2026) staged AnyDesk in the victim's own "Music" folder for outbound C2 relay access (May 29), then dropped a defense-evasion binary plus the PoisonX kernel driver (g11.sys, SHA-256 2d91a78e739891c9854c254f5b2a6b84c0e167dfa253466cbccd2cdd1c20145d) and staged 14 NirSoft credential-dumping tools plus Mimikatz (May 30), moved laterally to 10+ hosts via PsExec while installing unattended-access AnyDesk on each and disabling Windows Defender (June 1), and finally deployed the ransomware binary (encrypter-windows-gui-x86.exe) on a separate network segment (June 3) — a four-day dwell period consistent with staged exfiltration before encryption. What distinguishes this BYOVD instance: PoisonX is not a legitimate-but-flawed driver being abused (the classic BYOVD shape) but a driver its developers built to be malicious from the outset and nonetheless got Microsoft to sign under the "Microsoft Windows Hardware Compatibility Publisher" program — once loaded it terminates security-product processes and strips user-mode API hooks, disabling EDR visibility rather than merely evading it. PoisonX was first documented in an unrelated incident earlier in 2026 killing the CrowdStrike Falcon service via a crafted IOCTL to the driver's undocumented interface.
+    region_nexus: "US organizations confirmed to date; BYOVD-via-signed-malicious-driver technique is directly transferable to any environment relying on kernel-mode EDR"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector enterprise; ransomware-as-a-service targeting"
+    cves: []
+    techniques: [T1219.002, T1021.002, T1547.006, T1685, T1003.001, T1552.001, T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:hyadina", type: actor, name: "Hyadina", aliases: [],
+          summary: "Symantec-tracked ransomware-as-a-service developer/operator active since March 2022, responsible for the Monster → Beast → GodDamn locker lineage; GodDamn's June 2026 intrusion used the Microsoft-signed malicious kernel driver PoisonX for BYOVD-style EDR blinding (Symantec/Broadcom, 2026-07-09)." }
+      - { key: "tool:poisonx-driver", type: tool, name: "PoisonX", aliases: [],
+          summary: "Malicious kernel driver (g11.sys) that its developers obtained a genuine Microsoft \"Windows Hardware Compatibility Publisher\" signature for; terminates security-product processes and strips user-mode API hooks. First documented disabling CrowdStrike Falcon earlier in 2026; reused by the Hyadina/GodDamn ransomware operation in June 2026 (Symantec/Broadcom, 2026-07-09)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The PoisonX driver seems to be slightly more unusual, in that it appears to be a malicious driver that its developers succeeded in getting signed by Microsoft, and it is now being used by ransomware attackers."
+        attribution: "Symantec Threat Hunter Team / The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/goddamn-ransomware-uses-poisonx-driver.html"
+      - quote: "The four-day gap between the first observed pre-ransomware activity on May 29 and the first ransomware detections on June 3 is consistent with a dwell period"
+        attribution: "Symantec/Broadcom (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/goddamn-ransomware-beast-rebrand"
+      - quote: "AnyDesk was established on each PsExec-reached host in a configuration suited to unattended access"
+        attribution: "Symantec/Broadcom (security.com)"
+        source_url: "https://www.security.com/threat-intelligence/goddamn-ransomware-beast-rebrand"
+    extended_notes: |
+      Triage/hunt angle: because PoisonX carries a valid Microsoft signature, code-signing allowlisting alone will not stop it loading — the discriminator is behavioral (a newly-loaded, rarely-seen driver whose process immediately correlates with EDR/AV service termination events and the disappearance of user-mode API hooks), not signature-based. Hunt for a driver-load event immediately followed by security-product service-stop events on the same host within a short window; that sequence is the benign-lookalike-resistant signal since legitimate driver installs do not typically co-occur with mass security-service termination. AnyDesk staged inside a user profile folder (here: "Music") making outbound connections is a second concrete hunt pivot — legitimate AnyDesk deployment is normally IT-managed and installed under Program Files, not staged in a personal media folder.
+
+  - title: "Elastic Security Labs: REF6045/SCMBANKER — ClickFix-delivered, AI-assisted PowerShell toolkit runs operator-assisted Mexican banking fraud with live CLABE/card clipboard hijacking"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/mexican-banking-fraud-scmbanker-ref6045", publisher: "Elastic Security Labs", date: "2026-07-08", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/scmbanker-malware-uses-clickfix-lures.html", publisher: "The Hacker News", date: "2026-07-08", role: "corroborating" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs → drill: https://www.elastic.co/security-labs/mexican-banking-fraud-scmbanker-ref6045 → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/scmbanker-malware-uses-clickfix-lures.html"
+    summary: |
+      Elastic Security Labs documented REF6045, an operator-assisted banking-fraud operation targeting Mexican retail/business banking, fintechs, payment processors, crypto exchanges and the SAT tax authority. Initial access is ClickFix: a fake reCAPTCHA-style "find the fire hydrant" challenge instructs the victim to paste and run a command via the Windows Run dialog, which downloads a batch script driving a six-stage install (fake-Windows-Update kiosk-mode smokescreen via Edge → UAC-consent-fatigue looping every 20 seconds until elevated → ClipCursor-based cursor confinement to a 1x1 pixel box to block user interaction → bitsadmin-fetched PowerShell toolkit from an open directory → registry Run-key/Startup-folder persistence via run.vbs → forced reboot). The resulting SCMBANKER toolkit is a PowerShell script family: cliente.ps1 (30-second C2 beacon), jujuzkt.ps1/jujuzkt2.ps1 (banking-activity window-title monitor against 100+ named financial targets, browser-redirect phishing injection), mensaje*.ps1 (vishing lockscreen overlays), screen2.ps1/rotor1.ps1 (screenshot capture, ~42 images per trigger), clip.ps1/clip2.ps1 (clipboard hijacker checking every 300ms for 18-digit Mexican CLABE account numbers and card numbers matched against bank-prefix lists, silently substituting attacker-controlled destination accounts), key.ps1 (keylogger exfiltrating via Telegram), and avs.ps1/instaler.ps1/remoto.ps1 (optional Remote Utilities RAT deployment). Elastic assesses the scripts show clear LLM-assisted authorship (banner-style scaffolding, generation artifacts, profanity-laden inline comments suggesting a Spanish-language prompting session) despite crude operational security — the C2 file server at 68.211.161[.]46 had directory listing enabled, exposing the toolkit source and an unauthenticated PHP admin editor. Live victim counters on the operator's own panel confirm real, individually-tracked victims, not just a test deployment.
+    region_nexus: "Mexico (confirmed victims); ClickFix as an initial-access vector is a top current technique also seen against European/Swiss targets, making the delivery-chain detection guidance directly transferable"
+    primary_sector_nexus: "indirect"
+    sector: "finance (banking, fintech, payment processors, crypto exchanges)"
+    cves: []
+    techniques: [T1566.002, T1204.002, T1197, T1547.001, T1113, T1115, T1219, T1657, T1056.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:ref6045", type: actor, name: "REF6045", aliases: [],
+          summary: "Elastic Security Labs designation for an operator-assisted banking-fraud cluster running the ClickFix-delivered SCMBANKER PowerShell toolkit against Mexican financial-sector victims, with clear signs of LLM-assisted tool development (Elastic Security Labs, 2026-07-08)." }
+      - { key: "tool:scmbanker", type: tool, name: "SCMBANKER", aliases: [],
+          summary: "PowerShell-based banking-fraud toolkit deployed by REF6045 via ClickFix fake-CAPTCHA lures: banking-session monitoring, vishing lockscreen overlays, screenshot capture, CLABE/card-number clipboard hijacking, keylogging with Telegram exfiltration, and optional Remote Utilities RAT staging (Elastic Security Labs, 2026-07-08)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A human operator is behind the wheel, monitoring infected machines and deciding what happens next."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/mexican-banking-fraud-scmbanker-ref6045"
+      - quote: "The scripts are riddled with AI-generated artifacts, indicating that the operator used an LLM to write most of the tooling."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/mexican-banking-fraud-scmbanker-ref6045"
+      - quote: "Crude as it is, SCMBANKER already has real victims. The live victim counter and labeled machines show individual people actively targeted."
+        attribution: "Elastic Security Labs / The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/scmbanker-malware-uses-clickfix-lures.html"
+    extended_notes: |
+      Triage/benign-lookalike note: the cursor-confinement step (an inline PowerShell P/Invoke call to user32.dll!ClipCursor immediately following a UAC elevation prompt) is a distinctive, low-false-positive telemetry signal — legitimate installers do not lock the cursor to a 1x1 pixel region after requesting admin rights. Combined with repeated (every ~20s) UAC prompts from the same short-lived process, this sequence is a strong discriminator from normal software-installation UAC flows. Elastic published a full MITRE ATT&CK mapping (25+ techniques across 11 tactics) and open-sourced behavioral detection rules (elastic/protections-artifacts repo) for the bitsadmin abuse, WSH/script-interpreter child-process, and Windows-Run command-execution steps specifically — useful even for non-Elastic-Security shops as a detection-logic reference given they are open TOML rule files.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "9th+ consecutive run: WebFetch AND the bridge/jina fallback both 403 on both listing and per-article pages (confirmed again this run on both the listing homepage draw and the healthcare-ransomware article drill-down). Only the /feed/ RSS path is reachable. Two in-window items surfaced via the feed (Comparitech H1-2026 healthcare-ransomware stats, CYFIRMA June ransomware-ecosystem stats) were not pursued further — both are aggregate-statistics/trend pieces without the component/prerequisite/detection specificity this domain's technical-depth bar requires, and org profile explicitly excludes vanity metrics; judged not worth the extra pivot effort given time budget, not a fetch failure."
+  - source_id: xlab-qianxin
+    reason: "Feed reachable, 10 items returned, but the freshest (RustDuck botnet analysis) published 2026-06-30 — outside both the 24h and 72h developing windows. No in-window content this run; not a source failure."
+  - source_id: seqrite-labs
+    reason: "Feed reachable; freshest genuine-research item (Russian-aerospace AnyDesk phishing) published 2026-07-07 — just outside the 72h developing window. No in-window content this run."
+  - source_id: exodus-intelligence
+    reason: "Feed reachable; freshest item (Windows Installer folder-delete LPE) published 2026-07-06 — outside the 72h window. No in-window content."
+  - source_id: sophos-xops
+    reason: "Feed reachable; freshest genuine research/analysis item (AI-agents-vs-telemetry) published 2026-07-07 — outside the 72h window; the one 2026-07-10 item (Gartner Peer Insights award) is marketing, not research. No in-window content."
+  - source_id: sansec-research
+    reason: "Listing reachable; freshest item (Amasty Magento mass-disclosure) published 2026-07-02 — outside the 72h window. No in-window content."
+  - source_id: calif-codex
+    reason: "Feed reachable; freshest item (My Cousin Vinyl CVE-2026-50052) published 2026-07-01 — outside the 72h window. No in-window content."
+  - source_id: fox-it-blog
+    reason: "Listing reachable; freshest post (RemotePE Lazarus RAT) published 2026-05-22 — long-known sparse cadence, expected per source notes, not a failure."
+  - source_id: flatt-security
+    reason: "Listing reachable; freshest post (Poisoning Claude Code via GitHub Issue) published 2026-06-01 — outside window, expected per ~monthly cadence noted in source record."
+  - source_id: sygnia
+    reason: "Listing reachable; freshest post (Inside an AI-Assisted Cloud Attack, 2026-07-08) is a duplicate of prior-run entry 2026-07-09/sygnia-ai-orchestrated-aws-cloud-intrusion-72h — correctly deduped, not included."
+  - source_id: volexity
+    reason: "Listing reachable; freshest post (VerdantBamboo/BRICKSTORM) published 2026-06-04 — sparse cadence expected per source notes, not a failure."
+  - source_id: infosec-magazine
+    reason: "Feed reachable; used as discovery/corroboration lead for 3 of the 4 items returned. One additional in-window lead (CISA AWS GovCloud incident-response postmortem) was pivoted to its actual CISA primary and found to be dated 2026-06-23 — a 2.5-week-old advisory being recycled by trade press on 2026-07-10 with no fresh delta; dropped as stale/recycled per recency discipline, not included."

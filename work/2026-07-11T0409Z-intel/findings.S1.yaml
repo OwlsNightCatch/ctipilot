@@ -1,0 +1,176 @@
+domain: S1
+run_id: 2026-07-11T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-11T04:11:09Z
+ended_at: 2026-07-11T04:21:24Z
+duration_seconds: 615
+self_telemetry:
+  webfetch_calls: 13
+  websearch_calls: 3
+  bridge_fetches: 30
+items:
+  - title: "Windows HTTP.sys kernel-mode RCE (CVE-2026-47291): ZDI publishes full exploitation mechanics for a critical integer-overflow patched in June, still unexploited but rated 'Exploitation More Likely'"
+    sources:
+      - { url: "https://www.zerodayinitiative.com/blog/2026/7/9/cve-2026-47291-remote-code-execution-in-the-windows-httpsys", publisher: "Zero Day Initiative (Trend Micro)", date: "2026-07-10", role: "primary" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-47291", publisher: "Microsoft MSRC", date: "2026-06-09", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-47291", publisher: "NVD/NIST", date: "2026-06-09", role: "corroborating" }
+    discovery_trace: "first seen at: zdi (source slice), URL https://www.zerodayinitiative.com/blog/ (listing) → primary: ZDI full write-up, URL https://www.zerodayinitiative.com/blog/2026/7/9/cve-2026-47291-remote-code-execution-in-the-windows-httpsys → corroboration: Microsoft MSRC Security Update Guide, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-47291 → corroboration: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-47291"
+    summary: |
+      ZDI (TrendAI Research Team, researchers Yazhi Wang & Jonathan Lein) published a full technical
+      write-up on 2026-07-10 of CVE-2026-47291, a kernel-mode remote code execution flaw in HTTP.sys,
+      the kernel driver that terminates HTTP/1.x and TLS connections for IIS and any Windows service
+      built on the HTTP Server API. The bug is an integer overflow (CWE-190) in the buffer-reference
+      array that tracks header fragments: when a 16-bit capacity counter reaches 0xFFFB and is
+      incremented by 5 it wraps to 0x0000, and a subsequent memmove() then copies roughly 524,256
+      bytes into a 40-byte heap allocation (CWE-122 heap-based buffer overflow). The path is reachable
+      only via HTTP/1.x request parsing over TLS — HTTP/2 and HTTP/3 use different parser code and are
+      not affected. Triggering it requires sending an HTTP/1.x request in which each header line is
+      encapsulated in its own separate TLS application-data record, totaling roughly 262,144 bytes of
+      header data and taking ZDI's researchers about 11 minutes to complete end to end — no
+      authentication or user interaction is needed (CVSS 3.1 9.8, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H,
+      Microsoft's own rating). Microsoft patched the flaw in the June 2026 Patch Tuesday cycle across
+      Windows 10 (1607, 1809, 21H2, 22H2) and Windows 11 (23H2, 24H2, 25H2, 26H1), 32-bit/x64/ARM64.
+      Microsoft's MSRC record still lists the vulnerability as not publicly disclosed and not exploited
+      at time of patch, but rates exploitability "Exploitation More Likely" — ZDI's detailed write-up,
+      published a month after the patch, materially lowers the bar for weaponization by documenting the
+      exact overflow arithmetic and the TLS-record-fragmentation trigger technique. A pre-2026-06 default
+      MaxRequestBytes registry value (16384 bytes) is not vulnerable; environments that raised
+      MaxRequestBytes above the default without also patching remain exposed even after applying other
+      June updates if they reverted or never set the interim mitigation.
+    region_nexus: "global; any internet-facing Windows Server running IIS or another HTTP.sys-based service (including Windows-hosted e-government portals) is in scope"
+    primary_sector_nexus: "direct — public-sector web infrastructure commonly runs IIS/HTTP.sys"
+    sector: "public-sector, energy, finance, healthcare, telco, transport (any Windows Server-hosted web tier)"
+    cves: ["CVE-2026-47291"]
+    techniques: ["T1190", "T1499"]
+    affected_products: ["Microsoft Windows Server (HTTP.sys/IIS)", "Windows 10", "Windows 11"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The vulnerability is only reachable through HTTP/1.x header parsing over TLS connections."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/blog/2026/7/9/cve-2026-47291-remote-code-execution-in-the-windows-httpsys"
+      - quote: "Successful exploitation results in unexpected system termination due to a memory access exception in the context of the kernel."
+        attribution: "Zero Day Initiative"
+        source_url: "https://www.zerodayinitiative.com/blog/2026/7/9/cve-2026-47291-remote-code-execution-in-the-windows-httpsys"
+      - quote: "Integer overflow or wraparound in Windows HTTP.sys allows an unauthorized attacker to execute code over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-47291"
+    extended_notes: |
+      Hunt/detection concept (telemetry class first): inbound HTTPS connections whose TLS session
+      shows an unusually high count of small application-data records for a single HTTP/1.x request
+      (i.e., request header bytes fragmented across many TLS records rather than one or a few) is the
+      discriminating shape described by ZDI's trigger technique; standard browser/proxy clients do not
+      fragment headers this way, so a large volume of tiny TLS app-data records feeding one HTTP
+      connection to an IIS/HTTP.sys listener is anomalous and worth a packet-capture-level or W3C
+      IIS-log correlation (request size vs. TLS record count) where such telemetry exists. Kernel crash
+      dumps/blue-screens on internet-facing IIS boxes following unusual inbound TLS traffic warrant
+      triage against this CVE. Hardening: confirm June 2026 cumulative update is applied; verify
+      HKLM\SYSTEM\CurrentControlSet\Services\HTTP\Parameters\MaxRequestBytes is at the Windows default
+      (16384) or, if a larger value is operationally required, no lower than 65534 per Microsoft's
+      interim-mitigation guidance — values between 16384 and 65534 remain exposed pre-patch.
+    borderline: false
+
+  - title: "Metasploit ships a working exploit module for the Flowise CSV Agent unauthenticated RCE (CVE-2026-41264) — public point-and-click exploitation now available for a April-2026 sandbox-bypass flaw"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/pt-weekly-metasploit-update-exploits-for-flowiseai-csv-agent-and-macos-package-kit", publisher: "Rapid7 (Metasploit)", date: "2026-07-11", role: "primary" }
+      - { url: "https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-3hjv-c53m-58jj", publisher: "FlowiseAI / GitHub Security Advisories", date: "2026-04-15", role: "primary" }
+    discovery_trace: "first seen at: rapid7-research (source slice), URL https://www.rapid7.com/rss.xml → primary: Rapid7 Metasploit weekly wrap-up, URL https://www.rapid7.com/blog/post/pt-weekly-metasploit-update-exploits-for-flowiseai-csv-agent-and-macos-package-kit → pivot: WebSearch (\"CVE-2026-41264 Flowise CSV Agent ZDI advisory\") → primary: FlowiseAI GitHub Security Advisory, URL https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-3hjv-c53m-58jj"
+    summary: |
+      Rapid7's 2026-07-11 weekly Metasploit wrap-up adds a new exploit module
+      (multi/http/flowise_auth_rce_cve_2026_41264, contributed by Takahiro Yokoyama, credited to a ZDI
+      disclosure) for CVE-2026-41264, an unauthenticated remote code execution vulnerability in
+      FlowiseAI Flowise, an open-source low-code builder for AI agents/chatbots. The flaw sits in the
+      run() method of the CSV_Agents class (packages/components/nodes/agents/CSVAgent/CSVAgent.ts) and
+      its companion pythonCodeValidator.ts input-sanitization logic: the CSV Agent node evaluates
+      LLM-generated Python without proper sandboxing, and CVE-2026-41264 is a prompt-injection bypass of
+      an earlier fix (CVE-2026-41137) that blocked dangerous imports — the bypass works by aliasing
+      import statements (e.g. import pandas as np, os as pandas, then calling pandas.system(...)) so the
+      import-name check does not catch the disallowed os module. An unauthenticated attacker able to
+      send prompts to a chatflow that exposes the CSV Agent node can coax the LLM into emitting the
+      malicious Python, which executes with the privileges of the Flowise server process — no Flowise
+      login is required, though the Metasploit module needs an API key with chatflows:create permission
+      to stage the flow. Affected: Flowise and flowise-components ≤ 3.0.13; fixed in 3.1.0 (all imports
+      disallowed in the CSV Agent going forward). The underlying vulnerability itself was disclosed by
+      ZDI/FlowiseAI on 2026-04-15 (CVSS 4.0: 9.2) and is not new; what is new in-window is the public,
+      point-and-click Metasploit exploit module, which meaningfully lowers the bar from "PoC exists" to
+      "any Metasploit user can run this against exposed instances" for a self-hosted AI-agent platform
+      that saw prior mass-exploitation reporting in April 2026 (12,000+ internet-exposed instances noted
+      at the time for a related CVSS 10.0 flaw).
+    region_nexus: "global; any organisation self-hosting FlowiseAI for internal AI-agent/chatbot tooling, including EU public-sector AI pilots, is exposed if instances are internet-reachable and unpatched"
+    primary_sector_nexus: "indirect — self-hosted AI-agent tooling increasingly piloted in public-sector digitalisation projects"
+    sector: "public-sector, cross-sector (any org self-hosting Flowise)"
+    cves: ["CVE-2026-41264"]
+    techniques: ["T1190", "T1059.006"]
+    affected_products: ["FlowiseAI Flowise", "flowise-components"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This adds a new exploit module for FlowiseAI Flowise (CVE-2026-41264). The CSV Agent feature evaluates LLM-generated Python code without proper sandboxing, allowing a prompt injection to achieve arbitrary code execution as the user running the server."
+        attribution: "Rapid7 (Metasploit weekly wrap-up)"
+        source_url: "https://www.rapid7.com/blog/post/pt-weekly-metasploit-update-exploits-for-flowiseai-csv-agent-and-macos-package-kit"
+      - quote: "The issue results from the lack of proper sandboxing when evaluating an LLM generated python script. An attacker can leverage this vulnerability to execute code in the context of the user running the server."
+        attribution: "FlowiseAI GitHub Security Advisory (GHSA-3hjv-c53m-58jj)"
+        source_url: "https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-3hjv-c53m-58jj"
+      - quote: "An unauthenticated attacker with the ability to send prompts to a chatflow using the CSV Agent node may convince an LLM to respond with malicious python script."
+        attribution: "FlowiseAI GitHub Security Advisory (GHSA-3hjv-c53m-58jj)"
+        source_url: "https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-3hjv-c53m-58jj"
+    extended_notes: |
+      Detection concept: process-creation telemetry showing the Flowise/Node.js server process spawning
+      a Python interpreter (or a Python process invoking os/subprocess-equivalent calls) outside of
+      expected orchestration paths is the anchor; on the Flowise host, unexpected child processes off
+      the node/flowise parent with command lines invoking system()/os.system-equivalent calls are the
+      discriminator. Benign lookalike: legitimate CSV Agent usage does invoke Python-in-process for
+      pandas dataframe operations, so the distinguishing signal is imports beyond pandas/numpy data
+      manipulation (e.g. os, subprocess aliased as a data-science module name) or outbound network/file
+      activity from the interpreter that doesn't match a CSV-processing workload. Hardening: upgrade to
+      Flowise/flowise-components >= 3.1.0; restrict chatflows:create API-key issuance; do not expose
+      Flowise CSV Agent-enabled chatflows to unauthenticated end users; network-isolate self-hosted
+      Flowise instances from the internet where agent-authoring is not a public-facing requirement.
+    borderline: true
+    borderline_reason: "the underlying CVE was disclosed in April 2026 (not new); the in-window development is the public Metasploit weapon­ization, which the S1 mission explicitly tracks (public PoC/exploit research) but which some editors may judge as insufficiently novel for a standalone entry — surfaced for the main agent's call."
+
+cve_table:
+  - { cve: "CVE-2026-47291", product: "Microsoft Windows (HTTP.sys)", cvss: "9.8 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)", epss: null, kev: false, exploited: "No (per MSRC, as of 2026-07-10); Microsoft rates 'Exploitation More Likely'", patch: "June 2026 Patch Tuesday cumulative updates (Windows 10 1607/1809/21H2/22H2; Windows 11 23H2/24H2/25H2/26H1)", source: "https://www.zerodayinitiative.com/blog/2026/7/9/cve-2026-47291-remote-code-execution-in-the-windows-httpsys" }
+  - { cve: "CVE-2026-41264", product: "FlowiseAI Flowise / flowise-components", cvss: "9.2 (CVSS 4.0, AV:N/AC:H/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N)", epss: null, kev: false, exploited: "Public Metasploit exploit module released 2026-07-11; no confirmed in-the-wild exploitation reported for this specific bypass CVE", patch: "flowise / flowise-components >= 3.1.0", source: "https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-3hjv-c53m-58jj" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in org-profile.yaml — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across the full source slice (CISA KEV, ENISA EUVD x3 listings, NCSC-CH CSH, NCSC-NL, CERT-FR, BSI, CERT-EU, CISA advisories/directives, NCSC-UK, CERT-PL, JPCERT, and standard-tier exploit-research blogs)."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "named as a rotation-priority source in the spawn message but not present in work/2026-07-11T0409Z-intel/sources.S1.json — the slice handed to this sub-agent does not include an 'industrialcyber-co' record, so it could not be attempted. Flagging for the main agent to confirm the record exists in sources/sources.json and is routed to S1's slice on the next run."
+  - source_id: ncsc-uk
+    reason: "bridge/WebFetch on the reports-advisories index returned only 6 items, newest dated 2026-04-07 — consistent with prior notes that this source lags; no in-window (24h) content available this run."
+  - source_id: cert-eu
+    reason: "RSS/API returned advisories only through 2026-06 (2026-008, published 2026-06-10) — no in-window content; source's publication cadence is roughly monthly."
+  - source_id: jpcert
+    reason: "RSS feed (jpcert-en.rdf) returned 0 items via jina fallback; WebFetch on the English index page showed newest alert dated 2026-06-10 — no in-window content, consistent with prior notes of a multi-week lag."
+  - source_id: cisa-directives
+    reason: "listing enumerated via bridge (cisa page) showed only previously-known directives (BOD 26-04, BOD 26-02, ED-25-03, ED-26-03) — no new directive published in-window."
+  - source_id: vulncheck
+    reason: "blog listing freshest post dated 2026-06-25 — outside 24h window, no in-window content."
+  - source_id: watchtowr
+    reason: "RSS feed freshest post dated 2026-07-02 (ColdFusion APSB26-68) — outside 24h window, no in-window content."
+  - source_id: exodus-intelligence
+    reason: "RSS feed freshest post dated 2026-07-06 — outside 24h window, no in-window content."
+  - source_id: flatt-security
+    reason: "listing freshest post dated 2026-06-01 — outside window, no in-window content (cadence is ~monthly per source notes)."
+  - source_id: calif-codex
+    reason: "RSS feed freshest post dated 2026-07-01 — outside 24h window, no in-window content."
+  - source_id: keycloak
+    reason: "not checked this run — no Keycloak-specific in-window lead surfaced from other sources (last Keycloak release cycle already covered 2026-06-28/29 per prior_coverage); deprioritised in favour of essential-tier sweep given time budget."
+  - source_id: sansec
+    reason: "not checked this run — deprioritised in favour of essential-tier sweep and the two confirmed in-window items; no Magecart/skimmer lead surfaced elsewhere in this run's collection."
