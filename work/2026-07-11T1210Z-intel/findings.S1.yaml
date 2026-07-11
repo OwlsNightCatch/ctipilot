@@ -1,0 +1,158 @@
+domain: S1
+run_id: 2026-07-11T1210Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-11T12:13:16Z
+ended_at: 2026-07-11T12:25:15Z
+duration_seconds: 719
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 8
+  bridge_fetches: 28
+
+items:
+  - title: "Joomla extension file-upload RCE wave adds two more members: RSFiles! (CVE-2026-57827, unauthenticated, CVSS 10.0) and Phoca Download (CVE-2026-57828, authenticated, CVSS 9.0)"
+    sources:
+      - { url: "https://mysites.guru/blog/rsfiles-unauthenticated-file-upload-rce/", publisher: "mySites.guru", date: "2026-07-10", role: "primary" }
+      - { url: "https://www.rsjoomla.com/blog/view/644-unauthenticated-file-upload-fixed-in-rsfiles-version-11712-update-now.html", publisher: "RSJoomla! (vendor)", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://mysites.guru/blog/phoca-download-authenticated-file-upload-rce/", publisher: "mySites.guru", date: "2026-07-10", role: "primary" }
+      - { url: "https://github.com/PhocaCz/PhocaDownload/releases", publisher: "PhocaCz (vendor, GitHub releases)", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvdservices.enisa.europa.eu/api/search?fromScore=9&toScore=10 (EUVD-2026-43168 CVE-2026-57827 and EUVD-2026-43167 CVE-2026-57828, both datePublished 2026-07-11) → pivot: mySites.guru, URL https://mysites.guru/blog/rsfiles-unauthenticated-file-upload-rce/ → corroborating: RSJoomla! vendor blog, URL https://www.rsjoomla.com/blog/view/644-unauthenticated-file-upload-fixed-in-rsfiles-version-11712-update-now.html → pivot: mySites.guru, URL https://mysites.guru/blog/phoca-download-authenticated-file-upload-rce/ → corroborating: PhocaCz GitHub releases, URL https://github.com/PhocaCz/PhocaDownload/releases; CVE ids verified live on https://nvd.nist.gov/vuln/detail/CVE-2026-57827 and https://nvd.nist.gov/vuln/detail/CVE-2026-57828 (verification only, not cited as Source per link-discipline rule)."
+    summary: |
+      RSFiles! (com_rsfiles) for Joomla through 1.17.11 split its permission check and its file-write operation across two separate methods; an attacker calling the write method directly bypasses the permission gate entirely with no authentication or CSRF token, and the uploaded file lands in the component's public, web-executable /downloads folder — a classic CWE-434 unrestricted-upload-to-RCE primitive (CVSS 4.0 10.0, AV:N/AC:L/AT:N/PR:N/UI:N). RSJoomla! shipped 1.17.12 on 2026-07-10 enforcing a valid CSRF token plus permission/file-type checks before the write. The same-day companion disclosure, Phoca Download (com_phocadownload) through 6.1.2, ties its allow-list file-type check to the wrong internal upload mode: the non-default frontend member-upload feature uses a different code path than the one the allow-list was written for, so a registered user can upload and execute a .php file (CVSS 4.0 9.0, requires an account plus the member-upload feature enabled). Phoca fixed this in 6.1.3, also released 2026-07-10. Both were found by mySites.guru, the same researcher/tooling that has been systematically fuzzing Joomla third-party extensions for this exact bug class for weeks — JoomShaper SP Page Builder (CVE-2026-48908), Joomlack Page Builder CK (CVE-2026-56290) and Balbooa Forms (CVE-2026-56291) all disclosed since mid-June with the identical CWE-434 primitive, and all three are now CISA KEV-listed (Balbooa and Joomlack both added within days of disclosure, the third — Joomlack — found already being exploited pre-patch via a hosting-abuse report). RSFiles! and Phoca Download are not yet confirmed exploited (EPSS still 0.0, too new to score) but match the exact profile that turned the wave's earlier members into confirmed KEV entries within one to three weeks: pre-auth or low-auth CMS extension, public web-executable upload directory, and a researcher already publishing the exact bypass mechanics.
+    region_nexus: "global — Joomla is widely deployed across Swiss and European public-sector and SME websites; extension-level exposure is independent of core-Joomla patch status"
+    primary_sector_nexus: "indirect — public-sector and any-sector Joomla-hosted sites"
+    sector: "public-sector, cross-sector web hosting"
+    cves: [CVE-2026-57827, CVE-2026-57828]
+    techniques: [T1190, T1505.003]
+    affected_products: ["RSFiles! (com_rsfiles) for Joomla", "Phoca Download (com_phocadownload) for Joomla"]
+    entity_keys: ["trend:joomla-extension-file-upload-rce-wave"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Any attacker, without having an account on your website, can upload a .php file in your /downloads directory and execute it."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/rsfiles-unauthenticated-file-upload-rce/"
+      - quote: "A logged-in user could upload a file type that should have been rejected, such as a .php script, into the public user-upload folder and then run it."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/phoca-download-authenticated-file-upload-rce/"
+      - quote: "The Joomla extension RSFiles is vulnerable to an unauthenticated arbitrary file upload that allows uploading executable files and leads to full RCE."
+        attribution: "NVD (CVE-2026-57827 description, verification only)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-57827"
+    extended_notes: |
+      Registry entity trend:joomla-extension-file-upload-rce-wave currently summarises three prior members (JoomShaper SP Page Builder CVE-2026-48908, Joomlack Page Builder CK CVE-2026-56290, Balbooa Forms CVE-2026-56291). RSFiles! and Phoca Download are two more members of the same wave, same discoverer (mySites.guru), same CWE-434 primitive, disclosed 2026-07-10 — the main agent may wish to extend the entity's summary/aliases to reflect five members rather than three.
+      Detection/hardening for defenders running any Joomla site with third-party extensions: monitor for POST requests to component upload endpoints (com_rsfiles ajax/task=upload equivalents, com_phocadownload member-upload endpoints) that are not preceded by a normal authenticated session-cookie + CSRF-token page load; alert on new .php/.phtml/.php5 files appearing under web-root download/upload directories (webshell staging); the benign-lookalike discriminator is that legitimate upload traffic always carries a valid Joomla session cookie AND the CSRF token matching that session — the exploit path (both RSFiles and Phoca) either lacks the token entirely (RSFiles, unauthenticated) or reaches the write function through a code path the allow-list was never applied to (Phoca). Hardening: disable non-default upload/member-upload features where not required (removes Phoca's precondition entirely); web-server config to deny script execution in extension upload/download directories (defense-in-depth against the whole wave, not just these two CVEs).
+    borderline: false
+
+  - title: "Keycloak 26.7.0 patches four more identity-plane CVEs — admin-role-rename TOCTOU privilege escalation, OIDC redirect-URI parameter pollution, CIBA lockout bypass, and a fine-grained-permissions role-unassignment flaw"
+    sources:
+      - { url: "https://www.keycloak.org/2026/07/keycloak-2670-released", publisher: "Keycloak Project (vendor)", date: "2026-07-09", role: "primary" }
+    discovery_trace: "first seen at: keycloak (source-list slice), URL https://www.keycloak.org/rss.xml → primary: Keycloak Project release notes, URL https://www.keycloak.org/2026/07/keycloak-2670-released (no further pivot reachable — linked GitHub issues #49427/#49430/#49432/#49766 both 403'd direct fetch and jina-reader fallback)."
+    summary: |
+      Keycloak 26.7.0 (released 2026-07-09) is the third consecutive monthly release to carry identity-plane CVE fixes for the CNCF/Red Hat reference IAM stack that underpins federated SSO across much of the EU public sector — following 26.6.3 (2026-06-07, token-exchange privesc) and 26.6.4 (2026-06-26, JWT algorithm confusion CVE-2026-11800 + policy-enforcer bypass CVE-2026-9800, both previously covered). This release fixes four more: CVE-2026-9796 is a TOCTOU (time-of-check/time-of-use) race in the admin-role-rename path that bypasses checkAdminRoles, letting a user holding only the manage-clients role escalate to realm-wide admin; CVE-2026-9689 is an HTTP Parameter Pollution in the OIDC redirect_uri handling that allows response-parameter duplication; CVE-2026-9798 lets the CIBA (Client-Initiated Backchannel Authentication) flow bypass Keycloak's brute-force account-lockout counter entirely, re-opening credential-stuffing/brute-force exposure on any realm that has enabled CIBA; and CVE-2026-11986 lets a caller of the Fine-Grained Admin Permissions v1 API unassign any role, including from users the caller has no authority over. No CVSS scores or confirmed-exploitation status were published in the vendor's release notes; all four were disclosed and fixed in the same release with no interim advisory window.
+    region_nexus: "Switzerland and EU — Keycloak is the dominant open-source IdP/SSO broker across EU public-sector e-government deployments (explicitly flagged as such in the org's prior Keycloak coverage 2026-06-28/29)"
+    primary_sector_nexus: "direct — public-sector federated identity infrastructure"
+    sector: "public-sector, identity-infrastructure, cross-sector (any Keycloak-brokered SSO deployment)"
+    cves: [CVE-2026-9796, CVE-2026-9689, CVE-2026-9798, CVE-2026-11986]
+    techniques: [T1068, T1110]
+    affected_products: ["Keycloak (before 26.7.0)"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-06-29/cve-2026-11800-jwt-algorithm-confusion-and-cve-2026-9800-pol"
+    evidence:
+      - quote: "[CVE-2026-9796] Admin role rename TOCTOU bypasses checkAdminRoles — realm-wide escalation from manage-clients"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+      - quote: "[CVE-2026-9798] CIBA authentication flow bypasses brute-force account lockout"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+      - quote: "[CVE-2026-11986] FGAP v1 allows unassigning any role"
+        attribution: "Keycloak Project"
+        source_url: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+    extended_notes: |
+      Recency note for the main agent: keycloak.org's own RSS dates this release 2026-07-09T00:00Z, ~60 hours before this run (window_hours=24, developing_window_hours=72) — included under the developing-story allowance because it is a direct continuation of a Keycloak identity-plane vulnerability-disclosure pattern the org has covered twice already (2026-06-28 deep dive, 2026-06-29 rollup) and no daily run appears to have surfaced 26.7.0 in the intervening two days (not present in prior_coverage.json). Flagging as borderline in case the main agent judges the 60h gap too stale for a non-update item; the update-of shape (delta on the tracked Keycloak-identity-plane story) is the basis for inclusion despite the gap.
+      Detection angle: CVE-2026-9798 is the most operationally significant of the four for a SOC — any realm with CIBA enabled loses its brute-force lockout counter as a control, so credential-stuffing detection must fall back to authentication-log volume/velocity analysis (repeated failed CIBA backchannel authentication requests from one client_id or one IP within a short window) rather than relying on Keycloak's own lockout state. CVE-2026-9796 is a TOCTOU race — from a pure detection-engineering perspective this class of bug is hard to catch from logs alone since the race window is server-side; the practical control is the patch itself plus auditing which service accounts hold manage-clients without also needing full admin.
+    borderline: true
+    borderline_reason: "vendor release notes are dated ~60h before this run's window opened (window_hours=24; developing_window_hours=72 for actively-developing stories) — included as a delta on the twice-already-covered Keycloak identity-plane disclosure pattern, single-sourced to the vendor's own release notes (GitHub issue links for the four CVEs both 403'd on fetch)."
+
+cve_table:
+  - cve: CVE-2026-57827
+    product: "RSFiles! (com_rsfiles) for Joomla, through 1.17.11"
+    cvss: "10.0 (CVSS 4.0, CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)"
+    epss: "0.0 (too new to score)"
+    kev: false
+    exploited: "not confirmed — matches the profile of prior wave members that reached KEV within 1-3 weeks"
+    patch: "1.17.12 (2026-07-10)"
+    source: "https://mysites.guru/blog/rsfiles-unauthenticated-file-upload-rce/"
+  - cve: CVE-2026-57828
+    product: "Phoca Download (com_phocadownload) for Joomla, through 6.1.2"
+    cvss: "9.0 (CVSS 4.0, CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H)"
+    epss: "0.0 (too new to score)"
+    kev: false
+    exploited: "not confirmed — requires registered account + non-default member-upload feature enabled"
+    patch: "6.1.3 (2026-07-10)"
+    source: "https://mysites.guru/blog/phoca-download-authenticated-file-upload-rce/"
+  - cve: CVE-2026-9796
+    product: "Keycloak, before 26.7.0"
+    cvss: "not published by vendor"
+    epss: "not published"
+    kev: false
+    exploited: "not confirmed"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-9689
+    product: "Keycloak, before 26.7.0"
+    cvss: "not published by vendor"
+    epss: "not published"
+    kev: false
+    exploited: "not confirmed"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-9798
+    product: "Keycloak, before 26.7.0"
+    cvss: "not published by vendor"
+    epss: "not published"
+    kev: false
+    exploited: "not confirmed"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+  - cve: CVE-2026-11986
+    product: "Keycloak, before 26.7.0"
+    cvss: "not published by vendor"
+    epss: "not published"
+    kev: false
+    exploited: "not confirmed"
+    patch: "26.7.0 (2026-07-09)"
+    source: "https://www.keycloak.org/2026/07/keycloak-2670-released"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment — sweep is a no-op per spawn instructions; general coverage rules applied throughout."
+
+candidate_sources:
+  - id: mysites-guru
+    publisher: "mySites.guru (Joomla/WordPress site-management vendor blog)"
+    url: "https://mysites.guru/blog/"
+    category: research
+    why: "Primary discoverer of an entire wave of critical CWE-434 unauthenticated/low-auth file-upload-to-RCE flaws across Joomla third-party extensions since mid-June 2026 (JoomShaper SP Page Builder CVE-2026-48908, Joomlack Page Builder CK CVE-2026-56290, Balbooa Forms CVE-2026-56291, and now RSFiles! CVE-2026-57827 + Phoca Download CVE-2026-57828 this run) — several of these have gone on to CISA KEV within days to weeks. Consistent, dated, technically precise write-ups with vendor-patch confirmation each time; already the primary source underlying the registry's trend:joomla-extension-file-upload-rce-wave entity across at least three prior runs."
+
+coverage_gaps:
+  - source_id: industrialcyber-co
+    reason: "Rotation-priority target; jina reader also returned 'reader proxy relayed an upstream block/challenge' — the host is blocked even through the jina fallback. Direct WebFetch not attempted separately (already known 403 per prior runs). No working transport found this run; recipe likely needs a different bridge approach or should be logged as a persistent block."
+  - source_id: cert-eu
+    reason: "Fetched clean (200) via the api bridge but freshest advisory in the recent-8 listing is 2026-008 (Ivanti Sentry, published 2026-06-10) — no in-window content; quiet period, not a transport failure."
+  - source_id: cert-pl
+    reason: "Fetched clean via WebFetch but freshest news item is 2026-06-12 (UNC1151/Ghostwriter Gmail phishing) — no in-window content; quiet period, not a transport failure."
+  - source_id: jpcert
+    reason: "Fetched clean via WebFetch; freshest items (Ricoh Web Image Monitor XSS 2026-07-09, Pupsman installer 2026-07-08, Apache Jena Fuseki path traversal 2026-07-07) are all low-severity single-vendor advisories (reflected XSS, CSRF, path traversal) that did not clear the relevance/actionability bar for this run — not a transport failure."
+  - source_id: ncsc-uk
+    reason: "The reports-advisories index returned only a JS-rendered shell to the bridge `url` fetch (no drillable article hrefs surfaced in this attempt) — did not retry with the documented WebFetch-then-bridge-slug recipe due to time allocation; no in-window NCSC-UK item confirmed either way this run."
+  - source_id: vulncheck
+    reason: "Fetched clean via jina reader (WebFetch attempt returned only a Nuxt CSS shell); freshest post is 2026-06-25 (NVIDIA GEN3C pickle RCE) — no in-window content, quiet period."

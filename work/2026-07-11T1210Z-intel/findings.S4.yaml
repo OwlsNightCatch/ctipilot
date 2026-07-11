@@ -1,0 +1,99 @@
+domain: S4
+run_id: 2026-07-11T1210Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-11T12:13:51Z
+ended_at: 2026-07-11T12:25:31Z
+duration_seconds: 700
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 22
+  bridge_fetches: 5
+items:
+  - title: "CISA publishes forensic postmortem of its own May 2026 AWS GovCloud credential leak — secrets-in-repo and public-upload guardrails as the transferable lesson"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/news/lessons-cisas-cyber-incident", publisher: "CISA", date: "2026-07-09", role: primary }
+      - { url: "https://cyberscoop.com/cisa-credential-leak-forensic-report/", publisher: "CyberScoop", date: "2026-07-10", role: corroborating }
+      - { url: "https://krebsonsecurity.com/2026/05/cisa-admin-leaked-aws-govcloud-keys-on-github/", publisher: "Krebs on Security", date: "2026-05-18", role: background }
+    discovery_trace: "first seen at: WebSearch (\"CISA blog forensic report May credential leak GitHub AWS GovCloud\") → pivot: CyberScoop, URL https://cyberscoop.com/cisa-credential-leak-forensic-report/ → primary: CISA, URL https://www.cisa.gov/news-events/news/lessons-cisas-cyber-incident (fetched via bridge/jina reader — CISA.gov 403s direct WebFetch per repo convention)"
+    summary: |
+      CISA published a forensic postmortem (2026-07-09) of the incident it disclosed in May 2026, in which
+      a Nightwing contractor's personal GitHub repository ("Private-CISA") exposed administrative credentials
+      to three AWS GovCloud accounts, plaintext passwords for internal CISA systems, SSH keys and access to
+      CISA's internal Artifactory build-package repository ("LZ-DSO") for roughly six months (this is an
+      update on entries/2026-05-19/cisa-contractor-nightwing-exposed-aws-govcloud-admin-keys-an — the original
+      Krebs on Security disclosure). CISA's own account confirms the exposure mechanism was T1552.001
+      (Credentials In Files): a contractor uploaded a personal copy of CISA's build/deployment repo — including
+      Infrastructure-as-Code and both admin and build credentials — to a public personal GitHub account for
+      autonomous cloud-infra tooling, and had disabled GitHub's default push-protection secret scanning on that
+      repo. Forensic log analysis found the leaked credentials were not used outside CISA's own environments and
+      no customer/mission data was exposed, but key rotation "took longer than anticipated" given the complexity
+      of CISA's federal/industry interconnections. The concrete corrective actions CISA now names are the
+      transferable content for defenders: (1) monitoring/blocking uploads to public code repositories via EDR
+      rather than relying on developer-honoured settings, since users previously had unrestricted ability to
+      push to public repos; (2) mandatory secrets rotation across every environment where the exposed individual
+      held admin rights (not just the directly-exposed credentials); (3) a dedicated GitHub/cloud incident
+      playbook, which CISA had not had prepared in advance; (4) consolidating developer environments to enforce
+      consistent controls; (5) simplifying and multiplying reporting channels (a security.txt file alone was
+      insufficient — the researcher had to route through a reporter after multiple failed channels).
+    region_nexus: "global — US federal cybersecurity authority; no direct CH/EU victim, included as a transferable governance/incident-response lesson for national CERTs and public-sector build pipelines (see extended_notes)"
+    primary_sector_nexus: "indirect — public-sector CI/cloud build-pipeline security practice, directly transferable to NCSC/BSI/ANSSI-class national CERT operations and any public-sector DevOps environment"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1552.001]
+    affected_products: ["GitHub (public repositories)", "Amazon AWS GovCloud"]
+    entity_keys: ["incident:cisa-nightwing-contractor-aws-govcloud-keys-exposed-github"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-05-19/cisa-contractor-nightwing-exposed-aws-govcloud-admin-keys-an"
+    evidence:
+      - quote: "The individual had uploaded copies of a CISA build and deployment repository to their personal GitHub account for the purpose of creating cloud infrastructure autonomously. This repository included CISA's Infrastructure As Code and build code."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/news/lessons-cisas-cyber-incident"
+      - quote: "No repository should contain secrets, yet secrets made it into CISA private repositories. CISA has since rotated all secrets and created an action plan to improve management of developer secrets and to better monitor for exposed secrets going forward."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/news/lessons-cisas-cyber-incident"
+      - quote: "It also analyzed log files to learn that none of the leaked credentials were used outside of CISA, and that no customer or mission data was exposed."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/cisa-credential-leak-forensic-report/"
+    extended_notes: |
+      Included as a transferable governance lesson rather than a CH/EU-nexus breach: the underlying incident
+      (a national cybersecurity authority's own build-credential exposure via a contractor's personal GitHub
+      repo, six months undetected, disabled secret-scanning) is a generic-but-universal failure mode for any
+      national CERT or public-sector DevOps pipeline that gives contractors/integrators push access to build
+      infrastructure — squarely the kind of transferable lesson the org's own S1/S4 entity note on the original
+      incident (entries/2026-05-19) already flagged for NCSC/BSI/ANSSI operators. This item supplies the concrete
+      remediation playbook CISA actually implemented, which the original entry could not have known in May.
+      Borderline call: no CH/EU victim and CISA is a foreign authority, but the entity key was already registered
+      from the May disclosure and the update meaningfully deepens the actionable lesson, so it clears the bar as
+      an update rather than a fresh out-of-nexus item requiring the (a)-(d) test.
+    borderline: true
+    borderline_reason: "US federal agency self-disclosure with no Swiss/EU victim; included as update-of a previously registered incident because the postmortem supplies new, concrete, transferable secrets-management/incident-response detail (EDR-enforced repo-upload controls, mandatory org-wide secret rotation, GitHub/cloud playbook gap) not available at original disclosure."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist configured for this deployment — sweep is a no-op per org-profile.yaml. General incident/disclosure coverage (SEC EDGAR 8-K item 1.05, CNIL/EDPB, UK ICO enforcement, ransomware.live, breach journalism) was worked in full regardless."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "cnil-fr"
+    reason: "No breach/enforcement item newer than 2026-05-28 (IQVIA fine) surfaced on /en/news; the richer French-language sanctions page (cnil.fr/fr/les-sanctions-prononcees-par-la-cnil) showed nothing newer than 2026-01-14 (Free Mobile/Free — 6 months stale, dropped for recency)."
+  - source_id: "edpb (via cnil-fr sourcing note)"
+    reason: "edpb.europa.eu/news_en checked directly: newest item 2026-07-08 is guidance (AI anonymisation/web-scraping/blockchain), not a breach/incident disclosure; nothing in-window on the incident/disclosure axis."
+  - source_id: "ico-uk (bridge: ico-uk enforcement)"
+    reason: "Sitemap-derived enforcement listing shows nothing newer than 2026-07-08 lastmod (Jacksons Marketing Ltd, dated to a March action); no fresh in-window UK ICO enforcement action."
+  - source_id: "ransomware-live (bridge: api recentvictims)"
+    reason: "100 most-recent claims pulled and filtered to CH/EU/UK countries within 48h: dominated by a single 'Deadlock' mass-listing wave (~40 EU victims posted within one hour, incl. Zidlochovice city CZ public-sector and Dyhrberg AG Switzerland) plus a French municipality (Commune of Castries, ~110GB claimed by 'Payload') and a Mayotte commune (La ville de Ouangani). ALL are unverified leak-site claims only — no victim confirmation or Admiralty A/B journalism found after targeted WebSearch in French/German for each (Castries: only automated leak-trackers frenchbreaches.com/QPulse/HookPhish/ThreatMon bot, no municipal statement or regional press found). Dropped per mandatory fake-news-scrutiny rule (leak-site claims require victim disclosure or A/B journalism); not included even as borderline given the hard requirement is unmet, not just weak."
+  - source_id: "WebSearch (bd.zh.ch / Zurich cantonal Baudirektion MedusaLocker listing)"
+    reason: "Found via WebSearch: bd.zh.ch (Zurich canton Baudirektion) appeared on MedusaLocker's leak site 2026-07-01 per a single low-reliability automated breach-blog (GalaxyWarden, no established track record); no NCSC-CH/Kanton Zürich statement or press corroboration found. Dropped for BOTH recency (10 days stale, no in-window fresh delta found) and fake-news-scrutiny (single unverified leak-site relay). Flagging explicitly given the deployment's own cantonal nexus (Zurich) — worth a targeted follow-up check against NCSC-CH/Kanton ZH channels in a future run if the SOC has internal visibility to confirm/deny."
+  - source_id: "SEC EDGAR (bridge: sec-edgar 8k, item 1.05)"
+    reason: "Only one Item 1.05 filing in the 2026-07-08 to 2026-07-11 window: River Financial Corp / River Bank & Trust (Alabama, US) 8-K/A amending its June 19 ransomware disclosure. Considered and dropped: small US-only regional bank, no CH/EU nexus, no named threat actor/cluster disclosed, no transferable TTP beyond generic ransomware deployment — fails all of the (a)-(d) out-of-nexus tests."
+  - source_id: "WebSearch (Accenture 35GB source-code/Azure-credential breach)"
+    reason: "Accenture confirmed a breach (threat actor '888', PwnForums listing, source code + Azure/SSH/RSA keys) on 2026-07-08 — genuinely global-significance candidate (major public-sector/CI IT-services supplier; same actor has prior alleged claims against Credit Suisse) but no fresh in-window development found after a dedicated search; freshest source is 3 days outside the 24h window with no delta. Dropped per recency rule (3+ days stale, no in-window development); flagged here in case a later run finds a fresh scope-confirmation delta."
+  - source_id: "industrialcyber.co, darkreading, le-monde-info, cyberinsider, securityaffairs, malwarebytes, troyhunt"
+    reason: "All fetched successfully (via feed/webfetch, no transport failures this run); reviewed full recent listings — no additional in-window CH/EU-nexus incident/disclosure item cleared the gate beyond what's covered above (remaining fresh items were vulnerability/research/threat-actor material already in prior_coverage or squarely S1/S3 domain, e.g. GigaWiper, GodDamn/PoisonX, Sygnia AI-AWS intrusion, all already covered on 2026-07-09/11)."
