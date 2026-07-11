@@ -4,6 +4,27 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.21 — 2026-07-11 (full-store quality-audit hardening: CVE-id provenance, dead-ATT&CK-id gate FAIL, main-run watchdog, outage-backfill research-blog sweep)
+
+### Why
+
+Operator-directed full-store intelligence audit (three verification passes over all 55 entries of 2026-07-08…-11 against their primary sources; three independent landscape re-sweeps of 2026-07-03…-11). Findings: (1) one entry propagated three wrong wolfSSL CVE ids from a Talos *roundup blog* that contradicted Talos's own per-CVE advisory pages — a wrong id poisons the CVE dedup index, the `/cve/` surfaces and automated triage matching; (2) one entry shipped a CVSS 9.9 for a CVE the vendor advisory scores 8.5, inverting the cluster's severity ranking; (3) one entry shipped a revoked ATT&CK id (T1656) that the pinned dataset already marked revoked at compose time — the gate only WARNed; (4) two runs in one week silently ran 11.2 h and 17.8 h wall-clock, publishing hours late and being overtaken by the next fire (one overtaken run improvised the correct re-sync-and-dedup recovery — codify it); (5) the 62 h scheduler-outage backfill run caught every KEV/CERT item but missed two vendor research-blog publications dated inside the gap (Kaspersky Armored Likho/BusySnake — government + electric-power targeting; Infoblox Lurking Lizard) because research blogs do not route through CVE/KEV discovery paths.
+
+### What changed
+
+- **Phase 2 step 4 — CVE-id provenance rule:** a CVE id and its CVSS are transcribed from the record that owns them (per-CVE advisory, vendor PSIRT, discloser's per-vulnerability page — e.g. a TALOS advisory's "Vendor Response (CVE-…)" field), never from a multi-CVE roundup alone; on disagreement the per-CVE authority wins and the discrepancy goes in `sourcing_note`; an id resolving nowhere never enters `cves[]`.
+- **Phase 4 § ATT&CK / gate:** unknown, revoked, or deprecated `techniques[]` ids now **FAIL** `tools/check_run.py` on v3.21+ runs (`MAPPING_IDS_STRICT_FROM`) — the pin is on disk at compose time, so a dead id is a composition defect; store-wide (`--all`) stays WARN because a *later* pin update revoking a previously-active id is legitimate drift on immutable history.
+- **New anti-crash guard #10 — main-run wall-clock watchdog:** check elapsed time at every phase boundary; past ~3 h, stop widening, land the already-verified candidates through gate → one verifier iteration → publish, and record the overrun. When a later fire overtook the run, re-fetch `origin/main`, rebuild prior-coverage, and re-dedup before composing (the 2026-07-09T2009Z recovery, now codified). `check_run.py` WARNs on `duration_seconds` > 3 h (per-run and `--all`).
+- **Phase 0 step 6 — outage-backfill duty:** when `gap_hours > 24`, S3's spawn message gains an explicit per-publisher research-blog listing sweep for the outage dates before normal in-window work.
+- **`tools/check_run.py`:** the three gates above, plus `--all` WARN on a v3.14+ run record still carrying no `publish_status` >24 h after it started (a Phase 7 amendment that never landed — observed on 2026-07-09T1211Z).
+- **Verifier F2 scope note (both definitions, byte-identical):** frontmatter `cves[]` ids/scores are cross-checked against the per-CVE authority, not just the entry's own cited roundup.
+- **Store repairs under the immutability-exception log** (`.claude/memory/entry-immutability-exceptions.md`): wolfSSL CVE ids corrected (CVE-2026-28739→7532, 25106→5263, 33091→6678; `state/cves_seen.json` re-synced), BeyondTrust CVE-2026-40141 CVSS 9.9→8.5, Odido T1656→T1684.001. Audit report: `docs/audits/2026-07-11-intelligence-quality-audit.md`.
+- **`sources/sources.json` `ncsc-uk`:** working discovery recipe recorded (`all-rss-feed.xml` is fresh; the HTML listing returns a consent-banner shell to every transport) — an essential source had been dark-but-green for weeks because reachability was mistaken for readability.
+
+### What stays
+
+Every phase contract, the inclusion gate (PD-11), dedup polarity, entry immutability (repairs are logged exceptions, not precedent), the verifier loop, and the weekly's divergent lens — the weekly inherits these edits via its runtime read of `cti-run.md`; its banner moves to v3.21 in lockstep.
+
 ## 3.20 — 2026-07-11 (typed entity relationships replace the untyped `related` list; interactive threat graph at /graph/)
 
 ### Why
