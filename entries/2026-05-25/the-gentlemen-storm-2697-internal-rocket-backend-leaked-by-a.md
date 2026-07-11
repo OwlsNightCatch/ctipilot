@@ -25,7 +25,6 @@ sectors:
   - public-sector
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"

@@ -21,7 +21,8 @@ regions:
 sectors:
   - public-sector
   - education
-entities: []
+entities:
+  - "actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu"
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/webworm-new-burrowing-techniques/"

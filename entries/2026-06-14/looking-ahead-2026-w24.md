@@ -19,7 +19,6 @@ sectors: []
 entities:
   - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
   - "trend:greatxml-bitlocker-bypass-2026"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/massnahmen-grossanlaesse-konferenzen-g7.html"

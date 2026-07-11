@@ -23,7 +23,6 @@ sectors:
   - finance
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://krebsonsecurity.com/2026/06/who-runs-the-ransomware-group-the-gentlemen/"

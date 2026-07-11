@@ -21,7 +21,6 @@ sectors:
   - public-sector
 entities:
   - "campaign:ghost-sender-exchange-online-spoofing"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://labs.infoguard.ch/posts/ghost-sender/"

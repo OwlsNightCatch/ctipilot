@@ -22,7 +22,6 @@ sectors:
   - manufacturing
 entities:
   - "report:sophos-active-adversary-2026"
-  - "campaign:underground-ai-adoption-sophos"
 cves: []
 sources:
   - url: "https://www.sophos.com/en-us/blog/2026-sophos-active-adversary-report"

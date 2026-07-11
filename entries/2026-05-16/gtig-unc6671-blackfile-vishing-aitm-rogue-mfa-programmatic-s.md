@@ -23,8 +23,8 @@ sectors:
   - technology
   - healthcare
 entities:
-  - "report:gtig-europe-2025"
   - "actor:shinyhunters"
+  - "actor:unc6671"
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/blackfile-vishing-extortion-operation/"

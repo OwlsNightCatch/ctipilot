@@ -22,7 +22,6 @@ sectors:
   - technology
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
   - "actor:akira"
 cves: []
 sources:

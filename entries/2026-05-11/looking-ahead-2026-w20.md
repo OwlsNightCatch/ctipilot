@@ -19,8 +19,6 @@ sectors: []
 entities:
   - "campaign:mini-shai-hulud"
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
   - "actor:teampcp"
 cves: []
 sources:

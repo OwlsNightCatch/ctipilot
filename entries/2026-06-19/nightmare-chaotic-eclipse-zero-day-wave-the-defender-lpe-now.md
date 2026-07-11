@@ -23,6 +23,7 @@ sectors:
   - public-sector
 entities:
   - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
+  - "actor:nightmare-eclipse"
 cves:
   - id: CVE-2026-50656
     cvss: "7.8"

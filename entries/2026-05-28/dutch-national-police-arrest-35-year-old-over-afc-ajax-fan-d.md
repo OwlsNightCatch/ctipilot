@@ -18,7 +18,8 @@ regions:
   - europe
 sectors:
   - media
-entities: []
+entities:
+  - "incident:afc-ajax-amsterdam-arrest-2026-05-26-300k-fan-records-shared-keys-misconfigured"
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/dutch-police-arrests-suspect-linked-to-ajax-football-club-hack/"

@@ -20,7 +20,8 @@ regions:
 sectors:
   - water
   - public-sector
-entities: []
+entities:
+  - "campaign:frostyneighbor-2026-05-campaign"
 cves: []
 sources:
   - url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa24-207a"

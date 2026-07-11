@@ -22,7 +22,8 @@ regions:
 sectors:
   - defense
   - public-sector
-entities: []
+entities:
+  - "actor:kimsuky"
 cves: []
 sources:
   - url: "https://thehackernews.com/2026/05/kimsuky-deploys-httpspy-expands-arsenal.html"

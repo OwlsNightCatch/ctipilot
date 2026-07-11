@@ -23,7 +23,8 @@ sectors:
   - public-sector
   - education
   - technology
-entities: []
+entities:
+  - "trend:gogs-unpatched-argument-injection-rce-rapid7-metasploit"
 cves: []
 sources:
   - url: "https://www.rapid7.com/blog/post/ve-authenticated-rce-via-argument-injection-gogs-unfixed/"

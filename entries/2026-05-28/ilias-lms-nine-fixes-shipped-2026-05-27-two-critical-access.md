@@ -25,7 +25,6 @@ sectors:
   - public-sector
 entities:
   - "trend:ilias-lms-nine-fixes-2026-05-27-tileimageupload-unauth-write-soap-access-bypass"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://docu.ilias.de/go/blog/15821"

@@ -21,7 +21,8 @@ regions:
   - europe
   - middle-east
 sectors: []
-entities: []
+entities:
+  - "actor:muddywater"
 cves: []
 sources:
   - url: "https://www.deepinstinct.com/blog/muddywater-2026"

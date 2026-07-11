@@ -27,7 +27,7 @@ sectors:
   - healthcare
   - defense
 entities:
-  - "actor:embargo"
+  - "incident:pwn2own-berlin-2026"
 cves: []
 sources:
   - url: "https://www.thezdi.com/blog/2026/5/16/pwn2own-berlin-2026-day-three-results-and-master-of-pwn"

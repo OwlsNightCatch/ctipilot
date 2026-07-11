@@ -23,7 +23,6 @@ sectors:
   - technology
 entities:
   - "campaign:mini-shai-hulud"
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
   - "tool:pcpjack-cloud-worm-2026"
   - "actor:teampcp"
 cves: []

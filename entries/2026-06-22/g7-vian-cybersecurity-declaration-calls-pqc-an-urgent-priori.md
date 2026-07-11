@@ -22,8 +22,7 @@ regions:
 sectors:
   - public-sector
   - transport
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://cyber.gouv.fr/en/publications/jointly-led-international-publications/declaration-of-the-g7-cybersecurity-working-group/"

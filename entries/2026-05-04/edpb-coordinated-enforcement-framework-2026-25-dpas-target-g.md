@@ -20,6 +20,7 @@ regions:
 sectors: []
 entities:
   - "campaign:edpb-cef-2026-transparency"
+  - "policy:edpb-cef-2026-transparency"
 cves: []
 sources:
   - url: "https://www.edpb.europa.eu/news/news/2026/cef-2026-edpb-launches-coordinated-enforcement-action-transparency-and-information_en"

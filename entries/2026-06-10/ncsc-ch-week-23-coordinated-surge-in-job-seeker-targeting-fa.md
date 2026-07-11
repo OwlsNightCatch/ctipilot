@@ -21,7 +21,6 @@ sectors:
   - public-sector
 entities:
   - "campaign:ncsc-ch-jobseeker-targeting-2026"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_23.html"

@@ -24,6 +24,7 @@ sectors:
 entities:
   - "actor:thegentlemen"
   - "actor:akira"
+  - "actor:qilin"
 cves: []
 sources:
   - url: "https://www.comparitech.com/news/healthcare-ransomware-roundup-q1-2026-stats-on-attacks-ransoms-and-data-breaches/"

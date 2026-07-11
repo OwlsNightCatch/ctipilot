@@ -23,7 +23,6 @@ regions:
 sectors: []
 entities:
   - "campaign:ghost-stadium-phaas-300-fifa-domain-clones-eu-fan-credentials"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.helpnetsecurity.com/2026/06/05/june-2026-patch-tuesday-forecast/"

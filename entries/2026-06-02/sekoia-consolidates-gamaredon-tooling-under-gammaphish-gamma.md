@@ -20,7 +20,8 @@ regions:
 sectors:
   - public-sector
   - defense
-entities: []
+entities:
+  - "actor:gamaredon"
 cves: []
 sources:
   - url: "https://blog.sekoia.io/fsbs-matryoshka-1-3-gamaredons-gifts-that-keeps-unpacking-gammaphish-and-gammaworm/"

@@ -19,8 +19,7 @@ regions:
 sectors:
   - finance
   - technology
-entities:
-  - "campaign:tds-security-tool-impersonation-checkpoint"
+entities: []
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/from-stars-to-upvotes-fake-reputation-fueling-a-crypto-clipboard-hijacker/"

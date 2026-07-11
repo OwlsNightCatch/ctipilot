@@ -23,8 +23,7 @@ sectors:
   - finance
   - public-sector
   - retail
-entities:
-  - "report:gtig-europe-2025"
+entities: []
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/chinese-language-phishing-services/"

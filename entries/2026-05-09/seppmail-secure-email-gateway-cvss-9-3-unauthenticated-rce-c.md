@@ -24,8 +24,7 @@ sectors:
   - public-sector
   - healthcare
   - finance
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://security-hub.ncsc.admin.ch/api/posts/12551/details"

@@ -18,7 +18,8 @@ regions:
   - global
 sectors:
   - technology
-entities: []
+entities:
+  - "campaign:atomic-arch-aur-supply-chain-2026"
 cves: []
 sources:
   - url: "https://www.sonatype.com/blog/atomic-arch-npm-campaign-adds-malicious-dependency"

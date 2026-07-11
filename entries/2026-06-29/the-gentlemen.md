@@ -25,7 +25,6 @@ sectors:
   - energy
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
   - "incident:fortibleed-fortigate-credential-exposure"
 cves: []
 sources:

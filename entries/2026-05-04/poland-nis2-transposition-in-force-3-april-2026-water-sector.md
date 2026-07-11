@@ -20,7 +20,8 @@ regions:
 sectors:
   - water
   - public-sector
-entities: []
+entities:
+  - "policy:poland-nis2-transposition-2026"
 cves: []
 sources:
   - url: "https://www.addleshawgoddard.com/en/insights/insights-briefings/2026/technology/nis2-directive-finally-implemented-poland-what-businesses-need-know/"

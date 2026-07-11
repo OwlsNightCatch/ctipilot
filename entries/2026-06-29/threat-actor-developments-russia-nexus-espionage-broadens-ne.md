@@ -27,7 +27,6 @@ sectors:
   - defense
 entities:
   - "tool:macos-gaslight"
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering"

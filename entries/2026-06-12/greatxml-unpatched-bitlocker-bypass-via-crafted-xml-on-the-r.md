@@ -24,7 +24,6 @@ entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
   - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
   - "trend:greatxml-bitlocker-bypass-2026"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.securityweek.com/greatxml-zero-day-exploit-bypasses-bitlocker/"

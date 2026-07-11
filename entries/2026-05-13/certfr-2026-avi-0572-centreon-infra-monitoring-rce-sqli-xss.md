@@ -20,7 +20,7 @@ sectors:
   - public-sector
 entities:
   - "campaign:certfr-2026-avi-0572"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+  - "trend:centreon-april-2026-vuln-cluster"
 cves: []
 sources:
   - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0572/"

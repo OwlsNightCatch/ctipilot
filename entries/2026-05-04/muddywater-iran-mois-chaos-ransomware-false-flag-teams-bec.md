@@ -23,7 +23,8 @@ regions:
   - middle-east
 sectors:
   - manufacturing
-entities: []
+entities:
+  - "actor:muddywater"
 cves: []
 sources:
   - url: "https://www.rapid7.com/blog/post/tr-muddying-tracks-state-sponsored-shadow-behind-chaos-ransomware/"

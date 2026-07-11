@@ -23,6 +23,7 @@ sectors:
   - public-sector
 entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
+  - "actor:nightmare-eclipse"
 cves:
   - id: CVE-2026-45585
     cvss: n

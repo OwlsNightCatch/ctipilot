@@ -20,7 +20,8 @@ regions:
 sectors:
   - public-sector
   - defense
-entities: []
+entities:
+  - "tool:toddycat-umbrij-oauth-token-theft-strd"
 cves: []
 sources:
   - url: "https://securelist.com/toddycat-apt-umbrij-tool-and-oauth/120251/"

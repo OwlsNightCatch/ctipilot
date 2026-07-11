@@ -25,8 +25,7 @@ sectors:
   - finance
   - aviation
 entities:
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
-  - "campaign:stock-exchange-mailbox-espionage-2026"
+  - "actor:muddywater"
 cves: []
 sources:
   - url: "https://www.security.com/threat-intelligence/iran-seedworm-electronics"

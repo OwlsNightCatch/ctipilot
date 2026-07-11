@@ -22,6 +22,7 @@ sectors:
 entities:
   - "campaign:mini-shai-hulud"
   - "actor:teampcp"
+  - "campaign:miasma-redhat-npm-supply-chain"
 cves: []
 sources:
   - url: "https://opensourcemalware.com/blog/miasma-reaches-azure"

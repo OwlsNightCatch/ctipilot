@@ -20,7 +20,8 @@ regions:
 sectors:
   - finance
   - public-sector
-entities: []
+entities:
+  - "campaign:island-badblocker-adblock-youtube-extension"
 cves: []
 sources:
   - url: "https://www.island.io/blog/badblocker-11-million-users-one-server-call-away-from-compromise"

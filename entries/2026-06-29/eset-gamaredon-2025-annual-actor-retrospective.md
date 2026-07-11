@@ -20,7 +20,8 @@ regions:
 sectors:
   - public-sector
   - defense
-entities: []
+entities:
+  - "actor:gamaredon"
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/"

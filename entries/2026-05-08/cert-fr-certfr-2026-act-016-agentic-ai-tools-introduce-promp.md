@@ -18,6 +18,7 @@ regions:
 sectors: []
 entities:
   - "campaign:certfr-2026-act-016"
+  - "report:certfr-2026-act-016"
 cves: []
 sources:
   - url: "https://www.cert.ssi.gouv.fr/actualite/CERTFR-2026-ACT-016/"

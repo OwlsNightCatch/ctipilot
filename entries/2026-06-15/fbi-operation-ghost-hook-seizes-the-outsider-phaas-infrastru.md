@@ -21,7 +21,8 @@ regions:
 sectors:
   - finance
   - public-sector
-entities: []
+entities:
+  - "campaign:outsider-phaas-gemini-2026"
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/fbi-disrupts-massive-ai-powered-phishing-service-using-a-million-urls/"

@@ -21,7 +21,8 @@ sectors:
   - public-sector
   - defense
   - education
-entities: []
+entities:
+  - "campaign:frostyneighbor-2026-05-campaign"
 cves: []
 sources:
   - url: "https://thehackernews.com/2026/05/ghostwriter-targets-ukraine-government.html"

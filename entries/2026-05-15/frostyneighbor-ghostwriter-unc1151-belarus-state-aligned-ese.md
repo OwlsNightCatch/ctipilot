@@ -20,7 +20,8 @@ sectors:
   - public-sector
   - healthcare
   - manufacturing
-entities: []
+entities:
+  - "campaign:frostyneighbor-2026-05-campaign"
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/frostyneighbor-fresh-mischief-digital-shenanigans/"

@@ -21,7 +21,6 @@ sectors:
   - public-sector
   - energy
 entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
   - "actor:teampcp"
 cves: []
 sources:

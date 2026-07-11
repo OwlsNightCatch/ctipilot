@@ -22,7 +22,7 @@ sectors:
   - public-sector
   - defense
 entities:
-  - "report:gtig-europe-2025"
+  - "actor:secretblizzard"
 cves:
   - id: CVE-2025-8088
     cvss: n/a

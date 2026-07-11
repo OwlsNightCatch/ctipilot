@@ -18,7 +18,8 @@ regions:
   - global
 sectors:
   - technology
-entities: []
+entities:
+  - "campaign:llmshare-malvertising-chatgpt-share-links-infostealer-google"
 cves: []
 sources:
   - url: "https://pushsecurity.com/blog/llmshare-malvertising-campaign"

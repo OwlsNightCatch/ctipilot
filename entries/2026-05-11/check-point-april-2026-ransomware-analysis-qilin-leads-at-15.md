@@ -22,7 +22,6 @@ sectors:
 entities:
   - "actor:qilin"
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://blog.checkpoint.com/research/cyber-threats-spike-in-april-2026-as-ransomware-expands-and-attack-volumes-climb-after-short-lived-moderation/"

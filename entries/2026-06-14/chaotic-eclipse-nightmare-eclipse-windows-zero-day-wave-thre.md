@@ -23,6 +23,7 @@ entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
   - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
   - "trend:greatxml-bitlocker-bypass-2026"
+  - "actor:nightmare-eclipse"
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/microsoft/microsoft-june-2026-patch-tuesday-fixes-6-zero-days-200-flaws/"

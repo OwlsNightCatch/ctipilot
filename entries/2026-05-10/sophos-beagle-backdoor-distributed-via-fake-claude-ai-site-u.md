@@ -18,7 +18,7 @@ regions:
 sectors:
   - technology
 entities:
-  - "campaign:underground-ai-adoption-sophos"
+  - "tool:beagle-fake-claude-stac4713-2026"
 cves: []
 sources:
   - url: "https://www.sophos.com/en-us/blog/donuts-and-beagles-fake-claude-site-spreads-backdoor"

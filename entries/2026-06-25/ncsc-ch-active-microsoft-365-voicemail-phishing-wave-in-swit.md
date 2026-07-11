@@ -20,8 +20,7 @@ regions:
 sectors:
   - public-sector
   - finance
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_25.html"

@@ -20,7 +20,6 @@ sectors:
   - public-sector
 entities:
   - "campaign:mini-shai-hulud"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
   - "actor:teampcp"
 cves: []
 sources:

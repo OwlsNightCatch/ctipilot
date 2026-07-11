@@ -24,7 +24,6 @@ sectors:
   - finance
 entities:
   - "report:checkpoint-research-ai-threat-landscape-march-april-2026-mexico-nine-agencies-ev"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://blog.checkpoint.com/research/ai-attacks-are-no-longer-experimental-key-findings-from-the-march-april-2026-ai-threat-landscape/"

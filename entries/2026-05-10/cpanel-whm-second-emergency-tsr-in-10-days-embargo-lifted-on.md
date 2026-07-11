@@ -18,9 +18,7 @@ regions:
   - global
 sectors:
   - technology
-entities:
-  - "actor:embargo"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves:
   - id: CVE-2026-29202
     cvss: "8.8"

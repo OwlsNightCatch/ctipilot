@@ -23,7 +23,6 @@ entities:
   - "report:q1-2026-ransomware-quarterly"
   - "actor:gentlemen-raas-gentlekiller"
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/thus-spoke-the-gentlemen/"

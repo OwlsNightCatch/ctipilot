@@ -21,6 +21,7 @@ sectors:
   - public-sector
 entities:
   - "incident:arwini-lower-saxony-statutory-prescription-audit-body-data"
+  - "actor:kairos-extortion"
 cves: []
 sources:
   - url: "https://www.aerzteblatt.de/news/hackerangriff-auf-rezeptprufer-c259a70c-595b-4770-9d84-87f6c8338c0c"

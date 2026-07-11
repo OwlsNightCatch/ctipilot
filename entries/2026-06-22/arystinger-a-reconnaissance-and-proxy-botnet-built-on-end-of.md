@@ -23,7 +23,8 @@ sectors:
   - public-sector
   - education
   - telco
-entities: []
+entities:
+  - "campaign:arystinger-botnet"
 cves:
   - id: CVE-2013-3307
     cvss: "8.3"

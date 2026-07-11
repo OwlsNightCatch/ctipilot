@@ -20,8 +20,7 @@ regions:
   - global
 sectors:
   - technology
-entities:
-  - "campaign:tds-security-tool-impersonation-checkpoint"
+entities: []
 cves:
   - id: CVE-2025-67644
     cvss: n/a

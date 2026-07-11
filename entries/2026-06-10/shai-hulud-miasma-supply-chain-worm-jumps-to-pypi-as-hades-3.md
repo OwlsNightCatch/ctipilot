@@ -20,7 +20,8 @@ regions:
 sectors:
   - technology
   - education
-entities: []
+entities:
+  - "campaign:miasma-redhat-npm-supply-chain"
 cves: []
 sources:
   - url: "https://thehackernews.com/2026/06/hades-pypi-attack-19-packages-poisoned.html"

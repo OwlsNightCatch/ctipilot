@@ -19,9 +19,7 @@ sectors: []
 entities:
   - "actor:thegentlemen"
   - "actor:shinyhunters"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
   - "campaign:cl-sta-1132"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.techzine.eu/news/security/141149/dutch-university-disconnects-canvas-systems-after-instructure-hack/"

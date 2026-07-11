@@ -26,6 +26,7 @@ entities:
   - "campaign:mini-shai-hulud"
   - "tool:pcpjack-cloud-worm-2026"
   - "actor:teampcp"
+  - "campaign:megalodon-mass-github-cicd-backdoor-5561-repos-sysdiag-optimize-build"
 cves: []
 sources:
   - url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-shai-hulud-megalodon-supply-chain-cascade/"

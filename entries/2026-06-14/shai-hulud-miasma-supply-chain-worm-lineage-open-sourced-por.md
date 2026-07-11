@@ -23,6 +23,7 @@ entities:
   - "campaign:mini-shai-hulud"
   - "campaign:ironworm"
   - "actor:teampcp"
+  - "campaign:miasma-redhat-npm-supply-chain"
 cves: []
 sources:
   - url: "https://www.sonatype.com/blog/atomic-arch-npm-campaign-adds-malicious-dependency"

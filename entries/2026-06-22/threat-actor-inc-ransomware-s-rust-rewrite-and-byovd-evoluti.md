@@ -19,7 +19,8 @@ regions:
   - us
 sectors:
   - healthcare
-entities: []
+entities:
+  - "actor:inc-ransom"
 cves: []
 sources:
   - url: "https://www.acronis.com/en/tru/posts/from-emerging-threat-to-top-tier-ransomware-as-a-service-the-evolution-of-inc-ransomware/"

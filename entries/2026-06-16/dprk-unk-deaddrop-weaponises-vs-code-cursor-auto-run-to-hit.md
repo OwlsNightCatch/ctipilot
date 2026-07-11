@@ -22,7 +22,8 @@ sectors:
   - finance
   - technology
   - education
-entities: []
+entities:
+  - "campaign:unk-deaddrop-2026"
 cves: []
 sources:
   - url: "https://www.proofpoint.com/us/blog/threat-insight/dont-fear-repo-unkdeaddrop-phishing-campaign-targets-developers-steal"

@@ -19,6 +19,7 @@ regions:
 sectors: []
 entities:
   - "incident:die-linke-qilin-2026"
+  - "actor:qilin"
 cves: []
 sources:
   - url: "https://www.heise.de/news/"

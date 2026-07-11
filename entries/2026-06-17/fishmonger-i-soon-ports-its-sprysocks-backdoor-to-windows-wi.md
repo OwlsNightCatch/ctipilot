@@ -21,7 +21,8 @@ sectors:
   - public-sector
   - telco
   - technology
-entities: []
+entities:
+  - "actor:webworm-fishmonger-aquatic-panda-eset-echocreep-graphworm-eu"
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/fishmongers-arsenal-upgraded-sprysocks-windows/"

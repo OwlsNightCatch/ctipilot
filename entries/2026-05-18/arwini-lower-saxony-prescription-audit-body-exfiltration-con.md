@@ -20,7 +20,8 @@ regions:
 sectors:
   - healthcare
   - public-sector
-entities: []
+entities:
+  - "actor:kairos-extortion"
 cves: []
 sources:
   - url: "https://www.aerzteblatt.de/news/hackerangriff-auf-rezeptprufer-c259a70c-595b-4770-9d84-87f6c8338c0c"

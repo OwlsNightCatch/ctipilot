@@ -21,7 +21,8 @@ sectors:
   - public-sector
   - defense
   - technology
-entities: []
+entities:
+  - "campaign:strikeshark-sharkloader"
 cves: []
 sources:
   - url: "https://securelist.com/strikeshark-campaign/120326/"

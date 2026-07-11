@@ -23,8 +23,7 @@ sectors:
   - public-sector
   - defense
   - media
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://rewardsforjustice.net/rewards/unc5792/"

@@ -26,9 +26,8 @@ sectors:
   - defense
   - technology
 entities:
-  - "report:gtig-europe-2025"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
   - "actor:teampcp"
+  - "report:gtig-ai-threat-tracker-may-2026"
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/ai-vulnerability-exploitation-initial-access"

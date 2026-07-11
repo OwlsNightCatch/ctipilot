@@ -21,7 +21,8 @@ regions:
 sectors:
   - public-sector
   - defense
-entities: []
+entities:
+  - "actor:scarcruft"
 cves: []
 sources:
   - url: "https://www.genians.co.kr/en/blog/threat_intelligence/narwhalrat"

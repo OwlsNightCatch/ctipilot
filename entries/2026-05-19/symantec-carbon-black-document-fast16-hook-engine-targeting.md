@@ -22,8 +22,6 @@ sectors:
   - defense
   - energy
 entities:
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
-  - "campaign:stock-exchange-mailbox-espionage-2026"
   - "campaign:fast16-symantec-carbon-black-contemporaneous-stuxnet-nuclea"
 cves: []
 sources:

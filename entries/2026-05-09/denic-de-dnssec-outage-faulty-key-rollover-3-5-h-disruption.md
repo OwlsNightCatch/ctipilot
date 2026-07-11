@@ -18,7 +18,8 @@ regions:
   - dach
 sectors:
   - public-sector
-entities: []
+entities:
+  - "incident:denic-dnssec-outage-2026"
 cves: []
 sources:
   - url: "https://blog.denic.de/en/technical-issue-with-de-domains-resolved/"

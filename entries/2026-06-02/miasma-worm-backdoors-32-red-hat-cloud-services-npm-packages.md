@@ -23,6 +23,7 @@ sectors:
 entities:
   - "campaign:mini-shai-hulud"
   - "actor:teampcp"
+  - "campaign:miasma-redhat-npm-supply-chain"
 cves: []
 sources:
   - url: "https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages"

@@ -23,7 +23,7 @@ sectors:
   - defense
   - telco
 entities:
-  - "campaign:tds-security-tool-impersonation-checkpoint"
+  - "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/fast-and-furious-nimbus-manticore-operations-during-the-iranian-conflict/"

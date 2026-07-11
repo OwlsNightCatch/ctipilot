@@ -23,6 +23,7 @@ sectors:
   - public-sector
 entities:
   - "campaign:ironworm"
+  - "campaign:miasma-redhat-npm-supply-chain"
 cves: []
 sources:
   - url: "https://research.jfrog.com/post/iron-worm-shai-hulud-rustier-cousin/"

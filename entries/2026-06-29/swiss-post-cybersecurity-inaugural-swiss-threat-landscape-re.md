@@ -20,8 +20,7 @@ regions:
 sectors:
   - public-sector
   - finance
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://www.swisspost-cybersecurity.ch/news/swiss-threat-landscape-report"

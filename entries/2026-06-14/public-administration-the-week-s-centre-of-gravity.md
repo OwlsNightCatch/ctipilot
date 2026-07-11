@@ -22,7 +22,6 @@ sectors:
   - public-sector
 entities:
   - "incident:cyber-europe-2026-eu-cybersecurity-reserve"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_23.html"

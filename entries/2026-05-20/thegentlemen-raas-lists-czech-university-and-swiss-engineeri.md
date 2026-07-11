@@ -20,8 +20,7 @@ regions:
 sectors:
   - education
   - manufacturing
-entities:
-  - "campaign:tds-security-tool-impersonation-checkpoint"
+entities: []
 cves: []
 sources:
   - url: "https://www.dexpose.io/thegentlemen-target-university-of-finance-and-administration-in-czech-republic/"

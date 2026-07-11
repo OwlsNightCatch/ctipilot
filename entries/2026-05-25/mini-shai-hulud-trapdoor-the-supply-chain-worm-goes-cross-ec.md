@@ -26,6 +26,7 @@ sectors:
 entities:
   - "campaign:mini-shai-hulud"
   - "actor:teampcp"
+  - "campaign:trapdoor"
 cves: []
 sources:
   - url: "https://socket.dev/blog/trapdoor-crypto-stealer-npm-pypi-crates"

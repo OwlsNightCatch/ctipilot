@@ -23,8 +23,7 @@ sectors:
   - public-sector
   - healthcare
   - finance
-entities:
-  - "campaign:tds-security-tool-impersonation-checkpoint"
+entities: []
 cves: []
 sources:
   - url: "https://blog.checkpoint.com/research/ai-attacks-are-no-longer-experimental-key-findings-from-the-march-april-2026-ai-threat-landscape/"

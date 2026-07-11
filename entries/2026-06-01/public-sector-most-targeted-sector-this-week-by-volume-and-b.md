@@ -22,7 +22,6 @@ regions:
 sectors:
   - public-sector
 entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
   - "actor:op-512"
 cves: []
 sources:

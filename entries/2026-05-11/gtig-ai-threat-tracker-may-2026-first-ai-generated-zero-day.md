@@ -18,7 +18,8 @@ regions:
   - global
 sectors:
   - public-sector
-entities: []
+entities:
+  - "report:gtig-ai-threat-tracker-may-2026"
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/ai-threat-tracker-may-2026/"

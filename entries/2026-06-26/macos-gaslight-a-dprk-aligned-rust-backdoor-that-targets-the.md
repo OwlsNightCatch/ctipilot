@@ -24,7 +24,6 @@ sectors:
   - finance
 entities:
   - "tool:macos-gaslight"
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
 cves: []
 sources:
   - url: "https://www.sentinelone.com/labs/macos-gaslight-rust-backdoor-turns-prompt-injection-on-the-analyst-not-the-sandbox/"

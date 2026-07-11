@@ -20,7 +20,8 @@ regions:
   - apac
 sectors:
   - telco
-entities: []
+entities:
+  - "campaign:calypso-red-lamassu-showboat-jfmbackdoor-linux-windows-telco"
 cves: []
 sources:
   - url: "https://www.lumen.com/blog/en-us/introducing-showboat-a-new-malware-family-taunts-defenses-and-targets-international-telecom-firms"

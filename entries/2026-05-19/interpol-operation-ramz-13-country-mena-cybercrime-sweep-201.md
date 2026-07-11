@@ -24,7 +24,6 @@ sectors:
   - public-sector
 entities:
   - "campaign:interpol-operation-ramz-mena-cybercrime-13-country-201-arre"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.interpol.int/en/News-and-Events/News/2026/201-arrests-in-first-of-its-kind-cybercrime-operation-in-MENA-region"

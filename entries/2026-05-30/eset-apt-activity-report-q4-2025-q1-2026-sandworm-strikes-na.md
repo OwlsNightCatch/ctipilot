@@ -26,6 +26,7 @@ sectors:
   - technology
 entities:
   - "report:eset-apt-activity-report-q4-2025-q1-2026-sandworm-lazarus"
+  - "actor:verdantbamboo"
 cves: []
 sources:
   - url: "https://www.welivesecurity.com/en/eset-research/eset-apt-activity-report-q4-2025-q1-2026/"

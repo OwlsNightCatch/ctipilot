@@ -20,6 +20,7 @@ regions:
 sectors: []
 entities:
   - "campaign:eu-cybersecurity-package-2026"
+  - "policy:eu-cybersecurity-package-2026"
 cves: []
 sources:
   - url: "https://www.dlapiper.com/en/insights/publications/2026/02/nis2-update-eu-moves-to-harmonise-cyber-controls-refine-scope-and-add-new-in-scope-entities"

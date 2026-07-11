@@ -21,7 +21,8 @@ sectors:
   - defense
   - telco
   - public-sector
-entities: []
+entities:
+  - "campaign:jdy-botnet-volt-typhoon-2026"
 cves: []
 sources:
   - url: "https://www.lumen.com/blog/en-us/expanded-jdy-iot-and-soho-botnet-enables-rapid-vulnerability-exploitation"

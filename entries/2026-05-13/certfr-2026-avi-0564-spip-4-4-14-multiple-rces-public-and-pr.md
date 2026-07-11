@@ -20,6 +20,7 @@ sectors:
   - public-sector
 entities:
   - "campaign:certfr-2026-avi-0564"
+  - "trend:spip-2026-rce-wave"
 cves: []
 sources:
   - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0564/"

@@ -21,7 +21,8 @@ sectors:
   - technology
   - public-sector
   - education
-entities: []
+entities:
+  - "campaign:megalodon-mass-github-cicd-backdoor-5561-repos-sysdiag-optimize-build"
 cves: []
 sources:
   - url: "https://safedep.io/megalodon-mass-github-repo-backdooring-ci-workflows/"

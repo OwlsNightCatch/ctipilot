@@ -24,7 +24,6 @@ sectors:
 entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
   - "trend:nightmare-eclipse-rogueplanet-defender-toctou-lpe-2026-06"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/microsoft/microsoft-defender-rogueplanet-zero-day-grants-system-privileges/"

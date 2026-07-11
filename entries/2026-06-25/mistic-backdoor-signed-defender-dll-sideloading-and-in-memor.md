@@ -21,8 +21,8 @@ sectors:
   - technology
   - legal-services
 entities:
-  - "campaign:stock-exchange-mailbox-espionage-2026"
   - "actor:akira"
+  - "tool:mistic-mltbackdoor"
 cves: []
 sources:
   - url: "https://www.broadcom.com/support/security-center/protection-bulletin/backdoor-mistic-new-backdoor-may-be-linked-to-ransomware-access-broker"

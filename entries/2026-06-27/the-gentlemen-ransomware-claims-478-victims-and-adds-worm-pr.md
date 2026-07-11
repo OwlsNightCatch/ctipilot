@@ -20,7 +20,6 @@ regions:
 sectors: []
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://www.inside-it.ch/aufstrebende-ransomware-bande-findet-mehr-schweizer-opfer-20260626"

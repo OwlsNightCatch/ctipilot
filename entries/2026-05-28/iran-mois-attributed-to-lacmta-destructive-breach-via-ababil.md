@@ -21,7 +21,8 @@ regions:
 sectors:
   - transport
   - public-sector
-entities: []
+entities:
+  - "actor:ababil-of-minab-mois-attribution-lacmta-march-2026-700gb-backups-destroyed"
 cves: []
 sources:
   - url: "https://gambit.security/blog-posts/babil-of-minab-iran-mois-destruction-campaign"

@@ -20,7 +20,8 @@ regions:
 sectors:
   - public-sector
   - technology
-entities: []
+entities:
+  - "actor:verdantbamboo"
 cves: []
 sources:
   - url: "https://www.volexity.com/blog/2026/06/04/verdantbamboo-just-another-brickstorm-in-the-firewall/"

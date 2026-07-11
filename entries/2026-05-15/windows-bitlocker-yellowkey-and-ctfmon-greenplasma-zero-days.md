@@ -23,7 +23,6 @@ sectors:
   - education
 entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
 cves: []
 sources:
   - url: "https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/"

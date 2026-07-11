@@ -15,7 +15,8 @@ tags:
 regions:
   - europe
 sectors: []
-entities: []
+entities:
+  - "incident:eurail-breach-2026"
 cves: []
 sources:
   - url: "https://nos.nl/artikel/"

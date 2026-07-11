@@ -18,7 +18,8 @@ sectors:
   - public-sector
   - technology
   - telco
-entities: []
+entities:
+  - "trend:underminr-multitenant-cdn-domain-fronting-variant"
 cves: []
 sources:
   - url: "https://support.adamnet.works/t/underminr-information-share-official-release/1584"

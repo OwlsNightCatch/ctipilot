@@ -23,6 +23,7 @@ sectors:
   - finance
 entities:
   - "incident:ncsc-ch-booking-hotel-phishing-2026"
+  - "incident:dutch-hotels-booking-saas-breach-2026"
 cves: []
 sources:
   - url: "https://www.ncsc.admin.ch/ncsc/en/home/aktuell/im-fokus/2026/wochenrueckblick_22.html"

@@ -20,7 +20,8 @@ regions:
   - europe
 sectors:
   - finance
-entities: []
+entities:
+  - "tool:remotepe"
 cves: []
 sources:
   - url: "https://blog.fox-it.com/2026/05/22/remotepe-the-lazarus-rat-that-lives-in-memory/"

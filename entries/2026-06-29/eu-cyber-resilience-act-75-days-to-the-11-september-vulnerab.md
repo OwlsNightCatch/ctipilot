@@ -21,6 +21,7 @@ sectors:
   - technology
 entities:
   - "campaign:eu-cyber-resilience-act"
+  - "policy:eu-cyber-resilience-act"
 cves: []
 sources:
   - url: "https://www.enisa.europa.eu/topics/product-security-and-certification/single-reporting-platform-srp"

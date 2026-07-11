@@ -22,7 +22,8 @@ sectors:
   - defense
   - aviation
   - telco
-entities: []
+entities:
+  - "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"
 cves: []
 sources:
   - url: "https://unit42.paloaltonetworks.com/tracking-iran-apt-screening-serpens/"

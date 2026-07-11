@@ -17,8 +17,7 @@ regions:
   - uk
 sectors:
   - public-sector
-entities:
-  - "incident:ncsc-ch-booking-hotel-phishing-2026"
+entities: []
 cves: []
 sources:
   - url: "https://www.ncsc.gov.uk/blogs/10-questions-ask-using-ai-models-find-vulnerabilities"

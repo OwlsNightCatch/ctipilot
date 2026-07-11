@@ -21,6 +21,7 @@ sectors:
   - technology
 entities:
   - "campaign:eu-cyber-resilience-act"
+  - "policy:eu-cyber-resilience-act"
 cves: []
 sources:
   - url: "https://digital-strategy.ec.europa.eu/en/factpages/cyber-resilience-act-implementation"

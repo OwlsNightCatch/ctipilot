@@ -18,7 +18,8 @@ regions:
 sectors:
   - manufacturing
   - finance
-entities: []
+entities:
+  - "campaign:desckvb-rat-doubleclick-2026"
 cves: []
 sources:
   - url: "https://www.huntress.com/blog/malspam-to-deskcvb-rat-delivery-chain-analysis"

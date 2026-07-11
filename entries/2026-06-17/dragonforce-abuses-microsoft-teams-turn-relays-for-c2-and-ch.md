@@ -24,7 +24,6 @@ sectors:
 entities:
   - "campaign:dragonforce-backdoor-turn-teams-relay-byovd"
   - "actor:dragonforce"
-  - "campaign:stock-exchange-mailbox-espionage-2026"
 cves: []
 sources:
   - url: "https://www.security.com/threat-intelligence/dragonforce-msteams-backdoor"

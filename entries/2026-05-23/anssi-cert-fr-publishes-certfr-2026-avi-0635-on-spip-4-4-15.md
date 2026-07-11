@@ -19,7 +19,8 @@ regions:
 sectors:
   - public-sector
   - education
-entities: []
+entities:
+  - "trend:spip-2026-rce-wave"
 cves: []
 sources:
   - url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0635/"

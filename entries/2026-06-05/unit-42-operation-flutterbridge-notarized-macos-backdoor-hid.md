@@ -19,7 +19,8 @@ regions:
   - europe
 sectors:
   - technology
-entities: []
+entities:
+  - "campaign:flutterbridge-cl-cri-1089"
 cves: []
 sources:
   - url: "https://unit42.paloaltonetworks.com/flutterbridge-new-fluttershell-backdoor/"

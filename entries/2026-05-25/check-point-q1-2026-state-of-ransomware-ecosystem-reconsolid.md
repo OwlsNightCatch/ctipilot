@@ -23,7 +23,6 @@ sectors:
   - manufacturing
 entities:
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/the-state-of-ransomware-q1-2026/"

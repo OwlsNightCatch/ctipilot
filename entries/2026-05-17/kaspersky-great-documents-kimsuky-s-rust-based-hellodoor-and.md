@@ -24,7 +24,8 @@ sectors:
   - public-sector
   - defense
   - healthcare
-entities: []
+entities:
+  - "actor:kimsuky"
 cves: []
 sources:
   - url: "https://securelist.com/kimsuky-appleseed-pebbledash-campaigns/119785/"

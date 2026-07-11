@@ -27,7 +27,6 @@ sectors:
 entities:
   - "actor:gentlemen-raas-gentlekiller"
   - "actor:thegentlemen"
-  - "campaign:tds-security-tool-impersonation-checkpoint"
 cves: []
 sources:
   - url: "https://research.checkpoint.com/2026/dfir-report-the-gentlemen/"

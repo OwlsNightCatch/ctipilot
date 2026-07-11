@@ -22,7 +22,7 @@ sectors:
   - public-sector
 entities:
   - "actor:shinyhunters"
-  - "campaign:sentinelone-living-off-the-pipeline-2026"
+  - "incident:grafana-labs-coinbasecartel-pwn-request-github-actions-breac"
 cves: []
 sources:
   - url: "https://www.securityweek.com/grafana-confirms-breach-after-hackers-claim-they-stole-data/"

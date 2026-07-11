@@ -22,6 +22,7 @@ regions:
 sectors: []
 entities:
   - "campaign:nightmare-eclipse-microsoft-dcu-threat-greenplasma-miniplasmaaac"
+  - "actor:nightmare-eclipse"
 cves:
   - id: CVE-2020-17103
     cvss: n/a

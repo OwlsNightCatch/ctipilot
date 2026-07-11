@@ -21,7 +21,8 @@ regions:
 sectors:
   - legal-services
   - finance
-entities: []
+entities:
+  - "campaign:fbi-flash-csa-260526-silent-ransom-group-physical-usb-attacks-us-law-firms"
 cves: []
 sources:
   - url: "https://cloud.google.com/blog/topics/threat-intelligence/targeted-campaign-us-law-firms/"

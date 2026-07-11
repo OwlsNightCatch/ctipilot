@@ -18,8 +18,7 @@ regions:
   - global
 sectors:
   - technology
-entities:
-  - "campaign:underground-ai-adoption-sophos"
+entities: []
 cves: []
 sources:
   - url: "https://www.sophos.com/en-us/blog/pointing-a-cursor-at-evading-detection"
