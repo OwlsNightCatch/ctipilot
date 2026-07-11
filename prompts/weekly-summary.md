@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.18 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.19 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >

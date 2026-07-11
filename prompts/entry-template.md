@@ -105,8 +105,12 @@ classification:                  # with NO triage scheme configured (the shipped
   reliability: A                 # vulnerability entries carry the Admiralty block like
   credibility: 1                 # every other kind — no entry ships unrated
 watchlist_hit: false
-actions:
-  - "Patch {Product} to ≥ {version} now; {rotation / isolation / hunt step tied to this entry's facts}."
+actions: []                      # do-now bar (cti-run.md Phase 4 § actions[]): empty is the
+  # normal case — ship an action ONLY when it is a concrete task the team
+  # starts now, derived from this finding's own mechanics; never generic
+  # advice, never a restatement of the body's detection/hardening guidance.
+  # When one ships: "Patch {Product} to ≥ {version} now and {the
+  # rotation / termination / compromise-check the mechanics demand}."
 migrated_from: null
 ---
 

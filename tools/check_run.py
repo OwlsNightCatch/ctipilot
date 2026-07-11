@@ -1539,6 +1539,85 @@ def check_aggregator_only(run_entries: list[dict]) -> None:
         ok("aggregator-only", "no entry leans on news-aggregator hosts as its only sources")
 
 
+# Action-item discipline (prompts/CHANGELOG.md § 3.19): actions[] is the
+# do-now surface feeding the rendered brief's aggregated § Action Items —
+# only concrete, finding-derived, start-now tasks; empty is the normal case.
+# Mechanical residue of the editorial bar (the verifier's F18 owns the
+# judgment calls): list-length and canonical generic-advice phrases. WARN
+# severity — genericity is not machine-decidable, so the gate never blocks
+# on it. Applied to v3.19+ runs only (entries are immutable; earlier records
+# predate the bar).
+ACTIONS_DISCIPLINE_FROM = (3, 19)
+
+# Lowercase substrings that mark canonical generic advice — true independently
+# of any specific finding, so never an action item (cti-run.md Phase 4
+# § actions[] rule 2). Deliberately short and unambiguous: this list flags
+# the textbook phrases, not every weak action.
+GENERIC_ACTION_PHRASES = (
+    "enable mfa",
+    "enable multi-factor",
+    "patch regularly",
+    "apply patches regularly",
+    "keep systems up to date",
+    "keep software up to date",
+    "raise awareness",
+    "user awareness",
+    "security awareness training",
+    "monitor for suspicious activity",
+    "stay vigilant",
+    "follow best practices",
+    "review your security posture",
+    "ensure backups",
+    "defense in depth",
+)
+
+
+def check_actions_discipline(run_entries: list[dict], run: dict[str, Any] | None) -> None:
+    """actions[] hygiene for v3.19+ runs: WARN on a padded list (> 3 actions
+    on one entry — near-certain body restatement per the Phase 4 do-now bar),
+    on canonical generic-advice phrases, and on the same action string shipped
+    verbatim by two entries of the run (the brief's § Action Items is a union
+    — the reader sees the duplicate). Empty actions[] is always fine."""
+    v = _prompt_version_tuple((run or {}).get("prompt_version"))
+    if v is None or v < ACTIONS_DISCIPLINE_FROM:
+        ok("action-items", "pre-v3.19 run — do-now bar not yet in force (informational)")
+        return
+    flagged: list[str] = []
+    seen: dict[str, str] = {}
+    total = 0
+    for e in run_entries:
+        actions = [a.strip() for a in (e.get("actions") or [])
+                   if isinstance(a, str) and a.strip()]
+        total += len(actions)
+        if len(actions) > 3:
+            flagged.append(
+                f"{e['id']}: {len(actions)} action items — the do-now bar (cti-run.md "
+                f"Phase 4 § actions[]) makes >3 near-certain body restatement; keep the "
+                f"genuine start-now tasks, fold the rest into the body")
+        for a in actions:
+            low = a.lower()
+            for phrase in GENERIC_ACTION_PHRASES:
+                if phrase in low:
+                    flagged.append(
+                        f"{e['id']}: action {a[:80]!r} contains generic-advice phrase "
+                        f"{phrase!r} — an action true independently of this finding is "
+                        f"body content at best, never an action item")
+                    break
+            if a in seen and seen[a] != e["id"]:
+                flagged.append(
+                    f"{e['id']}: action duplicated verbatim from {seen[a]} — the rendered "
+                    f"§ Action Items is a union over the window; state it once")
+            seen.setdefault(a, e["id"])
+    if flagged:
+        for f_ in flagged:
+            warn("action-items", f_)
+    else:
+        ok("action-items",
+           f"{total} action item{'s' if total != 1 else ''} across "
+           f"{len(run_entries)} entr{'y' if len(run_entries) == 1 else 'ies'} — "
+           "no padded list, no generic-advice phrase, no verbatim duplicate")
+
+
 def check_closed_sources(run_entries: list[dict], profile: dict[str, Any] | None) -> None:
     """closed_sources[] traceability hygiene. There is NO TLP gate: this
     pipeline never filters on TLP or a public/private flag — every file under
@@ -2375,6 +2454,9 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== aggregator-only sourcing ==")
     check_aggregator_only(run_entries)
+
+    print("\n== action-item discipline (do-now bar) ==")
+    check_actions_discipline(run_entries, run)
 
     profile = _load_org_profile()
     print("\n== closed-source citations (traceability, no TLP gate) ==")

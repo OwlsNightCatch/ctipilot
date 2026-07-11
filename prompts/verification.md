@@ -75,6 +75,7 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] `techniques[]` carries every ATT&CK id the body maps and nothing the body doesn't describe — and is **never empty on a `threat`/`incident`/`vulnerability` entry** (the access/exploitation vector is always mappable; `check_run.py` FAILs it from v3.18); ids woven into prose at the behavior they name (no bare ID lists); `affected_products[]` names only products the cited sources name; any `**Triage:**` discriminator follows from the cited mechanism (omitted, never invented, when the sources give no basis).
 - [ ] All entity references resolve in `entities/registry.yaml` (aliases checked); new entities registered with sourced definitions.
 - [ ] `priority` calibrated (critical ⇔ immediate_action bar; high ⇔ TL;DR-worthy); every entry clears the strict relevance/actionability gate (no count target or ceiling).
+- [ ] `actions[]` clears the do-now bar (`prompts/cti-run.md` Phase 4 § `actions[]`): only concrete, finding-derived, start-now tasks; no generic advice, no body restatement, no in-window duplicates; empty where nothing qualifies.
 - [ ] Deep-dive treatment reserved for an item that earns it; category rotation applied.
 - [ ] Run record complete: telemetry, verification counters, notes with drops / single-source / contradictions / parseable lines.
 - [ ] **`python3 tools/check_run.py "$RUN_ID"` exits 0 BEFORE the verification sub-agent is spawned** — the verifier reads output whose schema / URLs / taxonomy / dedup are already mechanically clean.
@@ -90,9 +91,9 @@ After entries and the run record are written, state is updated, and `tools/check
 
 **Truth gate.** Every URL fetched; every claim cross-checked against its linked source; every named entity traced to a fetched source; every `evidence[]` quote confirmed verbatim; frontmatter ⇔ body agreement (a `summary` claiming more than the body's sources support is a hallucination with a notification blast radius).
 
-**Editorial-quality gate.** Relevance to the profiled organization; primary-source strength (vendor PSIRT / research lab / regulator / victim first — NVD/CERT second-tier); priority calibration; correct update-vs-new decisions; vendor-marketing tells; fake-news patterns; contradictions; clarity for a Tier 2 responder; missed angles.
+**Editorial-quality gate.** Relevance to the profiled organization; primary-source strength (vendor PSIRT / research lab / regulator / victim first — NVD/CERT second-tier); priority calibration; action-item discipline (`actions[]` do-now bar); correct update-vs-new decisions; vendor-marketing tells; fake-news patterns; contradictions; clarity for a Tier 2 responder; missed angles.
 
-The verifier's finding categories (F1–F17), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping.
+The verifier's finding categories (F1–F18), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping.
 
 ### Iterative refinement loop (cap 5 — fail-open safety valve, not goal)
 

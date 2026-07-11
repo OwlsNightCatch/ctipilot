@@ -244,8 +244,12 @@ English only.
 - **`update_of`** — must resolve to an existing earlier entry. An update
   entry re-states only the delta, never recaps. Long-running campaigns get
   ≤ 1 consolidated update per week unless something critical changes.
-- **`actions[]`** — only actions derived from this entry's own content.
-  The rendered brief's § Action Items is the union over the window.
+- **`actions[]`** — only actions derived from this entry's own content,
+  held to the do-now bar (`prompts/cti-run.md` Phase 4 § `actions[]`, v3.19):
+  concrete, self-contained, start-now tasks — never generic advice, never a
+  restatement of the body's detection/hardening guidance. **Empty is the
+  normal case for many entries.** The rendered brief's § Action Items is the
+  union over the window, so every marginal action dilutes it for the reader.
 - **`migrated_from`** — non-null marks a v2-brief import. Migrated entries
   may carry placeholder `evidence[]`, empty `entities`/`actions`/
   `techniques`, and news-register bodies; **machine consumers (triage
