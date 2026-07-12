@@ -1227,9 +1227,17 @@ def validate_run_record(run: dict) -> list:
     ps = run.get("publish_status")
     if ps is not None and ps not in ("pending", "ok", "main-only"):
         err(f"publish_status {ps!r} not in ('pending', 'ok', 'main-only')")
+    # `stood_down` (optional): a non-empty string marks a fire that legitimately
+    # aborted before Phase 1 spawned any research/verification workers — the
+    # duplicate-audit guard (quality-audit Phase 0) or an equivalent preflight
+    # stand-down. Such a fire still writes a run record (run-record-per-fire),
+    # but it has no sub_agents telemetry because no sub-agents ran. Normal runs
+    # (no `stood_down`) must still carry a sub_agents block.
+    stood_down = str(run.get("stood_down") or "").strip()
     subs = run.get("sub_agents")
     if not isinstance(subs, dict) or not subs:
-        err("sub_agents block missing or empty")
+        if not stood_down:
+            err("sub_agents block missing or empty")
     ver = run.get("verification")
     iters = (ver or {}).get("iterations") if isinstance(ver, dict) else None
     if not isinstance(iters, list) or not iters:

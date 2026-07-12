@@ -611,6 +611,15 @@ in place, commits `run: <run-id> publish-status`, and re-pushes the feature
 branch (fire-and-forget; auto-merge promotes it). No other field is ever
 edited after commit, and no later fire edits an earlier fire's record.
 
+An optional `stood_down: <reason>` field (non-empty string) marks a fire that
+legitimately aborted **before Phase 1** spawned any research/verification
+workers — e.g. the quality audit's duplicate-audit guard (gap since the last
+audit < 72 h). Such a fire still writes a run record (run-record-per-fire is
+never waived) but carries an empty `sub_agents` block, since no sub-agents
+ran; the mechanical gate exempts the `sub_agents` requirement only when
+`stood_down` is set. The mandatory verification iteration still runs (scoped
+to the run record). Normal fires omit `stood_down`.
+
 ```yaml
 ---
 schema: 1
