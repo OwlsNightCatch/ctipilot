@@ -20,6 +20,9 @@ parts and defers to that spec for every field-level question.
                       │  weekly — fired once per week:     │
                       │   "Read prompts/weekly-summary.md  │
                       │    and execute it."                │
+                      │  quality audit — once per week:    │
+                      │   "Read prompts/quality-audit.md   │
+                      │    and execute it."                │
                       └─────────────────┬──────────────────┘
                                         │ git push
                                         ▼
@@ -29,6 +32,7 @@ parts and defers to that spec for every field-level question.
          │  prompts/                  entries/YYYY-MM-DD/<slug>.md  │
          │   ├ cti-run.md             entities/registry.yaml        │
          │   ├ weekly-summary.md      runs/YYYY-MM-DD/<run-id>.md   │
+         │   ├ quality-audit.md                                     │
          │   ├ CHANGELOG.md                                         │
          │   ├ verification.md        state/                        │
          │   ├ entry-template.md       ├ cves_seen.json             │
@@ -36,6 +40,7 @@ parts and defers to that spec for every field-level question.
          │                            sources/sources.json          │
          │  docs/pipeline.md          work/<run-id>/                │
          │   (NORMATIVE data model)                                 │
+         │  docs/audits/              (weekly audit reports)        │
          │  site/content_model.py     tools/                        │
          │   (shared parser)           ├ check_run.py (Phase 5.5)   │
          │                             ├ build_prior_coverage.py    │
@@ -105,6 +110,22 @@ The two master prompts plus the runtime-policy / template / debug docs they refe
   page is rendered from them. The weekly may re-frame operational entries
   via `references`; intel runs never duplicate strategic entries — the
   asymmetry runs one way.
+- [`prompts/quality-audit.md`](../prompts/quality-audit.md) — the weekly
+  *quality-audit* run, fired once per week (recommended: Sunday, after the
+  weekly slot). **Builds on `cti-run.md`** the same way and defines only the
+  audit lens over the window since the previous audit record: retrospective
+  truth verification of every published entry against its primary sources
+  (batched cold-reader passes on the verifier sub-agents), independent
+  coverage re-sweeps diffed against the store (G1 vulns / G2 incidents +
+  watch-item corroboration / G3 research-blog listing sweeps), a
+  systemic/operational drift review (runaway runs, publish follow-through,
+  dark-but-green sources, discipline decay), effectiveness checks on the
+  previous audit's fixes, and — first fire of each calendar month — the
+  priority-calibration review (priority distribution vs verifier F16 drift).
+  Root-causes every confirmed defect and ships the fix under the versioning
+  rule (or a numbered operator recommendation). Output: an audit report
+  under `docs/audits/`, one run record (`-audit` run-id suffix, `kind:
+  intel`), and audit-recovered entries where a gap still clears PD-11.
 - [`prompts/CHANGELOG.md`](../prompts/CHANGELOG.md) — the version history of
   the prompts. Treat as the audit trail for editorial-policy changes.
 - [`prompts/verification.md`](../prompts/verification.md) — the editorial /
@@ -554,7 +575,11 @@ cve_types / cve_vectors / cve_auth / cve_status). The build and
 
 The weekly run shares this machinery verbatim (it `Read`s `cti-run.md` at
 runtime); it differs in Phase 1 (a local week-in-review pass over the
-window's operational entries) and its research fan-out (W1–W2 + W3).
+window's operational entries) and its research fan-out (W1–W2 + W3). The
+weekly quality-audit run builds on it the same way; its fan-out is
+retrospective — truth-verification passes over the window's published
+entries plus independent gap re-sweeps (G1–G3) — and its extra output is
+the audit report under `docs/audits/`.
 
 ```
  ┌──────────────┐  Phase 0     ┌───────────────────────────────────────┐
