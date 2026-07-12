@@ -657,6 +657,37 @@ assert_true("unconnected historical CVE stays out of the graph",
 assert_true("relation vocabulary ships in the payload",
             graph["relation_types"].get("uses", {}).get("inverse") == "used by")
 
+# Derived-edge evidence gate: strategic synthesis and annual-report
+# roundups reference many unrelated entities — they must never create
+# co-occurrence edges. Curated relations are unaffected.
+E_ROUNDUP_W = mk_entry(
+    "weekly-roundup-fixture", kind="synthesis", priority="notable",
+    ts="2026-07-03T09:00:00Z", horizon="strategic",
+    entities=["actor:testfox", "tool:foxkit"],
+)
+E_ROUNDUP_A = mk_entry(
+    "annual-roundup-fixture", kind="annual-report", priority="notable",
+    ts="2026-07-03T10:00:00Z",
+    entities=["actor:testfox", "tool:foxkit"],
+)
+ents2, matched2 = build_entities(
+    REGISTRY, ALL_ENTRIES + [E_ROUNDUP_W, E_ROUNDUP_A],
+    CVES_SEEN, SOURCES_RAW, day_pages)
+co2 = compute_related_entities(ents2, matched2)
+fox2 = {e["key"]: e for e in ents2}["actor:testfox"]
+assert_true("strategic/annual-report entries create no co-occurrence",
+            co2.get("actor:testfox", {}).get("tool:foxkit", 0) == 0
+            and not any(r["key"] == "tool:foxkit" for r in fox2["related_entities"]))
+graph2 = build_graph_payload(ents2, matched2, co2, generated_at="2026-07-03T00:00:00Z")
+assert_true("no derived graph edge from roundup-only co-occurrence",
+            not any(e["kind"] == "co-occurrence"
+                    and {e["source"], e["target"]} == {"actor:testfox", "tool:foxkit"}
+                    for e in graph2["edges"]))
+assert_true("curated typed edge survives the derived-edge gate",
+            any(e["kind"] == "relation"
+                and {e["source"], e["target"]} == {"actor:testfox", "tool:foxkit"}
+                for e in graph2["edges"]))
+
 src = annotate_sources(SOURCES_RAW, ALL_ENTRIES)["sources"][0]
 assert_true("source appearances carry dates", "2026-07-03" in src["appearances"])
 assert_true("source entry_refs carry entry ids",

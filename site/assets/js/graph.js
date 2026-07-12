@@ -97,6 +97,14 @@
     if (!canvas || !canvas.getContext) return;
     ctx = canvas.getContext('2d');
     readColors();
+    // The theme toggle stamps data-theme on <html>; re-read the palette
+    // and repaint so edges stay visible after a light/dark switch.
+    new MutationObserver(function () { readColors(); draw(); })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+    if (mq && mq.addEventListener) {
+      mq.addEventListener('change', function () { readColors(); draw(); });
+    }
 
     fetch(sitePrefix() + cfg.data_url, { credentials: 'omit' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
@@ -118,7 +126,10 @@
     });
     colors.text = (cs.getPropertyValue('--text') || '').trim() || '#333';
     colors.muted = (cs.getPropertyValue('--text-muted') || '').trim() || '#888';
-    colors.edge = (cs.getPropertyValue('--border') || '').trim() || '#c8c8c8';
+    // Edge inks come from the TEXT ramp, not the border ramp — the border
+    // color is near-invisible against the page background in dark mode.
+    colors.curated = (cs.getPropertyValue('--text-soft') || '').trim() || colors.text;
+    colors.edge = colors.muted;
     colors.bg = (cs.getPropertyValue('--bg') || '').trim() || '#fff';
     colors.accent = (cs.getPropertyValue('--accent') || '').trim() || '#2f81f7';
   }
@@ -375,18 +386,18 @@
       ctx.lineTo(e.t.x, e.t.y);
       if (e.kind === 'relation') {
         ctx.setLineDash([]);
-        ctx.strokeStyle = onPath ? colors.accent : colors.muted;
+        ctx.strokeStyle = onPath ? colors.accent : colors.curated;
         ctx.lineWidth = (onPath ? 2.4 : 1.4) / view.k;
       } else {
         ctx.setLineDash([4 / view.k, 4 / view.k]);
         ctx.strokeStyle = onPath ? colors.accent : colors.edge;
-        ctx.lineWidth = (onPath ? 2.2 : Math.min(2.5, 0.5 + (e.count || 1) * 0.25)) / view.k;
+        ctx.lineWidth = (onPath ? 2.2 : Math.min(2.5, 0.7 + (e.count || 1) * 0.25)) / view.k;
       }
-      ctx.globalAlpha = dimmed ? 0.18 : (e.kind === 'relation' ? 0.85 : 0.5);
+      ctx.globalAlpha = dimmed ? 0.18 : (e.kind === 'relation' ? 0.9 : 0.65);
       ctx.stroke();
       ctx.setLineDash([]);
       if (e.kind === 'relation' && !e.symmetric && !dimmed && view.k > 0.35) {
-        drawArrow(e, onPath ? colors.accent : colors.muted);
+        drawArrow(e, onPath ? colors.accent : colors.curated);
       }
     }
     ctx.globalAlpha = 1;

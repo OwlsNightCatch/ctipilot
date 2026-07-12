@@ -8562,51 +8562,63 @@ def annotate_sources(sources_raw: dict[str, Any],
 
 
 def _registry_phrases(ent: dict[str, Any]) -> tuple[list[str], list[str]]:
-    """Match phrases for a registry entity → `(folded, acronyms)`.
+    """Match phrases for a registry entity → `(phrases, cased)`.
 
-    `folded` — case-folded name + aliases, min length 4. Callers must
-    confirm a substring hit at a word boundary (a raw `in` match lets
-    "Lace" attach to "necklace" and pollute co-occurrence).
-    `acronyms` — short all-caps/digit labels (2–3 chars, e.g. "INC",
-    "CRA", "888") matched case-sensitively at word boundaries, so
-    short-named entities are not silently unmatchable in prose."""
-    folded: list[str] = []
-    acronyms: list[str] = []
+    `phrases` — case-folded MULTI-token labels, matched case-insensitively
+    at word boundaries (a raw `in` match lets "Lace" attach to "necklace"
+    and pollute co-occurrence).
+    `cased` — single-token labels (incl. 2–3-char acronyms like "INC",
+    "888"), matched CASE-SENSITIVELY against the registered casing or its
+    sentence-start capitalization. Group names are proper nouns in prose,
+    so this keeps "Coolify ships a fix" attaching to `coolify` while a
+    disclosure "embargo lifted" or an "unsafe deserialization" no longer
+    attaches to the actors named Embargo / Unsafe."""
+    phrases: list[str] = []
+    cased: list[str] = []
     for label in [ent.get("name")] + list(ent.get("aliases") or []):
         if not isinstance(label, str):
             continue
         raw = label.strip()
-        p = raw.lower()
-        if len(p) >= 4 and p not in folded:
-            folded.append(p)
-        elif 2 <= len(raw) <= 3 and re.fullmatch(r"[A-Z0-9]+", raw) and raw not in acronyms:
-            acronyms.append(raw)
-    return folded, acronyms
+        if not raw:
+            continue
+        if re.search(r"\s", raw):
+            p = raw.lower()
+            if len(p) >= 4 and p not in phrases:
+                phrases.append(p)
+        elif (len(raw) >= 4 or re.fullmatch(r"[A-Z0-9]{2,3}", raw)) and raw not in cased:
+            cased.append(raw)
+    return phrases, cased
 
 
 _WORD_BOUNDARY_CACHE: dict[tuple[str, bool], "re.Pattern[str]"] = {}
 
 
+def _word_pat(token: str, cased: bool) -> "re.Pattern[str]":
+    pat = _WORD_BOUNDARY_CACHE.get((token, cased))
+    if pat is None:
+        boundary = r"[A-Za-z0-9]" if cased else r"[a-z0-9]"
+        pat = re.compile(
+            r"(?<!" + boundary + r")" + re.escape(token) + r"(?!" + boundary + r")"
+        )
+        _WORD_BOUNDARY_CACHE[(token, cased)] = pat
+    return pat
+
+
 def _phrase_hits(haystack_folded: str, haystack_raw: str,
-                 folded: list[str], acronyms: list[str]) -> bool:
+                 phrases: list[str], cased: list[str]) -> bool:
     """Word-boundary phrase match: substring prefilter (cheap), then a
     boundary-anchored regex confirm (correct)."""
-    for p in folded:
-        if p in haystack_folded:
-            pat = _WORD_BOUNDARY_CACHE.get((p, False))
-            if pat is None:
-                pat = re.compile(r"(?<![a-z0-9])" + re.escape(p) + r"(?![a-z0-9])")
-                _WORD_BOUNDARY_CACHE[(p, False)] = pat
-            if pat.search(haystack_folded):
-                return True
-    for a in acronyms:
-        if a in haystack_raw:
-            pat = _WORD_BOUNDARY_CACHE.get((a, True))
-            if pat is None:
-                pat = re.compile(r"(?<![A-Za-z0-9])" + re.escape(a) + r"(?![A-Za-z0-9])")
-                _WORD_BOUNDARY_CACHE[(a, True)] = pat
-            if pat.search(haystack_raw):
-                return True
+    for p in phrases:
+        if p in haystack_folded and _word_pat(p, False).search(haystack_folded):
+            return True
+    for w in cased:
+        if w in haystack_raw and _word_pat(w, True).search(haystack_raw):
+            return True
+        # sentence-start tolerance for lowercase brand names ("coolify" →
+        # "Coolify ships…"); never widens an already-capitalized name.
+        cap = w[:1].upper() + w[1:]
+        if cap != w and cap in haystack_raw and _word_pat(cap, True).search(haystack_raw):
+            return True
     return False
 
 
@@ -8791,6 +8803,18 @@ def build_entities(
     return entities, dict(matched)
 
 
+def derived_edge_qualified(entry: dict[str, Any]) -> bool:
+    """Evidence-quality gate for DERIVED graph edges (entity co-occurrence
+    and entity↔CVE): only focused operational reporting creates them.
+    Strategic entries (weekly synthesis, outlooks, policy roundups) and
+    annual/periodic-report treatments mention many unrelated entities by
+    construction — two names sharing a weekly recap or a quarterly
+    ransomware ranking is summarization, not a connection. Curated
+    `relations[]` are untouched: they carry their own source entry."""
+    return (entry.get("horizon") or "operational") == "operational" \
+        and (entry.get("kind") or "") != "annual-report"
+
+
 def compute_related_entities(
     entities: list[dict[str, Any]],
     entries_by_entity_key: dict[str, list[dict[str, Any]]],
@@ -8804,14 +8828,18 @@ def compute_related_entities(
       symmetric edges on both endpoints. Every row carries the relation
       type, reading label, note, and the establishing source entry.
     - `related_entities` — the DERIVED co-occurrence list: two entities
-      referenced by the same entry; score = count of distinct shared
-      entries, top 8. Curated neighbours are marked (`curated: True`) so
-      the renderer can dedupe, but they no longer masquerade as
-      co-occurrence rows — the typed edge is its own surface."""
+      referenced by the same QUALIFIED entry (`derived_edge_qualified` —
+      focused operational reporting only; weekly synthesis, outlooks and
+      annual-report roundups never create derived edges); score = count
+      of distinct shared entries, top 8. Curated neighbours are marked
+      (`curated: True`) so the renderer can dedupe, but they no longer
+      masquerade as co-occurrence rows — the typed edge is its own
+      surface."""
     entry_to_keys: dict[str, set[str]] = defaultdict(set)
     for k, ents in entries_by_entity_key.items():
         for e in ents:
-            entry_to_keys[e["id"]].add(k)
+            if derived_edge_qualified(e):
+                entry_to_keys[e["id"]].add(k)
     by_key = {e["key"]: e for e in entities}
     co: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
     for keys in entry_to_keys.values():
@@ -9113,7 +9141,8 @@ def render_entity_page(
             )
         related_block = (
             '<h2 class="section-head" style="margin-top:1.5rem">Co-occurring entities</h2>'
-            '<p class="muted" style="margin-top:0.2rem">Derived — referenced by the same entries; '
+            '<p class="muted" style="margin-top:0.2rem">Derived — referenced by the same '
+            "focused operational entries (weekly summaries and report roundups don't count); "
             "×N counts the shared entries.</p>"
             f'<ul class="entity-list">{"".join(rows)}</ul>'
         )
@@ -9841,9 +9870,13 @@ def build_graph_payload(
     (techniques are a toggleable layer). Edges carry their derivation
     (docs/pipeline.md § Relationships): `relation` = curated typed edge with
     its source entry; `co-occurrence` / `cve` / `technique` = derived,
-    with the supporting entry ids/counts. The client renders curated and
-    derived edges distinctly and can answer "why does this edge exist?"
-    for every line it draws."""
+    with the supporting entry ids/counts. Derived edges obey the
+    `derived_edge_qualified` evidence gate — the `co` index is already
+    filtered by `compute_related_entities`, and the per-edge supporting
+    entry lists here apply the same gate, so an edge never cites a weekly
+    recap or report roundup as its evidence. The client renders curated
+    and derived edges distinctly and can answer "why does this edge
+    exist?" for every line it draws."""
     by_key = {e["key"]: e for e in entities_list}
     entity_nodes: dict[str, dict[str, Any]] = {}
     for ent in entities_list:
@@ -9906,8 +9939,8 @@ def build_graph_payload(
             a_is_cve = content_model.CVE_ID_RE.match(a) is not None
             b_is_cve = content_model.CVE_ID_RE.match(b) is not None
             shared = sorted(
-                {e["id"] for e in entries_by_entity_key.get(a, [])}
-                & {e["id"] for e in entries_by_entity_key.get(b, [])},
+                {e["id"] for e in entries_by_entity_key.get(a, []) if derived_edge_qualified(e)}
+                & {e["id"] for e in entries_by_entity_key.get(b, []) if derived_edge_qualified(e)},
                 reverse=True,
             )[:6]
             if a_is_ent and b_is_ent:
@@ -10031,9 +10064,10 @@ def render_graph_page(
   that node's connections (or widen the reach to 2 hops / the full connected graph).
   Solid edges are <strong>curated relationships</strong> — typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
-  Dashed edges are <strong>derived</strong> — entities referenced by the same entries, or an
-  entity and a CVE carried by the same entry. Click a node for its detail panel;
-  shift-click a second node to trace the shortest path between them.
+  Dashed edges are <strong>derived</strong> — entities referenced by the same focused
+  operational entry, or an entity and a CVE carried by the same entry (weekly summaries,
+  outlooks and report roundups never create derived edges). Click a node for its detail
+  panel; shift-click a second node to trace the shortest path between them.
 </p>
 <p class="muted">
   {len(ent_nodes)} entities · {sum(1 for n in nodes if n.get("kind") == "cve")} CVEs ·

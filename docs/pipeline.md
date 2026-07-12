@@ -445,7 +445,14 @@ has exactly two edge classes, and every edge's derivation is explicit:
    a CVE carried by the same entry, an entity and an ATT&CK technique via
    the derived TTP profiles (§ The ATT&CK layer). Derived edges are
    recomputed on every build and always carry their supporting entry ids —
-   they can never drift from the store.
+   they can never drift from the store. **Evidence-quality gate**
+   (`build.derived_edge_qualified`): only focused operational reporting
+   creates a derived edge — `horizon: strategic` entries (weekly
+   synthesis, outlooks, policy roundups) and `annual-report` treatments
+   are excluded, because they mention many unrelated entities by
+   construction: two names sharing a weekly recap or a quarterly
+   ransomware ranking is summarization, not a connection. Curated edges
+   are unaffected (each carries its own establishing entry).
 
 Curated edges assert *what happened*; derived edges surface *what the
 store connects*. Renderers keep the two visually distinct (curated edges
