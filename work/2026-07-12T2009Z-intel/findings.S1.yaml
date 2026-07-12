@@ -1,0 +1,87 @@
+domain: S1
+run_id: 2026-07-12T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-12T20:11:53Z
+ended_at: 2026-07-12T20:19:59Z
+duration_seconds: 486
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 6
+  bridge_fetches: 15
+items: []
+# No items cleared the bar this run. Rationale below (also see coverage_gaps
+# / notes). This is a genuinely quiet 8-hour intraday window: every
+# essential source's freshest content clusters at or before ~2026-07-12
+# 08:16 UTC (a batch of VulnCheck/GHSA disclosures, none with confirmed
+# in-the-wild exploitation) or on Fri 2026-07-10 (CISA KEV, NCSC-NL,
+# BSI, ANSSI/CERT-FR, NCSC-CH Security Hub, CISA advisories feed,
+# Chrome stable) -- all before the window start (~2026-07-12T12:30Z).
+# The previous run (2026-07-12T1210Z-intel) already swept up through
+# ~12:10Z and returned zero; nothing new appeared between ~12:10Z and
+# now (~20:15Z) across the full essential-source slice plus rotation
+# and targeted WebSearch.
+#
+# Near-miss items explicitly checked and excluded as out-of-window
+# (published before ~12:30Z cutoff, confirmed via NVD publication
+# timestamp):
+#   - CVE-2026-61876 (LuCI DHCPv6 lease-hostname stored XSS, CVSS 9.4/
+#     8.8) -- NVD published 2026-07-12T08:16:46Z.
+#   - CVE-2026-56271 (Flowise hardcoded default JWT secrets, CVSS 9.3/
+#     9.8) -- NVD published 2026-07-12T08:16:45Z.
+#   - CVE-2026-59260 (OpenWrt luci-app-samba4 read-ACL RCE via smbd,
+#     CVSS 8.7/8.8) -- NVD published 2026-07-12T08:16:45Z; no ITW
+#     exploitation stated by VulnCheck (source of the advisory).
+#   - Whole VulnCheck/GHSA batch (Capgo x7, Crawl4AI x2, filebrowser,
+#     luci-app-upnp) all timestamped ~08:16 UTC 2026-07-12 -- same
+#     batch, same reason, no exploitation claimed for any.
+# Already-covered duplicates confirmed against prior_coverage.json (not
+# re-surfaced):
+#   - CVE-2026-45659 (SharePoint deserialization RCE, KEV-listed
+#     2026-07-01) -- entry 2026-06-... already covers it; WebSearch hits
+#     from 2026-07-09/10 (Storm-2603/Warlock ransomware framing) are a
+#     restatement, not a material delta.
+#   - CVE-2026-43499 "GhostLock" (Linux kernel rtmutex UAF, public
+#     97%-reliable root+container-escape exploit) -- already an entry in
+#     the 14-day index.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist -- sweep is a no-op per spawn instructions; general coverage rules applied throughout (no watchlisted-product hits would have changed the zero-item outcome above)."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "RSS feed (cert.europa.eu/publications/security-advisories-rss) fetched successfully but its newest advisory (2026-008, Ivanti Sentry) is dated 10 June 2026 -- CERT-EU has not published since; not a transport failure, just a stale feed relative to this window."
+  - source_id: mozilla-mfsa
+  - source_id: chrome-releases
+    reason: "feed subcommand returned 0 items (jina fallback parsed no entries from the Atom feed); WebFetch on the HTML landing page confirmed titles only through 10 July 2026 with no post bodies/references extractable. Recommend the source record's fetch_method note be updated to prefer WebFetch on individual post permalinks over the feed for this host."
+  - source_id: msrc-blog
+    reason: "https://msrc.microsoft.com/blog redirects to https://www.microsoft.com/en-us/msrc/blog, which WebFetch renders as a JS-hydrated landing page carrying no individual post dates/bodies -- recipe needs a jina-reader pass or the structured msrc releases/recent subcommand instead of plain WebFetch."
+  - source_id: ncsc-uk
+    reason: "url fetch succeeded (200) but the reports-advisories listing page's inline text only surfaced two older alert titles (Fortinet firewalls/VPN gateways targeting, Middle East conflict guidance) with no visible dates in the extracted text; likely an older cached/static block on the page. No in-window UK advisory found via this route or via WebSearch."
+notes: |
+  Slice coverage this run: all 11 essential records attempted (CISA KEV
+  API, NCSC-NL RSS, ANSSI/CERT-FR via cert-fr bridge subcommand, BSI
+  WID-SEC RSS, CERT-EU RSS, CERT-PL RSS, CISA advisories+directives via
+  cisa bridge subcommand, ENISA EUVD via enisa-euvd bridge subcommand
+  (lastvulnerabilities/exploited/criticals views), NCSC-CH Security Hub
+  via ncsc-csh bridge subcommand, NCSC-UK via url bridge). Standard
+  rotation attempted: chrome-releases, oracle-cpu (next CPU release
+  confirmed scheduled 21 July 2026, nothing new), watchtowr, greynoise,
+  projectzero, claroty-team82, horizon3-ai, msrc-blog, vulncheck
+  (advisories listing directly). calif-codex was not reached this run
+  (deprioritised after the essential slice + rotation sources above all
+  returned stale/no in-window content and wall-clock was better spent on
+  WebSearch verification of near-miss items) -- flagging for the next
+  run's rotation priority rather than logging as a fetch failure, since
+  it was never attempted.
+  Targeted WebSearch queries run: "actively exploited vulnerability July
+  12 2026", "zero-day exploited CVE advisory today", "GhostLock
+  CVE-2026-43499 futex Linux kernel" (confirmed already-covered),
+  "CVE-2026-45659 SharePoint KEV exploited" (confirmed already-covered),
+  "\"CVE-2026\" advisory Sonntag 12 Juli Schweiz OR cyberattack"
+  (German/CH-focused, no hits), "vulncheck advisory July 12 2026". None
+  surfaced a qualifying in-window item beyond what is analysed above.
+  Zero is the honest, healthy result for this narrow intraday delta.
