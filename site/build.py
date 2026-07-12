@@ -10025,9 +10025,10 @@ def render_graph_page(
     body = f"""
 <h1>Threat graph</h1>
 <p class="subtitle" style="max-width:64rem">
-  Start from an entity and see everything connected to it — and nothing else.
-  Pick a starting point (search, or an entity below); the graph renders exactly the
-  connected subgraph reachable from it, full component or limited to 1–2 hops.
+  Start from an entity and see only what connects to it — nothing else is drawn.
+  Pick a starting point (search, or an entity below); the graph renders its direct
+  neighbourhood, and grows only where you take it: double-click any node to pull in
+  that node's connections (or widen the reach to 2 hops / the full connected graph).
   Solid edges are <strong>curated relationships</strong> — typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
   Dashed edges are <strong>derived</strong> — entities referenced by the same entries, or an
@@ -10047,9 +10048,9 @@ def render_graph_page(
            placeholder="Start here: find an actor / campaign / malware / CVE / technique…" />
     <ul class="atk-suggest" data-graph-suggest hidden></ul>
     <div class="graph-toggles" role="group" aria-label="Reach from the starting points">
-      <button type="button" class="mini-btn" data-graph-reach="1" title="Direct neighbours only">1 hop</button>
+      <button type="button" class="mini-btn active" data-graph-reach="1" title="Direct neighbours only — grow further by double-clicking nodes">1 hop</button>
       <button type="button" class="mini-btn" data-graph-reach="2" title="Neighbours of neighbours">2 hops</button>
-      <button type="button" class="mini-btn active" data-graph-reach="all" title="The entire connected graph reachable from the starting points">connected graph</button>
+      <button type="button" class="mini-btn" data-graph-reach="all" title="The entire connected graph reachable from the starting points">connected graph</button>
     </div>
     <div class="graph-toggles" role="group" aria-label="Node layers">
       <button type="button" class="mini-btn active" data-graph-layer="entity">entities</button>
@@ -10077,8 +10078,8 @@ lists the most-connected entities; every entity page carries the same relationsh
 list form.</p></noscript>
 
 <h2 class="section-head" style="margin-top:2rem">Start from a well-connected entity</h2>
-<p class="muted" style="margin-top:0.2rem">Opens the graph seeded on that entity — the view
-shows its entire connected subgraph.</p>
+<p class="muted" style="margin-top:0.2rem">Opens the graph seeded on that entity — its direct
+neighbourhood first; grow it node by node from there.</p>
 <ul class="entity-list">{top_rows}</ul>
 {data_island}
 """
