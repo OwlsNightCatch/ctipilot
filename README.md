@@ -71,6 +71,7 @@ The site deploys automatically on every push to `main` that touches the content 
 ├── prompts/                   # Everything the routines load at runtime
 │   ├── cti-run.md             # The intel-run master prompt (fired N× per day)
 │   ├── weekly-summary.md      # The weekly strategic run (builds on cti-run.md)
+│   ├── quality-audit.md       # The weekly quality-audit run (builds on cti-run.md)
 │   ├── CHANGELOG.md           # Editorial-policy audit trail
 │   ├── verification.md        # Fake-news / two-source verification policy
 │   ├── entry-template.md      # Canonical entry + run-record skeletons
@@ -105,6 +106,7 @@ The site deploys automatically on every push to `main` that touches the content 
 │   ├── architecture.md        # End-to-end map: what reads/writes what
 │   ├── operating.md           # Operator runbook: setup, ops dashboard, troubleshooting
 │   ├── routines.md            # Catalog of every routine + in-repo prompt (incl. backup)
+│   ├── audits/                # Weekly quality-audit reports (one per audit fire)
 │   ├── customization.md       # Downstream fork / rebrand guide
 │   ├── private-deployment.md  # Host the whole stack org-internally
 │   └── analytics.md           # What we measure, what we don't
@@ -175,6 +177,14 @@ Full walkthrough lives in the prompt itself ([`prompts/cti-run.md`](prompts/cti-
 A separate routine fires once per week (operator-chosen day and time): `Read prompts/weekly-summary.md and execute it.` The weekly prompt **builds on the intel-run prompt** — it `Read`s `cti-run.md` at runtime and defines only the divergent lens, so shared machinery can never copy-drift.
 
 The weekly reads the week's operational entries, builds its working lists (what's on fire if no one acted, multi-day chains, CVE roll-up, sector patterns, incidents recap), spawns horizon sub-agents (W1 threat-actor / campaign / research / report horizon; W2 policy & regulatory; conditional W3 intake), and composes `horizon: strategic` entries placed by `weekly_section` — each listing the operational entries it synthesises via `references`. Run id: `YYYY-MM-DDTHHMMZ-weekly`; the `/weekly/YYYY-Www/` page is rendered from these entries. Unlike intel runs, the weekly **may re-frame operational coverage** with a new lens — the asymmetry runs one way; intel runs never duplicate the weekly.
+
+## The weekly quality audit
+
+A third routine fires once per week (recommended: Sunday, after the weekly slot): `Read prompts/quality-audit.md and execute it.` Where the intel and weekly runs produce intelligence, the audit run audits *them* — institutionalized continuous improvement, modeled on the operator-directed full-store audit of 2026-07-11 ([`docs/audits/2026-07-11-intelligence-quality-audit.md`](docs/audits/2026-07-11-intelligence-quality-audit.md)).
+
+Each fire covers the window since the previous audit record (default 7 days, self-healing, 21-day cap) and asks the two questions the sound-AND-complete doctrine weighs equally: **soundness** — retrospective cold-reader truth passes re-fetch the primary sources behind every published entry and re-check every CVE id/CVSS (against the per-CVE authority), exploitation/KEV claim, version boundary, victim statement, attribution, evidence quote, ATT&CK id (against the pinned dataset) and classification; and **completeness** — independent research sub-agents re-research the window as if for the first time (including per-publisher research-blog listing sweeps, the discovery path CVE/KEV channels miss) and the returns are diffed against the store. On top of both: a systemic review (runaway runs, publish follow-through, reachable-but-unreadable sources, `actions[]`/priority/classification drift), re-checks of the previous audit's watch items, and effectiveness checks on its shipped fixes. The **first fire of each calendar month** also runs the priority-calibration review — the store's priority distribution against the verifier loop's F16 (priority-calibration) findings — to keep the notification channel honest.
+
+Every confirmed defect is root-caused to a specific mechanism and the fix ships in the same run (prompts, tools, sources, agent definitions — under the versioning rule) or becomes a numbered operator recommendation. Output per fire: an audit report `docs/audits/<date>-weekly-quality-audit.md`, one run record (`-audit` run-id suffix), audit-recovered entries where a missed item still clears the inclusion gate, and the fixes themselves. A clean audit is a healthy outcome and is reported as such — findings are never manufactured. Entry immutability holds: only factual metadata errors that poison machine surfaces (wrong CVE id, wrong CVSS, dead ATT&CK id) are repaired in place, each logged as an immutability exception; every other correction is a new `update_of` entry.
 
 ## Source list and CVE index — autonomous
 
