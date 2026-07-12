@@ -1,8 +1,26 @@
 # Prompt CHANGELOG
 
-Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-cti-brief.md`) and `prompts/weekly-summary.md`.
+Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-cti-brief.md`), `prompts/weekly-summary.md`, and `prompts/quality-audit.md`.
 
 ---
+
+## 3.22 — 2026-07-12 (weekly quality-audit routine: the 2026-07-11 full-store audit institutionalized as a scheduled run, with the monthly priority-calibration review folded in)
+
+### Why
+
+Operator-directed. The 2026-07-11 full-store intelligence-quality audit (`docs/audits/2026-07-11-intelligence-quality-audit.md`) found three published factual errors, one clear coverage miss, and five systemic/operational defects — every one real, narrow, and traceable to a fixable mechanism — but it only ran because a human asked. Continuous improvement needs the audit to be a standing routine, not an event: a weekly pass that re-verifies the trailing window's published entries against primary sources (soundness), independently re-researches the window and diffs it against the store (completeness), reviews the machinery for drift (runaway runs, dark-but-green sources, discipline decay), re-checks the previous audit's watch items, and confirms its shipped fixes actually took. The audit's recommendation 3 — a monthly pass over the priority distribution (the `high` share sat at 37 %, stable but on the generous side) against verifier F16 priority-calibration drift, to keep the notification channel honest — is folded into the same routine rather than becoming a fourth one. (Recommendations 1 — org-profile watchlists — and 2 — scheduler-side watchdog — are operator-side and addressed separately.)
+
+### What changed
+
+- **New master prompt `prompts/quality-audit.md`** — the weekly quality-audit run. Builds on `cti-run.md` exactly like the weekly does (runtime `Read`, shared machinery defined once, this file carries only the audit lens). Shape: Phase 0 preflight with a self-healing window anchored on the previous `-audit` run record (default 7 days, 21-day cap, 72-h `duplicate-audit` guard mirroring `duplicate-week`), carry-forward of open watch items and fix-effectiveness duties from prior reports, and the monthly-calibration duty check; Phase 1 retrospective truth passes (batched ≤20 entries, `cti-verification`/`-alt` rotation for model diversity, 45-min research-class cap, per-CVE-authority / verbatim-quote / pinned-ATT&CK / classification checks); Phase 2 independent coverage re-sweeps (`cti-research` G1 vulns / G2 incidents + watch-item corroboration / G3 research-blog listing sweeps — the discovery path behind both 07-11 misses); Phase 3 systemic review (telemetry, publish follow-through, reachable-but-unreadable sources, discipline drift, gate/pin state, previous-fix effectiveness); **Phase 3b monthly priority-calibration review** (first fire of each calendar month, keyed on the absence of a `## Priority calibration` section in the month's audit reports; F16 drift vs fixed bars; calibration edits only against concrete mis-prioritized entries); Phase 4 root-cause-and-fix with the repair discipline made explicit (in-place repair ONLY for the logged immutability-exception class — machine-surface metadata; everything else `update_of` or recommendation; recovered entries pass the full normal gates); Phase 5 audit report under `docs/audits/` mirroring the 07-11 structure incl. carried-forward recommendations and watch items; Phases 5.5→7 verbatim from `cti-run.md`, with the Phase 5.7 verifier scope extended to the audit report itself (the 07-11 audit's iteration 1 caught exactly that class). New invariants A-INV-1…5 (immutability carve-out bounded, no manufactured findings, report+record ship even cut-short, versioning rule on fixes, never race the scheduled runs).
+- **Run-record contract:** `run_id = <date>T<HHMM>Z-audit`, `kind: intel` (per the 07-11 precedent; `RUN_KINDS` unchanged), retrospective passes recorded under `sub_agents:` telemetry, `entries_published` counts only audit-recovered entries.
+- **`docs/routines.md` § 1d + § 2 table row; `docs/operating.md` § Set up the routines item 3** — the routine invocation prompt (`Read prompts/quality-audit.md and execute it.`), cadence guidance, and catalog entry.
+- **`CLAUDE.md`** — quality-audit prompt added to the repo map, the versioning-rule file list, and the shared-machinery note (an edit to a `cti-run.md` phase contract now also re-checks the audit prompt's references).
+- **Banner bumps:** `prompts/cti-run.md` + `prompts/weekly-summary.md` + `prompts/quality-audit.md` → v3.22 in lockstep (no body change to the first two).
+
+### What stays
+
+Every intel-run and weekly phase contract, PD-1…13, W-PD-1, the inclusion gate, dedup polarity, the verifier loop, the publishing chain — all untouched: the audit is additive and read-mostly. Entry immutability stays a hard invariant; the audit does not widen the 07-11 exception class, it bounds it (A-INV-1). The priority bars themselves (critical extreme, high TL;DR-worthy) are explicitly fixed reference points the calibration review tunes adherence to, never the bars. `tools/check_run.py`, `site/`, and the content model need no changes — the audit run record uses the existing `kind: intel` shape.
 
 ## 3.21 — 2026-07-11 (full-store quality-audit hardening: CVE-id provenance, dead-ATT&CK-id gate FAIL, main-run watchdog, outage-backfill research-blog sweep)
 
