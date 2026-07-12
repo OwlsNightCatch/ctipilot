@@ -527,9 +527,11 @@ CVEs, mapped ATT&CK techniques, curated + derived edges) and renders at
 libraries) canvas exploration surface. Exploration is **seeded**: the
 analyst names one or more starting nodes (search, an entity-page deep link
 `?focus=<id>`, or the most-connected directory), and the view renders
-exactly the connected subgraph reachable from those seeds — the full
-connected component by default, optionally limited to 1–2 hops — and
-nothing else; with no seed, nothing is drawn. Within the view:
+exactly the subgraph the analyst has grown from those seeds — the direct
+neighbourhood by default (`?hops=` widens to 2 hops or the full connected
+component), extended node by node via expand — and nothing else: nodes
+outside the grown view are not drawn at all, not even dimmed; with no
+seed, nothing is drawn. Within the view:
 type-filtering (entities / CVEs / techniques as a toggleable layer),
 curated/derived edge toggles (both also bound reachability), hover
 neighborhoods, a node detail panel (summary, typed relations, supporting

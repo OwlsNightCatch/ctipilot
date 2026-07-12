@@ -10,13 +10,17 @@
  * drawing fast no matter how large the store grows.
  *
  *   - search → add seed chips (multiple seeds compare components)
- *   - reach control: 1 hop / 2 hops / full connected graph
+ *   - reach control: 1 hop (default) / 2 hops / full connected graph
+ *   - double-click a node (or the panel's "expand") → pull that node's
+ *     direct neighbours into the view — investigations grow node by
+ *     node; nothing outside the grown view is ever drawn, not even
+ *     dimmed
  *   - node-type layers (entities / CVEs / techniques) and edge-class
  *     toggles (curated / derived) — these also bound reachability
  *   - click → detail panel (typed relations with their source entries,
  *     neighbours, page links); shift-click a second node → shortest path
- *   - double-click a node → re-seed the view on it
- *   - ?focus=<id>[,<id>…][&to=<id>] deep links (entity pages link here)
+ *   - ?focus=<id>[,<id>…][&hops=1|2|all][&to=<id>] deep links (entity
+ *     pages link here)
  *
  * Progressive enhancement: without JS the page's most-connected
  * directory and the per-entity relationship lists carry the same data.
@@ -45,7 +49,9 @@
   var edges = [];            // all edges: {s,t,kind,...} with node refs
   var adj = {};              // id -> [{other, edge}]
   var seeds = [];            // node ids the user named — the view roots
-  var reach = Infinity;      // 1 | 2 | Infinity — BFS depth from the seeds
+  var reach = 1;             // 1 | 2 | Infinity — BFS depth from the seeds
+  var expanded = new Set();  // nodes whose direct neighbours were pulled in
+  var extra = new Set();     // individually pulled-in nodes (panel jumps)
   var layers = { entity: true, cve: true, technique: false };
   var edgeClasses = { relation: true, derived: true };
   var visN = [], visE = [], visSet = new Set();   // cached visible subgraph
@@ -60,8 +66,9 @@
   var simTimer = null, alpha = 0;
   var colors = {};
 
-  var HINT_DEFAULT = 'Scroll to zoom · drag the canvas to pan · drag a node to pin it · ' +
-    'click = details · shift-click a second node = shortest path · double-click = re-seed here · Esc = clear.';
+  var HINT_DEFAULT = 'Double-click a node to pull in its neighbours · scroll to zoom · ' +
+    'drag the canvas to pan · drag a node to pin it · click = details · ' +
+    'shift-click a second node = shortest path · Esc = clear.';
   var HINT_EMPTY = 'Nothing is drawn until you pick a starting point — search above, or ' +
     'pick one of the most-connected entities below. The view then shows everything connected to it.';
 
@@ -174,11 +181,34 @@
           q.push(o);
         }
       }
+      // user-driven growth: nodes explicitly pulled in one by one — a
+      // deliberate pick always shows, even when its layer is toggled off
+      // (the layer toggles govern automatic reachability, not explicit
+      // choices).
+      extra.forEach(function (id) {
+        if (nodeById[id]) visSet.add(id);
+      });
+      // … and expansions: a visible node's direct neighbours join the
+      // view. Insertion order matters (each expansion may make the next
+      // expandable node visible), so iterate until stable.
+      var grew = true;
+      while (grew) {
+        grew = false;
+        expanded.forEach(function (id) {
+          if (!visSet.has(id)) return;
+          (adj[id] || []).forEach(function (a) {
+            if (!traversable(a.edge)) return;
+            if (!visSet.has(a.other.id)) { visSet.add(a.other.id); grew = true; }
+          });
+        });
+      }
     }
     visN = nodes.filter(function (n) { return visSet.has(n.id); });
+    // Every edge between two visible nodes draws (visSet membership
+    // already encodes the layer rules) — a visible pair must never show
+    // without its connection.
     visE = edges.filter(function (e) {
-      return visSet.has(e.s.id) && visSet.has(e.t.id) && edgeClassOk(e) &&
-        layerOk(e.s) && layerOk(e.t);
+      return visSet.has(e.s.id) && visSet.has(e.t.id) && edgeClassOk(e);
     });
     placeNew();
     if (selected && !visSet.has(selected)) { selected = null; showPanel(null); }
@@ -352,7 +382,7 @@
         ctx.strokeStyle = onPath ? colors.accent : colors.edge;
         ctx.lineWidth = (onPath ? 2.2 : Math.min(2.5, 0.5 + (e.count || 1) * 0.25)) / view.k;
       }
-      ctx.globalAlpha = dimmed ? 0.08 : (e.kind === 'relation' ? 0.85 : 0.5);
+      ctx.globalAlpha = dimmed ? 0.18 : (e.kind === 'relation' ? 0.85 : 0.5);
       ctx.stroke();
       ctx.setLineDash([]);
       if (e.kind === 'relation' && !e.symmetric && !dimmed && view.k > 0.35) {
@@ -369,7 +399,7 @@
       ctx.beginPath();
       ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
       ctx.fillStyle = colors[n.type] || colors.muted;
-      ctx.globalAlpha = dim ? 0.15 : 1;
+      ctx.globalAlpha = dim ? 0.4 : 1;
       ctx.fill();
       if (n.kind === 'cve' && n.exploited) {
         ctx.beginPath();
@@ -521,17 +551,25 @@
       ? pfx + 'attack/#' + encodeURIComponent(n.id)
       : pfx + 'entities/' + encodeURIComponent(n.id) + '/';
     var conns = (adj[n.id] || []).filter(function (a) { return edgeClassOk(a.edge); });
-    var hiddenCount = conns.filter(function (a) { return !visSet.has(a.other.id); }).length;
+    // What "expand" would actually add: distinct not-yet-drawn neighbours
+    // reachable over traversable edges (layer rules apply to automatic
+    // growth) — never a per-edge count.
+    var expandable = new Set();
+    conns.forEach(function (a) {
+      if (!visSet.has(a.other.id) && traversable(a.edge)) expandable.add(a.other.id);
+    });
+    var hiddenCount = expandable.size;
+    var CONN_CAP = 40;
     var rows = conns
       .sort(function (a, b) {
         var ka = a.edge.kind === 'relation' ? 0 : 1;
         var kb = b.edge.kind === 'relation' ? 0 : 1;
         return ka - kb || (b.edge.count || 0) - (a.edge.count || 0);
       })
-      .slice(0, 40)
+      .slice(0, CONN_CAP)
       .map(function (a) {
         var off = visSet.has(a.other.id) ? '' :
-          ' <span class="muted" title="Outside the current view — jumping re-seeds if needed">(outside view)</span>';
+          ' <span class="muted" title="Not drawn yet — jumping pulls it into the view">(not in view)</span>';
         return '<li><button type="button" class="g-jump" data-jump="' + esc(a.other.id) + '">' +
           esc(a.other.label || a.other.id) + '</button>' + off + ' ' + edgeExplain(a.edge, n.id) + '</li>';
       }).join('');
@@ -549,6 +587,10 @@
       '<div class="g-panel-meta">' + meta.join(' ') + '</div>' +
       '<div class="g-panel-actions">' +
       '<a class="mini-btn" href="' + pageUrl + '">open page</a> ' +
+      (hiddenCount
+        ? '<button type="button" class="mini-btn" data-expand="' + esc(n.id) +
+          '" title="Pull this node’s direct neighbours into the view">expand +' + hiddenCount + '</button> '
+        : '') +
       '<button type="button" class="mini-btn" data-reseed="' + esc(n.id) + '">re-seed here</button> ' +
       (isSeed
         ? '<button type="button" class="mini-btn" data-seed-remove="' + esc(n.id) + '">remove seed</button> '
@@ -559,8 +601,13 @@
         ? '<p class="muted g-path-note">Path ' + esc(selected) + ' → ' + esc(pathEnd) + ': ' +
           (pathIds.size - 1) + ' hop(s). Esc to clear.</p>'
         : '<p class="muted g-path-note">Shift-click another node to trace the shortest path from here.</p>') +
-      '<h4>Connections' + (hiddenCount ? ' <span class="muted">(' + hiddenCount + ' outside the current view)</span>' : '') + '</h4>' +
-      '<ul class="g-conn">' + (rows || '<li class="muted">none</li>') + '</ul>';
+      '<h4>Connections <span class="muted">(' + conns.length +
+      (hiddenCount ? ' · ' + hiddenCount + ' not drawn yet' : '') + ')</span></h4>' +
+      '<ul class="g-conn">' + (rows || '<li class="muted">none</li>') +
+      (conns.length > CONN_CAP
+        ? '<li class="muted">… showing the first ' + CONN_CAP + ' of ' + conns.length +
+          ' — the <a href="' + pageUrl + '">entity page</a> lists them all</li>'
+        : '') + '</ul>';
     panel.hidden = false;
   }
 
@@ -616,7 +663,7 @@
     });
     canvas.addEventListener('dblclick', function (ev) {
       var n = nodeAt(ev.offsetX, ev.offsetY);
-      if (n) reseed(n.id);
+      if (n) expandNode(n.id);
     });
     canvas.addEventListener('wheel', function (ev) {
       ev.preventDefault();
@@ -666,6 +713,8 @@
       if (ev.target.closest('[data-panel-close]')) { clearSelection(); return; }
       t = ev.target.closest('[data-jump]');
       if (t) { jumpTo(t.getAttribute('data-jump')); return; }
+      t = ev.target.closest('[data-expand]');
+      if (t) { expandNode(t.getAttribute('data-expand')); return; }
       t = ev.target.closest('[data-reseed]');
       if (t) { reseed(t.getAttribute('data-reseed')); return; }
       t = ev.target.closest('[data-seed-add]');
@@ -741,21 +790,31 @@
   function reseed(id) {
     if (!nodeById[id]) return;
     seeds = [id];
+    expanded.clear();
+    extra.clear();
     refreshVisible();
     selectNode(id, true);
   }
 
+  function expandNode(id) {
+    if (!nodeById[id]) return;
+    expanded.add(id);
+    refreshVisible();
+    selectNode(id);
+  }
+
   function jumpTo(id) {
-    // Neighbour click in the panel: select it; if it sits outside the
-    // current view, add it as a seed so the view grows to include it.
-    if (!visSet.has(id)) addSeed(id);
+    // Neighbour click in the panel: select it; if it is not drawn yet,
+    // pull exactly this one node into the view (never its whole
+    // neighbourhood — growth stays user-driven, node by node).
+    if (!visSet.has(id)) { extra.add(id); refreshVisible(); }
     selectNode(id, true);
   }
 
   function selectNode(id, center) {
     var n = nodeById[id];
     if (!n) return;
-    if (!visSet.has(id)) { addSeed(id); }
+    if (!visSet.has(id)) { extra.add(id); refreshVisible(); }
     selected = id;
     pathEnd = null; pathIds = null; pathEdgeSet = null;
     showPanel(n);
@@ -798,6 +857,8 @@
 
   function resetAll() {
     seeds = [];
+    expanded.clear();
+    extra.clear();
     selected = null; pathEnd = null; pathIds = null; pathEdgeSet = null;
     view = { x: 0, y: 0, k: 1 };
     nodes.forEach(function (n) { n.pinned = false; n.placed = false; });
@@ -811,7 +872,7 @@
     var p = new URLSearchParams();
     if (seeds.length) p.set('focus', seeds.join(','));
     if (selected && pathEnd) p.set('to', pathEnd);
-    if (reach !== Infinity) p.set('hops', String(reach));
+    if (reach !== 1) p.set('hops', reach === Infinity ? 'all' : String(reach));
     var qs = p.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
   }
@@ -819,8 +880,8 @@
   function restoreFromUrl() {
     var p = new URLSearchParams(location.search);
     var hops = p.get('hops');
-    if (hops && /^[12]$/.test(hops)) {
-      reach = parseInt(hops, 10);
+    if (hops && /^([12]|all)$/.test(hops)) {
+      reach = hops === 'all' ? Infinity : parseInt(hops, 10);
       shell.querySelectorAll('[data-graph-reach]').forEach(function (b) {
         b.classList.toggle('active', b.getAttribute('data-graph-reach') === hops);
       });
