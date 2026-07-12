@@ -1,18 +1,22 @@
-/* graph.js — the /graph/ interactive threat graph.
+/* graph.js — the /graph/ interactive threat graph (seeded exploration).
  *
  * Renders data/graph.json (all canonical entities + covered CVEs +
  * mapped ATT&CK techniques; curated typed edges + derived edges) as a
- * force-directed canvas an analyst can investigate:
+ * force-directed canvas — but never all at once: the analyst SEEDS the
+ * view by naming one or more nodes, and the surface renders exactly the
+ * connected subgraph reachable from those seeds (full component by
+ * default, optionally hop-limited). Nothing unconnected is ever drawn,
+ * and an empty seed list renders nothing — which keeps layout and
+ * drawing fast no matter how large the store grows.
  *
- *   - pan / zoom / drag-to-pin nodes
+ *   - search → add seed chips (multiple seeds compare components)
+ *   - reach control: 1 hop / 2 hops / full connected graph
  *   - node-type layers (entities / CVEs / techniques) and edge-class
- *     toggles (curated / derived)
- *   - search with jump-to-node
- *   - click → detail panel (summary line, typed relations with their
- *     source entries, direct neighbours, page links)
- *   - shift-click a second node → shortest-path trace between the two
- *   - double-click → isolate a node's neighbourhood (depth 2)
- *   - ?focus=<id> deep link (entity pages link here)
+ *     toggles (curated / derived) — these also bound reachability
+ *   - click → detail panel (typed relations with their source entries,
+ *     neighbours, page links); shift-click a second node → shortest path
+ *   - double-click a node → re-seed the view on it
+ *   - ?focus=<id>[,<id>…][&to=<id>] deep links (entity pages link here)
  *
  * Progressive enhancement: without JS the page's most-connected
  * directory and the per-entity relationship lists carry the same data.
@@ -36,22 +40,30 @@
 
   // ---- state ----------------------------------------------------------
   var data = null;
-  var nodes = [];            // render nodes: {id,kind,type,label,...,x,y,vx,vy,deg,pinned}
+  var nodes = [];            // all nodes: {id,kind,type,label,...,x,y,vx,vy,deg,pinned}
   var nodeById = {};
-  var edges = [];            // render edges: {s,t,kind,...} with node refs
+  var edges = [];            // all edges: {s,t,kind,...} with node refs
   var adj = {};              // id -> [{other, edge}]
+  var seeds = [];            // node ids the user named — the view roots
+  var reach = Infinity;      // 1 | 2 | Infinity — BFS depth from the seeds
   var layers = { entity: true, cve: true, technique: false };
   var edgeClasses = { relation: true, derived: true };
+  var visN = [], visE = [], visSet = new Set();   // cached visible subgraph
   var selected = null;       // node id
   var pathEnd = null;        // second node id (shift-click)
   var pathIds = null;        // Set of ids on the traced path
-  var isolated = null;       // Set of visible ids when isolating, else null
+  var pathEdgeSet = null;
   var hovered = null;
   var view = { x: 0, y: 0, k: 1 };   // pan/zoom transform
-  var canvas, ctx, panel, statusEl, shell;
+  var canvas, ctx, panel, statusEl, shell, seedBox;
   var dpr = Math.max(1, window.devicePixelRatio || 1);
   var simTimer = null, alpha = 0;
   var colors = {};
+
+  var HINT_DEFAULT = 'Scroll to zoom · drag the canvas to pan · drag a node to pin it · ' +
+    'click = details · shift-click a second node = shortest path · double-click = re-seed here · Esc = clear.';
+  var HINT_EMPTY = 'Nothing is drawn until you pick a starting point — search above, or ' +
+    'pick one of the most-connected entities below. The view then shows everything connected to it.';
 
   var TYPE_COLOR_VARS = {
     actor: '--g-actor', campaign: '--g-campaign', malware: '--g-malware',
@@ -74,13 +86,17 @@
     canvas = shell.querySelector('[data-graph-canvas]');
     panel = shell.querySelector('[data-graph-panel]');
     statusEl = shell.querySelector('[data-graph-status]');
+    seedBox = shell.querySelector('[data-graph-seeds]');
     if (!canvas || !canvas.getContext) return;
     ctx = canvas.getContext('2d');
     readColors();
 
     fetch(sitePrefix() + cfg.data_url, { credentials: 'omit' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (payload) { data = payload; build(); shell.hidden = false; resize(); layout(true); wire(); restoreFromUrl(); })
+      .then(function (payload) {
+        data = payload; build(); shell.hidden = false; resize(); wire();
+        if (!restoreFromUrl()) { refreshVisible(); }
+      })
       .catch(function (err) {
         if (statusEl) statusEl.textContent = 'Could not load the graph dataset (' + err.message + ') — the directory below still works.';
         shell.hidden = false;
@@ -103,7 +119,7 @@
   function build() {
     nodes = (data.nodes || []).map(function (n) {
       return Object.assign({}, n, {
-        x: 0, y: 0, vx: 0, vy: 0, deg: 0, pinned: false
+        x: 0, y: 0, vx: 0, vy: 0, deg: 0, pinned: false, placed: false
       });
     });
     nodeById = {};
@@ -119,50 +135,117 @@
       (adj[t.id] = adj[t.id] || []).push({ other: s, edge: re });
       if (e.kind !== 'technique') { s.deg++; t.deg++; }
     });
-    // deterministic initial spiral placement (stable across loads)
-    var golden = Math.PI * (3 - Math.sqrt(5));
-    nodes
-      .slice()
-      .sort(function (a, b) { return b.deg - a.deg || (a.id < b.id ? -1 : 1); })
-      .forEach(function (n, i) {
-        var r = 40 * Math.sqrt(i + 1);
-        n.x = r * Math.cos(i * golden);
-        n.y = r * Math.sin(i * golden);
+  }
+
+  // ---- visibility: seeded reachability ---------------------------------
+  function layerOk(n) { return !!layers[n.kind]; }
+  function edgeClassOk(e) {
+    return e.kind === 'relation' ? edgeClasses.relation : edgeClasses.derived;
+  }
+  function traversable(e) { return edgeClassOk(e) && layerOk(e.s) && layerOk(e.t); }
+
+  function refreshVisible() {
+    visSet = new Set();
+    var rooted = seeds.filter(function (id) { return nodeById[id]; });
+    if (rooted.length) {
+      // BFS from every seed over traversable edges, bounded by `reach`.
+      var depth = {};
+      var q = [];
+      rooted.forEach(function (id) {
+        if (!layerOk(nodeById[id])) {
+          // A seed always shows, even if its layer is toggled off …
+          layers[nodeById[id].kind] = true;
+          var btn = shell.querySelector('[data-graph-layer="' + nodeById[id].kind + '"]');
+          if (btn) btn.classList.add('active');
+        }
+        depth[id] = 0; q.push(id); visSet.add(id);
       });
+      while (q.length) {
+        var cur = q.shift();
+        if (depth[cur] >= reach) continue;
+        var neigh = adj[cur] || [];
+        for (var i = 0; i < neigh.length; i++) {
+          var e = neigh[i];
+          if (!traversable(e.edge)) continue;
+          var o = e.other.id;
+          if (visSet.has(o)) continue;
+          visSet.add(o);
+          depth[o] = depth[cur] + 1;
+          q.push(o);
+        }
+      }
+    }
+    visN = nodes.filter(function (n) { return visSet.has(n.id); });
+    visE = edges.filter(function (e) {
+      return visSet.has(e.s.id) && visSet.has(e.t.id) && edgeClassOk(e) &&
+        layerOk(e.s) && layerOk(e.t);
+    });
+    placeNew();
+    if (selected && !visSet.has(selected)) { selected = null; showPanel(null); }
+    if (pathIds) {
+      var ok = true;
+      pathIds.forEach(function (id) { if (!visSet.has(id)) ok = false; });
+      if (!ok) { pathEnd = null; pathIds = null; pathEdgeSet = null; }
+    }
+    renderSeedChips();
+    updateStatus();
+    layout(true);
   }
 
-  // ---- visibility -----------------------------------------------------
-  function nodeVisible(n) {
-    if (!layers[n.kind]) return false;
-    if (isolated && !isolated.has(n.id)) return false;
-    return true;
+  function placeNew() {
+    // Deterministic spiral placement for nodes entering the view, highest
+    // degree first; already-placed nodes keep their position.
+    var golden = Math.PI * (3 - Math.sqrt(5));
+    var fresh = visN.filter(function (n) { return !n.placed; });
+    fresh.sort(function (a, b) { return b.deg - a.deg || (a.id < b.id ? -1 : 1); });
+    var base = visN.length - fresh.length;
+    fresh.forEach(function (n, i) {
+      var k = base + i + 1;
+      var r = 34 * Math.sqrt(k);
+      n.x = r * Math.cos(k * golden);
+      n.y = r * Math.sin(k * golden);
+      n.placed = true;
+    });
   }
-  function edgeVisible(e) {
-    if (!nodeVisible(e.s) || !nodeVisible(e.t)) return false;
-    if (e.kind === 'relation') return edgeClasses.relation;
-    return edgeClasses.derived;
-  }
-  function visibleNodes() { return nodes.filter(nodeVisible); }
-  function visibleEdges() { return edges.filter(edgeVisible); }
 
-  // ---- force layout ---------------------------------------------------
+  function updateStatus() {
+    if (!statusEl) return;
+    if (!seeds.length) { statusEl.textContent = HINT_EMPTY; return; }
+    var reachLabel = reach === Infinity ? 'full connected graph' : reach + ' hop' + (reach === 1 ? '' : 's');
+    statusEl.textContent = visN.length + ' node(s) · ' + visE.length + ' edge(s) — ' +
+      reachLabel + ' from ' + seeds.map(function (id) {
+        return (nodeById[id] || {}).label || id;
+      }).join(', ') + '. ' + HINT_DEFAULT;
+  }
+
+  function renderSeedChips() {
+    if (!seedBox) return;
+    if (!seeds.length) { seedBox.innerHTML = '<span class="muted g-seed-empty">no starting point selected</span>'; return; }
+    seedBox.innerHTML = seeds.map(function (id) {
+      var n = nodeById[id] || { label: id, type: '' };
+      return '<span class="g-seed-chip"><span class="e-tag e-tag--' + esc(n.type || 'none') + '">' +
+        esc(n.type || '?') + '</span> ' + esc(n.label) +
+        ' <button type="button" data-seed-remove="' + esc(id) + '" aria-label="Remove ' + esc(n.label) + '">×</button></span>';
+    }).join('');
+  }
+
+  // ---- force layout (visible subgraph only) -----------------------------
   function layout(restart) {
     if (restart) alpha = 1;
     if (simTimer) return;
     var step = function () {
-      var vn = visibleNodes(), ve = visibleEdges();
-      tick(vn, ve);
+      tick();
       draw();
-      alpha *= 0.985;
-      if (alpha > 0.02) { simTimer = requestAnimationFrame(step); }
+      alpha *= 0.97;
+      if (alpha > 0.02 && visN.length) { simTimer = requestAnimationFrame(step); }
       else { simTimer = null; draw(); }
     };
     simTimer = requestAnimationFrame(step);
   }
 
-  function tick(vn, ve) {
+  function tick() {
+    var vn = visN, ve = visE;
     var i, j, n, m, dx, dy, d2, d, f;
-    // repulsion on a coarse grid (Barnes-Hut-ish bucketing)
     var CELL = 160;
     var grid = {};
     for (i = 0; i < vn.length; i++) {
@@ -190,11 +273,9 @@
           }
         }
       }
-      // gravity toward origin
       n.vx -= n.x * 0.012 * alpha;
       n.vy -= n.y * 0.012 * alpha;
     }
-    // springs
     var LINK = 120;
     for (i = 0; i < ve.length; i++) {
       var e = ve[i];
@@ -226,6 +307,19 @@
     var w = canvas.width / dpr, h = canvas.height / dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
+
+    if (!visN.length) {
+      ctx.fillStyle = colors.muted;
+      ctx.font = '14px ' + '-apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Pick a starting point — search above or choose an entity below.', w / 2, h / 2 - 12);
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('The graph then shows everything connected to it — and nothing else.', w / 2, h / 2 + 12);
+      ctx.textAlign = 'left';
+      return;
+    }
+
     ctx.translate(w / 2 + view.x, h / 2 + view.y);
     ctx.scale(view.k, view.k);
 
@@ -234,15 +328,16 @@
       focusSet = new Set();
       var fid = hovered || selected;
       focusSet.add(fid);
-      (adj[fid] || []).forEach(function (a) { if (edgeVisible(a.edge)) focusSet.add(a.other.id); });
+      (adj[fid] || []).forEach(function (a) {
+        if (visSet.has(a.other.id) && edgeClassOk(a.edge)) focusSet.add(a.other.id);
+      });
       if (pathIds) pathIds.forEach(function (id) { focusSet.add(id); });
     }
 
-    var ve = visibleEdges();
+    var ve = visE;
     for (var i = 0; i < ve.length; i++) {
       var e = ve[i];
-      var onPath = pathIds && pathIds.has(e.s.id) && pathIds.has(e.t.id) &&
-        pathEdgeSet && pathEdgeSet.has(e);
+      var onPath = pathIds && pathEdgeSet && pathEdgeSet.has(e);
       var dimmed = focusSet && !onPath &&
         !(focusSet.has(e.s.id) && focusSet.has(e.t.id));
       ctx.beginPath();
@@ -260,14 +355,13 @@
       ctx.globalAlpha = dimmed ? 0.08 : (e.kind === 'relation' ? 0.85 : 0.5);
       ctx.stroke();
       ctx.setLineDash([]);
-      // arrowhead on directed curated edges
       if (e.kind === 'relation' && !e.symmetric && !dimmed && view.k > 0.35) {
         drawArrow(e, onPath ? colors.accent : colors.muted);
       }
     }
     ctx.globalAlpha = 1;
 
-    var vn = visibleNodes();
+    var vn = visN;
     for (i = 0; i < vn.length; i++) {
       var n = vn[i];
       var r = nodeRadius(n);
@@ -283,6 +377,15 @@
         ctx.strokeStyle = colors.cve;
         ctx.lineWidth = 1.6 / view.k;
         ctx.stroke();
+      }
+      if (seeds.indexOf(n.id) !== -1) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 5 / view.k, 0, Math.PI * 2);
+        ctx.strokeStyle = colors[n.type] || colors.muted;
+        ctx.setLineDash([3 / view.k, 3 / view.k]);
+        ctx.lineWidth = 1.4 / view.k;
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
       if (n.id === selected || n.id === pathEnd) {
         ctx.beginPath();
@@ -300,15 +403,17 @@
     }
     ctx.globalAlpha = 1;
 
-    // labels: hovered/selected/path always; high-degree when zoomed in
+    // labels: small views label everything; larger ones label seeds,
+    // hovered/selected/path nodes and hubs (more as you zoom in)
     ctx.font = (11 / view.k) + 'px ui-monospace, SFMono-Regular, Menlo, monospace';
     ctx.textBaseline = 'middle';
     for (i = 0; i < vn.length; i++) {
       n = vn[i];
       var show = n.id === hovered || n.id === selected || n.id === pathEnd ||
+        seeds.indexOf(n.id) !== -1 ||
         (pathIds && pathIds.has(n.id)) ||
-        (view.k > 1.4) || (n.deg >= 8 && view.k > 0.5) ||
-        (isolated && isolated.size <= 40);
+        vn.length <= 40 ||
+        (view.k > 1.4) || (n.deg >= 8 && view.k > 0.5);
       if (!show) continue;
       if (focusSet && !focusSet.has(n.id)) continue;
       var label = n.label || n.id;
@@ -348,10 +453,9 @@
 
   function nodeAt(px, py) {
     var p = toWorld(px, py);
-    var vn = visibleNodes();
     var best = null, bestD = Infinity;
-    for (var i = 0; i < vn.length; i++) {
-      var n = vn[i];
+    for (var i = 0; i < visN.length; i++) {
+      var n = visN[i];
       var dx = n.x - p.x, dy = n.y - p.y;
       var r = nodeRadius(n) + 4 / view.k;
       var d2 = dx * dx + dy * dy;
@@ -361,19 +465,17 @@
   }
 
   // ---- shortest path ---------------------------------------------------
-  var pathEdgeSet = null;
-
   function tracePath(a, b) {
-    // BFS over visible edges
     var prev = {}, prevEdge = {}, seen = {}; seen[a] = true;
     var q = [a];
+    var visEdgeSet = new Set(visE);
     while (q.length) {
       var cur = q.shift();
       if (cur === b) break;
       var neigh = adj[cur] || [];
       for (var i = 0; i < neigh.length; i++) {
         var o = neigh[i].other.id;
-        if (seen[o] || !edgeVisible(neigh[i].edge)) continue;
+        if (seen[o] || !visEdgeSet.has(neigh[i].edge)) continue;
         seen[o] = true;
         prev[o] = cur; prevEdge[o] = neigh[i].edge;
         q.push(o);
@@ -418,8 +520,9 @@
     var pageUrl = n.kind === 'technique'
       ? pfx + 'attack/#' + encodeURIComponent(n.id)
       : pfx + 'entities/' + encodeURIComponent(n.id) + '/';
-    var rows = (adj[n.id] || [])
-      .filter(function (a) { return edgeVisible(a.edge); })
+    var conns = (adj[n.id] || []).filter(function (a) { return edgeClassOk(a.edge); });
+    var hiddenCount = conns.filter(function (a) { return !visSet.has(a.other.id); }).length;
+    var rows = conns
       .sort(function (a, b) {
         var ka = a.edge.kind === 'relation' ? 0 : 1;
         var kb = b.edge.kind === 'relation' ? 0 : 1;
@@ -427,8 +530,10 @@
       })
       .slice(0, 40)
       .map(function (a) {
+        var off = visSet.has(a.other.id) ? '' :
+          ' <span class="muted" title="Outside the current view — jumping re-seeds if needed">(outside view)</span>';
         return '<li><button type="button" class="g-jump" data-jump="' + esc(a.other.id) + '">' +
-          esc(a.other.label || a.other.id) + '</button> ' + edgeExplain(a.edge, n.id) + '</li>';
+          esc(a.other.label || a.other.id) + '</button>' + off + ' ' + edgeExplain(a.edge, n.id) + '</li>';
       }).join('');
     var meta = [];
     if (n.type) meta.push('<span class="e-tag e-tag--' + esc(n.type) + '">' + esc(n.type) + '</span>');
@@ -436,6 +541,7 @@
     if (n.kind === 'cve' && n.exploited) meta.push('<span class="badge badge--accent">exploited</span>');
     if (n.entries) meta.push('<span class="muted">' + n.entries + ' entr' + (n.entries === 1 ? 'y' : 'ies') + '</span>');
     if (n.first) meta.push('<span class="mono muted">' + esc(n.first) + (n.last && n.last !== n.first ? ' → ' + esc(n.last) : '') + '</span>');
+    var isSeed = seeds.indexOf(n.id) !== -1;
     panel.innerHTML =
       '<div class="g-panel-head">' +
       '<strong>' + esc(n.title && n.title !== n.label ? n.label + ' — ' + n.title : n.label) + '</strong>' +
@@ -443,14 +549,18 @@
       '<div class="g-panel-meta">' + meta.join(' ') + '</div>' +
       '<div class="g-panel-actions">' +
       '<a class="mini-btn" href="' + pageUrl + '">open page</a> ' +
-      '<button type="button" class="mini-btn" data-isolate="' + esc(n.id) + '">isolate</button> ' +
+      '<button type="button" class="mini-btn" data-reseed="' + esc(n.id) + '">re-seed here</button> ' +
+      (isSeed
+        ? '<button type="button" class="mini-btn" data-seed-remove="' + esc(n.id) + '">remove seed</button> '
+        : '<button type="button" class="mini-btn" data-seed-add="' + esc(n.id) + '">add as seed</button> ') +
       '<button type="button" class="mini-btn" data-pin="' + esc(n.id) + '">' + (n.pinned ? 'unpin' : 'pin') + '</button>' +
       '</div>' +
       (pathIds && pathEnd
         ? '<p class="muted g-path-note">Path ' + esc(selected) + ' → ' + esc(pathEnd) + ': ' +
           (pathIds.size - 1) + ' hop(s). Esc to clear.</p>'
         : '<p class="muted g-path-note">Shift-click another node to trace the shortest path from here.</p>') +
-      '<h4>Connections</h4><ul class="g-conn">' + (rows || '<li class="muted">none visible</li>') + '</ul>';
+      '<h4>Connections' + (hiddenCount ? ' <span class="muted">(' + hiddenCount + ' outside the current view)</span>' : '') + '</h4>' +
+      '<ul class="g-conn">' + (rows || '<li class="muted">none</li>') + '</ul>';
     panel.hidden = false;
   }
 
@@ -506,7 +616,7 @@
     });
     canvas.addEventListener('dblclick', function (ev) {
       var n = nodeAt(ev.offsetX, ev.offsetY);
-      if (n) isolate(n.id);
+      if (n) reseed(n.id);
     });
     canvas.addEventListener('wheel', function (ev) {
       ev.preventDefault();
@@ -529,7 +639,7 @@
         var l = t.getAttribute('data-graph-layer');
         layers[l] = !layers[l];
         t.classList.toggle('active', layers[l]);
-        layout(true);
+        refreshVisible();
         return;
       }
       t = ev.target.closest('[data-graph-edges]');
@@ -538,15 +648,30 @@
         edgeClasses[c === 'derived' ? 'derived' : 'relation'] =
           !edgeClasses[c === 'derived' ? 'derived' : 'relation'];
         t.classList.toggle('active');
-        draw();
+        refreshVisible();
+        return;
+      }
+      t = ev.target.closest('[data-graph-reach]');
+      if (t) {
+        var r = t.getAttribute('data-graph-reach');
+        reach = r === 'all' ? Infinity : parseInt(r, 10);
+        shell.querySelectorAll('[data-graph-reach]').forEach(function (b) {
+          b.classList.toggle('active', b === t);
+        });
+        refreshVisible();
+        syncUrl();
         return;
       }
       if (ev.target.closest('[data-graph-reset]')) { resetAll(); return; }
       if (ev.target.closest('[data-panel-close]')) { clearSelection(); return; }
       t = ev.target.closest('[data-jump]');
-      if (t) { selectNode(t.getAttribute('data-jump'), true); return; }
-      t = ev.target.closest('[data-isolate]');
-      if (t) { isolate(t.getAttribute('data-isolate')); return; }
+      if (t) { jumpTo(t.getAttribute('data-jump')); return; }
+      t = ev.target.closest('[data-reseed]');
+      if (t) { reseed(t.getAttribute('data-reseed')); return; }
+      t = ev.target.closest('[data-seed-add]');
+      if (t) { addSeed(t.getAttribute('data-seed-add')); return; }
+      t = ev.target.closest('[data-seed-remove]');
+      if (t) { removeSeed(t.getAttribute('data-seed-remove')); return; }
       t = ev.target.closest('[data-pin]');
       if (t) {
         var n = nodeById[t.getAttribute('data-pin')];
@@ -569,38 +694,68 @@
         return (n.label || '').toLowerCase().indexOf(q) !== -1 ||
           (n.title || '').toLowerCase().indexOf(q) !== -1 ||
           n.id.toLowerCase().indexOf(q) !== -1;
-      }).slice(0, 12);
+      });
+      hits.sort(function (a, b) { return b.deg - a.deg; });
+      hits = hits.slice(0, 12);
       sug.innerHTML = hits.map(function (n) {
-        return '<li><button type="button" data-jump="' + esc(n.id) + '">' +
+        return '<li><button type="button" data-seed-pick="' + esc(n.id) + '">' +
           '<span class="e-tag e-tag--' + esc(n.type) + '">' + esc(n.type) + '</span> ' +
           esc(n.label) + (n.title && n.title !== n.label ? ' <span class="muted">' + esc(n.title) + '</span>' : '') +
-          '</button></li>';
+          ' <span class="muted mono">×' + n.deg + '</span></button></li>';
       }).join('');
       sug.hidden = hits.length === 0;
     });
     input.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') {
-        var first = sug.querySelector('[data-jump]');
-        if (first) { selectNode(first.getAttribute('data-jump'), true); sug.hidden = true; }
+        var first = sug.querySelector('[data-seed-pick]');
+        if (first) { pickSeed(first.getAttribute('data-seed-pick')); }
       }
+      if (ev.key === 'Escape') { sug.hidden = true; }
     });
     sug.addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-jump]');
-      if (b) { selectNode(b.getAttribute('data-jump'), true); sug.hidden = true; input.value = ''; }
+      var b = ev.target.closest('[data-seed-pick]');
+      if (b) { pickSeed(b.getAttribute('data-seed-pick')); }
     });
+    function pickSeed(id) {
+      sug.hidden = true; sug.innerHTML = ''; input.value = '';
+      addSeed(id);
+      selectNode(id, true);
+    }
   }
 
   // ---- actions ---------------------------------------------------------
+  function addSeed(id) {
+    if (!nodeById[id]) return;
+    if (seeds.indexOf(id) === -1) seeds.push(id);
+    refreshVisible();
+    syncUrl();
+  }
+
+  function removeSeed(id) {
+    seeds = seeds.filter(function (s) { return s !== id; });
+    refreshVisible();
+    syncUrl();
+    if (selected) showPanel(nodeById[selected]);
+  }
+
+  function reseed(id) {
+    if (!nodeById[id]) return;
+    seeds = [id];
+    refreshVisible();
+    selectNode(id, true);
+  }
+
+  function jumpTo(id) {
+    // Neighbour click in the panel: select it; if it sits outside the
+    // current view, add it as a seed so the view grows to include it.
+    if (!visSet.has(id)) addSeed(id);
+    selectNode(id, true);
+  }
+
   function selectNode(id, center) {
     var n = nodeById[id];
     if (!n) return;
-    if (!layers[n.kind]) {
-      layers[n.kind] = true;
-      var btn = shell.querySelector('[data-graph-layer="' + n.kind + '"]');
-      if (btn) btn.classList.add('active');
-      layout(true);
-    }
-    if (isolated && !isolated.has(id)) isolated = null;
+    if (!visSet.has(id)) { addSeed(id); }
     selected = id;
     pathEnd = null; pathIds = null; pathEdgeSet = null;
     showPanel(n);
@@ -625,68 +780,62 @@
       pathIds = null; pathEdgeSet = null;
       if (statusEl) statusEl.textContent =
         'No path between ' + (nodeById[a].label) + ' and ' + (nodeById[b].label) +
-        ' with the current layers/edge classes.';
+        ' inside the current view (layers/edge classes apply).';
     }
     showPanel(nodeById[selected]);
     syncUrl();
     draw();
   }
 
-  function isolate(id) {
-    var keep = new Set([id]);
-    (adj[id] || []).forEach(function (a) {
-      if (!edgeVisible(a.edge)) return;
-      keep.add(a.other.id);
-      (adj[a.other.id] || []).forEach(function (b) {
-        if (edgeVisible(b.edge)) keep.add(b.other.id);
-      });
-    });
-    isolated = keep;
-    selectNode(id, true);
-    if (statusEl) statusEl.textContent =
-      'Isolated ' + (nodeById[id].label) + ' + neighbourhood (depth 2, ' +
-      keep.size + ' nodes). Reset to restore the full graph.';
-    layout(true);
-  }
-
   function clearSelection() {
     selected = null;
     pathEnd = null; pathIds = null; pathEdgeSet = null;
     showPanel(null);
+    updateStatus();
     syncUrl();
     draw();
   }
 
   function resetAll() {
-    isolated = null;
+    seeds = [];
     selected = null; pathEnd = null; pathIds = null; pathEdgeSet = null;
     view = { x: 0, y: 0, k: 1 };
-    nodes.forEach(function (n) { n.pinned = false; });
+    nodes.forEach(function (n) { n.pinned = false; n.placed = false; });
     showPanel(null);
+    refreshVisible();
     syncUrl();
-    layout(true);
   }
 
   // ---- URL state -------------------------------------------------------
   function syncUrl() {
     var p = new URLSearchParams();
-    if (selected) p.set('focus', selected);
+    if (seeds.length) p.set('focus', seeds.join(','));
     if (selected && pathEnd) p.set('to', pathEnd);
+    if (reach !== Infinity) p.set('hops', String(reach));
     var qs = p.toString();
     history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
   }
 
   function restoreFromUrl() {
     var p = new URLSearchParams(location.search);
-    var focus = p.get('focus');
-    var to = p.get('to');
-    if (focus && nodeById[focus]) {
-      // let the first layout settle briefly before centering
-      setTimeout(function () {
-        selectNode(focus, true);
-        if (to && nodeById[to]) setPath(focus, to);
-      }, 350);
+    var hops = p.get('hops');
+    if (hops && /^[12]$/.test(hops)) {
+      reach = parseInt(hops, 10);
+      shell.querySelectorAll('[data-graph-reach]').forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-graph-reach') === hops);
+      });
     }
+    var focus = (p.get('focus') || '').split(',').filter(function (id) { return nodeById[id]; });
+    var to = p.get('to');
+    if (!focus.length) return false;
+    seeds = focus;
+    refreshVisible();
+    // let the first layout settle briefly before centering
+    setTimeout(function () {
+      selectNode(focus[0], true);
+      if (to && nodeById[to]) setPath(focus[0], to);
+    }, 350);
+    return true;
   }
 
   function resize() {

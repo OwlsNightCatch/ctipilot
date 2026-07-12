@@ -10006,10 +10006,12 @@ def render_graph_page(
 
     top_rows = "".join(
         "<li>"
-        f'<span><a class="e-title" href="{prefix}entities/{urllib.parse.quote(n["id"], safe="")}/">'
+        f'<span><a class="e-title" href="?focus={urllib.parse.quote(n["id"], safe="")}"'
+        ' title="Seed the graph on this entity">'
         f'{_escape(n["label"])}</a>'
         f'<div class="e-meta"><span class="e-tag e-tag--{_escape(n["type"] or "none")}">{_escape(n["type"])}</span>'
-        f'<span class="mono">{_escape(n["id"])}</span>'
+        f'<a class="mono" href="{prefix}entities/{urllib.parse.quote(n["id"], safe="")}/"'
+        f' title="Entity page">{_escape(n["id"])}</a>'
         f'<span class="e-apps">×{deg.get(n["id"], 0)} connections</span></div></span></li>'
         for n in top
     )
@@ -10023,12 +10025,14 @@ def render_graph_page(
     body = f"""
 <h1>Threat graph</h1>
 <p class="subtitle" style="max-width:64rem">
-  Every tracked entity, covered CVE and mapped ATT&amp;CK technique as one connected graph.
+  Start from an entity and see everything connected to it — and nothing else.
+  Pick a starting point (search, or an entity below); the graph renders exactly the
+  connected subgraph reachable from it, full component or limited to 1–2 hops.
   Solid edges are <strong>curated relationships</strong> — typed, source-stated connections
   ("attributed to", "uses", "exploits", …), each citing the entry that establishes it.
   Dashed edges are <strong>derived</strong> — entities referenced by the same entries, or an
-  entity and a CVE carried by the same entry. Click a node for its detail panel, drag to
-  rearrange, pin two nodes to trace the shortest path between them.
+  entity and a CVE carried by the same entry. Click a node for its detail panel;
+  shift-click a second node to trace the shortest path between them.
 </p>
 <p class="muted">
   {len(ent_nodes)} entities · {sum(1 for n in nodes if n.get("kind") == "cve")} CVEs ·
@@ -10040,8 +10044,13 @@ def render_graph_page(
 <div class="graph-shell panel" data-graph-shell hidden>
   <div class="graph-toolbar">
     <input id="graph-q" type="search" autocomplete="off" spellcheck="false"
-           placeholder="Find an actor / campaign / malware / CVE / technique…" />
+           placeholder="Start here: find an actor / campaign / malware / CVE / technique…" />
     <ul class="atk-suggest" data-graph-suggest hidden></ul>
+    <div class="graph-toggles" role="group" aria-label="Reach from the starting points">
+      <button type="button" class="mini-btn" data-graph-reach="1" title="Direct neighbours only">1 hop</button>
+      <button type="button" class="mini-btn" data-graph-reach="2" title="Neighbours of neighbours">2 hops</button>
+      <button type="button" class="mini-btn active" data-graph-reach="all" title="The entire connected graph reachable from the starting points">connected graph</button>
+    </div>
     <div class="graph-toggles" role="group" aria-label="Node layers">
       <button type="button" class="mini-btn active" data-graph-layer="entity">entities</button>
       <button type="button" class="mini-btn active" data-graph-layer="cve">CVEs</button>
@@ -10053,20 +10062,23 @@ def render_graph_page(
     </div>
     <button type="button" class="mini-btn" data-graph-reset>reset</button>
   </div>
+  <div class="graph-seeds" data-graph-seeds aria-label="Starting points"></div>
   <div class="graph-stage">
     <canvas data-graph-canvas aria-label="Threat graph — interactive canvas"></canvas>
     <aside class="graph-panel" data-graph-panel hidden></aside>
   </div>
   <p class="muted graph-hint" data-graph-status>
-    Scroll to zoom · drag the canvas to pan · drag a node to pin it ·
-    click = details · shift-click a second node = shortest path · double-click = isolate neighbourhood · Esc = clear.
+    Nothing is drawn until you pick a starting point — search above, or pick one of the
+    most-connected entities below. The view then shows everything connected to it.
   </p>
 </div>
 <noscript><p class="muted">The interactive graph needs JavaScript — the directory below
 lists the most-connected entities; every entity page carries the same relationships in
 list form.</p></noscript>
 
-<h2 class="section-head" style="margin-top:2rem">Most connected entities</h2>
+<h2 class="section-head" style="margin-top:2rem">Start from a well-connected entity</h2>
+<p class="muted" style="margin-top:0.2rem">Opens the graph seeded on that entity — the view
+shows its entire connected subgraph.</p>
 <ul class="entity-list">{top_rows}</ul>
 {data_island}
 """

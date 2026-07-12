@@ -521,17 +521,24 @@ an alias or a `merged_into` tombstone.
 
 ### The graph rendering — `/graph/` + `data/graph.json`
 
-The full graph ships as `data/graph.json` and renders at `/graph/` as an
-interactive, self-contained (strict-CSP, no external libraries) canvas
-exploration surface for analysts: force-directed layout over all canonical
-entities and covered CVEs (ATT&CK techniques as a toggleable layer),
-type-filtering, search, hover-highlighting of neighborhoods, a node detail
-panel (summary, typed relations, supporting entries), and shortest-path
-tracing between two pinned nodes — "how is this actor connected to this
-CVE?" answered visually, every hop backed by an edge whose provenance is
-one click away. Entity pages render the same edges in prose form: typed
-curated relations grouped by relationship reading, each with its source
-entry link, followed by the derived co-occurrence list.
+The full graph ships as `data/graph.json` (all canonical entities, covered
+CVEs, mapped ATT&CK techniques, curated + derived edges) and renders at
+`/graph/` as an interactive, self-contained (strict-CSP, no external
+libraries) canvas exploration surface. Exploration is **seeded**: the
+analyst names one or more starting nodes (search, an entity-page deep link
+`?focus=<id>`, or the most-connected directory), and the view renders
+exactly the connected subgraph reachable from those seeds — the full
+connected component by default, optionally limited to 1–2 hops — and
+nothing else; with no seed, nothing is drawn. Within the view:
+type-filtering (entities / CVEs / techniques as a toggleable layer),
+curated/derived edge toggles (both also bound reachability), hover
+neighborhoods, a node detail panel (summary, typed relations, supporting
+entries — including connections outside the current view), re-seeding from
+any node, and shortest-path tracing between two nodes — "how is this actor
+connected to this CVE?" answered visually, every hop backed by an edge
+whose provenance is one click away. Entity pages render the same edges in
+prose form: typed curated relations grouped by relationship reading, each
+with its source entry link, followed by the derived co-occurrence list.
 
 ## The ATT&CK layer — pinned dataset + derived TTP mappings
 
