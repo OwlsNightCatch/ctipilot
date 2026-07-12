@@ -98,6 +98,27 @@ covers it, so running it is safe even in a race - no duplicate content can resul
 > guard to avoid double-publishing (wasteful) and could not distinguish a healthy state from a real
 > primary failure. The prompt above fixes both.
 
+### 1d. Weekly quality audit — once per week (recommended: Sunday, after the weekly slot)
+
+```
+Read prompts/quality-audit.md and execute it.
+```
+
+Institutionalizes the 2026-07-11 full-store intelligence-quality audit
+([`docs/audits/2026-07-11-intelligence-quality-audit.md`](audits/2026-07-11-intelligence-quality-audit.md))
+as a standing continuous-improvement routine. Each fire audits the window since the previous
+`-audit` run record (default 7 days, self-healing across missed fires, capped at 21 days):
+retrospective truth verification of every published entry against its primary sources, independent
+coverage re-sweeps diffed against the store, systemic/operational review (runaway runs,
+dark-but-green sources, discipline drift), re-check of the previous audit's watch items, and an
+effectiveness check on its shipped fixes. The **first fire of each calendar month** additionally
+runs the priority-calibration review (priority distribution vs verifier F16 drift — the monthly
+review recommended by the 07-11 audit). Output: an audit report under `docs/audits/`, a run
+record (`run_id` suffix `-audit`), recovered entries where coverage gaps still clear PD-11, and
+fixes shipped under the versioning rule. A 72-h `duplicate-audit` guard (mirror of
+`duplicate-week`) makes double fires safe; a clean audit is a healthy outcome and is reported as
+such.
+
 **Optional: an intel-run backup.** There is no intel backup configured, and one is rarely needed —
 the intel run is cadence-agnostic and the *next* scheduled fire self-heals the missed window from the
 gap since the last run record. If you want one anyway, mirror the pattern above but key on
@@ -121,6 +142,7 @@ the CHANGELOG head.
 |---|---|
 | [`prompts/cti-run.md`](../prompts/cti-run.md) | **Intel-run master prompt** (fires N×/day). Defines the shared machinery once: anti-crash guards, prime directives PD-1…PD-13, entry composition discipline, state lifecycle, the mechanical gate (Phase 5.5), the verification loop (Phase 5.7), and the publishing chain (Phases 6–7). Everything else builds on it. |
 | [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) | **Weekly strategic run.** *Builds on* `cti-run.md` — it `Read`s that file at runtime and defines only the divergent weekly lens (W-PD-1 inclusion gate, ISO-week recency + `duplicate-week` guard, weekly dedup polarity, `weekly_section` placement). Shared machinery is never copied here, so the two prompts cannot drift. |
+| [`prompts/quality-audit.md`](../prompts/quality-audit.md) | **Weekly quality-audit run.** *Builds on* `cti-run.md` the same way and defines only the audit lens: retrospective truth passes over the window's published entries, independent coverage re-sweeps, systemic review, watch-item carry-forward, fix-effectiveness checks, and the monthly priority-calibration review (Phase 3b, first fire of each calendar month). Root-causes every confirmed defect and ships the fix; report under `docs/audits/`. |
 | [`prompts/verification.md`](../prompts/verification.md) | **Two-source / fake-news verification policy.** The sourcing checklist and the `verification` frontmatter enum that surfaces every entry's sourcing status. Referenced by both master prompts and by the verifier sub-agents. |
 | [`prompts/entry-template.md`](../prompts/entry-template.md) | **Canonical entry + run-record skeletons.** The frontmatter contract and section shape the main agent composes against. |
 | [`prompts/check-run-fixes.md`](../prompts/check-run-fixes.md) | **Fix recipes for common `tools/check_run.py` FAILs.** Consulted when the Phase 5.5 gate does not exit 0. |
