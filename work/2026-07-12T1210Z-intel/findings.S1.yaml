@@ -1,0 +1,85 @@
+domain: S1
+run_id: 2026-07-12T1210Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-12T12:13:26Z
+ended_at: 2026-07-12T12:21:07Z
+duration_seconds: 461
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 12
+items: []
+# No items cleared the inclusion gate this run. Full essential-slice sweep
+# performed; every source checked confirms a genuinely quiet 24h window
+# (2026-07-11T12:10Z - 2026-07-12T12:10Z), consistent with the prior run
+# (2026-07-12T04:09Z) also finding zero new items. Detail below.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured for this deployment (org-profile.yaml has none) — sweep is a documented no-op per spawn tasking. General coverage rules applied unchanged; no watchlist-driven items to report."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ncsc-uk
+    reason: "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories is a client-side-rendered (cookie-consent + nav shell) page; both direct WebFetch and the jina reader returned only navigation chrome, no advisory listing content. Recipe needs an alternate route (RSS/sitemap or a different NCSC-UK advisories endpoint) — flagging for sources.json recipe fix."
+  - source_id: cisa-advisories
+    reason: "https://www.cisa.gov/news-events/cybersecurity-advisories bridge fetch returned only the filter-facet UI (Drupal faceted-search chrome), not the advisory listing itself — likely needs a query-string page-1 fetch or the CISA alerts RSS instead. No in-window items surfaced via this route; cross-checked against CISA KEV JSON directly instead (no new dateAdded entries past 2026-07-10)."
+notes: |
+  Thorough sweep across the full essential-tier slice (CISA KEV API, NCSC-NL RSS,
+  BSI/WID-SEC RSS, CERT-FR/ANSSI RSS, ENISA EUVD recent/criticals/exploited/
+  lastvulnerabilities, NCSC-CH Security Hub API, CERT-EU publications, CISA
+  advisories/directives, NCSC-UK) plus rotation sources (watchtowr Labs,
+  VulnCheck advisories). Every essential source's most recent item predates
+  the 24h window (2026-07-11T12:10Z-2026-07-12T12:10Z) — the newest dated
+  material across CISA KEV, NCSC-NL, BSI, CERT-FR, CERT-EU, and NCSC-CH
+  Security Hub all clusters on Fri 2026-07-10, consistent with a genuine
+  weekend lull (2026-07-11/12 = Sat/Sun) rather than a collection failure.
+  This matches the prior run's (2026-07-12T04:09Z) empty finding.
+
+  Notable false lead investigated and DROPPED (documented for the audit
+  trail and as a process lesson — see self-evolution note below): VulnCheck's
+  advisory feed listed several Flowise and Crawl4AI CVEs "dated 7/12/2026"
+  (CVE-2026-56271 Flowise hardcoded-JWT auth bypass, CVE-2026-56259/56260/
+  56265 Crawl4AI Docker-API-server SSRF/file-write/credential-exfiltration/
+  hardcoded-JWT cluster), and NVD's own "Published" field for these CVE
+  records likewise shows 2026-07-12. On drilling to the actual GitHub
+  Security Advisories that are the CVEs' primary source, the true vendor
+  disclosure dates are materially older: GHSA-cc4f-hjpj-g9p8 (Flowise) traces
+  to a mirror dated ~2026-04-16; GHSA-365w-hqf6-vxfg (Crawl4AI multi-vuln,
+  fixed in 0.8.7) published 2026-06-02; GHSA-f989-c77f-r2cq (Crawl4AI
+  credential exfiltration, fixed in 0.8.8) published by the maintainer
+  2026-06-04 (confirmed by fetching the GHSA page directly — "unclecode
+  published GHSA-f989-c77f-r2cq Jun 4, 2026"). NVD/VulnCheck simply
+  assigned/catalogued the CVE records over a month later; no fresh
+  development, no new exploitation signal, no update to the advisories
+  in-window. Per recency discipline (source publication date, not CVE
+  catalog timestamp, gates inclusion) this is recycled news and was
+  correctly dropped rather than reported as new S1 signal.
+
+  Self-evolution note for prompts/docs: NVD "Published" and vendor-advisory-
+  aggregator "date" fields (VulnCheck advisory pages, in this case) can lag
+  the true vendor/GHSA disclosure date by many weeks — sometimes appearing
+  to publish "today." Before treating any NVD-fresh or aggregator-fresh CVE
+  as in-window signal, pivot to the actual GitHub Security Advisory (or
+  equivalent primary vendor advisory) and read its own "published" timestamp
+  before deciding recency. This is a variant of the existing "check the
+  original event date" guidance and is worth calling out explicitly for
+  vulnerability-focused sub-agents (S1) since NVD/VulnCheck timestamp lag is
+  a systematic, recurring trap distinct from ordinary news-recycling.
+
+  CISA KEV catalog (catalogVersion 2026.07.10) checked in full: no
+  dateAdded entries past 2026-07-10 (CVE-2026-56291 Balbooa Forms,
+  CVE-2026-48939 iCagenda — both already in the 14-day prior-coverage
+  Joomla-extension-wave list). ENISA EUVD recent/criticals/exploited/
+  lastvulnerabilities lists checked; newest dateUpdated timestamps
+  (2026-07-11) are metadata refreshes on already-known MSRC/Joomla/Balbooa
+  entries, not new disclosures (datePublished all 2026-07-02 through
+  2026-07-10). NCSC-CH Security Hub newest post (id 12757, Zimbra Classic
+  Web Client info-disclosure) created 2026-07-10T12:45Z — outside the 24h
+  window and concerns the already-heavily-covered Zimbra ZCS 10.1.19 patch
+  cycle. WebSearch sweeps for weekend zero-day/PoC/exploitation news (Bad
+  Epoll CVE-2026-46242, cPanel/SonicWall KEV-confusion hits, generic
+  "actively exploited July 11/12" queries) all resolved to material already
+  weeks old or already in the prior-coverage 14-day index.
