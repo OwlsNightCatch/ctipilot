@@ -2,7 +2,7 @@
 
 Operator's reference for the autonomous CTI pipeline: one-time setup, the publishing chain, the operations dashboard, the sub-agent capability ceiling, and what to do when something goes wrong.
 
-The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`](../prompts/cti-run.md) (the intel run, fired several times per day) and [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) (the weekly strategic run). The data model (entries, entity registry, run records) is [`docs/pipeline.md`](pipeline.md). This file is the operator-facing wrapper around them.
+The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`](../prompts/cti-run.md) (the intel run, fired several times per day), [`prompts/weekly-summary.md`](../prompts/weekly-summary.md) (the weekly strategic run), and [`prompts/quality-audit.md`](../prompts/quality-audit.md) (the weekly quality-audit run). The data model (entries, entity registry, run records) is [`docs/pipeline.md`](pipeline.md). This file is the operator-facing wrapper around them.
 
 ---
 
@@ -11,7 +11,7 @@ The full run narrative lives in the prompts themselves — [`prompts/cti-run.md`
 `main` is protected: only [`.github/workflows/auto-merge-claude.yml`](../.github/workflows/auto-merge-claude.yml) promotes commits onto it. Every Claude Code session in this repo (interactive or routine) operates on a `claude/<adjective>-<name>-<id>` feature branch.
 
 ```
-routine fires (cloud, scheduled — intel run N×/day, weekly 1×/week)
+routine fires (cloud, scheduled — intel run N×/day, weekly 1×/week, quality audit 1×/week)
    │
    ▼
 feature branch  ─── git push ───▶  auto-merge-claude.yml
@@ -93,7 +93,11 @@ In <https://claude.ai/code/routines>, create these routines against this reposit
    - `CLAUDE_FRIENDLY_NAME` — the human-facing name (e.g. `Claude Opus 4.8`). Should match the friendly name a release blog post would use.
    - `CLAUDE_MODEL_ID` — the canonical model id the harness identifies the agent by (e.g. `claude-opus-4-8`).
    The env vars are **container-scoped** — they describe the main-agent default and cannot see a sub-agent's `model:` pin, which is why they are the fallback, not the primary: an env-fallback `**Model:**` line carries the marker `— container default, env fallback` so the run record preserves the provenance. Keep them matched to the routine's configured main-agent model.
-7. **Allow the `cti-verification-alt` sub-agent type** — Phase 5.7 rotates the verifier per iteration: odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). Both definitions live under `.claude/agents/`; if the routine needs an explicit allow-list, include both names (plus `cti-research`).
+7. **`JINA_API_KEY` — reader-proxy API key (recommended).** The fetch bridge's jina reader transport (`tools/fetch_source.py jina <URL>` and the `url` auto-fallback — tier 3 of the fetch ladder) authenticates every `r.jina.ai` request with `Authorization: Bearer $JINA_API_KEY` when this env var is set in the routine container. With a key the connector gets a dedicated rate limit and the `X-Engine: browser` rendering tier, which recovers article bodies the default engine cannot (e.g. heise.de per-article pages behind the TollBit gate — recovered 2026-07-12). Without a key the reader still works anonymously (shared rate limit, no browser engine), so the variable is recommended, not required.
+   - **Get a key:** <https://jina.ai/api-dashboard/> (a fresh key carries a finite token balance; a browser-engine page fetch costs roughly 5–20 k tokens).
+   - **Set it ONLY as a container environment variable.** The key is read exclusively from the environment — never commit it to any file in this repo, and never paste it into a prompt or config.
+   - **Monitor it:** `python3 tools/fetch_source.py jina-usage` prints the key's remaining balance and warns on stderr below 1 M tokens (or when exhausted) that a new key should be generated. A reader HTTP 402 during a run means the balance is spent — the connector raises a non-retryable error naming the fix. When the balance runs low, generate a new key and update the env var; no repo change is needed.
+8. **Allow the `cti-verification-alt` sub-agent type** — Phase 5.7 rotates the verifier per iteration: odd iterations spawn `cti-verification` (Opus default), even iterations spawn `cti-verification-alt` (Sonnet default). Both definitions live under `.claude/agents/`; if the routine needs an explicit allow-list, include both names (plus `cti-research`).
 
 ---
 
@@ -205,6 +209,8 @@ The routine credential (Claude GitHub App installation token, or the synced `gh`
 - **`gh`-token sync** — re-run `gh auth refresh -h github.com -s repo` and `/web-setup` from a Claude Code CLI session.
 
 A leaked credential lets the holder push commits as the routine. Because every routine commit appears in the git diff and every prompt edit triggers the in-prompt CHANGELOG-bump rule, a maliciously crafted run is detectable but not preventable in real time. The defensive frame is "detect and correct".
+
+- **`JINA_API_KEY` (reader proxy)** — rotates on *consumption*, not a calendar: the key carries a finite token balance, and `python3 tools/fetch_source.py jina-usage` reports what remains (stderr warning below 1 M tokens). Generate the replacement at <https://jina.ai/api-dashboard/> and swap the routine container's env var — nothing in the repo changes. Also rotate immediately if the key is ever exposed (pasted into a chat, a log, or a commit): the blast radius of a leak is only spend-down of the token balance and requests attributed to your account, but a spent key silently degrades every reader fetch to the anonymous tier mid-run. Env-var setup: § [Set up the routines](#4-set-up-the-routines), item 7.
 
 ---
 

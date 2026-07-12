@@ -57,6 +57,7 @@ so every page has a backup transport. Force one transport with `--direct` / `jin
 Usage:
     python3 tools/fetch_source.py url <URL> [--direct]               # direct browser-UA GET, auto-fallback to jina reader (prints body)
     python3 tools/fetch_source.py jina <URL> [html]                  # force the r.jina.ai reader proxy (clean markdown; `html` for simplified HTML)
+    python3 tools/fetch_source.py jina-usage                         # JINA_API_KEY token balance — warns when a new key should be generated
     python3 tools/fetch_source.py ncsc-csh list [N]                  # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
     python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
     python3 tools/fetch_source.py ncsc-csh recent [N]                # combined: list + each post's full content (default 10)
@@ -569,10 +570,23 @@ def cisa_kev() -> Any:
 #      index. Used by `cisa csaf-recent` / `cisa csaf`.
 #
 # Citations always point at the human cisa.gov URL; the bridge supplies
-# the data, not the citation. Set JINA_API_KEY in the environment to raise
-# the reader-proxy rate limit if a run ever needs it (anonymous works for
-# the routine's handful of CISA fetches per fire).
+# the data, not the citation.
+#
+# Authentication: the reader works anonymously (shared, low rate limit),
+# but with `JINA_API_KEY` set in the environment every reader request is
+# sent with `Authorization: Bearer <key>` — dedicated rate limit and the
+# `X-Engine: browser` rendering tier. The key lives ONLY in the
+# environment (the routine container's env config); it is never read
+# from or written to any file in this repo. Key lifecycle: keys carry a
+# finite token balance — `jina-usage` (CLI) / `jina_usage()` query the
+# dashboard API for the remaining balance and warn the operator to
+# generate a new key at https://jina.ai/api-dashboard/ when it runs low;
+# a reader HTTP 402 means the balance is exhausted.
 JINA_READER_BASE = "https://r.jina.ai/"
+JINA_USAGE_API = "https://embeddings-dashboard-api.jina.ai/api/v1/api_key/user"
+# Warn when fewer tokens than this remain on the key (a fresh trial key
+# carries ~10 M; a browser-engine page fetch costs roughly 5–20 k).
+JINA_LOW_BALANCE_TOKENS = 1_000_000
 CISA_CSAF_RAW_BASE = "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files"
 CISA_CSAF_OT_CHANGES = CISA_CSAF_RAW_BASE + "/OT/white/changes.csv"
 # ICS advisory ids: icsa-YY-DDD-NN (industrial) and icsma-YY-DDD-NN (medical).
@@ -627,10 +641,31 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     `fetch` — the ORIGIN url is validated (https, not an internal address)
     before it is handed to the reader."""
     _check_url(target_url)
-    extra: dict[str, str] = {"X-Retain-Images": "none"}
+    # Reader control headers (Jina's X-* surface):
+    #   X-Cache-Tolerance: 300 — accept a reader-cached snapshot up to 5 min
+    #     old, so repeat fetches of the same URL within a run are near-free
+    #     and don't re-spend key tokens.
+    #   X-Engine: browser — full browser rendering; slower but the highest-
+    #     fidelity extraction tier. Recovers bodies the default engine
+    #     misses (verified 2026-07-12: heise.de per-article pages, whose
+    #     TollBit gate defeats every direct transport, return the complete
+    #     article text). Markdown page fetches only — the `fmt="html"` feed
+    #     path keeps the default engine so the `<hN><a href>` rendering the
+    #     feed parsers depend on stays stable.
+    #   X-With-Links-Summary: true — append a Links/Buttons section with
+    #     every outbound URL, so discovery pivots survive the markdown
+    #     conversion (same rationale as the WebFetch outbound-links
+    #     template).
+    extra: dict[str, str] = {
+        "X-Retain-Images": "none",
+        "X-Cache-Tolerance": "300",
+    }
     if fmt:
         extra["X-Return-Format"] = fmt
-    key = os.environ.get("JINA_API_KEY")
+    else:
+        extra["X-Engine"] = "browser"
+        extra["X-With-Links-Summary"] = "true"
+    key = os.environ.get("JINA_API_KEY", "").strip()
     if key:
         extra["Authorization"] = f"Bearer {key}"
     reader_url = JINA_READER_BASE + target_url
@@ -655,6 +690,18 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
             if _looks_blocked(text):
                 raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
             return text
+        if code == 402:
+            # Payment Required — per the reader's OpenAPI spec this is
+            # InsufficientBalanceError or TierFeatureConstraintError: the
+            # JINA_API_KEY token balance is exhausted (or the key's tier lacks
+            # the feature). Not retryable with this key; surface the fix
+            # instead of burning the backoff budget.
+            raise RuntimeError(
+                "reader proxy HTTP 402: JINA_API_KEY balance exhausted (or "
+                "tier constraint) — generate a new key at "
+                "https://jina.ai/api-dashboard/ and update the environment "
+                "(verify with `jina-usage`)"
+            )
         last = f"HTTP {code}" if code else last
         if attempt < 3:
             time.sleep(2.0 * attempt)
@@ -669,6 +716,54 @@ def jina_page(url: str, *, html: bool = False) -> str:
     gates it, or serves a JS-only shell: the reader returns clean, readable
     content (markdown by default; simplified HTML with `html=True`)."""
     return _jina_fetch(url, fmt="html" if html else None)
+
+
+def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
+    """Token-balance check for the reader API key. Reads `JINA_API_KEY` from
+    the environment (never from a file), queries Jina's dashboard API, and
+    returns the wallet balances. `warning` is a human-readable notice when
+    the balance is exhausted or below `warn_below` — the signal to generate
+    a new key at https://jina.ai/api-dashboard/ and update the env."""
+    key = os.environ.get("JINA_API_KEY", "").strip()
+    if not key:
+        raise RuntimeError(
+            "JINA_API_KEY is not set — the reader is running anonymously "
+            "(shared rate limit, no browser engine). Set the key in the "
+            "environment to check its usage."
+        )
+    qs = urllib.parse.urlencode({"api_key": key})
+    try:
+        data = fetch_json(f"{JINA_USAGE_API}?{qs}")
+    except RuntimeError as e:
+        raise RuntimeError(
+            f"jina usage lookup failed ({e}) — the key may be invalid or "
+            "revoked; generate a new one at https://jina.ai/api-dashboard/"
+        ) from None
+    wallet = (data.get("wallet") or {}) if isinstance(data, dict) else {}
+    total = int(wallet.get("total_balance") or 0)
+    out: dict[str, Any] = {
+        "source": "jina-usage",
+        "key_suffix": key[-6:],  # enough to tell keys apart, never the key
+        "total_balance": total,
+        "trial_balance": int(wallet.get("trial_balance") or 0),
+        "regular_balance": int(wallet.get("regular_balance") or 0),
+        "trial_end": wallet.get("trial_end"),
+        "warn_below": warn_below,
+        "warning": None,
+    }
+    if total <= 0:
+        out["warning"] = (
+            "JINA_API_KEY balance is EXHAUSTED — reader requests will 402. "
+            "Generate a new API key at https://jina.ai/api-dashboard/ and "
+            "update the environment."
+        )
+    elif total < warn_below:
+        out["warning"] = (
+            f"JINA_API_KEY balance is low ({total:,} tokens < "
+            f"{warn_below:,}) — generate a new API key at "
+            "https://jina.ai/api-dashboard/ soon and update the environment."
+        )
+    return out
 
 
 def smart_fetch(url: str) -> tuple[str, str]:
@@ -1655,6 +1750,8 @@ def main(argv: list[str]) -> int:
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
                         help="return format (default markdown; `html` keeps simplified markup)")
 
+    sub.add_parser("jina-usage", help="remaining token balance on JINA_API_KEY — warns (stderr) when a new key should be generated")
+
     p_csh = sub.add_parser("ncsc-csh", help="NCSC Switzerland Cyber Security Hub")
     csh_sub = p_csh.add_subparsers(dest="csh_cmd", required=True)
     p_csh_list = csh_sub.add_parser("list", help="public dashboard listing")
@@ -1779,6 +1876,14 @@ def main(argv: list[str]) -> int:
             return 0
         if args.cmd == "jina":
             sys.stdout.write(jina_page(args.url, html=(args.fmt == "html")))
+            return 0
+        if args.cmd == "jina-usage":
+            usage = jina_usage()
+            json.dump(usage, sys.stdout, indent=2)
+            sys.stdout.write("\n")
+            if usage.get("warning"):
+                # stderr so pipelines that parse stdout still see clean JSON.
+                print(f"jina-usage: WARNING: {usage['warning']}", file=sys.stderr)
             return 0
         if args.cmd == "ncsc-csh":
             if args.csh_cmd == "list":
