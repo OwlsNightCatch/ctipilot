@@ -798,6 +798,15 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
                "pre-verification block (expected at this stage)")
     else:
         ok("run-record", "record passes content_model.validate_run_record")
+    dur = run.get("duration_seconds")
+    if isinstance(dur, (int, float)) and dur > RUNAWAY_RUN_SECONDS:
+        warn("run-record",
+             f"duration_seconds={int(dur)} (~{dur / 3600:.1f} h) exceeds the "
+             f"{RUNAWAY_RUN_SECONDS // 3600} h runaway threshold — a single intel fire "
+             "should finish well inside an hour or two; a stalled/overrun run delays "
+             "publication and lets later scheduled fires overtake it (observed "
+             "2026-07-09T2009Z: 11.2 h, published 11 h late). Surface the cause in "
+             "the run record and to the operator")
 
 
 def check_prompt_version(run: dict[str, Any], content_root: Path) -> None:
@@ -1768,6 +1777,22 @@ def _triage_scheme_configured(profile: dict[str, Any] | None) -> bool:
 # Entries are immutable, so records from earlier prompt versions keep the
 # old WARN severity — history stays green, the future is gated.
 RATING_ENFORCED_FROM = (3, 18)
+# v3.21+: unknown/revoked/deprecated ATT&CK ids in a NEW run's techniques[]
+# are a FAIL at gate time — the pinned dataset is on disk when the entry is
+# composed, so shipping a dead id is a composition defect, not drift. Store
+# mode stays WARN: history is immutable, and a *later* pin update revoking a
+# previously-active id (the legitimate case) must never turn --all red.
+MAPPING_IDS_STRICT_FROM = (3, 21)
+# v3.14 added Phase 7 publish-status telemetry to the run record. A v3.14+
+# record still carrying no publish_status a day later means the Phase 7
+# amendment never landed — the operator cannot tell from state whether the
+# run actually reached the site (observed: 2026-07-09T1211Z-intel).
+PUBLISH_TELEMETRY_FROM = (3, 14)
+# A single intel fire should complete well inside an hour or two; the
+# 2026-07-09T2009Z run silently ran 11.2 h wall-clock (container stall /
+# overrun into the next scheduled fire). Surface it — never a FAIL, the
+# record itself is the forensic evidence.
+RUNAWAY_RUN_SECONDS = 3 * 3600
 
 # ATT&CK completeness by kind: these kinds inherently describe attacker
 # behavior (a campaign, an intrusion, an exploitable vulnerability's access
@@ -1794,6 +1819,24 @@ def _rating_enforced(run: dict[str, Any] | None) -> bool:
         return False
     v = _prompt_version_tuple(run.get("prompt_version"))
     return v is not None and v >= RATING_ENFORCED_FROM
+
+
+def _parse_iso_utc(value: Any) -> datetime | None:
+    """`2026-07-09T20:09:30Z` → aware datetime; None when unparseable."""
+    try:
+        return datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _mapping_ids_strict(run: dict[str, Any] | None) -> bool:
+    """True when this run's prompt version is subject to the v3.21 hard
+    gate: dead (unknown / revoked / deprecated) ATT&CK ids in techniques[]
+    FAIL at gate time instead of WARNing."""
+    if run is None:
+        return False
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    return v is not None and v >= MAPPING_IDS_STRICT_FROM
 
 
 def check_attack_dataset() -> dict[str, Any]:
@@ -1836,13 +1879,17 @@ def check_attack_dataset() -> dict[str, Any]:
 
 
 def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
-                         *, store_mode: bool = False, enforce: bool = False) -> None:
+                         *, store_mode: bool = False, enforce: bool = False,
+                         strict_ids: bool = False) -> None:
     """Entry technique ids vs the pinned ATT&CK release, plus mapping
     COMPLETENESS. Id *format* is already a FAIL in entry schema; here:
 
       - `techniques[]` id unknown to the pin → WARN (typo, or the pin is
-        older than the id — run `tools/attack_data.py --check`)
-      - id revoked/deprecated upstream → WARN (forward pointer to survivor)
+        older than the id — run `tools/attack_data.py --check`); FAIL on
+        v3.21+ run scope (`strict_ids`) — the pin is on disk at compose
+        time, so a new entry shipping a dead id is a composition defect
+      - id revoked/deprecated upstream → WARN (forward pointer to
+        survivor); FAIL on v3.21+ run scope (`strict_ids`)
       - run scope only: the body names ATT&CK ids in prose but
         `techniques[]` is empty / incomplete → WARN (the machine retrieval
         layer is missing its mirror; prompts v3.17+ compose frontmatter-first)
@@ -1868,22 +1915,23 @@ def check_attack_mapping(scope_entries: list[dict], attack: dict[str, Any],
         fm = [t for t in (e.get("techniques") or []) if isinstance(t, str)]
         if fm:
             n_mapped += 1
+        id_report = fail if strict_ids else warn
         for t in fm:
             rec = techniques.get(t)
             if rec is None:
                 n_issues += 1
-                warn("attack-mapping",
-                     f"{eid}: techniques[] id {t} unknown to pinned ATT&CK v{version} — "
-                     "typo, or the pin is stale (python3 tools/attack_data.py --check)")
+                id_report("attack-mapping",
+                          f"{eid}: techniques[] id {t} unknown to pinned ATT&CK v{version} — "
+                          "typo, or the pin is stale (python3 tools/attack_data.py --check)")
             elif rec.get("revoked"):
                 n_issues += 1
                 fwd = rec.get("revoked_by")
-                warn("attack-mapping",
-                     f"{eid}: techniques[] id {t} is revoked upstream"
-                     + (f" — superseded by {fwd}; reference the surviving id" if fwd else ""))
+                id_report("attack-mapping",
+                          f"{eid}: techniques[] id {t} is revoked upstream"
+                          + (f" — superseded by {fwd}; reference the surviving id" if fwd else ""))
             elif rec.get("deprecated"):
                 n_issues += 1
-                warn("attack-mapping", f"{eid}: techniques[] id {t} is deprecated upstream")
+                id_report("attack-mapping", f"{eid}: techniques[] id {t} is deprecated upstream")
         if store_mode:
             continue
         kind = str(e.get("kind") or "")
@@ -2344,6 +2392,7 @@ def check_all_run_records(runs: list[dict]) -> None:
     failed it otherwise) and run_id / date / kind are present."""
     n_err = 0
     n_migrated = 0
+    now = datetime.now(timezone.utc)
     for r in runs:
         if r.get("migrated_from"):
             n_migrated += 1
@@ -2355,6 +2404,24 @@ def check_all_run_records(runs: list[dict]) -> None:
         for e in cm.validate_run_record(r):
             n_err += 1
             fail("run-record", e)
+        # Phase 7 follow-through: a v3.14+ record still carrying no
+        # publish_status a day after it started means the publish-status
+        # amendment never landed — the operator cannot tell from state
+        # whether the run reached the site (observed: 2026-07-09T1211Z).
+        v = _prompt_version_tuple(r.get("prompt_version"))
+        if (v is not None and v >= PUBLISH_TELEMETRY_FROM
+                and not r.get("publish_status")):
+            started = _parse_iso_utc(r.get("started"))
+            if started is not None and (now - started).total_seconds() > 86400:
+                warn("run-record",
+                     f"{r.get('run_id')}: no publish_status >24 h after the run "
+                     "started — the Phase 7 publish-status amendment never landed; "
+                     "verify the run reached main and the site, then amend the record")
+        dur = r.get("duration_seconds")
+        if isinstance(dur, (int, float)) and dur > RUNAWAY_RUN_SECONDS:
+            warn("run-record",
+                 f"{r.get('run_id')}: duration_seconds={int(dur)} (~{dur / 3600:.1f} h) "
+                 "exceeded the runaway threshold — see the per-run watchdog note")
     if not n_err:
         ok("run-record",
            f"{len(runs)} run record(s) valid ({n_migrated} migrated, identity-checked only)")
@@ -2540,7 +2607,8 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
     print("\n== ATT&CK dataset + technique mapping ==")
     attack_ds = check_attack_dataset()
-    check_attack_mapping(run_entries, attack_ds, enforce=enforce_ratings)
+    check_attack_mapping(run_entries, attack_ds, enforce=enforce_ratings,
+                         strict_ids=_mapping_ids_strict(run))
 
     if run is not None:
         print("\n== sources.json bookkeeping ==")

@@ -1,0 +1,138 @@
+domain: S1
+run_id: 2026-07-11T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-11T20:11:16Z
+ended_at: 2026-07-11T20:20:34Z
+duration_seconds: 558
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 5
+  bridge_fetches: 35
+items:
+  - title: "PraisonAI multi-agent AI framework: three same-day CVEs — unsandboxed LLM code execution (CodeAgent), AICoder arbitrary file write/command execution, and SQL/CQL injection via vector-store dimension parameter"
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43182", publisher: "ENISA EUVD", date: "2026-07-11", role: "corroborating" }
+      - { url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-2xv2-w8cq-5gxw", publisher: "PraisonAI / MervinPraison (GitHub Security Advisory)", date: "2026-07-11", role: "primary" }
+      - { url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-9mp3-24cc-77mg", publisher: "PraisonAI / MervinPraison (GitHub Security Advisory)", date: "2026-07-11", role: "primary" }
+      - { url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-wf65-4jjx-q444", publisher: "PraisonAI / MervinPraison (GitHub Security Advisory)", date: "2026-07-11", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-61447", publisher: "NVD", date: "2026-07-11", role: "corroborating" }
+      - { url: "https://www.thehackerwire.com/praisonai-rce-cve-2026-61447/", publisher: "TheHackerWire", date: "2026-07-11", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd bridge (`enisa-euvd recent criticals`), human detail page https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43182 → primary: GitHub Security Advisory (vendor), https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-2xv2-w8cq-5gxw (read in full via jina reader after WebFetch also returned the body) → cross-checked: NVD, https://nvd.nist.gov/vuln/detail/CVE-2026-61447 → corroborating: TheHackerWire, https://www.thehackerwire.com/praisonai-rce-cve-2026-61447/ ; companion CVEs found in the same EUVD criticals sweep: EUVD-2026-43181 → https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-9mp3-24cc-77mg ; EUVD-2026-43175 → https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-wf65-4jjx-q444"
+    summary: |
+      Three CVEs affecting PraisonAI, an open-source multi-agent LLM orchestration framework (pip packages
+      praisonaiagents / praisonai), were published together on 2026-07-11 (NVD/EUVD datePublished ~13:01 UTC),
+      assigned by VulnCheck. All three are reachable through prompt injection into the framework's LLM-facing
+      tool-call surface rather than through a classic network listener, illustrating a technique class specific
+      to agentic-AI deployments: the LLM's own output is the code path to RCE.
+
+      CVE-2026-61447 (CVSS 10.0 v4.0, CWE-94) is in `CodeAgent._execute_python()`
+      (src/praisonai-agents/praisonaiagents/agent/code_agent.py, lines 253-308): LLM-generated Python is written
+      to a temp file and run via `subprocess.run(["python", temp_file], env=os.environ.copy())` with zero AST
+      validation, zero import restriction, and no sandbox enforcement — even though `CodeConfig` declares
+      `sandbox: bool = True` by default; `_execute_python()` never reads that field, so the sandbox flag is dead
+      code. Passing the full parent environment to the subprocess exposes every credential in-process
+      (OPENAI_API_KEY, DATABASE_URL, cloud tokens) to any code the LLM can be induced to emit. Fixed in
+      praisonaiagents >= 1.6.78.
+
+      CVE-2026-61445 (CVSS 9.4) is in the AICoder chat-UI component, which exposes `write_to_file` and
+      `execute_command` tool calls to the model without path validation or command sanitization — an attacker
+      who can influence the LLM's tool-call arguments via prompt injection can write to arbitrary filesystem
+      paths (e.g. /etc/crontab, SSH authorized_keys) and run arbitrary shell commands; the vendor advisory notes
+      Docker deployments of PraisonAI commonly run as root (no USER directive), turning tool-call abuse into
+      full host compromise inside the container. Fixed in praisonai >= 4.6.78.
+
+      CVE-2026-60090 (CVSS 9.3) is a SQL/CQL injection in the PGVector and Cassandra knowledge-store backends'
+      `create_collection()`: the numeric `dimension` argument is declared as `int` but never validated at
+      runtime and is interpolated directly into the generated `CREATE TABLE`/CQL DDL, so a caller who can
+      influence collection-creation parameters (e.g. via a RAG ingestion API) can append tokens such as
+      `3); DROP TABLE tenant_secrets; --`. A prior, narrower collection-name injection in the same code path had
+      already been patched; this dimension-parameter vector was missed. Conservative affected range per the
+      vendor: praisonai >= 3.10.0, <= 4.6.64, plus current main at disclosure time for PGVector/Cassandra
+      knowledge-store users. Fixed in praisonai >= 4.6.78.
+
+      No public PoC or confirmed in-the-wild exploitation had been reported for any of the three as of this
+      writing (TheHackerWire, 2026-07-11). Context for defenders: an earlier, unrelated PraisonAI flaw
+      (CVE-2026-44338, a hardcoded-disabled-auth issue disclosed 2026-05-11) was scanned and targeted within
+      under 4 hours of disclosure per multiple outlets (SecurityWeek, CSO Online, Sysdig) — PraisonAI-class
+      agentic frameworks are demonstrably watched by opportunistic scanners the moment an advisory drops, so
+      the absence of a PoC today should not be read as low urgency.
+    region_nexus: "global — open-source framework with no reported region concentration; relevant wherever public-sector or CI-operator innovation teams have piloted PraisonAI-based agent deployments"
+    primary_sector_nexus: "indirect — cross-sector relevance to any organisation running self-hosted LLM/agent orchestration frameworks, including public-sector AI pilots"
+    sector: "public-sector, cross-sector (AI/agentic tooling)"
+    cves: [CVE-2026-61447, CVE-2026-61445, CVE-2026-60090]
+    techniques: [T1190, T1059.006, T1059.004, T1552]
+    affected_products: ["PraisonAI (praisonaiagents / praisonai pip packages)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CodeAgent._execute_python() executes LLM-generated Python code in a subprocess with the complete parent-process environment (os.environ.copy()), zero AST validation, zero import restrictions, and no sandbox enforcement — even when CodeConfig(sandbox=True) is explicitly set."
+        attribution: "GitHub Security Advisory GHSA-2xv2-w8cq-5gxw (PraisonAI / MervinPraison)"
+        source_url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-2xv2-w8cq-5gxw"
+      - quote: "CodeConfig defines sandbox: bool = True (line 21), but _execute_python never checks this field."
+        attribution: "GitHub Security Advisory GHSA-2xv2-w8cq-5gxw (PraisonAI / MervinPraison)"
+        source_url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-2xv2-w8cq-5gxw"
+      - quote: "All Docker containers run as root (no USER directive)"
+        attribution: "GitHub Security Advisory GHSA-9mp3-24cc-77mg (PraisonAI / MervinPraison)"
+        source_url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-9mp3-24cc-77mg"
+      - quote: "A caller that can influence collection creation dimensions can append SQL/CQL tokens to the generated DDL executed by the database driver."
+        attribution: "GitHub Security Advisory GHSA-wf65-4jjx-q444 (PraisonAI / MervinPraison)"
+        source_url: "https://github.com/MervinPraison/PraisonAI/security/advisories/GHSA-wf65-4jjx-q444"
+      - quote: "No public PoC is available at the time of writing."
+        attribution: "TheHackerWire"
+        source_url: "https://www.thehackerwire.com/praisonai-rce-cve-2026-61447/"
+    extended_notes: |
+      Detection (telemetry class first, platform anchor second):
+      - Process-creation telemetry with parent-image lineage: any child process (python, bash, sh, or
+        subprocess-spawned interpreters) whose PARENT is the PraisonAI/praisonaiagents Python process,
+        especially where the child subsequently opens outbound network connections or reads
+        credential-adjacent environment variables — Sysmon EID 1 / EDR process-creation events filtered on
+        parent image = the agent-hosting Python interpreter is the concrete anchor.
+      - Egress/DNS telemetry: outbound HTTP(S)/DNS requests issued by the agent-hosting process shortly after
+        it processes untrusted/ingested content (tool results, uploaded documents, chat input) — a plausible
+        exfiltration-shaped sequence for the CodeAgent secrets-leak path.
+      - Application/tool-call audit log: PraisonAI's own tool-call log (if enabled) for `execute_command` /
+        `write_to_file` invocations whose arguments reference paths outside the intended working directory
+        (e.g. /etc/, ~/.ssh/, cron directories) — this is the AICoder-specific discriminator the vendor
+        advisory itself calls out.
+      - Database audit logging: PGVector/Cassandra DDL statements generated by the knowledge-store
+        `create_collection()` call path containing non-numeric tokens in the dimension position (SQL/CQL
+        tokens, semicolons, comment sequences) — anomalous relative to the expected integer-only value.
+      Hardening:
+      - Upgrade praisonaiagents to >= 1.6.78 and praisonai to >= 4.6.78 (all three fixed in the same release
+        line).
+      - Do not rely on `CodeConfig(sandbox=True)` alone even post-patch — verify the fixed version actually
+        enforces sandboxing rather than exposing the same dead-code flag; independently constrain LLM code
+        execution via OS-level sandboxing (gVisor/nsjail/seccomp), a scoped/empty environment for the
+        execution subprocess rather than `os.environ.copy()`, and import/module allowlisting.
+      - Run any AICoder-enabled deployment as a non-root container user with a read-only root filesystem and
+        no bind-mounted host paths, to blunt the impact even if the tool-call abuse succeeds.
+      - Validate and parameterize the `dimension` argument server-side (enforce integer type and bounds)
+        before any DDL generation in PGVector/Cassandra knowledge-store integrations; do not string-interpolate
+        caller-supplied values into DDL.
+      Triage / benign-lookalike: legitimate CodeAgent use also spawns python subprocesses performing real
+      data-processing work, so parent-child process lineage alone is not the discriminator — the source-stated
+      signal is the CHILD PROCESS'S BEHAVIOUR: unexpected imports (socket, urllib.request, subprocess spawning
+      a shell) not required for the agent's declared task, or outbound network calls carrying
+      environment-variable-shaped data. For AICoder, legitimate file writes stay within the declared
+      workspace/project directory; the vendor-cited PoC targets (/etc/crontab, SSH keys) are outside any
+      normal workspace scope and are the discriminating signal.
+candidate_sources: []
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "cert-eu recent (bridge) returned items only through 2026-06-10 — feed appears to lag; no in-window content available via this source this run (consistent with the source's previously-flagged staleness)."
+  - source_id: cisa-directives
+    reason: "cisa page listing rendered only nav/template content, no enumerable directive rows this run; cisa-news feed (all.xml) showed no new directive announcements in window either."
+  - note: "cybersecuritynews.com/praisonai-vulnerability-exploited (a lead on an EARLIER, already-out-of-window PraisonAI CVE, CVE-2026-44338) returned a bot-check/CAPTCHA page via both WebFetch and jina; not essential to this item since CVE-2026-44338 is outside the recency window and mentioned only as background context, sourced instead from SecurityWeek/CSO/Sysdig search-result snippets — not cited as a standalone claim."
+  - note: "TheHackerWire article on GHSA-2xv2-w8cq-5gxw direct WebFetch returned HTTP 403; recovered via jina reader (used as the cited fetch)."
+  - note: "Otherwise-quiet window: NCSC-CH CSH (latest post 2026-07-10T12:45Z, before the 24h cutoff), NCSC-NL advisories RSS (latest NCSC-2026-0223, 2026-07-10T05:54Z, before cutoff), BSI WID-SEC RSS (latest 2026-07-10T11:06Z, before cutoff), CERT-FR avis/actu feeds (latest 2026-07-10, before cutoff), CISA KEV catalog (dateReleased 2026-07-10T17:00Z, no post-cutoff additions), CISA advisories feed (newest ICS items ~2026-07-07 to 07-10, before cutoff), NCSC-UK combined feed (newest blog post 2026-07-09, before cutoff) — consistent with a quiet Saturday; all essential sources were attempted and returned content, just none of it fresh enough to clear the 24h recency gate beyond items already published by the 14:35Z run today."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment — sweep is a no-op per tasking; general coverage rules applied unchanged across all essential/standard S1 sources this run."

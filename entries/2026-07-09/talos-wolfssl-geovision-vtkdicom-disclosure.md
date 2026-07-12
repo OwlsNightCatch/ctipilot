@@ -26,7 +26,7 @@ entities: []
 techniques: [T1553, T1190, T1189, T1203]
 affected_products: ["wolfSSL", "GeoVision GV-I/O Box 4E", "GeoVision GeoWebPlayer", "vtk-dicom"]
 cves:
-  - id: CVE-2026-28739
+  - id: CVE-2026-7532
     cvss: "9.1"
     epss: null
     type: auth-bypass
@@ -35,7 +35,7 @@ cves:
     status: [patch-available, poc-public]
     affected: "wolfSSL 5.9.1"
     fixed: "vendor-patched (see wolfSSL advisory)"
-  - id: CVE-2026-25106
+  - id: CVE-2026-5263
     cvss: "7.4"
     epss: null
     type: auth-bypass
@@ -44,7 +44,7 @@ cves:
     status: [patch-available, poc-public]
     affected: "wolfSSL 5.9.1"
     fixed: "vendor-patched (see wolfSSL advisory)"
-  - id: CVE-2026-33091
+  - id: CVE-2026-6678
     cvss: "7.5"
     epss: null
     type: memory-corruption
@@ -134,7 +134,7 @@ actions:
 migrated_from: null
 ---
 
-Cisco Talos' Vulnerability Discovery & Research team published a coordinated-disclosure roundup on 2026-07-09 — three wolfSSL, 37 GeoVision (across 14 advisories) and one VTK-DICOM CVE, 41 in total, all patched by their respective vendors under Cisco's third-party disclosure policy ([Cisco Talos, 2026-07-09](https://blog.talosintelligence.com/wolfssl-vulnerabilities/)). In **wolfSSL 5.9.1** (embedded TLS for IoT/RTOS/medical/embedded devices), two X.509 name-constraint bugs let a subordinate CA issue certificates outside its permitted scope and have them accepted anyway, subverting a trust control (`T1553`): CVE-2026-28739 (CVSS 9.1) — the iPAddress SAN branch is compiled out unless `WOLFSSL_IP_ALT_NAME` is defined, silently skipping constraint enforcement for any certificate carrying an iPAddress SAN ([Talos TALOS-2026-2409, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2409)) — and CVE-2026-25106 (CVSS 7.4) — `ConfirmNameConstraints()` iterates a fixed GeneralName-type array that omits `ASN_RID_TYPE`, so registeredID SANs bypass constraint checking in every build ([Talos TALOS-2026-2410, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2410)). A third, CVE-2026-33091 (CVSS 7.5), is an integer underflow in PKCS#7 `OtherRecipientInfo` parsing that produces a heap buffer overflow with a stated path to code execution ([Talos TALOS-2026-2408, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2408)).
+Cisco Talos' Vulnerability Discovery & Research team published a coordinated-disclosure roundup on 2026-07-09 — three wolfSSL, 37 GeoVision (across 14 advisories) and one VTK-DICOM CVE, 41 in total, all patched by their respective vendors under Cisco's third-party disclosure policy ([Cisco Talos, 2026-07-09](https://blog.talosintelligence.com/wolfssl-vulnerabilities/)). In **wolfSSL 5.9.1** (embedded TLS for IoT/RTOS/medical/embedded devices), two X.509 name-constraint bugs let a subordinate CA issue certificates outside its permitted scope and have them accepted anyway, subverting a trust control (`T1553`): CVE-2026-7532 (CVSS 9.1) — the iPAddress SAN branch is compiled out unless `WOLFSSL_IP_ALT_NAME` is defined, silently skipping constraint enforcement for any certificate carrying an iPAddress SAN ([Talos TALOS-2026-2409, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2409)) — and CVE-2026-5263 (CVSS 7.4) — `ConfirmNameConstraints()` iterates a fixed GeneralName-type array that omits `ASN_RID_TYPE`, so registeredID SANs bypass constraint checking in every build ([Talos TALOS-2026-2410, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2410)). A third, CVE-2026-6678 (CVSS 7.5), is an integer underflow in PKCS#7 `OtherRecipientInfo` parsing that produces a heap buffer overflow with a stated path to code execution ([Talos TALOS-2026-2408, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2408)).
 
 Talos separately disclosed 37 CVEs across GeoVision physical-security/CCTV/access-control hardware. The most severe is an OS command-injection cluster led by CVE-2026-12486 (CVSS 9.1) in **GV-I/O Box 4E 2.09**: a function builds a shell command string from an attacker-controlled IP/netmask/gateway/DNS value with no sanitisation and passes it to `system()`, reachable over the network from the DVRSearch discovery service and the `Network.cgi` endpoint — though Talos scores it `PR:H`, i.e. requiring high privileges rather than fully unauthenticated (`T1190`) ([Talos TALOS-2026-2379, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2379)). CVE-2026-13125 (CVSS 8.8) is a missing-authentication flaw in **GeoWebPlayer** version 1.1.1.0 (shipped with GV-VMS/GV-Cloud): it opens an unauthenticated WebSocket server on localhost, so any webpage a victim visits can connect and invoke screen-capture APIs to exfiltrate their screen (`T1189`) ([Talos TALOS-2026-2370, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2370)). Finally, **VTK-DICOM 9.5.2** (used to parse DICOM CT/MRI data) carries CVE-2026-22879 (CVSS 8.1), an improper-array-index heap overflow where a crafted DICOM file corrupts heap-chunk metadata and aborts the process — a client-side surface for hospital PACS/imaging pipelines that ingest external DICOM (`T1203`) ([Talos TALOS-2026-2366, 2026-07-09](https://talosintelligence.com/vulnerability_reports/TALOS-2026-2366)).
 

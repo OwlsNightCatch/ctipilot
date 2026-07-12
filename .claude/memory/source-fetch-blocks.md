@@ -56,3 +56,11 @@ The frozenset in `tools/source_health.py` still exists to mark a `fetch_method: 
 ## JS-rendered pages with no server content (recurring recipe gaps)
 
 Sources whose "recent items" live only in client-hydrated JS, so the fetcher gets an empty shell: NCSC-CH `aktuelle-vorfaelle.html`, OFAC recent-actions table, `sans.org/newsletters/newsbites/`, `prodaft.com/reports` (Next.js SPA). Pivot to their RSS/JSON endpoint where one exists, or a WebSearch pivot; flag as a recipe gap, never fabricate content.
+
+## ncsc-uk — WORKING recipe found (2026-07-11 audit); "reachable but unreadable" is a failure class
+
+The NCSC-UK HTML listing (`/section/keep-up-to-date/reports-advisories`) had been a "recipe gap" in nearly every July run — consent-banner shell to WebFetch AND jina — while `sources.json` showed it green (an HTTP 200 bumped `last_successful_fetch`): an **essential source dark for weeks with healthy-looking bookkeeping**. Recipe: the combined feed `https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml` is FRESH (verified 2026-07-11; items days old) — use `python3 tools/fetch_source.py feed <that URL> 20` for discovery, drill item links for citation. (`report-rss-feed.xml` alone lags months — that's what earned RSS its bad reputation in the old note.) General lesson: a 200 that yields no parseable items is a coverage gap, not a success — when a source repeats as a "recipe gap" across runs, spend the five minutes probing its API/feed endpoints instead of re-logging the gap.
+
+## ransomware.live — use the JSON API, not the HTML (2026-07-11 audit)
+
+The HTML site returns chrome with no parseable victim table. Working recipe for country sweeps: `https://api.ransomware.live/v2/countryvictims/CH` (any ISO country code) via plain fetch. Leak-site claims stay single-source PD-6 material — the API is discovery, never confirmation.

@@ -1,0 +1,42 @@
+**Model:** Opus 4.8 (1M context) (`claude-opus-4-8[1m]`)
+**Timestamps:** started_at=2026-07-11T17:38:10Z · ended_at=2026-07-11T17:41:47Z · duration_seconds=217
+**Self-telemetry:** urls_checked=1 · webfetch_calls=0 · bridge_fetches=1 (jina reader on the Securelist primary; all other cross-checks were against on-disk files: pinned ATT&CK dataset, sources.json, registry.yaml, the three repaired entries, the immutability log, the audit doc)
+
+## Verification report — 2026-07-11T1435Z-audit (iteration 1)
+
+Scope: the single new entry `entries/2026-07-11/armored-likho-busysnake-ai-generated-loader-python-stealer.md` + the run record `runs/2026-07-11/2026-07-11T1435Z-audit.md`. Audit-run carve-outs honoured per spawn: out-of-window recency (backfill blind spot), non-standard six-audit-sub-agent shape, and the disclosed ~2 h rate-limit pause in `duration_seconds` were NOT flagged.
+
+### Entry verification — Armored Likho / BusySnake (CLEAN)
+
+Primary fetched via `python3 tools/fetch_source.py jina https://securelist.com/tr/armored-likho-apt-with-busysnake-stealer/120292/` — the article "Armored Likho's new weapon: BusySnake Stealer" was retrieved in full.
+
+- **Both `evidence[]` quotes are contiguous verbatim substrings** of the primary. Quote 1 ("This targeted campaign focuses heavily on government agencies and the electric power sector…global threat actor.") and quote 2 ("This coding style is highly uncharacteristic of human-developed malware…generate their malicious payloads.") match the source word-for-word.
+- **Every body/headline/summary claim confirmed against the source**: actor Armored Likho / alias Eagle Werewolf (circumstantial, Kaspersky's own); government + electric-power targeting; Russia/Brazil/Kazakhstan geography; spear-phishing government-notice/social-program themes with archive attachments; NSIS dropper writing legitimate `pnx.exe` to temp + code injection into its process; ZDI-CAN-25373 LNK whitespace/line-break command-line concealment → obfuscated PowerShell; LLM-generated loader (verbose comments + bullet-point emojis); rotating GitHub staging repos; `%APPDATA%\WindowsHelper` staging; bundled Python 3.12 + `get-pip.py` + `module.pyw`; PyArmor Pro 9.2.0 call-time bytecode decrypt/re-encrypt; `run.vbs` scheduled task every five minutes; `wh_selfdelete.vbs`; DPAPI (Chromium) + PK11SDR_Decrypt (Firefox) credential theft; cookie theft incl. browser-extension variant (`handle_extract_cookies_v7_command`); clipboard + local-file scraping for 64-char hex keys and `otpauth://` seeds; document exfil ≤5 MB; screenshots; Telegram `tdata` after force-killing `telegram.exe`; wallet-JSON hunting; reverse-SSH tunnel with C2-supplied key; RustDesk abuse (download-if-absent / restart-to-recapture-credentials). No claim in the entry lacks source support.
+- **No-IOC rule honoured**: entry contains no IPs, hashes, or attacker domains (the source's C2 IP `159.198.41.140` and User-Agent string were correctly excluded). File names/paths (`pnx.exe`, `module.pyw`, `%APPDATA%\WindowsHelper`) are behavioral artifacts, not prohibited IOC classes.
+- **techniques[]**: all 15 ids (T1566.001, T1204.002, T1027, T1055, T1053.005, T1059.001, T1059.006, T1608.001, T1555.003, T1539, T1115, T1113, T1005, T1572, T1219) are present, non-revoked, non-deprecated in the pinned ATT&CK v19.1 dataset, and each maps to a behavior the body describes. Non-empty as required for a `threat` kind.
+- **classification B/3**: `kaspersky-securelist` carries `reliability: B` in `sources/sources.json` — the entry's `reliability: B` matches (not above the source letter). Credibility 3 is appropriately conservative for single-source uncorroborated vendor research (not the "1 should be 2" error). `verification: single-source` + a `sourcing_note` naming Kaspersky as sole publisher satisfy the single-source flag (no F12).
+- **Relevance / priority**: out-of-nexus (RU/BR/KZ) threat entry that earns its place on the transferable-tradecraft ground (novel LLM-generated first-stage loader; concrete low-noise hunt pivots) and is framed around the lesson, not the victim — clears the check-5 stricter bar. `priority: notable` is correctly calibrated (no home-region targeting, no active CVE exploitation against the constituency). Not F7, not F16.
+- **Frontmatter⇔body / entities / dedup**: `regions`/`sectors`/`entities`/`event_date` all consistent; `actor:armored-likho` (alias "Eagle Werewolf") and `malware:busysnake-stealer` are registered in `entities/registry.yaml` with a typed `uses` relation sourced to this entry; no prior store coverage of the actor, so `update_of: null` is correct. `actions: []` is the healthy output for a transferable-tradecraft awareness item.
+
+The entry is factually and editorially clean.
+
+### Unsupported / hallucinated facts
+
+- **F4 — run-record repair claim not supported by the cited immutability log.** Run record line 98 states: *"Three published factual errors found and repaired in place under the immutability-exception log (`.claude/memory/entry-immutability-exceptions.md`)"* and lists three bullets, the first being the wolfSSL CVE-id corrections (CVE-2026-28739→**7532**, 25106→**5263**, 33091→**6678**), described as *"Worst finding of the audit."* The cited log documents only **two** repairs: its section heading reads *"2026-07-11 — full-store intelligence audit: two metadata error repairs"* and covers only the BeyondTrust CVSS (9.9→8.5) and Odido (T1656→T1684.001) fixes. A grep of the 59-line log for `wolfssl|talos|7532|5263|6678` returns nothing. Meanwhile `git status` shows `entries/2026-07-09/talos-wolfssl-geovision-vtkdicom-disclosure.md` **modified** in the working tree (the repair was applied — the entry now carries 7532/5263/6678), and this run is about to commit that edited immutable entry alongside a sanction log that does not cover it. This is both (a) a published run-record claim the referenced file does not support, and (b) the exact drift the immutability log exists to prevent — a future `check_run.py --all` / cold verifier seeing the modified wolfSSL entry would find no authorizing record. The wolfSSL findings ARE in `docs/audits/2026-07-11-intelligence-quality-audit.md`, but that is the audit report, not the invariant-required sanction log the run record cites. **Fix:** add a third repair record to `.claude/memory/entry-immutability-exceptions.md` covering the wolfSSL CVE-id corrections and their TALOS-advisory verification basis, and change the section heading "two"→"three" — aligning the cited log with the run record's claim and sanctioning the edit.
+
+### Verdict
+
+NEEDS_FIXES (truth: 1, editorial: 0, advisory: 0)
+
+The new Armored Likho / BusySnake entry is clean on every axis checked (verbatim evidence, source-supported claims, active ATT&CK mapping, B/3 classification consistent with sources.json, correct single-source flagging, justified relevance, no IOCs, registered entities, correct dedup). The sole finding is a run-record/provenance defect: the record claims three immutable-entry repairs are logged under `.claude/memory/entry-immutability-exceptions.md`, but that log records only two — the wolfSSL CVE-id repair (a real, applied edit to an immutable published entry) is unlogged there. Coverage of the new entry looks complete; no missed-angle or contradiction surfaced within scope. Note: I did not independently re-verify the run record's aggregate audit claims (55 entries / ~85 URLs / KEV coverage) — out of scope; only the spawn-directed three-repairs cross-check was performed, and it surfaced this discrepancy.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "Run record § Verification & coverage notes — 'three repairs under the immutability-exception log'"
+  url_or_quote: "Three published factual errors found and repaired in place under the immutability-exception log (`.claude/memory/entry-immutability-exceptions.md`)"
+  summary: "The cited log documents only TWO repairs (heading: 'two metadata error repairs' — beyondtrust CVSS 8.5 and Odido T1656->T1684.001). The wolfSSL CVE-id repair, the run record's self-described 'worst finding', is applied to the immutable entry (git shows the talos-wolfssl entry modified) but has NO record in the sanction log. Run-record claim not supported by the cited file, and an immutable-entry edit is about to be committed unlogged. Fix: add a third record to the immutability log covering the wolfSSL CVE-id corrections + advisory basis, and change the heading 'two'->'three'."
+```
