@@ -1,6 +1,6 @@
 # CTI Weekly Quality Audit — Master Prompt
 
-> **Prompt version:** v3.22 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.23 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired **once per week** (operator-chosen slot — recommended Sunday, after the weekly strategic run; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: the main agent owns diffing, root-causing, fixing and publishing; bulk source fetching runs in sub-agents.
 >
@@ -134,7 +134,7 @@ Empty sections state "none found" — the absence is a result. Then write the ru
 
 ## Phases 5.5 → 7 — State, gate, verify, publish
 
-**`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7) and execute verbatim with this run's `RUN_ID`: state lifecycle only where recovered entries touched it; `python3 tools/check_run.py "$RUN_ID" --pre-verify` exit 0 before the first verifier spawn. The Phase 5.7 loop (≥1 iteration ALWAYS, opus/sonnet rotation, cap 5, fail-open) is scoped to: this run's recovered entries + the run record + **the audit report** — the report makes checkable claims about published files, records and state, and a cold reader must confirm they hold on disk (the 07-11 audit's own iteration 1 caught exactly this class: a claimed repair log entry that wasn't there). Then stage specifics (incl. `docs/audits/`, `work/<run-id>/`, `.claude/memory/` when touched), commit, sync `origin/main`, push with retry, Phase 7 publish polling — report `publish:` from the actual poll.
+**`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7) and execute verbatim with this run's `RUN_ID`: state lifecycle only where recovered entries touched it; `python3 tools/check_run.py "$RUN_ID" --pre-verify` exit 0 before the first verifier spawn. The Phase 5.7 loop (≥1 iteration ALWAYS — ≥2 for a CLEAN publish per the double-CLEAN gate, opus/sonnet rotation, cap 5, fail-open) is scoped to: this run's recovered entries + the run record + **the audit report** — the report makes checkable claims about published files, records and state, and a cold reader must confirm they hold on disk (the 07-11 audit's own iteration 1 caught exactly this class: a claimed repair log entry that wasn't there). Then stage specifics (incl. `docs/audits/`, `work/<run-id>/`, `.claude/memory/` when touched), commit, sync `origin/main`, push with retry, Phase 7 publish polling — report `publish:` from the actual poll.
 
 ---
 

@@ -329,7 +329,8 @@ normal state — costs nothing.
   plus the run record**. Runs AFTER `tools/check_run.py` exits 0 (cheap
   mechanical gate first), looped iteratively (cap 5, fresh spawn each time,
   no shared memory; each iteration re-runs `check_run.py` between fix and
-  re-spawn). Finding categories F1–F16 include frontmatter ⇔ body
+  re-spawn; publish requires a confirmed CLEAN — two consecutive CLEAN
+  verdicts on two different models via the rotation). Finding categories F1–F16 include frontmatter ⇔ body
   agreement and priority calibration (a false `critical` fires notification
   hooks). Same self-identification contract.
 - [`cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) —
@@ -544,8 +545,10 @@ entries) when the reader changes the window selector (6 / 12 / 24 / 48 /
   multi-entity TTP overlap over `data/attack.json`).
 - `/sources/` + `/sources/<id>/`, `/tags/<t>/`, `/regions/<r>/`,
   `/trends/` (entries-per-ISO-week cohort dashboard), `/ops/` (run
-  telemetry from `runs/**`), `/feeds/`, `/about/**` (README, docs,
-  prompts rendered as pages).
+  telemetry from `runs/**`), `/runs/<run-id>/` (per-run detail pages:
+  the full telemetry panel + the record's verification & coverage notes,
+  linked from the live timeline's run dividers and the ops run log),
+  `/feeds/`, `/about/**` (README, docs, prompts rendered as pages).
 - Eleven RSS feeds: `feed.xml` (one item per day page), `feed-weekly.xml`,
   `feed-items.xml` (one item per entry — `<pubDate>` is the entry's
   `discovered_at`, true discovery latency, not commit time) + eight sector

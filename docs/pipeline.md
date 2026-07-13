@@ -666,13 +666,22 @@ publish_status: pending        # pending | ok | main-only — machine-auditable 
 publish_checked_at: null       # UTC timestamp of the Phase 7 poll that set publish_status
 publish_note: null             # free-text reason detail (e.g. "site polling disabled",
                                # "auto-merge pending at deadline")
-verification_iterations: 1
+verification_iterations: 2
 verification_residual_count: 0 # never 0 when the final iteration was NEEDS_FIXES
 verification:
-  iterations:
+  confirmation_waived: null    # optional (v3.23+): non-null string ONLY when the run published
+                               # on a CLEAN that no second model confirmed (single CLEAN at the
+                               # iteration cap, watchdog-overrun single iteration, other-model
+                               # spawn blocked) — the reason, verbatim. Normal confirmed-CLEAN
+                               # publishes omit it. `check_run.py` FAILs an unconfirmed final
+                               # CLEAN on v3.23+ records unless this (or the cap) explains it.
+  iterations:                  # v3.23+: a CLEAN publish requires the final TWO iterations both
+                               # CLEAN, on different models (the opus/sonnet rotation supplies
+                               # the model diversity) — so a CLEAN publish has ≥2 iterations
     - n: 1
       model: "…"
       model_id: "…"
+      subagent_type: cti-verification   # which rotation definition was spawned
       started_at: "…"
       ended_at: "…"
       duration_seconds: 240
@@ -681,6 +690,18 @@ verification:
       editorial: 0             # F5–F10 + F12 + F16
       advisory: 0              # F11
       findings: []             # rich per-finding records, v2 shape
+    - n: 2                     # the confirmation pass — the other model, also CLEAN
+      model: "…"
+      model_id: "…"
+      subagent_type: cti-verification-alt
+      started_at: "…"
+      ended_at: "…"
+      duration_seconds: 210
+      verdict: CLEAN
+      truth: 0
+      editorial: 0
+      advisory: 0
+      findings: []
 ---
 
 ## Verification & coverage notes

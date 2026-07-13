@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.22 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.23 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -39,7 +39,7 @@ Anti-crash guards (priority order):
 8. **Take time on quality, not retries.** A correct 25-min run beats a 90-min retry-loop one.
 9. **Main agent does NO source fetching during Phase 1 (anti-classifier-trip).** While the `cti-research` sub-agents are running, the main agent MUST NOT call `WebFetch`, `WebSearch`, or `python3 tools/fetch_source.py`. Source-fetching is the sub-agents' exclusive job in Phase 1; their isolated contexts absorb the raw advisory / breach / enforcement content so the main agent's working context stays compositional. Two failure modes prevented: (a) duplicate work; (b) classifier trip — accumulated raw CTI content in the main context has killed runs mid-flight with `API Error … Usage Policy` and no published output (the worst guard-1 violation). Main-agent exceptions (all AFTER Phase 1 sub-agents have returned, so no concurrency with active research): Phase 2 single-URL spot-checks; the **Phase 4 deep-read re-fetch of the WILL-PUBLISH set only** (the small triaged set — re-read each published item's primary in full via the jina reader, extract, then drop the raw body; escalate to a scoped sub-agent if the set is large); Phase 5.7 verification-fix re-fetches of one flagged URL; Phase 7 publish polling. The invariant is specifically **no fetching *during Phase 1* and no bulk raw-content accumulation** — a bounded, extract-and-drop deep read of the handful of items you are about to publish is the intended path, not a violation. Anything beyond these: spawn another sub-agent. Hardened as META hard invariant #16.
 
-10. **Main-run wall-clock watchdog — check elapsed time at every phase boundary; past ~3 h, stop widening and land the run (v3.21).** Two runs in one week silently ran 11.2 h and 17.8 h wall-clock (container stalls / long waits), publishing their entries up to 11 h late and being overtaken by the next scheduled fire. At each phase boundary compare now against `work/<run-id>/main.started_at`: past ~3 h elapsed, do not start new research or widen scope — carry only the already-verified candidates straight through the gate (Phase 5.5), a single verifier iteration (Phase 5.7), and the publishing chain, and record the overrun and its apparent cause in the run record. **If a later scheduled fire has already published while this run was mid-pipeline** (visible when Phase 6's sync pulls new run records for today), re-fetch `origin/main`, rebuild the prior-coverage index, and re-deduplicate every not-yet-committed candidate against the overtaking run's entries before composing/committing — the overtaken run publishes only the delta the newer run did not surface. `check_run.py` WARNs on `duration_seconds` past the runaway threshold.
+10. **Main-run wall-clock watchdog — check elapsed time at every phase boundary; past ~3 h, stop widening and land the run (v3.21).** Two runs in one week silently ran 11.2 h and 17.8 h wall-clock (container stalls / long waits), publishing their entries up to 11 h late and being overtaken by the next scheduled fire. At each phase boundary compare now against `work/<run-id>/main.started_at`: past ~3 h elapsed, do not start new research or widen scope — carry only the already-verified candidates straight through the gate (Phase 5.5), a single verifier iteration (Phase 5.7 — a documented waiver of the double-CLEAN confirmation: set `verification.confirmation_waived` with the overrun reason if that iteration returns CLEAN), and the publishing chain, and record the overrun and its apparent cause in the run record. **If a later scheduled fire has already published while this run was mid-pipeline** (visible when Phase 6's sync pulls new run records for today), re-fetch `origin/main`, rebuild the prior-coverage index, and re-deduplicate every not-yet-committed candidate against the overtaking run's entries before composing/committing — the overtaken run publishes only the delta the newer run did not surface. `check_run.py` WARNs on `duration_seconds` past the runaway threshold.
 
 11. **Scheduler and hook noise never restarts or short-circuits the run.** Two recurring distractions, both handled the same way — acknowledge, hold course: (a) **Fallback wakeups/heartbeats.** If you schedule one while waiting on sub-agents (a reasonable hedge against a hung spawn), **cancel it the moment the wait ends** (all sub-agents returned or capped) — completion notifications re-invoke you anyway. If a stale wakeup still fires *after* this run published, verify the run record is on `main`, stop the loop, and end the turn: **a leftover heartbeat is never a new fire** — real cadence comes only from the operator's scheduler, and a self-triggered re-fire would re-scan ground just swept for a near-certain zero delta. (b) **Mid-run stop-hook / "commit your work" nudges.** These never override the publishing chain: nothing is committed before Phase 6 — the run commits atomically (entries + record + state + work/ together) after the gate and the verifier loop. State briefly that the run is mid-pipeline and continue; never push a partial run to satisfy a hook.
 
@@ -504,14 +504,14 @@ The mechanical gate runs **before** Phase 5.7 because it is dramatically cheaper
 
 ---
 
-## Phase 5.7 — Final verification sub-agent (URL truth + editorial quality, loop until CLEAN)
+## Phase 5.7 — Final verification sub-agent (URL truth + editorial quality, loop until confirmed CLEAN)
 
 After Phase 5.5 exits 0, this run's output goes through an independent cold-reader verification sub-agent — a hostile, technically-fluent SOC reader. Two concerns in one pass:
 
 - **Truth gate** — every URL fetched, every claim cross-checked against its linked source, every named entity (CVE / actor / campaign / version / date / number) traced to a source the verifier could read, every `evidence` quote confirmed verbatim, every frontmatter field consistent with the body.
 - **Editorial-quality gate** — relevance to the profiled organization, primary-source strength, priority calibration (is that `high` really TL;DR-worthy? is a `critical` defensible?), correct update-vs-new decisions, vendor-marketing tells, missed angles.
 
-**The verifier's CLEAN verdict is the gate to publish.** No commit until CLEAN — except the iteration-cap fail-open. Non-negotiable; at least one iteration always runs. Verification removes bad content; it never blocks the run record.
+**The gate to publish is a *confirmed* CLEAN: two consecutive iterations, on two different models, both returning verdict CLEAN (v3.23).** A single CLEAN is a hypothesis, not a publish decision — the rotation puts the next iteration on the other model, and only its independent agreement confirms the run is clean (one model's blind spot must not be the last word). No commit until the double-CLEAN — except the iteration-cap fail-open and the low-residual early exit (decision rules below). Non-negotiable; at least one iteration always runs, and a CLEAN publish always takes at least two. Verification removes bad content; it never blocks the run record.
 
 ### Spawn — with model rotation across iterations
 
@@ -520,20 +520,21 @@ After Phase 5.5 exits 0, this run's output goes through an independent cold-read
 | 1, 3, 5 | `cti-verification` | `opus` |
 | 2, 4 | `cti-verification-alt` | `sonnet` |
 
-Both definitions carry the identical operational system prompt (finding categories F1–F18, return contract, composed organization context, read-only tools, 30-min cap); only the model pin differs. Fresh spawn each iteration — no shared memory. (Rotation telemetry: since v3.15 verifiers self-report from the harness-injected model line in their own system prompt, which sees the definition's pin — expect the reported model to alternate across iterations. Only a report marked `— container default, env fallback` is blind to the pin; uniformity among such fallback reports is a measurement limitation, not proof the rotation failed. See § Self-identification.)
+Both definitions carry the identical operational system prompt (finding categories F1–F18, return contract, composed organization context, read-only tools, 30-min cap); only the model pin differs. Fresh spawn each iteration — no shared memory. The rotation is what makes the double-CLEAN gate meaningful: consecutive iterations always run on different models, so the confirming CLEAN is always an independent second model agreeing with the first. **Never spawn the same definition twice in a row.** If the other-model spawn genuinely fails (classifier block, spawn error — retry once first), the confirmation may run on the same model as a recorded exception: note it in the run record and set `verification.confirmation_waived` with the reason (precedent: 2026-06-05, Opus spawns blocked by the content classifier). (Rotation telemetry: since v3.15 verifiers self-report from the harness-injected model line in their own system prompt, which sees the definition's pin — expect the reported model to alternate across iterations. Only a report marked `— container default, env fallback` is blind to the pin; uniformity among such fallback reports is a measurement limitation, not proof the rotation failed. See § Self-identification.)
 
-Spawn message: (1) **scope** — this run's `run_id`, the list of new entry paths, and the run-record path; (2) iteration number; (3) dedup-context paths (`prior_coverage.json`, `entities/registry.yaml`); (4) the run record's telemetry (so the verifier can judge missed angles from source coverage); (5) confirmation that `check_run.py` exited 0; (6) **even iterations only:** the prior-iteration deltas block — every finding from the previous iteration plus the remediation you applied (`code / entry / summary / remediation_applied / verify_in_this_iteration`), so the alternate model verifies the fixes instead of re-deriving cold and flip-flopping. Odd iterations read genuinely cold.
+Spawn message: (1) **scope** — this run's `run_id`, the list of new entry paths, and the run-record path; (2) iteration number; (3) dedup-context paths (`prior_coverage.json`, `entities/registry.yaml`); (4) the run record's telemetry (so the verifier can judge missed angles from source coverage); (5) confirmation that `check_run.py` exited 0; (6) **even iterations only:** the prior-iteration deltas block — every finding from the previous iteration plus the remediation you applied (`code / entry / summary / remediation_applied / verify_in_this_iteration`), so the alternate model verifies the fixes instead of re-deriving cold and flip-flopping. Odd iterations read genuinely cold. A confirmation pass after a CLEAN (decision rule 2) has no deltas to pass — state only that the previous iteration returned CLEAN with zero findings and that this iteration independently confirms or refutes; nothing else, so the second model anchors on the run's output, not on the first model's judgement.
 
 ### Main-agent loop
 
 The verifier returns a compact summary (`**Verdict:**`, `**Counts:**`, report paths). Read only those lines; `Read work/<run-id>/verification.iter<N>.findings.yaml` for the structured findings when remediating; never wholesale-`Read` the full report.
 
 Decision rules (priority order):
-1. Verdict CLEAN → Phase 6.
-2. NEEDS_FIXES with F1 (broken URL) or F4 (hallucinated fact) → ALWAYS remediate + re-spawn.
-3. NEEDS_FIXES with `truth + editorial ≥ 3` → remediate + re-spawn.
-4. NEEDS_FIXES with `truth + editorial ≤ 2` and no F1/F4 → apply remediations, publish (early exit); log the residuals.
-5. Iteration 5 without CLEAN → publish anyway (fail-open safety valve); `verification_residual_count = final truth + editorial` (never 0 on a NEEDS_FIXES final iteration).
+1. Verdict CLEAN **and** the previous iteration also returned CLEAN (a different model, per the rotation) → **confirmed CLEAN** → Phase 6.
+2. Verdict CLEAN but unconfirmed (iteration 1, or the previous iteration was NEEDS_FIXES) → spawn iteration N+1 as the **confirmation pass**. The rotation puts it on the other model; it reads cold and carries full verdict weight like any iteration — CLEAN confirms (rule 1), NEEDS_FIXES re-enters the loop (rules 3–5) and the CLEAN chain restarts. Exception: if N is already the cap (no room to confirm), publish on the single CLEAN as a fail-open — set `verification.confirmation_waived: "single CLEAN at iteration cap"` and log it in the notes.
+3. NEEDS_FIXES with F1 (broken URL) or F4 (hallucinated fact) → ALWAYS remediate + re-spawn.
+4. NEEDS_FIXES with `truth + editorial ≥ 3` → remediate + re-spawn.
+5. NEEDS_FIXES with `truth + editorial ≤ 2` and no F1/F4 → apply remediations, publish (early exit); log the residuals. (The early exit publishes on a NEEDS_FIXES final verdict with residuals — the double-CLEAN confirmation governs only the CLEAN path.)
+6. Iteration 5 without a publishable outcome → publish anyway (fail-open safety valve); `verification_residual_count = final truth + editorial` (never 0 on a NEEDS_FIXES final iteration).
 
 Remediation per finding type (v2 table, adapted to entries): broken/generic URL → re-pivot to a specific fresh URL or drop the entry; claim-not-supported → narrow the claim or fix the citation; hallucinated fact → drop the fact and whatever it props up; missing citation → add or rewrite; strengthen-primary → re-pivot, reorder `sources[]`; **drop** → `git rm` the entry file, decrement counters, remove orphaned `cves_seen` records, log in the run record; needs-more-research → ≤3 follow-up `cti-research` sub-agents, scoped, 45-min cap; contradiction → run-record line + `verification: contradicted` on the entry; missed angle → one targeted sub-agent if it would clear the inclusion gates, else a coverage-gap line; priority-miscalibration (F16 scope in v3 includes priority/org-triage drift) → adjust `priority`/`org_triage` to what the cited facts support; F13 analytical-link-as-fact → soften to the source's claim or re-cite; F14 quantifier-without-source → the source's number, "several", or omission; F15 name-collision → explicit disambiguation in the body, or restructure as `update_of`.
 
@@ -544,8 +545,9 @@ After remediation: **re-run `python3 tools/check_run.py`**, fix FAILs, then re-s
 - Verifier reads only; the main agent owns all edits.
 - Cap 5 iterations; fresh spawn each; `check_run.py` green between iterations.
 - ≤3 follow-up research sub-agents per iteration.
-- Verifier fails (30-min timeout, no return) → publish anyway, note in the run record.
+- Verifier fails (30-min timeout, no return) → publish anyway, note in the run record (if the failed spawn was a confirmation pass, set `verification.confirmation_waived` with the reason).
 - **At least one verification iteration is mandatory** — never commit without a verifier return on file.
+- **A CLEAN publish requires two consecutive CLEAN verdicts from two different models** (rules 1–2 above). `check_run.py` enforces the shape on v3.23+ records: an unconfirmed final CLEAN FAILs the gate unless `verification.confirmation_waived` (or the cap) explains it, and a same-model confirmation WARNs.
 
 ---
 
@@ -568,7 +570,7 @@ git commit -m "run: ${RUN_ID}
 - entries: N new (threat: N · vuln: N · research: N · updates: N) · deep-dive: <slug or 'none'> · critical: N
 - entities: <keys added, or 'none'> · sources: <one-line summary of changes>
 - cves: <new: N · updated: N · removed: N (with reason)>
-- verification: N iteration(s), <CLEAN | residuals: N>
+- verification: N iteration(s), <confirmed CLEAN | residuals: N>
 "
 ```
 
@@ -695,7 +697,7 @@ Do **not** re-enter the Phase 7 poll for the amendment — auto-merge promotes i
 - [ ] All entities linked via registry keys; new entities registered with sourced definitions; no duplicate/alias collisions.
 - [ ] `entities/registry.yaml`, `state/cves_seen.json`, `sources/sources.json`, `state/source_health.json` updated; run record complete (telemetry + notes + parseable lines).
 - [ ] **`python3 tools/check_run.py "$RUN_ID" --pre-verify` exits 0 BEFORE the first Phase 5.7 spawn**, and the plain invocation exits 0 after every fix iteration and before commit.
-- [ ] **Phase 5.7 ran ≥1 iteration**; CLEAN or documented fail-open; counters recorded.
+- [ ] **Phase 5.7 ran ≥1 iteration (≥2 for a CLEAN publish)**; confirmed CLEAN (two consecutive CLEANs, two models), low-residual early exit, or documented fail-open (`confirmation_waived` set where a CLEAN went unconfirmed); counters recorded.
 - [ ] **Run record exists at `runs/<date>/<run-id>.md`** — even on a zero-entry run, even with sub-agent failures.
 - [ ] **Phase 7 ran** — the `publish:` line reports the actual poll result, not a guess; the 7c publish-status amendment was committed and pushed (or its failure logged).
 
@@ -732,7 +734,7 @@ The agent has full authority to modify this prompt, the source list, documentati
 8. No workflow-internal language in published content.
 9. Publishing chain: feature-branch-only push → auto-merge promotes → Phase 7 verification. No direct pushes to main.
 10. Phase 5.5 mechanical gate (`python3 tools/check_run.py` exits 0) before Phase 5.7 and between fix iterations.
-11. Phase 5.7 verification loop (≤5 iterations, model rotation, ≤3 follow-up sub-agents per iteration; the cap is a fail-open safety valve, not the goal).
+11. Phase 5.7 verification loop (≤5 iterations, model rotation, double-CLEAN publish gate — two consecutive CLEAN verdicts on two different models, ≤3 follow-up sub-agents per iteration; the cap is a fail-open safety valve, not the goal).
 12. Entry frontmatter is the complete metadata contract (docs/pipeline.md); taxonomy values from `site/taxonomy.yaml`; entity keys from `entities/registry.yaml`.
 13. Strict CSP + vendored-library integrity in the site build.
 14. `tools/fetch_source.py` bridge for CISA + NCSC.ch every run; never let 403/429 go unmitigated.

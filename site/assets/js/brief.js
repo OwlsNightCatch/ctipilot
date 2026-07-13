@@ -120,12 +120,18 @@
         + '</div></div>';
     }
 
-    function runDivider(label, gap, count) {
+    function runDivider(label, gap, count, rid) {
+      // Mirrors render_run_divider in site/build.py — the timestamp label
+      // links to the run's detail page (/runs/<run-id>/) when the run id is
+      // known; identical markup/classes otherwise.
       var n = count === 0 ? 'quiet window' : count + ' finding' + (count === 1 ? '' : 's');
       var g = (gap ? gap + ' · ' : '') + n;
       var cls = count === 0 ? 'tl-run tl-run--quiet' : 'tl-run';
+      var lbl = rid
+        ? '<a class="rl" href="' + esc(sitePrefix() + 'runs/' + rid + '/') + '" title="Open run details · verification & coverage notes">' + esc(label) + '</a>'
+        : '<span class="rl">' + esc(label) + '</span>';
       return '<div class="' + cls + '"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
-        + '<div class="run-h"><span class="rl">' + esc(label) + '</span><span class="rg">· run · ' + esc(g) + '</span></div></div>';
+        + '<div class="run-h">' + lbl + '<span class="rg">· run · ' + esc(g) + '</span></div></div>';
     }
 
     function render() {
@@ -192,7 +198,7 @@
           }
           if (ts.getTime() > 0) prevTs = ts;
           var items = byRun[rid] || [];
-          html += runDivider(stamp(ts), gap, items.length);
+          html += runDivider(stamp(ts), gap, items.length, rid);
           items.forEach(function (e) { html += runItem(e, rid === firstNonEmpty); });
         });
       }

@@ -379,27 +379,20 @@
     });
   }
 
-  // ── Ops dashboard: run-detail picker ───────────────────────────────
+  // ── Ops dashboard: run navigator (Run log section) ─────────────────
+  // The old in-page panel picker is gone — every run has its own page at
+  // /runs/<run-id>/, so the <select> simply navigates there. Legacy
+  // #run=<id> deep links (from the removed picker) redirect to the page.
   function wireOpsRunPicker() {
     var sel = document.getElementById('ops-run-select');
     if (!sel) return;
-    var panels = document.querySelectorAll('[data-run-panel]');
-    if (!panels.length) return;
-    function show(key) {
-      var matched = false;
-      panels.forEach(function (p) {
-        var isMatch = p.getAttribute('data-run-panel') === key;
-        p.hidden = !isMatch;
-        if (isMatch) matched = true;
-      });
-      return matched;
-    }
+    var base = sel.getAttribute('data-run-nav');
+    if (base == null) return;
     sel.addEventListener('change', function () {
-      show(sel.value);
-      if (window.history && history.replaceState) history.replaceState(null, '', '#run=' + encodeURIComponent(sel.value));
+      if (sel.value) window.location.href = base + encodeURIComponent(sel.value) + '/';
     });
     var m = (window.location.hash || '').match(/run=([^&]+)/);
-    if (m) { var key = decodeURIComponent(m[1]); if (show(key)) sel.value = key; }
+    if (m) window.location.replace(base + encodeURIComponent(decodeURIComponent(m[1])) + '/');
   }
 
   // ── list-page filters (briefs / cves / topics / sources / entities) ─

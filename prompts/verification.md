@@ -79,7 +79,7 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 - [ ] Deep-dive treatment reserved for an item that earns it; category rotation applied.
 - [ ] Run record complete: telemetry, verification counters, notes with drops / single-source / contradictions / parseable lines.
 - [ ] **`python3 tools/check_run.py "$RUN_ID"` exits 0 BEFORE the verification sub-agent is spawned** — the verifier reads output whose schema / URLs / taxonomy / dedup are already mechanically clean.
-- [ ] **Phase 5.7 verification sub-agent ran ≥1 iteration** covering both URL truth and editorial quality; verdict CLEAN within ≤5 iterations or residuals logged in the run record.
+- [ ] **Phase 5.7 verification sub-agent ran ≥1 iteration (≥2 for a CLEAN publish)** covering both URL truth and editorial quality; confirmed CLEAN (two consecutive CLEAN verdicts on two different models) within ≤5 iterations, or residuals / a `confirmation_waived` reason logged in the run record.
 - [ ] No `sources[]` URL on the hard-blocked pattern list (NVD/MITRE/cve.org per-CVE pages, homepages, category landings, advisory indexes — enforced by `tools/check_run.py`).
 - [ ] Every `sources[]` URL returns HTTP 200 on a live HEAD/GET at commit time (ledger-cached fetches trusted).
 
@@ -87,17 +87,17 @@ Every entry reflects events inside the run's gap-derived recency window (`window
 
 ## Phase 5.7 — Final verification sub-agent (URL truth + editorial quality)
 
-After entries and the run record are written, state is updated, and `tools/check_run.py` exits 0 (the cheap mechanical gate runs first), an independent verification sub-agent reads the run's output end to end — every new entry (frontmatter AND body) plus the run record — as a hostile, technically-fluent SOC reader with no memory of how the run was assembled. **The verifier's CLEAN verdict is the gate to publish** (the 5-iteration cap is the fail-open safety valve).
+After entries and the run record are written, state is updated, and `tools/check_run.py` exits 0 (the cheap mechanical gate runs first), an independent verification sub-agent reads the run's output end to end — every new entry (frontmatter AND body) plus the run record — as a hostile, technically-fluent SOC reader with no memory of how the run was assembled. **The gate to publish is a confirmed CLEAN — two consecutive iterations, on two different models, both returning verdict CLEAN** (v3.23; the 5-iteration cap and the low-residual early exit are the fail-open safety valves). A single model's CLEAN never publishes alone: the rotation puts the confirmation pass on the other model, so one model's blind spot is never the last word.
 
 **Truth gate.** Every URL fetched; every claim cross-checked against its linked source; every named entity traced to a fetched source; every `evidence[]` quote confirmed verbatim; frontmatter ⇔ body agreement (a `summary` claiming more than the body's sources support is a hallucination with a notification blast radius).
 
 **Editorial-quality gate.** Relevance to the profiled organization; primary-source strength (vendor PSIRT / research lab / regulator / victim first — NVD/CERT second-tier); priority calibration; action-item discipline (`actions[]` do-now bar); correct update-vs-new decisions; vendor-marketing tells; fake-news patterns; contradictions; clarity for a Tier 2 responder; missed angles.
 
-The verifier's finding categories (F1–F18), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping.
+The verifier's finding categories (F1–F18), report format, and compact-summary contract live in [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md). **Verifier-model rotation:** odd iterations spawn `cti-verification` (Opus default), even iterations `cti-verification-alt` (Sonnet default) — byte-identical operational prompts, different model pins — so model-specific blind spots are caught across iterations; even iterations receive the prior iteration's findings + applied remediations so the alternate model verifies fixes instead of flip-flopping. The rotation also carries the double-CLEAN gate: the confirming iteration is by construction a different model, so every CLEAN publish rests on two independent models agreeing.
 
-### Iterative refinement loop (cap 5 — fail-open safety valve, not goal)
+### Iterative refinement loop (double-CLEAN to publish; cap 5 — fail-open safety valve, not goal)
 
-Remediation per finding type, re-run `tools/check_run.py`, fresh re-spawn — the full loop and remediation table live in `prompts/cti-run.md` Phase 5.7. Up to 3 follow-up `cti-research` sub-agents per iteration for `Needs more research` / `Missed angles`. Iteration counters and per-iteration findings land in the run record's `verification` block — the Ops dashboard at `/ops/` surfaces cap-breaches.
+Remediation per finding type, re-run `tools/check_run.py`, fresh re-spawn — the full loop, decision rules (incl. the CLEAN-confirmation pass) and remediation table live in `prompts/cti-run.md` Phase 5.7. Up to 3 follow-up `cti-research` sub-agents per iteration for `Needs more research` / `Missed angles`. Iteration counters and per-iteration findings land in the run record's `verification` block — the Ops dashboard at `/ops/` and the per-run pages at `/runs/<run-id>/` surface cap-breaches and unconfirmed-CLEAN waivers.
 
 ---
 

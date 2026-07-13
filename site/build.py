@@ -25,6 +25,9 @@ Outputs (written under site/_site/):
     /tags/<t>/ /regions/<r>/       per-tag / per-region entry indexes
     /trends/                       entries-per-ISO-week cohort dashboard
     /ops/                          run telemetry dashboard (from runs/**)
+    /runs/<run-id>/                per-run detail pages: full telemetry panel +
+                                   verification & coverage notes (linked from the
+                                   live timeline's run dividers and the ops run log)
     /feeds/ + feed*.xml            daily / weekly / per-entry + 8 sector slices
     /about/**                      README, docs (incl. docs/pipeline.md), prompts
     /data/briefbook.json           last-35-days entries+runs with pre-rendered card HTML
@@ -1897,6 +1900,13 @@ def entry_url_path(entry: dict[str, Any]) -> str:
     return f"entries/{entry['date']}/{entry['slug']}/"
 
 
+def run_url_path(run: dict[str, Any]) -> str:
+    """Site-root-relative permalink path for a run record's detail page ·
+    `runs/2026-07-13T1212Z-intel/`. Run ids are filesystem-safe (compact
+    `THHMMZ` timestamps, no colons)."""
+    return f"runs/{run.get('run_id')}/"
+
+
 def entry_section_key(entry: dict[str, Any]) -> str | None:
     """Daily-brief section for an operational entry. Orthogonal flags
     relocate at render time: update_of → updates, deep_dive → deep-dive.
@@ -2540,16 +2550,26 @@ def render_timeline_item(entry: dict[str, Any], *, prefix: str = "", is_new: boo
     )
 
 
-def render_run_divider(run_label: str, gap_note: str, count: int) -> str:
+def render_run_divider(run_label: str, gap_note: str, count: int, *,
+                       url: str | None = None) -> str:
     """The `.tl-run` divider between run groups in the live timeline.
     A 0-finding run is a first-class outcome: it still gets a divider,
-    labelled 'quiet window'."""
+    labelled 'quiet window'. With `url` the timestamp label becomes a
+    link to the run's detail page (/runs/<run-id>/ — verification
+    iterations + coverage notes incl. borderline drops) — same markup
+    and classes otherwise, so the timeline's look does not change.
+    Mirrored client-side by brief.js runDivider — keep the two in sync."""
     n_txt = "quiet window" if count == 0 else f"{count} finding" + ("" if count == 1 else "s")
     gap_txt = (gap_note + " · " if gap_note else "") + n_txt
     cls = "tl-run tl-run--quiet" if count == 0 else "tl-run"
+    label_html = (
+        f'<a class="rl" href="{_escape(url)}" '
+        f'title="Open run details · verification &amp; coverage notes">{_escape(run_label)}</a>'
+        if url else f'<span class="rl">{_escape(run_label)}</span>'
+    )
     return (
         f'<div class="{cls}"><div class="tl-rail rail-e"><span class="runnode"></span></div>'
-        f'<div class="run-h"><span class="rl">{_escape(run_label)}</span>'
+        f'<div class="run-h">{label_html}'
         f'<span class="rg">· run · {_escape(gap_txt)}</span></div></div>'
     )
 
@@ -3177,7 +3197,10 @@ def _live_timeline_html(ops: list[dict[str, Any]], runs: list[dict[str, Any]],
                 gap = f"gap {round(dh)}h"
         prev_ts = ts if ts != _floor else prev_ts
         es = entries_by_run.get(rid, [])
-        rows.append(render_run_divider(label, gap, len(es)))
+        rows.append(render_run_divider(
+            label, gap, len(es),
+            url=f"{prefix}runs/{rid}/" if rid else None,
+        ))
         for e in es:
             rows.append(render_timeline_item(e, prefix=prefix, is_new=(rid == first_nonempty)))
     return "".join(rows)
@@ -6236,14 +6259,18 @@ def render_ops_page(
     # Dashboard structure:
     #   - Health KPIs + trend charts are GLOBAL — computed over every recorded
     #     run, not a 30-run slice (the operator asked for global stats).
-    #   - The run-log table renders all runs (paginated client-side).
-    #   - The run-detail selector is bounded to the most-recent 30 (each panel
-    #     is heavy; older runs remain inspectable via the run-log table).
+    #   - The run-log table renders all runs (paginated client-side); it is
+    #     ALSO the run selector — every row links to that run's detail page
+    #     at /runs/<run-id>/, and a jump-to <select> navigates the 30 most
+    #     recent directly.
+    #   - The dashboard renders ONLY the latest run's detail panel inline;
+    #     every other run's identical panel lives on its own page (the old
+    #     in-page 30-panel selector was replaced by the per-run pages).
     #   - The fetch-density heatmap stays a compact recent window.
     all_desc = list(reversed(all_runs))          # newest first, ALL runs
     runs_desc = all_desc                          # KPIs + charts: global
     runs_asc = list(reversed(runs_desc))          # chronological, all runs
-    picker_runs = all_desc[:30]                   # run-detail selector (bounded)
+    nav_runs = all_desc[:30]                      # run-log jump-to <select> (bounded)
     heatmap_runs = all_desc[:16]                  # fetch-density (compact)
 
     daily_runs = [r for r in runs_desc if r.get("kind", "daily") != "weekly"]
@@ -6412,53 +6439,55 @@ def render_ops_page(
     heatmap_html = _ops_svg_heatmap(heatmap_rows, cell=14, gap=2, label="Sub-agent fetch density (used/attempted)") \
         if heatmap_rows else '<p class="muted">No sub-agent allocation recorded yet.</p>'
 
-    # ----- Run-detail picker -----------------------------------------------
-    # The detail panel is selectable across every run in the window, not just
-    # the latest. Each run's panel is rendered into the page; a <select>
-    # toggles which one is visible (app.js wireOpsRunPicker — CSP-safe, no
-    # inline handlers). The latest run (first of runs_desc) is the default.
-    # All but the selected panel carry `hidden`, so the page is fully usable
-    # with JS disabled (the latest panel shows; the rest are reachable once
-    # JS wires the select).
-    if picker_runs:
-        run_options: list[str] = []
-        run_panels: list[str] = []
-        for i, r in enumerate(picker_runs):
-            key = r.get("run_id") or f"idx-{i}"
-            label = _ops_run_picker_label(r)
-            selected = " selected" if i == 0 else ""
-            run_options.append(
-                f'<option value="{_escape(key)}"{selected}>{_escape(label)}</option>'
-            )
-            run_panels.append(
-                f'<div class="ops-run-panel" data-run-panel="{_escape(key)}"'
-                f'{"" if i == 0 else " hidden"}>'
-                + _ops_render_latest_run_panel(
-                    r, palette, prefix=prefix,
-                    day_pages=day_pages,
-                    run_entries=entries_by_run.get(str(r.get("run_id") or ""), []),
-                )
-                + '</div>'
-            )
-        run_detail_html = (
-            '<div class="ops-run-picker">'
-            '<label class="ops-run-picker__label" for="ops-run-select">Showing run</label>'
-            f'<select id="ops-run-select" class="ops-run-picker__select" '
-            f'aria-label="Select a run to inspect">{"".join(run_options)}</select>'
-            '</div>'
-            + "".join(run_panels)
+    # ----- Latest-run detail -------------------------------------------------
+    # The dashboard shows ONLY the most recent run's full panel. The old
+    # in-page selector that pre-rendered 30 hidden panels was replaced by the
+    # per-run detail pages at /runs/<run-id>/ (render_run_detail_page — the
+    # same panel plus the run record's verification & coverage notes); the
+    # run selector now lives only in the Run log history below (row links +
+    # jump-to <select>).
+    latest_run = all_desc[0] if all_desc else None
+    if latest_run is not None:
+        latest_rid = str(latest_run.get("run_id") or "")
+        permalink = (
+            f'<p class="muted"><span class="ops-pill ops-pill--neutral">latest</span> '
+            f'<a class="mono" href="{prefix}runs/{_escape(latest_rid)}/">runs/{_escape(latest_rid)}/</a>'
+            ' · the permanent page for this run (adds the verification &amp; coverage notes)</p>'
+            if latest_rid else ""
+        )
+        run_detail_html = permalink + _ops_render_latest_run_panel(
+            latest_run, palette, prefix=prefix,
+            day_pages=day_pages,
+            run_entries=entries_by_run.get(latest_rid, []),
         )
     else:
         run_detail_html = '<p class="muted">No runs recorded yet.</p>'
 
     # The GLOBAL "Verification iterations" table was removed. Per-
-    # iteration verdicts now live ONLY in each run's detail panel
-    # (_ops_render_verification_iterations, called from the run-detail
-    # selector), so the same data is not presented twice.
+    # iteration verdicts now live ONLY in a run's detail panel (the latest
+    # inline here, every run on its /runs/<run-id>/ page), so the same
+    # data is not presented twice.
 
     # ----- Run-log table (ALL runs, paginated client-side) -----------------
+    # The history is the run selector: every row's Run cell links to that
+    # run's detail page, and the jump-to <select> (app.js wireOpsRunPicker,
+    # CSP-safe) navigates straight to one of the most recent 30.
     runs_table_html = _ops_render_runs_table(all_desc, palette, prefix=prefix,
                                              day_pages=day_pages)
+    nav_options = "".join(
+        f'<option value="{_escape(str(r.get("run_id")))}">'
+        f'{_escape(_ops_run_picker_label(r))}</option>'
+        for r in nav_runs if r.get("run_id")
+    )
+    run_nav_html = (
+        '<div class="ops-run-picker">'
+        '<label class="ops-run-picker__label" for="ops-run-select">Open run</label>'
+        f'<select id="ops-run-select" class="ops-run-picker__select" '
+        f'data-run-nav="{_escape(prefix)}runs/" '
+        f'aria-label="Open a run&#39;s detail page">'
+        f'<option value="" selected>jump to a run page…</option>{nav_options}</select>'
+        '</div>'
+    ) if nav_options else ""
 
     # ----- Stale-active-sources MOVED TO /sources/ ----------------
     # The "Stale active sources" panel that previously lived here is now
@@ -6536,7 +6565,6 @@ def render_ops_page(
 
     run_count_label = f"{len(all_desc)} run{'' if len(all_desc) == 1 else 's'}"
     source_health_html = _ops_render_source_health(source_health, prefix=prefix)
-    picker_count_label = f"{len(picker_runs)} most-recent run{'' if len(picker_runs) == 1 else 's'}"
     body = f"""
 <h1>Operations</h1>
 <p class="subtitle">Live telemetry from the per-run records under <code>runs/</code> (sub-agent allocation, model split, verification verdicts, fetch failures, source-list edits, entries published, wall-clock duration) and <code>sources/sources.json</code> + <code>state/source_health.json</code> (last-successful-fetch timestamps + independent accessibility probe). Stats below are global across all {run_count_label}.</p>
@@ -6545,7 +6573,7 @@ def render_ops_page(
   <span class="ops-nav__label">Jump to</span>
   <a href="#health">Health</a>
   <a href="#runlog">Run log</a>
-  <a href="#latest">Run detail</a>
+  <a href="#latest">Latest run</a>
 </nav>
 
 <section class="ops-cluster" id="health">
@@ -6577,13 +6605,14 @@ def render_ops_page(
 
 <section class="ops-cluster" id="runlog">
   <h2 class="ops-cluster__head">Run log</h2>
-  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. Shows 10 per page by default; use the selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
+  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. <strong>The Run cell links to that run's detail page</strong> at <code>/runs/&lt;run-id&gt;/</code> — full telemetry panel plus the run's verification &amp; coverage notes — and the jump-to selector opens one of the 30 most recent directly. Shows 10 per page by default; use the page-size selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
+  {run_nav_html}
   {runs_table_html}
 </section>
 
 <section class="ops-cluster" id="latest">
-  <h2 class="ops-cluster__head">Run detail</h2>
-  <p class="ops-cluster__intro">Everything about a single run in one place · pick any of the {picker_count_label} from the selector. Each panel carries the sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>that run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Global source-accessibility action items live in the <a href="#health">Health</a> section above · distinct from a single run's coverage gaps.</p>
+  <h2 class="ops-cluster__head">Latest run</h2>
+  <p class="ops-cluster__intro">Everything about the most recent run in one place · sub-agent allocation + telemetry, <strong>Verification iterations</strong>, <strong>Sources changed (this run)</strong>, <strong>Coverage gaps (this run)</strong> (sources <em>this run's</em> brief needed but couldn't fetch), and <strong>Bridge invocations (this run)</strong>. Every run — including this one — has a permanent page at <code>/runs/&lt;run-id&gt;/</code> carrying the same panel plus the run's verification &amp; coverage notes; open older runs from the <a href="#runlog">Run log</a> above. Global source-accessibility action items live in the <a href="#health">Health</a> section · distinct from a single run's coverage gaps.</p>
   {run_detail_html}
 </section>
 
@@ -6601,6 +6630,89 @@ def render_ops_page(
         cachebust=cachebust,
         home_relative_prefix=prefix,
         seo={"breadcrumb": [(SITE_NAME, site_url), ("Operations", canonical)]},
+    )
+
+
+def render_run_detail_page(
+    run: dict[str, Any],
+    palette: dict[str, str],
+    *,
+    run_entries: list[dict[str, Any]],
+    day_pages: set[str],
+    site_url: str,
+    cachebust: str,
+    prefix: str,
+    canonical: str,
+) -> str:
+    """/runs/<run-id>/ · one run record's complete picture on its own page:
+    the same detail panel the Ops dashboard shows for the latest run
+    (sub-agent telemetry, per-iteration verification verdicts + findings,
+    sources changed, coverage gaps, bridge invocations) PLUS the run
+    record's narrative body — the verification & coverage notes, where
+    borderline drops and judged-not-relevant items are recorded. Linked
+    from the live timeline's run dividers and the ops run log, so a reader
+    can check any day what a run dropped and why."""
+    rid = str(run.get("run_id") or run.get("date") or "?")
+    date = str(run.get("date") or "")
+    kind = str(run.get("kind") or "intel")
+    panel = _ops_render_latest_run_panel(
+        run, palette, prefix=prefix, day_pages=day_pages, run_entries=run_entries,
+    )
+    # The narrative body, in the same collapsible shell the day pages use —
+    # but expanded: on this page the notes are a first-class deliverable
+    # (published rationale, borderline drops, single-source carve-outs,
+    # contradictions, coverage gaps), not a provenance footnote.
+    notes_html = (
+        '<details class="verif" open>'
+        '<summary class="vh">Verification &amp; coverage notes'
+        '<span class="verif-count">run record body</span>'
+        '<svg class="verif-chev" viewBox="0 0 24 24" width="12" height="12" fill="none" '
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">'
+        '<path d="M6 9l6 6 6-6"></path></svg></summary>'
+        f'<div class="verif-body">{render_run_note(run, base_url=canonical)}</div>'
+        '</details>'
+    )
+    day_link = (
+        f' · <a href="{prefix}daily/{_escape(date)}/">day page {_escape(date)}</a>'
+        if date in day_pages else ""
+    )
+    body = f"""
+<h1 class="mono">{_escape(rid)}</h1>
+<p class="subtitle">One pipeline fire, in full · <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span> run of {_escape(date or "?")} · sub-agent allocation and telemetry, per-iteration verification verdicts and findings, source-list edits, coverage gaps, bridge invocations — and the run's own <a href="#notes">verification &amp; coverage notes</a>: what was published, what was dropped at the borderline or judged not relevant (and why), single-source carve-outs, and contradictions. Rendered from <code>runs/{_escape(date)}/{_escape(rid)}.md</code>.</p>
+
+<nav class="ops-nav" aria-label="Run sections">
+  <span class="ops-nav__label">Jump to</span>
+  <a href="#telemetry">Telemetry</a>
+  <a href="#notes">Verification &amp; coverage notes</a>
+</nav>
+
+<section class="ops-cluster" id="telemetry">
+  <h2 class="ops-cluster__head">Run telemetry</h2>
+  {panel}
+</section>
+
+<section class="ops-cluster" id="notes">
+  <h2 class="ops-cluster__head">Verification &amp; coverage notes</h2>
+  <p class="ops-cluster__intro">The run record's narrative body, verbatim. This is where the run accounts for its own judgement calls — every borderline drop and judged-not-relevant item with its reason, dedup decisions, single-source items and their carve-outs, contradictions, and per-source coverage gaps — so nothing the run considered disappears silently.</p>
+  {notes_html}
+</section>
+
+<p class="muted ops-footnote">
+  <a href="{prefix}ops/">← Operations dashboard</a>{day_link} · run-record contract: <a href="{prefix}about/docs/pipeline/">docs/pipeline.md</a>
+</p>
+"""
+    return base_template(
+        title=f"Run {rid} · {SITE_NAME}",
+        active_page="ops",
+        description=f"Run record {rid}: sub-agent telemetry, verification iterations, "
+                    "and the verification & coverage notes (incl. borderline drops).",
+        body=body,
+        canonical=canonical,
+        site_url=site_url,
+        cachebust=cachebust,
+        home_relative_prefix=prefix,
+        seo={"breadcrumb": [(SITE_NAME, site_url), ("Operations", site_url + "ops/"),
+                            (rid, canonical)]},
     )
 
 
@@ -7560,9 +7672,12 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
 
         rid = str(r.get("run_id") or r.get("date") or "?")
         rdate = str(r.get("date") or "")
+        # The Run cell is the history's run selector: it links to the run's
+        # own detail page (telemetry panel + verification & coverage notes).
         date_cell = (
-            f'<a href="{prefix}daily/{_escape(rdate)}/" title="{_escape(rid)}">{_escape(rdate)}</a>'
-            if rdate in day_pages
+            f'<a href="{prefix}runs/{_escape(rid)}/" '
+            f'title="{_escape(rid)} · open run details">{_escape(rdate or rid)}</a>'
+            if r.get("run_id")
             else f'<span title="{_escape(rid)}">{_escape(rdate or "?")}</span>'
         )
         rows.append(
@@ -11041,6 +11156,31 @@ def main() -> int:
             entries_by_run=entries_by_run,
         ),
     )
+
+    # ---- /runs/<run-id>/ — per-run detail pages -------------------------
+    # One page per recorded run: the ops detail panel + the record's
+    # verification & coverage notes. Linked from the live timeline's run
+    # dividers, the ops run log, and the run navigator. One shared palette
+    # keeps model colours consistent across the whole page family.
+    run_palette: dict[str, str] = {}
+    for r in runs:
+        run_rid = str(r.get("run_id") or "")
+        if not run_rid:
+            continue
+        rel_url = run_url_path(r)
+        emit_html(
+            rel_url,
+            render_run_detail_page(
+                r, run_palette,
+                run_entries=entries_by_run.get(run_rid, []),
+                day_pages=day_pages,
+                site_url=site_url,
+                cachebust=cachebust,
+                prefix="../../",
+                canonical=site_url + rel_url,
+            ),
+            lastmod=str(r.get("date") or ""),
+        )
     emit_html(
         "trends/",
         render_trends_page(

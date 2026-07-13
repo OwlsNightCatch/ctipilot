@@ -65,6 +65,10 @@ from build import (  # noqa: E402
     render_entry_card,
     render_inline,
     render_markdown,
+    render_ops_page,
+    render_run_detail_page,
+    render_run_divider,
+    run_url_path,
     scan_for_secrets,
     select_tldr_entries,
     slugify,
@@ -513,6 +517,53 @@ quiet_page = render_day_page("2026-07-05", [], [QUIET_RUN], entries_by_id=by_id_
                              prefix="../../", canonical="https://x.example/briefs/2026-07-05/")
 assert_in("quiet day page names the run", "2026-07-05T0009Z-intel", quiet_page)
 assert_in("quiet day page reports zero entries", "0 verified findings", quiet_page)
+
+# ---------------------------------------------------------------------
+# per-run detail pages + live-timeline run links + ops run selector
+# ---------------------------------------------------------------------
+print("== run detail pages ==")
+assert_eq("run_url_path builds the permalink", run_url_path(RUN),
+          "runs/2026-07-03T0412Z-intel/")
+
+div_linked = render_run_divider("03 Jul 04:31Z", "gap 7h", 2,
+                                url="../runs/2026-07-03T0412Z-intel/")
+assert_in("linked divider carries the anchor",
+          '<a class="rl" href="../runs/2026-07-03T0412Z-intel/"', div_linked)
+assert_in("linked divider keeps the run-h markup", 'class="run-h"', div_linked)
+div_plain = render_run_divider("03 Jul 04:31Z", "", 0)
+assert_in("plain divider stays a span", '<span class="rl">', div_plain)
+assert_true("plain divider has no anchor", "<a" not in div_plain)
+assert_in("quiet divider keeps the quiet class", "tl-run--quiet", div_plain)
+
+run_page = render_run_detail_page(
+    RUN, {}, run_entries=[E_CRIT], day_pages={"2026-07-03"},
+    site_url="https://x.example/", cachebust="t", prefix="../../",
+    canonical="https://x.example/runs/2026-07-03T0412Z-intel/",
+)
+assert_in("run page names the run id", "2026-07-03T0412Z-intel", run_page)
+assert_in("run page has the telemetry section", 'id="telemetry"', run_page)
+assert_in("run page has the notes section", 'id="notes"', run_page)
+assert_in("run page renders the record body", "Watchlist: no hits this run.", run_page)
+assert_in("run page notes expanded by default", '<details class="verif" open>', run_page)
+assert_in("run page lists the run's entries",
+          'href="../../entries/2026-07-03/coolify-rce/"', run_page)
+assert_in("run page links back to ops", 'href="../../ops/"', run_page)
+assert_in("run page links the day page", 'href="../../daily/2026-07-03/"', run_page)
+
+ops_page = render_ops_page(
+    [RUN, QUIET_RUN, WEEKLY_RUN], [], prefix="../",
+    site_url="https://x.example/", cachebust="t",
+    canonical="https://x.example/ops/", day_pages={"2026-07-03"},
+    entries_by_run={"2026-07-03T0412Z-intel": [E_CRIT]},
+)
+assert_true("ops: no hidden per-run panels remain", "data-run-panel" not in ops_page)
+assert_in("ops: run navigator lives in the run log",
+          'data-run-nav="../runs/"', ops_page)
+assert_in("ops: run-log row links the run page",
+          'href="../runs/2026-07-03T0412Z-intel/"', ops_page)
+assert_in("ops: latest-run panel carries its permalink",
+          'href="../runs/2026-06-28T0800Z-weekly/"', ops_page)
+assert_in("ops: latest-run section renamed", ">Latest run</h2>", ops_page)
 
 # ---------------------------------------------------------------------
 # briefbook.json / alerts.json shapes

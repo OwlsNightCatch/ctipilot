@@ -809,6 +809,83 @@ def check_run_record(run: dict[str, Any] | None, run_id: str, content_root: Path
              "the run record and to the operator")
 
 
+def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = False,
+                                    store_mode: bool = False) -> None:
+    """v3.23 double-CLEAN gate: a run whose final verifier verdict is CLEAN
+    must show the previous iteration also CLEAN, on a different model — the
+    rotation's independent second model agreeing is what turns one model's
+    CLEAN into a publish decision. Unconfirmed final CLEAN → FAIL pre-commit
+    unless the record explains it (`verification.confirmation_waived`, or a
+    first CLEAN landing exactly at the iteration cap → WARN). A same-model
+    confirmation WARNs (legitimate only as a recorded spawn-failure
+    exception, e.g. 2026-06-05's classifier-blocked Opus spawns).
+    NEEDS_FIXES finals are the early-exit / cap fail-open path with residuals
+    and are out of scope here. `store_mode` (--all) downgrades FAIL to WARN —
+    published records are immutable history."""
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    if v is None or v < DOUBLE_CLEAN_FROM:
+        if not store_mode:
+            ok("verification-confirmation",
+               "pre-v3.23 run — double-CLEAN gate not yet in force (informational)")
+        return
+    rid = run.get("run_id")
+    ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
+    iters = [i for i in (ver.get("iterations") or []) if isinstance(i, dict)] \
+        if isinstance(ver.get("iterations"), list) else []
+    if not iters:
+        if pre_verify and not store_mode:
+            ok("verification-confirmation",
+               "no iterations yet (--pre-verify) — populated by the Phase 5.7 loop")
+        # a missing/empty block on the plain invocation is validate_run_record's FAIL
+        return
+    final = iters[-1]
+    if final.get("verdict") != "CLEAN":
+        if not store_mode:
+            ok("verification-confirmation",
+               "final verdict NEEDS_FIXES — early-exit / fail-open path with residuals; "
+               "the double-CLEAN gate governs only CLEAN publishes")
+        return
+    prev = iters[-2] if len(iters) >= 2 else None
+    waived = str(ver.get("confirmation_waived") or "").strip()
+    if prev is None or prev.get("verdict") != "CLEAN":
+        if waived:
+            warn("verification-confirmation",
+                 f"{rid}: final CLEAN is unconfirmed — confirmation waived: {waived!r} "
+                 "(recorded fail-open)")
+        elif len(iters) >= VERIFIER_ITERATION_CAP:
+            warn("verification-confirmation",
+                 f"{rid}: first CLEAN landed at the {VERIFIER_ITERATION_CAP}-iteration cap "
+                 "with no room for the other-model confirmation pass — fail-open; set "
+                 "verification.confirmation_waived with the reason")
+        else:
+            emit = warn if store_mode else fail
+            emit("verification-confirmation",
+                 f"{rid}: final verdict CLEAN is unconfirmed — iteration "
+                 f"{final.get('n')} is the only CLEAN in the chain. A CLEAN publish "
+                 "requires two consecutive CLEAN verdicts on two different models "
+                 "(Phase 5.7 decision rules 1–2): spawn the other-model confirmation "
+                 "pass, or record why it was impossible in "
+                 "verification.confirmation_waived")
+        return
+
+    def _ident(it: dict[str, Any]) -> str:
+        return (str(it.get("subagent_type") or "").strip()
+                or str(it.get("model_id") or "").strip()
+                or str(it.get("model") or "").strip())
+
+    ia, ib = _ident(prev), _ident(final)
+    if ia and ib and ia == ib:
+        warn("verification-confirmation",
+             f"{rid}: confirming iterations {prev.get('n')} + {final.get('n')} both ran "
+             f"{ia} — the confirmation pass must run on a different model (rotation); "
+             "acceptable only as a recorded exception (other-model spawn blocked after "
+             "a retry) noted in the run record")
+    elif not store_mode:
+        ok("verification-confirmation",
+           f"confirmed CLEAN — iterations {prev.get('n')} + {final.get('n')} both CLEAN "
+           f"on {ia or '?'} + {ib or '?'}")
+
+
 def check_prompt_version(run: dict[str, Any], content_root: Path) -> None:
     """The run record's `prompt_version` must match the most recent
     `## N.M —` heading in prompts/CHANGELOG.md.
@@ -1798,6 +1875,15 @@ MAPPING_IDS_STRICT_FROM = (3, 21)
 # amendment never landed — the operator cannot tell from state whether the
 # run actually reached the site (observed: 2026-07-09T1211Z-intel).
 PUBLISH_TELEMETRY_FROM = (3, 14)
+# v3.23+: the Phase 5.7 publish gate for a CLEAN outcome is DOUBLE-CLEAN —
+# the final two verifier iterations both return CLEAN, on two different
+# models (the opus/sonnet rotation supplies the diversity). A single
+# unconfirmed CLEAN publishes only as a recorded fail-open: a first CLEAN
+# landing exactly at the iteration cap, or an explicit
+# `verification.confirmation_waived` reason (watchdog overrun, other-model
+# spawn blocked).
+DOUBLE_CLEAN_FROM = (3, 23)
+VERIFIER_ITERATION_CAP = 5
 # A single intel fire should complete well inside an hour or two; the
 # 2026-07-09T2009Z run silently ran 11.2 h wall-clock (container stall /
 # overrun into the next scheduled fire). Surface it — never a FAIL, the
@@ -2432,6 +2518,8 @@ def check_all_run_records(runs: list[dict]) -> None:
             warn("run-record",
                  f"{r.get('run_id')}: duration_seconds={int(dur)} (~{dur / 3600:.1f} h) "
                  "exceeded the runaway threshold — see the per-run watchdog note")
+        # v3.23+ double-CLEAN gate, store severity (immutable history → WARN)
+        check_verification_confirmation(r, store_mode=True)
     if not n_err:
         ok("run-record",
            f"{len(runs)} run record(s) valid ({n_migrated} migrated, identity-checked only)")
@@ -2557,6 +2645,9 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
     check_run_record(run, run_id, content_root, pre_verify=pre_verify)
 
     if run is not None:
+        print("\n== verification double-CLEAN (v3.23 gate) ==")
+        check_verification_confirmation(run, pre_verify=pre_verify)
+
         print("\n== prompt-version vs CHANGELOG ==")
         check_prompt_version(run, content_root)
 

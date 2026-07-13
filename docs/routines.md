@@ -164,7 +164,7 @@ byte-identically in the same commit).
 | Sub-agent | Role |
 |---|---|
 | [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) | **Research worker.** One spawned per domain — intel run S1–S4 (+ conditional S5 closed-source intake); weekly W1–W2 (+ conditional W3). Reads the prior-coverage index and `entities/registry.yaml` before fetching; returns findings YAMLs, never composes entries. |
-| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries + run record. Read-only; re-spawned fresh until CLEAN or the 5-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). Spawned on **odd** iterations. |
+| [`.claude/agents/cti-verification.md`](../.claude/agents/cti-verification.md) | **Cold-reader verifier (Opus default).** Phase 5.7. Scope: the run's new entries + run record. Read-only; re-spawned fresh until a confirmed CLEAN (two consecutive CLEAN verdicts on two different models) or the 5-iteration cap. Two concerns — URL truth and editorial quality (finding categories F1–F18). Spawned on **odd** iterations. |
 | [`.claude/agents/cti-verification-alt.md`](../.claude/agents/cti-verification-alt.md) | **Verifier, Sonnet rotation variant.** Byte-identical operational body to `cti-verification.md`; only the model frontmatter differs. Spawned on **even** iterations so model-specific blind spots surface. |
 
 Self-identification for every agent (main + sub-agents) comes primarily from the model line the
