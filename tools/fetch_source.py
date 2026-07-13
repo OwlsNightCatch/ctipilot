@@ -121,6 +121,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import ipaddress
 import json
 import os
@@ -599,6 +600,74 @@ JINA_USAGE_API = "https://embeddings-dashboard-api.jina.ai/api/v1/api_key/user"
 # Warn when fewer tokens than this remain on the key (a fresh trial key
 # carries ~10 M; a browser-engine page fetch costs roughly 5–20 k).
 JINA_LOW_BALANCE_TOKENS = 1_000_000
+
+# ── Local reader-response cache — saves API requests AND key tokens ────
+#
+# The pipeline re-fetches the same URL repeatedly within a run: the Phase
+# 5.7 verifier cold-reads every entry source the research agents already
+# fetched in Phase 1, parallel research agents overlap on hub/landing
+# pages, and `smart_fetch` retries pivot through the same URL. Each of
+# those was a fresh reader request spending fresh key tokens. The reader
+# responses are cached on LOCAL DISK, keyed by (url, return-format),
+# TTL-bounded, and shared across processes — so the second and later
+# fetches of a URL within the TTL cost zero requests and zero tokens.
+#
+# Properties:
+#   - Best-effort: any cache I/O failure falls through to a live fetch.
+#   - Atomic writes (tmp + rename) so parallel sub-agents never read a
+#     torn body.
+#   - The cache holds only what a live call would have returned (blocked/
+#     challenge bodies raise before caching, so they are never stored).
+#   - The directory lives OUTSIDE the repo (never committed) and dies
+#     with the ephemeral routine container.
+#
+# Env overrides:
+#   JINA_CACHE_DIR — cache directory (default /tmp/ctipilot-jina-cache)
+#   JINA_CACHE_TTL — max age in seconds (default 3600; 0 disables).
+#     Keep it aligned with the X-Cache-Tolerance header below: both say
+#     "an intel run tolerates content up to an hour stale", which is well
+#     inside the multi-hour window each run processes.
+JINA_CACHE_DIR = os.environ.get("JINA_CACHE_DIR", "/tmp/ctipilot-jina-cache")
+try:
+    JINA_CACHE_TTL = int(os.environ.get("JINA_CACHE_TTL", "3600"))
+except ValueError:
+    JINA_CACHE_TTL = 3600
+
+
+def _jina_cache_path(target_url: str, fmt: str | None) -> str:
+    digest = hashlib.sha256(
+        f"{fmt or 'markdown'}\n{target_url}".encode("utf-8")
+    ).hexdigest()
+    return os.path.join(JINA_CACHE_DIR, digest + ".body")
+
+
+def _jina_cache_get(target_url: str, fmt: str | None) -> str | None:
+    """Return the cached reader body for (url, fmt) if fresh, else None."""
+    if JINA_CACHE_TTL <= 0:
+        return None
+    path = _jina_cache_path(target_url, fmt)
+    try:
+        if time.time() - os.stat(path).st_mtime > JINA_CACHE_TTL:
+            return None
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def _jina_cache_put(target_url: str, fmt: str | None, text: str) -> None:
+    """Store a reader body, atomically and best-effort."""
+    if JINA_CACHE_TTL <= 0:
+        return
+    try:
+        os.makedirs(JINA_CACHE_DIR, exist_ok=True)
+        path = _jina_cache_path(target_url, fmt)
+        tmp = f"{path}.tmp{os.getpid()}"
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except OSError:
+        pass
 CISA_CSAF_RAW_BASE = "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files"
 CISA_CSAF_OT_CHANGES = CISA_CSAF_RAW_BASE + "/OT/white/changes.csv"
 # ICS advisory ids: icsa-YY-DDD-NN (industrial) and icsma-YY-DDD-NN (medical).
@@ -686,12 +755,27 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     of the process and the next key takes over immediately. When no live key
     remains, the request runs ANONYMOUSLY on the reader's free tier (shared
     rate limit, no `X-Engine: browser`), so the reader keeps working with
-    zero valid keys — reduced fidelity, never an outage."""
+    zero valid keys — reduced fidelity, never an outage.
+
+    Cost controls: a LOCAL disk cache (`JINA_CACHE_DIR` / `JINA_CACHE_TTL`,
+    default 1 h) answers repeat fetches of the same (url, fmt) with zero
+    API requests and zero token spend; `X-Cache-Tolerance: 3600` lets the
+    reader serve ITS cached snapshot for URLs other parties fetched
+    recently, skipping the expensive re-crawl/re-render on Jina's side."""
     _check_url(target_url)
+    # Local cache first — a hit costs nothing (no request, no tokens) and is
+    # exactly what the same call returned within the last hour. Set
+    # JINA_CACHE_TTL=0 to force live fetches.
+    cached = _jina_cache_get(target_url, fmt)
+    if cached is not None:
+        return cached
     # Reader control headers (Jina's X-* surface):
-    #   X-Cache-Tolerance: 300 — accept a reader-cached snapshot up to 5 min
-    #     old, so repeat fetches of the same URL within a run are near-free
-    #     and don't re-spend key tokens.
+    #   X-Cache-Tolerance: 3600 — accept a reader-cached snapshot up to an
+    #     hour old, so repeat fetches of the same URL within a run (and
+    #     across the day's multiple fires) skip the re-crawl and don't
+    #     re-spend key tokens. Aligned with the local JINA_CACHE_TTL: an
+    #     intel run processes a multi-hour window, so hour-stale content
+    #     cannot cost it a finding.
     #   X-Engine: browser — full browser rendering; slower but the highest-
     #     fidelity extraction tier. Recovers bodies the default engine
     #     misses (verified 2026-07-12: heise.de per-article pages, whose
@@ -705,7 +789,7 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     #     template).
     base_extra: dict[str, str] = {
         "X-Retain-Images": "none",
-        "X-Cache-Tolerance": "300",
+        "X-Cache-Tolerance": "3600",
     }
     if fmt:
         base_extra["X-Return-Format"] = fmt
@@ -747,6 +831,7 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
                 # page as content.
                 if _looks_blocked(text):
                     raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
+                _jina_cache_put(target_url, fmt, text)
                 return text
             if key and code in (401, 402):
                 # 402 Payment Required — per the reader's OpenAPI spec this is
