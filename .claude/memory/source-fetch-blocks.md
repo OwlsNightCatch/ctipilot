@@ -59,11 +59,20 @@ Sources whose "recent items" live only in client-hydrated JS, so the fetcher get
 
 ## jina reader v2 — authenticated, browser engine; heise.de per-article bodies RECOVERED (2026-07-12)
 
-The reader connector (`tools/fetch_source.py` `_jina_fetch`) now sends, on every markdown page fetch: `Authorization: Bearer $JINA_API_KEY` (env-only — the key is NEVER stored in the repo; the routine env carries it), `X-Engine: browser` (highest-fidelity rendering tier), `X-With-Links-Summary: true` (outbound URLs survive the markdown conversion), `X-Cache-Tolerance: 300` and `X-Retain-Images: none`. The `fmt="html"` feed path keeps the default engine so the `<hN><a href>` feed parse stays stable.
+The reader connector (`tools/fetch_source.py` `_jina_fetch`) now sends, on every keyed markdown page fetch: `Authorization: Bearer <key>` (env-only — keys are NEVER stored in the repo; the routine env carries them), `X-Engine: browser` (highest-fidelity rendering tier, authenticated rungs only), `X-With-Links-Summary: true` (outbound URLs survive the markdown conversion), `X-Cache-Tolerance: 300` and `X-Retain-Images: none`. The `fmt="html"` feed path keeps the default engine so the `<hN><a href>` feed parse stays stable.
 
 - **heise-sec RECOVERED** (was demoted as fetch-waste since v2.64): the browser-engine reader returns the FULL per-article body that the TollBit/heise+ gate denies every direct transport. Recipe: `feed https://www.heise.de/security/feed.xml N` for discovery → `jina <article-url>` for body. Free articles only; a heise+ article stays paywalled → pivot.
-- **Key lifecycle:** `python3 tools/fetch_source.py jina-usage` reports the key's remaining token balance (Jina dashboard API) and WARNs on stderr below 1 M tokens / when exhausted → operator generates a new key at https://jina.ai/api-dashboard/ and updates the env. A reader HTTP 402 = balance exhausted (no retry; the error message says so). The quality-audit run should include a `jina-usage` check so a dying key is caught before it silently degrades the reader to anonymous-tier failures.
+- **Key lifecycle:** `python3 tools/fetch_source.py jina-usage` reports EVERY configured key's remaining token balance plus the pool total (Jina dashboard API) and WARNs on stderr below 1 M tokens combined / when every key is dead → operator generates a new key at https://jina.ai/api-dashboard/ and adds it to the env. The quality-audit run should include a `jina-usage` check so a dying pool is caught before it silently degrades the reader to the anonymous tier.
 - No key in env → reader still works anonymously (shared rate limit, no browser engine) — same behaviour as before v2.
+
+## jina reader v3 — multi-key pool + anonymous free-tier fallback (2026-07-13)
+
+Shipped after the 2026-07-12→13 runs lost every jina fetch to a spent key (HTTP 402 was a terminal, non-retryable error). `_jina_fetch` now walks a **credential ladder** per fetch:
+
+- **Key pool:** `JINA_API_KEYS` (new) takes one or more keys separated by commas/semicolons/whitespace — listed order = spend order; the original `JINA_API_KEY` still works and is appended after the list (it may itself carry a separated list). Duplicates are collapsed.
+- **Rotation:** a key answering **402** (balance exhausted) or **401** (invalid/revoked) is marked dead for the rest of the process (`_JINA_DEAD_KEYS`, so a multi-fetch invocation doesn't re-burn it per page) and the next key is tried immediately — no backoff wasted on a dead key. A stderr line names the rotated key by suffix.
+- **Anonymous backstop:** when no live key remains, the request runs on the reader's **anonymous free tier** (no `Authorization`, no `X-Engine: browser` — requesting the browser engine keyless is itself a 402). An exhausted pool degrades fidelity, never availability; heise-style TollBit-gated bodies are what the anonymous tier may miss.
+- **Health semantics:** `source_health.py`'s `reader-quota` class now only fires when the whole pool is dead AND the anonymous rung also failed for that fetch; its action text says to add a fresh key to `JINA_API_KEYS`. The final connector error still carries the `HTTP 402` / `balance exhausted` markers the classifier keys on.
 
 ## ncsc-uk — WORKING recipe found (2026-07-11 audit); "reachable but unreadable" is a failure class
 

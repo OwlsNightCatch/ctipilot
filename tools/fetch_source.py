@@ -57,7 +57,7 @@ so every page has a backup transport. Force one transport with `--direct` / `jin
 Usage:
     python3 tools/fetch_source.py url <URL> [--direct]               # direct browser-UA GET, auto-fallback to jina reader (prints body)
     python3 tools/fetch_source.py jina <URL> [html]                  # force the r.jina.ai reader proxy (clean markdown; `html` for simplified HTML)
-    python3 tools/fetch_source.py jina-usage                         # JINA_API_KEY token balance — warns when a new key should be generated
+    python3 tools/fetch_source.py jina-usage                         # token balance of every configured reader key — warns when new keys are needed
     python3 tools/fetch_source.py ncsc-csh list [N]                  # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
     python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
     python3 tools/fetch_source.py ncsc-csh recent [N]                # combined: list + each post's full content (default 10)
@@ -573,15 +573,27 @@ def cisa_kev() -> Any:
 # the data, not the citation.
 #
 # Authentication: the reader works anonymously (shared, low rate limit),
-# but with `JINA_API_KEY` set in the environment every reader request is
-# sent with `Authorization: Bearer <key>` — dedicated rate limit and the
-# `X-Engine: browser` rendering tier. The key lives ONLY in the
-# environment (the routine container's env config); it is never read
-# from or written to any file in this repo. Key lifecycle: keys carry a
-# finite token balance — `jina-usage` (CLI) / `jina_usage()` query the
-# dashboard API for the remaining balance and warn the operator to
-# generate a new key at https://jina.ai/api-dashboard/ when it runs low;
-# a reader HTTP 402 means the balance is exhausted.
+# but with API key(s) configured every reader request is sent with
+# `Authorization: Bearer <key>` — dedicated rate limit and the
+# `X-Engine: browser` rendering tier. Keys live ONLY in the environment
+# (the routine container's env config); they are never read from or
+# written to any file in this repo. Two variables are honoured, and each
+# may carry ONE OR MORE keys separated by commas / semicolons /
+# whitespace:
+#
+#   JINA_API_KEYS — the multi-key list (spend order = listed order)
+#   JINA_API_KEY  — the original single-key variable (kept for
+#                   compatibility; appended after JINA_API_KEYS)
+#
+# Key lifecycle: keys carry a finite token balance — `jina-usage` (CLI) /
+# `jina_usage()` query the dashboard API for every configured key's
+# remaining balance and warn the operator to generate a new key at
+# https://jina.ai/api-dashboard/ when the pool runs low. A reader HTTP
+# 402 means that key's balance is exhausted (HTTP 401: invalid/revoked);
+# `_jina_fetch` then ROTATES to the next configured key, and when no live
+# key remains it falls back to the ANONYMOUS free tier (shared rate
+# limit, no browser engine) — so an exhausted key pool degrades fidelity,
+# never availability.
 JINA_READER_BASE = "https://r.jina.ai/"
 JINA_USAGE_API = "https://embeddings-dashboard-api.jina.ai/api/v1/api_key/user"
 # Warn when fewer tokens than this remain on the key (a fresh trial key
@@ -628,6 +640,33 @@ def _looks_blocked(text: str) -> bool:
     return any(m in head for m in cf_markers)
 
 
+def _jina_keys() -> list[str]:
+    """Every configured reader API key, spend order first-to-last.
+
+    Reads `JINA_API_KEYS` then `JINA_API_KEY` (either alone is fine; both
+    may carry one or more keys separated by commas, semicolons, or
+    whitespace/newlines). Duplicates collapse to their first occurrence.
+    Keys live ONLY in the environment — never in any file in this repo."""
+    raw = " ".join(
+        os.environ.get(var, "") for var in ("JINA_API_KEYS", "JINA_API_KEY")
+    )
+    keys: list[str] = []
+    for tok in re.split(r"[\s,;]+", raw):
+        tok = tok.strip()
+        if tok and tok not in keys:
+            keys.append(tok)
+    return keys
+
+
+# Keys that answered HTTP 402 (token balance exhausted) or 401 (invalid /
+# revoked) in THIS process — skipped for the rest of the run so a long
+# multi-fetch invocation (e.g. `ncsc-csh recent`, a feed sweep) does not
+# re-burn a request on a dead key per page. Process-scoped by design: a
+# fresh invocation re-probes every configured key, so a topped-up or
+# replaced key comes back on its own with no state to reset.
+_JINA_DEAD_KEYS: set[str] = set()
+
+
 def _jina_fetch(target_url: str, *, fmt: str | None = None,
                 max_bytes: int = MAX_BODY_BYTES_HTML) -> str:
     """Fetch `target_url` through the r.jina.ai reader proxy and return the
@@ -639,7 +678,15 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     with real content. `fmt` maps to Jina's `X-Return-Format` header ('html'
     keeps simplified markup; default is clean markdown). Same SSRF defences as
     `fetch` — the ORIGIN url is validated (https, not an internal address)
-    before it is handed to the reader."""
+    before it is handed to the reader.
+
+    Credential ladder: every configured API key (`JINA_API_KEYS` /
+    `JINA_API_KEY`, spend order) is tried in turn — a key answering HTTP 402
+    (balance exhausted) or 401 (invalid/revoked) is marked dead for the rest
+    of the process and the next key takes over immediately. When no live key
+    remains, the request runs ANONYMOUSLY on the reader's free tier (shared
+    rate limit, no `X-Engine: browser`), so the reader keeps working with
+    zero valid keys — reduced fidelity, never an outage."""
     _check_url(target_url)
     # Reader control headers (Jina's X-* surface):
     #   X-Cache-Tolerance: 300 — accept a reader-cached snapshot up to 5 min
@@ -656,56 +703,78 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     #     every outbound URL, so discovery pivots survive the markdown
     #     conversion (same rationale as the WebFetch outbound-links
     #     template).
-    extra: dict[str, str] = {
+    base_extra: dict[str, str] = {
         "X-Retain-Images": "none",
         "X-Cache-Tolerance": "300",
     }
     if fmt:
-        extra["X-Return-Format"] = fmt
+        base_extra["X-Return-Format"] = fmt
     else:
-        extra["X-Engine"] = "browser"
-        extra["X-With-Links-Summary"] = "true"
-    key = os.environ.get("JINA_API_KEY", "").strip()
-    if key:
-        extra["Authorization"] = f"Bearer {key}"
+        base_extra["X-With-Links-Summary"] = "true"
     reader_url = JINA_READER_BASE + target_url
-    # The reader can cold-start / rate-limit / stall on a first hit; three tries
-    # with a short backoff turn those blips into the real (usually 200) result.
-    last = ""
-    for attempt in (1, 2, 3):
-        try:
-            code, body, _ = fetch(
-                reader_url, accept="text/plain, */*",
-                max_bytes=max_bytes, extra_headers=extra,
-            )
-        except Exception as e:  # noqa: BLE001 — network/timeout: retry
-            last = str(e)[:140]
-            code, body = 0, b""
-        if code == 200:
-            text = body.decode("utf-8", errors="replace")
-            # Some paths (e.g. cisa.gov's deprecated /blog.xml) return the
-            # upstream Akamai "Access Denied" page even through the reader;
-            # surface that as a failure rather than handing back the denial
-            # page as content.
-            if _looks_blocked(text):
-                raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
-            return text
-        if code == 402:
-            # Payment Required — per the reader's OpenAPI spec this is
-            # InsufficientBalanceError or TierFeatureConstraintError: the
-            # JINA_API_KEY token balance is exhausted (or the key's tier lacks
-            # the feature). Not retryable with this key; surface the fix
-            # instead of burning the backoff budget.
-            raise RuntimeError(
-                "reader proxy HTTP 402: JINA_API_KEY balance exhausted (or "
-                "tier constraint) — generate a new key at "
-                "https://jina.ai/api-dashboard/ and update the environment "
-                "(verify with `jina-usage`)"
-            )
-        last = f"HTTP {code}" if code else last
-        if attempt < 3:
-            time.sleep(2.0 * attempt)
-    raise RuntimeError(f"reader proxy failed for {target_url}: {last}")
+    # Credential ladder: every still-live configured key in spend order, then
+    # None = the anonymous free tier as the always-available last rung.
+    creds: list[str | None] = [k for k in _jina_keys() if k not in _JINA_DEAD_KEYS]
+    creds.append(None)
+    failures: list[str] = []
+    for key in creds:
+        extra = dict(base_extra)
+        if key:
+            extra["Authorization"] = f"Bearer {key}"
+            if not fmt:
+                # Full browser rendering is the AUTHENTICATED tier — the
+                # anonymous rung stays on the default engine (requesting the
+                # browser engine without a key is itself a 402 tier error).
+                extra["X-Engine"] = "browser"
+        label = f"key …{key[-6:]}" if key else "anonymous free tier"
+        # The reader can cold-start / rate-limit / stall on a first hit; three
+        # tries with a short backoff turn those blips into the real result.
+        last = ""
+        for attempt in (1, 2, 3):
+            try:
+                code, body, _ = fetch(
+                    reader_url, accept="text/plain, */*",
+                    max_bytes=max_bytes, extra_headers=extra,
+                )
+            except Exception as e:  # noqa: BLE001 — network/timeout: retry
+                last = str(e)[:140]
+                code, body = 0, b""
+            if code == 200:
+                text = body.decode("utf-8", errors="replace")
+                # Some paths (e.g. cisa.gov's deprecated /blog.xml) return the
+                # upstream Akamai "Access Denied" page even through the reader;
+                # surface that as a failure rather than handing back the denial
+                # page as content.
+                if _looks_blocked(text):
+                    raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
+                return text
+            if key and code in (401, 402):
+                # 402 Payment Required — per the reader's OpenAPI spec this is
+                # InsufficientBalanceError or TierFeatureConstraintError: THIS
+                # key's token balance is exhausted (or its tier lacks the
+                # feature). 401 — the key is invalid or revoked. Neither is
+                # retryable with this key: mark it dead for the process and
+                # rotate to the next credential instead of burning backoff.
+                _JINA_DEAD_KEYS.add(key)
+                last = ("balance exhausted (HTTP 402)" if code == 402
+                        else "invalid/revoked (HTTP 401)")
+                print(
+                    f"fetch_source: jina reader {label} {last} — "
+                    f"rotating to the next credential",
+                    file=sys.stderr,
+                )
+                break
+            last = f"HTTP {code}" if code else last
+            if attempt < 3:
+                time.sleep(2.0 * attempt)
+        failures.append(f"{label}: {last}")
+    raise RuntimeError(
+        f"reader proxy failed for {target_url}: {'; '.join(failures)}"
+        + (" — generate a new key at https://jina.ai/api-dashboard/ and add "
+           "it to the environment (verify with `jina-usage`)"
+           if any("balance exhausted" in f or "invalid/revoked" in f
+                  for f in failures) else "")
+    )
 
 
 def jina_page(url: str, *, html: bool = False) -> str:
@@ -719,49 +788,80 @@ def jina_page(url: str, *, html: bool = False) -> str:
 
 
 def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
-    """Token-balance check for the reader API key. Reads `JINA_API_KEY` from
-    the environment (never from a file), queries Jina's dashboard API, and
-    returns the wallet balances. `warning` is a human-readable notice when
-    the balance is exhausted or below `warn_below` — the signal to generate
-    a new key at https://jina.ai/api-dashboard/ and update the env."""
-    key = os.environ.get("JINA_API_KEY", "").strip()
-    if not key:
+    """Token-balance check across EVERY configured reader API key
+    (`JINA_API_KEYS` / `JINA_API_KEY`, spend order — read from the
+    environment, never from a file). Queries Jina's dashboard API per key
+    and returns the per-key wallets plus the pool totals. `warning` is a
+    human-readable notice when the whole pool is dead or the combined
+    balance is below `warn_below` — the signal to generate a new key at
+    https://jina.ai/api-dashboard/ and add it to the env. An exhausted
+    pool is degraded, not down: `_jina_fetch` falls back to the anonymous
+    free tier."""
+    keys = _jina_keys()
+    if not keys:
         raise RuntimeError(
-            "JINA_API_KEY is not set — the reader is running anonymously "
-            "(shared rate limit, no browser engine). Set the key in the "
-            "environment to check its usage."
+            "no reader API key configured (JINA_API_KEYS / JINA_API_KEY) — "
+            "the reader is running anonymously (shared rate limit, no "
+            "browser engine). Set at least one key in the environment to "
+            "check usage."
         )
-    qs = urllib.parse.urlencode({"api_key": key})
-    try:
-        data = fetch_json(f"{JINA_USAGE_API}?{qs}")
-    except RuntimeError as e:
-        raise RuntimeError(
-            f"jina usage lookup failed ({e}) — the key may be invalid or "
-            "revoked; generate a new one at https://jina.ai/api-dashboard/"
-        ) from None
-    wallet = (data.get("wallet") or {}) if isinstance(data, dict) else {}
-    total = int(wallet.get("total_balance") or 0)
+    per_key: list[dict[str, Any]] = []
+    total = 0
+    live = 0
+    for key in keys:
+        entry: dict[str, Any] = {
+            "key_suffix": key[-6:],  # enough to tell keys apart, never the key
+            "status": "ok",
+            "total_balance": 0,
+            "trial_balance": 0,
+            "regular_balance": 0,
+            "trial_end": None,
+        }
+        qs = urllib.parse.urlencode({"api_key": key})
+        try:
+            data = fetch_json(f"{JINA_USAGE_API}?{qs}")
+        except RuntimeError as e:
+            entry["status"] = (
+                f"lookup failed ({str(e)[:120]}) — the key may be invalid "
+                "or revoked"
+            )
+            per_key.append(entry)
+            continue
+        wallet = (data.get("wallet") or {}) if isinstance(data, dict) else {}
+        bal = int(wallet.get("total_balance") or 0)
+        entry.update(
+            total_balance=bal,
+            trial_balance=int(wallet.get("trial_balance") or 0),
+            regular_balance=int(wallet.get("regular_balance") or 0),
+            trial_end=wallet.get("trial_end"),
+            status="ok" if bal > 0 else "exhausted",
+        )
+        total += bal
+        if bal > 0:
+            live += 1
+        per_key.append(entry)
     out: dict[str, Any] = {
         "source": "jina-usage",
-        "key_suffix": key[-6:],  # enough to tell keys apart, never the key
+        "key_count": len(keys),
+        "live_key_count": live,
         "total_balance": total,
-        "trial_balance": int(wallet.get("trial_balance") or 0),
-        "regular_balance": int(wallet.get("regular_balance") or 0),
-        "trial_end": wallet.get("trial_end"),
+        "keys": per_key,
         "warn_below": warn_below,
         "warning": None,
     }
-    if total <= 0:
+    if live == 0:
         out["warning"] = (
-            "JINA_API_KEY balance is EXHAUSTED — reader requests will 402. "
-            "Generate a new API key at https://jina.ai/api-dashboard/ and "
-            "update the environment."
+            "EVERY configured reader key is exhausted or invalid — reader "
+            "requests fall back to the anonymous free tier (shared rate "
+            "limit, no browser engine). Generate a new API key at "
+            "https://jina.ai/api-dashboard/ and add it to the environment."
         )
     elif total < warn_below:
         out["warning"] = (
-            f"JINA_API_KEY balance is low ({total:,} tokens < "
-            f"{warn_below:,}) — generate a new API key at "
-            "https://jina.ai/api-dashboard/ soon and update the environment."
+            f"combined reader-key balance is low ({total:,} tokens < "
+            f"{warn_below:,} across {live} live key(s)) — generate a new "
+            "API key at https://jina.ai/api-dashboard/ soon and add it to "
+            "the environment."
         )
     return out
 
@@ -1750,7 +1850,7 @@ def main(argv: list[str]) -> int:
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
                         help="return format (default markdown; `html` keeps simplified markup)")
 
-    sub.add_parser("jina-usage", help="remaining token balance on JINA_API_KEY — warns (stderr) when a new key should be generated")
+    sub.add_parser("jina-usage", help="remaining token balance of every configured reader key (JINA_API_KEYS / JINA_API_KEY) — warns (stderr) when the pool runs low")
 
     p_csh = sub.add_parser("ncsc-csh", help="NCSC Switzerland Cyber Security Hub")
     csh_sub = p_csh.add_subparsers(dest="csh_cmd", required=True)
