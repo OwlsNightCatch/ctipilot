@@ -1,0 +1,79 @@
+domain: S1
+run_id: 2026-07-13T0410Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-13T04:13:10Z
+ended_at: 2026-07-13T04:22:36Z
+duration_seconds: 566
+self_telemetry:
+  webfetch_calls: 13
+  websearch_calls: 9
+  bridge_fetches: 19
+
+# No qualifying items this run. Exhaustive sweep of the full essential
+# source slice plus multiple standard-tier rotation sources found the
+# advisory/exploit-research ecosystem clustered almost entirely around
+# Friday 2026-07-10 (CISA KEV catalogVersion 2026.07.10; NCSC-NL last
+# advisory NCSC-2026-0223 published Fri 10 Jul 05:54Z; BSI CERT-Bund RSS
+# entirely dated Fri 10 Jul; CERT-FR/ANSSI avis feed newest entry Fri 10
+# Jul; NCSC-CH Security Hub newest post 2026-07-10T12:45Z; CERT-EU stale
+# since June 2026). The weekend (Sat 11 - Sun 12 Jul) and the pre-dawn
+# hours of Monday 13 Jul (this run fires 04:10Z) produced essentially no
+# fresh national-CERT/vendor-PSIRT/exploit-research publication activity
+# in the curated slice — consistent with routine advisory cadence
+# (July 2026 Patch Tuesday falls tomorrow, 2026-07-14). Everything that
+# WAS published inside the 24h/72h window (Progress MOVEit Transfer
+# CVE-2026-10699/10698/11903 via CERT-FR 2026-07-11; PraisonAI CVE-2026-
+# 61447/61445/60090 2026-07-11) is already present in prior_coverage.json
+# (last night's weekly + intel runs). No update-of delta was found on any
+# previously-covered CVE (checked Gitea CVE-2026-20896, BeyondTrust
+# CVE-2026-40138/40139, Adobe ColdFusion CVE-2026-48282, CitrixBleed 2
+# CVE-2025-5777, Splunk CVE-2026-20251/20253 — all already carry their
+# most-recent status in the store; no fresher delta source found).
+#
+# One candidate was found and deliberately dropped rather than marked
+# borderline: EUVD-2026-43252 / CVE-2026-15511 (Comfast CF-WR631AX V3
+# WiFi router, unauthenticated OS command injection via
+# system_wl_upload_pic_file in /usr/bin/webmgnt, CVSS4.0 9.3, published
+# 2026-07-12T23:00Z — genuinely inside the 24h window). Dropped because:
+# (a) single-source, VulDB self-submission only (no vendor response, no
+# CERT/PSIRT corroboration — fails two-source verification and is not a
+# national-CERT carve-out); (b) EPSS 0.0 despite "exploit publicly
+# disclosed" wording (VulDB boilerplate, not evidence of real-world
+# targeting); (c) consumer/SOHO wifi hardware with no plausible nexus to
+# Swiss/EU critical-infrastructure or government deployments. This is
+# below the relevance threshold, not merely near it, so it is omitted
+# entirely rather than flagged borderline.
+items: []
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty (none configured) per org profile — no-op; general coverage rules applied unchanged across the full sweep described above, no watchlist-relevant hits."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Direct WebFetch 403'd (expected/known-403 host); bridge fallback to the jina reader also failed this run (JINA_API_KEY balance exhausted / tier constraint — reader proxy returned HTTP 402 on every jina call this run, not just this source). WebSearch found only pre-window CISA ICS advisory activity (most recent identifiable batch 2026-07-09); no in-window (24h) CISA cybersecurity-advisory content recovered via any transport."
+  - source_id: cisa-directives
+    reason: "Same jina-exhaustion failure mode as cisa-advisories (direct 403 + jina 402). WebSearch surfaced nothing dated in-window for CISA Directives specifically."
+  - source_id: ncsc-uk
+    reason: "Bridge `url` fetch succeeded (200, raw HTML returned) but the reports-advisories listing renders publication dates client-side via JS; the raw HTML carried titles/links but no visible dates, and the jina reader (which executes page JS and would normally hydrate this) was unavailable this run due to the API-key exhaustion above. Could not confirm in-window content on this source; treated as an unconfirmed-recency gap, not cited."
+  - source_id: claroty-team82
+    reason: "WebFetch returned the research listing but with no dates on any item (site does not surface publication dates in the fetched markup); could not determine which, if any, entries fall inside the 24h/72h window. Titles visible did not include obviously-new content matching other in-window leads."
+
+# Self-evolution note for the main agent: the jina reader proxy
+# (r.jina.ai, used as the automatic fallback rung inside
+# tools/fetch_source.py for both `jina <URL>` and the `url`/`feed`
+# auto-fallback) returned "HTTP 402: JINA_API_KEY balance exhausted (or
+# tier constraint)" on every call that needed it this run (cisa page,
+# feed chromereleases.googleblog.com, feed blog.calif.io/rss.xml, feed
+# tenable.com/blog/rss). This silently removes the rung-3 escalation path
+# for every 403/anti-bot/JS-shell host for the remainder of the key's
+# exhaustion window — worth flagging to the operator to top up/rotate
+# the JINA_API_KEY, since several essential-tier sources (CISA
+# advisories, CISA directives) have NO other working transport once
+# jina is out, per the fetch-ladder contract in the agent definition.

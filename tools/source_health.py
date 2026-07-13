@@ -320,6 +320,18 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
         if attempt == 1:
             time.sleep(1.5)
     detail = f"bridge `{' '.join(argv)}` failed: {why}"
+    # A jina reader HTTP 402 is an ACCOUNT-level block, not a per-source recipe
+    # death: the JINA_API_KEY token balance is exhausted, so EVERY jina fetch
+    # (and every `url` auto-fallback) this run 402s identically regardless of
+    # the source. The hard rule forbids demoting on a transport block (402 /
+    # 403 / 429), so this must not churn every jina-method source as an unsolved
+    # `needs-demote` while the key is down — it is a single operator fix (top up
+    # JINA_API_KEY; `jina-usage` confirms the balance), not N source regressions.
+    # Its own class keeps it visible without flagging it as an unsolved fault.
+    if "402" in why and ("balance exhausted" in why.lower()
+                         or "jina_api_key" in why.lower()
+                         or "reader proxy http 402" in why.lower()):
+        return "reader-quota", detail
     # An essential reachable ONLY through an anti-bot bridge (server-side reader
     # proxy) has no other transport, and the hard rule forbids demoting it on a
     # transport failure. So ANY bridge failure for it — a relayed 403, a reader
@@ -420,6 +432,14 @@ def _action(status: str, fetch_method: str, cls: str, code: int | None,
         return "none", "already demoted (handled)"
     if cls in _HEALTHY_CLASSES:
         return "none", ""
+    # jina reader key balance exhausted (HTTP 402) — an account-level transport
+    # block hitting every jina source uniformly this run, not a source fault.
+    # 402 never demotes (same hard rule as 403/429); the fix is operator-side.
+    if cls == "reader-quota":
+        return "none", ("jina reader key balance exhausted (HTTP 402) — account-level "
+                        "transport block affecting every jina source uniformly this run, "
+                        "not a source fault; 402 never demotes. Top up JINA_API_KEY "
+                        "(verify with `fetch_source.py jina-usage`).")
     # Known transport-blocked essential: 403 on every UA (Akamai/anti-bot),
     # no reachable content recipe, substitute documented, and the hard rule
     # forbids demoting a 403. Handled — do not float it as unsolved.
@@ -670,7 +690,8 @@ def main() -> int:
     print()
     print("# class breakdown:")
     for cls in ("ok", "redirect-ok", "bridge-ok", "jina-ok", "ua-blocked", "bridge-blocked",
-                "client-error", "server-error", "unreachable", "bridge-fail", "not-probed"):
+                "reader-quota", "client-error", "server-error", "unreachable", "bridge-fail",
+                "not-probed"):
         n = by_class.get(cls, 0)
         if n:
             print(f"  {n:>3}× {cls}")
