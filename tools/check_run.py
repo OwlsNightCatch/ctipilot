@@ -1171,6 +1171,16 @@ def _scan_iocs(text: str) -> list[str]:
         ip = m.group(0)
         if _is_doc_or_private(ip):
             continue
+        # Skip longer dotted-integer identifiers (SNMP/MIB OIDs such as
+        # 1.3.6.1.4.1.9.9.96.1.1, and multi-part version strings): a real
+        # IPv4 address is exactly four groups, so a match that continues
+        # with another `.<digit>` immediately before or after is part of a
+        # longer numeric identifier, not an address. Real routable IOCs are
+        # four groups bounded by a non-(dot+digit) neighbour and stay flagged.
+        before = text[max(0, m.start() - 1):m.start()]
+        after = text[m.end():m.end() + 2]
+        if before == "." or re.match(r"\.\d", after):
+            continue
         # Look at the surrounding 80-char window for version-string cues.
         start = max(0, m.start() - 80)
         end = min(len(text), m.end() + 80)

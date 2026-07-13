@@ -1,0 +1,151 @@
+domain: S4
+run_id: 2026-07-13T1212Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-13T12:14:58Z
+ended_at: 2026-07-13T12:32:00Z
+duration_seconds: 1022
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 10
+  bridge_fetches: 6
+items:
+  - title: "Progress orders ShareFile Storage Zone Controller shutdown over a 'credible external threat' — day three, still no patch or root cause disclosed"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/", publisher: "BleepingComputer", date: "2026-07-10", role: "primary" }
+      - { url: "https://status.sharefile.com/", publisher: "Progress ShareFile (vendor status page)", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.heise.de/news/Progress-warnt-Admins-ShareFile-deaktivieren-11362288.html", publisher: "heise Security", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://www.securityweek.com/progress-prompts-sharefile-storage-zone-controller-shutdown-amid-security-concerns/", publisher: "SecurityWeek", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://securityaffairs.com/195194/hacking/progress-told-sharefile-customers-to-pull-the-plug-on-their-servers-heres-what-we-know.html", publisher: "Security Affairs", date: "2026-07-12", role: "corroborating" }
+      - { url: "https://labs.watchtowr.com/youre-not-supposed-to-sharefile-with-everyone-progress-sharefile-pre-auth-rce-chain-cve-2026-2699-cve-2026-2701/", publisher: "watchTowr Labs", date: "2026-04-02", role: "background" }
+      - { url: "https://thehackernews.com/2026/07/urgent-progress-tells-sharefile.html", publisher: "The Hacker News", date: "2026-07-10", role: "corroborating" }
+    discovery_trace: "first seen at: heise-sec (S4 slice), URL https://www.heise.de/news/Progress-warnt-Admins-ShareFile-deaktivieren-11362288.html → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/ → pivot: vendor status page, URL https://status.sharefile.com/ (fetched fresh, confirms still unresolved as of 2026-07-13) → background primary: watchTowr Labs, URL https://labs.watchtowr.com/youre-not-supposed-to-sharefile-with-everyone-progress-sharefile-pre-auth-rce-chain-cve-2026-2699-cve-2026-2701/ (the prior, patched pre-auth RCE chain in the same component)"
+    summary: |
+      Progress Software told all customers running ShareFile Storage Zone Controller (SZC) — the on-premises, internet-facing hybrid component that bridges ShareFile's cloud authentication plane to customer-managed storage — to manually shut down the Windows server hosting it, citing "a credible external security threat." The directive, issued 2026-07-10, disabled cloud-side account access for affected tenants as an additional precaution; per Progress's own statement there is "no indication of unauthorized access to any Progress ShareFile accounts or data" to date. Three days on (status.sharefile.com still shows the Storage Zone Controller service as non-operational and "Investigating" as of this run), Progress has disclosed neither a CVE, a root cause, nor a patch or safe-restart timeline — the shutdown-not-patch instruction is itself the signal that no fix yet exists. Only on-premises SZC deployments are affected; cloud-only ShareFile accounts are unaffected. This is the same on-prem MFT-adjacent architecture class (Citrix/Progress ShareFile, MOVEit, GoAnywhere, Cleo) that has produced mass pre-auth exploitation events before. Background: watchTowr Labs disclosed a chainable pre-auth RCE in this exact component in April 2026 — CVE-2026-2699 (CWE-698 Execution-After-Redirect auth bypass in /ConfigService/Admin.aspx, where Response.Redirect() is called with terminate=false so the "authenticated" admin code path keeps executing after the 302) combined with CVE-2026-2701 (the bypassed admin panel lets an attacker repoint the storage repository at the web root and upload a ZIP with unzip=true, which does not strip .aspx extensions, yielding a webshell) — patched in SZC 5.12.4 (2026-03-10); watchTowr counted roughly 30,000 internet-facing SZC instances at disclosure time. Progress has NOT stated whether the July "credible external threat" is connected to this chain or to any other previously reported issue — treat the two as separate facts until Progress says otherwise, but any organisation still on SZC 5.x below 5.12.4 should treat this as a compounding risk regardless.
+    region_nexus: "global; on-premises SZC deployments are common in EU/CH public-sector, finance and healthcare organisations using ShareFile for managed file transfer"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, healthcare"
+    cves: ["CVE-2026-2699", "CVE-2026-2701"]
+    techniques: [T1190]
+    affected_products: ["Progress ShareFile Storage Zone Controller"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:progress-sharefile-storage-zone-controller-shutdown-2026-07", type: incident, name: "Progress ShareFile Storage Zone Controller emergency shutdown", aliases: [], summary: "Progress Software ordered all ShareFile Storage Zone Controller customers to manually shut down their on-premises servers on 2026-07-10 over an undisclosed 'credible external security threat'; as of 2026-07-13 no CVE, root cause, patch, or restart timeline has been published and the vendor status page still shows the service non-operational (BleepingComputer / status.sharefile.com, 2026-07-10/13)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "We have reason to believe there is a credible external security threat targeting Progress Software's ShareFile Storage Zone Controllers"
+        attribution: "Progress Software (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/"
+      - quote: "Currently, we have no indication of unauthorized access to any Progress ShareFile accounts or data."
+        attribution: "Progress Software (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/"
+      - quote: "ShareFile customers with Storage Zone Controllers are not operational at this time."
+        attribution: "Progress ShareFile status page"
+        source_url: "https://status.sharefile.com/"
+      - quote: "Thirty thousand of them are internet-facing."
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/youre-not-supposed-to-sharefile-with-everyone-progress-sharefile-pre-auth-rce-chain-cve-2026-2699-cve-2026-2701/"
+    extended_notes: |
+      Detection/hardening framing for the composer: telemetry class is web-application-log + process-creation on the SZC host (IIS worker process spawning cmd.exe/powershell.exe, unexpected .aspx files appearing under the web root, ConfigService/Admin.aspx hits with a 302 immediately followed by admin-API calls from the same source). Hardening lever regardless of whether the July threat proves related to CVE-2026-2699/2701: confirm SZC is at 5.12.4+ (5.x branch) or on the unaffected 6.x .NET Core branch, and — per the vendor's own current instruction — take internet-facing SZC instances offline until Progress publishes a resolution. Historical parallel: Citrix (prior owner) took the same product offline in 2023 over CVE-2023-24489 (also actively exploited). This is a "watch for a material update" item — flag for a same-day follow-up entry if Progress discloses a CVE, confirms exploitation, or restores service.
+  - title: "EU and UK sanction FSB/GRU cyber operators over a Poland energy-grid wiper attempt; joint 12-nation advisory exposes FSB Centre 16's router-hunting tradecraft (CVE-2018-0171, weak SNMP)"
+    sources:
+      - { url: "https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions", publisher: "UK Government (FCDO)", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting", publisher: "NCSC-UK", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/eu-and-uk-hit-russia-with-first-joint-cyber-sanctions-package/", publisher: "BleepingComputer", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://www.securityweek.com/eu-targets-russian-intelligence-officers-accused-of-running-a-yearslong-cyber-spying-campaign/", publisher: "SecurityWeek", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://www.infosecurity-magazine.com/news/russian-state-hackers-vulnerable/", publisher: "Infosecurity Magazine", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/sandworm-hackers-linked-to-failed-wiper-attack-on-polands-energy-systems/", publisher: "BleepingComputer", date: "2026-01-24", role: "background" }
+    discovery_trace: "first seen at: securityweek (S4 slice), URL https://www.securityweek.com/eu-targets-russian-intelligence-officers-accused-of-running-a-yearslong-cyber-spying-campaign/ → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/eu-and-uk-hit-russia-with-first-joint-cyber-sanctions-package/ → primary: UK Government/FCDO, URL https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions → primary: NCSC-UK joint advisory, URL https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting → background: BleepingComputer (Jan 2026 ESET/Sandworm attribution), URL https://www.bleepingcomputer.com/news/security/sandworm-hackers-linked-to-failed-wiper-attack-on-polands-energy-systems/ (direct EU-Council primary at consilium.europa.eu returned HTTP 403 on both direct fetch and jina-reader escalation — logged as a fetch failure below; UK gov.uk/NCSC-UK primaries substitute as carve-out national-authority sources)"
+    summary: |
+      The EU Council and the UK government announced coordinated sanctions on 2026-07-13 against Russian military- and security-service-linked cyber operators, and the UK's NCSC simultaneously published a joint advisory with 11 other countries' cyber authorities (Australia, Canada, Czech Republic, Denmark, Estonia, Finland, France, Italy, New Zealand, Poland, Sweden, plus the US) on a specific router-hunting tradecraft. The EU sanctioned 9 individuals and 4 entities; the UK separately designated 24 individuals and entities, including senior GRU figures (Vyacheslav Stafeyev, Ivan Senin, Ivan Kasyanenko) accused of directing GRU cyber/hybrid operations, IMPULS (accused of recruiting hackers from Russian universities for GRU Unit 29155's cyber division), operators tied to the Lumma Stealer infostealer (2,100+ UK victims in six months, credentials used for espionage), and Rybar LLC (state-linked disinformation/election-interference in Moldova and Armenia). The Council of the EU publicly named the FSB's 16th Centre — which it states controls several cyber threat groups including Turla (tracked here as actor:secretblizzard) — as running government- and critical-infrastructure-focused espionage against France, Germany, Poland, Cyprus, the Netherlands, Austria, Slovakia, Romania and Finland since 2010, and linked Turla to "a recent failed strike" on Poland's energy grid that could have cut power to roughly 500,000 people in winter. Attribution note (hold both, do not merge): this Turla attribution for the Poland grid incident, made today by the EU Council/UK government, sits alongside earlier reporting — ESET research cited by BleepingComputer in January 2026 — that attributed the same late-December-2025 attack on ~30 Polish energy facilities and the DynoWiper data-wiping malware used in it to a different, GRU-linked cluster, Sandworm (aka APT44/Seashell Blizzard/UAC-0113). Separately, Poland also reported blocking a cyberattack on its National Centre for Nuclear Research (NCBJ). The NCSC-led joint advisory, published the same day, names "FSB Centre 16" cyber actors (aliased across the advisory ecosystem as Berserk Bear, Energetic Bear, Crouching Yeti, Dragonfly, Ghost Blizzard and — in CISA/FBI reporting — Static Tundra) as opportunistically scanning the internet for routers configured with default or weak SNMP community strings (SNMPv1/v2 transmit these in plaintext), then using that access to exfiltrate device configurations via TFTP, and separately exploiting the seven-year-old CVE-2018-0171 in Cisco Smart Install (SMI) on end-of-life, unpatched networking gear. Targeted sectors named: communications, defence, energy, financial services, government and healthcare — directly overlapping the constituency's core and additional sectors. Mitigations recommended: migrate to SNMPv3 (or disable legacy SNMP outright), enforce strong unique device credentials, and restrict management-protocol access via ACLs.
+    region_nexus: "direct EU/CH-adjacent: named long-term espionage targets include Germany, France and Austria (Swiss neighbours) plus Poland, Netherlands, Cyprus, Slovakia, Romania and Finland; UK co-sanctioning partner"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, telco, finance, healthcare"
+    cves: ["CVE-2018-0171"]
+    techniques: [T1595, T1190, T1602.002]
+    affected_products: ["Cisco Smart Install (SMI)", "network devices running SNMPv1/SNMPv2"]
+    entity_keys: ["actor:secretblizzard"]
+    new_entities:
+      - { key: "actor:sandworm", type: actor, name: "Sandworm", aliases: ["APT44", "Seashell Blizzard", "UAC-0113", "Voodoo Bear"], summary: "GRU Unit 74455-linked Russian destructive/disruptive actor active since 2009; ESET attributed the December 2025 wiper attempt (DynoWiper) against ~30 Polish energy-grid facilities to Sandworm (BleepingComputer/ESET, 2026-01-24), a claim that sits alongside the EU Council's 2026-07-13 attribution of the same Poland grid targeting to Turla/FSB Centre 16." }
+      - { key: "actor:fsb-centre16-static-tundra", type: actor, name: "FSB Centre 16 router-hunting cluster (Static Tundra)", aliases: ["Berserk Bear", "Energetic Bear", "Crouching Yeti", "Dragonfly", "Ghost Blizzard", "Static Tundra"], summary: "FSB Centre 16-attributed cluster named in a 2026-07-13 joint advisory from NCSC-UK, CISA, NSA, FBI and 12 countries' authorities for scanning the internet for routers with default/weak SNMP credentials and exploiting CVE-2018-0171 in Cisco Smart Install to compromise end-of-life network devices and exfiltrate configurations via TFTP." }
+      - { key: "policy:eu-uk-sanctions-russia-cyber-2026-07-13", type: policy, name: "EU/UK joint sanctions on Russian GRU/FSB cyber ecosystem", aliases: [], summary: "Coordinated 2026-07-13 EU (9 individuals, 4 entities) and UK (24 individuals/entities) sanctions against GRU leadership, IMPULS (hacker recruitment), Lumma Stealer operators and Rybar LLC (disinformation), plus public EU attribution of FSB Centre 16 (incl. Turla) for years-long espionage against EU government/critical-infrastructure targets since 2010." }
+    relation_suggestions:
+      - { subject: "actor:secretblizzard", object: "policy:eu-uk-sanctions-russia-cyber-2026-07-13", basis: "Council of the EU: the FSB's 16th Centre, which controls Turla, is named as running the sanctioned years-long espionage campaign and is linked to a failed strike on Poland's energy grid (Council of the EU statement via BleepingComputer, 2026-07-13)" }
+      - { subject: "actor:fsb-centre16-static-tundra", object: "policy:eu-uk-sanctions-russia-cyber-2026-07-13", basis: "NCSC-UK: the router-hunting joint advisory was published alongside, and references, the same day's sanctions action against Russian cyber actors (NCSC-UK, 2026-07-13)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Turla hackers were also linked to a recent failed strike targeting Poland's critical infrastructure, including energy grid organizations such as heat and power plants, which could have cut power to roughly 500,000 people during winter."
+        attribution: "Council of the EU (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/eu-and-uk-hit-russia-with-first-joint-cyber-sanctions-package/"
+      - quote: "Centre 16 has been seen hunting for vulnerable routers by scanning the internet for devices that still use default or weak SNMP passwords"
+        attribution: "NCSC-UK"
+        source_url: "https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting"
+      - quote: "Sectors most at risk from this global targeting, including communications, defence, energy, financial services, government and healthcare"
+        attribution: "NCSC-UK"
+        source_url: "https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting"
+      - quote: "The incident was later attributed to the Russian state-backed hacking group Sandworm, which attempted to deploy the destructive DynoWiper data-wiping malware and disable compromised devices."
+        attribution: "BleepingComputer (citing ESET), 2026-01-24"
+        source_url: "https://www.bleepingcomputer.com/news/security/sandworm-hackers-linked-to-failed-wiper-attack-on-polands-energy-systems/"
+      - quote: "GRU Unit 29155 cyber division worked with cybercriminals, including the company IMPULS, to recruit hackers and cyber specialists from universities and academies across Russia."
+        attribution: "UK Government (FCDO)"
+        source_url: "https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions"
+    extended_notes: |
+      Detection framing for the composer: telemetry class is network-device management-plane logging — SNMP GET/SET requests from unfamiliar source IPs against community strings other than a tightly-scoped read-only string, TFTP sessions initiated outbound from a router/switch's management interface, and Cisco Smart Install (SMI, TCP/4786) sessions on any device that should have SMI disabled. Hardening: SNMPv3 migration or legacy SNMP disablement, ACL-restricted management-plane access, and disabling the Smart Install client feature on Cisco IOS devices that don't actively use SMI zero-touch provisioning (a 2018-era CVE still being exploited in 2026 is itself the hardening lesson — inventory EOL/unpatched network devices). The Council of the EU's own press release (consilium.europa.eu) could not be fetched directly in this run (HTTP 403 on both plain fetch and jina-reader escalation) — the UK gov.uk/NCSC-UK pages and BleepingComputer/SecurityWeek corroboration substitute; a future run should retry the EU Council primary directly.
+  - title: "Attacker's own OPSEC failure exposes three separate M365 AiTM/device-code phishing operations — AI-assisted kit development and a concrete Entra device-code hunt pivot"
+    sources:
+      - { url: "https://thehackernews.com/2026/07/misconfigured-server-reveals-three.html", publisher: "The Hacker News", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://blog.lexfo.fr/opendir-to-phishing-operator.html", publisher: "Lexfo", date: "2026-07-13", role: "primary" }
+      - { url: "https://socradar.io/blog/the-quarry-phaas-irs-ssa-phishing/", publisher: "SOCRadar", date: "2026-06", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews (S4 slice), URL https://thehackernews.com/2026/07/misconfigured-server-reveals-three.html → primary: Lexfo research blog, URL https://blog.lexfo.fr/opendir-to-phishing-operator.html → corroborating: SOCRadar (The Quarry PhaaS ecosystem), URL https://socradar.io/blog/the-quarry-phaas-irs-ssa-phishing/"
+    summary: |
+      French security firm Lexfo pivoted from a single OPSEC failure — a phishing operator left a Python HTTP server (python3 -m http.server) publicly listening with directory listing enabled, and the enabling command sat in the server's readable .bash_history — into a full exposure of three independent, unrelated Microsoft 365 phishing operations, all built as customised forks of the open-source Evilginx adversary-in-the-middle (AiTM) reverse-proxy framework. Two operators ran classic AiTM credential/session-cookie relay kits (one pairing a custom bulk-mail tool with 2FA-secret/session capture against ~2 confirmed corporate victims since March 2026; a second — "red-queen" — adding Subresource-Integrity-check evasion via HTML attribute renaming and a URL-rewriting engine, with captured Microsoft ESTSAUTHPERSISTENT session cookies carrying roughly a one-year validity window). The third and largest ("black-queen") abused Microsoft Entra ID's legitimate OAuth device-code authentication flow: it requests a genuine device code from Microsoft, presents it inside a spoofed Authenticator-branded lure, and instructs the victim to enter it at the real microsoft.com/devicelogin — so the victim completes an authentic Microsoft login and MFA challenge, while the operator's backend polls the token endpoint and captures the resulting valid, MFA-satisfied access/refresh token pair with no password ever touching the phishing page. That kit ran undetected for over 13 months (June 2025-July 2026), capturing 218 distinct accounts across 12 countries, roughly 94% of them corporate mailboxes, with auto-refresh enabled on the stolen tokens (some refreshed as many as 25 times). All three kits were built with minimal customisation on top of public GitHub Evilginx forks, and Lexfo found direct evidence of AI-assisted development across all three — including verbatim leftover AI-coding-session transcripts and git commits carrying AI-model co-author metadata — illustrating how low the technical bar for a functional MFA-bypassing AiTM/device-code kit has fallen. The kits connect to a broader Telegram-distributed phishing-as-a-service ecosystem ("The Quarry", independently documented by SOCRadar in June 2026) that resells this tooling to an estimated ~200 operators.
+    region_nexus: "international (12 countries); confirmed corporate victims include French organisations"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1566.002, T1557, T1539, T1528]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID (OAuth device-code flow)"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:the-quarry-phaas", type: campaign, name: "The Quarry phishing-as-a-service ecosystem", aliases: [], summary: "Telegram-distributed PhaaS ecosystem run by operator 'RockyBelling', active since April 2025 and reselling Evilginx-derived AiTM/device-code phishing tooling to an estimated ~200 operators; documented by SOCRadar (2026-06) and independently corroborated by Lexfo's exposure of three of its downstream operators (2026-07-13)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An attacker running a live Microsoft 365 phishing operation left a Python web server listening on a public port with directory listing switched on."
+        attribution: "The Hacker News (citing Lexfo)"
+        source_url: "https://thehackernews.com/2026/07/misconfigured-server-reveals-three.html"
+      - quote: "The attack generates a real device code, wraps it in an Authenticator-themed lure page, and tells the target to enter it at the genuine microsoft.com/devicelogin."
+        attribution: "The Hacker News (citing Lexfo)"
+        source_url: "https://thehackernews.com/2026/07/misconfigured-server-reveals-three.html"
+      - quote: "saroula01's Device Code Flow campaign ran undetected for over a year, accumulating 218 confirmed victims across 12 countries, with tokens silently auto-refreshed in the background."
+        attribution: "Lexfo"
+        source_url: "https://blog.lexfo.fr/opendir-to-phishing-operator.html"
+      - quote: "All three operators built functional MFA-bypass infrastructure from public GitHub repositories with minimal customization, using AI-assisted development."
+        attribution: "Lexfo"
+        source_url: "https://blog.lexfo.fr/opendir-to-phishing-operator.html"
+    extended_notes: |
+      Triage-relevant framing for the composer: two distinct attack classes need two distinct defences. (1) Against Evilginx-style AiTM reverse-proxy relay: origin-bound authentication (FIDO2/passkeys) defeats session-cookie relay outright since the credential is cryptographically bound to the legitimate origin. (2) Against OAuth device-code abuse: Conditional Access policies must explicitly block the device-code authorization grant flow except for narrowly-scoped, input-constrained hardware (kiosks, IoT) that genuinely need it — device-code abuse is a distinct primitive from password/MFA phishing and is not stopped by "require MFA" policies alone, since the victim's real MFA challenge is what the operator's backend is riding on. Detection concept (telemetry class: Entra ID / Azure AD sign-in and token-issuance logs): alert on device-code grant_type token requests originating from source IPs inconsistent with the named user's normal geolocation/ASN, especially against the well-documented first-party "Microsoft Office" public client ID that legitimate device-code flows and this abuse pattern both use — the anomaly signal is the source-IP/velocity mismatch, not the client ID itself (that ID is Microsoft's own, not attacker infrastructure). No IOCs (domains/IPs/hashes/Telegram bot IDs) carried forward from the source per policy; the AI-assisted-development angle is included as a detection-relevant behavioural observation (attacker tradecraft artifacts), not as an indictment of any AI vendor.
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured for this deployment — no-op per org-profile.yaml; general coverage rules applied unchanged across the full S4 sweep (SEC EDGAR 8-K item 1.05 pull for 2026-07-10..13, ICO enforcement sitemap, CERT-EU advisories, and the standard S4 source slice)."
+candidate_sources:
+  - id: lexfo-blog
+    publisher: "Lexfo (blog.lexfo.fr) — French security research blog"
+    url: "https://blog.lexfo.fr"
+    category: research
+    why: "Original OPSEC-pivot research exposing three distinct M365 AiTM/device-code phishing operator toolkits (2026-07-13); primary source with load-bearing technical/detection detail not available from any secondary write-up."
+coverage_gaps:
+  - source_id: consilium-europa-eu
+    reason: "The Council of the EU's own press release on the 2026-07-13 Russia cyber sanctions (consilium.europa.eu) returned HTTP 403 on both a direct WebFetch and a jina-reader escalation attempt; substituted with the UK government/NCSC-UK primary pages and BleepingComputer/SecurityWeek corroboration, which independently quote the EU Council statement verbatim."
+  - source_id: ico-uk-enforcement
+    reason: "ICO enforcement-action sitemap fetched (216 entries total); the 15 most-recently-modified entries are all from March-May 2026 with no in-window (last 24h) additions — checked, nothing found."
+  - source_id: cert-eu
+    reason: "CERT-EU security-advisories RSS fetched; most recent advisory (2026-008, Ivanti Sentry) is dated 2026-06-10 — no in-window items, feed appears to lag behind the daily vulnerability cycle covered elsewhere in this run."

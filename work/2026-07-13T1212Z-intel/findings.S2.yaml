@@ -1,0 +1,134 @@
+domain: S2
+run_id: 2026-07-13T1212Z-intel
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-13T12:14:44Z"
+ended_at: "2026-07-13T12:28:02Z"
+duration_seconds: 798
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 7
+  bridge_fetches: 16
+items:
+  - title: "Progress ShareFile Storage Zone Controller: full shutdown ordered over undisclosed 'credible' threat, unresolved after 3 days"
+    sources:
+      - { url: "https://www.heise.de/en/news/Progress-warns-admins-Deactivate-ShareFile-11362439.html", publisher: "heise online", date: "2026-07-13", role: "primary" }
+      - { url: "https://status.sharefile.com/", publisher: "Progress ShareFile Status Page", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/", publisher: "BleepingComputer", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/urgent-progress-tells-sharefile.html", publisher: "The Hacker News", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://labs.watchtowr.com/youre-not-supposed-to-sharefile-with-everyone-progress-sharefile-pre-auth-rce-chain-cve-2026-2699-cve-2026-2701/", publisher: "watchTowr Labs", date: "2026-04-02", role: "background/technical" }
+    discovery_trace: "first seen at: heise-sec, URL https://www.heise.de/security/feed.xml (item 'Progress warnt Admins: ShareFile deaktivieren', 2026-07-13) → pivot: heise EN translation, URL https://www.heise.de/en/news/Progress-warns-admins-Deactivate-ShareFile-11362439.html → pivot: WebSearch (\"Progress ShareFile Storage Zone Controller security threat shutdown July 2026\") → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/ → corroborating: TheHackerNews, URL https://thehackernews.com/2026/07/urgent-progress-tells-sharefile.html → status confirmation: Progress ShareFile Status Page, URL https://status.sharefile.com/ → technical background/prior disclosure: watchTowr Labs, URL https://labs.watchtowr.com/youre-not-supposed-to-sharefile-with-everyone-progress-sharefile-pre-auth-rce-chain-cve-2026-2699-cve-2026-2701/"
+    summary: |
+      Progress Software has ordered every customer running an on-premises ShareFile Storage Zone Controller (SZC) — the self-hosted IIS component that lets ShareFile's SaaS front end store files on customer-controlled storage (local filesystem, SMB, SharePoint, S3/Azure buckets) rather than Progress's cloud — to physically shut down the Windows servers hosting it, citing "a credible external security threat" first notified to customers on 2026-07-10 via email (screenshotted to r/sysadmin) and still listed as an unresolved incident on the vendor status page as of 2026-07-13. Progress states it has no indication of unauthorized account or data access but has not disclosed the technical nature of the threat, whether any SZC has been compromised, or a patch/return-to-service timeline; the mitigation offered is full shutdown, not an update, which multiple outlets read as evidence no fix currently exists. This sits on top of a pre-auth RCE chain watchTowr Labs disclosed in April 2026 in the same component: CVE-2026-2699 (CVSS 9.8) is an authentication bypass in `/ConfigService/Admin.aspx` caused by a CWE-698 Execution-After-Redirect bug — the code calls `Response.Redirect(path, false)` (the `false` suppresses `CompleteRequest`), so the admin page's body still renders and its "Join existing Zone" functionality executes even though the browser is told to redirect to the login page; from there an attacker can rewrite the `Primary Zone Controller` field without re-supplying the old passphrase. CVE-2026-2701 (CVSS 9.1) chains from that access: the `Network Share Location` field's validation (`ValidateStorageLocation`) only checks that the supplied path is writable/deletable, so an attacker can point the storage repository at the IIS webroot (e.g. `C:\inetpub\wwwroot\ShareFile\StorageCenter\documentum`) and, after working around filename-randomization/extension-stripping in the standard upload path, land an ASPX web shell for full RCE. Both were fixed in Storage Zone Controller 5.12.4 (5.x branch only; the 6.x .NET-Core branch was unaffected); watchTowr scanning found roughly 30,000 internet-visible SZC instances at disclosure time, and Shadowserver's more recent count puts ~784 still internet-exposed, concentrated in the US and Germany. Progress has not said whether the current shutdown order is driven by continued exploitation of the (patched but widely un-upgraded) CVE-2026-2699/2701 chain or a separate, undisclosed issue.
+    region_nexus: "global; Shadowserver's exposure count for the underlying component concentrates in the US and Germany, giving this direct home-region relevance"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector — public-sector, finance, healthcare and legal are typical users of on-prem hybrid file-exchange via Storage Zone Controllers"
+    cves: [CVE-2026-2699, CVE-2026-2701]
+    techniques: [T1190, T1505.003]
+    affected_products: ["Progress ShareFile Storage Zone Controller (formerly Citrix ShareFile)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "We have reason to believe there is a credible external security threat targeting Progress Software's ShareFile Storage Zone Controllers."
+        attribution: "Progress Software (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/"
+      - quote: "You must manually shut down the server hosting your Storage Zone Controllers. This is a critical additional step."
+        attribution: "Progress Software (via heise online)"
+        source_url: "https://www.heise.de/en/news/Progress-warns-admins-Deactivate-ShareFile-11362439.html"
+      - quote: "ShareFile customers with Storage Zone Controllers are not operational at this time."
+        attribution: "Progress ShareFile Status Page"
+        source_url: "https://status.sharefile.com/"
+    extended_notes: |
+      Detection/hunt angle: since Progress has not confirmed a mechanism, defenders running SZC 5.x should treat the CWE-698 chain as the working hypothesis and hunt for (a) IIS access-log requests to /ConfigService/Admin.aspx followed by 200-status responses instead of the expected 302-with-redirect-honoured behaviour, (b) unexpected modifications to Zone/Primary-Zone-Controller/Storage-Repository configuration fields outside of change windows, (c) w3wp.exe (IIS worker process) spawning cmd.exe/powershell.exe, and (d) any .aspx file appearing under the StorageCenter webroot subdirectories (documentum, cifs, sp) that isn't part of the vendor's shipped file set. Hardening: upgrade to 5.12.4+ or migrate to the 6.x .NET-Core branch (architecturally unaffected by this chain); if the vendor's shutdown order applies to your instance, do not simply restart until Progress confirms scope — no patch has been named for the current threat as of this run.
+  - title: "FSB Centre 16 (Static Tundra/Berserk Bear/Energetic Bear) router-hijacking campaign: 12-country joint advisory, formal Poland energy-grid attribution and coordinated UK/EU sanctions"
+    sources:
+      - { url: "https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting", publisher: "NCSC-UK", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions", publisher: "UK Government (FCDO)", date: "2026-07-13", role: "primary" }
+      - { url: "https://cert.pl/en/posts/2026/01/incident-report-energy-sector-2025/", publisher: "CERT Polska", date: "2026-01", role: "primary (technical incident report)" }
+      - { url: "https://blog.talosintelligence.com/static-tundra/", publisher: "Cisco Talos", date: "2025-08-20", role: "background/technical (actor profile referenced by the joint advisory)" }
+    discovery_trace: "first seen at: ncsc-uk, URL https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml (item 'UK and Allies urge critical sectors to improve defences against Russian intelligence targeting', published 2026-07-13T12:00Z) → primary: NCSC-UK advisory page, URL https://www.ncsc.gov.uk/news/uk-and-allies-urge-critical-sectors-to-improve-defences-against-russian-intelligence-targeting → pivot: WebSearch (\"FSB Centre 16 Static Tundra Poland energy grid attribution December 2025 sanctions July 2026\") → primary: UK Government sanctions announcement, URL https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions → primary: CERT Polska's own January 2026 incident report on the underlying attack, URL https://cert.pl/en/posts/2026/01/incident-report-energy-sector-2025/ → background: Cisco Talos's original Static Tundra actor profile, URL https://blog.talosintelligence.com/static-tundra/"
+    summary: |
+      On 2026-07-13, NCSC-UK and 17 other agencies from 12 countries (Australia, Canada, Czech Republic, Denmark, Estonia, Finland, France, Italy, New Zealand, Poland, Sweden, US) co-sealed a joint advisory ("Improve Router Hygiene to Protect Against Russian State-Sponsored Targeting") on FSB Centre 16 — publicly tracked as Static Tundra (Cisco Talos), Berserk Bear/Energetic Bear (CrowdStrike/FBI), Ghost Blizzard (Microsoft), Dragonfly (Symantec) and Crouching Yeti — opportunistically compromising internet-facing routers and network devices across communications, defence, energy, financial services, government and healthcare sectors globally. The group's primary access vector is scanning the internet (historically via Shodan/Censys-style scan data) for devices still exposing default or weak SNMP community strings (observed values include "public" and "anonymous" with read-write permission) and, separately, aggressively exploiting the seven-year-old Cisco IOS/IOS XE Smart Install vulnerability CVE-2018-0171 on unpatched or end-of-life devices — using the exploit to enable a local TFTP server (`tftp-server nvram:startup-config`) and pull the startup configuration, which frequently discloses further credentials and SNMP strings. Once inside, the actor uses SNMP itself (sometimes with spoofed source addresses to defeat ACLs, since SNMP is connectionless) to modify running configuration, create local privileged accounts, enable Telnet, and exfiltrate device configs via the CISCO-CONFIG-COPY-MIB over TFTP/RCP; persistence has historically included the SYNful Knock Cisco IOS firmware implant (activated by a "magic packet" crafted TCP SYN), and defense evasion includes tampering with TACACS+ logging and rewriting ACLs to whitelist attacker infrastructure. Collection is achieved by standing up GRE tunnels that redirect victim traffic of interest to attacker-controlled infrastructure and by pulling NetFlow data. The same-day announcement package also included, for the first time, a formal UK/EU attribution of the destructive 29 December 2025 attack on Polish energy infrastructure to this cluster: CERT Polska's own incident report (first published January 2026, now formally attributed) describes coordinated destructive attacks against 30+ wind/photovoltaic grid-connection substations (RTUs, HMIs and protection relays had firmware damaged or system files deleted) and a large combined-heat-and-power plant supplying near half a million customers (wiper malware deployment blocked at the CHP plant by the operator's EDR before detonation); CERT Polska attributed the activity to Static Tundra/Berserk Bear/Ghost Blizzard/Dragonfly based on VPS, router and anonymizing-infrastructure overlap, and called it the first publicly documented destructive operation by this normally espionage-focused cluster. On the same day, the UK sanctioned 24 individuals/entities and the EU sanctioned 9 individuals plus 4 entities, covering GRU senior leadership, GRU Unit 29155's hacker-recruitment front company IMPULS, Lumma Stealer credential-theft operators (cited with at least 2,100 UK victims in six months), and the disinformation outlet Rybar LLC.
+    region_nexus: "direct: formal attribution names a December 2025 attack on Poland's (EU member state) energy grid; the joint advisory explicitly covers EU/allied critical-infrastructure sectors and was co-sealed by France, Italy, Estonia, Finland, Sweden, Denmark, Czech Republic and Poland"
+    primary_sector_nexus: "direct"
+    sector: "energy, communications/telco, defence, financial services, government/public-sector, healthcare"
+    cves: [CVE-2018-0171]
+    techniques: [T1595.002, T1190, T1078, T1601.001, T1602.002, T1070, T1485]
+    affected_products: ["Cisco IOS Software", "Cisco IOS XE Software (Smart Install feature)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:static-tundra", type: actor, name: "Static Tundra", aliases: ["FSB Centre 16", "Berserk Bear", "Energetic Bear", "Crouching Yeti", "Dragonfly", "Ghost Blizzard"], nexus: russia-nexus,
+          summary: "Russian FSB Centre 16 cyber-espionage cluster specialising in long-term compromise of unpatched/end-of-life network devices (Cisco IOS Smart Install CVE-2018-0171, SNMP weak-credential abuse, SYNful Knock implant) for configuration exfiltration and persistent access; formally attributed by CERT Polska/UK/EU on 2026-07-13 to the first publicly documented destructive attack by this cluster, the 29 December 2025 sabotage of Polish wind/photovoltaic grid substations and a combined heat-and-power plant." }
+      - { key: "incident:poland-energy-grid-attack-2025-12-29", type: incident, name: "Poland energy-sector destructive attack (29 December 2025)", aliases: [],
+          summary: "Coordinated destructive cyberattack on 29 December 2025 against 30+ Polish wind/photovoltaic grid-connection substations and a large combined heat-and-power plant serving ~500,000 customers; RTU/HMI/protection-relay firmware damage and wiper malware (blocked by EDR at the CHP plant); formally attributed to FSB Centre 16/Static Tundra by CERT Polska, UK and EU on 2026-07-13 (CERT Polska, 2026-01; NCSC-UK/UK Gov, 2026-07-13)." }
+    relation_suggestions:
+      - { subject: "actor:static-tundra", object: "incident:poland-energy-grid-attack-2025-12-29",
+          basis: "CERT Polska: infrastructure overlap analysis 'shows a high degree of overlap with the infrastructure used by the activity cluster publicly known as Static Tundra... Berserk Bear... Ghost Blizzard... and Dragonfly' for the 29 Dec 2025 attack (CERT Polska, 2026-01, formally attributed 2026-07-13)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This reckless attack failed but could have caused 500,000 citizens to lose electricity in the depths of winter."
+        attribution: "UK Government (FCDO)"
+        source_url: "https://www.gov.uk/government/news/uk-and-eu-strike-russian-cyber-networks-with-new-sanctions"
+      - quote: "This is, however, the first publicly described destructive activity attributed to this activity cluster."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/01/incident-report-energy-sector-2025/"
+      - quote: "Static Tundra has been observed making initial access to devices via SNMP, leveraging a community string that was either compromised in a previous attack or guessed... insecure community strings of \"anonymous\" and \"public\" with read-write permissions."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/static-tundra/"
+    extended_notes: |
+      Detection: telemetry classes to prioritise are (1) authentication/session logs and AAA/TACACS+ logs on network devices for unexplained gaps or a drop in normal logging volume (Static Tundra tampers with TACACS+ config to blind logging); (2) SNMP traffic to/from management interfaces, watching for unexpected write operations (SetRequest with community strings, or use of CISCO-CONFIG-COPY-MIB) especially where the source IP is spoofed or inconsistent with known management stations; (3) NetFlow/traffic-profile baselining for new GRE tunnel endpoints or unexplained volumetric shifts to unfamiliar destinations; (4) unusually large or non-empty .bash_history-equivalent artifacts and unexpected local-account creation on network gear. Hardening: disable Cisco Smart Install (`no vstack`) on every device where CVE-2018-0171 cannot be patched immediately; migrate to SNMPv3 and disable SNMPv1/v2c community-string auth; enforce complex, unique community strings; disable Telnet (VTY `transport input ssh` / `transport output none`); centralise device configuration as the source of truth rather than trusting device-resident config; verify ACLs restrict all management protocols (SNMP/SSH/HTTP/NETCONF) to known management-station ranges. Especially relevant for Swiss/EU energy and telco operators given the explicit Poland-grid attribution and the advisory's direct naming of "energy" and "government" as primary target sectors.
+  - title: "Swiss Armed Forces' Cyber Command migrates off Microsoft 365 to sovereign open-source OpenDesk by October, citing US CLOUD Act risk"
+    sources:
+      - { url: "https://www.inside-it.ch/kommando-cyber-verabschiedet-sich-von-microsoft-20260713", publisher: "Inside IT Switzerland", date: "2026-07-13", role: "primary (Swiss trade-press anchor, publication date in-window)" }
+      - { url: "https://www.heise.de/en/news/Swiss-Army-breaks-with-Microsoft-Cyber-Command-relies-on-Open-Source-11361516.html", publisher: "heise online (EN)", date: "2026-07-10", role: "corroborating (fuller technical/policy detail)" }
+      - { url: "https://www.republik.ch/2026/07/09/die-cyber-spezialisten-des-bundes-kehren-microsoft-den-ruecken", publisher: "Republik", date: "2026-07-09", role: "corroborating (originating investigative report, cited by heise)" }
+    discovery_trace: "first seen at: inside-it-ch, URL https://www.inside-it.ch/rss.xml (item 'Kommando Cyber verabschiedet sich von Microsoft', published 2026-07-13T12:13Z) → pivot: WebSearch (\"Kommando Cyber Schweiz Microsoft 365 Opendesk Cloud Act Oktober 2026\") because the inside-it.ch article itself 403'd both direct and jina-reader fetch → corroborating: heise online EN translation, URL https://www.heise.de/en/news/Swiss-Army-breaks-with-Microsoft-Cyber-Command-relies-on-Open-Source-11361516.html → originating source cited by heise: Republik, URL https://www.republik.ch/2026/07/09/die-cyber-spezialisten-des-bundes-kehren-microsoft-den-ruecken"
+    summary: |
+      The Swiss Armed Forces' Cyber Command and its Cyber and Electromagnetic Actions (CEA) sub-unit are migrating all workstations off Microsoft 365 onto the open-source OpenDesk suite (developed by Germany's Zentrum für digitale Souveränität/Zendis) by October 2026, per reporting picked up by the Swiss trade outlet Inside IT on 2026-07-13 (following an original investigation by Republik on 2026-07-09 and heise coverage on 2026-07-10). Cyber Command chief Simon Müller is quoted stating that as long as providers remain subject to the US CLOUD Act, Microsoft 365 is unusable "for certain military contexts," citing the risk of compelled or hidden data disclosure to US authorities. The decision draws on a 2024 Swiss law requiring federal-government bodies to make in-house authority software source-available, from which the army had previously exempted itself; Cyber Command is now voluntarily adopting the open-source line. Reporting cites parallel precedent: Austria's Bundesheer migrating to LibreOffice, and Germany's Bundeswehr IT house BWI signing a framework agreement with Zendis for OpenDesk. The Federal Chancellery is separately conducting its own feasibility study on a broader civilian migration away from M365. Swiss civil-administration trials (Zurich) found OpenDesk still has gaps versus M365 (desktop-app parity, telephony integration, migration cost clarity) that matter less for an IT-literate specialist unit running its own data centres.
+    region_nexus: "direct — Swiss federal/military administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector (defence/federal administration)"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "This is a policy/vendor-dependency story rather than a threat/vulnerability item; the underlying decision was first reported by Republik on 2026-07-09 and heise on 2026-07-10 (3-4 days before this run), and Inside IT's 2026-07-13 piece appears to be Swiss trade-press picking up the same facts rather than a new development — but it has not previously appeared in ctipilot coverage, is highly relevant to the Swiss federal-SOC constituency's own vendor-risk posture, and Inside IT's publication date is inside the 24h window."
+    extended_notes: |
+      No attacker TTP content — included for its direct relevance to the Swiss federal/military IT dependency and sovereignty posture, which shapes future attack surface (self-hosted OpenDesk vs. M365 cloud) and vendor-risk assessment for the constituency.
+candidate_sources: []
+coverage_gaps:
+  - source_id: cert-at
+    reason: "CERT.at English blog (cert.at/en/news) returned via jina reader; most recent post dated 2026-06-01 — no in-window content. Confirmed empty, not a transport failure."
+  - source_id: cert-pl
+    reason: "cert.pl/en/news/ reachable via jina reader; most recent substantive post (UNC1151/Ghostwriter Gmail campaign) dated June 2026 — outside window. No fresh CERT Polska news post in-window (the CERT Polska energy-sector report cited in this run's FSB Centre 16 item is a January 2026 publication used as technical background, not a fresh post)."
+  - source_id: cert-eu
+    reason: "cert.europa.eu security-advisories RSS returned via bridge; most recent entry is 2026-008 (Ivanti Sentry) dated 2026-06-10 — feed appears not updated since then; no in-window CERT-EU advisory found."
+  - source_id: ccb-belgium
+    reason: "CCB Belgium advisories page fetched (jina); all entries are routine vulnerability patch advisories already in the vulnerability-domain's remit, most recent dated 2026-07-11, none carrying a home-region/sector incident angle distinct from S1 coverage."
+  - source_id: anssi-fr
+    reason: "cert-fr avis-recent and actu-recent both fetched via bridge subcommands; freshest avis batch dated 2026-07-10 (10 items, all routine vendor-patch advisories), freshest actualité bulletin CERTFR-2026-ACT-029 dated 2026-07-06 — no fresh CERT-FR publication inside the 24h window."
+  - source_id: ncsc-ch-security-hub
+    reason: "Cyber Security Hub (CSH) fetched via bridge (ncsc-csh recent 8); freshest post dated 2026-07-10 (Zimbra Classic Web Client, already covered in prior daily run) — no new NCSC-CH CSH post in this run's window."
+  - source_id: us-treasury-ofac
+    reason: "ofac.treasury.gov/recent-actions returned a JS-rendered shell via both direct and bridge fetch (no structured OFAC subcommand available in this tool); could not confirm whether a matching US Treasury sanctions action accompanied today's UK/EU Russia sanctions package. Corroborated via UK gov.uk and BleepingComputer instead; OFAC action (if any) not independently confirmed this run."
+  - source_id: truesec
+  - source_id: withsecure-labs
+  - source_id: infoguard-labs
+  - source_id: edpb
+  - source_id: cnil-fr
+  - source_id: synacktiv
+  - source_id: le-monde-info
+  - source_id: jpcert
+  - source_id: cisa-news
+  - source_id: cisa-directives
+    reason: "standard/essential rotation sources in this run's slice not individually fetched this run; wall-clock was concentrated on the three qualifying items above (ShareFile, FSB Centre 16 joint advisory, Swiss Cyber Command) which required deep multi-hop verification. No indication from WebSearch sweeps that these sources carried additional in-window home-region/sector signal."
