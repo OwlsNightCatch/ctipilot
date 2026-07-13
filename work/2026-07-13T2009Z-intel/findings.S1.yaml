@@ -1,0 +1,251 @@
+domain: S1
+run_id: 2026-07-13T2009Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-13T20:12:20Z
+ended_at: 2026-07-13T20:20:17Z
+duration_seconds: 477
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 9
+  bridge_fetches: 12
+items:
+  - title: "Rejetto HFS < 3.2.1: predictable session-signing PRNG lets unauthenticated attackers forge admin sessions to RCE (six-CVE chain, CVE-2026-61500)"
+    sources:
+      - { url: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key", publisher: "VulnCheck", date: "2026-07-13", role: primary }
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (EUVD-2026-43505)", date: "2026-07-13", role: corroborating }
+      - { url: "https://github.com/rejetto/hfs/releases/tag/v3.2.1", publisher: "Rejetto (GitHub release)", date: "2026-07-13", role: corroborating }
+      - { url: "https://cve.threatint.eu/CVE/CVE-2026-61500", publisher: "THREATINT CVE aggregator", date: "2026-07-13", role: corroborating }
+    discovery_trace: "first seen at: enisa-euvd bridge (recent criticals), URL https://euvd.enisa.europa.eu/ → primary: VulnCheck advisory, URL https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key → corroboration: Rejetto GitHub release notes, URL https://github.com/rejetto/hfs/releases/tag/v3.2.1 → corroboration: THREATINT CVE record, URL https://cve.threatint.eu/CVE/CVE-2026-61500"
+    summary: |
+      VulnCheck (finder: Zach Hanley/Horizon3.ai, with Anthropic Research) disclosed a six-CVE vulnerability
+      chain in Rejetto HFS (HTTP File Server) 3.0.0 through 3.2.0, all fixed in 3.2.1 (2026-07-13). The
+      headline bug, CVE-2026-61500 (CVSS 3.1: 9.8 / CVSS 4.0: 9.3, CWE-338 weak PRNG), derives the
+      session-cookie HMAC signing key from JavaScript's non-cryptographic Math.random() and leaks generator
+      outputs to unauthenticated clients on the login endpoint. An attacker who collects a small number of
+      login responses can reconstruct the PRNG's internal state, recover the signing key, and forge a valid
+      administrator session cookie — reaching full admin access and RCE via HFS's built-in server_code
+      configuration feature (arbitrary server-side script execution). No authentication or user interaction
+      is required. The companion bugs in the same disclosure lower the bar further: CVE-2026-61503 (username
+      enumeration via login-endpoint response differences, incl. the default admin account), CVE-2026-61502
+      (state-changing admin actions accepted over GET with no anti-CSRF check — including code execution
+      with zero credentials on default installs when the request originates from the server's own machine),
+      CVE-2026-61501 (unauthenticated stored XSS via a crafted failed-login username reflected unsanitized
+      into the admin error log, executing when an admin views logs), CVE-2026-61504 (stored XSS via
+      unescaped filenames in HFS's fallback "basic" listing, forceable via ?get=basic, exploitable by
+      anonymous uploaders on open-upload servers), and CVE-2026-61505 (path traversal via the lang query
+      parameter, limited to reading specific JSON files outside shared folders). Rejetto HFS 2.x has a
+      well-documented history of rapid post-disclosure weaponization by opportunistic ransomware and
+      cryptomining botnets (e.g. CVE2024-23692); no in-the-wild exploitation of this 3.x chain has been
+      reported yet, but the pre-auth, internet-facing, patch-just-shipped profile matches that pattern
+      closely.
+    region_nexus: "global; any Swiss/EU organization running an internet-exposed Rejetto HFS instance for ad-hoc file sharing is at risk — this product class has historically been a favored opportunistic-botnet target"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-61500, CVE-2026-61501, CVE-2026-61502, CVE-2026-61503, CVE-2026-61504, CVE-2026-61505]
+    techniques: [T1190]
+    affected_products: ["Rejetto HFS (HTTP File Server)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Rejetto HFS 3.0.0 through 3.2.0 derives its session-cookie signing key from the non-cryptographic Math.random() generator and discloses outputs of the same generator to unauthenticated clients during login."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key"
+      - quote: "A remote attacker can collect a small number of login responses, reconstruct the generator's state, recover the signing key, and forge a valid administrator session cookie, leading to full administrative access and remote code execution via the server_code configuration feature."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key"
+    extended_notes: |
+      Detection concept: HFS instances log HTTP requests; look for repeated rapid login attempts from a
+      single source ahead of a successful admin-cookie-bearing session with no prior credential-setting
+      event — the PRNG-recovery attack requires "a small number" of login responses collected in sequence,
+      which should show as a short burst of /login (or equivalent) requests immediately followed by
+      privileged actions (server_code edits, account creation) from the same session. Hardening: upgrade to
+      3.2.1; if upgrade is not immediately possible, do not expose HFS admin interfaces to the internet and
+      disable the server_code feature. No IOC-level detail published (session tokens/keys are per-instance
+      and not reusable across deployments).
+    watchlist: []
+
+  - title: "ServiceNow AI Platform sandbox escape (CVE-2026-6875) lets unauthenticated requests execute code on the platform — patched 2026-07-13"
+    sources:
+      - { url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947", publisher: "ServiceNow (vendor security KB / PSIRT)", date: "2026-07-13", role: primary }
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (EUVD-2026-43520)", date: "2026-07-13", role: corroborating }
+    discovery_trace: "first seen at: enisa-euvd bridge (recent criticals), URL https://euvd.enisa.europa.eu/ → primary: ServiceNow vendor security KB, URL https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947"
+    summary: |
+      ServiceNow published KB3137947 (initial publication 2026-07-13, article created 2026-07-08) disclosing
+      CVE-2026-6875, a "Sandbox Escape in ServiceNow AI Platform" rated CVSS 4.0: 9.5. Per ServiceNow's own
+      description, the flaw "could enable an unauthenticated user, in certain circumstances, to execute code
+      within the ServiceNow platform" — a sandbox-isolation failure in the AI Platform's code-execution
+      environment, the same general vulnerability class as the earlier ServiceNow AI Platform sandbox-escape
+      RCE disclosed in January 2026 (CVE-2026-0542, already patched, not tracked in this pipeline). ServiceNow
+      states it has already deployed the fix to its own hosted instances; self-hosted customers and partners
+      must apply the listed patches themselves (fixed releases: Brazil EA/GA, Australia Patch 2, Zurich Patch
+      7b/9, Yokohama Patch 12 Hot Fix 1b/13). ServiceNow states it is "not currently aware of exploitation
+      against ServiceNow instances." ServiceNow's AI Platform (Now Assist / AI Agents) underpins ITSM,
+      HR-service-delivery and case-management workflows widely deployed across public-sector and critical-
+      infrastructure operators, making self-hosted/partner-managed instances that have not yet applied the
+      patch the residual exposure to track.
+    region_nexus: "global; ServiceNow is broadly deployed across Swiss/European public-sector ITSM and case-management environments — self-hosted/partner-managed instances are the residual exposure until patched"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, cross-sector"
+    cves: [CVE-2026-6875]
+    techniques: [T1190, T1611]
+    affected_products: ["ServiceNow AI Platform"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ServiceNow has addressed a critical remote code execution vulnerability that was identified in the ServiceNow AI platform. This vulnerability, tracked as CVE-2026-6875, could enable an unauthenticated user, in certain circumstances, to execute code within the ServiceNow platform."
+        attribution: "ServiceNow"
+        source_url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947"
+      - quote: "We are not currently aware of exploitation against ServiceNow instances."
+        attribution: "ServiceNow"
+        source_url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947"
+    extended_notes: |
+      Detection concept: for self-hosted/partner-managed instances, review AI Platform / sandbox execution
+      audit logs (ServiceNow system logs for the AI Agent / code-execution runtime) for unauthenticated or
+      anomalous invocations of sandboxed-execution endpoints preceding unexpected script/record changes.
+      Hardening: apply the listed patch release for your track (Zurich/Yokohama/Australia/Brazil) or confirm
+      with your ServiceNow account team that your hosted instance already received the 2026-07-13 fix.
+    watchlist: []
+
+  - title: "@zereight/mcp-gitlab (GitLab MCP server) path traversal lets an AI agent's own GitLab PAT be redirected to arbitrary API endpoints (CVE-2026-61462)"
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (EUVD-2026-43504)", date: "2026-07-13", role: primary }
+      - { url: "https://github.com/zereight/gitlab-mcp/issues/587", publisher: "zereight/gitlab-mcp (GitHub issue)", date: "2026-07-13", role: corroborating }
+      - { url: "https://github.com/zereight/gitlab-mcp/commit/e2a81a047ab8750fa5bfa1763b5d85e5616f3994", publisher: "zereight/gitlab-mcp (patch commit)", date: "2026-07-13", role: corroborating }
+    discovery_trace: "first seen at: enisa-euvd bridge (recent criticals), URL https://euvd.enisa.europa.eu/ → primary: ENISA EUVD record EUVD-2026-43504, URL https://euvd.enisa.europa.eu/ → corroboration: GitHub issue #587 and patch commit, URL https://github.com/zereight/gitlab-mcp/issues/587"
+    summary: |
+      mcp-gitlab (npm package @zereight/mcp-gitlab), a third-party Model Context Protocol server that gives
+      AI coding agents GitLab access, carries a path-traversal vulnerability (CVE-2026-61462, CVSS 4.0: 9.2)
+      in the job_id parameter of build/index.js. An attacker able to influence the job_id value supplied to
+      the MCP tool call — e.g. via a malicious prompt, a poisoned repository, or an untrusted CI artifact fed
+      to the agent — can supply crafted values such as ../../../user to escape the intended GitLab API path
+      prefix and redirect the request to arbitrary GitLab API resources, executed using the operator's own
+      personal access token. This is a further instance of the broader agentic-tooling exposure pattern
+      already flagged for MCP servers (indirect prompt injection into tool-call parameters escalating to
+      abuse of the operator's own credentials) rather than a novel technique class. Fixed via GitHub commit
+      e2a81a047ab8750fa5bfa1763b5d85e5616f3994. No exploitation reported.
+    region_nexus: "global; relevant to any organization whose developers use AI coding agents wired to GitLab via this MCP connector"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: [CVE-2026-61462]
+    techniques: [T1190]
+    affected_products: ["mcp-gitlab (@zereight/mcp-gitlab)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "mcp-gitlab contains a path traversal vulnerability in the job_id parameter of build/index.js that allows attackers to redirect GitLab API requests to arbitrary endpoints."
+        attribution: "ENISA EUVD (EUVD-2026-43504)"
+        source_url: "https://euvd.enisa.europa.eu/"
+    extended_notes: |
+      Borderline item: niche third-party open-source MCP connector rather than a mainstream enterprise
+      product; included for the AI-agent-tooling trend relevance (matches this org's existing tracked
+      interest in MCP/agentic-tool supply-chain risk) rather than raw deployment scale. Main agent should
+      weigh inclusion against the run's other MCP/agent items.
+    watchlist: []
+    borderline: true
+    borderline_reason: "niche third-party MCP connector (not a mainstream enterprise product); included for AI-agent-tooling trend relevance, moderate independent severity"
+
+cve_table:
+  - cve: CVE-2026-61500
+    product: "Rejetto HFS"
+    cvss: "9.8 (3.1) / 9.3 (4.0)"
+    epss: null
+    kev: false
+    exploited: "not observed (disclosed 2026-07-13, historically rapid weaponization for this product class)"
+    patch: "3.2.1"
+    source: "https://www.vulncheck.com/advisories/rejetto-hfs-session-forgery-via-predictable-signing-key"
+  - cve: CVE-2026-61501
+    product: "Rejetto HFS"
+    cvss: "unspecified (part of same disclosure)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "3.2.1"
+    source: "https://cve.threatint.eu/CVE/CVE-2026-61501"
+  - cve: CVE-2026-61502
+    product: "Rejetto HFS"
+    cvss: "unspecified (part of same disclosure)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "3.2.1"
+    source: "https://cve.threatint.eu/CVE/CVE-2026-61502"
+  - cve: CVE-2026-61503
+    product: "Rejetto HFS"
+    cvss: "unspecified (part of same disclosure)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "3.2.1"
+    source: "https://cve.threatint.eu/CVE/CVE-2026-61503"
+  - cve: CVE-2026-61504
+    product: "Rejetto HFS"
+    cvss: "unspecified (part of same disclosure)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "3.2.1"
+    source: "https://cve.threatint.eu/CVE/CVE-2026-61504"
+  - cve: CVE-2026-61505
+    product: "Rejetto HFS"
+    cvss: "unspecified (part of same disclosure)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "3.2.1"
+    source: "https://cve.threatint.eu/CVE/CVE-2026-61505"
+  - cve: CVE-2026-6875
+    product: "ServiceNow AI Platform"
+    cvss: "9.5 (4.0)"
+    epss: null
+    kev: false
+    exploited: "not observed; ServiceNow states no known exploitation"
+    patch: "Zurich Patch 7b/9, Yokohama Patch 12 HF1b/13, Australia Patch 2, Brazil EA/GA"
+    source: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947"
+  - cve: CVE-2026-61462
+    product: "mcp-gitlab (@zereight/mcp-gitlab)"
+    cvss: "9.2 (4.0)"
+    epss: null
+    kev: false
+    exploited: "not observed"
+    patch: "GitHub commit e2a81a047ab8750fa5bfa1763b5d85e5616f3994"
+    source: "https://euvd.enisa.europa.eu/"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment (no-op per spawn tasking); general coverage rules applied"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: trendmicro-research
+    reason: "feed (feeds.feedburner.com/TrendMicroResearch) has not published since 2026-06-29 — appears stale/not updated in the last two weeks; no in-window items available regardless of transport."
+  - source_id: ncsc-uk
+    reason: "https://www.ncsc.gov.uk/section/keep-up-to-date/all-feeds returned a cookie-consent shell with no article content via WebFetch; the guessed feed path https://www.ncsc.gov.uk/api/1/services/v1/report-feed.rss and https://www.ncsc.gov.uk/api/1/services/v1/all-feeds.xml both 404'd. No working feed URL found in the time available; recommend the sources.json record be updated with a verified NCSC-UK feed/API path."
+  - source_id: cert-eu
+    reason: "not fetched this run — essential-tier time was concentrated on CISA KEV / ENISA EUVD / NCSC-CH / NCSC-NL / BSI / CERT-FR / CISA advisory attempts, which surfaced no in-window CERT-EU-exclusive items via cross-checks; direct cert.europa.eu fetch not attempted before time allocation moved to vulnerability deep-dives."
+  - source_id: cert-pl
+    reason: "not fetched this run due to time allocation; no CERT-PL-exclusive lead surfaced via other sources or search."
+  - source_id: shadowserver
+    reason: "not fetched this run due to time allocation; no Shadowserver-exclusive lead surfaced via other sources or search."
+  - source_id: snyk-research
+    reason: "not fetched this run due to time allocation."
+  - source_id: cisa-advisories
+    reason: "https://www.cisa.gov/news-events/cybersecurity-advisories listing page returned only filter-facet UI content via the cisa bridge tool (JS-rendered listing, no article links surfaced in the fetched body); cross-checked via WebSearch instead, which found no in-window CISA cybersecurity-advisory items beyond the already-covered AA26-194A (published 2026-07-09, entry already exists from the morning run) and the already-covered Joomla KEV additions."
+  - source_id: cisa-directives
+    reason: "not fetched this run; no directive-related lead surfaced via other sources or search."
