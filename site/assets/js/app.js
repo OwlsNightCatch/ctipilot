@@ -379,20 +379,19 @@
     });
   }
 
-  // ── Ops dashboard: run navigator (Run log section) ─────────────────
-  // The old in-page panel picker is gone — every run has its own page at
-  // /runs/<run-id>/, so the <select> simply navigates there. Legacy
-  // #run=<id> deep links (from the removed picker) redirect to the page.
+  // ── Ops dashboard: legacy #run=<id> deep links ─────────────────────
+  // The in-page run picker is gone — every run lives on its own page at
+  // /runs/<run-id>/, and the Run log table's run ids link there. Old
+  // bookmarked /ops/#run=<id> links redirect to the run's page.
   function wireOpsRunPicker() {
-    var sel = document.getElementById('ops-run-select');
-    if (!sel) return;
-    var base = sel.getAttribute('data-run-nav');
-    if (base == null) return;
-    sel.addEventListener('change', function () {
-      if (sel.value) window.location.href = base + encodeURIComponent(sel.value) + '/';
-    });
+    var marker = document.querySelector('[data-runs-base]');
+    if (!marker) return;
     var m = (window.location.hash || '').match(/run=([^&]+)/);
-    if (m) window.location.replace(base + encodeURIComponent(decodeURIComponent(m[1])) + '/');
+    if (m) {
+      window.location.replace(
+        marker.getAttribute('data-runs-base') + encodeURIComponent(decodeURIComponent(m[1])) + '/'
+      );
+    }
   }
 
   // ── list-page filters (briefs / cves / topics / sources / entities) ─

@@ -2641,6 +2641,9 @@ def render_run_note(run: dict[str, Any], *, base_url: str | None = None) -> str:
     header (run_id, models, window_hours, entries_published)."""
     rid = str(run.get("run_id") or "?")
     bits: list[str] = []
+    kind = str(run.get("kind") or "")
+    if kind and kind != "intel":
+        bits.append(_escape(kind))
     model = run.get("model")
     if model:
         bits.append(_escape(str(model)))
@@ -6227,10 +6230,101 @@ def _verification_clean_publish(run: dict[str, Any]) -> bool:
     Returns ``False`` for runs where verification never ran / was not recorded
     (``verification_iterations is None``) so they are excluded from the rate
     rather than silently counted as clean.
+
+    "Published clean" is deliberately orthogonal to the v3.23 double-CLEAN
+    gate: whether that CLEAN was confirmed by a second model is classified
+    separately by ``_verification_confirmation``, and the remediation effort
+    behind it by ``_verification_fix_rounds``.
     """
     if run.get("verification_iterations") is None:
         return False
     return (run.get("verification_residual_count") or 0) == 0
+
+
+# Prompt v3.23 introduced the double-CLEAN publish gate: a CLEAN publish
+# requires the final TWO verifier iterations both CLEAN, on two different
+# models. Runs from earlier prompt versions legitimately published on a
+# single CLEAN — their status is reported as such, never flagged.
+_DOUBLE_CLEAN_FROM = (3, 23)
+_PV_RE = re.compile(r"^v?(\d+)\.(\d+)")
+
+
+def _prompt_version_tuple(pv: Any) -> tuple[int, int] | None:
+    """`v3.23` / `3.23(.x)` → (3, 23); None when unparseable."""
+    m = _PV_RE.match(str(pv or "").strip())
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def _verifier_identity(it: dict[str, Any]) -> str:
+    """Which verifier ran an iteration — `subagent_type` (main-agent
+    recorded, reliable) first, self-reported model id/name as fallback."""
+    return (str(it.get("subagent_type") or "").strip()
+            or str(it.get("model_id") or "").strip()
+            or str(it.get("model") or "").strip())
+
+
+def _verification_confirmation(run: dict[str, Any]) -> dict[str, Any]:
+    """Classify a run's standing under the v3.23 double-CLEAN publish gate.
+
+    Returns ``{"status", "gated", "waiver", "models"}`` where ``status`` is:
+
+    - ``confirmed``   — final two iterations both CLEAN, different verifiers
+      (the gate's success outcome);
+    - ``same-model``  — final two both CLEAN but the same verifier identity
+      (legitimate only as a recorded spawn-failure exception);
+    - ``waived``      — final CLEAN unconfirmed, with
+      ``verification.confirmation_waived`` naming why (recorded fail-open);
+    - ``single``      — final CLEAN unconfirmed, no waiver. Expected on
+      pre-v3.23 runs (``gated`` False); a gate violation on v3.23+ runs;
+    - ``residual``    — final verdict NEEDS_FIXES (low-residual early exit
+      or cap fail-open — the gate governs only the CLEAN path);
+    - ``none``        — no per-iteration telemetry recorded.
+
+    ``gated`` is True when the run's prompt_version is v3.23+, ``waiver``
+    carries the confirmation_waived string, ``models`` the confirming pair's
+    self-reported model names (for display) when status is confirmed."""
+    v = _prompt_version_tuple(run.get("prompt_version"))
+    gated = v is not None and v >= _DOUBLE_CLEAN_FROM
+    ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
+    waiver = str(ver.get("confirmation_waived") or "").strip() or None
+    raw = ver.get("iterations") if isinstance(ver.get("iterations"), list) else []
+    iters = [i for i in raw if isinstance(i, dict)]
+    out = {"status": "none", "gated": gated, "waiver": waiver, "models": None}
+    if not iters:
+        return out
+    final = iters[-1]
+    if (final.get("verdict") or "").upper() != "CLEAN":
+        out["status"] = "residual"
+        return out
+    prev = iters[-2] if len(iters) >= 2 else None
+    if prev is None or (prev.get("verdict") or "").upper() != "CLEAN":
+        out["status"] = "waived" if waiver else "single"
+        return out
+    ia, ib = _verifier_identity(prev), _verifier_identity(final)
+    out["models"] = (str(prev.get("model") or ia or "?"),
+                     str(final.get("model") or ib or "?"))
+    out["status"] = "same-model" if (ia and ib and ia == ib) else "confirmed"
+    return out
+
+
+def _verification_fix_rounds(run: dict[str, Any]) -> int | None:
+    """How many verifier iterations returned NEEDS_FIXES — the remediation
+    rounds the run actually needed. Distinct from the iteration count: under
+    the v3.23 double-CLEAN gate a defect-free run takes two iterations
+    (CLEAN + the other-model confirmation) with ZERO fix rounds, so
+    ``iterations - 1`` would wrongly paint every confirmed run as
+    remediated. Falls back to the legacy scalar approximation
+    (``verification_iterations - 1``) when per-iteration telemetry is
+    absent; None when verification never ran."""
+    ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
+    raw = ver.get("iterations") if isinstance(ver.get("iterations"), list) else []
+    iters = [i for i in raw if isinstance(i, dict)]
+    if iters:
+        return sum(1 for it in iters if (it.get("verdict") or "").upper() != "CLEAN")
+    vi = run.get("verification_iterations")
+    if vi is None:
+        return None
+    return max(0, int(vi) - 1)
 
 
 def render_ops_page(
@@ -6260,9 +6354,8 @@ def render_ops_page(
     #   - Health KPIs + trend charts are GLOBAL — computed over every recorded
     #     run, not a 30-run slice (the operator asked for global stats).
     #   - The run-log table renders all runs (paginated client-side); it is
-    #     ALSO the run selector — every row links to that run's detail page
-    #     at /runs/<run-id>/, and a jump-to <select> navigates the 30 most
-    #     recent directly.
+    #     ALSO the run selection surface — every row's Run cell is the run id
+    #     linking to that run's detail page at /runs/<run-id>/.
     #   - The dashboard renders ONLY the latest run's detail panel inline;
     #     every other run's identical panel lives on its own page (the old
     #     in-page 30-panel selector was replaced by the per-run pages).
@@ -6270,11 +6363,14 @@ def render_ops_page(
     all_desc = list(reversed(all_runs))          # newest first, ALL runs
     runs_desc = all_desc                          # KPIs + charts: global
     runs_asc = list(reversed(runs_desc))          # chronological, all runs
-    nav_runs = all_desc[:30]                      # run-log jump-to <select> (bounded)
     heatmap_runs = all_desc[:16]                  # fetch-density (compact)
 
-    daily_runs = [r for r in runs_desc if r.get("kind", "daily") != "weekly"]
+    daily_runs = [r for r in runs_desc if r.get("kind", "intel") not in ("weekly", "audit")]
     weekly_runs = [r for r in runs_desc if r.get("kind") == "weekly"]
+    audit_runs = [r for r in runs_desc if r.get("kind") == "audit"]
+    kind_split_label = f"{len(daily_runs)} intel · {len(weekly_runs)} weekly" + (
+        f" · {len(audit_runs)} audit" if audit_runs else ""
+    )
     today = datetime.now(timezone.utc).date()
 
     # ----- KPI computation --------------------------------------------------
@@ -6301,6 +6397,17 @@ def render_ops_page(
     clean_runs = sum(1 for r in runs_desc if _verification_clean_publish(r))
     rated_runs = sum(1 for r in runs_desc if r.get("verification_iterations") is not None)
     clean_rate = (clean_runs / rated_runs * 100) if rated_runs else None
+
+    # Double-CLEAN gate (prompt v3.23+): every gated run's confirmation
+    # standing, so the dashboard shows whether CLEAN publishes really carry
+    # two models' agreement and how often the fail-opens fire.
+    conf_by_run = {id(r): _verification_confirmation(r) for r in runs_desc}
+    gated_runs = [r for r in runs_desc if conf_by_run[id(r)]["gated"]]
+    gated_counts = Counter(conf_by_run[id(r)]["status"] for r in gated_runs)
+    gated_confirmed = gated_counts.get("confirmed", 0)
+    gated_fallopen = (gated_counts.get("waived", 0) + gated_counts.get("single", 0)
+                      + gated_counts.get("same-model", 0))
+    gated_residual = gated_counts.get("residual", 0)
 
     # Aggregate failure / stall counts across the window.
     total_failures = sum(len(r.get("fetch_failures") or []) for r in runs_desc)
@@ -6349,14 +6456,14 @@ def render_ops_page(
 
     # Verification stacks: clean outcome (green) + remediation rounds (yellow)
     # + residuals (red). Green marks a clean publish regardless of how many
-    # iterations it took; yellow shows the remediation rounds it took to get
-    # there, so a brief that reached CLEAN after several iterations still
-    # reads as ultimately-clean rather than as a string of yellow with no
-    # green (which contradicted the clean-rate KPI).
+    # iterations it took; yellow shows the FIX rounds it actually needed
+    # (NEEDS_FIXES iterations — not the raw iteration count, which since the
+    # v3.23 double-CLEAN gate includes the other-model confirmation pass and
+    # would paint every perfectly clean run yellow).
     verification_stacks: list[list[tuple[float, str]]] = []
     for r in runs_asc:
         clean = 1 if _verification_clean_publish(r) else 0
-        needs = max(0, (r.get("verification_iterations") or 0) - 1)
+        needs = _verification_fix_rounds(r) or 0
         residuals = r.get("verification_residual_count") or 0
         verification_stacks.append([
             (clean, "var(--ok)"),
@@ -6469,25 +6576,9 @@ def render_ops_page(
     # data is not presented twice.
 
     # ----- Run-log table (ALL runs, paginated client-side) -----------------
-    # The history is the run selector: every row's Run cell links to that
-    # run's detail page, and the jump-to <select> (app.js wireOpsRunPicker,
-    # CSP-safe) navigates straight to one of the most recent 30.
-    runs_table_html = _ops_render_runs_table(all_desc, palette, prefix=prefix,
-                                             day_pages=day_pages)
-    nav_options = "".join(
-        f'<option value="{_escape(str(r.get("run_id")))}">'
-        f'{_escape(_ops_run_picker_label(r))}</option>'
-        for r in nav_runs if r.get("run_id")
-    )
-    run_nav_html = (
-        '<div class="ops-run-picker">'
-        '<label class="ops-run-picker__label" for="ops-run-select">Open run</label>'
-        f'<select id="ops-run-select" class="ops-run-picker__select" '
-        f'data-run-nav="{_escape(prefix)}runs/" '
-        f'aria-label="Open a run&#39;s detail page">'
-        f'<option value="" selected>jump to a run page…</option>{nav_options}</select>'
-        '</div>'
-    ) if nav_options else ""
+    # The history is the run selection surface: every row's Run cell is the
+    # run id, linking to that run's detail page. No separate selector widget.
+    runs_table_html = _ops_render_runs_table(all_desc, palette, prefix=prefix)
 
     # ----- Stale-active-sources MOVED TO /sources/ ----------------
     # The "Stale active sources" panel that previously lived here is now
@@ -6503,6 +6594,8 @@ def render_ops_page(
         last_run_label += f' <span class="muted ops-kpi__delta">({days_since_last}d ago)</span>'
     clean_rate_str = f"{clean_rate:.0f}%" if clean_rate is not None else "—"
     clean_rate_sub = f"{clean_runs}/{rated_runs} clean publish" if rated_runs else "no telemetry yet"
+    if gated_runs:
+        clean_rate_sub += f" · {gated_confirmed} double-confirmed"
     if clean_rate is None:
         clean_rate_kind = "neutral"
     elif clean_rate >= 80:
@@ -6520,7 +6613,7 @@ def render_ops_page(
     primary_kpis = (
         '<div class="ops-kpi-row">'
         + _ops_kpi_tile("Last run", last_run_label,
-                        sub=f"{len(daily_runs)} intel · {len(weekly_runs)} weekly in window",
+                        sub=f"{kind_split_label} in window",
                         kind=("warn" if days_since_last > 1 else "ok"),
                         primary=True)
         + _ops_kpi_tile("Verification clean-rate", clean_rate_str, sub=clean_rate_sub,
@@ -6542,7 +6635,7 @@ def render_ops_page(
     secondary_kpis = (
         '<div class="ops-kpi-grid">'
         + _ops_kpi_tile("Total runs (window)", str(min(total_runs, len(runs_desc))),
-                        sub=f"{len(daily_runs)} intel · {len(weekly_runs)} weekly",
+                        sub=kind_split_label,
                         chart=_ops_svg_bars(runs_per_day_series,
                                               width=140, height=28,
                                               color="var(--accent)", track="var(--bg)",
@@ -6560,6 +6653,16 @@ def render_ops_page(
                         chart=_ops_svg_bars(items_series, width=140, height=28,
                                               color="var(--ok)",
                                               label="Entries per run"))
+        + _ops_kpi_tile(
+            "Double-CLEAN gate",
+            (f"{gated_confirmed}/{len(gated_runs)}" if gated_runs else "—"),
+            sub=(
+                (f"confirmed by two models · {gated_residual} residual publish · "
+                 f"{gated_fallopen} fail-open")
+                if gated_runs else "no v3.23+ runs yet (gate active from the next fire)"
+            ),
+            kind=("warn" if gated_fallopen else ("ok" if gated_runs else "neutral")),
+        )
         + '</div>'
     )
 
@@ -6603,10 +6706,9 @@ def render_ops_page(
   </div>
 </section>
 
-<section class="ops-cluster" id="runlog">
+<section class="ops-cluster" id="runlog" data-runs-base="{prefix}runs/">
   <h2 class="ops-cluster__head">Run log</h2>
-  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), and verification verdict. <strong>The Run cell links to that run's detail page</strong> at <code>/runs/&lt;run-id&gt;/</code> — full telemetry panel plus the run's verification &amp; coverage notes — and the jump-to selector opens one of the 30 most recent directly. Shows 10 per page by default; use the page-size selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
-  {run_nav_html}
+  <p class="ops-cluster__intro">Every recorded run, newest first · duration, entries published / updated, fetch failures, source-list edits (<strong>Src Δ</strong>), publish follow-through, and verification verdict (incl. the v3.23 double-CLEAN confirmation). <strong>Each run id links to that run's detail page</strong> at <code>/runs/&lt;run-id&gt;/</code> — the full telemetry panel plus the run's verification &amp; coverage notes. Shows 10 per page by default; use the page-size selector to expand to 35 / 50 / 100 and the pager to step through the rest.</p>
   {runs_table_html}
 </section>
 
@@ -7079,6 +7181,8 @@ def _ops_render_verification_iterations(
     iters: list[Any], *,
     legacy_count: int | None,
     legacy_residual: int | None,
+    confirmation: dict[str, Any] | None = None,
+    dropped: int | None = None,
 ) -> tuple[str, str]:
     """return (chips_html, findings_html) instead of one combined
     string. The chips_html is the compact iteration timeline that fits in
@@ -7107,7 +7211,36 @@ def _ops_render_verification_iterations(
         return '<p class="muted">No verification telemetry recorded.</p>', ""
 
     # ── Chip row (compact roll-up) ────────────────────────────────────
+    # A leading summary chip states the run's standing under the v3.23
+    # double-CLEAN publish gate; the per-iteration chips follow.
     chip_blocks: list[str] = []
+    conf = confirmation or {}
+    status = conf.get("status")
+    if status == "confirmed":
+        ma, mb = conf.get("models") or ("?", "?")
+        chip_blocks.append(
+            f'<span class="ops-pill ops-pill--ok" title="double-CLEAN publish gate '
+            f'(v3.23): the final two iterations returned CLEAN on two different models">'
+            f'✓ double-CLEAN · {_escape(ma)} + {_escape(mb)}</span>'
+        )
+    elif status == "same-model":
+        chip_blocks.append(
+            '<span class="ops-pill ops-pill--warn" title="the final two iterations '
+            'returned CLEAN but ran the same verifier — legitimate only as a recorded '
+            'spawn-failure exception">double-CLEAN · same model</span>'
+        )
+    elif status == "waived":
+        waiver = (conf.get("waiver") or "")[:80]
+        chip_blocks.append(
+            f'<span class="ops-pill ops-pill--warn" title="published on a single CLEAN '
+            f'under a recorded fail-open">unconfirmed CLEAN · waived: {_escape(waiver)}</span>'
+        )
+    elif status == "single" and conf.get("gated"):
+        chip_blocks.append(
+            '<span class="ops-pill ops-pill--warn" title="v3.23+ run published on a '
+            'single CLEAN with no confirmation pass and no recorded waiver — '
+            'check_run flags this pre-commit">unconfirmed CLEAN</span>'
+        )
     for it in iters:
         if not isinstance(it, dict):
             continue
@@ -7125,6 +7258,12 @@ def _ops_render_verification_iterations(
             '</span>'
         )
     chips_html = '<div class="ops-chip-row">' + " ".join(chip_blocks) + '</div>'
+    if isinstance(dropped, int) and dropped > 0:
+        chips_html += (
+            f'<p class="muted">{dropped} entr{"y" if dropped == 1 else "ies"} '
+            'dropped by verification this run (recorded in the verification &amp; '
+            'coverage notes).</p>'
+        )
 
     # ── Per-iteration findings tables (full-width, stacked) ───────────
     final_idx = len(iters) - 1
@@ -7256,25 +7395,9 @@ def _ops_render_verification_iterations(
     return chips_html, findings_html
 
 
-def _ops_run_picker_label(run: dict[str, Any]) -> str:
-    """One-line label for a run in the run-detail <select>.
-
-    `<run_id> · <kind> · <verdict>` · e.g. "2026-07-03T0412Z-intel · intel ·
-    CLEAN". Multiple runs per day make the date alone ambiguous, so the
-    label leads with the run id. The verdict mirrors the clean-publish
-    definition: residual == 0 ⇒ CLEAN, else NEEDS_FIXES with the residual
-    count. Runs without verification telemetry show no verdict tag.
-    """
-    rid = run.get("run_id") or run.get("date") or "?"
-    kind = run.get("kind", "intel")
-    bits = [str(rid), str(kind)]
-    if run.get("verification_iterations") is not None:
-        residual = run.get("verification_residual_count") or 0
-        if residual == 0:
-            bits.append("CLEAN")
-        else:
-            bits.append(f"NEEDS_FIXES ({residual} residual)")
-    return " · ".join(bits)
+# (the run-detail <select> and its _ops_run_picker_label were removed:
+#  run selection is the Run log table itself — each row's run id links to
+#  /runs/<run-id>/.)
 
 
 def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *,
@@ -7301,15 +7424,27 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
     failures = run.get("fetch_failures") or []
 
     # Sub-agent cards. Base slots per kind + any extra recorded keys
-    # (the conditional S5 / W3 closed-source intake agents).
-    base_keys = ("W1", "W2") if kind == "weekly" else ("S1", "S2", "S3", "S4")
+    # (the conditional S5 / W3 closed-source intake agents). Audit runs have
+    # no fixed slots — their retrospective passes carry ad-hoc keys, so only
+    # the recorded ones render (no synthetic "absent" S1–S4 cards).
+    if kind == "weekly":
+        base_keys: tuple[str, ...] = ("W1", "W2")
+    elif kind == "audit":
+        base_keys = ()
+    else:
+        base_keys = ("S1", "S2", "S3", "S4")
     recorded = run.get("sub_agents") or {}
     extra_keys = tuple(k for k in sorted(recorded) if k not in base_keys)
     sa_cards: list[str] = []
     for k in base_keys + extra_keys:
         a = recorded.get(k) or {}
         sa_cards.append(_ops_render_subagent_card(k, a, palette))
-    sa_grid = f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
+    sa_grid = (
+        f'<div class="ops-sa-grid">{"".join(sa_cards)}</div>'
+        if sa_cards else
+        '<p class="muted">No sub-agent passes recorded for this run '
+        '(stood-down fire or pre-Phase-1 abort).</p>'
+    )
 
     # Entries this run published (links to permalinks).
     entries_block = ""
@@ -7362,6 +7497,26 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
         iters,
         legacy_count=run.get("verification_iterations"),
         legacy_residual=run.get("verification_residual_count"),
+        confirmation=_verification_confirmation(run),
+        dropped=run.get("entries_dropped_by_verification"),
+    )
+
+    # Head pills: publish follow-through (Phase 7, v3.14+) and a stood-down
+    # marker (a fire that legitimately aborted pre-Phase-1, e.g. the
+    # duplicate-audit guard) — both operator signals that were previously
+    # only visible in the raw record.
+    ps = run.get("publish_status")
+    publish_pill = {
+        "ok": '<span class="ops-pill ops-pill--ok" title="run record on main AND the site rebuild confirmed (Phase 7)">publish ok</span>',
+        "main-only": '<span class="ops-pill ops-pill--warn" title="record reached main but the site rebuild never confirmed">publish main-only</span>',
+        "pending": '<span class="ops-pill ops-pill--warn" title="Phase 7 never confirmed publication">publish pending</span>',
+    }.get(ps or "", "")
+    stood_down = str(run.get("stood_down") or "").strip()
+    stood_down_pill = (
+        f'<span class="ops-pill ops-pill--warn" title="fire aborted before Phase 1 '
+        f'spawned any workers — a stand-down still writes its run record">'
+        f'stood down: {_escape(stood_down)}</span>'
+        if stood_down else ""
     )
 
     return f"""
@@ -7371,6 +7526,8 @@ def _ops_render_latest_run_panel(run: dict[str, Any], palette: dict[str, str], *
       {f'<a class="ops-latest__date mono" href="{prefix}daily/{_escape(date)}/">{_escape(rid)}</a>' if date in day_pages else f'<span class="ops-latest__date mono">{_escape(rid)}</span>'}
       <span class="ops-pill ops-pill--neutral">{_escape(kind)}</span>
       <span class="ops-pill ops-pill--accent">prompt v{_escape(pv)}</span>
+      {publish_pill}
+      {stood_down_pill}
     </div>
     <div class="ops-latest__meta">
       <span class="mono">{_escape(duration)}</span>
@@ -7584,9 +7741,7 @@ def _ops_render_subagent_card(key: str, data: dict[str, Any], palette: dict[str,
 
 
 def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], *,
-                            prefix: str,
-                            day_pages: set[str] | None = None) -> str:
-    day_pages = day_pages or set()
+                            prefix: str) -> str:
     if not runs:
         return (
             '<div class="empty">'
@@ -7625,11 +7780,20 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
     for r in runs:
         sa = r.get("sub_agents") or {}
         kind = r.get("kind", "intel")
-        keys = ("W1", "W2") if kind == "weekly" else ("S1", "S2", "S3", "S4")
-        cells = "".join(f'<td>{_sa_cell(sa.get(k))}</td>' for k in keys)
-        # Pad weekly rows out to four sub-agent columns so columns align.
+        # Sub-agent columns: fixed S1–S4 / W1–W2 slots per run kind; audit
+        # runs record ad-hoc retrospective-pass keys, so show the first four
+        # recorded ones. Rows are always padded to four columns so the table
+        # aligns across kinds.
         if kind == "weekly":
-            cells += '<td><span class="muted">–</span></td><td><span class="muted">–</span></td>'
+            keys: list[str] = ["W1", "W2"]
+        elif kind == "audit":
+            keys = sorted(k for k in sa if isinstance(sa.get(k), dict))[:4]
+        else:
+            keys = ["S1", "S2", "S3", "S4"]
+        cells = "".join(
+            f'<td title="{_escape(k)}">{_sa_cell(sa.get(k))}</td>' for k in keys
+        )
+        cells += '<td><span class="muted">–</span></td>' * (4 - len(keys))
         failures = len(r.get("fetch_failures") or [])
         failures_html = (
             f'<span class="ops-pill ops-pill--warn">{failures}</span>'
@@ -7638,24 +7802,70 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
         )
         main_name = _ops_model_label(r.get("model"), r.get("model_id"))
         main_colour = _ops_color_for_model(main_name, palette)
+
+        # Publish follow-through (Phase 7 telemetry, v3.14+).
+        ps = r.get("publish_status")
+        if ps == "ok":
+            pub_html = ('<span class="ops-pill ops-pill--ok" title="run record on main '
+                        'AND the site rebuild confirmed (Phase 7)">ok</span>')
+        elif ps == "main-only":
+            pub_html = ('<span class="ops-pill ops-pill--warn" title="record reached main '
+                        'but the site rebuild never confirmed">main-only</span>')
+        elif ps == "pending":
+            pub_html = ('<span class="ops-pill ops-pill--warn" title="Phase 7 never '
+                        'confirmed publication — the fire died before the amendment '
+                        'or its push failed">pending</span>')
+        else:
+            pub_html = '<span class="muted" title="pre-v3.14 record — no publish telemetry">–</span>'
+
+        # Verification verdict — residual-aware, and double-CLEAN-aware for
+        # v3.23+ runs (×2 = the final two iterations CLEAN on two different
+        # models; fix rounds count NEEDS_FIXES iterations, so a defect-free
+        # confirmed run reads `clean ×2`, never a remediation warning).
         verif_iters = r.get("verification_iterations")
         verif_residual = r.get("verification_residual_count") or 0
+        conf = _verification_confirmation(r)
+        fix_rounds = _verification_fix_rounds(r) or 0
         if verif_iters is None:
             verif_html = '<span class="muted">–</span>'
         elif verif_residual:
             verif_html = (
                 f'<span class="ops-pill ops-pill--crit" '
-                f'title="{verif_iters} iteration(s); {verif_residual} unresolved finding(s)">'
+                f'title="{verif_iters} iteration(s); {verif_residual} unresolved finding(s) '
+                f'(low-residual early exit or cap fail-open)">'
                 f'{verif_iters}↻ · {verif_residual}r</span>'
             )
-        elif verif_iters > 1:
+        elif conf["gated"] and conf["status"] == "same-model":
+            verif_html = (
+                '<span class="ops-pill ops-pill--warn" '
+                'title="double-CLEAN reached, but both confirming iterations ran the same '
+                'verifier — legitimate only as a recorded spawn-failure exception">'
+                'clean ×2 same-model</span>'
+            )
+        elif conf["gated"] and conf["status"] in ("single", "waived"):
+            reason = conf["waiver"] or "no second-model confirmation recorded"
             verif_html = (
                 f'<span class="ops-pill ops-pill--warn" '
-                f'title="{verif_iters} iteration(s); cleaned up">'
-                f'{verif_iters}↻</span>'
+                f'title="published on a single CLEAN — {_escape(reason)}">'
+                'clean · unconfirmed</span>'
             )
         else:
-            verif_html = '<span class="ops-pill ops-pill--ok">clean</span>'
+            x2 = " ×2" if conf["status"] == "confirmed" else ""
+            x2_title = (" · double-CLEAN confirmed by two models"
+                        if conf["status"] == "confirmed" else "")
+            if fix_rounds:
+                verif_html = (
+                    f'<span class="ops-pill ops-pill--warn" '
+                    f'title="{verif_iters} iteration(s), {fix_rounds} fix round(s), '
+                    f'published clean{x2_title}">'
+                    f'{fix_rounds}↻ clean{x2}</span>'
+                )
+            else:
+                verif_html = (
+                    f'<span class="ops-pill ops-pill--ok" '
+                    f'title="no findings{x2_title or " (pre-v3.23 single-CLEAN gate)"}">'
+                    f'clean{x2}</span>'
+                )
         duration = _ops_format_duration(r.get("duration_seconds"))
         items_pub = r.get("entries_published")
         items_pub_str = str(items_pub) if items_pub is not None else "—"
@@ -7671,18 +7881,19 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             src_delta_html = '<span class="muted">0</span>'
 
         rid = str(r.get("run_id") or r.get("date") or "?")
-        rdate = str(r.get("date") or "")
-        # The Run cell is the history's run selector: it links to the run's
-        # own detail page (telemetry panel + verification & coverage notes).
-        date_cell = (
+        # The Run cell is the history's run selection surface: the run id
+        # itself (unambiguous across multiple fires per day), linking to the
+        # run's own detail page (telemetry panel + verification & coverage
+        # notes).
+        run_cell = (
             f'<a href="{prefix}runs/{_escape(rid)}/" '
-            f'title="{_escape(rid)} · open run details">{_escape(rdate or rid)}</a>'
+            f'title="open run details · verification &amp; coverage notes">{_escape(rid)}</a>'
             if r.get("run_id")
-            else f'<span title="{_escape(rid)}">{_escape(rdate or "?")}</span>'
+            else f'<span>{_escape(rid)}</span>'
         )
         rows.append(
             '<tr>'
-            f'<td class="mono">{date_cell}</td>'
+            f'<td class="mono">{run_cell}</td>'
             f'<td><span class="ops-pill ops-pill--neutral">{_escape(kind)}</span></td>'
             f'<td><span class="ops-legend__swatch" style="background:{main_colour}"></span>'
             f' <span class="mono">{_escape(main_name)}</span></td>'
@@ -7693,19 +7904,26 @@ def _ops_render_runs_table(runs: list[dict[str, Any]], palette: dict[str, str], 
             f'{cells}'
             f'<td>{failures_html}</td>'
             f'<td>{src_delta_html}</td>'
+            f'<td>{pub_html}</td>'
             f'<td>{verif_html}</td>'
             '</tr>'
         )
 
     table = (
         '<div class="data-wrap"><table class="data ops-runs-table">'
-        '<thead><tr><th>Run</th><th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
+        '<thead><tr><th title="Run id — links to the run\'s detail page">Run</th>'
+        '<th>Kind</th><th>Main model</th><th>Prompt</th><th>Duration</th>'
         '<th title="Entries published this run">Entries</th>'
         '<th title="Of which update_of entries">Upd</th>'
-        '<th>S1/W1</th><th>S2/W2</th><th>S3</th><th>S4</th>'
+        '<th title="S1 (intel) / W1 (weekly) / 1st audit pass">S1/W1</th>'
+        '<th title="S2 (intel) / W2 (weekly) / 2nd audit pass">S2/W2</th>'
+        '<th title="S3 (intel) / 3rd audit pass">S3</th>'
+        '<th title="S4 (intel) / 4th audit pass">S4</th>'
         '<th title="Fetch failures (coverage gaps)">Fetch fail</th>'
         '<th title="sources/sources.json edits this run (hover for breakdown)">Src Δ</th>'
-        '<th>Verif</th></tr></thead>'
+        '<th title="Publish follow-through (Phase 7): ok / main-only / pending">Pub</th>'
+        '<th title="Verification verdict · ×2 = double-CLEAN confirmed by two models (v3.23+)">Verif</th>'
+        '</tr></thead>'
         '<tbody data-pager-rows>' + "".join(rows) + '</tbody></table></div>'
     )
     return _ops_pager_wrap(table, pagesize=10, size_select=True)

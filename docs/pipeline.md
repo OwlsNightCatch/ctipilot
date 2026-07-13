@@ -67,12 +67,14 @@ e.g.     2026-07-03T0412Z-intel           runs/2026-07-03/2026-07-03T0412Z-intel
 - UTC, minute precision. Lexically sortable. Deterministic: a same-minute
   retry computes the same `run_id` and updates the same record in place
   (idempotent retry, same rationale as v2's sha8 scheme).
-- The suffix names the **fire type**; the frontmatter `kind` stays in the
-  validated vocabulary `{ intel, weekly }`. Weekly quality-audit fires
-  ([`prompts/quality-audit.md`](../prompts/quality-audit.md)) carry
-  `kind: intel` with the `-audit` suffix as the discriminator (precedent:
-  `2026-07-11T1435Z-audit`); consumers that need to distinguish audit runs
-  match the suffix, never a `kind` value.
+- The suffix names the **fire type** and the frontmatter `kind` carries the
+  same value from the validated vocabulary `{ intel, weekly, audit }` (v3.24
+  — weekly quality-audit fires, [`prompts/quality-audit.md`](../prompts/quality-audit.md),
+  are `kind: audit`; before v3.24 they carried `kind: intel` with the
+  `-audit` run-id suffix as the only discriminator, and the two pre-v3.24
+  audit records were migrated to `kind: audit` when the vocabulary landed).
+  Consumers distinguish run types by `kind`; the run-id suffix stays as the
+  human-readable mirror.
 - `work/<run-id>/` uses the identical string.
 - Migrated v2 runs keep their historical ids (`2026-07-03-04ba8283`,
   `2026-W26-b78503e7`) as filenames under `runs/<date>/`; only new runs use
@@ -624,7 +626,7 @@ to the run record). Normal fires omit `stood_down`.
 ---
 schema: 1
 run_id: 2026-07-03T0412Z-intel
-kind: intel                    # intel | weekly (audit fires use intel — the -audit run-id suffix discriminates)
+kind: intel                    # intel | weekly | audit (matches the run-id suffix)
 date: "2026-07-03"
 started: "2026-07-03T04:12:03Z"
 completed: "2026-07-03T04:31:40Z"

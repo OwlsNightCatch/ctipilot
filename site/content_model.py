@@ -85,7 +85,7 @@ VERIFICATIONS = (
     "contradicted",
 )
 CONFIDENCES = ("high", "medium", "low")
-RUN_KINDS = ("intel", "weekly")
+RUN_KINDS = ("intel", "weekly", "audit")
 ENTITY_TYPES = ("actor", "campaign", "malware", "tool", "incident", "report", "trend", "policy")
 SOURCE_ROLES = ("primary", "corroborating")
 

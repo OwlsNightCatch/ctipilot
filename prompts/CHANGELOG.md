@@ -4,6 +4,22 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.24 — 2026-07-13 (audit runs first-class: `kind: audit`; Ops dashboard tracks the double-CLEAN gate; run selection = the run-log table)
+
+### Why
+
+Operator-directed, in three parts. (1) Audit fires were recorded as `kind: intel` with only the `-audit` run-id suffix distinguishing them (the v3.22 contract) — so every consumer that keys on `kind` (the Ops dashboard's kind pills and intel/weekly counts, sub-agent slot layouts, day-page grouping) silently misrendered them as intel runs, and the essential-coverage gate applied intel-cadence duties to retrospective passes. (2) The v3.23 double-CLEAN publish gate shipped without an operator surface: the dashboard's clean-rate, verdict pills and stacks still counted raw iterations, which would have painted every confirmed two-iteration run as "remediated" and made the confirmation invisible. (3) The Ops run-log's jump-to selector duplicated what the table itself should do — select runs.
+
+### What changed
+
+- **`kind: audit` is first-class.** `site/content_model.py` `RUN_KINDS = (intel, weekly, audit)`; `prompts/quality-audit.md` run-record contract now `kind: audit` (the run-id `-audit` suffix stays as the human-readable mirror); docs/pipeline.md § run ids + schema comment updated. **The two pre-v3.24 audit records (`2026-07-11T1435Z-audit`, `2026-07-12T1308Z-audit`) were migrated in place to `kind: audit`** — an operator-directed record fix, not an entry edit. `tools/check_run.py` exempts audit runs from the essential-coverage duty (retrospective passes are not source slices). Rendering: audit runs get their own count in the Ops KPI splits, their ad-hoc retrospective-pass keys render as the sub-agent cards/columns (no synthetic "absent" S1–S4), `render_run_note` headers name non-intel kinds, and stood-down fires surface a head pill instead of an empty grid.
+- **Ops double-CLEAN tracking (`site/build.py`).** New helpers `_verification_confirmation(run)` (classifies v3.23+ runs: confirmed / same-model / waived / single / residual, reads `subagent_type` first) and `_verification_fix_rounds(run)` (NEEDS_FIXES iterations — the real remediation count, so a defect-free confirmed run is never painted as remediated). Surfaces: run-log **Verif** pills (`clean ×2`, `N↻ clean ×2`, `clean · unconfirmed`, `clean ×2 same-model`, residual unchanged), a leading confirmation chip in every run panel's verification row (✓ double-CLEAN · models / waiver reason), the clean-rate KPI notes double-confirmed count, a new **Double-CLEAN gate** KPI tile (confirmed/gated · residual publishes · fail-opens), the verification stacks chart counts fix rounds, and `entries_dropped_by_verification` > 0 is now shown. New run-log **Pub** column surfaces Phase 7 publish follow-through (ok / main-only / pending).
+- **Run selection = the run-log table.** The jump-to `<select>` (and `_ops_run_picker_label`, its app.js wiring, its CSS) is removed; the Run cell now shows the **run id** itself linking to `/runs/<run-id>/`. Legacy `/ops/#run=<id>` deep links still redirect via a `data-runs-base` marker. Tests updated in `site/test_build.py`.
+
+### What stays
+
+The v3.23 double-CLEAN gate semantics and `check_run.py` enforcement are untouched — this release only *surfaces* them. Run-id format, run-record schema (no new required fields), entry immutability, the audit prompt's phases and invariants, and every other consumer of `runs/**` are unchanged; pre-v3.24 non-audit records render exactly as before. `cti-run.md` and `weekly-summary.md` move to v3.24 in lockstep with no body change.
+
 ## 3.23 — 2026-07-13 (double-CLEAN publish gate: two consecutive CLEAN verdicts from two different models; per-run detail pages surface verification & coverage notes)
 
 ### Why

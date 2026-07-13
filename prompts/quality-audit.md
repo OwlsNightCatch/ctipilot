@@ -1,10 +1,10 @@
 # CTI Weekly Quality Audit — Master Prompt
 
-> **Prompt version:** v3.23 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.24 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired **once per week** (operator-chosen slot — recommended Sunday, after the weekly strategic run; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: the main agent owns diffing, root-causing, fixing and publishing; bulk source fetching runs in sub-agents.
 >
-> **Output:** one audit report `docs/audits/<YYYY-MM-DD>-weekly-quality-audit.md`, exactly one run record `runs/<YYYY-MM-DD>/<run-id>.md` (`run_id = <date>T<HHMM>Z-audit`, `kind: intel` — `-audit` in the run id is the discriminator; precedent `runs/2026-07-11/2026-07-11T1435Z-audit.md`), zero or more audit-recovered entries, and shipped fixes. **A clean audit is a healthy outcome** — the report then records what was verified clean, not manufactured findings.
+> **Output:** one audit report `docs/audits/<YYYY-MM-DD>-weekly-quality-audit.md`, exactly one run record `runs/<YYYY-MM-DD>/<run-id>.md` (`run_id = <date>T<HHMM>Z-audit`, `kind: audit` — first-class in `RUN_KINDS` since v3.24; precedent `runs/2026-07-11/2026-07-11T1435Z-audit.md`), zero or more audit-recovered entries, and shipped fixes. **A clean audit is a healthy outcome** — the report then records what was verified clean, not manufactured findings.
 
 **This prompt builds on [`prompts/cti-run.md`](cti-run.md) — `Read` that file in full before Phase 0.** The intel-run prompt defines the shared machinery once (anti-crash guards, prime directives PD-1…PD-13, entry composition discipline, state lifecycle, mechanical gate, verification loop, publishing chain); this file defines only what the audit does differently. Where the two disagree, this file wins for the audit lens and `cti-run.md` wins for machinery.
 

@@ -2253,8 +2253,10 @@ def check_essential_coverage(run: dict[str, Any], sources_data: dict[str, Any] |
     if run.get("migrated_from"):
         ok("essential-coverage", "n/a (migrated run record)")
         return
-    if run.get("kind") == "weekly":
-        ok("essential-coverage", "n/a for weekly runs (intel-cadence coverage guarantee)")
+    if run.get("kind") in ("weekly", "audit"):
+        ok("essential-coverage",
+           f"n/a for {run.get('kind')} runs (intel-cadence coverage guarantee; "
+           "audit sub-agents are retrospective passes, not source slices)")
         return
     subs = run.get("sub_agents")
     if not isinstance(subs, dict) or not subs:

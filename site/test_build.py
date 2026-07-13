@@ -40,6 +40,8 @@ from build import (  # noqa: E402
     _safe_url,
     _strip_controls,
     _verification_clean_publish,
+    _verification_confirmation,
+    _verification_fix_rounds,
     _xml_validate,
     annotate_sources,
     build_alerts,
@@ -550,20 +552,90 @@ assert_in("run page lists the run's entries",
 assert_in("run page links back to ops", 'href="../../ops/"', run_page)
 assert_in("run page links the day page", 'href="../../daily/2026-07-03/"', run_page)
 
+# v3.23+ fixtures for the double-CLEAN gate + a first-class audit run.
+def _iter(n, verdict, sat, model="M"):
+    return {"n": n, "verdict": verdict, "subagent_type": sat, "model": model,
+            "truth": 0 if verdict == "CLEAN" else 1, "editorial": 0, "advisory": 0,
+            "findings": []}
+
+CONFIRMED_RUN = mk_run(
+    run_id="2026-07-14T0410Z-intel", date="2026-07-14", prompt_version="v3.23",
+    started="2026-07-14T04:10:00Z", completed="2026-07-14T04:40:00Z",
+    publish_status="ok", verification_iterations=2,
+    verification={"iterations": [_iter(1, "CLEAN", "cti-verification", "Opus"),
+                                 _iter(2, "CLEAN", "cti-verification-alt", "Sonnet")]})
+FIXED_CONFIRMED_RUN = mk_run(
+    run_id="2026-07-14T1210Z-intel", date="2026-07-14", prompt_version="v3.24",
+    started="2026-07-14T12:10:00Z", completed="2026-07-14T12:50:00Z",
+    verification_iterations=3,
+    verification={"iterations": [_iter(1, "NEEDS_FIXES", "cti-verification"),
+                                 _iter(2, "CLEAN", "cti-verification-alt"),
+                                 _iter(3, "CLEAN", "cti-verification")]})
+WAIVED_RUN = mk_run(
+    run_id="2026-07-14T2010Z-intel", date="2026-07-14", prompt_version="v3.23",
+    started="2026-07-14T20:10:00Z", completed="2026-07-14T20:30:00Z",
+    verification_iterations=1,
+    verification={"confirmation_waived": "watchdog overrun",
+                  "iterations": [_iter(1, "CLEAN", "cti-verification")]})
+AUDIT_RUN = mk_run(
+    run_id="2026-07-14T1308Z-audit", kind="audit", date="2026-07-14",
+    prompt_version="v3.24",
+    started="2026-07-14T13:08:00Z", completed="2026-07-14T13:40:00Z",
+    sub_agents={"A1-verify": {"model": "Opus", "returned": True, "items_returned": 3},
+                "G1-vulns": {"model": "Sonnet", "returned": True, "items_returned": 1}},
+    verification_iterations=2,
+    verification={"iterations": [_iter(1, "CLEAN", "cti-verification", "Opus"),
+                                 _iter(2, "CLEAN", "cti-verification-alt", "Sonnet")]})
+
+print("== double-CLEAN classification ==")
+assert_eq("confirmed run classified", _verification_confirmation(CONFIRMED_RUN)["status"], "confirmed")
+assert_eq("fix-then-confirm classified", _verification_confirmation(FIXED_CONFIRMED_RUN)["status"], "confirmed")
+assert_eq("waived run classified", _verification_confirmation(WAIVED_RUN)["status"], "waived")
+assert_eq("pre-gate single CLEAN not gated", _verification_confirmation(RUN)["gated"], False)
+assert_eq("fix rounds exclude the confirmation pass",
+          _verification_fix_rounds(FIXED_CONFIRMED_RUN), 1)
+assert_eq("perfect confirmed run has zero fix rounds",
+          _verification_fix_rounds(CONFIRMED_RUN), 0)
+
 ops_page = render_ops_page(
-    [RUN, QUIET_RUN, WEEKLY_RUN], [], prefix="../",
+    [RUN, QUIET_RUN, WEEKLY_RUN, CONFIRMED_RUN, FIXED_CONFIRMED_RUN, WAIVED_RUN, AUDIT_RUN],
+    [], prefix="../",
     site_url="https://x.example/", cachebust="t",
     canonical="https://x.example/ops/", day_pages={"2026-07-03"},
     entries_by_run={"2026-07-03T0412Z-intel": [E_CRIT]},
 )
 assert_true("ops: no hidden per-run panels remain", "data-run-panel" not in ops_page)
-assert_in("ops: run navigator lives in the run log",
-          'data-run-nav="../runs/"', ops_page)
-assert_in("ops: run-log row links the run page",
-          'href="../runs/2026-07-03T0412Z-intel/"', ops_page)
+assert_true("ops: jump-to selector removed", "ops-run-select" not in ops_page)
+assert_in("ops: legacy #run= redirect marker present", 'data-runs-base="../runs/"', ops_page)
+assert_in("ops: run-log cell is the run id linking its page",
+          '<a href="../runs/2026-07-03T0412Z-intel/" '
+          'title="open run details · verification &amp; coverage notes">2026-07-03T0412Z-intel</a>',
+          ops_page)
 assert_in("ops: latest-run panel carries its permalink",
-          'href="../runs/2026-06-28T0800Z-weekly/"', ops_page)
+          'href="../runs/2026-07-14T1308Z-audit/"', ops_page)
 assert_in("ops: latest-run section renamed", ">Latest run</h2>", ops_page)
+assert_in("ops: confirmed run pill", ">clean ×2</span>", ops_page)
+assert_in("ops: fix-then-confirm pill", ">1↻ clean ×2</span>", ops_page)
+assert_in("ops: waived run pill", ">clean · unconfirmed</span>", ops_page)
+assert_in("ops: publish column pill", 'title="run record on main AND the site rebuild confirmed (Phase 7)">ok</span>', ops_page)
+assert_in("ops: audit kind pill", '>audit</span>', ops_page)
+assert_in("ops: audit retrospective pass column", 'title="A1-verify"', ops_page)
+assert_in("ops: double-CLEAN KPI tile", "Double-CLEAN gate", ops_page)
+assert_in("ops: kind split counts audits", "1 audit", ops_page)
+assert_in("ops: confirmation chip on the latest panel",
+          "✓ double-CLEAN · Opus + Sonnet", ops_page)
+
+audit_page = render_run_detail_page(
+    AUDIT_RUN, {}, run_entries=[], day_pages=set(),
+    site_url="https://x.example/", cachebust="t", prefix="../../",
+    canonical="https://x.example/runs/2026-07-14T1308Z-audit/",
+)
+assert_in("audit run page shows the audit kind", ">audit</span>", audit_page)
+assert_in("audit run page renders its ad-hoc passes", "A1-verify", audit_page)
+assert_true("audit run page has no synthetic S1 slot",
+            "No record for this sub-agent" not in audit_page)
+assert_eq("audit kind validates in the content model",
+          [e for e in content_model.validate_run_record(AUDIT_RUN) if "kind" in e], [])
 
 # ---------------------------------------------------------------------
 # briefbook.json / alerts.json shapes
