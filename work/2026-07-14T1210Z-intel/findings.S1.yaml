@@ -1,0 +1,176 @@
+domain: S1
+run_id: "2026-07-14T1210Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-14T12:13:10Z"
+ended_at: "2026-07-14T12:27:10Z"
+duration_seconds: 840
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 5
+  bridge_fetches: 12
+
+items:
+  - title: "AsyncAPI npm packages backdoored via a GitHub Actions pull_request_target token theft, delivering a multi-stage IPFS implant (\"M-RED-TEAM\")"
+    sources:
+      - { url: "https://www.aikido.dev/blog/asyncapi-npm-packages-compromised-with-miasma-variant", publisher: "Aikido Security", date: "2026-07-14", role: "primary" }
+      - { url: "https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions", publisher: "Wiz", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: aikido-security, URL https://www.aikido.dev/blog (listing fetch) → drill: https://www.aikido.dev/blog/asyncapi-npm-packages-compromised-with-miasma-variant → corroboration: WebSearch (\"AsyncAPI npm packages backdoored GitHub Actions Miasma\") → independent write-up: Wiz, URL https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions"
+    summary: |
+      On 2026-07-14 an attacker compromised the asyncapi/generator GitHub repository by abusing a `pull_request_target`
+      workflow that checks out untrusted PR code while still exposing repository secrets (a "pwn request"
+      misconfiguration flagged internally in PR #2092 on 2026-05-17 but left unmerged for two months). At 05:08 UTC
+      the attacker opened 37 pull requests; one (PR #2155) contained obfuscated JavaScript that exfiltrated the
+      npm publish token to rentry[.]co. Using the stolen token the attacker pushed malicious commits directly to
+      the `next` branch at 06:58 UTC, triggering the release workflow that published five trojanized package
+      versions starting 07:10 UTC: @asyncapi/specs@6.11.2 and @6.11.2-alpha.1, @asyncapi/generator@3.3.1,
+      @asyncapi/generator-helpers@1.1.1, @asyncapi/generator-components@0.7.1 — combined weekly downloads
+      Aikido measured at ~2.9M (Wiz cites "over three million downloads a week"). Malicious code was injected into
+      each package's runtime entry point/validator/helper/error-handler; on `require()` it spawns a detached
+      Node.js child process running an obfuscated downloader that fetches an ~8.25MB encrypted stage-2 object from
+      IPFS (two different CIDs for the specs vs. generator families), derives an AES-256-GCM key via HKDF-SHA256,
+      and decrypts a stage-3 payload (~3.08–3.09MB) that self-identifies as "M-RED-TEAM v6.4" in its own code
+      comments. The implant generates a secp256k1 keypair, persists via `.zshrc`/`.bashrc` (macOS/Linux shell
+      config), an `HKCU\Run` registry key (Windows) or a systemd user service (Linux), and beacons roughly every
+      30 seconds to 85.137.53.71:8080 (also :8081) with encrypted, signed commands; it falls back to unsigned
+      plaintext commands when the cipher is absent, an on-path attacker risk. It executes arbitrary shell commands
+      via `child_process.exec()` (only `killall` is blacklisted) and supports payload updates over Nostr relays
+      (signature-verified) and an Ethereum smart contract (unverified). Wiz independently confirmed the chain and
+      adds that the stage-3 framework (~92,000 lines) carries credential-theft code targeting browser-saved
+      passwords/cookies (Chrome, Brave, Firefox, Edge), SSH keys, npm/GitHub tokens, AWS credentials, macOS
+      Keychain and crypto wallets — present but, per Aikido's call-graph analysis, disabled in this build, along
+      with self-propagation to npm/PyPI/Cargo and an AI-tool-poisoning module. Config fields (`safeMode: true`,
+      `actualPersist: false`) are misleading — persistence code runs regardless. Aikido notes the initial-access
+      technique (PR-flood targeting `pull_request_target` with a rentry.co dead-drop) matches a campaign it and
+      Wiz separately track as "prt-scan", and that artifact naming/config reuse "Miasma" branding from the
+      unrelated May/June 2026 @redhat-cloud-services npm worm — but states this build differs technically
+      (Node/secp256k1/AES-GCM here vs. Bun/RSA/AES-CBC and active propagation in the earlier Miasma) and that
+      attribution is not definitive (code reuse, imitation, or deliberate mislabeling are all open). Safe versions:
+      @asyncapi/specs@6.11.1, @asyncapi/generator@3.3.0, @asyncapi/generator-helpers@1.1.0,
+      @asyncapi/generator-components@0.7.0 and earlier.
+    region_nexus: "global; AsyncAPI tooling is used in enterprise API-governance/CI pipelines including EU public-sector and financial development shops"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco (any org running CI/CD with AsyncAPI tooling)"
+    cves: []
+    techniques: [T1195.002, T1528, T1059.007, T1546.004, T1543.002, T1547.001, T1027, T1071.001]
+    affected_products: ["@asyncapi/specs", "@asyncapi/generator", "@asyncapi/generator-helpers", "@asyncapi/generator-components"]
+    entity_keys: []
+    new_entities:
+      - key: "incident:asyncapi-npm-github-actions-supply-chain-compromise-2026-07"
+        type: incident
+        name: "AsyncAPI npm supply-chain compromise via GitHub Actions (M-RED-TEAM)"
+        aliases: []
+        summary: "Attacker exploited a pull_request_target GitHub Actions misconfiguration in asyncapi/generator to steal an npm publish token and backdoor five @asyncapi package versions (~2.9M weekly downloads) with a three-stage IPFS-delivered implant self-identified as M-RED-TEAM v6.4 (Aikido Security, Wiz, 2026-07-14)."
+      - key: "tool:m-red-team-malware-framework"
+        type: tool
+        name: "M-RED-TEAM"
+        aliases: []
+        summary: "Node.js-based post-compromise implant framework (self-identifies as 'M-RED-TEAM v6.4' in code comments) delivered via an AES-256-GCM-encrypted IPFS loader; ships with disabled credential-harvesting and self-propagation modules, active secp256k1-keyed multi-channel C2 (raw TCP, Nostr, Ethereum) and unrestricted remote shell execution (Aikido Security, Wiz, 2026-07-14)."
+      - key: "campaign:prt-scan-github-actions-pwn-request-token-theft"
+        type: campaign
+        name: "prt-scan"
+        aliases: []
+        summary: "Campaign of mass GitHub pull-request floods against repositories with vulnerable pull_request_target workflows to steal npm/CI publish tokens via rentry.co dead-drops, tracked independently by Wiz and Aikido Security; cited as the initial-access technique behind the 2026-07-14 AsyncAPI compromise."
+    relation_suggestions:
+      - { subject: "incident:asyncapi-npm-github-actions-supply-chain-compromise-2026-07", object: "campaign:prt-scan-github-actions-pwn-request-token-theft", type: "related-to", source: "Aikido Security 2026-07-14", basis: "Aikido: \"initial access technique (PR flood targeting pull_request_target with rentry.co dead-drop) matches the prt-scan campaign\"" }
+      - { subject: "incident:asyncapi-npm-github-actions-supply-chain-compromise-2026-07", object: "campaign:miasma-redhat-npm-supply-chain", type: "overlaps-with", source: "Aikido Security 2026-07-14", basis: "Aikido: artifact naming/config use 'Miasma' branding but the build 'differs from the earlier Miasma toolkit' and attribution is 'not definitive'; hedge accordingly" }
+      - { subject: "incident:asyncapi-npm-github-actions-supply-chain-compromise-2026-07", object: "campaign:cordyceps-github-actions-pwn-request", type: "related-to", source: "Wiz / Aikido Security 2026-07-14", basis: "shared pull_request_target GitHub Actions 'pwn request' vulnerability class already tracked in the registry as campaign Cordyceps" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Five trojanized `@asyncapi` packages published on 2026-07-14. The attacker stole an npm publish token by exploiting a `pull_request_target` workflow vulnerability."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/asyncapi-npm-packages-compromised-with-miasma-variant"
+      - quote: "The implant beacons to `hxxp://85[.]137[.]53[.]71:8080` roughly every 30 seconds. Beacons are signed and encrypted with the attacker's public key."
+        attribution: "Aikido Security"
+        source_url: "https://www.aikido.dev/blog/asyncapi-npm-packages-compromised-with-miasma-variant"
+      - quote: "When the workflow checks out attacker-controlled code from the pull request and executes it, those secrets become accessible."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions"
+      - quote: "The payload includes credential theft capabilities targeting browser saved passwords and cookies (Chrome, Brave, Firefox, Edge), SSH keys, npm and GitHub tokens, AWS credentials, macOS Keychain, and cryptocurrency wallets."
+        attribution: "Wiz"
+        source_url: "https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions"
+    extended_notes: |
+      Triage: the discriminator between a benign `require()`-time build step and this compromise is the detached
+      child `node -e` process spawned at import time with `stdio: 'ignore'`/`windowsHide: true` and an outbound
+      connection to IPFS gateways followed by a raw TCP beacon on 85.137.53.71:8080/8081 — legitimate AsyncAPI
+      tooling has no such runtime network behaviour. Hunt for orgs that *imported* (not merely fetched/cached) the
+      affected versions between 2026-07-14 07:10 UTC and patch; rotate npm/GitHub/cloud tokens from a clean host
+      if found. This is the third documented 2026 wave of pull_request_target GitHub Actions abuse feeding
+      npm-ecosystem backdoors (Cordyceps class, generic; prt-scan, PR-flood token theft; and the unrelated
+      May/June Miasma worm against @redhat-cloud-services) — CI/CD pipeline hardening against `pull_request_target`
+      with untrusted checkout is now a recurring, high-value control gap across the npm ecosystem.
+
+  - title: "CVE-2026-56451 — Siemens Opcenter X: unauthenticated JWT algorithm-confusion auth bypass yields full administrative impersonation (CVSS 10.0)"
+    sources:
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-096828.html", publisher: "Siemens ProductCERT", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (recent criticals feed) → primary: Siemens ProductCERT, URL https://cert-portal.siemens.com/productcert/html/ssa-096828.html (no further pivot found; no second independent source located via WebSearch)"
+    summary: |
+      Siemens ProductCERT advisory SSA-096828 (published 2026-07-14) discloses CVE-2026-56451, a CVSS 10.0
+      (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:L/SI:H/SA:H) vulnerability in Opcenter X, Siemens'
+      cloud-native Manufacturing Execution System (MES) platform, affecting all versions before V2604. The
+      application "does not properly validate the algorithm specified in the JSON Web Token (JWT) header,"
+      an algorithm-confusion class flaw (improper cryptographic-signature verification) that lets an unauthenticated
+      remote attacker forge arbitrary JWTs, bypass the authentication mechanism entirely, and impersonate any
+      user including administrative accounts — full unauthorized application access with no privileges or user
+      interaction required. Siemens' advisory does not document exploitation prerequisites beyond network
+      reachability, nor a confirmed in-the-wild exploitation status; the fix ships in Opcenter X V2604 and later.
+      A second independent source (national-CERT republication or ICS-CERT advisory) was not found as of this
+      run — CISA's ICS-advisories feed had not yet listed an Opcenter X entry — so this item is carried
+      single-source on the vendor's own PSIRT bulletin, the standard primary for a vendor's own product.
+    region_nexus: "global; Opcenter X is deployed by manufacturing/production operators including in the EU industrial base"
+    primary_sector_nexus: "indirect"
+    sector: "energy, manufacturing (MES/production operators running Opcenter X)"
+    cves: ["CVE-2026-56451"]
+    techniques: [T1190, T1606]
+    affected_products: ["Siemens Opcenter X"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Opcenter X before V2604 contain an authentication bypass vulnerability that could allow an attacker to gain full unauthorized access to the application."
+        attribution: "Siemens ProductCERT"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-096828.html"
+    extended_notes: |
+      No triage/lookalike detail available — Siemens' bulletin does not describe the forged-token structure or
+      a distinguishing telemetry signature beyond "unauthenticated request to the application"; detection would
+      need to rely on Opcenter X application/auth logs for anomalous JWT `alg` header values (e.g. `none` or an
+      unexpected symmetric algorithm on a token that should be asymmetrically signed) — a hunt hypothesis only,
+      not sourced from the advisory. Flagging as a MES/production-network exposure for energy and manufacturing
+      operators to patch to V2604 on the normal OT change window; no evidence this is an imminent mass-exploitation
+      target given the specialized product class, hence confidence MEDIUM despite the CVSS 10.0.
+
+cve_table:
+  - cve: "CVE-2026-56451"
+    product: "Siemens Opcenter X (all versions < V2604)"
+    cvss: "10.0 (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:L/SC:L/SI:H/SA:H)"
+    epss: "unknown"
+    kev: false
+    exploited: "not reported"
+    patch: "V2604"
+    source: "Siemens ProductCERT SSA-096828, https://cert-portal.siemens.com/productcert/html/ssa-096828.html"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "cert.pl/en/posts/ direct fetch returned HTTP 403 (nginx) and the jina reader fallback was unavailable this run (reader key balance exhausted on every rotation attempted). WebFetch on cert.pl/en/news/ returned a listing truncated before 2026-07; the only July-dated CERT Polska item recovered was CVE-2026-6847 (ThemisNETPanel, published 2026-07-13) via an EUVD cross-reference — assessed too niche/low-blast-radius for inclusion this run, not carried as a finding."
+  - source_id: jina-reader
+    reason: "The r.jina.ai reader tool (python3 tools/fetch_source.py jina <URL>) returned 'balance exhausted (HTTP 402)' on every credential rotation attempted this run (JetBrains issues-fixed page, CISA advisories page, CISA ICS feed, cert.europa.eu, cert.pl). All affected fetches were recovered via WebFetch or the feed/url bridge subcommands instead, so no content was lost, but this is a recipe/ops issue worth flagging to the operator — the reader rung of the fetch ladder was unavailable for the whole run."
+  - source_id: cert-eu
+    reason: "cert.europa.eu/publications/security-advisories listing shows no advisory newer than 2026-008 (June 2026, Ivanti Sentry) — CERT-EU has not published a numbered security advisory in-window; confirmed via direct fetch, not a transport failure."
+  - source_id: msrc-patch-tuesday-july-2026
+    reason: "WebSearch surfaced a secondary-source claim (byteiota.com, uncurated, not in source list) that July 2026 Patch Tuesday (127 CVEs) landed today with CVE-2025-47981 (Windows SPNEGO) as 'the most urgent fix this month.' Verified directly against MSRC (tools/fetch_source.py msrc cve CVE-2025-47981): that CVE's actual releaseNumber is 2025-Jul (i.e. patched a year ago, July 2025), exploited=No, publiclyDisclosed=No — the secondary source conflated an old CVE with this month's release. Cross-checked the MSRC 2026-Jul release listing directly (547 entries) and found zero items with a 2026-07-14 releaseDate and zero non-null exploited/critical flags in the batch retrieved — the actual July 2026 Patch Tuesday cumulative had evidently not posted to MSRC's structured feed as of this run (~12:30 UTC / ~05:30 Redmond time). Dropped the item entirely rather than report unconfirmed/inaccurate Patch Tuesday claims; flagging for a later-in-day run to re-check MSRC once the cumulative posts."
+  - source_id: youtrack-cve-2026-62422
+    reason: "ENISA EUVD listed CVE-2026-62422 (JetBrains YouTrack, CVSS 10.0, 'authentication bypass via direct database access') as published 2026-07-14, but cross-referencing JetBrains' own June-2026 blog post (blog.jetbrains.com/youtrack/2026/06/youtrack-security-update-youtrack-server-upgrade-required/) shows an identical vulnerability class and an identical affected/patched-version list already disclosed and fixed under CVE-2026-50242 last month. Assessed as a duplicate/re-catalogued CVE for an already-public June disclosure, not genuinely new signal — dropped rather than reported as fresh."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist is configured for this deployment (per org-profile) — sweep is a no-op per spawn instructions; general coverage rules applied unchanged across all sources fetched this run."

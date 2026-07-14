@@ -1,0 +1,178 @@
+domain: S3
+run_id: 2026-07-14T1210Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-14T12:13:44Z
+ended_at: 2026-07-14T12:25:05Z
+duration_seconds: 681
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 6
+  bridge_fetches: 8
+items:
+  - title: "ESET uncovers 11 forgotten pre-0.9 UEFI shim bootloaders that bypass Secure Boot via a signature-length validation mismatch (CVE-2026-8863, CVE-2026-10797)"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/", publisher: "ESET Research (WeLiveSecurity)", date: "2026-07-14", role: "primary" }
+      - { url: "https://kb.cert.org/vuls/id/616257", publisher: "CERT/CC — VU#616257", date: "2026-06-17", role: "corroborating" }
+    discovery_trace: "first seen at: WebFetch of ESET WeLiveSecurity listing, URL https://www.welivesecurity.com/en/ → primary: ESET Research, URL https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/ → corroboration: CERT/CC VU#616257, URL https://kb.cert.org/vuls/id/616257 (originally released 2026-06-09, last revised 2026-06-17, referencing ESET's press release ahead of the full technical write-up)"
+    summary: |
+      ESET Research published a full technical dissection (2026-07-14) of 11 Microsoft-signed UEFI shim
+      bootloaders (all at shim version 0.9 or below) that undermine UEFI Secure Boot on any machine trusting
+      the "Microsoft Corporation UEFI CA 2011" third-party UEFI certificate — regardless of installed OS.
+      The core bug (CVE-2026-8863, CVE-2026-10797) is a signature-length validation mismatch: Authenticode-signed
+      PE binaries record signature length in two independent locations, and the shim's revocation-check routine
+      trusts the value from the signature header while the separate signature-verification routine trusts the
+      value from the PE header — the divergence lets an attacker craft a bootloader whose apparent signature
+      length differs between the two checks, evading the revocation (MokListX/DBX) check while still passing
+      verification. A second, independent weakness in the same forgotten binaries: pre-0.9 shims never enforce
+      the MOK deny-list (MokListX), so an attacker can substitute an older, still-trusted shim to load a binary
+      that was explicitly revoked; a third affects pre-15.3 shims which never implemented SBAT (Secure Boot
+      Advanced Targeting), reopening old GRUB 2 bugs like CVE-2015-5281 that SBAT was built to close.
+      No memory-corruption exploitation primitive is required — ESET states an attacker needs only to copy a
+      vulnerable, unrevoked shim plus a compatible second-stage bootloader onto the EFI System Partition, with
+      no admin privileges or physical access required once the files are staged; this is explicitly a
+      bring-your-own-vulnerable-shim technique (analogous to BYOVD but for the pre-OS boot chain). Affected
+      vendors named in CERT/CC's coordinated disclosure include Red Hat/CentOS, Oracle Linux, openSUSE, ROSA
+      Linux, Baramundi Management Suite, WhiteCanyon/Blancco WipeDrive, PC-Doctor Service Center, Spyrus
+      WTGCreator, and Finland's Abitti exam-kiosk OS — a long tail of PC-diagnostic, wipe, and Linux-distro
+      shim forks that forked an old shim and never rebased onto upstream fixes. Microsoft revoked all 11
+      binaries via its DBX (Forbidden Signature Database) update on the June 9, 2026 Patch Tuesday; ESET
+      reports no observed in-the-wild exploitation, framing this as a supply-chain hygiene problem (forgotten,
+      still-trusted legacy binaries) rather than an active campaign. For defenders, this converts any endpoint
+      that has not applied the June DBX update (and has not also applied the companion DB/KEK update sequence)
+      into a persistent Secure-Boot-bypass exposure regardless of the OS actually installed on it.
+    region_nexus: "global; affects any UEFI-based Windows or Linux endpoint trusting the Microsoft third-party UEFI CA — directly relevant to Swiss/EU public-sector and CI device fleets running Linux distros (RHEL, openSUSE) or PC-diagnostic/wipe tooling that forked an old shim"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, healthcare, finance, telco, cross-sector (any UEFI Windows/Linux fleet)"
+    cves: [CVE-2026-8863, CVE-2026-10797]
+    techniques: [T1542.003, T1553.006]
+    affected_products: ["Shim (UEFI bootloader, versions ≤0.9)", "Red Hat Enterprise Linux / CentOS 7.2", "Oracle Linux 7.2", "openSUSE Shim loader 0.9/2.1", "ROSA Linux R9/R10", "Baramundi Management Suite ≤2024R1", "WhiteCanyon/Blancco WipeDrive 8.0.0–8.1.3", "PC-Doctor Service Center 15/16", "Spyrus WTGCreator ≤0.7", "Abitti 1.0"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The revocation check and the signature verification functions diverged on which size value they should trust. The revocation check used the value from the signature header, while the signature verification function used the value from the PE header."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+      - quote: "An attacker needs no complicated exploitation primitives—only a copy of an old, still-trusted, but unrevoked shim binary and a basic understanding of how UEFI shims work."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+      - quote: "An attacker could exploit these vulnerable shim bootloaders using a Bring Your Own Vulnerable Driver (BYOVD)-style technique to execute arbitrary code during the early boot phase, prior to operating system initialization, thereby bypassing Secure Boot protections."
+        attribution: "CERT/CC"
+        source_url: "https://kb.cert.org/vuls/id/616257"
+      - quote: "The vulnerable UEFI applications were revoked on Microsoft's June 9th, 2026 Patch Tuesday."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+    extended_notes: |
+      Detection/hunt angle: this is a pre-OS-boot technique class, so classic endpoint telemetry (process
+      creation, EDR hooks) cannot see the exploitation step itself — the actionable control is inventory and
+      firmware-state verification, not runtime detection. Concretely: (1) confirm the June 9 2026 DBX
+      (Forbidden Signature Database) update has been applied fleet-wide — ESET/CERT/CC both note DB
+      (Authorized Signature Database) updates should be applied first, then DBX, to avoid bricking dual-boot
+      or recovery-partition machines; (2) audit the EFI System Partition of Linux and dual-boot fleets for
+      forked/vendored shim binaries at version ≤0.9 or without SBAT support — the open-source
+      uefi-dbx-audit tool (linked from CERT/CC's advisory) and Microsoft's own secureboot_objects DBX manifest
+      are the concrete artifacts to diff against; (3) treat any PC-diagnostic, disk-wipe, or exam-kiosk boot
+      media in the environment as a candidate carrier for a forked shim even on machines that otherwise run a
+      fully patched OS, since the vulnerable binary travels with the boot media, not the installed OS.
+      Benign-lookalike / triage note: legitimate dual-boot recovery media and vendor diagnostic USB sticks are
+      exactly the artifact class this bug lives in, so a hunt for "old shim present" will have real hits that
+      are legitimate-but-stale tooling, not evidence of compromise — the discriminating factor is whether the
+      DBX revocation has actually been enrolled in that device's firmware (a revoked-but-present shim is inert;
+      an unrevoked one is the exposure).
+
+  - title: "Cisco Talos maps the full Python package supply-chain attack surface — install-time build-hook abuse, .pth/site-hook injection, and entry-point hijacking across PyPI/VCS/custom-index distribution"
+    sources:
+      - { url: "https://blog.talosintelligence.com/the-serpents-tongue-luring-the-python-out-of-its-den/", publisher: "Cisco Talos", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: WebFetch of Cisco Talos blog listing, URL https://blog.talosintelligence.com/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/the-serpents-tongue-luring-the-python-out-of-its-den/"
+    summary: |
+      Cisco Talos published (2026-07-14) a defender-oriented technique taxonomy covering the entire Python
+      package supply-chain attack surface, from hosting (PyPI, direct VCS URLs, custom package indexes) through
+      distribution format (source distributions carrying setup.py/pyproject.toml build hooks vs. pre-built
+      wheels) to installation-time execution. Talos catalogs the concrete mechanisms adversaries use to get
+      code running with zero victim interaction beyond `pip install`: (1) legacy `distutils`/`setuptools`
+      Command-class overrides that execute inside setup.py's install/build_ext commands, which run automatically
+      during installation; (2) `.pth` file injection into `site-packages`, which Python's `site` module
+      auto-executes any line starting with `import` for on every interpreter start — a durable, install-time-only
+      persistence primitive requiring no further compromise of the package itself; (3) `PYTHONPATH`/site-hook
+      manipulation and `sitecustomize.py`/`usercustomize.py` abuse; (4) `__init__.py` import-time execution and
+      `__main__.py` abuse when a package is invoked as a module; (5) entry-point hijacking, where a malicious
+      package registers a console-script entry point matching a legitimate, frequently-invoked binary name to
+      intercept invocations. Talos frames this against named 2025-2026 incidents it treats as case studies —
+      the TeamPCP campaign's repeated compromise of trusted PyPI/npm packages and the "lightning" PyPI package
+      compromise credential-stealer — without re-disclosing new details on those specific incidents. Talos states
+      payload execution can occur within minutes of install and exfiltration within an hour. Defensive guidance
+      is concrete and tool-specific: use `pip-audit` for known-malicious-package scanning, pin exact versions
+      with lockfiles (`uv.lock`, `poetry.lock`, `Pipfile.lock`) that include content hashes so a compromised
+      re-publish under an existing version number is rejected at install time, apply a deliberate "cooldown"
+      window before adopting newly-published package versions (mirroring the `uv run --exclude-newer` flag),
+      build in isolated/ephemeral environments, and generate SBOMs (CycloneDX) to make a post-hoc compromise
+      audit tractable.
+    region_nexus: "global; directly relevant to any Swiss/EU public-sector or CI organisation running Python-based tooling, data-science/ML pipelines, or CI/CD build agents that resolve PyPI dependencies"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (software supply chain / CI-CD / developer tooling)"
+    cves: []
+    techniques: [T1195.001, T1059.006]
+    affected_products: ["PyPI package ecosystem", "setuptools", "Hatchling", "Poetry", "uv", "pip", "pip-audit"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Payload execution can occur within minutes of installing the malicious package, and exfiltration can be achieved within an hour, depending on adversarial goals."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-serpents-tongue-luring-the-python-out-of-its-den/"
+      - quote: "setup.py executes automatically during installation or download, allowing for the execution of arbitrary code."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-serpents-tongue-luring-the-python-out-of-its-den/"
+      - quote: "Use lock files such as uv.lock, poetry.lock, or Pipfile.lock to pin exact versions; always include hashes to ensure package content matches vetted versions."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/the-serpents-tongue-luring-the-python-out-of-its-den/"
+    extended_notes: |
+      Detection/hunt angle: the durable, high-value pivot from this taxonomy is `.pth` file creation/modification
+      under any `site-packages` directory outside of a package manager's own install transaction — file-integrity
+      or EDR file-creation telemetry scoped to `*.pth` under Python `site-packages` paths is a vendor-neutral,
+      low-noise hunt Talos's write-up makes concrete (most legitimate `.pth` files are created once at
+      interpreter/venv creation, not per-package). A second concrete hook: entry-point console-scripts installed
+      under a name matching an already-present, frequently-invoked binary (shadowing) is enumerable via a diff
+      of `dist-info/entry_points.txt` across a fleet's Python environments. Triage note: setup.py/pyproject.toml
+      build-time execution is universal and benign for the overwhelming majority of legitimate packages that
+      compile native extensions — the discriminator Talos surfaces is *build hooks reaching out to the network
+      or writing outside the build directory*, not build-hook execution itself.
+      Single-source note: this is Cisco Talos's own primary technical analysis; no second independent source
+      was located publishing the same synthesis in-window. Talos is a Tier-1 (Admiralty B) research lab; flagged
+      SINGLE-SOURCE-OTHER per the two-source-by-default rule rather than upgraded to MULTI-SOURCE.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: inside-it-ch
+    reason: "RSS feed fetched successfully (no 403 this run) — 15 items retrieved covering 2026-07-10 through 2026-07-14; all German-language Swiss IT/business news, none research-substance for S3's mission (the one cyber-adjacent item, Swiss Army Cyber Command's M365-to-Opendesk migration citing the US Cloud Act, is a policy/procurement story better suited to S2, not duplicated here)."
+  - source_id: dragos
+    reason: "webfetch listing returned no posts newer than 2026-06-23 — no in-window OT/ICS research from Dragos this run."
+  - source_id: nozomi-networks
+    reason: "listing page carries no dates; drilled the two most-plausible-fresh titles (Spring Botnet Floods — Golang IoT botnet, published 2026-07-06; banking third-party/cloud risk piece, published 2026-07-09, marketing-toned) — both outside the 24h window or non-technical; no in-window Nozomi research."
+  - source_id: kela-cyber
+    reason: "two in-window posts (2026-07-13, 2026-07-14) are both dark-web-tooling listicles (\"Top 10 Telegram Log & Carding Channels\", \"Top 10 Dark Web Search Engines\") — marketing/awareness content, not technical research substance; not included."
+  - source_id: group-ib
+    reason: "sitemap lastmod values are unreliable for publish date (several 2023-era posts show 2026 lastmod from re-indexing); the one genuinely in-window post (\"The Scam Will Go On\" — Celine Dion ticket-scam research, published 2026-07-14T08:18Z) is consumer-fraud social-engineering content with low technical/ATT&CK depth for this audience — not included, borderline."
+  - source_id: sans-ics
+    reason: "two 2026-07-13 posts (\"Cloud-Native Forensic Imaging Part 1\", \"A Guide to OT Security Best Practices\") could not be confirmed as substantive new technical research beyond listing titles within the time budget; not included pending a future run's fuller read."
+  - source_id: ibm-xforce
+    reason: "listing page (both direct WebFetch and jina reader) returned no publication dates and jina reader returned an empty/JS-shell response for this host this run; could not confirm any in-window items."
+  - source_id: citizen-lab
+    reason: "no posts newer than 2026-07-03 (the already-covered Pegasus/PEGA-committee item) on the research listing."
+  - source_id: cloudflare-cf1
+    reason: "no Cloudforce One posts newer than 2026-06-09 on the tag listing."
+  - source_id: push-security
+    reason: "no posts newer than 2026-06-26 on the blog listing."
+  - source_id: redcanary
+    reason: "RSS feed's newest item is 2026-06-30; feed metadata itself dated 2026-07-13 but carries no new item."
+  - source_id: intel471
+    reason: "RSS feed's newest item is 2026-06-23 (ShinyHunters 0-day blog); no in-window post."
+  - source_id: depthfirst
+    reason: "listing page carries three static research highlights with no publication dates and no indication of in-window freshness; could not confirm recency within time budget."

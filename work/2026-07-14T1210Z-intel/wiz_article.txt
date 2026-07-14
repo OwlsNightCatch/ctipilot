@@ -1,0 +1,168 @@
+Title: M-Red-Team: AsyncAPI Supply Chain Compromise via GitHub Actions
+
+URL Source: https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions
+
+Published Time: 2026-07-14T06:33:36-04:00
+
+Markdown Content:
+On July 14, 2026, an attacker opened 37 pull requests to the AsyncAPI generator repository. Almost all attempted to add a fake charity donation page. Camouflage in the noise, a single PR exploited [a misconfigured GitHub Actions workflow](https://www.wiz.io/blog/github-actions-security-guide) to steal a highly privileged Personal Access Token.
+
+**Four malicious npm packages (five total versions) were published under the****`@asyncapi`****namespace**. The packages contain a multi-stage payload that establishes persistence and connects to command and control infrastructure. Combined, these packages see over three million downloads a week. In this case, the payload executes on import/require, not install.
+
+This does not appear directly connected to the previous compromise of `@asyncapi`[in the Shai-Hulud 2.0](https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack)attack.
+
+## [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)What Happened?
+
+The attacker exploited a vulnerability class known as a "pwn request" in GitHub Actions. The `asyncapi/generator` repository [contained a workflow file](https://github.com/asyncapi/generator/blob/47be3886e460107a4ea5ce88ad674a65724ac4a7/.github/workflows/manual-netlify-preview.yml) that used `pull_request_target` to trigger on pull requests, but then checked out the pull request's code rather than the base branch.
+
+The vulnerable workflow
+
+This is dangerous because `pull_request_target` runs in the context of the base repository with full access to secrets. When the workflow checks out attacker-controlled code from the pull request and executes it, those secrets become accessible.
+
+Unfortunately, the potential for this vulnerability **had been identified months before the attack**. On April 29, a contributor [opened a PR investigating the issue](https://github.com/asyncapi/generator/pull/2078)with a proof-of-concept payload. On May 17, they [followed up a proposed fix](https://github.com/asyncapi/generator/pull/2092) that split the workflow into two separate jobs to isolate secret access from untrusted code. That fix was still open, unmerged, when the attacker struck 58 days later.
+
+At 05:08 UTC, the attacker opened [PR #2155](https://github.com/asyncapi/generator/pull/2155) containing a markdown file with obfuscated JavaScript hidden after approximately 1,000 bytes of whitespace. The payload was designed to scan the GitHub Actions runner's environment for secrets and exfiltrate them to a dead-drop URL on the rentry.co pastebin.
+
+Automated Review flagging the malicious payload
+
+Automated review flagged the obfuscation and while the PR was never merged, the damage was already done. The workflow completed at 05:16 UTC and the attacker was able to retrieve the stolen credentials.
+
+The compromised token appears to be a PAT belonging to `asyncapi-bot`, a service account with access across the AsyncAPI organization.
+
+### [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)Malicious Packages Published
+
+Using the stolen PAT, the attacker [pushed a malicious commit directly to the `next` branch at 06:58 UTC](https://github.com/asyncapi/generator/commit/3eab3ec9304aa26081358330491d3cfeb55cc245). This triggered the release workflow, which published the initial three compromised packages to npm at 07:10 UTC.
+
+The attacker then pivoted to the `asyncapi/spec-json-schemas` repository, pushing 11 commits between 07:51 and 08:28 UTC. Two additional malicious versions of `@asyncapi/specs` were published.
+
+Malicious commits to asyncapi/spec-json-schemas
+
+All five versions contain the same payload injected into different files. The malicious code is hidden on the first line of legitimate source files, padded with whitespace to push it off-screen in most editors.
+
+## [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)Connections to other attacks
+
+The payload shares some technical characteristics with the Miasma malware framework previously documented in supply chain attacks. The obfuscation layer uses `javascript-obfuscator` with a custom base64 alphabet, the same configuration seen in prior incidents.
+
+The Stage 3 runtime explicitly self-identifies as `"M-RED-TEAM v6.4"` in code comments describing beacon encryption and C2 communication protocols. The extracted configuration file sets `giteaPackagesOrg` to `"miasma-test-org."` The payload uses `miasma-monitor.service` within the persistence code. The Nostr relay C2 uses `"miasma”` branded tags.
+
+However, the Rentry dead-drop URL uses the slug `"elzotebo,"` matching naming patterns from the [prt-scan](https://www.wiz.io/blog/six-accounts-one-actor-inside-the-prt-scan-supply-chain-campaign) campaign, which has been linked to previous pull request-based attacks. The `prt-scan` campaign has not been linked to Miasma.
+
+Beyond the references and initial obfuscation method the payload contains minimal resemblance to previous Miasma and Shai-Hulud payloads. Instead of a worm, it appears to contain a fully fledged commands framework with classic Trojan capabilities (`Dirlist`, `GetFile`, `PutFile`, etc.) with a direct connection to command and control infrastructure.
+
+At this time, we are not making any definitive attribution.
+
+## [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)Payload
+
+The payload follows a staged infection chain:
+
+1.   The first stage is executed on package import. It spawns a detached child process that downloads the next stage from IPFS, saving it to a platform-specific directory:
+
+    1.   Linux: `~/.local/share/NodeJS/sync.js`
+
+    2.   macOS: `~/Library/Application Support/NodeJS/sync.js`
+
+    3.   Windows: `%LOCALAPPDATA%\NodeJS\sync.js`
+
+2.   The second stage is an 8.25 MB encrypted bundle retrieved from IPFS. It contains configuration data and the main runtime.
+
+3.   The third stage is a 92,000-line malware framework with modular architecture. It establishes persistence via systemd user services on Linux and communicates with command and control infrastructure over multiple channels including HTTP, Nostr relays, Ethereum smart contracts, and a libp2p mesh network.
+
+The payload includes credential theft capabilities targeting browser saved passwords and cookies (Chrome, Brave, Firefox, Edge), SSH keys, npm and GitHub tokens, AWS credentials, macOS Keychain, and cryptocurrency wallets. Once installed, the malware appears to accept remote commands for file operations, directory listing, and data exfiltration.
+
+## [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)What steps should security teams take?
+
+Wiz detected this attack through its automated malicious package monitoring system and immediately added hash-based detection to its reputation database followed by advisory release and package based detection, enabling rapid protection for Wiz customers before broader disclosure.
+
+*   Organizations should immediately investigate developer workstations, CI/CD environments, and repositories for signs of compromise. Teams should audit systems for the affected packages.
+
+| Package | Version |
+| --- | --- |
+| @asyncapi/generator | 3.3.1 |
+| @asyncapi/generator-helpers | 1.1.1 |
+| @asyncapi/generator-components | 0.7.1 |
+| @asyncapi/specs | 6.11.2 |
+| @asyncapi/specs | 6.11.2-alpha.1 |
+
+*   Because the malware targets developer credentials and secrets, organizations should assume potential exposure of GitHub tokens, SSH keys, cloud credentials, and CI/CD secrets, and rotate them accordingly.
+
+*   Finally, organizations should strengthen software supply chain defenses by implementing dependency allowlisting, SBOM generation, package verification, and improved monitoring of developer and build environments.
+
+### [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)How Can Wiz Help?
+
+Wiz customers should refer to [the pre-built advisory](https://app.wiz.io/boards/threat-center/wiz-adv-2026-125) in the Wiz Threat Intel Center for actionable steps to investigate, remediate, and harden their environments. Wiz Research will continue to update that advisory as the situation develops.
+
+## [](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions)Indicators of Compromise
+
+| Category | Indicator | Details |
+| --- | --- | --- |
+| SHA1 | 22bf76fe317ea6769bd38619bd440e42d119bd6b | validator.js malicious file (generator) |
+| SHA1 | a7e18d96efd3cdb127ef4cdcad9e3ad26c482bf2 | utils.js malicious file (generator-helpers) |
+| SHA1 | 9890950adcbc2478e7a080234f053214adbad44e | ErrorHandling.js malicious file (generator-components) |
+| SHA1 | c70e105e212ff3c1daa04bb2a62507717f296b0b | index.js malicious file (specs) |
+| SHA1 | c8cb3f6d5b90c46686d2bf531dc1a5786e27edc5 | sync.js Stage 2 payload |
+| IP | 85.137.53.71 | C2 server (ports 8080, 8081) |
+| Ethereum | 0x12c37A86a0Ed0beBe5d1d6a43E42f07860eAc710 | Fallback C2 contract |
+| Ethereum | 0x1969ab05d67b67fdcaa26240f738ccb077e1cd84 | Backup contract |
+| Ethereum | 0x92d4C5413e4F7B258a114964101F9e1C6d64C6Ba | Deployer wallet |
+| IPFS | QmQobZSp1wRPrpSEQ56qnyq7ecZh5Bg5k1fnjt4SUwwHb9 | Stage 2 payload |
+| IPFS | Qmet4fhsAaWMBUxNDfREHwgiyDeSWy4YSYs9wiKUW5jGyf | Stage 2 payload (react-sdk variant) |
+| File | ~/.local/share/NodeJS/sync.js | Persisted payload |
+| Service | miasma-monitor.service | Systemd persistence |
+| Domain | ipfs[.]io | Payload delivery |
+| Domain | rentry[.]co | Token exfiltration |
+
+Links/Buttons:
+- [Sign in](https://app.wiz.io/login)
+- [Experiencing an incident?](https://www.wiz.io/experiencing-an-incident)
+- [Wiz](https://www.wiz.io/)
+- [Pricing](https://www.wiz.io/pricing)
+- [Get a demo](https://www.wiz.io/demo)
+- [Blog](https://www.wiz.io/blog)
+- [](https://www.onetrust.com/solutions/consent-and-preferences/?utm_source=cmp&utm_medium=cmpbanner)
+- [a misconfigured GitHub Actions workflow](https://www.wiz.io/blog/github-actions-security-guide)
+- [in the Shai-Hulud 2.0](https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack)
+- [contained a workflow file](https://github.com/asyncapi/generator/blob/47be3886e460107a4ea5ce88ad674a65724ac4a7/.github/workflows/manual-netlify-preview.yml)
+- [opened a PR investigating the issue](https://github.com/asyncapi/generator/pull/2078)
+- [followed up a proposed fix](https://github.com/asyncapi/generator/pull/2092)
+- [PR #2155](https://github.com/asyncapi/generator/pull/2155)
+- [pushed a malicious commit directly to the `next` branch at 06:58 UTC](https://github.com/asyncapi/generator/commit/3eab3ec9304aa26081358330491d3cfeb55cc245)
+- [prt-scan](https://www.wiz.io/blog/six-accounts-one-actor-inside-the-prt-scan-supply-chain-campaign)
+- [the pre-built advisory](https://app.wiz.io/boards/threat-center/wiz-adv-2026-125)
+- [#Research](https://www.wiz.io/blog/tag/research)
+- [#Threat Intel](https://www.wiz.io/blog/tag/threat-intel)
+- [What Happened?](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#what-happened-3)
+- [Malicious Packages Published](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#malicious-packages-published-10)
+- [Connections to other attacks](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#connections-to-other-attacks-15)
+- [Payload](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#payload-21)
+- [What steps should security teams take?](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#what-steps-should-security-teams-take-25)
+- [How Can Wiz Help?](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#how-can-wiz-help-30)
+- [Indicators of Compromise](https://www.wiz.io/blog/m-red-team-asyncapi-supply-chain-compromise-via-github-actions#indicators-of-compromise-32)
+- [Cloud & AI Security](https://www.wiz.io/platform)
+- [Wiz Code](https://www.wiz.io/platform/wiz-code)
+- [Wiz Cloud](https://www.wiz.io/platform/wiz-cloud)
+- [Wiz Defend](https://www.wiz.io/platform/wiz-defend)
+- [Integrations](https://www.wiz.io/integrations)
+- [Environments](https://www.wiz.io/environments)
+- [Documentation](https://docs.wiz.io/)
+- [Customer Stories](https://www.wiz.io/customers)
+- [Cloud Security Courses](https://www.wiz.io/courses)
+- [CloudSec Academy](https://www.wiz.io/academy)
+- [Resources Center](https://www.wiz.io/resources)
+- [Cloud Threat Landscape](https://www.wiz.io/cloud-threat-landscape)
+- [Cloud Security Assessment](https://www.wiz.io/cloud-security-assessment)
+- [Vulnerability Database](https://www.wiz.io/vulnerability-database)
+- [About Wiz](https://www.wiz.io/about)
+- [Join the Team](https://www.wiz.io/careers)
+- [Newsroom](https://www.wiz.io/newsroom)
+- [Events](https://www.wiz.io/events)
+- [Contact Us](https://www.wiz.io/contact)
+- [Trust Center](https://www.wiz.io/trust-center)
+- [Wiz Partner Alliance](https://www.wiz.io/partner-alliance)
+- [X](https://x.com/intent/user?screen_name=wiz_io)
+- [LinkedIn](https://linkedin.com/company/wizsecurity)
+- [RSS](https://www.wiz.io/feed/rss.xml)
+- [Status](https://status.wiz.io/)
+- [Privacy Policy](https://cloud.google.com/terms/cloud-acquisitions-privacy-notice?hl=en&e=0)
+- [Terms of Use](https://legal.wiz.io/legal#terms-of-use)
+- [Modern Slavery Statement](https://legal.wiz.io/legal#modern-slavery)
+- [More information about cookies](https://www.wiz.io/legal/cookie-policy)

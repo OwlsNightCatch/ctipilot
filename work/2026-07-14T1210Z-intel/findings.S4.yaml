@@ -1,0 +1,145 @@
+domain: S4
+run_id: 2026-07-14T1210Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-14T12:13:59Z
+ended_at: 2026-07-14T12:28:17Z
+duration_seconds: 858
+self_telemetry:
+  webfetch_calls: 13
+  websearch_calls: 12
+  bridge_fetches: 15
+
+items:
+  - title: "Progress ShareFile Storage Zone Controller shutdown — Shadowserver confirms active exploitation of CVE-2026-2699; researcher assesses Clop involvement"
+    sources:
+      - { url: "https://www.bankinfosecurity.com/progress-urges-sharefile-shutdown-over-credible-threat-a-32210", publisher: "BankInfoSecurity (ISMG)", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/07/13/progress-orders-emergency-sharefile-server-shutdown-over-mystery-security-threat/5270281", publisher: "The Register", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://status.sharefile.com/", publisher: "Progress ShareFile status page (vendor, first-party)", date: "2026-07-10", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/weekly-recap-sharefile-threat-citrix.html", publisher: "The Hacker News (weekly recap)", date: "2026-07-13", role: "corroborating" }
+    discovery_trace: "first seen at: databreaches.net feed, URL https://databreaches.net/feed/ (item: 'Progress urges ShareFile admins to shut down servers over credible threat') → pivot: The Register, URL https://www.theregister.com/security/2026/07/13/progress-orders-emergency-sharefile-server-shutdown-over-mystery-security-threat/5270281 → primary: BankInfoSecurity, URL https://www.bankinfosecurity.com/progress-urges-sharefile-shutdown-over-credible-threat-a-32210 (Shadowserver honeypot exploitation detail + named-researcher Clop assessment) → corroboration: Progress vendor status page https://status.sharefile.com/"
+    summary: |
+      Material update to the 2026-07-13 entry on Progress ShareFile's emergency shutdown order. New facts from BankInfoSecurity's 2026-07-13 reporting (Mathew J. Schwartz): the emergency alert to Storage Zone Controller (SZC) customers arrived "the same day that independent honeypots began detecting active, in-the-wild attempts to exploit" CVE-2026-2699 — the pre-auth authentication-bypass flaw (CVSS 9.9, access to the /ConfigService/Admin.aspx configuration page) that watchTowr Labs chained with CVE-2026-2701 (CVSS 9.1, malicious-file-upload RCE) in April 2026 research; both were patched to 5.12.4 in March 2026. Shadowserver Foundation's honeypots recorded the exploitation attempts starting Friday 2026-07-10, the same day Progress sent its shutdown notice. watchTowr itself posted possible indicators of "active zero-day exploitation targeting on-premises Progress ShareFile controllers." Internet-exposed SZC instance count collapsed from watchTowr's April count of ~30,000 to roughly 1,000 by Monday 2026-07-13 — evidence of mass emergency remediation. Recorded Future threat-intel analyst Allan Liska publicly assessed (Blue Sky, quoted by BankInfoSecurity) that the pattern "smells like CL0P ransomware group activity," explicitly drawing the parallel to Clop's history of exploiting secure file-transfer software (Accellion FTA, GoAnywhere MFT, MOVEit, Cleo Harmony/VLTrader/LexiCom, Oracle E-Business Suite) — this is a named researcher's assessment, not a confirmed attribution; Progress has not named an actor. Progress restored ShareFile cloud-service access as of 5pm ET Sunday 2026-07-12 but SZC servers must stay powered off; the company still states no evidence of unauthorized access to customer data and has disclosed no root cause, no new CVE, and no restart timeline. The prior entry (2026-07-13) noted SZC exposure concentrates in the US and Germany, giving Swiss/European on-prem file-exchange operators direct reason to prioritize this.
+    region_nexus: "global; SZC exposure concentrated in the US and Germany, directly relevant to EU on-prem file-exchange operators"
+    primary_sector_nexus: "indirect (cross-sector file-transfer infrastructure used by public-sector and CI operators)"
+    sector: "public-sector, finance, healthcare, energy (any sector using on-prem ShareFile SZC for secure file exchange)"
+    cves: [CVE-2026-2699, CVE-2026-2701]
+    techniques: [T1190]
+    affected_products: ["Progress ShareFile Storage Zone Controller (branch 5.x, pre-5.12.4)"]
+    entity_keys: ["incident:progress-sharefile-storage-zone-controller-shutdown-2026-07"]
+    new_entities:
+      - { key: "actor:clop", type: actor, name: "Clop", aliases: ["Cl0p"],
+          summary: "Long-running extortion actor specialising in mass exploitation of secure managed-file-transfer software (Accellion FTA 2020-21, GoAnywhere MFT 2023, MOVEit and Cleo Harmony 2023, VLTrader/LexiCom 2024, Oracle E-Business Suite 2025). Recorded Future analyst Allan Liska assessed the July 2026 Progress ShareFile Storage Zone Controller emergency shutdown 'smells like CL0P ransomware group activity' (BankInfoSecurity, 2026-07-13) — an unconfirmed researcher assessment, not a vendor or law-enforcement attribution." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-13/progress-sharefile-storage-zone-controller-shutdown"
+    evidence:
+      - quote: "The alert arrived the same day that independent honeypots began detecting active, in-the-wild attempts to exploit a critical authentication bypass vulnerability the vendor patched earlier this year in its ShareFile Storage Zone Controller software."
+        attribution: "BankInfoSecurity (Mathew J. Schwartz)"
+        source_url: "https://www.bankinfosecurity.com/progress-urges-sharefile-shutdown-over-credible-threat-a-32210"
+      - quote: "This smells like CL0P ransomware group activity. If you use ShareFile, be like C-3PO and 'shut them all down.'"
+        attribution: "Allan Liska, Recorded Future (quoted by BankInfoSecurity)"
+        source_url: "https://www.bankinfosecurity.com/progress-urges-sharefile-shutdown-over-credible-threat-a-32210"
+      - quote: "As of 5 p.m. ET on Sunday, July 12, we notified all ShareFile customers with Storage Zone Controllers that their access to the Progress ShareFile cloud service has been restored. However, Storage Zone Controllers must remain turned off while we complete our investigation."
+        attribution: "Progress Software statement to The Register"
+        source_url: "https://www.theregister.com/security/2026/07/13/progress-orders-emergency-sharefile-server-shutdown-over-mystery-security-threat/5270281"
+    extended_notes: |
+      Defender takeaway: this is the exact "confirmed active exploitation, no vendor attribution yet" moment where Tier 2/3 teams should stop waiting for a CVE-scoped advisory and act on the exposure class. Detection concept: any organisation still running SZC should treat outbound connections FROM the SZC host as suspicious (the auth-bypass reaches /ConfigService/Admin.aspx then chains to a file-upload RCE) — hunt for unexpected child processes off the IIS worker process (w3wp.exe) hosting ShareFile, and any newly-dropped .aspx files under the ShareFile IIS directory. Hardening: if still running SZC 5.x pre-5.12.4, the vendor's own guidance is now "power off the host," not "patch" — treat this as a stop-the-bleeding scenario, not a routine patch cycle.
+
+  - title: "D1R claims a cascading Synopsys → Bosch → ARM supply-chain compromise via a client-portal enumeration flaw — unconfirmed by all three companies"
+    sources:
+      - { url: "https://cybernews.com/security/bosch-synopsys-data-breach-claim/", publisher: "Cybernews", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.dexpose.io/d1r-ransomware-attack-on-arm-compromise-of-uk-tech-giant/", publisher: "DeXpose (leak-site tracker, reproduces D1R's own claim text)", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://www.dexpose.io/d1r-ransomware-group-targets-synopsys-in-devastating-cyberattack/", publisher: "DeXpose (leak-site tracker)", date: "2026-07-13", role: "corroborating" }
+    discovery_trace: "first seen at: ransomware.live API, URL https://api.ransomware.live/v2/recentvictims (D1R entries for Bosch, ARM dated 2026-07-13T00:00:00Z and Synopsys dated 2026-07-13T11:32:45Z) → pivot: WebSearch (\"D1R ransomware Bosch ARM Synopsys claim July 2026\") → primary: Cybernews, URL https://cybernews.com/security/bosch-synopsys-data-breach-claim/ → corroboration: DeXpose leak-site-tracker posts reproducing D1R's own dark-web statements, URL https://www.dexpose.io/d1r-ransomware-attack-on-arm-compromise-of-uk-tech-giant/ and https://www.dexpose.io/d1r-ransomware-group-targets-synopsys-in-devastating-cyberattack/"
+    summary: |
+      UNCONFIRMED CLAIM — treat as a watch item, not a confirmed breach. A previously-unknown extortion actor calling itself D1R listed three victims on its dark-web leak site on 2026-07-13: Synopsys (US, EDA/semiconductor-design software), Bosch (Germany, automotive/industrial engineering conglomerate) and ARM (UK, chip-architecture licensor) — three companies foundational to the global semiconductor design and embedded-systems supply chain. D1R's own leak-site statement claims the chain began with "a flawed logic in [Synopsys'] registration form" that let it "pull an entire 40,000 corporate client database without internal access" — consistent with an unauthenticated IDOR/enumeration flaw in a customer-facing web portal, not a disclosed CVE. D1R then claims it used that Synopsys client database, cross-referenced against "many other group leaks," to gain access to "ARM center" credentials, and — "severely incapacitated by 2FA email/sms-code required by ARM on every step" — instead downloaded a client-side tool called "Athena Download Manager" that authenticates via an SSL client certificate belonging to a company entitled to ARM downloads, and that this certificate-based auth path bypasses the interactive 2FA checks ARM enforces on its normal web download flow. Against Bosch, D1R published a screenshot of a CAN (Controller Area Network — the hardware-communication protocol Bosch originated in 1983, used across automotive, rail and industrial embedded systems) user-manual page plus a directory listing including .vhd (VHDL hardware-description) files, framing this as Bosch engineering/hardware-design data reached via the same Synopsys-rooted access rather than a direct Bosch intrusion. Cybernews reached out to both Bosch and Synopsys for comment and had received no response as of publication; none of the three companies has confirmed any compromise. D1R is a newly-surfaced actor with only these three listed victims and no established track record, so the claims — while technically detailed — carry real risk of exaggeration for extortion leverage (an 11-day negotiation countdown was set on each listing).
+    region_nexus: "Germany (Bosch) and UK (ARM) direct EU/UK nexus; US (Synopsys) global semiconductor-design supply chain with wide EU/CH industrial and defense-adjacent usage"
+    primary_sector_nexus: "indirect (semiconductor design / embedded-systems supply chain underpinning multiple CI sectors)"
+    sector: "technology/semiconductor supply chain (transferable to energy, transport, telco, and defense-adjacent public-sector users of Bosch embedded components, ARM silicon, and Synopsys EDA tooling)"
+    cves: []
+    techniques: [T1190, T1556.006]
+    affected_products: ["Synopsys corporate client portal (registration/enrollment form)", "ARM technology download platform (Athena Download Manager client tool)", "Bosch CAN protocol documentation / VHDL hardware-design files (alleged exposure only)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:d1r", type: actor, name: "D1R", aliases: [],
+          summary: "Newly-surfaced extortion actor first observed July 2026 with a dark-web leak site listing three victims (Synopsys, Bosch, ARM) as of 2026-07-13, claiming a cascading supply-chain compromise beginning with an unauthenticated client-database enumeration flaw in Synopsys' web registration form. Unconfirmed by any named victim as of this run (Cybernews, 2026-07-13)." }
+      - { key: "incident:d1r-synopsys-bosch-arm-claim-2026-07", type: incident, name: "D1R Synopsys/Bosch/ARM supply-chain extortion claim",
+          summary: "Unconfirmed dark-web leak-site claim (D1R, 2026-07-13) of a cascading compromise: an alleged unauthenticated enumeration flaw in Synopsys' client registration form yielding a 40,000-record corporate client database, cross-referenced against other groups' leaked data to obtain ARM access credentials, then bypassing ARM's interactive 2FA via a client-side 'Athena Download Manager' tool that authenticates on an SSL client certificate instead; Bosch CAN-protocol documentation and VHDL hardware-design files allegedly exposed via the same Synopsys-rooted access. None of the three companies has confirmed a breach (Cybernews, 2026-07-13)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    evidence:
+      - quote: "A ransomware gang claims to have stolen sensitive engineering data from Bosch through an alleged breach of technology company Synopsys. This raises concerns that proprietary hardware designs could be exposed."
+        attribution: "Cybernews"
+        source_url: "https://cybernews.com/security/bosch-synopsys-data-breach-claim/"
+      - quote: "Our cybersecurity assessment team has discovered a vulnerability in Synopsis. A flawed logic in their registration form has allowed our team to pull an entire 40,000 corporate client database without internal access."
+        attribution: "D1R (quoted by Cybernews)"
+        source_url: "https://cybernews.com/security/bosch-synopsys-data-breach-claim/"
+      - quote: "Cybernews reached out to Bosch and Synopsis for a comment. We will update the article once the response is received."
+        attribution: "Cybernews"
+        source_url: "https://cybernews.com/security/bosch-synopsys-data-breach-claim/"
+      - quote: "Severely incapacitated by 2FA email/sms-code required by ARM on every step, we were still able to download an interesting tool: Athena Download Manager That requires an SSL certificate of a company that owns ARM products, and downloading by means of Athena allows to bypass multiple 2FA checks that are required when downloading same files from www.arm.com"
+        attribution: "D1R (quoted by DeXpose)"
+        source_url: "https://www.dexpose.io/d1r-ransomware-attack-on-arm-compromise-of-uk-tech-giant/"
+    extended_notes: |
+      Transferable lesson independent of whether this specific claim holds up: the alleged pattern — enumerate a B2B vendor's public-facing registration/self-service portal for a full client list (no CVE, just broken access-control logic), then cross-reference that client list against other groups' unrelated leaked data to build a picture of who trusts whom, then pivot into a downstream client's environment via a client-specific tool that authenticates on a certificate/trust relationship weaker than the tenant's normal interactive MFA — is a coherent and low-effort supply-chain-recon technique class regardless of this actor's credibility. Any organisation operating a B2B customer/reseller self-service portal should audit it for unauthenticated enumeration (IDOR/BOLA) of the client roster, and any organisation shipping a client-side "download manager"-style tool that trusts a certificate instead of the user's normal MFA path should treat that tool as a distinct, lower-assurance auth surface requiring its own monitoring.
+    borderline: true
+    borderline_reason: "unconfirmed leak-site claim (single primary chain, no victim confirmation from Synopsys/Bosch/ARM); included for genuinely global significance of the three named companies (semiconductor design/embedded-systems supply chain) and a technically coherent, transferable supply-chain-recon TTP, but credibility of D1R itself is unestablished."
+
+  - title: "Lidl discloses online-shop customer-data theft after an IT service-provider breach — Germany, Belgium, Netherlands; Dutch DPA notified"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/", publisher: "BleepingComputer", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/07/13/lidl-data-breach-customer-data/", publisher: "Help Net Security", date: "2026-07-13", role: "corroborating" }
+    discovery_trace: "first seen at: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/ (listing) → drill: https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/ → corroboration: Help Net Security, URL https://www.helpnetsecurity.com/2026/07/13/lidl-data-breach-customer-data/ (both quote Lidl's own customer-notification email)"
+    summary: |
+      Lidl (Schwarz Group, Europe's largest food retailer) notified online-shop customers in Germany, Belgium and the Netherlands of a data breach traced to a compromised, unnamed IT service provider rather than Lidl's own online-shop infrastructure. Per Lidl's own customer notification (quoted verbatim by both outlets): "unknown individuals briefly gained access to a separately stored file containing customer data, and part of the data was stolen from it," while "the online shop's system itself was not affected." Stolen fields: names, phone numbers, email addresses, dates of birth, customer numbers, salutations, and — per the German-language coverage — individual order records from January–June 2026. Lidl explicitly stated passwords, billing/shipping addresses, and payment/bank details were not affected and customer accounts were not compromised. The company found "no concrete evidence of data misuse" as of notification but warned customers of potential follow-on phishing. The affected service provider filed a police report and engaged external forensic experts; Lidl filed a report with the Dutch Data Protection Authority. Notification emails went out 2026-07-10. Neither the service provider nor the specific initial-access vector has been named.
+    region_nexus: "Germany, Belgium, Netherlands (EU home-region retail/consumer nexus)"
+    primary_sector_nexus: "indirect (large-scale EU consumer/retail breach via third-party data processor — same exposure pattern applies to public-sector bodies using outsourced customer-data processors)"
+    sector: "retail (transferable to any sector using third-party data processors, incl. public-sector citizen-facing services)"
+    cves: []
+    techniques: [T1199]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:lidl-service-provider-breach-2026-07", type: incident, name: "Lidl online-shop customer-data breach via IT service provider",
+          summary: "Lidl (Schwarz Group) notified online-shop customers in Germany, Belgium and the Netherlands (2026-07-10) that names, phone numbers, email addresses, dates of birth, customer numbers and order records were stolen from a separately-stored file at a compromised, unnamed IT service provider; Lidl's own online-shop systems were not affected. Dutch DPA notified (BleepingComputer / Help Net Security, 2026-07-13)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Despite high IT security standards, unknown individuals briefly gained access to a separately stored file containing customer data, and part of the data was stolen from it."
+        attribution: "Lidl customer notification (quoted by BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/"
+      - quote: "The online shop's system itself was not affected."
+        attribution: "Lidl customer notification (quoted by BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/"
+      - quote: "The hacked IT service provider has also filed a police report and engaged IT forensic experts."
+        attribution: "Lidl customer notification (quoted by BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/"
+      - quote: "Although we currently have no concrete evidence of data misuse, we are warning you as a precaution against possible phishing attempts or identity fraud."
+        attribution: "Lidl customer notification (quoted by Help Net Security)"
+        source_url: "https://www.helpnetsecurity.com/2026/07/13/lidl-data-breach-customer-data/"
+    extended_notes: |
+      Transferable lesson for public-sector defenders: this is a clean case study of the "separately stored file at a third-party processor" exposure class — the primary application (online shop) stayed intact and uncompromised while a downstream data extract held by an outsourced processor was the actual point of loss. Any organisation (public-sector citizen portals included) that exports customer/citizen data extracts to marketing, CRM, or fulfilment processors should treat those extracts as a distinct, auditable data-flow requiring its own access logging and retention limits — the core application's security posture says nothing about the processor's.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sec-disclosures-edgar
+    reason: "SEC EDGAR full-text search (Item 1.05, last 7 days) returned only one hit: River Financial Corp's 8-K/A amendment filed 2026-07-10 — a small US bank holding company, already 4 days stale relative to this run's window and with no Swiss/EU/CI nexus or global-significance qualifier. Checked, not included."
+  - source_id: ico-uk
+    reason: "ICO enforcement-action sitemap (top 20 by lastmod) returned no items newer than 2026-07-08 (lastmod), all substantively dated March-May 2026. No fresh in-window enforcement action found."
+  - source_id: cnil-fr
+    reason: "CNIL news listing's most recent item (EDPB anonymisation/web-scraping guidance) is dated 2026-07-09 — outside this run's ~24-36h window. No fresh CNIL enforcement or breach item in window."
+  - source_id: troyhunt
+    reason: "Troy Hunt's RSS feed's most recent post is dated 2026-07-08 (Weekly Update 511) — no in-window content."
+  - source_id: databreaches-net
+    reason: "Feed checked in full (10 items back to 2026-07-11); the ZEGO Textilveredelungszentrum GmbH insolvency-after-cyberattack item and the Zenith Bank Nigeria court item were considered and dropped — neither has a Swiss/EU CI-government nexus, transferable new TTP, plausible shared-actor overlap, or global scale sufficient to clear the stricter S4 incident gate."
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist is configured for this deployment (org-profile.yaml supplier watchlist is empty) — sweep is a no-op per instructions; general relevance discipline applied to all S4 candidates instead."

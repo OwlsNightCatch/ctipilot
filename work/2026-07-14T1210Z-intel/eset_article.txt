@@ -1,0 +1,317 @@
+Title: Forgotten UEFI shims undermining Secure Boot
+
+URL Source: https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/
+
+Markdown Content:
+ESET researchers identified 11 old and forgotten UEFI shim bootloaders at versions 0.9 and below that can be used to bypass UEFI Secure Boot on any UEFI-based machine that trusts Microsoft’s Microsoft Corporation UEFI CA 2011 third-party UEFI certificate authority (CA) certificate, regardless of the installed operating system (OS). Reported shims can be exploited to execute untrusted code during system boot, enabling attackers to deploy malicious UEFI bootkits (such as [Bootkitty](https://www.welivesecurity.com/en/eset-research/bootkitty-analyzing-first-uefi-bootkit-linux/), [HybridPetya](https://www.welivesecurity.com/en/eset-research/introducing-hybridpetya-petya-notpetya-copycat-uefi-secure-boot-bypass/), or [BlackLotus](https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/)) even on systems with UEFI Secure Boot enabled. We reported our findings to CERT/CC in February 2026, and the vulnerable UEFI applications were revoked on Microsoft’s June 9 th, 2026 Patch Tuesday.
+
+While two CVE IDs were assigned to this case to cover the reported shims, [CVE-2026-8863](https://www.cve.org/CVERecord?id=CVE-2026-8863) and [CVE-2026-10797](https://www.cve.org/CVERecord?id=CVE-2026-10797), exploitation of each reported shim is not just about a single bug or two that can be found in these old shims directly. In fact, the attack surface is extended by the shims’ trusted, second-stage bootloaders (mostly [GRUB 2](http://www.gnu.org/software/grub/grub.html)), which – like the shims themselves – may include outdated versions with known vulnerabilities. The discovered shims come from various tools or software packages, including PC-diagnostics software, Linux distributions, and other UEFI-based utilities. Importantly, exploitation is not limited to systems with the affected software or OS installed, as attackers can bring their own copy of the vulnerable shims to any UEFI system with the Microsoft third-party UEFI certificate enrolled.
+
+The full list of the software products relying on the reported shims along with their affected versions is available in [CERT/CC’s Vulnerability Note](https://kb.cert.org/vuls/id/616257). In response to ESET researchers’ report, UEFI shim bootloaders with the following PE [Authenticode](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/authenticode) hashes were revoked in the dbx update that was part of Microsoft’s [June 9 th Patch Tuesday](https://msrc.microsoft.com/update-guide/releaseNote/2026-Jun):
+
+*   AE75F0D82BA3DF824FBFC69340CC3B4D66C598373B1AB54CDB6C8BFD83A6B961
+*   7B2A3F5C96F95BD8086CE54B0825E300F9C8F11FE3401BB631B3215C8DE9EB10
+*   EB86FA1386FE6E4533B8B938DCC1250616D2F1C14C15E2FCF80834A161018A0A
+*   FD23D6E57DE6F4E1F9D7118DA1C5F31A8AF6BE5E5D9E8170F9493447268D50C5
+*   A0DE9333442C1BF9349A460141AE5E80F911955C6506040FA3D021BF6C1AE3E4
+*   95B6D71FC0C0F8C5E1533A37AEF92CF6B0C961E2CC612A97117FA6759CE5FC06
+*   236A9CB0D71951C36398A32EB660CE2CD4A52CCFA7CF751CC6A35D9DE549E19B
+*   5E594C448760A3135B1A3A83E07A4F2E6FBE49414EF2C7CAB1CBA77F284FA63B
+*   8A964D5F8373948D20A1D4296FB92E545DAD4617A0C810F3B934B53D98AE8963
+*   410260B1B6F5AF5FBEEB9EA3220658435E876CB3247126EE907A437F312DB373
+*   96275DFD6282A522B011177EE049296952AC794832091F937FBBF92869028629
+
+> **Key points of this blogpost:**
+> 
+> 
+> *   ESET researchers discovered 11 old, Microsoft-signed, UEFI applications that allow bypassing UEFI Secure Boot on the majority of UEFI-based systems.
+> *   An attacker exploiting one of these vulnerable applications can execute untrusted code during system boot, enabling deployment of malicious UEFI bootkits or other malware.
+> *   Exploitation is not limited to systems with the affected software or OS installed, as attackers can bring their own copy of the vulnerable binaries to any UEFI system with the Microsoft third-party UEFI certificate enrolled.
+> *   All UEFI systems with Microsoft third-party UEFI signing enabled are affected (Windows 11 Secured-core PCs should have this option disabled by default).
+> *   The vulnerable binaries were revoked by Microsoft in the June 9 th, 2026 Patch Tuesday update.
+
+Following is the coordinated disclosure timeline. We’d like to thank CERT/CC for its help in coordinating the vulnerability disclosure process, and the affected vendors for smooth and transparent communication and cooperation during the vulnerability disclosure and remediation process. To protect your systems against this threat, install the latest Microsoft dbx updates. Instructions on how to do that can be found in the _[Protection and detection](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#Protection%20and%20detection)_ section.
+
+> **Coordinated disclosure timeline:**
+> 
+> 
+> *   2026-02-16 – ESET reported the findings, along with a proof of concept, to CERT/CC.
+> *   2026-03-18 – dbx update and public disclosure date was set to May 19 th, 2026 (Microsoft’s May Patch Tuesday).
+> *   2026-03-30 – dbx update and public disclosure date was postponed to June 9 th, 2026 (Microsoft’s June Patch Tuesday).
+> *   2026-06-09 – Microsoft’s June Patch Tuesday update, CERT/CC [Vulnerability Note](https://kb.cert.org/vuls/id/616257) published.
+> *   2026-07-14 – ESET blogpost published.
+
+## UEFI shim bootloader and UEFI Secure Boot
+
+To understand the impact that such vulnerable shims can have on UEFI Secure Boot-protected systems, we need to understand how UEFI Secure Boot works, and how signed UEFI shim bootloaders extend the Secure Boot trust chain. In this section we’ll look at UEFI Secure Boot basics, how UEFI shims extend the UEFI Secure Boot trust chain, and two shim-related features: Machine Owner Key (MOK) and Secure Boot Advanced Targeting (SBAT). For anyone already familiar with the theory, we recommend jumping directly to the section [_Bypassing UEFI Secure Boot using old shims_](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#Bypassing%20UEFI%20Secure%20Boot%20using%20old%20shims).
+
+### UEFI Secure Boot
+
+As shown in Figure 1, when UEFI firmware loads a boot application – like Windows Boot Manager or a UEFI shim – it verifies the binary against two Secure Boot databases:
+
+*   db (allowed certificates and Authenticode hashes), and
+*   dbx (forbidden certificates and Authenticode hashes).
+
+_Figure 1. UEFI Secure Boot simplified scheme (source: [UEFI Bootkits and Where UEFI Security Fails](https://static.rainfocus.com/rsac/us24/sess/1697270793852001dpne/finalwebsite/2024\_USA24\_HTA-T09\_01\_UEFI-Bootkits-and-Where-UEFI-Security-Fails\_1713983196427001MzOd.pdf), p. 48)_
+
+The image must be trusted by db and not listed in dbx – otherwise, the boot manager triggers a security violation instead of executing it. To make this work out of the box on newly purchased devices with UEFI Secure Boot enabled, most OEMs enroll a set of Microsoft UEFI certificates in the db database, namely:
+
+*   Microsoft Windows Production PCA 2011 and Windows UEFI CA 2023 (used to sign Microsoft’s own UEFI boot applications; the 2011 certificate [will be added to dbx soon](https://support.microsoft.com/en-us/topic/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023-24932-41a975df-beb2-40c1-99a3-b3ff139f832d) as a result of the [BlackLotus](http://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/)-related vulnerabilities).
+*   Microsoft Corporation UEFI CA 2011 and Microsoft UEFI CA 2023 (used to sign third-party UEFI boot software, such as Linux shims, recovery tools, and disk encryption utilities).
+
+This means that anyone wanting their boot-time software to be UEFI Secure Boot-compatible by default can submit their binaries to Microsoft for signing through the Windows Hardware Dev Center, and once approved, the signed files become trusted on the vast majority of UEFI systems. As a result, Microsoft plays a central role in securing most UEFI-based devices, effectively deciding what is, and what is not, allowed to run during boot.
+
+#### UEFI revocation (dbx)
+
+UEFI Secure Boot’s revocation design is straightforward: when a previously trusted boot application – one whose PE authenticode hash, or the certificate that signed it, is present in db – turns out to be vulnerable, its PE authenticode hash is added to dbx, the Microsoft-managed forbidden-signatures database (with the latest dbx contents typically published in [Microsoft’s GitHub repository](https://github.com/microsoft/secureboot_objects/tree/main/PostSignedObjects/DBX)). Certificates themselves are revoked only occasionally.
+
+While the original idea of revoking individual vulnerable binaries by hash might have been reasonable at the time Secure Boot was introduced, cases such as [BootHole](https://eclypsium.com/research/theres-a-hole-in-the-boot/) and [BlackLotus](https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/) demonstrate that this approach is far from ideal. The fundamental issue is scale, and it is well captured in the Red Hat Bootloader Team’s [SBAT](https://github.com/rhboot/shim/blob/main/SBAT.md) proposal/specification:
+
+_As part of the recent "BootHole" security incident [CVE-2020-10713](https://nvd.nist.gov/vuln/detail/CVE-2020-10713), 3 certificates and 150 image hashes were added to the UEFI Secure Boot revocation database dbx on the popular x64 architecture. This single revocation event consumes 10kB of the 32kB, or roughly one third, of revocation storage typically available on UEFI platforms. Due to the way that UEFI merges revocation lists, this plus prior revocation events can result in a dbx that is almost 15kB in size, approaching 50% capacity._
+
+The same pressure on dbx capacity surfaced again with the BlackLotus-related revocations of vulnerable Windows Boot Manager binaries. Both of these prompted Microsoft, together with its partners, to introduce additional, version-based revocation mechanisms, each tied to one of the two widely deployed Secure Boot-compatible bootloaders:
+
+*   [Secure Boot Advanced Targeting](https://github.com/rhboot/shim/blob/main/SBAT.md) (SBAT) – used by shim, a UEFI bootloader for Linux, from [version 15.3](https://github.com/rhboot/shim/releases/tag/15.3).
+*   Microsoft’s Secure Boot Security Version Number (SVN) – used by Windows Boot Manager (released in April 2024) – also referred to as Revocation via Embedded Secure Version Information (REVISE) in [Bill Demirkapi’s Booting with Caution, p. 62](https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2024_05_OffensiveCon/OffensiveCon24_Booting_With_Caution_BDemirkapi.pdf); however, this name and acronym do not seem to be used in the official Microsoft documentation.
+
+In short, where dbx revokes _binaries_, SBAT and Microsoft’s Secure Boot SVN revoke _versions_. When a vulnerability is found in a UEFI application supporting one of these version-based revocation mechanisms, what really needs to be kept out is _every build up to and including the broken one_ – and _that_ can be captured by a version number much easier than by a long list of hashes. We explain more about SBAT in the _[Secure Boot Advanced Targeting (SBAT)](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#Secure%20Boot%20Advanced%20Targeting%20(SBAT))_ section.
+
+### UEFI shim bootloader and Secure Boot
+
+With Linux distributions supporting UEFI Secure Boot, the above-described Secure Boot mechanism built around Microsoft keys introduces some challenges. Every Linux distribution generates its own bootloader binaries, and each of them has a different hash. Getting every Linux bootloader signed directly by Microsoft would be slow, bureaucratic, and impractical (if not impossible) to maintain across all Linux distributions.
+
+The solution to this problem is a shim: a small, minimal first-stage bootloader that Microsoft can vet and sign once, and which then creates a secondary trust anchor for the rest of the Linux distribution-specific boot stack – usually GRUB 2 and the Linux kernel. This trust anchor is another certificate, referred to as a vendor certificate (managed by the distribution vendor), added to the shim binary before it is signed by Microsoft.
+
+A simplified boot sequence on a Secure Boot-enabled Linux system using a shim is depicted in Figure 2.
+
+_Figure 2. Simplified UEFI boot flow on Linux systems_
+
+The UEFI firmware loads the shim and validates its signature against the Microsoft CA stored in the firmware (the db variable). The shim then takes over and validates the second-stage bootloader (often GRUB 2) against its own embedded vendor certificate – for example, Debian’s UEFI key for Debian, Canonical’s UEFI key for Ubuntu, or Red Hat’s key for RHEL and Fedora. GRUB 2, in turn, validates the kernel using the same vendor certificate before handing over control. Every step is cryptographically vouched for by the step before it.
+
+This indirection means that a Linux distribution can release bootloader and kernel updates rapidly, signing them with its own vendor key, without needing to go back to Microsoft for every update. Only the shim itself requires Microsoft’s signature – and it changes infrequently.
+
+In addition to the vendor certificate, the shim often contains another built-in certificate associated only with the specific shim build/binary. This certificate is often referred to as a shim certificate and is used to sign and verify integrity of the shim’s utilities that can be generated during the shim’s build time, such as MokManager (used for managing MOKs and explained in more detail below) or the shim’s [fallback](https://www.rodsbooks.com/efi-bootloaders/fallback.html).
+
+#### Machine Owner Key (MOK)
+
+When talking about shims, we cannot skip another important mechanism that allows a shim to use external keys managed by the user, known as [Machine Owner Keys](https://edk2-docs.gitbook.io/understanding-the-uefi-secure-boot-chain/additional_secure_boot_chain_implementations/machine_owner_key_mok) (MOKs). A MOK allowlist (think of it as a shim-specific “extension” of the UEFI db database) is stored in a boot-only NVRAM variable named MokList, and a forbidden list (the shim-specific “extension” of the UEFI dbx database) is stored in a boot-only NVRAM variable named MokListX; physical access is required to modify both variables on a system with UEFI Secure Boot enabled (boot-only variables can only be modified during boot, before the OS loader calls the UEFI boot services function [ExitBootServices](https://uefi.org/specs/UEFI/2.9_A/07_Services_Boot_Services.html#efi-boot-services-exitbootservices)). To manage the lists, the shim uses the MokManager UEFI application. A guide on how to manage MOKs can be found [here](https://www.rodsbooks.com/efi-bootloaders/secureboot.html#mokutil). Figure 3 illustrates how a MOK extends the shim’s UEFI Secure Boot trust chain.
+
+_Figure 3. Simplified UEFI boot flow on Linux systems (with Machine Owner Key)_
+
+As we described in our [BlackLotus](https://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/) and [Bootkitty](https://www.welivesecurity.com/en/eset-research/bootkitty-analyzing-first-uefi-bootkit-linux/) discoveries, due to the non-authenticated nature of the boot-only NVRAM variables used by the MOK mechanism, bootkits tend to misuse MOKs for persistence once they successfully bypass UEFI Secure Boot.
+
+#### Secure Boot Advanced Targeting (SBAT)[](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/)
+
+Each UEFI application (component) that supports [SBAT](https://github.com/rhboot/shim/blob/main/SBAT.md) carries a small piece of metadata in a dedicated .sbat section of its PE file, protected by the same signature as the binary itself. The metadata names the component (for example, shim or grub) and assigns it a generation number that is incremented every time a security fix ships.
+
+What turns these numbers into a revocation mechanism is a matching policy on the UEFI system itself: a boot-only UEFI variable named SbatLevel that records the minimum acceptable generation number for each known component. Crucially, this variable is managed and enforced by the shim, not the firmware, which allows faster revocation updates compared to a dbx update. The shim embeds the policy, so enforcement does not rely solely on the external variable and incorporates any newer policy provided via SbatLevel. At every boot, the shim first verifies its own SBAT metadata against the policy – so an outdated shim can be made to reject itself – and then applies the same test to every binary it loads, refusing anything whose generation number falls below the minimum that the policy demands.
+
+Examples of SBAT revocations are shown in Figure 4. These are taken from the [SbatLevel_Variable.txt](https://github.com/rhboot/shim/blob/main/SbatLevel_Variable.txt) file located in the shim repository, which serves as the single source for SBAT revocations.
+
+_Figure 4. Latest SBAT revocations in the [shim repository](https://github.com/rhboot/shim/blob/main/SbatLevel\_Variable.txt)_
+
+The enforced level isn’t hidden from the OS – the shim publishes a read-only copy of SbatLevel in a runtime variable, SbatLevelRT. The OS can inspect which revocation policy is currently in force, but cannot modify it. On Windows the same information is also available through the registry value HKLM\SYSTEM\CurrentControlSet\Control\SecureBoot\SBAT\SbatLevel.
+
+## Bypassing UEFI Secure Boot using old shims[](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/)
+
+With the theory about a shim’s Secure Boot trust chain explained in the previous section, we can now focus on the practical impact that forgotten and old, though trusted, UEFI binaries can have on UEFI system security.
+
+We illustrate this by examining a few specific issues in the reported shims – issues that are easily exploitable and highlight the breadth of the attack surface they expose.
+
+### Vulnerable second-stage bootloaders
+
+Each of the reported shims embeds both a vendor-managed and a built-in shim certificate that serve as a trust anchor for the shim’s second-stage bootloaders or utilities: GRUB 2 binaries, MokManager, fallback loaders, and occasionally other vendor-signed shims that extend the trust chain even further. The number of binaries trusted by a given shim varies: from fewer than ten in the case of dedicated, specialized software to close to a hundred in the case of well-known Linux distributions.
+
+Signing and compilation timestamps of the applications trusted by the shims we reported span from 2013 to 2025 – enough to confirm that a significant portion of these binaries were old and likely affected by numerous publicly known vulnerabilities, including the already mentioned [BootHole](https://eclypsium.com/research/theres-a-hole-in-the-boot/) in the case of GRUB 2. While most of these trusted components are old enough to carry some security risk, GRUB 2 seems to be the weakest link. It is a complex piece of software, and older versions accumulate vulnerabilities accordingly.
+
+Consider the shim from Oracle Linux, which is among those we reported. It trusts binaries signed by a certificate issued to Oracle Corporation (SHA‑1 thumbprint: 2E434A724B4759C981E4189AA5AD3D635096DD2F). One of the binaries signed by that certificate is a GRUB 2 binary found in the Oracle Linux 7.1 installation ISO (V74844-01.iso). This binary is affected by [CVE-2015-5281](https://nvd.nist.gov/vuln/detail/CVE-2015-5281), which – quoting the vulnerability note – “_when used on UEFI systems, allows local users to bypass intended Secure Boot restrictions and execute non-verified code via a crafted (1) multiboot or (2) multiboot2 module_”. Both mentioned modules, multiboot and multiboot2, allow loading of unsigned code during system startup using the identically named commands, and should be forbidden in signed UEFI Secure Boot-compatible GRUB 2 binaries, as they bypass UEFI Secure Boot by design.
+
+The exploit is simple: there are no memory corruption bugs to trigger, no ROP chains to construct, and no complex reverse engineering required. The single prerequisite is building a custom, unsigned [multiboot2-compliant](https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html) kernel image – in practice, little more than an ELF binary containing the required headers and a handful of other specifics. Once an attacker builds this binary and copies it to the EFI System Partition (ESP) along with the vulnerable shim and GRUB 2, a single GRUB 2 multiboot2 command can be used to load and execute it during boot, Secure Boot enabled or not. A proof of concept demonstrating exploitation of CVE-2015-5281 via the old, reported Oracle Linux shim on a system with UEFI Secure Boot enabled (without the latest Microsoft patches applied) is shown in the video below:
+
+### Absence of newer features
+
+Over the years, the UEFI shim bootloader has naturally evolved, with new improvements and security features introduced in successive releases of the upstream [UEFI shim repository](https://github.com/rhboot/shim/tree/main). At the same time, many third-party vendors have taken available versions of the shim source code to build their own binaries, which they subsequently submitted to Microsoft for signing. This behavior is expected and aligns with the original design of shims. However, insufficient attention has been given to revoking outdated Microsoft-signed shims, many of which can, by design, be leveraged to bypass newer security mechanisms. We illustrate this gap with a few concrete examples.
+
+### MOK denylist enforcement
+
+The MokList (MOK-based allowlisting) has been supported by the upstream UEFI shim since [almost the very beginning](https://github.com/rhboot/shim/commit/0848fab) (version 0.3). MOK revocations (MokListX), however, only [started to be enforced](https://github.com/rhboot/shim/commit/b8d1bc6e98e54f6fda87ba0a248de7cba5c78f96) in version 0.9. Why is that a problem? Consider the following scenario...
+
+An enterprise has enrolled its own MOK to sign custom UEFI tools and bootloaders that it deploys across its network. A vulnerability surfaces in several of those binaries, and in response, the administrators revoke the old signing certificate by enrolling it into the MOK denylist (MokListX). Then, they enroll a fresh MOK, and re-sign patched versions of the affected binaries with the new key. The old, vulnerable binaries are now rejected by the shim, while the newly signed ones load properly, so the enterprise’s devices look secure. The old certificate remains present and trusted in the MokList, but is revoked in MokListX, where it is enforced as a higher-priority rule.
+
+In this scenario, an attacker could replace the victim’s up-to-date shim with an older Microsoft-signed UEFI shim from our report – for example, version 0.8 from the Abitti 1 software, signed by Microsoft for Finland’s Matriculation Examination Board. This shim still trusts the certificates stored in the victim’s MokList variable, where the outdated MOK certificate remains valid, but it ignores MokListX, as it was built prior to the introduction of MOK denylist [enforcement](https://github.com/rhboot/shim/commit/b8d1bc6e98e54f6fda87ba0a248de7cba5c78f96). As a result, the attacker’s shim could be used to load vulnerable binaries without restriction, allowing arbitrary code execution or the installation of a malicious UEFI bootkit.
+
+### SBAT enforcement
+
+The same issue applies to SBAT. Support for it was introduced upstream in shim [version 15.3](https://github.com/rhboot/shim/releases/tag/15.3), so any earlier shim is unaware of the mechanism: it does not read the SbatLevel revocation policy or inspect the .sbat section of the second-stage bootloader it loads. As a result, it ignores any later SBAT revocations intended to block vulnerable components.
+
+In this case, an attack scenario would be the following: an attacker takes a Microsoft-signed pre-v15.3 shim – such as the version 0.9 shim from Red Hat Enterprise Linux 7.2 that was part of our report – pairs it with one of the several GRUB 2 binaries that the shim still trusts but that SBAT has already revoked, and then copies both to the ESP. During system boot, the shim validates the GRUB 2 binary against its own embedded certificate, never consults SBAT, and loads the vulnerable binary without complaint – leaving the attacker free to exploit any vulnerability in that GRUB 2 binary.
+
+### Known shim vulnerabilities
+
+Finally, old shims are simply old code, and much old code carries known vulnerabilities. To illustrate this, we use an example of an old issue affecting shims at version 0.9 and below. This vulnerability had no CVE ID assigned until our report – even though it was fixed and well described almost exactly a decade ago in the message of one of the shim repository’s upstream commits, [d241bbb](https://github.com/rhboot/shim/commit/d241bbbdbfb98b4f878342ef180e3994205b170a). It is now tracked as [CVE-2026-10797](https://www.cve.org/CVERecord?id=CVE-2026-10797).
+
+The issue is that an Authenticode-signed PE binary records its signature’s length in two independent locations:
+
+*   its PE header’s data directory (IMAGE_DIRECTORY_ENTRY_SECURITY), and
+*   its WIN_CERTIFICATE structure, which encapsulates the signature itself.
+
+In the affected shims, the revocation check and the signature verification functions diverged on which size value they should trust. The revocation check used the value from the signature header, while the signature verification function used the value from the PE header.
+
+It is thus possible to bypass the revocation mechanism by tampering with the second-stage bootloader’s WIN_CERTIFICATE structure so that the revocation function compares dbx and MokListX against bogus data instead of the bootloader’s actual signature.
+
+Simply put, even if the second-stage bootloader’s certificate were revoked in dbx or MokListX, the shim would not find out. Two important comments here:
+
+*   this bypass works only with certificate-based revocations (not hash-based revocations), and
+*   the second-stage bootloader needs to be signed by a certificate embedded in the shim (whether it’s the shim’s built-in certificate generated during the shim’s build process or the vendor certificate).
+
+These limitations come from the fact that hash-based revocations and non-embedded certificates (from MokList and db) are checked elsewhere in the code and are not affected by this issue.
+
+## Won’t expiring Microsoft UEFI certificates solve this?
+
+With the current Microsoft UEFI certificate [expirations](https://support.microsoft.com/en-us/topic/windows-secure-boot-certificate-expiration-and-ca-updates-7ff40d33-95dc-4c3c-8725-a9b95457578e) in mind (as shown in Figure 5, Microsoft Corporation UEFI CA 2011 expired on June 27 th 2026), one might wonder whether reporting vulnerable UEFI applications signed by this expired certificate is just causing unnecessary noise.
+
+The truth is that the UEFI certificate’s expiration date has no effect on the Secure Boot verification process. If the Microsoft Corporation UEFI CA 2011 certificate stays in db, and is not revoked in dbx, all bootloaders validly signed with this expired certificate stay trusted if not explicitly revoked by hash. This is the reason why Microsoft [kept signing](https://techcommunity.microsoft.com/blog/hardware-dev-center/signing-with-the-new-2023-microsoft-uefi-certificates-what-submitters-need-to-kn/4455787) new submissions with the old certificate up until its expiration date.
+
+_Figure 5._ Microsoft Corporation UEFI CA 2011 _certificate_
+
+## Protection and detection[](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/)
+
+These vulnerable shims can be blocked by applying the latest UEFI revocations from Microsoft. Windows systems should be updated automatically. Figure 6 displays PowerShell commands (to be run with elevated permissions) to check whether the necessary revocations are installed on your Windows system.
+
+```
+$hashes = 
+'AE75F0D82BA3DF824FBFC69340CC3B4D66C598373B1AB54CDB6C8BFD83A6B961',
+'7B2A3F5C96F95BD8086CE54B0825E300F9C8F11FE3401BB631B3215C8DE9EB10',
+'EB86FA1386FE6E4533B8B938DCC1250616D2F1C14C15E2FCF80834A161018A0A',
+'FD23D6E57DE6F4E1F9D7118DA1C5F31A8AF6BE5E5D9E8170F9493447268D50C5',
+'A0DE9333442C1BF9349A460141AE5E80F911955C6506040FA3D021BF6C1AE3E4',
+'95B6D71FC0C0F8C5E1533A37AEF92CF6B0C961E2CC612A97117FA6759CE5FC06',
+'236A9CB0D71951C36398A32EB660CE2CD4A52CCFA7CF751CC6A35D9DE549E19B',
+'5E594C448760A3135B1A3A83E07A4F2E6FBE49414EF2C7CAB1CBA77F284FA63B',
+'8A964D5F8373948D20A1D4296FB92E545DAD4617A0C810F3B934B53D98AE8963',
+'410260B1B6F5AF5FBEEB9EA3220658435E876CB3247126EE907A437F312DB373',
+'96275DFD6282A522B011177EE049296952AC794832091F937FBBF92869028629' 
+$dbx = [BitConverter]::ToString((Get-SecureBootUEFI dbx).Bytes) -replace '-'
+$notRevoked = $hashes | Where-Object { $dbx -notmatch $_ }
+if ($notRevoked) {
+    $notRevoked | ForEach-Object { "Hash not revoked: $_" }
+} else {
+    "All hashes revoked in dbx!"
+}
+```
+
+_Figure 6. PowerShell commands to check UEFI revocations_
+
+For Linux systems, updates should be available through the [Linux Vendor Firmware Service](https://web.archive.org/web/20260623050535/https:/fwupd.org/), and the revocation status can be checked using the [uefi-dbx-audit](https://github.com/sei-vsarvepalli/uefi-dbx-audit/) script.
+
+For more general recommendations regarding how to protect against (or at least detect) exploitation of unknown vulnerable signed UEFI bootloaders and deployment of UEFI bootkits, see our blogpost [Under the cloak of UEFI Secure Boot: Introducing CVE-2024-7344](https://www.welivesecurity.com/en/eset-research/under-cloak-uefi-secure-boot-introducing-cve-2024-7344/).
+
+## Conclusion
+
+What makes these old shims dangerous is not a novel vulnerability, it’s that no new vulnerability is needed to bypass UEFI Secure Boot. An attacker needs no complicated exploitation primitives – only a copy of an old, still-trusted, _but unrevoked_ shim binary and a basic understanding of how UEFI shims work. That is enough to bypass such an essential security feature as UEFI Secure Boot.
+
+While revoking these 11 shims addressed the immediate issue, a deeper issue remains: visibility. The shim signing process became significantly more transparent in 2017 with the introduction of the [shim-review](https://github.com/rhboot/shim-review) repository, where vendor submissions are vetted by maintainers before Microsoft signs them. Every shim approved since then is documented – but those signed earlier are not, and no one can reliably say how many of those old, still-trusted shims remain. What has not been fully and transparently catalogued cannot be effectively retired.
+
+On a positive note, we believe that the trend is moving in the right direction. Each disclosure like this one shrinks the pool of forgotten shims, and with improved shim-signing transparency and mechanisms such as SBAT, keeping track of what needs to be revoked, and effectively revoking it, can be handled far more efficiently than in the past. The next step is to extend this level of transparency in Microsoft’s third-party [UEFI signing](https://techcommunity.microsoft.com/blog/hardware-dev-center/updated-microsoft-uefi-signing-requirements/1062916) ecosystem to non-shim third-party UEFI applications, which, as repeatedly demonstrated (e.g., [CVE-2022-34302](https://www.cve.org/CVERecord?id=CVE-2022-34302), [CVE-2023-28005](https://www.cve.org/CVERecord?id=CVE-2023-28005), [CVE-2024-7344](https://www.cve.org/CVERecord?id=CVE-2024-7344), [CVE-2026-25250](https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-25250), …), can also serve as a straightforward source of UEFI Secure Boot bypasses.
+
+## IoCs
+
+As the vulnerable shims are part of legitimate software packages that are potentially present on thousands of systems that have never been compromised via these loaders, we are not providing indicators of compromise to avoid massive misidentification. Instead, defenders should follow the advice in the _[Protection and detection](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#Protection%20and%20detection)_ section.
+
+> _For any inquiries about our research published on WeLiveSecurity, please contact us at [threatintel@eset.com](mailto:threatintel@eset.com?utm\_source=welivesecurity.com&utm\_medium=referral&utm\_campaign=autotagging&utm\_content=eset-research&utm\_term=en)._
+> 
+> 
+> _ESET Research offers private APT intelligence reports and data feeds. For any inquiries about this service, visit the [ESET Threat Intelligence](https://www.eset.com/int/business/services/threat-intelligence/?utm\_source=welivesecurity.com&utm\_medium=referral&utm\_campaign=wls-research&utm\_content=forgotten-uefi-shims-undermining-secure-boot&sfdccampaignid=7011n0000017htTAAQ) page._
+
+Links/Buttons:
+- [](https://www.welivesecurity.com/rss-configurator/)
+- [Español](https://www.welivesecurity.com/es/)
+- [Deutsch](https://www.welivesecurity.com/de/)
+- [Português](https://www.welivesecurity.com/pt/)
+- [Français](https://www.welivesecurity.com/fr/)
+- [TIPS & ADVICE](https://www.welivesecurity.com/en/tips-advice/)
+- [BUSINESS SECURITY](https://www.welivesecurity.com/en/business-security/)
+- [About ESET Research](https://www.welivesecurity.com/en/about-eset-research/)
+- [Blogposts](https://www.welivesecurity.com/en/eset-research/)
+- [Podcasts](https://www.welivesecurity.com/en/podcasts/)
+- [White papers](https://www.welivesecurity.com/en/white-papers/)
+- [Threat reports](https://www.welivesecurity.com/en/threat-reports/)
+- [WeLiveScience](https://www.welivesecurity.com/en/we-live-science/)
+- [Ukraine crisis – Digital security resource center](https://www.welivesecurity.com/en/ukraine-crisis-digital-security-resource-center/)
+- [WeLiveProgress](https://www.welivesecurity.com/en/we-live-progress/)
+- [COVID-19](https://www.welivesecurity.com/en/covid-19/)
+- [Resources](https://www.welivesecurity.com/en/resources/)
+- [Videos](https://www.welivesecurity.com/en/videos/)
+- [Digital Security](https://www.welivesecurity.com/en/cybersecurity/)
+- [Scams](https://www.welivesecurity.com/en/scams/)
+- [How to](https://www.welivesecurity.com/en/how-to/)
+- [Privacy](https://www.welivesecurity.com/en/privacy/)
+- [Cybercrime](https://www.welivesecurity.com/en/cybercrime/)
+- [Kids online](https://www.welivesecurity.com/en/kids-online/)
+- [Social media](https://www.welivesecurity.com/en/social-media/)
+- [Internet of Things](https://www.welivesecurity.com/en/internet-of-things/)
+- [Malware](https://www.welivesecurity.com/en/malware/)
+- [Ransomware](https://www.welivesecurity.com/en/ransomware/)
+- [Secure coding](https://www.welivesecurity.com/en/secure-coding/)
+- [Mobile security](https://www.welivesecurity.com/en/mobile-security/)
+- [Critical infrastructure](https://www.welivesecurity.com/en/critical-infrastructure/)
+- [About WeLiveSecurity](https://www.welivesecurity.com/en/company/about-us/)
+- [Our Experts](https://www.welivesecurity.com/en/our-experts/)
+- [Contact Us](https://www.welivesecurity.com/en/company/contact-us/)
+- [Bootkitty](https://www.welivesecurity.com/en/eset-research/bootkitty-analyzing-first-uefi-bootkit-linux/)
+- [HybridPetya](https://www.welivesecurity.com/en/eset-research/introducing-hybridpetya-petya-notpetya-copycat-uefi-secure-boot-bypass/)
+- [BlackLotus](http://www.welivesecurity.com/2023/03/01/blacklotus-uefi-bootkit-myth-confirmed/)
+- [CVE-2026-8863](https://www.cve.org/CVERecord?id=CVE-2026-8863)
+- [CVE-2026-10797](https://www.cve.org/CVERecord?id=CVE-2026-10797)
+- [GRUB 2](http://www.gnu.org/software/grub/grub.html)
+- [CERT/CC’s Vulnerability Note](https://kb.cert.org/vuls/id/616257)
+- [Authenticode](https://learn.microsoft.com/en-us/windows-hardware/drivers/install/authenticode)
+- [June 9th Patch Tuesday](https://msrc.microsoft.com/update-guide/releaseNote/2026-Jun)
+- [Protection and detection](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#protection-and-detection)
+- [Bypassing UEFI Secure Boot using old shims](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#bypassing-uefi-secure-boot-using-old-shims)
+- [UEFI Bootkits and Where UEFI Security Fails](https://static.rainfocus.com/rsac/us24/sess/1697270793852001dpne/finalwebsite/2024_USA24_HTA-T09_01_UEFI-Bootkits-and-Where-UEFI-Security-Fails_1713983196427001MzOd.pdf)
+- [will be added to dbx soon](https://support.microsoft.com/en-us/topic/how-to-manage-the-windows-boot-manager-revocations-for-secure-boot-changes-associated-with-cve-2023-24932-41a975df-beb2-40c1-99a3-b3ff139f832d)
+- [Microsoft’s GitHub repository](https://github.com/microsoft/secureboot_objects/tree/main/PostSignedObjects/DBX)
+- [BootHole](https://eclypsium.com/research/theres-a-hole-in-the-boot/)
+- [SBAT](https://github.com/rhboot/shim/blob/main/SBAT.md)
+- [CVE-2020-10713](https://nvd.nist.gov/vuln/detail/CVE-2020-10713)
+- [version 15.3](https://github.com/rhboot/shim/releases/tag/15.3)
+- [Bill Demirkapi’s Booting with Caution, p. 62](https://github.com/microsoft/MSRC-Security-Research/blob/master/presentations/2024_05_OffensiveCon/OffensiveCon24_Booting_With_Caution_BDemirkapi.pdf)
+- [Secure Boot Advanced Targeting (SBAT)](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#Secure%20Boot%20Advanced%20Targeting%20(SBAT))
+- [fallback](https://www.rodsbooks.com/efi-bootloaders/fallback.html)
+- [Machine Owner Keys](https://edk2-docs.gitbook.io/understanding-the-uefi-secure-boot-chain/additional_secure_boot_chain_implementations/machine_owner_key_mok)
+- [ExitBootServices](https://uefi.org/specs/UEFI/2.9_A/07_Services_Boot_Services.html#efi-boot-services-exitbootservices)
+- [here](https://www.rodsbooks.com/efi-bootloaders/secureboot.html#mokutil)
+- [SbatLevel_Variable.txt](https://github.com/rhboot/shim/blob/main/SbatLevel_Variable.txt)
+- [CVE-2015-5281](https://nvd.nist.gov/vuln/detail/CVE-2015-5281)
+- [multiboot2-compliant](https://www.gnu.org/software/grub/manual/multiboot2/multiboot.html)
+- [UEFI shim repository](https://github.com/rhboot/shim/tree/main)
+- [almost the very beginning](https://github.com/rhboot/shim/commit/0848fab)
+- [started to be enforced](https://github.com/rhboot/shim/commit/b8d1bc6e98e54f6fda87ba0a248de7cba5c78f96)
+- [d241bbb](https://github.com/rhboot/shim/commit/d241bbbdbfb98b4f878342ef180e3994205b170a)
+- [expirations](https://support.microsoft.com/en-us/topic/windows-secure-boot-certificate-expiration-and-ca-updates-7ff40d33-95dc-4c3c-8725-a9b95457578e)
+- [kept signing](https://techcommunity.microsoft.com/blog/hardware-dev-center/signing-with-the-new-2023-microsoft-uefi-certificates-what-submitters-need-to-kn/4455787)
+- [Linux Vendor Firmware Service](https://web.archive.org/web/20260623050535/https:/fwupd.org/)
+- [uefi-dbx-audit](https://github.com/sei-vsarvepalli/uefi-dbx-audit/)
+- [Under the cloak of UEFI Secure Boot: Introducing CVE-2024-7344](https://www.welivesecurity.com/en/eset-research/under-cloak-uefi-secure-boot-introducing-cve-2024-7344/)
+- [shim-review](https://github.com/rhboot/shim-review)
+- [UEFI signing](https://techcommunity.microsoft.com/blog/hardware-dev-center/updated-microsoft-uefi-signing-requirements/1062916)
+- [CVE-2022-34302](https://www.cve.org/CVERecord?id=CVE-2022-34302)
+- [CVE-2023-28005](https://www.cve.org/CVERecord?id=CVE-2023-28005)
+- [CVE-2024-7344](https://www.cve.org/CVERecord?id=CVE-2024-7344)
+- [CVE-2026-25250](https://msrc.microsoft.com/update-guide/en-US/vulnerability/CVE-2026-25250)
+- [threatintel@eset.com](mailto:threatintel@eset.com?utm_source=welivesecurity.com&utm_medium=referral&utm_campaign=autotagging&utm_content=eset-research&utm_term=en)
+- [ESET Threat Intelligence](https://www.eset.com/int/business/services/threat-intelligence/?utm_source=welivesecurity.com&utm_medium=referral&utm_campaign=wls-research&utm_content=forgotten-uefi-shims-undermining-secure-boot&sfdccampaignid=7011n0000017htTAAQ)
+- [ESET ResearchThreat ReportsESET Threat Report H1 2026ESET ResearchThreat ReportsESET Threat Report H1 2026](https://www.welivesecurity.com/en/eset-research/eset-threat-report-h1-2026/)
+- [ESET ResearchGamaredon in 2025: Leveraging tunnels, workers, dead drops, and new alliancesESET ResearchGamaredon in 2025: Leveraging tunnels, workers, dead drops, and new alliances](https://www.welivesecurity.com/en/eset-research/gamaredon-2025-leveraging-tunnels-workers-dead-drops-new-alliances/)
+- [ESET ResearchESET takes part in Operation Endgame to disrupt Amadey and StealcESET ResearchESET takes part in Operation Endgame to disrupt Amadey and Stealc](https://www.welivesecurity.com/en/eset-research/eset-takes-part-operation-endgame-disrupt-amadey-stealc/)
+- [UEFI shim bootloader and UEFI Secure Boot](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#uefi-shim-bootloader-and-uefi-secure-boot)
+- [Won’t expiring Microsoft UEFI certificates solve this?](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#wont-expiring-microsoft-uefi-certificates-solve-this)
+- [Conclusion](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#conclusion)
+- [IoCs](https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/#iocs)
+- [ESET](https://www.eset.com/us?utm_source=welivesecurity.com&utm_medium=referral&utm_campaign=autotagging&utm_content=eset-research&utm_term=en)
+- [Privacy Policy](https://www.welivesecurity.com/en/company/privacy/)
+- [Legal Information](https://www.welivesecurity.com/en/company/legal-information/)
+- [Manage Cookies](https://www.welivesecurity.com/en/#)
+- [RSS Feed](https://www.welivesecurity.com/en/rss/feed/)
+- [Cookie Policy](https://www.welivesecurity.com/en/company/cookie-policy/)
