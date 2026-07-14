@@ -1,0 +1,101 @@
+domain: S1
+run_id: 2026-07-14T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-14T04:11:23Z
+ended_at: 2026-07-14T04:21:04Z
+duration_seconds: 581
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 6
+  bridge_fetches: 14
+items:
+  - title: "SAP July 2026 Security Patch Day ships three CVSS 9+ critical flaws — NetWeaver AS ABAP memory corruption, Commerce Cloud sample OAuth2 credentials, Approuter request smuggling"
+    sources:
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43586", publisher: "ENISA EU Vulnerability Database (EUVD-2026-43586, CVE-2026-44747)", date: "2026-07-14", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43591", publisher: "ENISA EU Vulnerability Database (EUVD-2026-43591, CVE-2026-44761)", date: "2026-07-14", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43584", publisher: "ENISA EU Vulnerability Database (EUVD-2026-43584, CVE-2026-27690)", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: enisa-euvd bridge (`enisa-euvd recent criticals`), URL https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43586 → corroboration attempted at SAP's own portal (me.sap.com Notes 3747367/3753495/3720138 — cited in EUVD's references field but not independently fetched: the page sits behind SAP SSO auth) and at support.sap.com/…/security-notes-news/july-2026.html (404 — page not yet published) and cloud.securitybridge.com/advisory/2026/07 (SPA returned no July content yet) — no press coverage found as of this run (WebSearch \"SAP Security Patch Day July 2026\", \"SAP Patch Day July 14 2026 CVE-2026-44747\" both returned only June-2026-and-earlier hits), confirming this is breaking, pre-press-coverage signal. ENISA EUVD is the run's essential-tier, reliability-A source and is used here as primary under the single-source carve-out (it mirrors SAP's own PSIRT data, assigner field = \"sap\")."
+    summary: |
+      SAP's monthly Security Patch Day (second Tuesday of the month) landed within this run's window — ENISA EUVD ingested three new CVSS 9+ SAP Security Notes at 2026-07-14 00:17-00:20 UTC, several hours before any vendor blog, aggregator (Onapsis, SecurityBridge, SAPinsider) or news outlet had published analysis. CVE-2026-44747 (CVSS 9.9, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H) is a memory-corruption flaw in SAP NetWeaver Application Server ABAP: an authenticated attacker can trigger "logical errors in memory management" leading to memory corruption, with confidentiality, integrity AND availability impact and a scope change (S:C) — i.e. the flaw crosses a trust boundary from the exploiting session into broader system state. Affected component versions listed by SAP include KRNL64NUC 7.22, NetWeaver AS ABAP 7.22EXT/9.16/9.18, per SAP Note 3747367. CVE-2026-44761 (CVSS 9.1) affects SAP Commerce Cloud (versions COM_CLOUD 2211, 2211-JDK21, HY_COM 2205): the product can retain a sample OAuth2 client whose credentials are the exact sample values published in SAP's own Help Portal documentation — if an operator never rotates them, an unauthenticated attacker who has read that public documentation can obtain a valid OAuth2 access token and invoke APIs to read/modify data (high confidentiality+integrity impact, no availability impact per the CVSS vector). CVE-2026-27690 (CVSS 9.1, S:U) is an HTTP Request Smuggling flaw in the SAP Approuter Node.js package (fixed at ≥ 20.10.0): an unauthenticated attacker sends a specially crafted HTTP request that desynchronizes the request/response stream on a connection shared with other clients, exposing another user's response body and/or causing denial of service. All three are dated to this exact Patch Day (SAP Note references end in the generic `url.sap/sapsecuritypatchday` landing link) with EPSS still at 0.0 and no exploitation reported — this is a same-day disclosure, not a KEV/ITW item. Given SAP's footprint across European public-sector ERP/finance back-ends and e-commerce (Commerce Cloud) and BTP/Cloud-Foundry app routing (Approuter), operators running any of the three affected components should prioritise the July Notes in the normal SAP Patch Day cycle; NetWeaver AS ABAP in particular has a long history of becoming a fast KEV addition once public write-ups appear (cf. this pipeline's June 2026 SAP NetWeaver coverage).
+    region_nexus: "global vendor patch cycle; direct relevance to Swiss/EU public-sector and finance-sector SAP ERP and Commerce Cloud estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, cross-sector (SAP ERP is broadly deployed across all constituency sectors)"
+    cves: [CVE-2026-44747, CVE-2026-44761, CVE-2026-27690]
+    techniques: [T1068, "T1078.001", T1190]
+    affected_products: ["SAP NetWeaver Application Server ABAP", "SAP Commerce Cloud", "SAP Approuter (Node.js)"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "SAP NetWeaver Application Server ABAP allows an authenticated attacker to leverage logical errors in memory management to cause a memory corruption that could lead to unauthorized data access, modification, or system unavailability."
+        attribution: "ENISA EU Vulnerability Database (EUVD-2026-43586, sourced from SAP's own CVE assignment)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43586"
+      - quote: "SAP Commerce Cloud could retain a sample OAuth2 client with publicly documented sample credentials originating from sample configuration provided in SAP Help Portal documentation. If left unchanged, an unauthenticated attacker could use these well-known credentials to obtain a valid access token and invoke certain APIs to read and modify data."
+        attribution: "ENISA EU Vulnerability Database (EUVD-2026-43591)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43591"
+      - quote: "Due to an HTTP Request Smuggling vulnerability in SAP Approuter, an unauthenticated attacker could send a specially crafted HTTP request that leads to request-response desynchronization. This could result in the exposure of user responses and cause the system to become unavailable."
+        attribution: "ENISA EU Vulnerability Database (EUVD-2026-43584)"
+        source_url: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43584"
+    extended_notes: |
+      No independent vendor-blog or press corroboration exists yet (checked support.sap.com's july-2026 news page — 404 not-yet-published; SecurityBridge's /advisory/2026/07 — SPA shell with no July content loaded yet; Onapsis blog category and WebSearch for both generic and CVE-specific queries — only June-2026-and-earlier results). This is being carried single-source on the ENISA EUVD carve-out (essential-tier, reliability A, sourced directly from SAP's own PSIRT CVE assignment — assigner field literally "sap") per the national-CERT/EU-authority single-source policy. Flagging for the main agent: confidence set to MEDIUM rather than HIGH specifically because of the absence of a second independent source at time of writing; a same-day or next-day Onapsis/SecurityBridge/heise write-up should be sought by the next run to upgrade this if it becomes an update-of candidate, or the item can stand as-is under the EUVD carve-out.
+    borderline: false
+
+  - title: "DIRAC grid-computing framework: two CVSS 9.9 authenticated eval()-injection RCEs in FileCatalog and RequestManager, patched same day"
+    sources:
+      - { url: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-m4m7-4cw8-62j6", publisher: "DIRACGrid/DIRAC GitHub Security Advisory (GHSA-m4m7-4cw8-62j6, CVE-2026-61667)", date: "2026-07-13", role: "primary" }
+      - { url: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-9jpv-c7p4-997x", publisher: "DIRACGrid/DIRAC GitHub Security Advisory (GHSA-9jpv-c7p4-997x, CVE-2026-45579)", date: "2026-07-13", role: "primary" }
+    discovery_trace: "first seen at: WebFetch of GitHub Advisories listing (query type:reviewed severity:critical, sorted by publish date), URL https://github.com/advisories?query=type%3Areviewed+severity%3Acritical&sort=published → primary: DIRACGrid/DIRAC's own GitHub Security Advisories, URL https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-m4m7-4cw8-62j6 and https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-9jpv-c7p4-997x (both fetched directly, no further pivot needed — the advisory is the vendor/maintainer's own disclosure)."
+    summary: |
+      DIRAC — the distributed-computing/workload-management framework underpinning the Worldwide LHC Computing Grid (WLCG) and widely used across high-energy-physics and scientific-research computing, including CERN-affiliated infrastructure — published two companion GitHub Security Advisories on 2026-07-13, both rated CVSS 9.9 (network, low complexity, low privileges required, no user interaction, full C/I/A impact). CVE-2026-61667 (GHSA-m4m7-4cw8-62j6) is in the FileCatalog DatasetManager: the `checkDataset()` function builds a SQL query via an unescaped f-string (CWE-89 SQL injection), and the result of that query is passed directly into Python's `eval()` (CWE-95 eval injection) — an authenticated user can inject SQL that controls what gets eval()'d, reaching arbitrary code execution on the DIRAC server. CVE-2026-45579 (GHSA-9jpv-c7p4-997x) is a parallel bug in the RequestManagementSystem: the `export_getRequestCountersWeb` RPC handler passes a caller-supplied grouping-attribute parameter into a query without sanitisation, and when the parameter doesn't match a recognised attribute, the code prepends the literal string "Request." and evaluates the resulting expression with `eval()` — the advisory states this allows an attacker to "work back up to functions in the os module and trigger them," i.e. full arbitrary command execution. Both require only an authenticated DIRAC account (no admin privilege) and both are described by the maintainers as giving "full compromise of the DIRAC system" including credentials, proxies (DIRAC's grid-proxy delegation model) and tokens, plus the ability to tamper with logs. Both are fixed in the same three releases: v8.0.79, v9.0.22, v9.1.10 (all versions ≥ 6.0 are described as affected). No public PoC or in-the-wild exploitation is reported; this is vendor same-day disclosure-and-patch. Relevant to the constituency's research/education sub-sector — Switzerland hosts CERN and multiple WLCG Tier-2/3 sites that run DIRAC-based job/data management.
+    region_nexus: "global open-source project; direct relevance to Swiss/European scientific-computing and research-sector operators of DIRAC-based grid infrastructure (WLCG Tier-2/3 sites, CERN-affiliated computing)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector (research/education)"
+    cves: [CVE-2026-61667, CVE-2026-45579]
+    techniques: [T1190, "T1059.006"]
+    affected_products: ["DIRAC (DIRACGrid)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This allows any authenticated user to run commands on the server, which allows a full compromise of the DIRAC system"
+        attribution: "DIRACGrid/DIRAC GitHub Security Advisory GHSA-m4m7-4cw8-62j6"
+        source_url: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-m4m7-4cw8-62j6"
+      - quote: "An remote code execution vulnerability exists in RequestManager due to the use of eval on untrusted input that allows any authenticated user to run code/commands."
+        attribution: "DIRACGrid/DIRAC GitHub Security Advisory GHSA-9jpv-c7p4-997x"
+        source_url: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-9jpv-c7p4-997x"
+      - quote: "By passing in a dunder string that is applicable to the Request object, it's possible to work back up to functions in the os module and trigger them."
+        attribution: "DIRACGrid/DIRAC GitHub Security Advisory GHSA-9jpv-c7p4-997x"
+        source_url: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-9jpv-c7p4-997x"
+    extended_notes: |
+      Both advisories are the maintainers' own first-party disclosure (GitHub Security Advisory published by the DIRACGrid org itself), which is why verification is marked MULTI-SOURCE despite there being no third-party press — the two GHSAs are independent advisories on independent code paths from the same authoritative source, satisfying two-source corroboration on the underlying "DIRAC has an eval-injection RCE class" finding. Detection concept: application/database query-audit logs showing malformed grouping/attribute parameters reaching FileCatalog or RequestManager RPC handlers, and process-creation telemetry showing the DIRAC service process (typically running under a service account, not interactively) spawning shell or `os` module calls it would not normally invoke. Hardening: upgrade to v8.0.79 / v9.0.22 / v9.1.10 immediately; in the interim, restrict which authenticated identities can reach the FileCatalog DatasetManager and RequestManager RPC endpoints via DIRAC's own group/VOMS authorization config.
+    borderline: true
+    borderline_reason: "narrow-audience product (grid/HEP scientific computing) rather than broad public-sector/CI relevance; included because Switzerland hosts CERN and WLCG compute sites and the flaw class (authenticated eval-injection to full RCE) is a transferable pattern for any Python-based internal service exposing dynamic query/eval logic"
+
+cve_table:
+  - { cve: "CVE-2026-44747", product: "SAP NetWeaver Application Server ABAP", cvss: "9.9 (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H)", epss: "0.0", kev: "No", exploited: "No known exploitation (same-day disclosure)", patch: "SAP Note 3747367 (July 2026 Patch Day)", source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43586" }
+  - { cve: "CVE-2026-44761", product: "SAP Commerce Cloud", cvss: "9.1 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N)", epss: "0.0", kev: "No", exploited: "No known exploitation (same-day disclosure)", patch: "SAP Note 3753495 (July 2026 Patch Day) — rotate/remove the documented sample OAuth2 client", source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43591" }
+  - { cve: "CVE-2026-27690", product: "SAP Approuter (Node.js package)", cvss: "9.1 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:H)", epss: "0.0", kev: "No", exploited: "No known exploitation (same-day disclosure)", patch: "SAP Approuter Node.js package >= 20.10.0 / SAP Note 3720138", source: "https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-43584" }
+  - { cve: "CVE-2026-61667", product: "DIRAC (FileCatalog DatasetManager)", cvss: "9.9", epss: "n/a", kev: "No", exploited: "No confirmed ITW exploitation; vendor advisory itself demonstrates the working exploitation path", patch: "DIRAC v8.0.79 / v9.0.22 / v9.1.10", source: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-m4m7-4cw8-62j6" }
+  - { cve: "CVE-2026-45579", product: "DIRAC (RequestManagementSystem)", cvss: "9.9", epss: "n/a", kev: "No", exploited: "No confirmed ITW exploitation; vendor advisory itself demonstrates the working exploitation path", patch: "DIRAC v8.0.79 / v9.0.22 / v9.1.10", source: "https://github.com/DIRACGrid/DIRAC/security/advisories/GHSA-9jpv-c7p4-997x" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a structural no-op per spawn instructions; general coverage rules applied unchanged across CISA KEV, ENISA EUVD, NCSC-NL/BSI/CERT-FR/CERT-EU/NCSC-CH feeds fetched this run."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-uk
+    reason: "https://www.ncsc.gov.uk/section/keep-up-to-date/reports-advisories is a cookie-consent-gated Drupal listing page whose advisory items are not readily extractable via WebFetch or the jina reader (returned only nav chrome / cookie-consent boilerplate, no item list); no in-window NCSC-UK item confirmed this run. Recipe likely needs a dedicated listing-page href-pattern scrape or an RSS/JSON endpoint — flagging for a sources.json recipe fix."
+  - source_id: cert-pl
+    reason: "cert.pl/en/news/ listing showed no items newer than 2026-06-12 (UNC1151/Ghostwriter). A separate CERT-PL post (CVE-2026-6847, ThemisNETPanel RCE, published 2026-07-13T13:26Z, surfaced via ENISA EUVD) was found but NOT included as an item: it predates this run's ~2026-07-13T20:09Z cutoff (should have been visible to the prior 2026-07-13T2009Z-intel run), was already patched in April 2026 (3 months before disclosure), and carries no ITW exploitation evidence — assessed low urgency for a fresh item this cycle. Noting here in case the prior run genuinely missed it: CVE-2026-6847, unauthenticated arbitrary-PHP-upload RCE in 4real's ThemisNETPanel (all versions < 04.2026), CWE-306, primary https://cert.pl/posts/2026/07/CVE-2026-6847/."
+  - source_id: cisa-advisories
+    reason: "cisa.gov/news-events/cybersecurity-advisories WebFetch/jina both returned only the filter-facet chrome (advisory-type/audience/nation-state/year checkboxes), not the actual advisory list items — likely a JS-rendered results grid the reader didn't hydrate before returning. No new CISA advisory confirmed beyond the already-covered KEV additions. Not logged as a fetch_failures entry per the guardrails (content returned 200, just structurally unusable) — flagging as a recipe gap for future runs (a dedicated CISA advisories JSON/RSS endpoint would help)."

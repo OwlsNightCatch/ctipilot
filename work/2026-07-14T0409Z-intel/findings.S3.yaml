@@ -1,0 +1,115 @@
+domain: S3
+run_id: 2026-07-14T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: '2026-07-14T04:12:06Z'
+ended_at: 2026-07-14T04:24:22Z
+duration_seconds: 736
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 8
+  bridge_fetches: 9
+items:
+- title: Check Point ships its Annual AI Security Report 2026 — AI moves from attack assistant to autonomous operator
+  sources:
+  - url: https://research.checkpoint.com/2026/ai-security-report-2026/
+    publisher: Check Point Research
+    date: '2026-07-14'
+    role: primary
+  discovery_trace: 'first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ -> primary: Check Point Research, URL https://research.checkpoint.com/2026/ai-security-report-2026/ (no pivot needed)'
+  summary: 'Check Point Research''s Annual AI Security Report 2026 documents a transition CPR frames as "AI has crossed from assistant to operator": across the reporting cases AI now runs offensive operations rather than merely accelerating existing ones. The headline case is VoidLink, an 88,000-line command-and-control framework CPR says a single developer produced in under a week using an AI coding environment — illustrating how AI collapses the tooling-development timeline for even non-expert operators. On the agentic side, CPR reports attackers pivoting away from transient prompt-injection strings toward planted configuration files that an agent loads and trusts persistently across sessions — a more durable bypass class than one-shot prompt injection because it survives context resets and re-authentication. Telemetry cited: indirect prompt-injection detections rose roughly fivefold between March and May 2026, approaching 1% of observed prompts by May; high-risk enterprise GenAI prompts carrying sensitive-data-exposure risk doubled from 2% to 4% over the past year, with Business Services verticals showing a 5.91% exposure rate ("nearly one in every 17 AI interactions carried a significant risk of sensitive data exposure"). CPR also reports continued maturation of criminal AI tooling: phishing-as-a-service kits now ship with embedded jailbroken LLMs, and synthetic voice/facial forgery is enabling scaled multi-channel social-engineering pretexting. For defenders, the load-bearing shift is architectural: CPR''s own framing is that the durable attack surface is now the agent''s trusted configuration/context store, not the prompt channel — teams running agentic AI tooling (coding assistants, SOC-automation agents, RAG pipelines) should treat any config file, memory store, or tool-output channel an agent trusts across sessions as a persistence surface requiring integrity monitoring, not just input-side prompt filtering.'
+  region_nexus: global; enterprise GenAI adoption in Swiss/EU public-sector and finance verticals directly exposed to the reported data-leakage and agent-config-trust findings
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1587.001
+  affected_products: []
+  entity_keys: []
+  new_entities:
+  - key: report:checkpoint-ai-security-report-2026
+    type: report
+    name: Check Point Annual AI Security Report 2026
+    aliases:
+    - CPR AI Security Report 2026
+    summary: Check Point Research's annual report documenting AI's shift from attack accelerant to autonomous operator, including the VoidLink AI-generated C2 framework and planted-configuration-file agent persistence class (Check Point Research, 2026-07-14).
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: AI has crossed from assistant to operator.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/ai-security-report-2026/
+  - quote: one developer used an AI environment to produce VoidLink, an 88,000-line command-and-control offensive framework, in under a week.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/ai-security-report-2026/
+  - quote: the durable bypass is now a planted configuration file an agent loads and trusts across sessions.
+    attribution: Check Point Research
+    source_url: https://research.checkpoint.com/2026/ai-security-report-2026/
+  extended_notes: 'ANNUAL REPORT — Check Point Annual AI Security Report 2026. Flagging per domain instructions: cover once as a dedicated entry, do not compose a full summary in future runs — reference this entry instead. Distinct from Check Point''s earlier "AI Threat Landscape Digest March-April 2026" (already registered as report:checkpoint-research-ai-threat-landscape-march-april-2026-mexico-nine-agencies-ev) — that was a bimonthly digest; this is the full-year annual report, published 2026-07-14T00:51:31Z per the RSS feed timestamp. Single-source (Check Point''s own report) — no independent corroborating write-up had appeared yet at fetch time; treat statistics as CPR''s own telemetry claims, not independently confirmed.'
+  borderline: false
+- title: 'Jamf Threat Labs: CrashStealer — a notarized, native-C++ macOS infostealer impersonating Apple''s crash-reporter with anti-debug and dscl-validated credential harvesting'
+  sources:
+  - url: https://www.jamf.com/blog/crashstealer-macos-infostealer-analysis/
+    publisher: Jamf Threat Labs
+    date: '2026-07-13'
+    role: primary
+  - url: https://www.bleepingcomputer.com/news/security/new-crashstealer-malware-poses-as-apple-crash-reporting-tool/
+    publisher: BleepingComputer
+    date: '2026-07-13'
+    role: corroborating
+  discovery_trace: 'first seen at: WebSearch ("new malware campaign disclosed ''July 13, 2026'' OR ''July 14, 2026'' researchers") -> pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-crashstealer-malware-poses-as-apple-crash-reporting-tool/ -> primary: Jamf Threat Labs, URL https://www.jamf.com/blog/crashstealer-macos-infostealer-analysis/'
+  summary: 'Jamf Threat Labs (author Thijs Xhaflaire) documented CrashStealer, a macOS infostealer written entirely in native C++ (unlike the AppleScript/thin-Objective-C wrappers typical of commodity macOS stealers). Jamf first saw a sample on VirusTotal in early May 2026; by early July the malware had matured into active in-the-wild deployment. Delivery: a signed and Apple-notarized dropper app (Developer ID since revoked by Apple) mounts a disk image and instructs the user via social engineering to right-click-launch the bundled app, which then queries a GitHub-hosted repository for a Base64-encoded shell script that in turn downloads the payload disk image and copies the app bundle into a hidden cache directory — a legitimately-signed-dropper pattern that clears Gatekeeper on first launch (T1553.001) before staging an ad-hoc-signed payload. Persistence is a LaunchAgent (T1543.001) registered as a fake Apple-named service with RunAtLoad plus a KeepAlive/SuccessfulExit:false combination that forces relaunch on exit. The credential-theft mechanic is notable: the malware pops a spoofed macOS authorization prompt and validates the entered password locally via dscl -authonly before accepting it, re-prompting on failure — meaning the operator only ever receives passwords that actually authenticate (T1555.001 Keychain access via the validated credential). Anti-analysis layering includes dual-stage anti-debugging via sysctl/KERN_PROC/P_TRACED checks at two separate points in initialization (T1622) plus control-flow flattening and encrypted/runtime-decoded strings for the C2 address and collection targets (T1027). Target scope: Chromium-family browser profiles (T1555.003), ~80 cryptocurrency-wallet browser extensions across Solana/Cosmos/TON/Sui/Aptos/NEO ecosystems, 14 password managers, and the unlocked system Keychain. Collected data is written to hidden dot-prefixed staging files (T1564.001), AES-256-GCM encrypted via CommonCrypto (PBKDF2-HMAC-SHA256 key derivation), then zip-archived (T1560.001) before upload via libcurl multipart POST to a hardcoded C2 endpoint permitted to use cleartext HTTP/TLS 1.0 via an ATS exception in Info.plist (T1041).'
+  region_nexus: global; any Mac fleet in EU/CH public-sector or enterprise environments is exposed — CrashStealer targets consumer/enterprise crypto-wallet and password-manager extensions regardless of region
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1204.002
+  - T1553.001
+  - T1543.001
+  - T1622
+  - T1027
+  - T1555.001
+  - T1555.003
+  - T1564.001
+  - T1560.001
+  - T1041
+  affected_products:
+  - macOS
+  entity_keys: []
+  new_entities:
+  - key: tool:crashstealer
+    type: tool
+    name: CrashStealer
+    aliases: []
+    summary: Native-C++ macOS infostealer impersonating Apple's CrashReporter, delivered via a notarized dropper and GitHub-staged payload; validates stolen passwords locally via dscl before exfiltration (Jamf Threat Labs, 2026-07-13).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: Validating the password with dscl -authonly before harvesting lets the operator keep only credentials that actually work
+    attribution: Jamf Threat Labs
+    source_url: https://www.jamf.com/blog/crashstealer-macos-infostealer-analysis/
+  - quote: 'Patching out that first check is not enough on its own: a second check later in application initialization exits the same way'
+    attribution: Jamf Threat Labs
+    source_url: https://www.jamf.com/blog/crashstealer-macos-infostealer-analysis/
+  - quote: Researchers at Jamf identified the threat in May during development stages and observed active attacks by early July
+    attribution: BleepingComputer
+    source_url: https://www.bleepingcomputer.com/news/security/new-crashstealer-malware-poses-as-apple-crash-reporting-tool/
+  extended_notes: 'Related prior registry entry tool:pamstealer (Jamf Threat Labs) documents a similar macOS-infostealer pattern (impersonating a legitimate utility, validating harvested passwords against a local OS API before exfiltration) — worth a relation_suggestion once the main agent confirms Jamf''s own write-up states a lineage/tooling connection; the fetched CrashStealer post did not itself draw that comparison, so no relation_suggestion is made here (source did not state it). IOC discipline note: the Jamf post also lists a hardcoded C2 IP, delivery domain, and several associated domains plus a GitHub staging-repo path — all deliberately EXCLUDED from this summary and from Sources/evidence per the no-IOCs rule; only behavioral TTPs and detection-relevant artifact classes (hidden dot-prefixed zip staging files, LaunchAgent naming pattern, dscl validation) are carried forward.'
+  borderline: true
+  borderline_reason: BleepingComputer's own timestamp reads 'July 13, 2026 at 03:04 PM' (timezone unstated); if US Eastern (most likely for a Jamf/BleepingComputer post), that is ~19:04 UTC — roughly an hour before this run's stated window open (~2026-07-13T20:09Z) and well before the prior run's completion (2026-07-13T22:37Z). Not found in prior_coverage.json, so it appears the prior run's research sweep missed it despite the story being available before that run completed. Given the technical depth and direct relevance to Tier2/3 detection engineering, and the genuine ambiguity in the exact UTC publish time, surfacing this as borderline rather than silently dropping it — main agent has full cross-run context to decide.
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+- source_id: mandiant-gtig
+  reason: 'cloud.google.com/blog/topics/threat-intelligence is a client-side-rendered SPA; direct fetch and jina reader (rate-limited/balance-exhausted this run) both failed to surface a dated article list. WebSearch found no items published in-window; most recent identifiable posts (targeted-campaign-us-law-firms, recovering-active-adfs-signing-keys) are already several weeks old and/or already registry-covered (ADFS key-recovery tradecraft per prior_coverage). Recipe fix suggestion: prefer the Google Cloud Blog RSS at a per-topic path (attempted https://cloud.google.com/blog/topics/threat-intelligence/rss/ — returned 0 items via jina, likely wrong path) or probe for a sitemap/JSON API.'
+- source_id: intel471
+  reason: www.intel471.com/blog is a Next.js SPA with no readable article listing via direct fetch; rss.xml path returns 404; jina reader hit balance-exhausted/rate-limited both attempts. WebSearch surfaced only older (2025 annual-report-era) content, nothing in-window.
+- source_id: inside-it-ch
+  reason: https://www.inside-it.ch/rss returned upstream 403 on both direct and jina transports. Fallback WebFetch on the homepage also 403'd. No in-window Swiss IT/security items recovered this run via this source; S2 (home-region domain) may have separate access via different routing.
+- source_id: industrialcyber-co
+  reason: 'NOT actually a fetch failure — noting a recipe correction: the RSS feed at https://industrialcyber.co/feed/ works fine via direct fetch (9 items returned); the previously-noted 403/jina-block issue applies only to the bare homepage https://industrialcyber.co, not the /feed/ path. Recommend the source record''s notes be updated to specify the feed URL as the working recipe. Most recent item was 2026-07-13T08:15:21Z (CYFIRMA manufacturing OT/ICS warning) — before this run''s window open, nothing new in-window.'
