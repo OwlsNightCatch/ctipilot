@@ -1,0 +1,96 @@
+domain: S3
+run_id: 2026-07-15T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-15T04:11:36Z
+ended_at: 2026-07-15T04:21:53Z
+duration_seconds: 617
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 20
+  bridge_fetches: 2
+items:
+  - title: "ESET: 11 forgotten Microsoft-signed UEFI shim bootloaders let attackers bypass Secure Boot on any UEFI system (CVE-2026-8863, CVE-2026-10797)"
+    sources:
+      - { url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/", publisher: "ESET Research (WeLiveSecurity)", date: "2026-07-14", role: "primary" }
+      - { url: "https://kb.cert.org/vuls/id/616257", publisher: "CERT/CC (VU#616257)", date: "2026-07-14", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/11-old-microsoft-signed-linux-uefi.html", publisher: "The Hacker News", date: "2026-07-14", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/07/14/eset-uefi-secure-boot-bypass/", publisher: "Help Net Security", date: "2026-07-14", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"ESET research blog July 14 2026 malware\") → pivot: The Hacker News / Help Net Security summaries, URL https://thehackernews.com/2026/07/11-old-microsoft-signed-linux-uefi.html → primary: ESET Research, URL https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/ → corroborating primary: CERT/CC VU#616257, URL https://kb.cert.org/vuls/id/616257"
+    summary: |
+      ESET Research identified 11 old, forgotten UEFI shim bootloaders (shim versions 0.9 and below) that are still trusted under the Microsoft Corporation UEFI CA 2011 third-party certificate authority and can be used to bypass UEFI Secure Boot on any UEFI-based machine that trusts that CA, regardless of the installed OS. The shims fail four separate checks that later shim releases added: (1) no enforcement of the MOK deny-list (MokListX, added in shim v0.9), (2) no support for SBAT (Secure Boot Advanced Targeting, added in v15.3), (3) they chain-load known-vulnerable second-stage bootloaders — notably GRUB 2 (~2015) affected by CVE-2015-5281, which lets an attacker load unsigned code via the multiboot/multiboot2 protocol — and (4) a distinct revocation-bypass flaw newly assigned CVE-2026-10797, where the shim's revocation-check routine and its signature-verification routine disagree on which length field in the Authenticode WIN_CERTIFICATE structure to trust, letting an attacker tamper with the structure to evade both the dbx (UEFI revocation list) and MokListX checks. A second CVE, CVE-2026-8863, covers additional vendor-specific shim builds (Spyrus WTGCreator, Baramundi Management Suite ≤2024R1, WhiteCanyon/Blancco WipeDrive, Finland's Abitti exam software, NTC IT ROSA Linux, Oracle Linux 7.2, PC-Doctor Service Center) that ship the same class of outdated, MokListX/SBAT-lacking shim. Exploitation requires only that an attacker be able to write a copy of one of these old shim binaries to the EFI System Partition (no physical presence needed if the ESP is writable, e.g. via an already-compromised OS or an unattended provisioning workflow) — the attacker does not need the OS the shim originally shipped with to be installed at all, since Secure Boot trust is anchored to the certificate, not the OS. ESET reported the findings to CERT/CC on 2026-02-16; Microsoft revoked all 11 shims via the dbx forbidden-signature database update shipped in the 2026-06-09 Patch Tuesday. No in-the-wild exploitation has been observed; ESET frames the risk in terms of the UEFI bootkit families this class of bypass could enable (Bootkitty, HybridPetya, BlackLotus). Defenders should verify their dbx has actually been updated (stale/incompletely-deployed dbx revocation is common on OEM and embedded/appliance UEFI implementations) using audit tooling such as Check-UEFISecureBootVariables (Windows) or uefi-dbx-audit (Linux/fwupd), and should not assume "Secure Boot: On" in firmware settings means the boot chain is actually protected against this class of bypass.
+    region_nexus: "global — affects any UEFI-based system trusting the Microsoft Corporation UEFI CA 2011 (the vast majority of Windows and dual-boot Linux/Windows enterprise and public-sector fleets), independent of installed OS"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, healthcare, finance, telco, transport"
+    cves: [CVE-2026-8863, CVE-2026-10797]
+    techniques: [T1542.003, T1553.006]
+    affected_products: ["UEFI shim bootloader (rhboot/shim) v0.9 and below", "Spyrus WTGCreator", "Baramundi Management Suite ≤2024 R1", "WhiteCanyon/Blancco WipeDrive 8.0.0-8.1.3", "Finland Matriculation Examination Board Abitti 1.0", "NTC IT ROSA Linux R9/R10", "Oracle Linux 7.2", "PC-Doctor Service Center 15/16", "openSUSE UEFI Shim Loader / Shim 2.1", "GRUB 2 (~2015, CVE-2015-5281 chain-load path)"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:forgotten-uefi-shims-secure-boot-bypass-2026", type: trend, name: "Forgotten UEFI shim Secure Boot bypass (CVE-2026-8863 / CVE-2026-10797)", aliases: [], summary: "ESET Research (2026-07-14) identified 11 outdated, still-trusted Microsoft-signed UEFI shim bootloaders (v0.9 and below) lacking MokListX/SBAT support that allow UEFI Secure Boot bypass and bootkit deployment on any UEFI system trusting the Microsoft Corporation UEFI CA 2011; a distinct revocation-bypass flaw (CVE-2026-10797) also lets an attacker tamper with the Authenticode WIN_CERTIFICATE structure to evade dbx/MokListX checks. Reported to CERT/CC 2026-02-16; Microsoft revoked the shims via the 2026-06-09 Patch Tuesday dbx update." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ESET researchers identified 11 old and forgotten UEFI shim bootloaders at versions 0.9 and below that can be used to bypass UEFI Secure Boot on any UEFI-based machine."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+      - quote: "Exploitation is not limited to systems with the affected software or OS installed, as attackers can bring their own copy of the vulnerable shims to any UEFI system."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+      - quote: "the revocation check and the signature verification functions diverged on which size value they should trust... bypass the revocation mechanism."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+      - quote: "What makes these old shims dangerous is not a novel vulnerability, it's that no new vulnerability is needed to bypass UEFI Secure Boot."
+        attribution: "ESET Research"
+        source_url: "https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/"
+    extended_notes: |
+      Defender vantage: this is a supply-chain/trust-anchor problem rather than a single-vendor patch — the exposure persists as long as an org's UEFI implementation trusts the Microsoft Corporation UEFI CA 2011 and has not received/deployed the 2026-06-09 dbx update. Fleets that image machines from old recovery/diagnostic media (PC-Doctor, WipeDrive, OEM diagnostic partitions) or maintain dual-boot/legacy Linux distros (Oracle Linux 7.2, openSUSE, older RHEL/CentOS 7.2 builds per CERT/CC's affected list) are the most exposed population. CERT/CC's VU#616257 lists 36+ vendors as "status unknown" — worth an internal sweep against firmware/BIOS inventory rather than assuming the Patch Tuesday dbx update alone closes the gap on embedded/appliance firmware that doesn't receive Windows Update–delivered dbx revisions.
+    borderline: false
+
+  - title: "Proofpoint: OAuth client ID spoofing lets attackers validate stolen Entra ID credentials at scale without generating a successful sign-in log event"
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy", publisher: "Proofpoint Threat Research", date: "2026-07-13", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/07/13/entra-id-oauth-client-id-spoofing/", publisher: "Help Net Security", date: "2026-07-13", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/oauth-client-id-spoofing-lets-attackers.html", publisher: "The Hacker News", date: "2026-07-13", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"OAuth client ID spoofing evasion technique Entra ID enumerate accounts validate credentials without sign-in event\") → pivot: Help Net Security / The Hacker News summaries → primary: Proofpoint Threat Research, URL https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy"
+    summary: |
+      Proofpoint documented a novel authentication-evasion technique — OAuth client ID spoofing — being independently weaponized by at least two distinct threat clusters against Microsoft Entra ID. The mechanism: an attacker POSTs credentials to Entra ID's `/common/oauth2/token` endpoint using the legacy Resource Owner Password Credentials (ROPC) flow, supplying an arbitrary/unregistered GUID as the `client_id` parameter instead of a real registered application ID. Entra ID's differential error responses leak account and credential validity regardless of whether the client_id is real: `AADSTS50034` = username does not exist, `AADSTS50126` = valid username, wrong password, `AADSTS700016` = "application not found in directory" — which paradoxically is the response returned when username AND password are both correct (because Entra ID gets far enough to validate the credential before it fails on the unrecognized client_id). Critically, none of these code paths write a successful (or in most cases any) sign-in log entry, and because the client_id is unregistered, the application-name field in whatever log entry does appear is blank — defeating detections that alert on authentication-attempt spikes correlated by application name. Proofpoint attributes two campaigns: UNK_pyreq2323 (January–March 2026, launched from AWS-hosted infrastructure, 700,000+ distinct spoofed client IDs, targeting 1M+ accounts across ~4,000 tenants, causing account lockouts for ~28% of targeted users as a side effect of failed-attempt thresholds) and UNK_OutFlareAZ (December 2025–March 2026, Cloudflare-fronted infrastructure, 3.7M distinct spoofed client IDs against 2M+ users) — independently discovered techniques with different client-ID-generation and enumeration patterns, indicating parallel invention rather than shared tooling.
+    region_nexus: "global — any Microsoft Entra ID tenant with ROPC/legacy authentication enabled is exposed; both observed clusters ran opportunistic mass enumeration rather than targeted regional campaigns"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, telco, healthcare, energy, transport"
+    cves: []
+    techniques: [T1110.004, T1589.001, T1078.004]
+    affected_products: ["Microsoft Entra ID", "Microsoft Entra ID Resource Owner Password Credentials (ROPC) OAuth 2.0 flow"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:unk-pyreq2323", type: actor, name: "UNK_pyreq2323", aliases: [], summary: "Proofpoint-tracked cluster (2026-07-13) that ran OAuth client ID spoofing against Microsoft Entra ID from AWS infrastructure, Jan-Mar 2026: 700,000+ spoofed client IDs used to enumerate/validate credentials across ~4,000 tenants and 1M+ accounts without generating a successful sign-in log entry." }
+      - { key: "actor:unk-outflareaz", type: actor, name: "UNK_OutFlareAZ", aliases: [], summary: "Proofpoint-tracked cluster (2026-07-13) that independently developed OAuth client ID spoofing against Microsoft Entra ID from Cloudflare-fronted infrastructure, Dec 2025-Mar 2026: 3.7M spoofed client IDs against 2M+ users." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Spoofed client IDs enable account enumeration without a registered OAuth application and allow attackers to infer both password and account validity without generating a successful sign-in event."
+        attribution: "Proofpoint Threat Research"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy"
+      - quote: "When a spoofed client ID is used, no corresponding application name is recorded in the sign-in log. This means that detections that look for surges against a specific application name may miss this activity entirely, as the field is blank."
+        attribution: "Proofpoint Threat Research"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy"
+      - quote: "By fragmenting authentication attempts across many fictional applications, activity becomes harder to correlate and may evade per-application detections and rate limiting."
+        attribution: "Proofpoint Threat Research"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy"
+      - quote: "Defenders should treat sign-in log entries with blank application IDs...as potential indicators of client ID spoofing, and recognize that an AADSTS700016 error code may signal compromised credentials, not just a failed login attempt."
+        attribution: "Proofpoint Threat Research"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy"
+    extended_notes: |
+      Triage-relevant discriminator: legitimate ROPC usage (some legacy line-of-business apps, service accounts, and CI/CD pipelines still use ROPC deliberately) will show a registered, named application in the sign-in log — a genuinely blank/absent application-name field on a `/common/oauth2/token` ROPC request, especially at volume against many distinct usernames from a single ASN/cloud-hosting range, is the anomaly to hunt on. AADSTS700016 responses are ordinarily read by defenders as "harmless — misconfigured app," which is precisely the blind spot both clusters exploited; treating a burst of AADSTS700016 responses against valid usernames as equivalent in severity to a successful credential-stuffing hit is the concrete detection-logic change this finding demands. Hardening lever: Conditional Access policies scoped to "all cloud apps" (not per-application) still apply to ROPC sign-ins regardless of client_id validity, so orgs that have not yet blocked the ROPC grant type outright (Entra ID Authentication Methods / legacy auth blocking policies) should treat that as the actionable fix, since per-application CA scoping is trivially bypassed by this technique.
+    borderline: false
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: group-ib
+    reason: "WAF/anti-bot block on direct fetch; jina reader unavailable this run (all three reader API keys returned HTTP 402 balance-exhausted, rotated through all and still failed). Landing page returned only Dec-2022-dated nav/menu content, no post listing. WebSearch found Group-IB's most recent substantive post (\"Connecting Scattered Spider\") dated 2026-07-07, outside this run's window — no in-window Group-IB item recoverable this run."
+  - source_id: intel471
+    reason: "RSS/jina fetch of https://www.intel471.com/blog returned 0 items (jina reader also hit the same HTTP 402 balance-exhausted rotation failure seen on group-ib). No alternate route attempted within time budget; treat as unrecovered gap, not a confirmed empty feed."
+  - source_id: sans-ics
+    reason: "Listing page (https://www.sans.org/blog/?focus-area=industrial-control-systems-ics) returned titles/dates/authors only, no article bodies/outbound links via WebFetch; drilled one specific July-13 post (A Guide to OT Security Best Practices) which 404'd on the guessed URL slug. Did not have time budget to re-locate the correct slug via search; no SANS ICS item confirmed in-window this run."
