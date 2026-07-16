@@ -1,0 +1,228 @@
+domain: S1
+run_id: 2026-07-16T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-16T04:11:53Z
+ended_at: 2026-07-16T04:24:05Z
+duration_seconds: 732
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 7
+  bridge_fetches: 24
+items:
+  - title: "CVE-2026-46817 — Oracle E-Business Suite Payments: unauthenticated RCE, now formally KEV-listed after six weeks of quiet in-the-wild exploitation"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-07-15", role: "primary" }
+      - { url: "https://www.oracle.com/security-alerts/cspumay2026.html", publisher: "Oracle PSIRT (Critical Patch Update, May 2026)", date: "2026-05-28", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/", publisher: "Help Net Security (citing Defused)", date: "2026-06-30", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-46817", publisher: "NVD", date: "2026-07-15", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge: tools/fetch_source.py cisa-kev, dateAdded 2026-07-15) → pivot: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog → pivot: Help Net Security, URL https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/ → primary: Oracle Critical Patch Update, URL https://www.oracle.com/security-alerts/cspumay2026.html (confirmed CVSS/version table) → verified: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-46817"
+    summary: |
+      CISA added CVE-2026-46817 to the KEV catalog on 2026-07-15 (3-day BOD 26-04 remediation
+      deadline: 2026-07-18), the first formal confirmation of active exploitation for a flaw
+      Oracle patched quietly in its May 2026 Critical Patch Update. The bug (CVSS 9.8,
+      CWE-269/287/306) sits in the File Transmission component of Oracle Payments — the
+      payment-processing engine built into E-Business Suite (versions 12.2.3-12.2.15) — and is
+      reachable over plain HTTP with no authentication (T1190 Exploit Public-Facing
+      Application). Threat-intel firm Defused first recorded exploitation via its EBS honeypot
+      decoys on 27 June 2026, roughly six weeks after the patch and before any public PoC
+      existed; the observed technique calls the ibytransmit endpoint, which invokes an internal
+      Oracle Java function directly and redirects it to read /etc/passwd — the same primitive
+      can be pointed at configuration files holding database credentials, encryption keys or
+      payment-processor API keys. Shadowserver separately counted roughly 950 internet-exposed
+      EBS instances. This is the same EBS/PeopleSoft product family already under sustained
+      ShinyHunters/UNC6240 extortion pressure this quarter, and the pattern of near-annual
+      critical, remotely exploitable EBS flaws continues.
+    region_nexus: "global; EBS is widely deployed in European/Swiss public-sector and enterprise finance back-office estates"
+    primary_sector_nexus: "direct"
+    sector: "finance, public-sector"
+    cves: ["CVE-2026-46817"]
+    techniques: ["T1190"]
+    affected_products: ["Oracle E-Business Suite", "Oracle Payments"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On 27 June 2026 our Oracle E-Business Suite decoys recorded the first in-the-wild exploitation of CVE-2026-46817 — roughly six weeks after Oracle's May 2026 patch and before any public proof-of-concept existed."
+        attribution: "Defused (via Help Net Security)"
+        source_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+      - quote: "CISA has added two new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+      - quote: "The exploit targets the ibytransmit endpoint in Oracle Payments' File Transmission component, and calls an internal Oracle Java function directly, redirecting it to read a file (/etc/passwd) from the server."
+        attribution: "Help Net Security"
+        source_url: "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/"
+    extended_notes: |
+      Prerequisites: none — unauthenticated, network access via HTTP to the EBS web tier is
+      sufficient (CVSS AV:N/AC:L/PR:N/UI:N, Scope Unchanged, C:H/I:H/A:H per Oracle's own CPU
+      table). Detection: web-access-log telemetry for POST requests to /OA_HTML/ibytransmit
+      from unexpected sources, especially in the hours/days after any internet-facing EBS
+      instance was left unpatched past 2026-05-28; treat such instances as potentially
+      compromised and rotate credentials/API keys stored on the host after investigation, not
+      before. Hardening: apply Oracle's May 2026 CPU now (12.2.3-12.2.15 branch); until patched,
+      restrict the EBS web interface to internal networks only — CVE-2026-46817 is only the
+      latest in a now-annual cadence of critical, remotely exploitable EBS/PeopleSoft flaws
+      (CVE-2025-61882/-61884 in 2025), which is reason enough for EBS owners to question whether
+      any component needs to stay internet-facing at all. This item formalizes exploitation
+      first reported publicly in late June/early July (already summarized in this store's
+      2026-07-05 weekly roll-up); no dedicated per-CVE entry existed until this KEV listing.
+    novelty_note: "related prior mention: 2026-07-05/weekly-w27-oracle-ebs-and-peoplesoft-exploited (weekly synthesis only, no dedicated CVE-level entry existed — this is the first dedicated entry for CVE-2026-46817)"
+
+  - title: "CVE-2023-4346 — KNX building-automation protocol: three-year-old account-lockout DoS now confirmed under active exploitation, added to CISA KEV"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-07-15", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-23-236-01", publisher: "CISA (ICS Advisory ICSA-23-236-01)", date: "2026-07-15", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2023-4346", publisher: "NVD", date: "2026-07-15", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (bridge: tools/fetch_source.py cisa-kev, dateAdded 2026-07-15) → pivot: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog → primary: CISA ICS advisory, URL https://www.cisa.gov/news-events/ics-advisories/icsa-23-236-01 (updated same day with the exploited-in-the-wild note) → verified: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2023-4346"
+    summary: |
+      CISA added CVE-2023-4346 to KEV on 2026-07-15 alongside the Oracle EBS entry above —
+      notable because the flaw itself is three years old (reported by Felix Eberstaller of
+      Limes Security, published August 2023) and had no prior KEV listing until this update
+      added an explicit "actively exploited" note to the underlying ICS advisory (ICSA-23-236-01).
+      KNX is a widely deployed European building-automation bus protocol (KNX Association is
+      headquartered in Belgium) used for HVAC, lighting, access-control and BMS integration —
+      relevant to any large public-sector or critical-infrastructure estate with smart-building
+      controls. The bug (CWE-645 Overly Restrictive Account Lockout, CVSS 7.5,
+      AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H) is a design flaw in KNX Connection Authorization
+      Option 1: any device that has never had its BCU (Bus Coupling Unit) key set can be
+      "purged" by an attacker with network access to the KNX installation, who then sets a new
+      BCU key and permanently locks legitimate operators out — there is no reset path without
+      the current password. An attacker with only physical access to the bus can do the same.
+      There is no software patch; the fix is entirely procedural (always set a BCU key during
+      commissioning).
+    region_nexus: "Europe (KNX Association HQ Belgium; large European deployment base)"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, healthcare, public-sector"
+    cves: ["CVE-2023-4346"]
+    techniques: ["T1489"]
+    affected_products: ["KNX devices using Connection Authorization Option 1 (all versions with no BCU key set)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA has received reports of this vulnerability being actively exploited."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-23-236-01"
+      - quote: "If the device is configured to interface with a network, an attacker with access to that network could interface with the KNX installation, purge all devices without additional security options enabled, and set a BCU key, locking the device."
+        attribution: "CISA (ICS Advisory ICSA-23-236-01)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-23-236-01"
+    extended_notes: |
+      Prerequisites: network access to the KNX bus/gateway (IP-KNX routers are the common
+      internet/IT-network-adjacent exposure point) OR physical access to the bus; no
+      authentication or user interaction needed on the victim side. Impact is availability-only
+      (denial of legitimate operator access to building-automation devices) — mapped here to
+      T1489 Service Stop as the closest Enterprise ATT&CK analogue for an availability-impact
+      technique against OT/building-automation endpoints; ATT&CK for ICS readers may prefer
+      "Denial of Control"-class framing instead. Detection: this is a configuration/behavioral
+      artifact, not a network-traffic signature — monitor KNX/ETS project management logs and
+      BCU-key-set events for unexpected changes, and treat any building-management or IP-KNX
+      gateway that is internet-reachable as a priority segmentation target regardless of patch
+      status (KNX Association has issued no software fix in three years — CISA's mitigation
+      guidance is unchanged: minimize network exposure, isolate control-system networks behind
+      firewalls, use VPNs for remote access). Hardening: KNX Association's own recommendation —
+      set the BCU Key in every finished KNX project before commissioning, and hand it over to
+      the building owner as part of project documentation (KNX Secure Checklist).
+    borderline: true
+    borderline_reason: "old CVE (2023) resurfacing via a fresh KEV addition rather than a new disclosure; included because the KEV addition itself is an in-window, actionable exploitation-status delta and the technology class (building automation) is under-covered for our sector mix"
+
+  - title: "Veeam Software/Infrastructure Appliance Updater component — unauthenticated-to-root local privilege escalation, no CVE yet assigned (KB4879)"
+    sources:
+      - { url: "https://www.veeam.com/kb4879", publisher: "Veeam (KB4879)", date: "2026-07-14", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0878/", publisher: "CERT-FR (CERTFR-2026-AVI-0878)", date: "2026-07-15", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ → drilled: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0878/ → primary: Veeam KB4879, URL https://www.veeam.com/kb4879"
+    summary: |
+      Veeam published KB4879 on 2026-07-14 (relayed the next day by CERT-FR as
+      CERTFR-2026-AVI-0878) for a High-severity (CVSS 4.0: 8.4,
+      AV:L/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H) local privilege-escalation flaw in the Veeam
+      Updater component, reported through HackerOne by researcher skydesperados. A local user
+      on the underlying OS can elevate to root-level access to the host. The bug is scoped to
+      the Linux-based Veeam Software Appliance and Veeam Infrastructure Appliance (Veeam Backup
+      & Replication 13) — Windows-based VBR backup servers are explicitly unaffected. No CVE
+      identifier has been published by Veeam alongside this KB (T1068 Exploitation for
+      Privilege Escalation as the closest ATT&CK mapping for the disclosed mechanism, pending
+      Veeam's own root-cause write-up beyond "vulnerability in the Veeam Updater component").
+      Backup infrastructure is a standing high-value target for ransomware operators seeking to
+      disable recovery before detonating an encryptor, so any local-to-root escalation path on
+      a backup host is operationally significant even without a public exploitation report.
+    region_nexus: "global; Veeam Backup & Replication is broadly deployed across Swiss/European public-sector and critical-infrastructure backup estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, healthcare, finance, telco"
+    cves: []
+    techniques: ["T1068"]
+    affected_products: ["Veeam Software Appliance", "Veeam Infrastructure Appliance", "Veeam Backup & Replication 13 (Linux-based appliances only)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in the Veeam Updater component allows a local user to elevate their privileges and gain root-level access to the underlying operating system."
+        attribution: "Veeam (KB4879)"
+        source_url: "https://www.veeam.com/kb4879"
+      - quote: "CVSS Score: 8.4 CVSS:4.0/AV:L/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N"
+        attribution: "Veeam (KB4879)"
+        source_url: "https://www.veeam.com/kb4879"
+    extended_notes: |
+      Prerequisites: local access to the underlying OS of a Veeam Software Appliance or Veeam
+      Infrastructure Appliance host with an already-elevated local role (CVSS PR:H) — this is a
+      local-to-root escalation, not a remote-network vector; no evidence of in-the-wild
+      exploitation or public PoC as of this writing. No public exploitation evidence and no CVE
+      yet is why this is flagged MEDIUM confidence rather than HIGH despite the concrete vendor
+      detail. Detection: for the affected Linux appliance roles, monitor for unexpected
+      privilege transitions originating from the Veeam Updater service process tree
+      (process-creation telemetry with parent lineage rooted in the updater component spawning
+      root-owned children outside its normal update-check cadence). Hardening: for most
+      deployments the fix (Updater component 12.3.0.65+) installs automatically on the next
+      update check; air-gapped appliances that cannot reach repository.veeam.com or a local
+      mirror repository need manual deployment via Veeam Support or temporary internet access
+      to the update server.
+
+cve_table:
+  - cve: CVE-2026-46817
+    product: "Oracle E-Business Suite / Oracle Payments (File Transmission component)"
+    cvss: 9.8
+    epss: null
+    kev: true
+    exploited: true
+    patch: "Oracle May 2026 Critical Patch Update (patched 2026-05-28); affected 12.2.3-12.2.15"
+    source: "https://www.cisa.gov/news-events/alerts/2026/07/15/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+  - cve: CVE-2023-4346
+    product: "KNX devices using KNX Connection Authorization Option 1 (KNX Association)"
+    cvss: 7.5
+    epss: null
+    kev: true
+    exploited: true
+    patch: "No software patch -- procedural mitigation only (always set BCU Key per KNX Secure Checklist)"
+    source: "https://www.cisa.gov/news-events/ics-advisories/icsa-23-236-01"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment -- sweep is a no-op per spawn instructions; general coverage rules applied unchanged"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-eu
+    reason: "CERT-EU security-advisories RSS returned only 10 items, freshest dated 2026-06-10 -- feed appears to update infrequently; no in-window item available from this source this run."
+  - source_id: ncsc-uk
+    reason: "Listing page (bridge fetch) surfaced no items with an in-window publication date; checked 3 linked news items individually (Fortinet global-targeting alert, APT28 router DNS-hijack alert, Russian-intelligence critical-sectors advisory) -- all dated 7 April-13 July 2026, outside the 26h window, and the most recent (13 July, FSB Centre 16 router-hijacking advisory) was already captured by a prior run (2026-07-13 entries in prior_coverage.json)."
+  - source_id: shadowserver
+    reason: "News & Insights listing freshest item dated 25 June 2026 (StealC special report) -- no in-window content."
+  - source_id: depthfirst
+    reason: "Homepage research highlights (FFmpeg 21 zero-days, NGINX Rift) both dated well outside window (2 June 2026 and earlier); no in-window item."
+  - source_id: sonatype
+    reason: "RSS freshest items (Maven Central infrastructure post, 15 July) not vulnerability/exploit-relevant to S1 mission; Miasma/Leo Platform npm supply-chain post dated 25 June 2026, outside window."
+  - source_id: snyk-research
+    reason: "RSS freshest items dated 9 July 2026 and earlier, all outside the 26h window; none vulnerability/exploit-specific."
+  - source_id: 0patch-blog
+    reason: "Freshest post (CVE-2025-60704 Kerberos micropatch) dated 13 July 2026, outside the 26h window."

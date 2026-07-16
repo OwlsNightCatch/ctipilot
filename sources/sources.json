@@ -390,7 +390,7 @@
    ],
    "status": "active",
    "fetch_method": "bridge",
-   "last_successful_fetch": "2026-07-15",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "US government joint advisories often co-signed with allied CERTs (UK NCSC, ACSC AU, NCSC-NZ, CCCS CA, BSI DE, CERT-EU). WebFetch is reliably HTTP 403 on cisa.gov (re-confirmed 2026-05-08). REQUIRED FETCH METHOD: `python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories`. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api/bridge: python3 tools/fetch_source.py cisa page https://www.cisa.gov/news-events/cybersecurity-advisories  (then `cisa page <alert_url>` to drill). AVOID: WebFetch reliably HTTP 403 on cisa.gov — skip it entirely. Use the bridge `cisa page` subcommand.. | 2026-07-04: bridge (cisa page) upstream HTTP 403 again — consecutive_fetch_failures 2; 403 is transport blocking (does NOT demote per lifecycle rules). CISA KEV JSON API still works via the bridge. | 2026-07-05 root-cause confirmed: www.cisa.gov dynamic paths (/news-events/*, all .xml feeds, and the CSAF .well-known) are blocked by Akamai bot management (`Access Denied`, `Reference #18.*`) for EVERY UA/header combination tested (chrome/firefox/googlebot/curl/minimal/+Referer all 403) — the block keys off the egress TLS/behavioural fingerprint, so it is unfixable from request headers. Only the STATIC /sites/default/files/feeds/ path (KEV JSON) is served. No reachable alternative for the advisory HTML content (search.gov results are a JS shell needing an API key; Wayback has no snapshots). SUBSTITUTE: `cisa-kev` JSON API for exploited-vuln ground truth + WebSearch corroboration for advisory narrative (covered_anyway). STAYS ACTIVE — a 403 is a transport block and NEVER demotes (hard rule). source_health.py now classifies this `bridge-blocked` (handled), not `needs-demote`, so the routine stops re-flagging it every run. | 2026-07-05 RECOVERED — CISA dynamic content is now reachable. The Akamai 403 on every UA still holds for a DIRECT fetch, but `tools/fetch_source.py` routes cisa.gov through the r.jina.ai reader proxy (server-side fetch, bypasses the Akamai fingerprint) for `cisa page` / `cisa feed`, and through the cisagov/CSAF GitHub mirror (raw.githubusercontent.com, not proxy-blocked) for `cisa csaf-recent` / `cisa csaf` (fully-structured ICS advisories). This SUPERSEDES the earlier KEV+WebSearch-substitute handling — the advisory/directive/news content itself is now fetchable with full detail. `cisa-kev` JSON remains the exploited-vuln ground truth. FETCH now works via the reader-proxy recipe: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` to discover items (title+link), then `cisa page <advisory_url>` for the full body. For ICS/OT advisories prefer the fully-structured CSAF mirror: `cisa csaf-recent [N]` (dated index) + `cisa csaf <icsa-YY-DDD-NN>`. | 2026-07-05 admiralty audit: A (primary-authority) — CISA advisories; bridge 403 is a known transport block (does NOT demote per lifecycle rules), host confirmed live via KEV. Status stays active. | 2026-07-09 structured-listing recipe (v3.14): the /news-events/cybersecurity-advisories listing is a JS shell — `cisa page` on it returns only the filter UI. REQUIRED listing fetch: `python3 tools/fetch_source.py cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml 20` (structured {title,link} items, newest first); drill each item with `cisa page <link>`. Confirmed working 2026-07-09. | 2026-07-10: recipe recovered — `python3 tools/fetch_source.py cisa page` returned 200 full listing (S2); freshest item 07-07, no in-window content. Rotation-gap cleared; fetch_method/bridge path works. | 2026-07-10 (2009Z run): page URL returned only filter/facet UI in static HTML (no enumerated advisory rows); S1 recovered content via the RSS feed https://www.cisa.gov/cybersecurity-advisories/all.xml, which surfaced the in-window KEV addition. Prefer the RSS feed over the page URL for enumeration.",
    "last_covered_in_brief": "2026-06-20",
@@ -434,7 +434,7 @@
    ],
    "status": "active",
    "fetch_method": "api",
-   "last_successful_fetch": "2026-07-14",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Authoritative for actively-exploited vulns with federal remediation deadlines. WebFetch is reliably HTTP 403 on this host (transport-side block on the routine UA, ongoing since 2026-05-06; re-confirmed 2026-05-08). REQUIRED FETCH METHOD for both main agent AND every sub-agent: `python3 tools/fetch_source.py cisa-kev` returns the full KEV JSON catalog. Do NOT call WebFetch on cisa.gov; treat the 403 as a transport block — it never demotes the source. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → api: python3 tools/fetch_source.py cisa-kev (full KEV JSON catalog, each entry is a drillable CVE record). AVOID: Do NOT WebFetch cisa.gov — reliably 403s the routine UA. The api subcommand is the only supported path.. | 2026-07-05 admiralty audit: A (primary-authority) — CISA KEV, authoritative exploited-vuln catalog; api fetch clean and current. Status stays active.",
    "consecutive_quiet_periods": 0,
@@ -795,7 +795,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-11",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Elastic Security research. 2026-05-08 audit: 5 dated articles 5-8 May 2026 (TCLBANKER, Traefik, AI hunting). | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://www.elastic.co/security-labs (listing) then webfetch www.elastic.co/security-labs/<slug> for body. AVOID: Nothing — webfetch works cleanly on both listing and article. | 2026-07-05 admiralty audit: B — vendor research lab, first-hand original research; live, keep active.",
    "last_covered_in_brief": "2026-06-25",
@@ -1028,7 +1028,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-15",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Tech press; useful for vendor reports and patch summaries. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch https://www.helpnetsecurity.com/ (listing) then webfetch per-article URL for body. AVOID: Nothing — WebFetch works on both listing and articles. High daily volume; many items are vendor-report/PR roundups, so triage to vuln/breach/threat items.. | 2026-07-05 admiralty audit: C — reputable security-news aggregator, mostly re-reports vendor/research findings; corroborate before acting. MEDIUM->C, stays active.",
    "consecutive_quiet_periods": 0,
@@ -1446,7 +1446,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-14",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Microsoft Threat Intelligence Center reporting. 2026-05-08 audit: WebFetch returned 5 dated TI articles latest 2026-05-04 on AiTM phishing, Sapphire Sleet, Forest Blizzard. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → webfetch (listing) https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ then webfetch per-article (URLs are /security/blog/YYYY/MM/DD/{slug}/).. AVOID: Nothing — WebFetch works cleanly on both listing and article. No bridge needed.. | 2026-07-05 admiralty audit: B — MSTIC original threat research from Microsoft telemetry. Reliability HIGH->B, status stays active. Distinct source from msrc-blog (PSIRT).",
    "last_covered_in_brief": "2026-06-30",
@@ -1667,7 +1667,7 @@
    ],
    "status": "active",
    "fetch_method": "bridge",
-   "last_successful_fetch": "2026-07-13",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Oracle quarterly Critical Patch Updates and individual Security Alerts (added 2026-05-08). Quarterly cadence (Jan / Apr / Jul / Oct); also publishes off-cycle Security Alerts for ITW-exploited bugs. 2026-05-08 audit: WebFetch surfaced CPU Apr 2026 + CVE-2026-21992 Mar 20 alert. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → bridge: python3 tools/fetch_source.py url https://www.oracle.com/security-alerts/ (listing) then bridge: python3 tools/fetch_source.py url https://www.oracle.com/security-alerts/<cpu-or-alert>.html for the advisory body. AVOID: WebFetch 403s oracle.com — skip WebFetch, go straight to the bridge. Quarterly CPU cadence (Jan/Apr/Jul/Oct) plus off-cycle Security Alerts; don't expect daily change.. | 2026-07-05 admiralty audit: A (HIGH->A) status active->active — first-party Oracle PSIRT, own-product advisories; bridge listing live/drillable. Justified A: vendor PSIRT for its own products. Quarterly cadence; Jul 2026 CPU due mid-month.",
    "consecutive_fetch_failures": 0,
@@ -2478,7 +2478,7 @@
    ],
    "status": "active",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-08",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
    "notes": "Palo Alto threat research. RSS at https://unit42.paloaltonetworks.com/feed/ fully mirrors the listing (verified 2026-05-08). 2026-05-08 audit: WebFetch on HTML returned 5 dated articles latest 2026-05-06 on PAN-OS 0-day, Linux RCE, npm supply-chain. | 2026-06-20 full audit (v2.62): live=Y, drill=Y. FETCH → rss: python3 tools/fetch_source.py feed https://unit42.paloaltonetworks.com/feed/ 5 (mirrors listing) then webfetch per-article URL; webfetch HTML index also works. AVOID: Both webfetch HTML and the /feed/ RSS work; the feed fully mirrors the listing with clean dates — no need to scrape HTML.. | 2026-07-05 admiralty audit: B — flagship vendor threat-research lab, original first-hand research; both WebFetch HTML and /feed/ RSS work. No status change.",
    "consecutive_quiet_periods": 0,
@@ -3142,9 +3142,9 @@
    ],
    "status": "candidate",
    "fetch_method": "webfetch",
-   "last_successful_fetch": "2026-07-08",
+   "last_successful_fetch": "2026-07-16",
    "consecutive_failures": 0,
-   "notes": "2026-06-22: surfaced by S4 covering the EFK federal cyber-governance audit (report 25152) with more depth than Netzwoche; CH trade press tracking BACS/BABS/federal IT-security developments. Candidate — promote to active after 3 runs with content contribution. | 2026-07-05 admiralty audit: C (MEDIUM->C) — CH trade press, re-reporting. Keep candidate: live/relevant CH-nexus but re-reporting and single contribution so far."
+   "notes": "2026-06-22: surfaced by S4 covering the EFK federal cyber-governance audit (report 25152) with more depth than Netzwoche; CH trade press tracking BACS/BABS/federal IT-security developments. Candidate — promote to active after 3 runs with content contribution. | 2026-07-05 admiralty audit: C (MEDIUM->C) — CH trade press, re-reporting. Keep candidate: live/relevant CH-nexus but re-reporting and single contribution so far. | 2026-07-16: corroborated the IWB Basel third-party-provider breach entry (2nd tracked contribution) — CH home-region CI incident."
   },
   {
    "id": "swisspost-cybersecurity",
@@ -3362,6 +3362,26 @@
    "consecutive_fetch_failures": 0,
    "consecutive_quiet_periods": 0,
    "notes": "added as candidate 2026-07-15: served as the primary for the Entra ID OAuth client ID spoofing entry (UNK_pyreq2323 / UNK_OutFlareAZ); recurring identity/threat-insight research authority. Promote to active after 3 contributing runs."
+  },
+  {
+   "id": "netzwoche",
+   "publisher": "Netzwoche (Swiss IT/cybersecurity trade press)",
+   "url": "https://www.netzwoche.ch/",
+   "category": [
+    "ch-eu"
+   ],
+   "reliability": "C",
+   "tier": "standard",
+   "language": [
+    "de"
+   ],
+   "status": "candidate",
+   "fetch_method": "webfetch",
+   "last_successful_fetch": "2026-07-16",
+   "consecutive_failures": 0,
+   "consecutive_fetch_failures": 0,
+   "consecutive_quiet_periods": 0,
+   "notes": "2026-07-16: added as candidate — served as the primary source for the IWB Basel third-party-provider breach entry (CH home-region CI incident); recurring Swiss trade outlet tracking cantonal/federal cyber incidents. Candidate — promote to active after 3 runs with content contribution. Reliability C (re-reporting CH trade press)."
   }
  ]
 }

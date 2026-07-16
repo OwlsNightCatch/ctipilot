@@ -1,0 +1,296 @@
+domain: S3
+run_id: 2026-07-16T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-16T04:12:39Z
+ended_at: 2026-07-16T04:28:10Z
+duration_seconds: 931
+self_telemetry:
+  webfetch_calls: 22
+  websearch_calls: 9
+  bridge_fetches: 9
+items:
+  - title: "TuxBot v3 Evolution — Unit 42 documents an LLM-assisted IoT botnet framework tied to the Keksec/AISURU ecosystem"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-15", role: primary }
+      - { url: "https://github.com/PaloAltoNetworks/Unit42-timely-threat-intel/blob/main/2026-05-28-TuxBot-v3-Evolution-Framework-Analysis.txt", publisher: "Unit 42 Timely Threat Intel (GitHub)", date: "2026-05-28", role: corroborating }
+    discovery_trace: >
+      first seen at: WebSearch ("Dragos Juneau water utility xOT visibility blind spots" pivot led to general Unit42
+      sweep), URL https://unit42.paloaltonetworks.com/ (listing) → primary: Unit 42, URL
+      https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/ (full technical write-up fetched via jina reader)
+    summary: >
+      Unit 42 recovered the complete source tree, a Git development log and 254 automated DDoS-benchmark reports for
+      "TuxBot v3 Evolution," a previously undocumented modular IoT-botnet framework whose developer used an LLM to
+      write large parts of the C/Go codebase. The bot is a statically-linked C binary that cross-compiles for 17
+      architectures (ARM, MIPS/MIPSEL/MIPS64, x86_64, PowerPC, RISC-V, etc.), brute-forces Telnet with 1,496
+      credential pairs, and communicates over an X25519+ChaCha20-Poly1305 encrypted TCP primary channel with five
+      fallback mechanisms: a SHA-512 domain-generation algorithm (20 candidate domains/day), Ed25519-signed P2P
+      gossip, IRC, DNS TXT queries and HTTP polling. Persistence uses seven mechanisms (a systemd service disguised
+      as sd-pam.service, cron @reboot/*-5-min entries, shell-profile injection, watchdog keepalive, periodic binary
+      relocation across 21 directories masquerading under 20 legitimate daemon names). LLM-introduced bugs — raw
+      chain-of-thought reasoning left in source comments, a hard-coded model safety disclaimer shipped unremoved, an
+      XOR string-table key mismatch, a VM-magic-value mismatch that breaks the custom exploit virtual machine, and a
+      hallucinated Argon2id password-hashing implementation that silently falls back to SHA-256 while faking the
+      Argon2id output format — leave roughly 70% of the framework's features non-functional in the recovered build;
+      Unit 42 fixed several of them with a handful of targeted LLM prompts, meaning a corrected operator build likely
+      already exists. Pivoting on a hard-coded dropper IP address ties TuxBot's C2/dropper infrastructure to Kaitori
+      v3.9 and AISURU-branded DDoS tooling, placing the operator inside the Keksec IoT-botnet ecosystem; the
+      developer's leaked Git-log hostname and a still-active parent domain point to an Iran-hosted development
+      workstation.
+    region_nexus: "global — IoT botnet targeting internet-exposed Telnet/SSH/HTTP/ADB devices worldwide; no CH/EU-specific targeting stated"
+    primary_sector_nexus: "indirect — any internet-exposed IoT/embedded network device (energy, water, telco OT-adjacent gateways) is in the Telnet/SSH/HTTP scanner's target set"
+    sector: "telco, energy, water, transport"
+    cves: []
+    techniques: [T1110.001, T1498, T1499, T1568.002, T1071.004, T1053.003, T1497.001, T1036.005, T1210, T1090]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:tuxbot-v3-evolution-iot-botnet", type: tool, name: "TuxBot v3 Evolution", aliases: [],
+          summary: "LLM-assisted, modular multi-architecture IoT botnet framework (C bot agent + Go C2 with DDoS-for-hire SSH panel) documented by Unit 42, 2026-07-15; ~70% functional due to LLM-introduced bugs; shares dropper infrastructure with Kaitori v3.9 and AISURU tooling." }
+      - { key: "actor:keksec", type: actor, name: "Keksec", aliases: [],
+          summary: "IoT-botnet operator ecosystem known for running multiple parallel Mirai/Gafgyt/Tsunami-lineage botnet variants (Kaitori, AISURU); Unit 42 places the TuxBot v3 Evolution operator within this ecosystem based on shared dropper-server infrastructure (Unit 42, 2026-07-15)." }
+    relation_suggestions:
+      - { subject: "tool:tuxbot-v3-evolution-iot-botnet", object: "actor:keksec",
+          basis: "Unit 42: 'Shared infrastructure with Kaitori v3.9 and AISURU tooling places the TuxBot operator within the Keksec ecosystem' (Unit 42, 2026-07-15)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The malware authors leveraged an LLM to assist in their code development, yielding mixed results. While the AI complied with their request to generate botnet code, it included a safety disclaimer that the developer failed to remove before shipping."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+      - quote: "The LLM hallucinated that it implemented Argon2id but actually fell back to SHA256 loops while keeping the Argon2id comments, constants and output format."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+      - quote: "Shared infrastructure with Kaitori v3.9 and AISURU tooling places the TuxBot operator within the Keksec ecosystem. This group is known for running multiple IoT botnet variants in parallel."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+    extended_notes: >
+      Single-vendor sourcing (Unit 42's own recovered-source-tree analysis); no independent second lab has yet
+      published on this family, so treat the Keksec/AISURU attribution as Unit 42's own infrastructure-pivot
+      assessment rather than confirmed multi-source attribution. Detection angle: the Telnet/SSH/HTTP/ADB scanner
+      behavior and the systemd-service-masquerading persistence pattern are generic enough to apply hunt logic
+      across any Keksec-lineage IoT botnet, not just this specific build.
+    classification:
+      reliability: B
+      credibility: 2
+
+  - title: "TELEPUZ — Elastic Security Labs reverse-engineers a fast-evolving modular MaaS RAT delivered via CLICKFIX-VIDAR chains"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/telepuz-maas-malware-clickfix", publisher: "Elastic Security Labs", date: "2026-07-16", role: primary }
+    discovery_trace: >
+      first seen at: general research-lab sweep of https://www.elastic.co/security-labs (listing) → primary: Elastic
+      Security Labs, URL https://www.elastic.co/security-labs/telepuz-maas-malware-clickfix (full write-up fetched
+      via jina reader)
+    summary: >
+      Elastic Security Labs is tracking TELEPUZ, a full-featured, fast-evolving modular Windows RAT active since
+      late April 2026 and spreading via a ClickFix social-engineering lure that pastes a PowerShell one-liner into
+      Win+R, which downloads a Go-variant VIDAR stealer; VIDAR then fetches a small stager (install.exe) that loads
+      the TELEPUZ main payload (a 64-bit DLL launched via rundll32) from the domain-rotating staging infrastructure
+      (URL path pattern /files/telemetriawork/telepuz.dll). The payload initializes an indirect-syscall engine by
+      mapping a fresh ntdll.dll copy, parsing syscall numbers from its export table, and patching the .text section
+      of a randomly-chosen legitimate DLL (dfscli.dll, davhlpr.dll, msdtclog.dll, dsrole.dll or secur32.dll) with
+      syscall trampolines — executing syscalls from inside a trusted-looking module to bypass user-mode API hooking
+      and ETW. Evasion includes AMSI/ETW patching (patched AmsiScanBuffer returns E_INVALIDARG; patched
+      EtwEventWrite/NtTraceEvent return zero), NTDLL unhooking, removal of third-party DllNotification callbacks,
+      anti-debug (ProcessDebugPort/ThreadHideFromDebugger checks, 0xDEADBEEF NtClose crash trigger), and
+      CIS-country/sandbox-hostname/username geofencing. Privilege escalation uses two UAC-bypass techniques (COM
+      elevation moniker via CLSID_CMSTPLUA; an AppInfo-ALPC/DebugObjects technique abusing winver.exe and
+      computerdefault.exe) plus SYSTEM token theft from spoolsv.exe/msdtc.exe/WmiPrvSE.exe/svchost.exe; it installs
+      as a service named CipherAllocator. C2 runs over WebSocket (with optional SChannel TLS) at /cdn/health?sid=,
+      with four fallback address-discovery channels — a Telegram channel bio, a Steam profile name history, a DNS
+      TXT lookup and a Polygon smart-contract eth_call (also used as a remote kill switch) — each XOR- or
+      AES-256-CBC-encrypted. The malware ships 36 C2 commands (hash-addressed, not sent as plaintext) covering
+      remote shell, process-hollowing PE execution (DownloadRunPE), reflective module loading, a keylogger, a
+      stealer, a Chrome App-Bound-Encryption cookie-decryption helper, and a browser web-injection module that uses
+      Chrome DevTools Protocol / Firefox WebDriver BiDi (not code injection) to swap IBAN/amount fields in banking
+      web forms.
+    region_nexus: "global — no CH/EU-specific targeting stated; malware-as-a-service distribution model implies broad, geography-agnostic reach"
+    primary_sector_nexus: "indirect — commodity Windows-endpoint RAT with a banking-focused web-injection module relevant to the finance sector"
+    sector: "finance, technology"
+    cves: []
+    techniques: [T1204.004, T1055.001, T1620, T1622, T1497.001, T1497.003, T1614.001, T1548.002, T1134.001, T1543.003, T1112, T1071.001, T1573.002, T1105]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:telepuz-maas-malware", type: tool, name: "TELEPUZ", aliases: [],
+          summary: "Modular Windows RAT/MaaS platform active since ~April 2026, distributed via CLICKFIX-VIDAR infection chains; uses indirect syscalls via patched legitimate DLLs, four decentralized C2 fallback discovery channels (Telegram, Steam, DNS TXT, Polygon smart contract) and a CDP/WebDriver-BiDi browser web-injection module (Elastic Security Labs, 2026-07-16)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "TELEPUZ is a modular malware that emerged through CLICKFIX-VIDAR attacks in April. We reverse-engineered it to show you the infrastructure and evasion techniques that matter."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/telepuz-maas-malware-clickfix"
+      - quote: "Finally, the malware selects a random library from a set of standard libraries (dfscli.dll, davhlpr.dll, msdtclog.dll, dsrole.dll, and secur32.dll) and loads it via LoadLibrary. It then patches the library's .text section with the previously generated trampolines, so indirect syscalls are now executed from this location."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/telepuz-maas-malware-clickfix"
+      - quote: "Given the significant number of builds uploaded to VirusTotal daily, it is likely that we are dealing with a MaaS."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/telepuz-maas-malware-clickfix"
+    extended_notes: >
+      Elastic published a full MITRE ATT&CK tactic/technique list and a public YARA rule
+      (Windows_Trojan_Telepuz.yar on elastic/protections-artifacts) alongside the write-up. Triage-relevant
+      discriminator: the ETW/AMSI patch signatures (fixed return-value stubs on AmsiScanBuffer/EtwEventWrite) plus a
+      rundll32-hosted process reaching out to a WebSocket endpoint at a URI containing "/cdn/health?sid=" is a
+      distinguishing combination — legitimate rundll32 invocations do not open outbound WebSocket connections.
+    classification:
+      reliability: B
+      credibility: 2
+
+  - title: "OkoBot — Kaspersky documents a 20+-module TookPS-descendant framework combining hidden browser extensions, RDP-session hijacking and hardware-wallet seed-phrase phishing"
+    sources:
+      - { url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/", publisher: "Kaspersky (Securelist / GReAT)", date: "2026-07-15", role: primary }
+    discovery_trace: >
+      first seen at: general research-lab sweep of https://securelist.com/all/ (listing) → primary: Kaspersky
+      Securelist, URL https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/ (full write-up
+      fetched via jina reader)
+    summary: >
+      Kaspersky's GReAT team documents "OkoBot," the latest evolution of the TookPS downloader campaign (first
+      reported March 2025), now built around a 20+-payload delivery/orchestration framework active since April 2025
+      and still active at publication. Initial access is via ClickFix or a trojanized fake "SQL Server Management
+      Studio" package on GitHub (in reality a legitimate Audacity build patched with a malicious library, SEO'd to
+      rank for the query "SSMS"); both vectors run TookPS, which installs SSH, opens a reverse tunnel to an
+      attacker server, and lets an automated SSH bot pull further modules over SFTP. The SSH bot harvests wallet
+      files/browser data, disables Defender notifications via a registry change, and hijacks the graphical session
+      by opening inbound RDP firewall ports, adding a user to Remote Desktop Users, replacing termsrv.dll with a
+      patched build that permits multiple concurrent RDP sessions, and scheduling an hourly "Apple Sync" task that
+      re-establishes a reverse SSH tunnel forwarding the local RDP port. A VMProtect-packed launcher (HDUtil)
+      dispatches modules with an optional UAC-bypass flag (auto-elevated msconfig.exe + Windows RPC, per Project
+      Zero's 2019 technique). One module (extl.exe) hooks Chromium's BrowserListObserver::OnBrowserAdded and
+      msedge.dll-equivalent functions to silently install and hide malicious .crx extensions — including the Rilide
+      Chromium stealer — from the browser's extension UI. A second module chain (Volume2, an open-source utility
+      trojanized via a malicious protobuf.dll/version.dll side-load, AES-GCM-decrypted without an authentication
+      check) acts as a plugin dispatcher polling an HTTP C2 every 20 seconds and hosting five plugins: CMD/PowerShell
+      wrappers, an environment enumerator, a dropper, and a process injector that delivers ext_daemon (extl.exe's
+      twin), SeedHunter (injects Trezor Suite/Ledger Live/Ledger Wallet processes via hooked Electron functions to
+      show a fake seed-phrase-recovery page triggered by USB VID/PID wallet detection), an MC Keylogger (keystrokes,
+      clipboard by format including CF_DIB images, periodic screenshots), and OkoSpyware (FFmpeg-based video capture
+      plus keylogging of ~100 named target-application windows, including MetaMask/Tonkeeper browser-extension
+      wallets). Kaspersky reports hundreds of victims across 25+ countries (largest shares in Brazil, Vietnam,
+      Canada, Mexico and Türkiye) and no confirmed actor attribution, though the initial-stage PowerShell servers
+      geoblock Russia/CIS source IPs — a pattern Kaspersky notes is common among Russian-speaking crimeware crews.
+    region_nexus: "global consumer/crypto-holder targeting (largest shares Brazil, Vietnam, Canada, Mexico, Türkiye); no CH/EU concentration reported but the technique set is directly transferable"
+    primary_sector_nexus: "indirect — targets individual cryptocurrency holders rather than institutions, but the RDP-hijack and hidden-browser-extension techniques are relevant to any Windows endpoint fleet"
+    sector: "finance"
+    cves: []
+    techniques: [T1204.002, T1055.001, T1176, T1548.002, T1574.001, T1021.001, T1112, T1053.005, T1027.002, T1552.001, T1056.001, T1113, T1071.001, T1572]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:okobot-tookps-crypto-theft-framework", type: campaign, name: "OkoBot", aliases: ["TookPS (downloader stage)"],
+          summary: "Kaspersky GReAT-tracked evolution of the TookPS downloader campaign into a 20+-module cryptocurrency-theft delivery framework (SSH-tunnel orchestration, hidden Chromium extensions, RDP-session hijacking, hardware-wallet seed-phrase phishing via SeedHunter); active since April 2025, hundreds of victims in 25+ countries as of 2026-07-15 (Kaspersky Securelist)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This new malicious campaign has multiple stages that cover the full attack lifecycle, from initial infection to persistence and data exfiltration... We dubbed this updated TookPS campaign \"OkoBot\"."
+        attribution: "Kaspersky (Securelist / GReAT)"
+        source_url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/"
+      - quote: "In total, the framework includes more than 20 malicious payloads and implants, covering a wide variety of functions. At the time of writing, the threat remains active."
+        attribution: "Kaspersky (Securelist / GReAT)"
+        source_url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/"
+      - quote: "At the time of writing, we have detected hundreds of victims of the OkoBot campaign in more than 25 countries, with the largest proportion of attacked end users found in Brazil, Vietnam, Canada, Mexico, and Türkiye."
+        attribution: "Kaspersky (Securelist / GReAT)"
+        source_url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/"
+    extended_notes: >
+      Triage-relevant discriminator: legitimate RDP administration does not replace termsrv.dll or create a
+      scheduled task named "Apple Sync" that re-establishes an outbound SSH tunnel hourly — that combination
+      (file-integrity change on termsrv.dll + an unexpected recurring scheduled task opening outbound SSH) is a
+      strong, low-false-positive signal distinct from normal remote-support tooling. The hidden-extension technique
+      (hooking OnBrowserAdded to install .crx files outside the default extensions directory and suppress
+      extension-management UI callbacks) is also a reusable hunt pattern: any Chromium extension living outside the
+      default per-profile Extensions directory, invisible in chrome://extensions, is anomalous by construction.
+    classification:
+      reliability: B
+      credibility: 2
+
+  - title: "AsyncAPI npm compromise: Microsoft's forensic timeline resolves the M-RED-TEAM/miasma-train-p1 identity ambiguity and shows the payload published with valid npm OIDC provenance"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/07/15/unpacking-asyncapi-npm-supply-chain-compromise-import-time-payload-delivery/", publisher: "Microsoft Threat Intelligence", date: "2026-07-16", role: primary }
+      - { url: "https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-15", role: corroborating }
+    discovery_trace: >
+      first seen at: general research-lab sweep of https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/
+      (listing) → primary: Microsoft Threat Intelligence, URL
+      https://www.microsoft.com/en-us/security/blog/2026/07/15/unpacking-asyncapi-npm-supply-chain-compromise-import-time-payload-delivery/
+      (full write-up fetched via jina reader); independently corroborated via Unit 42's evergreen npm-threat-landscape
+      tracker (updated 2026-07-15), URL https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/
+    summary: >
+      This is a same-incident technical delta on the already-published 2026-07-14 AsyncAPI npm supply-chain
+      compromise entry (Wiz/SafeDep primary sourcing). Microsoft Threat Intelligence's own forensic timeline adds
+      material new detail: the initial "pwn request" (PR #2155, commit 47be388, 05:08:58 UTC) targeted the
+      repository's docs-preview Netlify workflow — not the release workflow — via a pull_request_target
+      misconfiguration that ran attacker PR content with the base repository's privileged GITHUB_TOKEN and
+      persisted checkout credentials; the submitted content fetched and evaluated JavaScript from a rentry.co paste.
+      Once the attacker held push access as the asyncapi-bot service account, no npm-token theft was needed:
+      commit 3eab3ec (06:58:42 UTC) pushed directly to the next branch, triggering the project's own legitimate
+      release-with-changesets.yml workflow, which published the malicious packages via npm trusted publishing over
+      GitHub OIDC — meaning the five trojanized versions carry cryptographically valid provenance attestations that
+      correctly identify the real repository, commit and workflow, even though the triggering commit was
+      unauthorized. A parallel compromise chain hit asyncapi/spec-json-schemas the same way roughly an hour later.
+      Microsoft's stage breakdown (Stage 0: no npm lifecycle hooks declared, defeating postinstall-hook-focused
+      scanners; Stage 1: import-time trigger embedded in one file per package — index.js for specs,
+      validator.js/utils.js/ErrorHandling.js for the generator family; Stage 1b: IPFS content-identifier fetch of
+      sync.js; Stage 2: an ~8.2MB bundle unwrapped via three static-key cryptographic layers, HKDF-SHA256 →
+      AES-256-GCM → ROT-94 → eval(); Stage 3: the "Miasma" runtime) resolves the identifier ambiguity in the original
+      reporting — Microsoft recovered all three self-identifying strings from the same binary: M-RED-TEAM v6.4,
+      miasma-train-p1, and miasma-test-org — confirming Wiz's and SafeDep's differing labels both describe the same
+      framework rather than competing forks. In this build, only persistence and C2 were active; six additional
+      modules (credential harvest, encrypted exfiltration, supply-chain propagation, metamorphic generation,
+      AI-tool poisoning, and sandbox evasion) were present but disabled, with the credential-harvest module alone
+      targeting 100+ named environment-variable secrets (cloud, CI/CD, container/Kubernetes, secrets-manager and
+      AI-platform API keys) plus on-disk credential files. Unit 42's independent campaign tracker corroborates the
+      timeline and frames the incident as the third in an April-to-July 2026 lineage of Miasma-descended npm
+      compromises (April "Shai-Hulud: The Third Coming," April/May Mini Shai-Hulud/TeamPCP waves, June
+      @redhat-cloud-services), all sharing wormable-propagation, CI/CD-persistence and multi-stage sleeper-dependency
+      TTPs.
+    region_nexus: "global software-supply-chain exposure — same nexus as the original 2026-07-14 entry"
+    primary_sector_nexus: "indirect — CI/CD/npm-ecosystem exposure affecting any organization building on AsyncAPI-family tooling, including public-sector technology suppliers"
+    sector: "technology, public-sector, finance"
+    cves: []
+    techniques: [T1195.002, T1528, T1059.007, T1105, T1543.002, T1027, T1071.001, T1102.001]
+    affected_products: ["@asyncapi/generator", "@asyncapi/generator-helpers", "@asyncapi/generator-components", "@asyncapi/specs"]
+    entity_keys: ["incident:asyncapi-npm-github-actions-supply-chain-compromise-2026-07", "tool:m-red-team-malware-framework"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-14/asyncapi-npm-supply-chain-compromise-github-actions"
+    evidence:
+      - quote: "All five malicious versions were published through npm trusted publishing using GitHub OIDC and carried valid provenance attestations. The attestations accurately identified the legitimate repositories, commits, and workflows that created the packages, even though the triggering commits were unauthorized."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/15/unpacking-asyncapi-npm-supply-chain-compromise-import-time-payload-delivery/"
+      - quote: "Recovered identifiers: M-RED-TEAM v6.4, miasma-train-p1, and miasma-test-org."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/15/unpacking-asyncapi-npm-supply-chain-compromise-import-time-payload-delivery/"
+      - quote: "Do not rely on npm install –ignore-scripts as a mitigation; this campaign executes when the module is imported, not through a lifecycle hook."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/15/unpacking-asyncapi-npm-supply-chain-compromise-import-time-payload-delivery/"
+      - quote: "The campaign calls itself miasma-train-p1, and the payload appears to be a descendant of the same Miasma RAT deployed in the June 2026 Red Hat supply chain operation."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/"
+    extended_notes: >
+      The load-bearing new fact for detection engineers and supply-chain-security reviewers is the provenance-bypass
+      mechanism: SLSA/npm-OIDC provenance attestation verifies WHICH pipeline built an artifact, not whether the
+      commit that triggered the pipeline was authorized. A CI/CD pipeline-integrity check (branch-protection
+      coverage on every branch capable of triggering a publish workflow, not just the default branch) is the
+      control gap this incident demonstrates — provenance verification alone would not have caught it. Microsoft
+      also published concrete Defender XDR detection names (Trojan:Script/Supychain.A, Trojan:JS/MiasmStealer.SC,
+      Trojan:JS/SpawnLoader.MKV!MTB) and advanced-hunting KQL for the persistence-drop/detached-spawn pattern.
+    classification:
+      reliability: B
+      credibility: 1
+candidate_sources: []
+coverage_gaps:
+  - source_id: intel471
+    reason: "RSS feed (https://www.intel471.com/blog/rss.xml) returned 0 items via jina fallback; direct WebFetch of the blog listing page returned only navigation/CTA content with no post titles or dates. Could not confirm in-window coverage from this source this run — recipe likely needs a different feed path or a jina fetch of a specific category page."
+  - source_id: cloudflare-cf1
+    reason: "Tag listing page (blog.cloudflare.com/tag/cloudforce-one/) returned only posts through 2026-06-09; no in-window Cloudforce One content this run (quiet period, not a fetch failure)."
+  - source_id: kela-cyber
+    reason: "Blog reachable; latest posts (through 2026-07-14) were listicle/marketing-style content (dark-web search-engine and Telegram-channel roundups) rather than substantive primary technical research meeting the S3 bar — none included."
+  - source_id: group-ib
+    reason: "Blog reachable via direct WebFetch (no bridge/jina needed this run); latest post 2026-07-14, none within the 26h primary window and none carrying a materially fresh technical angle over prior coverage."
+  - source_id: depthfirst
+    reason: "Landing page surfaced only three static 'AI breakthrough research' teaser links with no dates; could not confirm any in-window publication from this source this run."
