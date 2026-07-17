@@ -1,0 +1,142 @@
+domain: S4
+run_id: "2026-07-17T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-17T04:12:40Z"
+ended_at: "2026-07-17T04:24:05Z"
+duration_seconds: 685
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 6
+  bridge_fetches: 14
+
+items:
+  - title: "Garante Privacy fines Wind Tre EUR 1.7M over a vishing-enabled API-enumeration breach that exposed 365,048 Italian telco customers"
+    sources:
+      - { url: "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10272004", publisher: "Garante per la protezione dei dati personali (Italian DPA) — Newsletter n.549", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10263796", publisher: "Garante per la protezione dei dati personali — Provvedimento n.348 del 14 maggio 2026", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.ansa.it/english/news/business/2026/07/16/privacy-watchdog-fines-wind-tre-1.7-million_43961a24-11d7-4652-9659-f09f4cd78659.html", publisher: "ANSA (English)", date: "2026-07-16", role: "corroborating" }
+    discovery_trace: >
+      first seen at: databreaches-net, URL https://databreaches.net/feed/ (RSS item "Italy fines WINDTRE €1.7 million over data breaches", link https://wkzo.com/2026/07/16/italy-fines-windtre-e1-7-million-over-data-breaches/)
+      → WebSearch ("Garante privacy WINDTRE multa 1.7 milioni violazione dati luglio 2026")
+      → pivot: Garante Privacy Newsletter listing page, URL https://www.garanteprivacy.it/home/stampa-comunicazione/newsletter (confirmed the 16/07/2026 newsletter entry)
+      → primary: Garante Privacy Newsletter n.549, URL https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10272004
+      → primary decision text: Garante Privacy Provvedimento n.348 del 14 maggio 2026, URL https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10263796
+      → corroborating: ANSA English, URL https://www.ansa.it/english/news/business/2026/07/16/privacy-watchdog-fines-wind-tre-1.7-million_43961a24-11d7-4652-9659-f09f4cd78659.html
+    summary: |
+      Italy's Garante per la protezione dei dati personali published (16 July 2026, Newsletter n.549) its 14 May 2026 decision (Provvedimento n.348, doc. web n.10263796) fining Wind Tre S.p.A. EUR 1,715,600 over two 2025 breaches of a customer-facing "Web Application XX." The decision's fact section gives an unusually complete technical account for a DPA order. Initial access was voice social engineering (T1566.004): attackers phoned staff at two retail points-of-sale, posed as internal technical-support technicians, and talked the operators into granting remote access to the POS device. This let the attackers obtain the device's installed client digital certificate plus login credentials — reportedly stored in cleartext on the desktop or recoverable from the browser rather than held in the OS certificate store (T1552 Unsecured Credentials) — and use them as valid multi-factor-authenticated access to the web application (T1078 Valid Accounts). In the first incident the stolen access was used for 66 targeted lookups against the customer base, exposing ~23 customers. In the second, days later, the attackers pivoted from the primary (protected) search API to an unprotected secondary API invoked by the same search function, and ran ~2,000,000 requests sequentially incrementing the customerId parameter — an IDOR/BOLA-style enumeration with no rate-limiting or CAPTCHA on that endpoint (T1213 Data from Information Repositories) — exfiltrating names and contact details for 365,048 customers, and for a 41,359-customer subset also payment-instrument data (postal payment-slip references, IBANs, and credit-card PAN with only the last digits and expiry unmasked). The Garante's legal finding cites GDPR Art. 5(1)(f) (integrity/confidentiality) and Art. 32(1)(b) (security of processing), specifically calling out inadequate digital-certificate/key custody (certs should live in encrypted stores, KMS or HSM, not exportable cleartext) and an incomplete API-security posture — Wind Tre's own vulnerability-assessment/pen-test program had not covered the secondary, enumeration-vulnerable endpoints, a gap the order maps explicitly to OWASP API Security Top 10 categories (missing object-level authorization limits / missing resource-consumption limits). Remediation ordered: encrypted/HSM-backed certificate custody, mandatory password-manager use for POS credential storage, and formalized certificate/credential lifecycle management (issue/distribute/revoke/renew). No named threat actor/cluster — the perpetrators remain unidentified ("ignoti").
+    region_nexus: "Italy (EU) — GDPR enforcement by a national DPA under the deployment's coverage focus; the attack technique (helpdesk/retail-staff vishing to obtain a client cert, then enumeration abuse of an unprotected secondary API) is directly transferable to any Swiss/EU telco, utility or public-sector organization with a POS/field-agent access model and a customer-lookup web application."
+    primary_sector_nexus: "indirect"
+    sector: "telco"
+    cves: []
+    techniques: [T1566.004, T1078, T1552, T1213]
+    affected_products: ["Wind Tre customer-facing web application (unnamed, internally referred to as \"XX\" in the decision)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:wind-tre-2026-vishing-api-enumeration-breach", type: incident, name: "Wind Tre vishing + API-enumeration breach (2025)",
+          aliases: [], summary: "Two February 2025 breaches of Wind Tre's retail-facing web application: retail POS staff were vished into granting remote access, letting attackers exfiltrate a stolen digital certificate and credentials, then enumerate an unprotected secondary customer-lookup API (~2M sequential customerId requests) to exfiltrate 365,048 customers' data, including payment instrument data for 41,359 of them. Garante Privacy fined Wind Tre EUR 1,715,600 (decision 14 May 2026, published 16 July 2026)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "gli hacker, fingendosi tecnici dell'assistenza, hanno convinto gli operatori di due punti vendita a consentire l'accesso ai sistemi aziendali"
+        attribution: "Garante Privacy (Provvedimento n.348, 2026-05-14, published 2026-07-16) — \"the hackers, posing as support technicians, convinced operators at two retail points of sale to allow access to company systems\""
+        source_url: "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10272004"
+      - quote: "gli attaccanti sono riusciti ad eseguire circa 2 milioni di richieste totali seguendo una logica di enumeration, ovvero andando ad aumentare progressivamente l'identificativo del codice cliente (c.d. \"customerId\") violando i dati personali di 365.048 clienti"
+        attribution: "Garante Privacy decision text — \"the attackers managed to execute about 2 million total requests following an enumeration logic, i.e. progressively incrementing the customer code identifier ('customerId'), compromising the personal data of 365,048 customers\""
+        source_url: "https://www.garanteprivacy.it/home/docweb/-/docweb-display/docweb/10263796"
+      - quote: "serious security deficiencies in its company systems ... two unauthorized accesses and the exfiltration of the personal data of over 365,000 customers"
+        attribution: "ANSA (English), 2026-07-16"
+        source_url: "https://www.ansa.it/english/news/business/2026/07/16/privacy-watchdog-fines-wind-tre-1.7-million_43961a24-11d7-4652-9659-f09f4cd78659.html"
+    extended_notes: |
+      Root-cause detail worth carrying into the entry body: Wind Tre argued in its defense that its API design already followed OWASP API Security Top 10 practices and that the events were unavoidable human error, not a systemic flaw; the Garante rejected this, finding the secondary/enumeration-reachable endpoints were "reasonably identifiable" by a properly scoped vulnerability assessment and penetration test aimed specifically at the API surface (not just the primary/protected endpoints) — a good detection/hardening talking point: security testing that only exercises a web app's primary documented interfaces will miss the secondary endpoints an attacker discovers by probing the app's own client behaviour. Wind Tre's post-incident hardening (rate-limiting on at-risk APIs, lowered CAPTCHA thresholds, WAF blocking of automation user-agents, mandatory OTP second factor) is a usable hardening checklist for any org running a similar retail/field-access model.
+
+  - title: "Scattered Spider duo sentenced to 5.5 years each for the 2024 Transport for London intrusion — helpdesk vishing and MFA-reset social engineering detailed in court"
+    sources:
+      - { url: "https://www.nationalcrimeagency.gov.uk/news/two-sentenced-for-hacking-transport-for-london-in-uk-s-biggest-ever-cyber-crime-case", publisher: "UK National Crime Agency (NCA)", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.cps.gov.uk/national-news/news/cyberhackers-who-targeted-tfl-jailed-more-five-years-each", publisher: "UK Crown Prosecution Service (CPS)", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.theregister.com/cyber-crime/2026/07/16/brit-scattered-spider-duo-handed-tickets-to-prison-over-transport-for-london-attack/5272446", publisher: "The Register", date: "2026-07-16", role: "corroborating" }
+    discovery_trace: >
+      first seen at: WebSearch ("Thalha Jubair Owen Flowers sentenced Transport for London hacking prison")
+      → primary: National Crime Agency, URL https://www.nationalcrimeagency.gov.uk/news/two-sentenced-for-hacking-transport-for-london-in-uk-s-biggest-ever-cyber-crime-case
+      → primary: Crown Prosecution Service, URL https://www.cps.gov.uk/national-news/news/cyberhackers-who-targeted-tfl-jailed-more-five-years-each
+      → corroborating: The Register, URL https://www.theregister.com/cyber-crime/2026/07/16/brit-scattered-spider-duo-handed-tickets-to-prison-over-transport-for-london-attack/5272446
+    summary: |
+      Owen Flowers (18) and Thalha Jubair (20), both identified by the NCA and CPS as leading Scattered Spider members, were sentenced at Woolwich Crown Court on 16 July 2026 to five years and six months' imprisonment each for the August-September 2024 intrusion into Transport for London (TfL), the largest cybercrime prosecution in UK legal history. Both pleaded guilty under Computer Misuse Act 1990 Section 3ZA (reckless conduct causing significant risk of serious damage) — only the second conviction ever under that section. Court evidence (per The Register and CPS) laid out the intrusion chain in detail: the pair purchased partial TfL employee credentials from criminal forums (T1589.001 Gather Victim Identity Information: Credentials), then impersonated a TfL employee and vished a TfL helpdesk worker into resetting the target account's password and, over multiple attempts, its 2FA (T1566.004 Spearphishing Voice; T1098 Account Manipulation), before using the reset credentials for initial and sustained access (T1078 Valid Accounts). The pair held network access from 31 August to 3 September 2024, using that window to escalate privileges and reach internal systems, ultimately accessing data on what TfL initially believed was ~5,000 people but which TfL confirmed in March 2026 was actually ~7 million users. Business impact: 148 systems rendered inoperable, ~27,000-28,000 employees forced to reset passwords, Dial-a-Ride booking/Oyster refunds/contactless journey-history/photo-travelcard issuance disrupted for months (photocard issuance was not restored until 4 December 2024), and GBP 29 million in remediation cost — while core train/bus operations were not affected. The NCA and CPS state the group intended or was reckless as to risk of serious harm to critical UK infrastructure; CPS quotes prosecutors as noting Flowers threatened to "lock the systems down" despite awareness of potential fatalities, the basis for the Section 3ZA "significant risk of serious damage" charge. Jubair separately faces unsealed US federal charges alleging Scattered Spider-role compromise of 120 networks across 47 US entities (2022-2025), including critical national infrastructure and the federal court system, tied to over USD 115 million in ransom payments; both defendants have prior convictions (Jubair: 22 priors including Lapsus$-era BT/EE and Nvidia intrusions). NCA states the arrests "materially degraded" Scattered Spider's operational capability but declines to confirm any link between the two convicted individuals and other Scattered Spider-attributed attacks (e.g. MGM Resorts 2023, 2025 UK retail wave).
+    region_nexus: "United Kingdom — Transport for London is core public transport critical infrastructure; the helpdesk-vishing/MFA-reset TTP chain is a live, globally recurring Scattered Spider signature directly transferable to any Swiss/EU public-sector or CI operator running an internal IT helpdesk with password/MFA-reset authority."
+    primary_sector_nexus: "indirect"
+    sector: "transport, public-sector"
+    cves: []
+    techniques: [T1589.001, T1566.004, T1098, T1078]
+    affected_products: []
+    entity_keys: ["actor:scattered-spider", "incident:tfl-scattered-spider-2024"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-06-23/two-scattered-spider-members-plead-guilty-over-the-2024-tran"
+    evidence:
+      - quote: "148 systems became inoperable, including critical ones that required significant manual workarounds."
+        attribution: "National Crime Agency, 2026-07-16"
+        source_url: "https://www.nationalcrimeagency.gov.uk/news/two-sentenced-for-hacking-transport-for-london-in-uk-s-biggest-ever-cyber-crime-case"
+      - quote: "The attack on Transport for London caused significant financial harm and disruption to a vital part of the UK's critical infrastructure."
+        attribution: "NCA Deputy Director Paul Foster, National Cyber Crime Unit, 2026-07-16"
+        source_url: "https://www.nationalcrimeagency.gov.uk/news/two-sentenced-for-hacking-transport-for-london-in-uk-s-biggest-ever-cyber-crime-case"
+      - quote: "Flowers and Jubair purchased partial TfL credentials from \"well-known criminal forums\" and used those to reset the 2FA on employee accounts, a process that took multiple attempts. Woolwich Crown Court heard that the pair impersonated an employee and socially engineered a TfL helpdesk worker into resetting the password for their account."
+        attribution: "The Register, 2026-07-16"
+        source_url: "https://www.theregister.com/cyber-crime/2026/07/16/brit-scattered-spider-duo-handed-tickets-to-prison-over-transport-for-london-attack/5272446"
+    extended_notes: |
+      This is a materially richer follow-up to the 2026-06-23 guilty-plea entry (entities/registry.yaml key incident:tfl-scattered-spider-2024, actor:scattered-spider) — the guilty-plea coverage did not carry the helpdesk-vishing/credential-purchase mechanics; this sentencing coverage does, sourced to on-the-record court evidence via CPS/NCA/Register. Recommend the composer treat this as the technical-detail delta rather than a bare re-report of "they were sentenced." Detection/hardening angle for the brief: the compromise chain never touched a technical vulnerability — the single control point was the helpdesk's password/MFA-reset process. Defenders should treat helpdesk-initiated credential and MFA resets as a distinct, monitorable event class (who requested it, what verification was performed, time-to-privileged-action afterward) rather than an implicitly trusted administrative action.
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No supplier watchlist configured for this deployment (org-profile.yaml lists none) — sweep is a no-op per instructions; no items were included or excluded on this basis."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ico-uk
+    reason: "ICO enforcement sitemap listing (216 entries) shows no new entries with lastmod in the 26h window — latest lastmod dates back to 2026-07-08 for older 2026 cases. No in-window ICO enforcement action to report."
+  - source_id: cnil-fr
+    reason: "CNIL RSS (fr) shows no breach/enforcement items in the 26h window — all recent items are guidance/webinar/consultation content (EDPB anonymisation & web-scraping guidelines, connected-vehicle location-data recommendation, etc.), none breach-specific."
+  - source_id: us-treasury-ofac
+    reason: "OFAC Recent Actions listing (fetched via jina reader after a WebFetch return of unparsed raw HTML) shows the newest cyber-related designation dated 2026-07-13 (already covered in prior_coverage as the 1VPNS sanctions item) — nothing new inside the 26h window."
+  - source_id: sec-disclosures-edgar
+    reason: "EDGAR full-text search for 8-K filings citing \"Item 1.05\" (trailing 14 days) returned only two 8-K/A amendments from River Financial Corp (filed 2026-07-06 and 2026-07-10) — both outside the 26h window and both amendments to an already-older filing, not new disclosures. No fresh Item 1.05 filing in window. (Note: Coca-Cola's 2026-07-16 8-K on the Fairlife ransomware incident was filed under Item 8.01 \"Other Events\", not Item 1.05 — see borderline-drop note below.)"
+  - source_id: databreaches-net
+    reason: "The one candidate follow-up item found via this feed (\"The Breach That Won't End\" — Instructure/Canvas vendor-trust update, published 2026-07-16) could not be fetched: direct WebFetch returned HTTP 403, and both the jina reader and the bridge 'url' transport (which itself falls back to jina) also failed with an upstream block/challenge. Logged in Fetch failures below."
+
+# Borderline items considered and NOT included as findings (recorded per PD-8/relevance-gate discipline):
+# - Coca-Cola/Fairlife ransomware production halt (BleepingComputer, 2026-07-16; SEC 8-K Item 8.01,
+#   https://www.sec.gov/Archives/edgar/data/21344/000162828026048466/ko-20260716.htm): US-only dairy
+#   production impact, no ransomware group has claimed responsibility, no data-theft confirmed, sector
+#   (food/beverage manufacturing) outside the org's sector lens, no Swiss/EU nexus stated. Global-brand
+#   name recognition alone does not meet the (a)-(d) bar absent more technical/nexus substance — dropped,
+#   not force-fit as borderline.
+# - 23andMe USD 18M multistate-AG settlement (BleepingComputer, 2026-07-16): settlement of an already
+#   long-covered 2023 credential-stuffing breach; 43 US state AGs only, no new technical facts beyond what
+#   was already public (lack of MFA/password-blocklisting/rate-limiting was already known from the prior UK
+#   ICO fine); no Swiss/EU nexus in this specific settlement. Dropped as a repeat/no-novelty item.
+# - AiLock leak-site claim against Ferrovial (ES) and "The Gentlemen" leak-site claim against
+#   Landesbibliothek Coburg (DE), both discovered via the ransomware.live public leak-site tracker
+#   (https://api.ransomware.live/v2/recentvictims, fetched 2026-07-17): neither has a victim statement or
+#   high-reliability (Admiralty A/B) journalism corroboration as of this run (WebSearch for both returned
+#   only the ransomware.live/RansomLook listing itself and generic group profiles, no independent reporting).
+#   Per the fake-news gate, unconfirmed leak-site claims do not qualify — both dropped, not published as
+#   speculative items. Worth a follow-up check in a later run if either group posts proof-of-data or a
+#   victim discloses.
+
+fetch_failures:
+  - id: databreaches-net
+    url_tried: "https://databreaches.net/2026/07/16/the-breach-that-wont-end-an-update-on-canvas-and-how-they-created-an-edtechs-vendor-trust-problem/"
+    fetch_method: webfetch
+    status_code: 403
+    error_class: transport-403
+    error_message: "The server returned HTTP 403 Forbidden."
+    attempted_methods: [webfetch, "bridge:jina", "bridge:url"]
+    mitigation_applied: "none — coverage gap. The underlying breach (Instructure/Canvas, ransom paid ~May 2026) is US-higher-ed-focused with no stated Swiss/EU nexus in the RSS summary available, so even had the fetch succeeded this item's inclusion would likely have been borderline at best."
+    covered_anyway: false

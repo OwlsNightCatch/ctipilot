@@ -1,0 +1,171 @@
+domain: S3
+run_id: "2026-07-17T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-17T04:12:26Z"
+ended_at: "2026-07-17T04:24:40Z"
+duration_seconds: 734
+self_telemetry:
+  webfetch_calls: 33
+  websearch_calls: 9
+  bridge_fetches: 7
+
+items:
+  - title: "Cisco Talos: UAT-11795 deploys a novel Python RAT (\"Starland\") and a bespoke in-memory PowerShell C2 implant (\"WLDR\"), with blockchain dead-drop C2 resolution"
+    sources:
+      - { url: "https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/", publisher: "Cisco Talos", date: "2026-07-16", role: "primary" }
+    discovery_trace: "first seen at: direct sweep of blog.talosintelligence.com, URL https://blog.talosintelligence.com/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/ (no pivot needed; full body confirmed via jina reader, Published Time 2026-07-16T10:00:01Z)"
+    summary: |
+      Cisco Talos disclosed UAT-11795, a Russian-speaking, financially motivated actor active since at least June 2025 against victims chiefly in the U.S., with lesser impact in Germany, Romania and Venezuela. Initial access is a ClickFix lure that runs a clipboard-pasted command invoking mshta.exe to fetch a weaponized HTA; the HTA's embedded VBScript drops a batch file that stages a trojanized installer (observed disguising MobaXterm, Cisco WebEx, Zoom, DBeaver Community Edition and the FACEIT gaming client) and sets HKCU\Software\Microsoft\Windows\CurrentVersion\Run\MyApp -> mshta.exe for re-execution at logon. The NSIS-packaged installer bundles pythonw.exe plus a compiled Python loader disguised as LICENSE.txt; the loader XOR-decrypts (key 0xC6) and executes "Starland RAT" entirely in memory. Starland pre-declares Win32 API signatures via ctypes (VirtualAllocEx, WriteProcessMemory, CreateRemoteThread, QueueUserAPC), checks for sandbox usernames/hostnames (incl. WDAGUtilityAccount, Cuckoo, Any.Run) and a Downloads Zone.Identifier ADS before proceeding, persists via a scheduled task named PythonLauncher-{3 random chars} (AtLogOn, RunLevel Highest) plus a Startup-folder LNK, harvests host recon (HWID from the C: volume serial, RAM, AV product, AD domain membership via whoami/systeminfo/net user/nltest), enumerates 40+ desktop and browser-extension cryptocurrency wallets, and beacons a Telegram bot with victim fingerprint/wallet inventory before registering to its primary C2. If primary C2 registration fails, Starland calls the Polygon smart contract 0x6ae382ed2154cc84c6672e4e908cd2c69c1b35ba via eth_call/JSON-RPC and XOR-decrypts (key "$m7*rYpry3") the returned string to recover a fallback C2 domain — a blockchain dead-drop resolver pattern. Starland's C2 can direct it to run shell/PowerShell commands, or fetch 32/64-bit shellcode via APC-based process injection that AMSI/ETW-patches (hash-resolved AmsiScanBuffer/EtwEventWrite overwritten in memory, with a VirtualProtect fallback) before reflectively loading one of two named secondary implants: CastleStealer (.NET credential/crypto/Telegram/Discord stealer, DPAPI + AES-GCM browser-credential decryption) via the x64 path, or a Remcos RAT variant via the x32 path. Separately, Starland has also been observed shell-executing a curl download of an undocumented, bespoke PowerShell C2 framework the actor's own scripts label "WLDR": a multi-stage PowerShell stager/downloader/agent chain, HWID-bound to the C: volume serial number, deriving a 64-byte AES key via a hardcoded password and a server-supplied salt, running encrypted HTTP beaconing (Chrome-124 User-Agent spoofing) every 10 seconds, and executing operator PowerShell through a 10-thread RunspacePool that streams stdout/stderr/warning back to the C2 in real time (with a background-job fallback for short batch tasks). A Russian-language VBScript developer comment confirms the actor's likely origin.
+    region_nexus: "primary victimology United States; secondary impact in Germany (EU) and Romania (EU) per passive-DNS C2 resolution data — direct EU footprint"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (opportunistic, volume-driven distribution across IT-admin, developer-tooling, enterprise-collaboration and consumer-gaming software categories)"
+    cves: []
+    techniques: [T1204.004, T1204.002, T1036, T1218.005, T1059.006, T1059.001, T1053.005, T1547.001, T1055, T1620, T1685, T1102.001, T1082]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uat-11795", type: actor, name: "UAT-11795", aliases: [],
+          summary: "Russian-speaking, financially motivated threat actor active since at least June 2025, distributing trojanized installers (MobaXterm, WebEx, Zoom, DBeaver, FACEIT) via ClickFix lures to deploy the Python-based Starland RAT and a bespoke PowerShell C2 implant tracked as WLDR, with CastleStealer and Remcos RAT as alternative payloads (Cisco Talos, 2026-07-16)." }
+      - { key: "tool:starland-rat", type: tool, name: "Starland RAT", aliases: [],
+          summary: "Python-based RAT deployed by UAT-11795 via trojanized NSIS installers; steals browser/crypto-wallet data, persists via scheduled task, and resolves a fallback C2 via a Polygon blockchain smart contract dead-drop (Cisco Talos, 2026-07-16)." }
+      - { key: "tool:wldr-c2-implant", type: tool, name: "WLDR", aliases: ["WLDR agent", "WLDR C2"],
+          summary: "Bespoke, undocumented PowerShell-based in-memory C2 implant deployed by UAT-11795 via Starland RAT's shell-command capability; features AES-256-CBC/HMAC-SHA256 encrypted beaconing, HWID binding and a multi-threaded RunspacePool task-execution engine (Cisco Talos, 2026-07-16)." }
+      - { key: "tool:castlestealer", type: tool, name: "CastleStealer", aliases: [],
+          summary: ".NET-based infostealer/credential harvester (Chromium/Firefox DPAPI + AES-GCM decryption, crypto-wallet extensions, Discord/Telegram/Steam data) delivered by UAT-11795 as an x64 shellcode payload via Starland RAT (Cisco Talos, 2026-07-16)." }
+    relation_suggestions:
+      - { subject: "actor:uat-11795", object: "tool:starland-rat", basis: "Talos: \"Talos has discovered that the actor in this campaign delivers a Python-based remote access tool (RAT) that we track as 'Starland RAT'\" (Cisco Talos, 2026-07-16)" }
+      - { subject: "actor:uat-11795", object: "tool:wldr-c2-implant", basis: "Talos: the actor executed a Windows shell command through Starland RAT to download and execute the WLDR C2 framework (Cisco Talos, 2026-07-16)" }
+      - { subject: "actor:uat-11795", object: "tool:castlestealer", basis: "Talos: \"the threat actor can deliver CastleStealer implant through the x64 shellcode\" (Cisco Talos, 2026-07-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cisco Talos is disclosing UAT-11795, a sophisticated, Russian-speaking, financially motivated adversary that has been conducting a malicious campaign targeting users in the U.S. and Europe since at least June 2025."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/"
+      - quote: "The actor in this campaign has also implemented C2 infrastructure resilience by using a Polygon smart contract (\"0x6ae382ed2154cc84c6672e4e908cd2c69c1b35ba\"), which stores an XOR-encrypted fallback C2 domain that is retrievable via a public JSON-RPC call."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/"
+      - quote: "Talos identified a Russian-language developer comment left in the VBScript (\"Добавление команды в автозапуск для текущего пользователя\"), indicating that a Russian-speaking actor is conducting this campaign."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/uat-11795-deploys-novel-starland-rat-and-bespoke-wldr-c2-implant-in-financially-motivated-campaign/"
+    extended_notes: |
+      Triage-relevant discriminator: the persistence scheduled-task name follows the fixed pattern "PythonLauncher-{3 random chars}" and the Startup LNK targets pythonw.exe with argument LICENSE.txt — both are unusual for legitimate Python tooling and are strong, low-false-positive hunt anchors (New-ScheduledTask calls with that name pattern; pythonw.exe launched with a "LICENSE.txt" argument from a Startup shortcut). Telemetry class: process-creation events with command-line capture (mshta.exe spawned from a ClickFix-style parent chain; NSIS installer executing pythonw.exe against a non-.py "LICENSE.txt" argument), scheduled-task creation events, and outbound HTTPS/JSON-RPC to Polygon RPC endpoints from a non-browser process as a dead-drop-resolver indicator. Cisco published ClamAV signatures (e.g. Win.Malware.Starland, Ps1.Trojan.WLDRAgent) and Snort SIDs 66787-66790 and 301580.
+
+  - title: "Kaspersky: \"HelloNet\" campaign persists inside the ViPNet secure-network update system via DLL sideloading, hindering security tools through raw AFD IOCTL interception"
+    sources:
+      - { url: "https://securelist.com/hellonet-vipnet/120700/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-16", role: "primary" }
+    discovery_trace: "first seen at: direct sweep of securelist.com, URL https://securelist.com/ → primary: Kaspersky Securelist, URL https://securelist.com/hellonet-vipnet/120700/ (no pivot needed; full body confirmed via jina reader, page carries a 2026-07-16 update log for SIEM/MDR/KEDR/KATA detection additions)"
+    summary: |
+      Kaspersky's GReAT team disclosed "HelloNet", an active APT campaign (started at least May 2026, ongoing at publication) that abuses the update mechanism of ViPNet — a Russian GOST-certified secure-networking software suite — to persist inside targeted Russian government, energy, transport, education, logistics and industrial organizations. The attackers drop a malicious wtsapi32.dll into C:\Program Files (x86)\InfoTeCS\VIPNet Update System, a directory the legitimate, auto-launched update executable itcsrvup64.exe is susceptible to loading via DLL sideloading. This loader ("HelloInjector") injects into svchost.exe via NtWriteVirtualMemory/NtCreateThreadEx after verifying the target process both matches the svchost.exe name and carries "netsvcs" on its command line, then loads a second-stage payload ("HelloProxy") stored in plaintext in its own body. HelloProxy uses the Microsoft Detours library to hook NtDeviceIoControlFile, closesocket and shutdown, intercepting the raw Ancillary Function Driver IOCTL codes AFD_RECV (0x12017, incoming-traffic processing) and AFD_GET_TDI_HANDLES (0x12037, socket registration) — a technique Kaspersky states "allows the malware to hinder security solutions operating in user mode for filtering network connections" — while listening on ports 5003/5060 and gating command traffic behind a two-byte (0x0502) plus fixed-string ("ASDFASFSAFASDF") handshake, then acting as either a raw traffic proxy or a loader for further in-memory modules. Two such modules were recovered from svchost.exe: "HelloExecutor" (arbitrary shell-command execution, used to run recon commands including query user, ipconfig /all, net user/group /do, and directory listings of ViPNet Administrator/Client export paths) and "HelloCleaner" (deletes ViPNet log files to hide attacker activity). On at least one host the operators launched a renamed, legitimate PuTTY/Plink binary (as C:\users\public\music\frontpage.exe) to open an SSH-based reverse tunnel (-R 8443:<redacted>:5003) to their C2 at 5.39.253[.]206. A separate, Rust-written backdoor ("HelloBackdoor") was also found, listening on TCP/443 and gated by the string "47c6235b4d2611184" (the second half of the MD5 hash of "hello\n"), supporting file upload/download and self-stop commands. Attribution is low-confidence to an unknown Chinese-speaking APT group, based only on an unused HTTP request string referencing news.sina.com and Rust crates fetched from the mirrors.ustc.edu.cn mirror during compilation — Kaspersky explicitly flags both as potentially unintentional artifacts or false flags. Kaspersky notes this is not the first time ViPNet-connected systems have been targeted, citing its own 2025 report on a backdoor mimicking ViPNet updates.
+    region_nexus: "Russia (direct victimology: government, energy, transport, education, logistics, industry); no direct Swiss/EU victim named — carried for the transferable technique class (DLL sideloading of a security/VPN product's own auto-update component, plus raw AFD-IOCTL interception to blind user-mode network-filtering security tools), which applies to any organization running third-party secure-network/VPN client software with an automatic update mechanism"
+    primary_sector_nexus: "indirect"
+    sector: "energy, transport, education (out-of-nexus direct victim: Russian government/critical-infrastructure sectors)"
+    cves: []
+    techniques: [T1574.001, T1055, T1685, T1572, T1105, T1070, T1082, T1016, T1518, T1087.002]
+    affected_products: ["InfoTeCS ViPNet"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:hellonet-vipnet-supply-chain", type: campaign, name: "HelloNet", aliases: [],
+          summary: "APT campaign (active since at least May 2026) persisting via DLL-sideloading into the ViPNet secure-network software's own update component, targeting Russian government, energy, transport, education, logistics and industrial organizations; attributed with low confidence to an unknown Chinese-speaking APT group (Kaspersky Securelist/GReAT, 2026-07-16)." }
+      - { key: "tool:hellonet-malware-suite", type: tool, name: "HelloNet toolkit", aliases: ["HelloInjector", "HelloProxy", "HelloExecutor", "HelloCleaner", "HelloBackdoor"],
+          summary: "Multi-component malware suite used in the HelloNet campaign: HelloInjector (DLL-sideload loader that injects into svchost.exe), HelloProxy (traffic proxy/loader hooking AFD IOCTLs via Microsoft Detours), HelloExecutor (shell-command backdoor), HelloCleaner (ViPNet log eraser) and HelloBackdoor (Rust file-transfer backdoor on TCP/443) (Kaspersky Securelist/GReAT, 2026-07-16)." }
+    relation_suggestions:
+      - { subject: "campaign:hellonet-vipnet-supply-chain", object: "tool:hellonet-malware-suite", basis: "Kaspersky: the campaign deploys the named HelloInjector/HelloProxy/HelloExecutor/HelloCleaner/HelloBackdoor component chain (Kaspersky Securelist, 2026-07-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "By placing the file in this directory, the attackers implement the DLL Sideloading technique — the ViPNet update system executable file itcsrvup64.exe, which is launched at OS startup, is susceptible to it."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/hellonet-vipnet/120700/"
+      - quote: "These codes are used during socket operations — their interception allows the malware to hinder security solutions operating in user mode for filtering network connections."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/hellonet-vipnet/120700/"
+      - quote: "At present, we link this campaign to the activities of an unknown Chinese-speaking APT group with a low degree of confidence."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/hellonet-vipnet/120700/"
+    borderline: true
+    borderline_reason: "direct victimology is Russian government/CI with no named Swiss/EU victim; included for the transferable DLL-sideloading-via-trusted-updater and AFD-IOCTL-interception technique classes applicable to any org running third-party secure-network/VPN client software with auto-update, and because Kaspersky's own detection guidance (KEDR hunt rules, SIEM correlation logic, specific IOCTL codes) is directly reusable hunt content"
+    extended_notes: |
+      Triage-relevant discriminator (from Kaspersky's own detection guidance): monitor for wtsapi32.dll creation specifically inside \InfoTeCS\VIPNet Update System\ (this DLL name/path combination has no legitimate reason to be written there); monitor itcsrvup64.exe/itcsrvup.exe launching any child process other than wmail/monitor/itcsrvup64, or loading a DLL whose signature does not carry the InfoTeCS publisher name; and monitor PuTTY/Plink usage by original PE metadata (product/version/hash) rather than filename, since the tool was renamed to frontpage.exe — Kaspersky's own KEDR rule for this is "using_plink_or_putty_for_port_forwarding". Telemetry class: file-creation/module-load events scoped to a named vendor-update directory, process-creation events for the vendor's own update binary, and command-line pattern matching for renamed remote-tunnel binaries (ssh/plink argument shape port:address:port) independent of executable name.
+
+  - title: "Microsoft: two parallel ACR Stealer intrusion chains — WebDAV/Python/blockchain-dead-drop C2 and fileless MSHTA/steganography — both rooted in ClickFix"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/07/16/acr-stealer-two-observed-intrusion-chains-amid-increased-threat-activity/", publisher: "Microsoft Threat Intelligence (Defender Experts)", date: "2026-07-16", role: "primary" }
+    discovery_trace: "first seen at: direct sweep of microsoft.com/en-us/security/blog/, URL https://www.microsoft.com/en-us/security/blog/ → primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/07/16/acr-stealer-two-observed-intrusion-chains-amid-increased-threat-activity/ (no pivot needed; full body confirmed via jina reader, Published Time 2026-07-16T23:12:02Z)"
+    summary: |
+      Microsoft Defender Experts documented two distinct ACR Stealer delivery campaigns observed across customer environments from late April to mid-June 2026. ACR Stealer is a malware-as-a-service infostealer Microsoft states is "reportedly...associated with the rebranding of Amatera Stealer." Both campaigns begin with an identical ClickFix lure (via malvertising/SEO poisoning) but diverge sharply downstream. Campaign 1: the ClickFix command spawns cmd.exe, which invokes rundll32.exe to load a DLL from a remote WebDAV share over HTTPS, using a GUID-based directory structure disguised as legitimate resources (e.g. "google.ct"); in two of three observed variants the WebDAV share is mounted as a temporary local drive via pushd, and the most evasive variant launches through conhost.exe --headless with delayed-expansion environment-variable obfuscation to hide the pushd/rundll32/hostname strings. Once loaded, the DLL runs a heavily obfuscated PowerShell stage (arithmetic no-ops, dead loops, randomized variable names) that downloads a ZIP payload into a masqueraded %LocalAppData%\Temp directory (e.g. "LogiOptionsPlus"), launches a bundled pythonw.exe, establishes persistence via a hidden scheduled task disguised as a software update, timestomps dropped files against notepad.exe, and clears PowerShell history. The obfuscated Python loader (dynamic API resolution, string reversal/shifting, Base64+zlib) decodes an in-memory shellcode stage that allocates executable memory via VirtualAlloc and transfers execution through the Windows Fiber API (ConvertThreadToFiber/CreateFiber/SwitchToFiber) rather than a thread-based injection primitive. A subset of Campaign 1 intrusions add a secondary Python loader implementing "EtherHiding" — querying public blockchain RPC endpoints/Web3 node infrastructure as a dead-drop resolver for follow-up payloads or a C2 address, letting the operators rotate infrastructure without redeploying malware. Campaign 2 is fileless throughout: the ClickFix command spawns mshta.exe to fetch remote HTA content whose embedded VBScript uses COM objects to decode and launch PowerShell in memory (similarly obfuscated, plus certificate-validation disabling and a victim-specific identifier); its distinguishing technique is steganographic payload delivery — the script downloads a JPEG from an image-hosting service and extracts an encrypted payload from the pixel data before decrypting, decompressing and executing it entirely in memory via runtime-resolved LoadLibrary/GetProcAddress/VirtualAlloc/CreateThread. Both chains converge on the same objective: DPAPI-based decryption of Chromium/Firefox browser credential stores (cookies, saved passwords, auth tokens) plus targeted enumeration of PDFs, Microsoft 365 documents and OneDrive/SharePoint-synced enterprise data, archived for exfiltration. Microsoft published its own MITRE ATT&CK mapping table for both chains alongside concrete KQL advanced-hunting queries (RunMRU registry-key detection for the WebDAV/rundll32 pattern, scheduled-task-creation detection for the disguised "Autoupdate" persistence task, and MSHTA-launched-via-PowerShell detection).
+    region_nexus: "global; Microsoft Defender Experts telemetry across customer environments, no region singled out — directly relevant to any Windows enterprise fleet, including Swiss/EU public-sector and critical-infrastructure endpoints"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (enterprise Windows endpoints generally)"
+    cves: []
+    techniques: [T1189, T1204.004, T1059.003, T1059.001, T1059.006, T1218.011, T1218.005, T1053.005, T1027, T1036, T1070.003, T1027.003, T1620, T1055, T1555.003, T1005, T1074.001, T1102.001]
+    affected_products: []
+    entity_keys: ["tool:amatera"]
+    new_entities:
+      - { key: "tool:acr-stealer", type: tool, name: "ACR Stealer", aliases: [],
+          summary: "Malware-as-a-service information-stealing malware family, reportedly tied to the rebranding of Amatera Stealer; observed by Microsoft Defender Experts (late Apr-mid Jun 2026) in two distinct ClickFix-rooted intrusion chains — WebDAV/Python/blockchain-dead-drop C2, and fileless MSHTA/steganography — both ending in DPAPI-based browser-credential theft (Microsoft Threat Intelligence, 2026-07-16)." }
+    relation_suggestions:
+      - { subject: "tool:acr-stealer", object: "tool:amatera", basis: "Microsoft: \"ACR Stealer is an information-stealing malware family reportedly offered through a malware-as-a-service (MaaS) model and associated with the rebranding of Amatera Stealer\" (Microsoft Security Blog, 2026-07-16)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ACR Stealer is an information-stealing malware family reportedly offered through a malware-as-a-service (MaaS) model and associated with the rebranding of Amatera Stealer."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/16/acr-stealer-two-observed-intrusion-chains-amid-increased-threat-activity/"
+      - quote: "A notable variation in this campaign is the use of blockchain services for C2 resolution, utilizing a technique known as EtherHiding."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/16/acr-stealer-two-observed-intrusion-chains-amid-increased-threat-activity/"
+      - quote: "The malware (injected code) aggressively harvests information from browser credential stores. It invokes Windows Data Protection API (DPAPI) routines to decrypt locally stored browser passwords, cookies, and authentication tokens."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/16/acr-stealer-two-observed-intrusion-chains-amid-increased-threat-activity/"
+    extended_notes: |
+      Triage-relevant discriminator: Campaign 1's RunMRU registry pattern is highly specific — an "@ssl" WebDAV path combined with a GUID (8-4-4-4-12 hex) directory segment invoked through rundll32 or pushd is not a pattern legitimate WebDAV usage produces; Microsoft's own advanced-hunting query keys on exactly this shape. Campaign 2's MSHTA-via-PowerShell chain (PowerShell.exe launched directly from explorer.exe, itself launching mshta.exe against a URL with a 7-digit path segment) is a second, independent low-false-positive anchor. Telemetry class: registry-modification events (RunMRU keys) for the WebDAV/rundll32 discriminator, scheduled-task-creation events for the disguised "Autoupdate" persistence task, and process-creation events with full command-line/parent-lineage capture for the MSHTA-via-PowerShell chain — all three map directly to Microsoft's published KQL, but the underlying artifacts (RunMRU entries, scheduled-task names matching an 8-digit numeric suffix, mshta.exe spawned from a non-interactive PowerShell parent) are vendor-neutral and portable to any EDR/SIEM capturing registry and process-creation telemetry.
+
+  - title: "Unit 42 revisits its 2026 Global Incident Response Report through an AI lens — force multiplier, not yet a new attack class"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ai-incident-response-report/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.paloaltonetworks.com/resources/research/unit-42-incident-response-report", publisher: "Palo Alto Networks Unit 42", date: "2026-02", role: "corroborating" }
+    discovery_trace: "first seen at: direct sweep of unit42.paloaltonetworks.com, URL https://unit42.paloaltonetworks.com/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/ai-incident-response-report/ (no pivot needed; underlying '2026 Global Incident Response Report' confirmed via https://www.paloaltonetworks.com/resources/research/unit-42-incident-response-report to have originally published February 2026 — this is a fresh AI-focused revisit of that report's dataset, not a new annual report release)"
+    summary: |
+      Unit 42 published a fresh (2026-07-16) analysis piece revisiting its 2026 Global Incident Response Report (originally published February 2026, covering incidents Oct 2024-Sep 2025) specifically through the lens of AI's role in intrusions. The core assessment: AI is "acting as a force multiplier to increase the speed and efficiency of attacks, but is not significantly redefining methods of compromise" — credential theft, phishing, known-vulnerability exploitation and ransomware deployment remain the dominant initial-access and impact categories, but AI compresses attack timelines (the underlying report found the fastest quartile of intrusions reached data exfiltration in 1.2 hours, down from 4.8 hours the prior year) through automated reconnaissance, content generation and malware development. The piece names emerging AI-enabled threat classes — agentic ransomware managing multi-stage extortion (citing Sysdig's JADEPUFFER, already covered in prior-run coverage) and "token jacking" targeting exposed cloud AI credentials/API keys — while reiterating that over 90% of the underlying report's breaches were enabled by preventable security gaps rather than novel exploits. This is a low-technical-depth trend synthesis rather than a new technical disclosure; included for completeness given its in-window publication date but carries limited new detection/hunt content beyond what prior JADEPUFFER and LLM-jacking coverage already surfaced.
+    region_nexus: "global; no region-specific data in this piece"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: ["actor:jadepuffer"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "AI is acting as a force multiplier to increase the speed and efficiency of attacks, but is not significantly redefining methods of compromise."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-incident-response-report/"
+      - quote: "Threat actors continue to rely on established techniques such as credential theft, phishing, exploitation of known vulnerabilities and ransomware deployment."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-incident-response-report/"
+    borderline: true
+    borderline_reason: "trend-synthesis piece revisiting an already 5-month-old report through an AI framing; genuinely published in-window (2026-07-16) but carries low technical/detection specificity relative to the other three S3 items this run — main agent should weigh whether it earns a standalone entry or is better folded as context into another item"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: group-ib
+    reason: "WebFetch and the bridge (tools/fetch_source.py url) both returned only the WordPress page head/meta (Weglot i18n config, GTM tags) with no rendered article-listing HTML captured — the blog's post list appears to be client-side rendered and not present in either fetch's static body. WebSearch found no group-ib.com article dated 2026-07-16/17 (most recent identified: 2026-07-09 RedHook Android RAT update, out of window). No in-window Group-IB item found; treat as unconfirmed rather than a confirmed empty result."
+  - source_id: mandiant-direct
+    reason: "https://www.mandiant.com/resources/blog redirects (301) to https://cloud.google.com/security/consulting/mandiant-services (a services page, not a blog listing) — Mandiant research is now folded into the Google Cloud/GTIG threat-intelligence blog, which was swept directly and returned no confirmed in-window items (the one candidate, a Cisco Catalyst SD-WAN CVE-2026-20245 zero-day post, was verified via WebSearch to be a stale May/June 2026 item resurfacing in the listing, not fresh)."
+  - source_id: sophos-threat-research
+    reason: "news.sophos.com/en-us/category/threat-research/ 301-redirects to www.sophos.com/en-us/blog?taxonomy_blog_category=Threat+Research/, which WebFetch rendered as only 4 featured/pinned items with no publication dates — could not confirm presence or absence of an in-window post. Recommend the operator add an RSS-feed recipe for this host in a future run."
+  - source_id: nozominetworks-blog
+    reason: "WebFetch returned post titles with no visible publication dates on the listing page; could not confirm in-window status for any Nozomi post from the listing alone, and none of the visible titles matched an obviously time-sensitive topic. No dedicated RSS/API recipe attempted this run."
+
+watchlist_sweep:
+  duty: none
+  note: "S3 has no watchlist duty per spawn message; general coverage rules applied unchanged."

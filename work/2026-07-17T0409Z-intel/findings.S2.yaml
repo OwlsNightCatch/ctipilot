@@ -1,0 +1,118 @@
+domain: S2
+run_id: 2026-07-17T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-17T04:12:15Z
+ended_at: 2026-07-17T04:26:32Z
+duration_seconds: 857
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 8
+  bridge_fetches: 14
+
+items:
+  - title: "Abacus ERP: unauthenticated critical RCE (CVSS 9.8) plus authenticated path traversal — NCSC-CH flags Swiss ERP vendor's silent hotfix"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12766", publisher: "NCSC Switzerland (Cyber Security Hub / GovCERT.ch)", date: "2026-07-16", role: "primary" }
+      - { url: "https://security.abacus.ch/en/2026-84b5ca67-a46f-639c-5784-ce3c72065a34", publisher: "Abacus Research AG (vendor PSIRT)", date: "2026-07-15", role: "primary" }
+      - { url: "https://security.abacus.ch/en/2026-8b29ce3e-c211-1f4d-9e50-a94d4d6659d1", publisher: "Abacus Research AG (vendor PSIRT)", date: "2026-07-15", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12766 → primary: Abacus Research AG vendor advisory (RCE), URL https://security.abacus.ch/en/2026-84b5ca67-a46f-639c-5784-ce3c72065a34 → primary: Abacus Research AG vendor advisory (path traversal), URL https://security.abacus.ch/en/2026-8b29ce3e-c211-1f4d-9e50-a94d4d6659d1"
+    summary: |
+      Abacus Research AG (Wittenbach, SG) — one of the most widely-deployed ERP/accounting
+      platforms among Swiss SMEs, municipal utilities and public-sector-adjacent
+      organizations — shipped a hotfix on 2026-07-15 for two vulnerabilities NCSC-CH flagged
+      the following day. The critical flaw (vendor-rated CVSS 9.8, no CVE assigned) is an
+      unauthenticated remote code execution in the server-side component that handles the
+      proprietary Abacus client-server communication protocol: any attacker who can reach an
+      Abacus server endpoint over the network can execute arbitrary code with no
+      authentication and no user interaction. WebPortal and cloud-hosted Abacus deployments
+      are NOT affected — only on-premises server installations running the native
+      client-server protocol. A second, unrelated flaw (vendor-rated CVSS 7.7, high) is a
+      path traversal in two APIs tied to the AbaClik / AbaClik.ai mobile companion apps that
+      lets an authenticated attacker read files outside the application's security realm;
+      NCSC-CH notes these APIs are exposed externally by default even for customers who do
+      not use the mobile apps. All supported branches are affected — V2026 <=
+      2026.201.17178, V2025 <= 2025.203.17014, V2024 <= 2024.204.16741 — as well as every
+      End-of-Life V2023-and-earlier release, which Abacus confirms remains vulnerable with no
+      fix forthcoming. Fixed versions are V2026 2026.201.17211, V2025 2025.203.17044 and
+      V2024 2024.204.16772; Abacus also offers a ServiceManager-deployable "silent hotfix"
+      that requires AbaClient >= 4.2 (older AbaClient versions will fail to start Abacus
+      after the silent hotfix and need a manual revert or client upgrade). Both flaws were
+      found through Abacus's bug-bounty program; the vendor states it has no indication of
+      in-the-wild exploitation and no current indicators of compromise. Internal-only
+      deployments remain vulnerable but with the attack surface reduced to the internal
+      network.
+    region_nexus: "Switzerland — vendor headquartered in Wittenbach (SG); product widely deployed across Swiss SMEs and public-sector-adjacent organizations (utilities, municipal-linked entities, accounting/HR back-offices) that rely on on-premises Abacus ERP installations"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Abacus ERP"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "If successfully exploited, the vulnerability allows remote code execution on the abacus server without user authentication."
+        attribution: "Abacus Research AG (vendor advisory)"
+        source_url: "https://security.abacus.ch/en/2026-84b5ca67-a46f-639c-5784-ce3c72065a34"
+      - quote: "There was a path traversal vulnerability in two apis which allowed an authenticated attacker to read a subset of files on the server which reside outside of the security realm."
+        attribution: "Abacus Research AG (vendor advisory)"
+        source_url: "https://security.abacus.ch/en/2026-8b29ce3e-c211-1f4d-9e50-a94d4d6659d1"
+      - quote: "customers with no Mobile Apps in use can be affected if the affected apis are exposed to extern, which is the case by default"
+        attribution: "NCSC Switzerland (Cyber Security Hub post 12766)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12766"
+      - quote: "No, the vulnerability was found in our bugbounty program. We have no indications of a successful attack in the wild."
+        attribution: "Abacus Research AG (vendor advisory FAQ)"
+        source_url: "https://security.abacus.ch/en/2026-84b5ca67-a46f-639c-5784-ce3c72065a34"
+    extended_notes: |
+      No CVE has been assigned to either flaw — Abacus rates severity itself (CVSS 9.8 / 7.7)
+      and both advisories explicitly withhold deeper technical detail "for security reasons,"
+      so hunt guidance is limited to the vendor's own recommendation: patch/hotfix now, and
+      if IOCs are later published, review logs for anomalous client-server protocol traffic
+      and unexpected file reads via the AbaClik/AbaClik.ai API paths. Operationally notable
+      for patch teams: the silent-hotfix delivery path has a version dependency
+      (AbaClient >= 4.2) that can itself cause an outage if skipped — the vendor's FAQ
+      explicitly documents a revert procedure for exactly this failure mode, which is worth
+      flagging to change-management before a scheduled rollout.
+    borderline: false
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-focus
+    reason: "Fetched (Im Fokus + Aktuelle Vorfälle pages) — both are consumer-fraud/awareness bulletins with no items past 2026-07-14 and none in the technical-audience or CI/gov register; no qualifying item."
+  - source_id: bsi-de
+    reason: "WID-SEC RSS fetched (20 items) — all routine vendor-patch-cycle advisories (Golang, Red Hat, FreeRDP, NGINX, BusyBox, etc.), none incident/threat-specific or Swiss/EU-incident-relevant beyond what S1 already tracks."
+  - source_id: advisories-ncsc-nl
+    reason: "RSS fetched (20 items) — all routine Patch Tuesday / vendor-CVE advisories (Firefox, ColdFusion, Fortinet, SonicWall, Microsoft Office/Dynamics/Exchange), no NL-specific incident or gov-targeting item in window."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis + actualité feeds fetched via bridge — avis are routine vuln advisories (Splunk, Drupal, Cisco RoomOS, F5, etc.); actualité bulletin (ACT-030) predates window (2026-07-13); no fresh incident-type item."
+  - source_id: cert-eu
+    reason: "Security-advisories RSS fetched — most recent entry is 2026-008 (10 June 2026, Ivanti Sentry); no new CERT-EU advisory in window."
+  - source_id: cert-pl
+    reason: "Fetched via WebFetch — most recent post is the UNC1151/Ghostwriter Gmail campaign (12 June 2026), already in prior coverage (2026-07-09 entry); no fresh CERT Polska item in window."
+  - source_id: enisa
+    reason: "Fetched — most recent items (podcast launch, SME CRA maturity tool, women's cybersecurity challenge) are institutional/awareness announcements from 10-14 July, none carrying a technical finding for this audience."
+  - source_id: ncsc-uk
+    reason: "Fetched (jina) — most recent advisory (13 Jul 2026, Russian router-targeting) is the FSB Centre 16/Static Tundra story already in prior coverage (2026-07-13 entry); no newer NCSC-UK advisory."
+  - source_id: compass-security
+    reason: "Feed fetched — most recent post (Cyber Resilience Act Part II) dated 2026-07-07, outside the 26h window; no fresh Swiss research post."
+  - source_id: infoguard-labs
+    reason: "Not fetched this run — time budget prioritised the confirmed-fresh NCSC-CH/Abacus lead and cross-checks; no indication from other sources of an InfoGuard-specific finding in window."
+  - source_id: cnil-fr
+    reason: "Fetched (jina) — SPA/JS-rendered listing returned only navigation chrome, no dated article list surfaced; recommend a structured-endpoint check in a future run."
+  - source_id: edpb
+    reason: "Fetched (jina) — same SPA-shell limitation as CNIL; filter/navigation chrome only, no dated news items surfaced in this fetch."
+  - source_id: heise-sec
+    reason: "RSS fetched (20 items, all in-window) — reviewed in full; two candidates (Hoymiles solar-inverter DTU protocol flaw disclosed by CCC, and BSI's Windows Hello for Business analysis) were investigated in depth but both had underlying publication dates of 2026-07-15 06:26Z / 13:30Z respectively, which fall before the window cutoff (2026-07-16T02:09Z) — dropped on recency grounds, no fresher follow-up found. A Cursor IDE git.exe zero-day (Mindgard, disclosed 2026-07-14) discussed in a heise opinion piece on 2026-07-16 and a Zoom Windows-client account-takeover CVE (CVE-2026-53412) reported by heise on 2026-07-16 were also investigated but judged better suited to S1/S3 domains (global vendor vuln / AI-tooling research, not Switzerland/EU-specific) and were not carried forward from S2 to avoid overlap — flagging here in case neither was independently caught by S1/S3."
+  - source_id: truesec
+    reason: "Feed/blog checked — 'Russian Intelligence Targets SOHO Routers' (2026-07-16) initially looked like a fresh Forest Blizzard finding but verification showed it recaps a campcampaign Microsoft/NCSC-UK originally disclosed in April 2026 (SOHO router DNS-hijacking/AitM, Operation Masquerade); the Truesec post is generic commentary with no new technical detail — dropped as recycled news, not an in-window development."
+  - source_id: withsecure-labs
+    reason: "W/Labs page checked — 'GREYVIBE' (published 2026-05-28) and 'Andariel' European public/legal-sector breach (published January 2026) both surfaced in the 'recent' list but are stale; no in-window WithSecure publication found."
+  - source_id: govcert-at
+    reason: "RSS returned zero items (feed likely moved/empty); EN homepage and CERT.at English blog checked directly — most recent CERT.at blog post is 1 June 2026; no in-window Austrian item found via this source this run. Recipe may need revisiting (feed URL possibly stale)."
