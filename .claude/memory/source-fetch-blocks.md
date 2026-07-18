@@ -41,9 +41,9 @@ Cite the human URL `https://github.com/advisories/<GHSA-ID>`; the bridge supplie
 
 **Health/lifecycle:** these probe `bridge-ok` now. They remain in `source_health.py TRANSPORT_BLOCKED_HANDLED` only as a transient-outage safety net (a reader-proxy blip is treated as a transport block → never demote). Reader proxy is anonymous by default; set `JINA_API_KEY` env if a run ever hits its rate limit.
 
-## jina reader (r.jina.ai) is a GENERAL-PURPOSE transport, not just the CISA path (v3.8, 2026-07-06)
+## jina reader (r.jina.ai) is a GENERAL-PURPOSE transport, not just the CISA path (v3.8, 2026-07-06; ladder order superseded by v3.25 below)
 
-The reader was wired only into `cisa page`/`cisa feed`. It is now a **first-class, universal fetch transport** — `python3 tools/fetch_source.py jina <URL> [html]`. It fetches from **its own egress** (bypasses anti-bot / WAF / geo blocks that 403 ours) **and executes page JavaScript** (hydrates JS-only SPAs that return an empty shell to a plain GET), returning the full body as clean markdown. The **fetch ladder** the agents follow, best-content-first, always keeping a backup: **RSS (`feed`) → direct `WebFetch` → `jina` reader → dedicated bridge/API recipe.** `fetch_source.py url` now auto-falls-back to the reader on a challenge/403 (`--direct` opts out); `feed` falls back too (`method: jina` in its result). New `fetch_method: jina` for sources whose clean transport is the reader. Reader-unreachable hosts (401 even to r.jina.ai): `coe.int`, `downloads.seppmail.com` — those stay `blocked`.
+The reader was wired only into `cisa page`/`cisa feed`. It is now a **first-class, universal fetch transport** — `python3 tools/fetch_source.py jina <URL> [html]`. It fetches from **its own egress** (bypasses anti-bot / WAF / geo blocks that 403 ours) **and executes page JavaScript** (hydrates JS-only SPAs that return an empty shell to a plain GET), returning the full body as clean markdown. `fetch_source.py url` auto-falls-back to the reader on a challenge/403 (`--direct` opts out); `feed` falls back too (`method: jina` in its result). `fetch_method: jina` marks sources whose only working transport is the reader. Reader-unreachable hosts (401 even to r.jina.ai): `coe.int`, `downloads.seppmail.com` — those stay `blocked`. **Ladder order: see the v3.25 note below — the reader is now the LAST rung, not rung 3.**
 
 ## group-ib.com + ccn-cert.cni.es — RECOVERED via the reader (2026-07-06, supersedes the block below)
 
@@ -88,3 +88,13 @@ The NCSC-UK HTML listing (`/section/keep-up-to-date/reports-advisories`) had bee
 ## ransomware.live — use the JSON API, not the HTML (2026-07-11 audit)
 
 The HTML site returns chrome with no parseable victim table. Working recipe for country sweeps: `https://api.ransomware.live/v2/countryvictims/CH` (any ISO country code) via plain fetch. Leak-site claims stay single-source PD-6 material — the API is discovery, never confirmation.
+
+## jina reader v4 — LAST-RESORT rung; anonymous tier NOT guaranteed; fresh key verified (v3.25, 2026-07-18)
+
+The 2026-07-18T0409Z run exhausted the key pool mid-window (HTTP 402) **and the anonymous free tier answered HTTP 401** — falsifying the v3 assumption "exhausted pool = degraded fidelity, never availability". Operator-directed changes (prompt v3.25):
+
+- **Ladder reordered — the reader is rung 4 of 4:** RSS (`feed`) → direct `WebFetch` → **direct bridge** (`url <URL>` raw body / structured publisher recipe) → **jina reader LAST**. Every reader fetch spends metered API-key credit; routine fetches must never burn it when a free direct transport serves the same content. Force `jina <URL>` directly ONLY for `fetch_method: jina` sources (heise article bodies via browser engine, cisa.gov dynamic paths, ccn-cert geo-gate — hosts proven to need it) or after every direct rung failed. `url`'s auto-reader-fallback is unchanged, so nothing requires switching commands mid-read.
+- **Full-detail reads:** prefer `url <URL>` (whole raw body, nothing summarised away) over the reader; heavy raw HTML goes to `work/<run-id>/` and gets extracted on disk (grep/python), keeping bulk out of main context — the 2026-07-18 deep-read proved this path.
+- **Anonymous rung:** `_jina_fetch` now treats 401/402 on the anonymous credential as non-retryable (no backoff burned); all docs say an exhausted pool can be a reader OUTAGE. Treat `jina-usage` "pool dead" as an incident, not a footnote.
+- **Institutionalized watch:** quality-audit Phase 3 item 4 runs `python3 tools/fetch_source.py jina-usage` weekly; low/dead pool → operator recommendation (new key at jina.ai/api-dashboard → `JINA_API_KEYS` env; keys NEVER in the repo).
+- **2026-07-18 session verification:** a fresh operator-supplied key (suffix `…MrZOsc`, 10 M tokens, trial to 2036) was tested from this repo: `jina-usage` reports it live; rotation off the dead env key (`…xI3xEh`, 402) worked; heise article body (VMware Avi, id 11368661) and cisa.gov/news-events/directives both returned full content through it. Operator still needs to update the routine container env vars.

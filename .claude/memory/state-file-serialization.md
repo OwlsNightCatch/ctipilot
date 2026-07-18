@@ -6,19 +6,23 @@ type: project
 
 # State-file serialization — sources.json canonical format
 
-**Fact (2026-07-06):** `sources/sources.json` is committed with **`indent=1, ensure_ascii=False`** — one-space indentation and literal UTF-8 (em-dashes `—` are NOT escaped to `—`).
+**Fact (re-ratified 2026-07-18):** `sources/sources.json` is committed with **`indent=2, ensure_ascii=False`** — two-space indentation and literal UTF-8 (em-dashes `—` are NOT escaped to `—`).
 
-**Why it matters:** if a run re-serializes it with the Python default `json.dump(d, f, indent=2)` (2-space) or `ensure_ascii=True`, **every line flips** and the commit shows a ~6400-line diff (≈3217 insertions / 3217 deletions) even when only a handful of `last_successful_fetch` values changed. This has happened on prior runs (e.g. the diff on c4980f7 and the weekly before it), making review impossible and oscillating the file's format between fires.
+**History of the flip:** the 2026-07-06 canonical was `indent=1`; the **2026-07-17T0409Z run re-serialized with `indent=2`** against this note (the full-churn defect this file exists to prevent — it reached `main` unflagged), and the 07-18 run committed on top. With two runs of history on indent=2, flipping back would just churn again, so **indent=2 is the canonical format from 2026-07-18 onward**. A 2026-07-18 session edit that trusted this note's old `indent=1` reproduced the ~6700-line churn locally (caught by `git diff --stat` before commit, redone at indent=2 → 9-line diff). **Lesson: check `head -5 sources/sources.json` for the live indentation before dumping, and verify with `git diff --stat` after — every time.**
+
+**Why it matters:** if a run re-serializes it with a different indent or `ensure_ascii=True`, **every line flips** and the commit shows a ~6700-line diff even when only a handful of `last_successful_fetch` values changed. This has happened on prior runs (e.g. the diff on c4980f7 and the weekly before it), making review impossible and oscillating the file's format between fires.
 
 **The fix — always bump/edit in place with the canonical dump:**
 ```python
 import json
-d = json.load(open('sources/sources.json'))
+raw = open('sources/sources.json', encoding='utf-8').read()
+d = json.loads(raw)
 # ... mutate records (bump last_successful_fetch, reset counters, append notes) ...
 d['last_updated'] = '<run-date>'
-with open('sources/sources.json', 'w') as f:
-    json.dump(d, f, indent=1, ensure_ascii=False)
-    f.write('\n')   # file ends with a single trailing newline
+out = json.dumps(d, indent=2, ensure_ascii=False)
+if raw.endswith('\n'):
+    out += '\n'   # preserve the single trailing newline
+open('sources/sources.json', 'w', encoding='utf-8').write(out)
 ```
 Verify with `git diff --stat sources/sources.json` — a correct bookkeeping bump touches only ~15–35 lines, never the whole file.
 

@@ -1,6 +1,6 @@
 # CTI Weekly Quality Audit — Master Prompt
 
-> **Prompt version:** v3.24 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.25 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired **once per week** (operator-chosen slot — recommended Sunday, after the weekly strategic run; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: the main agent owns diffing, root-causing, fixing and publishing; bulk source fetching runs in sub-agents.
 >
@@ -91,9 +91,10 @@ Over the window's run records, `work/` artifacts and state — no fetching excep
 1. **Telemetry:** wall-clock durations (>3 h runaway), `gap_hours` anomalies and overtaken-run races, verification iteration counts / residuals / dropped-entry rates, stalled-sub-agent abandonments. Zero-entry runs: read their notes — defensible quiet window or filter failure?
 2. **Publish follow-through:** any v3.14+ record with missing/stale `publish_status` (the Phase 7 amendment that never landed).
 3. **Source health — reachability ≠ readability:** essential/tier-1 sources green in `state/source_health.json` but contributing zero items across the whole window are suspects for the dark-but-green class (ncsc-uk, 07-11); spot-check the fetch recipe of each suspect and record a working recipe in `sources/sources.json` notes when found.
-4. **Discipline drift:** `actions[]` distribution against the v3.19 do-now bar (empty-is-normal shape restored?); priority mix of the window; classification codes present and plausible; behavior-kind `techniques[]` density; `update_of` discipline on same-topic entries.
-5. **Gate & pin:** the Phase 0 `check_run.py --all` and `attack_data.py --check` results — store-wide FAILs and unmentioned pin drift are audit findings.
-6. **Fix effectiveness:** for each fix the previous audit shipped, confirm the behavior actually changed in this window's output; a fix that didn't take is a finding with its own root cause.
+4. **Reader-pool health (last-resort transport):** run `python3 tools/fetch_source.py jina-usage`. The jina reader is the fetch ladder's LAST rung — the recovery path for anti-bot/WAF/geo-blocked and JS-only hosts — and its anonymous free tier is best-effort only (observed answering HTTP 401, 2026-07-18), so a dead or low key pool means that recovery path can hard-fail. A combined balance under the 1 M-token warning threshold, a dead pool, or repeated 402/401 rotation notes in the window's run records is an operator recommendation: generate a new key at <https://jina.ai/api-dashboard/> and add it to `JINA_API_KEYS` (env-only — never in the repo).
+5. **Discipline drift:** `actions[]` distribution against the v3.19 do-now bar (empty-is-normal shape restored?); priority mix of the window; classification codes present and plausible; behavior-kind `techniques[]` density; `update_of` discipline on same-topic entries.
+6. **Gate & pin:** the Phase 0 `check_run.py --all` and `attack_data.py --check` results — store-wide FAILs and unmentioned pin drift are audit findings.
+7. **Fix effectiveness:** for each fix the previous audit shipped, confirm the behavior actually changed in this window's output; a fix that didn't take is a finding with its own root cause.
 
 ## Phase 3b — Monthly priority-calibration review (only when Phase 0 step 4 assigned it)
 

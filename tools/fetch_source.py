@@ -26,9 +26,10 @@ The script will NEVER:
 - Fetch hidden / authenticated content (the agent must respect TLP).
 - Run third-party JS or load any other origin.
 
-Fetch ladder recap: try `feed` (RSS) → the routine's WebFetch → `jina` (the
-r.jina.ai reader proxy) → `url` / a dedicated bridge recipe, and keep a backup.
-The `url` command folds the last two together (direct → reader auto-fallback).
+Fetch ladder recap: try `feed` (RSS) → the routine's WebFetch → `url` / a
+dedicated bridge recipe (direct browser-UA GET / publisher API) → `jina` (the
+r.jina.ai reader proxy) as the LAST RESORT, and keep a backup. The `url`
+command folds the last two together (direct → reader auto-fallback).
 
 Hosts the direct bridge cannot get content from — but the `jina` reader CAN
 (it fetches from its own egress and runs page JS, defeating the anti-bot / geo
@@ -44,19 +45,27 @@ Recovered earlier by the UA bump — use the feed path: databreaches.net
 (`feed https://databreaches.net/feed/`), www.darkreading.com (its /rss.xml),
 www.inside-it.ch (its /rss.xml).
 
-Fetch ladder (best-content-first — the same order the research agents follow):
+Fetch ladder (cheapest-first, jina LAST — the same order the research agents follow):
     1. RSS/Atom feed   → `feed <URL>` (structured, dated, carries outbound links)
     2. direct WebFetch → the routine's WebFetch tool (agent-side; not this script)
-    3. jina reader     → `jina <URL>` (clean markdown; server-side egress bypasses
-                          anti-bot / WAF / geo blocks and executes page JS)
-    4. dedicated bridge→ the structured subcommands below (browser UA / publisher API)
-The `url` command folds tiers 2→3 into one call: it tries a direct browser-UA
+    3. direct bridge   → `url <URL>` (browser-UA GET, full raw body) or the
+                          structured subcommands below (publisher API / CSAF /
+                          OData / sitemap)
+    4. jina reader     → `jina <URL>` — the LAST RESORT. Its server-side egress
+                          bypasses anti-bot / WAF / geo blocks and executes page
+                          JS, but every fetch spends metered API-key credit.
+                          Reach for it only when every direct transport failed,
+                          or the host is a KNOWN reader-required host
+                          (sources.json `fetch_method: jina`; e.g. heise.de
+                          article bodies, cisa.gov dynamic paths, the
+                          ccn-cert.cni.es geo-gate).
+The `url` command folds rungs 3→4 into one call: it tries a direct browser-UA
 GET and AUTO-FALLS-BACK to the jina reader on a 403 / anti-bot / challenge body,
 so every page has a backup transport. Force one transport with `--direct` / `jina`.
 
 Usage:
     python3 tools/fetch_source.py url <URL> [--direct]               # direct browser-UA GET, auto-fallback to jina reader (prints body)
-    python3 tools/fetch_source.py jina <URL> [html]                  # force the r.jina.ai reader proxy (clean markdown; `html` for simplified HTML)
+    python3 tools/fetch_source.py jina <URL> [html]                  # LAST RESORT: force the r.jina.ai reader proxy (clean markdown; `html` for simplified HTML)
     python3 tools/fetch_source.py jina-usage                         # token balance of every configured reader key — warns when new keys are needed
     python3 tools/fetch_source.py ncsc-csh list [N]                  # NCSC CSH public dashboard (last N TLP:CLEAR posts as JSON)
     python3 tools/fetch_source.py ncsc-csh post <ID>                 # one TLP:CLEAR post (Markdown body + metadata)
@@ -70,7 +79,7 @@ Usage:
     python3 tools/fetch_source.py enisa-euvd advisory <ID>           # one EUVD advisory by id (e.g. EUVD-2025-12345)
     python3 tools/fetch_source.py bsi-rss                            # BSI cert-bund WID-SEC RSS feed (XML)
     python3 tools/fetch_source.py bsi-csaf <WID-SEC-ID>              # BSI WID-SEC advisory CSAF JSON (full body — e.g. WID-SEC-2026-1438)
-    python3 tools/fetch_source.py ncsc-nl csaf <ID> [VERSION]        # one Dutch NCSC CSAF advisory (e.g. NCSC-2025-0432, default v1)
+    python3 tools/fetch_source.py ncsc-nl csaf <ID>                  # one Dutch NCSC CSAF advisory (e.g. NCSC-2025-0432)
     # Structured discovery feeds for hosts whose listing pages are JS-rendered
     python3 tools/fetch_source.py ncsc-nl recent [N]                 # Dutch NCSC RSS — last N advisory IDs + titles (default 20)
     python3 tools/fetch_source.py cert-eu recent [N]                 # CERT-EU RSS — last N advisories (default 20)
@@ -352,11 +361,6 @@ def _check_url(url: str) -> None:
     _resolve_and_check(host)
 
 
-# Backwards-compatible shim — old callers used `_check_host`.
-def _check_host(url: str) -> None:  # pragma: no cover - thin alias
-    _check_url(url)
-
-
 class SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
     """Re-validate every redirect destination against `_check_url`.
 
@@ -592,9 +596,11 @@ def cisa_kev() -> Any:
 # https://jina.ai/api-dashboard/ when the pool runs low. A reader HTTP
 # 402 means that key's balance is exhausted (HTTP 401: invalid/revoked);
 # `_jina_fetch` then ROTATES to the next configured key, and when no live
-# key remains it falls back to the ANONYMOUS free tier (shared rate
-# limit, no browser engine) — so an exhausted key pool degrades fidelity,
-# never availability.
+# key remains it tries the ANONYMOUS free tier (shared rate limit, no
+# browser engine) as a best-effort backstop. The anonymous tier is NOT
+# guaranteed — the 2026-07-18 run observed it answering HTTP 401 — so an
+# exhausted key pool can mean a reader outage; keeping a live key in the
+# pool is what keeps the last-resort rung available.
 JINA_READER_BASE = "https://r.jina.ai/"
 JINA_USAGE_API = "https://embeddings-dashboard-api.jina.ai/api/v1/api_key/user"
 # Warn when fewer tokens than this remain on the key (a fresh trial key
@@ -753,9 +759,10 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     `JINA_API_KEY`, spend order) is tried in turn — a key answering HTTP 402
     (balance exhausted) or 401 (invalid/revoked) is marked dead for the rest
     of the process and the next key takes over immediately. When no live key
-    remains, the request runs ANONYMOUSLY on the reader's free tier (shared
-    rate limit, no `X-Engine: browser`), so the reader keeps working with
-    zero valid keys — reduced fidelity, never an outage.
+    remains, the request is tried ANONYMOUSLY on the reader's free tier
+    (shared rate limit, no `X-Engine: browser`) as a best-effort backstop —
+    NOT a guarantee: the anonymous tier was observed answering HTTP 401 on
+    2026-07-18, so with an exhausted pool the reader can be a hard outage.
 
     Cost controls: a LOCAL disk cache (`JINA_CACHE_DIR` / `JINA_CACHE_TTL`,
     default 1 h) answers repeat fetches of the same (url, fmt) with zero
@@ -833,19 +840,23 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
                     raise RuntimeError(f"reader proxy relayed an upstream block/challenge for {target_url}")
                 _jina_cache_put(target_url, fmt, text)
                 return text
-            if key and code in (401, 402):
+            if code in (401, 402):
                 # 402 Payment Required — per the reader's OpenAPI spec this is
                 # InsufficientBalanceError or TierFeatureConstraintError: THIS
                 # key's token balance is exhausted (or its tier lacks the
                 # feature). 401 — the key is invalid or revoked. Neither is
-                # retryable with this key: mark it dead for the process and
-                # rotate to the next credential instead of burning backoff.
-                _JINA_DEAD_KEYS.add(key)
+                # retryable with this credential: mark a key dead for the
+                # process and rotate; on the anonymous rung (key=None) the
+                # same statuses mean the free tier is refusing us (observed
+                # 2026-07-18) — equally non-retryable, don't burn backoff.
+                if key:
+                    _JINA_DEAD_KEYS.add(key)
                 last = ("balance exhausted (HTTP 402)" if code == 402
                         else "invalid/revoked (HTTP 401)")
                 print(
                     f"fetch_source: jina reader {label} {last} — "
-                    f"rotating to the next credential",
+                    + ("rotating to the next credential" if key
+                       else "free tier refused; no credential left"),
                     file=sys.stderr,
                 )
                 break
@@ -864,11 +875,14 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
 
 def jina_page(url: str, *, html: bool = False) -> str:
     """Fetch ANY HTTPS page's body through the r.jina.ai reader proxy. This is
-    the operator-facing `jina <URL>` transport — tier 3 of the fetch ladder
-    (RSS → direct WebFetch → jina reader → dedicated bridge recipe). Prefer it
-    over a raw `url` fetch whenever the host anti-bot-blocks our egress, geo-
-    gates it, or serves a JS-only shell: the reader returns clean, readable
-    content (markdown by default; simplified HTML with `html=True`)."""
+    the operator-facing `jina <URL>` transport — the LAST rung of the fetch
+    ladder (RSS → direct WebFetch → direct bridge / structured recipe → jina
+    reader). Every reader fetch spends metered API-key credit, so reach for it
+    only when every direct transport failed — an anti-bot/WAF/geo block, a
+    JS-only shell — or the host is a known reader-required host (sources.json
+    `fetch_method: jina`; e.g. heise.de article bodies, cisa.gov dynamic
+    paths). It returns clean, readable content (markdown by default;
+    simplified HTML with `html=True`)."""
     return _jina_fetch(url, fmt="html" if html else None)
 
 
@@ -879,9 +893,10 @@ def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
     and returns the per-key wallets plus the pool totals. `warning` is a
     human-readable notice when the whole pool is dead or the combined
     balance is below `warn_below` — the signal to generate a new key at
-    https://jina.ai/api-dashboard/ and add it to the env. An exhausted
-    pool is degraded, not down: `_jina_fetch` falls back to the anonymous
-    free tier."""
+    https://jina.ai/api-dashboard/ and add it to the env. Treat an
+    exhausted pool as DOWN: `_jina_fetch` still tries the anonymous free
+    tier, but that rung is best-effort only (observed answering HTTP 401
+    on 2026-07-18)."""
     keys = _jina_keys()
     if not keys:
         raise RuntimeError(
@@ -936,9 +951,10 @@ def jina_usage(*, warn_below: int = JINA_LOW_BALANCE_TOKENS) -> dict[str, Any]:
     }
     if live == 0:
         out["warning"] = (
-            "EVERY configured reader key is exhausted or invalid — reader "
-            "requests fall back to the anonymous free tier (shared rate "
-            "limit, no browser engine). Generate a new API key at "
+            "EVERY configured reader key is exhausted or invalid — the "
+            "last-resort reader rung is effectively DOWN (the anonymous "
+            "free tier is best-effort only and was observed answering "
+            "HTTP 401 on 2026-07-18). Generate a new API key at "
             "https://jina.ai/api-dashboard/ and add it to the environment."
         )
     elif total < warn_below:
@@ -1194,14 +1210,13 @@ def bsi_csaf(advisory_id: str) -> Any:
 _NCSC_NL_RE = re.compile(r"^NCSC-(\d{4})-(\d{3,5})$")
 
 
-def ncsc_nl_csaf(advisory_id: str, version: int = 1) -> Any:
+def ncsc_nl_csaf(advisory_id: str) -> Any:
     """Fetch the CSAF v2.0 JSON for a Dutch-NCSC TLP:WHITE advisory.
 
     `advisory_id` is the canonical identifier (`NCSC-YYYY-NNNN`); the
     bridge derives the lowercase `ncsc-yyyy-nnnn` slug expected at the
-    CSAF distribution path. The legacy `version` parameter is accepted
-    for back-compat with older recipes but ignored — the publisher
-    serves the latest revision at the deterministic path.
+    CSAF distribution path. The publisher serves the latest revision at
+    the deterministic path.
     """
     m = _NCSC_NL_RE.match(advisory_id.strip())
     if not m:
@@ -1930,7 +1945,7 @@ def main(argv: list[str]) -> int:
     p_url.add_argument("--direct", action="store_true",
                        help="direct browser-UA GET only — do NOT fall back to the jina reader (raw HTML/XML)")
 
-    p_jina = sub.add_parser("jina", help="force the r.jina.ai reader proxy — clean markdown; bypasses anti-bot/WAF/geo blocks and runs page JS")
+    p_jina = sub.add_parser("jina", help="LAST RESORT: force the r.jina.ai reader proxy (metered credit) — clean markdown; bypasses anti-bot/WAF/geo blocks and runs page JS. Try feed/WebFetch/url first")
     p_jina.add_argument("url")
     p_jina.add_argument("fmt", nargs="?", choices=["markdown", "html"], default="markdown",
                         help="return format (default markdown; `html` keeps simplified markup)")
@@ -1975,9 +1990,8 @@ def main(argv: list[str]) -> int:
 
     p_ncscnl = sub.add_parser("ncsc-nl", help="Dutch NCSC advisories")
     ncscnl_sub = p_ncscnl.add_subparsers(dest="ncscnl_cmd", required=True)
-    p_ncscnl_csaf = ncscnl_sub.add_parser("csaf", help="one NCSC-NL advisory CSAF JSON")
+    p_ncscnl_csaf = ncscnl_sub.add_parser("csaf", help="one NCSC-NL advisory CSAF JSON (publisher serves the latest revision)")
     p_ncscnl_csaf.add_argument("id", help="advisory id, e.g. NCSC-2025-0432")
-    p_ncscnl_csaf.add_argument("version", type=int, nargs="?", default=1, help="CSAF revision (default 1; ignored — publisher serves latest)")
     p_ncscnl_recent = ncscnl_sub.add_parser("recent", help="most-recent NCSC-NL advisory IDs from the RSS feed")
     p_ncscnl_recent.add_argument("count", type=int, nargs="?", default=20)
 
@@ -2124,7 +2138,7 @@ def main(argv: list[str]) -> int:
             return 0
         if args.cmd == "ncsc-nl":
             if args.ncscnl_cmd == "csaf":
-                json.dump(ncsc_nl_csaf(args.id, args.version), sys.stdout, indent=2)
+                json.dump(ncsc_nl_csaf(args.id), sys.stdout, indent=2)
                 sys.stdout.write("\n")
             elif args.ncscnl_cmd == "recent":
                 json.dump(ncsc_nl_recent(args.count), sys.stdout, indent=2)

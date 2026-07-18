@@ -4,6 +4,25 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.25 — 2026-07-18 (jina reader demoted to LAST-RESORT transport; anonymous free tier no longer assumed available; reader-pool health institutionalized in the quality audit)
+
+### Why
+
+Operator-directed, triggered by the 2026-07-18T0409Z run: the jina reader key pool exhausted mid-window (HTTP 402 on the configured key **and HTTP 401 on the anonymous free tier**, which the 2026-07-13 credential ladder had assumed was an always-available backstop — "degrades fidelity, never availability" turned out to be false). Coverage survived only because the direct-transport fallbacks happened to work. Two lessons: (1) the reader is a metered, externally-billed dependency and the v3.8 ladder had it at rung 3 — *above* the free direct bridge — so routine fetches burned paid credit that direct transports would have served, draining the pool that the genuinely reader-dependent hosts (heise article bodies, cisa.gov dynamic paths, ccn-cert geo-gate, JS-only SPAs) need to stay reachable; (2) nothing in the scheduled pipeline watched the pool balance, so exhaustion was discovered by a run failing into it rather than by an audit predicting it.
+
+### What changed
+
+- **Fetch ladder reordered — jina is rung 4 of 4, the LAST RESORT** (`.claude/agents/cti-research.md` § Fetch tooling reference + § fetch_method + the WebFetch-escalation/completeness/redirect notes; `tools/fetch_source.py` module docs): RSS feed → direct `WebFetch` → direct bridge (`url <URL>` raw body / structured publisher recipe) → jina reader. Full-technical-detail reads now prefer `url <URL>` (raw body, nothing summarised away) over the reader; the reader is forced directly only when rungs 1–3 failed or the source record pins `fetch_method: jina` (a pinned record means the host is *proven* to need it — going straight to the reader there is correct, not a violation). `url`'s built-in auto-fallback to the reader is unchanged, so blocked hosts still recover without switching commands.
+- **`prompts/cti-run.md` Phase 4 deep-read** no longer prefers the reader: `url <URL>` / structured recipe first, heavy raw HTML extracted on disk under `work/<run-id>/` (the 2026-07-18 run's proven path), reader only for reader-required hosts. **Phase 5 `needs-bridge` playbook** reordered: structured feed → mirror → reader LAST, and `fetch_method: jina` is pinned only when no direct transport reaches the content.
+- **`tools/fetch_source.py` — anonymous tier no longer assumed:** a 401/402 on the anonymous rung is now non-retryable (previously burned 3 attempts + backoff per fetch on a rung observed to be refusing us); docstrings, the exhausted-pool `jina-usage` warning, and the operator docs now say an exhausted pool can mean a reader **outage**, not a fidelity downgrade. Removed the `_check_host` back-compat shim and the ignored `ncsc-nl csaf` legacy `[VERSION]` argument (no-backwards-compat policy).
+- **`prompts/quality-audit.md` Phase 3 — new ops-hygiene item 4 "Reader-pool health":** every weekly audit runs `jina-usage`; a low/dead pool or repeated 402/401 rotation notes in the window's run records becomes an operator recommendation before exhaustion hits a live run (institutionalizes the memory note that had never made it into the prompt).
+- **Both verifier definitions (bodies regenerated in lockstep):** the URL-truth escalation now names the reader as the last-resort rung after `WebFetch` and `url`, with the ladder parenthetical reordered (structured bridge recipe → jina reader).
+- **CLAUDE.md + docs/operating.md + `.claude/memory/source-fetch-blocks.md`:** ladder order, last-resort rule, and the anonymous-tier observation recorded; operating.md reframes `JINA_API_KEYS` from "recommended" to required-for-the-last-resort-rung and no longer promises anonymous availability.
+
+### What stays
+
+The reader itself, its credential-ladder rotation, multi-key pool, local response cache, `X-Cache-Tolerance`, browser-engine tier, and every dedicated bridge recipe are untouched — this release changes *when* the reader is used and what the pipeline assumes about its free tier, not how it works. `fetch_method: jina` records (`ccn-cert-es`, `reliaquest`, `mysites-guru`) keep the reader as their working recipe by design. Every hard invariant: no IOCs, two-source verification with carve-outs, entry immutability + update_of, the mechanical gate, the double-CLEAN verifier loop, feature-branch-only publishing, relevance discipline, run-record-per-fire, memory commits. `weekly-summary.md` moves to v3.25 in lockstep with no body change.
+
 ## 3.24 — 2026-07-13 (audit runs first-class: `kind: audit`; Ops dashboard tracks the double-CLEAN gate; run selection = the run-log table)
 
 ### Why
