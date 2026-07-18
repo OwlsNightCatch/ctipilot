@@ -1,0 +1,170 @@
+domain: S3
+run_id: 2026-07-18T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-18T04:12:45Z
+ended_at: 2026-07-18T04:25:06Z
+duration_seconds: 741
+self_telemetry:
+  webfetch_calls: 30
+  websearch_calls: 11
+  bridge_fetches: 3
+items:
+  - title: "Unit 42 chains three Siemens RUGGEDCOM ROX II zero-days into unauthenticated file read, command injection and persistent root code execution"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/siemens-rox-ii-zero-day-vulnerabilities/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-17", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/html/ssa-081142.html", publisher: "Siemens ProductCERT (SSA-081142)", date: "2026-05-12", role: "corroborating" }
+    discovery_trace: "first seen at: Unit 42 blog listing, URL https://unit42.paloaltonetworks.com/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/siemens-rox-ii-zero-day-vulnerabilities/ → vendor advisory corroboration: Siemens ProductCERT, URL https://cert-portal.siemens.com/productcert/html/ssa-081142.html (SSA-081142; companion advisories SSA-973901 and SSA-078743 cited in the Unit 42 write-up but not independently fetched this run)"
+    summary: |
+      Unit 42 published a three-stage exploit chain against Siemens RUGGEDCOM ROX II operational-technology switches on 2026-07-17. Stage one (CVE-2025-40948, CVSS 6.8) abuses an insecurely configured, root-privileged invocation of the `xz` utility: supplying the `-f`, `-c` and `-d` parameters together lets an attacker read arbitrary files on the device filesystem. Stage two (CVE-2025-40947, CVSS 7.5) is command injection in the feature-key signature-verification path — the `gpgv`-based validation of an uploaded feature-key file does not sanitize the embedded signature parameter before inserting it into a shell command string, giving code execution. Stage three (CVE-2025-40949, CVSS 9.1/CVSS4 8.9, CWE-78) is command injection in the web-management task scheduler: an authenticated attacker can inject control characters into the system configuration file the scheduler reads, achieving persistent, cron-driven root-level code execution that survives reboot. Chained end-to-end, the three flaws take an attacker from unauthenticated file disclosure to full privilege escalation and durable root access on a device class used as a network-security/routing boundary inside industrial networks (rail, utility, oil & gas). Siemens's own advisory (SSA-081142, first published 2026-05-12) independently confirms CVE-2025-40949 as OS command injection in the Scheduler function of the web UI requiring authentication, CVSS 9.1, fixed in firmware V2.17.1 across the whole ROX II family (MX5000/MX5000RE, RX1400/1500/1501/1510/1511/1512/1524/1536, RX5000). No in-the-wild exploitation is reported for any of the three CVEs; this is a researcher-disclosed, vendor-patched chain, not an active campaign — but the target class (an OT security/routing appliance) and the full-chain root persistence make it a priority patch for any energy, rail, water or manufacturing operator running ROX II below V2.17.1.
+    region_nexus: "global; Siemens ROX II is deployed in European (including Swiss) rail, utility and industrial-network infrastructure"
+    primary_sector_nexus: "indirect"
+    sector: "energy, transport, water, manufacturing"
+    cves: ["CVE-2025-40948", "CVE-2025-40947", "CVE-2025-40949"]
+    techniques: ["T1190", "T1059.004", "T1068", "T1053.003"]
+    affected_products: ["Siemens RUGGEDCOM ROX II (MX5000, MX5000RE, RX1400, RX1500, RX1501, RX1510, RX1511, RX1512, RX1524, RX1536, RX5000)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation of this chain would allow an attacker to achieve full privilege escalation and persistent root-level access on these devices."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/siemens-rox-ii-zero-day-vulnerabilities/"
+      - quote: "Ruggedcom Rox contains an input validation vulnerability in the Scheduler functionality that could allow an authenticated remote attacker to execute arbitrary commands with root privileges."
+        attribution: "Siemens ProductCERT (SSA-081142)"
+        source_url: "https://cert-portal.siemens.com/productcert/html/ssa-081142.html"
+    extended_notes: |
+      Detection concept: no IOC needed — hunt for anomalous `xz` invocations combining -f/-c/-d flags in device shell logs, unexpected feature-key upload activity outside maintenance windows, and unplanned entries in the ROX II task-scheduler configuration file. Hardening: patch to firmware V2.17.1+; network-isolate management interfaces (feature-key upload and scheduler UI) from untrusted segments as an interim control if patching is delayed. Transferable lesson for the audience beyond this specific device family: root-privileged invocation of a generic CLI utility (xz) as part of a device's own validation logic is a recurring OT/embedded-appliance anti-pattern worth hunting for elsewhere.
+
+  - title: "SonicWall SMA 1000 zero-days (CVE-2026-15409/CVE-2026-15410) actively exploited pre-patch — actor UTA0533 tunnels to a localhost Erlang service, then chains to root and deploys a custom Java webshell"
+    sources:
+      - { url: "https://www.volexity.com/blog/2026/07/17/proxying-to-compromise-sonicwall-secure-mobile-access-0-day-exploitation/", publisher: "Volexity", date: "2026-07-17", role: "primary" }
+      - { url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008", publisher: "SonicWall PSIRT (SNWLID-2026-0008)", date: "2026-07-14", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/", publisher: "Rapid7", date: "2026-07-16", role: "corroborating" }
+    discovery_trace: "first seen at: Volexity blog listing, URL https://www.volexity.com/blog/ → primary: Volexity, URL https://www.volexity.com/blog/2026/07/17/proxying-to-compromise-sonicwall-secure-mobile-access-0-day-exploitation/ → vendor advisory: SonicWall PSIRT, URL https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008 → independent corroboration: Rapid7, URL https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/"
+    summary: |
+      Volexity and Rapid7 independently discovered active, pre-patch exploitation of two SonicWall SMA 1000-series (models 6210, 7210, 8200v) VPN-gateway zero-days, and SonicWall's own advisory (SNWLID-2026-0008, first published 2026-07-14) confirms in-the-wild exploitation and credits both firms. CVE-2026-15409 (CVSS 10.0, CWE-918 SSRF) is an unauthenticated flaw in the SMA1000 Work Place interface's `/wsproxy` endpoint: sending a WebSocket-upgrade request with a crafted Host/User-Agent-style parameter and no valid SMA session cookie tunnels the attacker straight to a normally localhost-only Erlang service (port 1050), yielding initial code execution with zero authentication. CVE-2026-15410 (CVSS 7.2, CWE-94 code injection, per the vendor advisory; Rapid7 independently scored it in the same range) requires the foothold from the first flaw: a request to the hotfix-rollback workflow with path-traversal sequences in the rollback-name parameter (e.g. `../../../../var/tmp/privesc`) escapes the intended directory and injects OS commands, escalating to root. Post-exploitation, the actor (Volexity's designation: UTA0533) used a custom Python injection loader (KNUCKLEBALL) to inject a modified open-source HTTP proxy (Suo5) and a bespoke Java webshell (ORANGETAIL, Behinder-like) into the legitimate `workplace` process, established reboot-survivable persistence by adding a call to the loader script inside `/etc/init.d/workplace`, captured unencrypted LDAP credentials off the wire with tcpdump, and pivoted from the compromised appliance directly into internal corporate networks — reaching domain controllers with non-inventory hostnames. No workaround exists; the only remediation is the hotfix (12.4.3-03453 / 12.5.0-02835 or later), and both vendor and researchers recommend full forensic review, re-imaging on any appliance showing the published IOCs, and resetting all passwords and TOTP seeds. SMA 100-series and firewall-hosted SSL-VPN are explicitly not affected.
+    region_nexus: "global; SonicWall SMA is widely deployed as remote-access infrastructure across European public-sector and enterprise networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, finance, healthcare, telco"
+    cves: ["CVE-2026-15409", "CVE-2026-15410"]
+    techniques: ["T1190", "T1133", "T1059", "T1068", "T1055", "T1505.003", "T1037.004", "T1040", "T1090.003"]
+    affected_products: ["SonicWall Secure Mobile Access (SMA) 1000 series — models 6210, 7210, 8200v"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:uta0533", type: actor, name: "UTA0533", aliases: [], summary: "Volexity's designation for the actor exploiting the SonicWall SMA 1000 zero-day chain (CVE-2026-15409/CVE-2026-15410); deploys the KNUCKLEBALL Python injection loader to run the modified Suo5 HTTP proxy and the custom ORANGETAIL Java webshell inside the appliance's legitimate 'workplace' process (Volexity, 2026-07-17)." }
+      - { key: "tool:sonicwall-sma-uta0533-toolset", type: tool, name: "KNUCKLEBALL / ORANGETAIL SonicWall SMA toolset", aliases: ["KNUCKLEBALL", "ORANGETAIL"], summary: "UTA0533's post-exploitation toolset against SonicWall SMA 1000: KNUCKLEBALL is a Python injection loader used to inject a modified Suo5 open-source HTTP proxy and ORANGETAIL, a custom Behinder-like Java webshell, into the appliance's legitimate 'workplace' process (Volexity, 2026-07-17)." }
+    relation_suggestions:
+      - { subject: "actor:uta0533", object: "tool:sonicwall-sma-uta0533-toolset", basis: "Volexity: UTA0533 deploys KNUCKLEBALL to inject Suo5 and ORANGETAIL into the compromised appliance (Volexity, 2026-07-17)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "No valid SMA session cookie was required during this process."
+        attribution: "Volexity"
+        source_url: "https://www.volexity.com/blog/2026/07/17/proxying-to-compromise-sonicwall-secure-mobile-access-0-day-exploitation/"
+      - quote: "SonicWall PSIRT has investigated multiple cases indicating the active exploitation of the vulnerabilities described in this advisory."
+        attribution: "SonicWall PSIRT (SNWLID-2026-0008)"
+        source_url: "https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008"
+      - quote: "Both vulnerabilities are being actively exploited in the wild."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/"
+      - quote: "The threat actors quickly shifted to lateral movement, pivoting from the compromised appliance directly into the internal corporate network."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/"
+    extended_notes: |
+      Detection concept: telemetry-class first — web/app access logs for the VPN gateway's own interface (101 Switching Protocols responses on /wsproxy with no valid session cookie; requests to /__api__/login or /__api__/logout, which SonicWall states do not exist in a legitimate configuration), plus appliance-log review for hotfix-rollback requests carrying path-traversal sequences, and network egress/auth logs for LDAP binds from the appliance's own IP. SonicWall's advisory publishes concrete log-line indicators (extraweb_access.log, ctrl-service.log, /var/lib/unit/conf.json route entries) that any SOC ingesting SMA appliance logs can operationalize without needing IOC hashes. Hardening: apply the hotfix immediately (no workaround exists); treat any pre-hotfix internet-exposed SMA 1000 appliance as potentially already compromised and follow the vendor's re-image/credential-reset guidance rather than trusting an in-place patch alone.
+
+  - title: "DPRK's Contagious Interview hides a four-stage OTTERCOOKIE-aligned payload in Base64 fragments inside SVG flag images, delivered through fake coding-interview repositories"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/contagious-interview-malware-svg-steganography", publisher: "Elastic Security Labs", date: "2026-07-18", role: "primary" }
+    discovery_trace: "first seen at: Elastic Security Labs blog listing, URL https://www.elastic.co/security-labs → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/contagious-interview-malware-svg-steganography (targeted Elastic's own community Slack; corroborated by the same lab's direct incident visibility, single-source at time of writing)"
+    summary: |
+      Elastic Security Labs disclosed a new instance (internally tracked REF9403) of the long-running, DPRK-aligned "Contagious Interview" campaign on 2026-07-18, after the operators targeted a fake job posting at Elastic's own community Slack workspace. The lure is a trojanized coding-interview take-home project — a fully functional Next.js e-commerce codebase hosted on GitHub (developer account "GreatStackDev") — that a victim is asked to run as part of the "test." The malicious payload is hidden via steganography: Base64-encoded fragments are embedded inside HTML comments spread across every SVG country-flag image in the project's `/assets/flags/` directory (AE.svg, AF.svg, etc.); a loader script (serverValidation.js) reassembles the fragments alphabetically, Base64-decodes them and runs the result via `eval()`, deliberately evading static/signature scanners that don't parse SVG comment bodies. The chain executes on project startup (`npm run dev` / `npm start`) as a four-stage, OTTERCOOKIE-aligned payload: stage 1 harvests browser-stored credentials and 25+ cryptocurrency-wallet extensions (MetaMask, Phantom, Trust Wallet, etc.) across Windows/macOS/Linux and exfiltrates them to an actor-controlled domain; stage 2 recursively discovers and exfiltrates sensitive files (.env, .pem, .aws, .ssh, shell history, source code); stage 3 opens a persistent Socket.IO-based remote-access channel with interactive shell execution and VM-detection checks; stage 4 (Windows-only) drops further second-stage binaries and adds cross-platform clipboard exfiltration. At time of writing the trojanized repository had zero detections across all major antivirus vendors. Elastic frames this as a reminder that a single compromised developer is a viable initial-access path into downstream supply chains — directly relevant to any public-sector or vendor engineering team that sources contractors or evaluates candidates via take-home coding tests.
+    region_nexus: "global; developer-targeting campaigns of this kind have previously reached European targets"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology (any org with in-house or contracted software development)"
+    cves: []
+    techniques: ["T1204.002", "T1027.003", "T1555.003", "T1552.001", "T1083", "T1071.001", "T1115"]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:contagious-interview", type: campaign, name: "Contagious Interview", aliases: ["DeceptiveDevelopment"], summary: "Long-running DPRK-aligned campaign that lures software developers with fake job offers and take-home coding-interview projects to deliver credential- and crypto-wallet-stealing malware; Elastic's 2026-07-18 instance (REF9403) hid a four-stage OTTERCOOKIE-aligned payload in Base64 fragments inside SVG flag images." }
+      - { key: "tool:ottercookie", type: tool, name: "OTTERCOOKIE", aliases: [], summary: "Multi-stage malware family aligned with the DPRK Contagious Interview campaign; the 2026-07-18 Elastic-documented variant chains browser/crypto-wallet theft, sensitive-file exfiltration, a Socket.IO-based RAT and clipboard exfiltration." }
+    relation_suggestions:
+      - { subject: "campaign:contagious-interview", object: "tool:ottercookie", basis: "Elastic Security Labs: the REF9403 payload chain is 'aligned with OTTERCOOKIE' (Elastic Security Labs, 2026-07-18)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "DPRK-aligned hackers hid malware inside SVG flag images to backdoor developer job interview coding tests."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/contagious-interview-malware-svg-steganography"
+      - quote: "Payloads are split into Base64 fragments inside HTML comments across every SVG flag image inside an assets directory."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/contagious-interview-malware-svg-steganography"
+      - quote: "The trojanized repositories at the time of writing have zero detections and are not flagged by any AV vendors."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/contagious-interview-malware-svg-steganography"
+    extended_notes: |
+      Single-source at time of writing (Elastic Security Labs only; no second independent lab report found in this run) — flagged MEDIUM confidence per verification policy, not dropped, given Elastic's direct first-hand incident visibility (their own Slack was targeted) and the campaign's well-established multi-year lineage under other labs' tracking (Contagious Interview / DeceptiveDevelopment is independently documented by ESET, Microsoft, NTT Security, and others per Elastic's own References section, though not for this specific SVG-steganography variant). Triage benign-lookalike note: legitimate take-home coding assessments routinely ship real, runnable e-commerce/Next.js starter projects with image assets — the discriminator here is Base64/steganographic content inside SVG comment nodes plus a `serverValidation.js`-style loader invoking eval() on reassembled fragments, not the presence of SVGs or a Next.js scaffold per se. Detection concept: telemetry-class first — process-creation events showing Node.js/npm spawning network connections or credential-store access shortly after project install, outbound Socket.IO/WebSocket connections from a developer workstation to non-corporate domains, and file-integrity/EDR script-content scanning for eval() calls fed by decoded SVG-comment data.
+
+  - title: "n8n Enterprise token-exchange flaw (CVE-2026-59208) lets a valid token from one trusted OIDC issuer impersonate a different issuer's user — surfaced by an AI penetration-testing agent"
+    sources:
+      - { url: "https://socradar.io/blog/cve-2026-59208-cross-issuer-impersonation-n8n/", publisher: "SOCRadar", date: "2026-07-17", role: "primary" }
+      - { url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-mq3m-f8x3-579w", publisher: "n8n (GitHub Security Advisory GHSA-mq3m-f8x3-579w)", date: "2026-07-09", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/n8n-token-exchange-flaw-could-let.html", publisher: "The Hacker News", date: "2026-07-16", role: "corroborating" }
+    discovery_trace: "first seen at: SOCRadar blog listing, URL https://socradar.io/blog/ → primary: SOCRadar, URL https://socradar.io/blog/cve-2026-59208-cross-issuer-impersonation-n8n/ → vendor advisory: n8n GitHub Security Advisory, URL https://github.com/n8n-io/n8n/security/advisories/GHSA-mq3m-f8x3-579w → corroborating: The Hacker News, URL https://thehackernews.com/2026/07/n8n-token-exchange-flaw-could-let.html"
+    summary: |
+      CVE-2026-59208 (CVSS 4.0: 7.6 High; NVD CVSS 3.1: 6.8) is an improper-authentication flaw (n8n GitHub Security Advisory GHSA-mq3m-f8x3-579w) in n8n's Enterprise-only "token exchange" feature — an RFC 8693 implementation OEM partners use to embed n8n without a second login screen. When an instance trusts more than one external token-exchange issuer, n8n resolved the external identity to a local account using only the JWT `sub` (subject) claim and ignored the `iss` (issuer) claim; because a correctly bound external identity requires the pair (iss, sub), an attacker holding a valid token from trusted issuer A whose `sub` value collides with a victim registered under trusted issuer B can authenticate as that victim without knowing their password. The bug does not bypass JWT signature verification — the token itself is validly signed — it is purely an identity-binding defect after the token is accepted. Exploitation requires token exchange enabled and two or more trusted issuers configured, so the exposed population is narrow (n8n states other deployment modes are unaffected), but any Enterprise n8n instance meeting those preconditions is impersonable end-to-end via legitimate authentication material. Affected: all n8n releases below 2.27.4, and 2.28.0; fixed in 2.27.4 and 2.28.1. No public PoC and no confirmed in-the-wild exploitation as of publication. Notably, the report is credited to a researcher account associated with "Strix," an AI penetration-testing agent — a concrete instance of autonomous offensive tooling finding a real production identity-federation bug, relevant to the same AI-as-force-multiplier theme this week's other research covers.
+    region_nexus: "global; n8n is widely self-hosted by European public-sector and enterprise automation teams"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: ["CVE-2026-59208"]
+    techniques: ["T1550.001", "T1078.004"]
+    affected_products: ["n8n (Enterprise token-exchange feature)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "narrow precondition (Enterprise token-exchange with 2+ trusted issuers), no confirmed exploitation, and possible overlap with S1's vulnerability sweep — carried here for the identity-binding technique class and the AI-pentest-agent discovery angle rather than as an urgent patch alert."
+    evidence:
+      - quote: "External identities are resolved to local accounts using only the JWT sub claim, ignoring the issuer (iss)."
+        attribution: "n8n (GitHub Security Advisory GHSA-mq3m-f8x3-579w)"
+        source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-mq3m-f8x3-579w"
+      - quote: "An attacker who can obtain a valid token from one trusted issuer with a sub matching a victim registered under a different issuer can authenticate as that victim."
+        attribution: "n8n (GitHub Security Advisory GHSA-mq3m-f8x3-579w)"
+        source_url: "https://github.com/n8n-io/n8n/security/advisories/GHSA-mq3m-f8x3-579w"
+      - quote: "n8n credits the report to the GitHub account bearsyankees, whose profile lists Strix, which makes an AI penetration testing agent."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/n8n-token-exchange-flaw-could-let.html"
+    extended_notes: |
+      Detection concept: identity/auth telemetry class — audit-log correlation of an authenticated session's asserted `iss` against the issuer configured for the resolved account, and alerting on any Enterprise token-exchange login where the presenting issuer does not match the account's provisioning issuer. Hardening: restrict token exchange to a single trusted issuer where multi-issuer support isn't operationally required, and upgrade to >=2.27.4 / >=2.28.1.
+
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: sophos-news
+    reason: "news.sophos.com/en-us/category/security-operations/ 301-redirects to www.sophos.com/en-us/blog?taxonomy_blog_category=security+operations/; WebFetch returned only the redirect notice and was not re-fetched this run due to time budget. Recipe fix: use the redirected URL directly next run."
+  - source_id: citizenlab
+    reason: "citizenlab.ca/category/research/targeted-threats/ returned an empty archive listing (no posts) this run; root cause not investigated further (may be a URL-path change on Citizen Lab's site) — try citizenlab.ca/latest-research or a sitemap probe next run."
+  - source_id: ibm-xforce
+    reason: "www.ibm.com/think/x-force listing's most recent item is dated 2026-06-30 ('The front of the cyber kill chain just moved') — no in-window items; not a fetch failure, just a quiet period for this source in the window."
+  - source_id: group-ib
+    reason: "not attempted this run due to time budget (bridge:url recipe not exercised); no in-window Group-IB item confirmed or ruled out."
+  - source_id: kela-cyber
+    reason: "not attempted this run due to time budget."
+  - source_id: morphisec
+    reason: "not attempted this run due to time budget."
+  - source_id: resecurity
+    reason: "not attempted this run due to time budget."
+  - source_id: depthfirst
+    reason: "not attempted this run due to time budget."
+  - source_id: reliaquest
+    reason: "not attempted this run due to time budget."
