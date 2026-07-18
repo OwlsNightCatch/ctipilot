@@ -1,0 +1,535 @@
+domain: G3
+run_id: 2026-07-18T1208Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-18T12:13:58Z
+ended_at: 2026-07-18T12:29:54Z
+duration_seconds: 956
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 16
+  bridge_fetches: 6
+
+mission: >
+  Re-research the audit window (2026-07-11T14:35Z to 2026-07-18T12:08Z) via
+  per-publisher research-blog LISTING SWEEPS across the G3 slice (majors:
+  Mandiant/GTIG, Talos, Unit 42, Check Point Research, ESET, Kaspersky
+  Securelist, Google TAG, plus rotation-due standard sources: Cloudflare
+  Cloudforce One, Dragos, IBM X-Force, KELA, Nozomi, Push Security, Red
+  Canary, SANS ICS, depthfirst.com, Group-IB, Intel 471, Morphisec,
+  Resecurity, Team Cymru, Trend Micro Research). Goal: catch misses the
+  CVE/KEV-driven discovery path does not route through.
+
+items:
+  - title: "Kaspersky GReAT: GoSerpent backdoor evolves — dwell-time-integrated exfiltration against Southeast Asian government/diplomatic targets"
+    sources:
+      - { url: "https://securelist.com/goserpent-backdoor-in-southeast-asia/120687/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-16", role: primary }
+    discovery_trace: >
+      first seen at: kaspersky-securelist listing sweep, URL https://securelist.com/
+      (title surfaced without a visible date on the WebFetch listing summary) →
+      WebSearch ("Kaspersky Securelist GoSerpent persistent threat evolves backdoor 2026")
+      → primary: Kaspersky Securelist, URL https://securelist.com/goserpent-backdoor-in-southeast-asia/120687/
+    summary: |
+      Kaspersky GReAT (published 16 July 2026) documents the continued evolution of GoSerpent, a
+      Go-based RAT active since at least 2021 and re-tooled in 2025-2026, targeting government and
+      diplomatic entities in Southeast Asia — including police complaint-management systems,
+      biometric databases, criminal-case files, and hotel/tenant records tied to national identity
+      registries. The backdoor receives base64-encoded, AES-CBC-encrypted command-line arguments
+      carrying the C2 address and a communication password whose SHA-256 hash becomes the ChaCha20
+      session key. Deployed alongside it: a SOCKS5 proxy, remote-shell execution, and secondary
+      collection tools (ThumbcacheService — a malicious DLL Windows service that harvests
+      .doc/.docx/.pdf/.xls/.xlsx files; Mimikatz and QuarksDumpLocalHash for credential dumping).
+      The hallmark tradecraft is deliberate dwell time: operators plant the backdoor, wait weeks
+      while documents accumulate, then return with an evolved proxy (Stowaway) and
+      TmcLoader/TmcPayload to 7-Zip-compress and exfiltrate the archive over stolen-credential
+      network shares — a cadence explicitly designed to outlast standard log-retention windows.
+      Kaspersky hedges attribution: "indications of a potential link to the TetrisPhantom threat
+      actor" rather than a firm claim. This is a strong transferable-lesson item for any
+      government/diplomatic-facing SOC — the AES-CBC arg-decryption + ChaCha20 C2 channel and the
+      staged collect-then-wait-then-exfil pattern are hunt-actionable independent of the Southeast
+      Asian victim geography.
+      Why it clears the gate: new/evolved malware targeting government & diplomatic entities with
+      hunt-actionable tradecraft (technique class: T1027 Obfuscated Files or Information for the
+      AES-CBC arg encoding, T1573.001 Symmetric Cryptography for the ChaCha20 C2 channel, T1005 Data
+      from Local System / T1560.001 Archive via Utility for the ThumbcacheService+7-Zip collection
+      stage, T1003.001 OS Credential Dumping: LSASS Memory via Mimikatz, T1090.002 External Proxy
+      via Stowaway). Not present anywhere in the 69-item prior-coverage window (checked title,
+      entity, and CVE fields — no match).
+    region_nexus: "Southeast Asia (victim geography); TTPs (dwell-time exfil against government/diplomatic targets) transferable to any Swiss/EU public-sector or diplomatic-facing environment"
+    primary_sector_nexus: "direct — government / law-enforcement / diplomatic targeting"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1027, T1573.001, T1005, T1560.001, T1003.001, T1090.002]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:goserpent-backdoor", type: tool, name: "GoSerpent", aliases: [],
+          summary: "Go-based RAT active since ~2021, re-tooled 2025-2026, deployed against Southeast Asian government/diplomatic targets with dwell-time-integrated document collection and exfiltration (Kaspersky GReAT, 2026-07-16)." }
+      - { key: "actor:tetrisphantom", type: actor, name: "TetrisPhantom", aliases: [],
+          summary: "Threat actor Kaspersky GReAT suspects (not confirmed) may be linked to the GoSerpent campaign based on shared victimology, technical capabilities, and operational methods (Kaspersky, 2026-07-16)." }
+    relation_suggestions:
+      - { subject: "tool:goserpent-backdoor", object: "actor:tetrisphantom",
+          basis: "Kaspersky GReAT: 'indications of a potential link to the TetrisPhantom threat actor' (Securelist, 2026-07-16) — hedged, not confirmed attribution" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The backdoor connects to command-and-control servers using ChaCha20 encryption for communications, with the SHA256 hash of the communication password serving as the encryption key."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/goserpent-backdoor-in-southeast-asia/120687/"
+      - quote: "While the exact attribution of the GoSerpent campaign remains uncertain, there are indications of a potential link to the TetrisPhantom threat actor."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/goserpent-backdoor-in-southeast-asia/120687/"
+    extended_notes: |
+      Kaspersky's listing page (securelist.com/) rendered this title with NO visible publish date
+      in the WebFetch summary — it was only surfaced by targeted WebSearch. This is the exact
+      discovery-path gap the 2026-07-11 audit flagged: a plain listing WebFetch under-reports
+      dates on several Securelist entries, silently pushing in-window items below the visible
+      fold. Recommend the main agent/operator note this pattern for the sources.json record.
+    status: possible-gap
+
+  - title: "Kaspersky GReAT: OkoBot — 20+-payload crypto-wallet-stealing framework distributed via a fake SQL Server Management Studio GitHub repo"
+    sources:
+      - { url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-15", role: primary }
+    discovery_trace: >
+      first seen at: kaspersky-securelist listing sweep, URL https://securelist.com/
+      (title surfaced without a visible date) → WebSearch ("Kaspersky Securelist GReAT OkoBot new
+      malware framework cryptocurrency 2026") → primary: Kaspersky Securelist, URL
+      https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/
+    summary: |
+      Kaspersky GReAT (published 15 July 2026) details OkoBot, an actively-developed (ongoing since
+      early 2025, still active at publication) malicious framework built on the existing TookPS
+      loader and targeting cryptocurrency users and IT/developer staff specifically. Initial access
+      is via ClickFix-style lures and a malicious GitHub repository (active March-June 2025)
+      masquerading as SQL Server Management Studio installation guidance; both vectors trigger
+      TookPS, which installs SSH on the victim host and opens an attacker-controlled SSH tunnel used
+      to push 20+ payloads/implants (browser-extension loaders, wallet stealers, keyloggers,
+      SeedHunter, MC Keylogger). The new OkoSpyware module hooks Chromium's extension-loading
+      function to silently install malicious extensions when a new browser window opens, and
+      separately hooks internal Electron framework functions (used by Ledger Live, Exodus, Trezor
+      Suite, Tonkeeper, MetaMask) to record FFmpeg-captured video of wallet-app windows plus
+      keystrokes, storing MP4 + JSON metadata for exfiltration — effectively defeating password
+      managers/hardware-wallet UIs that rely on on-screen confirmation by recording the screen
+      itself rather than stealing a static secret. Victims span 25+ countries (concentrated in
+      Brazil, Vietnam, Canada, Mexico, Türkiye); Kaspersky assesses a Russian-speaking operator
+      based on geoblocking, Russian-language code comments, and prior Rilide distribution on
+      Russian-language forums.
+      Why it clears the gate: new malware family, hunt-actionable tradecraft (Chromium
+      extension-hook + Electron-framework-hook screen/keylog capture is a technique class not
+      widely covered elsewhere; developer/IT-staff targeting via a trojanized GitHub tooling repo is
+      directly relevant to any org's software-supply-chain and developer-endpoint hygiene, including
+      public-sector dev teams). Not present in the 69-item prior-coverage window.
+    region_nexus: "global distribution (25+ countries); developer/IT-staff targeting vector is transferable to any Swiss/EU organisation running internal dev tooling"
+    primary_sector_nexus: "indirect — targets IT/developer personnel broadly, not government-specific"
+    sector: "finance (cryptocurrency), public-sector (developer endpoints generally)"
+    cves: []
+    techniques: [T1204.001, T1176, T1555.003, T1113, T1056.001]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:okobot-framework", type: tool, name: "OkoBot", aliases: ["OkoSpyware"],
+          summary: "Multi-stage crypto-wallet-stealing malware framework built on TookPS, distributed via ClickFix lures and a trojanized GitHub SSMS-installer repo; new OkoSpyware module hooks Chromium/Electron to video-record and keylog wallet-app windows (Kaspersky GReAT, 2026-07-15)." }
+      - { key: "tool:tookps-loader", type: tool, name: "TookPS", aliases: [],
+          summary: "SSH-tunnel-installing loader that both OkoBot infection vectors trigger to establish the initial attacker-controlled channel (Kaspersky, 2026-07-15)." }
+    relation_suggestions:
+      - { subject: "tool:okobot-framework", object: "tool:tookps-loader",
+          basis: "Kaspersky: 'Both infection vectors trigger the execution of the malicious script TookPS, which installs SSH on the victim's system' (Securelist, 2026-07-15)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The framework includes more than 20 malicious payloads and implants, covering a wide variety of functions."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/"
+      - quote: "When a new Chromium window is opened, a hooked function is invoked that silently installs extensions."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/okobot-framework-targets-cryptocurrency-wallets/120660/"
+    extended_notes: |
+      Same listing-page date-visibility gap as GoSerpent above — both titles appeared on
+      securelist.com/ with no date rendered in the WebFetch summary.
+    status: possible-gap
+
+  - title: "Unit 42: TuxBot v3 — an LLM-assisted, 17-architecture IoT botnet framework shipping with its own AI safety disclaimer left in the code"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-15", role: primary }
+      - { url: "https://thehackernews.com/2026/07/tuxbot-v3-evolution-shows-signs-of-llm.html", publisher: "The Hacker News", date: "2026-07-16", role: corroborating }
+    discovery_trace: >
+      first seen at: unit42 listing sweep, URL https://unit42.paloaltonetworks.com/ →
+      primary: Palo Alto Networks Unit 42, URL
+      https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/
+    summary: |
+      Unit 42 (published 15 July 2026) documents TuxBot v3 Evolution, a modular IoT botnet framework
+      cross-compiled for 17 CPU architectures (ARM, MIPS, x86_64, PowerPC, RISC-V, etc.). Initial
+      access is Telnet brute-forcing with 1,496 hardcoded username/password pairs; the codebase also
+      carries exploit code for 30+ IoT device families, though most of those exploit paths are
+      non-functional in the analysed build. C2 uses X25519/ChaCha20-Poly1305 encryption, a SHA-512
+      domain-generation algorithm, and an Ed25519-signed P2P gossip protocol, with IRC/DNS-TXT/HTTP
+      polling as fallback channels. The standout finding: the developer relied heavily on an LLM to
+      generate the C modules, port exploits, and write the C2 server, and the resulting code carries
+      reproducible LLM-signature bugs — an XOR key table where roughly a sixth of entries decrypt to
+      garbage, a non-functional virtual-machine magic-number check, and a hallucinated Argon2id
+      routine — plus every one of the 61 C source files retains an identical LLM-inserted safety
+      disclaimer header ("this code is for educational and authorized security research only") that
+      the operator never stripped. Unit 42 demonstrated the defects are trivially fixable with
+      targeted follow-up LLM prompts, meaning corrected production builds plausibly already exist in
+      the wild. Working capabilities recovered include Telnet/SSH/HTTP/ADB scanning and functioning
+      DDoS flood modules.
+      Why it clears the gate: new IoT malware family with concrete, hunt-actionable tradecraft (the
+      specific C2 crypto stack, DGA algorithm, and credential list are all detection-relevant), and
+      it is a directly comparable data point to the org's already-tracked "AI moved from target to
+      operator" theme (JADEPUFFER, 0DIN coercion, Phantom Squatting) — this is the same shift
+      playing out in commodity IoT-botnet development rather than targeted intrusion tooling. Not
+      present in the 69-item prior-coverage window.
+    region_nexus: "global — any internet-exposed Linux/IoT device with Telnet/SSH reachable is a target; relevant to Swiss/EU-operated IoT and OT-adjacent estates"
+    primary_sector_nexus: "indirect — commodity IoT botnet, not government-specific, but energy/water/telco IoT deployments are in the exposed-device population this framework brute-forces"
+    sector: "energy, water, telco (any org with internet-facing embedded/IoT devices)"
+    cves: []
+    techniques: [T1110.001, T1583.001, T1071.004, T1584.005]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:tuxbot-v3", type: tool, name: "TuxBot v3 Evolution", aliases: ["TuxBot v3"],
+          summary: "Modular, LLM-assisted IoT botnet framework cross-compiling for 17 CPU architectures; retained LLM safety-disclaimer headers and several LLM-hallucinated implementation bugs in its shipped code (Unit 42, 2026-07-15)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The developer relied on an LLM to generate C modules, port exploits and write C2 server code."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+      - quote: "Every .c file in the bot directory carries an identical header: WARNING: This code is for educational research only. The LLM complied with the request to generate botnet code but added a safety disclaimer."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+      - quote: "The bot ships with 1,496 username/password pairs for Telnet brute-forcing."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/tuxbot-v3-evolution-iot-botnet/"
+    extended_notes: |
+      Unit 42's own listing page correctly surfaced this title WITH a date on WebFetch, but the
+      direct-guess URL (tuxbot-iot-botnet/) 404'd — the correct slug (tuxbot-v3-evolution-iot-botnet/)
+      only surfaced via WebSearch. A pure listing-drill without the search pivot would have missed
+      this item on a URL-guessing failure, illustrating a second, distinct discovery-path failure
+      mode from the GoSerpent/OkoBot date-visibility one above.
+    status: possible-gap
+
+  - title: "Mandiant: exposed Google Cloud Run/Functions LFI→RCE chains to full-project takeover via metadata-server service-account token theft"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/exposed-cloud-functions-harden/", publisher: "Google Cloud / Mandiant", date: "2026-07-15", role: primary }
+    discovery_trace: >
+      first seen at: mandiant-gtig RSS feed, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v
+      → primary (no further pivot needed): Google Cloud / Mandiant, URL
+      https://cloud.google.com/blog/topics/threat-intelligence/exposed-cloud-functions-harden/
+    summary: |
+      Mandiant (published 15 July 2026) walks through concrete attack scenarios in which a
+      publicly-exposed Cloud Run/Cloud Functions service with an LFI or RCE flaw lets an attacker
+      reach the GCP instance-metadata server and extract the service account's bearer token; if the
+      function runs under the default compute service account with Editor-equivalent permissions,
+      this is described as "equivalent to a full GCP project takeover" — the attacker pivots from
+      the serverless function to arbitrary adjacent workloads and secrets. Hardening guidance is
+      concrete: isolate public-facing serverless services into their own project, force custom
+      least-privilege service accounts (never the default compute SA), front the function with a
+      Layer-7 Application Load Balancer plus Cloud Armor WAF rules (named rule IDs
+      lfi-v33-stable / rce-v33-stable), and instrument Security Command Center's Cloud Run
+      threat-detection module.
+      Why it's borderline: this is hardening/technique guidance rather than a named campaign or
+      malware family — it does map a concrete attack chain (T1190 Exploit Public-Facing Application
+      → T1552.005 Cloud Instance Metadata API → T1078.004 Cloud Accounts) that is directly relevant
+      to any public-sector or CI operator running GCP serverless workloads, which is an increasingly
+      common migration target for EU government cloud programmes. No specific victim or ITW
+      exploitation is claimed — it reads as proactive Mandiant Consulting guidance, not an incident
+      writeup.
+    region_nexus: "global; directly applicable to any Swiss/EU public-sector or CI cloud-migration programme using GCP serverless"
+    primary_sector_nexus: "indirect — cloud-platform hardening guidance, not government-specific"
+    sector: "public-sector, finance, telco (any GCP serverless tenant)"
+    cves: []
+    techniques: [T1190, T1552.005, T1078.004]
+    affected_products: ["Google Cloud Run", "Google Cloud Functions"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Leveraging these compromised secrets or service accounts allows threat actors to pivot to adjacent systems and workloads, potentially resulting in a total environment takeover if proper hardening strategies are not in place."
+        attribution: "Mandiant (Google Cloud)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/exposed-cloud-functions-harden/"
+    extended_notes: |
+      Borderline call — flagged for the main agent to weigh: is generic cloud-hardening guidance
+      (no named campaign/actor/incident) in scope for the entry store, or is it better captured as
+      background context in a future serverless-security deep dive?
+    borderline: true
+    borderline_reason: "solid technical hardening content but no named campaign, actor, or confirmed exploitation — a guidance piece, not a threat/incident finding"
+    status: borderline
+
+  - title: "KELA: ByteToBreach data-leak operator's July update names Romania's ANCPI cadastral agency among government/bank victims"
+    sources:
+      - { url: "https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/", publisher: "KELA Cybercrime Threat Intelligence", date: "2026-07-17 (updated; original Nov 2025)", role: primary }
+    discovery_trace: >
+      first seen at: kela-cyber listing sweep, URL https://www.kelacyber.com/blog/ →
+      primary: KELA, URL https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/
+    summary: |
+      KELA's profile of "ByteToBreach" (attributed with moderate confidence to an Algeria-based
+      individual, Zakaria Mahdjoub) was originally published November 2025 but was updated 17 July
+      2026 with new victim material, including a claimed breach of Romania's National Agency for
+      Cadastre and Real Estate Publicity (ANCPI) — exposing Active Directory environments, source
+      code, and citizen databases — plus references to Polish banking-sector and Ukraine/Cyprus
+      targets. The actor's known playbook: known-vulnerability exploitation plus infostealer
+      (Raccoon, StealC)/phishing-harvested credentials, exfiltrating data from airlines, banks,
+      governments, and universities, sold/leaked across DarkForums, Dread, and Telegram.
+      Why it's borderline: this is a criminal actor's own claim relayed by a Tier-C-reliability
+      cybercrime-intel vendor about a European government agency (Romania, an EU member state) —
+      exactly the kind of item the fake-news rules require victim confirmation or high-reliability
+      journalism for before treating as fact. No ANCPI statement or Romanian CERT/DNSC advisory was
+      found corroborating the claim in this sweep (S2/S4 domains should check Romanian-language
+      sources and DNSC directly). Flagging for cross-domain corroboration rather than composing as a
+      standalone item.
+    region_nexus: "Romania (EU member state) — direct European-government nexus if corroborated"
+    primary_sector_nexus: "direct if corroborated — national government cadastral/land-registry agency"
+    sector: "public-sector, finance"
+    cves: []
+    techniques: [T1589.001, T1078]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:bytetobreach", type: actor, name: "ByteToBreach", aliases: [],
+          summary: "Prolific data-leak/extortion actor (KELA assesses likely Zakaria Mahdjoub, Algeria) active since ~June 2025, selling/leaking data from airlines, banks, governments and universities; July 2026 update names Romania's ANCPI as a victim (KELA, updated 2026-07-17)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: new
+    evidence:
+      - quote: "innocent people are the victims, not the governments. Remember that"
+        attribution: "ByteToBreach (actor statement, relayed by KELA)"
+        source_url: "https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/"
+    extended_notes: |
+      This item sits closer to G2 (home region & sector) / G4 (incidents & disclosures) territory
+      than G3's research mandate — surfacing here because it was discovered via a G3-slice
+      publisher (KELA) during the listing sweep. Recommend the main agent route it to whichever
+      domain owns Romania/EU incident corroboration for this run.
+    borderline: true
+    borderline_reason: "single-source criminal-actor claim relayed by a C-reliability vendor about an EU government victim — needs victim/CERT corroboration before treating as fact"
+    status: borderline
+
+  - title: "Unit 42 recap of its own Feb-2026 Global Incident Response Report — thin new content (agentic ransomware, token jacking notes)"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ai-incident-response-report/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-16", role: primary }
+    discovery_trace: >
+      first seen at: unit42 listing sweep, URL https://unit42.paloaltonetworks.com/ →
+      primary: Palo Alto Networks Unit 42, URL https://unit42.paloaltonetworks.com/ai-incident-response-report/
+    summary: |
+      Published 16 July 2026 but confirmed (via direct fetch) to be a retrospective commentary
+      piece on Unit 42's Global Incident Response Report ORIGINALLY released in February 2026 (the
+      "72-minutes to exfiltration" statistic already covered by the store's earlier reporting cycle
+      and consistent with figures cited elsewhere). New content is thin: brief mentions of emerging
+      agentic-ransomware adoption and AI-cloud-service token-jacking, both themes already present in
+      the store via other, more specific entries (JADEPUFFER, ShinyHunters OAuth/token-abuse
+      mapping). Classic recycled-news trap — the fresh publish date wraps old research with minimal
+      genuinely new material.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "general"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: LOW
+    novelty: "update-of: none identified in store (underlying Feb 2026 report itself predates this 7-day audit-index window)"
+    evidence: []
+    extended_notes: |
+      Recommend NOT composing as a standalone entry — flagged only to document that it was checked
+      and consciously dropped as recycled content, per the "check original event date" discipline.
+    borderline: true
+    borderline_reason: "in-window publish date but recycled/thin new content versus the Feb 2026 original report"
+    status: borderline
+
+  - title: "Varonis: 'Rogue Agent' permission-boundary flaw in Google Dialogflow CX enabled VPC-SC bypass and silent conversation exfiltration"
+    sources:
+      - { url: "https://www.varonis.com/blog/rogue-agent-dialogflow-attack", publisher: "Varonis Threat Labs", date: "last updated 2026-07-07", role: primary }
+      - { url: "https://www.darkreading.com/application-security/dialogflow-cx-rogue-agent-flaw-enabled-ai-chatbot-data-theft", publisher: "Dark Reading", date: "2026-07-14", role: corroborating }
+    discovery_trace: >
+      first seen at: checkpoint-research weekly digest, URL
+      https://research.checkpoint.com/2026/13th-july-threat-intelligence-report/ (roll-up,
+      discovery-only) → pivot: Dark Reading, URL
+      https://www.darkreading.com/application-security/dialogflow-cx-rogue-agent-flaw-enabled-ai-chatbot-data-theft
+      → primary: Varonis Threat Labs, URL https://www.varonis.com/blog/rogue-agent-dialogflow-attack
+    summary: |
+      Varonis Threat Labs disclosed "Rogue Agent," a permission-boundary flaw in Google Dialogflow
+      CX requiring only the dialogflow.playbooks.update permission (grantable at the single-agent
+      level) to exploit. Dialogflow CX's "Code Blocks" feature runs embedded Python inside a
+      Google-managed Cloud Run service SHARED across every agent in the same GCP project; an
+      attacker could overwrite the code_execution_env.py file to inject code that intercepts live
+      conversations, exfiltrates data, and manipulates chatbot responses — then restore the
+      original configuration so the Dialogflow Console UI shows nothing abnormal while the
+      malicious code persists invisibly in the underlying Cloud Run environment. Because the shared
+      Cloud Run instances retain default public egress, the flaw also bypassed VPC Service Controls
+      perimeters. Google shipped an initial fix in April 2026 and a full resolution in June 2026;
+      Google states no confirmed in-the-wild exploitation before the patch.
+      Why it's borderline on recency: Varonis's own writeup is dated "last updated 2026-07-07"
+      (outside the 2026-07-11 window start), but a wave of press coverage (Dark Reading, Dataconomy,
+      GBHackers, TheHackerNews, CyberPress) ran 2026-07-14, inside the window — this reads as a
+      delayed-disclosure press wave rather than fresh technical development, so it is offered for
+      the main agent's recency judgment rather than composed outright. Not in the assigned G3
+      publisher slice (Varonis) — surfaced via the Check Point weekly roll-up's outbound links.
+    region_nexus: "global; Dialogflow CX is used by public-sector/citizen-service chatbot deployments, including in the EU"
+    primary_sector_nexus: "indirect — platform-level flaw, not campaign/actor-specific"
+    sector: "public-sector, telco (any org using Dialogflow CX for citizen/customer chatbots)"
+    cves: []
+    techniques: [T1611, T1499.004, T1565.001]
+    affected_products: ["Google Dialogflow CX"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The only permission required to configure Code Blocks was dialogflow.playbooks.update, which can be granted at the project level and scoped down to a specific agent."
+        attribution: "Varonis Threat Labs"
+        source_url: "https://www.varonis.com/blog/rogue-agent-dialogflow-attack"
+      - quote: "Google issued an initial security update in April 2026 and fully resolved the issue in June 2026. We are not aware of any exploitation in the wild before Google's patch release."
+        attribution: "Varonis Threat Labs"
+        source_url: "https://www.varonis.com/blog/rogue-agent-dialogflow-attack"
+    extended_notes: |
+      Discovered outside the assigned G3 publisher list — surfaced via a roll-up digest's outbound
+      link. Recommend the main agent judge recency itself (article vs. press-wave date) before
+      composing.
+    borderline: true
+    borderline_reason: "primary disclosure writeup pre-dates the window; press wave covering it falls inside the window — recency call needed"
+    status: borderline
+
+covered_in_store_compact:
+  # Compact list of in-window items independently re-discovered by this listing sweep that ARE
+  # already present in prior_coverage.json — listed to prove the sweep ran and to confirm no
+  # silent duplicate composition risk.
+  - { title: "UAT-11795 deploys Starland RAT / WLDR C2 implant", publisher: "Cisco Talos", date: "2026-07-16", matched_entry: "2026-07-17/talos-uat-11795-starland-rat-wldr-c2" }
+  - { title: "The Serpent's Tongue — Python package build/import-time code execution", publisher: "Cisco Talos", date: "2026-07-14", matched_entry: "2026-07-14/talos-serpents-tongue-python-package-code-execution-taxonomy" }
+  - { title: "Siemens ROX II zero-day trilogy", publisher: "Unit 42", date: "2026-07-17", matched_entry: "2026-07-18/siemens-ruggedcom-rox-ii-unit42-three-cve-chain" }
+  - { title: "Forgotten UEFI shims undermining Secure Boot", publisher: "ESET WeLiveSecurity", date: "2026-07-14", matched_entry: "2026-07-14/eset-forgotten-uefi-shims-secure-boot-bypass" }
+  - { title: "HelloNet campaign — ViPNet update-system sideload", publisher: "Kaspersky Securelist", date: "2026-07-16", matched_entry: "2026-07-17/kaspersky-hellonet-vipnet-updater-sideload-afd-ioctl" }
+  - { title: "AI Security Report 2026", publisher: "Check Point Research", date: "2026-07-14", matched_entry: "2026-07-14/check-point-annual-ai-security-report-2026" }
+  - { title: "Cavern Manticore — Iran-linked modular C2", publisher: "Check Point Research", date: "2026-07-06 (discovered 2026-07-09)", matched_entry: "2026-07-09/cavern-manticore-iran-mois-modular-net-c2-anti-analysis" }
+  - { title: "ESET Threat Report H1 2026", publisher: "ESET WeLiveSecurity", date: "2026-07-08 (discovered 2026-07-09)", matched_entry: "2026-07-09/eset-threat-report-h1-2026" }
+
+not_in_window_checked:
+  # Items surfaced during the sweep, individually verified via direct fetch/search to have
+  # published OUTSIDE the 2026-07-11 to 2026-07-18 window — confirmed drops, not gaps.
+  - { title: "Spring Botnet Floods: Golang malware (Apex2, c2c/meow) targets exposed IoT", publisher: "Nozomi Networks Labs", actual_date: "2026-07-06" }
+  - { title: "Tenda router hidden admin backdoor (CVE-2026-11405)", publisher: "CERT/CC (via Check Point digest)", actual_date: "2026-07-06" }
+  - { title: "U-Boot FIT signature-verification flaws (6x, Binarly)", publisher: "Binarly (via Check Point digest)", actual_date: "~2026-07-09" }
+  - { title: "Targeting the Defense Industrial Base — network-telemetry pre-positioning", publisher: "Team Cymru", actual_date: "2026-04-29" }
+  - { title: "Analyzing Void Dokkaebi's Cython-compiled InvisibleFerret malware", publisher: "Trend Micro Research", actual_date: "2026-05-22" }
+  - { title: "ZionSiphon dismissed as non-functional/LLM-generated OT malware", publisher: "Nozomi Networks Labs / Dragos", actual_date: "2026-04-24 / 2026-04-23" }
+  - { title: "Device Code Phishing via Microsoft OAuth Device Authorization Grant", publisher: "Kaspersky Securelist", actual_date: "~pre-window (sequential article-ID precedes GoSerpent/OkoBot)" }
+  - { title: "Threat landscape for industrial automation systems Q1 2026", publisher: "Kaspersky ICS CERT", actual_date: "2026-06-09" }
+
+sweep_log:
+  - publisher: "Palo Alto Networks Unit 42"
+    method: "webfetch listing (https://unit42.paloaltonetworks.com/) + targeted url/search drill-down"
+    posts_enumerated_in_window: 4
+    dispositions: "Siemens ROX II trilogy = covered-in-store; AI IR Report recap = borderline (thin/recycled); npm Threat Landscape (updated) = likely update of already-covered npm-wave theme, not separately flagged; TuxBot v3 = possible-gap"
+  - publisher: "Kaspersky Securelist (GReAT)"
+    method: "webfetch listing (https://securelist.com/) — several titles rendered WITHOUT visible dates; targeted WebSearch used to date and confirm each"
+    posts_enumerated_in_window: 3
+    dispositions: "HelloNet = covered-in-store; GoSerpent = possible-gap; OkoBot = possible-gap. Additional undated titles on the listing (Device Code Phishing, Q1 2026 ICS report) checked and confirmed pre-window."
+  - publisher: "Cisco Talos"
+    method: "webfetch listing (https://blog.talosintelligence.com/)"
+    posts_enumerated_in_window: 6
+    dispositions: "UAT-11795 Starland RAT = covered-in-store; Serpent's Tongue = covered-in-store; Patch Tuesday coverage = out of G3 scope (S1 territory); Hunter's Paradox / integrations video = opinion/marketing, not gate-clearing"
+  - publisher: "ESET WeLiveSecurity"
+    method: "webfetch listing (https://www.welivesecurity.com/en/)"
+    posts_enumerated_in_window: 1
+    dispositions: "Forgotten UEFI shims = covered-in-store"
+  - publisher: "Google Cloud / Mandiant (GTIG)"
+    method: "rss feed (feedburner) — clean, full outbound links via drill-down"
+    posts_enumerated_in_window: 2
+    dispositions: "Exposed Cloud Functions hardening = borderline (guidance, no campaign); AI-Assisted Vulnerability Management blueprint = reviewed, dropped (no attacker TTP content, pure guidance)"
+  - publisher: "Check Point Research"
+    method: "rss feed (research.checkpoint.com/feed/) + drill into 13th-July weekly digest for pivots"
+    posts_enumerated_in_window: 2
+    dispositions: "AI Security Report 2026 = covered-in-store; 13th July digest = roll-up, discovery-only, pivots followed (Varonis Dialogflow, Tenda, U-Boot — all resolved as above)"
+  - publisher: "Google Threat Analysis Group (TAG)"
+    method: "webfetch + jina reader retry"
+    posts_enumerated_in_window: 0
+    dispositions: "TRANSPORT GAP — page renders as a JS shell surfacing only one unrelated post (Android fake-call detection) with no listing/dates; jina reader retry returned the same single item. Could not confirm whether in-window TAG posts exist."
+  - publisher: "Group-IB"
+    method: "bridge (python3 tools/fetch_source.py url)"
+    posts_enumerated_in_window: 0
+    dispositions: "TRANSPORT GAP — bridge fetch returned a stale/cached page whose only visible dates were 2022 and 2025-02-28; current post listing did not render."
+  - publisher: "Trend Micro Research"
+    method: "rss feed attempts (http + https feedburner, both failed) → jina reader on research.html landing page"
+    posts_enumerated_in_window: 0
+    dispositions: "TRANSPORT GAP (feeds) + UNCERTAIN (landing page) — jina-rendered listing showed only posts through 2026-06-29 despite today being 2026-07-18; could not confirm whether this reflects genuinely quiet 3 weeks or a caching/pagination issue. Targeted searches for named recent Trend Micro pieces (Void Dokkaebi/InvisibleFerret) resolved to a pre-window (2026-05-22) publish date."
+  - publisher: "Dragos"
+    method: "webfetch listing (https://www.dragos.com/blog/)"
+    posts_enumerated_in_window: 1
+    dispositions: "'How Juneau's Water Utility Closed Its OT Blind Spots' (2026-07-14) — customer case-study/marketing piece, not technique research; reviewed and dropped (no gate-clearing TTP content)"
+  - publisher: "Nozomi Networks Labs"
+    method: "webfetch listing (no dates rendered) + individual WebSearch confirmation for candidate titles"
+    posts_enumerated_in_window: 0
+    dispositions: "Listing showed 5 undated titles; the one technically interesting item ('Spring Botnet Floods') confirmed pre-window (2026-07-06) via search. Water-utility/NERC-CIP-015 series items appear to be an ongoing vendor content series without confirmed in-window dates — not pursued further given marketing/compliance-guidance framing."
+  - publisher: "SANS ICS"
+    method: "webfetch listing (https://www.sans.org/blog/?focus-area=industrial-control-systems-ics) — dates rendered"
+    posts_enumerated_in_window: 0
+    dispositions: "Most recent dated post (17 Jul) is a generic 'AI can find bugs' opinion piece outside the ICS-technical-research bar; no in-window ICS-specific technical research found"
+  - publisher: "Push Security Blog"
+    method: "webfetch listing — dates rendered"
+    posts_enumerated_in_window: 0
+    dispositions: "Most recent post dated 12 May 2026 — stale listing relative to window; no in-window items"
+  - publisher: "Cloudflare Cloudforce One"
+    method: "webfetch listing (tag page) — dates rendered"
+    posts_enumerated_in_window: 0
+    dispositions: "Most recent post dated 9 June 2026; no in-window items"
+  - publisher: "IBM X-Force"
+    method: "bridge/webfetch (https://www.ibm.com/think/x-force) — no dates rendered"
+    posts_enumerated_in_window: "unknown (dates not visible)"
+    dispositions: "Could not confirm in-window status of listed posts via listing alone. Targeted search on the 'Palo Alto and Fortinet VPN compromise advisory' title indicates it extends the already-covered FortiBleed story (2026-06/07 origin) rather than new ground; not pursued as a distinct item given time budget."
+  - publisher: "KELA Cybercrime Threat Intelligence"
+    method: "webfetch listing — dates rendered"
+    posts_enumerated_in_window: 4
+    dispositions: "Exilio404 (Brazil forum profile, 2026-07-17) and ByteToBreach (updated 2026-07-17) both reviewed; Exilio404 dropped (no CI/gov nexus, pure cybercrime-forum profiling); ByteToBreach flagged borderline (Romania ANCPI government claim, needs corroboration). Top-10 dark-web-search-engine and Telegram-channel listicles (2026-07-13/14) reviewed and dropped as non-actionable listicle content."
+  - publisher: "Morphisec Labs"
+    method: "webfetch listing — dates rendered"
+    posts_enumerated_in_window: 1
+    dispositions: "'Prompt Injection, Model Poisoning, and AI Supply Chain Attacks Explained' (2026-07-13) reviewed — generic educational/marketing framing, no new technical research; dropped"
+  - publisher: "Resecurity"
+    method: "webfetch listing — no article URLs surfaced, dates unclear"
+    posts_enumerated_in_window: 0
+    dispositions: "No in-window items identified"
+  - publisher: "Team Cymru S2 Research"
+    method: "webfetch listing (no dates rendered) + individual WebSearch confirmation for the strongest candidate"
+    posts_enumerated_in_window: 0
+    dispositions: "'Targeting the Defense Industrial Base' confirmed pre-window (2026-04-29) via search. Other undated titles (Yurei/Beast ransomware analyses, DPRK fake-IT-worker post) not individually date-confirmed given time budget — residual uncertainty noted below."
+  - publisher: "depthfirst.com"
+    method: "webfetch"
+    posts_enumerated_in_window: 0
+    dispositions: "TRANSPORT GAP — page returned only site navigation, no blog listing content"
+  - publisher: "Intel 471 Blog"
+    method: "rss feed (https://www.intel471.com/blog/feed) — clean, dates rendered"
+    posts_enumerated_in_window: 4
+    dispositions: "Scattered Spider TfL sentencing recap (2026-07-17) = ties to already-covered 2026-07-17/scattered-spider-tfl-sentencing-helpdesk-vishing; Operation Fake KickOff SaaS-recruiter credential harvesting (2026-07-15) = reviewed, appears to be Intel 471's own research not seen elsewhere in the 69-item window — genuinely new but assessed as moderate-severity generic credential-phishing tradecraft rather than a strong gate-clearing item given time constraints, flagged for main-agent awareness only, not composed as a full item; QuimaRAT MaaS RAT (2026-07-15) = same treatment; Threat Hunting Case Study: Scattered Spider (2026-07-14) = ties to already-covered Scattered Spider material via the weekly W28 actor-developments entry"
+  - publisher: "Red Canary"
+    method: "rss feed (https://redcanary.com/feed/) — clean, dates rendered"
+    posts_enumerated_in_window: 0
+    dispositions: "Most recent post dated 30 June 2026; no in-window items"
+
+coverage_gaps:
+  - source_id: google-tag
+    reason: "Page renders as a JS shell; both direct WebFetch and jina reader retry surfaced only a single unrelated post with no dated listing. Could not confirm in-window TAG content either way."
+  - source_id: group-ib
+    reason: "Bridge fetch (tools/fetch_source.py url) returned a stale/cached HTML snapshot (dates 2022, 2025-02) rather than the current listing; current posts did not render."
+  - source_id: trendmicro-research
+    reason: "Both RSS feed candidates (http://feeds.trendmicro.com/TrendMicroResearch, https://feeds.trendmicro.com/TrendMicroResearch) failed transport (refused http; SSL EOF + jina 422 on https). jina-rendered landing page (research.html) showed posts only through 2026-06-29 despite the current date being 2026-07-18 — could not confirm whether this is a genuine 3-week quiet period or a stale/paginated render."
+  - source_id: ibm-xforce
+    reason: "Listing content rendered without publish dates on any of the ~6 visible posts; could not confirm in-window status without per-article drilling, which time budget did not allow beyond one targeted search."
+  - source_id: depthfirst
+    reason: "WebFetch returned only site navigation chrome, no blog post listing content at all."
+  - source_id: nozomi-networks
+    reason: "Listing WebFetch rendered 5 post titles with no dates; had to fall back to per-title WebSearch, which is not exhaustive — residual risk that an in-window Nozomi post was missed if it wasn't among the titles searched."
+
+candidate_sources: []
+
+watchlist_sweep: null

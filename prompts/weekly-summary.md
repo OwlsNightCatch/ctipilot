@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.25 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.26 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -173,7 +173,7 @@ All composition rules of `prompts/cti-run.md` Phase 4 apply (compose-after-retur
 - **`weekly-long-running`** entries are ≤1 consolidated status paragraph per campaign, keyed on the campaign's registry entity; where the prior weekly already carried the campaign, write it as `update_of` that strategic entry.
 - **`weekly-looking-ahead`**: exactly ONE `outlook` entry — a focused, justified bullet list of items **already in motion** (each with an inline source and, where applicable, a `references` id). No predictions.
 - **Week at a glance is derived, not written** — the renderer builds it from the week's `critical`/`high` strategic entries (headline + summary). Calibrate `priority: high` to the genuinely week-defining items — a short, scannable set — not to a fixed bullet count.
-- The run record body carries the weekly verification & coverage notes (single-source items, drops with reasons, contradictions, stalled agents, `Coverage gaps:` / `Watchlist:` / `Closed-source intake:` lines).
+- **Citation dates and per-fact attribution are re-verified at weekly composition — never inherited from pipeline bookkeeping (v3.26).** The 2026-07-18 audit found nearly every W28 strategic entry citing its primaries with a date 1–8 days later than the source's actual publication date (the pipeline's *discovery/processing* date had been reused), and four entries attributing a specific fact to a co-cited source that does not carry it (a KEV-listing claim cited to a pre-KEV post; a victim-count as-of date spliced from an adjacent figure in the same post; two facts carried only by an uncited secondary). Both defects enter when synthesizing: the weekly re-frames facts it did not fetch fresh. Mechanical duty: (a) the `(Publisher, YYYY-MM-DD)` in every inline citation is the source's own publication date, taken from the page/feed metadata of a source fetched by *this* run or verbatim from the referenced operational entry's `sources[]` record — never from `discovered_at`, the findings YAML timestamp, or memory of "when we covered it"; (b) the intel-run per-fact attribution rule applies with full force to synthesis — every number, as-of date, and status claim is cited to the specific source that states it, and when a needed fact exists only in a source the operational entry did not cite, the weekly either fetches and cites that source or drops the fact. The verifier flags both patterns as F3.
 
 ---
 

@@ -4,6 +4,20 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.26 — 2026-07-18 (weekly citation-date + per-fact attribution duty at synthesis time)
+
+### Why
+
+Shipped by the 2026-07-18 weekly quality audit (`runs/2026-07-18/2026-07-18T1208Z-audit.md`). The audit's retrospective truth pass over the 15 W28 strategic entries found a batch-level pattern the operational entries do not share: 12 of 15 weekly entries carried at least one primary citation dated 1–8 days later than the source's actual publication date (the pipeline's discovery/processing date had been reused as the citation date), and four entries attributed a specific fact to a co-cited source that does not carry it — a Langflow KEV-listing claim cited to a Sysdig post that predates the KEV add and says the opposite; a CERT.LV "unpatched for roughly two years" detail that is The Record's, uncited; Unit 42's "580 victims across 77 countries" figure spliced onto the as-of date of an adjacent chart ("through July 3" vs the figure's own "Through July 7"); and a "The Syndicate" attribution cited to a Nayax SEC filing that never names the group. All underlying facts were true — the defect class is synthesis-time citation drift (F3), which the weekly's re-framing workflow invites because it composes from operational entries and findings rather than fresh fetches.
+
+### What changed
+
+- **`prompts/weekly-summary.md` Phase 4 — new composition bullet:** citation dates and per-fact attribution are re-verified at weekly composition, never inherited from pipeline bookkeeping. Inline citation dates come from the source's own publication metadata (fetched this run, or verbatim from the referenced operational entry's `sources[]` record) — never from `discovered_at` or findings timestamps; every number, as-of date, and status claim is cited to the specific source that states it, and a fact carried only by an uncited secondary is either fetched-and-cited or dropped. Verifier flags both patterns as F3.
+
+### What stays
+
+The four defective W28 entries stay as published — entry immutability holds; none of the defects changes a defender decision, all are documented in `docs/audits/2026-07-18-weekly-quality-audit.md` (no update entries warranted, following the 2026-07-11 minor-findings precedent). The weekly's lens, W-PD-1, references mechanism, section shapes, and all shared machinery are untouched. `cti-run.md` and `quality-audit.md` move to v3.26 in lockstep with no body change.
+
 ## 3.25 — 2026-07-18 (jina reader demoted to LAST-RESORT transport; anonymous free tier no longer assumed available; reader-pool health institutionalized in the quality audit)
 
 ### Why
