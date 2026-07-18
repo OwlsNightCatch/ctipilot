@@ -7287,7 +7287,7 @@ def _ops_render_verification_iterations(
         dur = _ops_format_duration(it.get("duration_seconds"))
         is_final = iter_idx == final_idx
         cap_breach_badge = (
-            ' <span class="ops-pill ops-pill--crit" title="cap-breach safety valve fired · brief published at iteration 5 without CLEAN">cap-breach</span>'
+            ' <span class="ops-pill ops-pill--crit" title="cap-breach safety valve fired · brief published without CLEAN at the final iteration">cap-breach</span>'
             if is_final and verdict == "NEEDS_FIXES" else ""
         )
 

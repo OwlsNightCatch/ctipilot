@@ -852,9 +852,12 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
             warn("verification-confirmation",
                  f"{rid}: final CLEAN is unconfirmed — confirmation waived: {waived!r} "
                  "(recorded fail-open)")
-        elif len(iters) >= VERIFIER_ITERATION_CAP:
+        elif len(iters) >= (VERIFIER_ITERATION_CAP if v >= CAP_EIGHT_FROM
+                            else VERIFIER_ITERATION_CAP_PRE_V327):
+            cap = (VERIFIER_ITERATION_CAP if v >= CAP_EIGHT_FROM
+                   else VERIFIER_ITERATION_CAP_PRE_V327)
             warn("verification-confirmation",
-                 f"{rid}: first CLEAN landed at the {VERIFIER_ITERATION_CAP}-iteration cap "
+                 f"{rid}: first CLEAN landed at the {cap}-iteration cap "
                  "with no room for the other-model confirmation pass — fail-open; set "
                  "verification.confirmation_waived with the reason")
         else:
@@ -1883,7 +1886,14 @@ PUBLISH_TELEMETRY_FROM = (3, 14)
 # `verification.confirmation_waived` reason (watchdog overrun, other-model
 # spawn blocked).
 DOUBLE_CLEAN_FROM = (3, 23)
-VERIFIER_ITERATION_CAP = 5
+# v3.27 raised the Phase 5.7 cap 5 → 8 (operator directive 2026-07-18): the
+# double-CLEAN confirmation gate was churning into the 5-cap fail-open in
+# roughly half the runs; 8 gives the CLEAN chain room to converge. Records
+# from before v3.27 legitimately capped at 5 — the "first CLEAN landed at
+# the cap" waiver check resolves the cap per record's prompt_version.
+CAP_EIGHT_FROM = (3, 27)
+VERIFIER_ITERATION_CAP = 8
+VERIFIER_ITERATION_CAP_PRE_V327 = 5
 # A single intel fire should complete well inside an hour or two; the
 # 2026-07-09T2009Z run silently ran 11.2 h wall-clock (container stall /
 # overrun into the next scheduled fire). Surface it — never a FAIL, the

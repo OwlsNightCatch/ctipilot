@@ -1,8 +1,8 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.26 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.27 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
-> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired multiple times per day** (the operator picks the cadence — the prompt is cadence-agnostic and self-healing). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
+> **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired on an operator-chosen cadence** — several times a day, once a day, or anything else; the operator tunes the schedule at will and the prompt is cadence-agnostic and self-healing (the window is always derived from the gap to the last run, PD-7). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
 > **Output:** per-finding entry files under `entries/<YYYY-MM-DD>/<slug>.md` (zero or more per run — only the *new* verified signal since the previous run) plus exactly one run record `runs/<YYYY-MM-DD>/<run-id>.md`. The rendered brief is a **query** over entries by time window (default: last 24 h) — there is no brief file. Data model: [`docs/pipeline.md`](../docs/pipeline.md) (normative).
 
@@ -30,7 +30,7 @@ The single most important property is that **every fire ends with a written, com
 Anti-crash guards (priority order):
 
 1. **Always write the run record.** Even if Phase 1 returns nothing or Phase 5.7 drops every candidate, write the record with full telemetry and a verification-notes body explaining what happened. Entries only exist for verified findings.
-2. **Hard-cap sub-agents by role — research sub-agents at 45 min wall-clock, the Phase 5.7 verifier at 30 min; do not pre-empt before the cap.** There is no soft cap below it — depth over speed (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Time-boxing). Research sub-agents run at `xhigh` reasoning effort and the verifiers at `high` (set in each definition's frontmatter, applied automatically — you do not pass effort in the spawn message); the 45-min research cap exists so deeper per-pivot reasoning does not cost source coverage, while the verifier stays at 30 min because its loop runs sequentially up to five times and publish latency is the mission. Past the cap, abandon and proceed without the sub-agent; log the gap in the run record. Follow-up research sub-agents take the 45-min research cap.
+2. **Hard-cap sub-agents by role — research sub-agents at 45 min wall-clock, the Phase 5.7 verifier at 30 min; do not pre-empt before the cap.** There is no soft cap below it — depth over speed (see [`.claude/agents/cti-research.md`](../.claude/agents/cti-research.md) § Time-boxing). Research sub-agents run at `xhigh` reasoning effort and the verifiers at `high` (set in each definition's frontmatter, applied automatically — you do not pass effort in the spawn message); the 45-min research cap exists so deeper per-pivot reasoning does not cost source coverage, while the verifier stays at 30 min because its loop runs sequentially up to eight times and publish latency is the mission. Past the cap, abandon and proceed without the sub-agent; log the gap in the run record. Follow-up research sub-agents take the 45-min research cap.
 3. **One `Write` per entry file.** Entries are small (typically 40–120 lines) — a single `Write` per entry is safe and atomic. The run record is written skeleton-then-`Edit` (frontmatter first, body sections appended) if it grows long. Never batch more than ~5 file writes in one assistant turn (anti-stream-timeout).
 4. **Persist intermediate state often** under `work/<run-id>/<step>.json` (version-controlled — Phase 6 commits the whole directory). After every meaningful unit of work, write the partial result so a later step can resume.
 5. **Drop raw HTML once extracted.** Long page text bloats context.
@@ -534,7 +534,7 @@ Decision rules (priority order):
 3. NEEDS_FIXES with F1 (broken URL) or F4 (hallucinated fact) → ALWAYS remediate + re-spawn.
 4. NEEDS_FIXES with `truth + editorial ≥ 3` → remediate + re-spawn.
 5. NEEDS_FIXES with `truth + editorial ≤ 2` and no F1/F4 → apply remediations, publish (early exit); log the residuals. (The early exit publishes on a NEEDS_FIXES final verdict with residuals — the double-CLEAN confirmation governs only the CLEAN path.)
-6. Iteration 5 without a publishable outcome → publish anyway (fail-open safety valve); `verification_residual_count = final truth + editorial` (never 0 on a NEEDS_FIXES final iteration).
+6. Iteration 8 without a publishable outcome → publish anyway (fail-open safety valve); `verification_residual_count = final truth + editorial` (never 0 on a NEEDS_FIXES final iteration).
 
 Remediation per finding type (v2 table, adapted to entries): broken/generic URL → re-pivot to a specific fresh URL or drop the entry; claim-not-supported → narrow the claim or fix the citation; hallucinated fact → drop the fact and whatever it props up; missing citation → add or rewrite; strengthen-primary → re-pivot, reorder `sources[]`; **drop** → `git rm` the entry file, decrement counters, remove orphaned `cves_seen` records, log in the run record; needs-more-research → ≤3 follow-up `cti-research` sub-agents, scoped, 45-min cap; contradiction → run-record line + `verification: contradicted` on the entry; missed angle → one targeted sub-agent if it would clear the inclusion gates, else a coverage-gap line; priority-miscalibration (F16 scope in v3 includes priority/org-triage drift) → adjust `priority`/`org_triage` to what the cited facts support; F13 analytical-link-as-fact → soften to the source's claim or re-cite; F14 quantifier-without-source → the source's number, "several", or omission; F15 name-collision → explicit disambiguation in the body, or restructure as `update_of`.
 
@@ -543,7 +543,7 @@ After remediation: **re-run `python3 tools/check_run.py`**, fix FAILs, then re-s
 ### Hard rules
 
 - Verifier reads only; the main agent owns all edits.
-- Cap 5 iterations; fresh spawn each; `check_run.py` green between iterations.
+- Cap 8 iterations (v3.27 — raised from 5 so the double-CLEAN confirmation has room to converge instead of churning into the fail-open); fresh spawn each; `check_run.py` green between iterations.
 - ≤3 follow-up research sub-agents per iteration.
 - Verifier fails (30-min timeout, no return) → publish anyway, note in the run record (if the failed spawn was a confirmation pass, set `verification.confirmation_waived` with the reason).
 - **At least one verification iteration is mandatory** — never commit without a verifier return on file.
@@ -734,7 +734,7 @@ The agent has full authority to modify this prompt, the source list, documentati
 8. No workflow-internal language in published content.
 9. Publishing chain: feature-branch-only push → auto-merge promotes → Phase 7 verification. No direct pushes to main.
 10. Phase 5.5 mechanical gate (`python3 tools/check_run.py` exits 0) before Phase 5.7 and between fix iterations.
-11. Phase 5.7 verification loop (≤5 iterations, model rotation, double-CLEAN publish gate — two consecutive CLEAN verdicts on two different models, ≤3 follow-up sub-agents per iteration; the cap is a fail-open safety valve, not the goal).
+11. Phase 5.7 verification loop (≤8 iterations, model rotation, double-CLEAN publish gate — two consecutive CLEAN verdicts on two different models, ≤3 follow-up sub-agents per iteration; the cap is a fail-open safety valve, not the goal).
 12. Entry frontmatter is the complete metadata contract (docs/pipeline.md); taxonomy values from `site/taxonomy.yaml`; entity keys from `entities/registry.yaml`.
 13. Strict CSP + vendored-library integrity in the site build.
 14. `tools/fetch_source.py` bridge for CISA + NCSC.ch every run; never let 403/429 go unmitigated.

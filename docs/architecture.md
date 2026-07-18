@@ -327,7 +327,7 @@ normal state — costs nothing.
   isolated context (Opus by default — gatekeeper of the publish gate).
   The Phase 5.7 cold-reader verifier; its scope is **this run's new entries
   plus the run record**. Runs AFTER `tools/check_run.py` exits 0 (cheap
-  mechanical gate first), looped iteratively (cap 5, fresh spawn each time,
+  mechanical gate first), looped iteratively (cap 8, fresh spawn each time,
   no shared memory; each iteration re-runs `check_run.py` between fix and
   re-spawn; publish requires a confirmed CLEAN — two consecutive CLEAN
   verdicts on two different models via the rotation). Finding categories F1–F16 include frontmatter ⇔ body
@@ -646,7 +646,7 @@ the audit report under `docs/audits/`.
  └──────────┬─────────────────────────────────────────┘
             ▼
  ┌────────────────────────────────────────────────────┐
- │ Phase 5.7 — verifier loop (≤5 iterations)           │
+ │ Phase 5.7 — verifier loop (≤8 iterations)           │
  │  odd iters: cti-verification (Opus)                 │
  │  even iters: cti-verification-alt (Sonnet) + the    │
  │    prior-iteration deltas block                     │

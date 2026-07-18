@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.26 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.27 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -179,7 +179,7 @@ All composition rules of `prompts/cti-run.md` Phase 4 apply (compose-after-retur
 
 ## Phases 5 → 7 — State, gate, verify, publish
 
-**`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7 — the shared machinery is defined once, there) and execute those phases verbatim with this run's `RUN_ID` (registry additions; `cves_seen` sync; source lifecycle; `source_health.py`; `python3 tools/check_run.py "$RUN_ID" --pre-verify` to exit 0 before the first verifier spawn (plain invocation between iterations and before commit); verification loop with model rotation, cap 5, the double-CLEAN publish gate (two consecutive CLEANs on two different models), prior-iteration deltas on even iterations; stage `entries/<date>/` + `runs/<date>/` + registry + state + sources + `.claude/memory/` + `work/<run-id>/`; sync with the same auto-resolution rules; push with retry; poll the run record on main and `data/briefbook.json` for the run id). The weekly's verifier scope line names the strategic entries + run record of THIS run.
+**`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7 — the shared machinery is defined once, there) and execute those phases verbatim with this run's `RUN_ID` (registry additions; `cves_seen` sync; source lifecycle; `source_health.py`; `python3 tools/check_run.py "$RUN_ID" --pre-verify` to exit 0 before the first verifier spawn (plain invocation between iterations and before commit); verification loop with model rotation, cap 8, the double-CLEAN publish gate (two consecutive CLEANs on two different models), prior-iteration deltas on even iterations; stage `entries/<date>/` + `runs/<date>/` + registry + state + sources + `.claude/memory/` + `work/<run-id>/`; sync with the same auto-resolution rules; push with retry; poll the run record on main and `data/briefbook.json` for the run id). The weekly's verifier scope line names the strategic entries + run record of THIS run.
 
 ---
 
