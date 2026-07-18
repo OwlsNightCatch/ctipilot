@@ -4,6 +4,24 @@ Tracks substantive changes to `prompts/cti-run.md` (before v3.0: `prompts/daily-
 
 ---
 
+## 3.28 — 2026-07-18 (zero-warning discipline: runs fix their own warnings, the weekly audit sweeps the store to zero; acknowledgment ledger for settled history; renderer emphasis-leak fixes)
+
+### Why
+
+Operator-directed, same day as v3.27: the store sat at 8 standing `check_run.py --all` WARNs (3 pre-watchdog runaway durations, 5 era-correct confirmation waivers from the 5-cap era) plus 2 `site/build.py` self-check warnings — all "pre-existing", none anyone's job to clear. The operator's directive: the repo must be *perfectly clean* — warnings are fixed, not tolerated; every run ensures its own warnings are fixed, and at the latest the weekly audit fixes them all, acting as a weekly cleanup that repairs everything possible. The blocker was structural: warnings on immutable history (a published record's `duration_seconds`, a recorded waiver) literally cannot be fixed without falsifying records, so they accumulated forever and buried real signal.
+
+### What changed
+
+- **Acknowledgment ledger (`state/warning_acknowledgments.json` + `tools/check_run.py`):** the audit-reviewed escape hatch for genuinely unfixable warnings. `warn()` reclassifies a warning as ACK when a ledger record's `check` matches the label and its `match` (≥12 chars, pinned to the specific run/subject) is a substring of the message; acknowledged warnings print in their own section with the recorded reason and count as zero (`summary: … · N acknowledged`). Malformed/unreadable ledger records FAIL (`ack-ledger`). Seeded with the 8 reviewed acknowledgments (3 runaways root-caused in the 07-11 audit and answered by the v3.21 watchdog; 5 pre-v3.27 cap waivers answered by the v3.27 cap raise). Discipline: only the weekly audit (or an operator-directed session) adds records — a run never self-acknowledges its own fresh warnings.
+- **`prompts/cti-run.md` Phase 5.5 — zero-warning duty:** before commit a run fixes every warning it caused or can fix; only its own telemetry facts (explained in the notes) and settled prior history may survive, for the audit to sweep.
+- **`prompts/quality-audit.md` — the audit is the pipeline's weekly cleanup:** mission statement extended; new Phase 3 item 8 (warning sweep to zero: every `--all` WARN and every build self-check warning is a mandatory Phase 4 work item; the audit does not publish until `--all` ends 0 warn · 0 fail and the build is warning-free; dead ledger rows are pruned); new Phase 4 fix class (acknowledge-on-immutable-history, disclosed in the report, never as a substitute for a possible fix); report §7, quality-gate checklist, and the Output block now carry the sweep (`warnings: 0 open (N acknowledged) · build self-check: clean`). Beyond warnings, the audit ships every small repair it finds (renderer defects, drifted docs, dead recipes) inside § META authority.
+- **`site/build.py` — the two live feed warnings fixed at root cause:** (a) new `_strip_md_emphasis()` replaces the five bare `.strip("*")` headline cleanups that half-stripped a leading bold token (`**Avalon** framework …` → `Avalon** framework …` in TL;DR bullets, aria-labels and feeds); (b) evidence quotes (`entry-cite__quote`) render inline emphasis instead of escaping it raw (a GHSA quote carrying `**Root access**` now renders bold); (c) `_inline_text()` drops `**` that survives rendering and a field-leading orphan `*` — unbalanced markers in immutable source fields are syntax, not prose (fixes the 06-23 Gitea summary artifact); (d) the feed self-check now flags ANY post-scrub `**` (paired or orphaned), closing the gap that let the half-stripped class through.
+- **`prompts/check-run-fixes.md`, CLAUDE.md, docs/operating.md:** WARN recipes reframed under the zero-warning discipline; new hard-rule paragraph, file-map entry, and operator-signal row (a WARN outliving an audit = skipped sweep; a growing ledger = acknowledging instead of fixing).
+
+### What stays
+
+Warning *checks* themselves are untouched — nothing is silenced at the check level; the ledger only reclassifies specific, reviewed, immutable-history instances, each visible in the output with its reason and in the commit diff. Exit-code semantics unchanged (FAILs block, warnings never did — the discipline is prompt-level duty, not a new gate). Entry and run-record immutability hold: zero content files were edited; both fixes are renderer/tooling-side. The mechanical gate, the double-CLEAN loop (cap 8, v3.27), feature-branch publishing, and all hard invariants unchanged. `weekly-summary.md` moves to v3.28 in lockstep with no body change (it executes the intel run's Phase 5.5 verbatim, inheriting the duty).
+
 ## 3.27 — 2026-07-18 (operator directives on the 07-18 audit: verifier iteration cap 5 → 8; scheduler cadence declared operator-owned and variable; operator watch-item closures are final)
 
 ### Why

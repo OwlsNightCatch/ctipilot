@@ -1,6 +1,6 @@
 # CTI Intelligence Run — Master Prompt
 
-> **Prompt version:** v3.27 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
+> **Prompt version:** v3.28 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). The routine should print this banner at the start of the run so the operator can verify which version executed.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, **fired on an operator-chosen cadence** — several times a day, once a day, or anything else; the operator tunes the schedule at will and the prompt is cadence-agnostic and self-healing (the window is always derived from the gap to the last run, PD-7). The main agent composes entries and owns the publishing chain; parallel research and cold-reader verification are delegated to sub-agents defined under [`.claude/agents/`](../.claude/agents/). Main agent and sub-agents may run on different models — every agent self-identifies (§ Self-identification).
 >
@@ -486,6 +486,8 @@ Record every edit in `sources_changed[]`. Script-level error → note in the run
 ## Phase 5.5 — Self-check gate (institutionalised script)
 
 **Single command.** Run after Phase 5, fix every `FAIL`, re-run until exit code 0. Read-only — drift is what *you* fix.
+
+**Zero-warning discipline (v3.28).** WARNs are not decoration — they are defects with a deadline. Before commit, fix **every warning this run caused or can fix**: state/shape drift, action-item discipline, closed-source tracing, unmirrored technique ids, source-record shape — all of it; a warning you can fix and ship anyway is a quality failure. Two classes legitimately survive a run: (a) **telemetry facts about this run itself** that cannot be changed without falsifying the record (e.g. this run's own runaway `duration_seconds`) — leave them visible and explain them in the run notes; (b) **settled history on immutable prior records** — the weekly quality audit owns sweeping those to zero. The audit resolves each surviving warning by fixing its cause or, when genuinely unfixable, acknowledging it in `state/warning_acknowledgments.json` (check + specific match + reason + date; acknowledged warnings report separately and count as zero). **A run NEVER adds its own fresh warnings to the acknowledgment ledger** — that is the audit's reviewed decision, not a self-serve mute button.
 
 ```bash
 # The FIRST gate run — before any Phase 5.7 verifier has spawned:

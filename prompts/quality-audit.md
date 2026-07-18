@@ -1,6 +1,6 @@
 # CTI Weekly Quality Audit — Master Prompt
 
-> **Prompt version:** v3.27 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.28 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired **once per week** (operator-chosen slot — recommended Sunday, after the weekly strategic run; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: the main agent owns diffing, root-causing, fixing and publishing; bulk source fetching runs in sub-agents.
 >
@@ -14,6 +14,8 @@
 2. **Completeness** — did the window miss anything a reader relying on ctipilot.ch alone needed? Re-research the window independently and diff against the store.
 
 Plus the meta-question neither scheduled run asks: **is the machinery drifting** — runaway runs, dark-but-green sources, discipline decay (`actions[]`, priority, classification), fixes from the previous audit that didn't take? Every confirmed failure is root-caused to a specific mechanism and the fix ships in this run (or becomes an explicit operator recommendation when it exceeds § META authority). Be very critical — question everything, fetch ground truth, trust no claim because it is in the store. But never performative: a defect-free component is reported clean.
+
+**The audit is also the pipeline's weekly cleanup (v3.28).** It leaves the whole repo at **zero warnings**: every `check_run.py --all` WARN and every `site/build.py` self-check warning is either fixed at its root cause this fire or — settled, immutable history only — acknowledged with a reason in `state/warning_acknowledgments.json` (Phase 3 item 8 / Phase 4 fix class). Beyond warnings, the audit fixes everything fixable it touches along the way: renderer defects, stale tool output, drifted docs, dead recipes — small repairs ship in the audit commit rather than being deferred, provided they stay inside § META authority and never weaken a hard invariant. The operator expectation is a repo that is *perfectly clean* after every audit, not merely audited.
 
 ---
 
@@ -95,6 +97,7 @@ Over the window's run records, `work/` artifacts and state — no fetching excep
 5. **Discipline drift:** `actions[]` distribution against the v3.19 do-now bar (empty-is-normal shape restored?); priority mix of the window; classification codes present and plausible; behavior-kind `techniques[]` density; `update_of` discipline on same-topic entries.
 6. **Gate & pin:** the Phase 0 `check_run.py --all` and `attack_data.py --check` results — store-wide FAILs and unmentioned pin drift are audit findings.
 7. **Fix effectiveness:** for each fix the previous audit shipped, confirm the behavior actually changed in this window's output; a fix that didn't take is a finding with its own root cause.
+8. **Warning sweep to zero (v3.28):** collect every WARN from the Phase 0 `check-all.txt` and every `SELF-CHECK WARNING` from a fresh `python3 site/build.py`. Each one is a mandatory Phase 4 work item — fix the root cause (tool, prompt, renderer, source record, state) whenever a fix exists; only a warning whose subject is settled immutable history (a published run record's telemetry fact, an era-correct recorded waiver) may instead be acknowledged in `state/warning_acknowledgments.json`. The audit does not publish until `check_run.py --all` ends **0 warn · 0 fail** (acknowledged entries report separately) and `site/build.py` emits no self-check warnings. Review existing ledger entries while there: an acknowledgment whose match no longer silences anything (the underlying check changed, or the warning no longer fires) is deleted — the ledger never accumulates dead rows.
 
 ## Phase 3b — Monthly priority-calibration review (only when Phase 0 step 4 assigned it)
 
@@ -116,6 +119,7 @@ Every confirmed defect is root-caused to the specific mechanism that let it thro
 - **Missed coverage that still clears PD-11 today:** compose and publish the recovered entry through the **full normal gates** (Phase 4 composition rules, dedup, `check_run.py`, verifier loop), with a provenance line naming this audit. Borderline items that correctly fail PD-11 are documented as correctly-droppable — that documentation is what makes the completeness judgment auditable.
 - **Systemic causes:** fix prompts / tools / sources / agent definitions / memory under § META authority — the versioning rule applies in full (banner bump + CHANGELOG entry in the same commit; verifier definitions regenerate in lockstep). What exceeds authority (scheduler config, org-profile values, hosting) becomes a numbered operator recommendation.
 - **Single-source claims touching the constituency** that fail corroboration: not published, recorded as **watch items** with what would resolve them — the next audit re-checks.
+- **Warnings on settled immutable history (v3.28):** a WARN whose subject cannot change without falsifying the record — a published run record's runaway `duration_seconds`, an era-correct recorded confirmation waiver — is acknowledged in `state/warning_acknowledgments.json`: `check` label, `match` pinned to the specific run id/subject, `reason`, `acknowledged_at`. This is a reviewed audit decision disclosed in the report (the ledger diff is part of the audit commit); NEVER acknowledge a warning that a code/prompt/state/renderer fix could clear instead, and a run never self-acknowledges its own fresh warnings.
 
 ## Phase 5 — Audit report (skeleton-then-`Edit`)
 
@@ -127,7 +131,7 @@ Write `docs/audits/<RUN_DATE>-weekly-quality-audit.md`, mirroring the 2026-07-11
 4. **Findings — missing or incomplete coverage** — recovered items, correctly-droppable borderlines with reasons, resolved false alarms.
 5. **Findings — systemic / operational** (incl. fix-effectiveness results from Phase 3.6).
 6. **Priority calibration** (monthly fires only — Phase 3b output).
-7. **Fixes shipped in this commit.**
+7. **Fixes shipped in this commit** — including the warning sweep's outcome: what was fixed, and every new/removed `state/warning_acknowledgments.json` entry with its reason.
 8. **Recommendations** (operator decisions, not shipped) — numbered, carried forward until adopted or explicitly retired.
 9. **Watch items** — carried-forward status + new items, each with its resolution condition.
 
@@ -148,6 +152,7 @@ Empty sections state "none found" — the absence is a result. Then write the ru
 - [ ] Previous audit's watch items re-checked and its fixes effectiveness-checked.
 - [ ] Monthly duty honored: at most one `## Priority calibration` section per calendar month across audit reports, and at least one unless no audit fired that month.
 - [ ] Recovered entries passed the full normal gates (dedup, `check_run.py`, verifier loop) — audit provenance never lowers a bar.
+- [ ] Zero-warning sweep complete: `python3 tools/check_run.py --all` ends **0 warn · 0 fail** (acknowledged excepted) and `python3 site/build.py` emits no self-check warnings; every ledger change is disclosed in the report.
 - [ ] No manufactured findings; clean components reported clean.
 - [ ] All shared gates from `prompts/cti-run.md` § Quality gates hold (gate exit 0, ≥1 verifier iteration, run record committed, publish verified).
 
@@ -161,6 +166,7 @@ audit: docs/audits/YYYY-MM-DD-weekly-quality-audit.md
 window: <start> → <end> · entries audited: N (clean: N) · runs reviewed: N
 findings: erroneous: N · coverage gaps: N (recovered: N) · systemic: N · calibration: run | not-due
 fixes shipped: N · repairs (logged exceptions): N · watch items: N open
+warnings: 0 open (N acknowledged) · build self-check: clean
 commit: <short SHA> · push: ok (feature branch) | failed (<reason>) · publish: ok | main-only | pending (<reason>)
 ```
 

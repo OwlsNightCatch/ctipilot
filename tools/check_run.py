@@ -80,6 +80,44 @@ except Exception as _exc:  # pragma: no cover — hard dependency
 FAILS: list[str] = []
 WARNS: list[str] = []
 PASSES: list[str] = []
+ACKED: list[str] = []
+
+# Acknowledged-warning ledger (v3.28 zero-warning discipline). A warning on
+# settled, immutable history (a past run record's runaway duration; an
+# era-correct confirmation waiver from the 5-cap era) cannot be "fixed"
+# without falsifying the record — the weekly quality audit reviews each such
+# warning and, when it is genuinely unfixable, acknowledges it here with a
+# reason. Acknowledged warnings are reported separately and do not count as
+# warnings, so `--all` can be held at zero. Discipline (enforced by prompt,
+# reviewed in the audit): only the weekly audit adds entries, never a run
+# for its own fresh warnings; `match` must pin the specific run/subject.
+ACK_LEDGER_PATH = STATE_DIR / "warning_acknowledgments.json"
+_ACK_LEDGER: list[dict] | None = None
+
+
+def _ack_ledger() -> list[dict]:
+    global _ACK_LEDGER
+    if _ACK_LEDGER is None:
+        _ACK_LEDGER = []
+        try:
+            data = json.loads(ACK_LEDGER_PATH.read_text(encoding="utf-8"))
+            for rec in data.get("acknowledged", []):
+                if (isinstance(rec, dict)
+                        and str(rec.get("check") or "").strip()
+                        and len(str(rec.get("match") or "").strip()) >= 12
+                        and str(rec.get("reason") or "").strip()):
+                    _ACK_LEDGER.append(rec)
+                else:
+                    fail("ack-ledger",
+                         f"malformed acknowledgment record {rec!r} — needs "
+                         "check, match (≥12 chars, pin the specific subject) "
+                         "and reason")
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            fail("ack-ledger",
+                 f"{ACK_LEDGER_PATH.name} unreadable/malformed: {exc}")
+    return _ACK_LEDGER
 
 
 def _print(severity: str, label: str, detail: str = "") -> None:
@@ -93,7 +131,15 @@ def fail(label: str, detail: str = "") -> None:
 
 
 def warn(label: str, detail: str = "") -> None:
-    WARNS.append(f"{label}: {detail}" if detail else label)
+    msg = f"{label}: {detail}" if detail else label
+    for rec in _ack_ledger():
+        if rec["check"] == label and str(rec["match"]) in msg:
+            ACKED.append(
+                f"{msg}  [acknowledged {rec.get('acknowledged_at', '?')}: "
+                f"{rec['reason']}]")
+            _print("ACK", label, detail)
+            return
+    WARNS.append(msg)
     _print("WARN", label, detail)
 
 
@@ -2744,15 +2790,25 @@ def run_checks(run_arg: str | None, *, all_mode: bool, skip_build_tests: bool,
 
 def _summary() -> int:
     print()
-    print(f"summary: {len(PASSES)} pass · {len(WARNS)} warn · {len(FAILS)} fail")
+    acked = f" · {len(ACKED)} acknowledged" if ACKED else ""
+    print(f"summary: {len(PASSES)} pass · {len(WARNS)} warn · "
+          f"{len(FAILS)} fail{acked}")
     if FAILS:
         print("\nFAILURES:")
         for f_ in FAILS:
             print(f"  - {f_}")
     if WARNS:
-        print("\nWARNINGS (not blocking):")
+        print("\nWARNINGS (not blocking, but the zero-warning discipline "
+              "applies — fix what this run caused before commit; the weekly "
+              "audit sweeps the rest to zero):")
         for w in WARNS:
             print(f"  - {w}")
+    if ACKED:
+        print("\nACKNOWLEDGED (settled history per "
+              "state/warning_acknowledgments.json — reviewed by the weekly "
+              "audit, not counted as warnings):")
+        for a in ACKED:
+            print(f"  - {a}")
     return 1 if FAILS else 0
 
 

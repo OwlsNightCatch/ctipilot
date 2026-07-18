@@ -35,7 +35,9 @@ every FAIL is yours to fix, then re-run until exit 0. Check ids below match
 | `fetch-failure-bridge-required` | Known-403 source logged as failed without a bridge attempt | Re-fetch via `python3 tools/fetch_source.py <subcommand>`; the record's `attempted_methods` must show the bridge |
 | `test-build` | `site/test_build.py` failing | Read the test output tail — usually an entry that breaks a renderer assumption; fix the entry, not the test |
 
-WARNs worth acting on before Phase 5.7:
+**WARNs are all worth acting on — the zero-warning discipline (v3.28) makes every WARN a work item.** Fix every warning this run caused or can fix before commit. What a run legitimately leaves behind: its own telemetry facts (e.g. this run's runaway `duration_seconds` — explain in the notes) and settled history on prior immutable records; the weekly audit sweeps those to zero, fixing causes or acknowledging genuinely unfixable ones in `state/warning_acknowledgments.json` (check + specific match + reason + date — audit-only; a run never self-acknowledges). A `ack-ledger` FAIL means a malformed/unreadable ledger record — fix the JSON shape (`check`, `match` ≥12 chars pinning the subject, `reason`).
+
+Frequent WARN recipes:
 `registry-relations` (the edge's `source` entry neither keys nor names an
 endpoint — confirm the entry actually establishes the connection, or point
 `source` at the one that does),

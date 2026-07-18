@@ -26,6 +26,8 @@ For an end-to-end map of what reads / writes what, see [docs/architecture.md](do
 
 `tools/check_run.py` MUST exit 0 before any commit that adds entries or a run record. The script is read-only; drift is what *you* fix.
 
+**Zero-warning discipline (v3.28): warnings are defects with a deadline, not decoration.** A run fixes every warning it caused or can fix before commit (`check_run.py` WARNs and `site/build.py` self-check warnings alike); what legitimately survives — a run's own telemetry facts, settled history on immutable records — is swept to zero by the weekly quality audit, which fixes root causes or (unfixable history only) acknowledges the warning with a reason in `state/warning_acknowledgments.json`. Acknowledged warnings report separately and count as zero; a run NEVER self-acknowledges its own fresh warnings. The audit is the pipeline's weekly cleanup — after every audit, `check_run.py --all` ends 0 warn · 0 fail and the build is warning-free.
+
 ## Hard rules — ALWAYS / NEVER
 
 - **ALWAYS commit `.claude/memory/` changes on every session that touches it.** Auto-memory is enabled and persisted under `.claude/memory/` (committed to git). Every routine fire spawns a fresh container that clones from `main`; memory not committed is silently lost. **Memory that doesn't reach `main` did not happen.**
@@ -118,6 +120,7 @@ runs/YYYY-MM-DD/<run-id>.md        # per-run records: telemetry frontmatter + ve
 sources/sources.json               # ~150 curated CTI sources (autonomous lifecycle; tier field)
 state/cves_seen.json               # flat CVE dedup index
 state/source_health.json           # bounded source-health history
+state/warning_acknowledgments.json # audit-reviewed ledger of settled-history WARNs (zero-warning discipline)
 site/content_model.py              # reference parser/validator (entries, registry, runs)
 site/build.py                      # static-site generator (dynamic /live/, day pages, weekly, ops, feeds)
 site/taxonomy.yaml                 # controlled vocabulary for entry frontmatter

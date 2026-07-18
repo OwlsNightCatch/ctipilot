@@ -354,6 +354,14 @@ remain:
   index (`{id, title, primary_source_url, first_seen, last_seen}`) for
   sub-agent dedup and the CVE-sync check. Kept flat because a CVE-id
   lookup must not require scanning the entry store.
+- `state/warning_acknowledgments.json` — the zero-warning discipline's
+  ledger (v3.28): audit-reviewed acknowledgments of `check_run.py` WARNs
+  whose subjects are settled immutable history (a published record's
+  runaway duration, an era-correct confirmation waiver). `check_run.py`
+  reports matching warnings separately (`N acknowledged`) and counts them
+  as zero, so `--all` is held at 0 warn · 0 fail. Written only by the
+  weekly quality audit (or an operator-directed session), never by a run
+  for its own fresh warnings.
 - `state/source_health.json` — written by
   [`tools/source_health.py`](../tools/source_health.py): bounded history
   (12 runs) of per-source accessibility probes via each source's *actual

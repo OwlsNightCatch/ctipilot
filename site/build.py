@@ -2182,7 +2182,7 @@ def render_entry_evidence(entry: dict[str, Any]) -> str:
     figures: list[str] = []
     for pub, quotes in groups:
         quote_html = "".join(
-            f'<p class="entry-cite__quote">{_escape(q)}</p>' for q in quotes
+            f'<p class="entry-cite__quote">{_inline_text(q)}</p>' for q in quotes
         )
         figures.append(
             '<figure class="entry-cite">'
@@ -2252,7 +2252,7 @@ def render_immediate_action_callout(entry: dict[str, Any], *, prefix: str = "") 
             src_by_pub = _entry_source_by_publisher(entry)
             quote_html = (
                 '<figure class="entry-cite entry-cite--inline">'
-                f'<p class="entry-cite__quote">{_escape(str(ev["quote"]))}</p>'
+                f'<p class="entry-cite__quote">{_inline_text(str(ev["quote"]))}</p>'
                 f"{_cite_attribution_html(pub, src_by_pub)}"
                 "</figure>"
             )
@@ -2322,7 +2322,7 @@ def _short_entry_label(entry: dict[str, Any], *, max_len: int = 52) -> str:
     cves = entry_cve_ids(entry)
     if cves:
         return cves[0] + (f" +{len(cves) - 1}" if len(cves) > 1 else "")
-    text = (entry.get("headline") or entry.get("title") or entry["id"]).strip().strip("*").strip()
+    text = _strip_md_emphasis(entry.get("headline") or entry.get("title") or entry["id"])
     if len(text) <= max_len:
         return text
     return text[:max_len].rsplit(" ", 1)[0].rstrip(",;:—- ") + "…"
@@ -2617,15 +2617,36 @@ def _empty_stub_html() -> str:
 def _inline_text(s: str) -> str:
     """Headline / summary fields are *mostly* plain text, but migrated v2
     content may carry inline Markdown emphasis. Render it (escaped, no
-    links) so `**bold**` never leaks verbatim into pages or feeds."""
-    return render_inline_no_links((s or "").strip())
+    links) so `**bold**` never leaks verbatim into pages or feeds. Any
+    `**` still literal AFTER rendering is an unbalanced marker in the
+    (immutable) source field — never meaningful prose — so drop it rather
+    than ship raw Markdown syntax to readers."""
+    out = render_inline_no_links((s or "").strip())
+    if "**" in out:
+        out = out.replace("**", "")
+    # a field-leading `*Word` with no matching closer is a broken emphasis
+    # opener from the (immutable) source, not prose — drop the marker
+    return re.sub(r"^\*+(?=\w)", "", out)
+
+
+def _strip_md_emphasis(s: str) -> str:
+    """Reduce a one-line field to plain text: remove PAIRED Markdown
+    emphasis markers (`**x**` / `*x*` → x) before trimming stray edge
+    asterisks. A bare .strip("*") on a headline that OPENS with a bold
+    token ("**Avalon** framework …") eats only the edge markers and leaks
+    the mid-string closer as a raw `**` into labels, bullets and feeds —
+    always strip pairs first."""
+    s = re.sub(r"\*\*([^*\n]+)\*\*", r"\1", s or "")
+    s = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"\1", s)
+    # anything left as ** is an unbalanced marker, never meaningful text
+    return s.replace("**", "").strip().strip("*").strip()
 
 
 def render_tldr_bullets(picked: list[dict[str, Any]], *, prefix: str = "") -> str:
     lis: list[str] = []
     for e in picked:
         url = f"{prefix}{entry_url_path(e)}"
-        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
+        headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
         lis.append(
             "<li>"
             f"<strong>{_inline_text(headline)}.</strong> "
@@ -2715,7 +2736,7 @@ def render_tldr_list(
     lis: list[str] = []
     for i, e in enumerate(picked, 1):
         url = f"{prefix}{entry_url_path(e)}"
-        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
+        headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
         summ = _inline_text(e.get("summary") or "")
         lis.append(
             f'<li><span class="num">{i:02d}</span>'
@@ -4200,7 +4221,7 @@ def _home_tldr_list(picked: list[dict[str, Any]], *, cap_chars: int = 240) -> st
     lis: list[str] = []
     for e in picked:
         url = entry_url_path(e)
-        headline = (e.get("headline") or e.get("title") or e["id"]).strip().strip("*").rstrip(".")
+        headline = _strip_md_emphasis(e.get("headline") or e.get("title") or e["id"]).rstrip(".")
         summ = (e.get("summary") or "").strip()
         if len(summ) > cap_chars:
             summ = summ[: cap_chars - 1].rstrip() + "…"
@@ -4240,7 +4261,7 @@ def render_home_page(
         if not picked:
             return None
         e = picked[0]
-        head = (e.get("headline") or e.get("title") or "").strip().strip("*").rstrip(".")
+        head = _strip_md_emphasis(e.get("headline") or e.get("title") or "").rstrip(".")
         return head, (e.get("summary") or "").strip()
 
     # (1) Live — the current day's rolling window.
@@ -10711,9 +10732,15 @@ def self_check(
             # rendered as <code>**Model:**</code> and must not false-positive).
             scrub = re.sub(r"<code\b[^>]*>.*?</code>", "", payload, flags=re.DOTALL)
             scrub = re.sub(r"<pre\b[^>]*>.*?</pre>", "", scrub, flags=re.DOTALL)
-            # Markdown emphasis tokens that should have rendered to HTML
-            if re.search(r"\*\*[^\n*]{1,80}\*\*", scrub):
-                warnings.append(f"feed {fp.name}: unrendered Markdown `**...**` in content:encoded")
+            # Markdown emphasis tokens that should have rendered to HTML.
+            # Any surviving `**` — paired OR orphaned — is a leak: a paired
+            # token means unrendered emphasis; a lone one means a renderer
+            # half-stripped a bold headline/summary (the .strip("*") class
+            # _strip_md_emphasis exists to prevent). Entry style keeps code
+            # in backticks, so post-scrub prose never legitimately carries
+            # a double asterisk.
+            if "**" in scrub:
+                warnings.append(f"feed {fp.name}: unrendered/orphaned Markdown `**` in content:encoded")
                 break
             if re.search(r"\[[^\]\n]{1,80}\]\((https?://)", scrub):
                 warnings.append(f"feed {fp.name}: unrendered Markdown `[..](http..)` in content:encoded")
