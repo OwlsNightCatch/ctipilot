@@ -1,0 +1,110 @@
+domain: S3
+run_id: 2026-07-19T0408Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-19T04:10:49Z
+ended_at: 2026-07-19T04:25:16Z
+duration_seconds: 867
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 20
+  bridge_fetches: 14
+items:
+  - title: "ClickLock Stealer — a macOS ClickFix infostealer that force-kills every visible process every 210ms until the victim types their login password, targeting Europe (>50% of victims), North America and MEA"
+    sources:
+      - { url: "https://www.group-ib.com/blog/clicklock-stealer-macos-malware/", publisher: "Group-IB Threat Intelligence", date: "2026-07-16", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/new-clicklock-macos-malware-traps-users-into-revealing-login-password/", publisher: "BleepingComputer", date: "2026-07-16", role: "corroborating" }
+      - { url: "https://www.forbes.com/sites/daveywinder/2026/07/18/app-killing-mac-malware-triggers-83-hour-password-entry-loop/", publisher: "Forbes", date: "2026-07-18", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new malware analysis \\\"published July 18\\\" 2026\") → pivot: Forbes, URL https://www.forbes.com/sites/daveywinder/2026/07/18/app-killing-mac-malware-triggers-83-hour-password-entry-loop/ (fresh in-window pickup, 2026-07-18) → primary: Group-IB Threat Intelligence (original discovering research), URL https://www.group-ib.com/blog/clicklock-stealer-macos-malware/ (2026-07-16, curated S3 source) → corroborating: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/new-clicklock-macos-malware-traps-users-into-revealing-login-password/ (2026-07-16)"
+    summary: |
+      Group-IB Threat Intelligence discovered a previously undocumented macOS stealer, named ClickLock Stealer, uploaded to VirusTotal on 9 June 2026 with zero AV detections at analysis time. The malware is delivered via a ClickFix-style social-engineering page (a fake Cloudflare "verifying you are not a bot" banner instructing the victim to paste a command into Terminal) and requires no exploit and no elevated privilege — the entire compromise runs at the logged-in user's own privilege level. The orchestrator script.sh disables SIGINT, hides the cursor, renders a fake Cloudflare progress-bar animation as cover, and pulls four modules from compromised WordPress infrastructure and a Telegram-controlled backdoor: a credential stealer, a Keychain stealer, a crypto-focused stealer, and a modified GSocket-based backdoor (persistent gs-netcat reverse shell disguised as an iCloud process). It first attempts a soft osascript-built fake macOS password dialog validated locally via `dscl /Local/Default -authonly` (so only a correct password is ever exfiltrated); if the victim cancels, two LaunchAgents (com.authirity.plist, com.chromer.plist) are installed for persistence, and on next login the credential-stealer module force-kills every visible application (Finder, Dock, SystemUIServer, NotificationCenter) every 210 milliseconds — for up to 83 hours per public reporting — leaving only the password dialog on screen until the victim complies. A parallel module uses the identical kill-loop technique to force approval of a genuine macOS Keychain authorization dialog, capturing Chrome's Safe Storage AES key, while a ~6-hour NotificationCenter-suppression loop blocks Gatekeeper/security alerts. The data harvester archives browser credentials (8 browsers), 31 crypto-wallet browser extensions, 7 password-manager extensions, 8 desktop wallets, blockchain addresses across 6 chains, macOS Keychain, shell history and FTP credentials into a ZIP exfiltrated to a Telegram bot; all modules except the backdoor self-delete and timestomp afterward. Group-IB assesses with high confidence the malware is/will be distributed via ClickFix phishing pages (citing prior Cloudflare-, Claude-, and disk-cleaning-themed ClickFix lures reported by Malwarebytes and Microsoft) and notes the code structure suggests active development. Telemetry shows at least 100 victims across 33 countries, with more than 50% located in Europe, active since roughly May 2026 — direct relevance to the Swiss/European constituency given the regional concentration.
+    region_nexus: "Europe is the largest victim region (>50% of identified victims per Group-IB telemetry), followed by North America and MEA — direct relevance to Swiss/European macOS-using constituents (crypto holders and any user with browser-saved credentials/password-manager vaults)."
+    primary_sector_nexus: "indirect — targets individual macOS users (crypto holders, credential/password-manager users) rather than a specific sector; relevant to any organisation issuing macOS endpoints to staff, including public-sector and critical-infrastructure environments."
+    sector: "cross-sector, public-sector"
+    cves: []
+    techniques: [T1204.004, T1059.004, T1543.001, T1070.004, T1070.006, T1564.001, T1056.002, T1187, T1555.003, T1552.001, T1119, T1489, T1036.005]
+    affected_products: ["macOS"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:clicklock-stealer", type: tool, name: "ClickLock Stealer", aliases: ["ClickLock"],
+          summary: "Modular macOS ClickFix-delivered infostealer discovered by Group-IB (uploaded to VirusTotal 2026-06-09, zero detections at analysis) that forces credential/Keychain disclosure by repeatedly killing all visible processes until the victim enters their password; bundles a modified GSocket backdoor for persistent access. >50% of ~100 identified victims in 33 countries are in Europe (Group-IB, 2026-07-16)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Group-IB Threat Intelligence has discovered a malicious shell script that was uploaded to VirusTotal on June 9, 2026, and has zero detections at the time of analysis."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/clicklock-stealer-macos-malware/"
+      - quote: "A ClickLock Stealer operation has already targeted at least 100 victims in 33 countries, with more than 50% from Europe, and has been active for approximately two months, since May 2026."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/clicklock-stealer-macos-malware/"
+      - quote: "On subsequent login, the zsh.txt module activates killing every visible application every 210 milliseconds, leaving only a password dialog on screen until the user is forced to comply."
+        attribution: "Group-IB"
+        source_url: "https://www.group-ib.com/blog/clicklock-stealer-macos-malware/"
+    extended_notes: |
+      Group-IB's own post already includes a full MITRE ATT&CK mapping table and an extensive detection/hardening section (osascript spawning password dialogs with non-standard icon paths; rapid repeated pkill/killall targeting Finder/Dock/SystemUIServer/NotificationCenter at sub-second intervals as a discriminator with "no legitimate use case"; `security find-generic-password` invoked from shell/non-browser parents; bulk access to browser-profile directories followed by outbound connections to api.telegram.org; curl-piped-to-bash patterns with misleading extensions .jpg/.txt/.css; LaunchAgent creation by shell processes combined with launchctl load). Benign-lookalike guidance from the source: legitimate Keychain queries come from the requesting application itself, not a bash process — that is Group-IB's own stated discriminator for the `security find-generic-password` telemetry hook. No IOCs carried forward per policy (domains/hashes omitted).
+  - title: "SharePoint July 2026 exploitation cluster gets a full technical kill-chain breakdown — CISA names official AMSI/MDAV detection signatures for the machineKey-theft → ViewState-forgery → SQL-farm-account lateral-movement path"
+    sources:
+      - { url: "https://www.resecurity.com/blog/article/from-web-request-to-domain-compromise-understanding-the-july-2026-sharepoint-attacks", publisher: "Resecurity", date: "2026-07-18", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations", publisher: "CISA", date: "2026-07-16 (updated)", role: "corroborating" }
+    discovery_trace: "first seen at: resecurity, URL https://www.resecurity.com/blog (listing) → https://www.resecurity.com/blog/article/from-web-request-to-domain-compromise-understanding-the-july-2026-sharepoint-attacks (2026-07-18, curated S3 source) → corroborating pivot: CISA Alert (bridge cisa page), URL https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations (updated 2026-07-16, adds CVE-2026-58644 to KEV and names official AMSI/MDAV detection signatures)"
+    summary: |
+      Building on the already-tracked July 2026 on-premises SharePoint Server exploitation wave (CVE-2026-32201, CVE-2026-45659, CVE-2026-56164, CVE-2026-58644 — all four confirmed exploited per CISA, all four now KEV-listed as of 16 July), Resecurity published a step-by-step technical walkthrough of the full attack chain from initial web request to domain-wide compromise, and CISA's alert (silently updated 16 July to add CVE-2026-58644 to KEV) names, for the first time in this run's coverage, the specific AMSI and Defender detection-signature identifiers deployed against it. Initial access exploits the auth-bypass/deserialization flaws to reach RCE inside the IIS worker process (w3wp.exe); the attacker then deploys an ASP.NET web shell (commonly named spinstall0.aspx and renamed variants) and uses .NET reflection to read the private `_ValidationKey`/`_DecryptionKey` fields off `MachineKeySection`, exfiltrating the IIS machineKey material. With the stolen validation/decryption keys the attacker forges ViewState payloads offline and/or registers a malicious native IIS module in applicationHost.config/web.config for persistence beyond a single patch cycle. The critical escalation step: the SharePoint farm service account holds `dbcreator`, `securityadmin` and `db_owner` SQL Server roles across all SharePoint content/configuration databases by design, so an attacker who reaches that account can query every SharePoint database and pivot toward Active Directory — collapsing a single-server RCE into a farm-wide and potentially domain-wide compromise. CISA's alert (Acknowledgements: "Microsoft contributed to this Alert") names concrete, vendor-published detection signatures: AMSI `Exploit:Script/SuspSignoutReqBody.A` (SharePoint Server Subscription Edition only, request-body scanning), AMSI `Exploit:Script/ToolPaneAuthBypass.A` (request-header scanning, all three on-prem versions) and `.C` (RCE coverage, all three versions), and Microsoft Defender Antivirus `Backdoor:MSIL/LeakFang.A!dha` (post-exploitation/IIS-secret-theft alert) — none of which appeared in this run's prior three SharePoint entries. CISA explicitly warns that machine keys must not simply be rotated without first hunting for and removing any machine-key harvester, since a persistent harvester will just re-steal a freshly rotated key.
+    region_nexus: "global; on-premises SharePoint Server is common in EU/Swiss public-sector and enterprise document-management estates — the farm-account SQL-role escalation path applies to any on-prem SharePoint farm regardless of geography."
+    primary_sector_nexus: "direct — on-premises collaboration/document-management infrastructure is widely deployed across public-sector and critical-infrastructure back offices."
+    sector: "public-sector, cross-sector"
+    cves: ["CVE-2026-32201", "CVE-2026-45659", "CVE-2026-56164", "CVE-2026-58644"]
+    techniques: [T1190, T1505.003, T1552.004, T1606]
+    affected_products: ["Microsoft SharePoint Server Subscription Edition", "Microsoft SharePoint Server 2019", "Microsoft SharePoint Server 2016"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-17/cve-2026-58644-sharepoint-confirmed-exploited-kev"
+    evidence:
+      - quote: "CISA is aware of active exploitation of vulnerabilities CVE-2026-32201, CVE-2026-45659, CVE-2026-56164, and CVE-2026-58644, enabling cyber threat actors to gain unauthorized access to on-premises SharePoint Server instances."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+      - quote: "AMSI: Exploit:Script/SuspSignoutReqBody.A – request body scanning; SharePoint Server Subscription only; Microsoft has blocked observed attempts."
+        attribution: "CISA (Microsoft-contributed)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+      - quote: "Before rotating IIS machine keys, hunt for and remediate any intrusion artifacts, including machine-key harvesters, that could allow for the keys to be stolen again."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+      - quote: "The farm service account has dbcreator and securityadmin SQL server roles and db_owner on all SharePoint databases."
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/from-web-request-to-domain-compromise-understanding-the-july-2026-sharepoint-attacks"
+    extended_notes: |
+      CVE-2026-32201 and CVE-2026-45659 were already KEV-listed from earlier in the year (14 Apr and 1 Jul respectively per CISA) and CVE-2026-56164 / CVE-2026-58644 are already tracked in this store's prior coverage (2026-07-14 and 2026-07-15/07-17 entries) at the "patched"/"exploited" level; this item's value-add is exclusively the exploitation-chain depth (machineKey-theft-via-reflection → ViewState forgery → SQL-farm-account lateral movement) and the named AMSI/MDAV detection-signature identifiers, neither of which appeared in the three prior SharePoint entries this run's dedup index carries. Resecurity is a reliability-C source per the source list (originates research but corroborate before citing as sole source) — corroborated here against CISA's own alert (an A-tier national/government authority for its own advisory) for the detection-signature and CVE-status claims, and against multiple independently-observed CVE numbers matching MITRE/CVE.org records looked up during this run.
+candidate_sources: []
+coverage_gaps:
+  - source_id: dragos
+    reason: "Blog listing (webfetch + bridge) and blog.rss feed both fetched successfully but surfaced no dated post inside the 24-72h window; most recent identifiable technical post (Nozomi-adjacent OT malware coverage aside) predates window. blog.rss returned 'no element found' via both direct and jina transports — feed appears broken/empty; listing page itself works fine via bridge."
+  - source_id: nozomi-networks
+    reason: "Blog listing (bridge + WebFetch) fetched successfully; newest dated post identified (\"Spring Botnet Floods\", 2026-07-06) falls outside the 72h developing window. No RSS/Atom endpoint found (confirmed dead ends per source notes)."
+  - source_id: ibm-xforce
+    reason: "Listing + 6 candidate article pages fetched via bridge; all dateModified values fell in May/June 2026, outside window."
+  - source_id: depthfirst
+    reason: "Research listing fetched via WebFetch; newest post is 13 May 2026 (NGINX Rift, already a known prior primary) — no new post since last successful run."
+  - source_id: push-security
+    reason: "Blog listing fetched via WebFetch; newest post 12 May 2026, outside window (source has a documented low publish cadence)."
+  - source_id: sans-ics
+    reason: "ICS-filtered listing fetched via WebFetch; only ICS-specific item found (\"A Guide to OT Security Best Practices\", 13 Jul) is generic best-practice guidance, not threat research, and falls outside the 72h window regardless."
+  - source_id: team-cymru
+    reason: "Blog listing fetched via WebFetch; individual post pages (bridge) all returned a templated datePublished of 2026-04-08/2025-11-17 that does not match the listing's implied recency — treated as unreliable metadata and none of the candidate posts included in this run's findings. Flagging for recipe review: team-cymru per-post dates may need a different extraction path than the schema.org datePublished field."
+  - source_id: kela-cyber
+    reason: "Blog listing fetched via WebFetch; two candidate research posts (Exilio404 Brazil forum profile, ByteToBreach data-leak-operator profile) published 2026-07-17T03:21Z — outside the strict 24h floor and not framed as updates to an actively-developing story, so excluded per recency discipline (borderline, noted here for the operator's awareness rather than as a dropped-but-relevant item)."
+  - source_id: intel471
+    reason: "RSS feed fetched cleanly; newest items (Scattered Spider TfL sentencing recap 2026-07-17, already covered by prior-day reporting; Operation Fake KickOff recruiter/SaaS phishing 2026-07-15) both fall outside the 24h floor or duplicate existing coverage."
+  - source_id: cloudflare-cf1
+    reason: "Listing fetched via WebFetch (10 items); newest dated post is 9 June 2026 — consistent with this source's documented sparse cadence, no in-window item."
+  - source_id: morphisec
+    reason: "Listing fetched via WebFetch; newest items (13/09/06 Jul 2026) are AI/EDR thought-leadership pieces, not threat research, and the newest (13 Jul) is outside the 72h window regardless."
+  - source_id: resecurity
+    reason: "Listing fetched via WebFetch (8 items) — yielded this run's SharePoint finding (18 Jul, included above); no other in-window item on the listing."
+  - source_id: group-ib
+    reason: "Listing fetched via bridge (large historical archive, no dates on listing); the in-window ClickLock Stealer post was found via WebSearch discovery rather than the listing drill and is included above. Recipe note: the group-ib.com/blog/ listing page bridge fetch still returns an undated flat href archive — dates must be read per-article, same as documented in source notes."
+  - source_id: redcanary
+    reason: "RSS feed (8 items) fetched cleanly; newest item is 30 Jun 2026, outside window."

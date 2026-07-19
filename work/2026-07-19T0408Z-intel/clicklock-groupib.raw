@@ -1,0 +1,545 @@
+Title: ClickLock Stealer: Paste Once, Lose Everything
+
+URL Source: https://www.group-ib.com/blog/clicklock-stealer-macos-malware/
+
+Published Time: 2026-07-16T07:00:36+00:00
+
+Markdown Content:
+## Introduction
+
+Malware targeting macOS users are usually considered rare and advanced: the system’s built-in protections like Gatekeeper, TCC, System Integrity Protection, mandatory code signing and lower number of users require higher commitments and bring less profit for the attackers compared to other platforms. Although the macOS threat landscape has grown considerably in recent years, with malware like [_Atomic Stealer (AMOS)_](https://cyble.com/blog/threat-actor-selling-new-atomic-macos-amos-stealer-on-telegram/), [_Banshee Stealer_](https://www.elastic.co/security-labs/beyond-the-wail), [_Poseidon_](https://www.malwarebytes.com/blog/news/2024/06/poseidon-mac-stealer-distributed-via-google-ads), [_Cuckoo_](https://www.iru.com/blog/malware-cuckoo-infostealer-spyware), [_Cthulhu Stealer_](https://www.darktrace.com/de/blog/from-the-depths-analyzing-the-cthulhu-stealer-malware-for-macos) and [_MacStealer_](https://www.threatdown.com/blog/new-macos-malware-steals-sensitive-info-including-a-users-entire-keychain-database/), the total number of known macOS malware families remains relatively small in contrast to other systems, which means the discovery of a previously undocumented sample with zero detections is always something worth digging into.
+
+[Group-IB Threat Intelligence](https://www.group-ib.com/products/threat-intelligence/) has discovered [_a malicious shell script_](https://www.virustotal.com/gui/file/3ce0504ba65f8d56f83d7fef45faeaeb31e4e5aa9b872b56610b5f2558231caa/) that was uploaded to VirusTotal on June 9, 2026, and has zero detections at the time of analysis. Based on our research, it’s a new modular macOS stealer that is likely distributed via ClickFix pages and relies on compromised WordPress domains and Telegram infrastructure, with a strong focus on Europe where more than 50% of identified victims are located. It is also worth noting that the current malware doesn’t even need any elevated privileges or rely on exploits for the successful execution.
+
+Upon execution of the ClickFix command, the malicious script shows a terminal-based loading animation mimicking Cloudflare progress bar with browser verification flow. Meanwhile, the malware orchestrates further modules that search the system for various data including browser credentials, password manager data, crypto wallet extensions, desktop wallet files, etc. and even employs a GSocket backdoor. Interestingly, the victim gets forced to follow the attack flow and enter a password, because otherwise malware “locks” the system usage by killing all visible processes despite the Terminal.
+
+We have decided to name this malware ClickLock Stealer due to both ClickFix and “locker” techniques implemented in the attack, this way forming that distinctive chain. This blog post presents a full technical breakdown of this new malware targeting macOS users. In further sections, we will describe potential initial infection vectors, detail the observed killchain, analyze the role of each malware component, describe infrastructure used by the attackers, explore targeted data and victimology.
+
+## Key Discoveries
+
+*   Group-IB has discovered and analyzed new malware targeting macOS users that we have named ClickLock Stealer.
+*   ClickLock Stealer targets data from 8 browsers, 31 crypto wallet browser extensions, 7 password manager extensions, 8 desktop wallet applications, extracts blockchain addresses across 6 chains, macOS Keychain, shell history and FTP credentials.
+*   We assess with high confidence that the malware likely is or will be distributed via phishing pages employing ClickFix technique.
+*   Adversaries use a slightly modified version of an open-source tool _GSocket_ as one of the components.
+*   Based on the code structure and other observed artifacts, we assume that the malware is still under development.
+*   A ClickLock Stealer operation has already targeted at least 100 victims in 33 countries, with more than 50% from Europe, and has been active for approximately two months, since May 2026.
+
+### Who may find this blog interesting:
+
+*   Cybersecurity analysts and corporate security teams
+*   Malware analysts
+*   Threat intelligence specialists
+*   Cyber investigators
+*   Computer Emergency Response Teams (CERT)
+*   Law enforcement investigators
+*   Crypto holders
+
+## Group-IB Threat Intelligence Portal: ClickLock Stealer
+
+Group-IB customers can access our Threat Intelligence portal for more information about this malware:
+
+*   Threat actor profile: [_ClickLock Dev_](https://tap.group-ib.com/ta/actors?ta=61cb084223318ad59a17e27062e59694bd202da8)
+*   Malware profile: [_ClickLock Stealer_](https://tap.group-ib.com/malware/reports/8009a7ad96e2c1daaff8e5ad1cb8c184287b7e96)
+
+## What is ClickFix?
+
+Our analysis begins at the script level, from the initial payload itself, rather than the infrastructure that distributes it to victims. However, although we did not directly observe the phishing pages responsible for delivering this malware, the script’s behaviour and internal structure provide strong indicators that it is intended to be delivered via the ClickFix technique.
+
+Figure 2a. Example of Cloudflare-themed ClickFix phishing page targeting macOS users. The current screenshot is update-check[.]com, [reported by MalwareBytes](https://www.malwarebytes.com/blog/threat-intel/2026/03/infiniti-stealer-a-new-macos-infostealer-using-clickfix-and-python-nuitka).
+
+Figure 2b. Example of Claude-themed ClickFix phishing page targeting macOS users. The current screenshot is claudecodedoc.squarespace[.]com, [reported by Microsoft](https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/).
+
+Figure 2c. Example of ClickFix phishing page targeting macOS users via fake disk-cleaning command. The current screenshot is macclean.craft[.]me, [reported by Microsoft](https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/).
+
+The discovered ClickLock Stealer script opens with a fake “CLOUDFLARE CAPTCHA ACCESS CONTROL” banner, renders an animated terminal progress bar cycling through messages like “Verifying you are not a bot” and “Collecting browser signals,” and accepts a RAY_ID parameter, mimicking a real Cloudflare verification page, as its first argument. None of these elements serve any functional purpose within the malware itself. They exist solely to provide visual reassurance to a user who has just pasted a command into Terminal, suggesting the victim arrives from a web page that frames the action as a required browser verification step. However, the exact design of the landing page, the domains serving it, and the traffic sources driving users to it remain unconfirmed in our research at the point of writing this report.
+
+Figure 3. Screenshot of malware behaviour captured by VirusTotal Sandbox.
+
+It also remains unclear whether victims are initially directed to the phishing page through SEO poisoning, compromised legitimate sites, social media lures or any kind of phishing, based on the artifacts we obtained.
+
+## The Kill Chain
+
+The kill chain starts once the user pastes the command into Terminal. The orchestrator script named _script.sh_ immediately disables keyboard interrupts, shows the fake Cloudflare progress animation as a distraction, and begins downloading four components in the background: a credential stealer _zsh.txt_, a Keychain stealer _chromer.txt_, and a crypto focused stealer _finderv2.jpg_ from compromised WordPress infrastructure at panalobet[.]ph, and a GSocket based backdoor installer _goyim_ from store.grafsynergy[.]com. The crypto stealing module and backdoor are piped directly into bash without saving to disk; the credential and Keychain stealers are saved to a hidden directory at $HOME/.cacheb/ for later execution at the startup via LaunchAgents.
+
+Figure 4. ClickLock Stealer kill chain from potential phishing page to full system compromise and persistent access.
+
+After all modules complete their objectives, they forge timestamps, remove their persistence mechanisms, and delete themselves, with the exception of the _goyim_ backdoor, which remains permanently installed. The victim’s system returns to normal operation, likely without raising any awareness of compromise. The attacker now holds the macOS login password, Chrome’s encryption key, a full archive of stolen data, and a persistent backdoor which is more than enough to decrypt all browser-stored credentials offline and maintain access indefinitely. Each module is analyzed in detail in the sections below.
+
+## Malware Analysis
+
+### Initial Script: Orchestrator
+
+The file _script.sh_ (SHA1 d9617710d4ed8e9b87f6fee0b7014c4101effba0) is an initial shell script acting as an orchestrator and entry point of the entire attack. Its primary function is coordination: it sets up the environment for further components, downloads all the required files, attempts an initial credential theft, and ensures persistence for subsequent modules if the user doesn’t cooperate immediately.
+
+The script immediately disables user interrupts with “trap ” INT” and hides the terminal cursor with “tput civis”, preventing the user from stopping execution or noticing unusual behavior. It then renders a fake Cloudflare-themed progress bar, cycling through twelve hardcoded status messages such as “Verifying you are not a bot” and “Collecting browser signals” over ten seconds. This animation serves purely as a distraction while payloads are downloaded in the background. The actual download commands are embedded within hundreds of lines of random alphanumeric text designed to resemble certificate data when scrolling by in the terminal:
+
+The orchestrator first attempts a soft approach displaying a fake macOS password dialog built with osascript. If the user complies, the password is validated and sent to Telegram immediately. If the user cancels, the orchestrator installs two LaunchAgents and exits. On subsequent login, the _zsh.txt_ module activates killing every visible application every 210 milliseconds, leaving only a password dialog on screen until the user is forced to comply. In parallel, the _chromer.txt_ module uses the same kill-loop technique to force approval of a real macOS Keychain dialog, capturing Chrome’s Safe Storage AES key. Meanwhile, the data harvester performs a full system scan: browser credentials, crypto wallet extensions, desktop wallets, Keychain, shell history and archives everything into a ZIP, and exfiltrates it to Telegram bot. The _goyim_ backdoor installs a persistent gs-netcat reverse shell disguised as an iCloud process, providing the attacker with ongoing remote access.
+
+Figure 5a. GSocket Backdoor installer executed in-memory via nohup, fully detached from the terminal session.
+
+Figure 5b. Credential and Keychain stealers downloaded to hidden staging directory.
+
+Figure 5c. Data harvester piped directly into bash without saving to disk.
+
+Note the difference in execution strategy: _goyim_ and _finderv2.jpg_ are piped directly into bash and not written to disk, while _zsh.txt_ (stored locally as _zoom_) and _chromer.txt_ (stored locally as _chromer_) are saved to the hidden _$HOME/.cacheb/_ directory for later execution via LaunchAgents.
+
+A background loop also starts killing macOS NotificationCenter continuously for approximately ~6 hours, suppressing any Gatekeeper or security warnings that might alert the victim:
+
+Figure 6. NotificationCenter suppression loop preventing security alerts for ~6 hours.
+
+The script collects a system fingerprint including username, macOS version, CPU, RAM, disk size, and public IP (via ifconfig.me), stored in the $INFOD variable for later exfiltration alongside credentials.
+
+It then begins its first credential theft attempt a fake macOS password dialog constructed via osascript, styled with a downloaded Apple icon to appear indistinguishable from a genuine system prompt:
+
+Figure 7. Fake macOS system dialog uses the victim’s real username and a downloaded Apple icon.
+
+If the user enters a password, it is validated against the local directory service via dscl /Local/Default -authonly “$USER” “$PASS” ensuring only the correct password is exfiltrated. On successful validation, the password is logged in plaintext, hex, and base64, then sent to the attacker’s Telegram bot along with the full system fingerprint. If validation fails, the user sees a native-looking “Incorrect password” alert and the dialog loops. If the user cancels the dialog entirely, the script installs persistence and exits. Notably, just the same mechanism is used in the second component – credential stealer.
+
+Figure 8. Persistence installation on user cancel LaunchAgents created, timestamps forged to match legitimate directories.
+
+Both plist.css and chromer.js are shell scripts that create [_LaunchAgent_](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)_com.authirity.plist_ and _com.chromer.plist_ files in ~/Library/LaunchAgents/. This is a standard macOS persistence mechanism, any plist in this directory with _RunAtLoad_ set to _true_ will automatically execute its specified program on user login. This means that even if the user cancels the dialog, closes Terminal, or reboots, the _zsh.txt_ (stored locally as _zoom_) and _chromer.txt_ (stored locally as _chromer_) modules will activate on next login _zsh.txt_ to force password entry, _chromer.txt_ to force Keychain approval. Both modules manage and clean up their own LaunchAgents upon successful execution, as described in the following sections.
+
+Figure 9a. Content of plist.css bash script creating com.authirity.plist LaunchAgent.
+
+Figure 9b. Content of chromer.js bash script creating com.chromer.plist LaunchAgent.
+
+After credential capture, the orchestrator checks whether Terminal has Full Disk Access by attempting to list a TCC-protected path ($HOME/Library/Messages). If not granted, it opens System Settings directly to the Full Disk Access panel and provides step-by-step instructions asking the user to add Terminal. This grants the data harvester already running in the background access to TCC-protected directories including the Keychain database. Finally, the orchestrator displays a fake success message “Access granted. Verification complete. You can now go back to your browser and reload.” closing the social engineering loop and leaving the victim unaware that their system is being compromised.
+
+### First Component: Keychain Stealer
+
+The file _chromer.txt_ (SHA1 b67aa4f598c0ea625a7409ea7884e10a7bc9c3ff) that is downloaded from hxxps://panalobet[.]ph/wp-content/themes/twentytwenty/assets/fonts/chromer.txt acts as a keychain stealer module designed to extract the Chrome Safe Storage key from macOS Keychain. Upon execution, it queries the Keychain for Chrome credentials in a background loop while the foreground process aggressively kills system UI components, browsers, Terminal, and Activity Monitor at rapid intervals effectively locking the user into the Keychain authorization prompt. Once the key is obtained, the script collects system information, exfiltrates the key along with host details to an attacker-controlled Telegram bot, removes its associated LaunchAgent persistence, and deletes itself. If extraction fails within the timeout window, it logs failure and applies timestamp manipulation to hinder forensic analysis.
+
+The module is launched via a LaunchAgent (com.chromer.plist) and starts with a check if the log file at $HOME/.cacheb/<username>-chrome-key.txt already contains the string “successfully,” the entire module is skipped, preventing duplicate runs. Upon first execution, it constructs a single-line reconnaissance string containing the username, macOS version, CPU model, core count, RAM, disk size, external IP (resolved via ifconfig.me), and current working directory. This string is later sent alongside the stolen credential as context for the attacker.
+
+Figure 10. Code snippet compiling system information (lines wrapped).
+
+The core objective is executed in a background subshell that queries macOS Keychain for the Chrome Safe Storage password:
+
+Figure 11. Code snippet responsible for querying macOS Keychain for the Chrome Safe Storage encryption key.
+
+This command triggers a system authorization prompt asking the user to allow access to the “Chrome” keychain item. The extracted key is the AES encryption key used by Chromium-based browsers to encrypt locally stored cookies, passwords, and autofill data. Possession of this key allows offline decryption of the Chrome Login Data and Cookies SQLite databases. The extraction loop retries every 0.5 seconds until the key is obtained.
+
+Figure 12. Code snippet showing loop that kills all interactive applications until the user grants Keychain access.
+
+While the background subshell waits for authorization, the foreground process enters the coercion loop shown above. It monitors a flag file for the “successfully” string written by the background subshell, and until that condition is met, it aggressively kills virtually all interactive applications every 0.2 seconds including Finder, Dock, SystemUIServer, Spotlight, all major browsers, Terminal, fish shell, and notably Activity Monitor. This renders the system effectively unusable, leaving the Keychain authorization dialog as the only interactive element on screen and pressuring the user into granting access. Activity Monitor and Terminal are specifically targeted to prevent investigation or termination of the malware. The loop is configured to persist for up to 3,000,000 seconds (~34.7 days). Once the flag file is detected, the script writes a success marker, applies timestamp forgery, and exits cleanly.
+
+Upon successful extraction, the key file and system profile are exfiltrated to an attacker-controlled Telegram bot via the sendDocument API method. Telegram serves as a lightweight C2 channel requiring no attacker-controlled infrastructure while providing encrypted transport unlikely to be blocked by network filters. After exfiltration, the module unloads and deletes its LaunchAgent, then removes itself via rm — “$0”. Timestamp forgery is applied to output files by copying the modification time from $HOME/Movies, a default macOS directory unlikely to have been recently modified, complicating timeline-based forensic analysis.
+
+### Second Component: Credential Stealer
+
+The file _zsh.txt_ (SHA1 8dda05168ea8610a2449419a47517bc32823d6ec) is a credential stealer module downloaded from hxxps://panalobet[.]ph/wp-content/upgrade/zsh.txt. Upon execution via the LaunchAgent _com.authirity.plist_, the module begins by creating a hidden working directory at ~/.cacheb/ and silently downloading a macOS system icon from another compromised domain (hxxps://store.grafsynergy[.]com/media/apple.png) for additional credibility of this social engineering. The script also establishes a fake macOS password dialogue and gathers system info in a way similar to the one described in the orchestrator section.
+
+Figure 13. Creation of hidden working directory and download of fake macOS system icon from compromised infrastructure.
+
+The second parallel process acts as an enforcement mechanism, running a tight loop every 210 milliseconds that aggressively terminates any application the victim might use to investigate or interrupt the attack. This includes Finder, Dock, Terminal, Activity Monitor, Console, System Settings, Spotlight, NotificationCenter, SystemUIServer, all common browsers, and even specific shell processes such as fish. This way the victim’s desktop becomes entirely unusable with the fake password dialog as the only interactive element remaining on screen. This loop is configured to run for approximately 83 hours (300000 seconds) or until the password is successfully captured.
+
+Figure 14. Code snippet responsible for locker technique.
+
+Once a valid password is obtained, the exfiltration function attempts to send the log file to an attacker-controlled Telegram bot via the SendDocument API method. The function is designed for resilience, retrying up to 1000 times with 30-second intervals between attempts, ensuring delivery even if network connectivity is temporarily unavailable.
+
+After successful exfiltration, the cleanup routine unloads and deletes the LaunchAgent, applies timestamp forgery by copying modification times from ~/Movies to all files within the hidden directory, and finally deletes the script itself. The timestamp manipulation is applied consistently throughout execution, not only during cleanup but after every password attempt and state change, making forensic timeline analysis more difficult.
+
+### Third Component: Crypto Stealer
+
+The file named _finderv2.jpg_ / _finder.sh_ (SHA1 0a1fb016bd10bac5455175c79aa4511e5ff1a330) downloaded from the hxxps://panalobet[.]ph/wp-content/themes/twentytwenty/assets/images/finderv2.jpg is a comprehensive infostealer targeting cryptocurrency wallets, browser credentials, and system data across macOS and Linux. Upon execution, the script first determines the operating system and resolves browser data directories, accounting for standard installs, beta/dev channels, Flatpak, and Snap variants. It iterates through all Chromium-based browsers (Chrome, Brave, Edge, Opera, Vivaldi, Arc, Chromium) and Firefox, enumerating installed extensions against a hardcoded mapping of 30+ wallet extension IDs. For each detected wallet, the script copies the underlying storage LevelDB directories for Chromium extensions or IndexedDB SQLite files for Firefox into a structured output directory.
+
+Beyond raw file copying, the script performs active vault extraction. For Chromium wallets, it attempts to open the LevelDB database using the [_plyvel_](https://pypi.org/project/plyvel/) Python library to decompress Snappy-compressed blocks and walk all key-value pairs, searching for MetaMask-style encrypted vault objects. When plyvel is unavailable, it falls back to raw byte regex scanning across .ldb and .log files, using proximity matching to associate scattered data, iv, and salt fields:
+
+Figure 15. Proximity-based regex matching reassembles vault components (data, iv, salt) dropped across LevelDB log files by matching fields within 1000 bytes of each other.
+
+The address scanning component extracts plaintext wallet addresses without requiring any decryption, leveraging the fact that wallets cache display addresses unencrypted. It includes specialized parsers for individual wallet storage formats, each triggered by specific LevelDB key names:
+
+Figure 16. Central key-value dispatcher routes LevelDB entries to wallet-specific parsers based on known storage key names, demonstrating prior reverse engineering of each wallet’s internal data model.
+
+Exfiltration is performed via Telegram Bot API using a hardcoded token and chat ID. The upload routine implements persistent retry logic with escalating delays and indefinite network waiting, ensuring data is eventually delivered even on unstable connections. Files exceeding 40 MB are automatically split before transmission, with captions instructing the operator to recombine parts. The script also saves all console output into a finder_output.txt file included in the archive, giving the attacker full visibility into what was detected on the victim machine without needing to inspect the data manually. After successful exfiltration, the script removes the archive and performs self-deletion to minimize forensic traces:
+
+### Fourth Component: GSocket Backdoor
+
+The file _goyim_ (SHA1 2fc970e25570532f9cbe33b7ebfe1f0383a7341a) is a slightly customized copy of an open-source GSocket deployment script deploy.sh that is available on GitHub and serves as the primary backdoor installer.
+
+Figure 18. Comparison using kdiff3 tool (deploy.sh file on the left and goyim on the right).
+
+We have compared the modified GSocket sample with the original deploy.sh script using hashed and tokenized lines comparison. The first method indicates that nearly 70% of the initial script were reused “as is” and the second method shows almost 10% more reused with minor adjustments, e.g. commented or uncommented. This way approximately 80% of initial open-source script code were reused by the attackers.
+
+Figure 19a. Comparison of the hashed strings indicating the amount of exact matches.
+
+Figure 19b. Comparison of the tokenized strings indicating the estimated amount of close matches.
+
+Upon execution, the script immediately fingerprints the target system (username, OS, CPU, RAM, external IP via ifconfig.me) and exfiltrates this reconnaissance data to the same compromised WordPress domain panalobet[.]ph/wp-content/deng.php, while simultaneously notifying the operator via a Telegram bot. It then detects the host’s OS and CPU architecture, downloads the appropriate precompiled gs-netcat binary from gsocket.io/bin, and installs persistent reverse shell access connecting through the operator’s relay at gsnc[.]eu:67. On macOS, the binary is disguised as iCloud within ~/Library/Application Support/iCloudsync, with the process masquerading as SystemUIServerl. The script leverages GSocket’s built-in persistence mechanisms, including crontab injection, shell RC file infection, and LaunchAgent creation, and upon successful installation, sends the connection secret to the operator through three redundant channels (HTTP webhook, Telegram, and DNS).
+
+Unlike the other modules, this component does not self-delete, it establishes persistent reverse shell access via crontab injection, shell RC file modification, and LaunchAgent creation.
+
+## Targeted Data
+
+The combination of all modules results in a comprehensive extraction of credentials, financial data, and authentication material from the victim’s system. Below is the full list of targeted data, confirmed through static analysis of all components.
+
+*       *   **System Information:**
+        *   Username, macOS version, CPU model, core count, RAM, disk size
+        *   Public IP address (via ifconfig.me)
+        *   Current working directory
+
+    *   **System Credentials:**
+        *   macOS login password
+        *   macOS Keychain
+        *   Chrome Safe Storage AES encryption key
+
+    *   **Chromium Browser Data (Chrome, Brave, Edge, Opera, Vivaldi, Arc, Chromium):**
+        *   Local State
+        *   Login Data / Login Data For Account
+        *   Cookies
+        *   Web Data
+        *   Bookmarks
+        *   Local Storage/leveldb
+        *   Session Storage
+        *   Firefox Browser Data
+        *   logins.json
+        *   key4.db
+        *   cookies.sqlite
+        *   formhistory.sqlite
+
+    *   **Crypto Wallet Extensions (Chromium):**
+        *   MetaMask
+        *   Phantom
+        *   Coinbase Wallet
+        *   Trust Wallet
+        *   Rabby
+        *   Rainbow
+        *   Exodus
+        *   Keplr
+        *   Solflare
+        *   OKX Wallet
+        *   Backpack
+        *   Yoroi
+        *   Tonkeeper
+        *   Xverse
+        *   UniSat
+        *   Ronin
+        *   TronLink
+        *   Zerion
+        *   MyTonWallet
+        *   Bitget
+        *   Leather
+        *   Bittensor
+
+    *   **Crypto Wallet Extensions (Firefox):**
+        *   MetaMask
+        *   Phantom
+        *   Ronin Wallet
+        *   Alby
+        *   FilSnap
+        *   Tonkeeper
+        *   Solflare
+
+    *   **Password Manager Extensions:**
+        *   Bitwarden
+        *   LastPass
+        *   Talisman
+        *   1Password
+        *   iCloud Passwords
+        *   NordPass
+        *   Keeper
+        *   Dashlane
+        *   Enkrypt
+
+    *   **Desktop Wallets:**
+        *   Exodus
+        *   Coinomi
+        *   Electrum
+        *   Atomic Wallet
+        *   Wasabi Wallet
+        *   Bitcoin Core
+        *   Feather / Monero
+        *   1Password
+
+    *   **Extracted Blockchain Addresses (regex-based, no decryption required):**
+        *   EVM
+        *   Bitcoin
+        *   Solana
+        *   TRON
+        *   TON
+        *   Stacks
+
+    *   **Other Data:**
+        *   Shell history (~/.zsh_history, ~/.bash_history)
+        *   FileZilla (sitemanager.xml, recentservers.xml)
+        *   Encrypted Vault Data (captured for offline brute-force):
+        *   {data, iv, salt} JSON objects from Chromium LevelDB
+        *   {encrypted64, nonce64, salt64} from Firefox IndexedDB
+        *   Optional iterations field (key derivation rounds)
+
+## Infrastructure
+
+Throughout the attack, the malware communicates with three compromised domains, one legitimate service for IP discovery (ifconfig.me), and three Telegram bots for all exfiltration. No dedicated command-and-control infrastructure was observed. The data is entirely pushed to the attacker’s controlled compromised domains and Telegram chat.
+
+## Victimology
+
+The malware’s targeting priorities allow us to assume a victim profile. The focus on cryptocurrency wallet extensions, desktop wallet applications, and blockchain address extraction across six chains indicates that crypto holders are the primary targets. The additional harvesting of password manager vaults, browser-saved credentials, and payment data suggests that any macOS user with valuable online accounts represents a worthwhile target for this campaign.
+
+Observed connections span across multiple regions, with the highest concentration in Europe and North America, followed by the Middle East and Africa. The geographic distribution is consistent with a financially-motivated campaign targeting users in high-income regions where cryptocurrency adoption and macOS market share are both elevated. The full country stats are presented below.
+
+Figure 20. Regional distribution of the ClickLock Stealer targets based on Group-IB telemetry.
+
+## Conclusion
+
+This campaign demonstrates that macOS users may face real, sophisticated threats that require neither exploits nor any elevated access to succeed. The entire attack chain from initial access to full credential theft and data exfiltration relies on a single moment of trust: the user pasting a command into Terminal. The malware is capable of accomplishing everything it needs through social engineering and forced interaction loops.
+
+The technical execution is notable for its layered redundancy. If the victim enters their password willingly, the attack completes quietly in seconds. If they refuse, the system is locked down until they comply. If they reboot, persistence mechanisms ensure the attack resumes. Each component has a specific role, communicates through a single exfiltration channel, and deletes itself upon completion. The attacker receives the macOS login password, the Chrome encryption key, and a full archive of browser data, crypto wallets, password manager vaults, and system credentials – enough to compromise virtually every account the victim holds.
+
+For defenders, the key takeaway is that this malware leaves a narrow detection window. The payloads are hosted on compromised legitimate domains with clean reputations, the script had zero VirusTotal detections at the time of discovery, and all components self-delete after execution. Detection opportunities exist at the behavioral level: osascript spawning password dialogs, rapid repeated process termination, security find-generic-password called from non-standard parent processes, and bulk file access to browser profile directories followed by outbound connections to api.telegram.org.
+
+For end users, the lesson is straightforward: no legitimate website will ever ask you to paste a command into Terminal. Cloudflare, Google, and other services perform their verification entirely within the browser. Any page that instructs you to open Terminal, regardless of how professional it looks, is attempting to compromise your system.
+
+## Recommendations
+
+**For End Users:**
+
+*   Never paste commands into Terminal from websites, regardless of how the page looks or what it claims to verify. No legitimate service requires this.
+*   If your Mac suddenly starts killing all applications and displays a password prompt you didn’t initiate, do not enter your password. Instead, hold the power button to force shutdown, then boot into Safe Mode (hold Shift during startup) to investigate.
+*   If you suspect you ran this malware, revoke active browser sessions, assume all saved passwords, cookies, and wallet keys are compromised and change the passwords.
+*   Check ~/Library/LaunchAgents/ for unfamiliar plist files and ~/.cacheb/ for any artifacts. Their presence confirms compromise.
+
+**For Security Teams and Defenders:**
+
+*   Monitor for osascript processes spawning password dialogs with custom icons, particularly when the icon is sourced from /tmp/ or other unusual locations.
+*   Alert on rapid, repeated pkill or killall activity targeting system processes (Finder, Dock, SystemUIServer, NotificationCenter) at sub-second intervals, this behavior is unique to forced-interaction malware and has no legitimate use case.
+*   Flag `security find-generic-password` calls originating from shell scripts or non-browser parent processes. Legitimate applications query their own Keychain entries; a bash process requesting Chrome Safe Storage is inherently suspicious.
+*   Detect bulk access to browser profile directories (Login Data, Cookies, Local Extension Settings/) followed by outbound connections to api.telegram.org or archive creation.
+*   Consider blocking or alerting on curl piped directly to bash (curl | bash patterns), especially when the source URL uses misleading file extensions (.jpg, .txt, .css).
+*   Monitor for LaunchAgent creation in ~/Library/LaunchAgents/ by shell processes, particularly when combined with launchctl load.
+
+**For Organizations:**
+
+*   Educate users specifically about paste-based social engineering attacks. Traditional phishing awareness training often focuses on clicking links and opening attachments, this vector bypasses both by asking users to take a seemingly technical but harmless action.
+*   Deploy endpoint detection tools capable of behavioral analysis rather than relying solely on signature-based detection. This sample had zero VirusTotal detections at discovery, meaning static analysis tools provided no protection.
+*   Restrict Terminal access for users who do not require it. On managed devices, application whitelisting or MDM policies can prevent casual Terminal use that enables this attack vector.
+*   Implement TCC (Transparency, Consent, and Control) monitoring to detect unexpected Full Disk Access grants, particularly to Terminal.app or shell interpreters.
+
+## MITRE ATT&CK
+
+**Tactic****Technique ID****Description**
+RESOURCE DEVELOPMENT T1584 Compromise Infrastructure
+T1584.001 Compromise Infrastructure: Domains
+T1587 Develop Capabilities
+T1587.001 Develop Capabilities: Malware
+T1588.002 Obtain Capabilities: Tool
+T1608.001 Stage Capabilities: Upload Malware
+T1608.002 Stage Capabilities: Upload Tool
+EXECUTION T1059 Command and Scripting Interpreter
+T1059.002 Command and Scripting Interpreter: PowerShell
+T1059.004 Command and Scripting Interpreter: Unix Shell
+T1204 User Execution
+T1204.004 User Execution: Malicious Copy and Paste
+PERSISTENCE T1543 Create or Modify System Process
+T1543.001 Create or Modify System Process: Launch Agent
+PRIVILEGE ESCALATION T1543 Create or Modify System Process
+T1543.001 Create or Modify System Process: Launch Agent
+DEFENSE EVASION T1027 Obfuscated Files or Information
+T1027.016 Obfuscated Files or Information: Compile After Delivery
+T1036 Masquerading
+T1036.005 Masquerading: Match Legitimate File Name
+T1036.008 Masquerading: Masquerade File Type
+T1070 Indicator Removal
+T1070.004 Indicator Removal: File Deletion
+T1070.006 Indicator Removal: Timestomp
+T1070.009 Indicator Removal: Clear Persistence
+T1564 Hide Artifacts
+T1564.001 Hide Artifacts: Hidden Files and Directories
+T1564.003 Hide Artifacts: Hidden Window
+CREDENTIAL ACCESS T1056 Input Capture
+T1056.002 Input Capture: GUI Input Capture
+T1187 Forced Authentication
+T1539 Steal Cloud Storage Data
+T1552 Unsecured Credentials
+T1552.001 Unsecured Credentials: Credentials in Files
+T1552.003 Unsecured Credentials: Credentials in Files
+T1555 Credentials from Password Managers
+T1555.001 Credentials from Password Managers: Credentials from Browser
+T1555.003 Credentials from Password Managers: Credentials from Browser
+T1555.005 Credentials from Password Managers: Credentials from Browser
+DISCOVERY T1087 Account Discovery
+T1087.001 Account Discovery: Local Account
+T1016 System Network Configuration Discovery
+T1033 System Owner/User Discovery
+T1057 Process Discovery
+T1082 System Information Discovery
+T1217 Browser Bookmark Discovery
+T1518 Software Discovery
+COLLECTION T1005 Data from Local System
+T1056 Input Capture
+T1056.002 Input Capture: GUI Input Capture
+T1119 Automated Exfiltration
+T1560 Archive Collected Data
+T1560.001 Archive Collected Data: Archive via Utility
+T1560.002 Archive Collected Data: Archive via Library
+COMMAND AND CONTROL T1071 Application Layer Protocol
+T1071.001 Application Layer Protocol: Web Protocols
+T1102 Web Service
+T1102.003 Web Service: One-Way Communication
+EXFILTRATION T1020 Automated Exfiltration
+T1030 Data Transfer Size Limits
+T1567 Exfiltration Over Web Service
+T1567.002 Exfiltration Over Web Service: Exfiltration to Cloud Storage
+IMPACT T1489 Service Stop
+
+## Indicators of Compromise (IOCs)
+
+### Network Indicators
+
+_Please note, that all the network IOCs are compromised domains._
+
+**Domain****URL**
+panalobet[.]ph hxxps://panalobet[.]ph/wp-content/themes/twentytwenty/assets/fonts/chromer.txt
+hxxps://panalobet[.]ph/wp-content/upgrade/zsh.txt
+hxxps://panalobet[.]ph/wp-content/themes/twentytwenty/assets/images/finderv2.jpg
+hxxps://panalobet[.]ph/wp-content/deng.php
+store.grafsynergy[.]com hxxps://store.grafsynergy[.]com/media/goyim
+cottonbox[.]co[.]il hxxps://cottonbox[.]co[.]il/wp-content/hbd
+
+File Indicators
+
+**Component****File name****SHA1**
+Orchestrator script.sh d9617710d4ed8e9b87f6fee0b7014c4101effba0
+Keychain Stealer chromer.txt / chromer b67aa4f598c0ea625a7409ea7884e10a7bc9c3ff
+Credential Stealer zsh.txt / zoom 8dda05168ea8610a2449419a47517bc32823d6ec
+Crypto Stealer finderv2.jpg / finder.sh 0a1fb016bd10bac5455175c79aa4511e5ff1a330
+GSocket Backdoor goyim 2fc970e25570532f9cbe33b7ebfe1f0383a7341a
+
+**DISCLAIMER:**All technical information, including malware analysis, indicators of compromise and infrastructure details provided in this publication, is shared solely for defensive cybersecurity and research purposes. Group-IB does not endorse or permit any unauthorized or offensive use of the information contained herein. The data and conclusions represent Group-IB’s analytical assessment based on available evidence and are intended to help organizations detect, prevent, and respond to cyber threats.
+
+Group-IB expressly disclaims liability for any misuse of the information provided. Organizations and readers are encouraged to apply this intelligence responsibly and in compliance with all applicable laws and regulations.
+
+This blog may reference legitimate third-party services such as Telegram and others, solely to illustrate cases where threat actors have abused or misused these platforms.
+
+This material is provided for informational purposes, prepared by Group-IB as part of its own analytical investigation, and reflects recently identified threat activity.
+
+All trademarks referenced herein are the property of their respective owners and are used solely for informational purposes, without any implication of affiliation or sponsorship.
+
+Links/Buttons:
+- [+65 3159 4398](tel:+6531594398)
+- [+31 20 890 55 59](tel:++31208905559)
+- [+971 4 540 6400](tel:+97145406400)
+- [+56 2 275 473 79](tel:+56227547379)
+- [Privacy Policy](https://www.group-ib.com/privacy-policy/)
+- [blog](https://www.group-ib.com/blog/cybercrime-fighters-club/)
+- [](https://www.onetrust.com/products/cookie-consent/)
+- [The Unified Risk Platform Prevent breaches, fraud, and brand abuse with intelligence-driven solutions powered by a single platform](https://www.group-ib.com/products/unified-risk-platform/)
+- [Integrations Enhance your portfolio by integrating Group-IB solutions](https://www.group-ib.com/integrations/)
+- [Threat Intelligence](https://www.group-ib.com/products/threat-intelligence/)
+- [Attack Surface Management](https://www.group-ib.com/products/attack-surface-management/)
+- [Fraud Protection](https://www.group-ib.com/products/fraud-protection/)
+- [Digital Risk Protection](https://www.group-ib.com/products/digital-risk-protection/)
+- [Managed XDR](https://www.group-ib.com/products/managed-xdr/)
+- [Business Email Protection](https://www.group-ib.com/products/business-email-protection/)
+- [Cyber Fraud Intelligence Platform](https://www.group-ib.com/products/cyber-fraud-intelligence-platform/)
+- [Cloud Security Posture Management](https://www.group-ib.com/products/cloud-security-posture-management/)
+- [Email Protection Audit Program](https://www.group-ib.com/services/email-protection-audit-program/)
+- [Messages and Files Encryption](https://www.group-ib.com/tools/secure-note/)
+- [Network Protection Assessment](https://trebuchet.gibthf.com/?tab=network)
+- [Malware Reports](https://www.group-ib.com/tools/malware-reports/)
+- [Services Retainer](https://www.group-ib.com/services/service-retainer/)
+- [Incident Response Readiness Assessment](https://www.group-ib.com/services/incident-response-readiness-assessment/)
+- [Penetration Testing](https://www.group-ib.com/services/penetration-testing/)
+- [Vulnerability Assessment](https://www.group-ib.com/services/vulnerability-assessment/)
+- [Red Teaming](https://www.group-ib.com/services/red-teaming/)
+- [Purple Teaming](https://www.group-ib.com/services/purple-teaming/)
+- [Compromise Assessment](https://www.group-ib.com/services/compromise-assessment/)
+- [AI Red Teaming](https://www.group-ib.com/services/ai-red-teaming/)
+- [SOC Assessment](https://www.group-ib.com/services/soc-assessment/)
+- [Tabletop Exercises](https://www.group-ib.com/services/tabletop-exercise/)
+- [SOC Consulting](https://www.group-ib.com/services/soc-consulting/)
+- [Threat Landscape](https://www.group-ib.com/services/threat-landscape/)
+- [Incident Response](https://www.group-ib.com/services/incident-response/)
+- [Incident Response Retainer](https://www.group-ib.com/services/incident-response-retainer/)
+- [Digital Forensics](https://www.group-ib.com/services/digital-forensics/)
+- [Regional Threat Readiness Program](https://www.group-ib.com/services/gulf-regional-threat-readiness-program/)
+- [Training for Technical Specialists](https://www.group-ib.com/services/technical-training-programs/)
+- [Management Masterclasses](https://www.group-ib.com/cybersecurity-education/master-classes/management-master-classes/)
+- [Cyber Investigation](https://www.group-ib.com/services/cyber-investigation/)
+- [Investigation Subscription](https://www.group-ib.com/services/investigation-subscription/)
+- [CISO](https://www.group-ib.com/solutions/ciso/)
+- [Head of Fraud](https://www.group-ib.com/solutions/head-of-fraud/)
+- [Head of Brand Protection](https://www.group-ib.com/solutions/head-of-brand-protection/)
+- [Head of Threat Intelligence](https://www.group-ib.com/solutions/head-of-threat-intelligence/)
+- [SOC Manager](https://www.group-ib.com/solutions/soc-manager/)
+- [Security Analyst](https://www.group-ib.com/solutions/security-analyst/)
+- [Data Leak Detection](https://www.group-ib.com/solutions/data-leak-detection/)
+- [Ransomware Protection](https://www.group-ib.com/solutions/ransomware-protection/)
+- [Phishing and Scam Protection](https://www.group-ib.com/solutions/phishing-and-scam-protection/)
+- [Bot Protection](https://www.group-ib.com/solutions/bot-protection/)
+- [Dark Web and Deep Web Monitoring](https://www.group-ib.com/solutions/dark-web-and-deep-web-monitoring/)
+- [Building CTI Program](https://www.group-ib.com/solutions/building-cti-program/)
+- [Vulnerability Management](https://www.group-ib.com/solutions/vulnerability-management/)
+- [Supply Chain Attacks](https://www.group-ib.com/solutions/supply-chain-attacks/)
+- [Network Security](https://www.group-ib.com/solutions/network-security/)
+- [Data Center Security](https://www.group-ib.com/solutions/data-centers/)
+- [Law Enforcement](https://www.group-ib.com/solutions/law-enforcement/)
+- [Regulatory Compliance](https://www.group-ib.com/solutions/regulatory-compliance/)
+- [Retail and e-Commerce](https://www.group-ib.com/solutions/ecommerce-and-retail/)
+- [Crypto Industry](https://www.group-ib.com/solutions/crypto/)
+- [Governments](https://www.group-ib.com/solutions/government/)
+- [Telecom and Service Providers](https://www.group-ib.com/solutions/telecom-and-service-providers/)
+- [Online Gambling and Betting](https://www.group-ib.com/solutions/online-gambling-and-betting/)
+- [Financial Services](https://www.group-ib.com/solutions/financial-services/)
+- [Insurance Sector](https://www.group-ib.com/solutions/insurance-industry/)
+- [OT/ICS Cybersecurity](https://www.group-ib.com/solutions/operational-technology-and-iot-security/)
+- [Manufacturing Industry](https://www.group-ib.com/solutions/manufacturing-industry/)
+- [Small and Medium Business](https://www.group-ib.com/solutions/small-and-medium-business/)
+- [Oil and Gas](https://www.group-ib.com/solutions/oil-gas/)
+- [SaaS](https://www.group-ib.com/solutions/saas/)
+- [Energy and Utility](https://www.group-ib.com/solutions/energy-and-utility/)
+- [Healthcare](https://www.group-ib.com/solutions/healthcare/)
+- [Subscription Plans](https://www.group-ib.com/subscriptions/managed-xdr/)
+- [The world of cybersecurity in one place](https://www.group-ib.com/resources/)
+- [AI Cybersecurity Hub](https://www.group-ib.com/ai-hub/)
+- [Research Hub](https://www.group-ib.com/resources/research-hub/)
+- [Success Stories](https://www.group-ib.com/resources/success-stories/)
+- [Knowledge Hub](https://www.group-ib.com/resources/knowledge-hub/)
+- [Certificates](https://www.group-ib.com/resources/certificates/)
+- [Webinars](https://www.group-ib.com/resources/webinars/)
+- [Masked Actors](https://www.group-ib.com/masked-actors/)
+- [Podcasts](https://www.group-ib.com/resources/podcasts/)
+- [Investigations](https://www.group-ib.com/top-investigations/)
+- [FAQ](https://www.group-ib.com/faq/)
+- [Ransomware Notes](https://www.group-ib.com/resources/ransomware-notes/)
+- [Cybercrime Fighters Club](https://www.group-ib.com/landing/cybercrime-fighters-club)
+- [Learn more](https://www.group-ib.com/landing/high-tech-crime-trends-report-2026/)
+- [Blog](https://www.group-ib.com/blog/)
+- [About Group-IB](https://www.group-ib.com/about-us/)
+- [Team](https://www.group-ib.com/team/)
+- [CERT-GIB](https://www.group-ib.com/services/cert/)
+- [Careers](https://www.group-ib.com/careers/)
+- [Internship](https://www.group-ib.com/careers/internship/)
+- [Academic Alliance](https://www.group-ib.com/academic-alliance/)
+- [Sustainability](https://www.group-ib.com/sustainability/)
+- [Media Center](https://www.group-ib.com/media-center/)
+- [Contact](https://www.group-ib.com/contacts/)
+- [Partner Program](https://www.group-ib.com/partner-program/)
+- [MSSP and MDR Partner Program](https://www.group-ib.com/mssp-and-mdr-partner-program/)
+- [Technology Partners](https://www.group-ib.com/technology-partners/)
+- [Partner Locator](https://www.group-ib.com/partners/)
+- [Talk to sales](https://www.group-ib.com/talk-to-sales/)
+- [Sign inSign in](https://sso.group-ib.com/)
+- [Boris Martynyuk Cyber Threat Intelligence Analyst, Europe](https://www.group-ib.com/author/boris-martynyuk/)
+- [Atomic Stealer (AMOS)](https://cyble.com/blog/threat-actor-selling-new-atomic-macos-amos-stealer-on-telegram/)
+- [Banshee Stealer](https://www.elastic.co/security-labs/beyond-the-wail)
+- [Poseidon](https://www.malwarebytes.com/blog/news/2024/06/poseidon-mac-stealer-distributed-via-google-ads)
+- [Cuckoo](https://www.iru.com/blog/malware-cuckoo-infostealer-spyware)
+- [Cthulhu Stealer](https://www.darktrace.com/de/blog/from-the-depths-analyzing-the-cthulhu-stealer-malware-for-macos)
+- [MacStealer](https://www.threatdown.com/blog/new-macos-malware-steals-sensitive-info-including-a-users-entire-keychain-database/)
+- [a malicious shell script](https://www.virustotal.com/gui/file/3ce0504ba65f8d56f83d7fef45faeaeb31e4e5aa9b872b56610b5f2558231caa/)
+- [ClickLock Dev](https://tap.group-ib.com/ta/actors?ta=61cb084223318ad59a17e27062e59694bd202da8)
+- [ClickLock Stealer](https://tap.group-ib.com/malware/reports/8009a7ad96e2c1daaff8e5ad1cb8c184287b7e96)
+- [reported by MalwareBytes](https://www.malwarebytes.com/blog/threat-intel/2026/03/infiniti-stealer-a-new-macos-infostealer-using-clickfix-and-python-nuitka)
+- [reported by Microsoft](https://www.microsoft.com/en-us/security/blog/2026/05/06/clickfix-campaign-uses-fake-macos-utilities-lures-deliver-infostealers/)
+- [LaunchAgent](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)
+- [plyvel](https://pypi.org/project/plyvel/)
+- [July 14, 2026The Scam Will Go On: Beware of Fake Offers for Celine Dion Concert Tickets](https://www.group-ib.com/blog/fake-concert-ticket-scam-celine-dion/)
+- [July 13, 2026Inside the Matching Engine: How Distributed Tokenization Identifies Compromised Cards Without Exposing Them](https://www.group-ib.com/blog/compromised-card-tokenization/)
+- [July 9, 2026RedHook Returns with a Dangerous Upgrade](https://www.group-ib.com/blog/redhook-android-rat-upgraded/)
+- [Services](https://www.group-ib.com/services/)
+- [+65 3159 3798](tel:+6531593798)
+- [+31 20 226 90 90](tel:+31202269090)
+- [+971 4 568 1785](tel:+97145681785)
+- [info@group-ib.com](mailto:info@group-ib.com)
+- [Terms of Use](https://www.group-ib.com/terms-of-use/)
+- [Cookie Policy](https://www.group-ib.com/cookie-policy/)

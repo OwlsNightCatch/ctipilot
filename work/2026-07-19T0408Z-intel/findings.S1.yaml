@@ -1,0 +1,256 @@
+domain: S1
+run_id: 2026-07-19T0408Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-19T04:10:29Z
+ended_at: 2026-07-19T04:25:35Z
+duration_seconds: 906
+self_telemetry:
+  webfetch_calls: 21
+  websearch_calls: 14
+  bridge_fetches: 13
+
+# Window note: 2026-07-18/19 falls on a weekend (Sat/Sun). Every essential
+# national-CERT / government source (NCSC-CH CSH, NCSC-NL, BSI CERT-Bund,
+# CERT-FR avis+actu, CERT-EU, NCSC-UK, CISA advisories/directives/KEV) was
+# confirmed live via its documented recipe but carried NO items published
+# inside the 24h window (window_hours: 24, anchor 2026-07-18T04:08Z ->
+# 2026-07-19T04:08Z) — freshest content across all of them clusters on
+# Fri 2026-07-17. This was verified, not assumed: CISA KEV catalogVersion
+# is still 2026.07.16 (no new KEV additions since); the CISA advisories
+# RSS's newest items are ICS advisories numbered day-197 (2026-07-16);
+# NCSC-CH CSH's newest post (12766) is dated 2026-07-16; NCSC-NL's newest
+# advisory (NCSC-2026-0250) published 2026-07-18T11:01 duplicates the
+# already-covered WordPress WP2Shell story; BSI WID-SEC and CERT-FR avis
+# feeds both stop at 2026-07-17T10:xx. This is a genuinely quiet
+# government-source window, not a fetch failure — see per-source detail
+# folded into coverage_gaps below (none logged as fetch_failures; every
+# source resolved 200/JSON and was read to its documented recipe).
+items:
+  - title: "@fastify/http-proxy prefix-rewrite bypass lets attackers reach hidden upstream paths via a URL-encoded proxy prefix (CVE-2026-16117, CVSS 10.0)"
+    sources:
+      - { url: "https://github.com/fastify/fastify-http-proxy/security/advisories/GHSA-mx7v-qhg9-2mvv", publisher: "GitHub Security Advisory (OpenJS Foundation CNA)", date: "2026-07-18", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-16117", publisher: "NVD", date: "2026-07-18", role: "corroborating" }
+    discovery_trace: "first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (via bridge `enisa-euvd recent criticals`, record EUVD-2026-45379) → primary: GitHub Security Advisory, URL https://github.com/fastify/fastify-http-proxy/security/advisories/GHSA-mx7v-qhg9-2mvv → confirmed: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-16117"
+    summary: |
+      @fastify/http-proxy (the official Fastify plugin for reverse-proxying requests to an
+      upstream service, commonly used to build Node.js API gateways) versions up to and
+      including 11.5.0 fail to rewrite the request prefix when the prefix segment is
+      URL-encoded. Fastify's router URL-decodes paths for route matching (so a request to
+      `/%61pi/*` still matches a route registered under `/api/*`), but `request.url` retains
+      the original encoded form, and the plugin's prefix-rewrite step performs a literal
+      string replace against the decoded prefix — which then fails to match the still-encoded
+      URL. The result: a crafted request that encodes one or more characters of the configured
+      prefix matches the proxy route but skips the rewrite, so the raw encoded path is
+      forwarded to the upstream unchanged; the upstream then decodes it and serves whatever
+      path it names — reaching internal or administrative endpoints the gateway operator
+      believed were hidden behind `rewritePrefix`. No authentication or user interaction is
+      required (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:N = 10.0). No workaround exists;
+      the only fix is upgrading to 11.6.0. No public exploitation has been reported as of
+      2026-07-18. Relevant to any organization — including public-sector API gateways — that
+      relies on `@fastify/http-proxy`'s `rewritePrefix` to expose only a subset of an upstream
+      service's paths through a public-facing proxy.
+    region_nexus: "global; affects any Node.js-based API gateway/reverse-proxy deployment, including Swiss/EU public-sector web-service front ends built on Fastify"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco, general IT infrastructure"
+    cves: [CVE-2026-16117]
+    techniques: [T1190]
+    affected_products: ["@fastify/http-proxy (npm package)"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Fastify's router URL-decodes paths for route matching, so `/%61pi/*` matches a route registered under `/api/*`, but `request.url` retains the encoded form and the literal `String.replace(prefix, rewritePrefix)` fails to match."
+        attribution: "@fastify/http-proxy GHSA-mx7v-qhg9-2mvv"
+        source_url: "https://github.com/fastify/fastify-http-proxy/security/advisories/GHSA-mx7v-qhg9-2mvv"
+      - quote: "Applications that rely on `rewritePrefix` to isolate upstream paths behind a public prefix are exposed to path-restriction bypass."
+        attribution: "@fastify/http-proxy GHSA-mx7v-qhg9-2mvv"
+        source_url: "https://github.com/fastify/fastify-http-proxy/security/advisories/GHSA-mx7v-qhg9-2mvv"
+    extended_notes: |
+      Discovered via ENISA EUVD's "criticals" listing sweep (CVSS 9.0-10.0), which also
+      surfaced two other fresh (2026-07-18) high-CVSS GHSA records I evaluated and dropped:
+      CVE-2026-9323 (urwid Python TUI library, web-display-backend session-ID prediction +
+      /tmp FIFO enumeration — real but the vulnerable web-display feature is rarely exposed
+      in production, so relevance is low) and CVE-2025-71392 (SurrealDB SurrealQL injection
+      via backup export/import, CVSS 9.4) — the latter's underlying GHSA advisory is dated
+      2025-04-10; EUVD only backfilled/republished the record on 2026-07-18, so it is NOT a
+      fresh disclosure (recycled-news trap avoided) and was dropped as stale.
+
+  - title: "WordPress wp2shell pre-auth RCE chain (CVE-2026-63030/CVE-2026-60137): watchTowr reports early indications of in-the-wild exploitation, a day after the PoC went public"
+    sources:
+      - { url: "https://cyberinsider.com/wordpress-releases-emergency-update-for-critical-wp2shell-rce-flaw/", publisher: "CyberInsider", date: "2026-07-18", role: "primary" }
+      - { url: "https://www.wordfence.com/blog/2026/07/psa-wordpress-core-patched-unauthenticated-remote-code-execution-vulnerability-chain/", publisher: "Wordfence", date: "2026-07-17", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"'proof of concept' exploit released critical vulnerability July 18 2026\") → pivot: CyberInsider, URL https://cyberinsider.com/wordpress-releases-emergency-update-for-critical-wp2shell-rce-flaw/ → corroboration: Wordfence, URL https://www.wordfence.com/blog/2026/07/psa-wordpress-core-patched-unauthenticated-remote-code-execution-vulnerability-chain/ (confirms a customer firewall rule shipped 2026-07-17 but does not itself confirm ITW exploitation) → claim source named by CyberInsider: watchTowr CEO Benjamin Harris"
+    summary: |
+      Delta on the already-covered wp2shell WordPress-core pre-auth RCE chain (REST API
+      batch-endpoint route confusion, CVE-2026-63030, chained with a WP_Query SQL injection,
+      CVE-2026-60137; fixed out-of-band in 7.0.2/6.9.5/6.8.6 on 2026-07-17). The prior entry
+      recorded "no confirmed in-the-wild exploitation as of 2026-07-18." That has moved:
+      watchTowr CEO Benjamin Harris is quoted (2026-07-18) saying the company is "already
+      seeing PoC exploits for wp2shell in circulation and the first indications of
+      in-the-wild exploitation" — a claim, not yet an independently-confirmed fact (no CISA
+      KEV addition, no named victim, no independent telemetry source corroborates it as of
+      this run). Wordfence separately confirms it shipped a WAF rule to Premium/Care/Response
+      customers on 2026-07-17 specifically to block attacks against this RCE (Free-tier users
+      get the same rule 2026-08-16) — a defensive measure consistent with anticipated/observed
+      attack activity, but not itself an ITW-exploitation confirmation. The vulnerability
+      remains unauthenticated, no-plugins-required, reachable against any stock WordPress 6.9.0
+      through 7.0.1 install; the interim WAF mitigation is to block both `/wp-json/batch/v1`
+      and `?rest_route=/batch/v1` (blocking only the former leaves the query-string route open).
+    region_nexus: "global; WordPress is heavily used across Swiss/EU public-sector, education and municipal websites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, education"
+    cves: [CVE-2026-63030, CVE-2026-60137]
+    techniques: [T1190]
+    affected_products: ["WordPress Core"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030"
+    evidence:
+      - quote: "Early signs of real-world exploitation have emerged."
+        attribution: "CyberInsider"
+        source_url: "https://cyberinsider.com/wordpress-releases-emergency-update-for-critical-wp2shell-rce-flaw/"
+      - quote: "the company is already seeing PoC exploits for wp2shell in circulation and the first indications of in-the-wild exploitation"
+        attribution: "watchTowr CEO Benjamin Harris, quoted by CyberInsider"
+        source_url: "https://cyberinsider.com/wordpress-releases-emergency-update-for-critical-wp2shell-rce-flaw/"
+      - quote: "Premium, Care, and Response customers received a firewall rule protecting against attacks targeting the remote code execution vulnerability on July 17, 2026. Wordfence Free users will receive the same protection 30 days later, on August 16, 2026."
+        attribution: "Wordfence"
+        source_url: "https://www.wordfence.com/blog/2026/07/psa-wordpress-core-patched-unauthenticated-remote-code-execution-vulnerability-chain/"
+    extended_notes: |
+      Attribution discipline note: the "first indications of in-the-wild exploitation" line
+      traces to a single named individual's statement (watchTowr's CEO) relayed by one
+      secondary outlet — I did not find an independent telemetry source (Wordfence's own
+      WAF-hit data, Shadowserver scanning data, or a CISA KEV addition) confirming actual
+      exploitation as of this run. Recommend the next cycle check Wordfence's Intelligence
+      feed and CISA KEV directly for a firmer confirmation before this graduates past
+      "claimed."
+
+  - title: "SharePoint July 2026 exploitation cluster: CISA's AMSI/Defender signature names and the IIS machine-key-theft persistence chain"
+    sources:
+      - { url: "https://www.resecurity.com/blog/article/from-web-request-to-domain-compromise-understanding-the-july-2026-sharepoint-attacks", publisher: "Resecurity", date: "2026-07-18", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations", publisher: "CISA", date: "2026-07-16 (update)", role: "primary" }
+    discovery_trace: "first seen at: resecurity (source-list standard-tier), URL https://www.resecurity.com/blog → drilled article, URL https://www.resecurity.com/blog/article/from-web-request-to-domain-compromise-understanding-the-july-2026-sharepoint-attacks → primary technical authority: CISA Alert, URL https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations (last updated 2026-07-16, carries the AMSI/MDAV signature names Resecurity's synthesis draws on)"
+    summary: |
+      Technical/detection enrichment on the already-covered on-prem SharePoint Server
+      exploitation cluster (CVE-2026-32201, CVE-2026-45659, CVE-2026-56164, CVE-2026-58644 —
+      all CISA KEV-listed and confirmed exploited; CVE-2026-55040 and CVE-2026-50522 disclosed
+      but not yet confirmed exploited). CISA's alert (last updated 2026-07-16) states these
+      vulnerabilities are being used for RCE and "post-exploitation activities, such as
+      stealing Internet Information Services (IIS) machine keys and performing deserialization
+      techniques, to gain persistence and deploy malware" — i.e. the ToolShell-lineage
+      playbook: an initial webshell drop into a `_layouts`-reachable path, theft of the
+      ASP.NET machine validation/decryption keys, and offline forging of ViewState / forms-auth
+      tickets that remain valid after the initiating vulnerability is patched (patching alone
+      does not revoke stolen keys). CISA names four concrete AMSI/Microsoft Defender Antivirus
+      signatures organizations should hunt for: `Exploit:Script/SuspSignoutReqBody.A` (request
+      body, SharePoint Subscription Edition only), `Exploit:Script/ToolPaneAuthBypass.A`
+      (request header scanning) and `.C` (RCE coverage) on 2016/2019/Subscription, and
+      `Backdoor:MSIL/LeakFang.A!dha` (post-exploitation, IIS-protected-secrets access).
+      Resecurity's 2026-07-18 write-up walks the same chain in a fictional "Operation
+      FarmKey" illustrative case study (explicitly labelled as such, not an observed incident
+      — excluded from the technical claims above) but usefully consolidates concrete
+      telemetry to hunt: `w3wp.exe` spawning `cmd.exe`/`powershell.exe`/`csc.exe`, new
+      `.aspx`/`.dll` files under `TEMPLATE\LAYOUTS`, and IIS Configuration/Operational Event
+      ID 29 (new global module registered in `applicationHost.config` — the persistence
+      mechanism that survives an application-pool recycle). CISA's hardening guidance: before
+      rotating machine keys, hunt for and remediate machine-key harvesters first (rotating
+      keys without doing so lets the attacker steal the new ones too); avoid exposing
+      SharePoint Servers directly to the internet; require AMSI "Full Mode" request-body
+      scanning.
+    region_nexus: "global; on-premises SharePoint Server is widely deployed across Swiss/EU government and public-administration back offices"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: [CVE-2026-56164, CVE-2026-58644, CVE-2026-45659, CVE-2026-32201, CVE-2026-55040, CVE-2026-50522]
+    techniques: [T1190, T1505.003, T1505.004, T1606.001]
+    affected_products: ["Microsoft SharePoint Server 2016", "Microsoft SharePoint Server 2019", "Microsoft SharePoint Server Subscription Edition"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-17/cve-2026-58644-sharepoint-confirmed-exploited-kev"
+    evidence:
+      - quote: "These vulnerabilities affect all supported on-premises SharePoint Server versions (Subscription Edition, 2019, and 2016) and involve establishing remote code execution (RCE) and post-exploitation activities, such as stealing Internet Information Services (IIS) machine keys and performing deserialization techniques, to gain persistence and deploy malware."
+        attribution: "CISA Alert (updated 2026-07-16)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+      - quote: "AMSI: Exploit:Script/SuspSignoutReqBody.A – request body scanning; SharePoint Server Subscription only; Microsoft has blocked observed attempts."
+        attribution: "CISA Alert (updated 2026-07-16)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+      - quote: "Before rotating IIS machine keys, hunt for and remediate any intrusion artifacts, including machine-key harvesters, that could allow for the keys to be stolen again."
+        attribution: "CISA Alert (updated 2026-07-16)"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/07/14/cisa-urges-sharepoint-hardening-after-new-exploitations"
+    extended_notes: |
+      Sourcing note: Resecurity is a standard-tier, Admiralty-C source (marketing tone,
+      corroborate before sole-citing per sources.json) and its "Operation FarmKey" case study
+      is explicitly fictional/illustrative — I deliberately excluded that narrative from the
+      summary's factual claims and anchored every load-bearing technical fact to CISA's own
+      alert text instead. The CISA alert's own last-update timestamp (2026-07-16) is 2-3 days
+      before this run's 24h window; I'm treating this as the "vendor/authority advisory from
+      2-3 days ago carrying detection specifics not yet surfaced in the brief" exception,
+      with Resecurity's 2026-07-18 write-up as the fresh trigger that surfaced it. Given the
+      mixed source tier, marked confidence MEDIUM rather than HIGH.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "Confirmed live (fetch succeeded, catalogVersion 2026.07.16, 1647 entries) but no NEW additions since 2026-07-16 — genuinely quiet, not a fetch problem. Cross-checked against the CISA advisories RSS feed (freshest items are ICS advisories numbered day-197 = 2026-07-16) and WebSearch, both consistent with no KEV additions in the 24h window."
+  - source_id: fortisandbox-kev-gap (not a sources.json id — audit note)
+    reason: "CVE-2026-25089 / CVE-2026-39808 (Fortinet FortiSandbox OS command injection) were added to CISA KEV on 2026-07-16 and do not appear anywhere in the 14-day prior_coverage.json index — a genuine miss from an earlier run, not something I can present as fresh news now (freshest source is 3 days outside this run's 24h window, no new development found via WebSearch). Flagging for the quality-audit / next relevant cycle to recover, per the 'audit-recovered' pattern already used for the 2026-07-18 GoSerpent and WP2Shell entries."
+  - source_id: apple-security
+    reason: "WebFetch on https://support.apple.com/en-us/100100 returned only the page header (content truncated by the summariser) on the first attempt; bridge `url` returned raw un-rendered HTML head with no dated release table. Did not retry a third time (one-retry cap); no WebSearch signal of a fresh Apple 0-day patch in the window, so treating as a low-confidence gap rather than pursuing the jina reader for a source with no positive lead."
+  - source_id: cert-eu
+    reason: "Live (api fetch clean) but its advisory series is stale relative to today — most recent entry is 2026-006 (May 2026); CERT-EU evidently has not published a numbered security-advisory since spring 2026 even though its Cyber Briefs/other channels may be more current. Not pursued further within budget; note for the operator that the 'cert-eu recent' API list may need a wider N or a different endpoint to reach current content."
+
+## Bridge uses
+- id: cisa-advisories
+  method: bridge:cisa-kev
+  outcome: ok
+- id: cisa-advisories
+  method: bridge:feed (cisa cybersecurity-advisories all.xml)
+  outcome: ok
+- id: ncsc-ch-security-hub
+  method: bridge:ncsc-csh.recent
+  outcome: ok
+- id: bsi-de
+  method: bridge:feed (WID-SEC rss)
+  outcome: ok
+- id: advisories-ncsc-nl
+  method: bridge:feed (advisories rss)
+  outcome: ok
+- id: anssi-fr
+  method: bridge:cert-fr.avis-recent
+  outcome: ok
+- id: anssi-fr
+  method: bridge:cert-fr.actu-recent
+  outcome: ok
+- id: cert-eu
+  method: bridge:cert-eu.recent
+  outcome: ok
+- id: enisa-euvd
+  method: bridge:enisa-euvd.recent (lastvulnerabilities, criticals, exploited)
+  outcome: ok
+- id: ncsc-uk
+  method: bridge:feed (all-rss-feed.xml)
+  outcome: ok
+- id: 0patch-blog
+  method: bridge:feed (blogger atom)
+  outcome: ok
+- id: censys-blog
+  method: bridge:feed
+  outcome: ok
+- id: snyk-research
+  method: bridge:feed
+  outcome: ok
+- id: socprime
+  method: bridge:feed
+  outcome: ok
+- id: sonatype
+  method: bridge:feed
+  outcome: ok
+- id: apple-security
+  method: bridge:url
+  outcome: empty (unrendered head only)
