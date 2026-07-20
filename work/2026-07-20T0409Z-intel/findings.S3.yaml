@@ -1,0 +1,92 @@
+domain: S3
+run_id: 2026-07-20T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-20T04:11:38Z
+ended_at: 2026-07-20T04:21:45Z
+duration_seconds: 607
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 5
+  bridge_fetches: 9
+items:
+  - title: "CERT-UA: Sandworm subcluster UAC-0145 pairs ClickFix fake-CAPTCHA with Ethereum-smart-contract C2 resolution and a Signal-delivered Android backdoor"
+    sources:
+      - { url: "https://cert.gov.ua/article/6318437", publisher: "CERT-UA", date: "2026-07 (mid-month; page's 'Published Time' metadata reads 2026-03-10, which conflicts with the article's own text describing 'June-July 2026' activity — treated as a site-metadata artefact, not the true publish date)", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html", publisher: "The Hacker News", date: "2026-07-19", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews, URL https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html → primary: CERT-UA, URL https://cert.gov.ua/article/6318437 (fetched via jina reader after the direct URL returned only a JS-SPA shell)"
+    summary: |
+      CERT-UA reports that UAC-0145 — a subcluster of UAC-0002/Sandworm (aka APT44, Seashell Blizzard), Russia's GRU-linked destructive-actor family — compromised at least 10 legitimate websites between June and July 2026 to serve a fake CAPTCHA that instructs visitors to paste and run a PowerShell command in the ClickFix pattern (MITRE ATT&CK now has a dedicated ID for this: T1204.004 Malicious Copy and Paste). The PowerShell one-liner drops a VBS persistence stub (GHETTOVIBE) into the Startup folder, which stages a PowerShell recon script (SCOUTCURL) that profiles the host and browser data, and separately loaders FLUIDLEECH (disguised as an "ESET AV Remover") and LOADLOOP fetch a Python-compiled (.pyc) backdoor, FREAKYPOLL. The compromised-site injection itself uses a custom script, SMARTAXE, layered on top of the commodity Cloaking.House traffic-filtering service; SMARTAXE resolves its remote CAPTCHA-content domain dynamically via an `eth_call` to an Ethereum smart contract (EtherHiding — MITRE maps this class of behavior to T1568 Dynamic Resolution), rather than a hardcoded domain, to survive takedowns. Separately, UAC-0145 distributes an Android backdoor (COWARDDUCK) via Signal disguised as security software; it exfiltrates contacts, files (DCIM/Documents/Downloads/Pictures/Alarms plus config/VPN/office-document extensions), and real-time geolocation via the Dropbox API, and pulls C2 tasking from images hosted on legitimate services (images.stockmemory.site/space, steamcommunity.com) proxied through proxy.duckduckgo.com — both chosen to blend into normal outbound traffic. CERT-UA's advisory is explicitly a continuation of its multi-year UAC-0145/Sandworm tracking, which previously relied on trojanized torrent installers and Signal-delivered "antivirus" lures using KALAMBUR/SUMBUR/TAMBUR plus OpenSSH/Tor port-forwarding for remote access.
+    region_nexus: "Primary targeting is Ukraine; Sandworm/GRU is a standing shared threat to European critical infrastructure and government, and the technique stack (ClickFix, blockchain-resolved C2, a messenger-delivered mobile backdoor) is directly transferable to Swiss/EU environments."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, government, defense"
+    cves: []
+    techniques: [T1189, T1204.004, T1059.001, T1547.001, T1102, T1568]
+    affected_products: []
+    entity_keys: ["actor:sandworm"]
+    new_entities:
+      - { key: "actor:uac-0145", type: actor, name: "UAC-0145", aliases: [],
+          summary: "CERT-UA-tracked subcluster of UAC-0002/Sandworm (APT44, Seashell Blizzard); since June-July 2026 compromises legitimate websites to serve ClickFix fake-CAPTCHA lures resolving C2 domains via an Ethereum smart-contract call (EtherHiding), and distributes an Android backdoor (COWARDDUCK) via Signal (CERT-UA, article 6318437)." }
+    relation_suggestions:
+      - { subject: "actor:uac-0145", object: "actor:sandworm",
+          basis: "CERT-UA: UAC-0145 is a subcluster of UAC-0002, 'also known as Sandworm, APT44, Seashell Blizzard' (CERT-UA, article 6318437)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "тривалий час CERT-UA у взаємодії з основними суб'єктами забезпечення кібербезпеки України вживаються адресні заходи, спрямовані на дослідження кластера кіберзагроз UAC-0145 (субкластер UAC-0002, також відомий як Sandworm, APT44, Seashell Blizzard)"
+        attribution: "CERT-UA (Ukrainian, translated: 'for a long time CERT-UA ... has been researching the UAC-0145 cyber threat cluster, a subcluster of UAC-0002, also known as Sandworm, APT44, Seashell Blizzard')"
+        source_url: "https://cert.gov.ua/article/6318437"
+      - quote: "Протягом червня-липня CERT-UA детально проаналізовано спосіб реалізації ClickFix на більше ніж десяти скомпрометованих вебресурсах"
+        attribution: "CERT-UA (translated: 'During June-July CERT-UA analyzed in detail the ClickFix implementation method on more than ten compromised web resources')"
+        source_url: "https://cert.gov.ua/article/6318437"
+      - quote: "The CAPTCHA content to be injected into the web page employs the EtherHiding technique to retrieve the domain name of the remote resource from an Ethereum smart contract."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html"
+      - quote: "The malware embedded in the APK file is a full-featured backdoor codenamed COWARDDUCK that can clandestinely collect the following details — Contacts; Files matching certain extensions; Geolocation in real time."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html"
+    extended_notes: |
+      CERT-UA frames this as a continuation of years-long UAC-0145 tracking; prior tradecraft (torrent-bundled backdoored installers, Signal "antivirus" social engineering, KALAMBUR/SUMBUR/TAMBUR + OpenSSH/Tor port-forwarding for remote access) is background, not part of the in-window delta — the in-window delta is specifically the ClickFix/CAPTCHA vector, the EtherHiding C2-resolution layer (SMARTAXE), and the COWARDDUCK Android backdoor. Defender-relevant hunt: any Startup-folder VBS created around the time of a browser "CAPTCHA" prompt asking the user to open Win+R/Terminal and paste text; PowerShell child processes of explorer.exe/browser processes with no prior parent-child history; outbound HTTPS to images.stockmemory.site/.space or unusual `eth_call` JSON-RPC traffic to public Ethereum nodes from endpoint agents (EtherHiding's tell); Android fleets (BYOD/MDM) receiving APKs via Signal claiming to be AV/security tools.
+
+  - title: "SANS ISC: new honeypot-observed reconnaissance scans probe Hikvision's ISAPI /System/status endpoint"
+    sources:
+      - { url: "https://isc.sans.edu/diary/33164", publisher: "SANS Internet Storm Center (Johannes Ullrich)", date: "2026-07-19", role: "primary" }
+    discovery_trace: "first seen at: sans-isc, URL https://isc.sans.edu/rssfeed.xml → primary (no pivot needed), URL https://isc.sans.edu/diary/33164"
+    summary: |
+      SANS ISC's Johannes Ullrich reports that ISC honeypots picked up a new class of reconnaissance scanning this past weekend (mid-July 2026) against Hikvision's "OPEN Intelligent Security API" (ISAPI) — specifically requests to `/ISAPI/System/status`, an endpoint that has existed since at least 2018 but had not previously been observed as a scan target. ISAPI is a fully-documented REST interface intended for third-party integration that exposes camera configuration and management, not just AI/facial-recognition features as the name implies; the `/System/status` path is a low-noise way to fingerprint whether a device supports the API (a 401/403 response confirms it exists, a 404 means it doesn't) and to stage credential brute-forcing against Basic/Digest auth. Ullrich notes a specific transport-security gap: ISAPI messages can be AES-128/256-CBC encrypted with a key derived from the device password and an IV exposed in the URL, but if the device is still using Basic authentication (password sent in cleartext) this encryption adds no real protection — proper protection requires HTTPS with device-configured certificates, which many exposed IoT-class devices never get. No exploitation has yet been captured in full by the honeypot network (no authentication data logged so far); this is reconnaissance, not confirmed compromise.
+    region_nexus: "Global scanning activity picked up by ISC's distributed honeypot network; directly relevant wherever Hikvision or similarly ISAPI-enabled IP cameras sit on internet-reachable networks, including physical-security camera deployments across Swiss/EU critical-infrastructure and public-sector sites."
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, transport, public-sector (physical-security/IoT camera fleets)"
+    cves: []
+    techniques: [T1595]
+    affected_products: ["Hikvision IP cameras (ISAPI-enabled)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This weekend, I noticed a new type of recon scans against the newer OPEN Intelligent Security API (ISAPI) provided by Hikvision cameras."
+        attribution: "SANS ISC (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33164"
+      - quote: "The ISAPI has been around since at least 2018, but I have only now noticed scans for /ISAPI/System/status, an endpoint that is an obvious choice to profile ISAPI devices."
+        attribution: "SANS ISC (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33164"
+      - quote: "the encryption does not provide any additional security if Basic authentication is used and the password is sent in the clear"
+        attribution: "SANS ISC (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33164"
+    extended_notes: |
+      Thin but concrete and timely: a single handler's honeypot observation (no independent corroboration found this run), reconnaissance only, no confirmed exploitation. Included as a low-cost hunt tip (watch for /ISAPI/System/status probes in web/proxy logs; confirm no Hikvision or ISAPI-compatible camera exposes management interfaces to the internet; verify HTTPS + non-Basic auth is actually configured, not just supported) rather than a high-severity item.
+    borderline: true
+    borderline_reason: "single-source (SANS ISC handler diary, reliability B, no national-CERT carve-out), reconnaissance/scanning only with no confirmed exploitation, and a narrow product footprint — moderate severity but timely, concrete, and transferable to any org running internet-reachable IP cameras."
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: trellix
+    reason: "bridge `url` fetch returned only the JS-app HTML shell (React/Next-style SPA) with no listing content in the static body; no RSS feed exists for this source per its sources.json note. No in-window items recoverable this run; flag for a structured-endpoint recipe (sitemap or API) in a future run."
+  - source_id: huntress
+    reason: "WebFetch returned only a partial/cached rendering of the blog listing (1 fully-dated post, 3 undated titles); latest dated item (Railway/LSHIY, 2026-07-09) is outside the 24h window and already covered by prior runs. Traversal to a full 10-item list did not surface further content."
+  - source_id: securelist
+    reason: "WebFetch returned only the landing-page navigation/category structure without per-article dates or bodies; all article titles visible (HelloNet, GoSerpent, Armored Likho/BusySnake) match items already covered in prior_coverage.json, so no in-window delta was recoverable via this transport this run."

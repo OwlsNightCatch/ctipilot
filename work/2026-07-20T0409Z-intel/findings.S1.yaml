@@ -1,0 +1,106 @@
+domain: S1
+run_id: 2026-07-20T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-20T04:11:19Z
+ended_at: 2026-07-20T04:25:32Z
+duration_seconds: 853
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 9
+  bridge_fetches: 14
+items:
+  - title: "CVE-2026-42533 — nginx/NGINX Plus: 15-year-old two-pass capture-clobbering heap overflow, researcher disputes F5's DoS-only framing and demonstrates pre-auth RCE"
+    sources:
+      - { url: "https://cyberstan.co.uk/nginx-rce/", publisher: "cyberstan.co.uk (Stan Shaw, independent researcher, reported to F5 SIRT)", date: "2026-07-19", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/critical-nginx-vulnerability-can-crash.html", publisher: "The Hacker News", date: "2026-07-19", role: "corroborating" }
+      - { url: "https://www.securityweek.com/f5-patches-multiple-nginx-big-ip-vulnerabilities/", publisher: "SecurityWeek", date: "2026-07-16", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"new CVE exploit proof-of-concept published this weekend security research\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/critical-nginx-vulnerability-can-crash.html → primary: cyberstan.co.uk (discoverer's own technical write-up), URL https://cyberstan.co.uk/nginx-rce/ → corroborating: SecurityWeek, URL https://www.securityweek.com/f5-patches-multiple-nginx-big-ip-vulnerabilities/ (confirms F5's out-of-band patch and CVSS 9.2 rating) → CVE identifier verified via NVD (https://nvd.nist.gov/vuln/detail/CVE-2026-42533, not cited as a source per policy)"
+    summary: |
+      CVE-2026-42533 is a missing save/restore of PCRE capture state across nginx's two-pass
+      script-expression engine (LEN-measure pass then VALUE-write pass) in ngx_http_script.c /
+      ngx_stream_script.c, reachable from any directive that evaluates a compiled expression:
+      proxy_set_header, fastcgi_param, scgi_param, uwsgi_param, grpc_set_header, return, add_header,
+      rewrite, set, root, alias, access_log. When a config combines a regex-capturing block
+      (location/server_name/rewrite/if) with a regex `map` directive referenced after the capture in
+      the same evaluated string, evaluating the map's regex mid-pass clobbers the shared
+      r->captures/r->captures_data state, so the LEN and VALUE passes disagree on buffer size —
+      an unauthenticated, pre-auth heap buffer overflow triggerable via crafted HTTP requests. The
+      bug has existed since nginx 0.9.6 (2011, when `map` gained regex support) through 1.30.3 /
+      1.31.2; F5 (which now owns nginx) shipped an out-of-band fix in nginx 1.30.4 (stable), 1.31.3
+      (mainline) and NGINX Plus 37.0.3.1 / R36 P7 on 2026-07-15/16 (CVSS 3.1 8.1 / CVSS 4.0 9.2).
+      F5's advisory frames real-world risk on ASLR-enabled systems as primarily denial-of-service;
+      independent researcher Stan Shaw (credited in the fix, reported directly to F5 SIRT) disputes
+      that framing and demonstrates two chainable primitives — an information-leak variant (clobbered
+      capture smaller than original) that returns uninitialized heap residue (a libc pointer at
+      offset 0x08, a heap pointer at 0x10) sufficient to defeat ASLR in one unauthenticated GET, and
+      a heap-overflow variant (clobbered capture larger than original) that writes unbounded
+      attacker-controlled request-body content past the allocated buffer, hijacking control flow via
+      nginx's pool-cleanup mechanism. Tested at 10/10 reliability on stock Ubuntu 24.04 (glibc 2.39,
+      full ASLR). No public PoC or full exploit write-up yet — the researcher is deliberately
+      withholding both for ~21 days post-patch, citing CVE-2026-42945 ("Rift", a weaker nginx flaw in
+      the same engine that only needed ASLR disabled) as precedent for how quickly PoC-driven
+      exploitation follows disclosure in this codebase. A non-exploitative config-audit scanner is
+      already public. As of 2026-07-20, CVE-2026-42533 is not yet in CISA KEV and no exploitation has
+      been observed.
+    region_nexus: "global; nginx/NGINX Plus is near-ubiquitous as an edge reverse proxy / web server across Swiss and EU public-sector e-government portals, CI operator API gateways, and any public-facing service — directly relevant regardless of sector"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector (public-sector, energy, water, transport, healthcare, finance, telco — anywhere nginx/NGINX Plus terminates internet-facing traffic)"
+    cves: ["CVE-2026-42533"]
+    techniques: ["T1190"]
+    affected_products: ["nginx (Open Source)", "NGINX Plus", "NGINX Ingress Controller"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A missing save/restore of PCRE capture state in nginx's script engine lets a remote unauthenticated attacker trigger a heap buffer overflow with fully controlled content and length."
+        attribution: "Stan Shaw (cyberstan.co.uk)"
+        source_url: "https://cyberstan.co.uk/nginx-rce/"
+      - quote: "Both primitives chain into a complete pre-auth RCE. The info leak defeats ASLR in a single GET request."
+        attribution: "Stan Shaw (cyberstan.co.uk)"
+        source_url: "https://cyberstan.co.uk/nginx-rce/"
+      - quote: "A reader of the F5 advisory could reasonably conclude this is DoS-only on default systems. It is not."
+        attribution: "Stan Shaw (cyberstan.co.uk), quoted by The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/critical-nginx-vulnerability-can-crash.html"
+      - quote: "Every nginx version from 0.9.6 through 1.31.2 is vulnerable, a range that reaches back to 2011, when map gained regex support."
+        attribution: "The Hacker News, citing Stan Shaw"
+        source_url: "https://thehackernews.com/2026/07/critical-nginx-vulnerability-can-crash.html"
+    extended_notes: |
+      Detection concept (behavioural, no IOCs): the researcher's public config-scanner
+      (github.com/0xCyberstan/CVE-2026-42533-Config-Scanner) statically flags nginx configs that
+      combine a regex-capturing block with a regex `map` variable referenced afterward in the same
+      evaluated string — run it against every internet-facing nginx/NGINX Plus config now, before
+      patching, to know which vhosts were exposed. At the network layer: anomalously large or
+      malformed request bodies immediately followed by worker-process restarts/crashes on nginx edge
+      hosts is the DoS-primitive's crash signature; a GET immediately followed by a POST from the
+      same source to the same vhost, where the GET's response size deviates from the configured
+      capture's expected length, is the two-request exploitation chain's shape (info-leak GET, then
+      overflow POST) — though this is inferred from the mechanism, not stated by the source as an
+      observed detection rule. Hardening: upgrade to 1.30.4/1.31.3/NGINX Plus 37.0.3.1 immediately;
+      until patched, restructure any config matching the vulnerable pattern (move the map-variable
+      reference before the capture reference, or split them into separate evaluated expressions).
+      Relevant precedent the researcher cites: CVE-2026-42945 ("Rift"), a weaker flaw in the same
+      nginx script engine that required ASLR disabled, "saw active exploitation shortly after its
+      PoC dropped" — the same trajectory should be assumed here once the withheld PoC ships (~early
+      August 2026 by the researcher's stated timeline).
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "Catalog snapshot's newest entries dated 2026-07-16 (CVE-2026-58644 SharePoint, three Fortinet FortiSandbox CVEs, KNX) — all already covered by prior runs / the 2026-07-19 weekly; no fresh KEV additions found inside the 2026-07-19 04:09Z–2026-07-20 04:09Z window despite re-checking."
+  - source_id: ncsc-ch-security-hub
+    reason: "Newest post (12766, Abacus ERP) lastModified 2026-07-16; no CSH posts published or edited since — consistent with a quiet weekend, not a fetch failure."
+  - source_id: advisories-ncsc-nl
+    reason: "Newest advisory NCSC-2026-0250 (2026-07-18, WordPress/Automattic batch-API RCE) confirmed via CSAF to be the already-covered WP2Shell story (CVE-2026-63030/-60137); nothing newer in the feed."
+  - source_id: bsi-de
+    reason: "Newest WID-SEC item dated 2026-07-17 09:xx–10:xx GMT; feed's own channel pubDate (2026-07-20 04:13Z) reflects fetch time only — no new advisories published since Friday, consistent with a weekend gap in BSI's publishing cadence."
+  - source_id: cert-eu
+    reason: "Most recent listed security advisory (2026-008, Ivanti Sentry) dated 2026-06-10 — CERT-EU's curated advisory list appears to publish on a low, non-daily cadence; nothing newer found."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured for this deployment — sweep is a no-op per org profile; general coverage rules applied unchanged across the full essential-tier source sweep (CISA KEV, ENISA EUVD, NCSC-CH, NCSC-NL, BSI, ANSSI/CERT-FR, CERT-EU, CERT-PL, NCSC-UK, CISA advisories/directives)."
+candidate_sources: []
