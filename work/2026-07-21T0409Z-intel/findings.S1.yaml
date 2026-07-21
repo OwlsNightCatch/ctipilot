@@ -1,0 +1,164 @@
+domain: S1
+run_id: 2026-07-21T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-21T04:11:36Z
+ended_at: 2026-07-21T04:22:06Z
+duration_seconds: 630
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 8
+  bridge_fetches: 14
+
+items:
+  - title: "CVE-2026-6875 — ServiceNow AI Platform sandbox-escape RCE now confirmed under active exploitation (CVSS 9.5)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12778", publisher: "NCSC-CH Cyber Security Hub", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-07-20", role: "corroborating" }
+      - { url: "https://slcyber.io/research-center/smashing-the-servicenow-sandbox-pre-authentication-rce/", publisher: "Searchlight Cyber", date: "2026-07-14", role: "corroborating" }
+      - { url: "https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947", publisher: "ServiceNow (vendor KB)", date: "2026-07-13", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12778 (fetched via `ncsc-csh recent 10`, post created 2026-07-20T12:04:27Z) → primary corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks/ → pivot: Searchlight Cyber (original discoverer/technical write-up), URL https://slcyber.io/research-center/smashing-the-servicenow-sandbox-pre-authentication-rce/ → vendor reference: ServiceNow KB3137947, URL https://support.servicenow.com/kb?id=kb_article_view&sysparm_article=KB3137947 (JS-gated, content not independently readable but cited by both NCSC-CH and Searchlight Cyber as the vendor advisory)"
+    summary: |
+      CVE-2026-6875 is a pre-authentication sandbox escape in ServiceNow AI Platform's GlideRecord query API
+      (disclosed by Searchlight Cyber on 2026-07-14) that lets an unauthenticated caller reach unrestricted
+      JavaScript execution: the attacker submits an unsanitized `sysparm_assessable_type` parameter to the
+      `/assessment_thanks.do` endpoint, then uses `Object.defineProperty` to override `Object.clone` with the
+      `Function` constructor, and triggers `gs.include()` script-include evaluation to run arbitrary server-side
+      code once sandbox restrictions are lifted. ServiceNow shipped an emergency mitigation within 24 hours of
+      disclosure and later introduced "Guarded Script" (restricting sandboxed code to single, simple expressions —
+      no variable declarations, control flow, or multi-statement blocks) as the durable fix.
+      NCSC-CH's 2026-07-20 advisory update (post 12778) changed the exploitation-status field from "no known
+      exploitation" (as reported when this vulnerability was first covered on 2026-07-13) to "actively exploited."
+      Threat-intelligence firm Defused, cited by BleepingComputer, confirmed in-the-wild exploitation starting
+      2026-07-18. Self-hosted and partner-managed ServiceNow instances that have not applied the vendor's KB3137947
+      hotfix are the residual exposure — ServiceNow's own hosted/SaaS instances were already patched.
+    region_nexus: "global; ServiceNow AI Platform (Now Assist/Virtual Agent-class tooling) is widely deployed for ITSM/case-management in Swiss and EU public-sector back offices — self-hosted and partner-managed instances are the exposure that persists after ServiceNow's own hosted-instance fix"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, telco, healthcare (any org running self-hosted/partner-managed ServiceNow AI Platform)"
+    cves: ["CVE-2026-6875"]
+    techniques: ["T1190"]
+    affected_products: ["ServiceNow AI Platform"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-13/servicenow-ai-platform-sandbox-escape-cve-2026-6875"
+    evidence:
+      - quote: "Current exploitation status: Actively exploited"
+        attribution: "NCSC-CH Cyber Security Hub (post 12778, 2026-07-20)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12778"
+      - quote: "We are observing in-the-wild exploitation of the ServiceNow pre-auth sandbox-escape RCE (CVE-2026-6875)"
+        attribution: "Defused, cited by BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks/"
+      - quote: "Running any code via eval or new Function will run free from the constraints of the additional sandbox."
+        attribution: "Searchlight Cyber"
+        source_url: "https://slcyber.io/research-center/smashing-the-servicenow-sandbox-pre-authentication-rce/"
+      - quote: "Guarded Script accepts only a single, simple expression. Variable declarations, control flow, function declarations, assignment operators, and multiple statements are not supported."
+        attribution: "Searchlight Cyber"
+        source_url: "https://slcyber.io/research-center/smashing-the-servicenow-sandbox-pre-authentication-rce/"
+    extended_notes: |
+      Defender vantage: hunt for anomalous outbound requests to /assessment_thanks.do with a
+      sysparm_assessable_type value containing JavaScript-object-property syntax
+      (Object.defineProperty / prototype-chain tokens), and for gs.include() script-include
+      evaluations triggered outside normal admin workflows in ServiceNow application logs.
+      NVD has not yet published its own CVSS assessment for this CVE ("NVD assessment not yet
+      provided" as of this run) — the 9.5 figure is the vendor/NCSC-CH-cited score, not an
+      NVD-computed one; note this provenance if citing CVSS precision downstream.
+    watchlist: []
+
+  - title: "CVE-2026-2291 — Exodus Intelligence publishes a working heap-overflow-to-RCE exploit chain against dnsmasq's DNS cache (OpenWrt target), two months after the silent fix"
+    sources:
+      - { url: "https://blog.exodusintel.com/2026/07/20/dnsmasq-dns-remote-heap-buffer-overflow/", publisher: "Exodus Intelligence", date: "2026-07-20", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-2291", publisher: "NVD", date: "2026-05-11", role: "corroborating" }
+    discovery_trace: "first seen at: exodus-intelligence, URL https://blog.exodusintel.com/feed/ (RSS listing, item dated 2026-07-20T15:15:06Z) → primary: Exodus Intelligence full write-up, URL https://blog.exodusintel.com/2026/07/20/dnsmasq-dns-remote-heap-buffer-overflow/ → corroboration: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-2291"
+    summary: |
+      Exodus Intelligence published a full exploit-development write-up for CVE-2026-2291, a heap buffer
+      overflow in dnsmasq's DNS-reply caching function `really_insert()` (src/cache.c). When dnsmasq converts
+      a domain name from DNS wire-format to an escaped C string for caching, the escaping can double the
+      string's length, but the destination `bigname` buffer (fixed at 1,025 bytes) is never resized —
+      an unchecked `strcpy()` then overflows it. The published exploit chain sends three attacker-controlled
+      DNS names in sequence (`alloc.me`, `overflow.me`, `overwrite.me`) resolved via a malicious/attacker-authoritative
+      upstream DNS response to groom the heap, overflow into an adjacent `bigname` chunk's `next` pointer, mount
+      a write-what-where primitive against `ld.so` function pointers, and achieve EIP control — full remote code
+      execution on the OpenWrt target used for the demonstration (musl libc, x86). The bug requires no local
+      access: the attacker only needs a client behind the vulnerable dnsmasq instance to resolve an
+      attacker-controlled or attacker-influenced domain name. NVD's own CVSS (7.3, AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L)
+      frames the flaw as DNS-cache poisoning/DoS; Exodus's chain demonstrates the practical impact is materially
+      worse — full code execution — which is the gap defenders should weigh when triaging by CVSS alone.
+      Already fixed upstream in dnsmasq 2.92rel2 / 2.93 (11 May 2026); this write-up is a two-month-later
+      technical deep dive, not a new zero-day, but dnsmasq is the default DNS/DHCP forwarder on OpenWrt and
+      countless consumer/SME routers, embedded Linux and OT-adjacent gateways, and many enterprise Linux
+      distributions' NetworkManager DNS backend — patch-verification exposure is broad.
+    region_nexus: "global; dnsmasq is the default DNS/DHCP forwarder embedded in OpenWrt and widely deployed on consumer/SME routers and embedded-Linux gateways across CH/EU networks, including OT-adjacent estates in energy, water and transport"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, transport, telco (embedded network infrastructure); public-sector networks using OpenWrt-based or dnsmasq-based CPE"
+    cves: ["CVE-2026-2291"]
+    techniques: ["T1190"]
+    affected_products: ["dnsmasq"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The root cause of the vulnerability is an unsafe strcpy() when a domain name is cached...The length of the string is not checked to ensure it does not exceed the size of the bigname buffer."
+        attribution: "Exodus Intelligence"
+        source_url: "https://blog.exodusintel.com/2026/07/20/dnsmasq-dns-remote-heap-buffer-overflow/"
+      - quote: "To exploit the vulnerability a client makes a series of DNS requests to the target: alloc.me, overflow.me, and overwrite.me."
+        attribution: "Exodus Intelligence"
+        source_url: "https://blog.exodusintel.com/2026/07/20/dnsmasq-dns-remote-heap-buffer-overflow/"
+      - quote: "dnsmasqs extract_name() function can be abused to cause a heap buffer overflow, allowing an attacker to inject false DNS cache entries, which could result in DNS lookups to redirect to an attacker-controlled IP address, or to cause a DoS."
+        attribution: "NVD (CVE-2026-2291 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-2291"
+    extended_notes: |
+      Defender vantage: verify dnsmasq >= 2.92rel2/2.93 on any OpenWrt/embedded-Linux gateway,
+      router or NetworkManager-DNS host; hunt for anomalous long/malformed DNS-response domain
+      names (escaped-character-heavy) in DNS resolver logs, and for unexpected dnsmasq process
+      crashes/restarts (a heap-corruption exploit attempt failing partway is a plausible precursor
+      signal even where full RCE isn't achieved). No confirmed in-the-wild exploitation of this
+      specific write-up's chain — this is researcher-published offense, not observed attack activity.
+    watchlist: []
+
+cve_table:
+  - { cve: "CVE-2026-6875", product: "ServiceNow AI Platform", cvss: "9.5 (vendor/NCSC-CH-cited; NVD assessment not yet provided)", epss: "unknown", kev: "not yet CISA-KEV-listed as of this run", exploited: "yes — confirmed ITW since 2026-07-18 (Defused, via BleepingComputer; NCSC-CH updated exploitation status to 'Actively exploited' 2026-07-20)", patch: "ServiceNow hosted/SaaS instances already patched; self-hosted/partner-managed instances must apply vendor hotfix KB3137947", source: "NCSC-CH CSH post 12778 / Searchlight Cyber / BleepingComputer" }
+  - { cve: "CVE-2026-2291", product: "dnsmasq", cvss: "7.3 (NVD, AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L) — Exodus's exploit chain demonstrates practical impact beyond NVD's DoS/cache-poisoning framing (full RCE)", epss: "unknown", kev: "not KEV-listed", exploited: "no confirmed ITW exploitation of this chain — researcher-published exploit-development write-up only", patch: "fixed upstream in dnsmasq 2.92rel2 / 2.93 (2026-05-11)", source: "Exodus Intelligence / NVD" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Deployment configures no product watchlist — sweep is a no-op per spawn instructions. General coverage (CISA KEV, ENISA EUVD recent/criticals/exploited, NCSC-CH CSH, NCSC-NL, BSI WID-SEC, CERT-FR, CERT-EU, NCSC-UK, CERT-PL, plus standard-tier research labs) was swept as part of normal S1 research; no watchlisted-product-specific gap found because none is configured."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-kev
+    reason: "No coverage gap — confirmed quiet. CISA KEV catalogVersion cached at 2026.07.16 (dateReleased 2026-07-16T17:00:15Z); cross-checked against cisa-advisories RSS feed (newest items also dated 2026-07-16) and WebSearch for 'CISA adds ... Known Exploited Vulnerabilities catalog' around 2026-07-20 — no fresher KEV-addition alert found. Treated as a genuine 4-5 day quiet period on the US KEV side, not a fetch failure."
+  - source_id: ncsc-uk
+    reason: "No in-window items — freshest item via all-rss-feed.xml is a 2026-07-15 blog post; no reports/advisories published in the 26h window."
+  - source_id: advisories-ncsc-nl
+    reason: "No in-window items beyond what's already covered — freshest advisory NCSC-2026-0250 (WordPress/Automattic) published 2026-07-18, already covered as WP2Shell CVE-2026-63030/-60137."
+  - source_id: cert-eu
+    reason: "Listing (security-advisories-rss) still stale — freshest item is 2026-006 from 2026-06-10, a known long-standing feed-staleness issue per prior audit notes, not a fresh fetch failure this run."
+  - source_id: cisa-advisories
+    reason: "Freshest ICS advisories and KEV-addition alerts both dated 2026-07-16 via the all.xml RSS feed and csaf-recent index — consistent with the cisa-kev quiet period, not a fetch failure."
+  - source_id: claroty-team82
+    reason: "Listing drilled but freshest identifiable post (Vertiv UPS network cards) dated 2026-06-09 — no in-window research found; listing page does not surface publish dates so this required a per-post date check, only performed for the top listed item given time budget."
+
+borderline_dropped_note: |
+  Two items were assessed and NOT included after review: (1) BSI WID-SEC-2026-2411 / CERT-FR
+  CERTFR-2026-AVI-0902 — a 10-bulletin Mattermost Server vulnerability bundle (published/updated
+  2026-07-19/20 by both German and French national CERTs) carries NO CVE ids and NO CVSS scores
+  (Mattermost's own policy withholds bulletin technical detail for 30 days after release; both CERTs
+  rate it "mittel"/medium and describe only "a non-specified security issue"). Given the audience's
+  actionability bar (component/CVE/CVSS/prerequisites), this lacked enough substance for a standalone
+  entry; only the affected-version ranges were extractable (Server <11.9.0, <11.7.7, <11.8.4, <10.11.22,
+  fixed 11.9.0/11.7.7/11.8.4/10.11.22 respectively per BSI's CSAF product tree). (2) CERT Polska's
+  CVE-2026-57309/-57310/-57311 (Windu CMS, unauthenticated blind SQLi CVSS 9.3 + weak password hashing +
+  authenticated file-upload RCE, published 2026-07-20) — Windu is a ~10,000-site Polish small-business
+  "business card website" CMS with no confirmed public-sector/critical-infrastructure adoption, no vendor
+  patch available (vendor contact attempts by CERT Polska were unsuccessful), and no confirmed exploitation;
+  judged below the relevance bar for this constituency and dropped rather than marked borderline.

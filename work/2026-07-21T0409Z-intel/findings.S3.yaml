@@ -1,0 +1,235 @@
+domain: S3
+run_id: "2026-07-21T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-21T04:11:57Z"
+ended_at: "2026-07-21T04:28:59Z"
+duration_seconds: 1022
+self_telemetry:
+  webfetch_calls: 26
+  websearch_calls: 1
+  bridge_fetches: 24
+
+items:
+  - title: "JADEPUFFER returns with ENCFORGE, a purpose-built ransomware that destroys AI/ML model artifacts instead of just extorting data"
+    sources:
+      - { url: "https://www.sysdig.com/blog/jadepuffer-evolves-the-agentic-threat-actor-deploys-ransomware-built-to-destroy-ai-models", publisher: "Sysdig Threat Research Team", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/jadepuffer-ai-model-ransomware/", publisher: "Infosecurity Magazine", date: "2026-07-20", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (RSS listing) → primary: Sysdig Threat Research Team, URL https://www.sysdig.com/blog/jadepuffer-evolves-the-agentic-threat-actor-deploys-ransomware-built-to-destroy-ai-models"
+    summary: |
+      Sysdig's Threat Research Team reports that JADEPUFFER — the agentic-LLM ransomware operator it first documented on 2026-07-01 exploiting Langflow's missing-authentication flaw CVE-2025-3248 (/api/v1/validate/code, unauthenticated arbitrary Python execution) — returned to the same Langflow instance with a materially upgraded payload. Where the original campaign used improvised Python and MySQL's AES_ENCRYPT() to extort a downstream database, the new intrusion stages ENCFORGE (deployed to disk as "lockd"), a compiled, UPX-packed Go ransomware purpose-built for AI/ML infrastructure. ENCFORGE targets roughly 180 file extensions spanning the modern ML stack: model checkpoints (PyTorch, TensorFlow), HuggingFace SafeTensors weights, llama.cpp GGUF quantized models, FAISS vector indices, Apache Parquet/TFRecord training datasets, NumPy arrays and LoRA adapters, encrypting with AES-256-CTR/RSA-2048. Sysdig notes the extortion contact embedded in ENCFORGE matches the address disclosed in the July 1 report, confirming continuity of the same operator rather than a copycat. The operational significance for defenders: unlike conventional ransomware, encrypted model checkpoints and their training data cannot simply be restored from a vendor patch or decryptor — rebuilding a production fine-tuned model requires re-running weeks-to-months of training at $75,000–$500,000 in compute/engineering cost per model, and if the training data sits on the same compromised host, recovery is blocked until the data itself is reconstructed. Sysdig's post-exploitation reconstruction (Phase 1: credential sweep via cloud keys, DB connection strings, API tokens; internal-service probing via /dev/tcp) documents continued autonomous chaining behaviour consistent with the original agentic-operation assessment.
+    region_nexus: "global; any organization self-hosting Langflow (incl. EU/CH public-sector and research AI pipelines) is at risk"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, research, finance"
+    cves: ["CVE-2025-3248"]
+    techniques: ["T1190", "T1611", "T1486"]
+    affected_products: ["Langflow"]
+    entity_keys: ["actor:jadepuffer"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-04/jadepuffer-agentic-llm-ransomware-langflow-rce"
+    evidence:
+      - quote: "Ransomware operators make a bet that their victims don't keep backups. In a new development, the operator behind JADEPUFFER has doubled down on that bet, using ransomware to destroy the one thing an organization can't simply restore: a trained AI model."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/jadepuffer-evolves-the-agentic-threat-actor-deploys-ransomware-built-to-destroy-ai-models"
+      - quote: "The extortion contact embedded in ENCFORGE, e78393397@proton.me, matches the contact disclosed in the prior report. This is the same operator with a materially upgraded toolkit."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/jadepuffer-evolves-the-agentic-threat-actor-deploys-ransomware-built-to-destroy-ai-models"
+      - quote: "Rebuilding a production-ready, fine-tuned AI model requires re-running weeks or months of training, at a cost of $75,000 to $500,000 per model in compute and engineering time."
+        attribution: "Sysdig Threat Research Team"
+        source_url: "https://www.sysdig.com/blog/jadepuffer-evolves-the-agentic-threat-actor-deploys-ransomware-built-to-destroy-ai-models"
+    extended_notes: |
+      Fits the pipeline's already-tracked emerging theme of AI infrastructure as both attack surface and attack target (Sygnia AI-orchestrated AWS intrusion, Check Point AI Security Report 2026). Note the extortion-contact evidence quote above is included for attribution-continuity reasoning only, per the no-IOC policy the composer should not render it as an indicator.
+
+  - title: "Cruciferra: a $450-$2,000/month crypter-as-a-service using kernel-patched process ghosting and BYOVD EDR termination, tied to China-nexus TA4922"
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service", publisher: "Proofpoint Threat Insight", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/cruciferra-crypter-process-ghosting/", publisher: "Infosecurity Magazine", date: "2026-07-20", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (RSS listing) → primary: Proofpoint Threat Insight, URL https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service"
+    summary: |
+      Proofpoint documented Cruciferra, a Mono/.NET-based crypter-as-a-service advertised on underground forums since fall 2025 at $450-$2,000/month, used across multiple unrelated cybercriminal groups to pack commodity RATs and infostealers (AsyncRAT/DCRAT, Agent Tesla, XWorm, zgRAT, Formbook/XLoader, PhantomStealer, Remcos, Snake Keylogger). Payloads are encrypted with 90+ polymorphic cipher routines dynamically assembled from Keccak, Feistel, SPECK and Threefish primitives and stored Base16-encoded in the PE's .reloc section — no two samples share an identical routine. Execution uses a modified process-ghosting technique: a temporary file is marked for deletion via NtSetInformationFile, mapped as a PE image section (SEC_IMAGE) before the delete completes via NtCreateSection/NtMapViewOfSection, leaving a running process whose backing image is never scannable on disk; Cruciferra additionally patches ZwQueryVirtualMemory to sanitize what EDR memory queries see and neuters NtManageHotPatch to defeat kernel image-integrity validation. For EDR/AV termination it loads a legitimate-but-vulnerable signed driver (GoFlyDrv.sys, among several alternates) and issues DeviceIOControl IOCTLs to kill security processes (BYOVD). Additional evasion: IAT patching plus indirect syscalls sourced from a clean ntdll.dll copy, hundreds of decoy DLL exports, and background EnumWindows polling to suppress console-window visibility. Proofpoint attributes dozens of April-June 2026 campaigns to TA4922 (a China-nexus financially motivated cluster already tracked by this pipeline), using tax-authority and SSA-themed lures against financial services (34%), healthcare (25%) and government (10%) targets.
+    region_nexus: "global; sector mix (finance/healthcare/government) is directly relevant to CH/EU public-sector and CI targeting"
+    primary_sector_nexus: "direct"
+    sector: "finance, healthcare, public-sector"
+    cves: []
+    techniques: ["T1055", "T1685", "T1027"]
+    affected_products: []
+    entity_keys: ["actor:ta4922"]
+    new_entities:
+      - { key: "tool:cruciferra-crypter", type: tool, name: "Cruciferra", aliases: [],
+          summary: "Mono/.NET-based commercial crypter-as-a-service ($450-$2,000/month) using 90+ polymorphic cipher routines, modified process ghosting, IAT/syscall unhooking and BYOVD (GoFlyDrv.sys and alternates) to pack commodity RATs/infostealers; Proofpoint attributes multiple April-June 2026 campaigns to China-nexus TA4922 (Proofpoint, 2026-07-20)." }
+    relation_suggestions:
+      - { subject: "actor:ta4922", object: "tool:cruciferra-crypter",
+          basis: "Proofpoint: 'Proofpoint attributed multiple campaigns using the malware to the Chinese-speaking group TA4922' (Proofpoint, 2026-07-20)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cruciferra calls itself 'the underground's most lethal crypter.'"
+        attribution: "Proofpoint Threat Insight"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service"
+      - quote: "It patched the Import Address Table, read a clean copy of ntdll.dll to source indirect syscalls, and disabled kernel-level telemetry."
+        attribution: "Proofpoint Threat Insight"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service"
+      - quote: "Proofpoint attributed multiple campaigns using the malware to the Chinese-speaking group TA4922."
+        attribution: "Proofpoint Threat Insight"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service"
+    extended_notes: |
+      Detection angle for hunt teams: query for processes whose backing PE section maps to a since-deleted temp file (classic ghosting signature), unusual EnumWindows-polling threads targeting "ConsoleWindowClass", and driver-load events for GoFlyDrv.sys / Core64.sys / HwOs2Ec.sys / LnvMSRIO.sys / MemoryInformer.sys / NTIOLib_X64.sys / ProcessMonitorDriver.sys / selfprot.sys outside expected vendor contexts (BYOVD hunt list, not full IOCs).
+
+  - title: "HOLLOWGRAPH: a new Cavern-framework component turns a compromised Microsoft 365 calendar into a two-way dead-drop C2 channel via the Graph API"
+    sources:
+      - { url: "https://www.group-ib.com/blog/hollowgraph-microsoft-365/", publisher: "Group-IB Threat Intelligence", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/hollowgraph-microsoft-calendars/", publisher: "Infosecurity Magazine", date: "2026-07-20", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (RSS listing) → primary: Group-IB Threat Intelligence, URL https://www.group-ib.com/blog/hollowgraph-microsoft-365/"
+    summary: |
+      Group-IB identified HOLLOWGRAPH, a .NET NativeAOT-compiled DLL that Group-IB links "with high confidence" to the modular Cavern C2 framework previously profiled by Check Point Research as used by the Iran-MOIS-linked Cavern Manticore APT (2026-07-06). HOLLOWGRAPH implements only two commands (get/send) and never contacts attacker-owned infrastructure directly: instead it treats a compromised Microsoft 365 mailbox's calendar as a two-way dead-drop over the Microsoft Graph API. The "send" command encrypts stolen files (hybrid RSA-OAEP + AES-256-GCM, separate key pairs per direction) and uploads them as attachments to a newly created calendar event dated far in the future (13 May 2050) to avoid the mailbox owner's notice, then renames the event subject to an operator-recognizable tag; "get" queries the same calendarView window for operator-planted tasking events and decrypts the attached instructions. A second, unencrypted channel refreshes the four Microsoft Entra ID (Azure AD) credentials the implant needs (tenant ID, client ID, client secret, mailbox) via DNS tunneling: length- and data-encoded queries against an attacker domain resolved as IPv6 AAAA records, reassembled into 14-usable-bytes-per-query chunks. The attribution to Cavern rests on matching invocation syntax (<command>_;;_<arg0>_,_<arg1>_,_<arg2>), a matching self-command code (Base64 "MzU=" decoding to "003", a documented Cavern debug-toggle instruction) and identical C2 tasking JSON structure. Group-IB explicitly states it cannot confidently attribute HOLLOWGRAPH to any previously named actor, but assesses — at low confidence — technical overlap with the Iranian-nexus Lyceum sub-group of OilRig (matching modular-plugin architecture and plugin-naming convention against a 2025 Lyceum .NET backdoor sample). Victimology is narrowly scoped: 12 infected systems identified, only ~3 actively communicating, all evidence (compromised exfil mailbox, malware upload origin) pointing to Israeli organizations, active since at least 3 June 2026.
+    region_nexus: "Israel-focused per current telemetry; the Cavern-framework and Graph-API-as-C2 technique is directly transferable to any Microsoft 365 tenant, including CH/EU public-sector"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, IT-services"
+    cves: []
+    techniques: ["T1102.002", "T1071.004", "T1027"]
+    affected_products: ["Microsoft 365", "Microsoft Graph API", "Microsoft Entra ID"]
+    entity_keys: ["tool:cavern-c2-framework"]
+    new_entities:
+      - { key: "tool:hollowgraph-malware", type: tool, name: "HOLLOWGRAPH", aliases: [],
+          summary: "NativeAOT-compiled .NET DLL that Group-IB links with high confidence to the Cavern C2 framework; abuses the Microsoft Graph API to turn a compromised M365 mailbox calendar into a two-way dead-drop for tasking/exfiltration, with DNS-tunneled Entra ID credential refresh. Narrowly targets Israeli entities; observed June-July 2026 (Group-IB, 2026-07-20)." }
+    relation_suggestions:
+      - { subject: "tool:hollowgraph-malware", object: "tool:cavern-c2-framework",
+          basis: "Group-IB: 'these similarities strongly support our assessment that HOLLOWGRAPH is part of a different variant of the Cavern framework,' based on matching command syntax and matching C2 tasking JSON structure (Group-IB, 2026-07-20)." }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Group-IB Threat Intelligence team has identified HOLLOWGRAPH, a new malware sample that we attribute, with high confidence, to the Cavern backdoor framework"
+        attribution: "Group-IB Threat Intelligence"
+        source_url: "https://www.group-ib.com/blog/hollowgraph-microsoft-365/"
+      - quote: "these similarities strongly support our assessment that HOLLOWGRAPH is part of a different variant of the Cavern framework"
+        attribution: "Group-IB Threat Intelligence"
+        source_url: "https://www.group-ib.com/blog/hollowgraph-microsoft-365/"
+      - quote: "we cannot confidently attribute this activity to any previously identified threat actor... we assess a potential link to Lyceum with low confidence"
+        attribution: "Group-IB Threat Intelligence"
+        source_url: "https://www.group-ib.com/blog/hollowgraph-microsoft-365/"
+    extended_notes: |
+      Detection concept (Graph API audit telemetry, not IOCs): alert on Microsoft 365 mailbox audit / Graph API activity showing calendar-event creation, attachment upload and subject-rename performed by an application/service-principal identity rather than the interactive mailbox owner, especially where the event's scheduled date is anomalously far in the future. This is the second independent-lab report in under two weeks building out the Cavern-framework picture (Check Point 2026-07-06 named the actor Cavern Manticore and profiled the C2 itself; Group-IB 2026-07-20 profiles a new component without confirming the same actor) — worth flagging to the composer as a fast-evolving cluster to keep threading together across entries.
+
+  - title: "Researcher chains a WordPress pre-auth RCE end-to-end using GPT5.6 in ~10 hours for ~$25 — a capability marker for AI-accelerated exploit development"
+    sources:
+      - { url: "https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/", publisher: "Searchlight Cyber", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/researchers-wordpress-exploit/", publisher: "Infosecurity Magazine", date: "2026-07-20", role: "corroborating" }
+    discovery_trace: "first seen at: infosec-magazine, URL https://www.infosecurity-magazine.com/rss/news/ (RSS listing) → primary: Searchlight Cyber, URL https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/"
+    summary: |
+      Searchlight Cyber researcher Adam Kues tasked OpenAI's GPT5.6 "Sol Ultra" model — running autonomously for up to 10 hours per session — to independently rediscover and weaponize the already-disclosed WordPress core pre-authentication RCE chain "WP2Shell" (CVE-2026-63030, a REST API batch-endpoint route-confusion/validation-desync bug, CVSS 9.8, chained with CVE-2026-60137, a SQL injection in WP_Query's author__not_in parameter, CVSS 5.9 — both already patched out-of-band in WordPress 7.0.2 on 2026-07-17 and already tracked by this pipeline as a public-PoC item pending exploitation). Without human guidance beyond the initial task, the model recursively chained batch API requests to bypass method validation, poisoned the request cache with fabricated posts, abused the oEmbed subsystem to create arbitrary database rows, exploited cycle-detection logic in WordPress's changeset handling, and weaponized the parse_request hook to replay a request with elevated administrator context — ultimately creating an unauthorized admin account on a stock install with no plugins. Total cost: roughly $25 (about half of one weekly $200 subscription allotment), against a stated underground/broker market rate near $500,000 for a WordPress-core RCE of this class. The technical substance (the CVEs, patch state, PoC availability) is unchanged from this pipeline's 2026-07-18 coverage; the new fact is the capability demonstration itself — full pre-auth exploit-chain discovery and weaponization completed autonomously in hours rather than the weeks-to-months a skilled human researcher would need.
+    region_nexus: "global; WordPress core is deployed across CH/EU public-sector and SME web estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, general-IT"
+    cves: ["CVE-2026-63030", "CVE-2026-60137"]
+    techniques: ["T1190"]
+    affected_products: ["WordPress"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030"
+    evidence:
+      - quote: "Total usage: 50% of weekly usage. Pro-rata total cost on the $200 subscription: ~ $25 USD."
+        attribution: "Searchlight Cyber (Adam Kues)"
+        source_url: "https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/"
+      - quote: "No security researcher could have found and completed this exploit chain in 10 hours without AI."
+        attribution: "Searchlight Cyber (Adam Kues)"
+        source_url: "https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/"
+    extended_notes: |
+      Frame this as a research/capability-trend item rather than a fresh vulnerability disclosure — the CVEs and patch guidance are already published. The value for defenders is patch-cycle-urgency calibration: independently-reproducible, low-cost AI-driven rediscovery of a patched pre-auth RCE narrows the window in which "patched but not yet applied" is a safe state to sit in. Complements the pipeline's existing AI-offense thread (Sygnia AI-orchestrated AWS intrusion, Check Point AI Security Report 2026, Sysdig JADEPUFFER/ENCFORGE item above).
+
+  - title: "ANCPI (Romania's national cadastre agency): agency now says core databases were NOT compromised, contradicting ByteToBreach's backup-destruction claim; Government Cloud migration to complete 22 July"
+    sources:
+      - { url: "https://www.digi24.ro/stiri/actualitate/agentia-nationala-de-cadastru-spune-ca-bazele-de-date-nu-au-fost-afectate-cand-se-reiau-serviciile-3870161", publisher: "Digi24 (Romania)", date: "2026-07-20", role: "primary" }
+      - { url: "https://news.risky.biz/risky-bulletin-hacker-wipes-romanias-entire-land-registry-database/", publisher: "Risky Business News", date: "2026-07-20", role: "corroborating" }
+      - { url: "https://publicrecord.ro/2026/07/17/atac-cibernetic-ancpi/", publisher: "Public Record (Romania)", date: "2026-07-17", role: "corroborating" }
+      - { url: "https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/", publisher: "KELA Cyber Intelligence Center", date: "2026-07-17 (updated)", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"ANCPI cadastru atac cibernetic șters bază de date iulie 2026\") → pivot: Public Record (Romania), URL https://publicrecord.ro/2026/07/17/atac-cibernetic-ancpi/ → pivot: KELA Cyber, URL https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/ → primary: Digi24 (Romania) official-statement report, URL https://www.digi24.ro/stiri/actualitate/agentia-nationala-de-cadastru-spune-ca-bazele-de-date-nu-au-fost-afectate-cand-se-reiau-serviciile-3870161 (also surfaced independently via Risky Business News, URL https://news.risky.biz/risky-bulletin-hacker-wipes-romanias-entire-land-registry-database/)"
+    summary: |
+      Update on the still-unresolved ANCPI (Romania's National Agency for Cadastre and Real Estate Publicity) cyberattack this pipeline first covered on 2026-07-19: on 2026-07-20 ANCPI stated publicly, following completed security verification, that its technical and legal databases "have not been affected" — directly contradicting the extortion operator ByteToBreach's earlier claim (screenshots posted alongside the data-sale listing) of having begun deleting backups after a failed extortion attempt. ANCPI confirmed it has begun migrating its applications to the Romanian Government Cloud, a process coordinated by the Special Telecommunications Service (STS) and expected to complete Wednesday, 22 July; only after migration will authorized institutions verify systems and ANCPI will announce a phased service-restoration timeline. The agency continues to frame the multi-day e-Terra/RENNS outage (initially down since 14 July) as a deliberate protective isolation measure rather than confirmation of data loss. Separately, KELA's updated actor profile assesses ByteToBreach is likely operated by an individual (Zakaria Mahdjoub) based in Oran, Algeria, active since June 2025 across DarkForums/Dread/Telegram/a WordPress storefront, with a victimology spanning government, banking, airline and university targets across Ukraine, Kazakhstan, Cyprus, Poland, Chile, Uzbekistan and the US — access methods documented as cloud/corporate-infrastructure vulnerability exploitation, reuse of infostealer/phishing-harvested credentials, and brute force, consistent with the "valid credentials + internal recon" entry vector claimed against ANCPI.
+    region_nexus: "EU (Romania); national land-registry/cadastre is core critical-government infrastructure directly analogous to CH/EU cantonal and national registries"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: ["T1078", "T1485", "T1490"]
+    affected_products: []
+    entity_keys: ["actor:bytetobreach", "incident:ancpi-romania-cyberattack-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: "update-of:2026-07-19/ancpi-romania-cadastre-cyberattack-bytetobreach"
+    evidence:
+      - quote: "Following all verifications conducted to date, the technical and legal databases of the institution have not been affected."
+        attribution: "ANCPI (via Digi24)"
+        source_url: "https://www.digi24.ro/stiri/actualitate/agentia-nationala-de-cadastru-spune-ca-bazele-de-date-nu-au-fost-afectate-cand-se-reiau-serviciile-3870161"
+      - quote: "The hacker entered using valid credentials, mapped internal systems, and wiped systems and backups after failing to extort the agency."
+        attribution: "Risky Business News"
+        source_url: "https://news.risky.biz/risky-bulletin-hacker-wipes-romanias-entire-land-registry-database/"
+      - quote: "KELA assesses the actor behind the campaign, ByteToBreach, is likely operated by Zakaria Mahdjoub, an individual based in Oran, Algeria."
+        attribution: "KELA Cyber Intelligence Center"
+        source_url: "https://www.kelacyber.com/blog/bytetobreach-a-deep-dive-into-a-persistent-data-leak-operator/"
+    extended_notes: |
+      The contradiction between the attacker's destruction claim and the agency's "databases intact" statement is itself the notable fact here — hold both claims rather than resolving them; this remains an open incident. Transferable lesson for CH/EU registries: valid-credential access plus post-extortion-failure destructive follow-through is now a documented combined TTP against national e-government/cadastre platforms, independent of any software CVE.
+
+  - title: "Fake game downloads abuse the Ren'Py engine and MSBuild.exe to stage Amatera Stealer, resolving C2 via an EtherHiding blockchain lookup"
+    sources:
+      - { url: "https://www.malwarebytes.com/blog/threat-intel/2026/07/fake-games-spread-stealers-with-renpy-loader-msbuild-and-etherhiding", publisher: "Malwarebytes Labs", date: "2026-07-20", role: "primary" }
+    discovery_trace: "first seen at: malwarebytes, URL https://www.malwarebytes.com/blog (listing) → primary: Malwarebytes Labs, URL https://www.malwarebytes.com/blog/threat-intel/2026/07/fake-games-spread-stealers-with-renpy-loader-msbuild-and-etherhiding"
+    summary: |
+      Malwarebytes documents a distribution vector for Amatera Stealer distinct from this pipeline's already-covered ClickFix-rooted Amatera/ACR Stealer chains: fake game downloads hosted on lookalike sites, itch.io pages and file-sharing services. The loader ("RenPy Loader" / "RenEngine Loader") abuses Ren'Py, a legitimate open-source visual-novel engine, to decrypt a bundled ZIP containing a batch script and MSBuild project files; execution proceeds via MSBuild.exe (T1127.001, a signed Microsoft build tool) loading a trojanized copy of the legitimate Nancy .NET library, which runs a custom 23-opcode bytecode interpreter to decrypt further stages (multi-key XOR, Base64/hex chains). The chain manipulates Zone.Identifier NTFS alternate-data-stream attributes to suppress SmartScreen warnings and disables TLS certificate validation via registry modification. For C2 resolution the malware performs an Ethereum JSON-RPC eth_call against a Binance Smart Chain public node, reading an encrypted C2 address from smart-contract storage (EtherHiding) — a dead-drop-resolver technique this pipeline has already documented in the Amatera/ACR-Stealer and Sandworm/UAC-0145 ClickFix chains, here reused for a completely different (game-piracy) delivery front. Final payload is Amatera Stealer, harvesting browser credentials, cryptocurrency wallets and messaging-app data.
+    region_nexus: "global; opportunistic, not region-targeted"
+    primary_sector_nexus: "indirect"
+    sector: "general"
+    cves: []
+    techniques: ["T1189", "T1127.001", "T1027", "T1102.001"]
+    affected_products: []
+    entity_keys: ["tool:amatera"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "RenPy Loader, also known as RenEngine Loader, is particularly interesting because it abuses Ren'Py, a legitimate engine used to create visual novels."
+        attribution: "Malwarebytes Labs"
+        source_url: "https://www.malwarebytes.com/blog/threat-intel/2026/07/fake-games-spread-stealers-with-renpy-loader-msbuild-and-etherhiding"
+      - quote: "The encrypted C2 domain is obtained using an Ethereum JSON-RPC eth_call request to bsc-dataseed.binance.org."
+        attribution: "Malwarebytes Labs"
+        source_url: "https://www.malwarebytes.com/blog/threat-intel/2026/07/fake-games-spread-stealers-with-renpy-loader-msbuild-and-etherhiding"
+    borderline: true
+    borderline_reason: "Payload (Amatera) and C2 technique (EtherHiding) are both already extensively covered this window (ACR/Amatera ClickFix chains, UAC-0145/Sandworm). The only genuinely new element is the delivery vector (Ren'Py engine abuse + MSBuild.exe LOLBin execution via fake game downloads) — worth including for the distinct technique class, but the composer should weigh against repeat-theme fatigue and single-source (Malwarebytes only, no independent corroboration found in this run)."
+    extended_notes: |
+      Detection concept: alert on msbuild.exe (a rarely-legitimate process outside dev/build environments) spawning from a batch/script parent and loading non-standard DLLs, particularly a DLL claiming to be the Nancy web framework in a non-developer context.
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "trustwave-spiderlabs"
+    reason: "Not fetched this run due to time allocation — no in-window items confirmed missed, but slice was not exhaustively worked."
+  - source_id: "synacktiv"
+    reason: "Not fetched this run due to time allocation."
+  - source_id: "withsecure-labs"
+    reason: "Not fetched this run due to time allocation."
+  - source_id: "csa-labs"
+    reason: "Not fetched this run due to time allocation."
+  - source_id: "shadowserver"
+    reason: "Not fetched this run due to time allocation; cadence is documented as sparse per source notes."
+  - source_id: "sans-newsbites"
+    reason: "Not fetched this run; bi-weekly cadence makes an in-window hit unlikely."
+  - source_id: "sansec-research"
+    reason: "Listing fetched via bridge but slugs carried no visible dates without drilling each; not drilled further this run for time."
+  - source_id: "zimperium-zlabs"
+    reason: "Listing fetched via bridge but slugs carried no visible dates without drilling each; not drilled further this run for time."
+  - source_id: "infoguard-labs"
+    reason: "Listing fetch via bridge returned no post-card links extractable by the grep pattern used; not re-attempted via WebFetch this run for time."
+  - source_id: "expel"
+    reason: "CylindricalCanine/GoldenEyeDog DigiCert-breach post (published 2026-07-15) fetched successfully via jina reader but DROPPED from findings on recency grounds — publication falls outside both the 26h primary window and the 72h developing-story extension (cutoff ~2026-07-18T04:09Z), and no fresh in-window development on the story was found beyond a 2026-07-20 Risky Biz Bulletin re-mention that added no new technical fact."
