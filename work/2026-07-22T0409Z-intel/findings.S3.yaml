@@ -1,0 +1,200 @@
+# work/2026-07-22T0409Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-07-22T0409Z-intel
+model: Claude Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-22T04:14:14Z
+ended_at: 2026-07-22T04:24:38Z
+duration_seconds: 624
+self_telemetry:
+  webfetch_calls: 8
+  websearch_calls: 3
+  bridge_fetches: 6
+items:
+  - title: "Kaspersky: 'XEntry Team' runs living-off-the-land BitLocker extortion via RDP/MSSQL access, RMM tooling and GPO — ransom notes printed on office printers"
+    sources:
+      - { url: "https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/", publisher: "Kaspersky (Securelist / GERT)", date: "2026-07-21", role: "primary" }
+    discovery_trace: "first seen at: securelist RSS (https://securelist.com/feed/), URL https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/ → primary (no pivot needed)"
+    summary: |
+      Kaspersky's GERT incident-response team documented two 2026 extortion cases by a
+      crew it tracks as "XEntry Team" that abuses native Windows BitLocker for impact
+      instead of deploying a conventional ransomware family — a living-off-the-land
+      encryption model that leaves no bespoke encryptor for signature-based detection.
+      Initial access in the analysed cases was an internet-exposed RDP service and a
+      misconfigured Microsoft SQL Server whose xp_cmdshell extended stored procedure
+      allowed OS command execution. The operators established persistence and remote
+      control through legitimate RMM suites — ManageEngine Endpoint Central, Mesh Agent
+      and Tactical RMM — dropped web shells, then used Group Policy Objects to push
+      BitLocker encryption tasks across domain-joined systems. Ransom demands were small
+      (about USD 3,000 in the Colombia case) and, in a notable delivery twist, ransom
+      notes emerged from victims' office printers. Because every stage relies on
+      built-in Windows features and off-the-shelf admin tooling, detection must target
+      the behaviours — anomalous RDP logons, MSSQL xp_cmdshell command execution, new
+      RMM-agent installs, GPO changes that invoke manage-bde/BitLocker, and unexpected
+      recovery-key rotation — not a malware artefact.
+    region_nexus: "global; TTP directly transferable to Swiss/EU public-sector and CI estates running exposed RDP, MSSQL and RMM"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1133, T1505.001, T1505.003, T1219, T1484.001, T1486]
+    affected_products: ["Microsoft Windows BitLocker", "Microsoft SQL Server", "ManageEngine Endpoint Central", "Tactical RMM"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:xentry-team", type: actor, name: "XEntry Team",
+          aliases: [],
+          summary: "Financially-motivated extortion crew documented by Kaspersky GERT (2026) that uses native Windows BitLocker for encryption-for-impact rather than a bespoke ransomware family; gains access via exposed RDP and misconfigured MSSQL (xp_cmdshell), persists via legitimate RMM tools and web shells, deploys BitLocker via GPO, demands small ransoms, and delivers ransom notes through victims' office printers (Kaspersky, 2026-07-21)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "The attackers exploited an internet-exposed RDP service on a machine connected to an 8 TB storage device containing mission-critical data."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/"
+      - quote: "The database engine was misconfigured to allow operating system command execution via the xp_cmdshell extended stored procedure."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/"
+      - quote: "Ransom notes began emerging from office printers."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/"
+    extended_notes: |
+      Defender vantage: this is a BitLocker-abuse extortion model in the ShrinkLocker
+      lineage (Kaspersky references its 2024 ShrinkLocker research) but here driven by
+      an RMM-and-GPO admin workflow rather than a self-contained binary. The highest-
+      value hunt signals are GPO/scheduled-task changes invoking BitLocker on machines
+      that were not previously encrypted, sudden BitLocker recovery-key changes, and
+      MSSQL processes (sqlservr.exe) spawning cmd.exe/powershell.exe via xp_cmdshell.
+  - title: "Kaspersky corroborates the Cavern/HOLLOWGRAPH cluster and attributes it to OilRig (APT34): new 'Project CAV3RN' module adds DNS AAAA-record C2 config recovery behind Outlook-calendar Graph C2"
+    sources:
+      - { url: "https://securelist.com/project-cav3rn-cyberespionage-framework-using-outlook-and-dns/120757/", publisher: "Kaspersky (Securelist / GReAT)", date: "2026-07-21", role: "primary" }
+      - { url: "https://research.checkpoint.com/2026/cavern-manticore-exposing-iran-linked-modular-c2-framework/", publisher: "Check Point Research", date: "2026-07-06", role: "corroborating" }
+    discovery_trace: "first seen at: securelist RSS (https://securelist.com/feed/), URL https://securelist.com/project-cav3rn-cyberespionage-framework-using-outlook-and-dns/120757/ → primary (no pivot needed); cross-ref Check Point Cavern Manticore + Group-IB HOLLOWGRAPH (already covered)"
+    summary: |
+      Kaspersky GReAT published independent analysis of a new communication module
+      (AzureCommunication.dll) in the Cavern C2 framework — the same Iran-linked toolset
+      Check Point tracks as "Cavern Manticore" and Group-IB documented as HOLLOWGRAPH —
+      and attributes the framework to OilRig (APT34). The new module replaces the earlier
+      HTTP/WebSocket component with Microsoft Graph, exchanging encrypted commands and
+      results as attachments (RSA-OAEP-SHA256 + AES-256-GCM) inside far-future Outlook
+      calendar events (dated 2050-05-13) keyed to a controller-generated agent ID. The
+      genuinely novel element beyond prior reporting is the resilience layer: when Graph
+      authentication or tenant validation fails, the module recovers replacement
+      connection settings (TenantId, ClientId, ClientSecret, UserEmail) via DNS AAAA
+      responses from attacker nameservers, encoding length markers and 14-byte chunks in
+      specially formatted subdomains. This is a material second-vendor corroboration of a
+      cluster this pipeline covered on 2026-07-21 (HOLLOWGRAPH), adding the explicit
+      OilRig attribution and the DNS AAAA config-recovery mechanics.
+    region_nexus: "Israel / Middle East government and IT targeting; technique transferable to any Microsoft 365 tenant, including EU/CH public-sector"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: [T1102.002, T1071.004, T1008, T1573, T1574.002]
+    affected_products: ["Microsoft 365", "Microsoft Graph", "Microsoft Outlook"]
+    entity_keys: ["tool:cavern-c2-framework", "tool:hollowgraph-malware", "actor:cavern-manticore"]
+    new_entities:
+      - { key: "actor:oilrig", type: actor, name: "OilRig",
+          aliases: ["APT34", "Helix Kitten", "Evasive Serpens", "Hazel Sandstorm", "Lyceum"],
+          summary: "Iran-nexus (MOIS-linked) cyber-espionage actor active since ~2014 against Middle East government, energy, telecom and IT targets, known for cloud-service-abusing C2 (Microsoft Graph, OneDrive) and DNS-tunnelling tooling; Kaspersky attributes the Cavern/CAV3RN framework to OilRig (Kaspersky, 2026-07-21)." }
+    relation_suggestions:
+      - { subject: "tool:cavern-c2-framework", object: "actor:oilrig",
+          basis: "Kaspersky: assesses the Cavern/Project CAV3RN framework shares behavioural patterns with, and is attributable to, OilRig/APT34 (Kaspersky, 2026-07-21)" }
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: update-of:2026-07-21/hollowgraph-m365-calendar-graph-api-c2-cavern
+    borderline: true
+    borderline_reason: "core technique (Graph-calendar C2 + DNS credential recovery) already covered by the 07-21 HOLLOWGRAPH entry; delta is Kaspersky's independent corroboration, explicit OilRig attribution and DNS AAAA config-recovery detail — main agent decides update-of vs merge/drop"
+    classification: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "If Microsoft Graph authentication or tenant validation fails, the module attempts to retrieve replacement connection settings through DNS AAAA responses."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/project-cav3rn-cyberespionage-framework-using-outlook-and-dns/120757/"
+      - quote: "The new module shares several behavioral patterns with previously reported OilRig tooling, including the use of Microsoft-hosted services, attachment-based command exchange, and a secondary mechanism for restoring access to a cloud C2 channel."
+        attribution: "Kaspersky (Securelist)"
+        source_url: "https://securelist.com/project-cav3rn-cyberespionage-framework-using-outlook-and-dns/120757/"
+    extended_notes: |
+      Hunt overlap with the existing HOLLOWGRAPH entry: Outlook/M365 calendar events with
+      far-future dates carrying base64/binary attachments, Graph API access from
+      non-interactive service principals, and outbound DNS AAAA queries to newly-registered
+      domains returning IPv6 addresses used as an encoding channel rather than for routing.
+  - title: "SentinelLABS midyear assessment: Iran-nexus cyber operations shift from pre-conflict recon to access monetisation and persona-led coercion across five clusters"
+    sources:
+      - { url: "https://www.sentinelone.com/labs/iran-war-cyber-threat-landscape-a-midyear-assessment-on-what-matters/", publisher: "SentinelOne (SentinelLABS)", date: "2026-07-21", role: "primary" }
+    discovery_trace: "first seen at: sentinellabs RSS (https://www.sentinelone.com/labs/feed/), URL https://www.sentinelone.com/labs/iran-war-cyber-threat-landscape-a-midyear-assessment-on-what-matters/ → primary (no pivot needed)"
+    summary: |
+      SentinelLABS published a midyear assessment of the Iran-nexus cyber threat landscape,
+      framing activity across five clusters — Void Manticore (destructive, persona-led),
+      MuddyWater (espionage), APT34/OilRig (regional intelligence), APT42 (cloud and social
+      engineering) and CyberAv3ngers (opportunistic OT) — targeting US and Israeli
+      government, finance, critical infrastructure and NGO sectors. Its central analytic
+      judgement is that post-conflict activity has moved from reconnaissance toward access
+      monetisation and selective disruption, with persona-fronted campaigns weaponising
+      public claims (leak samples, victim lists, unverifiable impact figures) to impose
+      psychological cost before any technical effect is confirmed — meaning defenders
+      should treat loud public claims skeptically and separately from verified impact. The
+      lab's defender priorities are concrete and transferable to Swiss/EU CI and government:
+      eliminate internet-facing industrial systems, secure identity/RMM/service-provider
+      access paths, enforce phishing-resistant MFA on trusted administrative accounts, and
+      architect recovery independent of production dependencies. Named tooling overlaps with
+      this pipeline's existing coverage (Cavern Manticore, CyberAv3ngers OT activity).
+    region_nexus: "US/Israel/Middle East targeting; CyberAv3ngers OT opportunism and identity-path tradecraft directly relevant to EU/CH critical infrastructure and government"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, finance"
+    cves: []
+    techniques: [T1190, T1566, T1219]
+    affected_products: []
+    entity_keys: ["actor:cyberav3ngers", "actor:muddywater", "actor:apt42", "actor:cavern-manticore"]
+    new_entities:
+      - { key: "report:sentinelone-iran-war-midyear-2026", type: report, name: "SentinelLABS — Iran War Cyber Threat Landscape: A Midyear Assessment",
+          aliases: [],
+          summary: "SentinelLABS midyear (2026-07-21) assessment of Iran-nexus cyber operations, taxonomising five clusters and assessing a shift from pre-conflict reconnaissance to access monetisation and persona-led coercion, with defender priorities for critical infrastructure and identity paths." }
+      - { key: "actor:void-manticore", type: actor, name: "Void Manticore",
+          aliases: ["Red Sandstorm", "Storm-0842", "Banished Kitten", "Handala Hack Team", "Homeland Justice"],
+          summary: "Iran-linked destructive/persona-led actor associated with wiper operations and hacktivist personas against Israeli and allied targets (SentinelLABS, 2026-07-21)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "periodic midyear landscape assessment (strategic-leaning); high analytic value and CI-relevant defender priorities but overlaps existing actor coverage — main agent decides operational entry vs weekly/strategic handling"
+    classification: { reliability: B, credibility: 2 }
+    evidence:
+      - quote: "Iran's most valuable cyber asset is optionality. Persistent access can support immediate collection, future tasking, transfer to another operational element, or disruption when political value exceeds operational cost."
+        attribution: "SentinelLABS"
+        source_url: "https://www.sentinelone.com/labs/iran-war-cyber-threat-landscape-a-midyear-assessment-on-what-matters/"
+      - quote: "The public claim is part of the operation. Victim lists, leak samples, countdowns, doxxing, and unverifiable impact figures impose reputational and psychological costs before technical scoping is complete."
+        attribution: "SentinelLABS"
+        source_url: "https://www.sentinelone.com/labs/iran-war-cyber-threat-landscape-a-midyear-assessment-on-what-matters/"
+      - quote: "We assess with high confidence that the near-term base case is continued espionage and access development accompanied by persona-led coercion and a large volume of lower-impact activity."
+        attribution: "SentinelLABS"
+        source_url: "https://www.sentinelone.com/labs/iran-war-cyber-threat-landscape-a-midyear-assessment-on-what-matters/"
+    extended_notes: |
+      Flagged per S3 mission as a newly-published periodic report (midyear assessment, not
+      annual). Note the report is analytic/forecast in nature; credibility 2 reflects its
+      assessment/judgement character rather than fresh first-hand incident telemetry.
+coverage_gaps:
+  - source_id: crowdstrike
+    reason: "counter-adversary-operations listing is a JS SPA; bridge url surfaced only marketing/GTR links, no dated in-window research posts. No in-window CrowdStrike research confirmed."
+  - source_id: trellix
+    reason: "research listing returned no posts on/after 2026-07-19 (most recent older)."
+  - source_id: withsecure-labs
+    reason: "most recent post 2026-06-15; nothing in window."
+  - source_id: infoguard-labs
+    reason: "most recent post 2026-06-15; nothing in window."
+  - source_id: shadowserver
+    reason: "most recent item 2026-06-25; nothing in window (sparse cadence, not a failure)."
+  - source_id: zimperium-zlabs
+    reason: "feed at /feed/ returned empty; no in-window mobile-threat research confirmed."
+notes: |
+  Out-of-window notable leads seen but DROPPED on recency (SOURCE publication date
+  outside 26h/72h window), logged so the next run does not re-chase:
+   - Expel 'CylindricalCanine' (GoldenEyeDog subgroup behind April DigiCert code-signing
+     cert theft) — published 2026-07-15 (modified 07-20); primary
+     https://expel.com/blog/introducing-cylindricalcanine/
+   - Symantec/Security.com 'Spirals' Rust ransomware (IIS web shell → PsExec/WMI, full
+     network encryption <24h, South Asian IT firm) — published 2026-07-16; primary
+     https://www.security.com/threat-intelligence/ransomware-spirals-extortion
+  Quiet in-window across slice RSS: Mandiant GTIG newest 07-16, Huntress 07-13,
+  Talos 07-16, Unit42 07-17, ESET 07-14, Proofpoint 07-14 — all outside window.
+  Truesec 2026-07-20 SharePoint post = already-covered ToolShell wave (CVE-2026-58644/
+  56164/45659/32201), duplicate. Microsoft TI and Trend Micro: no in-window research post.
