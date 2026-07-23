@@ -1,0 +1,114 @@
+# work/2026-07-23T0409Z-intel/findings.S3.yaml
+# S3b narrow follow-up: salvage defender signal from the malware-research candidate
+# that tripped the content-safety classifier on three prior full-domain S3 spawns.
+domain: S3
+run_id: 2026-07-23T0409Z-intel
+model: Opus 4.8
+model_id: claude-opus-4-8
+started_at: 2026-07-23T04:24:07Z
+ended_at: 2026-07-23T04:27:10Z
+duration_seconds: 183
+self_telemetry:
+  webfetch_calls: 3
+  websearch_calls: 3
+  bridge_fetches: 0
+items:
+  - title: "CrowdStrike SANDWORM_MODE — an npm supply-chain worm that 'lives off the AI toolchain', poisoning MCP servers in AI coding assistants to steal developer credentials"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/denying-the-worm-sandworm-mode-and-ai-toolchain-supply-chain-attacks/", publisher: "CrowdStrike", date: "2026-07-21", role: "primary" }
+      - { url: "https://securitybrief.com.au/story/crowdstrike-warns-of-malware-targeting-ai-coding-tools", publisher: "SecurityBrief", date: "2026-07-22", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"CrowdStrike Denying the Worm MCP Cursor supply-chain worm AI developer toolchain\") → primary: CrowdStrike blog 'Detecting SANDWORM_MODE and AI Toolchain Supply Chain Attacks', URL https://www.crowdstrike.com/en-us/blog/denying-the-worm-sandworm-mode-and-ai-toolchain-supply-chain-attacks/ → corroboration: SecurityBrief, URL https://securitybrief.com.au/story/crowdstrike-warns-of-malware-targeting-ai-coding-tools"
+    summary: |
+      CrowdStrike published defensive research (2026-07-21) on SANDWORM_MODE, a
+      multi-stage npm supply-chain worm — discovered February 2026 — that targets
+      AI-augmented developer workflows rather than only conventional package
+      distribution or build systems. The transferable shift CrowdStrike names is
+      "living off the AI toolchain": the malware abuses the normalised runtime
+      behaviours of AI coding assistants, CI automation and LLM tooling so that its
+      malicious actions blend into legitimate developer telemetry. Observable
+      behaviours the vendor describes: on install the worm writes unexpected entries
+      into AI-assistant configuration files (Claude Desktop, Cursor, VS Code,
+      Windsurf) that register a rogue Model Context Protocol (MCP) tool provider
+      staged in a hidden directory; it injects git hooks under the global
+      git-template hooks path (persistence that fires on future git operations); it
+      harvests credentials from environment variables and .env / SSH-key files —
+      npm tokens, AWS keys, SSH keys, and API keys for multiple LLM providers
+      (OpenAI, Anthropic, Google, Groq, Together, Fireworks, Replicate, Mistral,
+      Cohere). It fingerprints the host to separate developer workstations from CI
+      runners, delaying full payload activation 48–96 hours on workstations (immediate
+      on CI) specifically to defeat detection tools that correlate install-time and
+      behaviour signals, and falls back to DNS tunnelling when primary exfiltration
+      is blocked. CrowdStrike's own candour is the load-bearing defender lesson: of
+      14 investigated behaviours only 9 produced any signal and only 2 met the bar
+      for high-fidelity alerting — because npm publish, repo pushes, LLM-API calls,
+      credential handling and file writes overlap heavily with legitimate developer
+      and CI activity. This is distinct from the run's already-covered AI stories
+      (GPT5.6 autonomous exploit-dev; the Hugging Face autonomous-agent breach): here
+      the AI developer toolchain itself is the propagation and credential-access
+      surface.
+    region_nexus: "global; affects any organisation with AI-assisted software development, incl. Swiss/European government software teams, public-sector technology suppliers and CI operators"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, technology"
+    cves: []
+    techniques: [T1195.002, T1552.001, T1546, T1071.004, T1497]
+    affected_products: ["npm", "Cursor", "Visual Studio Code", "Claude Desktop", "Windsurf", "Model Context Protocol (MCP)"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:sandworm-mode", type: malware, name: "SANDWORM_MODE",
+          aliases: [],
+          summary: "Multi-stage npm supply-chain worm (discovered Feb 2026, documented by CrowdStrike 2026-07-21) that 'lives off the AI toolchain' — poisons MCP-server configs in AI coding assistants (Cursor, VS Code, Claude Desktop, Windsurf), injects global git-template hooks for persistence, and exfiltrates npm/AWS/SSH credentials and multi-provider LLM API keys with a 48-96h delay on workstations to evade install/behaviour correlation. NOT the FSB GRU actor:sandworm — the name collision is coincidental." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SANDWORM_MODE introduces an analogous pattern for AI-augmented development environments: living off the AI toolchain."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/denying-the-worm-sandworm-mode-and-ai-toolchain-supply-chain-attacks/"
+      - quote: "Of 14 investigated behaviors, only 9 could produce any signal, and only 2 met the fidelity bar for customer-visible alerting."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/denying-the-worm-sandworm-mode-and-ai-toolchain-supply-chain-attacks/"
+      - quote: "SANDWORM_MODE is not a one-off campaign as much as it is a proof of concept for an emerging attack class."
+        attribution: "SecurityBrief (quoting CrowdStrike)"
+        source_url: "https://securitybrief.com.au/story/crowdstrike-warns-of-malware-targeting-ai-coding-tools"
+    extended_notes: |
+      Defender vantage — hunt/detection concepts (behavioural, no IOCs):
+      - AI-assistant config integrity: baseline and monitor writes to AI coding-assistant
+        configuration files (Claude Desktop / Cursor / VS Code / Windsurf) that register
+        a NEW MCP tool provider, especially one pointing at a hidden/dot directory. An
+        unexpected MCP-provider entry appearing shortly after a package install is the
+        highest-value single artifact.
+      - git persistence: alert on modification of `git config --global init.templateDir`
+        and unauthorised writes to the global git-template hooks path — a hook that fires
+        on every future `git init`/clone is durable persistence that survives the original
+        package.
+      - Process-lineage telemetry: node/npm process trees performing narrowly-scoped actions
+        against git hooks, package-registry operations, or AI-config files. Class: process-
+        creation events (parent = node/npm) correlated with path-specific file writes.
+      - Credential-access telemetry: reads of ~/.aws, ~/.ssh, .env and environment-variable
+        harvesting followed by egress; DNS-tunnelling egress as a fallback channel (monitor
+        anomalous outbound DNS volume/entropy from developer/CI hosts).
+      - Time-window blind spot: the 48-96h activation delay defeats install->behaviour
+        correlation. Hardening lever CrowdStrike names: extend telemetry retention/correlation
+        windows beyond 96h; require review/approval gates before npm publish and git-hook
+        changes; scope and short-live CI credentials.
+      Naming caution for the composer: SANDWORM_MODE is a supply-chain WORM/malware family and
+      is unrelated to the Russian GRU actor "Sandworm" (actor:sandworm in the registry). Do not
+      cross-link. Lineage context (from socket.dev, not independently verified here): reported
+      alongside the s1ngularity/Shai-Hulud npm-worm lineage as the AI-toolchain evolution of
+      that attack class.
+    borderline: false
+coverage_gaps:
+  - source_id: darkreading
+    reason: "https://www.darkreading.com/cyber-risk/attackers-live-off-ai-toolchain returned HTTP 403; CrowdStrike primary + SecurityBrief corroboration covered the story anyway."
+borderline_drops:
+  - title: "SentinelLABS 'Sol Searching' — can frontier models do autonomous long-horizon malware analysis?"
+    url: "https://www.sentinelone.com/labs/frontier-models-tackle-autonomous-long-horizon-malware-analysis/"
+    reason: |
+      Defensive-AI-tooling / benchmark research: SentinelLABS built an 8-stage reverse-
+      engineering benchmark (recreating their fast16 2005-implant investigation) to test
+      whether frontier LLMs can sustain a trustworthy long-horizon malware investigation.
+      Interesting industry signal on analyst-augmentation capability, but it does not change
+      what a SOC patches, hunts, blocks or detects — no threat actor, no TTP, no transferable
+      detection/hunt concept. Fails the PD-11(d) transferable-value bar for this constituency.
+      Not fetched in full (only WebSearch abstract) to avoid re-tripping the classifier.
