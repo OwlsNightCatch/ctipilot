@@ -1,0 +1,153 @@
+domain: S1
+run_id: 2026-07-24T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-24T04:12:25Z
+ended_at: 2026-07-24T04:27:26Z
+duration_seconds: 901
+self_telemetry:
+  webfetch_calls: 4
+  websearch_calls: 5
+  bridge_fetches: 27
+
+items:
+  - title: "Joint 18-nation advisory: Russian APT 'LAUNDRY BEAR' weaponized a Zimbra zero-day (CVE-2025-66376) into a view-based, near-zero-click mailbox-exfiltration capability, still exploited today"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a", publisher: "CISA / NSA / FBI / MIVD / AIVD + 14 allied agencies (joint CSA AA26-204A)", date: "2026-07-23", role: "primary" }
+      - { url: "https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign", publisher: "NCSC-UK", date: "2026-07-23", role: "primary" }
+      - { url: "https://unit42.paloaltonetworks.com/russian-webmail-espionage/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-advisories bridge feed, URL https://www.cisa.gov/cybersecurity-advisories/all.xml → https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a → primary (no pivot needed; itself a 18-agency joint primary) → corroboration: ncsc-uk RSS, URL https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml → https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign → further corroboration via the advisory's own cited reference: https://unit42.paloaltonetworks.com/russian-webmail-espionage/"
+    summary: |
+      A joint Cybersecurity Advisory (AA26-204A) from NSA, FBI, CISA and 15 further national agencies (incl. NCSC-UK, AIVD/MIVD Netherlands, ANSSI/DGSI France, five other EU member-state services) discloses that the Russian state-supported actor "LAUNDRY BEAR" (aka Void Blizzard/Microsoft, CL-STA-1114/Unit 42, TA488 formerly UNK_PitStop/Proofpoint) has run a sustained email-exfiltration campaign against Zimbra Collaboration Suite (ZCS) webmail since at least July 2025, continuing to the present. The actor exploited CVE-2025-66376 (CWE-79, stored XSS via unsanitized CSS @import directives in HTML email; MITRE CVSS 3.1 7.2, NVD 6.1) as an undisclosed zero-day for roughly four months before Zimbra's fix (ZCS 10.0.18 / 10.1.13, released November 2025) and continues to exploit unpatched instances today. The exploit requires only that the victim view a malicious email in a vulnerable ZCS webmail client (no click, no attachment) — CISA calls it "view-based," Unit 42 and NCSC-UK frame it as "zero-click." The payload is a Base64/SVG-onload-hidden, XOR-obfuscated JavaScript ("Ulej"/"beehive," assessed as AI-assisted in its development) that runs 12 asynchronous collection stages via Zimbra SOAP API calls: it harvests the victim's last 90 days of email, the organization's Global Address List (brute-forced via ~1,540 two-character SearchGalRequest batches), 2FA scratch codes, and creates a persistent Application Passcode named "ZimbraWeb" to bypass native 2FA for IMAP access. Exfiltration runs over both DNS A-record queries (Base32-encoded, RFC-1035-compliant) and HTTPS to a Dockerized "Flowerbed" collection stack (Catcher/Nginx/Certbot/Gardener containers) fronted by Let's Encrypt TLS on short-lived (7–60 day) VPS infrastructure, mostly reached via Mullvad VPN. Targeting spans the Defense Industrial Base, federal/local government, education, energy, law enforcement, media, NGOs and technology sectors across NATO/Western states, with earlier and heavier targeting of Ukraine. CVE-2025-66376 was already added to CISA KEV in March 2026; the new in-window content is the attribution, campaign mechanics and detection guidance, not the underlying flaw's disclosure.
+    region_nexus: "global NATO/Western targeting with explicit government, energy, defense-industrial-base, law-enforcement and education victimology named by 18 co-authoring agencies including 6 EU member-state services (France, Italy, Poland, Spain, Sweden, Netherlands) and NCSC-UK — direct relevance to any Swiss/European public-sector or critical-infrastructure operator running on-premises Zimbra"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, government, energy, defense, education, telco"
+    cves: [CVE-2025-66376]
+    techniques: [T1566, T1203, T1114.002, T1556.006, T1087, T1048.003, T1608]
+    affected_products: ["Zimbra Collaboration Suite (ZCS)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:laundry-bear", type: actor, name: "LAUNDRY BEAR", aliases: ["Void Blizzard", "CL-STA-1114", "TA488", "UNK_PitStop"], nexus: "russia-nexus",
+          summary: "Russian state-supported espionage actor first publicly named by Netherlands AIVD/MIVD and Microsoft (May 2025) for cloud-email (Exchange) targeting via credential theft/AiTM; per the 2026-07-23 joint CSA AA26-204A (NSA/FBI/CISA + 15 allied agencies) it shifted from July 2025 to exploiting a Zimbra Collaboration Suite zero-day (CVE-2025-66376) for covert, high-volume email/GAL/2FA-token exfiltration against NATO government, defense-industrial-base, energy, law-enforcement, education and technology targets, with Ukraine as priority/testbed victim before broader Western deployment." }
+      - { key: "tool:ulej-flowerbed", type: tool, name: "Ulej / Flowerbed", aliases: ["beehive"], nexus: null,
+          summary: "LAUNDRY BEAR's custom exfiltration toolchain (CISA/joint CSA AA26-204A, 2026-07-23): 'Ulej' (Russian for 'beehive') is the client-side JavaScript exploit payload for CVE-2025-66376 that harvests Zimbra webmail data via SOAP API abuse; 'Flowerbed' is the Dockerized (Catcher/Nginx/Certbot/Gardener) collection-and-relay infrastructure it exfiltrates to over DNS and HTTPS." }
+    relation_suggestions:
+      - { subject: "actor:laundry-bear", object: "tool:ulej-flowerbed", basis: "CISA/NSA/FBI/MIVD/AIVD joint advisory AA26-204A (2026-07-23): 'Using a custom-developed capability named Улей or Ulej ... LAUNDRY BEAR successfully targeted and exfiltrated sensitive user information' and stores it via the 'Flowerbed' collection framework" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "LAUNDRY BEAR's latest campaign leverages a view-based exploit that only requires a user to view a malicious email within a vulnerable version of the webmail service."
+        attribution: "CISA/NSA/FBI/MIVD/AIVD joint advisory (AA26-204A)"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "A patch for CVE-2025-66376 was released for both 10.1.13 and 10.0.18 versions of ZCS."
+        attribution: "CISA/NSA/FBI/MIVD/AIVD joint advisory (AA26-204A)"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "Threat actors continue to actively target unpatched ZCS instances using CVE-2025-66376."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/russian-webmail-espionage/"
+      - quote: "Unlike traditional phishing campaigns, 'beehive' allows the threat actors to gain extensive and sustained access to emails without requiring a user's input."
+        attribution: "NCSC-UK"
+        source_url: "https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign"
+    extended_notes: |
+      Framing discrepancy worth flagging: CISA's own advisory calls the exploit "view-based" (requires the message to be opened/rendered in the vulnerable Classic Web Client, no click), while Unit 42 and NCSC-UK both describe it as "zero-click." Both describe the same underlying mechanism (CSS @import-triggered script execution on message render) — treat "zero-click" as the industry shorthand for "requires only opening/viewing," not literal no-interaction.
+      CVSS is contested between databases: MITRE scores CVE-2025-66376 7.2 (UI:N — no interaction needed for the CVSS model), NVD scores it 6.1 (UI:R). ENISA EUVD mirrors MITRE's 7.2 and lists EPSS 12.01% (as of 2026-07-23) and exploitedSince 2026-03-18 (the KEV addition date), confirming this is not a fresh CVE — the news value is the campaign attribution, not the flaw.
+      High-value detection artifacts named in the advisory: (1) Zimbra mailbox.log (/opt/zimbra/log/mailbox.log) showing bursts of SearchGalRequest SOAP calls from a single user in a short window (GAL brute-force uses ~20 batches of ~77 two-character queries each); (2) CreateAppSpecificPasswordRequest SOAP calls creating an Application Passcode literally named "ZimbraWeb" (there is no legitimate reason for this name — ZCS webmail supports native 2FA and does not require an app passcode); (3) GetScratchCodesRequest SOAP calls (2FA scratch-code harvesting); (4) browser localStorage entries keyed zd_comp_YYYY-MM-DD on the ZCS webmail origin (LAUNDRY BEAR's own de-duplication marker for already-exfiltrated days, persists post-compromise since the script never cleans up); (5) network signal — DNS queries with long randomized subdomains resolving to non-organizational VPS providers, and HTTPS destinations reached via Mullvad VPN egress ranges. LAUNDRY BEAR primarily used ProtonMail for initial delivery but has, since ~November 2025, pivoted to sending phishing emails from already-compromised victim mailboxes (observed sender domains include isofts.kiev[.]ua and navs.edu[.]ua), which will evade sender-reputation-based filtering.
+      Mitigation per CISA: patch to ZCS ≥10.0.18 / ≥10.1.13; if patching is not immediately feasible, move users off the Classic Web Client (Modern client and non-web IMAP/desktop clients are not exposed to this XSS vector) as an interim isolation control; revoke/rotate any Application Passcodes and 2FA scratch codes for any account suspected compromised; consider a passkey-supporting third-party auth broker in front of ZCS since ZCS itself lacks native passkey support.
+
+  - title: "Mitel MiCollab AWV component: unauthenticated command injection to full system compromise (CVSS 9.8, no CVE assigned yet)"
+    sources:
+      - { url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0006", publisher: "Mitel PSIRT (MISA-2026-0006)", date: "2026-07-22", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0911/", publisher: "CERT-FR / ANSSI (CERTFR-2026-AVI-0911)", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr bridge (cert-fr avis-recent), URL https://www.cert.ssi.gouv.fr/avis/feed/ → https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0911/ → primary: Mitel PSIRT, URL https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0006"
+    summary: |
+      Mitel published PSIRT advisory MISA-2026-0006 (2026-07-22, republished by CERT-FR as CERTFR-2026-AVI-0911 on 2026-07-23) for a critical command-injection vulnerability (internal tracking id MTLVULN-1694; CVE requested but not yet assigned) in the Audio, Web, and Video Conferencing (AWV) component of Mitel MiCollab, an on-premises unified-communications/conferencing platform. Per Mitel, insufficient parameter sanitization in the AWV component allows an unauthenticated attacker to inject and execute arbitrary OS commands, rated Critical with CVSS 3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) — no authentication, no user interaction, network-reachable. Affected versions run from 10.0.0.26 up to and including 10.2 SP1 FP2 (10.2.1.205) and 9.8 SP3 FP2 (9.8.3.203) and earlier; the fix ships in MiCollab 10.3.0.18, with Mitel-provided backport patches also available for the 10.2 SP1 FP2 and 9.8 SP3 FP2 branches (KB000128275). Mitel credits Hoang Tai of VNPT Cyber Immunity for the finding; no exploitation has been reported by either Mitel or CERT-FR at time of publication. A second, lower-severity advisory (MISA-2026-0007 / MTLVULN-1618, CVSS 3.1 8.0) published the same day covers a reflected XSS in the related OpenScape UC application requiring authentication and user interaction, fixed in V11 R1 FR2 / V10 R6 FR18.
+    region_nexus: "worldwide MiCollab/OpenScape UC deployments; Mitel UC/conferencing systems are commonly deployed by European public-sector and telecom-adjacent enterprise voice environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco, finance, healthcare"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Mitel MiCollab (AWV - Audio, Web, and Video Conferencing component)", "Mitel OpenScape UC"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A command injection vulnerability has been identified in the Audio, Web, and Video Conferencing (AWV) component of Mitel MiCollab which, if successfully exploited, could allow an unauthenticated attacker to conduct a command injection attack due to insufficient parameter sanitization."
+        attribution: "Mitel PSIRT (MISA-2026-0006)"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0006"
+      - quote: "Note: The above issue is referenced here by our internal tracking ID. A CVE identifier has been requested but is not yet assigned."
+        attribution: "Mitel PSIRT (MISA-2026-0006)"
+        source_url: "https://www.mitel.com/support/security-advisories/mitel-product-security-advisory-misa-2026-0006"
+    extended_notes: |
+      No CVE identifier exists yet for this flaw (Mitel's internal id is MTLVULN-1694) — track by MITEL PSIRT advisory id / MTLVULN id until MITRE assigns one; watch for the CVE to appear in a future run so the dedup index can be updated. Given the unauthenticated, no-interaction profile and the product class (internet-facing conferencing/UC appliances have a documented history of being targeted, including a prior Mitel MiCollab unauthenticated RCE, CVE-2025-47188, covered by InfoGuard Labs in 2025), treat any internet-exposed MiCollab AWV instance as a priority patch target even absent confirmed in-the-wild exploitation.
+
+  - title: "MZ Automation libIEC61850 (IEC 61850 substation-automation library): unauthenticated heap-overflow RCE via crafted MMS Initiate request (CVE-2026-49035) among four CVEs; sibling lib60870 SCADA-protocol library gets a separate DoS fix (CVE-2026-16002)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-06", publisher: "CISA (ICSA-26-204-06)", date: "2026-07-23", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-07", publisher: "CISA (ICSA-26-204-07)", date: "2026-07-23", role: "primary" }
+    discovery_trace: "first seen at: cisa-advisories bridge feed, URL https://www.cisa.gov/cybersecurity-advisories/all.xml → https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-06 → primary (no pivot needed; CISA ICS-CERT is the sole authority for this advisory) — companion advisory https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-07 reached via the same feed listing"
+    summary: |
+      CISA published ICS advisory ICSA-26-204-06 (initial release 2026-07-23) for four vulnerabilities in MZ Automation's open-source libIEC61850 (versions >=1.0.0 to <=1.6.1), a widely embedded C library implementing IEC 61850 (MMS/GOOSE) substation-automation protocols used in energy-sector protection, control and visibility functions worldwide. The most severe, CVE-2026-49035 (CWE-122 heap-based buffer overflow, CVSS 3.1 8.1 / CVSS 4.0 9.2 CRITICAL, AV:N/AC:H(v3) network-adjacent, no auth, no user interaction), is triggered by a crafted MMS Initiate request; CISA states remote code execution has been demonstrated when ASLR is disabled, with memory corruption/DoS in ASLR-enabled configurations. Three companion flaws in the same release: CVE-2026-50039 (CWE-121 stack-based buffer overflow via a crafted ReadRequest, CVSS 3.1 7.5/4.0 8.7); CVE-2026-50103 (CWE-228, NULL pointer dereference in the shared L2 GOOSE/R-GOOSE parser via a malformed TLV in a GOOSE frame, network-adjacent DoS, CVSS 3.1 6.5/4.0 7.1); and CVE-2026-50032 (CWE-476, NULL pointer dereference in the MMS Write Named Variable List handler via a WriteRequest with an empty listOfData field, CVSS 3.1 7.5/4.0 8.7). A companion advisory, ICSA-26-204-07 (also 2026-07-23), covers MZ Automation's sibling library lib60870 (versions <=2.4.0, implementing IEC 60870-5-104 SCADA telecontrol, used in Chemical/Energy/Water-Wastewater sectors): CVE-2026-16002 (CWE-125 out-of-bounds read causing a parser crash/DoS, CVSS 3.1 8.2/4.0 8.8). CISA states no known public exploitation of any of these five CVEs has been reported to CISA at time of publication, and neither advisory text (as retrieved) states a fixed/patched version number — operators should consult MZ Automation directly and the linked CSAF JSON for remediation status.
+    region_nexus: "worldwide; libIEC61850/lib60870 are embedded OEM components in substation-automation and SCADA telecontrol gear used across the European electricity-transmission/distribution and water-utility sectors — direct relevance to Swiss/European energy and water operators"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, critical-manufacturing, chemical"
+    cves: [CVE-2026-49035, CVE-2026-50039, CVE-2026-50103, CVE-2026-50032, CVE-2026-16002]
+    techniques: [T1190]
+    affected_products: ["MZ Automation libIEC61850", "MZ Automation lib60870"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The affected product is vulnerable to a heap-based buffer overflow via a crafted MMS Initiate request. Remote code execution (RCE) has been demonstrated when ASLR is disabled; memory corruption or denial of service may occur in configurations where ASLR is enabled."
+        attribution: "CISA (ICSA-26-204-06)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-06"
+      - quote: "No known public exploitation specifically targeting these vulnerabilities has been reported to CISA at this time."
+        attribution: "CISA (ICSA-26-204-06)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-06"
+      - quote: "Successful exploitation of this vulnerability could cause the parsing process to crash, which will cause a denial of service."
+        attribution: "CISA (ICSA-26-204-07)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-204-07"
+    extended_notes: |
+      Neither CISA advisory page (as fetched) states an available fixed version or patch — this is an honest gap, not confirmed no-fix; operators should check MZ Automation's own channels and the CSAF JSON (https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-204-06.json and .../icsa-26-204-07.json) for remediation guidance before assuming no fix exists. CISA's standard OT guidance applies with elevated weight given the pre-auth RCE profile: minimize internet exposure of any device embedding libIEC61850/lib60870, segment control-system networks behind firewalls from business networks, and prefer up-to-date VPNs over direct exposure for any required remote access. Reporters: Abhinav Agarwal (libIEC61850 CVEs) and Lars Tray (lib60870 CVE).
+
+cve_table:
+  - { cve: "CVE-2025-66376", product: "Zimbra Collaboration Suite (ZCS)", cvss: "7.2 (MITRE, CVSS 3.1) / 6.1 (NVD, CVSS 3.1)", epss: "12.01%", kev: "yes (added 2026-03-18)", exploited: "yes — LAUNDRY BEAR, ongoing since ≥July 2025 (zero-day until Nov 2025 patch)", patch: "ZCS 10.0.18 / 10.1.13", source: "CISA joint CSA AA26-204A, 2026-07-23" }
+  - { cve: "CVE-2026-49035", product: "MZ Automation libIEC61850", cvss: "8.1 (CVSS 3.1) / 9.2 CRITICAL (CVSS 4.0)", epss: "unknown", kev: "no", exploited: "no known public exploitation reported to CISA", patch: "not stated in CISA advisory as retrieved", source: "CISA ICSA-26-204-06, 2026-07-23" }
+  - { cve: "CVE-2026-50039", product: "MZ Automation libIEC61850", cvss: "7.5 (CVSS 3.1) / 8.7 (CVSS 4.0)", epss: "unknown", kev: "no", exploited: "no known public exploitation reported to CISA", patch: "not stated in CISA advisory as retrieved", source: "CISA ICSA-26-204-06, 2026-07-23" }
+  - { cve: "CVE-2026-50103", product: "MZ Automation libIEC61850", cvss: "6.5 (CVSS 3.1) / 7.1 (CVSS 4.0)", epss: "unknown", kev: "no", exploited: "no known public exploitation reported to CISA", patch: "not stated in CISA advisory as retrieved", source: "CISA ICSA-26-204-06, 2026-07-23" }
+  - { cve: "CVE-2026-50032", product: "MZ Automation libIEC61850", cvss: "7.5 (CVSS 3.1) / 8.7 (CVSS 4.0)", epss: "unknown", kev: "no", exploited: "no known public exploitation reported to CISA", patch: "not stated in CISA advisory as retrieved", source: "CISA ICSA-26-204-06, 2026-07-23" }
+  - { cve: "CVE-2026-16002", product: "MZ Automation lib60870", cvss: "8.2 (CVSS 3.1) / 8.8 (CVSS 4.0)", epss: "unknown", kev: "no", exploited: "no known public exploitation reported to CISA", patch: "not stated in CISA advisory as retrieved", source: "CISA ICSA-26-204-07, 2026-07-23" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "product watchlist is empty in this deployment (no-op per tasking); general coverage rules applied unchanged across all essential/rotation sources fetched this run"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "https://cert.pl/en/posts/ returned HTTP 403 both via direct WebFetch and via the jina-reader bridge fallback (all 3 configured jina keys reported balance-exhausted HTTP 402 before a 4th live key was reached, and the reader itself then hit the origin's 403). WebSearch substitute found only consumer-facing SMS-phishing alerts and already-covered CVEs (Oracle EBS, NetScaler) for CERT Polska in the window — no qualifying new item."
+  - source_id: chrome-releases
+    reason: "feed https://chromereleases.googleblog.com/feeds/posts/default returned 0 items after falling back to the jina reader (method:jina, count:0) — the reader appears to return the page as markdown prose rather than parseable feed XML, so the bridge's feed parser silently gets nothing. Confirmed by direct GET (--direct) returning a normal Blogger HTML page with content, so the underlying feed likely does have entries; this looks like a systemic jina-fallback-vs-feed-parser interaction bug, not a dead source. Recommend main agent/operator fix the bridge's feed subcommand to fall back to scraping the direct HTML index when jina-fallback yields 0 parsed items."
+  - source_id: keycloak
+    reason: "feed https://www.keycloak.org/security/rss.xml returned 0 items via the same jina-fallback-empty-parse pattern as chrome-releases (see above) — same underlying bridge bug suspected, not a dead source."
+  - source_id: sansec-research
+    reason: "feed https://sansec.io/research/feed returned 0 items via the same jina-fallback-empty-parse pattern — same underlying bridge bug suspected, not a dead source."
+  - source_id: msrc-blog
+    reason: "feed https://msrc.microsoft.com/blog/rss returned 0 items via the same jina-fallback-empty-parse pattern — same underlying bridge bug suspected, not a dead source. Compensated for this run via direct msrc cve <CVE-ID> API subcommand for the specific CVEs of interest, so no coverage loss on the Microsoft-cloud-CVE check, but the blog's narrative content (if any this week) was not reviewed."
+  - source_id: apple-security
+    reason: "WebFetch on https://support.apple.com/en-us/100100 returned only header/navigation content, no advisory list — the summariser could not extract the release table from this JS-rendered page. Not re-attempted via bridge due to time budget; no evidence either way of in-window Apple releases this cycle."
+  - source_id: jpcert
+    reason: "WebSearch substitute found only Japan-domestic consumer-software alerts (Tera Term, FeliCa IC cards, HYPER SBI 2) plus already-covered Microsoft Patch Tuesday items in the window — no qualifying new item for this constituency."
+
+self_evolution_notes: |
+  Systemic issue observed this run: multiple RSS/Atom feed fetches via `python3 tools/fetch_source.py feed <url> N` fell through to the jina-reader fallback (because 3 of 4 configured jina API keys report balance-exhausted/HTTP 402, "rotating to the next credential" printed on every call) and then returned {"count": 0, "items": []} even though a live key (4th, ~9.05M balance per `jina-usage`) was apparently reached. This happened for chromereleases.googleblog.com, keycloak.org/security/rss.xml, sansec.io/research/feed, and msrc.microsoft.com/blog/rss — i.e. every feed URL that required the jina fallback this run. A direct (`--direct`) GET of chromereleases.googleblog.com confirmed the page itself renders fine as HTML with content, so this looks like the bridge's feed-parsing path not understanding the markdown/text the jina reader returns for a feed URL (as opposed to an HTML article page, which the reader handles fine per the CISA/Mitel fetches above). Recommend: either have `feed` fall back to a raw-HTML scrape of the blog index when the jina-parsed result is empty, or exclude jina as a `feed` fallback entirely and only apply it to `url` fetches of individual articles. Also worth noting for the operator: 3 of 4 jina keys are fully exhausted (negative balance) — worth rotating in fresh credit or pruning dead keys from the pool.

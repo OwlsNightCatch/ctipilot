@@ -1,0 +1,94 @@
+domain: S2
+run_id: "2026-07-24T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-24T04:12:35Z"
+ended_at: "2026-07-24T04:25:01Z"
+duration_seconds: 746
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 15
+  bridge_fetches: 12
+items:
+  - title: "Joint 20-nation advisory: Russian state actor 'LAUNDRY BEAR' (Void Blizzard/TA488/CL-STA-1114) used a zero-click Zimbra webmail exploit (CVE-2025-66376) to steal government email at scale, AI-assisted tooling"
+    sources:
+      - { url: "https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign", publisher: "NCSC-UK (GCHQ)", date: "2026-07-23", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a", publisher: "CISA / NSA / FBI joint advisory AA26-204A", date: "2026-07-22", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/russian-espionage-group-exploited.html", publisher: "The Hacker News", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-uk (essential slice source), URL https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml (fetched via bridge, item dated 2026-07-23) → primary: NCSC-UK advisory page, URL https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign → pivot: CISA/NSA/FBI 20-agency joint Cybersecurity Advisory AA26-204A (full technical write-up), URL https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a (fetched via `python3 tools/fetch_source.py cisa page <url>`, never WebFetched directly) → corroborating: The Hacker News technical recap citing Unit 42 / Proofpoint, URL https://thehackernews.com/2026/07/russian-espionage-group-exploited.html"
+    summary: |
+      A 20-agency joint Cybersecurity Advisory (AA26-204A, US NSA/FBI/CISA/DoD/Treasury lead, co-sealed by NL AIVD/MIVD, UK NCSC/GCHQ, ANSSI/DGSI France, AISE/AISI Italy, and 12 further national agencies; NCSC-UK's own release 2026-07-23) exposes a Russian state-supported actor tracked as LAUNDRY BEAR (aka Void Blizzard, CL-STA-1114, TA488/formerly UNK_PitStop) using a genuinely zero-click exploit against Zimbra Collaboration Suite (ZCS) Classic Web Client webmail since at least July 2025. The vulnerability, CVE-2025-66376 (CWE-79 stored XSS, CVSS ~6.1-7.2 depending on scorer), lets a crafted HTML email's CSS @import directives smuggle a Base64-encoded, XOR-encrypted JavaScript payload inside an SVG <onload> attribute; merely viewing the email in a vulnerable ZCS Classic UI session (no click, no attachment) executes the script inside the victim's authenticated webmail session. It was a true zero-day when first exploited in July 2025 — Synacor (Zimbra's vendor) did not patch it until ZCS 10.0.18 / 10.1.13 in November 2025, and the CVE was only published 5 January 2026.
+      The payload ("Ulej", Russian for "beehive") runs a 12-stage asynchronous collection routine that pulls a CSRF token from localStorage and issues Zimbra SOAP calls to harvest: the last 90 days of the victim's email (via repeated GET .../home/~/?fmt=tgz&meta=0&query=date:-{N}d), the organization's full Global Address List (brute-forced two-character SearchGalRequest batches), any browser-autocompleted password (via two invisible injected login form fields), OAuth consumer info, device-sync status, and — critically for persistence — it issues CreateAppSpecificPasswordRequest to mint a new IMAP application passcode (bypassing ZCS's lack of 2FA support for IMAP) and GetScratchCodesRequest to steal 2FA backup codes, then flips zimbraPrefImapEnabled to true. Both the SOAP-call sequence and the resulting app-specific password survive a subsequent password reset — patching stops the next email from firing but does not revoke access already established.
+      Exfiltration runs over both DNS (Base32-encoded A-record queries to actor infrastructure, RFC-1035-compliant chunking) and HTTPS (to a self-hosted, Dockerized "Flowerbed" framework — Catcher/Certbot/Nginx/Gardener containers, Let's Encrypt certs via Cloudflare DNS challenge, Mullvad-VPN-fronted VPS infrastructure rotated every 7-60 days). CISA states the simplistic Flowerbed codebase shows indications AI played a role in its development — an operational-tradecraft data point, not spectacle. LAUNDRY BEAR's targeting spans the Defense Industrial Base, federal/local government, education, energy, law enforcement, media, NGOs and technology sectors; the advisory explicitly notes the technique was extensively trialled against Ukrainian victims before deployment against NATO-member organizations, continuing the pattern of Ukraine as testbed for Russian cyber capability before Western use. No CH-specific targeting is named in the advisory, but Zimbra Classic Web Client is common self-hosted webmail across Swiss and EU public-sector and SME estates (this store has separately tracked two other unrelated July 2026 ZCS Classic Web Client issues), making exposure assessment directly relevant regardless of the co-signer list.
+      Detection: audit /opt/zimbra/log/audit.log for CreateAppSpecificPasswordRequest and GetScratchCodesRequest SOAP calls outside expected admin workflows; alert on ModifyPrefsRequest toggling zimbraPrefImapEnabled; watch DNS telemetry for long, high-entropy A-record subdomain lookups (the exfil scheme prefixes victim-identifier chunks with "d-"); inspect inbound mail for @import-chained CSS directives preceding an SVG element with a Base64 onload payload (a documented YARA-able pattern per Proofpoint's TA488 write-up); and treat any newly created ZCS application password as a persistence indicator requiring revocation, not just a post-patch password reset.
+    region_nexus: "NATO/EU member-state government and DIB organizations (advisory co-signed by France/ANSSI/DGSI, Italy/AISE/AISI, Netherlands/AIVD/MIVD, Poland, Spain, Sweden, Czech Republic, Denmark, Estonia, Finland, Moldova, plus Five Eyes); extensively trialled against Ukraine first. Switzerland not named as a co-signer or confirmed victim, but ZCS Classic Web Client is common self-hosted webmail across Swiss/EU public-sector and SME estates already tracked in this store."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, government, defense-industrial-base, education, energy"
+    cves: ["CVE-2025-66376"]
+    techniques: [T1566, T1203, T1114, T1027.017, T1087, T1556.006, T1048.003, T1074.002, T1119, T1588.007]
+    affected_products: ["Zimbra Collaboration Suite (Classic Web Client)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:laundry-bear", type: actor, name: "LAUNDRY BEAR", aliases: ["Void Blizzard", "TA488", "CL-STA-1114", "UNK_PitStop"],
+          summary: "Russia-nexus state-supported APT (name coined by Netherlands AIVD/MIVD, May 2025) focused on covert acquisition of email data; per the 20-agency joint CISA/NSA/NCSC-UK advisory AA26-204A (2026-07-22/23), moved from AiTM credential phishing (Evilginx-based, targeting Microsoft Exchange/cloud email via CVE-independent techniques) to a novel zero-click exploit against Zimbra Collaboration Suite (CVE-2025-66376, 'Ulej' capability) since July 2025, trialling techniques on Ukrainian victims before targeting NATO-member government, DIB, education and energy-sector organizations." }
+      - { key: "tool:ulej-flowerbed-zimbra-exfil", type: tool, name: "Ulej / Flowerbed", aliases: ["Улей"],
+          summary: "LAUNDRY BEAR's custom zero-click data-exfiltration and aggregation capability exploiting CVE-2025-66376 in Zimbra Collaboration Suite: a 12-stage SOAP-based collection script ('Ulej') paired with a Dockerized C2/collection backend ('Flowerbed' — Catcher/Certbot/Nginx/Gardener containers) that CISA assesses shows indications of AI-assisted development (CISA/NSA joint advisory AA26-204A, 2026-07-22)." }
+    relation_suggestions:
+      - { subject: "actor:laundry-bear", object: "tool:ulej-flowerbed-zimbra-exfil", basis: "CISA/NSA joint advisory AA26-204A: LAUNDRY BEAR uses a custom-developed capability named 'Улей'/'Ulej' paired with the 'Flowerbed' collection framework to exploit CVE-2025-66376" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Russian state-supported cyber actors have targeted Western organisations with a malicious campaign which uses a zero-click exploit coined 'beehive'"
+        attribution: "NCSC-UK"
+        source_url: "https://www.ncsc.gov.uk/news/uk-and-partners-expose-russian-state-supported-actors-for-new-zero-click-phishing-campaign"
+      - quote: "Unlike traditional phishing campaigns that persuade a user into taking an action, such as clicking a link or opening a file, LAUNDRY BEAR's latest campaign leverages a view-based exploit that only requires a user to view a malicious email within a vulnerable version of the webmail service."
+        attribution: "CISA/NSA/FBI joint advisory AA26-204A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "The vulnerability, Common Vulnerabilities and Exposures (CVE) CVE-2025-66376, was patched in November 2025. This demonstrates LAUNDRY BEAR's intent and ability to deploy increasingly sophisticated technical capabilities."
+        attribution: "CISA/NSA/FBI joint advisory AA26-204A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "extensive Ukrainian targeting, prior to use against U.S. and other NATO allies, outlines an increasing trend within Russian cyber threat groups to target Ukrainian users first"
+        attribution: "CISA/NSA/FBI joint advisory AA26-204A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "Patching stops the next crafted email from running. It does not revoke what the last one left behind."
+        attribution: "The Hacker News (analysis of app-specific-password persistence)"
+        source_url: "https://thehackernews.com/2026/07/russian-espionage-group-exploited.html"
+    extended_notes: |
+      This store already tracks two unrelated July 2026 Zimbra Classic Web Client issues (a no-CVE crafted-email code-exec flagged by NCSC-CH on 2026-07-10, fixed in ZCS 10.1.19; and an SNMP command-injection RCE plus stored-XSS bugs in ZCS 10.1.20 flagged by NCSC-CH/BSI on 2026-07-21/22). CVE-2025-66376 is a THIRD, distinct Classic-UI stored-XSS flaw (patched Nov 2025, well before either of those) — the delta here is the joint 20-nation attribution advisory, not the vulnerability's disclosure date. Any Swiss/EU public-sector or SME operator running Zimbra Classic Web Client should treat this as a reason to (a) confirm ZCS is on 10.0.18+/10.1.13+ specifically for this CVE (separate from the other two patch cycles), and (b) audit for and revoke any unexpected application-specific passwords or newly-enabled IMAP access on webmail accounts, since patching alone does not undo prior compromise.
+      Full IOC sets (STIX) are published by CISA but are out of scope for this entry per the no-IOC policy; defenders should pull the advisory's STIX bundle directly if hunting.
+
+  - title: "Saxony-Anhalt state administration: reported IT-security incidents more than doubled H1 2026 vs H1 2025, ministry cites attackers deliberately timing intrusions to summer/holiday staffing gaps"
+    sources:
+      - { url: "https://www.heise.de/news/Cyberattacken-auf-Landesverwaltung-nehmen-weiter-zu-11374292.html", publisher: "heise online", date: "2026-07-23", role: "primary" }
+    discovery_trace: "first seen at: heise-sec (essential-adjacent DE regional press, part of standard rotation slice), URL https://www.heise.de/security/rss/news-atom.xml → primary (no further pivot found; article itself relays the Saxony-Anhalt Ministry for Infrastructure and Digital Affairs' own reporting, no separate ministry press release located)"
+    summary: |
+      Saxony-Anhalt's Ministry for Infrastructure and Digital Affairs reported 30 IT-security incidents against the state administration in H1 2026, versus 14 in H1 2025 (more than double). Of the 30: 16 phishing attacks, 2 DDoS attacks, 2 system intrusions, and 9 cases of stolen/lost IT hardware. The ministry states impact to date has been limited to short-lived outages of a few hours (affected largely individual stolen devices and temporary unreachability of web presences after DDoS). The ministry's stated pattern of note: attackers deliberately exploit vacation periods when staff levels are reduced, on the theory that thinner administrative coverage widens the response window. No named threat actor or CVE is attached to this specific reporting period (the pipeline separately tracks NoName057(16) DDoS activity against German state portals from prior summers, but this report does not attribute the current wave to that or any other named cluster). This is a low-technical-depth, statistics-and-trend item rather than a TTP disclosure — flagged borderline given the audience's technical-depth bar.
+    region_nexus: "Germany (Saxony-Anhalt state/Land government) — home-region EU public-sector administration"
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1566, T1498]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "Fresh (2026-07-23), primary-adjacent (relays the state ministry's own H1 2026 statistics) and directly on-lens (EU state/Land public administration), but lacks the technical specificity (no named actor, no CVE, no TTP beyond generic phishing/DDoS/intrusion categories) our audience's bar calls for; including mainly for the transferable operational-security lesson (holiday/reduced-staffing periods draw deliberate targeting)."
+watchlist_sweep:
+  duty: sector-lens
+  note: "No product/supplier watchlist configured for this deployment; applied the profile's sector/region lens (Swiss/EU public-sector core, energy/water/transport/healthcare/finance/telco) throughout triage. No dedicated sweep fetches beyond normal domain research."
+candidate_sources: []
+coverage_gaps:
+  - source_id: "acn.gov.it (csirt-acn-it)"
+    reason: "Both the direct listing fetch and the jina-reader fallback returned zero items (jina reader keys reported HTTP 402 balance-exhausted across all three rotated credentials during this run); no in-window Italian CSIRT items were surfaced. WebSearch for Italian PA/hospital incidents in-window found only stale (2025 or non-window) leads."
+  - source_id: "ccb-belgium"
+    reason: "https://ccb.belgium.be/en/news returned HTTP 404 on both direct and jina-fallback fetch (jina also reporting key-balance-exhausted); correct current URL not identified within budget. WebSearch found only the CCB's 2025 annual-figures page, outside window."
+  - source_id: "inside-it-ch"
+    reason: "RSS feed (https://www.inside-it.ch/rss/News) returned HTTP 403 direct and jina-fallback failed on exhausted keys; direct WebFetch of https://www.inside-it.ch/security also 403'd. No in-window Swiss items recovered from this source this run; WebSearch substitutes found nothing dated inside the 72h window."
+  - source_id: "govcert-at / cert-at"
+    reason: "cert.at's advisory listing (https://www.cert.at/de/meldungen/) topped out at 2026-07-20 (WordPress Core RCE, already covered via NCSC-CH) with no items inside the tighter 26h window; a WebSearch-surfaced mention of a Qilin/'ZipLine' Austria-confirmed phishing item could not be dated or relocated on the CERT.at site within budget, so it was not included."
+  - source_id: "jina reader pool"
+    reason: "All three jina-reader credentials rotated during this run reported HTTP 402 (balance exhausted), affecting acn.gov.it and ccb.belgium.be fetch attempts specifically (both noted above); other sources were reachable via direct WebFetch/bridge so overall coverage impact was limited to those two."

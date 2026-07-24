@@ -1,0 +1,281 @@
+domain: S3
+run_id: "2026-07-24T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-24T04:12:46Z"
+ended_at: "2026-07-24T04:28:58Z"
+self_telemetry:
+  webfetch_calls: 30
+  websearch_calls: 4
+  bridge_fetches: 9
+
+items:
+  - title: "Russian state-supported actor (Void Blizzard/LAUNDRY BEAR/CL-STA-1114/TA488) exploits a zero-click Zimbra webmail XSS (CVE-2025-66376) against NATO governments, defense, transport and finance — now the subject of a 15-nation joint CISA/NSA/FBI/AIVD/MIVD advisory"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/russian-webmail-espionage/", publisher: "Unit 42 (Palo Alto Networks)", date: "2026-07-23", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a", publisher: "CISA / NSA / FBI / AIVD / MIVD (joint international advisory AA26-204A)", date: "2026-07-22", role: "primary" }
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/ta488-targets-zimbra-mailservers-half-click-exploits", publisher: "Proofpoint", date: "2026-07-23", role: "corroborating" }
+      - { url: "https://therecord.media/zimbra-webmail-zero-click-phishing-russia-laundry-bear", publisher: "The Record (Recorded Future News)", date: "2026-07-23", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2025-66376", publisher: "NVD/MITRE", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 (research-lab sweep), URL https://unit42.paloaltonetworks.com/russian-webmail-espionage/ → primary corroboration: CISA joint advisory AA26-204A, URL https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a → pivot: Proofpoint (independent TA488 tracking), URL https://www.proofpoint.com/us/blog/threat-insight/ta488-targets-zimbra-mailservers-half-click-exploits → pivot: The Record, URL https://therecord.media/zimbra-webmail-zero-click-phishing-russia-laundry-bear (confirms official advisory citation) → NVD/MITRE CVE record, URL https://nvd.nist.gov/vuln/detail/CVE-2025-66376"
+    summary: |
+      Unit 42 (2026-07-23) documented a Russian state-supported cyberespionage campaign it tracks as CL-STA-1114 — corroborated
+      independently by Proofpoint as TA488 and by Dutch AIVD/MIVD/US-led CISA advisory AA26-204A (2026-07-22, co-sealed by
+      15 agencies across the US, Netherlands, UK, Australia, Canada, New Zealand, Czech Republic and Denmark) as "LAUNDRY BEAR"/
+      Void Blizzard — exploiting CVE-2025-66376, a stored XSS in Zimbra Collaboration Suite's Classic UI reachable via
+      CSS @import tag-splitting inside an HTML email. The exploit is genuinely zero-click: the malicious JavaScript executes
+      the moment a victim views or previews the email in a vulnerable ZCS webmail session — no link click, no attachment,
+      no macro. Once triggered it exfiltrates CSRF tokens, credentials, 2FA backup/scratch codes, system details and the
+      victim's last 90 days of email and Global Address List contents to actor-controlled infrastructure; Proofpoint
+      documents the associated ZimReaper malware additionally establishing persistence via app-specific passwords (bypassing
+      2FA on IMAP/POP3/SMTP) and exfiltrating via DNS tunnelling (Base32-encoded) to spoofed Zimbra telemetry domains.
+      The vulnerability was a genuine zero-day when first exploited from around July 2025 and was patched in ZCS 10.0.18 /
+      10.1.13 (November 2025) — but per CISA's advisory it "continues to be successfully exploited" months after the patch
+      shipped, meaning unpatched instances remain live targets. Targeting spans defense, transportation and financial-sector
+      organisations in NATO member states, Ukraine, CIS countries and Africa. This is a distinct actor/campaign from the
+      APT28 "Operation GhostMail" abuse of the same CVE reported by Seqrite in March 2026 — two separate Russian-nexus
+      operators independently weaponised the same unpatched Zimbra flaw against government targets, months apart.
+    region_nexus: "NATO member states, Ukraine, CIS countries, Africa — direct relevance to any CH/EU government or defense body running on-prem Zimbra"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, government, defense, transport, finance"
+    cves: ["CVE-2025-66376"]
+    techniques: ["T1566.001", "T1059.007", "T1114.002", "T1071.004", "T1556.006", "T1539"]
+    affected_products: ["Zimbra Collaboration Suite (ZCS) Classic Web Client"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:void-blizzard", type: actor, name: "Void Blizzard", aliases: ["LAUNDRY BEAR", "CL-STA-1114", "TA488"],
+          summary: "Russian state-supported cyberespionage actor active since at least 2024, historically reliant on password spraying, phishing and pass-the-cookie; from July 2025 weaponised a Zimbra Collaboration Suite zero-click XSS (CVE-2025-66376, dubbed ZimReaper by Proofpoint) against NATO government, defense, transport and financial-sector targets. Named LAUNDRY BEAR by Dutch AIVD/MIVD (2025-05), Void Blizzard by Microsoft, CL-STA-1114 by Unit 42, TA488 by Proofpoint. Subject of a 15-agency joint advisory CISA AA26-204A (2026-07-22)." }
+      - { key: "malware:zimreaper", type: malware, name: "ZimReaper",
+          summary: "Post-exploitation credential-theft and persistence tool Proofpoint attributes to TA488/Void Blizzard, deployed after CVE-2025-66376 XSS exploitation on Zimbra webmail; establishes access via app-specific passwords bypassing 2FA on IMAP/POP3/SMTP, enumerates the Global Address List, and exfiltrates mail archives via DNS tunnelling with Base32 encoding (Proofpoint, 2026-07-23)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "LAUNDRY BEAR's latest campaign leverages a view-based exploit that only requires a user to view a malicious email within a vulnerable version of the webmail service."
+        attribution: "CISA/NSA/FBI/AIVD/MIVD joint advisory AA26-204A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-204a"
+      - quote: "Threat actors continue to actively target unpatched ZCS instances using CVE-2025-66376."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/russian-webmail-espionage/"
+      - quote: "Proofpoint's collaboration with US government partners confirmed TA488 association with Void Blizzard; US federal indictments show TA488 is private contractor for Russian intelligence."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/ta488-targets-zimbra-mailservers-half-click-exploits"
+    extended_notes: |
+      Distinct from, but on the same underlying vulnerability as, the two other 2026 Zimbra items already in this store:
+      the no-CVE Classic Web Client stored-XSS fixed in ZCS 10.1.19 (2026-07-07) and the SNMP command-injection RCE fixed
+      in ZCS 10.1.20 (2026-07-20) are unrelated flaws. CVE-2025-66376 was added to CISA KEV in March 2026. Detection concept:
+      hunt for HTML emails whose body contains a CSS @import rule with an unusually long or Base64-looking url() argument,
+      and for ZCS application-specific-password creation events outside normal admin workflows (bypasses 2FA by design).
+      NVD rates this CVSS 6.1 (medium); MITRE's own CNA assessment rates it 7.2 (high) — the discrepancy is in whether
+      Scope is considered Changed and UI None vs Required, illustrating why blind reliance on a single CVSS source for
+      patch prioritisation understates real-world risk for a flaw two separate nation-state actors chose to weaponise.
+
+  - title: "msaRAT: Chaos ransomware's Rust RAT builds covert C2 exclusively through Chrome DevTools Protocol, WebRTC and Cloudflare Workers/Twilio TURN relays — the RAT process itself never touches the network"
+    sources:
+      - { url: "https://blog.talosintelligence.com/chaos-msarat-living-off-the-browser-to-build-covert-c2-channel/", publisher: "Cisco Talos", date: "2026-07-23", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/dont-swing-at-everything/", publisher: "Cisco Talos (Threat Source newsletter)", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: talos (research-lab sweep of blog.talosintelligence.com listing), URL https://blog.talosintelligence.com/ → primary: Cisco Talos technical write-up, URL https://blog.talosintelligence.com/chaos-msarat-living-off-the-browser-to-build-covert-c2-channel/"
+    summary: |
+      Cisco Talos documented msaRAT, a Rust-based remote access trojan deployed by the Chaos ransomware-as-a-service group,
+      whose defining trait is that the RAT process itself never opens a socket to the network — all C2 traffic is
+      offloaded into a headless Chrome/Edge instance it launches and controls via the Chrome DevTools Protocol (CDP), a
+      legitimate browser debugging API. The malware connects to the browser's local CDP WebSocket (127.0.0.1 only),
+      registers CDP bindings, and injects JavaScript via Runtime.evaluate that fetches STUN/TURN configuration from a
+      Cloudflare Workers endpoint, negotiates a WebRTC PeerConnection/DataChannel (ICE + SDP offer/answer over HTTP POST
+      to the same Workers endpoint), and routes all subsequent C2 commands over that DataChannel through a Twilio TURN
+      relay, double-encrypted with DTLS plus ChaCha20-Poly1305. Because every externally-visible network connection
+      originates from the legitimate browser binary rather than the RAT process, endpoint tooling that keys off "which
+      process opened this socket" sees only ordinary Chrome/Edge traffic. Talos ships ClamAV signatures and Snort
+      rules (SIDs 66839–66841 / 301587).
+    region_nexus: "global — Chaos operates as a RaaS affecting organisations broadly, including CH/EU"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: ["T1071.001", "T1090.002", "T1573.001"]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:chaos-ransomware", type: actor, name: "Chaos (ransomware-as-a-service)",
+          summary: "Ransomware-as-a-service operation active since at least February 2025, distinct from MuddyWater's 2026 'Chaos' false-flag operation; Cisco Talos documents its Rust-based msaRAT tool using Chrome DevTools Protocol/WebRTC for covert C2 (Talos, 2026-07-23)." }
+      - { key: "malware:msarat", type: malware, name: "msaRAT",
+          summary: "Rust-based RAT deployed by the Chaos ransomware group that establishes C2 exclusively by driving a headless Chrome/Edge instance via the Chrome DevTools Protocol, tunnelling commands over a WebRTC DataChannel relayed through Cloudflare Workers (signalling) and Twilio TURN (media relay), double-encrypted with DTLS + ChaCha20-Poly1305; the RAT process itself never makes a direct network connection (Cisco Talos, 2026-07-23)." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "msaRAT never touches the network directly — it controls its C2 communication channel exclusively through Chrome DevTools Protocol (CDP), a browser debugging API."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/chaos-msarat-living-off-the-browser-to-build-covert-c2-channel/"
+      - quote: "The binary contains a Cloudflare Workers endpoint, but it never makes HTTP connections to that domain itself; it offloads that work entirely to the browser."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/chaos-msarat-living-off-the-browser-to-build-covert-c2-channel/"
+    extended_notes: |
+      Detection concept beyond signatures: hunt for headless Chrome/Edge process launches carrying --remote-debugging-port
+      or equivalent CDP flags from a non-browser-management parent process, and for local loopback WebSocket connections
+      to that port originating from an unrelated binary. Talos' companion Q2 2026 vulnerability-statistics newsletter
+      ("Don't swing at everything", same date) reports CVE volume up 49% YoY (~200/day by June), 46% of currently
+      KEV-listed CVEs still tracing to 2025 or earlier despite standard patch cycles, and 95% of CVSS 9+ CVEs sitting
+      below 5% EPSS — an argument for EPSS-informed rather than CVSS-only patch triage; folded in here as context rather
+      than a standalone item since it carries no new technical finding of its own.
+
+  - title: "Exploitarium: an uncoordinated, still-expanding GitHub 0-day archive discloses a pre-auth libssh2 memory-corruption flaw (CVE-2025-55200) reachable by any client connecting to a malicious SSH server, alongside 34 other unreported OSS findings"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/exploitarium-inside-the-archive-behind-the-mass-0-day-drop", publisher: "LevelBlue SpiderLabs", date: "2026-07-21", role: "primary" }
+    discovery_trace: "first seen at: trustwave-spiderlabs (LevelBlue) blog listing sweep, URL https://www.levelblue.com/blogs/spiderlabs-blog → primary: LevelBlue SpiderLabs technical write-up, URL https://www.levelblue.com/blogs/spiderlabs-blog/exploitarium-inside-the-archive-behind-the-mass-0-day-drop"
+    summary: |
+      LevelBlue SpiderLabs assessed "exploitarium," a GitHub repository maintained by an account calling itself "bikini"
+      that publishes vulnerability findings for open-source software with no vendor pre-notification — bypassing
+      coordinated disclosure entirely. As of the assessment, the archive holds 204 tracked files across 35 project
+      folders (curl, Git, PHP, PostgreSQL, Redis, Nextcloud, Discourse, Docker, QEMU, OpenVPN, RustDesk, ImageMagick,
+      Ghidra, Gitea, Gogs, nghttp2, libarchive and more) and now accepts external pull-request contributions — one added
+      previously unpublished use-after-free/information-disclosure findings in OpenVPN's Windows kernel driver
+      (ovpn-dco-win). Its single most consequential finding to date, present from the archive's first three entries on
+      2026-06-23, is a pre-authentication out-of-bounds write in libssh2's SSH packet parsing (through version 1.11.1,
+      fixed upstream in commit 97acf3d, formally tracked as CVE-2026-55200 via VulnCheck's coordinated channel with
+      credit to researcher Tristan Madani) — reachable purely by connecting to a malicious/compromised SSH server,
+      before any authentication, host-key trust or session state is established, and inherited transitively by every
+      tool that links libssh2 (notably curl and Git). SpiderLabs frames the operational risk correctly: prioritise by
+      reachability and blast radius, not by exploitation status or PoC volume — most of the 204 files are low-impact,
+      but this one is not.
+    region_nexus: "global — affects any organisation running curl, Git, or other libssh2-linked tooling"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: ["CVE-2026-55200"]
+    techniques: ["T1203", "T1588.006"]
+    affected_products: ["libssh2 (<= 1.11.1)", "curl", "Git"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:exploitarium-mass-0day-archive", type: trend, name: "Exploitarium uncoordinated-disclosure archive",
+          summary: "A GitHub repository ('exploitarium', maintainer 'bikini') publishing open-source vulnerability findings without vendor pre-notification; 204 files across 35 projects as of 2026-07-21, now accepting external contributions, with a pre-auth libssh2 OOB write (CVE-2026-55200, through 1.11.1) as its most consequential finding (LevelBlue SpiderLabs, 2026-07-21). Independent of, but analogous in pattern to, the Nightmare-Eclipse Windows zero-day drop series already tracked in this registry." }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Because the flaw sits in transport-layer packet parsing, it is reachable before authentication completes, without valid credentials, host key trust, or established session state."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/exploitarium-inside-the-archive-behind-the-mass-0-day-drop"
+      - quote: "Affected versions comprise libssh2 through 1.11.1."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/exploitarium-inside-the-archive-behind-the-mass-0-day-drop"
+    extended_notes: |
+      No in-the-wild exploitation reported for the libssh2 flaw specifically. Hardening: patch libssh2 to a build
+      incorporating upstream commit 97acf3d via software-composition-analysis of build artefacts and vendored copies
+      (many downstream consumers statically link or vendor libssh2, so a package-manager version bump alone may not
+      catch it). SpiderLabs notes the community project "Exploitarium-Detections" ships Microsoft Sentinel/Defender
+      XDR KQL rules for some of the archive's findings.
+    borderline: true
+    borderline_reason: "single-source (LevelBlue SpiderLabs only); publication timestamp (2026-07-21T13:23:51Z) sits near the outer edge of the 72h developing-window allowance"
+
+  - title: "CISA/FBI/NSA update joint OT advisory: Iran-linked CyberAv3ngers PLC exploitation of US critical infrastructure expands from Rockwell/Allen-Bradley to Schneider Electric and Siemens, with confirmed operational disruption"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a", publisher: "CISA / FBI / NSA / EPA / DoE / USCYBERCOM (joint advisory AA26-097A, updated)", date: "2026-07-22", role: "primary" }
+      - { url: "https://www.trendmicro.com/en_us/research/26/g/plc-exploitation.html", publisher: "Trend Micro Research", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: trendmicro-research blog listing sweep, URL https://www.trendmicro.com/en_us/research.html → primary: CISA joint advisory AA26-097A (updated), URL https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a"
+    summary: |
+      Six US federal agencies (FBI, CISA, NSA, EPA, DoE, USCYBERCOM) updated joint advisory AA26-097A on 2026-07-22 —
+      originally published 2026-04-07 covering Iranian-affiliated APT exploitation of internet-connected Rockwell
+      Automation/Allen-Bradley PLCs (CompactLogix, Micro850) — to widen the manufacturer scope to Schneider Electric
+      and Siemens equipment and add guidance on detecting malicious changes to reusable PLC code modules. The actors
+      scan for internet-exposed PLCs and connect using legitimate manufacturer engineering software (e.g. Rockwell
+      Studio 5000 Logix Designer) with valid credentials obtained via misconfigured or weakly-protected devices;
+      observed target ports are 44818/2222 (EtherNet/IP), 102 (Siemens S7comm/ISO-TSAP), 502 (Modbus TCP) and 22
+      (Dropbear SSH on victim modems used for remote access). After extracting device project files, FBI/CISA
+      identified modification and deletion of PLC logic — including Add-On Instructions (AOIs) — and manipulation of
+      HMI/SCADA display data, disabling shutdown and alarm logic so systems could enter unsafe states without
+      operator notification. Unlike the largely disruption-free 2023 campaign this advisory originally superseded
+      (AA23-335A), the current activity has produced confirmed operational disruption and financial loss at some
+      victim organisations across water, energy and government-services sectors. Public reporting (Recorded Future/
+      Insikt, CloudSEK, covered in this store 2026-07-19) separately assesses CyberAv3ngers is now using LLM-agent
+      tooling to accelerate reconnaissance of internet-exposed ICS devices with default credentials.
+    region_nexus: "US critical infrastructure named in the advisory; the exposure pattern (internet-facing PLC + vendor engineering software + weak/default credentials) is directly transferable to CH/EU energy and water operators running the same PLC families"
+    primary_sector_nexus: "indirect"
+    sector: "energy, water, public-sector"
+    cves: []
+    techniques: ["T1078", "T1021", "T1565", "T1219"]
+    affected_products: ["Rockwell Automation/Allen-Bradley CompactLogix", "Rockwell Automation/Allen-Bradley Micro850", "Schneider Electric PLCs", "Siemens PLCs"]
+    entity_keys: ["actor:cyberav3ngers"]
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Nation-state and advanced persistent threat (APT) actors are actively exploiting internet-facing programmable logic controllers (PLCs) across U.S. government services, water systems, and energy infrastructure."
+        attribution: "CISA/FBI/NSA joint advisory AA26-097A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a"
+      - quote: "The authoring agencies updated this advisory on July 22, 2026, to add new guidance on detecting malicious changes in reusable code modules leveraged within Rockwell Automation PLC programs. It also expands the manufacturer scope to include observed targeting of Schneider Electric, Siemens, and potentially other branded/manufactured PLCs"
+        attribution: "CISA/FBI/NSA joint advisory AA26-097A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a"
+    extended_notes: |
+      Hardening priority order per the advisory: remove PLCs from direct internet exposure and route remote access
+      through a secure gateway with MFA (this week); physically set mode switches to RUN and restrict PROGRAM/REMOTE
+      mode to supervised maintenance windows; enable programming-protection key-switch features (Rockwell SD1771 /
+      Siemens TIA Portal access protection); maintain offline, tested backups of PLC logic/configuration; disable
+      Telnet and default web management interfaces on OT devices. Detection: baseline PLC logic/AOI configuration and
+      alert on unauthorised changes; monitor for inbound traffic to OT devices on ports 44818/2222/102/502/22 from
+      unexpected source ranges, particularly via leased/third-party-hosted infrastructure.
+
+  - title: "German BKA and US/Indonesian authorities dismantle Kratos, the Sneaky2FA-derived AiTM phishing-as-a-service platform behind ~15,000 monthly Microsoft 365 credential-theft campaigns"
+    sources:
+      - { url: "https://www.bka.de/SharedDocs/Kurzmeldungen/DE/Kurzmeldungen/260720_Schlag_gegen_Phishing_Gruppierung_Kratos.html", publisher: "Bundeskriminalamt (BKA), Germany", date: "2026-07-20", role: "primary" }
+      - { url: "https://www.trendmicro.com/en_us/research/26/g/kratos-takedown.html", publisher: "Trend Micro Research", date: "2026-07-22", role: "corroborating" }
+    discovery_trace: "first seen at: trendmicro-research blog listing sweep, URL https://www.trendmicro.com/en_us/research/26/g/kratos-takedown.html → primary: BKA (German federal police) press release, URL https://www.bka.de/SharedDocs/Kurzmeldungen/DE/Kurzmeldungen/260720_Schlag_gegen_Phishing_Gruppierung_Kratos.html"
+    summary: |
+      Germany's Bundeskriminalamt (BKA), together with the Frankfurt public prosecutor's cybercrime unit
+      (Zentralstelle zur Bekämpfung der Internetkriminalität), US law enforcement and Indonesian authorities,
+      announced on 2026-07-20 the takedown of Kratos — a phishing-as-a-service (PhaaS) platform that evolved from
+      the earlier Sneaky2FA kit and offered subscribers a turnkey adversary-in-the-middle (AiTM) toolkit for
+      generating deceptively authentic Microsoft 365 authentication pages, including browser-in-the-browser (BitB)
+      fake login windows added November 2025 and Cloudflare Turnstile anti-bot challenges to blunt automated
+      takedown/analysis. Per BKA and Trend Micro (which supported the investigation via its threat-intelligence
+      unit and had tracked Sneaky2FA's evolution into Kratos since December 2024), roughly 1,800 criminal
+      subscribers ran an estimated 15,000 phishing campaigns per month across 200+ servers, generating over
+      €300,000 since 2024; the operation identified around 850 confirmed victims across 35 countries (Trend Micro
+      separately cites victim exposure in the hundreds of thousands globally since late 2024). Authorities seized
+      the infrastructure and arrested the platform's developer/technical administrator in Indonesia. This is the
+      second major AiTM PhaaS takedown this cycle after Tycoon2FA, which is documented elsewhere in this store to
+      have resurged post-takedown via OAuth Device Authorization Grant abuse — a pattern operators should expect
+      to see repeat with Kratos's remaining affiliate base.
+    region_nexus: "Germany-led law-enforcement action with US and Indonesian partners; the underlying M365 AiTM tradecraft is directly relevant to CH/EU public-sector and enterprise M365 tenants"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: ["T1557", "T1656", "T1539", "T1566.002"]
+    affected_products: ["Microsoft 365"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:kratos-phaas", type: tool, name: "Kratos (phishing-as-a-service)",
+          summary: "Adversary-in-the-middle Microsoft 365 phishing-as-a-service platform evolved from Sneaky2FA, offering browser-in-the-browser fake login pages and Cloudflare Turnstile anti-bot challenges; dismantled 2026-07-20 by German BKA with US and Indonesian partners after ~1,800 subscribers ran an estimated 15,000 monthly campaigns (BKA; Trend Micro, 2026-07-20/22)." }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Over 1,800 criminal subscribers had rented access to Kratos and used it to run an estimated 15,000 phishing campaigns a month."
+        attribution: "Trend Micro Research"
+        source_url: "https://www.trendmicro.com/en_us/research/26/g/kratos-takedown.html"
+      - quote: "bedeutender Ermittlungserfolg gegen eine der weltweit gefährlichsten Phishing-as-a-Service-Gruppierung"
+        attribution: "Bundeskriminalamt (BKA) — \"a significant investigative success against one of the world's most dangerous phishing-as-a-service groups\""
+        source_url: "https://www.bka.de/SharedDocs/Kurzmeldungen/DE/Kurzmeldungen/260720_Schlag_gegen_Phishing_Gruppierung_Kratos.html"
+    extended_notes: |
+      Defender takeaway: a takedown removes infrastructure, not the affiliate base or the kit's code — expect
+      rebranding/resurgence (as already observed with Tycoon2FA). Detection concept: watch for BitB-style login
+      popups (a DOM overlay mimicking a native browser window rather than a real top-level navigation to
+      login.microsoftonline.com) and for Cloudflare Turnstile challenges gating a Microsoft-branded login flow
+      hosted off-domain.
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sysdig
+    reason: "https://www.sysdig.com/blog returned HTTP 503 on first WebFetch attempt; not retried per single-retry budget."
+  - source_id: group-ib
+    reason: "https://www.group-ib.com/blog/ bridge fetch returned raw HTML with no dated post listing visible in the truncated output; could not confirm in-window items within time budget."
+  - source_id: recordedfuture-insikt
+    reason: "https://www.recordedfuture.com/research/insikt-group listing page is JS-rendered; WebFetch returned no dated post list. No structured bridge recipe available for this host."
+  - source_id: google-tag
+    reason: "https://blog.google/threat-analysis-group/ WebFetch returned only one undated featured article; could not confirm in-window coverage."
+  - source_id: claroty-team82
+    reason: "https://claroty.com/team82/research listing page renders without visible publication dates in WebFetch output; could not confirm/deny in-window items within time budget."
+  - source_id: nozomi-networks
+    reason: "https://www.nozominetworks.com/blog listing page renders without visible publication dates in WebFetch output; could not confirm/deny in-window items within time budget."
