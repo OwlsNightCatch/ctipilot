@@ -1,0 +1,216 @@
+domain: S1
+run_id: 2026-07-25T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-25T04:13:23Z
+ended_at: 2026-07-25T04:27:53Z
+duration_seconds: 870
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 15
+  bridge_fetches: 28
+
+items:
+  - title: "Certighost (CVE-2026-54121): full AD CS certificate-forgery exploitation mechanics published for a patched Domain-Controller-impersonation flaw"
+    sources:
+      - { url: "https://gist.githubusercontent.com/H0j3n/a5ef2609b5f2944ac2390a191a534c26/raw", publisher: "H0j3n & aniqfakhrul (independent researchers, GitHub Gist write-up)", date: "2026-07-24", role: "primary" }
+      - { url: "https://cybersecuritynews.com/certighost-active-directory-cs-flaw/", publisher: "CybersecurityNews", date: "2026-07-24", role: "corroborating" }
+      - { url: "https://github.com/aniqfakhrul/CVE-2026-54121", publisher: "aniqfakhrul (GitHub PoC repository)", date: "2026-07-24", role: "corroborating" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121", publisher: "Microsoft MSRC", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"vulncheck advisory July 24 2026\") → pivot: WebSearch (\"Certighost CVE-2026-54121 Active Directory Certificate Services\") → pivot: CybersecurityNews, URL https://cybersecuritynews.com/certighost-active-directory-cs-flaw/ → primary: raw research write-up, URL https://gist.githubusercontent.com/H0j3n/a5ef2609b5f2944ac2390a191a534c26/raw → primary: Microsoft MSRC CVE page (fetched via `msrc cve CVE-2026-54121` bridge subcommand), URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121"
+    summary: |
+      Researchers H0j3n and aniqfakhrul published (2026-07-24) a full technical write-up and working PoC for "Certighost"
+      (CVE-2026-54121, CVSS 3.1 8.8, CWE-285 Improper Authorization), an Active Directory Certificate Services (AD CS)
+      elevation-of-privilege flaw Microsoft patched in the July 2026 Patch Tuesday cycle (2026-07-14). The vulnerable
+      path is the enrollment "chase" fallback in `certpdef.dll` (loaded by `certsrv.exe`): when a certificate request
+      carries the `cdc` (Client DC) and `rmd` (Remote Domain) attributes, the CA's `CRequestInstance::_LoadPrincipalObject`
+      opened SMB and LDAP connections to the attacker-supplied `cdc` host and trusted the identity data (objectSid,
+      dNSHostName) it returned — without first verifying that host was an actual Domain Controller. A low-privileged
+      domain user (using only the default `ms-DS-MachineAccountQuota`-created machine account) can stand up rogue
+      LDAP/LSA services, direct the chase at itself, and receive a CA-issued certificate carrying a target Domain
+      Controller's identity; that certificate authenticates via PKINIT as the DC, and the resulting Kerberos ticket
+      grants directory-replication rights — the PoC demonstrates a DCSync pull of the krbtgt hash. Microsoft's fix
+      adds `CRequestInstance::_ValidateChaseTargetIsDC` (gated behind servicing flag `Feature_3185813818`), which
+      rejects the chase target unless it resolves to a real computer object with `userAccountControl` bit
+      `SERVER_TRUST_ACCOUNT` (8192), plus a follow-on SID comparison. Microsoft's own advisory listed the flaw as
+      "Exploitation Less Likely" and not publicly disclosed at patch time; the July 24 write-up (with a full
+      June-vs-July decompiled-function diff of `certpdef.dll`) now makes both the exploitation chain and the exact
+      patch gate public, which meaningfully drops the weaponization bar for any AD CS deployment that has not yet
+      applied the July 2026 cumulative update. No in-the-wild exploitation has been reported for either the pre- or
+      post-disclosure window.
+    region_nexus: "global; Windows Server AD CS is near-ubiquitous across Swiss/EU federal, cantonal and critical-infrastructure Active Directory estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2026-54121"]
+    techniques: ["T1649", "T1003.006", "T1078.002"]
+    affected_products: ["Windows Server (Active Directory Certificate Services role) — Windows Server 2012 through Windows Server 2025; also listed against Windows 10 1607/1809"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Certighost is an Active Directory Certificate Services (AD CS) vulnerability that allowed a low-privileged domain user to impersonate a Domain Controller and achieve domain compromise in the tested AD CS configuration."
+        attribution: "H0j3n & aniqfakhrul (research write-up)"
+        source_url: "https://gist.githubusercontent.com/H0j3n/a5ef2609b5f2944ac2390a191a534c26/raw"
+      - quote: "The CA accepted the requester-supplied chase target without first proving that it was the Domain Controller it claimed to be."
+        attribution: "H0j3n & aniqfakhrul (research write-up)"
+        source_url: "https://gist.githubusercontent.com/H0j3n/a5ef2609b5f2944ac2390a191a534c26/raw"
+      - quote: "An authenticated attacker could manipulate attributes associated with a machine account and obtain a certificate from Active Directory Certificate Services that allows authentication as that machine via PKINIT. If a Domain Controller account can be targeted, the attacker could authenticate as the Domain Controller and gain the ability to perform privileged Active Directory operations."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121"
+    extended_notes: |
+      Detection concept (from the source's own control-flow diagram, not IOC-based): AD CS servers log certificate
+      requests; a hunt can look for enrollment requests carrying non-empty `cdc`/`rmd` attributes originating from
+      workstation/user accounts rather than legitimate cross-domain replication partners, and for anomalous outbound
+      SMB/LDAP connections initiated *by the CA host itself* toward client-segment IP ranges immediately after a
+      certificate-request event (the PoC's Wireshark capture shows exactly this CA-initiated LSA/LDAP chase to an
+      attacker host). Hardening: apply the July 2026 cumulative update (which ships the validation gate) to every
+      Enterprise CA; where AD CS supports "chase"-eligible cross-domain enrollment scenarios, review whether that
+      functionality is actually required, and audit `ms-DS-MachineAccountQuota` (default 10) since the PoC relies on
+      an attacker being able to self-register a machine account. Benign lookalike / triage note: legitimate
+      cross-forest or cross-domain certificate chase traffic will originate the CA→target connection toward an
+      address that already appears as a real DC in AD; the discriminator the patch itself enforces (SERVER_TRUST_ACCOUNT
+      bit + resolved-SID match) is the same one a detection rule should check.
+    borderline: false
+
+  - title: "Check Point Security Management: two more CVEs in the same disclosure bundle as the actively-exploited SmartConsole bypass — Gaia Portal root escalation (CVE-2026-62145) and unauthenticated management RCE (CVE-2026-62144)"
+    sources:
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0264.html", publisher: "NCSC-NL (Dutch national CERT)", date: "2026-07-24", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk185152", publisher: "Check Point PSIRT (sk185152)", date: "2026-07-22", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk185153", publisher: "Check Point PSIRT (sk185153)", date: "2026-07-22", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0912/", publisher: "CERT-FR / ANSSI (CERTFR-2026-AVI-0912)", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories → advisory detail, URL https://advisories.ncsc.nl/2026/ncsc-2026-0264.html → primary: Check Point PSIRT sk185152, URL https://support.checkpoint.com/results/sk/sk185152 → primary: Check Point PSIRT sk185153, URL https://support.checkpoint.com/results/sk/sk185153 → corroborating: CERT-FR CERTFR-2026-AVI-0912, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0912/"
+    summary: |
+      NCSC-NL's advisory NCSC-2026-0264 (published 2026-07-24) and CERT-FR's CERTFR-2026-AVI-0912 (2026-07-23) both
+      bundle the already-tracked, actively-exploited Check Point SmartConsole authentication bypass (CVE-2026-16232,
+      covered previously) together with two sibling CVEs from the same Check Point patch release that this pipeline
+      had not yet surfaced individually. CVE-2026-62144 (CVSS 3.1 9.3; Check Point calls it "Management Authentication
+      Bypass and Privilege Escalation") lets an unauthenticated network attacker run arbitrary commands on a Security
+      Management or Multi-Domain Security Management (MDS) server — including `run-script` and `exec-command` against
+      managed Security Gateways — whenever the Management is reachable without firewall protection or with an
+      unrestricted Trusted Clients (GUI clients) list. CVE-2026-62145 (CVSS 3.1 7.5, AV:N/AC:H/PR:L) is a Gaia Portal
+      local-privilege-escalation flaw: an authenticated attacker holding only read-only Gaia Portal access can run
+      commands as root through the portal's OS-authentication interface, affecting Security Gateways and Security
+      Management alike (Spark Gateways are not affected). Both flaws span the same version range as the exploited
+      CVE-2026-16232 — R77.30 through R81.10/R81.20/R82/R82.10 prior to the fix — and both are closed by the same
+      Jumbo Hotfix Accumulator releases (R82.10 Take 36+, R82 Take 118+, R81.20 Take 158+). Check Point has stated
+      only CVE-2026-16232 has been observed exploited (against a small number of customers who left the Management
+      interface internet-exposed with a permissive Trusted Clients configuration); neither CVE-2026-62144 nor
+      CVE-2026-62145 is reported as exploited, but they sit on the exact same attack surface — an internet-reachable
+      or loosely-restricted Check Point Management Server — that is already under active attack.
+    region_nexus: "global; Check Point Security Management / MDS is a common network-edge and firewall-management platform in Swiss/EU government and critical-infrastructure networks"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, finance, telco"
+    cves: ["CVE-2026-62144", "CVE-2026-62145"]
+    techniques: ["T1190", "T1068"]
+    affected_products: ["Check Point Security Management Server", "Check Point Multi-Domain Security Management Server (MDS)", "Check Point Gaia Portal (Security Gateways, Security Management)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232"
+    evidence:
+      - quote: "An unauthenticated attacker can run any command on the Management including run-script and exec-command on Security Gateway."
+        attribution: "Check Point PSIRT (sk185152, CVE-2026-62144)"
+        source_url: "https://support.checkpoint.com/results/sk/sk185152"
+      - quote: "A vulnerability in Gaia Portal allows an authenticated attacker with read-only access to run commands as root."
+        attribution: "Check Point PSIRT (sk185153, CVE-2026-62145)"
+        source_url: "https://support.checkpoint.com/results/sk/sk185153"
+      - quote: "De multiples vulnérabilités ont été découvertes dans les produits Check Point. Elles permettent à un attaquant de provoquer une élévation de privilèges et un contournement de la politique de sécurité."
+        attribution: "CERT-FR / ANSSI (CERTFR-2026-AVI-0912)"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0912/"
+    extended_notes: |
+      Detection concept: for CVE-2026-62144, monitor Management-server authentication/session logs for administrative
+      API/token issuance events with no preceding interactive admin login, and for `run-script`/`exec-command`
+      invocations against Security Gateways sourced from the Management's own automation context rather than a
+      known SmartConsole GUI client session. For CVE-2026-62145, monitor Gaia Portal command-execution audit logs
+      for root-context command execution associated with a session that authenticated at read-only privilege level —
+      any such pairing is definitionally the abuse condition Check Point's advisory describes. Hardening for all
+      three CVEs in this bundle: restrict Trusted Clients (GUI client) configuration to specific management IPs,
+      place the Management Server behind firewall rules that block internet reach entirely, and apply the Jumbo
+      Hotfix Accumulator (R82.10 Take 36+ / R82 Take 118+ / R81.20 Take 158+) — the same update line already
+      mandatory for the exploited CVE-2026-16232.
+    borderline: false
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Direct WebFetch on https://www.cisa.gov/news-events/cybersecurity-advisories and the filtered listing URL both returned HTTP 403; jina reader fallback also failed with HTTP 402 (key pool balance exhausted, per run-note). Recovered partial coverage via `cisa page <specific-advisory-URL>` bridge subcommand (works on cisa.gov detail pages even when the listing 403s) and via WebSearch for KEV/ICS-specific leads; general (non-ICS, non-KEV) CISA alert listing for 2026-07-24/25 could not be enumerated directly."
+  - source_id: cert-pl
+    reason: "https://cert.pl/en/posts/ returned HTTP 403 (nginx) on both direct fetch and jina-reader fallback (jina pool exhausted, HTTP 402). Partial coverage obtained indirectly via ENISA EUVD records where CERT-PL is the assigner (Apereo CAS Client CVE-2026-15243, GNU coreutils CVE-2026-56391/56392) — none of those cleared the domain's action-required bar (low CVSS, no exploitation)."
+  - source_id: cisa-directives
+    reason: "No `cisa-directives` subcommand exists in tools/fetch_source.py (checked via --help); recipe in the source slice note may be stale or refers to a different tool path. Not attempted further this run; flagging for main agent to verify/update the source record's fetch_method."
+
+notes: |
+  Several promising leads were investigated and dropped as stale, already-fixed-with-no-action, or already covered:
+  - ManageEngine ADAudit Plus unauthenticated RCE (CVE-2026-6516, NCSC-NL NCSC-2026-0263, published 2026-07-24) —
+    the underlying ZohoCorp vendor advisory is dated April 17, 2026 (confirmed via page source); NCSC-NL was simply
+    cataloguing a 3-month-old, already-patched flaw today. No fresh exploitation or development. Dropped per
+    recency discipline (recycled-news trap).
+  - Bing Images ImageMagick-delegate SVG command-injection RCE (CVE-2026-32194/32191, XBOW research write-up,
+    covered by TheHackerNews 2026-07-24) — both CVEs were fixed server-side by Microsoft in March 2026 with
+    "customerActionRequired: false"; XBOW published exploitation mechanics on already-remediated Microsoft-hosted
+    infrastructure. No action for any reader to take on this specific CVE; the transferable ImageMagick-delegate
+    hardening lesson (disable delegates in policy.xml) is real but the item itself carries no urgency/action for a
+    self-hosted deployment beyond generic ImageMagick hardening already known. Dropped as not clearing the
+    action-required bar for S1; better suited to S3 research framing if picked up there.
+  - CVE-2026-62835 (Azure Portal information disclosure, CVSS 9.3, ENISA EUVD-2026-48737, published 2026-07-24) —
+    confirmed via MSRC: "This vulnerability has already been fully mitigated by Microsoft. There is no action for
+    users of this service to take." Cloud-CVE transparency disclosure only. Dropped.
+  - CISA ICSA-26-204-01 (Johnson Controls C-CURE 9000 / Victor application server, CVSS 9.6, unauthenticated
+    adjacent-network RCE against physical-access-control servers) — genuinely severe and OT/critical-infrastructure
+    relevant, but CISA's Initial Release Date is 2026-07-23, and the sibling advisories from the same 204-XX batch
+    (MZ Automation libIEC61850/lib60870) were already surfaced by an earlier run on 2026-07-24. No fresh delta on
+    this specific advisory since; dropped per strict recency discipline rather than surfaced as a late catch.
+  - Synacktiv's unpatched, unauthenticated Argo CD repo-server RCE (no CVE assigned, published 2026-07-01, still
+    unpatched as of 2026-07-24 per WebSearch corroboration) — severe (full Kubernetes cluster takeover via an
+    unauthenticated gRPC GenerateManifest call) but the disclosure is 24 days old with no fresh in-window development
+    (no patch, no CVE, no new exploitation confirmed today); does not clear the recency gate for a daily S1 return.
+    Flagging here so a weekly (W1) sweep can pick it up as a still-open, high-severity unpatched issue if it remains
+    unpatched.
+  - CISA KEV catalog: `catalogVersion: 2026.07.24` / `dateReleased: 2026-07-24T17:40:56Z`, but the newest individual
+    `dateAdded` entries are still 2026-07-22 (Check Point CVE-2026-16232, Microsoft SharePoint CVE-2026-50522) —
+    no new KEV entries actually added in the 26h window.
+  - Cisco PSIRT RSS newest item (CVE-2026-20245, SD-WAN authenticated privesc with observed limited exploitation)
+    published 2026-07-21 16:01 UTC — roughly 84 hours before this run, outside even the 72h developing-story
+    allowance. Dropped.
+  - WordPress WP2Shell (CVE-2026-63030/60137), MOVEit, GLPI, SolarWinds Serv-U, MZ Automation libIEC61850/lib60870,
+    Laundry Bear/Zimbra, and the FSB Centre 16/Turla items in the spawn message's already-covered set were
+    reconfirmed present in `prior_coverage.json` and not resurfaced.
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist is configured in this deployment (config/org-profile.yaml has none configured) — the products sweep is a no-op per the org profile; general coverage rules applied unchanged."
+
+cve_table:
+  - cve: "CVE-2026-54121"
+    product: "Windows Server — Active Directory Certificate Services (AD CS) role, Windows Server 2012–2025"
+    cvss: "8.8 (CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H) — Microsoft"
+    epss: "not published by MSRC"
+    kev: "not in CISA KEV"
+    exploited: "No confirmed in-the-wild exploitation; Microsoft rates exploitability \"Exploitation Less Likely\"; full PoC and exploitation mechanics published 2026-07-24"
+    patch: "Fixed in Microsoft's July 2026 Patch Tuesday cumulative update (released 2026-07-14) — adds CA-side validation of the certificate-request `cdc` chase target against AD"
+    source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121"
+  - cve: "CVE-2026-62144"
+    product: "Check Point Security Management Server / Multi-Domain Security Management Server (MDS)"
+    cvss: "9.3 (CVSS 3.1, Check Point/Tenable); NCSC-NL cites CVSS v4 10.0"
+    epss: "not published"
+    kev: "not in CISA KEV"
+    exploited: "No — Check Point states only the companion CVE-2026-16232 has been observed exploited"
+    patch: "Jumbo Hotfix Accumulator: R82.10 Take 36+, R82 Take 118+, R81.20 Take 158+"
+    source: "https://support.checkpoint.com/results/sk/sk185152"
+  - cve: "CVE-2026-62145"
+    product: "Check Point Gaia Portal (Security Gateways, Security Management)"
+    cvss: "7.5 (CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:U/C:H/I:H/A:H, Check Point/Tenable); NCSC-NL cites CVSS v4 9.4"
+    epss: "not published"
+    kev: "not in CISA KEV"
+    exploited: "No"
+    patch: "Jumbo Hotfix Accumulator: R82.10 Take 36+, R82 Take 118+, R81.20 Take 158+"
+    source: "https://support.checkpoint.com/results/sk/sk185153"
