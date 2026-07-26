@@ -1,0 +1,72 @@
+check_run.py — scope: --all (whole content store)
+
+== store: state / sources JSON ==
+  PASS json-parse: state/cves_seen.json
+  PASS json-parse: sources/sources.json
+  PASS json-parse: state/source_health.json
+
+== store: taxonomy ==
+  PASS taxonomy: 123 terms across 9 keys
+
+== store: sources.json schema (shape + controlled-vocab) ==
+  PASS sources-schema: 165 source(s) — shapes valid, vocab values in range
+
+== store: content parse ==
+
+== store: entity registry ==
+  PASS registry: 466 entities, 101 curated relation(s), keys/aliases consistent
+  PASS store-parse: 1034 entry file(s) + 117 run record(s) parse cleanly
+
+== all: entry-id uniqueness ==
+  PASS entry-ids: 1034 entry id(s) unique
+
+== all: entry schema (incl. folder-date == discovered_at, registry refs) ==
+  PASS entry-schema: all 1034 entries pass validate_entry
+
+== all: update_of / references resolution + cycles ==
+  PASS references: all update_of / references links resolve to existing entries
+  PASS update-target: 92 update chain(s) acyclic and bounded
+
+== all: CVE sync ==
+  PASS cve-sync: all 562 CVE(s) in store entries are in cves_seen.json
+
+== all: ATT&CK dataset + techniques[] ids ==
+  PASS attack-dataset: ATT&CK v19.1 · 697 active techniques · 15 tactics
+  PASS attack-mapping: 898 entries consistent with pinned ATT&CK v19.1 (10 carrying techniques[])
+
+== all: rating + mapping completeness (always-classified gate) ==
+  PASS store-ratings: 136 entries from 32 v3.18+ run(s) under the always-rated / always-mapped gate
+  PASS org-triage: no triage scheme configured and no org_triage values present (triage kinds carry the Admiralty classification instead)
+  PASS classification: 136 entries carry a valid Admiralty classification
+  PASS attack-mapping: 136 entries consistent with pinned ATT&CK v19.1 (126 carrying techniques[])
+
+== all: run records ==
+  ACK  run-record: 2026-07-04T1809Z-intel: duration_seconds=64161 (~17.8 h) exceeded the runaway threshold — see the per-run watchdog note
+  ACK  run-record: 2026-07-09T2009Z-intel: duration_seconds=40250 (~11.2 h) exceeded the runaway threshold — see the per-run watchdog note
+  ACK  run-record: 2026-07-11T1435Z-audit: duration_seconds=12000 (~3.3 h) exceeded the runaway threshold — see the per-run watchdog note
+  ACK  verification-confirmation: 2026-07-13T2009Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following iteration 4 (Sonnet) NEEDS_FIXES; the cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. Note: iteration 3 (Opus) had already returned CLEAN; iteration 4 (Sonnet) reset the chain by surfacing source cross-check contradictions, all remediated before the final CLEAN." (recorded fail-open)
+  ACK  verification-confirmation: 2026-07-14T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following iteration 4 (Sonnet) NEEDS_FIXES; the cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. The earlier iteration-3 (Opus) CLEAN was deliberately NOT treated as sufficient — the iteration-4 (Sonnet) confirmation refused it by surfacing two real CrashStealer truth defects (encrypt/zip order, mis-cited source), both remediated before the final CLEAN, which is exactly the two-model guard working as intended." (recorded fail-open)
+  ACK  verification-confirmation: 2026-07-14T1210Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following four consecutive NEEDS_FIXES iterations that alternated models (iter1 Opus, iter2 Sonnet, iter3 Opus, iter4 Sonnet), each surfacing a genuine defect that was remediated before the next pass — two ESET truth over-claims, a run-record jargon leak, the AsyncAPI single-to-multi-source upgrade, an unsourced ordinal, and one ShareFile ATT&CK-mapping-support gap. The cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. Every finding across all five iterations was remediated; the final Opus CLEAN independently re-verified all of them cold." (recorded fail-open)
+  ACK  verification-confirmation: 2026-07-15T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: 'single CLEAN at iteration 5 (the 5-iteration cap); iteration 4 returned NEEDS_FIXES, so the normal double-CLEAN confirmation pass would exceed the cap — published as fail-open per the Phase 5.7 decision-rule-2 cap exception. Iteration 5 verified both iteration-4 remediations against ground truth and found zero defects on a full cold read.' (recorded fail-open)
+  ACK  verification-confirmation: 2026-07-17T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: 'single CLEAN at iteration cap — iteration 5 (cti-verification/Opus) returned CLEAN with zero findings, but iteration 4 (Sonnet) was NEEDS_FIXES, so there was no room for a confirming pass before the 5-iteration cap; published fail-open on the single final CLEAN per Phase 5.7 decision rule 2 (cap exception). The whack-a-mole was benign: each iteration surfaced a distinct minor quote-fidelity/attribution/severity-surfacing defect on a different entry, all remediated; no F1 broken URL and no unresolved F4 remained at the cap.' (recorded fail-open)
+  WARN verification-confirmation: 2026-07-23T0409Z-intel: confirming iterations 7 + 8 both ran cti-verification — the confirmation pass must run on a different model (rotation); acceptable only as a recorded exception (other-model spawn blocked after a retry) noted in the run record
+  PASS run-record: 117 run record(s) valid (68 migrated, identity-checked only)
+
+== build-side smoke tests ==
+  PASS test-build: site/test_build.py passed
+
+summary: 20 pass · 1 warn · 0 fail · 8 acknowledged
+
+WARNINGS (not blocking, but the zero-warning discipline applies — fix what this run caused before commit; the weekly audit sweeps the rest to zero):
+  - verification-confirmation: 2026-07-23T0409Z-intel: confirming iterations 7 + 8 both ran cti-verification — the confirmation pass must run on a different model (rotation); acceptable only as a recorded exception (other-model spawn blocked after a retry) noted in the run record
+
+ACKNOWLEDGED (settled history per state/warning_acknowledgments.json — reviewed by the weekly audit, not counted as warnings):
+  - run-record: 2026-07-04T1809Z-intel: duration_seconds=64161 (~17.8 h) exceeded the runaway threshold — see the per-run watchdog note  [acknowledged 2026-07-18: Settled history: 17.8 h runaway caused by scheduler/container-side stalls, root-caused in the 2026-07-11 audit; v3.21 shipped the ~3 h wall-clock watchdog + overtaken-run re-dedup in response. The record is immutable and its duration is a historical fact — nothing left to fix.]
+  - run-record: 2026-07-09T2009Z-intel: duration_seconds=40250 (~11.2 h) exceeded the runaway threshold — see the per-run watchdog note  [acknowledged 2026-07-18: Settled history: 11.2 h runaway, same scheduler/container-side stall class as 07-04, root-caused in the 2026-07-11 audit; v3.21 watchdog shipped in response. Immutable record, historical fact.]
+  - run-record: 2026-07-11T1435Z-audit: duration_seconds=12000 (~3.3 h) exceeded the runaway threshold — see the per-run watchdog note  [acknowledged 2026-07-18: Settled history: the 2026-07-11 audit run itself ran ~3.3 h, marginally past the runaway threshold, before the v3.21 watchdog it was in the middle of shipping took effect. Immutable record, historical fact.]
+  - verification-confirmation: 2026-07-13T2009Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following iteration 4 (Sonnet) NEEDS_FIXES; the cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. Note: iteration 3 (Opus) had already returned CLEAN; iteration 4 (Sonnet) reset the chain by surfacing source cross-check contradictions, all remediated before the final CLEAN." (recorded fail-open)  [acknowledged 2026-07-18: Era-correct recorded fail-open at the 5-iteration cap (pre-v3.27): the waiver text on the record documents the full chain. v3.27 raised the cap to 8 precisely to make this shape rare; the record is immutable history.]
+  - verification-confirmation: 2026-07-14T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following iteration 4 (Sonnet) NEEDS_FIXES; the cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. The earlier iteration-3 (Opus) CLEAN was deliberately NOT treated as sufficient — the iteration-4 (Sonnet) confirmation refused it by surfacing two real CrashStealer truth defects (encrypt/zip order, mis-cited source), both remediated before the final CLEAN, which is exactly the two-model guard working as intended." (recorded fail-open)  [acknowledged 2026-07-18: Era-correct recorded fail-open at the 5-iteration cap (pre-v3.27); waiver documented on the record, superseded by the v3.27 cap raise. Immutable history.]
+  - verification-confirmation: 2026-07-14T1210Z-intel: final CLEAN is unconfirmed — confirmation waived: "single CLEAN at iteration cap (5): iteration 5 (Opus) returned CLEAN following four consecutive NEEDS_FIXES iterations that alternated models (iter1 Opus, iter2 Sonnet, iter3 Opus, iter4 Sonnet), each surfacing a genuine defect that was remediated before the next pass — two ESET truth over-claims, a run-record jargon leak, the AsyncAPI single-to-multi-source upgrade, an unsourced ordinal, and one ShareFile ATT&CK-mapping-support gap. The cap leaves no room for an other-model confirmation pass, so the double-CLEAN gate's fail-open safety valve applies. Every finding across all five iterations was remediated; the final Opus CLEAN independently re-verified all of them cold." (recorded fail-open)  [acknowledged 2026-07-18: Era-correct recorded fail-open at the 5-iteration cap (pre-v3.27); waiver documented on the record, superseded by the v3.27 cap raise. Immutable history.]
+  - verification-confirmation: 2026-07-15T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: 'single CLEAN at iteration 5 (the 5-iteration cap); iteration 4 returned NEEDS_FIXES, so the normal double-CLEAN confirmation pass would exceed the cap — published as fail-open per the Phase 5.7 decision-rule-2 cap exception. Iteration 5 verified both iteration-4 remediations against ground truth and found zero defects on a full cold read.' (recorded fail-open)  [acknowledged 2026-07-18: Era-correct recorded fail-open at the 5-iteration cap (pre-v3.27); waiver documented on the record, superseded by the v3.27 cap raise. Immutable history.]
+  - verification-confirmation: 2026-07-17T0409Z-intel: final CLEAN is unconfirmed — confirmation waived: 'single CLEAN at iteration cap — iteration 5 (cti-verification/Opus) returned CLEAN with zero findings, but iteration 4 (Sonnet) was NEEDS_FIXES, so there was no room for a confirming pass before the 5-iteration cap; published fail-open on the single final CLEAN per Phase 5.7 decision rule 2 (cap exception). The whack-a-mole was benign: each iteration surfaced a distinct minor quote-fidelity/attribution/severity-surfacing defect on a different entry, all remediated; no F1 broken URL and no unresolved F4 remained at the cap.' (recorded fail-open)  [acknowledged 2026-07-18: Era-correct recorded fail-open at the 5-iteration cap (pre-v3.27); waiver documented on the record, superseded by the v3.27 cap raise. Immutable history.]
+up to date: local v19.1 == upstream latest v19.1

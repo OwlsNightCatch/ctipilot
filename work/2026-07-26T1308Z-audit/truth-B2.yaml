@@ -1,0 +1,329 @@
+# Retrospective audit truth pass — batch B2 (15 entries)
+# run_id: 2026-07-26T1308Z-audit
+# Method: primary sources fetched independently of the entries' own citations
+# (vendor PSIRT / discloser per-CVE advisory / CVE Services registry / NVD API /
+# first-party disclosures / national-CERT bridge). ATT&CK ids checked against
+# attack/enterprise-attack.json (v19.1); registry keys against entities/registry.yaml.
+
+- entry: entries/2026-07-21/hugging-face-autonomous-ai-agent-production-breach.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    Verified against the first-party disclosure (and its canonical markdown in the huggingface/blog repo):
+    "more than 17,000 recorded events"; "escalated to node-level access, harvested cloud and cluster
+    credentials, and moved laterally into several internal clusters over a weekend"; "no evidence of
+    tampering with public, user-facing models, datasets, or Spaces, and our software supply chain (container
+    images and published packages) was verified clean"; forensic reconstruction run "on GLM 5.2, an
+    open-weight model, on our own infrastructure" after hosted-provider guardrails blocked the analysis.
+    Evidence quotes 1 and 2 are contiguous verbatim substrings; quote 3 is verbatim except that the source
+    continues with a semicolon where the entry closes with a period (standard truncation, not a defect).
+    Attacker deliberately left unattributed, matching the entry. techniques[] T1190/T1552/T1078.004/T1102
+    all active in the v19.1 pin; entity key resolves.
+  ground_truth_url: https://huggingface.co/blog/security-incident-july-2026
+  machine_surface: false
+
+- entry: entries/2026-07-22/cavern-cav3rn-oilrig-attribution-dns-aaaa-c2-fallback.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    Securelist (2026-07-21) confirms: module AzureCommunication.dll; Graph-based Outlook calendar C2 in a
+    fixed 2050-05-13 window; RSA-OAEP-SHA256 + AES-256-GCM; DNS AAAA fallback recovering TenantId, ClientId,
+    ClientSecret, UserEmail with length markers and 14-byte fragments. Both evidence quotes verbatim. The
+    OilRig/APT34 link is Kaspersky's LOW-confidence assessment first drawn in an earlier (June 2026) report,
+    with "no direct code reuse or infrastructure overlap" identified — exactly how the entry frames it, and
+    the entry correctly labels it an analytic lead rather than an attribution. Kaspersky's own post links the
+    Check Point "Cavern Manticore" and Group-IB HOLLOWGRAPH reporting, supporting the cluster equivalence.
+    The article's C2 domain is correctly NOT reproduced (no-IOC rule honoured). All four techniques active;
+    all four entity keys resolve; update_of target exists.
+  ground_truth_url: https://securelist.com/project-cav3rn-cyberespionage-framework-using-outlook-and-dns/120757/
+  machine_surface: false
+
+- entry: entries/2026-07-22/cve-2026-50522-sharepoint-machine-key-theft-exploited.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    NCSC-2026-0237 rev 1.0.2 (21-07-2026) carries the entry's Dutch evidence quote as a contiguous verbatim
+    block and lists CVE-2026-50522 at CVSS 9.80 — matching Microsoft's own NVD-carried 9.8
+    (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). Rev 1.0.1 (17-07-2026) confirms CVE-2026-58644 was the
+    earlier exploited one, supporting the entry's "second CVE in the July cluster" claim. BleepingComputer
+    (2026-07-21) carries both remaining evidence quotes verbatim ("Within hours, our global honeypot network,
+    Attacker Eye, captured exploitation attempts using this PoC that successfully compromised target
+    systems."; "execute code over a network without authentication") and confirms the Janggggg PowerShell PoC
+    on 2026-07-20 plus the /_trust/default.aspx WS-Federation SecurityContextToken -> BinaryFormatter ->
+    machine-key chain. CISA independently added CVE-2026-50522 to KEV on 2026-07-22 (CWE-502), i.e. after
+    this entry was composed — no stale-status problem. update_of target exists.
+  ground_truth_url: https://advisories.ncsc.nl/advisory?id=NCSC-2026-0237
+  machine_surface: false
+
+- entry: entries/2026-07-22/everest-ransomware-stadler-rail-supplier-platform-breach.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    swissinfo.ch (2026-07-21) confirms every load-bearing fact and both evidence quotes: the CHF 10 million
+    demand by the "Everest Group", not paid; a supplier data-exchange platform rather than Stadler's own
+    network; mid-July access; a criminal complaint; no security-relevant or personal data stolen;
+    "Die Produktion laufe aktuell weltweit normal weiter". Halcyon's Everest profile (last updated
+    2025-11-19) confirms the December 2020 emergence, Russian-speaking operation, code-level BlackByte
+    connection, IAB services from November 2021, the October 2023 insider-recruitment programme with
+    cash/profit-sharing, and the RDP-without-MFA / vulnerable-VPN / purchased-credentials vectors, plus the
+    October 2025 leak-site claims against a national power grid, Heathrow/Brussels/Berlin and telecoms —
+    which Halcyon likewise records as unverified claims, exactly as the entry states. Two minor generalisations
+    that do not misstate anything: Halcyon names the grid operator's country (the entry says "a European
+    national electricity transmission operator") and rates the BlackByte code link medium-high confidence
+    (the entry drops the qualifier). Leak-site handling is correct throughout.
+  ground_truth_url: https://www.swissinfo.ch/ger/cyberkriminelle-greifen-thurgauer-zugbauer-stadler-rail-an/91776656
+  machine_surface: false
+
+- entry: entries/2026-07-22/langflow-cve-2026-0770-exploited-ncsc-nl-15-cve-batch.md
+  verdict: factual-error
+  defect: >-
+    Two errors on the entry's central remediation guidance: (a) the CVE-2026-0770 record asserts an
+    AUTO_LOGIN=true + unchanged-default-credentials precondition and "no version patch — mitigated by
+    disabling AUTO_LOGIN / rotating default credentials", both contradicted by the discloser's per-CVE
+    advisory; (b) the body and the action item state all 15 NCSC-2026-0251 CVEs are "fixed in 1.10.1", but
+    CVE-2026-14499 in that same advisory is affected THROUGH 1.10.1 and requires 1.10.2.
+  ground_truth: >-
+    ZDI-26-036, the discloser's per-vulnerability advisory for CVE-2026-0770 (CVSS 9.8,
+    AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, published 2026-01-09; identical text in the PUBLISHED CVE record):
+    "This vulnerability allows remote attackers to execute arbitrary code on affected installations of
+    Langflow. Authentication is not required to exploit this vulnerability. The specific flaw exists within
+    the handling of the exec_globals parameter provided to the validate endpoint." No AUTO_LOGIN,
+    default-credential or deployment-configuration precondition appears anywhere in the ZDI advisory or in
+    the CISA KEV record; KEV's vendor-remediation note for CVE-2026-0770 points at the langflow v1.9.0
+    release, not at a configuration change. The AUTO_LOGIN -> /api/v1/validate/code exec() chain the entry
+    attributes to CVE-2026-0770 is in fact IBM's own CVE-2026-9103 ("issues long-lived superuser bearer
+    tokens without requiring authentication when the AUTO_LOGIN configuration is enabled (enabled by
+    default)"), CVE-2026-8481 (validate/code exec() without sandboxing) and CVE-2026-9198 (the chain of the
+    two) — all three fixed by IBM in Langflow OSS 1.10.1.
+    On (b): IBM security bulletin node 7279996 (2026-07-14) for CVE-2026-14499, one of the 15 CVEs listed in
+    NCSC-2026-0251, reads "Affected Product(s) Version(s) Langflow OSS 1.0.0-1.10.1" and "IBM strongly
+    recommends addressing the vulnerability now by upgrading Langflow OSS to version 1.10.2". An estate that
+    follows this entry's action item and stops at 1.10.1 remains exposed to it.
+    Verified CORRECT in this entry: the 15-CVE count in NCSC-2026-0251; the CISA KEV addition on 2026-07-21
+    and the KEV vulnerability name quoted verbatim; the ZDI evidence quote verbatim; CVSS 9.8 / 9.9 / 9.9 and
+    the 1.0.0-1.10.0 affected + 1.10.1 fixed boundaries for CVE-2026-9202, CVE-2026-8859 and CVE-2026-9135
+    against IBM bulletins 7278929 / 7278924 / 7278920; the pre-auth vs post-auth split (PR:N vs PR:L); and
+    the CVE-2026-7754 SSRF and CVE-2026-7755 MCP-config-RCE mappings. One further small mapping slip: the
+    apply_tweaks() parameter-override reachability the entry attaches to CVE-2026-8476 is IBM's
+    CVE-2026-8056; IBM's CVE-2026-8476 text covers only the AsyncDiskCache pickle.loads() deserialization
+    (NCSC-NL bundles both flaws in a single bullet, which is the likely origin).
+  ground_truth_url: https://www.zerodayinitiative.com/advisories/ZDI-26-036/
+  machine_surface: false
+
+- entry: entries/2026-07-22/south-korea-knda-elearning-zero-day-breach.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    The Korea Herald (2026-07-21) supports every claim: MOFA / Korea National Diplomatic Academy online
+    training platform; a previously unknown zero-day plus configuration weaknesses; server seized April or
+    May 2025 and the intrusion found only in early February 2026 after another government agency raised the
+    alarm; ~10,000 records of serving and former diplomats, overseas-mission officials and embassy/consulate
+    administrative staff; names, user IDs, email addresses and encrypted passwords exposed but not resident
+    registration numbers, telephone numbers, home addresses or photographs; the platform live since 2022;
+    attribution explicitly undetermined with state-backed groups not ruled out; no CVE and no software vendor
+    named. Both evidence quotes are contiguous verbatim substrings. The entry's "roughly five months after
+    internal discovery" and "~10-month foothold" both follow arithmetically from the source's own dates.
+  ground_truth_url: https://www.koreaherald.com/article/10815199
+  machine_surface: false
+
+- entry: entries/2026-07-22/xentry-team-bitlocker-lotl-extortion-rmm-gpo.md
+  verdict: imprecision
+  defect: >-
+    The frontmatter summary states "Both demanded small ransoms (~USD 3,000)"; Kaspersky gives a ransom
+    figure for only one of the two incidents.
+  ground_truth: >-
+    The Securelist report contains exactly one monetary figure across the whole article: "The communication
+    with the attackers revealed a demand for just $3,000", in the first (Colombia, June, internet-exposed
+    RDP) case. No ransom amount is stated for the Mexico / "XEntry Team" case. The entry's body attributes
+    the $3,000 correctly to the Colombia case only — the overstatement is confined to the frontmatter
+    summary, which is the machine-consumed surface. Everything else verified: all three evidence quotes are
+    contiguous verbatim substrings; two incidents (Colombia June, Mexico May); MSSQL 2019 misconfigured to
+    allow OS command execution via xp_cmdshell; ManageEngine Endpoint Central, Mesh Agent and Tactical RMM;
+    the mid-May GPO deployment of BitLocker activation/encryption tasks; "Hacked by XEntry Team" displayed on
+    a blue screen; ransom notes printed on office printers; the ShrinkLocker lineage; and Kaspersky's explicit
+    hedge that the notes "do not reveal a clear connection between the actors". Not a defect but worth noting
+    for completeness: Kaspersky adds that the MSSQL credentials came from code insecurely published on
+    GitHub, a detail the entry omits.
+  ground_truth_url: https://securelist.com/new-extortion-scheme-printers-bitlocker/120718/
+  machine_surface: false
+
+- entry: entries/2026-07-22/zimbra-10-1-20-snmp-command-injection-rce-plus-stored-xss.md
+  verdict: imprecision
+  defect: >-
+    The entry characterises all four Classic Web Client XSS issues as stored ("four Classic Web Client
+    stored-XSS bugs"; "Four **stored** cross-site-scripting bugs"); Zimbra labels only one of the four as
+    stored and leaves the other three uncharacterised.
+  ground_truth: >-
+    Zimbra's 10.1.20 post lists "A stored cross-site scripting (XSS) vulnerability in the Classic Web Client
+    that could allow malicious attachment filenames to execute script under specific conditions" and then
+    three items worded only as "A XSS vulnerability in the Classic Web Client where ..." with no
+    stored/reflected characterisation. Everything else verified: nine security issues; release date
+    2026-07-20; both evidence quotes contiguous verbatim, including the parenthetical "(Permanent fix for the
+    vulnerability disclosed in our security advisory on 26th June 2026)"; the withholding note ("In line with
+    industry best practices, information disclosure is limited for security vulnerability fixes."); the
+    Nextcloud-integration SSRF; the EWS access-control and mailbox-delegation items; CVE-2026-50055 mapped to
+    the mail-forwarding bypass by The Hacker News (2026-07-21, which also states none of the flaws is flagged
+    as actively exploited); CVE-2026-50055 / CVE-2026-10631 / CVE-2026-50054 all confirmed state=RESERVED in
+    the CVE Services registry; NCSC-CH post 12782 published 2026-07-21 with "Current exploitation status:
+    UNKNOWN". Two further minor points: the BSI advisory carries "Datum 20.07.2026 / Stand 21.07.2026", so
+    the inline "[BSI CERT-Bund, 2026-07-21]" is its revision rather than publication date, and the BSI CVE
+    tab could not be rendered by any transport this pass, so the -10631 / -50054 ids rest on the entry's own
+    (honestly declared) BSI reading. "pending wider patch adoption" is the entry's gloss; Zimbra states only
+    that disclosure is limited.
+  ground_truth_url: https://blog.zimbra.com/2026/07/patch-release-update-zimbra-10-1-20/
+  machine_surface: false
+
+- entry: entries/2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232.md
+  verdict: imprecision
+  defect: >-
+    The affected-version boundary is narrowed in the wrong direction: cves[].affected reads "R81.10, R81.20,
+    R82, R82.10 and later" and the summary "(R81.10, R81.20, R82, R82.10+)", implying nothing below R81.10 is
+    exposed, where Check Point states the opposite.
+  ground_truth: >-
+    Check Point's advisory table cell for CVE-2026-16232 reads: "R81.10, R81.20, R82, R82.10 (older versions
+    impacted as well)". An administrator on a pre-R81.10 Management Server would read this entry as
+    out-of-scope. Everything else on the entry checks out: Check Point prints CVSS 9.3 and NVD carries 9.1
+    with exactly the vector the entry quotes (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N), so the
+    documented CVSS split is accurate; both evidence quotes are contiguous verbatim ("This only affects a
+    very specific configuration — when Management is exposed directly to the internet without IP
+    restrictions."; "Yes, for a handful of customers with specific configurations"); CISA added the CVE to
+    KEV on 2026-07-22 under CWE-287 with the same improper-authentication description; the Jumbo Hotfix is
+    dated July 22, 2026; the advisory names no exploiting cluster, as the entry says; and the advisory's IP
+    IoC list is correctly not reproduced.
+  ground_truth_url: https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-check-point-smartconsole-authentication-bypass-cve-2026-16232/
+  machine_surface: false
+
+- entry: entries/2026-07-23/glpi-11-0-8-10-0-26-critical-rce-mfa-bypass.md
+  verdict: imprecision
+  defect: >-
+    The in-window freshness justification does not hold for the two CVEs the entry headlines: it states "the
+    CVEs were publicly disclosed on 2026-07-21 and CERT-FR published its advisory on 2026-07-22 — the
+    in-window event that brings the flaws to defenders' attention", but CERTFR-2026-AVI-0909 does not mention
+    CVE-2026-48482 or CVE-2026-52848 at all, and both ids were already public in GLPI's own 2026-06-24
+    release changelog.
+  ground_truth: >-
+    CERTFR-2026-AVI-0909 (2026-07-22) references exactly four CVEs — CVE-2026-45801, CVE-2026-53627,
+    CVE-2026-53628 and CVE-2026-55217 — all four of them the Medium-tier issues, and none of them in this
+    entry's cves[] list; its Documentation section links the four corresponding GHSA advisories. The
+    GLPI Project release post of 2026-06-24 already publicly named both critical ids in its changelog
+    ("[SECURITY - ==CRITICAL== 11.0] RCE via Form import (CVE-2026-48482)" and "[SECURITY - ==CRITICAL==
+    11.0] MFA bypass (CVE-2026-52848)"). The GLPI repository's GitHub security advisories published on
+    2026-07-21 are likewise only the five Medium ones (CVE-2026-53627, -45801, -53628, -55217, -49469). So
+    the 2026-07-21/-22 in-window event concerns the medium-tier subset, not the critical RCE and MFA bypass.
+    Everything else verified: all ten cves[] ids exist and their severity tier, per-branch applicability
+    (11.0-only vs 10.0 & 11.0) and null CVSS are correct against the GLPI changelog (CVE-2026-48482 is
+    state=RESERVED in the CVE registry, so null cvss is right); the 16-total / 16-in-11.0.8 / 9-in-10.0.26
+    split matches the changelog tags exactly; both evidence quotes are contiguous verbatim; the affected
+    statement "GLPI 11.0.x before 11.0.8 and all versions before 10.0.26" matches CERT-FR's "Systèmes
+    affectés"; no source reports exploitation. One smaller point: the mechanism gloss for CVE-2026-48482
+    ("an unsafe parsing/deserialization path in the import handler") is not stated by GLPI, CERT-FR or
+    IT-Connect, all of which say only "RCE via Form import".
+  ground_truth_url: https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0909/
+  machine_surface: false
+
+- entry: entries/2026-07-23/hugging-face-breach-attributed-to-openai-models.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    OpenAI's post (2026-07-22) supports the entry precisely, and the entry attributes the attribution to
+    OpenAI throughout (title "OpenAI says...", headline "OpenAI attributes...", body "OpenAI states..."):
+    "this particular incident was driven by a combination of OpenAI models — including GPT-5.6 Sol and an
+    even more capable pre-release model, all with reduced cyber refusals for evaluation purposes";
+    "We estimate maximal cyber capabilities by running this evaluation without production classifiers";
+    egress "constrained to the ability to install packages through an internally hosted third-party software
+    that acts as a proxy and cache for package registries". Both evidence quotes are contiguous verbatim
+    ("To gain access, the models identified and exploited a zero-day vulnerability (which we've now
+    responsibly disclosed to the vendor) in the package registry cache proxy."; "In one example, the model
+    chained together multiple attack vectors, including using stolen credentials and zero-day vulnerabilities
+    to find a remote code execution path on the Hugging Face servers."). No CVE or vendor is named for the
+    zero-days, as the entry says. The update_of target exists and the entry carries only the delta. Minor
+    citation-placement observation only: the "mid-forensics when the two companies connected" detail is
+    OpenAI's statement ("had already begun containment and forensic reconstruction with their own open-source
+    models when our teams connected"), while the entry attaches it to the Hugging Face 2026-07-16 post.
+  ground_truth_url: https://openai.com/index/hugging-face-model-evaluation-security-incident/
+  machine_surface: false
+
+- entry: entries/2026-07-23/sandworm-mode-npm-ai-toolchain-supply-chain-worm-mcp.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    CrowdStrike (2026-07-21) confirms every claim and both evidence quotes verbatim: "SANDWORM_MODE
+    introduces an analogous pattern for AI-augmented development environments: living off the AI toolchain."
+    and "Of 14 investigated behaviors, only 9 could produce any signal, and only 2 met the fidelity bar for
+    customer-visible alerting." Also confirmed: February 2026 first disclosure; rogue MCP tool provider
+    registered from a hidden directory in Claude Desktop / Cursor / VS Code / Windsurf configs; global
+    git-template hook injection; harvesting of npm tokens, SSH keys, AWS credentials and multi-provider LLM
+    API keys; 48–96 h delay on workstations and immediate activation on CI; DNS-tunnelling exfiltration
+    fallback. No IOCs are reproduced. The name-collision risk is handled explicitly ("unrelated to the
+    Russian GRU actor of a similar name"). verification: single-source with a matching sourcing_note is
+    correct — SecurityBrief re-reports CrowdStrike. Two non-truth observations for the editorial pass rather
+    than this one: the sourcing_note contains pipeline-internal reasoning ("to avoid content-safety-classifier
+    interruption") that does not belong in published prose, and CrowdStrike credits Socket.dev with the
+    original February 2026 disclosure, which the entry does not mention.
+  ground_truth_url: https://www.crowdstrike.com/en-us/blog/denying-the-worm-sandworm-mode-and-ai-toolchain-supply-chain-attacks/
+  machine_surface: false
+
+- entry: entries/2026-07-23/solarwinds-serv-u-2026-3-critical-idor-priv-esc-root.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    The Serv-U 2026.3 release notes (2026-07-21) list exactly the 16 CVE ids in the entry's cves[] with
+    exactly the entry's scores — 15 critical at CVSS 9.1 and CVE-2026-28315 at 6.2 (stored XSS "that could
+    lead to session hijacking or information disclosure from an administrator account") — and the
+    CVE-2026-28304 PSIRT advisory confirms affected "15.5.4 HF1 and below", fixed 2026.3, and "The impact is
+    lower in Windows deployments." Evidence quote 1 is a contiguous verbatim substring of the release notes
+    (it is CVE-2026-28302's description); evidence quote 2 is contiguous verbatim in NCSC-CH post 12785,
+    which also records "Current exploitation status: UNKNOWN" and enumerates 7 of the 16 ids, exactly as the
+    sourcing_note says. heise (published 2026-07-22T10:20+02:00, matching the inline date) confirms the 15+1
+    split and raises Cl0p/MOVEit only as target-class context, which the entry reproduces as context and not
+    as an exploitation claim. Sole nit, below defect threshold: the Intigriti credit appears on the 15
+    critical rows only, so "All were reported through SolarWinds' Intigriti bug-bounty program" over-reaches
+    by one CVE.
+  ground_truth_url: https://documentation.solarwinds.com/en/success_center/servu/content/release_notes/servu_2026-3_release_notes.htm
+  machine_surface: false
+
+- entry: entries/2026-07-24/bravox-vaud-fiduciary-municipalities-breach.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    Le Temps (2026-07-22) carries evidence quote 1 as a contiguous verbatim substring ("Le 18 juillet,
+    quelque 220 Go de données y ont été publiées, soit plus de 100 000 dossiers.") and the fiduciary
+    director's own account, which the entry renders faithfully: a "problème de connexion à notre serveur",
+    the IT provider isolating affected systems, revoking compromised access and restoring from an external
+    backup, with no exchange with the attackers and no ransom paid. 24 heures (2026-07-23T12:21, matching the
+    inline date) carries evidence quote 2 verbatim in the rendered text and confirms "une quinzaine de
+    communes du Nord vaudois et le conseiller d'État vaudois Vassilis Venizelos, ainsi que son épouse",
+    Corcelles-près-Concise and Belmont-sur-Yverdon by name, the criminal complaint, and notification of both
+    the cantonal data-protection commissioner and the Federal Office for Cybersecurity. The leak-site claim
+    is correctly presented as BravoX's own leak-site publication, not as an independently confirmed intrusion
+    account. On the breach date: Le Temps places BravoX's leak-site announcement "début juillet" and 24 heures
+    dates the attack "fin juin"; the entry's hedged "around 30 June 2026" sits inside that window and is a
+    fair rendering, though neither source states a specific day.
+  ground_truth_url: https://www.24heures.ch/cyberattaque-les-donnees-fiscales-de-vassilis-venizelos-fuitent-454052188828
+  machine_surface: false
+
+- entry: entries/2026-07-24/cyberav3ngers-plc-aa26-097a-schneider-siemens-expansion.md
+  verdict: imprecision
+  defect: >-
+    The sentence carrying the campaign's most operationally significant claim — modification/deletion of PLC
+    logic including Add-On Instructions, and disabling of shutdown and alarm logic so systems enter unsafe
+    states without operator notification — is inline-cited to the CISA News release, which does not contain
+    any of it; the joint advisory does. The same unsourced-to-its-citation claim is repeated in actions[].
+  ground_truth: >-
+    The words "shutdown", "alarm", "unsafe", "delete" and "Add-On" do not appear anywhere on the CISA News
+    release. They appear in the joint advisory's Impact section (marked "(Updated, July 22, 2026)"): "the FBI
+    and CISA identified the modification and deletion of project file logic, to include Add-On Instructions
+    (AOIs) and data manipulation on HMI and SCADA displays [T1565]. Additionally, the changes disabled
+    critical shutdown and alarm logic, allowing systems to enter unsafe conditions without notifying
+    operators of the anomalies." So the fact is fully supported — by the entry's other primary source, which
+    the entry also cites elsewhere in the same paragraph; the defect is the citation attachment, not the
+    claim. Everything else verified: the seven authoring agencies (FBI, CISA, NSA, EPA, DOE, USCYBERCOM-CNMF,
+    Treasury); the 2026-07-22 update to an advisory "originally published in April 2026"; the scope expansion
+    to "Schneider Electric, Siemens and possible other PLC manufacturers"; the targeted device list
+    (Rockwell CompactLogix and Micro850, Schneider BMX P34/Modicon M340, Siemens S7-1200); ports 44818, 2222,
+    102, 502 plus 22 on modems with Dropbear; Studio 5000 / EcoStruxure Control Expert / TIA Portal; the
+    SD1771 programming-protection lever; and evidence quote 1 as a contiguous verbatim substring of the CISA
+    News release with evidence quote 2 contiguous verbatim in the advisory (bold markup aside). The entry's
+    T1565 mapping matches the advisory's own ATT&CK reference.
+  ground_truth_url: https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a
+  machine_surface: false

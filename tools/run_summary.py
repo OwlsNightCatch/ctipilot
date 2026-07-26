@@ -15,7 +15,11 @@ Phase 0 needs into one small JSON:
       },
       "sources": {                     # from sources/sources.json
         "active_count": 78,
-        "active_ids": [...], "demoted_ids": [...], "candidate_ids": [...]
+        "active_ids": [...], "demoted_ids": [...], "candidate_ids": [...],
+        # Candidates that have met the promotion rule (cited by published
+        # entries from >= promote_after distinct runs). A stateless per-fire
+        # agent cannot count prior runs itself, so the digest counts for it.
+        "promotion_due": [{"id", "contributing_runs", "last_run_id"}]
       },
       "runs": {                        # from runs/** (content_model)
         "count": 71,
@@ -57,8 +61,55 @@ def _load_json(path: Path):
         return None
 
 
+def _host(url: str) -> str:
+    """Normalised host of a URL: lowercase, no leading `www.`, no port."""
+    if not url:
+        return ""
+    rest = url.split("//", 1)[-1]
+    host = rest.split("/", 1)[0].split("@")[-1].split(":", 1)[0].lower()
+    return host[4:] if host.startswith("www.") else host
+
+
+def _promotion_due(srcs: list, promote_after: int) -> list:
+    """Candidates that have earned promotion to `active`.
+
+    The source lifecycle promotes `candidate` → `active` after N contributing
+    runs, but a fire has no memory of earlier fires, so nothing was ever
+    counting — the 2026-07-26 audit found 11 candidates long past the bar,
+    one of them cited by 11 distinct runs. A contributing run is a distinct
+    `run_id` among the published entries whose frontmatter `sources[]` cites
+    the candidate's host (or a subdomain of it).
+    """
+    cand_hosts: dict[str, str] = {}
+    for s in srcs:
+        if s.get("status") != "candidate" or not s.get("id"):
+            continue
+        host = _host(s.get("url") or "") or _host(s.get("rss_url") or "")
+        if host:
+            cand_hosts[s["id"]] = host
+    if not cand_hosts:
+        return []
+    runs_by_cand: dict[str, set] = {cid: set() for cid in cand_hosts}
+    for e in cm.collect_entries():
+        rid = e.get("run_id")
+        if not rid:
+            continue
+        hosts = {_host(rec.get("url") or "")
+                 for rec in (e.get("sources") or []) if isinstance(rec, dict)}
+        hosts.discard("")
+        for cid, chost in cand_hosts.items():
+            if any(h == chost or h.endswith("." + chost) for h in hosts):
+                runs_by_cand[cid].add(rid)
+    return [
+        {"id": cid, "contributing_runs": len(rids), "last_run_id": max(rids)}
+        for cid, rids in sorted(runs_by_cand.items(),
+                                key=lambda kv: (-len(kv[1]), kv[0]))
+        if len(rids) >= promote_after
+    ]
+
+
 def build_summary(now: datetime, recent_days: int, gap_runs: int,
-                  gap_window: int) -> dict:
+                  gap_window: int, promote_after: int = 3) -> dict:
     today = now.strftime("%Y-%m-%d")
     out: dict = {"today": today, "now": now.strftime("%Y-%m-%dT%H:%M:%SZ")}
 
@@ -86,6 +137,7 @@ def build_summary(now: datetime, recent_days: int, gap_runs: int,
         "active_ids": sorted(i for i in by_status["active"] if i),
         "demoted_ids": sorted(i for i in by_status["demoted"] if i),
         "candidate_ids": sorted(i for i in by_status["candidate"] if i),
+        "promotion_due": _promotion_due(srcs, promote_after),
     }
 
     # --- Runs (runs/** via content_model) ----------------------------------
@@ -151,6 +203,9 @@ def main() -> int:
     ap.add_argument("--recent-days", type=int, default=14)
     ap.add_argument("--gap-runs", type=int, default=2)
     ap.add_argument("--gap-window", type=int, default=7)
+    ap.add_argument("--promote-after", type=int, default=3,
+                    help="contributing runs after which a candidate source is "
+                         "listed under sources.promotion_due (default 3)")
     ap.add_argument("--now", help="override 'now' (UTC ISO 8601 Z) for testing")
     args = ap.parse_args()
 
@@ -158,7 +213,8 @@ def main() -> int:
         datetime.strptime(args.now, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
         if args.now else datetime.now(timezone.utc)
     )
-    summary = build_summary(now, args.recent_days, args.gap_runs, args.gap_window)
+    summary = build_summary(now, args.recent_days, args.gap_runs,
+                            args.gap_window, args.promote_after)
     payload = json.dumps(summary, indent=1, ensure_ascii=False) + "\n"
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

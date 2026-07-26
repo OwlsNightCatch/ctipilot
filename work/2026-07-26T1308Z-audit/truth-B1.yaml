@@ -1,0 +1,192 @@
+# Retrospective audit truth pass — batch B1 (odd/opus rotation)
+# run_id: 2026-07-26T1308Z-audit
+# 15 entries; every cited URL fetched in this pass; ATT&CK ids checked against attack/enterprise-attack.json (v19.1);
+# registry keys checked against entities/registry.yaml; CVE ids + CVSS checked against the per-CVE authority
+# (CVE.org/CNA container, EUVD, NVD API, F5 SIRT CNA record, GitHub CNA record) — never against the entry's roundup.
+- entry: entries/2026-07-18/goserpent-backdoor-evolution-sea-government-diplomatic.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030.md
+  verdict: imprecision
+  defect: >-
+    The body states "the CISA-ADP secondary assessment carried by NVD and EUVD inverts the pair at 7.5 and 9.1
+    ([ENISA EUVD, 2026-07-18](https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-45280))" — the cited EUVD record
+    carries neither score (only the WPScan 9.8) and was published 2026-07-17, not 07-18; the 7.5/9.1 pair exists only
+    in NVD's CISA-ADP metrics. Secondary: the actions[] item attributes the "/wp-json/batch/v1 and ?rest_route=/batch/v1
+    at a WAF" mitigation to NCSC-NL, which only refers readers to "de mitigerende maatregelen ... door beveiligingsbedrijf
+    Searchlight Cyber" — the endpoint paths are Searchlight's wording.
+  ground_truth: >-
+    EUVD-2026-45280 (fetched via the ENISA API and via jina): baseScore 9.8 CVSS:3.1 (assigner WPScan), published
+    "Jul 17, 2026, 7:14:12 PM", no 7.5 and no 9.1 anywhere in the record. NVD API for CVE-2026-63030 returns
+    cvssMetricV31 contact@wpscan.com 9.8 AND 134c704f-... (CISA-ADP) 7.5; for CVE-2026-60137, WPScan 5.9 and
+    CISA-ADP 9.1. The cves[] ids and the CNA scores carried in frontmatter (9.8 / 5.9) match the authority exactly.
+    NCSC-2026-0250 CSAF: Kans "high", Schade "medium" (the entry's "likelihood high" is correct); its Oplossingen note
+    defers the endpoint mitigation to Searchlight Cyber.
+  ground_truth_url: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-45280
+  machine_surface: false
+
+- entry: entries/2026-07-18/moodle-local-o365-jwt-forgery-admin-takeover-cve-2026-54733.md
+  verdict: imprecision
+  defect: >-
+    evidence[] quote 2 — "An unauthenticated remote attacker who knows (or can enumerate) any O365-authenticated user's
+    email address can forge a JWT with an arbitrary upn claim." — is not a contiguous substring of the cited GHSA: it
+    splices the Impact lead-in sentence (which ends in a colon) onto the first bullet of the list beneath it.
+  ground_truth: >-
+    GHSA-hqjh-93qv-47v5 reads: "An unauthenticated remote attacker who knows (or can enumerate) any O365-authenticated
+    user's email address can:" followed by bullets "* Forge a JWT with an arbitrary `upn` claim", "* Submit it to the
+    Teams SSO endpoint", "* Obtain a fully authenticated Moodle session as that user". Everything else verified:
+    evidence quote 1 verbatim; affected <4.5.6 / >=5.0.0 <5.0.5 / >=5.1.0 <5.1.1 and patched 4.5.6/5.0.5/5.1.1 match;
+    CVSS 4.0 9.3 CRITICAL is in the CNA (GitHub_M) container of the CVE record, so "GitHub CNA scores it 9.3" is
+    correct (CISA-ADP added only SSVC); BSI WID-SEC-2026-2400 CSAF aggregate_severity "hoch" and the German evidence
+    quote are verbatim.
+  ground_truth_url: https://github.com/microsoft/o365-moodle/security/advisories/GHSA-hqjh-93qv-47v5
+  machine_surface: false
+
+- entry: entries/2026-07-19/clicklock-stealer-macos-clickfix-forced-password-coercion.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-19/ancpi-romania-cadastre-cyberattack-bytetobreach.md
+  verdict: imprecision
+  defect: >-
+    Per-fact attribution: the sentence "posted ANCPI data for sale on a dark-web forum on 15 July, claiming to hold ...
+    a copied GitLab server carrying the source code for e-Terra and RENNS ... ([Help Net Security, 2026-07-16])"
+    attributes two facts to Help Net Security that Help Net Security does not carry — the 15 July sale date and the
+    e-Terra/RENNS naming. Both are in the co-cited Public Record investigation.
+  ground_truth: >-
+    Help Net Security says only "They claim to have compromised data of Romanian citizens and various ANCPI databases,
+    made a copy of the agency's GitLab servers and the source code contained within, and deployed ransomware" — no
+    date for the sale posting, no product names. Public Record (2026-07-17) carries both: "există și o copie a
+    serverelor GitLab care conțin codul sursă al tuturor sistemelor lor, precum Eterra, RENNS" and "Scurgerea de date
+    de la ANCPI a fost scoasă la vânzare pe 15 iulie". All other checked facts hold (institutional email offline,
+    ~1.5 m lei / 48-month contract, 24/7 call-centre and annual audit clauses, the eMAG "licence provider" quote,
+    ANAR December 2025 with "Aproximativ 1.000 de sisteme IT" affected); the KELA and HNS evidence quotes are verbatim.
+  ground_truth_url: https://publicrecord.ro/2026/07/17/atac-cibernetic-ancpi/
+  machine_surface: false
+
+- entry: entries/2026-07-19/ernst-young-third-party-itsm-platform-breach-client-tax-data.md
+  verdict: imprecision
+  defect: >-
+    "filed data-breach notifications with the California and Vermont Attorneys General on 2026-07-15" collapses two
+    filings onto one date: the Vermont filing is dated 2026-07-16, and no source cited by the entry mentions a Vermont
+    filing at all (the OAG report page carries no filing date either).
+  ground_truth: >-
+    Vermont AG security-breach-notice list: "Ernst & Young LLP | Other Commercial | 13 | Social Security Numbers,
+    Financial Account Codes, Credit and Debit Account Info | 7-16-2026". California OAG breach list row:
+    "Ernst & Young LLP | 03/28/2026, 04/23/2026 | 07/15/2026" — so the California date is right. The OAG report page
+    itself shows only Sample of Notice / Organization Name / Date(s) of Breach, in exactly the order the entry's
+    evidence[] quote reproduces (quote verified contiguous); BleepingComputer ("between March 28 and April 12",
+    "On April 23, 2026, EY identified anomalous activity within that platform", 24 months Experian) and CyberInsider
+    ("Support tickets submitted through the platform may include documents containing client tax information.")
+    are verbatim.
+  ground_truth_url: https://ago.vermont.gov/categories/security-breach-notices
+  machine_surface: false
+
+- entry: entries/2026-07-20/cve-2026-42533-nginx-pcre-capture-clobber-preauth-rce.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-20/uac-0145-sandworm-clickfix-etherhiding-android-backdoor.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-21/servicenow-ai-platform-cve-2026-6875-active-exploitation.md
+  verdict: imprecision
+  defect: >-
+    Exploitation-onset date off by one day: the summary says "with in-the-wild activity reported from 2026-07-18" and
+    the body "attributing the in-the-wild observation to threat-intelligence firm Defused from around 2026-07-18",
+    while the cited BleepingComputer article places the first observed attempts on Friday 2026-07-17 (the Defused
+    tweet, on Saturday 2026-07-18, is the report, not the onset).
+  ground_truth: >-
+    BleepingComputer, published Monday 2026-07-20: "Over the weekend, Defused security researchers confirmed that
+    attackers have begun exploiting the vulnerability in the wild, with the first attempts being observed on Friday."
+    (Friday = 2026-07-17; Saturday tweet = 2026-07-18.) Same article: "ServiceNow addressed the flaw across hosted
+    instances starting in April and released CVE-2026-6875 security updates for self-hosted instances one week ago,
+    on July 13th" — consistent with the entry's hosted-vs-self-hosted framing. NCSC-CH post 12778 (created
+    2026-07-20T12:04Z) carries "**Current exploitation status**: Actively exploited" and "CVE-2026-6875 CVSS 9.5
+    (CRITICAL)", matching the entry's evidence quote and cves[] score; the Searchlight sandbox-escape quote is verbatim.
+  ground_truth_url: https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks/
+  machine_surface: false
+
+- entry: entries/2026-07-21/cve-2026-2291-dnsmasq-heap-overflow-rce-exodus.md
+  verdict: imprecision
+  defect: >-
+    Exploitation prerequisite understated: "No local access is needed: the attacker only requires a client behind the
+    vulnerable resolver to look up an attacker-influenced name." Exodus's demonstrated chain requires the resolver to
+    be pointed at an attacker-controlled upstream DNS server, a materially stronger precondition that the entry states
+    only parenthetically earlier ("resolved via an attacker-influenced upstream response").
+  ground_truth: >-
+    Exodus Intelligence, 2026-07-20: "we exploited it to gain remote code execution on a OpenWRT target that is
+    configured with a malicious upstream DNS server" and "The target system is configured to use our malicious server
+    as the upstream DNS server. To exploit the vulnerability a client makes a series of DNS requests to the target:
+    alloc.me, overflow.me, and overwrite.me." (three names — the entry's "three attacker-controlled domain names" is
+    correct). Root-cause quote, really_insert()/src/cache.c, the 1,025-byte bigname buffer, the ld.so function-pointer
+    write-what-where and the 2.92rel2/2.93 fix on 11 May 2026 all verified. NVD's 7.3 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/
+    S:U/C:L/I:L/A:L) is a CISA-ADP secondary metric on a record still "Awaiting Analysis" — the low-impact vector the
+    entry describes is accurate.
+  ground_truth_url: https://blog.exodusintel.com/2026/07/20/dnsmasq-dns-remote-heap-buffer-overflow/
+  machine_surface: false
+
+- entry: entries/2026-07-21/jadepuffer-encforge-ai-model-destroying-ransomware.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-21/cruciferra-crypter-as-a-service-process-ghosting-byovd.md
+  verdict: clean
+  defect: null
+  ground_truth: >-
+    Advisory only (not counted as a defect): Proofpoint characterises TA4922 as a "Chinese-speaking cybercrime actor";
+    the entry's tags[] carry both organized-crime and nation-state. The china-nexus framing itself is consistent with
+    the registry record for actor:ta4922 ("China-nexus financially-motivated cluster", first_seen 2026-06-05), and the
+    body quotes Proofpoint's wording accurately.
+  ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/unpacking-cruciferra-analysis-sophisticated-crypter-service
+  machine_surface: false
+
+- entry: entries/2026-07-21/hollowgraph-m365-calendar-graph-api-c2-cavern.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
+
+- entry: entries/2026-07-21/gpt56-autonomous-wordpress-wp2shell-exploit-chain.md
+  verdict: imprecision
+  defect: >-
+    Autonomy overstated relative to the cited source: the entry says the model ran "autonomously for up to 10 hours per
+    session" and that "Without human guidance beyond the initial task, the model recursively chained batch API requests
+    ... ending with an unauthorised admin account". Searchlight's own account describes an operator-prompted escalation
+    across several stages, and the "just over 10 hours" is the total production time for the whole exploit, not a
+    per-session autonomous run.
+  ground_truth: >-
+    Searchlight Cyber, 2026-07-20: "I took the prompt and adapted it, then pointed it at WordPress and asked it to use
+    4 agents for at least 6 hours"; "Still not fully believing it, I installed a stock WordPress instance on a remote
+    server and asked it to steal the administrator's email"; "From there, I asked Sol if this could be escalated to an
+    RCE. About 4 hours later, Sol responded in the affirmative"; "This full exploit was produced in just over 10 hours."
+    Both evidence[] quotes are otherwise verbatim ("Total usage: 50% of weekly usage. Pro-rata total cost on the $200
+    subscription: ~ $25 USD." and, mid-sentence, "no security researcher could have found and completed this exploit
+    chain in 10 hours without AI"), and the oEmbed / cache-poisoning / parse_request chain description matches the post.
+  ground_truth_url: https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/
+  machine_surface: false
+
+- entry: entries/2026-07-21/ancpi-romania-cadastre-databases-not-affected-update.md
+  verdict: clean
+  defect: null
+  ground_truth: null
+  ground_truth_url: null
+  machine_surface: false
