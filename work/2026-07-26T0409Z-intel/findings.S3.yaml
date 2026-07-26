@@ -1,0 +1,155 @@
+domain: S3
+run_id: 2026-07-26T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-26T04:12:17Z
+ended_at: 2026-07-26T04:22:27Z
+duration_seconds: 610
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 8
+  bridge_fetches: 14
+
+items:
+  - title: "depthfirst chains two Ruby JSON-parser memory-corruption bugs into unauthenticated-feeling GitLab RCE via the Jupyter-notebook diff renderer — no CVE assigned"
+    sources:
+      - { url: "https://depthfirst.com/research/going-depthfirst-achieving-gitlab-rce-via-two-ruby-memory-corruption-vulnerabilities", publisher: "depthfirst (research)", date: "2026-07-24", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/researcher-publishes-gitlab-rce-poc.html", publisher: "The Hacker News", date: "2026-07-25", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"threat research blog post July 25 2026\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/researcher-publishes-gitlab-rce-poc.html → primary: depthfirst research post, URL https://depthfirst.com/research/going-depthfirst-achieving-gitlab-rce-via-two-ruby-memory-corruption-vulnerabilities"
+    summary: |
+      depthfirst (a security-research vendor running an automated vulnerability-discovery
+      system, the "Open Defense Initiative") disclosed a remote-code-execution chain
+      reaching GitLab CE/EE through its bundled `ipynbdiff` gem, which invokes
+      `Oj::Parser.usual.parse` — the native-C implementation of the Oj Ruby JSON parser —
+      inside a long-lived Puma worker whenever a repository's commit diff includes a
+      `.ipynb` (Jupyter notebook) file. Two Oj memory-safety bugs (present in Oj for
+      ~5 years) are chained: an unchecked 16-bit key-length narrowing truncates an
+      oversized (~65,535-byte) JSON object key to 29 bytes and returns/discloses a live
+      heap pointer that GitLab's notebook-diff renderer prints into the diff output
+      (used to locate libc in memory); and an unchecked nesting-stack overflow in
+      `Oj::Parser.usual.parse` gives a write primitive that redirects a parser callback
+      / function pointer to `system()`. The whole chain requires only an authenticated
+      GitLab user with push access to any project — no admin rights, no CI/runner
+      access, and no victim interaction: the attacker commits two crafted notebooks and
+      requests the commit diff (`GET /<project>/-/commit/<sha>/diffs_stream`). Affected:
+      GitLab CE/EE 15.2.0-18.10.7, 18.11.0-18.11.4, and 19.0.0-19.0.1. GitLab quietly
+      bumped the Oj dependency to the fixed release on 2026-06-10 without flagging it as
+      a security fix (no entry in GitLab's security-fix table, no CVE, no CVSS score),
+      creating a 44-day silent-patch window before depthfirst's working PoC (GitHub:
+      wupco/gitlab-rce-demo) was published on 2026-07-24. No in-the-wild exploitation
+      is reported — this is a disclosed researcher PoC, not observed attacker activity.
+      Fixed in GitLab 18.10.8, 18.11.5 and 19.0.2; depthfirst states neither GitLab nor
+      depthfirst offers a workaround for instances that cannot upgrade immediately.
+    region_nexus: "global; any self-managed GitLab CE/EE instance (incl. Swiss/EU public-sector and CI DevOps estates) in the affected version range"
+    primary_sector_nexus: "indirect — GitLab is widely used as internal DevOps/CI infrastructure across public-sector and critical-infrastructure engineering teams"
+    sector: "public-sector, energy, telco, finance (any org self-hosting GitLab CE/EE)"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["GitLab CE", "GitLab EE", "Oj (Ruby JSON parser gem)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "GitLab did not file the fix as a security fix…not in the security-fix table. There is no CVE, no CVSS score, and no mention of the notebook-diff chain."
+        attribution: "The Hacker News, citing depthfirst"
+        source_url: "https://thehackernews.com/2026/07/researcher-publishes-gitlab-rce-poc.html"
+      - quote: "Any authenticated user who can push to a project can run it…No administrator rights, no CI or runner access, no victim interaction."
+        attribution: "The Hacker News, citing depthfirst"
+        source_url: "https://thehackernews.com/2026/07/researcher-publishes-gitlab-rce-poc.html"
+      - quote: "The resulting chain affected GitLab CE and EE versions 15.2.0 through 18.10.7, 18.11.0 through 18.11.4, and 19.0.0 through 19.0.1. GitLab released patches shortly after receiving our reports."
+        attribution: "depthfirst"
+        source_url: "https://depthfirst.com/research/going-depthfirst-achieving-gitlab-rce-via-two-ruby-memory-corruption-vulnerabilities"
+    extended_notes: |
+      Defender framing: detection telemetry class is web/app-access logging on the
+      GitLab Rails/Workhorse layer for `.../-/commit/<sha>/diffs_stream` requests
+      correlated with recently-pushed `.ipynb` files carrying implausible field lengths
+      (e.g. object keys near the 65,535-byte boundary that only make sense as a
+      deliberate truncation trigger) — the exploit's own mechanics require the attacker
+      to push two purpose-built notebooks and then request their diff in sequence, which
+      is a mechanical (not source-stated) discriminator from routine data-science
+      notebook review traffic. Process-telemetry class: unexpected child processes
+      forked from the GitLab Puma/Rails worker (parent image `puma`/`bundle exec puma`)
+      spawning a shell interpreter would reflect the `system()` redirection this chain
+      achieves. Hardening: upgrade to 18.10.8 / 18.11.5 / 19.0.2 now; in the interim,
+      tighten project push-access grants since the whole chain requires only ordinary
+      push rights and no elevated permissions. Broader lesson for supply-chain/dependency
+      visibility: the underlying fix shipped as an unlabeled dependency bump, so teams
+      that gate patching on GitLab's security-advisory feed alone missed it for 44 days;
+      this is a second recent case (after the widely-covered Oj/Puma-style "quiet native
+      C dependency" pattern) of native-C Ruby gems as an underexplored memory-corruption
+      surface in ostensibly memory-safe Ruby applications — depthfirst states it found
+      18 prioritized vulnerabilities (7 memory-safety) in Oj alone via automated scanning
+      and expects more from this class of embedded-native-extension gem.
+    borderline: true
+    borderline_reason: "depthfirst's own post is dated 2026-07-24T12:00Z, ~40h before this run's spawn time — outside the strict 26h window but inside the 72h developing window; The Hacker News and several other outlets continued syndicating/covering it through 2026-07-25, and it was not surfaced by any earlier run in prior_coverage.json (verified via grep — no gitlab/depthfirst/oj-spill hits), so it appears to be genuinely new signal the pipeline has not yet processed rather than recycled news."
+
+candidate_sources:
+  - id: depthfirst
+    publisher: "depthfirst.com (AI-assisted vulnerability-research vendor)"
+    url: "https://depthfirst.com/research/"
+    category: research
+    why: "Primary discloser of the GitLab Oj RCE chain (this run) and of CVE-2026-42945 NGINX Rift (referenced in the entry-template worked example) — an automated vulnerability-discovery vendor producing detailed, PoC-backed memory-corruption research on widely-deployed open-source software (GitLab, NGINX). Publishes dated technical write-ups with exact affected/patched version ranges."
+
+coverage_gaps:
+  - source_id: (majors sweep - Trend Micro Research)
+    reason: "RSS 404 on https://www.trendmicro.com/en_us/research/rss.xml, jina reader pool exhausted (HTTP 402) so no fallback; no WebSearch substitute attempted beyond general queries. No in-window item confirmed either way."
+  - source_id: (majors sweep - Mandiant/GTIG blog)
+    reason: "RSS at https://www.mandiant.com/resources/blog/rss.xml malformed XML, jina fallback exhausted (402); WebSearch for GTIG posts around 2026-07-24/25 found only older (Feb 2026) reports, no in-window GTIG post located."
+  - source_id: (majors sweep - Volexity)
+    reason: "RSS at https://www.volexity.com/blog/feed/ returned 0 items via jina fallback (all direct rungs failed, jina pool exhausted before returning content); WebSearch found only the already-covered UTA0533/SonicWall post (2026-07-17-19, pre-window)."
+  - source_id: (majors sweep - Group-IB)
+    reason: "RSS at https://www.group-ib.com/blog/rss/ returned 404, jina fallback exhausted (402); no alternate in-window Group-IB item located."
+  - source_id: (majors sweep - Sekoia)
+    reason: "RSS at https://blog.sekoia.io/feed/ malformed XML, jina fallback exhausted (402); no alternate in-window Sekoia item located."
+  - source_id: (majors sweep - Dragos/Nozomi/Claroty OT vendors)
+    reason: "All three vendor blog RSS URLs (dragos.com/blog/feed/, nozominetworks.com/blog/feed/, claroty.com/team82/blog/rss.xml) returned 404; jina fallback exhausted (402). WebSearch for Dragos/Nozomi/Claroty OT research in July 2026 surfaced only Dragos's February 2026 annual Year-in-Review report — no in-window OT/ICS-specific vendor post found."
+  - source_id: sansec-research
+    reason: "Fetched via WebFetch; no items published in the last 5 days (most recent 2026-07-02)."
+  - source_id: flatt-security
+    reason: "Fetched via WebFetch; no items published in the last 5+ months (most recent 2026-06-01)."
+  - source_id: vulncheck
+    reason: "Fetched via WebFetch; no items published in the last 3 days (most recent 2026-07-17)."
+  - source_id: shadowserver
+    reason: "Fetched via WebFetch; cadence sparse per source note, no items published in the last 3 days (most recent 2026-06-25)."
+  - source_id: infoguard-labs
+    reason: "Fetched via WebFetch; no items published in the last several weeks (most recent 2026-06-15)."
+  - source_id: truesec
+    reason: "Fetched via WebFetch; no items published in the last several days (most recent 2026-07-20)."
+  - source_id: synacktiv
+    reason: "Fetched via WebFetch; no items published in the last 2 weeks (most recent 2026-07-10)."
+  - source_id: ahnlab-asec
+    reason: "Fetched via WebFetch; only a monthly APT-trend rollup at 2026-07-24 (South Korea domestic APT stats, no new named cluster/technique detail suitable for a standalone item)."
+  - source_id: zimperium-zlabs
+    reason: "Fetched via WebFetch; no items published in the last 9 days (most recent 2026-07-16)."
+  - source_id: withsecure-labs
+    reason: "Fetched via WebFetch; listing page did not surface publication dates for the routine fetch, could not confirm any item as in-window; per source note this is a known limitation of the /publications landing page."
+  - source_id: trustwave-spiderlabs
+    reason: "Fetched via WebFetch; most recent post 2026-07-21 (Exploitarium mass-0-day archive piece), just outside strict 26h window; no fresher item found."
+  - source_id: csa-labs
+    reason: "Fetched via WebFetch; surfaced several 2026-07-24/25 items but all were CSA-labs' own aggregation of stories already covered by this pipeline (SonicWall UTA0533 update_of 2026-07-18/19, Check Point SmartConsole CVE-2026-16232 update_of 2026-07-23/24, LAUNDRY BEAR Zimbra explicitly in the pre-covered list) — verified against prior_coverage.json, no genuinely new item extracted."
+  - source_id: trellix
+    reason: "Fetched via bridge (url); landing page returned only corporate news/leadership items, no dated research/perspectives content reachable without deeper /blogs/research/<slug> navigation which the bridge did not surface."
+
+notes: |
+  Quiet-window run (Sunday, 2026-07-26 UTC). Swept all majors named in the domain
+  brief (Microsoft TI, GTIG/Mandiant, Cisco Talos, Unit 42, Check Point, ESET,
+  Kaspersky Securelist, SentinelLabs, Proofpoint, Trend Micro, CrowdStrike, Volexity,
+  Group-IB, Sekoia, Elastic Security Labs, Recorded Future Insikt, Sophos X-Ops,
+  Huntress, Red Canary, DFIR Report, Dragos/Nozomi/Claroty) plus every source in the
+  assigned rotation slice (work/2026-07-26T0409Z-intel/sources.S3.json). All items
+  surfaced from feeds with fresh (2026-07-23 to 2026-07-25) publish dates were either
+  (a) already in prior_coverage.json (msaRAT/Chaos, UAT-11795/Starland, SANDWORM_MODE,
+  LAUNDRY BEAR/Zimbra, JadePuffer, Check Point AI Security Report, SonicWall UTA0533,
+  Check Point SmartConsole CVE-2026-16232) or (b) roll-up/digest pieces (Talos weekly
+  columns, ESET/Check Point/Unit42 weekly threat-intel bulletins) that are discovery-only
+  per the operating rules, not standalone findings. The one genuinely new item this run
+  is the depthfirst GitLab Oj RCE chain, flagged borderline for its recency edge (see
+  item's borderline_reason). The jina reader pool being exhausted (HTTP 402, per the
+  spawn message's transport note, confirmed empirically on every fallback attempt this
+  run) materially reduced reach into RSS-broken hosts (Volexity, Group-IB, Sekoia,
+  Mandiant, Dragos, Nozomi, Claroty, Trend Micro) — these are logged as coverage gaps,
+  not confirmed misses, since WebSearch substitutes were attempted but cannot fully
+  replace reading the vendor's own current blog listing.
