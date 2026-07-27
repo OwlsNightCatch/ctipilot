@@ -1,0 +1,474 @@
+Title: Security Advisory: Remote Code Execution in fastjson 1.2.68–1.2.83
+
+URL Source: https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83
+
+Markdown Content:
+## Security Advisory: Remote Code Execution in fastjson 1.2.68–1.2.83
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#security-advisory-remote-code-execution-in-fastjson-12681283)
+## 安全公告：fastjson 1.2.68–1.2.83 远程代码执行漏洞
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E5%AE%89%E5%85%A8%E5%85%AC%E5%91%8Afastjson-12681283-%E8%BF%9C%E7%A8%8B%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%BC%8F%E6%B4%9E)
+> **Date / 发布日期**：2026-07-21 **Severity / 严重等级**：🔴 Critical / 严重 **Affected / 影响版本**：fastjson **1.2.68 – 1.2.83** (including 1.2.83, the last 1.x release / 含 1.2.83，即 1.x 最后一个版本) **Not affected / 不影响**：All fastjson2 versions / fastjson2 所有版本
+
+* * *
+
+## English
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#english)
+### Summary
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#summary)
+A remote code execution (RCE) vulnerability exists in fastjson 1.2.68 through 1.2.83. This vulnerability is exploitable under fastjson's **stock default configuration** — no AutoType enablement required, no classpath gadget required.
+
+The only deployment prerequisite is that the target runs as a **Spring Boot executable fat-jar** (i.e., launched via `java -jar xxx.jar`). This is the most common Spring Boot deployment model.
+
+Verified end-to-end on Spring Boot 2.x / 3.x / 4.x and JDK 8 / 11 / 17 / 21.
+
+### Affected
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#affected)
+| Condition | Detail |
+| --- | --- |
+| fastjson version | **1.2.68 – 1.2.83** |
+| Configuration | AutoType OFF + SafeMode OFF (**stock defaults**) |
+| Deployment | Spring Boot executable fat-jar |
+| JDK | 8 / 11 / 17 / 21 verified |
+| Spring Boot | 2.x / 3.x / 4.x verified |
+| Entry points | `JSON.parse`, `JSON.parseObject(String)`, `JSON.parseObject(String, Class)` all reachable |
+
+> ⚠️ Specifying a target class (e.g., `JSON.parseObject(body, SomeDto.class)`) is **not** a mitigation — attackers can nest payloads inside Object/Map-typed fields of the DTO.
+
+### Not Affected
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#not-affected)
+| Condition | Reason |
+| --- | --- |
+| **All fastjson2 versions** | Root cause architecturally eliminated |
+| SafeMode = true | Rejects all `@type` before the vulnerable path is reached |
+| noneautotype builds | Vulnerable code removed at compile time |
+| Non-fat-jar deployments | plain `java -jar`, uber-jar, Tomcat/Jetty WAR do not meet the trigger condition |
+| fastjson ≤ 1.2.60 | Vulnerable code path does not exist |
+
+### fastjson2 Is Not Affected
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson2-is-not-affected)
+fastjson2 architecturally eliminates the root cause of this vulnerability:
+
+*   **No resource probing**: The type resolution path contains no `getResourceAsStream` call on user-controlled class names; class loading uses only `ClassLoader.loadClass()` and `Class.forName()`
+*   **No annotation-based trust bypass**: The `@JSONType` annotation is used solely for serialization configuration, not as a trust signal in type resolution
+*   **Allowlist-first model**: Types must match an allowlist or be explicitly approved by an `AutoTypeBeforeHandler`; otherwise they are rejected with no secondary escape path
+*   **autoType disabled by default**: `SupportAutoType` is off by default, deprecated, and carries a security warning
+
+fastjson2 users need take no action regarding this vulnerability.
+
+### Remediation
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#remediation)
+#### fastjson 1.x users
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson-1x-users)
+| Priority | Action | Detail |
+| --- | --- | --- |
+| **P0** | Enable SafeMode | `-Dfastjson.parser.safeMode=true`, or `ParserConfig.getGlobalInstance().setSafeMode(true)`, or set in `fastjson.properties` |
+| **P0** | Or switch to a noneautotype build | Maven example: `com.alibaba:fastjson:1.2.83_noneautotype` |
+| **P1** | Migrate to fastjson2 | Architecturally eliminates this vulnerability; safe under default configuration |
+
+#### fastjson2 users
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson2-users)
+No action required for this vulnerability. General security practices:
+
+*   Do not explicitly enable `JSONReader.Feature.SupportAutoType` (deprecated)
+*   If autoType capability is genuinely needed, use `ContextAutoTypeBeforeHandler` with a strict allowlist
+
+### Acknowledgements
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#acknowledgements)
+We thank Kirill Firsov of FearsOff Cybersecurity for discovering and responsibly disclosing this vulnerability.
+
+* * *
+
+## 中文
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E4%B8%AD%E6%96%87)
+### 概述
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E6%A6%82%E8%BF%B0)
+fastjson 1.2.68 至 1.2.83 存在一条远程代码执行（RCE）漏洞。该漏洞在 fastjson 的**默认配置**下即可触发——无需开启 AutoType，无需 classpath 上存在任何 gadget 类。
+
+唯一的部署前置条件是目标运行在 **Spring Boot 可执行 fat-jar** 模式下（即通过 `java -jar xxx.jar` 启动）。该模式是 Spring Boot 应用最常见的部署方式。
+
+已在 Spring Boot 2.x / 3.x / 4.x，JDK 8 / 11 / 17 / 21 上完成端到端验证。
+
+### 受影响
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E5%8F%97%E5%BD%B1%E5%93%8D)
+| 条件 | 说明 |
+| --- | --- |
+| fastjson 版本 | **1.2.68 – 1.2.83** |
+| 配置 | AutoType OFF + SafeMode OFF（**即默认配置**） |
+| 部署方式 | Spring Boot 可执行 fat-jar |
+| JDK | 8 / 11 / 17 / 21 均验证 |
+| Spring Boot | 2.x / 3.x / 4.x 均验证 |
+| 入口 | `JSON.parse`、`JSON.parseObject(String)`、`JSON.parseObject(String, Class)` 均可达 |
+
+> ⚠️ 指定目标 Class（如 `JSON.parseObject(body, SomeDto.class)`）**不是**缓解措施——攻击者可通过 DTO 中 Object / Map 类型的字段嵌套 payload。
+
+### 不受影响
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E4%B8%8D%E5%8F%97%E5%BD%B1%E5%93%8D)
+| 条件 | 原因 |
+| --- | --- |
+| **fastjson2 所有版本** | 架构上已消除此漏洞根因 |
+| SafeMode = true | 在漏洞触发路径之前即拒绝所有 `@type` |
+| noneautotype 版本 | 漏洞相关代码在编译期被移除 |
+| 非 fat-jar 部署 | plain `java -jar`、uber-jar、Tomcat/Jetty WAR 部署不满足触发条件 |
+| fastjson ≤ 1.2.60 | 不存在漏洞相关代码路径 |
+
+### fastjson2 不受影响
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson2-%E4%B8%8D%E5%8F%97%E5%BD%B1%E5%93%8D)
+fastjson2 从架构上消除了此漏洞的根因：
+
+*   **无资源探测**：类型解析路径中不存在基于用户可控类名的 `getResourceAsStream` 调用，类加载仅使用 `ClassLoader.loadClass()` 和 `Class.forName()`
+*   **无注解信任绕过**：`@JSONType` 注解仅用于序列化配置，不作为类型解析的信任判据
+*   **白名单优先**：类型必须匹配白名单或经 `AutoTypeBeforeHandler` 显式批准，否则直接拒绝，无二次逃逸路径
+*   **autoType 默认关闭**：`SupportAutoType` 默认不启用，且已标记 `@Deprecated` 并附有安全警告
+
+fastjson2 用户无需针对此漏洞采取任何行动。
+
+### 修复建议
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E4%BF%AE%E5%A4%8D%E5%BB%BA%E8%AE%AE)
+#### fastjson 1.x 用户
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson-1x-%E7%94%A8%E6%88%B7)
+| 优先级 | 措施 | 说明 |
+| --- | --- | --- |
+| **P0** | 启用 SafeMode | `-Dfastjson.parser.safeMode=true`，或 `ParserConfig.getGlobalInstance().setSafeMode(true)`，或在 `fastjson.properties` 中设置 |
+| **P0** | 或切换 noneautotype 版本 | Maven 坐标示例：`com.alibaba:fastjson:1.2.83_noneautotype` |
+| **P1** | 迁移至 fastjson2 | 从架构上消除此漏洞，且默认配置即安全 |
+
+#### fastjson2 用户
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#fastjson2-%E7%94%A8%E6%88%B7)
+无需针对此漏洞采取任何行动。一般性安全实践：
+
+*   避免显式启用 `JSONReader.Feature.SupportAutoType`（已废弃）
+*   如确需 autoType 能力，使用 `ContextAutoTypeBeforeHandler` 配置严格白名单
+
+### 致谢
+
+[](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E8%87%B4%E8%B0%A2)
+感谢 FearsOff Cybersecurity 的 Kirill Firsov 发现并负责任地披露了该漏洞。
+
+Links/Buttons:
+- [Skip to content](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#start-of-content)
+- [](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#%E8%87%B4%E8%B0%A2)
+- [Sign in](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Falibaba%2Ffastjson2%2Fwiki%2FSecurity-Advisory%3A-Remote-Code-Execution-in-fastjson-1.2.68%25E2%2580%25931.2.83)
+- [GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+- [GitHub Copilot appDirect agents from issue to merge](https://github.com/features/ai/github-app)
+- [MCP RegistryNewIntegrate external tools](https://github.com/mcp)
+- [ActionsAutomate any workflow](https://github.com/features/actions)
+- [CodespacesInstant dev environments](https://github.com/features/codespaces)
+- [IssuesPlan and track work](https://github.com/features/issues)
+- [Code ReviewManage code changes](https://github.com/features/code-review)
+- [Code QualityEnforce quality at merge](https://github.com/features/code-quality)
+- [GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+- [Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+- [Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- [Why GitHub](https://github.com/why-github)
+- [Documentation](https://docs.github.com/)
+- [Blog](https://github.blog/)
+- [Changelog](https://github.blog/changelog)
+- [Marketplace](https://github.com/marketplace)
+- [View all features](https://github.com/features)
+- [Enterprises](https://github.com/enterprise)
+- [Small and medium teams](https://github.com/team)
+- [Startups](https://github.com/enterprise/startups)
+- [Nonprofits](https://github.com/solutions/industry/nonprofits)
+- [App Modernization](https://github.com/solutions/use-case/app-modernization)
+- [DevSecOps](https://github.com/solutions/use-case/devsecops)
+- [DevOps](https://github.com/resources/articles?topic=devops)
+- [CI/CD](https://github.com/solutions/use-case/ci-cd)
+- [View all use cases](https://github.com/solutions/use-case)
+- [Healthcare](https://github.com/solutions/industry/healthcare)
+- [Financial services](https://github.com/solutions/industry/financial-services)
+- [Manufacturing](https://github.com/solutions/industry/manufacturing)
+- [Government](https://github.com/solutions/industry/government)
+- [View all industries](https://github.com/solutions/industry)
+- [View all solutions](https://github.com/solutions)
+- [AI](https://github.com/resources/articles?topic=ai)
+- [Software Development](https://github.com/resources/articles?topic=software-development)
+- [Security](https://github.com/security)
+- [View all topics](https://github.com/resources/articles)
+- [Customer stories](https://github.com/customer-stories)
+- [Events & webinars](https://github.com/resources/events)
+- [Ebooks & reports](https://github.com/resources/whitepapers)
+- [Business insights](https://github.com/solutions/executive-insights)
+- [GitHub Skills](https://skills.github.com/)
+- [Customer support](https://support.github.com/)
+- [Community forum](https://github.com/orgs/community/discussions)
+- [Trust center](https://github.com/trust-center)
+- [Partners](https://github.com/partners)
+- [View all resources](https://github.com/resources)
+- [GitHub SponsorsFund open source developers](https://github.com/open-source/sponsors)
+- [Security Lab](https://securitylab.github.com/)
+- [Maintainer Community](https://maintainers.github.com/)
+- [Accelerator](https://github.com/open-source/accelerator)
+- [GitHub Stars](https://stars.github.com/)
+- [Archive Program](https://archiveprogram.github.com/)
+- [Topics](https://github.com/topics)
+- [Trending](https://github.com/trending)
+- [Collections](https://github.com/collections)
+- [Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+- [Premium SupportEnterprise-grade 24/7 support](https://github.com/enterprise/premium-support)
+- [Pricing](https://github.com/pricing)
+- [Search syntax tips](https://docs.github.com/search-github/github-code-search/understanding-github-code-search-syntax)
+- [Sign up](https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Fwiki%2Fshow&source=header-repo&source_repo=alibaba%2Ffastjson2)
+- [alibaba](https://github.com/alibaba)
+- [fastjson2](https://github.com/alibaba/fastjson2)
+- [Notifications](https://github.com/login?return_to=%2Falibaba%2Ffastjson2)
+- [Issues 657](https://github.com/alibaba/fastjson2/issues)
+- [Pull requests 43](https://github.com/alibaba/fastjson2/pulls)
+- [Actions](https://github.com/alibaba/fastjson2/actions)
+- [Wiki](https://github.com/alibaba/fastjson2/wiki)
+- [Security and quality 0](https://github.com/alibaba/fastjson2/security)
+- [Insights](https://github.com/alibaba/fastjson2/pulse)
+- [Jump to bottom](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83#wiki-pages-box)
+- [2 revisions](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83/_history)
+- [array_to_map_cn](https://github.com/alibaba/fastjson2/wiki/array_to_map_cn)
+- [JSONField支持配置arrayToMapKey，支持将JSON数组映射到Map类型字段](https://github.com/alibaba/fastjson2/wiki/array_to_map_cn#jsonfield%E6%94%AF%E6%8C%81%E9%85%8D%E7%BD%AEarraytomapkey%E6%94%AF%E6%8C%81%E5%B0%86json%E6%95%B0%E7%BB%84%E6%98%A0%E5%B0%84%E5%88%B0map%E7%B1%BB%E5%9E%8B%E5%AD%97%E6%AE%B5)
+- [benchmark_2.0.7_aarch64](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64)
+- [1. 测试环境](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#1-%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83)
+- [1.1 JDK](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#11-jdk)
+- [1.2 JSON库的版本](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#12-json%E5%BA%93%E7%9A%84%E7%89%88%E6%9C%AC)
+- [1.3 测试代码](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#13-%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81)
+- [2. Parse String to Tree](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#2-parse-string-to-tree)
+- [JDK 8](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#jdk-8-7)
+- [JDK 11](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#jdk-11-8)
+- [JDK 17](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#jdk-17-8)
+- [3. Pars String to Java Bean](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#3-pars-string-to-java-bean)
+- [4. Parse UTF8 Bytes to Java Bean](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#4-parse-utf8-bytes-to-java-bean)
+- [JDK8](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#jdk8)
+- [5. Parse UTF8 Bytes to JSONObject](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#5-parse-utf8-bytes-to-jsonobject)
+- [6. Parse Pretty UTF8 Bytes to Java Bean](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#6-parse-pretty-utf8-bytes-to-java-bean)
+- [7. Write JavaBean to String](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#7-write-javabean-to-string)
+- [8. Write JavaBean to UTF8 Bytes](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#8-write-javabean-to-utf8-bytes)
+- [9. Write JavaBean to Binary](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#9-write-javabean-to-binary)
+- [10. Read Binary to JavaBean](https://github.com/alibaba/fastjson2/wiki/benchmark_2.0.7_aarch64#10-read-binary-to-javabean)
+- [design_doc_cn](https://github.com/alibaba/fastjson2/wiki/design_doc_cn)
+- [1. 使用场景](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#1-%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF)
+- [1.1 服务器应用](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#11-%E6%9C%8D%E5%8A%A1%E5%99%A8%E5%BA%94%E7%94%A8)
+- [1.2 大数据](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#12-%E5%A4%A7%E6%95%B0%E6%8D%AE)
+- [1.3 Android客户端](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#13-android%E5%AE%A2%E6%88%B7%E7%AB%AF)
+- [2. 类图](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#2-%E7%B1%BB%E5%9B%BE)
+- [1.1 Reader类结构](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#11-reader%E7%B1%BB%E7%BB%93%E6%9E%84)
+- [2.2 Writer类结构](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#22-writer%E7%B1%BB%E7%BB%93%E6%9E%84)
+- [3. 解析关键算法](https://github.com/alibaba/fastjson2/wiki/design_doc_cn#3-%E8%A7%A3%E6%9E%90%E5%85%B3%E9%94%AE%E7%AE%97%E6%B3%95)
+- [eishay_jvm_serializers_benchmark](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark)
+- [Test Platform](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#test-platform)
+- [Disclaimer](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#disclaimer)
+- [Serializers (no shared refs)](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#serializers-no-shared-refs)
+- [Full Object Graph Serializers](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#full-object-graph-serializers)
+- [Cross Lang Binary Serializers](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#cross-lang-binary-serializers)
+- [XML/JSon Serializers](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#xmljson-serializers)
+- [Manually optimized Serializers](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#manually-optimized-serializers)
+- [Cost of features](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#cost-of-features)
+- [Full data](https://github.com/alibaba/fastjson2/wiki/eishay_jvm_serializers_benchmark#full-data)
+- [faq_cn](https://github.com/alibaba/fastjson2/wiki/faq_cn)
+- [Q1. 如何获得fastjson2](https://github.com/alibaba/fastjson2/wiki/faq_cn#q1-%E5%A6%82%E4%BD%95%E8%8E%B7%E5%BE%97fastjson2)
+- [Q2. fastjson2支持的JDK版本有哪些？](https://github.com/alibaba/fastjson2/wiki/faq_cn#q2-fastjson2%E6%94%AF%E6%8C%81%E7%9A%84jdk%E7%89%88%E6%9C%AC%E6%9C%89%E5%93%AA%E4%BA%9B)
+- [Q3. fastjson2支持Android么？](https://github.com/alibaba/fastjson2/wiki/faq_cn#q3-fastjson2%E6%94%AF%E6%8C%81android%E4%B9%88)
+- [Q4. fastjson2支持输入和输入为byte[]么？](https://github.com/alibaba/fastjson2/wiki/faq_cn#q4-fastjson2%E6%94%AF%E6%8C%81%E8%BE%93%E5%85%A5%E5%92%8C%E8%BE%93%E5%85%A5%E4%B8%BAbyte%E4%B9%88)
+- [Q5. fastjson2是否兼容Jackson的Annotation？](https://github.com/alibaba/fastjson2/wiki/faq_cn#q5-fastjson2%E6%98%AF%E5%90%A6%E5%85%BC%E5%AE%B9jackson%E7%9A%84annotation)
+- [Q6. 如何自定义日期格式](https://github.com/alibaba/fastjson2/wiki/faq_cn#q6-%E5%A6%82%E4%BD%95%E8%87%AA%E5%AE%9A%E4%B9%89%E6%97%A5%E6%9C%9F%E6%A0%BC%E5%BC%8F)
+- [Q7. 如何解决返回较大整数javascript丢失精度问题](https://github.com/alibaba/fastjson2/wiki/faq_cn#q7-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E8%BF%94%E5%9B%9E%E8%BE%83%E5%A4%A7%E6%95%B4%E6%95%B0javascript%E4%B8%A2%E5%A4%B1%E7%B2%BE%E5%BA%A6%E9%97%AE%E9%A2%98)
+- [Q8. 如何解决返回JSON数据中带XSS攻击脚本的问题](https://github.com/alibaba/fastjson2/wiki/faq_cn#q8-%E5%A6%82%E4%BD%95%E8%A7%A3%E5%86%B3%E8%BF%94%E5%9B%9Ejson%E6%95%B0%E6%8D%AE%E4%B8%AD%E5%B8%A6xss%E6%94%BB%E5%87%BB%E8%84%9A%E6%9C%AC%E7%9A%84%E9%97%AE%E9%A2%98)
+- [Q9. 如何做全局配置](https://github.com/alibaba/fastjson2/wiki/faq_cn#q9-%E5%A6%82%E4%BD%95%E5%81%9A%E5%85%A8%E5%B1%80%E9%85%8D%E7%BD%AE)
+- [fastjson2_annotations](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations)
+- [FASTJSON2提供的Annotations](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#fastjson2%E6%8F%90%E4%BE%9B%E7%9A%84annotations)
+- [1. JSONField](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#1-jsonfield)
+- [1.1 定制名字序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#11-%E5%AE%9A%E5%88%B6%E5%90%8D%E5%AD%97%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [1.2 配置字段输出和反序列化的格式](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#12-%E9%85%8D%E7%BD%AE%E5%AD%97%E6%AE%B5%E8%BE%93%E5%87%BA%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E6%A0%BC%E5%BC%8F)
+- [1.3 忽略字段](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#13-%E5%BF%BD%E7%95%A5%E5%AD%97%E6%AE%B5)
+- [1.4 配置字段的序列化输出的的顺序](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#14-%E9%85%8D%E7%BD%AE%E5%AD%97%E6%AE%B5%E7%9A%84%E5%BA%8F%E5%88%97%E5%8C%96%E8%BE%93%E5%87%BA%E7%9A%84%E7%9A%84%E9%A1%BA%E5%BA%8F)
+- [1.5 配置序列化Features](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#15-%E9%85%8D%E7%BD%AE%E5%BA%8F%E5%88%97%E5%8C%96features)
+- [2. JSONType](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#2-jsontype)
+- [2.1 配置序列化和反序列化忽略的字段](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#21-%E9%85%8D%E7%BD%AE%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E5%BF%BD%E7%95%A5%E7%9A%84%E5%AD%97%E6%AE%B5)
+- [3. 基于mixin机制注入Annotation](https://github.com/alibaba/fastjson2/wiki/fastjson2_annotations#3-%E5%9F%BA%E4%BA%8Emixin%E6%9C%BA%E5%88%B6%E6%B3%A8%E5%85%A5annotation)
+- [fastjson2_autotype_cn](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn)
+- [FASTJSON 2 Autotype机制介绍](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#fastjson-2-autotype%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D)
+- [1. AutoType功能介绍](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#1-autotype%E5%8A%9F%E8%83%BD%E4%BB%8B%E7%BB%8D)
+- [2. AutoType安全机制介绍](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#2-autotype%E5%AE%89%E5%85%A8%E6%9C%BA%E5%88%B6%E4%BB%8B%E7%BB%8D)
+- [3. AutoType功能使用介绍](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#3-autotype%E5%8A%9F%E8%83%BD%E4%BD%BF%E7%94%A8%E4%BB%8B%E7%BB%8D)
+- [3.1 序列化时带上类型信息](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#31-%E5%BA%8F%E5%88%97%E5%8C%96%E6%97%B6%E5%B8%A6%E4%B8%8A%E7%B1%BB%E5%9E%8B%E4%BF%A1%E6%81%AF)
+- [3.2 反序列化时打开AutoType功能以支持自动类型](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#32-%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E6%97%B6%E6%89%93%E5%BC%80autotype%E5%8A%9F%E8%83%BD%E4%BB%A5%E6%94%AF%E6%8C%81%E8%87%AA%E5%8A%A8%E7%B1%BB%E5%9E%8B)
+- [4. 配置safeMode](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#4-%E9%85%8D%E7%BD%AEsafemode)
+- [4.1 JVM启动参数配置](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#41-jvm%E5%90%AF%E5%8A%A8%E5%8F%82%E6%95%B0%E9%85%8D%E7%BD%AE)
+- [5. 使用AutoTypeFilter在不打开AutoTypeSupport时实现自动类型](https://github.com/alibaba/fastjson2/wiki/fastjson2_autotype_cn#5-%E4%BD%BF%E7%94%A8autotypefilter%E5%9C%A8%E4%B8%8D%E6%89%93%E5%BC%80autotypesupport%E6%97%B6%E5%AE%9E%E7%8E%B0%E8%87%AA%E5%8A%A8%E7%B1%BB%E5%9E%8B)
+- [fastjson2_intro_cn](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn)
+- [0. FASTJSON 2.0介绍](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#0-fastjson-20%E4%BB%8B%E7%BB%8D)
+- [1. 使用准备](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#1-%E4%BD%BF%E7%94%A8%E5%87%86%E5%A4%87)
+- [1.1 添加依赖](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#11-%E6%B7%BB%E5%8A%A0%E4%BE%9D%E8%B5%96)
+- [1.2 其他模块](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#12-%E5%85%B6%E4%BB%96%E6%A8%A1%E5%9D%97)
+- [Fastjson v1兼容模块](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#fastjson-v1%E5%85%BC%E5%AE%B9%E6%A8%A1%E5%9D%97)
+- [Fastjson Kotlin集成模块](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#fastjson-kotlin%E9%9B%86%E6%88%90%E6%A8%A1%E5%9D%97)
+- [2 简单使用](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#2-%E7%AE%80%E5%8D%95%E4%BD%BF%E7%94%A8)
+- [2.1 将JSON解析为JSONObject](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#21-%E5%B0%86json%E8%A7%A3%E6%9E%90%E4%B8%BAjsonobject)
+- [2.2 将JSON解析为JSONArray](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#22-%E5%B0%86json%E8%A7%A3%E6%9E%90%E4%B8%BAjsonarray)
+- [2.3 将JSON解析为Java对象](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#23-%E5%B0%86json%E8%A7%A3%E6%9E%90%E4%B8%BAjava%E5%AF%B9%E8%B1%A1)
+- [2.4 将Java对象序列化为JSON](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#24-%E5%B0%86java%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%BAjson)
+- [2.5 使用JSONObject、JSONArray](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#25-%E4%BD%BF%E7%94%A8jsonobjectjsonarray)
+- [2.5.1 获取简单属性](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#251-%E8%8E%B7%E5%8F%96%E7%AE%80%E5%8D%95%E5%B1%9E%E6%80%A7)
+- [2.5.2 读取JavaBean](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#252-%E8%AF%BB%E5%8F%96javabean)
+- [2.5.3 转为JavaBean](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#253-%E8%BD%AC%E4%B8%BAjavabean)
+- [2.6 将JavaBean对象序列化为JSON](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#26-%E5%B0%86javabean%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%BAjson)
+- [3. 进阶使用](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#3-%E8%BF%9B%E9%98%B6%E4%BD%BF%E7%94%A8)
+- [3.1 使用JSONB](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#31-%E4%BD%BF%E7%94%A8jsonb)
+- [3.1.1 将JavaBean对象序列化JSONB](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#311-%E5%B0%86javabean%E5%AF%B9%E8%B1%A1%E5%BA%8F%E5%88%97%E5%8C%96jsonb)
+- [3.1.2 将JSONB数据解析为JavaBean](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#312-%E5%B0%86jsonb%E6%95%B0%E6%8D%AE%E8%A7%A3%E6%9E%90%E4%B8%BAjavabean)
+- [3.2 使用JSONPath](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#32-%E4%BD%BF%E7%94%A8jsonpath)
+- [3.2.1 使用JSONPath读取部分数据](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#321-%E4%BD%BF%E7%94%A8jsonpath%E8%AF%BB%E5%8F%96%E9%83%A8%E5%88%86%E6%95%B0%E6%8D%AE)
+- [3.2.2 使用JSONPath读取部分byte[]的数据](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#322-%E4%BD%BF%E7%94%A8jsonpath%E8%AF%BB%E5%8F%96%E9%83%A8%E5%88%86byte%E7%9A%84%E6%95%B0%E6%8D%AE)
+- [3.2.3 使用JSONPath读取部分byte[]的数据](https://github.com/alibaba/fastjson2/wiki/fastjson2_intro_cn#323-%E4%BD%BF%E7%94%A8jsonpath%E8%AF%BB%E5%8F%96%E9%83%A8%E5%88%86byte%E7%9A%84%E6%95%B0%E6%8D%AE)
+- [fastjson2_vs_simdjson](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson)
+- [SchemaBasedParseAndSelectBenchmark](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson#schemabasedparseandselectbenchmark)
+- [0. Script](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson#0-script)
+- [1. aliyun c8a](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson#1-aliyun-c8a)
+- [2. aliyun c8i](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson#2-aliyun-c8i)
+- [3. aws c5.xlarge](https://github.com/alibaba/fastjson2/wiki/fastjson2_vs_simdjson#3-aws-c5xlarge)
+- [fastjson_1_upgrade_cn](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn)
+- [FASTJSON 1.x升级指南](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#fastjson-1x%E5%8D%87%E7%BA%A7%E6%8C%87%E5%8D%97)
+- [1. 为什么要升级](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#1-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%8D%87%E7%BA%A7)
+- [2. 如何升级](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#2-%E5%A6%82%E4%BD%95%E5%8D%87%E7%BA%A7)
+- [2.1. 如何获得最新版本](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#21-%E5%A6%82%E4%BD%95%E8%8E%B7%E5%BE%97%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC)
+- [2.2. 兼容模式升级](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#22-%E5%85%BC%E5%AE%B9%E6%A8%A1%E5%BC%8F%E5%8D%87%E7%BA%A7)
+- [2.3. 使用新API升级](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#23-%E4%BD%BF%E7%94%A8%E6%96%B0api%E5%8D%87%E7%BA%A7)
+- [3. 常见问题](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#3-%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+- [3.1. ParserConfig.getGlobalInstance().addAccept()如何兼容](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#31-parserconfiggetglobalinstanceaddaccept%E5%A6%82%E4%BD%95%E5%85%BC%E5%AE%B9)
+- [3.2. ObjectSerializer 和 ObjectDeserializer 被移除了，有什么新的代替方案](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#32-objectserializer-%E5%92%8C-objectdeserializer-%E8%A2%AB%E7%A7%BB%E9%99%A4%E4%BA%86%E6%9C%89%E4%BB%80%E4%B9%88%E6%96%B0%E7%9A%84%E4%BB%A3%E6%9B%BF%E6%96%B9%E6%A1%88)
+- [3.3. 常见的类扩展升级映射](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#33-%E5%B8%B8%E8%A7%81%E7%9A%84%E7%B1%BB%E6%89%A9%E5%B1%95%E5%8D%87%E7%BA%A7%E6%98%A0%E5%B0%84)
+- [3.4 SerializerFeature.UseISO8601DateFormat在fastjson2的替代方案](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#34-serializerfeatureuseiso8601dateformat%E5%9C%A8fastjson2%E7%9A%84%E6%9B%BF%E4%BB%A3%E6%96%B9%E6%A1%88)
+- [3.5 SerializerFeature.DisableCircularReferenceDetect在fastjson2的替代方案](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#35-serializerfeaturedisablecircularreferencedetect%E5%9C%A8fastjson2%E7%9A%84%E6%9B%BF%E4%BB%A3%E6%96%B9%E6%A1%88)
+- [3.6 SerializerFeature.SortField在fastjson2的替代方案](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#36-serializerfeaturesortfield%E5%9C%A8fastjson2%E7%9A%84%E6%9B%BF%E4%BB%A3%E6%96%B9%E6%A1%88)
+- [3.7 SerializerFeature.WriteDateUseDateFormat在fastjson2的替代方案](https://github.com/alibaba/fastjson2/wiki/fastjson_1_upgrade_cn#37-serializerfeaturewritedateusedateformat%E5%9C%A8fastjson2%E7%9A%84%E6%9B%BF%E4%BB%A3%E6%96%B9%E6%A1%88)
+- [fastjson_benchmark](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark)
+- [1.1 各个库的版本](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#11-%E5%90%84%E4%B8%AA%E5%BA%93%E7%9A%84%E7%89%88%E6%9C%AC)
+- [1.2 服务器环境](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#12-%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%8E%AF%E5%A2%83)
+- [ecs.c8i.xlarge](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#ecsc8ixlarge)
+- [ecs.c8y.xlarge](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#ecsc8yxlarge)
+- [Orange Pi 5 Plus](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#orange-pi-5-plus)
+- [1.3 JDK版本](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#13-jdk%E7%89%88%E6%9C%AC)
+- [1.4 测试代码以及运行方式](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#14-%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81%E4%BB%A5%E5%8F%8A%E8%BF%90%E8%A1%8C%E6%96%B9%E5%BC%8F)
+- [2. 测试数据&结果分析](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#2-%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%9C%E5%88%86%E6%9E%90)
+- [2.1 EishayParseString](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#21-eishayparsestring)
+- [4 EishayParseString](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#4-eishayparsestring)
+- [2.2 EishayParseStringPretty](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#22-eishayparsestringpretty)
+- [2.3 EishayParseTreeString](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#23-eishayparsetreestring)
+- [2.4 EishayParseUTF8Bytes](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#24-eishayparseutf8bytes)
+- [2.5 EishayWriteString](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#25-eishaywritestring)
+- [2.6 EishayWriteUTF8Bytes](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#26-eishaywriteutf8bytes)
+- [2.7 EishayWriteStringTree](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#27-eishaywritestringtree)
+- [2.8 EishayWriteBinaryAutoType](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#28-eishaywritebinaryautotype)
+- [2.9 EishayParseBinaryAutoType](https://github.com/alibaba/fastjson2/wiki/fastjson_benchmark#29-eishayparsebinaryautotype)
+- [fastjson_string_codec_methods](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods)
+- [FASTJSON2提升Java字符串编码解码性能的技巧](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#fastjson2%E6%8F%90%E5%8D%87java%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%BC%96%E7%A0%81%E8%A7%A3%E7%A0%81%E6%80%A7%E8%83%BD%E7%9A%84%E6%8A%80%E5%B7%A7)
+- [1. 常见字符串编码](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#1-%E5%B8%B8%E8%A7%81%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%BC%96%E7%A0%81)
+- [2. 编码转换性能](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#2-%E7%BC%96%E7%A0%81%E8%BD%AC%E6%8D%A2%E6%80%A7%E8%83%BD)
+- [3. Java String的编码](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#3-java-string%E7%9A%84%E7%BC%96%E7%A0%81)
+- [3.1. JDK 6之前的String实现](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#31-jdk-6%E4%B9%8B%E5%89%8D%E7%9A%84string%E5%AE%9E%E7%8E%B0)
+- [3.2. JDK 7/8的String实现](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#32-jdk-78%E7%9A%84string%E5%AE%9E%E7%8E%B0)
+- [3.3. JDK 9/10/11的实现](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#33-jdk-91011%E7%9A%84%E5%AE%9E%E7%8E%B0)
+- [4. 快速构造字符串的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#4-%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%96%B9%E6%B3%95)
+- [4.1 基于MethodHandles.Lookup & LambdaMetafactory绑定反射的快速构造字符串的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#41-%E5%9F%BA%E4%BA%8Emethodhandleslookup--lambdametafactory%E7%BB%91%E5%AE%9A%E5%8F%8D%E5%B0%84%E7%9A%84%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%96%B9%E6%B3%95)
+- [4.1.1 JDK8快速构造字符串](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#411-jdk8%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2)
+- [4.1.2 JDK 11快速构造字符串的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#412-jdk-11%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%96%B9%E6%B3%95)
+- [4.1.3 JDK 17快速构造字符串的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#413-jdk-17%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%96%B9%E6%B3%95)
+- [4.2 基于JavaLangAccess快速构造](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#42-%E5%9F%BA%E4%BA%8Ejavalangaccess%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0)
+- [4.3 基于Unsafe实现快速构造字符串](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#43-%E5%9F%BA%E4%BA%8Eunsafe%E5%AE%9E%E7%8E%B0%E5%BF%AB%E9%80%9F%E6%9E%84%E9%80%A0%E5%AD%97%E7%AC%A6%E4%B8%B2)
+- [4.4 快速构建字符串的技巧应用：](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#44-%E5%BF%AB%E9%80%9F%E6%9E%84%E5%BB%BA%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%8A%80%E5%B7%A7%E5%BA%94%E7%94%A8)
+- [5. 快速遍历字符串的办法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#5-%E5%BF%AB%E9%80%9F%E9%81%8D%E5%8E%86%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E5%8A%9E%E6%B3%95)
+- [5.1 获取String.value的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#51-%E8%8E%B7%E5%8F%96stringvalue%E7%9A%84%E6%96%B9%E6%B3%95)
+- [5.1.1 使用反射获取String.value](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#511-%E4%BD%BF%E7%94%A8%E5%8F%8D%E5%B0%84%E8%8E%B7%E5%8F%96stringvalue)
+- [5.1.2 使用Unsafe获取String.value](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#512-%E4%BD%BF%E7%94%A8unsafe%E8%8E%B7%E5%8F%96stringvalue)
+- [6. 更快的encodeUTF8方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#6-%E6%9B%B4%E5%BF%AB%E7%9A%84encodeutf8%E6%96%B9%E6%B3%95)
+- [6.1 JDK8高性能encodeUTF8的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#61-jdk8%E9%AB%98%E6%80%A7%E8%83%BDencodeutf8%E7%9A%84%E6%96%B9%E6%B3%95)
+- [6.1.1 性能测试比较](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#611-%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95%E6%AF%94%E8%BE%83)
+- [6.2 JDK9/11/17高性能encodeUTF8的方法](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#62-jdk91117%E9%AB%98%E6%80%A7%E8%83%BDencodeutf8%E7%9A%84%E6%96%B9%E6%B3%95)
+- [7. 重要提醒](https://github.com/alibaba/fastjson2/wiki/fastjson_string_codec_methods#7-%E9%87%8D%E8%A6%81%E6%8F%90%E9%86%92)
+- [Features_cn](https://github.com/alibaba/fastjson2/wiki/Features_cn)
+- [通过Features配置序列化和反序列化的行为](https://github.com/alibaba/fastjson2/wiki/Features_cn#%E9%80%9A%E8%BF%87features%E9%85%8D%E7%BD%AE%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E8%A1%8C%E4%B8%BA)
+- [1. Feature介绍](https://github.com/alibaba/fastjson2/wiki/Features_cn#1-feature%E4%BB%8B%E7%BB%8D)
+- [2. 在JSON的toJSONString和parse方法中使用Feature](https://github.com/alibaba/fastjson2/wiki/Features_cn#2-%E5%9C%A8json%E7%9A%84tojsonstring%E5%92%8Cparse%E6%96%B9%E6%B3%95%E4%B8%AD%E4%BD%BF%E7%94%A8feature)
+- [2.1 在JSON的toJSONString方法中使用JSONWriter.Feature](https://github.com/alibaba/fastjson2/wiki/Features_cn#21-%E5%9C%A8json%E7%9A%84tojsonstring%E6%96%B9%E6%B3%95%E4%B8%AD%E4%BD%BF%E7%94%A8jsonwriterfeature)
+- [2.2 在JSON的parse方法中使用JSONReader.Feature](https://github.com/alibaba/fastjson2/wiki/Features_cn#22-%E5%9C%A8json%E7%9A%84parse%E6%96%B9%E6%B3%95%E4%B8%AD%E4%BD%BF%E7%94%A8jsonreaderfeature)
+- [3. 在JSONField和JSONType上配置features](https://github.com/alibaba/fastjson2/wiki/Features_cn#3-%E5%9C%A8jsonfield%E5%92%8Cjsontype%E4%B8%8A%E9%85%8D%E7%BD%AEfeatures)
+- [4. JSONReader.Feature介绍](https://github.com/alibaba/fastjson2/wiki/Features_cn#4-jsonreaderfeature%E4%BB%8B%E7%BB%8D)
+- [5. JSONWriter.Feature介绍](https://github.com/alibaba/fastjson2/wiki/Features_cn#5-jsonwriterfeature%E4%BB%8B%E7%BB%8D)
+- [jit_optimization](https://github.com/alibaba/fastjson2/wiki/jit_optimization)
+- [1. 参数说明](https://github.com/alibaba/fastjson2/wiki/jit_optimization#1-%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E)
+- [2. 配置JVM启动参数](https://github.com/alibaba/fastjson2/wiki/jit_optimization#2-%E9%85%8D%E7%BD%AEjvm%E5%90%AF%E5%8A%A8%E5%8F%82%E6%95%B0)
+- [3. 调用API配置](https://github.com/alibaba/fastjson2/wiki/jit_optimization#3-%E8%B0%83%E7%94%A8api%E9%85%8D%E7%BD%AE)
+- [json_schema_cn](https://github.com/alibaba/fastjson2/wiki/json_schema_cn)
+- [FASTJSON v2 JSONSchema的支持](https://github.com/alibaba/fastjson2/wiki/json_schema_cn#fastjson-v2-jsonschema%E7%9A%84%E6%94%AF%E6%8C%81)
+- [1. 通过构造JSONSchema对象直接校验](https://github.com/alibaba/fastjson2/wiki/json_schema_cn#1-%E9%80%9A%E8%BF%87%E6%9E%84%E9%80%A0jsonschema%E5%AF%B9%E8%B1%A1%E7%9B%B4%E6%8E%A5%E6%A0%A1%E9%AA%8C)
+- [2. 在JSONField上配置schema](https://github.com/alibaba/fastjson2/wiki/json_schema_cn#2-%E5%9C%A8jsonfield%E4%B8%8A%E9%85%8D%E7%BD%AEschema)
+- [3. 在JSONType上配置schema](https://github.com/alibaba/fastjson2/wiki/json_schema_cn#3-%E5%9C%A8jsontype%E4%B8%8A%E9%85%8D%E7%BD%AEschema)
+- [jsonb_cn](https://github.com/alibaba/fastjson2/wiki/jsonb_cn)
+- [1. 需要自定类型的JavaBean序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/jsonb_cn#1-%E9%9C%80%E8%A6%81%E8%87%AA%E5%AE%9A%E7%B1%BB%E5%9E%8B%E7%9A%84javabean%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [2. 自动类型的JavaBean序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/jsonb_cn#2-%E8%87%AA%E5%8A%A8%E7%B1%BB%E5%9E%8B%E7%9A%84javabean%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [3. 将JavaBean用数组的方式做映射序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/jsonb_cn#3-%E5%B0%86javabean%E7%94%A8%E6%95%B0%E7%BB%84%E7%9A%84%E6%96%B9%E5%BC%8F%E5%81%9A%E6%98%A0%E5%B0%84%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [4. 推荐使用Feature](https://github.com/alibaba/fastjson2/wiki/jsonb_cn#4-%E6%8E%A8%E8%8D%90%E4%BD%BF%E7%94%A8feature)
+- [5. 将JSONB bytes转成JSON格式](https://github.com/alibaba/fastjson2/wiki/jsonb_cn#5-%E5%B0%86jsonb-bytes%E8%BD%AC%E6%88%90json%E6%A0%BC%E5%BC%8F)
+- [jsonb_format_cn](https://github.com/alibaba/fastjson2/wiki/jsonb_format_cn)
+- [1. 设计目标](https://github.com/alibaba/fastjson2/wiki/jsonb_format_cn#1-%E8%AE%BE%E8%AE%A1%E7%9B%AE%E6%A0%87)
+- [2. JSON支持格式定义](https://github.com/alibaba/fastjson2/wiki/jsonb_format_cn#2-json%E6%94%AF%E6%8C%81%E6%A0%BC%E5%BC%8F%E5%AE%9A%E4%B9%89)
+- [jsonpath_benchmark](https://github.com/alibaba/fastjson2/wiki/jsonpath_benchmark)
+- [结论](https://github.com/alibaba/fastjson2/wiki/jsonpath_benchmark#%E7%BB%93%E8%AE%BA)
+- [测试数据](https://github.com/alibaba/fastjson2/wiki/jsonpath_benchmark#%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE)
+- [jsonpath_multi_cn](https://github.com/alibaba/fastjson2/wiki/jsonpath_multi_cn)
+- [JSONType_SeeAlso_cn](https://github.com/alibaba/fastjson2/wiki/JSONType_SeeAlso_cn)
+- [JavaBean Config](https://github.com/alibaba/fastjson2/wiki/JSONType_SeeAlso_cn#javabean-config)
+- [Usage](https://github.com/alibaba/fastjson2/wiki/JSONType_SeeAlso_cn#usage)
+- [mixin_cn](https://github.com/alibaba/fastjson2/wiki/mixin_cn)
+- [使用Mixin注入Anntation定制序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/mixin_cn#%E4%BD%BF%E7%94%A8mixin%E6%B3%A8%E5%85%A5anntation%E5%AE%9A%E5%88%B6%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [1. 要序列化的类](https://github.com/alibaba/fastjson2/wiki/mixin_cn#1-%E8%A6%81%E5%BA%8F%E5%88%97%E5%8C%96%E7%9A%84%E7%B1%BB)
+- [2. 注入配置类](https://github.com/alibaba/fastjson2/wiki/mixin_cn#2-%E6%B3%A8%E5%85%A5%E9%85%8D%E7%BD%AE%E7%B1%BB)
+- [3. 注入配置 & 使用](https://github.com/alibaba/fastjson2/wiki/mixin_cn#3-%E6%B3%A8%E5%85%A5%E9%85%8D%E7%BD%AE--%E4%BD%BF%E7%94%A8)
+- [optim_for_android](https://github.com/alibaba/fastjson2/wiki/optim_for_android)
+- [1. Android兼容的版本](https://github.com/alibaba/fastjson2/wiki/optim_for_android#1-android%E5%85%BC%E5%AE%B9%E7%9A%84%E7%89%88%E6%9C%AC)
+- [4. 字符串构造优化](https://github.com/alibaba/fastjson2/wiki/optim_for_android#4-%E5%AD%97%E7%AC%A6%E4%B8%B2%E6%9E%84%E9%80%A0%E4%BC%98%E5%8C%96)
+- [5. 首次运行优化](https://github.com/alibaba/fastjson2/wiki/optim_for_android#5-%E9%A6%96%E6%AC%A1%E8%BF%90%E8%A1%8C%E4%BC%98%E5%8C%96)
+- [redission_codec_cn](https://github.com/alibaba/fastjson2/wiki/redission_codec_cn)
+- [2. JSON Codec](https://github.com/alibaba/fastjson2/wiki/redission_codec_cn#2-json-codec)
+- [3. JSONB Codec](https://github.com/alibaba/fastjson2/wiki/redission_codec_cn#3-jsonb-codec)
+- [4. 相关链接](https://github.com/alibaba/fastjson2/wiki/redission_codec_cn#4-%E7%9B%B8%E5%85%B3%E9%93%BE%E6%8E%A5)
+- [register_custom_reader_writer_cn](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn)
+- [实现ObjectWriter和ObjectReader实现定制序列化和反序列化](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#%E5%AE%9E%E7%8E%B0objectwriter%E5%92%8Cobjectreader%E5%AE%9E%E7%8E%B0%E5%AE%9A%E5%88%B6%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [1. 实现ObjectWriter接口定制化序列化](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#1-%E5%AE%9E%E7%8E%B0objectwriter%E6%8E%A5%E5%8F%A3%E5%AE%9A%E5%88%B6%E5%8C%96%E5%BA%8F%E5%88%97%E5%8C%96)
+- [1.1 ObjectWriter的定义](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#11-objectwriter%E7%9A%84%E5%AE%9A%E4%B9%89)
+- [1.2 实现ObjectWriter举例](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#12-%E5%AE%9E%E7%8E%B0objectwriter%E4%B8%BE%E4%BE%8B)
+- [1.3 注册Writer](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#13-%E6%B3%A8%E5%86%8Cwriter)
+- [1.4 注册ObjectWriters的一些内置实现](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#14-%E6%B3%A8%E5%86%8Cobjectwriters%E7%9A%84%E4%B8%80%E4%BA%9B%E5%86%85%E7%BD%AE%E5%AE%9E%E7%8E%B0)
+- [2. 实现ObjectReader定制反序列化](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#2-%E5%AE%9E%E7%8E%B0objectreader%E5%AE%9A%E5%88%B6%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96)
+- [2.1 ObjectReader的定义](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#21-objectreader%E7%9A%84%E5%AE%9A%E4%B9%89)
+- [2.2 实现ObjectReader举例](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#22-%E5%AE%9E%E7%8E%B0objectreader%E4%B8%BE%E4%BE%8B)
+- [2.3 注册Writer](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#23-%E6%B3%A8%E5%86%8Cwriter)
+- [2.4 注册内置的ObjectReaders提供的一些内置实现](https://github.com/alibaba/fastjson2/wiki/register_custom_reader_writer_cn#24-%E6%B3%A8%E5%86%8C%E5%86%85%E7%BD%AE%E7%9A%84objectreaders%E6%8F%90%E4%BE%9B%E7%9A%84%E4%B8%80%E4%BA%9B%E5%86%85%E7%BD%AE%E5%AE%9E%E7%8E%B0)
+- [release_guid_cn](https://github.com/alibaba/fastjson2/wiki/release_guid_cn)
+- [发布指南](https://github.com/alibaba/fastjson2/wiki/release_guid_cn#%E5%8F%91%E5%B8%83%E6%8C%87%E5%8D%97)
+- [1. 发布步骤](https://github.com/alibaba/fastjson2/wiki/release_guid_cn#1-%E5%8F%91%E5%B8%83%E6%AD%A5%E9%AA%A4)
+- [2. 跑benchmark的步骤](https://github.com/alibaba/fastjson2/wiki/release_guid_cn#2-%E8%B7%91benchmark%E7%9A%84%E6%AD%A5%E9%AA%A4)
+- [road_map](https://github.com/alibaba/fastjson2/wiki/road_map)
+- [2.1版本 （草稿）](https://github.com/alibaba/fastjson2/wiki/road_map#21%E7%89%88%E6%9C%AC-%E8%8D%89%E7%A8%BF)
+- [设计目标](https://github.com/alibaba/fastjson2/wiki/road_map#%E8%AE%BE%E8%AE%A1%E7%9B%AE%E6%A0%87)
+- [时间表](https://github.com/alibaba/fastjson2/wiki/road_map#%E6%97%B6%E9%97%B4%E8%A1%A8)
+- [Security Advisory: Remote Code Execution in fastjson 1.2.68–1.2.83](https://github.com/alibaba/fastjson2/wiki/Security-Advisory:-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83)
+- [writer_context_demo](https://github.com/alibaba/fastjson2/wiki/writer_context_demo)
+- [Terms](https://docs.github.com/site-policy/github-terms/github-terms-of-service)
+- [Privacy](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement)
+- [Status](https://www.githubstatus.com/)
+- [Community](https://github.community/)
+- [Contact](https://support.github.com/?tags=dotcom-footer)

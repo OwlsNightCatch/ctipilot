@@ -1,0 +1,74 @@
+domain: S3
+run_id: 2026-07-27T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-27T04:12:40Z
+ended_at: 2026-07-27T04:21:14Z
+duration_seconds: 514
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 8
+  bridge_fetches: 12
+items: []
+# No in-window (2026-07-26T04:09Z .. 2026-07-27T04:09Z) items cleared the
+# recency/dedup gates for the S3 research & investigative-reporting mission.
+# This is a genuine quiet-window finding (Sunday->Monday UTC transition), not
+# a coverage failure — see the per-source notes below for what was fetched
+# and confirmed stale/duplicate.
+candidate_sources: []
+coverage_gaps:
+  - source_id: paradigm-shift-research
+    reason: "ps.tc renders as a JS-only SPA shell; WebFetch surfaced only the page heading ('Paradigm Shift') with no post listing, dates, or links. No RSS/structured endpoint known. Recipe needs review (jina reader or a discovered listing path) before this source can be worked."
+  - source_id: reliaquest
+    reason: "reliaquest.com/blog is a JS-rendered SPA; both WebFetch and the direct bridge (python3 tools/fetch_source.py url) returned only site chrome/nav (menu items, promo cards) — the actual post grid loads client-side and was not present in the fetched HTML. No RSS feed found. Could not confirm in-window content either way; recipe needs a structured-endpoint fix."
+  - source_id: trellix
+    reason: "trellix.com/blogs/ bridge fetch (raw HTML) returned only header/nav markup in the first ~300 lines (post grid not reached); WebFetch's own listing came back with posts dated April-May 2026 only, suggesting a stale/cached index rather than the true latest list. No in-window items confirmed; recipe needs a deeper fetch or RSS discovery."
+  - source_id: cryptotimes
+    reason: "Latest items (through 2026-07-26) are exchange-hack / crypto-fraud stories with no nexus to the Swiss federal SOC constituency (public-sector/CI) and no transferable TTP — out of scope for this mission, not a fetch problem."
+  - source_id: kommunaler-notbetrieb-de
+    reason: "Fetched successfully; most recent entry (Lecos/Leipzig IT-provider breach) is dated 2026-07-20, outside the 24h window. German municipal-incident items are S2/S4 territory more than S3 research; none in-window regardless."
+  - source_id: group-ib
+    reason: "Direct WebFetch on group-ib.com/blog/ returned HTTP 503 (transient); a bridge retry succeeded (200) but only returned page head/nav in the captured portion. WebSearch corroboration confirms the latest substantive post (HOLLOWGRAPH Microsoft-365-calendar C2 backdoor) is dated 2026-07-20 — outside the 24h window, so the gap did not cost any in-window coverage."
+  - source_id: jina-reader-pool
+    reason: "The jina reader credential rotated through and hit HTTP 402 (balance exhausted) on several forced-jina fallback attempts mid-run (schneier.com feed, cloud.google.com/blog RSS, trendmicro.com/research RSS, zscaler.com blog RSS, group-ib.com/blog RSS). All were recovered via a direct WebFetch on the equivalent HTML listing page instead, so no coverage was lost, but the pool exhaustion should be flagged for the operator per CLAUDE.md's jina-usage monitoring guidance."
+notes: |
+  Full slice worked (18 sources) plus a batched RSS/listing sweep of the 16
+  named major labs (Microsoft, GTIG/Mandiant, Talos, Unit 42, Check Point
+  Research, ESET WeLiveSecurity, Kaspersky Securelist, SentinelOne,
+  Proofpoint, Trend Micro, The DFIR Report, Recorded Future Insikt, Sophos
+  X-Ops, CrowdStrike, Group-IB, Zscaler ThreatLabz). Every feed/listing's
+  most recent item was dated 2026-07-24 or earlier — none fell inside the
+  2026-07-26T04:09Z .. 2026-07-27T04:09Z window. This lines up with a
+  genuine weekend-to-Monday publishing lull (most research blogs go quiet
+  Fri evening through Sun) rather than a fetch/transport problem: RSS feeds
+  resolved cleanly (HTTP 200, direct method) for the large majority of
+  sources fetched.
+
+  Cross-checked several superficially-fresh-looking leads against
+  work/2026-07-27T0409Z-intel/prior_coverage.json and confirmed all were
+  already covered by earlier runs this week, with no material delta:
+    - Hugging Face / OpenAI-agent sandbox-escape breach (Jul 21-23 sources,
+      e.g. ProjectDiscovery, Trend Micro, SOCRadar, Dark Reading) ->
+      covered 2026-07-21 and 2026-07-23 entries.
+    - LAUNDRY BEAR Zimbra zero-click espionage (Unit 42 "Russian Global
+      Webmail Espionage" Jul 23, Proofpoint Jul 23, SOCRadar Jul 24,
+      CyberScoop/Dark Reading Jul 23) -> covered 2026-07-22, 07-24, 07-25,
+      and the 2026-07-26 weekly W30 entries.
+    - SANDWORM_MODE npm/AI-toolchain supply-chain worm (CyberScoop Jul 22,
+      CrowdStrike Jul 21, Dark Reading Jul 22) -> covered 2026-07-23 and the
+      2026-07-26 weekly W30 entry.
+    - Turla / STOCKSTAY backdoor (GTIG) and Cisco Catalyst SD-WAN Manager
+      CVE-2026-20245 zero-day (Mandiant) -> both originally published/
+      disclosed in June 2026, well outside window; Turla itself already
+      covered 2026-07-13.
+    - SentinelOne's Kubernetes CSI-driver path-traversal research (Jul 23,
+      13:00 UTC) narrowly misses even the 72h developing-story threshold
+      (2026-07-24T04:09Z) by ~15 hours — dropped on recency grounds alone,
+      not for lack of substance.
+
+  No new-candidate-source recommendation this run: the candidate-tagged
+  sources in this slice (kommunaler-notbetrieb-de, project-discovery,
+  cryptotimes, paradigm-shift-research, gambit-security, netcraft) were all
+  worked as assigned; none surfaced a qualifying in-window item, and none
+  of them look like an obviously higher-value addition than what is already
+  tracked, so no new candidate is proposed.

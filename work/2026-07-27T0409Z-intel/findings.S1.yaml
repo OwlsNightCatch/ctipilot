@@ -1,0 +1,66 @@
+domain: S1
+run_id: 2026-07-27T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-27T04:12:07Z
+ended_at: 2026-07-27T04:25:23Z
+duration_seconds: 796
+self_telemetry:
+  webfetch_calls: 20
+  websearch_calls: 20
+  bridge_fetches: 12
+items:
+  - title: "CVE-2026-16723 — FastJson 1.2.68–1.2.83 unauthenticated RCE in Spring Boot fat-JARs, actively exploited, no patch available for the 1.x line"
+    sources:
+      - { url: "https://github.com/alibaba/fastjson2/wiki/Security-Advisory%3A-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83", publisher: "Alibaba fastjson2 project (vendor security advisory)", date: "2026-07-21", role: "primary" }
+      - { url: "https://www.imperva.com/blog/imperva-customers-protected-against-cve-2026-16723-critical-fastjson-1-x-zero-day-rce/", publisher: "Imperva", date: "2026-07-24", role: "corroborating" }
+      - { url: "https://latesthackingnews.com/2026/07/26/fastjson-rce-vulnerability-how-to-check/", publisher: "Latest Hacking News", date: "2026-07-26", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"CVE exploited critical vulnerability disclosed \\\"July 25, 2026\\\"\") → pivot: WebSearch (\"Fastjson CVE-2026-16723 ThreatBook Imperva exploited Spring Boot\") → pivot: Imperva blog, URL https://www.imperva.com/blog/imperva-customers-protected-against-cve-2026-16723-critical-fastjson-1-x-zero-day-rce/ → primary: Alibaba fastjson2 GitHub wiki security advisory, URL https://github.com/alibaba/fastjson2/wiki/Security-Advisory%3A-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83 → follow-up technical explainer: Latest Hacking News, URL https://latesthackingnews.com/2026/07/26/fastjson-rce-vulnerability-how-to-check/"
+    summary: |
+      A remote code execution vulnerability in Alibaba's fastjson 1.2.68–1.2.83 (the final 1.x release line) is exploitable under the library's stock default configuration when the target application is deployed as a Spring Boot executable fat-JAR (`java -jar xxx.jar`) — the most common Spring Boot deployment model. No AutoType enablement and no classpath gadget chain are required: the entry points `JSON.parse`, `JSON.parseObject(String)` and `JSON.parseObject(String, Class)` are all reachable, and specifying a target DTO class is not a mitigation because attackers can nest a malicious `@type`/`@JSONType` payload inside any Object- or Map-typed field of that DTO. The vendor's own advisory (Alibaba fastjson2 project, GitHub wiki, 2026-07-21) states the flaw was verified end-to-end across Spring Boot 2.x/3.x/4.x and JDK 8/11/17/21. FastJson 1.x is no longer actively maintained and no patched 1.x release exists — remediation is enabling SafeMode (`-Dfastjson.parser.safeMode=true` or `ParserConfig.getGlobalInstance().setSafeMode(true)`), switching to a `noneautotype` build, or migrating to the architecturally distinct fastjson2 (which removes the vulnerable class-resolution path entirely and is unaffected). ThreatBook and Imperva independently confirmed active in-the-wild exploitation by 2026-07-24–25 using Ruby- and Go-based scanning tooling; discovery is credited to Kirill Firsov (FearsOff Cybersecurity). As of 2026-07-26 no vendor fix for fastjson 1.x has shipped and the CVE is not yet CISA KEV-listed. None of the CH/EU authorities checked this run (NCSC-CH, NCSC-NL, BSI, CERT-FR/ANSSI, CERT-EU, CERT-PL) carry an advisory on this CVE, so Swiss/European operators running legacy Java/Spring Boot estates on fastjson 1.x should not assume their national CERT will flag it.
+    region_nexus: "global; no CH/EU-specific victimology reported, but fastjson 1.x is widely embedded in legacy enterprise Java/Spring Boot deployments across public-sector and financial estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-16723]
+    techniques: [T1190]
+    affected_products: ["Alibaba fastjson (1.2.68–1.2.83)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A remote code execution (RCE) vulnerability exists in fastjson 1.2.68 through 1.2.83. This vulnerability is exploitable under fastjson's stock default configuration — no AutoType enablement required, no classpath gadget required."
+        attribution: "Alibaba fastjson2 project (GitHub security advisory)"
+        source_url: "https://github.com/alibaba/fastjson2/wiki/Security-Advisory%3A-Remote-Code-Execution-in-fastjson-1.2.68%E2%80%931.2.83"
+      - quote: "Exploitation has been verified in Spring Boot applications deployed as executable fat JARs across Spring Boot 2.x, 3.x, and 4.x and JDK versions 8, 11, 17, and 21."
+        attribution: "Imperva"
+        source_url: "https://www.imperva.com/blog/imperva-customers-protected-against-cve-2026-16723-critical-fastjson-1-x-zero-day-rce/"
+      - quote: "FastJson 1.x is no longer actively maintained, and no patched 1.x version has been released for this vulnerability."
+        attribution: "Imperva"
+        source_url: "https://www.imperva.com/blog/imperva-customers-protected-against-cve-2026-16723-critical-fastjson-1-x-zero-day-rce/"
+    extended_notes: |
+      Detection concept: telemetry class = process-creation events with parent lineage on the JVM host (the JVM child-spawning a shell/downloader is the terminal indicator; this flaw itself normally manifests as anomalous outbound connections from the Java process as fastjson's type-resolution path attempts to load an attacker-supplied class/resource) plus reverse-proxy/WAF access logs showing JSON request bodies containing `@type` or `@JSONType` fields directed at any endpoint that calls JSON.parse/JSON.parseObject. Benign lookalike: legitimate use of fastjson's polymorphic (de)serialization also carries `@type` fields when AutoType is deliberately and safely enabled with an allowlist (`AutoTypeBeforeHandler`) — the discriminator is whether SafeMode is enabled and whether the resolved type resolves to an allow-listed application DTO versus an unexpected/attacker-controlled class or nested JAR resource path. Hardening lever: enable SafeMode globally, or migrate to fastjson2, which removes the `getResourceAsStream` class-resolution behavior and does not treat `@JSONType` as a trust signal. Staleness note: the vendor advisory itself is dated 2026-07-21 and exploitation confirmation dates to 2026-07-24; no primary source found strictly inside the 24h primary window. Flagged borderline for that reason — see borderline_reason.
+    borderline: true
+    borderline_reason: "Vendor advisory (2026-07-21) and exploitation confirmation (2026-07-24) both predate the 24h primary window; only the 2026-07-26 follow-up explainer falls inside it. Carried anyway because no patch exists for fastjson 1.x, exploitation is confirmed and ongoing, and none of the essential CH/EU sources checked this run (NCSC-CH, NCSC-NL, BSI, CERT-FR, CERT-EU, CERT-PL) have published on it — readers relying on those channels have not yet seen this."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Product watchlist not configured in config/org-profile.yaml (deployment-wide no-op per org profile). No product-specific sweep performed beyond general vulnerability research; general coverage rules applied throughout."
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Fetched via bridge (python3 tools/fetch_source.py cisa page). Listing returned only two advisories (AA26-204A Zimbra, AA26-194A router hygiene), both already covered by prior runs (2026-07-24 and 2026-07-13). No in-window addition."
+  - source_id: cisa-directives
+    reason: "Not separately checked this run — ICS/cybersecurity-advisories listing pages showed no in-window CISA activity of any kind (last ICS batch dated day-of-year 204 = 2026-07-23), so a directives-specific fetch was deprioritized in favor of broader WebSearch sweeps within the 45-min budget."
+  - source_id: apple-security
+    reason: "support.apple.com/en-us/100100 renders its advisory table via client-side JS; both WebFetch and the bridge `url` fetch returned only page chrome with no advisory rows. Not escalated to the jina reader given no specific reason to suspect an in-window Apple advisory this run; logged as a recipe gap, not a hard failure (structured feed/recipe needed for future runs)."
+  - source_id: wordpress-org-news
+    reason: "Fetched successfully via feed (https://wordpress.org/news/feed/) — rotation priority cleared. Ten most recent items span 2026-06-06 to 2026-07-22 (WordPress 7.1 Beta 3); no in-window post. The WordPress Core CVE-2026-60137/63030 KEV entries are already covered by prior runs (2026-07-26/2026-07-20)."
+  - source_id: mysites-guru
+    reason: "Not fetched this run — rotational, jina-only source; deprioritized within the 45-min budget in favor of the essential-source sweep, additional rotational sources (esentire, shadowserver, truesec, trustwave/levelblue-spiderlabs, infoguard-labs, vulncheck, synacktiv, flatt-security, sansec-research, jpcert — all cleared with no in-window hits), and broad WebSearch sweeps for exploited-CVE and zero-day leads."
+  - source_id: jpcert
+    reason: "Fetched; most recent in-window items (2026-07-23/24) are low-severity JVN entries (SEIKO EPSON printer CSRF, Ricoh SSH port-forwarding) — Japan-specific, low severity, no CH/EU nexus; dropped as not meeting the relevance bar."
