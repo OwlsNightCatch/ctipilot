@@ -1,0 +1,29 @@
+**Model:** Claude Opus 4.8 (`claude-opus-4-8`)
+**Timestamps:** started_at=2026-07-26T23:46:42Z · ended_at=2026-07-26T23:57:53Z · duration_seconds=671
+**Self-telemetry:** webfetch_calls=6 · websearch_calls=0 · bridge_fetches=15 · urls_checked=20
+
+## Verification report — 2026-07-26T2309Z-weekly (iteration 1)
+
+Cold read of 11 strategic entries + run record. All entity keys verified present in registry. All classification blocks present and defensible (no F17); no org-triage/watchlist misuse (no F16); actions[] empty across all entries — correct for weekly synthesis (no F18). Verified verbatim: CISA AA26-204A view-based-exploit quote and 16 co-sealing nations; Proofpoint TA488 "not observed TA458 using CVE-2025-66376" and the TA458 half-click definition; SOGo "was patched as CVE-2026-8496 in version 5.12.8"; OpenAI HF chained-attack quote; Hunt.io YOLO-mode quote; Sysdig JADEPUFFER quote; Zscaler TELESHIM quote; Kaspersky DNS-AAAA quote; swissinfo Everest ransom quote; BaFin fine quote; 20min IFAGE quote; PS News/go4it ANCPI facts (vCenter, 1,083 VMs, ~100 deleted, ESXi, ~2M ePayment records, no AV on servers); CrowdStrike SANDWORM_MODE (MCP poisoning of Cursor/VSCode/Claude Desktop/Windsurf, 48-96h time-bomb, git-template hooks, 14 behaviours/2 met the fidelity bar); mySites.guru Gridbox (CVE-2026-61425, 2.20.1, cookie-as-Super-User); ENISA EUMSS (mandatory-prerequisite quote, 2-year Reserve certification, 13 Sept close). Actor disambiguation (LAUNDRY BEAR vs TA458) holds throughout. Both update_of entries carry genuine deltas. W-PD-1 gate satisfied on all entries. Coverage looks complete given the disclosed W1 abandonment; no nameable in-window missed angle.
+
+### Citation does not support the claim
+- **F3** — `weekly-w30-exploited-internet-facing-enterprise-persistence`, ServiceNow strand. Clause "with in-the-wild activity reported from 2026-07-18; ServiceNow's hosted instances were already patched, so the residual exposure is self-hosted and partner-managed deployments ... ([NCSC-CH, 2026-07-20])". NCSC-CH post 12778 (fetched via bridge) states "Current exploitation status: Actively exploited" and lists hosted+self-hosted as affected, but does NOT carry the 2026-07-18 date or the hosted-already-patched/self-hosted-residual framing. Per the operational entry those are BleepingComputer/Defused's, and that BleepingComputer ServiceNow article is not in this entry's sources[] — so the 07-18 date has no supporting citation here. Fix: cite the BleepingComputer ServiceNow article for that clause.
+- **F3** — `weekly-w30-exploited-internet-facing-enterprise-persistence`, SharePoint strand + sourcing_note. Clause binds "to steal machine keys for long-term access" to [NCSC-NL, 2026-07-21]. NCSC-NL advisory NCSC-2026-0237 rev 1.0.2 (fetched via jina) says only that, per watchTowr, public exploit code for CVE-2026-50522 was published and on-premise SharePoint is now actively abused — no machine-key/long-term-access detail. That detail is watchTowr's/BleepingComputer's (co-cited in the very next clause). The sourcing_note compounds it: "the machine-key persistence detail is NCSC-NL's and watchTowr's" — NCSC-NL 0237 does not carry it. Fix: rebind the machine-key detail to BleepingComputer/watchTowr and correct the sourcing_note.
+
+### Unsupported / hallucinated facts
+- **F4** — `weekly-w30-c2-through-trusted-infrastructure`, Cisco Talos msaRAT quote (evidence[] and body): "msaRAT never touches the network directly — it controls its C2 communication channel exclusively through Chrome DevTools Protocol (CDP), a browser debugging API." The Talos page (fetched via jina) reads "**This RAT** never touches the network directly — ...". The subject noun was changed inside quotation marks, so the evidence[] quote is not a contiguous verbatim substring. Fix: quote "This RAT never touches..." verbatim, or lift "msaRAT" out of the quote marks.
+
+### Claims missing inline citation
+- **F5** — `weekly-w30-exploited-internet-facing-enterprise-persistence` (and `weekly-w30-vuln-status-rollup`), Check Point CVE-2026-16232 KEV listing. "CISA added it to KEV the same day" and summary "KEV-listed" have no inline citation; the only CISA source on the entry (the 2026-07-21 four-KEV alert, fetched via bridge) lists DD-WRT/Langflow/WordPress×2, NOT CVE-2026-16232. The operational entry sources the 16232 KEV listing to the 2026-07-22 "two KEV" alert (https://www.cisa.gov/news-events/alerts/2026/07/22/cisa-adds-two-known-exploited-vulnerabilities-catalog). Fix: cite that alert for the 16232 KEV claim in both entries.
+
+### Editorial / less-is-more flags (advisory)
+- **F11** — `weekly-w30-state-nexus-webmail-espionage`. Body: "...zero-days that fire 'the instant a target opens a message'". The single-quoted phrase is not verbatim on the Proofpoint TA458 page (verbatim line: "The targeted user must only open the malicious email in their webmail viewer to be compromised."). Drop the quote marks (accurate paraphrase) or use the page's phrase. Substance correct.
+- **F11** — `weekly-w30-bafin-teamviewer-disclosure-precedent`. Frontmatter evidence[] uses Swiss ss (Geldbusse/verstossen); source uses ß (Geldbuße/verstoßen). Body quote is correct. Trivial; optionally normalise the frontmatter quote for strict verbatim consistency.
+
+### Verdict
+NEEDS_FIXES (truth: 3, editorial: 1, advisory: 2)
+
+The three truth findings are all the pipeline's dominant residual class — a true, verified fact bound to a co-cited or wrong source that does not state it (F3×2), and a subject-noun substitution inside an evidence[] quote (F4). None is a fabricated fact; all are attribution/verbatim fixes the main agent can apply against the sources named above. The run is otherwise sound and complete.
+
+### Findings summary (machine-readable)
+See work/2026-07-26T2309Z-weekly/verification.iter1.findings.yaml
