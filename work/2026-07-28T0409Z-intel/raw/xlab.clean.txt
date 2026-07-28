@@ -1,0 +1,217 @@
+ 
+ 奇安信 X 实验室
+ CN 
+ 僵尸网络新秀：Dysphoria 演进与深度技术分析 
+ Wang Hao 
+ 2026年7月25日 
+ • 11 min read 
+ 本报告由国家互联网应急中心（CNCERT）与奇安信网神信息技术(北京)股份有限公司共同发布 
+ 自 2026 年第一季度以来，XLAB持续追踪到一个BOT数量超过20万名为 Dysphoria 的新兴僵尸网络家族。该家族在短短几个月内经历了频繁的变种更新与技术迭代，展现出极强的生命力。其演进路径不仅横跨了 jackskid 、 fbot 变种，更在近期引入了基于区块链 ENS/SNS 域名 的 C2 隐蔽解析机制，甚至开始将受害者主机转化为 C2 中继/代理节点 。ENS/SNS域名以及中继/代理节点的使用使得防御方想要摧毁Dysphoria变得更加困难。 
+ 本文将针对 Dysphoria 的历史演进时间线、核心字符串解密算法、C2 基础设施获取机制以及其独特的网络代理机制、样本感染方式、感染范围、DDoS攻击等方面进行深度剖析。 
+ 一、 家族演进时间线 (Timeline) 
+ Dysphoria 家族的迭代速度极快，从最初的资产关联到后期的混合拓扑结构，其关键节点如下： 
+ 3月25日 (初见端倪)： 捕获 jackskid 变种（样本 c1bedea... ），通过 ENS 域名 m3rnbvs5d.eth 关联到tg频道信息，输出特异性字符串 android has no compatible libc library 。 
+ 4月1日 (变种更替)： 捕获 fbot 变种，成功运行后输出 hail china mainland\x00 。 
+ 4月29日 - 4月30日 (算法升级)： 引入全新的 RC4 字符串加密算法与 C2 获取机制，开始大量复用 jackskid 的设计思维，并启用 ENS 域名 ukranianhorseriding.eth 。 
+ 5月初 (引入多链)： 首次引入 Solana 系统的 SNS 域名 24carnforth2merseyside.sol ，利用 TXT 记录下发资产。 
+ 6月10日 (域名更新)： 启用全新 ENS 域名 burrberry.eth 。 
+ 6月25日 (功能分化)： 关键转折点。捕获独立的功能变种（样本 b0782a9... ）， 该样本不再具备 DDoS 攻击功能，而是纯粹作为中继/代理节点运作 ，开启了该家族的“中继化”进程。 
+ 6月27日 - 28日 (完全体形成)： 引入 UPnP 自动化端口映射 增强内网穿透能力；同时构建了“DDoS 样本 + 动态 C2 中继节点列表”的混合型 C2 链路。 
+ 二、 核心样本技术分析 
+ 目前野外捕获的 Dysphoria 样本主要分为两大类： DDoS 攻击样本 与 纯中继/代理样本 。两者的共同特征是： 在运行时都会通过篡改进程名，伪装为 libdalvikengine.so 。 
+ 1. DDoS 样本：魔改定制版 RC4 解密 
+ Dysphoria 最新的 fbot 变种在字符串保护上花费了心思。其解密算法在一定程度上借鉴了 jackskid 的代码： 
+ KSA 1 阶段 ：标准 RC4 初始化。 
+ KSA 2 阶段 ：引入 LCG (线性同余发生器) 算法，连续打乱 S 盒 5 次。 
+ PRGA 阶段 ：在流生成过程中引入 LFSR (线性反馈移位寄存器) 步进，并进行复杂的位移互换。 
+ 以下是该算法的完整 Python 还原脚本： 
+ KEY = (
+ 0x08, 0x45, 0x3C, 0xD1, F9, 0x5D, 0x5C, 0x27,
+ 0x61, 0x21, 0x1C, 0xBD, E3, 0x0F, 0x3B, 0x9C,
+)
+def decrypt(data: bytes) -> bytes:
+ s = list(range(256))
+ # KSA 1
+ j = 0
+ for i in range(256):
+ j = (j + s[i] + KEY[i & 15]) & 0xff
+ s[i], s[j] = s[j], s[i]
+ # KSA 2: 引入 LCG 混淆
+ lcg = 0xE0A4CBD6
+ for _ in range(5):
+ for i in range(256):
+ lcg = (lcg * 0x41C64E6D + 12345) & 0xffffffff
+ r = (lcg >> 16) & 0xff
+ s[i], s[r] = s[r], s[i]
+ out = bytearray(data)
+ # PRGA: 引入 LFSR 与多重 Swap
+ i, j, k = 0, 0, 0
+ lfsr = 0xF31C8B2E
+ for p in range(len(out)):
+ i = (i + 1) & 255
+ si = s[i]
+ j = (j + si) & 255
+ sj = s[j]
+ # Swap 1
+ s[i], s[j] = sj, si
+ # Swap 2
+ k = (k + sj) & 255
+ tmp = s[k]
+ s[k] = si
+ s[j] = tmp
+ idx = (tmp + si + sj) & 255
+ # LFSR 步进
+ if lfsr & 1:
+ lfsr = ((lfsr >> 1) ^ 0xD800A4) & 0xffffffff
+ else:
+ lfsr >>= 1
+ x = s[idx] ^ (lfsr & 0xff)
+ ks = ((x << 3) | (x >> 5)) & 0xff
+ ks ^= x >> 4
+ out[p] ^= ks
+ return bytes(out)
+ 2. 区块链域名 C2 隐蔽解析机制 
+ Dysphoria 同时支持 ENS (以太坊域名服务) 和 SNS (Solana 域名服务) 。它会查询这些域名的 TXT 或特定自定义记录。不同域名对应的 Key 映射关系如下： 
+ 域名类型 
+ 目标域名 
+ 对应查询 Key 
+ 作用 
+ ENS 
+ burrberry.eth 
+ node 
+ 获取中继分发节点 IP 
+ ENS 
+ ukranianhorseriding.eth 
+ network 
+ 基础网络基础设施 
+ SNS 
+ 24carnforth2merseyside.sol 
+ deserialized 
+ 基础网络基础设施 
+ 虚假 IPv6 地址混淆 
+ 提取到记录后，文本中包含由 | 分割的 虚假 IPv6 地址 （例如 2001:db8:12e7:13d7::1 ）。 样本通过逐个字节字符串对比的方式 ，过滤并提取出其中的 4 字节关键数据，再通过自定义置换函数 F 还原出真实的 IPv4 地址( 144.31.38.215 )： 
+ def ror8(x, r):
+ return ((x >> r) | (x << (8-r))) & 0xFF
+def F(x, i, key=0x80408454):
+ x = ((x >> 4) | (x << 4)) & 0xFF
+ x = ror8(x, i+1)
+ k = (key >> (24 - 8*i)) & 0xFF
+ return ((x ^ k) + k) & 0xFF
+def decode_ip(ip_bytes):
+ k = 0x80408454
+ return ".".join(str(F(ip_bytes[i], i, k)) for i in range(4))
+# 提取关键4字节示例（对应 12e7:13d7）
+ip_bytes = bytearray.fromhex("12e713d7")
+print(f"解密出的 IP: {decode_ip(ip_bytes)}")
+ 动态 C2 获取流程 
+ 6 月底上线的动态平衡机制非常具有迷惑性： 
+ DDoS 样本 首先解析 burrberry.eth 的 node 记录，解密出一组中继分发节点的 IP（例如 144.31.38.215 等）。 
+ DDoS 样本 随后向这些分发节点发起 HTTP GET 请求： http://<node_ip>:9000/nodes?key=meowmeowmeow 。 
+ 该接口返回的 IP 列表被 DDoS 样本作为真正的 C2 交互地址。然而在实际追溯中发现， 这些返回的真实 C2 地址全部是由其他被感染的肉鸡所转换的中继节点 。 
+ 活跃C2(包括中继)趋势： 
+ 3. 网络协议与指令结构 
+ 在 fbot 的基础上，Dysphoria 重新定制了其底层通信协议。 上线包 与 心跳包 均为固定 78 字节 。 
+ 上线包 (Login) 与 心跳包 (Heartbeat) 结构 
+ +-----------------------------------------------------------------------+
+| Dysphoria 通信数据包结构 |
++-----------------------------------------------------------------------+
+| Login Packet (78 Bytes): |
+| [0----1] [2---------13] [14----15] [16-----------15+len] [剩余填充] |
+| Type(2B) Magic(12B) Length Value (动态长度) Padding |
++-----------------------------------------------------------------------+
+| Heartbeat Packet (78 Bytes): |
+| [0----1] [2---------13] [14--------------------------------------77] |
+| Type(2B) Magic(12B) Padding |
++-----------------------------------------------------------------------+
+ Login Magic : 00 80 00 5a 00 57 00 c8 00 f0 00 1e (MsgType: 02 00 ) 
+ Heartbeat Magic : 22 ba 15 24 1a 6f 04 d4 1f 9c 0d 06 (MsgType: 00 00 ) 
+ DDoS 攻击指令结构 (Attack Command) 
+ 攻击指令采用了多流嵌套结构，其中也包含对参数控制的 flag 结构体描述： 
+ +---------------------------------------------------------------------------------------+
+| Duration | AtkType | TargetCnt | targets[TargetCnt] | FlagCnt | flags[FlagCnt] |
+| (2B) | (1B) | (1B) | (动态嵌套结构) | (1B) | (动态嵌套结构) |
++---------------------------------------------------------------------------------------+
+其中：
+1. targets 结构体：
++-----------------------+
+| IP (4B) | Netmask (1B)|
++-----------------------+
+2. flag 结构体（本次更新重点补全）：
++------------------------------------------+
+| Option (1B) | Length (2B) | Value [Len] |
++------------------------------------------+
+ 三、 独立的“中继/代理样本”机制分析 
+ 6 月下旬出现的全新独立变种（如 b0782a9... ）功能十分纯粹： 它剥离了所有的 DDoS 攻击模块，仅负责将被感染的内网肉鸡彻底转变为黑产集团的隐蔽网络中继站。 
+ 1. 自动化 UPnP 内网穿透 
+ 由于大部分物联网设备或个人 PC 处于 NAT 后方，外部无法直接连接。该中继样本启动后，会在局域网内广播寻找支持 UPnP (通用即插即用) 的网关设备，随后强制调用 WAN 连接服务，在路由器上 瞬间流式映射 155 个端口 。 
+ 2. 双向非阻塞高效中继 (Epoll) 
+ 肉鸡在本机成功监听这 155 个端口。一旦有外部流量（如来自攻击者或 DDoS 样本的前端请求）接入肉鸡的某个端口 bot:P ，该中继样本会： 
+ 立即向真正的远程 c2:P （相同端口）发起出站连接。 
+ 在底层利用 Linux 高性能的 epoll 异步非阻塞 I/O 驱动，将两端连接进行绑定，实施 双向非阻塞数据透明中继 。 
+ 3. 中继状态上报 
+ 中继节点每隔 4 秒以上，会向心跳收集域名 login.trees4sale.net:9000 发送一次 JSON 格式的健康状态报告，汇报自身的可用性： 
+ {
+ "status": "ONLINE",
+ "connections": 42,
+ "bandwidth_mbps": 12.5
+}
+ 四、样本传播 
+ Dysphoria 样本主要通过 Telnet/SSH 弱口令爆破 以及 已知 IoT 设备远程代码执行（RCE）漏洞 进行传播，攻击目标涵盖路由器、网关、摄像头、及其他嵌入式 Linux 设备。已监测到其利用的部分漏洞包括： 
+CNVD-2021-79445
+CVE-2013-3307
+CVE-2016-20016
+CVE-2017-17215
+CVE-2017-5259
+CVE-2025-9528
+CVE-2018-14558
+CVE-2020-25499
+CVE-2020-8515
+CVE-2025-28137
+CVE-2025-34152
+CVE-2025-55182
+CVE-2022-35733
+ 其中既包含长期被僵尸网络广泛利用的经典 IoT 漏洞（如 CVE-2017-17215、CVE-2020-8515 等），也包含近年来披露的新漏洞，表明 Dysphoria 仍在持续维护和更新其传播能力，以提高对不同品牌和型号 IoT 设备的覆盖范围。与此同时，Telnet/SSH 弱口令攻击仍然是其最主要、最稳定的感染方式，与漏洞利用共同构成了其主要传播渠道。 
+ 五、感染范围与规模 
+ 通过监测分析发现，2026年7月14日至20日期间，Dysphoria僵尸网络在我国境内已确认的活跃“肉鸡”规模达4401台，境内日上线肉鸡数量最高达1801台，肉鸡C2日访问量最高达74万次。因其使用被控肉鸡作为C2中继，可以观测到其境外肉鸡规模更大，日上线境外肉鸡数最高达23.9万台。境内日上线肉鸡数量情况如下图所示： 
+ 从社交媒体泄露的控制端（C2）后台截图来看，Dysphoria 控制的 Bot 规模长期维持在 20 万台左右。结合我们持续监测的数据与后台显示的在线规模基本吻合，说明该截图具有较高的可信度，也侧面反映出 Dysphoria 具备较大的僵尸网络控制能力。 
+ 此外，Dysphoria 在其公开推广页面中宣称最高可提供约 4 Tbps 的 DDoS 攻击能力，并提供不同规格的攻击服务套餐，价格根据使用时长、带宽等配置有所差异，从几十美元到数百美元不等，体现出其攻击服务已具备较为成熟的商业化运营模式。 
+ 六、DDoS攻击 
+ DDoS攻击方面，Dysphoria 的攻击目标遍布全球，覆盖互联网服务、游戏等多个行业，受害目标具有分布广、行业覆盖面大的特点。从持续监测情况来看，其攻击活动几乎每天都有发生，整体保持较高活跃度。攻击目标趋势如下： 
+ 七、 威胁情报 (IOCs) 
+ 1. Download/C2 服务器 (包含特异性 FTP Banner) 
+ Banner 特征 : 220 cool ftp server hosted on brian krebs' giant ass 4head 
+ 217.60.195.160 
+ 76.164.203.171 
+ 92.42.100.131 
+ 78.153.155.152 
+ 2. 关键基础设施域名 
+ i.peer4you.net 
+ o.peer4you.net 
+ login.trees4sale.net 
+ www.trees4sale.net 
+ c2.saintpetersburgresident.ru 
+ peer.saintpetersburgresident.ru 
+ kieron.androiddebugbridge.su 
+ dysphoria.androiddebugbridge.su 
+ telaviv.androiddebugbridge.su 
+ jerusalem.androiddebugbridge.su 
+ node.androiddebugbridge.su 
+ wow.androiddebugbridge.su 
+ 3. 区块链域名 
+ m3rnbvs5d.eth (ENS) 
+ burrberry.eth (ENS) 
+ ukranianhorseriding.eth (ENS) 
+ 24carnforth2merseyside.sol (SNS) 
+ 4. 部分核心哈希 (SHA1) 
+ c1bedea261f325441fb9a75c50b11d0c8fb01ac6 
+ a3b9575897c16cbf6afe3af1aa8b55171ea6edf9 
+ 8db6c78533c176f13b61405cdc3f8fad703325f1 
+ 9c1716d770ea69e8e1418d96d52222396ecb4362 
+ 73651c02b29f1c07e3177e86c967fc45e9f30f0f 
+ 955ff909972958098f0d4a06bcc4d6b9eea90449 
+ 25081bdec05f64eb4f313420c82d8de957e30026 
+ dcea71b9ab9de8efca301de9e2f7bf11c7132364 
+ df510f6f69a5c149c216c7b3accc4f460d8cf363 
+ b0782a9d6eef2ce02f734a6e5e1d8e0f9a2b65be 
+ e7e1694162639ed587625432a79cfaa49f560d11 
+ b7faa44ab0772047a8581bbfdd9c561e28fc66de 

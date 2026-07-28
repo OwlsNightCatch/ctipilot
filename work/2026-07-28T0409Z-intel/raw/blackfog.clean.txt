@@ -1,0 +1,139 @@
+ 
+ Skip to content 
+ BLACKFOG NEWS American Alarm Moves From Reactive Security To Proactive Data Protection With BlackFog Studio Gang Strengthens Data Security with BlackFog’s Last Line of Defense BlackFog Receives 2026 AI in Cybersecurity Innovation Award from TMCnet The State of Ransomware: June 2026 BlackFog Launches ADX Vision For macOS – Extending Shadow AI Security To The Enterprise Inside OnyxC2: The New Stealer Targeting 210 Apps Free 14-Day AI Discovery & Data Exposure Assessment   Console Login 
+ MedusaHVNC: A Hidden Desktop That Steals Live Windows Sessions 
+ By Darren Williams | Last Updated: July 23rd, 2026 | 6 min read | Categories: Data Exfiltration , Breach , Cybersecurity | Contents 
+ We recently came across a sample of MedusaHVNC, a new remote access trojan (RAT) being sold as malware-as-a-service (MaaS). When we took it apart, we found a hidden virtual network computing (HVNC) module that opens a browser on a separate Windows desktop, out of sight of the victim. 
+ The browser still runs on the victim’s device, so it can load an existing profile, including cookies and session state. This gives the operator access to live, logged-in sessions while the activity continues to come from the victim’s usual machine. 
+ The seller’s website and operator panel show what MedusaHVNC claims to offer. Our sample reveals the other side of it, a five-stage infection chain ending in a native 64-bit payload with a hard-coded command-and-control (C2) server. 
+ The Marketplace Listing and the Operator Panel MedusaHVNC is promoted through a dedicated website and Telegram channel. Its advertised features include several functions associated with credential and session access. 
+ “Mem Exec” is described as a way to run .NET and native payloads in memory, with an AMSI patch and ETW bypass. “Browser Recovery” is advertised as being able to extract passwords, cookies and browsing history. 
+ The seller also lists Chrome, Edge, Brave, Firefox and Telegram as supported applications. 
+ Figure 1: The MedusaHVNC sales page. 
+ The client panel brings those options into one interface. An operator can select an application and configure the hidden desktop session. 
+ Figure 2: MedusaHVNC client options. 
+ In a video we obtained, Google Chrome is open on Google’s homepage inside a hidden desktop. The browser appears to be signed in to an account, and the panel includes controls for frame rate and image quality. 
+ Figure 3: An active MedusaHVNC session. 
+ The video captures the operator’s view once the hidden session is running. The sample itself reveals how MedusaHVNC builds it. 
+ From JScript to a Hidden Implant The chain starts with obfuscated JScript. We worked through each stage offline and checked our findings against available sandbox data. 
+ JScript Launcher 
+ The chain begins when Windows Script Host, wscript.exe , executes the JScript launcher. The script pauses for 7,584 milliseconds before rebuilding its embedded files under %TEMP%\Nx2981Okkr2\ . 
+ Staging and Persistence 
+ The script then writes several components to disk. These include an AutoIt interpreter named eepcxlhgdz.exe , a configuration file, and an encrypted payload with no file extension named zorsxklxfehdoals . It also places AFLlvOscPj.bat in the Startup folder. That gives the infection a way to run again after the system restarts. 
+ AutoIt Decryption 
+ The next stage uses AutoIt, a legitimate Windows automation tool. Running without a visible window, the AutoIt component decrypts the dropped payload with a single-byte XOR key, 0xAE . That produces the first native 64-bit executable in the chain. 
+ Character Map Launch 
+ The AutoIt stage then starts C:\Windows\System32\charmap.exe , the standard Windows Character Map utility. The public sandbox process tree shows charmap.exe as a child of the AutoIt process, and the loader is injected into it, using the trusted system binary as a host for the payload. The same sandbox run records screenshot capture during this stage. 
+ Layered Unpacking 
+ The loader now running inside charmap.exe contains two further encryption layers before the final payload. The first applies a 16-byte repeating XOR operation to 1,009,152 bytes from the .data section. The second uses ChaCha20 to decrypt 998,912 bytes of ciphertext with a 32-byte key, a 12-byte nonce, and an initial counter value of 1. 
+ We replayed that unpacking process offline and recovered the final payload byte for byte. The recovered keys and offsets are redacted in the example below: 
+ Figure 4: Redacted Python excerpt showing the offline unpacking process. 
+ Recovering the final payload allowed us to move from the delivery chain to the HVNC functionality itself. The file is an unsigned PE32+ x86-64 console executable containing a .pay section and the family string MedusaHVNC. 
+ The payload communicates with its operator over a custom TCP protocol using native Winsock functions, including WSAStartup , socket , connect , send , and recv . The C2 address 51.89.204.28:4444 is hard-coded into the binary. 
+ The rest of the binary contains the components needed to interact with applications running on a separate Windows desktop. 
+ Browser-specific strings reference Chrome, Edge, and Firefox. Functions such as BitBlt , EnumWindows , and PrintWindow support screen and window capture, while SendInput and SetWindowsHookExW are associated with synthetic input and interaction. 
+ Clipboard functions, including OpenClipboard , GetClipboardData , and SetClipboardData , provide another way to move information into or out of the session. 
+ Taken together, these findings are consistent with the core HVNC workflow. The browser references identify the applications involved, and the capture, input, window-management, and clipboard functions provide the mechanisms needed to observe and control activity inside the hidden desktop. 
+ Defending Against MedusaHVNC For the operator to use the hidden session, MedusaHVNC has to send it off the infected endpoint. That makes outbound traffic a practical place to detect and interrupt the attack, regardless of the loader or evasion technique used earlier in the chain. 
+ An unapproved connection to an attacker’s server is the same event whether it comes from a browser or a native client. Blocking traffic to known C2 infrastructure and alerting on unexpected outbound connections works regardless of how the session was hidden. Blocking the C2 address and the hashes in the IOC table is a concrete starting point. 
+ This is also the layer BlackFog’s anti data exfiltration (ADX) technology is built for. It watches outbound traffic on the device and blocks transfers to command-and-control servers in real time, regardless of which process opens the connection. If the hijacked session doesn’t make it out, the operator has nothing to receive. 
+ Share This Story, Choose Your Platform! Related Posts Darren Williams 2026-07-23T14:20:54+01:00 MedusaHVNC: A Hidden Desktop That Steals Live Windows Sessions Darren Williams 2026-07-23T14:20:54+01:00 July 27th, 2026 | MedusaHVNC is a newly uncovered hidden desktop malware family that gives operators access to live, logged-in browser sessions on a victim’s Windows device. Brenda Robb 2026-07-23T13:34:42+01:00 American Alarm Moves From Reactive Security To Proactive Data Protection With BlackFog Brenda Robb 2026-07-23T13:34:42+01:00 July 23rd, 2026 | Discover how American Alarm strengthened cybersecurity with BlackFog, preventing data exfiltration, improving AI governance, and reducing cyber risk. Brenda Robb 2026-07-21T11:27:47+01:00 What Are Recommended Best Practices For Implementing AI Assurance In Organizations? Brenda Robb 2026-07-21T11:27:47+01:00 July 21st, 2026 | Discover best practices for implementing AI assurance to build secure, transparent and trustworthy AI usage across your organization. Brenda Robb 2026-07-21T11:25:41+01:00 What Are The Latest Trends In AI Assurance Standards And Regulations? Brenda Robb 2026-07-21T11:25:41+01:00 July 21st, 2026 | Explore the latest AI assurance standards, regulations and governance trends shaping transparent, compliant and trustworthy AI. Brenda Robb 2026-07-21T11:23:00+01:00 How Can AI Be Used to Improve Cybersecurity Measures? Brenda Robb 2026-07-21T11:23:00+01:00 July 21st, 2026 | Learn how AI improves cybersecurity through faster threat detection, incident response, AI monitoring, behavioral analysis and security automation. Brenda Robb 2026-07-21T11:20:10+01:00 What Should I Look For In An AI Security App To Ensure My Device Is Protected? Brenda Robb 2026-07-21T11:20:10+01:00 July 21st, 2026 | Learn what to look for in an AI security app, from real-time visibility and data protection to defense against AI-powered threats, to keep your device secure. 
+ Recent Posts 
+ MedusaHVNC: A Hidden Desktop That Steals Live Windows Sessions 
+ July 27, 2026 
+ American Alarm Moves From Reactive Security To Proactive Data Protection With BlackFog 
+ July 23, 2026 
+ What Are Recommended Best Practices For Implementing AI Assurance In Organizations? 
+ July 21, 2026 
+ What Are The Latest Trends In AI Assurance Standards And Regulations? 
+ July 21, 2026 
+ How Can AI Be Used to Improve Cybersecurity Measures? 
+ July 21, 2026 
+ What Should I Look For In An AI Security App To Ensure My Device Is Protected? 
+ July 21, 2026 
+ Company 
+ Platform 
+ Learn 
+ Headquarters 
+ BlackFog Inc. 
+1 Embarcadero Ctr 
+Suite 1200 
+San Francisco 
+CA 94111 
+United States 
+ United Kingdom 
+ BlackFog UK Ltd. 
+7 Bell Yard 
+London WC2A 2JR 
+United Kingdom 
+ Northern Ireland 
+ BlackFog UK Ltd. 
+Custom House 
+Custom House Square 
+Belfast BT1 3ET 
+Northern Ireland 
+ Newsletter Sign Up 
+ By registering you agree that BlackFog may send you future marketing emails about its products. BlackFog does not sell, trade, lease, or rent your personal data to third parties. 
+ Success! × Registration Error. × Register © 2026 BlackFog. All Rights Reserved. 
+ Close product quick view × 
+ Title 
+ Page load link 
+ Manage Cookie Consent 
+ To provide the best experiences, we use technologies like cookies to store and/or access device information. Consenting to these technologies will allow us to process data such as browsing behavior or unique IDs on this site. Not consenting or withdrawing consent, may adversely affect certain features and functions. 
+ Functional 
+ Functional 
+ Always active 
+ The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications network. 
+ Preferences 
+ Preferences 
+ The technical storage or access is necessary for the legitimate purpose of storing preferences that are not requested by the subscriber or user. 
+ Statistics 
+ Statistics 
+ The technical storage or access that is used exclusively for statistical purposes. 
+ The technical storage or access that is used exclusively for anonymous statistical purposes. Without a subpoena, voluntary compliance on the part of your Internet Service Provider, or additional records from a third party, information stored or retrieved for this purpose alone cannot usually be used to identify you. 
+ Marketing 
+ Marketing 
+ The technical storage or access is required to create user profiles to send advertising, or to track the user on a website or across several websites for similar marketing purposes. 
+ Manage options 
+ Manage services 
+ Manage {vendor_count} vendors 
+ Read more about these purposes 
+ Accept 
+ Deny 
+ View preferences 
+ Save preferences 
+ View preferences 
+ {title} 
+ {title} 
+ {title} 
+ Manage Cookie Consent 
+ To provide the best experiences, we use technologies like cookies to store and/or access device information. Consenting to these technologies will allow us to process data such as browsing behavior or unique IDs on this site. Not consenting or withdrawing consent, may adversely affect certain features and functions. 
+ Functional 
+ Functional 
+ Always active 
+ The technical storage or access is strictly necessary for the legitimate purpose of enabling the use of a specific service explicitly requested by the subscriber or user, or for the sole purpose of carrying out the transmission of a communication over an electronic communications network. 
+ Preferences 
+ Preferences 
+ The technical storage or access is necessary for the legitimate purpose of storing preferences that are not requested by the subscriber or user. 
+ Statistics 
+ Statistics 
+ The technical storage or access that is used exclusively for statistical purposes. 
+ The technical storage or access that is used exclusively for anonymous statistical purposes. Without a subpoena, voluntary compliance on the part of your Internet Service Provider, or additional records from a third party, information stored or retrieved for this purpose alone cannot usually be used to identify you. 
+ Marketing 
+ Marketing 
+ The technical storage or access is required to create user profiles to send advertising, or to track the user on a website or across several websites for similar marketing purposes. 
+ Manage options 
+ Manage services 
+ Manage {vendor_count} vendors 
+ Read more about these purposes 
+ Accept 
+ Deny 
+ View preferences 
+ Save preferences 
+ View preferences 
+ {title} 
+ {title} 
+ {title} 
+ Manage consent 
+ Manage consent 
+ 

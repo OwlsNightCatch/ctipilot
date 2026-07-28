@@ -1,0 +1,149 @@
+domain: S2
+run_id: 2026-07-28T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-28T04:13:22Z
+ended_at: 2026-07-28T04:28:09Z
+duration_seconds: 887
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 12
+  bridge_fetches: 14
+
+items:
+  - title: "vBulletin unauthenticated pre-auth RCE via the {vb:math} template tag (CVE-2026-61511) — public exploit code released, patch has existed since 1 July"
+    sources:
+      - { url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/", publisher: "SSD Secure Disclosure", date: "2026-07-27", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2528", publisher: "BSI CERT-Bund (WID-SEC-2026-2528)", date: "2026-07-27", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html", publisher: "The Hacker News", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: >
+      first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss
+      (BSI CERT-Bund WID-SEC RSS feed, item "[NEU] [kritisch] vBulletin: Schwachstelle
+      ermöglicht Codeausführung", WID-SEC-2026-2528) →
+      pivot: BSI CSAF detail, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2528
+      (References section names the SSD advisory and the two vBulletin forum patch posts) →
+      primary: SSD Secure Disclosure, URL https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/
+      → corroborating pivot: WebSearch ("CVE-2026-61511 vBulletin runMaths preauth RCE") →
+      The Hacker News, URL https://thehackernews.com/2026/07/public-exploit-released-for-patched.html
+      (names discoverer "EgiX"/Egidio Romano, confirms PoC-typo detail and no-KEV-listing status as of publication).
+    summary: |
+      An unauthenticated remote code execution flaw in vBulletin's server-side template
+      engine reaches PHP's eval() with no authentication and no user interaction. The
+      vulnerable code sits in /includes/vb5/template/runtime.php, inside the
+      vB5_Template_Runtime::runMaths() method that backs the {vb:math} inline-math
+      template tag: the method applies a regular expression meant to restrict input to
+      digits, parentheses, arithmetic/binary operators and XOR before passing the result
+      to eval(), but the filter is loose enough that a crafted operand chain can
+      reconstruct arbitrary PHP function calls. The flaw is reachable pre-auth through the
+      public ajax/render/pagenav route, which copies the visitor-supplied
+      pagenav[pagenumber] value into a {vb:math} tag before evaluation — no login, no
+      administrative access, no other user interaction required (T1190, Exploit
+      Public-Facing Application). CVE-2026-61511 affects vBulletin 6.2.1 and earlier and
+      6.1.6 and earlier; the vendor shipped 6.2.2 on 1 July 2026 and back-ported patches
+      for 6.2.1, 6.2.0 and 6.1.6 in late June — nearly four weeks before SSD Secure
+      Disclosure's public write-up and a working proof-of-concept went out on 27 July
+      2026 (credited to independent researcher "EgiX"/Egidio Romano). The Hacker News
+      reports the released PoC contains a one-character typo that stops it from running
+      unmodified, though the fix is trivial. As of the sources fetched in this run, no
+      party has confirmed in-the-wild exploitation and CVE-2026-61511 is not yet listed
+      in CISA's KEV catalog; BSI CERT-Bund nonetheless rates the advisory "kritisch"
+      (critical) given the pre-auth RCE class and now-public exploit code. This is a
+      vBulletin-template-engine RCE class with prior form: BSI's own record cross-links
+      CVE-2025-48827/CVE-2025-48828, a May 2025 vBulletin template-engine RCE chain from
+      the same researcher lineage.
+    region_nexus: "global software footprint; discovered/relayed via BSI CERT-Bund (Germany), a home-region national CERT — no confirmed Swiss/EU victim yet"
+    primary_sector_nexus: "indirect — vBulletin forums are run by some public-sector, association and community-service sites; no sector-specific targeting reported"
+    sector: "public-sector (indirect), general/cross-sector"
+    cves: [CVE-2026-61511]
+    techniques: [T1190]
+    affected_products: ["vBulletin"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in vBulletin ausnutzen, um beliebigen Programmcode auszuführen."
+        attribution: "BSI CERT-Bund (WID-SEC-2026-2528)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2528"
+      - quote: "Summary A vulnerability in vBulletin has been identified, the vulnerability allows an unauthenticated user to cause the vBulletin to execute arbitrary code (PHP) on the remote server."
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+      - quote: "As of July 27, 2026, no source had confirmed in-the-wild attacks, and CVE-2026-61511 was not listed in CISA's Known Exploited Vulnerabilities catalog."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html"
+    extended_notes: |
+      Detection concept (telemetry class first): web-application access logs on any
+      internet-facing vBulletin instance — watch for anomalous parameter values on
+      ajax/render/pagenav (specifically the pagenav[pagenumber] parameter) containing
+      arithmetic/XOR-operator sequences well outside a legitimate page-number range, and
+      for PHP error-log entries referencing runtime.php / runMaths shortly before
+      unexpected outbound connections or webshell writes from the PHP-FPM/Apache
+      worker process. Hardening: upgrade to 6.2.2 (or apply the 6.2.1/6.2.0/6.1.6
+      back-ported patches) — there is no config-only mitigation since the flaw is in
+      the template engine itself; taking the forum offline or placing it behind
+      authentication is the only interim compensating control for instances that
+      cannot patch immediately. Borderline call: flagging because the home-region
+      national CERT (BSI) rated it critical and public PoC just dropped, but no
+      Swiss/EU victim or sector-specific targeting has been reported — main agent
+      should weigh against any S1 coverage of the same CVE to avoid duplication.
+    borderline: true
+    borderline_reason: "global generic-software vulnerability with no confirmed Swiss/EU incident or sector-specific targeting; included because BSI (home-region essential source) flagged it critical with fresh public PoC and it may fall in S1's territory too — main agent to dedup against S1's findings."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-at
+    reason: "CERT.at /en/news/ and /en/warnings/ (404) show no post since 2026-06-01; cadence genuinely sparse this cycle, nothing in-window."
+  - source_id: cert-pl
+    reason: "CERT Polska news listing shows no post since 2026-06-12; nothing in-window."
+  - source_id: cert-eu
+    reason: "CERT-EU advisories RSS newest item is 2026-009 (SharePoint) dated 2026-07-23, already covered by prior entries; nothing new in-window."
+  - source_id: enisa
+    reason: "ENISA news listing newest item is 2026-07-24 (EUMSS consultation), already flagged in prior-coverage reminders; nothing new in-window."
+  - source_id: ncsc-uk
+    reason: "NCSC-UK combined RSS feed newest item is 2026-07-23 (Russian zero-click phishing campaign — same LAUNDRY BEAR/AA26-204a story already covered by 2026-07-24/2026-07-25 entries); nothing new in-window."
+  - source_id: ncsc-ch-focus
+    reason: "Im Fokus weekly awareness posts (Woche 27-29) are all outside the 26h window and are general-awareness content, not incident/vuln reporting; no in-window post."
+  - source_id: ncsc-ch-incidents
+    reason: "Aktuelle Vorfälle accordion latest entry is 01.07.2026 (SwissNovaChat/SwissNovaCare fake-subscription warning); nothing in-window."
+  - source_id: ncsc-ch-security-hub
+    reason: "Newest posts (Fastjson CVE-2026-16723, Certighost CVE-2026-54121) published 2026-07-27 but both are same-day catch-ups of stories already published by prior runs (2026-07-27 and 2026-07-25 entries respectively) — no material delta, checked against prior_coverage.json and dropped."
+  - source_id: anssi-fr
+    reason: "CERT-FR avis/alerte feeds show routine vendor-patch bulletins (Atlassian, GLPI, Traefik, MS Edge, MongoDB, kernel updates) for 27/24 July; the GLPI advisory (CERTFR-2026-AVI-0935) adds only one new CVE (CVE-2026-57152) to an already-covered June GLPI batch — too thin a delta, dropped. No CERT-FR alerte (ALE) newer than ALE-008 (22 July, already covered)."
+  - source_id: cisa-advisories
+    reason: "CISA feed's AA26-204a (LAUNDRY BEAR/Zimbra joint advisory) was investigated in depth but confirmed identical to the already-published 2026-07-24 and 2026-07-25 entries (same primary_source_url in prior_coverage.json and entities/registry.yaml) — genuine duplicate, dropped per PD-8. ICS advisory batch (icsa-26-204-*, Weintek/Rockwell/Johnson Controls/Panduit/Siemens) reviewed at title level; no Swiss/EU-specific angle beyond routine OT patch cycle already in S1's territory."
+  - source_id: swisspost-cybersecurity
+    reason: "Listing is undated marketing/case-study content (Wädenswil case study, webinars, partnership announcements); no dated in-window item identifiable."
+  - source_id: senthorus-ch
+    reason: "Only weekly-roundup aggregation posts, most recent dated 2026-07-14; nothing in-window, and content is re-aggregation not original research per its C-reliability rating."
+  - source_id: infoguard-ch
+    reason: "Newest post (27 July, FINMA quantum-computing roadmap commentary) is a delayed blog write-up of FINMA guidance originally published 2026-07-09 — underlying regulatory event is outside the 26h window; noted as a potential future W2 (strategic/policy) item, not included here."
+  - source_id: infoguard-labs
+    reason: "Newest post dated 2026-06-15; nothing in-window."
+  - source_id: truesec
+    reason: "Newest post dated 2026-07-20 (SharePoint exploitation, already covered); nothing in-window."
+  - source_id: withsecure-labs
+    reason: "Listing undated in the fetched excerpt; most recent identifiable items (GREYVIBE, DarkGate) are already-covered/older stories; nothing confirmed in-window."
+  - source_id: lab52
+    reason: "RSS feed newest item dated 2026-07-03 (GRU military unit 67606); nothing in-window."
+  - source_id: intrinsec
+    reason: "Newest listed post (27 July, 'AI Agents X Digital Forensics 01 – OpenCode') could not be resolved — drilled URL 404'd; not re-attempted per bounded-retry rule, logged as a dead lead rather than a fetch failure since the listing page itself resolved fine."
+  - source_id: kudelski-security
+    reason: "Not reached this run — time was prioritised toward essential-tier sources and the deep-dive verification of the vBulletin and LAUNDRY BEAR leads; rotation priority should pick this up next cycle."
+  - source_id: synacktiv
+    reason: "Not reached this run — same time-prioritisation as kudelski-security; pick up next cycle."
+  - source_id: le-monde-info
+    reason: "Not reached this run — same time-prioritisation as kudelski-security; pick up next cycle."
+  - source_id: jpcert
+    reason: "Not reached this run — same time-prioritisation as kudelski-security; pick up next cycle."
+  - source_id: ccn-cert-es
+    reason: "jina reader returned HTTP 402 (credit exhausted, not retried per instructions); fallback `url` direct fetch returned only the static navigation shell (no dated article listing reachable without JS/reader); logged as unreached this run, not re-attempted."
+  - source_id: kommunaler-notbetrieb-de
+    reason: "Checked (candidate source, discovery-only D-reliability): newest incident (Zweckverband Kommunales Rechenzentrum Niederrhein, 24 July — infrastructure fault not an attack) and Stadtverwaltung Döbeln ransomware (23 July) are both outside the 26h window and already several days old; no in-window German municipal incident found."
+
+dead_ends:
+  - "GalaxyWarden.com blog post claiming bd.zh.ch (Kanton Zürich Baudirektion) was listed on MedusaLocker's leak site: publication date 2026-07-01 (reviewed 2026-07-22), both outside the 26h window; victim status explicitly 'unconfirmed' by the aggregator itself, single low-reliability breach-monitoring aggregator with only an .onion citation — dropped on both recency and fake-news-scrutiny grounds."
+  - "EU Commission CJEU referral of Ireland/Spain/France/Netherlands over NIS2 transposition: event dated 2026-07-08/09, already stale by ~3 weeks and matches the 'Dutch NIS2 Cyberbeveiligingswet' item already flagged in this run's reminders as heavily covered — dropped as out-of-window."
+  - "AA26-204a (LAUNDRY BEAR / Zimbra CVE-2025-66376 joint 24-agency advisory): initially flagged as a strong candidate after a deep-dive fetch (Flowerbed/Ulej architecture, MITRE ATT&CK/D3FEND mapping, victimology across DIB/federal-local government/education/energy/law-enforcement/media/NGO/technology, 24 co-sealing agencies including ANSSI, DGSI, AISE, AISI, CNI, NUKIB, DDIS, EFIS, FDI/SUPO, SIS RM, AW/SKW, NCSC-SE) — but cross-checked against entities/registry.yaml and prior_coverage.json and confirmed this is the EXACT SAME advisory (same URL) already used as primary source for the 2026-07-24 and 2026-07-25 entries. No genuine delta found; dropped as a duplicate rather than composed as an update-of."

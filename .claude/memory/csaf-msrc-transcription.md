@@ -46,3 +46,23 @@ facts come from the **structured** fields:
   (exploitability), and `revisions[]` for late/moved patches.
 The prose summary and "Recommended Practices" are for readability, not ground truth.
 Extract-and-drop still applies, but extract from the right key.
+
+## A displayed CVSS score may be the temporal one — check the vector before calling it a discrepancy
+
+**2026-07-28 (run 2026-07-28T0409Z-intel), FortiOS CVE-2025-68686.** The FortiGuard advisory
+page displays "CVSSv3 Score 5.3" while the CNA record Fortinet submitted carries 5.9. Composition
+wrote this up as an inconsistency *inside Fortinet's own records* and picked the vendor page's
+figure. It is not a discrepancy at all: the 5.3 on the page **hyperlinks to the vector**
+`AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N/E:P/RL:O/RC:C` — the same base vector with **temporal
+metrics appended**. 5.9 base × 0.94 (E:P) × 0.95 (RL:O) × 1.0 (RC:C) = 5.269 → 5.3. Three
+verifier iterations re-derived the arithmetic independently before it was settled.
+
+Two rules from this:
+
+1. **Before reporting two scores as contradictory, look at the vector each one is attached to.**
+   A vendor page that renders a bare number often links the calculator URL; `E:`, `RL:` and `RC:`
+   in that vector mean you are looking at a temporal score, not a competing base score.
+2. **`cves[].cvss` carries the BASE score.** Every other record in the store does, so a temporal
+   figure silently corrupts cross-entry comparison, the `/cve/` pages and any automated consumer.
+   Put the temporal figure in `sourcing_note` so a reader who sees it on the vendor page can
+   reconcile the two, and say which is which.

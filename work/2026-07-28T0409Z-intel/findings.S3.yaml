@@ -1,0 +1,278 @@
+domain: S3
+run_id: 2026-07-28T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-28T04:13:49Z
+ended_at: 2026-07-28T04:31:10Z
+duration_seconds: 1041
+self_telemetry:
+  webfetch_calls: 32
+  websearch_calls: 11
+  bridge_fetches: 6
+
+items:
+  - title: "Internet-wide scanners probe Spring Boot's /actuator/heapdump endpoint with default admin:admin Basic-Auth credentials"
+    sources:
+      - { url: "https://isc.sans.edu/diary/33188", publisher: "SANS Internet Storm Center", date: "2026-07-27", role: "primary" }
+    discovery_trace: "first seen at: sans-isc, URL https://isc.sans.edu/diaryarchive.html → primary: SANS ISC diary, URL https://isc.sans.edu/diary/33188 (no pivot needed)"
+    summary: |
+      SANS Internet Storm Center (Johannes Ullrich, 2026-07-27) reports scanning traffic hitting a
+      non-default Spring Boot Actuator base path, "/admin-api/actuator/heapdump", via HTTP Basic
+      Authentication using the credential pair admin:admin (base64 YWRtaW46YWRtaW4=). The Spring Boot
+      Actuator heapdump endpoint, when exposed, returns a full JVM heap dump (heapdump.hprof) — the
+      Java analog of a core dump — which frequently contains connection strings, API keys, database
+      passwords and other secrets resident in application memory at request time. The management
+      base path is application-configurable via management.endpoints.web.base-path (default
+      /actuator; here relocated to /admin-api/actuator, suggesting a shared application template or
+      convention across the scanned population). No CVE or auth-bypass is involved — the scanner
+      assumes Basic Auth is configured and simply tries the single most common default credential
+      pair, a straightforward reconnaissance-to-initial-access pattern against a known, recurring
+      Spring Boot Actuator misconfiguration class (T1595.002 Active Scanning tied to T1078.001 Valid
+      Accounts: Default Accounts once the default credential succeeds).
+      Detection: alert on GET requests to any path ending "/actuator/heapdump" (default or
+      relocated base path) carrying HTTP Basic-Auth headers, particularly repeated 401→200 status
+      flips indicating credential guessing, and on heapdump.hprof-sized response bodies leaving the
+      network.
+      Hardening: never include heapdump in management.endpoints.web.exposure.include on an
+      internet-facing profile; scope Spring Security authorization rules to the actuator base path
+      (relocating the path alone is not a control); rotate any secret that may have transited a
+      reachable heapdump.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, all sectors running Spring Boot backends"
+    cves: []
+    techniques: [T1595.002, T1078.001]
+    affected_products: ["Spring Boot (Spring Boot Actuator)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The heapdump often includes secrets used by the application to connect to backend systems."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33188"
+      - quote: "The attacker obviously assumes that authentication is configured and just relies on a weak password."
+        attribution: "SANS Internet Storm Center (Johannes Ullrich)"
+        source_url: "https://isc.sans.edu/diary/33188"
+    extended_notes: |
+      Single named source (SANS ISC handler telemetry, DShield sensor network) but a well-established,
+      reliable community reporting channel with a long track record; no independent second source
+      found describing this specific scan pattern in-window, hence SINGLE-SOURCE-OTHER rather than a
+      national-CERT carve-out. The technique class (actuator endpoint default-credential scanning) is
+      recurring and consistent with prior ISC/DShield reporting patterns, supporting MEDIUM confidence.
+
+  - title: "Dysphoria IoT botnet drops pure-DDoS operation for blockchain-resolved C2 and a self-built relay mesh after the JackSkid takedown"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/new-dysphoria-ddos-botnet-spreads-to-200k-devices-worldwide/", publisher: "BleepingComputer", date: "2026-07-27", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/dysphoria-iot-botnet-adds-blockchain-c2.html", publisher: "The Hacker News", date: "2026-07-27", role: "corroborating" }
+      - { url: "https://blog.xlab.qianxin.com/dysphoria/", publisher: "QiAnXin XLab", date: "2026-07-25", role: "primary" }
+    discovery_trace: "first seen at: bleepingcomputer, URL https://www.bleepingcomputer.com/news/security/new-dysphoria-ddos-botnet-spreads-to-200k-devices-worldwide/ → pivot: thehackernews, URL https://thehackernews.com/2026/07/dysphoria-iot-botnet-adds-blockchain-c2.html → primary: QiAnXin XLab technical report, URL https://blog.xlab.qianxin.com/dysphoria/"
+    summary: |
+      QiAnXin XLab (2026-07-25; fresh mainstream pickup via BleepingComputer and The Hacker News,
+      2026-07-27) is tracking Dysphoria, a >200,000-device IoT botnet lineage descended from the
+      jackskid and fbot malware families, whose tradecraft has shifted markedly since a March 2026
+      law-enforcement disruption of JackSkid infrastructure. Devices are compromised via brute-forced
+      weak Telnet/SSH credentials and known router/camera/embedded-Linux RCEs, including CVE-2025-9528
+      and the older CVE-2017-17215. Post-compromise, bots resolve C2 not through conventional DNS but
+      through Ethereum ENS and Solana SNS blockchain name records (e.g. burrberry[.]eth,
+      24carnforth2merseyside[.]sol), with the actual C2 IPv4 address hidden inside a fake
+      IPv6-formatted string recovered via a custom byte-transformation/permutation routine — a
+      resolution layer that survives conventional domain/DNS takedown because the resolvers are
+      decentralized name services rather than centrally-registered DNS records. Bots communicate via
+      a fixed 78-byte login/heartbeat packet and receive structured DDoS-attack commands (duration,
+      type, target, flags); operators advertise up to 4 Tbps DDoS capacity as a commercial booter
+      service. Since late June 2026, XLab has also tracked a variant that drops DDoS capability
+      entirely and instead abuses UPnP to open roughly 155 port-forwarding rules on the local
+      gateway, turning the infected device into a pure relay/proxy node in a mesh built from the
+      botnet's own victims — a "relayification" XLab assesses as a resilience response to the
+      JackSkid takedown.
+      Detection: flag outbound DNS-over-blockchain-style lookups (*.eth / *.sol resolution traffic)
+      originating from IoT/embedded-class devices — unusual for that device class; monitor for
+      anomalous UPnP port-mapping requests creating large numbers of forwarding rules from a single
+      LAN host; watch for fixed-length (78-byte) periodic outbound TCP beacons from IoT devices.
+      Hardening: disable Telnet/SSH management interfaces on internet-facing IoT devices and change
+      default credentials; disable UPnP on gateways where not operationally required; patch known IoT
+      RCEs including CVE-2025-9528 and CVE-2017-17215.
+    region_nexus: "global (telemetry shows both domestic-China and international spread)"
+    primary_sector_nexus: "indirect"
+    sector: "telco, all sectors (internet-facing IoT/embedded-Linux devices)"
+    cves: [CVE-2025-9528, CVE-2017-17215]
+    techniques: [T1110.001, T1190, T1498, T1568, T1090.002]
+    affected_products: ["consumer/SOHO routers", "IP cameras", "embedded-Linux IoT devices"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:dysphoria-botnet", type: tool, name: "Dysphoria", aliases: ["jackskid", "fbot"],
+          summary: "IoT botnet family tracked by QiAnXin XLab, evolved from the jackskid and fbot malware lineages; exceeds 200,000 bots, uses Ethereum ENS/Solana SNS blockchain name resolution for C2 and has spawned a DDoS-less relay/proxy variant abusing UPnP (XLab, 2026-07-25)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Since the first quarter of 2026, XLAB has continuously tracked an emerging botnet family named Dysphoria, whose bot count exceeds 200,000."
+        attribution: "QiAnXin XLab (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-dysphoria-ddos-botnet-spreads-to-200k-devices-worldwide/"
+      - quote: "The botnet uses Ethereum ENS and Solana SNS domains to retrieve infrastructure information, while C2 addresses are concealed inside fake IPv6 strings."
+        attribution: "QiAnXin XLab (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/new-dysphoria-ddos-botnet-spreads-to-200k-devices-worldwide/"
+      - quote: "该样本不再具备 DDoS 攻击功能，而是纯粹作为中继/代理节点运作，开启了该家族的'中继化'进程 (This sample abandoned DDoS attack capability to function purely as a relay/proxy node, initiating the family's 'relay transformation')"
+        attribution: "QiAnXin XLab"
+        source_url: "https://blog.xlab.qianxin.com/dysphoria/"
+    extended_notes: |
+      XLab's own technical report is dated 2026-07-25 (within the 72h developing window but outside
+      the strict 26h window); BleepingComputer and The Hacker News gave this its first mainstream
+      security-press coverage on 2026-07-27 (within the strict window), so the item is carried as
+      fresh in-window news with XLab as the deeper technical primary, per the "freshest source that
+      still supports the claim" rule. CVE-2025-9528 and CVE-2017-17215 are cited by XLab as two of
+      ~13 known IoT RCEs the family exploits for propagation, not a novel disclosure in their own
+      right.
+
+  - title: "MedusaHVNC: a MaaS hVNC RAT rides the victim's real, logged-in browser session on an invisible second Windows desktop"
+    sources:
+      - { url: "https://www.blackfog.com/medusahvnc-a-hidden-desktop/", publisher: "BlackFog", date: "2026-07-27", role: "primary" }
+      - { url: "https://www.securityweek.com/medusahvnc-malware-uses-hidden-windows-desktops-to-evade-detection/", publisher: "SecurityWeek", date: "2026-07-27", role: "corroborating" }
+      - { url: "https://cybersecuritynews.com/medusahvnc-control-your-pc-silently/", publisher: "Cyber Security News", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: securityweek, URL https://www.securityweek.com/medusahvnc-malware-uses-hidden-windows-desktops-to-evade-detection/ → pivot: cybersecuritynews.com, URL https://cybersecuritynews.com/medusahvnc-control-your-pc-silently/ → primary: BlackFog, URL https://www.blackfog.com/medusahvnc-a-hidden-desktop/"
+    summary: |
+      BlackFog (Darren Williams, 2026-07-27) analysed MedusaHVNC, a Windows remote-access trojan sold
+      as malware-as-a-service via a dedicated storefront and Telegram channel, that gives a buyer a
+      live, interactive view of the victim's actual browser session — real cookies, saved logins and
+      device fingerprint intact — with no visible sign of intrusion. The five-stage infection chain
+      starts with wscript.exe executing an obfuscated JScript launcher (a ~7.5-second delay before
+      staging), which drops components into a %TEMP% subfolder including an AutoIt interpreter, an
+      encrypted native payload and a Startup-folder batch file for persistence; AutoIt decrypts a
+      first-stage 64-bit payload with a single-byte XOR key (0xAE) and injects it into charmap.exe
+      (Windows Character Map) — a living-off-the-land injection target chosen to blend with trusted
+      system processes. Two further layers — 16-byte repeating XOR followed by ChaCha20 (32-byte key,
+      12-byte nonce) — unpack the final payload, which talks to a hardcoded C2 (51.89.204.28:4444)
+      over raw TCP via native Winsock calls. Once live, the payload uses only legitimate Windows APIs
+      to run the hidden desktop end-to-end: BitBlt/EnumWindows/PrintWindow for screen/window capture,
+      SendInput/SetWindowsHookExW for synthetic input, and OpenClipboard/GetClipboardData/
+      SetClipboardData for clipboard theft/injection — a fully separate Windows desktop session (its
+      own explorer.exe) operating Chrome, Edge or Firefox invisibly to the logged-in user. Because the
+      hijacked browser runs on the real infected host under the real profile, resulting traffic and
+      session cookies look device- and location-consistent to fraud-detection systems that key on
+      those signals — the operational payoff of hVNC-class malware in banking fraud, now packaged for
+      turnkey criminal purchase. The MaaS panel also advertises "Mem Exec" (in-memory .NET/native
+      payload execution with AMSI/ETW bypass) and "Browser Recovery" (stored credential/cookie/history
+      extraction across Chrome, Edge, Brave, Firefox and Telegram).
+      Detection: alert on unexpected child processes or unusual behavior under charmap.exe; flag
+      AutoIt interpreter execution outside known legitimate use; watch Startup-folder writes from
+      wscript.exe-spawned process chains; monitor for creation of a second, non-interactive desktop
+      session/explorer.exe on a host; outbound raw-TCP connections to unusual high ports from
+      processes not normally network-facing is the most durable signal since it survives however the
+      session was hidden.
+      Hardening: block outbound connections to known-bad C2 infrastructure; restrict wscript.exe/AutoIt
+      execution via application control where not business-required; strengthen fraud-detection logic
+      with device-attestation/session-binding controls rather than relying solely on cookie/profile
+      continuity.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "finance (primary abuse case: banking-fraud session riding), all sectors as commodity RAT"
+    cves: []
+    techniques: [T1564.003, T1055, T1547.001, T1562.001, T1555.003, T1115]
+    affected_products: ["Microsoft Windows", "Google Chrome", "Microsoft Edge", "Mozilla Firefox"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:medusahvnc", type: tool, name: "MedusaHVNC", aliases: [],
+          summary: "Hidden-VNC (hVNC) remote-access trojan sold as malware-as-a-service, operating a victim's real browser session on an invisible second Windows desktop; discovered and analysed by BlackFog (2026-07-27)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The hidden desktop allows the attacker to take full advantage of legitimate Windows tools without being observed by the user."
+        attribution: "BlackFog (Darren Williams)"
+        source_url: "https://www.blackfog.com/medusahvnc-a-hidden-desktop/"
+      - quote: "The browser still runs on the victim's device, so it can load an existing profile, including cookies and session state."
+        attribution: "BlackFog (Darren Williams)"
+        source_url: "https://www.blackfog.com/medusahvnc-a-hidden-desktop/"
+      - quote: "Blocking traffic to known C2 infrastructure and alerting on unexpected outbound connections works regardless of how the session was hidden."
+        attribution: "BlackFog (Darren Williams)"
+        source_url: "https://www.blackfog.com/medusahvnc-a-hidden-desktop/"
+    extended_notes: |
+      BlackFog's own page metadata confirms datePublished 2026-07-27T13:55:25+01:00, so this is
+      genuinely fresh, not a republish. MedusaHVNC is a family evolution/branding of long-standing
+      hVNC banking-fraud tradecraft (cf. HVNC modules in other "Medusa"-branded criminal tooling);
+      no direct code-sharing evidence with the Medusa ransomware/MedusaLocker families is claimed by
+      BlackFog beyond the shared brand name — treat as a naming convention, not an attribution link.
+
+  - title: "CVE-2026-61511 — vBulletin: unauthenticated eval() code-injection in the {vb:math} template tag, reachable pre-auth via the pagenav AJAX route"
+    sources:
+      - { url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/", publisher: "SSD Secure Disclosure", date: "2026-07-27", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html", publisher: "The Hacker News", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"vBulletin pre-auth code execution exploit PHP eval public disclosure July 2026\") → pivot: The Hacker News, URL https://thehackernews.com/2026/07/public-exploit-released-for-patched.html → primary: SSD Secure Disclosure, URL https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+    summary: |
+      SSD Secure Disclosure published (2026-07-27T07:54:05Z) a technical advisory for CVE-2026-61511,
+      an unauthenticated remote code execution vulnerability in vBulletin 6.2.1 and prior / 6.1.6 and
+      prior, credited to an independent researcher working with SSD. The vulnerable sink is
+      vB5_Template_Runtime::runMaths() in /includes/vb5/template/runtime.php, which processes the
+      {vb:math} template expression tag: the input string passes through a regex filter
+      (preg_replace('#([^+\-*=/\(\)\d\^<>&|\.]*)#','', $str)) permitting digits, parentheses, and
+      math/binary operators — including the XOR operator — before being handed directly to PHP's
+      eval() ($status = @eval("\$str = $str;");). Because the allowed character set is broad enough to
+      support "phpfuck"-style operator-only code obfuscation, an attacker can construct a $str value
+      that evaluates to arbitrary PHP execution rather than a simple arithmetic result. While
+      {vb:math} can be triggered by an authenticated admin editing a template/style, SSD demonstrates
+      it is also reachable pre-authentication via the ajax/render/[template] route: the stock
+      "pagenav" template embeds {vb:math {vb:var pagenav.currentpage} - 1} to compute prior/next page
+      numbers, so an unauthenticated request supplying a crafted pagenav['pagenumber'] value reaches
+      runMaths() with no login, admin session, or user interaction required. vBulletin shipped fixes
+      for 6.2.1/6.2.0/6.1.6 in late June 2026 and finalized 6.2.2 on 1 July 2026 — the public technical
+      write-up and PoC landed nearly four weeks after patches were available, so any internet-facing
+      vBulletin forum not yet on 6.2.2 (or the corresponding 6.1.6/6.2.0/6.2.1 patch tier) should be
+      treated as exposed to a now-public unauthenticated RCE chain. No in-the-wild exploitation is
+      claimed at time of disclosure.
+      Detection: monitor web-server access logs for requests to /ajax/render/pagenav (or any other
+      {vb:math}-using template) carrying an anomalous, operator-heavy pagenumber parameter (XOR ^,
+      comparison <>&| characters) rather than a plain integer.
+      Hardening: upgrade to vBulletin 6.2.2 (or the corresponding 6.2.1/6.2.0/6.1.6 patch) immediately;
+      where upgrade is delayed, filter non-numeric characters from pagenumber-class parameters at a
+      reverse proxy/WAF as a stopgap.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, all sectors running vBulletin community/forum software"
+    cves: [CVE-2026-61511]
+    techniques: [T1190]
+    affected_products: ["vBulletin"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The '$str' parameter is not sufficiently sanitized before being used in an eval() call."
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+      - quote: "This can be exploited to inject and execute (semi) arbitrary PHP code through \"phpfuck techniques\""
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+      - quote: "This can also be exploited by unauthenticated attackers by abusing the \"ajax/render/[template]\" route"
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+    extended_notes: |
+      Affected/patched precision: vulnerable ≤ 6.2.1 and ≤ 6.1.6; fixed in 6.2.2 (security patches for
+      6.2.1/6.2.0/6.1.6 released end of June 2026, 6.2.2 released 2026-07-01). This is squarely a
+      vulnerability-kind item; flagging it here because the SSD write-up is itself the primary research
+      artefact (PoC technique explanation) rather than a vendor bulletin — cross-check against S1's
+      output for overlap before publishing.
+
+candidate_sources:
+  - id: ssd-disclosure
+    publisher: "SSD Secure Disclosure (research.dcso/independent-researcher vulnerability publication arm)"
+    url: "https://ssd-disclosure.com"
+    category: research
+    why: "Original technical vulnerability-research advisories (e.g. CVE-2026-61511 vBulletin pre-auth RCE) with full root-cause analysis and PoC technique explanation, not just a bulletin summary."
+
+coverage_gaps:
+  - source_id: group-ib
+    reason: "Listing page (group-ib.com/blog/) returned an alphabetical archive index with no date/recency ordering surfaced within a reasonable fetch; could not identify in-window items without exhaustive per-post fetching. Recommend adding an RSS/feed recipe if one exists."
+  - source_id: sysdig
+    reason: "Landing page is a JS-rendered Webflow shell with no article listing in the raw fetch; most recent identifiable post (via WebSearch) was 2026-07-21 (AI threat-landscape piece), outside the window."
+  - source_id: inside-it-ch
+    reason: "WebFetch returned HTTP 403; not retried (bounded-retry rule) since S2 (home-region domain) is better positioned to work this source with the bridge tool."
+  - source_id: N/A (dropped-for-recency)
+    reason: "Two strong candidates were found and dropped after confirming their true primary-source publish dates were stale: (1) Mysk/Talal Haj Bakry & Tommy Mysk macOS trusted-app code-replacement research (mysk.blog, published 2026-07-23, Apple declined to treat as a vulnerability) — heise.de's 2026-07-27 'update' added no confirmed new technical delta; (2) ZeroBEC 'Operation BlueDash' fake-Teams-update multi-RMM phishing campaign — ZeroBEC's own report is dated 2026-07-21 (page metadata confirmed), ~7 days before this run, and The Hacker News' 2026-07-27 pickup added no fresh technical development, so both were treated as recycled news outside even the 72h developing window and excluded per the recency discipline.
+"

@@ -1,0 +1,231 @@
+domain: S1
+run_id: 2026-07-28T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-28T04:13:00Z
+ended_at: 2026-07-28T04:28:19Z
+duration_seconds: 919
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 6
+  bridge_fetches: 32
+
+items:
+  - title: "CVE-2026-16812 — Arista VeloCloud Orchestrator (VCO) on-prem: unauthenticated OS command injection (CVSS 10.0), actively exploited and KEV-listed"
+    sources:
+      - { url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144", publisher: "Arista Networks (Security Advisory 0144)", date: "2026-07-27", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/27/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV addition alert)", date: "2026-07-27", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/arista-patches-velocloud-orchestrator-zero-day-exploited-in-attacks/", publisher: "BleepingComputer", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (via `python3 tools/fetch_source.py cisa-kev`, catalogVersion 2026.07.27) → primary: Arista PSIRT Security Advisory 0144, URL https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144 → corroboration: CISA alert page, URL https://www.cisa.gov/news-events/alerts/2026/07/27/cisa-adds-two-known-exploited-vulnerabilities-catalog (fetched via `python3 tools/fetch_source.py cisa page <url>`) → corroboration: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/arista-patches-velocloud-orchestrator-zero-day-exploited-in-attacks/ (found via WebSearch \"Arista VeloCloud Orchestrator CVE-2026-16812 exploited\")"
+    summary: |
+      Arista disclosed and CISA KEV-listed (both 2026-07-27) an unauthenticated OS command injection vulnerability
+      in VeloCloud Orchestrator (VCO) on-prem, the centralized controller that configures, monitors and manages
+      VeloCloud SD-WAN Edge devices and Gateways. Per Arista's advisory the flaw sits in "privileged internal
+      functionality" that "was intended to be for internal use only and is not intended to be remotely accessible" —
+      but the VCO web interface is internet/network-reachable by default with no configuration option to disable
+      the exposure, and exploitation requires no tenant or operator credentials at all. Arista states the issue
+      "was discovered externally and is known to be actively exploited" — this is vendor-confirmed in-the-wild
+      exploitation, not a KEV-catalog-only assessment. CVSS 3.1/4.0 base score is 10.0 (AV:N/AC:L/PR:N/UI:N,
+      full C/I/A impact). Affected: on-prem VCO 5.2.x before 5.2.3.14, 6.1.x before 6.1.3.4, 6.4.x before 6.4.2.4,
+      and 7.0.x before 7.0.0.1; VCO Hosted and Dedicated (Arista/Broadcom-managed) were already patched before the
+      advisory published and are not affected, nor are VeloCloud Gateway/Edge or any Arista EOS-based product line.
+      Because VCO is the management plane for an SD-WAN fleet, compromise can cascade to managed Edge devices —
+      Arista's post-remediation guidance explicitly calls for credential rotation and validation of managed device
+      state, not just an orchestrator patch. CISA added the CVE to KEV the same day with a federal remediation
+      deadline of 2026-07-30 (three days), reflecting the urgency of default, unauthenticated, confirmed-exploited
+      exposure on internet-facing SD-WAN management infrastructure.
+    region_nexus: "global; VeloCloud SD-WAN is deployed by European/Swiss telcos, MSPs and enterprises managing branch-office WAN connectivity, including public-sector and CI-adjacent networks"
+    primary_sector_nexus: "direct"
+    sector: "telco, public-sector, energy, finance"
+    cves: ["CVE-2026-16812"]
+    techniques: ["T1190"]
+    affected_products: ["Arista VeloCloud Orchestrator (VCO) On-Prem"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This issue was discovered externally and is known to be actively exploited."
+        attribution: "Arista Networks, Security Advisory 0144"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144"
+      - quote: "VCO is exposed by default. There is no configuration that can prevent the exposure. A successful attack requires network access to the VCO web interface. VCO tenant or operator credentials are not required for this exposure."
+        attribution: "Arista Networks, Security Advisory 0144"
+        source_url: "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144"
+      - quote: "CISA has ordered U.S. federal civilian executive branch agencies to mitigate the vulnerability by Thursday, July 30, 2026."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/arista-patches-velocloud-orchestrator-zero-day-exploited-in-attacks/"
+    extended_notes: |
+      Arista's advisory also lists specific attacker-source IPs and IOC-hunt guidance in its own IOC section — per
+      this pipeline's no-IOC policy those are deliberately omitted here; defenders should pull them directly from
+      the vendor advisory. Detection concept (telemetry-class first): VCO web-access logs / reverse-proxy logs for
+      requests to internal-only API routes reached from external source IPs, unusual URL-encoded path components,
+      or high request rates against the VCO management interface; VCO backend/application logs for unexpected
+      command execution, file creation, or configuration changes not tied to an administrator session; outbound
+      network connections initiated from the VCO host itself (a management appliance should not originate
+      arbitrary outbound sessions). Hardening: restrict VCO web-interface reachability to trusted administrative
+      networks (the vendor's own interim mitigation, since no application-level control disables the exposed
+      functionality), and treat any historically internet-exposed on-prem VCO as a compromise-assessment candidate
+      per Arista's post-remediation guidance (credential rotation, review of managed Edge device state).
+
+  - title: "CVE-2025-68686 — Fortinet FortiOS: SSL-VPN symlink-persistence patch bypass added to CISA KEV"
+    sources:
+      - { url: "https://fortiguard.fortinet.com/psirt/FG-IR-25-934", publisher: "Fortinet PSIRT (FG-IR-25-934)", date: "2026-07-27", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/27/cisa-adds-two-known-exploited-vulnerabilities-catalog", publisher: "CISA (KEV addition alert)", date: "2026-07-27", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (via `python3 tools/fetch_source.py cisa-kev`, catalogVersion 2026.07.27, dateAdded 2026-07-27) → primary: Fortinet PSIRT advisory FG-IR-25-934, URL https://fortiguard.fortinet.com/psirt/FG-IR-25-934 → corroboration: CISA alert page, URL https://www.cisa.gov/news-events/alerts/2026/07/27/cisa-adds-two-known-exploited-vulnerabilities-catalog"
+    summary: |
+      CISA added CVE-2025-68686 to its KEV catalog on 2026-07-27, confirming active exploitation of a FortiOS
+      SSL-VPN flaw that lets an unauthenticated remote attacker bypass the fix Fortinet shipped for the
+      long-running "symlink persistence" technique (the technique, first documented by Fortinet/CERT-FR/CISA in
+      April 2025, let attackers who had root-filesystem access via an earlier CVE — CVE-2022-42475,
+      CVE-2023-27997 or CVE-2024-21762 — create a symbolic link inside an SSL-VPN language-file folder connecting
+      the user filesystem to the root filesystem, preserving read access to the device even after the initial
+      vulnerability was patched and the intrusion "resolved"). CVE-2025-68686 (CWE-200, CVSS 3.1 5.3,
+      AV:N/AC:H/PR:N/UI:N/C:H) is Fortinet's own description of a bypass of the mitigation it built for that
+      symlink mechanism: a remote unauthenticated attacker can defeat the earlier patch via crafted HTTP requests,
+      but ONLY as a follow-on to an attacker who has already compromised the device at the filesystem level through
+      a separate vulnerability — this is a persistence/defense-evasion primitive, not an independent initial-access
+      vector. Fortinet's advisory (originally published 2026-02-10, updated 2026-03-12) lists as affected FortiOS
+      7.6.0–7.6.1 (fix: 7.6.2+), 7.4.0–7.4.6 (fix: 7.4.7+), and all versions of 7.2, 7.0 and 6.4 (fix: migrate to a
+      supported release); Fortinet notes products that never had SSL-VPN enabled are not impacted, and ships a
+      virtual-patch signature ("FG-VD-60389.0day") via FMWP database update 26.033. The KEV listing — three-plus
+      months after initial disclosure — signals CISA now has evidence this bypass, not just the original symlink
+      technique, is being actively used against devices in the field.
+    region_nexus: "global; Fortinet FortiGate SSL-VPN is one of the most widely deployed remote-access edge platforms across Swiss/European government and critical-infrastructure networks, and has been a standing target class since the 2022–2024 FortiOS exploitation wave"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2025-68686"]
+    techniques: ["T1211", "T1005"]
+    affected_products: ["Fortinet FortiOS"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An Exposure of Sensitive Information to an Unauthorized Actor vulnerability [CWE-200] in FortiOS SSL-VPN may allow a remote unauthenticated attacker to bypass the patch developed for the symbolic link persistency mechanism observed in some post-exploit cases, via crafted HTTP requests. An attacker would need first to have compromised the product via another vulnerability, at filesystem level."
+        attribution: "Fortinet PSIRT, FG-IR-25-934"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-25-934"
+      - quote: "This vulnerability can only be abused as a consequence of a threat actor exploiting a known vulnerability to implement read-only access to vulnerable FortiGate devices, at file system level. Products that never had SSL-VPN enabled, are not impacted by this issue. Virtual Patch named \"FG-VD-60389.0day.\" is available in FMWP db update 26.033"
+        attribution: "Fortinet PSIRT, FG-IR-25-934"
+        source_url: "https://fortiguard.fortinet.com/psirt/FG-IR-25-934"
+    extended_notes: |
+      Background (for context, not a fresh source): Fortinet, CERT-FR and CISA first documented the underlying
+      symlink-persistence technique in April 2025 (attacks dating to early 2023) as a way threat actors retained
+      read-only root-filesystem access to FortiGate devices via the SSL-VPN web panel even after the exploited
+      vulnerability was patched; the current CVE is a bypass of Fortinet's fix for THAT technique, not a new
+      initial-access flaw. Detection concept: any FortiGate estate that was ever exposed to CVE-2022-42475,
+      CVE-2023-27997 or CVE-2024-21762 should be checked for unexpected symbolic links in the SSL-VPN language-file
+      directories, unusual entries in the user filesystem pointing outside its normal root, and file-integrity
+      drift on the device's language-pack files — regardless of when the device was last patched, since this CVE
+      specifically defeats the earlier remediation. Hardening: apply the FortiOS versions above, and where SSL-VPN
+      is not required, disable it entirely (the advisory's own scoping note that non-SSL-VPN deployments are
+      unaffected implies this is the most robust mitigation for the exposed component).
+
+  - title: "CVE-2026-61511 — vBulletin (all supported 5.x/6.x branches): unauthenticated PHP eval-injection RCE via the {vb:math} template tag, public exploit code released"
+    sources:
+      - { url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/", publisher: "SSD Secure Disclosure", date: "2026-07-27", role: "primary" }
+      - { url: "https://karmainsecurity.com/KIS-2026-13", publisher: "Karma(In)Security (Egidio Romano / EgiX)", date: "2026-07-27", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2528", publisher: "BSI CERT-Bund (WID-SEC-2026-2528)", date: "2026-07-27", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html", publisher: "The Hacker News", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de (BSI CERT-Bund WID RSS), URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (via `python3 tools/fetch_source.py feed`) → drill: BSI CSAF WID-SEC-2026-2528, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2528 (via `python3 tools/fetch_source.py bsi-csaf WID-SEC-2026-2528`) → primary: SSD Secure Disclosure advisory, URL https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/ → primary: Karma(In)Security researcher write-up, URL https://karmainsecurity.com/KIS-2026-13 → corroboration: The Hacker News, URL https://thehackernews.com/2026/07/public-exploit-released-for-patched.html"
+    summary: |
+      SSD Secure Disclosure and independent researcher Egidio Romano ("EgiX") published (2026-07-27) full technical
+      details and working exploit code for CVE-2026-61511, an unauthenticated remote code execution vulnerability
+      in vBulletin's server-side template engine. The vulnerable code is `vB5_Template_Runtime::runMaths()` in
+      `/includes/vb5/template/runtime.php`: it applies an allowlist regex (`#([^+\-*=/\(\)\d\^<>&|\.]*)#`) intended
+      to restrict input to digits, parentheses and math/binary operators, then passes the filtered string straight
+      into PHP's `eval()`. The regex permits enough characters — digits, parentheses, arithmetic and binary/XOR
+      operators — to reconstruct arbitrary PHP function names and string literals character-by-character using a
+      "phpfuck"-style technique with no letters at all, defeating the filter's intent. Exploitation requires no
+      authentication: the stock `pagenav` template copies the visitor-supplied `pagenav[pagenumber]` HTTP parameter
+      into a `{vb:math}` tag, which flows into `runMaths()` via the public `ajax/render/pagenav` route — so any
+      unauthenticated request to that route can trigger PHP code execution as the web-server user. The published
+      PoC (credited "vBulletin 0-day RCE exploit by EgiX") opens an interactive command shell over this primitive.
+      Affected: vBulletin 5.x through 5.7.5 and 6.x through 6.2.1 (per the researcher and BSI); vBulletin shipped
+      Patch Level 1 hotfixes for the 6.1.6/6.2.0/6.2.1 branches in late June 2026 and rolled the fix forward into
+      6.2.2 on 2026-07-01 — meaning the public exploit landed roughly four weeks after patches were already
+      available. vBulletin Cloud-hosted sites were already patched before the disclosure. As of 2026-07-27 no
+      source has confirmed in-the-wild exploitation and CVE-2026-61511 is not (yet) CISA KEV-listed — this is
+      included on the imminent-exploitation profile (pre-auth RCE, public working exploit, internet-facing forum
+      software with a large unpatched population) rather than confirmed active abuse.
+    region_nexus: "global; vBulletin runs self-hosted community/association/public-facing forums, including some operated by Swiss/European public-sector-adjacent bodies and municipalities"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-61511"]
+    techniques: ["T1190"]
+    affected_products: ["vBulletin (self-hosted, 5.x and 6.x branches)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation yet and vBulletin is less central to Swiss/EU critical-infrastructure/government cores than to community/association forums, but included given the unauthenticated pre-auth RCE + public working exploit + large historically-unpatched self-hosted install base"
+    evidence:
+      - quote: "The $str parameter is not sufficiently sanitized before being used in an eval() call. The used regex will allow for digits, parentheses, math and binary operators (the XOR, particularly)."
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+      - quote: "The filter blocks letters but permits digits, parentheses, concatenation, arithmetic operators, and binary operators such as XOR, enough to reconstruct PHP strings and callable function names without any letters, using a restricted-character technique."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html"
+      - quote: "SSD did not report active exploitation. As of July 27, 2026, no source had confirmed in-the-wild attacks, and CVE-2026-61511 was not listed in CISA's Known Exploited Vulnerabilities catalog."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/public-exploit-released-for-patched.html"
+    extended_notes: |
+      Detection concept: web-access logs for anomalous, encoded, or arithmetic-only-looking values in the
+      `pagenav[pagenumber]` parameter on requests to `ajax/render/pagenav` (legitimate pagination values are short
+      integers; a phpfuck-style payload is a long string of parentheses, digits and operators) — this is a
+      distinctive, low-benign-collision signature. Process-creation telemetry on the web-server host for
+      unexpected child processes spawned from the PHP-FPM/Apache/php-cgi worker handling vBulletin requests is the
+      platform anchor. Hardening: upgrade to 6.2.2 (or the branch-specific Patch Level 1 release) immediately;
+      vBulletin Cloud customers are already remediated. This is unrelated to the May 2025 vBulletin RCE chain
+      (CVE-2025-48827/CVE-2025-48828, also researched by the same discloser, abusing the Reflection API and the
+      ajax/api/ad/replaceAdTemplate endpoint) — a WebSearch hit for "vBulletin exploited in the wild" surfaced that
+      unrelated 2025 story, which was verified and excluded as out-of-window/off-topic during this run.
+
+cve_table:
+  - cve: "CVE-2026-16812"
+    product: "Arista VeloCloud Orchestrator (VCO) On-Prem"
+    cvss: "10.0 (CVSS v3.1 and v4.0)"
+    epss: "not yet scored (new CVE)"
+    kev: true
+    exploited: true
+    patch: "5.2.3.14 / 6.1.3.4 / 6.4.2.4 / 7.0.0.1 and later"
+    source: "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144"
+  - cve: "CVE-2025-68686"
+    product: "Fortinet FortiOS (SSL-VPN)"
+    cvss: "5.3 (CVSS v3.1)"
+    epss: "0.48 (per ENISA EUVD enrichment)"
+    kev: true
+    exploited: true
+    patch: "7.6.2+ / 7.4.7+ / migrate off all-versions-affected 7.2, 7.0, 6.4"
+    source: "https://fortiguard.fortinet.com/psirt/FG-IR-25-934"
+  - cve: "CVE-2026-61511"
+    product: "vBulletin (5.x through 5.7.5, 6.x through 6.2.1)"
+    cvss: "not stated by discloser; ENISA EUVD lists 9.3 (CVSS v4.0)"
+    epss: "not yet scored (new CVE)"
+    kev: false
+    exploited: false
+    patch: "6.2.2 (2026-07-01), or branch Patch Level 1 for 6.1.6 / 6.2.0 / 6.2.1 (late June 2026)"
+    source: "https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product/supplier watchlist configured in config/org-profile.yaml (per spawn message) — sweep is a no-op; general coverage rules applied unchanged across all essential + rotation sources fetched this run"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "landing page at https://www.cisa.gov/news-events/directives returned only nav/breadcrumb chrome via the bridge (no drillable recent-directives list surfaced); no dedicated bridge subcommand exists for this listing. Directive-relevant content (BOD 26-04) was reached instead via the KEV entries' own notes fields."
+  - source_id: mysites-guru
+    reason: "jina reader returned only site-navigation chrome for https://mysites.guru/blog/ (no dated post list in the fetched body). Already-covered Joomla-extension-wave status (mySites.guru campaign) not re-verified this run; no fresh signal expected given last week's weekly synthesis already captured status."
+  - source_id: apple-security
+    reason: "WebFetch summariser returned only a truncation notice for https://support.apple.com/en-us/100100 (no advisory rows surfaced); not retried via bridge given no Apple-specific rotation priority this run and no other signal pointed at an in-window Apple advisory."

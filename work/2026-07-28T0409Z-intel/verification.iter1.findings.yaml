@@ -1,0 +1,172 @@
+iteration: 1
+subagent_type: cti-verification
+model: "Opus 5"
+model_id: "claude-opus-5"
+started_at: "2026-07-28T04:52:15Z"
+ended_at: "2026-07-28T05:06:08Z"
+duration_seconds: 833
+verdict: NEEDS_FIXES
+counts: {truth: 8, editorial: 2, advisory: 2}
+self_telemetry: {webfetch_calls: 8, websearch_calls: 3, bridge_fetches: 14, urls_checked: 14}
+note: >
+  Verifier tool set has no Write, so the report was returned inline and transcribed here verbatim in
+  substance by the main agent. One finding (F10-a) was rejected on evidence; the rejection and its basis
+  are recorded below.
+findings:
+  - code: F3
+    category: claim-not-supported
+    item: "2026-07-28/cve-2026-61511-vbulletin-preauth-rce-public-exploit"
+    summary: >
+      Patch dates, the 6.2.2 reference and the "Cloud already patched" statement were all cited to the SSD
+      advisory, which carries none of them — its Vendor Response section is two bare links. The facts live
+      in the vBulletin forum announcement.
+    remediation_applied: >
+      Fetched the vBulletin security announcement directly and added it as a primary source. It is dated
+      "Tue 30 Jun '26, 10:16am", lists the 6.2.1 / 6.2.0 / 6.1.6 Patch Level 1 releases, tells anyone on an
+      older version to upgrade to 6.2.1 Patch Level 1, and states verbatim "Note: vBulletin Cloud has been
+      already been patched." Body paragraph 3, the frontmatter summary, cves[].fixed and the action item
+      were rewritten to attribute each fact to that announcement. The uncorroborated 2026-07-01 date for
+      6.2.2 was removed entirely — the entry now says the fix is also carried in 6.2.2 and that no cited
+      source dates that release. Added the Cloud sentence as a fourth evidence quote.
+  - code: F3
+    category: claim-not-supported
+    item: "2026-07-28/cve-2026-61511-vbulletin-preauth-rce-public-exploit"
+    summary: >
+      "BSI CERT-Bund rates the advisory critical" was cited to the rendered HTML advisory page, which
+      displays no severity word.
+    remediation_applied: >
+      PARTIALLY REJECTED, then fixed for precision. The verifier checked only the HTML rendering. BSI's
+      structured CSAF document for WID-SEC-2026-2528 — fetched this run via the documented `bsi-csaf`
+      transport for that source — carries `document.aggregate_severity.text = "kritisch"`, so the
+      characterisation is BSI's own and is not a hallucination. The citation was imprecise rather than
+      wrong: the body now says BSI classes the advisory "kritisch" in the structured CSAF record it
+      publishes for that advisory id, and the sourcing note states explicitly that the severity value comes
+      from the CSAF document while the rendered HTML page carries only the German description quoted in the
+      evidence block. The verifier's alternative (BSI's listing shows CVSS 9.8) was not adopted, because the
+      entry already carries the CNA's own CVSS and adding a third figure would confuse rather than clarify.
+  - code: F3
+    category: claim-not-supported
+    item: "2026-07-28/cve-2025-68686-fortios-ssl-vpn-symlink-persistence-kev"
+    summary: >
+      The sourcing note claimed the FortiGuard page displays 5.3 "with no vector" and framed the 5.3-vs-5.9
+      split as an inconsistency inside Fortinet's own records. Neither is true: the 5.3 hyperlinks to the
+      vector AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N with temporal metrics E:P/RL:O/RC:C appended, so 5.3 is the
+      temporal-adjusted score of the same 5.9 base vector. Carrying 5.3 in cves[].cvss also put a temporal
+      score in a field the rest of the store fills with base scores.
+    remediation_applied: >
+      Confirmed independently against the saved advisory markup — the vector link with the E:P/RL:O/RC:C
+      temporal metrics is present. cves[].cvss changed from 5.3 to the 5.9 base score, and the sourcing note
+      rewritten to explain that the two figures are base and temporal views of one vector rather than a
+      contradiction, so a reader who sees 5.3 on the vendor page can reconcile them. This was the most
+      valuable finding of the iteration: the original note asserted a vendor inconsistency that does not
+      exist.
+  - code: F4
+    category: hallucinated-fact
+    item: "2026-07-28/ey-itsm-breach-shinyhunters-attribution-claim"
+    summary: >
+      The sourcing note said leak-site listings naming two further organisations appeared in the same wave.
+      The entry is single-source on BleepingComputer, which reports only EY; the other names came from a
+      leak-site tracker the entry does not cite.
+    remediation_applied: >
+      Sentence deleted from the entry sourcing note and the equivalent claim deleted from the run-record
+      notes. Citing the tracker was considered and rejected: the run had already decided not to amplify
+      uncorroborated leak-site claims, and describing them without citing them was the defect.
+  - code: F4
+    category: hallucinated-fact
+    item: "2026-07-28/ey-itsm-breach-shinyhunters-attribution-claim"
+    summary: >
+      The body claimed two details were "not in the original filings" — the 2026-04-23 detection date and
+      the 24 months of identity monitoring. Both are already published in the 2026-07-19 entry this one
+      updates, and the detection date is in the California OAG filing that entry quotes. Only the provider
+      name Experian is new.
+    remediation_applied: >
+      Verified against the 2026-07-19 entry directly. The sentence was rewritten to claim only what is
+      actually new — that the report names Experian as the provider of monitoring the original coverage had
+      recorded without naming. An update entry manufacturing a delta its parent already published is exactly
+      the defect the update rules exist to prevent.
+  - code: F4
+    category: hallucinated-fact
+    item: "runs/2026-07-28/2026-07-28T0409Z-intel"
+    summary: >
+      Two statements in the run-record notes were false about this run's own entries: that the FortiOS entry
+      "uses 5.9" (it carried 5.3 at the time) and that the vBulletin entry records both 9.8 and 9.3 (it
+      records only 9.3). The notes render to the site.
+    remediation_applied: >
+      Both statements rewritten to describe what the entries now actually carry, after the F3-c remediation
+      moved the FortiOS figure to 5.9. The vBulletin sentence no longer mentions 9.8 at all.
+  - code: F13
+    category: analytical-link-as-fact
+    item: "2026-07-28/dysphoria-iot-botnet-ens-sns-c2-upnp-relay-mesh"
+    summary: >
+      The entry attributed to XLab an assessment that the relay pivot was a resilience response to a March
+      2026 law-enforcement disruption of JackSkid. The XLab report makes no motive assessment and mentions
+      no takedown; its only March item is the first capture of a variant. The disruption is real but comes
+      from an uncited third source, which also does not attribute the reading to XLab.
+    remediation_applied: >
+      Attribution clause removed. The sentence now states only what XLab supports — that it dates the
+      variant to 2026-06-25 and calls it the start of the family's "relay transformation" — and says
+      explicitly that XLab offers no assessment of why. Citing the third source to carry the causal reading
+      was considered and rejected: the takedown is not needed for the entry's defender-relevant point, and
+      adding a source to rescue a speculative clause is the wrong trade.
+  - code: F14
+    category: quantifier-without-source
+    item: "2026-07-28/dysphoria-iot-botnet-ens-sns-c2-upnp-relay-mesh"
+    summary: >
+      "a maintained set of thirteen known IoT remote-code-execution flaws" hardened into a set size what
+      XLab introduces as a partial list ("some of the vulnerabilities it has been observed exploiting
+      include"). Same wording had propagated into the registry record.
+    remediation_applied: >
+      Both the entry body and the tool:dysphoria-botnet registry summary now say XLab names thirteen
+      identifiers and presents them explicitly as only part of the observed set.
+  - code: F5
+    category: missing-citation
+    item: "2026-07-28/cve-2025-68686-fortios-ssl-vpn-symlink-persistence-kev"
+    summary: >
+      The SSL-VPN language-file-directory detail — which the entry's first action item turns on — appeared
+      in three places with no citation carrying it. FG-IR-25-934 says only "the symbolic link persistency
+      mechanism observed in some post-exploit cases" and never names the directory.
+    remediation_applied: >
+      Fetched Fortinet's own PSIRT blog (2025-04-10), already referenced from FG-IR-25-934, and added it as
+      a corroborating source. It states the mechanism verbatim, and the entry now quotes it directly in the
+      body along with the vendor's statement that the link survives patching. Added as a third evidence
+      quote. The action item is now sourced.
+  - code: F10
+    category: missed-angle
+    item: "Zscaler ThreatLabz TELESHIM / BINDCLOAK campaign against government entities"
+    summary: >
+      The verifier flagged the 2026-07-27 Zscaler post as an in-window item the run left behind, from a
+      source on S3's sources_attempted but not sources_used.
+    remediation_applied: >
+      REJECTED on evidence, not applied. The exact URL the finding proposes
+      (zscaler.com/blogs/security-research/targeted-attack-government-entities-middle-east-part-1) is
+      already the primary source of entries/2026-07-26/teleshim-bindcloak-volume-serial-keying-government-espionage,
+      published two days ago and present in this run's prior-coverage index — it covers the same ISO
+      delivery, the same signed-ASUSTek-binary DLL side-load, the same Telegram Bot API C2 and the same
+      volume-serial environmental keying. Republishing it would be a duplicate, which is what the dedup
+      discipline exists to prevent. The verifier appears not to have checked the finding against
+      prior_coverage.json. No delta was identified that would support an update entry.
+  - code: F11
+    category: editorial-advisory
+    item: "2026-07-28/medusahvnc-hidden-desktop-browser-session-hijacking"
+    summary: >
+      techniques[] mapped T1685 (Disable or Modify Tools) for a behaviour the body never described — the
+      advertised AMSI patch and ETW bypass appeared only in the sourcing note's disclaimer.
+    remediation_applied: >
+      Accepted. A body clause now describes the seller's advertised "Mem Exec" in-memory execution feature
+      with its AMSI patch and ETW bypass, and states that it is reported from the marketplace listing rather
+      than confirmed in the analysed sample. The mapping is now body-supported and its evidentiary status is
+      visible to the reader.
+  - code: F11
+    category: editorial-advisory
+    item: "evidence[] quote fidelity across three entries"
+    summary: >
+      Three evidence quotes were not byte-exact substrings — straight quotes substituted for the source's
+      curly quotes and a dropped leading "However, " in the vBulletin entry, two adjacent list items joined
+      into one quote in the FortiOS entry, and a capitalised leading word plus a truncated clause in the
+      Dysphoria entry. No meaning was altered in any of them.
+    remediation_applied: >
+      Accepted and normalised rather than deferred. The vBulletin quotes now carry the source's curly quotes
+      and the full "However, this can also be exploited..." opening; the joined FortiOS quote was split into
+      two separate evidence records; the Dysphoria quote now runs from the source's lowercase "the" through
+      the end of the sentence including the byte-transformation clause. Verbatim means a contiguous
+      substring, so these are worth fixing even when harmless.
