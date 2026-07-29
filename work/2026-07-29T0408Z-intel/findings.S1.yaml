@@ -1,0 +1,238 @@
+domain: S1
+run_id: 2026-07-29T0408Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-29T04:11:28Z
+ended_at: 2026-07-29T04:29:10Z
+duration_seconds: 1062
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 6
+  bridge_fetches: 28
+
+cve_table:
+  - { cve: "CVE-2026-59243", product: "Apache Airflow FAB provider (apache-airflow-providers-fab)", cvss: "vendor-rated moderate; BSI aggregate: hoch (high)", epss: null, kev: false, exploited: false, patch: "apache-airflow-providers-fab >= 3.7.3 (sets verify_signature=True by default)", source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551" }
+  - { cve: "CVE-2025-15467", product: "Siemens Desigo CC (vendored OpenSSL CMS parsing)", cvss: "9.8 (v3.1 CRITICAL)", epss: null, kev: false, exploited: false, patch: "V9 family fixed in 9.0.1; V7/V8 families unfixed as of 2026-07-28 (public PoC exists)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-01" }
+  - { cve: "CVE-2026-7891", product: "Siemens Mendix Runtime", cvss: "9.1 (v3.1 CRITICAL)", epss: null, kev: false, exploited: false, patch: "no code patch — documentation update; developers must explicitly configure access rules on the System.User entity", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-02" }
+  - { cve: "CVE-2026-16347", product: "MikroTik RouterOS / Cloud Hosted Router", cvss: "8.8 (v3.1 HIGH)", epss: null, kev: false, exploited: false, patch: "no vendor fix version identified in advisory; add rate-limiting/lockout controls", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-05" }
+  - { cve: "CVE-2026-12705", product: "ABB KNX Update Tool (legacy non-KNX-Secure devices)", cvss: "6.4 (v3.1 MEDIUM)", epss: null, kev: false, exploited: false, patch: "none planned by ABB (legacy KNX limitation); restrict physical bus access", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-07" }
+  - { cve: "CVE-2026-10697", product: "Progress MOVEit Transfer", cvss: "7.5 (v3.1 HIGH, AV:Adjacent/AC:High)", epss: "0.179% (8th percentile)", kev: false, exploited: false, patch: "MOVEit Transfer 2026.0.3 (also fixed in 2025.1.5 branch)", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15966", product: "Progress MOVEit Transfer", cvss: "7.5 (v3.1 HIGH)", epss: null, kev: false, exploited: false, patch: "MOVEit Transfer 2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15967", product: "Progress MOVEit Transfer", cvss: "7.5 (v3.1 HIGH)", epss: null, kev: false, exploited: false, patch: "MOVEit Transfer 2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15968", product: "Progress MOVEit Transfer", cvss: "7.1 (v3.1 HIGH)", epss: null, kev: false, exploited: false, patch: "MOVEit Transfer 2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-26980", product: "Ghost CMS", cvss: null, epss: null, kev: false, exploited: true, patch: "not stated by source; confirmed exploited per VulnCheck canary telemetry", source: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026" }
+
+items:
+  - title: "Apache Airflow FAB provider: Azure AD OAuth JWT signature verification disabled by default, allowing arbitrary-user (incl. Admin) login (CVE-2026-59243)"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551", publisher: "BSI CERT-Bund (WID-SEC-2026-2551)", date: "2026-07-28", role: "primary" }
+      - { url: "https://seclists.org/oss-sec/2026/q3/298", publisher: "oss-sec mailing list (Shahar Epstein, Apache Airflow security team)", date: "2026-07-28", role: "primary" }
+      - { url: "https://github.com/apache/airflow/pull/69374", publisher: "Apache Airflow GitHub (remediation PR)", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss → primary: BSI CERT-Bund advisory, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551 → primary: Apache's own oss-sec disclosure, URL https://seclists.org/oss-sec/2026/q3/298"
+    summary: |
+      Apache disclosed CVE-2026-59243 in apache-airflow-providers-fab (the FAB auth-manager provider for Apache Airflow, the widely-used workflow-orchestration platform) on 2026-07-27/28: the FAB auth manager's Azure AD OAuth login path decoded the OAuth ID token with `verify_signature` defaulted to False, so an attacker able to present a forged or unsigned (`alg:none`) ID token to the OAuth callback could bypass authentication entirely and log in as an arbitrary user — including one holding the Admin role (CWE-347 Improper Authentication). Only deployments running the FAB auth manager with the Azure AD OAuth login path under its default configuration are affected; the equivalent Authentik login path already defaulted `verify_signature=True` and is not affected. Apache rates the issue "moderate" severity in its own advisory text; BSI's aggregate rating is "hoch" (high). Fixed in `apache-airflow-providers-fab` 3.7.3, which flips the default to `verify_signature=True`. No indication of in-the-wild exploitation; this is a fresh (2026-07-27/28) vendor disclosure with a same-day fix already shipped.
+    region_nexus: "global; Airflow is broadly deployed for data-engineering/ETL orchestration across public-sector and financial-sector estates in Switzerland/EU"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy"
+    cves: ["CVE-2026-59243"]
+    techniques: [T1606]
+    affected_products: ["Apache Airflow FAB provider (apache-airflow-providers-fab)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The FAB auth manager's Azure AD OAuth login defaulted `verify_signature=False` when decoding the ID token, so an attacker able to present a forged or unsigned (`alg:none`) ID token to the OAuth callback could bypass authentication and log in as an arbitrary user, including one holding the Admin role"
+        attribution: "Shahar Epstein, Apache Airflow security team (oss-sec)"
+        source_url: "https://seclists.org/oss-sec/2026/q3/298"
+      - quote: "Ein entfernter, anonymer Angreifer kann eine Schwachstelle in Apache Airflow FAB provider ausnutzen, um Sicherheitsmaßnahmen zu umgehen und Administratorrechte zu erlangen."
+        attribution: "BSI CERT-Bund (WID-SEC-2026-2551)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551"
+    extended_notes: |
+      Detection concept (vendor-neutral): audit authentication logs on any Airflow FAB-auth-manager deployment using the Azure AD OAuth login path for logins whose JWT `alg` header is `none` or whose signature cannot be validated against the tenant's published JWKS — Airflow's own auth events / webserver access logs are the telemetry class. Hardening: upgrade `apache-airflow-providers-fab` to >= 3.7.3, or explicitly set `verify_signature=True` on any pinned older version as an interim mitigation; treat any Airflow Admin-role session created via this OAuth path before the upgrade as suspect and force credential/session rotation.
+
+  - title: "CISA ICS batch (28 Jul): Siemens Desigo CC pre-auth RCE via a vendored OpenSSL CMS parsing bug (CVE-2025-15467, CVSS 9.8, public PoC, partially unpatched) and Mendix Runtime's undocumented anonymous-role access to the System.User entity (CVE-2026-7891, CVSS 9.1)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-01", publisher: "CISA ICS Advisory ICSA-26-209-01 (Siemens Desigo CC)", date: "2026-07-28", role: "primary" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-02", publisher: "CISA ICS Advisory ICSA-26-209-02 (Siemens Mendix Runtime)", date: "2026-07-28", role: "primary" }
+      - { url: "https://github.com/guiimoraes/CVE-2025-15467", publisher: "guiimoraes (GitHub PoC repository for CVE-2025-15467)", date: "2026-07-28", role: "corroborating" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-05", publisher: "CISA ICS Advisory ICSA-26-209-05 (MikroTik RouterOS/CHR)", date: "2026-07-28", role: "corroborating" }
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-07", publisher: "CISA ICS Advisory ICSA-26-209-07 (ABB KNX Update Tool)", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/cybersecurity-advisories/all.xml → primary: CISA ICSA-26-209-01, URL https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-01 → corroborating PoC: GitHub, URL https://github.com/guiimoraes/CVE-2025-15467"
+    summary: |
+      CISA published seven ICS advisories on 2026-07-28. The headline is CVE-2025-15467 (CVSS 9.8) in Siemens Desigo CC, a widely-deployed European building-management/BAS platform (Critical Manufacturing sector, worldwide deployment): a vendored OpenSSL flaw in `evp_cipher_get_asn1_aead_params()` (crypto/evp/evp_lib.c) uses an attacker-controlled length from a CMS AuthEnvelopedData AEAD IV as the copy bound into a fixed 16-byte (`EVP_MAX_IV_LENGTH`) stack buffer, producing a pre-authentication stack buffer overflow when the process parses a crafted CMS/S-MIME AuthEnvelopedData message (no valid key material required, since the overflow fires before tag verification) — a public command-execution PoC is already on GitHub. Siemens fixed Desigo CC family V9 in 9.0.1, but families V7 and V8 remain on "all versions" affected with no fix yet shipped ("Siemens is preparing further fix versions"); interim mitigation is network segmentation per Siemens' grid-security guidance. The second Siemens item, CVE-2026-7891 (CVSS 9.1) in Mendix Runtime (Siemens' low-code application platform), is a documentation/config gap rather than a code bug: Mendix's access-rule model does not adequately describe the System.User entity's special behavior, so developers commonly grant the anonymous role implicit access to all stored user records without ever explicitly configuring permissions on System.User — a misconfiguration Siemens says can expose sensitive user data or enable privilege escalation in any deployed Mendix app that didn't override the default. The same batch also carries CVE-2026-16347 (CVSS 8.8, MikroTik RouterOS/Cloud Hosted Router — no rate-limiting/lockout on API authentication attempts, CISA notes it is "not exploitable remotely" and adjacent-network only) and CVE-2026-12705 (CVSS 6.4, ABB KNX Update Tool — missing firmware-integrity check on legacy non-KNX-Secure devices, physical bus access required, no fix planned by ABB). No in-the-wild exploitation is reported for any of these.
+    region_nexus: "Europe/worldwide; Siemens Desigo CC and Mendix are both headquartered/engineered in Germany with broad EU public-sector and critical-manufacturing deployment; ABB is Swiss-headquartered"
+    primary_sector_nexus: "direct"
+    sector: "energy, water, public-sector, critical-manufacturing"
+    cves: ["CVE-2025-15467", "CVE-2026-7891", "CVE-2026-16347", "CVE-2026-12705"]
+    techniques: [T1190]
+    affected_products: ["Siemens Desigo CC", "Siemens Mendix Runtime", "MikroTik RouterOS", "MikroTik Cloud Hosted Router", "ABB KNX Update Tool"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "OpenSSL has published a stack based buffer overflow vulnerability that allows a remote attacker to cause a denial of service (DoS) or potentially allow for remote code execution. Siemens has released new versions for several affected products ... Siemens is preparing further fix versions and recommends countermeasures for products where fixes are not, or not yet available."
+        attribution: "CISA (ICSA-26-209-01, citing Siemens ProductCERT)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-01"
+      - quote: "Mendix documentation for access rules does not adequately describe the special behavior of the System.User entity, leaving developers without sufficient guidance to configure access rules securely."
+        attribution: "CISA (ICSA-26-209-02, citing Siemens ProductCERT)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-209-02"
+      - quote: "The vulnerability is located in crypto/evp/evp_lib.c ... BUG: Uses 'i' (attacker-controlled) as max_len instead of EVP_MAX_IV_LENGTH ... OVERFLOW!"
+        attribution: "guiimoraes (GitHub PoC for CVE-2025-15467)"
+        source_url: "https://github.com/guiimoraes/CVE-2025-15467"
+    extended_notes: |
+      Detection concept (vendor-neutral): for Desigo CC, monitor process-crash/crash-dump telemetry on hosts running the Desigo CC server components immediately following inbound S/MIME, CMS, or PKCS#7 content (mail flow, file uploads, API bodies) — a crash coincident with such parsing is the primary observable given the overflow fires pre-authentication. For Mendix Runtime, audit any deployed Mendix app's access-rule configuration (`System.User` entity specifically) for an anonymous or unauthenticated role with implicit read access — an unauthenticated request against the app's REST/OData endpoints returning user records beyond the requester's own is the discriminator. Hardening: for Desigo CC V7/V8, apply Siemens' network-segmentation guidance until a fix version ships; for Mendix, explicitly configure access rules on System.User rather than relying on defaults; for MikroTik, add source-based/API rate limiting; ABB KNX Update Tool has no vendor fix — restrict physical bus access.
+
+  - title: "Progress MOVEit Transfer: four high-severity flaws fixed in 2026.0.3 — authentication bypass, permissive cross-domain policy, session-expiry and stored-XSS (CVE-2026-10697, CVE-2026-15966, CVE-2026-15967, CVE-2026-15968)"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12808", publisher: "NCSC Switzerland / Cyber Security Hub", date: "2026-07-28", role: "primary" }
+      - { url: "https://www.heise.de/en/news/Security-update-MOVEit-file-transfer-solution-is-vulnerable-11379334.html", publisher: "heise online", date: "2026-07-27", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-55Q6-5QRM-8CCF", publisher: "GitHub Advisory Database (GHSA for CVE-2026-10697)", date: "2026-07-23", role: "corroborating" }
+      - { url: "https://docs.progress.com/bundle/moveit-transfer-release-notes-2026/page/Fixed-Issues-in-2026.0.3.html", publisher: "Progress Software (MOVEit Transfer 2026 release notes)", date: "2026-07-24", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12808 → corroborating: heise online, URL https://www.heise.de/en/news/Security-update-MOVEit-file-transfer-solution-is-vulnerable-11379334.html → vendor reference: Progress release notes, URL https://docs.progress.com/bundle/moveit-transfer-release-notes-2026/page/Fixed-Issues-in-2026.0.3.html"
+    summary: |
+      Progress Software shipped MOVEit Transfer 2026.0.3 fixing four vulnerabilities it and GitHub's advisory database rate "high" severity, flagged fresh by NCSC-CH on 2026-07-28 and covered by heise on 2026-07-27: CVE-2026-10697 (CVSS 3.1 7.5, CWE-287 Improper Authentication, adjacent-network attack vector/high complexity per its GHSA CVSS vector, EPSS 8th percentile); CVE-2026-15966 (CVSS 7.5, permissive cross-domain security policy with untrusted domains); CVE-2026-15967 (CVSS 7.5, insufficient session expiration); and CVE-2026-15968 (CVSS 7.1, stored XSS via unfiltered input, enabling session hijacking or malicious-script execution against admins/users of the file-transfer web UI). All four affect MOVEit Transfer before 2025.1.5, and from 2026.0.0 before 2026.0.3. Neither Progress nor NCSC-CH report evidence of in-the-wild exploitation as of publication ("no indications from the software manufacturer that attackers are already exploiting the vulnerabilities" — heise). MOVEit Transfer's history as the vehicle for the 2023 Cl0p mass-exploitation campaign means any newly disclosed authentication/session-handling flaw in the product carries above-average urgency for defenders running internet-facing instances, even absent confirmed exploitation today.
+    region_nexus: "global; MOVEit Transfer is widely deployed for managed file transfer across government and enterprise estates, including Swiss/EU public-sector and financial-services use"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare"
+    cves: ["CVE-2026-10697", "CVE-2026-15966", "CVE-2026-15967", "CVE-2026-15968"]
+    techniques: [T1190]
+    affected_products: ["Progress MOVEit Transfer"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation could allow attackers to bypass authentication, hijack user sessions, or execute malicious scripts through network access to the application."
+        attribution: "NCSC Switzerland / Cyber Security Hub"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12808"
+      - quote: "Currently, there are no indications from the software manufacturer that attackers are already exploiting the vulnerabilities. However, this can change quickly."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Security-update-MOVEit-file-transfer-solution-is-vulnerable-11379334.html"
+      - quote: "This issue affects MOVEit Transfer: before 2025.1.5, from 2026.0.0 before 2026.0.3."
+        attribution: "GitHub Advisory Database (GHSA-55Q6-5QRM-8CCF)"
+        source_url: "https://github.com/advisories/GHSA-55Q6-5QRM-8CCF"
+    extended_notes: |
+      Detection concept (vendor-neutral): monitor MOVEit Transfer web-application access/authentication logs for repeated authentication attempts from a logically-adjacent network segment (CVE-2026-10697's AV:Adjacent vector implies the attacker must already be network-adjacent, not fully remote over the internet), for sessions that persist past expected timeout boundaries (CVE-2026-15967), and for stored content in transfer-notification or file-metadata fields that renders as script in the admin UI (CVE-2026-15968). Hardening: upgrade to MOVEit Transfer 2026.0.3 (or apply the equivalent fix for the 2025.1.x branch, 2025.1.5); given the product's history as a mass-exploitation target, treat any internet-facing MOVEit instance not yet on a fixed build as a priority patch even without confirmed ITW.
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation yet; included primarily because of MOVEit Transfer's history as a high-value mass-exploitation target and the Swiss NCSC's own decision to flag it fresh"
+
+  - title: "VulnCheck's 1H-2026 State of Exploitation: median CVE-to-KEV time falls to 80 days, CMS is one-third of all KEVs, and the first Anthropic Project-Glasswing-discovered CVE (Ghost CMS, CVE-2026-26980) is confirmed exploited"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026", publisher: "VulnCheck", date: "2026-07-28", role: "primary" }
+    discovery_trace: "first seen at: vulncheck, URL https://www.vulncheck.com/blog → primary: VulnCheck 1H-2026 State of Exploitation report, URL https://www.vulncheck.com/blog/state-of-exploitation-1h-2026"
+    summary: |
+      VulnCheck published its 1H-2026 State of Exploitation report on 2026-07-28, drawn from 495 CVEs it tracked as newly Known-Exploited during the first half of 2026. Key vulnerability-management-relevant findings: the median time from CVE publication to KEV-listing fell from 120 days (2025) to 80 days (1H-2026), while the share of KEVs exploited on or before the CVE's publication date dropped slightly (28.93% in 2025 to 23.43% in 1H-2026) — exploitation is reaching KEV status faster even as same-day "day-zero" exploitation eases marginally. Content Management Systems remained the single most-targeted technology category, accounting for one-third of all 1H-2026 KEVs (spanning WordPress plugins, Drupal, Ghost and Kentico Xperience, consistent with a concurrent Australian Signals Directorate advisory on large-scale CMS exploitation); Network Edge Devices (Cisco, Palo Alto, Check Point, F5, Juniper, Fortinet, SonicWall and others) remained the second most consistently targeted class. On AI-discovered vulnerabilities: of 1,061 CVEs VulnCheck attributes to AI-assisted discovery (correlating Anthropic's Project Glasswing disclosures with the Berkeley Vulnerability Research Initiative dataset), only 14 (1.3%) have been confirmed exploited in the wild — roughly matching the overall exploitation rate for all vulnerabilities and not evidence that AI-discovered flaws are disproportionately targeted. VulnCheck reports Anthropic's own Project Glasswing disclosure ledger, which claimed 23,019 findings at May 2026 launch, has not grown past its original 1,611 committed entries despite over 150 findings passing their disclosure deadline; of those, 126 produced published CVEs and exactly one — CVE-2026-26980 in Ghost CMS — is confirmed exploited in the wild, observed first-hand against VulnCheck's own canary infrastructure. Separately, VulnCheck notes ongoing exploitation of the previously-disclosed Langflow CVE-2026-0769 and CVE-2026-5027 (neither of which is CISA-KEV-listed) for OpenAI/Claude credential harvesting, cryptominer deployment and lateral-movement attempts.
+    region_nexus: "global; informs vulnerability-management prioritization for any Swiss/EU public-sector or CI operator running CMS or network-edge devices"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco, finance"
+    cves: ["CVE-2026-26980", "CVE-2026-0769", "CVE-2026-5027"]
+    techniques: [T1190]
+    affected_products: ["Ghost CMS", "Langflow"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "In the first half of 2026, 23.43% of KEVs showed evidence of exploitation on or before the day the CVE was published ... the median time from CVE publication to KEV falling from 120 days in 2025 to 80 days during the first half of 2026."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026"
+      - quote: "Of 1,061 vulnerabilities attributed to AI-assisted discovery, only 14, or 1.3%, have been confirmed as exploited in the wild ... 126 of those findings have resulted in published CVEs, and just one of them, CVE-2026-26980, has been confirmed as exploited in the wild"
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026"
+    extended_notes: |
+      Periodic/half-year report (analogous to an annual report) — flagged for the main agent as a recurring VulnCheck research series (a prior "2025 State of Exploitation" edition is referenced inline). Primarily strategic/prioritization value rather than a specific hunt/detection action; no single detection concept applies across the whole report. The Langflow detail is a material delta on the already-covered CVE-2026-0770/CVE-2026-14499 Langflow entries: VulnCheck names the specific post-exploitation behavior (OpenAI/Claude credential harvesting, cryptominer deployment, lateral-movement attempts) that the earlier coverage did not have.
+    borderline: true
+    borderline_reason: "single-source (VulnCheck's own analysis); strategic/statistical report rather than a single actionable vulnerability, but carries concrete, citable exploitation-rate and CMS/Langflow/Ghost detail directly relevant to vulnerability-management prioritization"
+
+  - title: "LegacyHive: Nightmare Eclipse's latest public Windows PoC hijacks profile initialization via offline registry-hive tampering, reproduced by LevelBlue on fully July-2026-patched systems"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation", publisher: "LevelBlue (Trustwave) SpiderLabs", date: "2026-07-27", role: "primary" }
+    discovery_trace: "first seen at: trustwave-spiderlabs, URL https://www.levelblue.com/blogs/spiderlabs-blog → primary: LevelBlue SpiderLabs LegacyHive write-up, URL https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+    summary: |
+      LevelBlue (Trustwave) SpiderLabs published a full technical breakdown (2026-07-27) of "LegacyHive," the latest in a series of public Windows zero-day/technique proof-of-concepts from the pseudonymous "Nightmare-Eclipse" (aka Chaotic Eclipse) disclosure persona already tracked in the registry for BlueHammer, RedSun, UnDefend, YellowKey, GreenPlasma, MiniPlasma, GreatXML and RoguePlanet. LegacyHive is not a traditional software vulnerability but an abuse of legitimate Windows profile-loading machinery: an attacker who already holds credentials for a low-privileged "helper" account uses Microsoft's own Registry Offline API (offreg.dll, functions OROpenHive/ORSetValue/ORSaveHive) to modify that account's ntuser.dat hive offline, rewriting the `Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders` Local AppData value to an attacker-controlled NT Object Manager namespace path; a batch opportunistic lock (FSCTL_REQUEST_BATCH_OPLOCK) on UsrClass.dat lets the exploit pause deterministically until Windows reaches the exact profile-initialization stage, at which point CreateProcessWithLogonW with LOGON_WITH_PROFILE forces a normal profile load that consumes the tampered hive and redirects the target account's application data path — giving the attacker access to resources tied to the helper/target account. LevelBlue's OpsIntel CTI and THOR teams independently reproduced the full chain on a fully patched Windows system (July 2026 Patch Tuesday updates installed), confirming no Microsoft fix currently closes this abuse path. There is no CVE and no vendor patch; Microsoft's Digital Crimes Unit has previously threatened legal action against the Nightmare-Eclipse persona over earlier drops in the same series.
+    region_nexus: "global; any Windows fleet, including government/enterprise domain-joined estates, where a low-privileged account holds or can obtain another account's credentials"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, healthcare, telco"
+    cves: []
+    techniques: [T1112, T1078]
+    affected_products: ["Microsoft Windows"]
+    entity_keys: ["actor:nightmare-eclipse"]
+    new_entities:
+      - { key: "trend:legacyhive-windows-profile-registry-hijack-2026-07", type: trend, name: "LegacyHive",
+          aliases: [],
+          summary: "Nightmare Eclipse's Windows profile-initialization/offline-registry-hive-tampering PoC (offreg.dll + oplock + CreateProcessWithLogonW/LOGON_WITH_PROFILE) reproduced by LevelBlue SpiderLabs on fully July-2026-patched systems; no CVE, no vendor fix (LevelBlue SpiderLabs, 2026-07-27)." }
+    relation_suggestions:
+      - { subject: "trend:legacyhive-windows-profile-registry-hijack-2026-07", object: "actor:nightmare-eclipse",
+          basis: "LevelBlue SpiderLabs: 'the Nightmare-Eclipse disclosure actor has published LegacyHive, its latest Windows proof-of-concept (PoC) released shortly after Microsoft's July 2026 Patch Tuesday' (LevelBlue SpiderLabs, 2026-07-27)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "LevelBlue OpsIntel CTI and Threat Operations and Research (THOR) teams reviewed and reproduced the complete LegacyHive exploitation chain on fully patched Windows systems with the July 2026 Patch Tuesday updates installed, confirming the PoC functions as described."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+      - quote: "LegacyHive abuses this process by modifying the hive offline, redirecting Local AppData into an attacker-controlled NT Object Manager namespace. When the helper account signs in and the modified hive is loaded, applications follow the redirected path, enabling access to resources associated with the target account."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+    extended_notes: |
+      Behavioral manifestation / benign lookalikes (per source): each individual operation (offline registry-hive editing via the Registry Offline API, a batch oplock request on a profile hive file, CreateProcessWithLogonW with LOGON_WITH_PROFILE) is legitimate Windows behavior in isolation and can appear in normal profile-management or roaming-profile tooling; LevelBlue states the discriminator is the *combination and short time window* — off-path staged copies of ntuser.dat/UsrClass.dat outside normal profile directories, followed closely by a cross-account CreateProcessWithLogonW invoking LOGON_WITH_PROFILE for an account other than the calling session's own — observed together within a short window is "highly unusual." Detection concept (vendor-neutral, no rule code): file-access telemetry for ntuser.dat/UsrClass.dat reads/writes outside their canonical per-profile paths, correlated with process-creation telemetry showing a cross-account logon-with-profile invocation (e.g., via the Windows seclogon service) in the same short window. Hardening: none from Microsoft yet for this technique class; the practical mitigation is restricting which accounts can hold or reuse "helper"-style credentials with cross-account logon rights, and treating any off-path access to another account's profile hive files as an incident trigger.
+    borderline: true
+    borderline_reason: "publication date 2026-07-27 is outside the 26h primary window (~28-52h before run start) but within the 72h developing_window_hours; included given the high technical/detection value and no vendor fix, and because it was not found in prior_coverage.json for the last 14 days"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product or supplier watchlist configured in config/org-profile.yaml (both 'none configured' per the org profile) — the products sweep is a no-op this run; general coverage rules applied unchanged. All items above were reached through normal S1 essential/rotational source coverage, not a product-name sweep."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "WebFetch returned a clean dated listing but the newest item is 2026-06-12 (UNC1151/Ghostwriter) — over a month stale; no in-window content, not a fetch failure."
+  - source_id: shadowserver
+    reason: "Listing fetched cleanly; newest item is 2026-06-25 (StealC special report) — sparse cadence as documented on the source record, no in-window items."
+  - source_id: synacktiv
+    reason: "Listing fetched cleanly; newest publication is 2026-07-10 — outside the 26h/72h window, no in-window items."
+  - source_id: claroty-team82
+    reason: "Listing fetched; newest dated item found (Iran-linked warning-systems research) published ~2026-06-25 — outside window. Listing itself carries no visible dates, requires per-post drill to confirm; done for the top item only given time budget."
+  - source_id: sansec-research
+    reason: "Listing fetched cleanly; newest item is 2026-07-02 (Amasty Magento extensions) — outside the 26h/72h window."
+  - source_id: mysites-guru
+    reason: "jina reader returned navigation chrome only (no post listing content) again, consistent with the 2026-07-28 note on the source record — transport/anti-bot issue, not content death. Not counted as a hard fetch failure per the source record's own note."
+  - source_id: jpcert
+    reason: "Fetched cleanly; newest items are Japan-specific consumer-hardware advisories (ELECOM routers, EPSON/Ricoh printers) with no Swiss/EU public-sector or CI nexus and no elevated severity — screened out as out-of-scope, not a fetch failure."
+  - source_id: chrome-releases
+    reason: "Feed fetched cleanly; latest Stable Channel Update for Desktop is dated 2026-07-23 (outside window) with no 'in the wild' exploitation note; the fresher 2026-07-28 items are ChromeOS LTS and Extended-Stable rollout notices without a dated Stable-Desktop security bulletin in-window."
+  - source_id: cisa-directives
+    reason: "Fetched cleanly via bridge; no new directive published in-window — the three listed directives (BOD 26-04, BOD 26-04 implementation guidance, BOD 26-02) are all previously known/covered."
+  - source_id: keycloak
+    reason: "RSS fetched cleanly; newest post (2026-07-20) is a forum-sunsetting announcement, no security advisory in-window."
+  - source_id: apple-security
+    reason: "Corroborated via NCSC-NL/CERT-FR (both flagged fresh Apple macOS/iOS/Sequoia/Sonoma/Tahoe fixes published 2026-07-28); direct WebFetch of support.apple.com/en-us/100100 returns a client-side-rendered table per the 2026-07-28 source-record note, and the per-release page (128067) carries no 'actively exploited' language — assessed as a routine patch cycle and not included as a standalone item (no confirmed ITW, ~155 generic memory-safety CVEs with no standout pre-auth remote vector called out by the sources read)."
+
+bridge_uses:
+  - { id: cisa-kev, method: "bridge:cisa-kev", outcome: ok }
+  - { id: cisa-advisories, method: "bridge:feed", outcome: ok }
+  - { id: cisa-directives, method: "bridge:url", outcome: ok }
+  - { id: enisa-euvd, method: "bridge:enisa-euvd.recent", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:feed", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:ncsc-nl.csaf", outcome: ok }
+  - { id: bsi-de, method: "bridge:feed", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-csaf", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.avis-recent", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.actu-recent", outcome: ok }
+  - { id: cert-eu, method: "bridge:cert-eu.recent", outcome: ok }
+  - { id: ncsc-ch-security-hub, method: "bridge:ncsc-csh.recent", outcome: ok }
+  - { id: ncsc-uk, method: "bridge:feed", outcome: ok }

@@ -1,0 +1,383 @@
+domain: S3
+run_id: "2026-07-29T0408Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-29T04:11:56Z"
+ended_at: "2026-07-29T04:28:07Z"
+duration_seconds: 971
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 5
+  bridge_fetches: 36
+
+items:
+  - title: "Kaspersky: Mirage Kitten (UNC1549/Smoke Sandstorm/Nimbus Manticore) fields a new backdoor and two WebSocket tunnelers hardened against corporate proxies"
+    sources:
+      - { url: "https://securelist.com/mirage-kitten-new-tools/120811/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-28", role: "primary" }
+      - { url: "https://securelist.com/feed/", publisher: "Kaspersky Securelist (GReAT) — RSS index", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: kaspersky-securelist, URL https://securelist.com/feed/ → primary: Kaspersky Securelist (GReAT), URL https://securelist.com/mirage-kitten-new-tools/120811/ (no pivot needed)"
+    summary: |
+      Kaspersky GReAT documents a previously undocumented malware set from Mirage Kitten (Kaspersky's designation
+      for the actor tracked elsewhere as UNC1549, Smoke Sandstorm and Nimbus Manticore — already registered in
+      this pipeline as an Iran-nexus APT under the alias set), an aerospace/aviation/defense/telecom espionage
+      group. NightLedger, a new Windows backdoor, masquerades as SspiCli.dll and relies on a DLL search-order
+      hijack: the legitimate AppVShNotify.exe does not directly import SspiCli.dll but imports RPCRT4.dll, which
+      delay-loads SspiCli.dll when an authenticated RPC API is invoked — letting a co-located malicious DLL load
+      under a trusted vendor process. It beacons over HTTPS to hardcoded C2 (realhealthshop[.]com, fallback
+      tjconsultingservices[.]com), tokenizing responses with a custom "#%%#" delimiter, and supports 13 numeric
+      command IDs (host/network recon, file ops, screenshot capture, process listing/kill, NetSetup.log
+      collection). Kaspersky notes NightLedger's command-dispatch design closely mirrors TWOSTROKE, an implant
+      GTIG previously attributed to the same actor. Two companion WebSocket tunnelers — BridgeHead and ArcBridge
+      — implement full SOCKS5 tunnel-proxy functionality over an authenticated WebSocket channel and are built to
+      survive corporate proxy environments: on an HTTP 407 they enumerate supported auth schemes and prefer
+      Negotiate over NTLM using the current user's SSO credentials, then retry with exponential backoff capped at
+      60 seconds. Both tunnelers hardcode a 3-character substring that must match the lowercased Windows username
+      before the malware activates — a per-target anti-sandbox check that causes silent exit on any non-matching
+      host. Victimology spans Egypt, Jordan, Tanzania (SMB/government), Pakistan (aviation), Ethiopia (telecom)
+      and Burkina Faso (finance); Kaspersky notes a broader infrastructure shift away from Azure-subdomain C2 to
+      Cloudflare-backed domains to complicate attribution.
+    region_nexus: "Middle East / Africa (Egypt, Jordan, Tanzania, Pakistan, Ethiopia, Burkina Faso); no direct CH/EU victim nexus, but the actor is a tracked Iran-nexus APT and the DLL-delay-load hijack + proxy-aware WebSocket tunneling technique class is directly transferable to any CH/EU government or CI network defending against APT lateral tooling."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco, transport"
+    cves: []
+    techniques: [T1574.001, T1071.001, T1090, T1572, T1113, T1057, T1082]
+    affected_products: []
+    entity_keys: ["actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt"]
+    new_entities:
+      - { key: "tool:nightledger-backdoor", type: tool, name: "NightLedger",
+          aliases: [],
+          summary: "Windows backdoor masquerading as SspiCli.dll via a DLL search-order/delay-load hijack of AppVShNotify.exe's RPCRT4.dll dependency; attributed to Mirage Kitten (UNC1549) on code/behavioral similarity to the actor's earlier TWOSTROKE implant (Kaspersky Securelist, 2026-07-28)." }
+      - { key: "tool:arcbridge-tunneler", type: tool, name: "ArcBridge",
+          aliases: [],
+          summary: "WebSocket-based SOCKS5 tunneling tool used by Mirage Kitten since at least April 2026, with an embedded C2-host/port/SSL-flag configuration block and UUID-style mutex for single-instance enforcement (Kaspersky Securelist, 2026-07-28)." }
+      - { key: "tool:bridgehead-tunneler", type: tool, name: "BridgeHead",
+          aliases: [],
+          summary: "Mirage Kitten WebSocket SOCKS5 tunneling proxy engineered to traverse corporate proxy environments (HTTP 407 handling, Negotiate/NTLM SSO retry, exponential backoff) and gated by a per-victim hardcoded username substring check (Kaspersky Securelist, 2026-07-28)." }
+    relation_suggestions:
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "tool:nightledger-backdoor",
+          basis: "Kaspersky attributes NightLedger to Mirage Kitten based on code and behavioral similarity to the actor's historical implants, including TWOSTROKE (Kaspersky Securelist, 2026-07-28)" }
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "tool:arcbridge-tunneler",
+          basis: "Kaspersky: 'ArcBridge is another WebSocket tunneling tool developed and used by Mirage Kitten' (Kaspersky Securelist, 2026-07-28)" }
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "tool:bridgehead-tunneler",
+          basis: "Kaspersky: BridgeHead deployment observed 'during post-exploitation activities in victim environments in Egypt and at a Pakistan-based aerospace and aviation organization' following Mirage Kitten spear-phishing tradecraft (Kaspersky Securelist, 2026-07-28)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The implant masquerades as SspiCli.dll and appears to be designed for DLL search-order hijacking, targeting a legitimate AppVShNotify.exe binary. While AppVShNotify.exe does not directly import SspiCli.dll, it imports RPCRT4.dll, which can delay-load SspiCli.dll when it invokes an RPC API that requires authentication."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      - quote: "According to our telemetry, we identified victims across Middle East and African countries including Egypt, SMB and government environments in Jordan and Tanzania, aviation organizations in Pakistan, telecommunication companies in Ethiopia and financial-sector entities in Burkina Faso."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      - quote: "a gradual shift away from Microsoft Azure subdomain-style infrastructure in favor of Cloudflare-backed domains in some of its malware, a change likely intended to complicate attribution while maintaining resilient command-and-control communications"
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+    extended_notes: |
+      Registry note for the main agent: this pipeline already tracks this actor as
+      actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt with aliases UNC1549 / Smoke
+      Sandstorm / Nimbus Manticore. Kaspersky's article uses a fourth public alias, "Mirage Kitten," not currently
+      in the registry's alias list — recommend adding it as an alias on the existing key rather than a new entity.
+
+  - title: "Cisco Talos IR Trends Q2 2026: phishing overtakes exploitation as top initial-access vector, MFA-bypass abuse triples, and Sinobi/Warlock ransomware weaponize legitimate RMM tools for covert C2"
+    sources:
+      - { url: "https://blog.talosintelligence.com/ir-trends-q2-2026/", publisher: "Cisco Talos Incident Response", date: "2026-07-28", role: "primary" }
+      - { url: "https://blog.talosintelligence.com/rss/", publisher: "Cisco Talos Blog — RSS index", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: talos, URL https://blog.talosintelligence.com/rss/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/ir-trends-q2-2026/ (no pivot needed)"
+    summary: |
+      QUARTERLY REPORT — Cisco Talos IR Trends Q2 2026. Phishing was the initial-access vector in over half of Talos
+      IR's Q2 engagements (up from ~a third in Q1), including a QR-code-in-PDF campaign against Australian
+      organizations that Talos attributes to a new actor it designates UAT-11764: auto-generated, victim-tailored
+      PDFs with QR codes routing to M365 credential-harvesting pages, with post-compromise inbox-rule creation and
+      SharePoint-hosted follow-on lures to propagate through each newly-compromised mailbox's contact list. A
+      second engagement uncovered ARToken, a phishing-as-a-service panel (already tracked in this pipeline,
+      lineage-linked to EvilTokens) exposing 80+ API endpoints for device-code phishing, primary-refresh-token
+      persistence and SharePoint exfiltration via a React dashboard. Authentication abuse (AitM proxies,
+      session-token theft, MFA-fatigue, self-enrolled attacker devices) jumped to 65% of engagements from 35% the
+      prior quarter. On the ransomware side, Talos responded to Sinobi ransomware for the first time and observed
+      the operators weaponize a trojanized MeshAgent binary (the open-source agent of the MeshCentral RMM
+      platform) as a SYSTEM-level auto-start service for covert encrypted-WebSocket C2 — a tactic not previously
+      publicly associated with the group — before moving laterally via RDP/WinRM using a cracked service-account
+      password pulled from ntds.dit and deploying ransomware domain-wide via a malicious GPO logon script, with
+      rclone.exe staging exfiltration. Separately, Warlock ransomware operators (Storm-2603) were observed
+      deploying the Zoho Assist Unattended Agent — enabling admin remote control with no logged-in user — a tool
+      not previously attributed to that group. Healthcare led targeted-sector share for the second consecutive
+      quarter (17%), followed by public administration and manufacturing (14% each), both characterized by
+      near-zero downtime tolerance. The report's top-weakness ranking: authentication abuse (65%), insufficient
+      logging/retention (42%, up from 18% — including domain-controller logs retained only hours and absent
+      NetFlow preventing exfiltration-scope determination), and exposed/unpatched internet-facing infrastructure
+      (31%, including ToolShell, an older Telerik UI deserialization flaw, and SD-WAN/VPN CVEs).
+    region_nexus: "global Talos IR engagement base; the top-targeted sectors (healthcare, public administration/local government, manufacturing) map directly onto the constituency's core and additional sectors, and the QR-phishing/MFA-bypass/RMM-weaponization techniques are equally exploitable against CH/EU M365 and RMM-managed estates."
+    primary_sector_nexus: "direct"
+    sector: "healthcare, public-sector, manufacturing, finance"
+    cves: []
+    techniques: [T1566.001, T1557, T1111, T1621, T1098.005, T1219, T1543.003, T1003.003, T1021.001, T1021.006, T1484.001, T1486, T1567, T1190]
+    affected_products: ["Microsoft 365", "Microsoft SharePoint", "MeshCentral MeshAgent", "Zoho Assist"]
+    entity_keys: ["tool:talos-artoken-eviltokens-bec-panel"]
+    new_entities:
+      - { key: "actor:uat-11764", type: actor, name: "UAT-11764",
+          aliases: [],
+          summary: "Cisco Talos designation for the operator of an ongoing QR-code phishing campaign (active since April 2026) against Australian organizations that uses compromised M365 accounts and contact lists to self-propagate (Cisco Talos, 2026-07-28)." }
+      - { key: "actor:sinobi-ransomware", type: actor, name: "Sinobi",
+          aliases: [],
+          summary: "Ransomware-as-a-service operation active roughly a year with minimal prior public reporting; Talos IR's first engagement (April 2026) found operators weaponizing a trojanized MeshAgent RMM binary as a covert SYSTEM-service C2 backdoor and encrypting via a domain-wide malicious GPO logon script, appending the .SINOBI extension (Cisco Talos, 2026-07-28)." }
+      - { key: "actor:warlock-storm-2603", type: actor, name: "Warlock",
+          aliases: ["Storm-2603"],
+          summary: "Ransomware operation (Microsoft designation Storm-2603) observed by Talos IR deploying the Zoho Assist Unattended Agent RMM tool for persistent no-user-session remote access, not previously attributed to the group in public reporting (Cisco Talos, 2026-07-28)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Phishing was the primary means of gaining initial access this quarter, appearing in over half of all Cisco Talos Incident Response (Talos IR) engagements – an increase from approximately a third of engagements last quarter."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "we observed the threat actors use a trojanized MeshAgent binary as their primary C2 mechanism during this engagement, a tactic that has not been previously associated with the group in public reporting"
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "Authentication abuse was the most prevalent security weakness this quarter, observed in 65 percent of engagements — up sharply from 35 percent last quarter."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+    extended_notes: |
+      Quarterly periodic report (Talos IR Trends), not annual — flagged per the "flag periodic/annual report"
+      instruction using a QUARTERLY REPORT marker instead of ANNUAL REPORT since that is the accurate cadence.
+      ARToken (tool:talos-artoken-eviltokens-bec-panel) was already registered from a prior run (first_seen
+      2026-07-02); this report references it as a recurring finding rather than new information, so it is listed
+      in entity_keys for continuity but is not the reason for this item's inclusion.
+
+  - title: "Sophos X-Ops: STAC4749 runs Microsoft Teams vishing with certificate-pinned Golang C2 implants through to Chaos ransomware in under 17 hours"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing", publisher: "Sophos X-Ops", date: "2026-07-28", role: "primary" }
+      - { url: "https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242", publisher: "Sophos X-Ops — RSS index", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: sophos-xops, URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 → primary: Sophos X-Ops, URL https://www.sophos.com/en-us/blog/chaos-in-teams-vishing (no pivot needed)"
+    summary: |
+      Sophos X-Ops documents STAC4749, a financially motivated cluster running Microsoft Teams voice-phishing
+      (vishing) intrusions against dozens of North American organizations (50% Canada, 44% US) between February
+      and June 2026, ending in Chaos ransomware in at least three confirmed cases. Operators impersonate IT/help­
+      desk personas from freshly registered ".top"-TLD cloud domains (not the onmicrosoft[.]com spoofing seen in
+      earlier Teams-abuse campaigns) and push victims toward Microsoft Quick Assist or, increasingly since April,
+      the cloud-based RemSupp RMM tool — a shift Sophos attributes to RemSupp being less likely to sit on
+      application blocklists. Lateral movement starts by enabling RDP on the initial host via msconfig service
+      reconfiguration. The first-stage payload evolved through three static-string-plus-random-numeric filename
+      generations (sekv*.exe → helper*.exe → 74fs*.exe) before the actors dropped the standalone loader in favor
+      of downloading a PyArmor-obfuscated PyInstaller backdoor directly; that backdoor retrieves its AES
+      key/IV for decrypting embedded config and payload data from a public GitHub repository. Persistence uses
+      HKCU Run keys masquerading as Realtek/WinAudio audio components plus .vbs-created Startup-folder shortcuts
+      disguised as SecurityHealth/OneDriveUpdate. Golang-based C2 implants (one-word filenames — graph.exe,
+      confirm.exe, midnight.exe, shield.exe) authenticate to C2 via a "--token-raw" Base64 token/signature pair
+      and, notably, hard-code CA certificates (issuer names loop-CA, connectify-CA, james-bond-CA) so the implant
+      only completes a TLS handshake with a C2 server presenting a matching issuer — segmenting infrastructure by
+      payload/operational role and complicating interception-based analysis. In ransomware-culminating incidents,
+      operators added DWAgent/AnyDesk for redundant access and, in one case, a custom sc5.exe reverse-SOCKS
+      tunneling proxy supporting up to 1,000 concurrent connections. Time from initial access to encryption was
+      under 17 hours in one case; ransom notes carried the filename pattern readme.chaos.txt. Sophos assesses
+      STAC4749 as financially motivated with limited-but-present Russian-language keyboard-layout artifacts, finds
+      no evidence linking it to MuddyWater's separate 2026 Chaos false-flag use, and notes shared tradecraft
+      lineage (Teams vishing → Quick Assist → DWAgent/AnyDesk) with earlier Sophos-tracked campaigns tied to
+      former BlackSuit/Royal members.
+    region_nexus: "North America (Canada 50%, United States 44% of observed cases); the STAC4749 technique class — Teams-vishing initial access, certificate-pinned Golang C2, and the Chaos RaaS back end — is directly transferable to CH/EU organizations given the near-universal enterprise deployment of Microsoft Teams and legitimate RMM tooling."
+    primary_sector_nexus: "indirect"
+    sector: "services, manufacturing, energy, construction"
+    cves: []
+    techniques: [T1566.004, T1219, T1021.001, T1547.001, T1547.009, T1027, T1572, T1090, T1071.001, T1486]
+    affected_products: ["Microsoft Teams", "Microsoft Quick Assist", "AnyDesk", "DWAgent"]
+    entity_keys: ["actor:chaos-ransomware"]
+    new_entities:
+      - { key: "actor:stac4749", type: actor, name: "STAC4749",
+          aliases: [],
+          summary: "Sophos X-Ops designation for a financially motivated cluster running Microsoft Teams vishing (IT-helpdesk impersonation from freshly registered .top-TLD domains) against North American organizations February–June 2026, culminating in Chaos ransomware in at least three confirmed cases (Sophos X-Ops, 2026-07-28)." }
+    relation_suggestions:
+      - { subject: "actor:stac4749", object: "actor:chaos-ransomware",
+          basis: "Sophos: 'At least three STAC4749 compromises led to Chaos ransomware deployment' (Sophos X-Ops, 2026-07-28)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Sophos analysts investigated a Microsoft Teams voice phishing (vishing) campaign tracked as STAC4749 that used a consistent set of IT-themed cloud domains and personas to gain remote access to victims' systems."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "In one incident, the time from initial access to ransomware deployment was less than 17 hours, consistent with prior Chaos ransomware cases observed by Sophos analysts."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "Several of the Golang-based implants contained hard-coded CA certificates associated with issuer names such as loop-CA, connectify-CA, and james-bond-CA. These implants only established encrypted connections if the C2 server had the same issuer as the embedded certificate."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+    extended_notes: |
+      Corroborating cross-reference: the same-day Cisco Talos IR Trends Q2 2026 report (separate item this run)
+      independently discusses Chaos ransomware's msaRAT C2 tooling and general RMM-weaponization trend, giving
+      two independent labs converging on Chaos/RMM abuse in the same 24-hour window without directly overlapping
+      claims.
+
+  - title: "Rapid7 publishes full root-cause and exploitation mechanics for the Check Point SmartConsole auth bypass (CVE-2026-16232) — a broken SIC-identity trust boundary across two management-plane protocol generations"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232", publisher: "Rapid7 Labs", date: "2026-07-28", role: "primary" }
+      - { url: "https://www.rapid7.com/rss.xml", publisher: "Rapid7 Blog — RSS index", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: rapid7-research, URL https://www.rapid7.com/rss.xml → primary: Rapid7 Labs, URL https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232 (no pivot needed)"
+    summary: |
+      Rapid7 Labs published a full root-cause and exploitation write-up for CVE-2026-16232 (the Check Point
+      SmartConsole authentication bypass this pipeline already covers as exploited-in-the-wild and CISA
+      KEV-listed), reverse-engineered from decompiled Java across two Jumbo Hotfix builds (vulnerable "Take 146"
+      vs patched "Take 158"). SmartConsole logins cross two management-plane protocol generations: the legacy
+      FWM/CPMI service (TCP 18190, Check Point's SIC certificate-based trust mechanism, length-prefixed "FwSet"
+      objects) and the newer CPM/DLE service (SOAP over HTTPS, TCP 19009, path /cpmws/). The root cause is a
+      broken trust boundary in LoginSvcImpl.authenticateRemoteApplication(): the vulnerable code sets
+      effectiveSicDn to the caller-supplied SIC distinguished name whenever one is present, only falling back to
+      the authenticated peer certificate's own getCertificateDnName() if none was supplied — so a remote client
+      that copies the management server's own SIC DN into the :DN field of an unauthenticated certificate-bind
+      request is accepted as that identity with no client certificate ever presented. The forged application
+      session then requests a gen-sso-token from the legacy FWM service with sso_original_client claiming
+      system_admin and a full permission bitmap (ffffffff|ffffffff|ffffffff), redeems that ticket over the CPM
+      SOAP API, and receives a full-administrator SmartConsole session. The patch (Take 158) restricts the
+      caller-supplied DN path to loopback CN=siclocal traffic only; remote logins now always bind to the
+      authenticated peer certificate DN, and any mismatch between a supplied DN and that certificate is rejected
+      with an explicit log entry. Exploitation requires only network reachability to the Management Server and a
+      Trusted-Clients configuration that does not restrict GUI clients — which Rapid7 found to be the default.
+      Rapid7 reproduced the exploit against affected R81.20 and R82.10 builds and confirmed the vendor patch
+      stops its PoC.
+    region_nexus: "global — Check Point Security Management / Multi-Domain Security Management is widely deployed across CH/EU government and enterprise networks as the firewall-policy control plane, making this root-cause detail directly actionable for any estate that was internet-exposed with a default Trusted-Clients configuration during the exploitation window."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, telco, energy"
+    cves: ["CVE-2026-16232"]
+    techniques: [T1190]
+    affected_products: ["Check Point Security Management Server", "Check Point Multi-Domain Security Management Server (MDS)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232"
+    evidence:
+      - quote: "Our analysis finds that the root cause of CVE-2026-16232 is a broken trust boundary in the application authentication path. A vulnerable server accepts an attacker-supplied Secure Internal Communication (SIC) distinguished name (DN) as the identity of a remote application instead of binding that identity to the authenticated remote peer certificate DN returned by getCertificateDnName()."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+      - quote: "Exploitation requires network access to the Management Server and for a Trusted Clients configuration that does not restrict GUI clients, which in our testing was a default setting."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+      - quote: "Rapid7 Labs has reproduced CVE-2026-16232 against affected R81.20 and R82.10 versions of the target software. Our proof-of-concept (PoC) exploit script can be used to successfully validate if a target is either vulnerable or patched."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+    extended_notes: |
+      Material technical delta over the prior 2026-07-23 entry, which reported the exploited-in-the-wild fact and
+      patch availability but not the underlying mechanics. This item is composed as a research-angle deep dive
+      (protocol/root-cause reverse engineering); the underlying CVE facts (affected versions, KEV status, patch
+      availability) remain sourced to the original 2026-07-23 entry and its Check Point/CISA/NCSC-NL corroboration.
+
+  - title: "JetBrains TeamCity On-Premises: unauthenticated deserialization RCE via the unauthenticated agent-polling protocol (CVE-2026-63077, CVSS 9.8) — all on-prem versions affected, no active exploitation yet"
+    sources:
+      - { url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/", publisher: "JetBrains (TeamCity PSIRT)", date: "2026-07-27", role: "primary" }
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-teamcity-cve-2026-63077-auth-bypass-rce-20/", publisher: "Cloud Security Alliance — Lab Space", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/ → pivot: CSA Labs research note, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-teamcity-cve-2026-63077-auth-bypass-rce-20/ → primary: JetBrains, URL https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+    summary: |
+      JetBrains disclosed CVE-2026-63077 on 2026-07-27, a critical (CVSS 3.1 9.8) unauthenticated remote code
+      execution vulnerability affecting all TeamCity On-Premises versions, reported privately by researcher
+      Antoni Tremblay on 2026-07-10 under coordinated disclosure. The vulnerable code path sits in the agent
+      polling protocol — the channel distributed TeamCity build agents use to check in with the central server
+      for job assignments and configuration — which does not require authentication and is reachable to any
+      attacker with plain HTTP(S) network access to the server; a crafted request against it triggers an insecure
+      deserialization of untrusted data (CWE-502) that yields arbitrary OS command execution with the privileges
+      of the TeamCity server process, without any credential, session or user interaction. Fixed in versions
+      2025.11.7 and 2026.1.3, with a security patch plugin released for 2017.1+ for environments that cannot
+      immediately upgrade (auto-detected and offered under Administration → Updates on TeamCity 2024.03+).
+      TeamCity Cloud is not affected. JetBrains states no evidence of exploitation as of publication. CSA Labs'
+      analysis situates the flaw against the CI/CD trust-boundary risk category TeamCity has occupied twice before
+      — CVE-2023-42793 (exploited at scale by APT29/SVR against >100 servers, joint CISA/FBI/NSA advisory) and
+      CVE-2024-23917 — and notes that internet-facing TeamCity instances have previously been enumerated in the
+      low thousands via Shodan (Wiz Research, 2024), making this an attractive, easily discoverable target set
+      once technical detail circulates; JetBrains' advisory withholds the specific deserialization gadget chain.
+    region_nexus: "global — TeamCity is a widely deployed CI/CD platform across European software supply chains, including public-sector technology suppliers in scope for this constituency; a compromised build server yields an ongoing capability to inject malicious code into every future build it produces, mirroring the 2023 APT29 precedent's downstream blast radius."
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: ["CVE-2026-63077"]
+    techniques: [T1190]
+    affected_products: ["JetBrains TeamCity On-Premises"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "If exploited, this vulnerability may allow an unauthenticated attacker with HTTP(S) access to a TeamCity server to bypass authentication checks and execute arbitrary operating system commands... This vulnerability affects all TeamCity On-Premises versions."
+        attribution: "JetBrains (TeamCity PSIRT)"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+      - quote: "A fix for this vulnerability has been introduced in versions 2025.11.7 and 2026.1.3. We have also released a security patch plugin for 2017.1+ so that customers who are unable to upgrade can still patch their environments."
+        attribution: "JetBrains (TeamCity PSIRT)"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+      - quote: "The vulnerable code path lives in the agent polling protocol, the mechanism by which distributed build agents check in with the central TeamCity server to retrieve job assignments and configuration data."
+        attribution: "Cloud Security Alliance — Lab Space"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-teamcity-cve-2026-63077-auth-bypass-rce-20/"
+    extended_notes: |
+      CSA Labs is an automated re-reporting/synthesis pipeline (Admiralty C per the source list note) — its
+      research note is carried here as corroborating context and historical framing (the APT29/CVE-2023-42793
+      precedent), not as the primary technical authority; the JetBrains PSIRT advisory is the load-bearing
+      primary for every version/patch/mechanism fact.
+
+  - title: "Netcraft: AI 'vibe coding' platforms are lowering the barrier to phishing-infrastructure creation, with leftover LLM safety-refusal text as an unusual detection tell"
+    sources:
+      - { url: "https://www.netcraft.com/blog/rise-of-ai-vibe-coding-and-new-cyber-threats", publisher: "Netcraft", date: "2026-07-28", role: "primary" }
+    discovery_trace: "first seen at: netcraft, URL https://www.netcraft.com/blog/ → primary: Netcraft, URL https://www.netcraft.com/blog/rise-of-ai-vibe-coding-and-new-cyber-threats (no pivot needed)"
+    summary: |
+      Netcraft describes fraudsters adopting consumer "vibe coding" platforms (natural-language-prompt website
+      generators) to build phishing infrastructure, based on internal testing and reporting-volume telemetry.
+      Netcraft's own analysts generated two functional clones — of a well-known postal-delivery service and a
+      well-known streaming service — with working credential-capture forms in minutes, and found KYC controls on
+      several platforms satisfied by nothing more than a free webmail address; prompt-based content filters meant
+      to block brand-impersonation generation proved inconsistent. Abuse-report volume on one tracked platform
+      rose from under 250/month (January 2025) to over 4,000/month (October 2025); a second Netcraft-integrated
+      provider API saw AI-tool-based attacks grow from roughly 10/month a year ago to over 1,500 in March 2026.
+      A parallel cryptocurrency-targeting campaign chains an AI-generated lure site with SEO manipulation
+      (compromised WordPress plugins planting comment-spam backlinks) toward pages harvesting exchange
+      credentials or wallet seed phrases, with some intercepting 2FA codes in real time. Netcraft's most concrete
+      detection signal: a number of AI-generated phishing pages retain leftover LLM prompt text in the page source
+      — including the model's own safety-refusal warnings about generating a phishing page — providing a
+      distinguishing artifact independent of the visual clone quality; the platforms' free-tier subdomain naming
+      pattern (e.g., a random name under a shared platform domain) is a secondary discriminator, though it
+      disappears once an attacker attaches a custom domain.
+    region_nexus: "global trend affecting any brand or organization subject to phishing impersonation, including CH/EU public-sector citizen-service and financial brands; the LLM-safety-refusal-artifact detection signal and free-tier-subdomain heuristic are directly usable by any anti-phishing/brand-protection function regardless of region."
+    primary_sector_nexus: "indirect"
+    sector: "finance, public-sector"
+    cves: []
+    techniques: [T1583.001, T1608.001, T1566.002]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "During our analysis at Netcraft, we were able to generate two functional pages with minimal difficulty which cloned a well-known postal delivery service and a well-known streaming service. These pages even had functional credential stores when credentials were inputted into the login page."
+        attribution: "Netcraft (Luke Wood)"
+        source_url: "https://www.netcraft.com/blog/rise-of-ai-vibe-coding-and-new-cyber-threats"
+      - quote: "Netcraft has been able to confirm AI involvement in a number of these pages through an ironic tell: leftover AI prompt text baked right into the fraudulent site, sometimes including warnings from the LLM about the risks of phishing that the AI generated as a safety measure."
+        attribution: "Netcraft"
+        source_url: "https://www.netcraft.com/blog/rise-of-ai-vibe-coding-and-new-cyber-threats"
+    extended_notes: |
+      Thinner on operational specificity than the run's other items — largely qualitative/interview-format
+      (podcast recap) with volume statistics rather than a named campaign, malware, or CVE. Included for the
+      genuinely actionable detection signal (LLM safety-refusal artifacts in phishing-page source) but flagged
+      borderline; the main agent may reasonably fold this into a roundup rather than a standalone entry.
+    borderline: true
+    borderline_reason: "single-source trend/interview piece with volume statistics rather than a named campaign or technical mechanism; the one concrete detection signal (leftover LLM prompt/safety text) is narrow but genuinely novel and actionable."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sekoia
+    reason: "Direct RSS fetch of https://blog.sekoia.io/feed/ failed (feed likely 301-redirected per a prior source-list note to www.sekoia.com/blog with XML parse failure); the fetcher's jina-reader fallback also failed because both configured jina API keys returned HTTP 402 (balance exhausted). No content retrieved from this source this run — logged as a fetch failure below."
+  - source_id: google-tag
+    reason: "Documented recipe (WebSearch discovery, since /threat-analysis-group/rss/ is dead) surfaced only the already-known 2026-07-24 GTIG actor-naming post; no in-window TAG-specific item found via WebSearch either."
+  - source_id: crowdstrike
+    reason: "The stored counter-adversary-operations category listing renders as a full alphabetical archive with no dates; the author.counter-adversary-operations/ listing renders dated posts but its newest is 2026-06-09 — no in-window item. WebSearch corroborated no fresh CAO blog post in the window."
+  - source_id: group-ib
+    reason: "Listing (https://www.group-ib.com/blog/) is live and dated; newest post is 2026-07-27 (JadeProx China-nexus writeup), just outside the 26h window floor — no in-window item."
+  - source_id: volexity
+    reason: "Sparse-cadence source per its own source-list note; newest post remains 2026-07-17 (already covered as the SonicWall SMA1000/UTA0533 deep dive) — no in-window item, consistent with expected cadence."
+  - source_id: zscaler-threatlabz
+    reason: "Homepage renders as a rotating featured-article carousel, not a chronological listing, and dates surfaced were not reliably sortable; WebSearch corroborated the newest substantive research is the already-covered TELESHIM/MIXEDKEY/BINDCLOAK piece (2026-07-20) — no in-window item found."
+  - source_id: trendmicro-research
+    reason: "Feedburner feed fetched cleanly; newest item is 2026-07-24, outside the 26h window floor — no in-window item."
+  - source_id: recordedfuture-insikt
+    reason: "The /feed endpoint fetched cleanly; newest item is 2026-07-24, outside the 26h window floor — no in-window item."
+  - source_id: proofpoint
+    reason: "Listing page returned raw Drupal markup with no drillable dated article cards on this fetch; WebSearch corroborated no in-window Threat Insight post (newest found was 2026-07-23) — no in-window item."

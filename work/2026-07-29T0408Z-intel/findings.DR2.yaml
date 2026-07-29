@@ -1,0 +1,1101 @@
+domain: DR2
+run_id: "2026-07-29T0408Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-29T04:34:16Z"
+ended_at: "2026-07-29T04:51:01Z"
+duration_seconds: 1005
+self_telemetry:
+  webfetch_calls: 2
+  websearch_calls: 5
+  bridge_fetches: 15
+
+note: >
+  Scoped deep-read only (no discovery, no new topics). All six assigned items were re-fetched
+  in full via the bridge (python3 tools/fetch_source.py url / feed / cisa page) and read end to
+  end (raw HTML parsed to plain text on disk under work/2026-07-29T0408Z-intel/ scratch files,
+  not committed). No IOCs (hashes, IPs, attacker domains, mutex GUID literals, YARA/query code)
+  are reproduced below even where the primary source published them — behaviour is described,
+  never the indicator. Existing S3/S4 findings.yaml records for these six stories were read
+  first; this file supplies the incremental depth requested, and calls out corrections to the
+  S3/S4 summaries where the full-text re-read surfaced a discrepancy.
+
+items:
+
+  # ==========================================================================
+  # 1. talos-ir-trends-q2-2026 — RUN'S DEEP DIVE
+  # ==========================================================================
+  - key: talos-ir-trends-q2-2026
+    title: "Cisco Talos IR Trends Q2 2026: phishing overtakes exploitation as top initial-access vector, MFA-bypass abuse triples, RMM weaponization drives Sinobi/Warlock ransomware"
+    primary_source:
+      url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      publisher: "Cisco Talos Incident Response (authors: Lexi DiScola, Dave Liebenberg)"
+      published_at: "2026-07-28T10:00:01Z"
+      note: "Confirmed via the page's own article:published_time / datePublished JSON-LD metadata, not just the rendered 'Tuesday, July 28, 2026 06:00' byline (which appears to be rendered in US Eastern time, consistent with 10:00:01 UTC)."
+    corroborating_sources: []
+    report_cadence: "QUARTERLY REPORT — Talos IR Trends Q2 2026 (not annual; flag as periodic-report shape rather than 'ANNUAL REPORT' marker)."
+
+    sinobi_engagement_chain_in_order: |
+      Talos IR's first-ever Sinobi ransomware engagement (April 2026; RaaS operation active
+      "nearly a year" with "minimal public reporting on the actors' operations" per Talos).
+      Reconstructed attack-chain order, as Talos describes it:
+        1. C2 establishment / durable backdoor: operators weaponized a TROJANIZED MeshAgent
+           BINARY (the open-source agent component of the MeshCentral remote-management
+           platform) — "a tactic that has not been previously associated with the group in
+           public reporting." The trojanized agent was installed as a SYSTEM-LEVEL AUTO-START
+           SERVICE, giving the backdoor SYSTEM privileges and boot-persistence from the start
+           rather than needing a separate privilege-escalation step.
+        2. C2 channel: the backdoor communicated over ENCRYPTED WEBSOCKET (WSS) to an
+           attacker-controlled server — chosen specifically, per Talos, to "blend malicious
+           traffic with legitimate remote management activity" (MeshCentral/MeshAgent traffic
+           is itself normally WebSocket-based, so the malicious channel rides the same
+           transport shape as benign RMM traffic).
+        3. Dwell time: this approach "maintain[ed] undetected access for approximately THREE
+           DAYS before ransomware deployment."
+        4. Credential access: lateral movement was enabled by a SERVICE ACCOUNT WITH A WEAK,
+           EASILY CRACKED PASSWORD obtained from the domain credential store, ntds.dit (i.e.
+           the operators pulled/exfiltrated or otherwise accessed the NTDS database, extracted
+           a service-account hash, and cracked it offline).
+        5. Lateral movement: the actor "moved laterally through the network using RDP and
+           WinRM" with the cracked service-account credentials.
+        6. Ransomware deployment mechanism: "the actor ultimately deployed the ransomware
+           across the ENTIRE DOMAIN using a MALICIOUS GROUP POLICY OBJECT (GPO) LOGON SCRIPT"
+           — i.e. domain-wide, centrally-pushed execution via GPO rather than manual
+           host-by-host deployment.
+        7. Impact / exfiltration staging: encryption used the .SINOBI file extension, "alongside
+           observed data exfiltration staging activity conducted via rclone.exe."
+      Talos's own forward-looking assessment: "Sinobi operators will likely continue
+      weaponizing legitimate tools like MeshAgent because these binaries blend into standard
+      administrative traffic and bypass many traditional signature-based alerts. The use of
+      GPO-based deployment scripts suggests an understanding of enterprise architecture."
+      Talos's stated defensive recommendation for this chain specifically: prioritize
+      monitoring of administrative tools, implement strict application allowlisting to prevent
+      unauthorized binaries running as services, proactively hunt for unauthorized MeshAgent
+      instances, and audit service-account permissions.
+      Detection-engineering read (analytical addition, not Talos's own wording): the
+      discriminator between this and a legitimate MeshCentral/MeshAgent deployment is that a
+      genuine agent install is provisioned through the organization's own MeshCentral server
+      (a known, inventoried management endpoint) and appears as an expected, pre-approved
+      service on a pre-approved asset — a rogue instance instead surfaces as an UNEXPECTED new
+      "MeshAgent"-named SYSTEM service on a host with no organizational MeshCentral deployment
+      of record, immediately followed (within the ~3-day dwell window) by RDP/WinRM sessions
+      from a service account authenticating from unusual source hosts, and by GPO logon-script
+      changes pushed domain-wide.
+
+    warlock_storm2603_zoho_assist_detail: |
+      In a separate engagement, Talos IR observed Warlock ransomware operators (also tracked as
+      Storm-2603) deploying an installer for the ZOHO ASSIST UNATTENDED AGENT — an RMM
+      capability "designed to allow administrative remote control of an endpoint without a user
+      logged in." Talos states this specific tool "we have not previously seen attributed to
+      Warlock." The stated operational value to the actor: it "enables the attackers to
+      maintain persistent, stealthy, and unrestricted control, significantly increasing the
+      potential malicious impact of an incident." In this particular engagement the activity
+      "did not lead to encryption," but Talos states it "was consistent with a successful
+      Warlock ransomware attack Talos observed in May [2026]" — i.e. Talos is drawing a
+      pattern-match to an earlier, encryption-culminating Warlock incident rather than treating
+      this as an isolated toolset choice. Talos's recommended defensive shift: move from
+      signature-based detection to behavior-based monitoring of Storm-2603 TTPs specifically
+      (abuse of legitimate administrative tools + rapid lateral movement).
+
+    uat11764_qr_phishing_chain: |
+      Starting in April 2026 and "remained ongoing as of late June 2026," a persistent QR-code
+      phishing campaign primarily targeting AUSTRALIAN organizations, attributed by Talos to an
+      actor it designates UAT-11764. Chain, in order:
+        1. Delivery: AUTO-GENERATED, VICTIM-TAILORED PDF documents containing embedded QR codes
+           (chosen specifically to evade traditional email-gateway text/link scanning).
+        2. Redirection: QR codes direct to adversary-controlled Microsoft 365 credential
+           HARVESTING pages.
+        3. Account takeover: on successful credential capture, the adversary attempts access to
+           the victim's Microsoft 365 account.
+        4. Post-compromise defense evasion: creation of EMAIL INBOX RULES (T1564.008-class
+           behavior) to hide/redirect incoming mail and reduce victim visibility into the
+           compromise.
+        5. Post-compromise staging: use of SHAREPOINT to host malicious follow-on documents.
+        6. Propagation: sends ADDITIONAL internal and external phishing emails — using each
+           newly-compromised mailbox's own contact list — to continue the compromise chain
+           into new victims.
+      Talos's confidence statement (verbatim structure, not paraphrased): "We assess with HIGH
+      CONFIDENCE that the threat actor... will almost certainly continue leveraging this QR
+      code phishing operation, using each newly compromised mailbox's contact lists to expand
+      its reach and sustain the campaign's momentum." Talos frames the actor's core tradecraft
+      insight as bypassing "many standard email security gateways" specifically by weaponizing
+      trusted infrastructure (SharePoint, M365) rather than attacker-registered domains.
+      Talos's stated defensive controls: block/flag emails containing QR codes inside PDF
+      attachments, enforce phishing-resistant MFA on M365 accounts, and monitor for suspicious
+      inbox-rule creation and anomalous SharePoint file staging as post-compromise indicators.
+      Separately (same report, different engagement, NOT UAT-11764): Talos also profiled
+      ARToken, a phishing-as-a-service platform "closely linked to the EvilTokens platform"
+      (already tracked in this pipeline as tool:talos-artoken-eviltokens-bec-panel) — exposing
+      80+ API endpoints for device-code phishing, primary-refresh-token (PRT) persistence,
+      email access, BEC operations and SharePoint exfiltration via a React dashboard; bypasses
+      MFA through the OAuth device-authorization flow rather than stealing passwords, and adds
+      OneDrive/SharePoint administration, geo-dynamic lure templates, inbox-rule manipulation,
+      cross-account keyword monitoring, collaborative token sharing, and "layered evasion
+      mechanisms and encrypted client-side payloads" for anti-analysis.
+
+    authentication_abuse_breakdown: |
+      "Authentication abuse was the most prevalent security weakness this quarter, observed in
+      65 percent of engagements — up sharply from 35 percent last quarter." Talos's own
+      enumeration of what specifically made up that 65%: adversaries "consistently defeated or
+      bypassed MFA using AiTM [adversary-in-the-middle] proxies and session-token theft, MFA
+      fatigue attacks, registration of attacker-controlled devices for authentication, and
+      legacy authentication protocols that circumvent MFA altogether." (The same components —
+      AitM proxies, session-token theft, MFA-fatigue, self-enrolled attacker devices — are also
+      named in the report's opening summary paragraph, "amongst other methods.") Recommended
+      controls tied to this specific weakness: transition from push/SMS-based MFA to
+      phishing-resistant methods (FIDO2/WebAuthn, hardware security keys); restrict
+      self-service MFA enrollment by requiring helpdesk verification; block legacy
+      authentication via Conditional Access; enforce number-matching or verified push where
+      phishing-resistant methods are not yet feasible; condition access on device compliance
+      and trusted infrastructure rather than geographic location alone.
+
+    logging_retention_finding: |
+      "Insufficient logging and visibility was the second most common weakness, observed in 42
+      percent of engagements compared to 18 percent last quarter." Talos's own enumeration of
+      the specific deficiencies observed:
+        - domain controller SECURITY LOGS retained for ONLY A FEW HOURS;
+        - host event logs truncated or overwritten before capture;
+        - ABSENT NETFLOW that prevented reconstruction of external authentication and
+          exfiltration;
+        - on-device-only logs that adversaries deleted to evade detection;
+        - short cloud-telemetry retention that did not extend back to the true initial-access
+          date.
+      Talos's direct consequence statement: "In several engagements these gaps PREVENTED
+      DEFINITIVE DETERMINATION of the initial access vector or the scope of data exfiltration"
+      — i.e. this is not a hypothetical hygiene gap, Talos is stating that inadequate logging
+      concretely blocked root-cause and scope determination in real IR engagements this
+      quarter. Recommended remediation: SIEM/centralized logging with a MINIMUM OF 90 DAYS
+      retention; forward logs off-device (servers, workstations, network infrastructure, cloud
+      identity providers, security appliances) so they survive log tampering and host rebuilds;
+      enable process-creation, command-line, and cloud-API (e.g. Microsoft Graph) auditing.
+      Talos also plugs its own "Log Architecture Assessment" service for gap identification —
+      note this is a vendor service reference, not a defender-neutral fact.
+
+    other_named_weaknesses: |
+      Third-ranked weakness: vulnerable/exposed/unpatched internet-facing infrastructure, 31%
+      of engagements (vs 25% last quarter) — named examples: ToolShell, "an older Telerik UI
+      deserialization flaw," and SD-WAN/perimeter-VPN appliance CVEs; internet-exposed services
+      also "subjected to SQL-injection and denial-of-service activity."
+      A named but lower-ranked weakness: unlimited outbound email thresholds enabled
+      propagation in "almost 15 percent of engagements" — illustrated with a specific case: a
+      single phishing-driven mailbox compromise was followed by "over 6,600 phishing and spam
+      emails" sent from the compromised mailbox before containment. Talos frames outbound
+      rate-limiting as "a low-effort, high-impact mitigation."
+
+    targeting_and_initial_access_stats: |
+      Healthcare led targeted-sector share for the SECOND CONSECUTIVE QUARTER (17% of
+      engagements); public administration and manufacturing followed at 14% each. Talos's
+      framing: the shared characteristic across these three is "a critical lack of downtime
+      tolerance" — healthcare targets were "entities that directly support clinical operations
+      and/or diagnostic services"; "almost all" targeted public-administration organizations
+      were LOCAL GOVERNMENTS; targeted manufacturing entities were "high-value targets within
+      the industrial supply chain, where potential disruptions could create cascading effects
+      across the downstream technology and energy sectors." Initial access: phishing accounted
+      for "over half" of engagements where initial access could be determined (up from ~35%
+      last quarter); other observed initial-access vectors: "exploitation of public-facing
+      applications and drive-by compromise." Ransomware/pre-ransomware made up "over 20 percent
+      of engagements this quarter, similar to just under 20 percent last quarter" — this is
+      presented as roughly flat quarter-over-quarter, in contrast to the sharp swings in
+      phishing/auth-abuse/logging shares.
+
+    exact_figures_with_sentence:
+      - figure: "phishing >50% of engagements (up from ~33% last quarter)"
+        sentence: "Phishing was the primary means of gaining initial access this quarter, appearing in over half of all Cisco Talos Incident Response (Talos IR) engagements – an increase from approximately a third of engagements last quarter."
+        category: "Talos engagement-share statistic (own IR case load), NOT a general threat-landscape/industry-wide figure."
+      - figure: "authentication abuse 65% of engagements (up from 35%)"
+        sentence: "Authentication abuse was the most prevalent security weakness this quarter, observed in 65 percent of engagements — up sharply from 35 percent last quarter."
+        category: "Talos engagement-share statistic."
+      - figure: "insufficient logging/visibility 42% of engagements (up from 18%)"
+        sentence: "Insufficient logging and visibility was the second most common weakness, observed in 42 percent of engagements compared to 18 percent last quarter."
+        category: "Talos engagement-share statistic."
+      - figure: "vulnerable/exposed/unpatched infrastructure 31% of engagements (vs 25% last quarter)"
+        sentence: "Vulnerable, exposed, or unpatched internet-facing infrastructure was the third most common weakness, observed in 31 percent of engagements, similar to last quarter's 25 percent."
+        category: "Talos engagement-share statistic."
+      - figure: "unlimited outbound email thresholds implicated in ~15% of engagements"
+        sentence: "unlimited outbound email thresholds were a notable security weakness this quarter, enabling threat actors to propagate malicious activity in almost 15 percent of engagements."
+        category: "Talos engagement-share statistic."
+      - figure: "ransomware/pre-ransomware >20% of engagements (vs just under 20% last quarter)"
+        sentence: "Ransomware and pre-ransomware incidents made up over 20 percent of engagements this quarter, relatively similar to just under 20 percent last quarter."
+        category: "Talos engagement-share statistic."
+      - figure: "healthcare 17%, public administration 14%, manufacturing 14% of engagements"
+        sentence: "For the second quarter in a row, health care led as the most targeted industry vertical accounting for 17 percent of all engagements, with public administration and manufacturing following at 14 percent each."
+        category: "Talos engagement-share statistic."
+      - figure: "one mailbox compromise generated over 6,600 outbound phishing/spam emails"
+        sentence: "Shortly after the threat actors gained access to the user's mailbox, they sent over 6,600 phishing and spam emails to continue the attack chain."
+        category: "Defender-actionable fact (a concrete observed case, not a share statistic) — usable as a rough scale benchmark for outbound-email-rate alerting thresholds."
+      - figure: "Sinobi dwell time ~3 days before ransomware deployment"
+        sentence: "This approach allowed the actor to blend malicious traffic with legitimate remote management activity and maintain undetected access for approximately three days before ransomware deployment."
+        category: "Defender-actionable fact (specific engagement detail, not a share statistic)."
+      - figure: "ARToken exposes 80+ API endpoints"
+        sentence: "the ARToken panel exposes 80+ API endpoints for device code phishing, primary refresh token (PRT) persistence, email access, business email compromise (BEC) operations, and SharePoint exfiltration"
+        category: "Defender-actionable fact (platform capability scale, not a share statistic)."
+
+    caveat_on_figures: >
+      EVERY percentage above is a share of Talos IR's OWN engagement case load this quarter —
+      it describes what Talos's incident responders were called in to handle, not a
+      representative sample of the global or Swiss/European threat landscape, and Talos does
+      not state its total N of engagements (so absolute counts behind each percentage are
+      unknown; a swing from 35% to 65% could reflect a small case-load base). Treat these as
+      directional signal on TTP prevalence within Talos's client base, not as base-rate
+      probabilities for any other organization's own risk. The dwell-time, command-count, and
+      email-volume figures (Sinobi's 3 days, the 6,600-email case, ARToken's 80+ endpoints) are
+      by contrast concrete, defender-actionable facts about a specific observed
+      engagement/tool, independent of the share-statistic caveat.
+
+    techniques: [T1566.001, T1557, T1111, T1621, T1098.005, T1219, T1543.003, T1003.003, T1021.001, T1021.006, T1484.001, T1486, T1567, T1190, T1564.008, T1078, T1204.001, T1053, T1133, T1687, T1070, T1110.003, T1018, T1083, T1087, T1082, T1526, T1534, T1071.001, T1102, T1572, T1048, T1598, T1595, T1593, T1589]
+    techniques_note: >
+      T1566.001/T1557/T1111/T1621/T1098.005/T1219/T1021.001/T1021.006/T1484.001/T1486/T1567/T1190
+      /T1564.008/T1078/T1204.001/T1053/T1133/T1687/T1070/T1110.003/T1018/T1083/T1087/T1082/T1526/
+      T1534/T1071.001/T1102/T1572/T1048/T1598/T1595/T1593/T1589 are ALL directly source-provided
+      (Talos's own MITRE ATT&CK table in the article, by tactic). T1543.003 (Windows Service
+      persistence — the SYSTEM-level auto-start MeshAgent service) and T1003.003 (OS Credential
+      Dumping: NTDS — the ntds.dit access) are unambiguous mappings for the Sinobi chain that
+      Talos describes in prose but did not include in its own summary table; flagged here as
+      analytical additions, not verbatim source-table entries.
+
+    benign_lookalike: >
+      MeshAgent/MeshCentral, Zoho Assist, RDP, WinRM and GPO logon scripts are all legitimate,
+      widely-deployed enterprise administration mechanisms — Talos's own framing is explicitly
+      that this is why the actors chose them ("blend into standard administrative traffic and
+      bypass many traditional signature-based alerts"). Talos does not offer a single
+      discriminator; the report's own remediation instead argues for behavioral correlation
+      (asset-inventory cross-check for unauthorized MeshAgent instances, application
+      allowlisting, and auditing which service accounts should legitimately be performing
+      RDP/WinRM lateral movement) rather than a signature-based tell.
+
+    evidence:
+      - quote: "Notably, we observed the threat actors use a trojanized MeshAgent binary as their primary C2 mechanism during this engagement, a tactic that has not been previously associated with the group in public reporting."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "The actor ultimately deployed the ransomware across the entire domain using a malicious Group Policy Object (GPO) logon script. The incident resulted in the encryption of systems with the .SINOBI file extension, alongside observed data exfiltration staging activity conducted via rclone.exe."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "In one engagement, we observed Warlock ransomware operators (also known as Storm-2603) deploying an installer for the RMM tool Zoho Assist Unattended Agent, which is designed to allow administrative remote control of an endpoint without a user logged in."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "We assess with high confidence that the threat actor, who we have dubbed UAT-11764, will almost certainly continue leveraging this QR code phishing operation, using each newly compromised mailbox's contact lists to expand its reach and sustain the campaign's momentum."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+      - quote: "In several engagements these gaps prevented definitive determination of the initial access vector or the scope of data exfiltration."
+        attribution: "Cisco Talos Incident Response"
+        source_url: "https://blog.talosintelligence.com/ir-trends-q2-2026/"
+
+  # ==========================================================================
+  # 2. mirage-kitten-nightledger-arcbridge-bridgehead
+  # ==========================================================================
+  - key: mirage-kitten-nightledger-arcbridge-bridgehead
+    title: "Kaspersky Securelist: Mirage Kitten (self-stated = UNC1549/Smoke Sandstorm/Nimbus Manticore) fields NightLedger backdoor and two proxy-resilient WebSocket tunnelers"
+    primary_source:
+      url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      publisher: "Kaspersky Securelist (GReAT) — authors Omar Amin, Vasily Berdnikov"
+      published_at: "2026-07-28T08:00:20Z"
+      modified_at: "2026-07-28T09:18:10Z"
+
+    alias_mapping_confirmation: |
+      CONFIRMED — this is Kaspersky's OWN stated equivalence, not an externally-sourced or
+      inferred mapping. The article's own opening sentence: "Mirage Kitten – also known as
+      UNC1549, Smoke Sandstorm, and Nimbus Manticore – is an advanced persistent threat (APT)
+      group focused on cyber-espionage operations against aerospace, aviation, defense, and
+      telecommunications sectors across the Middle East and Africa..." The same equivalence is
+      repeated in the article's own meta-description/schema data ("Kaspersky researchers reveal
+      previously undocumented malware attributed to Mirage Kitten (UNC1549, Smoke Sandstorm,
+      Nimbus Manticore)..."). Do NOT attribute this alias set to any third party — Kaspersky
+      states it directly, in its own voice, as background framing before any technical content.
+
+    nightledger_hijack_chain: |
+      The DLL-hijack mechanism, per Kaspersky's exact description: "The implant masquerades as
+      SspiCli.dll and appears to be designed for DLL search-order hijacking, targeting a
+      legitimate AppVShNotify.exe binary. While AppVShNotify.exe does not directly import
+      SspiCli.dll, it imports RPCRT4.dll, which can delay-load SspiCli.dll when it invokes an
+      RPC API that requires authentication. This allows a co-located malicious SspiCli.dll to
+      be loaded while forwarding expected exports to the legitimate DLL." In plain terms: the
+      malicious sspicli.dll is placed alongside the legitimate AppVShNotify.exe; the chain of
+      trust exploited is AppVShNotify.exe → (imports) RPCRT4.dll → (delay-loads, only when an
+      authenticated RPC API call actually occurs) SspiCli.dll — and because Windows resolves
+      that delay-load via the normal DLL search order, the co-located malicious DLL wins and
+      is loaded under the trusted, legitimately-signed AppVShNotify.exe process, forwarding
+      expected exports back to the genuine DLL so the host process continues functioning
+      normally (proxying/forwarding-DLL pattern, not a crash-on-load).
+
+    nightledger_command_dispatch: |
+      CORRECTION to the S3 findings summary for this run, which stated NightLedger "supports 13
+      numeric command IDs" — the full-text re-read counts 16 distinct numeric command IDs in
+      the article's own table: 1 (gather user/host identity info), 3 (execute a
+      process/program), 17 (list directories), 20 (download a file to the infected system), 25
+      (gather host and network information), 27 (copy a file), 30 (update beacon interval), 36
+      (take a screenshot), 43 (load a DLL), 56 (kill a process), 62 (delete a file), 69
+      (terminate thread), 70 (upload file to C2 via POST), 75 (enumerate logical drives), 90
+      (list processes), 93 (collect C:\Windows\debug\NetSetup.log together with process-list
+      output — NetSetup.log is described by Kaspersky as "a Windows diagnostic log generated
+      under C:\Windows\debug\ during domain/workgroup join, unjoin, and related network setup
+      operations"). Command output is returned to the C2 via a POST request to a
+      distinctly-named endpoint (endpoint path omitted here as attacker infrastructure detail).
+      Payload tokenization: "the implant tokenizes the payload using the custom delimiter
+      (#%%#) and passes the parsed fields to its command dispatcher."
+
+      TWOSTROKE relationship — Kaspersky's OWN stated basis and confidence level: Kaspersky
+      does NOT use a calibrated confidence phrase (no "high/medium confidence" language) for
+      this specific dispatch-structure comparison. The article states it as an observational,
+      code/behavior-level similarity claim: "From a development standpoint, this is similar to
+      TWOSTROKE, a backdoor attributed to the same APT and previously documented by GTIG, whose
+      C2 response is hex-encoded and uses (@##@) as a field separator." The conclusion restates
+      this as: "The NightLedger backdoor retains similar core command functionality to
+      TWOSTROKE while introducing additional capabilities, including screenshot capture and
+      collection of the NetSetup.log file." By contrast, the broader NightLedger→Mirage Kitten
+      attribution DOES carry a stated basis (though still no numeric/qualitative confidence
+      label): "NightLedger is a recently identified Windows backdoor that we attribute to
+      Mirage Kitten based on code and behavioral similarities to the historical implants
+      developed and used by the group." Net: treat the TWOSTROKE-lineage claim as a
+      Kaspersky-stated structural/behavioral similarity observation, not a confidence-graded
+      assessment — do not upgrade the wording when composing.
+
+    bridgehead_arcbridge_proxy_behavior: |
+      BridgeHead's HTTP 407 handling (its own dedicated logic, described by Kaspersky in a
+      table): on receiving HTTP 407 (Proxy Auth Required), the tunneler "Queries supported auth
+      schemes via WinHttpQueryAuthSchemes, selects Negotiate (0x10) or NTLM (0x2) IN THAT EXACT
+      ORDER, sets Windows SSO credentials (null username/password), retries up to 3 times." On
+      HTTP 101 (Switching Protocols) it proceeds to WebSocket upgrade + authentication; any
+      other response closes all handles and enters exponential backoff. Kaspersky's own
+      framing: "The implant is designed to operate through corporate proxy environments by
+      handling HTTP 407 responses, negotiating Windows-integrated proxy authentication with
+      Negotiate preferred over NTLM, retrying with the current user's SSO context, and falling
+      back to exponential C2 connection retry logic capped at 60 seconds." Kaspersky further
+      states this "closely mirrors the enterprise proxy traversal logic seen in the backdoor we
+      track internally as Retrograde, which overlaps with tooling publicly reported as MiniFast
+      / MiniUpdate, attributed to the same APT group" — a SEPARATE internal-alias/overlap claim
+      from the TWOSTROKE one, tying BridgeHead's proxy logic (not NightLedger's dispatch logic)
+      to a third tool lineage. Once authenticated, BridgeHead functions as a full SOCKS5 tunnel
+      proxy: "The C2 server initiates all tunnel connections by sending binary commands over
+      the WebSocket; the implant simply forwards traffic between server-specified targets and
+      the WebSocket channel" — described by Kaspersky as making the host "a relay node: the
+      operator runs tools server-side, and all resulting TCP traffic is tunneled through the
+      victim's machine as if originating from the victim's network." The wire protocol supports
+      7 active message types (CONNECT, CONNECT_RESPONSE, DATA, DISCONNECT, PING/PONG every 30
+      seconds, and FLOWCTRL for flow throttling), addressed in SOCKS5-style target encoding
+      (IPv4 / domain name / IPv6).
+      ArcBridge (a separate, related tool, first identified April 2026) implements its own
+      WebSocket tunneling with an OPEN (create proxy/tunnel session) and DNS (hostname/address
+      resolution) command set; its embedded configuration block carries C2 host, port,
+      retry/timeout value, an SSL flag and a likely implant identifier — a simpler control
+      surface than BridgeHead's full SOCKS5 relay.
+
+    username_substring_activation_gate: |
+      Both BridgeHead and a separately-hunted NightLedger-adjacent variant implement the SAME
+      per-target anti-analysis gate: the malware "dynamically loads advapi32.dll, resolves
+      GetUserNameA, retrieves the current Windows username, converts it to lowercase, and
+      searches for a specific substring in it." Kaspersky's own read: "This behavior suggests
+      prior reconnaissance was performed within the internal network and the username check is
+      needed to make sure it runs on a specific machine. This is potentially intended to
+      prevent execution of the standalone malware sample inside virtual analysis systems. If
+      the substring is not found, the function returns silently without activating." The
+      hardcoded control value is a 3-CHARACTER substring that must appear within the lowercased
+      username; on the separately-hunted variant, Kaspersky states this "confirm[s] per-target
+      tailoring of each deployed binary" — i.e. Kaspersky treats this as evidence that each
+      sample is individually built/configured for a specific intended victim host rather than
+      distributed as one generic binary across a target set.
+
+    victimology_sentence: >
+      "According to our telemetry, we identified victims across Middle East and African
+      countries including Egypt, SMB and government environments in Jordan and Tanzania,
+      aviation organizations in Pakistan, telecommunication companies in Ethiopia and
+      financial-sector entities in Burkina Faso."
+
+    infrastructure_note: >
+      Kaspersky states the group's tunneling-utility reliance "aligns with previous public
+      reporting, which documented the group's use of the LIGHTRAIL and POLLBLEND tunnelers" and
+      notes "a gradual shift away from Microsoft Azure subdomain-style infrastructure in favor
+      of Cloudflare-backed domains in some of its malware, a change likely intended to
+      complicate attribution while maintaining resilient command-and-control communications."
+      No initial-access vector was confirmed for most samples in this specific activity, though
+      Kaspersky notes BridgeHead deployment "followed targeted spear-phishing activity
+      consistent with tradecraft we recently documented as part of our private threat
+      intelligence reporting service and publicly reported by Unit 42 and Check Point
+      Research" — recruitment-themed lures impersonating trusted brands/hiring platforms and
+      lookalike videoconferencing pages redirecting to malicious archives on third-party
+      file-sharing services.
+
+    techniques: [T1574.001, T1071.001, T1090, T1572, T1113, T1057, T1082, T1018]
+    techniques_note: "T1018 (Remote System Discovery) added for NightLedger's 'gather host and network information' command; all others carried over from the S3 mapping and confirmed against the full text."
+
+    benign_lookalike: >
+      Kaspersky does not offer an explicit benign-lookalike discriminator for either tool.
+      Analytically: the DLL-hijack chain (RPCRT4.dll delay-loading SspiCli.dll only on an
+      authenticated RPC call) means the malicious module loads under a legitimately-signed,
+      expected parent process (AppVShNotify.exe) — the discriminating signal is therefore file
+      IDENTITY/provenance of the loaded sspicli.dll (co-located with, rather than in its normal
+      system directory, and not signed as the genuine Microsoft binary) rather than any
+      behavioral anomaly in the parent process itself.
+
+    evidence:
+      - quote: "Mirage Kitten – also known as UNC1549, Smoke Sandstorm, and Nimbus Manticore – is an advanced persistent threat (APT) group focused on cyber-espionage operations against aerospace, aviation, defense, and telecommunications sectors across the Middle East and Africa"
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      - quote: "This implementation closely mirrors the enterprise proxy traversal logic seen in the backdoor we track internally as Retrograde, which overlaps with tooling publicly reported as MiniFast / MiniUpdate, attributed to the same APT group."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      - quote: "Still, it implements the same technique of limiting execution to a specific username on the infected machine by hardcoding a 3-character control value that must appear as a substring in the lowercased Windows username retrieved via GetUserNameA. If the match fails, the implant silently exits, confirming per-target tailoring of each deployed binary."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+      - quote: "According to our telemetry, we identified victims across Middle East and African countries including Egypt, SMB and government environments in Jordan and Tanzania, aviation organizations in Pakistan, telecommunication companies in Ethiopia and financial-sector entities in Burkina Faso."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/mirage-kitten-new-tools/120811/"
+
+    relation_suggestions_additional:
+      - { subject: "actor:screening-serpens-unc1549-smoke-sandstorm-nimbus-manticore-iran-apt", object: "(new candidate tool, not yet registered) internally-tracked 'Retrograde' / publicly-reported MiniFast/MiniUpdate proxy-traversal tooling",
+          basis: "Kaspersky: BridgeHead's HTTP-407 proxy-traversal logic 'closely mirrors the enterprise proxy traversal logic seen in the backdoor we track internally as Retrograde, which overlaps with tooling publicly reported as MiniFast / MiniUpdate, attributed to the same APT group' (Kaspersky Securelist, 2026-07-28) — surfaced for the main agent's registry consideration; not one of the six required fields but a genuine new lineage/alias data point found during the deep read." }
+
+  # ==========================================================================
+  # 3. stac4749-teams-vishing-chaos
+  # ==========================================================================
+  - key: stac4749-teams-vishing-chaos
+    title: "Sophos X-Ops: STAC4749 Teams-vishing intrusions culminate in Chaos ransomware in under 17 hours via certificate-pinned Golang implants"
+    primary_source:
+      url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      publisher: "Sophos X-Ops (author: Morgan Demboski, with Sophos MDR/SophosLabs/CTU)"
+      published_at: "2026-07-28 (date only — no publish TIME is exposed in the page's own schema metadata beyond the date)"
+
+    initial_access_sequence_and_domain_pattern: |
+      STAC4749 operators initiate contact via MICROSOFT TEAMS CHATS AND CALLS, impersonating
+      helpdesk/IT-support staff; observed scam-call durations ranged 90 seconds to 20+ minutes,
+      "with most lasting between two to two-and-a-half minutes." Persona/domain PATTERN
+      (behavioral description, no literal domain reproduced): rather than the onmicrosoft[.]com
+      TENANT-SPOOFING seen in earlier Teams-abuse campaigns, STAC4749 registers its OWN
+      IT-themed cloud domains under the ".top" TOP-LEVEL DOMAIN, paired with plausible-sounding
+      individual employee-style usernames (first-name + last-name combinations) to make the
+      "IT support" persona's account look legitimate. Sophos's own naming-convention examples
+      cluster around security/update/service-desk themes (words like "security", "scan",
+      "update", "connect", "support", "service" combined into the second-level domain label).
+      This is a DELIBERATE TRADECRAFT SHIFT from tenant-spoofing to attacker-owned-domain
+      persona infrastructure, which changes the detection surface from "is this Teams tenant
+      the real onmicrosoft.com tenant" to "is this an unrecognized external .top-TLD domain
+      contacting our users via Teams."
+      Sophos's own trend context: Teams vishing was first publicly documented by Microsoft in
+      mid-2024 (helpdesk/support impersonation for social engineering into remote-access
+      grants); Sophos CTU identified similar GOLD REBELLION (associated with Black Basta
+      ransomware) activity in late 2024; Sophos's own January 2025 research covered STAC5777
+      and STAC5143 combining email bombing with Teams vishing. Sophos observed "a sharp
+      increase in MDR cases involving Teams vishing across multiple threat groups and
+      campaigns" starting January 2026, with additional jumps in March and May 2026 — while
+      cautioning "improved detections may partially explain these increases," Sophos still
+      concludes "the trend more strongly suggests that Teams vishing has become an increasingly
+      common initial access vector."
+
+    quick_assist_to_remsupp_shift: |
+      STAC4749 "initially favored Microsoft Quick Assist and deployed the cloud-based RemSupp
+      remote monitoring and management (RMM) tool as a fallback when Quick Assist was blocked
+      or unavailable." Sophos's stated reason for the shift: "activity since April [2026]
+      suggests the threat actors began to prefer RemSupp, LIKELY BECAUSE IT IS LESS LIKELY TO
+      BE INCLUDED IN APPLICATION BLOCKLISTS" than Quick Assist (i.e. Quick Assist has become a
+      known/blocklisted tool at many defended organizations following its wide reporting since
+      2024, pushing the actor toward a less-recognized RMM brand).
+
+    msconfig_rdp_step: >
+      "To move laterally to additional systems, STAC4749 intrusions consistently included
+      attempts to enable Remote Desktop Protocol (RDP) on the initial host by modifying Windows
+      service configurations via msconfig."
+
+    pyarmor_pyinstaller_backdoor: |
+      First-stage payload evolution: originally a malware LOADER (system discovery, persistence
+      establishment, C2 connection to retrieve a PyInstaller backdoor + additional payloads),
+      whose filename followed a pattern of a STATIC STRING that changed over time plus a unique
+      10-digit randomized numeric string — three successive naming generations observed:
+      "sekv<10-digit>.exe" (13–18 March), "helper<10-digit>.exe" (26 March – 9 April), and
+      "74fs<10-digit>.exe" (10–13 April). The loader communicated via gRPC, performed extensive
+      host profiling, generated per-sample mutexes/identifiers, and verified the presence of a
+      specific dependency log file — exiting if absent (an anti-sandbox/environment check).
+      By mid-April the operators abandoned the standalone loader stage and instead used the
+      live remote session to download the backdoor directly.
+      The backdoor itself (per Sophos's malware table): a PYARMOR-OBFUSCATED PYINSTALLER
+      binary that "can execute shell commands, collect system information, and dynamically
+      load additional Python modules." Its AES key/initialization-vector (IV) RETRIEVAL
+      MECHANISM: it "Retrieved its AES key and initialization vector (IV) from a PUBLIC GITHUB
+      REPOSITORY and used the key to decrypt embedded configuration data and payload" — i.e.
+      the decryption secret is fetched at runtime from a public code-hosting platform rather
+      than being hardcoded in the binary, which both evades static-analysis key extraction and
+      lets the operators rotate the key by updating the GitHub-hosted content. The decrypted
+      payload established communications with attacker infrastructure hosted on a
+      Cloudflare-Workers-style subdomain (described generically here per the no-IOC rule); the
+      backdoor created supporting Python files in a temp directory plus an archive used to
+      stage collected/exfiltrated data.
+
+    persistence_mechanisms: |
+      HKCU RUN-KEY MASQUERADE CLASS: the first-stage payload created a new HKCU Run key at
+      logon-persistence time, initially masquerading as REALTEK AUDIO components ("Realtek HD
+      Audio Universal Service," "Realtek HD Audio," "Realtek Audio," "Realtek Audio UHD" —
+      naming evolved February through May 2026 in step with the filename-generation changes);
+      from mid-May the operators ALSO began creating Run keys masquerading as WINAUDIO
+      components ("WinAudio life2"). Registry-value TARGETS pointed at the evolving
+      loader/backdoor filenames under AppData\Local\Temp or AppData\Roaming.
+      SECONDARY PERSISTENCE: ".vbs scripts (mklink-%.vbs) to create Startup folder shortcuts,"
+      disguised as seemingly legitimate filenames ("SecurityHealth," "OneDriveUpdate"), with
+      hidden file attributes applied in some instances.
+
+    certificate_pinning_behavior: |
+      "Sophos analysis indicates that STAC4749 operators embedded certificate authority (CA)
+      certificates directly within their payloads to tightly control C2 communications. Several
+      of the Golang-based implants contained hard-coded CA certificates associated with issuer
+      names such as loop-CA, connectify-CA, and james-bond-CA. These implants only established
+      encrypted connections if the C2 server had the same issuer as the embedded certificate."
+      Sophos's stated purpose/effect: "In addition to limiting unintended exposure and
+      complicating analysis, this approach enabled clear infrastructure segmentation. Payloads
+      sharing the same issuer consistently communicated with the same C2 servers, while those
+      using different issuers connected to separate infrastructure. This pattern suggests the
+      operators deliberately segment C2 infrastructure by payload or operational role rather
+      than relying on a single shared backend." The Golang C2 implants themselves are launched
+      via PowerShell Invoke-WebRequest with a "--token-raw" argument carrying two Base64-encoded
+      components (a token and a corresponding signature) used to authenticate to C2 or validate
+      commands; implant filenames are one-word nouns (graph.exe, confirm.exe, midnight.exe,
+      shield.exe) that differ per compromise. In several incidents these implants "only
+      communicated with C2 servers protected by pinned certificates and used unique identifiers
+      to manage victims individually." In ransomware-culminating cases, operators additionally
+      deployed DWAgent/AnyDesk for redundant remote-access channels, and in one case a custom
+      tunneling tool (a standalone reverse-SOCKS-proxy binary, described generically here)
+      supporting up to 1,000 concurrent connections — Sophos notes its use "as a standalone
+      component indicates the operators selectively deployed proxy functionality rather than
+      embedding it into a single all-purpose backdoor."
+
+    time_to_ransomware_figure: >
+      "In one incident, the time from initial access to ransomware deployment was less than 17
+      hours, consistent with prior Chaos ransomware cases observed by Sophos analysts." Encryption
+      "occurred nearly simultaneously across endpoints, and ransom notes with filenames such as
+      readme.chaos.txt were dropped on affected systems." At least THREE STAC4749 compromises
+      led to Chaos ransomware deployment overall.
+
+    sophos_attribution_and_muddywater_statement: |
+      Motivation assessment (Sophos's own confidence-graded language): "Given the short interval
+      between initial access and encryption, Sophos analysts assess WITH HIGH CONFIDENCE that
+      STAC4749 was a financially motivated operation that either directly deployed ransomware
+      or coordinated with affiliates." Chaos RaaS background (Sophos's own statement, not
+      STAC4749-specific): "active since at least February 2025 and was reportedly launched by
+      former members of BlackSuit (Royal) ransomware operation (tracked by CTU researchers as
+      GOLD SOUVENIR)." Sophos explicitly notes the STAC4749 custom-malware chain itself "has
+      not been reported" elsewhere, but tactics (Teams vishing abusing Quick Assist, DWAgent/
+      AnyDesk for lateral movement) align with prior Chaos-linked activity Sophos and third
+      parties have documented, including a May 2025 Sophos report on similar Teams-vishing
+      activity leading to 3AM ransomware (also linked to former BlackSuit members).
+      MUDDYWATER — explicit non-linkage statement (verbatim, as requested): "In May 2026,
+      Rapid7 suggested that Chaos may be used as a false flag by the Iranian threat group known
+      as MuddyWater (tracked by CTU researchers as COBALT ULSTER). SOPHOS ANALYSTS HAVE FOUND
+      NO EVIDENCE LINKING STAC4749 ACTIVITY TO THAT GROUP. Instead, limited hands-on-keyboard
+      artifacts suggest a Russian-language connection. For example, Sophos analysts observed a
+      mistyped command (a Cyrillic-keyboard-layout typo consistent with attempting to type
+      'dir') that is consistent with the operator attempting to enter 'dir' while using a
+      Russian keyboard layout. HOWEVER, THERE IS INSUFFICIENT EVIDENCE FOR ATTRIBUTION." — i.e.
+      Sophos explicitly rules out the MuddyWater/false-flag hypothesis for STAC4749 specifically
+      (that hypothesis was Rapid7's, about Chaos generally, not Sophos's own claim), while
+      simultaneously declining to commit to a Russian-actor attribution despite the keyboard
+      artifact.
+
+    victimology_stats: >
+      Between February and June 2026, "nearly 95% of observed cases... targeted organizations
+      based in Canada (50%) and the U.S. (44%)." Sector distribution: services 20%, manufacturing
+      17%, energy 12%, construction and engineering 12%; Sophos separately notes "all the legal
+      organizations targeted in the campaign specialize in intellectual property (IP) law or
+      services" — a targeting specificity worth flagging for any IP-law-adjacent constituency.
+
+    techniques: [T1566.004, T1219, T1021.001, T1547.001, T1547.009, T1027, T1572, T1090, T1071.001, T1486, T1105]
+    techniques_note: "T1105 (Ingress Tool Transfer) added for the PowerShell Invoke-WebRequest download-and-launch step of the Golang implants; all others carried over from the S3 mapping and confirmed against the full text."
+
+    benign_lookalike: >
+      Sophos does not state a single explicit discriminator, but the report's own detection
+      recommendations imply one: legitimate Quick Assist/RemSupp/DWAgent/AnyDesk sessions are
+      normally INITIATED BY THE END USER in response to an INTERNAL, pre-arranged support
+      ticket — the STAC4749 pattern is inverted (an UNSOLICITED external Teams chat/call from an
+      unrecognized .top-TLD "IT support" persona, immediately followed by a request to launch
+      or install a remote-access tool). Sophos's stated control: "establish processes to
+      investigate unexpected contact from external parties, especially interactions that
+      attempt to persuade users to launch remote support tools, download software, or grant
+      system access" — i.e. the discriminator is the ABSENCE of a corresponding internal
+      support ticket / employee-initiated request, not any property of the RMM tool itself
+      (which is fully legitimate software in both the benign and malicious case).
+
+    evidence:
+      - quote: "STAC4749 operators created IT-themed cloud domains under the \".top\" top-level domain (TLD) and leveraged plausible employee usernames to make the accounts appear legitimate"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "Retrieved its AES key and initialization vector (IV) from a public GitHub repository and used the key to decrypt embedded configuration data and payload"
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "Sophos analysts have found no evidence linking STAC4749 activity to that group. Instead, limited hands-on-keyboard artifacts suggest a Russian-language connection... However, there is insufficient evidence for attribution."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "Given the short interval between initial access and encryption, Sophos analysts assess with high confidence that STAC4749 was a financially motivated operation that either directly deployed ransomware or coordinated with affiliates."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+      - quote: "Several of the Golang-based implants contained hard-coded CA certificates associated with issuer names such as loop-CA, connectify-CA, and james-bond-CA. These implants only established encrypted connections if the C2 server had the same issuer as the embedded certificate."
+        attribution: "Sophos X-Ops"
+        source_url: "https://www.sophos.com/en-us/blog/chaos-in-teams-vishing"
+
+  # ==========================================================================
+  # 4. legacyhive-windows-profile-registry-hijack
+  # ==========================================================================
+  - key: legacyhive-windows-profile-registry-hijack
+    title: "LevelBlue SpiderLabs: LegacyHive cross-account profile hijack via offline registry-hive manipulation and NT Object Manager namespace redirection"
+    primary_source:
+      url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+      publisher: "LevelBlue SpiderLabs (authors: Serhii Melnyk and Timmy Lister)"
+      published_at: "2026-07-27T14:07:50Z"
+      published_at_source: "Confirmed via the page's own JSON schema 'datePublished' field (exact ISO timestamp), not the rendered 'July 27, 2026' date-only byline. This is ~38 hours before this run's 04:08Z kickoff, i.e. genuinely outside a strict 24-36h window — correctly flagged by the spawn message as being carried on relevance grounds, not recency."
+    disclosure_context: >
+      LegacyHive is the latest in a named SERIES of Windows PoCs from a disclosure actor
+      LevelBlue calls "Nightmare-Eclipse" — preceded by GreenPlasma, YellowKey, MiniPlasma,
+      RoguePlanet and GreatXML — released shortly after Microsoft's July 2026 Patch Tuesday.
+      LevelBlue is explicit that this is NOT a traditional software vulnerability (no CVE):
+      "Like its predecessors, LegacyHive explores a different corner of the Windows operating
+      system, this time focusing on profile initialization and registry hive loading rather
+      than introducing a traditional software vulnerability."
+
+    exact_prerequisite_bounding_severity: |
+      PRECISE PREREQUISITE (this is the key severity-bounding fact): the attacker must already
+      hold (1) an active, logged-in LOW-PRIVILEGED account session on the target machine
+      (their own foothold), AND (2) valid CREDENTIALS FOR A SEPARATE "HELPER" ACCOUNT on the
+      same machine (a second account's username + password, distinct from both the attacker's
+      own logged-in account and the ultimate target account). In the published PoC example,
+      the low-privileged logged-in user possesses credentials for helper account "u1"; the
+      command line is "LegacyHive.exe u1 test123 adm" where u1/test123 are the helper account's
+      credentials and "adm" is the target account whose profile data becomes exposed. Critically,
+      the attacker does NOT need the target ("adm") account's own credentials at any point —
+      the technique's entire value is bypassing that requirement by hijacking the HELPER
+      account's profile-load path so it aliases into the target account's UsrClass.dat
+      directory. LevelBlue's own scoping statement: "the publicly released PoC should also be
+      viewed in context. As released, it requires control of a low-privileged account and the
+      credentials of a separate helper account, MAKING IT MORE USEFUL AS A POST-COMPROMISE
+      CAPABILITY THAN AS A STANDALONE ATTACK. According to the disclosure, these limitations
+      were intentionally introduced before publication to discourage immediate abuse." Bottom
+      line for severity triage: this is strictly a POST-COMPROMISE / LATERAL technique requiring
+      the attacker to have already obtained at least one additional (non-target) local account's
+      valid credentials — it is not remote, not pre-auth, and not a privilege-escalation-from-
+      nothing primitive.
+
+    seven_stage_execution_chain: |
+      Stage 1 — Building a shadow namespace: creates a custom directory hierarchy inside the
+      Windows NT OBJECT MANAGER namespace (a low-level namespace beneath the Win32 API that
+      "most applications never interact with"), under a restricted path resolved dynamically
+      via NtCreateDirectoryObjectEx (resolved from ntdll.dll) — called from USER MODE, which
+      LevelBlue calls "unusual behavior — normal applications almost never create new Object
+      Manager namespaces after system initialization."
+      Stage 2 — Redirecting paths via symbolic links: creates OBJECT MANAGER SYMBOLIC LINKS
+      (native-API-level, NOT Windows shortcuts or NTFS junctions) inside the Stage-1 namespace
+      via NtCreateSymbolicLinkObject, forming the redirection layer that later determines where
+      the modified registry values actually resolve. LevelBlue: "The combination of
+      NtCreateDirectoryObjectEx followed by NtCreateSymbolicLinkObject is extremely rare in
+      legitimate software."
+      Stage 3 — Modifying the registry hive OFFLINE: opens the (helper) user's ntuser.dat file
+      DIRECTLY and modifies it OFFLINE using Microsoft's own REGISTRY OFFLINE API (offreg.dll),
+      targeting the value Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell
+      Folders, replacing the normal LOCAL APPDATA path with the Stage-1/2 redirected Object
+      Manager path. LevelBlue's key point: "the registry modification itself is legitimate.
+      LegacyHive uses valid registry structures, valid APIs, and a valid registry value type.
+      The abuse happens because Local AppData no longer points to the user's normal profile
+      directory. Instead, it points into the attacker-controlled Object Manager namespace."
+      After modification the hive is saved back to disk, replacing the original file — leaving
+      "one of the strongest forensic artifacts": a user hive whose Local AppData value
+      references BaseNamedObjects, NT paths, or other kernel namespaces "should be considered
+      suspicious."
+      Stage 4 — The timing trick (oplocks): uses a BATCH OPPORTUNISTIC LOCK
+      (FSCTL_REQUEST_BATCH_OPLOCK) on UsrClass.dat — "Instead of relying on timing or repeated
+      attempts, the exploit uses a built-in Windows synchronization mechanism to pause execution
+      until profile initialization reaches the expected point." LevelBlue frames this as a
+      deliberate design choice: "the exploit does not fight the Windows startup process — it
+      uses Windows' own synchronization features to control it."
+      Stage 5 — Triggering profile loading: launches a process AS THE TARGET (HELPER) USER via
+      CREATEPROCESSWITHLOGONW using the LOGON_WITH_PROFILE flag — the goal "is not execution; it
+      is forcing Windows to perform a normal profile load," which activates the modified
+      registry hive and redirected paths.
+      Stage 6 — Confirming the hijack: validation via RegOpenUserClassesRoot; if Windows exposes
+      the modified user hive, the chain has succeeded.
+      Stage 7 — Cleanup without removing impact: temporary files are removed, but "the modified
+      registry configuration and Object Manager redirection persist" — i.e. the persistence is
+      in the on-disk hive/namespace state, not in any running process or scheduled task.
+
+    detection_signals: |
+      LevelBlue names three specific behavioral signals mapped directly to the chain (rule
+      code / query syntax intentionally NOT reproduced here per the no-rule-code policy — only
+      the underlying telemetry concept):
+        1. REGISTRY SIGNAL — Object Manager path injection in the VOLATILE ENVIRONMENT registry
+           key: once the tampered hive loads, %LOCALAPPDATA% resolves into the Object Manager
+           namespace (e.g. a BaseNamedObjects-rooted path) instead of a normal filesystem path
+           — directly queryable from the per-user Volatile Environment key.
+        2. FILE-ACCESS SIGNAL — offline ntuser.dat / UsrClass.dat STAGING: because the exploit
+           copies and modifies hive files OUTSIDE their normal profile locations, unusual access
+           paths to ntuser.dat or UsrClass.dat are themselves detectable, independent of the
+           registry values they contain.
+        3. PROCESS SIGNAL — cross-account profile load via CreateProcessWithLogonW: LevelBlue
+           explicitly cautions that detection should NOT anchor on the specific target
+           executable (notepad.exe in the published PoC is trivially substitutable — LevelBlue
+           demonstrates this) but on the CALLING PATTERN itself: a cross-account
+           CreateProcessWithLogonW invocation using LOGON_WITH_PROFILE, routed through the
+           seclogon service.
+      EDR-level strongest signal (LevelBlue's own words): "For EDR platforms with visibility
+      into native Windows APIs, the strongest signals are user-mode invocations of
+      NtCreateDirectoryObjectEx and NtCreateSymbolicLinkObject. These functions are rarely used
+      outside system components, debugging tools, or specialized research utilities. Seeing
+      both from the same process should immediately warrant investigation."
+
+    levelblue_benign_lookalike_wording: >
+      LevelBlue's own explicit discriminator statement (verbatim structure): "Each operation is
+      legitimate in isolation but observing them together within a short time window is highly
+      unusual and well suited for behavioral correlation by EDR and SIEM platforms." And, on
+      the substitutable target-process point specifically: detection should focus on "the
+      calling pattern (cross-account, LOGON_WITH_PROFILE, via seclogon) rather than on
+      notepad.exe specifically" — because LevelBlue itself demonstrated the PoC can launch any
+      binary in place of notepad.exe, so the target executable carries no discriminating value;
+      the co-occurrence of offline hive access + Object Manager namespace creation +
+      cross-account CreateProcessWithLogonW within a short window is the actual signal.
+
+    reproduction_statement_and_patch_level: >
+      "LevelBlue OpsIntel CTI and Threat Operations and Research (THOR) teams reviewed and
+      reproduced the complete LegacyHive exploitation chain on FULLY PATCHED WINDOWS SYSTEMS
+      WITH THE JULY 2026 PATCH TUESDAY UPDATES INSTALLED, confirming the PoC functions as
+      described." I.e. this is not a patched/mitigated flaw — LevelBlue confirms the technique
+      works unmodified against a fully current, fully patched Windows build, consistent with
+      it being an abuse of legitimate OS mechanisms rather than a fixable bug.
+
+    scope_caveat: >
+      LevelBlue frames the released PoC as "a demonstration of the technique rather than a
+      definitive representation of its full potential" — adapting it to alternative
+      profile-loading workflows "would require additional engineering and a solid
+      understanding of Windows internals," and future variants "may change how profile loading
+      is triggered or which registry hives are targeted, but they will likely continue to rely
+      on the same core building blocks: offline hive modification, NT Object Manager
+      manipulation, controlled registry loading, and abnormal profile initialization." No
+      Microsoft mitigation exists yet for "this class of abuse" per LevelBlue.
+
+    techniques: [T1112, T1078, T1574]
+    techniques_note: >
+      Imperfect mapping, flagged explicitly rather than forced: T1112 (Modify Registry) is the
+      most directly source-supported id (the offline User Shell Folders hive edit). T1078
+      (Valid Accounts) covers the prerequisite use of the helper account's own valid
+      credentials. T1574 (Hijack Execution Flow) is offered as the closest parent category for
+      the Object-Manager-namespace path-redirection mechanism, but no existing enterprise
+      sub-technique cleanly describes "offline profile-hive path redirection via NT Object
+      Manager symbolic links" — this is a genuine ATT&CK-coverage gap the source itself
+      effectively documents (a new technique class), not a mapping the agent is confident in;
+      compose with that caveat intact rather than asserting a precise sub-technique id.
+
+    evidence:
+      - quote: "As released, it requires control of a low-privileged account and the credentials of a separate helper account, making it more useful as a post-compromise capability than as a standalone attack. According to the disclosure, these limitations were intentionally introduced before publication to discourage immediate abuse."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+      - quote: "the registry modification itself is legitimate. LegacyHive uses valid registry structures, valid APIs, and a valid registry value type. The abuse happens because Local AppData no longer points to the user's normal profile directory. Instead, it points into the attacker-controlled Object Manager namespace."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+      - quote: "For EDR platforms with visibility into native Windows APIs, the strongest signals are user-mode invocations of NtCreateDirectoryObjectEx and NtCreateSymbolicLinkObject. These functions are rarely used outside system components, debugging tools, or specialized research utilities. Seeing both from the same process should immediately warrant investigation."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+      - quote: "LevelBlue OpsIntel CTI and Threat Operations and Research (THOR) teams reviewed and reproduced the complete LegacyHive exploitation chain on fully patched Windows systems with the July 2026 Patch Tuesday updates installed, confirming the PoC functions as described."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/legacyhive-hunting-windows-profile-initialization-abuse-through-offline-registry-manipulation"
+
+  # ==========================================================================
+  # 5. minnesota-water-utilities-ot-attack
+  # ==========================================================================
+  - key: minnesota-water-utilities-ot-attack
+    title: "Coordinated two-day OT cyberattack disrupts 30+ Minnesota water/wastewater utilities — attribution explicitly unconfirmed by every named authority"
+    sources:
+      - { url: "https://www.cybersecuritydive.com/news/authorities-investigating-a-coordinated-cyberattack-against-minnesota-water/826427/", publisher: "Cybersecurity Dive (David Jones)", published_at: "2026-07-28T17:20:39 (US Eastern, no explicit offset in schema); dateModified 2026-07-28T18:13:56 same local scale", role: "primary" }
+      - { url: "https://statescoop.com/coordinated-cyberattack-disrupts-water-utilities-in-30-minnesota-communities/", publisher: "StateScoop (Colin Wood)", published_at: "2026-07-28T18:54:49Z", role: "primary — richer per-utility detail" }
+      - { url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a", publisher: "CISA/FBI/NSA/EPA/DOE/CNMF/Treasury joint advisory AA26-097A", published_at: "originally 2026-04-07; last updated 2026-07-22", role: "background/TTP reference for the ONGOING national campaign — NOT itself reporting the Minnesota event" }
+
+    scale_and_dates: |
+      "More than 30 Minnesota communities saw their water and wastewater utilities disrupted by
+      a coordinated cyberattack on Sunday and Monday [26–27 July 2026], the state's technology
+      bureau announced Tuesday [28 July]." Cybersecurity Dive corroborates: "The coordinated
+      attacks took place over two days, starting on Sunday, according to authorities." This is
+      a TWO-DAY, MULTI-COMMUNITY, COORDINATED event, not a single-utility incident.
+
+    what_was_disrupted_vs_not: |
+      DISRUPTED (per named utilities, StateScoop):
+        - City of Braham (pop. ~1,700): water plant went "offline for an unknown reason" Monday
+          morning; officials initially asked residents to MINIMIZE WATER USE because the city's
+          water tower held only a "limited quantity" — this is a genuine, if temporary,
+          consumption-guidance instruction (a nuance the Cybersecurity Dive framing of "no
+          evidence that local officials have instructed residents to modify their usage" does
+          NOT fully capture — Braham DID issue a temporary minimize-use request tied to tank
+          level, later lifted once the plant was back online). A second Braham notice
+          clarified the plant was back online and that the outage was "the result of a
+          malicious cyber-attack of computerized operating systems by UNKNOWN ACTORS."
+        - Plymouth (Minneapolis suburb, ~80,000 pop.): IT division "disconnected the affected
+          equipment from the network to stop the cyberattack and avoid any potential
+          retargeting while the equipment is reconfigured." Impact SCOPE explicitly stated:
+          "the attack was limited to equipment connected via CELLULAR COMMUNICATIONS at two
+          city water towers and 'multiple' lift stations."
+        - South St. Paul: "identified a cyberattack on Monday that impacted certain automated
+          controls." After contingency procedures, "no major impact to drinking and wastewater
+          treatment operations."
+      NOT DISRUPTED / EXPLICITLY REASSURED (consistent across multiple utilities and both news
+      primaries): no evidence of impact to drinking-water SAFETY or treatment QUALITY; Plymouth
+      explicitly: "the water is safe and there is no need for the public to adjust
+      consumption"; South St Paul: "Drinking water remains safe for use."
+      EQUIPMENT CLASS affected, where specified: PLCs / "automated controls" and CELLULAR-
+      CONNECTED field equipment at water towers and lift stations — i.e. remote/field OT
+      endpoints, not (per any source) the treatment-process chemistry/quality-control systems
+      themselves.
+
+    attribution_statements_verbatim: |
+      1. Braham's OWN city statement (via its official website, quoted by Cybersecurity Dive):
+         the outage was the result of "a malicious cyber-attack of computerized operating
+         systems by UNKNOWN ACTORS" — the affected utility itself explicitly says "unknown
+         actors," no actor name.
+      2. FBI (via spokesperson, to Cybersecurity Dive): "The FBI is aware of the incident and in
+         contact with victims to resolve the matter." — no attribution content, purely a
+         posture statement.
+      3. TJ Sayers, Senior Director of Threat Intelligence, Center for Internet Security
+         (quoted directly by StateScoop) — the clearest EXPLICIT non-attribution: "affirmed
+         that the Minnesota attacks have NOT YET BEEN ATTRIBUTED TO ANY PARTICULAR PARTY, and
+         that 'IT IS UNCLEAR' whether the attacks involved the programmable logic controllers
+         CISA warned about." Sayers separately noted that of the numerous nation-state attacks
+         on US water facilities in recent years, none has documented "major downstream health
+         impacts."
+      4. StateScoop's OWN editorial inference (NOT an official/authority claim — must be
+         labeled as the reporter's framing, not attributed to any named source): "The Minnesota
+         state government and several local governments contacted for this story declined to
+         comment on who attacked the state's water utilities, THOUGH IRAN IS A REASONABLE
+         GUESS." This sentence is StateScoop's own editorializing, immediately followed by
+         context about the CISA/FBI/NSA/EPA/DOE/CNMF/Treasury AA26-097A advisory update and
+         about a separate, unrelated recent event (US strikes near the Strait of Hormuz and a
+         Hanzala-group claim against several California water utilities) — none of which is
+         presented by StateScoop as direct evidence tying Iran to the Minnesota event
+         specifically.
+      5. Cybersecurity Dive's framing (its own subhead/lede, not an authority quote): "The
+         two-day attack comes days after federal officials warned of state-linked threat groups
+         targeting a wider set of industrial devices" and "Iran-linked hackers have been
+         exploiting vulnerable devices in an effort to disrupt a series of critical
+         infrastructure providers, including drinking water, wastewater treatment and energy
+         companies." This is CONTEXTUAL FRAMING tied to the AA26-097A advisory timing, not a
+         direct claim by CSD or any named official that Iran conducted the Minnesota attack.
+      NET: as of both news primaries' publication, NO named authority (FBI, CISA, EPA, MNIT,
+      any affected city) has attributed the Minnesota attack to any actor; the Iran/CyberAv3ngers
+      connection appearing in press coverage is CONTEXTUAL JUXTAPOSITION with the concurrently-
+      updated AA26-097A advisory and reporter inference, not a stated attribution. Compose this
+      distinction carefully — do not let AA26-097A's Iran attribution (which is about a
+      SEPARATE, ongoing nationwide PLC-targeting pattern) bleed into a direct claim about who
+      conducted the Minnesota incident specifically.
+
+    authorities_involved: >
+      State: Minnesota IT Services (MNIT) — coordinating response; John Israel (MNIT assistant
+      commissioner / Minnesota's chief information security officer) quoted describing a
+      "whole-of-government response" that helped "prevent more serious impacts to critical
+      services"; Minnesota's own public-safety and health departments; a state fusion center.
+      Federal: FBI, CISA, EPA (all three coordinating with local utilities per Cybersecurity
+      Dive); MNIT's own listed federal partners per StateScoop match this same set.
+      Local: individual city/utility officials (Braham's mayor Nate George, Plymouth's city
+      spokesperson, South St. Paul officials).
+
+    stated_technique: >
+      No utility or authority names a specific intrusion technique for the MINNESOTA incident
+      itself (TJ Sayers explicitly says it is unclear whether the CISA-warned PLC vector was
+      involved). The closest to a technical detail is Plymouth's own description of IMPACT
+      SCOPE: the attack was "limited to equipment connected via cellular communications" at
+      water towers and lift stations — i.e. cellular-connected OT/field endpoints were the
+      affected equipment class, though this is a scope statement, not a confirmed intrusion
+      vector.
+
+    aa26_097a_background_behavior_and_mitigations_no_iocs: |
+      AA26-097A (originally 7 April 2026, updated 22 July 2026) is a SEPARATE, ONGOING national
+      advisory describing Iranian-affiliated APT activity against internet-connected PLCs
+      broadly (Rockwell Automation/Allen-Bradley CompactLogix and Micro850; Schneider Electric
+      BMX P34/Modicon M340; Siemens S7-1200) — it is background/TTP context for this item, NOT
+      itself reporting on the Minnesota event.
+      LADDER-LOGIC / HMI TAMPERING BEHAVIOR (verbatim from the advisory, no IOC tables
+      reproduced): actors used LEASED, THIRD-PARTY HOSTED INFRASTRUCTURE and the vendors' OWN
+      ENGINEERING/CONFIGURATION SOFTWARE (Rockwell Studio 5000 Logix Designer; Schneider
+      EcoStruxure Control Expert; Siemens TIA Portal) to connect to MISCONFIGURED, INTERNET-
+      FACING PLCs and exfiltrate device PROJECT FILES to attacker-controlled infrastructure. "At
+      one U.S. victim, the FBI observed the APT actors download a malicious project file to a
+      targeted PLC using configuration software. Analysis indicated the project file retained
+      ladder logic for downstream function but ADDED LOGIC THAT OVERRODE SPECIFIC INSTRUCTION
+      SETS RESPONSIBLE FOR MAINTAINING SAFE OPERATING PARAMETERS in the victim's environment."
+      Impact: "the FBI and CISA identified the modification and deletion of project file logic,
+      to include Add-On Instructions (AOIs) [analogous to a 'Function Block'/'User Defined
+      Function Block' in other PLC vendors' programs] and data manipulation on HMI and SCADA
+      displays. Additionally, THE CHANGES DISABLED CRITICAL SHUTDOWN AND ALARM LOGIC, ALLOWING
+      SYSTEMS TO ENTER UNSAFE CONDITIONS WITHOUT NOTIFYING OPERATORS OF THE ANOMALIES." In one
+      instance, actors used Dropbear SSH software on victim MODEMS to gain remote access via
+      port 22; inbound traffic was otherwise observed on PLC-associated ports 44818, 2222, 102
+      and 502 (ports named as protocol context, not reproduced as an indicator list to block —
+      CISA itself cautions organizations to "investigate or vet" any IP indicators before
+      blocking).
+      MITIGATION SET (CISA's own, condensed — no IOCs): disconnect PLCs from the public-facing
+      internet and mediate all remote access through a secure gateway/jump host (never direct
+      inbound exposure); for cellular modems specifically, secure with strong authentication,
+      enable and review modem logs, and consider isolated architectures (private APN, 5G
+      PNI-NPN, cellular SD-WAN, ZTNA, or site-to-site VPN); strictly control network access to
+      PLCs via firewall/ACL rules limited to authorized control-system devices; for controllers
+      with a physical mode switch, place it in RUN position (only switch to program/remote
+      mode briefly for updates, and validate project files before switching back); enable
+      programming-protection features in vendor configuration software; review project files
+      for unauthorized changes using vendor integrity-checking tools and visual comparison
+      against known-good logic (explicitly including AOI review); change all device passwords
+      from defaults to complex unique values; implement MFA for any remote access to the OT
+      network; keep PLC firmware/software patched; disable unused authentication methods and
+      unnecessary services (Telnet, FTP, RDP, VNC, web services on the device); monitor asset-
+      management systems for configuration drift and monitor network-traffic content for
+      unusual logins or mode-changing/program-modifying protocol functions; ensure any
+      third-party OT service providers are informed of the active threat. CISA separately notes
+      this advisory update does NOT represent a new vulnerability in the named products — it
+      is "opportunistic targeting" of misconfiguration, not a CVE-driven flaw.
+
+    techniques_aa26_097a_source_provided: [T1219, T1041, T1565]
+    techniques_aa26_097a_note: >
+      These three are CISA's own enterprise-ATT&CK-mapped ids for AA26-097A (T1219 Remote
+      Access Software — Dropbear SSH on victim modems; T1041 Exfiltration Over C2 Channel —
+      project-file exfil via the leased third-party infrastructure; T1565 Data Manipulation —
+      project-file logic modification/deletion + HMI/SCADA display tampering). CISA also maps
+      two ICS-matrix (not enterprise) ids not carried into this pipeline's technique taxonomy:
+      T0883 (Internet Accessible Device) and T0885 (Commonly Used Port) — flagged for awareness
+      since the pipeline's techniques[] field is enterprise-ATT&CK-only.
+      No technique is source-stated for the MINNESOTA incident itself (attribution/vector
+      unconfirmed) — do not assign AA26-097A's techniques to the Minnesota incident entry
+      without an explicit caveat that this is background-advisory context, not a confirmed
+      match to the Minnesota event's own mechanism.
+
+    evidence:
+      - quote: "The two-day attack comes days after federal officials warned of state-linked threat groups targeting a wider set of industrial devices."
+        attribution: "Cybersecurity Dive"
+        source_url: "https://www.cybersecuritydive.com/news/authorities-investigating-a-coordinated-cyberattack-against-minnesota-water/826427/"
+      - quote: "The FBI is aware of the incident and in contact with victims to resolve the matter."
+        attribution: "FBI spokesperson, via Cybersecurity Dive"
+        source_url: "https://www.cybersecuritydive.com/news/authorities-investigating-a-coordinated-cyberattack-against-minnesota-water/826427/"
+      - quote: "the attack was limited to equipment connected via cellular communications at two city water towers and multiple lift stations"
+        attribution: "Plymouth, MN city spokesperson, via StateScoop"
+        source_url: "https://statescoop.com/coordinated-cyberattack-disrupts-water-utilities-in-30-minnesota-communities/"
+      - quote: "affirmed that the Minnesota attacks have not yet been attributed to any particular party, and that 'it is unclear' whether the attacks involved the programmable logic controllers CISA warned about."
+        attribution: "TJ Sayers (Center for Internet Security), via StateScoop"
+        source_url: "https://statescoop.com/coordinated-cyberattack-disrupts-water-utilities-in-30-minnesota-communities/"
+      - quote: "The Minnesota state government and several local governments contacted for this story declined to comment on who attacked the state's water utilities, though Iran is a reasonable guess."
+        attribution: "StateScoop (Colin Wood) — reporter's own inference, not an authority quote"
+        source_url: "https://statescoop.com/coordinated-cyberattack-disrupts-water-utilities-in-30-minnesota-communities/"
+      - quote: "a malicious cyber-attack of computerized operating systems by unknown actors"
+        attribution: "City of Braham, MN (official city statement), via StateScoop"
+        source_url: "https://statescoop.com/coordinated-cyberattack-disrupts-water-utilities-in-30-minnesota-communities/"
+      - quote: "Analysis indicated the project file retained ladder logic for downstream function but added logic that overrode specific instruction sets responsible for maintaining safe operating parameters in the victim's environment."
+        attribution: "CISA/FBI joint advisory AA26-097A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a"
+      - quote: "the changes disabled critical shutdown and alarm logic, allowing systems to enter unsafe conditions without notifying operators of the anomalies."
+        attribution: "CISA/FBI joint advisory AA26-097A"
+        source_url: "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-097a"
+
+  # ==========================================================================
+  # 6. uvvg-arad-qilin-ransomware
+  # ==========================================================================
+  - key: uvvg-arad-qilin-ransomware
+    title: "Romanian public university UVVG Arad confirms cybersecurity incident; Qilin ransomware leak-site claim has no corroboration beyond the leak-site mirror itself"
+    primary_source_search_result: >
+      TRIED, NOT FOUND: WebFetch of https://www.uvvg.ro/site/ (homepage) and
+      https://stiri.uvvg.ro/ (the university's own news subdomain, which 301-redirects to the
+      plain homepage) surfaced no cybersecurity-incident announcement; a targeted WebSearch
+      (site:uvvg.ro incident securitate cibernetica) returned no uvvg.ro results at all; the
+      homepage's news section (as of this fetch) still shows its most recent item dated 8 July
+      2026, three weeks before the incident. CONCLUSION: no uvvg.ro-hosted URL for the
+      university's own statement could be located despite a genuine, multi-angle attempt
+      (direct site fetch, news-subdomain fetch, site-restricted search, general Romanian-
+      language search). The statement instead appears to have been distributed as a press
+      release directly to Arad-area and regional outlets (at least six independently confirmed
+      to be running near-identical text, several explicitly framing it as "un comunicat de
+      presă" — a press release), rather than posted as a standalone page on the university's
+      own domain. Recommend continuing to treat the best available local-press relay as the
+      practical primary; Aradon.ro's version is the fullest verbatim transcription of the
+      release found in this run.
+    best_available_sources:
+      - { url: "https://www.aradon.ro/aradon-stirile-judetului-arad/atac-cibernetic-la-uvvg-arad-2225370/", publisher: "Aradon.ro", published_at: "2026-07-28T14:14:34Z", role: "primary — fullest verbatim quotation of the university's press release found" }
+      - { url: "https://www.sportarad.ro/2026/07/28/universitatea-de-vest-vasile-goldis-din-arad-ofera-informatii-cu-privire-la-incidentul-de-securitate-cibernetica-ce-a-vizat-infrastructura-it-a-institutiei/", publisher: "Sportarad.ro", published_at: "2026-07-28 (date only exposed)", role: "primary — original run's relay source" }
+      - { url: "https://www.gazetanord-vest.ro/2026/07/atac-cibernetic-asupra-infrastructurii-it-a-universitatii-de-vest-vasile-goldis-din-arad-autoritatile-au-fost-sesizate/", publisher: "Gazeta Nord-Vest", published_at: "2026-07-28T17:03:00+03:00", role: "corroborating — independent outlet, same release" }
+      - { url: "https://www.radioromania.ro/stiri-locale/arad-universitatea-de-vest-tinta-unui-atac-cibernetic-id203468.html", publisher: "Radio România (public national broadcaster)", published_at: "2026-07-28T18:11:00+03:00 (updated 18:18)", role: "corroborating — HIGHEST-reliability outlet found (national public broadcaster); ALSO the source of the clearest explicit non-confirmation language" }
+      - { url: "https://www.ziuadevest.ro/atac-cibernetic-la-universitatea-de-vest-vasile-goldis-din-arad/", publisher: "Ziua de Vest", published_at: "2026-07-28T19:34:35+03:00", role: "corroborating" }
+      - { url: "https://www.actualitati-arad.ro/un-atac-cibernetic-a-afectat-sistemele-universitatii-de-vest-vasile-goldis-din-arad/", publisher: "Actualitati-Arad", published_at: "2026-07-28T14:32:16Z", role: "corroborating" }
+
+    university_statement_full_content_ro_and_en: |
+      ROMANIAN (fullest verbatim reconstruction, principally from Aradon.ro's direct quotation
+      of "un comunicat de presă"):
+      "Recent a fost identificat un atac cibernetic care a afectat infrastructura informatică a
+      universității și funcționarea serviciilor digitale utilizate în activitatea academică și
+      administrativă. Acest incident se înscrie în contextul creșterii numărului de atacuri
+      cibernetice îndreptate împotriva instituțiilor publice și private, inclusiv a
+      instituțiilor de învățământ superior, atât în România, cât și la nivel internațional.
+      Imediat după identificarea incidentului, au fost anunțate autoritățile competente în
+      domeniu – DNSC, ANSPDCP, DIICOT – și s-au demarat toate măsurile necesare pentru
+      limitarea efectelor acestuia. Echipele tehnice lucrează în prezent cu specialiști pentru
+      reluarea treptată a serviciilor afectate. [UVVG] tratează acest incident cu maximă
+      responsabilitate și deplină transparență și se află în contact permanent cu instituțiile
+      abilitate."
+      ENGLISH GLOSS: "A cyberattack was recently identified that affected the university's IT
+      infrastructure and the functioning of digital services used in academic and
+      administrative activity. This incident falls within the context of a growing number of
+      cyberattacks directed against public and private institutions, including higher-education
+      institutions, both in Romania and internationally. Immediately after identifying the
+      incident, the competent authorities in the field were notified — DNSC [National
+      Directorate for Cybersecurity], ANSPDCP [National Supervisory Authority for Personal Data
+      Processing], DIICOT [Directorate for Investigating Organized Crime and Terrorism
+      Offenses] — and all measures necessary to limit its effects were initiated. Technical
+      teams are currently working with specialists on the gradual resumption of affected
+      services. [UVVG] treats this incident with maximum responsibility and full transparency
+      and remains in permanent contact with the competent institutions."
+
+    what_is_confirmed_vs_not: |
+      CONFIRMED by the university's own statement: (1) a cyberattack occurred and was "recently
+      identified"; (2) IT infrastructure and digital services used in academic/administrative
+      activity were affected; (3) three specific authorities were notified — DNSC, ANSPDCP,
+      DIICOT; (4) technical teams are working with external cybersecurity specialists on
+      gradual service restoration; (5) the university frames the incident within a general
+      trend of rising attacks on public/private and higher-education institutions.
+      EXPLICITLY NOT CONFIRMED — per Radio România's own direct reporting on the gaps in the
+      statement (this is the clearest explicit non-confirmation language found, verbatim):
+      "Universitatea nu a precizat, deocamdată, care sunt sistemele indisponibile și nici dacă
+      au fost compromise sau extrase date personale." (English: "The university has not yet
+      specified which systems are unavailable, nor whether personal data was compromised or
+      extracted.") Radio România further states: "Autoritățile urmează să stabilească natura
+      atacului, modul în care agresorii au pătruns în sistemele informatice și amploarea
+      eventualelor prejudicii. Universitatea nu a anunțat un termen pentru restabilirea completă
+      a serviciilor digitale." (English: "Authorities are yet to determine the nature of the
+      attack, how the attackers got into the information systems, and the scope of any
+      damages. The university has not announced a timeframe for full restoration of digital
+      services.") NO SOURCE — including the university's own statement — names an attacker,
+      confirms data exfiltration, gives an exact attack date, or lists the specific affected
+      systems/services.
+
+    qilin_claim_sourcing: |
+      Qilin's leak-site listing (fetched directly from ransomware.live): "Discovered" by
+      Ransomware.live at 2026-07-26 14:29 UTC; "Est. attack date" shown as 2026-07-26; country
+      RO; sector tag "Education" (highlighted/selected among the site's full sector-badge list);
+      NO description text provided on the leak-site page ("Description: N/A") and no additional
+      leaked-data sample referenced beyond a generic leak-site screenshot placeholder.
+      CONFIRMED: the Qilin attribution has NO SOURCE OTHER THAN THIS LEAK-SITE MIRROR. A
+      targeted WebSearch specifically for "Qilin ransomware 'Vasile Goldis' Arad university
+      leak" surfaced no independent journalism connecting Qilin to this victim — every hit was
+      either the ransomware.live page itself or unrelated Qilin background material (other
+      victims, general group profiles). None of the six Romanian-press articles fetched in this
+      run (Aradon, Sportarad, Gazeta Nord-Vest, Radio România, Ziua de Vest, Actualitati-Arad)
+      mentions Qilin, ransomware, or any actor name at all — every one of them relays only the
+      university's generic "incident de securitate cibernetică" / "atac cibernetic" language.
+      Compose accordingly: the Qilin actor claim and the university's own confirmed-incident
+      statement are TWO SEPARATE, UNLINKED streams of information that happen to concern the
+      same institution in the same week — do not present the Qilin claim as corroborated by the
+      university's statement, since the university statement does not corroborate it in any way
+      (no actor named, no ransom note referenced, no leak-site mention).
+
+    techniques: [T1486]
+    techniques_note: "T1486 (Data Encrypted for Impact) applies only to the Qilin ransomware CLAIM, which is itself unconfirmed beyond the leak-site listing — no technical detail is available from any source to support any other technique mapping."
+
+    evidence:
+      - quote: "recent a fost identificat un atac cibernetic care a afectat infrastructura informatică a universității"
+        attribution: "Universitatea de Vest 'Vasile Goldiș' din Arad (via Aradon.ro's direct quotation of the university's press release)"
+        source_url: "https://www.aradon.ro/aradon-stirile-judetului-arad/atac-cibernetic-la-uvvg-arad-2225370/"
+      - quote: "Universitatea nu a precizat, deocamdată, care sunt sistemele indisponibile și nici dacă au fost compromise sau extrase date personale."
+        attribution: "Radio România (Andrei Enache)"
+        source_url: "https://www.radioromania.ro/stiri-locale/arad-universitatea-de-vest-tinta-unui-atac-cibernetic-id203468.html"
+      - quote: "Autoritățile urmează să stabilească natura atacului, modul în care agresorii au pătruns în sistemele informatice și amploarea eventualelor prejudicii."
+        attribution: "Radio România (Andrei Enache)"
+        source_url: "https://www.radioromania.ro/stiri-locale/arad-universitatea-de-vest-tinta-unui-atac-cibernetic-id203468.html"
+      - quote: "Ransomware.live discovered on 2026-07-26 that Universitatea de Vest „Vasile Goldiș” din Arad has been claimed by Qilin ransomware group"
+        attribution: "Ransomware.live (page metadata)"
+        source_url: "https://www.ransomware.live/id/VW5pdmVyc2l0YXRlYSBkZSBWZXN0IOKAnlZhc2lsZSBHb2xkaciZ4oCdIGRpbiBBcmFkQHFpbGlu"
+
+coverage_gaps:
+  - source_id: uvvg-official-site
+    reason: "Genuine multi-angle attempt (homepage WebFetch, stiri.uvvg.ro news-subdomain WebFetch/redirect-follow, site:-restricted WebSearch, general Romanian-language WebSearch) found no university-hosted URL for the press statement. The statement appears to have been distributed directly to press rather than published on uvvg.ro; recommend the local-press relay (Aradon.ro, fullest verbatim quote) remain the practical primary going forward unless a future run finds a uvvg.ro-hosted copy."
+
+fetch_failures: []
+fetch_failures_note: >
+  None — every one of the 6 assigned primaries plus every corroborating/background fetch
+  attempted in this run returned 200 successfully; no source-access failures to report.

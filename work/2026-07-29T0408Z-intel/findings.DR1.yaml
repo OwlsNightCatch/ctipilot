@@ -1,0 +1,490 @@
+# work/2026-07-29T0408Z-intel/findings.DR1.yaml
+# DR1 — scoped deep-read enrichment of the WILL-PUBLISH vulnerability set.
+# No discovery performed; every item below is a re-fetch-in-full of the
+# primary (and, where instructed, a second independent primary) source for
+# an item already triaged by S1/S3. Keyed by the `key:` values assigned in
+# the spawn message.
+
+domain: DR1
+run_id: "2026-07-29T0408Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-29T04:33:39Z"
+ended_at: "2026-07-29T04:43:52Z"
+duration_seconds: 613
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 5
+  bridge_fetches: 23
+
+items:
+  - key: airflow-fab-cve-2026-59243
+    title: "Apache Airflow FAB provider CVE-2026-59243 — structured deep-read (BSI CSAF + Apache oss-sec)"
+    vulnerable_component: >
+      apache-airflow-providers-fab (the Flask-AppBuilder auth-manager provider for Apache Airflow).
+      Specific code path: the FAB auth manager's Azure AD OAuth login callback, which decodes the
+      OAuth-supplied JWT ID token with the `verify_signature` decode parameter defaulted to `False`
+      (CWE-347 Improper Authentication). Apache's own oss-sec text names no specific file/function
+      beyond "the FAB auth manager's Azure AD OAuth login" and points to the remediation PR
+      (github.com/apache/airflow/pull/69374, not fetched this run — github.com egress-blocked) for the
+      exact code diff.
+    prerequisites: >
+      No prior authentication and no privileged network position required beyond the ability to reach
+      the deployment's OAuth callback endpoint: an attacker able to present a forged or unsigned
+      (`alg:none`) ID token to that callback is authenticated as an arbitrary user, including Admin.
+      Only affects deployments running the FAB auth manager configured for the Azure AD OAuth login
+      path — CONFIRMED from Apache's own text that this is a default-configuration issue on that path,
+      not something requiring extra misconfiguration beyond choosing Azure AD OAuth as the login method.
+    authentik_path_confirmation: >
+      CONFIRMED unaffected. Apache's oss-sec advisory states verbatim: "Deployments running the FAB
+      auth manager with the Azure AD OAuth login path under its default configuration are affected;
+      the Authentik path already defaulted to `True`." No BSI or Apache text qualifies this further —
+      taken at face value as Apache's own statement about its own codebase.
+    affected_fixed_versions_structured: >
+      From BSI CERT-Bund's CSAF (WID-SEC-W-2026-2551, fetched via `tools/fetch_source.py bsi-csaf
+      WID-SEC-2026-2551`) product_tree/product_status fields (STRUCTURED, not prose): product_id
+      T057287 "Apache Airflow FAB provider <3.7.3" listed under `vulnerabilities[0].product_status.
+      known_affected`; the sibling product_id T057287-fixed "Apache Airflow FAB provider 3.7.3"
+      (cpe:/a:apache:airflow:fab_provider__3.7.3) is the fixed release. This corroborates Apache's own
+      oss-sec prose ("This issue affects apache-airflow-providers-fab before 3.7.3... upgrade to
+      apache-airflow-providers-fab 3.7.3, which defaults verify_signature=True"). No lower bound is
+      given (i.e., the CSAF range is an open "<3.7.3", consistent with the flaw existing since the
+      Azure AD OAuth login path was introduced).
+    exploitation_status: >
+      No indication of in-the-wild exploitation in either Apache's oss-sec text or BSI's CSAF. Same-day
+      disclosure-and-fix: Apache/BSI both dated 2026-07-27/28, GitHub remediation PR dated 2026-07-27.
+    cvss: >
+      NO CVSS SCORE IS PUBLISHED BY EITHER PARTY. Apache's own oss-sec advisory states only
+      "Severity: moderate" (a word, not a CVSS vector/score). BSI's CSAF carries only a document-level
+      `aggregate_severity.text: "hoch"` (German for "high") with NO `scores`/`cvss_v3` block anywhere in
+      the `vulnerabilities[]` array (confirmed by reading the full structured CSAF JSON — the
+      vulnerabilities entry for CVE-2026-59243 has only `product_status` and no `scores` key, unlike
+      the Siemens/CISA CSAF records handled under the DR1-2 item below, which DO carry `scores`).
+      MITRE's own CVE record does not yet exist: a direct query to `https://cveawg.mitre.org/api/
+      cve/CVE-2026-59243` returned `{"error":"CVE_RECORD_DNE","message":"The cve record for the cve
+      id does not exist."}` at time of this research (2026-07-29, ~04:34 UTC) — the CVE ID is reserved/
+      used in both advisories but has not yet propagated to a published MITRE CVE record. Severity-word
+      mismatch worth flagging for the entry: Apache calls its own flaw "moderate" despite it being a
+      full authentication bypass to Admin; BSI's aggregate rating is "hoch"/high — a materially
+      different severity characterization of the identical vulnerability by the vendor vs. the
+      national CERT re-publishing it, mirroring the OpenSSL-vs-Siemens severity-word gap found in the
+      Desigo CC item below.
+    credit_and_dates: >
+      Finder: MalHyuk. Remediation developer: Jarek Potiuk. Disclosed by Shahar Epstein (Apache Airflow
+      security team) via oss-sec, dated "Tue, 28 Jul 2026 10:24:07 +0000" (message header) / BSI's CSAF
+      tracking shows `initial_release_date: 2026-07-27T22:00:00Z`, i.e. Apache's fix/disclosure and
+      BSI's republication both landed within the same ~12-hour window (2026-07-27 22:00 UTC / 2026-07-28
+      10:24 UTC).
+    additional_evidence:
+      - quote: "Severity: moderate"
+        attribution: "Apache Airflow security team (Shahar Epstein, oss-sec)"
+        source_url: "https://seclists.org/oss-sec/2026/q3/298"
+      - quote: "Credit: MalHyuk (finder), Jarek Potiuk (remediation developer)"
+        attribution: "Apache Airflow security team (oss-sec)"
+        source_url: "https://seclists.org/oss-sec/2026/q3/298"
+      - quote: "\"aggregate_severity\": {\"text\": \"hoch\"}"
+        attribution: "BSI CERT-Bund CSAF (WID-SEC-W-2026-2551, document.aggregate_severity)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551", publisher: "BSI CERT-Bund CSAF (WID-SEC-2026-2551)", date: "2026-07-27", role: "primary", note: "fetched as structured CSAF JSON via tools/fetch_source.py bsi-csaf, not the rendered portal page" }
+      - { url: "https://seclists.org/oss-sec/2026/q3/298", publisher: "oss-sec mailing list (Shahar Epstein, Apache Airflow security team)", date: "2026-07-28", role: "primary" }
+    discovery_trace: "re-verification of S1 item → BSI CSAF structured re-fetch, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2551 (via bridge bsi-csaf) → Apache oss-sec full re-fetch, URL https://seclists.org/oss-sec/2026/q3/298 → CVE-record check (negative), URL https://cveawg.mitre.org/api/cve/CVE-2026-59243"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+  - key: cisa-ics-28jul-desigo-cc-mendix
+    title: "CISA ICSA-26-209-01/-02 (Siemens Desigo CC / Mendix Runtime) — structured CSAF deep-read, corroborated against Siemens' own SSA-734552/SSA-814963 and OpenSSL's own advisory"
+    desigo_cc_cve_2025_15467:
+      vulnerable_component: >
+        OpenSSL's `evp_cipher_get_asn1_aead_params()` function (crypto/evp/evp_lib.c per third-party
+        analysis of the GitHub PoC — NOT named verbatim in the OpenSSL advisory text itself, which
+        describes the flaw only as "parsing CMS AuthEnvelopedData structures"). The bug: when parsing
+        a CMS `AuthEnvelopedData` structure that uses an AEAD cipher (e.g. AES-GCM), the IV encoded in
+        the ASN.1 parameters is copied into a fixed-size stack buffer (EVP_MAX_IV_LENGTH, 16 bytes per
+        third-party PoC analysis) without verifying the IV length fits the destination — an attacker-
+        supplied oversized IV triggers a stack-based out-of-bounds write (CWE-787, confirmed by both
+        CISA's and Siemens' own CSAF) BEFORE any authentication or AEAD tag verification occurs, so no
+        valid key material is required to trigger it. Applications/services parsing untrusted CMS or
+        PKCS#7 content with AEAD ciphers (S/MIME AuthEnvelopedData/AES-GCM) are the exposed surface —
+        Siemens Desigo CC is affected because it vendors OpenSSL for this parsing path.
+      prereqs: >
+        Pre-authentication in the sense that no valid cryptographic key/credential is needed — the
+        overflow fires during ASN.1/IV-length parsing, before the AEAD tag check. Requires only that
+        the target process parses an attacker-supplied CMS/S-MIME AuthEnvelopedData message (e.g. via
+        an exposed mail-processing, file-upload, or API endpoint that accepts such content).
+      openssl_own_advisory: >
+        CONFIRMED via OpenSSL's own oss-security posting (Tomas Mraz, "OpenSSL Security Advisory
+        [27th January 2026]", fetched in full): "Stack buffer overflow in CMS AuthEnvelopedData parsing
+        (CVE-2025-15467) === Severity: High" — OpenSSL itself rates this vulnerability HIGH, not
+        Critical, despite the CVSS 9.8/CRITICAL score later assigned in the Siemens/CISA CSAF
+        (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). OpenSSL's affected-version statement: "OpenSSL 3.6, 3.5,
+        3.4, 3.3 and 3.0 are vulnerable to this issue. OpenSSL 1.1.1 and 1.0.2 are not affected by this
+        issue." FIPS modules in 3.6/3.5/3.4/3.3/3.0 are NOT affected (CMS implementation sits outside
+        the OpenSSL FIPS module boundary). OpenSSL's own fixed versions: 3.6.1, 3.5.5, 3.4.4, 3.3.6,
+        3.0.19. Reported 2025-12-14 by Stanislav Fort (Aisle/AISLE Research, an AI-assisted vulnerability-
+        research organization); fix developed by Igor Ustinov.
+      desigo_cc_structured_affected_fixed: >
+        Read directly from Siemens ProductCERT's own CSAF (SSA-734552, fetched via
+        `cert-portal.siemens.com/productcert/csaf/ssa-734552.json` — a SEPARATE, independent primary
+        from CISA's verbatim republication, confirmed byte-identical in substance) — NOT the prose
+        summary:
+        - Desigo CC family V7 (product range "vers:all/*" = ALL versions): `known_affected`; remediation
+          category "none_available" — "Currently no fix is available."
+        - Desigo CC family V8 (product range "vers:all/*" = ALL versions): `known_affected`; remediation
+          category "vendor_fix" — "Update to patch V8.0 QU2.0021" (plus a second vendor_fix entry whose
+          `details` field is itself a URL, https://support.industry.siemens.com/cs/ww/en/view/109989041/
+          — likely a malformed/duplicate CSAF remediation record, but the "vendor_fix" category and the
+          named patch V8.0 QU2.0021 are unambiguous). CORRECTION TO THE ASSUMED FRAMING: V8 IS FIXED —
+          it is NOT in the same "no fix yet" bucket as V7. Only V7 has `none_available`.
+        - Desigo CC family V9 (product range "vers:intdot/<9.0.1" = versions below 9.0.1 affected):
+          `known_affected`; remediation category "vendor_fix" — "Update to V9.0 QU1 or later version"
+          (URL https://support.industry.siemens.com/cs/ww/en/view/110002555/) — i.e., 9.0.1 (styled
+          "V9.0 QU1" in Siemens' own naming) is the fixed release, confirming S1's "9.0.1" figure.
+      cvss_desigo: >
+        9.8 CRITICAL, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — present in the `scores` array of
+        BOTH Siemens' own SSA-734552 CSAF and CISA's ICSA-26-209-01 republication (identical vector),
+        i.e. Siemens ProductCERT is the assigning party (CISA's advisory is a verbatim CSAF conversion/
+        republication, not an independent assessment — CISA's document explicitly states: "This ICSA is
+        a verbatim republication of Siemens ProductCERT SSA-734552... provided \"as-is\"... CISA is not
+        responsible for the editorial or technical accuracy"). This 9.8/CRITICAL score is a materially
+        higher characterization than OpenSSL's own "High" severity word for the identical underlying
+        flaw — worth surfacing as a vendor-vs-upstream severity discrepancy, paralleling the Airflow
+        item's Apache-vs-BSI gap.
+      exploitation_status: "No in-the-wild exploitation confirmed by CISA, Siemens, or OpenSSL. Public command-execution PoC exists on GitHub (guiimoraes/CVE-2025-15467), covered by S1; not independently re-verified in this pass."
+      publication_dates: "Siemens SSA-734552 initial_release_date 2026-07-14 (status 'interim' per Siemens' own tracking metadata); CISA republished as revision 2 on 2026-07-28 (\"Initial CISA Republication of Siemens ProductCERT SSA-734552 advisory\")."
+    mendix_cve_2026_7891:
+      vulnerable_component: >
+        Not a code vulnerability — a documentation/access-control-model gap (CWE-277 Insecure
+        Inherited Permissions, confirmed from both CISA's and Siemens' own CSAF `cwe` field). Mendix's
+        access-rule documentation does not adequately describe the special/reserved behavior of the
+        built-in `System.User` entity. Siemens' own CSAF vulnerability description (verbatim): "A common
+        misconfiguration identified is with the anonymous user role with a System.User entity to gain
+        access to all stored records, even though no access rights are explicitly configured on that
+        role." Root mechanism per remediation text: "System.User has built-in platform-enforced access
+        rules that cannot be overridden or restricted by access rules defined on a specialization" —
+        i.e. developers who define XPath constraints on a System.User specialization believing it
+        restricts access are wrong; the platform's own built-in rule silently supersedes it.
+      structured_affected_fixed: >
+        Siemens' own CSAF (SSA-814963, fetched independently from cert-portal.siemens.com — confirmed
+        byte-identical to CISA's ICSA-26-209-02 republication): product "Mendix Runtime", range
+        "vers:all/*" (ALL versions), `known_affected`. Remediation is NOT a code patch: category
+        "mitigation" — "Any security model relying solely on XPath constraints on a System.User
+        specialization to restrict access should be revised to enforce restrictions at the App Security
+        role-management configuration level instead" — plus a second remediation entry category
+        "vendor_fix" whose content is itself a documentation-review instruction, not a shipped code
+        change. CONFIRMS S1: no code patch exists; this is fixed by developer reconfiguration per
+        updated Siemens/Mendix documentation.
+      cvss_mendix: "9.1 CRITICAL, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N — present in Siemens' own SSA-814963 `scores` array (assigned by Siemens ProductCERT); CISA's republication carries the identical vector."
+      publication_dates: "Siemens SSA-814963 initial_release_date 2026-07-14 (status 'final'); CISA republished as revision 2 on 2026-07-28."
+    additional_evidence:
+      - quote: "Stack buffer overflow in CMS AuthEnvelopedData parsing (CVE-2025-15467) === Severity: High ... This issue was reported on 14th December 2025 by Stanislav Fort (Aisle Research). The fix was developed by Igor Ustinov."
+        attribution: "OpenSSL Security Advisory (Tomas Mraz, tomas@openssl.org, oss-security)"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/01/27/7"
+      - quote: "Update to patch V8.0 QU2.0021"
+        attribution: "Siemens ProductCERT (SSA-734552 CSAF, remediations[] for Desigo CC family V8)"
+        source_url: "https://cert-portal.siemens.com/productcert/csaf/ssa-734552.json"
+      - quote: "Currently no fix is available"
+        attribution: "Siemens ProductCERT (SSA-734552 CSAF, remediations[] for Desigo CC family V7)"
+        source_url: "https://cert-portal.siemens.com/productcert/csaf/ssa-734552.json"
+      - quote: "Any security model relying solely on XPath constraints on a System.User specialization to restrict access should be revised to enforce restrictions at the App Security role-management configuration level instead."
+        attribution: "Siemens ProductCERT (SSA-814963 CSAF, remediations[])"
+        source_url: "https://cert-portal.siemens.com/productcert/csaf/ssa-814963.json"
+    sources:
+      - { url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-209-01.json", publisher: "CISA ICSA-26-209-01 (structured CSAF)", date: "2026-07-28", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/csaf/ssa-734552.json", publisher: "Siemens ProductCERT SSA-734552 (structured CSAF, independent primary)", date: "2026-07-14", role: "primary" }
+      - { url: "https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-209-02.json", publisher: "CISA ICSA-26-209-02 (structured CSAF)", date: "2026-07-28", role: "primary" }
+      - { url: "https://cert-portal.siemens.com/productcert/csaf/ssa-814963.json", publisher: "Siemens ProductCERT SSA-814963 (structured CSAF, independent primary)", date: "2026-07-14", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/01/27/7", publisher: "OpenSSL Security Advisory (oss-security, Tomas Mraz)", date: "2026-01-27", role: "primary" }
+    discovery_trace: "re-verification of S1 item → CISA CSAF bridge, URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-209-01.json → pivot to Siemens' own CSAF referenced in ICSA-26-209-01's references[], URL https://cert-portal.siemens.com/productcert/csaf/ssa-734552.json → pivot to OpenSSL's own upstream advisory (WebSearch \"openssl.org advisory CVE-2025-15467\") located at URL https://www.openwall.com/lists/oss-security/2026/01/27/7 → same pattern for Mendix, CISA URL https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsa-26-209-02.json → Siemens SSA-814963 URL https://cert-portal.siemens.com/productcert/csaf/ssa-814963.json"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+  - key: teamcity-cve-2026-63077
+    title: "JetBrains TeamCity CVE-2026-63077 — full-body deep-read of JetBrains' own advisory, cross-checked against the MITRE CVE record"
+    vulnerable_component: >
+      The TeamCity agent polling protocol — "the mechanism by which distributed build agents check in
+      with the central TeamCity server to retrieve job assignments and configuration data" (this
+      framing is CSA Labs' phrasing per S3, corroborated in substance but not verbatim by JetBrains'
+      own text: "An unauthenticated attacker could exploit the vulnerability via the TeamCity agent
+      polling protocol to bypass authentication checks and execute arbitrary operating system commands
+      with the privileges of the TeamCity server process."). JetBrains' advisory deliberately withholds
+      the specific deserialization gadget/class chain. CWE-502 (Deserialization of Untrusted Data),
+      confirmed structurally from the MITRE CVE record's `problemTypes` field — JetBrains' own blog
+      text does not use the word "deserialization" itself, describing the impact only as "bypass
+      authentication checks and execute arbitrary operating system commands."
+    prerequisites: >
+      No authentication required; reachable to "any attacker with HTTP(S) access to a TeamCity server."
+      No user interaction, no prior foothold. Affects the on-premises agent-polling endpoint
+      specifically — TeamCity Cloud is explicitly excluded (see below).
+    affected_fixed_versions_structured: >
+      From the MITRE CVE record (`cveawg.mitre.org/api/cve/CVE-2026-63077`, CNA=JetBrains): `"affected":
+      [{"vendor":"JetBrains","product":"TeamCity","versions":[{"version":"0","status":"affected",
+      "lessThan":"2026.1.3, 2025.11.7","versionType":"semver"}],"defaultStatus":"unaffected"}]` — i.e.
+      structurally, all versions from "0" up to (but not including) 2026.1.3 and 2025.11.7 are affected
+      (two parallel release branches), matching JetBrains' own prose: "This vulnerability affects all
+      TeamCity On-Premises versions... A fix for this vulnerability has been introduced in versions
+      2025.11.7 and 2026.1.3." Security patch plugin: confirmed available for "TeamCity 2017.1+" via
+      direct download (https://download.jetbrains.com/teamcity/plugins/internal/fix_CVE_2026_63077.zip)
+      — this is the vendor-stated floor for the patch-plugin mitigation path, distinct from the full
+      upgrade path. TeamCity 2024.03+ auto-detects and offers the plugin under Administration | Updates
+      | Available security updates. For TeamCity 2017.1–2018.1 a server restart is required after
+      installing the plugin; 2018.2+ can enable it without a restart.
+    teamcity_cloud_confirmation: >
+      CONFIRMED unaffected, in JetBrains' own words: "TeamCity Cloud customers are not required to take
+      any action, as the necessary measures have already been applied. We have verified that there is
+      no evidence of TeamCity Cloud environments being exploited through this vulnerability." (Note the
+      second half of that sentence is technically an exploitation statement about Cloud specifically,
+      not a blanket "not vulnerable" claim — read literally, JetBrains states Cloud already had the
+      necessary measures applied AND separately verified no exploitation evidence there.)
+    reporter_and_dates: >
+      Reported privately July 10, 2026 by researcher Antoni Tremblay under JetBrains' coordinated
+      disclosure policy. Blog post authored by Daniel Gallo, published 2026-07-27 (page metadata:
+      day=27, hours=15, minutes=09 UTC, i.e. 2026-07-27T15:09Z).
+    exploitation_statement: "JetBrains' own words, verbatim: \"At the time of publishing this advisory, we are not aware of any active exploitation of this vulnerability.\""
+    cvss_and_assigner: >
+      9.8 CRITICAL, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — present in the MITRE CVE record's
+      `metrics[0].cvssV3_1` block under the JetBrains CNA container (i.e. JetBrains self-assigned this
+      score as the CVE Numbering Authority for its own product — this is NOT a NVD/third-party score).
+      JetBrains' own blog post does not print a numeric CVSS anywhere in its body text; the 9.8 figure
+      comes only from the structured CVE record, not the prose advisory. CISA's ADP Vulnrichment layer
+      (also present in the same CVE record) separately assessed SSVC: Exploitation="none",
+      Automatable="yes", Technical Impact="total", dated 2026-07-28 — i.e. CISA's own automated
+      enrichment corroborates JetBrains' "no known exploitation" statement one day after publication.
+    csa_labs_caveat: "CSA Labs' research note is treated per the task instruction as non-load-bearing context only (historical framing: CVE-2023-42793/APT29 and CVE-2024-23917 precedent, Shodan enumeration figures) — no fact from CSA Labs is carried as authoritative in this deep-read; every version/patch/mechanism/reporter fact above is sourced to JetBrains' own advisory body text or the MITRE CVE record."
+    additional_evidence:
+      - quote: "A critical security vulnerability has been identified in TeamCity On-Premises. If exploited, this flaw may enable an unauthenticated attacker with HTTP(S) access to a TeamCity server to bypass authentication checks and execute arbitrary operating system commands with the privileges of the TeamCity server process."
+        attribution: "JetBrains (TeamCity PSIRT, Daniel Gallo)"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+      - quote: "This unauthenticated remote code execution vulnerability was reported to us privately on July 10, 2026, by Antoni Tremblay in accordance with our coordinated disclosure policy."
+        attribution: "JetBrains (TeamCity PSIRT)"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+      - quote: "TeamCity Cloud customers are not required to take any action, as the necessary measures have already been applied. We have verified that there is no evidence of TeamCity Cloud environments being exploited through this vulnerability."
+        attribution: "JetBrains (TeamCity PSIRT)"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+      - quote: "\"cvssV3_1\":{\"version\":\"3.1\",\"attackVector\":\"NETWORK\",\"attackComplexity\":\"LOW\",\"privilegesRequired\":\"NONE\",\"userInteraction\":\"NONE\",\"scope\":\"UNCHANGED\",\"confidentialityImpact\":\"HIGH\",\"integrityImpact\":\"HIGH\",\"availabilityImpact\":\"HIGH\",\"baseScore\":9.8,\"baseSeverity\":\"CRITICAL\"}"
+        attribution: "MITRE CVE Record (CNA: JetBrains)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-63077"
+    sources:
+      - { url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/", publisher: "JetBrains (TeamCity PSIRT)", date: "2026-07-27", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-63077", publisher: "MITRE CVE Record (cveawg.mitre.org API, CNA: JetBrains)", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "re-verification of S3 item → JetBrains blog full-body re-fetch, URL https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/ (direct fetch succeeded, full article body recovered) → MITRE CVE record cross-check, URL https://cveawg.mitre.org/api/cve/CVE-2026-63077 (no pivot needed for the primary fact set; CSA Labs source from S3 deliberately NOT re-relied-upon per task instruction)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+  - key: check-point-cve-2026-16232-root-cause
+    title: "Rapid7 Check Point SmartConsole CVE-2026-16232 root-cause DELTA — exact method, protocol generations, gen-sso-token forgery step, patch diff, and the default-Trusted-Clients claim"
+    note: "DELTA-ONLY return per task instruction — this augments, does not replace, the existing S3 item (novelty update-of:2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232). Underlying CVE facts (KEV status, general patch availability, exploited-in-the-wild status) remain sourced to the original 2026-07-23 entry."
+    vulnerable_method: >
+      `LoginSvcImpl.authenticateRemoteApplication(String applicationName, String suppliedSicDn)` in
+      class `com.checkpoint.management.dleserver.coresvc.internal.LoginSvcImpl`, decompiled by Rapid7
+      from `work/t146/mgmt_wrapper.tgz:fw1/cpm-server/dleserver.jar.full` (i.e. the CPM/DLE service's
+      dleserver.jar). Vulnerable logic (verbatim from Rapid7's decompilation): `String effectiveSicDn =
+      suppliedSicDn == null ? this.j.getCertificateDnName() : suppliedSicDn;` — the method prefers the
+      caller-supplied SIC distinguished name whenever the caller supplies one at all, falling back to
+      `getCertificateDnName()` (the DN bound to the authenticated peer certificate) only when no DN was
+      supplied. If `effectiveSicDn.equals("CN=siclocal")` it authenticates as the local/loopback
+      identity; otherwise it calls `identifyDomainForRemoteLogin(effectiveSicDn)` and trusts that
+      identity for the remote session.
+    protocol_generations_and_ports: >
+      SmartConsole logins cross two generations of Check Point management-plane plumbing: (1) the
+      legacy FWM/CPMI service, TCP port 18190, using Check Point's SIC (Secure Internal Communication)
+      certificate-based trust mechanism; once the SIC bootstrap completes, FWM exchanges length-prefixed
+      "FwSet" name/value objects (a Check Point-proprietary encoding used by older management services);
+      (2) the newer CPM/DLE service, exposing SOAP services over HTTPS on TCP port 19009 under the URI
+      path `/cpmws/`; authenticated requests to this newer service carry `DLESESSIONID` and
+      `CLIENTSESSIONID` header values to prove the client is authenticated.
+    gen_sso_token_step: >
+      After forging an application-session identity via the DN-substitution bug above, the attacker
+      issues a `gen-sso-token` command to the legacy FWM service. The request's `sso_original_client`
+      block claims `lower_name (system_admin)`, `soap_local_bind (1)`, and `permissions
+      ("ffffffff|ffffffff|ffffffff")` — a full-permission bitmap (all bits set across all three
+      permission-mask fields). Rapid7's decompiled FWM authorization code shows a special case: "If the
+      current client is treated as a Check Point config administrator (which it will be [given the
+      forged identity from the DN bug]), a gen-sso-token request is allowed before the normal
+      permission mask check" — i.e. the DN-forgery bug upstream causes the FWM authorization layer to
+      treat the attacker as a config administrator, which then bypasses gen-sso-token's normal
+      permission gate entirely. The gen-sso-token response contains a new SSO ticket; the attacker
+      redeems that ticket through the normal SmartConsole SOAP login path to obtain a full-administrator
+      SmartConsole session.
+    patch_take158_diff: >
+      Rapid7 diffed the decompiled class between vulnerable "R81.20 Jumbo Hotfix Take 146" and patched
+      "R81.20 Jumbo Hotfix Take 158." The patch restructures `authenticateRemoteApplication` to: (a)
+      compute `boolean localSic = IpUtils.isLoopback(remoteIp) && "CN=siclocal".equals(certificateDn)`;
+      (b) only honor a caller-supplied DN when `localSic && suppliedSicDn != null` (i.e. loopback
+      CN=siclocal traffic only — preserving the local-application case Rapid7 notes was the original
+      intent); (c) for all other (remote) callers, bind `effectiveSicDn` to the authenticated peer
+      certificate DN (`certificateDn`) regardless of what the caller supplied; (d) explicitly detect a
+      mismatch between a supplied DN and the authenticated certificate DN and reject it with a logged
+      error — "Rejecting caller-supplied SIC name that does not match the client certificate DN for
+      application {} from {}" — throwing `AuthenticationFailureLoginException`; (e) add a new check that
+      rejects the login outright when there is no authenticated SIC identity at all (empty/null
+      `effectiveSicDn`), also logged and exception-raised. Rapid7's own summary: "This is why replaying
+      the management server's DN no longer works."
+    builds_reproduced_against: "R81.20 and R82.10 — Rapid7's own words: \"Rapid7 Labs has reproduced CVE-2026-16232 against affected R81.20 and R82.10 versions of the target software... The vendor supplied patches have been confirmed to successfully remediate the vulnerability and prevent our PoC script from succeeding.\" PoC repository referenced (github.com/sfewer-r7/CVE-2026-16232) but not independently fetched this run (github.com egress-blocked for repo content)."
+    default_trusted_clients_claim_exact_wording: >
+      "Exploitation requires network access to the Management Server and for a Trusted Clients
+      configuration that does not restrict GUI clients, which in our testing was a default setting." —
+      this is Rapid7's own exact sentence (also captured identically in S3's evidence block; confirmed
+      unchanged on this direct re-fetch of the live article body).
+    additional_evidence:
+      - quote: "By leveraging CVE-2026-16232, an unauthenticated attacker can obtain an application login token, use this token to log in through SmartConsole with full administrator privileges, and modify the security policy or security configuration."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+      - quote: "Shown above, the vulnerable “Take 146” accepts the caller's DN at [1]. The patched “Take 158” only allows a supplied DN for loopback CN=siclocal traffic at [2], which preserves the local application case. Remote clients now use the authenticated remote peer certificate DN at [3], and any mismatch between the supplied DN and that authenticated identity is rejected at [4]."
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+      - quote: "The native FWM authorization code has a special case for this command. If the current client is treated as a Check Point config administrator (which it will be), a gen-sso-token request is allowed before the normal permission mask check"
+        attribution: "Rapid7 Labs"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232", publisher: "Rapid7 Labs", date: "2026-07-28", role: "primary" }
+    discovery_trace: "re-verification/deepening of S3 item → full raw-body re-fetch (bridge url, Next.js embedded JSON extracted directly), URL https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232 (no pivot needed — same primary as S3, read to greater depth)"
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232"
+
+  - key: langflow-cve-2026-0769-exploited-outside-kev
+    title: "VERIFICATION RESULT: CVE-2026-0769 and CVE-2026-5027 both resolve as real, distinct Langflow vulnerabilities, confirmed absent from current CISA KEV — item CONFIRMED, not dropped"
+    verification_outcome: "DO NOT DROP. Both CVE identifiers resolve to real, published, Langflow-specific vulnerability records (one via ZDI/MITRE, one via Tenable/MITRE), and a direct fetch of the current CISA KEV JSON catalog confirms neither is present, while a near-identical, easily-confused sibling ID (CVE-2026-0770) IS present in KEV — a distinction worth calling out explicitly in the entry so readers do not conflate the two."
+    cve_2026_0769:
+      resolves: "YES — confirmed via the MITRE CVE Services API (cveawg.mitre.org/api/cve/CVE-2026-0769), state=PUBLISHED, and independently via ZDI's own advisory page (ZDI-26-035 / ZDI-CAN-26972)."
+      is_langflow: "YES — title: \"Langflow eval_custom_component_code Eval Injection Remote Code Execution Vulnerability\"; Affected Vendor/Product on ZDI's own page: Langflow / Langflow."
+      type_and_mechanism: >
+        CWE-95 (Improper Neutralization of Directives in Dynamically Evaluated Code — 'Eval Injection').
+        Root cause per ZDI's own text: "The specific flaw exists within the implementation of
+        eval_custom_component_code function. The issue results from the lack of proper validation of a
+        user-supplied string before using it to execute python code. An attacker can leverage this
+        vulnerability to execute code in the context of the current process."
+      auth_prerequisite: "None — ZDI's own text: \"This vulnerability allows remote attackers to execute arbitrary code on affected installations of Langflow. Authentication is not required to exploit this vulnerability.\""
+      cvss: "9.8 CRITICAL, CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H — ZDI's own score (confirmed identically on both the ZDI advisory page and the MITRE CVE record, CNA=zdi)."
+      affected_range_and_fixed_version: >
+        The MITRE CVE record lists only `"versions":[{"version":"1.3.2","status":"affected"}]` with
+        `defaultStatus:"unknown"` — i.e. ZDI's own structured record does NOT give a clean lower/upper
+        affected-version bound, only the single tested version 1.3.2. NO FIXED VERSION IS IDENTIFIED
+        ANYWHERE in this research: (a) ZDI's own advisory page explicitly frames this as a "(0Day)"
+        advisory and states under "Additional Details": "07/18/25 – ZDI submitted the report to the
+        vendor's GitHub account / 09/11/25 – ZDI asked for updates / 10/10/25 – ZDI asked for the fix /
+        12/10/25 – ZDI notified the vendor of the intention to publish the case as a 0-day advisory" —
+        i.e. the vendor did not fix it before ZDI's 0-day publication; ZDI's own mitigation guidance is
+        "Given the nature of the vulnerability, the only salient mitigation strategy is to restrict
+        interaction with the product" (no patch to apply, only network/access restriction). (b) A
+        WebSearch for the GitHub Advisory Database record (GHSA-5v3c-9g74-93w7) found it explicitly
+        states "Dependabot alerts are not currently supported on this advisory because it does not have
+        a package from a supported ecosystem with an affected and fixed version listed" — i.e. GitHub's
+        own advisory database also carries no fixed-version data for this CVE. (c) A direct OSV lookup
+        for the same GHSA ID (`tools/fetch_source.py osv vuln GHSA-5v3c-9g74-93w7`) returned HTTP 404
+        (not found in OSV's database), consistent with (b). CONCLUSION: as of this research, no publicly
+        documented fixed version exists for CVE-2026-0769 — this reads as an unpatched (or at minimum
+        undocumented-as-patched) pre-auth RCE, which is directly consistent with VulnCheck's report of
+        ongoing exploitation.
+      reporter: "Peter Girnus (@gothburz) of Trend Zero Day Initiative. Report timeline: reported to vendor 2025-07-18; ZDI coordinated public release 2026-01-09 (per ZDI's own Disclosure Timeline); MITRE CVE record shows datePublished 2026-01-23T03:28:47Z, dateReserved 2026-01-08."
+      cisa_adp_note: "CISA's own ADP Vulnrichment layer on the CVE record (dateUpdated 2026-02-26) recorded SSVC Exploitation=\"none\" as of that date — this predates VulnCheck's July 2026 claim of ongoing exploitation and is now stale; CISA has not (per the current KEV catalog fetch) added this CVE to KEV despite VulnCheck's canary-observed activity."
+    cve_2026_5027:
+      resolves: "YES — confirmed via the MITRE CVE Services API (cveawg.mitre.org/api/cve/CVE-2026-5027), state=PUBLISHED, CNA=Tenable."
+      is_langflow: "YES — title: \"Langflow - Path Traversal Arbitrary File Write via upload_user_file\"; vendor/product langflow-ai/langflow, repo https://github.com/langflow-ai/langflow (per the CVE record's own affected[] block)."
+      type_and_mechanism: >
+        CWE-22 (Improper Limitation of a Pathname to a Restricted Directory). Per Tenable's own CVE
+        description: "The 'POST /api/v2/files' endpoint does not sanitize the 'filename' parameter from
+        the multipart form data, allowing an attacker to write files to arbitrary locations on the
+        filesystem using path traversal sequences ('../')."
+      auth_prerequisite: >
+        LOW privileges required — CVSS vector PR:L, distinct from CVE-2026-0769's PR:N. This is NOT a
+        fully unauthenticated flaw per the structured CVSS vector; a foothold with at least low-privilege
+        access to the Langflow API is implied by PR:L (Tenable's own reference/write-up at
+        https://www.tenable.com/security/research/tra-2026-26 was NOT fetched directly in this run —
+        gap noted below).
+      cvss: "8.8 HIGH, CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H — Tenable's own score, CNA=tenable, per the MITRE CVE record."
+      affected_range_and_fixed_version: >
+        The MITRE CVE record's structured `affected[]` block is UNINFORMATIVE on version bounds: only
+        `"versions":[{"status":"affected","version":"0","versionType":"custom"}]` with
+        `defaultStatus:"unaffected"` — Tenable's own CNA container gives no explicit lower/upper affected
+        range or named fixed version in the machine-readable record. WebSearch-only (NOT independently
+        fetched/verified this run — flagged as unconfirmed secondary corroboration, per PD discipline):
+        several outlets (Orca Security, CSO Online, TheHackerNews, LinuxSecurity) report a fix shipped
+        in Langflow 1.9.0 (~2026-04-15) / 1.10.0 (~2026-06-10), with active exploitation continuing into
+        June 2026 despite the patch being available — i.e. per these secondary reports, unlike
+        CVE-2026-0769, a patch DOES exist for CVE-2026-5027, but exploitation continued against unpatched
+        instances. This patch-existence claim is NOT sourced to a primary document fetched in this run
+        (Tenable's own advisory at tenable.com/security/research/tra-2026-26 was not fetched) and should
+        be treated as secondary/unverified by the main agent unless independently confirmed.
+      published: "2026-03-27 (MITRE CVE record datePublished 2026-03-27T14:54:53Z)."
+    kev_absence_confirmed: >
+      Directly fetched the current CISA KEV catalog (`tools/fetch_source.py cisa-kev`, 24,595-line JSON,
+      this run). Searched for every Langflow entry in the catalog by `vendorProject`/`product` field.
+      Result: the KEV catalog contains exactly five Langflow entries — CVE-2026-0770 ("Langflow
+      Inclusion of Functionality from Untrusted Control Sphere Vulnerability"), CVE-2026-55255 ("Langflow
+      Authorization Bypass Through User-Controlled Key Vulnerability"), CVE-2025-34291 ("Langflow Origin
+      Validation Error Vulnerability"), CVE-2026-33017 ("Langflow Code Injection Vulnerability"), and
+      CVE-2025-3248 ("Langflow Missing Authentication Vulnerability"). CVE-2026-0769 and CVE-2026-5027 are
+      NOT present under any of these entries — CONFIRMS VulnCheck's claim that neither is KEV-listed.
+      IMPORTANT DISCRIMINATOR FOR THE COMPOSED ENTRY: CVE-2026-0770 (in KEV) and CVE-2026-0769 (NOT in
+      KEV, this item's subject) differ by only the last digit and are easily transposed — the composed
+      entry text should state the CVE-2026-0769 identifier explicitly and repeatedly to avoid a reader
+      or automated system conflating it with the already-KEV-listed CVE-2026-0770.
+    vulncheck_exact_quote: >
+      "We've observed exploitation activity across 10 of the 28 KEVs identified in AI systems in
+      VulnCheck Canaries. With LangFlow, we've seen attackers gain initial access using exploits
+      targeting both CVE-2026-0769 and CVE-2026-5027, harvest credentials, likely for services such as
+      OpenAI and Claude, deploy cryptominers, and attempt lateral movement. Neither of these
+      vulnerabilities have been added to CISA KEV."
+      (Note: this sentence appears in a paragraph discussing "AI systems" broadly, i.e. Langflow is
+      being framed by VulnCheck as an AI-workflow-automation product being targeted for the AI-service
+      credentials it holds, not as a generic web-app RCE story — this framing/context is worth carrying
+      into the composed entry.)
+    additional_evidence:
+      - quote: "We've observed exploitation activity across 10 of the 28 KEVs identified in AI systems in VulnCheck Canaries. With LangFlow, we've seen attackers gain initial access using exploits targeting both CVE-2026-0769 and CVE-2026-5027, harvest credentials, likely for services such as OpenAI and Claude, deploy cryptominers, and attempt lateral movement. Neither of these vulnerabilities have been added to CISA KEV."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026"
+      - quote: "This vulnerability allows remote attackers to execute arbitrary code on affected installations of Langflow. Authentication is not required to exploit this vulnerability."
+        attribution: "Zero Day Initiative (ZDI-26-035)"
+        source_url: "https://www.zerodayinitiative.com/advisories/ZDI-26-035/"
+      - quote: "12/10/25 – ZDI notified the vendor of the intention to publish the case as a 0-day advisory ... -- Mitigation: Given the nature of the vulnerability, the only salient mitigation strategy is to restrict interaction with the product"
+        attribution: "Zero Day Initiative (ZDI-26-035)"
+        source_url: "https://www.zerodayinitiative.com/advisories/ZDI-26-035/"
+      - quote: "The 'POST /api/v2/files' endpoint does not sanitize the 'filename' parameter from the multipart form data, allowing an attacker to write files to arbitrary locations on the filesystem using path traversal sequences ('../')."
+        attribution: "MITRE CVE Record (CNA: Tenable, CVE-2026-5027)"
+        source_url: "https://cveawg.mitre.org/api/cve/CVE-2026-5027"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/state-of-exploitation-1h-2026", publisher: "VulnCheck", date: "2026-07-28", role: "primary", note: "direct/bridge WebFetch returned a JS-only empty shell (Cloudflare SPA); forced the jina reader (last-resort rung) to retrieve the full markdown body — logged as a bridge_use below, not a fetch_failures entry since the reader succeeded" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-0769", publisher: "MITRE CVE Record (cveawg.mitre.org API, CNA: ZDI)", date: "2026-01-23", role: "primary" }
+      - { url: "https://www.zerodayinitiative.com/advisories/ZDI-26-035/", publisher: "Zero Day Initiative (ZDI-26-035 / ZDI-CAN-26972)", date: "2026-01-09", role: "primary" }
+      - { url: "https://cveawg.mitre.org/api/cve/CVE-2026-5027", publisher: "MITRE CVE Record (cveawg.mitre.org API, CNA: Tenable)", date: "2026-03-27", role: "primary" }
+    discovery_trace: "re-verification of S1 item (VulnCheck report) → forced jina re-fetch of the full VulnCheck article body (direct/bridge fetch returned an empty JS shell), URL https://www.vulncheck.com/blog/state-of-exploitation-1h-2026 → CVE-2026-0769 resolution check, URL https://cveawg.mitre.org/api/cve/CVE-2026-0769 → pivot to ZDI's own advisory, URL https://www.zerodayinitiative.com/advisories/ZDI-26-035/ → CVE-2026-5027 resolution check, URL https://cveawg.mitre.org/api/cve/CVE-2026-5027 → KEV-absence check via bridge, `tools/fetch_source.py cisa-kev` (JSON catalog, no single citable per-item URL beyond the catalog fetch itself) → WebSearch corroboration on Langflow 1.9.0 patch claim (NOT independently fetched, flagged as secondary)"
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: false
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "n/a (DR1 scoped deep-read, not a source-list sweep)"
+    reason: >
+      Two items carry an explicitly-flagged secondary/unverified sub-claim rather than a hard gap: (1)
+      the Airflow GitHub remediation PR (github.com/apache/airflow/pull/69374) was not independently
+      fetched — github.com repo content is egress-proxy-blocked per operating instructions, and the PR
+      reference was not load-bearing for any fact returned (BSI's CSAF + Apache's own oss-sec prose
+      fully cover affected/fixed versions and mechanism); (2) the WebSearch-sourced claim that
+      CVE-2026-5027 was patched in Langflow 1.9.0/1.10.0 was not confirmed against Tenable's own primary
+      advisory (tenable.com/security/research/tra-2026-26, not fetched this run) — flagged explicitly in
+      the langflow-cve-2026-0769-exploited-outside-kev item as secondary/unverified rather than treated
+      as fact.
+
+bridge_uses:
+  - { id: bsi-csaf, method: "bridge:bsi-csaf", outcome: ok }
+  - { id: cisa-csaf, method: "bridge:cisa.csaf-recent", outcome: ok }
+  - { id: cisa-csaf, method: "bridge:cisa.csaf icsa-26-209-01", outcome: ok }
+  - { id: cisa-csaf, method: "bridge:cisa.csaf icsa-26-209-02", outcome: ok }
+  - { id: cisa-kev, method: "bridge:cisa-kev", outcome: ok }
+  - { id: mitre-cve-api, method: "bridge:url cveawg.mitre.org (CVE-2026-59243, CVE-2026-63077, CVE-2026-0769, CVE-2026-5027)", outcome: "ok (3 resolved, 1 CVE_RECORD_DNE — expected/informative, Airflow CVE not yet in MITRE)" }
+  - { id: osv, method: "bridge:osv query PyPI apache-airflow-providers-fab / langflow; bridge:osv vuln GHSA-5v3c-9g74-93w7", outcome: "ok (queries succeeded; target CVE not yet indexed in either case, itself informative)" }
+  - { id: vulncheck, method: "bridge:jina (forced, after direct/bridge url returned an empty JS shell)", outcome: ok }
+  - { id: seclists-oss-sec, method: "bridge:url", outcome: ok }
+  - { id: openwall-oss-security, method: "bridge:url", outcome: ok }
+  - { id: siemens-productcert-csaf, method: "bridge:url (cert-portal.siemens.com, two advisories)", outcome: ok }
+  - { id: jetbrains-blog, method: "bridge:url (direct fetch, full body recovered)", outcome: ok }
+  - { id: rapid7-blog, method: "bridge:url (direct fetch, Next.js embedded content extracted)", outcome: ok }
+  - { id: zdi-advisory, method: "bridge:url", outcome: ok }
