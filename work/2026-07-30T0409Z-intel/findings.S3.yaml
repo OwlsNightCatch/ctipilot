@@ -1,0 +1,280 @@
+domain: S3
+run_id: 2026-07-30T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-30T04:11:47Z
+ended_at: 2026-07-30T04:29:52Z
+duration_seconds: 1085
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 6
+  bridge_fetches: 14
+items:
+  - title: "Amazon attributes the axios/debug/chalk npm supply-chain compromises to a DPRK financially-motivated cluster, naming a March 2025 'typo-crypto' package as the dress rehearsal"
+    sources:
+      - { url: "https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/", publisher: "AWS Security Blog (Amazon)", date: "2026-07-29", role: "primary" }
+      - { url: "https://cyberscoop.com/amazon-north-korea-open-source-software-attacks/", publisher: "CyberScoop", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: cyberscoop (rotational source), URL https://cyberscoop.com/amazon-north-korea-open-source-software-attacks/ → primary: AWS Security Blog, URL https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/"
+    summary: |
+      Amazon's threat-intelligence team (posted by CISO CJ Moses) assesses with MEDIUM confidence that a DPRK cluster it names SAPPHIRE SLEET, STARDUST CHOLLIMA, BlueNoroff, CageyChameleon and Alluring Pisces is behind both the high-impact September 2025 compromise of the widely-depended-on npm packages debug and chalk and the March 2026 compromise of axios (100M+ weekly downloads), and traces both back to a March 2025 "dress rehearsal": a small, low-download typosquat package named typo-crypto. Access to legitimate maintainer accounts was obtained through social engineering ("earned the trust of an employee to hand them the keys") rather than exploiting a platform vulnerability. The typo-crypto payload shipped as a trojanized core.js file impersonating the legitimate core-js package: it stayed dormant until it received a hash input beginning with the literal string "0098273", then fetched an OS-specific second-stage payload from a hardcoded C2 (npmjs[.]store, 216.74.123.126), using layered Base64 + XOR obfuscation (XOR key "01042025"). Wiz Research separately found roughly 1 in 10 scanned cloud environments were touched by the debug/chalk compromise within a two-hour window. Amazon frames the campaign as a template for supply-chain patience: low-value packages used to refine maintainer social-engineering and payload tradecraft before it is redirected at packages with tens or hundreds of millions of weekly installs, and flags that dependency-graph-level (not single-package) review, externally-fetched runtime "guard scripts," and AI-hallucinated ("slopsquatted") package names are now part of the same attacker toolkit.
+    region_nexus: "global; npm ecosystem impact is universal, directly relevant to any Swiss/EU organization consuming JavaScript/Node.js dependencies (axios alone at 100M+ weekly downloads)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, telco (any org with a Node.js/JavaScript software supply chain)"
+    cves: []
+    techniques: [T1195.002, T1199, T1027]
+    affected_products: ["axios (npm)", "debug (npm)", "chalk (npm)"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:sapphire-sleet", type: actor, name: "Sapphire Sleet", aliases: ["Stardust Chollima", "BlueNoroff", "CageyChameleon", "Alluring Pisces"],
+          summary: "DPRK financially-motivated cluster Amazon (2026-07-29, medium confidence) attributes to the March 2026 axios and September 2025 debug/chalk npm supply-chain compromises via shared C2 indicators, TTPs and code reuse, tracing both back to a March 2025 'typo-crypto' rehearsal package." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Based on analysis of command-and-control (C2) indicators and TTPs, Amazon assesses with medium confidence these campaigns are attributable to SAPPHIRE SLEET, STARDUST CHOLLIMA, BlueNoroff, CageyChameleon, and Alluring Pisces."
+        attribution: "AWS Security Blog / CJ Moses"
+        source_url: "https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/"
+      - quote: "The malicious file executes when it receives a hash input beginning with 0098273. When triggered, it downloads a second-stage payload from hardcoded C2 server, then executes based on victim's operating system."
+        attribution: "AWS Security Blog"
+        source_url: "https://aws.amazon.com/blogs/security/amazon-identifies-north-korean-hacker-group-behind-open-source-supply-chain-attacks/"
+      - quote: "We believe the March 2025 typo-crypto campaign was a rehearsal"
+        attribution: "CJ Moses, Amazon CISO (via CyberScoop)"
+        source_url: "https://cyberscoop.com/amazon-north-korea-open-source-software-attacks/"
+    extended_notes: |
+      Amazon's own hardening guidance is unusually concrete for a vendor post: evaluate dependency graphs rather than single packages; watch for maintainers who patiently build trust over weeks/months before publishing malicious updates; treat externally-fetched "license check" or config-cache scripts as a red flag; expect layered/runtime-derived crypto (AES-GCM, RC4-style arrays) rather than embedded keys; and expect AI-generated malware to read as clean, well-documented code, reducing the value of pattern-based review. debug and chalk were previously publicly attributed (Sept 2025) to a phishing-compromised maintainer without nation-state attribution — this is a materially new attribution layered onto a previously-known incident, not merely a rehash.
+
+  - title: "Flying Eagle: a leaked, Docker-packaged Android RAT-builder MaaS runs 170+ servers across China; a successor kit, Night Dragon, targets AliPay/WeChat/state bank apps"
+    sources:
+      - { url: "https://hunt.io/blog/flying-eagle-android-rat-170-servers-night-dragon", publisher: "hunt.io / NetAskari (independent researcher)", date: "2026-07-30", role: "primary" }
+      - { url: "https://www.darkreading.com/endpoint-security/flying-eagle-mobile-rat-builder-china", publisher: "Dark Reading", date: "2026-07-30", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading (rotational source), URL https://www.darkreading.com/endpoint-security/flying-eagle-mobile-rat-builder-china → primary: hunt.io/NetAskari, URL https://hunt.io/blog/flying-eagle-android-rat-170-servers-night-dragon"
+    summary: |
+      Independent researcher NetAskari and hunt.io traced two IP addresses named in a 2026-06-18 Chinese National Cybersecurity Reporting Center public warning (about a fake "one-stop public-safety-services" app) to a full-service Android malware-as-a-service builder called Flying Eagle. Flying Eagle ships as a complete Docker deployment — every buyer gets their own Web server, WebSocket server, PHP and MySQL instance plus APK/SDK build tooling (Java 11), a default TLS cert, and ready-made phishing-lure templates impersonating TikTok, adult services, financial apps and government welfare programs. The APK builder includes out-of-the-box AV-evasion: it strips revealing class names and pads samples with several megabytes of Base64-encoded JSON dressed up as SDK config cache (rather than random bytes) to keep file entropy low and avoid antivirus heuristics — hunt.io's head of research notes the developer left a comment confirming this was deliberate. Built samples steal payment credentials and screenshots, support keylogging and camera access, abuse Android accessibility services for privilege escalation, and inject overlays into government, adult and financial-services apps. Flying Eagle leaked from closed circles into the wider Chinese cybercriminal underground earlier in 2026 and is now marketed and supported through Telegram channels (the "SQLRCE0" channel sells a "repaired" build for $2,000 in Tether). Five days after the government warning, SQLRCE0 released a successor kit, "Night Dragon" — currently on far fewer servers than Flying Eagle's hundreds but more capable: live screen/microphone/camera capture, SMS and photo-gallery access, overlay injection specifically against AliPay, WeChat, crypto-wallet apps and the Agricultural Bank of China, China Construction Bank and ICBC, plus an artificial black "update screen" to hide hands-on-keyboard activity from the victim, and its own icon-hiding.
+    region_nexus: "targeting is China-domestic; the transferable signal is the commoditized Docker-packaged MaaS builder model, AV-evasion technique (JSON-padding to suppress entropy heuristics), and accessibility-service abuse pattern, all directly portable to any mobile-banking-fraud threat model"
+    primary_sector_nexus: "indirect"
+    sector: "finance, telco"
+    cves: []
+    techniques: [T1204.002, T1056.001, T1113, T1027]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "tool:flying-eagle-maas", type: tool, name: "Flying Eagle", aliases: [],
+          summary: "Docker-packaged, full-service Android RAT-builder malware-as-a-service kit documented by hunt.io/NetAskari (2026-07-30) running on 170+ active servers, distributed to Chinese-language cybercriminals via Telegram; steals payment credentials, abuses accessibility services, and injects phishing overlays into financial and government apps." }
+      - { key: "tool:night-dragon-android-rat", type: tool, name: "Night Dragon", aliases: [],
+          summary: "Successor Android remote-control kit released by the SQLRCE0 Telegram channel five days after China's national cybersecurity authority warned about Flying Eagle-generated apps (2026-06-18); adds live screen/mic/camera capture and overlay injection targeting AliPay, WeChat and major Chinese state-owned bank apps (hunt.io, 2026-07-30)." }
+      - { key: "actor:sqlrce0", type: actor, name: "SQLRCE0", aliases: [],
+          summary: "Telegram-channel operator that markets, supports and sells a 'repaired' version of the leaked Flying Eagle Android RAT builder, and released the successor Night Dragon kit in mid-2026 (hunt.io, 2026-07-30)." }
+    relation_suggestions:
+      - { subject: "actor:sqlrce0", object: "tool:flying-eagle-maas", basis: "hunt.io: SQLRCE0 Telegram channel spreads Flying Eagle and sells a repaired $2,000 build of it" }
+      - { subject: "actor:sqlrce0", object: "tool:night-dragon-android-rat", basis: "hunt.io: SQLRCE0 released Night Dragon as a successor kit five days after the Chinese government warning" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Docker as a concept invites itself to cybercriminals as much as normal software developers... it keeps things clean, you can deploy it at almost any remote server with little investment in time or adoption."
+        attribution: "NetAskari (independent researcher), via Dark Reading"
+        source_url: "https://www.darkreading.com/endpoint-security/flying-eagle-mobile-rat-builder-china"
+      - quote: "it injects a few megabytes of Base64 JSON dressed up as SDK config caches. That keeps entropy low and looks like ordinary app data, and the developer even left a comment saying that was the point."
+        attribution: "Esteban Borges, hunt.io head of research, via Dark Reading"
+        source_url: "https://www.darkreading.com/endpoint-security/flying-eagle-mobile-rat-builder-china"
+      - quote: "Hunt.io and NetAskari trace a leaked Android RAT framework across 170 active servers, analyze the APK builder internals, and document a successor platform called Night Dragon targeting Chinese users."
+        attribution: "hunt.io"
+        source_url: "https://hunt.io/blog/flying-eagle-android-rat-170-servers-night-dragon"
+    extended_notes: |
+      Discovery chain is itself notable: a government public-warning post on WeChat named two IP addresses, which an independent researcher pivoted from into a full criminal ecosystem — a reminder that government/CERT IOC releases, however terse, are pivot points for wider infrastructure mapping. No Europe/Switzerland victim targeting stated; carried for the transferable MaaS-tradecraft and evasion technique.
+
+  - title: "RufRoot (CVE-2026-59726, CVSS 10): unauthenticated MCP-bridge RCE in the Ruflo AI-agent-swarm host lets an attacker plant memory that outlives the patch"
+    sources:
+      - { url: "https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/", publisher: "Noma Security (Noma Labs)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.darkreading.com/cyber-risk/patch-resistant-rufroot-flaw-malicious-ai-agent-swarms", publisher: "Dark Reading", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading (rotational source), URL https://www.darkreading.com/cyber-risk/patch-resistant-rufroot-flaw-malicious-ai-agent-swarms → primary: Noma Security / Noma Labs, URL https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/"
+    summary: |
+      Noma Labs (Noma Security) discovered CVE-2026-59726 ("RufRoot," CVSS 10) in Ruflo (formerly Claude Flow), an open-source platform that hosts and orchestrates swarms of AI coding agents for Codex and Claude Code. The vulnerability sits in Ruflo's Model Context Protocol (MCP) bridge, which by default is exposed to the network with no authentication: a single unauthenticated HTTP request against the bridge achieves full remote code execution inside the Ruflo container. From there, an attacker can read every AI-provider API key the platform holds, read every stored user conversation, and — most significantly — plant instructions into the AI agent's own persistent memory that continue to steer its behavior for future users after the attacker has left, and after the platform is patched (the authentication bypass closes, but a memory-tampering payload planted before the patch is not itself removed by it). Noma Labs disclosed the flaw with a working PoC to Ruflo maintainers on 2026-06-30; Ruflo shipped a fix within 24 hours that defaults the platform to a locked-down configuration requiring explicit opt-in for public exposure, which Noma independently verified. Noma's remediation guidance for anyone who ran an affected deployment: treat all AI-provider credentials as compromised and rotate them, audit the platform's AI memory store for tampering, and rebuild containers from a clean image — patching alone is explicitly stated as insufficient.
+    region_nexus: "global; any organization running self-hosted Ruflo/Claude-Flow AI-agent-swarm infrastructure is affected regardless of region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, telco, healthcare (any org self-hosting AI-agent orchestration platforms)"
+    cves: [CVE-2026-59726]
+    techniques: [T1190, T1552.001, T1565.001]
+    affected_products: ["Ruflo (formerly Claude Flow)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The weakness is a lack of authentication coupled with command execution capabilities, enabling complete control over the container and exposure of sensitive credentials."
+        attribution: "Noma Labs, via OpenCVE / Dark Reading"
+        source_url: "https://www.darkreading.com/cyber-risk/patch-resistant-rufroot-flaw-malicious-ai-agent-swarms"
+      - quote: "researchers also found they could tamper with the AI's own memory in ways that would influence its responses to future users long after the attacker had gone"
+        attribution: "Dark Reading, citing Noma Labs"
+        source_url: "https://www.darkreading.com/cyber-risk/patch-resistant-rufroot-flaw-malicious-ai-agent-swarms"
+      - quote: "An agent platform concentrates everything an attacker wants in one place, with provider API keys, every stored conversation, shell access via its own tools, and a persistent memory the AI trusts. In other words, the bug class is old, but the blast radius is new."
+        attribution: "Johan Edholm, security engineer and co-founder, Detectify (via Dark Reading)"
+        source_url: "https://www.darkreading.com/cyber-risk/patch-resistant-rufroot-flaw-malicious-ai-agent-swarms"
+    extended_notes: |
+      No in-the-wild exploitation reported — this is a responsibly-disclosed research finding (PoC not released publicly), not an active campaign. Included because the "patch removes the door, not what already walked through it" mechanic is a genuinely new risk class for any organization standing up agentic-AI infrastructure, and MCP-bridge default-exposure is a pattern likely to recur across the wider MCP-server ecosystem.
+
+  - title: "Huntress: opportunistic credential-stuffing spree compromised 30 SonicWall customers (92 accounts) over three days — no post-compromise activity observed, suggesting pre-positioning"
+    sources:
+      - { url: "https://www.huntress.com/blog/sonicwall-credential-stuffing-campaign", publisher: "Huntress", date: "2026-07-28", role: "primary" }
+      - { url: "https://cyberscoop.com/sonicwall-credential-attacks-vpn-firewall/", publisher: "CyberScoop", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: cyberscoop (rotational source), URL https://cyberscoop.com/sonicwall-credential-attacks-vpn-firewall/ → primary: Huntress, URL https://www.huntress.com/blog/sonicwall-credential-stuffing-campaign"
+    summary: |
+      Huntress observed a broad, opportunistic credential-stuffing (automated credential-validation) campaign against SonicWall VPN/firewall remote-management interfaces active 2026-07-25 through 07-27: 92 unique user accounts across 30 distinct customer organizations were successfully logged into (26 accounts on the 25th, 34 on the 26th, 32 on the 27th) from five primary attacking IPs, all registered to DigitalOcean. Login attempts used already-valid credentials rather than exploiting a software vulnerability; Huntress does not disclose the credential source but the campaign follows a string of prior SonicWall incidents (an October 2025 state-sponsored firewall-configuration exposure, and earlier SSLVPN CVE-driven compromises) that could plausibly be feeding the same credential pool. Critically, Huntress states no post-compromise hands-on-keyboard activity was observed following any of the successful logins — the attacker validated access and stopped, consistent with pre-positioning for later exploitation rather than immediate abuse. SonicWall had not published an advisory as of the Huntress report. Huntress's own framing: "edge devices are one of the most targeted interfaces, comprising over 70% of active intrusions triaged by Huntress."
+    region_nexus: "global; SonicWall SMA/firewall remote-access appliances are widely deployed across European SME, healthcare and public-sector-adjacent estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, healthcare, finance (any SonicWall VPN/firewall remote-access customer)"
+    cves: []
+    techniques: [T1133, T1110.004]
+    affected_products: ["SonicWall SMA", "SonicWall firewall (SonicOS remote management)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Unknown attackers broke into 92 unique SonicWall user accounts with legitimate credentials, researchers said."
+        attribution: "CyberScoop"
+        source_url: "https://cyberscoop.com/sonicwall-credential-attacks-vpn-firewall/"
+      - quote: "We did not observe any post-compromise hands-on-keyboard activity from these attacks."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/sonicwall-credential-stuffing-campaign"
+      - quote: "Edge devices are one of the most targeted interfaces, comprising over 70% of active intrusions triaged by Huntress."
+        attribution: "Huntress, via CyberScoop"
+        source_url: "https://cyberscoop.com/sonicwall-credential-attacks-vpn-firewall/"
+    extended_notes: |
+      Huntress's immediate hardening guidance: restrict WAN management/remote access now; reset ALL secrets (local admin, VPN PSKs, LDAP/RADIUS/TACACS+, wireless PSKs, SNMP), not just the flagged accounts; revoke external API keys/automation secrets; enforce MFA on every admin/remote account; review recent logins and config changes. No CVE is implicated — this is a pure credential-reuse/brute-force exposure, meaning patching alone does nothing; credential rotation and MFA are the only levers.
+
+  - title: "Operation Double Barrel: Korean government joint advisory finds shared infrastructure, malware and SSH-key fingerprints between a state-sponsored actor and the Gunra ransomware group"
+    sources:
+      - { url: "https://asec.ahnlab.com/en/94696/", publisher: "AhnLab ASEC (joint advisory with Korea NIS/NPA/KISA/FSI)", date: "2026-07-29", role: "primary" }
+    discovery_trace: "first seen at: ahnlab-asec (major-research-lab, always swept), URL https://asec.ahnlab.com/en/feed/ → primary: AhnLab ASEC, URL https://asec.ahnlab.com/en/94696/ (no pivot needed)"
+    summary: |
+      AhnLab's ASEC published the technical annex to a joint cybersecurity advisory issued with South Korea's National Intelligence Service, National Police Agency, Korea Internet & Security Agency and Financial Security Institute, naming a campaign "Operation Double Barrel" that documents overlapping infrastructure between a state-sponsored threat group and the Gunra ransomware operation. The commonalities ASEC identifies: identical vulnerabilities exploited during initial access against two named Korean financial-security software products, shared malware, matching SSH key fingerprints, and shared network infrastructure (download servers and reverse-tunneling addresses). Tooling observed across the intrusions includes the backdoors "Struggle" (aka SIGNBT 3.0) and "Brandoor" (aka COPPERHEDGE) alongside UACMe, PetitPotam, Impacket, Certipy, TightVNC, WinSCP, FileZilla, Plink and Socat. Initial access combined watering-hole compromises of legitimate Korean media, education, healthcare and manufacturing websites with spear-phishing and the financial-security-software exploitation; ASEC additionally flags a possible supply-chain angle because several of the watering-holed sites shared the same Korean web-development/management vendor. Victimology spans 2025 through H1 2026 and is confined to Korean citizens and businesses. ASEC is explicit that it cannot yet definitively establish whether the relationship is common tooling/infrastructure reuse or actual operational collaboration between the state actor and the ransomware group, naming the campaign precisely to track that open question.
+    region_nexus: "South Korea only; carried for the technique class — a documented nation-state/ransomware-affiliate infrastructure overlap via shared SSH fingerprints and C2, a pattern (state actors moonlighting into or supplying ransomware crews) increasingly relevant to European critical-infrastructure threat modeling"
+    primary_sector_nexus: "indirect"
+    sector: "finance, public-sector, healthcare"
+    cves: []
+    techniques: [T1189, T1210, T1486, T1021.005]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:gunra-ransomware", type: actor, name: "Gunra", aliases: [],
+          summary: "Ransomware-as-a-service operation active since April 2025 with code-level similarities to Conti; per a 2026-07-29 Korean government joint advisory (NIS/NPA/KISA/FSI via AhnLab ASEC), it shares malware, SSH-key fingerprints and C2 infrastructure with an unnamed state-sponsored threat actor in a campaign designated 'Operation Double Barrel' — relationship (shared tooling vs. operational collaboration) explicitly not yet resolved by the investigators." }
+      - { key: "campaign:operation-double-barrel-korea", type: campaign, name: "Operation Double Barrel", aliases: [],
+          summary: "Joint Korean-government-named investigation (NIS/NPA/KISA/FSI, technical analysis by AhnLab ASEC, 2026-07-29) into shared infrastructure, malware (Struggle/SIGNBT, Brandoor/COPPERHEDGE) and SSH-key fingerprints between a state-sponsored threat group and the Gunra ransomware operation, targeting Korean media, education, healthcare, manufacturing and financial-sector organizations via watering-hole and financial-security-software exploitation." }
+    relation_suggestions:
+      - { subject: "actor:gunra-ransomware", object: "campaign:operation-double-barrel-korea", basis: "AhnLab ASEC: Gunra ransomware and a state-sponsored actor share malware, SSH-key fingerprints and network infrastructure under the campaign designation Operation Double Barrel" }
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Although ASEC cannot definitively determine the relationship between the two threat actors based solely on the information identified to date, it named this campaign 'Operation Double Barrel.'"
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/94696/"
+      - quote: "Numerous commonalities were identified, including the vulnerabilities exploited during initial access, the malware installed, SSH key fingerprints, and network infrastructure such as download and reverse tunneling addresses."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/94696/"
+      - quote: "Legitimate Korean websites across various industries, including media organizations, educational institutions, healthcare institutions, and manufacturing companies, were confirmed to have been abused in watering hole attacks."
+        attribution: "AhnLab ASEC"
+        source_url: "https://asec.ahnlab.com/en/94696/"
+    extended_notes: |
+      The malware names "SIGNBT" and "COPPERHEDGE" are widely associated in prior public reporting (Kaspersky, CISA) with the Lazarus Group / APT38 DPRK cluster, though this specific ASEC advisory declines to name the state actor directly in the material reviewed and stresses the attribution/relationship remains open. Do not upgrade this to a firm Lazarus/DPRK attribution beyond what ASEC itself states. No CVE was named for the exploited "Financial Security Software A/I" — flagged as a gap; a Swiss/EU reader has no equivalent product exposure, but the shared-infrastructure forensic method (SSH fingerprint / C2 overlap as the discriminator between "same group" and "shared tooling") is the transferable takeaway for any nation-state/ransomware-crossover hunt.
+
+  - title: "24,650 internet-exposed Baseboard Management Controllers leak crackable password hashes pre-authentication via a 22-year-old IPMI flaw — Lava finds confirmed in-the-wild ransomware exploitation"
+    sources:
+      - { url: "https://lavahq.io/research/bmc-exposure-alert", publisher: "Lava (Lava HQ research)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/", publisher: "Help Net Security", date: "2026-07-28", role: "corroborating" }
+      - { url: "https://www.darkreading.com/cyber-risk/flaw-exposes-data-centers-server-takeover", publisher: "Dark Reading", date: "2026-07-28", role: "corroborating" }
+    discovery_trace: "first seen at: darkreading (rotational source), URL https://www.darkreading.com/cyber-risk/flaw-exposes-data-centers-server-takeover → pivot: Help Net Security, URL https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/ → primary: Lava, URL https://lavahq.io/research/bmc-exposure-alert"
+    summary: |
+      Lava researchers scanned Shodan on 2026-05-06 for every public host answering on UDP/623 (the IPMI management port) and found 36,872 exposed Baseboard Management Controllers (BMCs) — the dedicated, OS-independent processor built into server motherboards for out-of-band remote management (reboot, power control, virtual media, firmware, health) via IPMI or the newer Redfish/HTTPS interface. Of those, 24,650 returned password-derived RAKP authentication material (an HMAC-SHA1 hash computed over the account password) to an unauthenticated client before the login handshake completed — CVE-2013-4786, an IPMI 2.0 specification flaw baked in since the protocol's 2004 release and publicly disclosed in 2013 but still unremediated 13 years later. Because the hash is returned once per request rather than requiring a fresh authentication attempt per guess, an attacker can crack it fully offline with no lockout, rate limit or failed-login alert generated on the BMC. Lava assessed roughly two-thirds of the captured hashes as crackable via wordlists or predictable factory-format passwords: Supermicro's 10-character-uppercase factory scheme (~141 trillion candidates) falls in about an hour on 8 GPUs, and HPE iLO's shorter factory format falls in 32 seconds on 8 RTX 6000 PRO cards; 2,340 endpoints paired an empty/ADMIN/root username with a dictionary password. Lava found direct evidence of in-the-wild exploitation: a ransom note (demanding 0.3 BTC, claiming RSA-2048 encryption) embedded in an exposed HPE iLO 4 Security Notice panel, and — per Dark Reading's interview with Lava CTO Yakir Kadkoda — compromised, ransom-note-displaying servers belonging to "one of the world's largest automotive component manufacturers." Because a BMC operates below and independently of the host OS, kernel, containers and workloads, host-based security tooling is structurally blind to a compromised BMC; Lava and Dark Reading both warn that a BMC foothold can pivot laterally across an entire out-of-band management network to reach other BMCs, storage and provisioning infrastructure, and in GPU-cloud environments potentially cross tenant boundaries.
+    region_nexus: "global; any organization operating on-prem or colocated bare-metal server infrastructure with BMC/IPMI management (Supermicro, HPE, and other vendors) is potentially exposed, including European data-centre and critical-infrastructure operators"
+    primary_sector_nexus: "indirect"
+    sector: "energy, telco, public-sector, finance, healthcare (any operator of on-prem/colocated server hardware)"
+    cves: [CVE-2013-4786]
+    techniques: [T1110.002, T1200, T1078.001]
+    affected_products: ["Supermicro BMC (IPMI)", "HPE iLO"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "24,650 of them returned password-derived authentication material before the client had authenticated."
+        attribution: "Help Net Security, citing Lava"
+        source_url: "https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/"
+      - quote: "Eight GPUs running Hashcat would walk the entire candidate space in an estimated hour."
+        attribution: "Help Net Security, citing Lava"
+        source_url: "https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/"
+      - quote: "One of the exposed iLO 4 login pages carried a ransom note in its Security Notice panel, claiming RSA-2048 encryption."
+        attribution: "Help Net Security, citing Lava"
+        source_url: "https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/"
+      - quote: "During the research, we identified compromised systems belonging to one of the world's largest automotive component manufacturers. Multiple exposed servers displayed ransomware notes and payment demands, indicating that the company was being targeted as part of an active attack campaign."
+        attribution: "Yakir Kadkoda, CTO/co-founder, Lava (via Dark Reading)"
+        source_url: "https://www.darkreading.com/cyber-risk/flaw-exposes-data-centers-server-takeover"
+    extended_notes: |
+      Immediate hardening per Lava/Dark Reading: remove BMC/IPMI interfaces from the public internet entirely (block UDP/623 at the network edge); isolate BMCs on a dedicated, tightly-access-controlled management VLAN/bastion; rotate every factory/default/reused BMC credential; disable IPMI 1.5, cipher-suite-0 and anonymous/NONE authentication; prefer Redfish-over-TLS on an isolated network over legacy IPMI. Detection angle for defenders: any exposed BMC should be treated as already compromised if it has ever been reachable on UDP/623 from the internet — the offline-crackable-hash property means a scan-and-crack event leaves no BMC-side authentication-failure telemetry at all, so network-flow/firewall logs showing inbound UDP/623 traffic from unexpected sources are the only realistic detection surface, not BMC login logs.
+
+  - title: "Operation Talked (SOCRadar): a Russia-nexus actor's own exposed C2 server reveals mass pre-auth scanning and nine breached Ukrainian defense/aerospace firms; Switzerland named among secondary targets"
+    sources:
+      - { url: "https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/", publisher: "SOCRadar", date: "2026-07-29", role: "primary" }
+    discovery_trace: "first seen at: socradar (rotational source), URL https://socradar.io/blog/ → primary: SOCRadar, URL https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/ (no pivot needed)"
+    summary: |
+      SOCRadar reports it reconstructed an ongoing Russia-nexus espionage campaign it names "Operation Talked" directly from the attacker's own infrastructure, after finding the operation's primary C2 server — hosted on Yandex Cloud in Moscow (46.8.236.121, AS13238) — exposing an unauthenticated Python SimpleHTTP open directory on port 8090 containing 8,436 operational files: attack tooling, shell history, stolen credentials, target lists and full Sliver C2 session logs. SOCRadar attributes the campaign to a Russia-nexus actor with what it calls high confidence, based on TTP overlap with UAC-0056/UAC-0114, consistent Moscow-timezone (UTC+3) operational activity, Russian-language shell/script artifacts, and a JCUKEN-keyboard-layout fingerprint (stray Cyrillic characters) in captured logs. The exposed materials show mass pre-authentication scanning (1.1M+ unique internet-facing targets) weaponizing 19+ CVEs against six appliance families — Sophos XG (CVE-2022-1040 dominant, ~757,000 targets scanned), FortiOS SSL-VPN (CVE-2024-55591), F5 BIG-IP (CVE-2023-46747), SAP NetWeaver (CVE-2025-31324), Roundcube (CVE-2025-49113), FortiWeb (CVE-2025-25257) and undisclosed SonicWall SSL-VPN/RabbitMQ exploitation — plus a Sliver C2 (v1.5.x, mTLS ECC P-256, HTTP listeners on 11008/11009) backed by secondary Oracle Cloud and Slovenia-based infrastructure, Godzilla/r57/suo5 webshells, Neo-reGeorg/Chisel/Gost tunneling, mimikatz/DonPAPI credential theft, NetExec Pass-the-Hash and evil-winrm lateral movement, and git-dumper against exposed Git repositories. Nine confirmed breaches sit in Ukraine's defense, aerospace and aviation sector (drone/UAV manufacturers, military aerial reconnaissance, military aviation, defense-industry and military-electronics-procurement organizations), each involving Git-repository theft, and SOCRadar reports an active interactive shell on a Ukrainian railway-logistics operator at time of publication. SOCRadar lists secondary-geography victims/targets beyond Ukraine as Russia, Romania, Poland, Moldova, Latvia, Switzerland, Ireland and South Korea.
+    region_nexus: "primary victimology is Ukraine defense/aerospace; Switzerland is explicitly named by SOCRadar among secondary-geography targets/victims, giving this a direct — if as-yet unelaborated — Swiss nexus"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, energy, telco, transport (defense-industrial base; the actor's CVE list also spans SAP/Fortinet/F5/SonicWall/RabbitMQ estates common to any sector)"
+    cves: [CVE-2022-1040, CVE-2026-63030, CVE-2024-55591, CVE-2023-46747, CVE-2025-31324, CVE-2025-49113, CVE-2025-25257]
+    techniques: [T1190, T1552.001, T1572, T1003.001, T1550.002, T1021.006]
+    affected_products: ["Sophos XG Firewall", "Fortinet FortiOS SSL-VPN", "F5 BIG-IP", "SAP NetWeaver", "Roundcube Webmail", "Fortinet FortiWeb", "SonicWall SSL-VPN", "RabbitMQ"]
+    entity_keys: []
+    new_entities:
+      - { key: "actor:talked-uac-aligned", type: actor, name: "Talked", aliases: [],
+          summary: "Russia-nexus espionage cluster named by SOCRadar (2026-07-29, high confidence per SOCRadar) after its own exposed, unauthenticated C2 open directory (8,436 files) revealed mass pre-auth scanning of 1.1M+ internet-facing hosts across 19+ CVEs and nine confirmed Ukrainian defense/aerospace-sector breaches; SOCRadar assesses TTP overlap with UAC-0056/UAC-0114. Secondary target geographies per SOCRadar include Switzerland." }
+    relation_suggestions:
+      - { subject: "actor:talked-uac-aligned", object: "actor:gamaredon", basis: "SOCRadar attributes Operation Talked with high confidence on TTP overlap with UAC-0056/UAC-0114 — note: UAC-0056/UAC-0114 are tracked elsewhere in public reporting as distinct from Gamaredon (UAC-0010); the main agent should verify whether either UAC id maps to an already-registered key before creating a relation" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "single-source (SOCRadar, Admiralty C reliability per sources.json — mostly aggregation with occasional original research); no independent corroboration found as of this run (published same-day). Genuine original telemetry (SOCRadar's own discovery of the exposed C2 directory) and high specificity argue for inclusion; the Switzerland secondary-target mention and defense-sector nexus argue for relevance. Flag for the main agent to weigh single-source risk against the direct Swiss-nexus claim."
+    evidence:
+      - quote: "Because the actor stored tools, shell history, target lists, stolen credentials, and Sliver session logs on that same server, we were able to reconstruct the operation from the attacker's own perspective rather than inferring activity from victim-side telemetry alone."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/"
+      - quote: "Every service is reachable on the bare IP address, and one of those services was an open directory serving 8,436 files with no authentication."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/"
+      - quote: "SOCRadar observed breaches at nine Ukrainian defense, aerospace, and aviation organizations, in each case involving theft of Git repositories."
+        attribution: "SOCRadar"
+        source_url: "https://socradar.io/blog/operation-talked-russia-ukraine-defense-industry/"
+    extended_notes: |
+      SOCRadar's article cites no external validation and no third-party corroboration was found as of this run (published same day, 2026-07-29). The UAC-0056/UAC-0114 designations are Ukrainian-authority (SSSCIP/CERT-UA) tracking codes for previously-documented Russia-nexus clusters; treat the "high confidence" framing as SOCRadar's own assessment, not an independently verified fact. If the main agent carries this item, attribute every claim to SOCRadar explicitly ("SOCRadar reports/assesses...") rather than stating it as established fact, per the single-source fake-news-scrutiny discipline.
+
+watchlist_sweep: null
+candidate_sources:
+  - id: hunt-io
+    publisher: "hunt.io (threat-infrastructure research blog, with independent researcher NetAskari)"
+    url: "https://hunt.io/blog/"
+    category: research
+    why: "Original infrastructure-mapping research (170-server Flying Eagle Android RAT MaaS teardown, 2026-07-30) discovered by pivoting from a government IOC release; no curated discovery path currently exists for this publisher and it was reached only via a Dark Reading citation this run."
+coverage_gaps:
+  - source_id: eset
+    reason: "Listing/RSS swept clean; latest post dated 2026-07-14 (UEFI shim Secure Boot bypass), nothing in-window."
+  - source_id: reliaquest
+    reason: "jina reader keys reported balance-exhausted (HTTP 402, both credentials) mid-run; fetch_source.py fell through to its bridge fallback and returned the blog listing successfully. Listing swept clean of in-window items (latest dated 2026-07-29 is an agentic-AI product post, not threat research)."
+  - source_id: akamai-sirt
+    reason: "Feed swept; latest items (2026-07-28) are partner/product marketing posts per the documented feed-mix issue in the source note; no in-window security-research item."
+  - source_id: dfirreport
+    reason: "Feed swept; latest post dated 2026-06-29 (Bumblebee/AdaptixC2 to Akira). Low cadence is the publisher's known pace, not a fetch failure."
+  - source_id: fox-it-blog
+    reason: "Listing swept; latest post dated 2026-05-22 (RemotePE Lazarus RAT). Very low cadence per the source note; no in-window item."
+  - source_id: sygnia
+    reason: "WebFetch returned HTTP 403 (Cloudflare interstitial per the source's documented recipe); the run had already collected 7 items and time-budgeted against retrying the bridge fallback for this single standard-tier source."
+  - source_id: group-ib
+    reason: "Blog listing page returns only an alphabetical archive (no date-sorted grid) to both WebFetch and the bridge; recovered dates via the blog_post-sitemap.xml (lastmod-sorted) instead. Newest lastmod entries (bec-protection 2026-07-28, ransomware-2026-rules 2026-07-24) checked individually and found to be marketing/trend-piece content, not in-window original research. Recipe note: for future runs, prefer https://www.group-ib.com/blog_post-sitemap.xml (via the bridge) over the HTML listing for date discovery on this host."

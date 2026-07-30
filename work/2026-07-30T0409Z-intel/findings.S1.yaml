@@ -1,0 +1,173 @@
+domain: S1
+run_id: 2026-07-30T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-30T04:11:21Z
+ended_at: 2026-07-30T04:23:48Z
+duration_seconds: 747
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 2
+  bridge_fetches: 28
+
+items:
+  - title: "VMware ESX/vCenter/Workstation/Fusion: unauthenticated auth-bypass and VM-escape chain in VMSA-2026-0006 (CVE-2026-59309, CVE-2026-59310, CVE-2026-47876)"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017", publisher: "Broadcom/VMware PSIRT (VMSA-2026-0006)", date: "2026-07-29", role: "primary" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12814", publisher: "NCSC Switzerland / GovCERT.ch", date: "2026-07-29", role: "corroborating" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2569", publisher: "BSI CERT-Bund (WID-SEC-2026-2569)", date: "2026-07-29", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0269", publisher: "NCSC-NL (NCSC-2026-0269)", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12814 → primary: Broadcom/VMware PSIRT, URL https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017 → corroboration: bsi-de, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2569 → corroboration: advisories-ncsc-nl, URL https://advisories.ncsc.nl/advisory?id=NCSC-2026-0269"
+    summary: |
+      Broadcom's VMSA-2026-0006 (29 July 2026) fixes five vulnerabilities across VMware ESX, vCenter Server, Workstation and Fusion, independently flagged the same day by NCSC-CH, BSI CERT-Bund and NCSC-NL. CVE-2026-59309 (CVSS 9.8) is an authentication bypass in vCenter's Directory Service — network access to vCenter is sufficient to bypass authentication and gain unauthorized system access. CVE-2026-59310 (CVSS 9.8) is a directory-traversal flaw in vCenter's Syslog server enabling arbitrary code execution via manipulated file/directory paths. CVE-2026-47876 (CVSS 9.3) is an out-of-bounds write in the VMXNET3 virtual network adapter: an attacker with local administrative privileges inside a guest VM using VMXNET3 can write beyond intended memory bounds to execute code on the underlying ESX host — a VM-to-host escape (VMs not using VMXNET3 are not vulnerable). Two lower-severity issues round out the advisory: CVE-2026-41703 (out-of-bounds read, ESX/Workstation/Fusion, info disclosure/DoS) and CVE-2026-41709 (insufficient logging on ESX, lets an admin perform unlogged actions). No workaround exists for any of the five — patching is mandatory. Fixed in vCenter 9.1.0.0300 / 9.0.2.0100 / 8.0U3k (async patch for 5.x); ESXi-9.1.0.0200 / ESXi-9.0.2.0100 / ESXi80U3k for the VMXNET3 escape; Workstation/Fusion 26H1 (or later per-track releases). No in-the-wild exploitation is reported by any of the three national CERTs or the vendor; the flaws were reported through Broadcom's bug-bounty program (Atredis Partners, STARLabs SG, CrowdStrike). Both NCSC-CH and NCSC-NL explicitly recommend never exposing vCenter/ESX management interfaces directly to the internet.
+    region_nexus: "global; vCenter/ESXi is foundational virtualization infrastructure across Swiss/EU government and CI data centres"
+    primary_sector_nexus: "direct — public-sector and CI data-centre virtualization estates"
+    sector: "public-sector, energy, healthcare, finance, telco"
+    cves: ["CVE-2026-59309", "CVE-2026-59310", "CVE-2026-47876", "CVE-2026-41703", "CVE-2026-41709"]
+    techniques: ["T1190", "T1611"]
+    affected_products: ["VMware ESX", "VMware ESXi", "VMware vCenter Server", "VMware Workstation", "VMware Fusion", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Telco Cloud Platform"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system."
+        attribution: "Broadcom/VMware VMSA-2026-0006"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "Deze kwetsbaarheid stelt een kwaadwillende met lokale beheerdersrechten op een virtuele machine met een VMXNET3 virtuele netwerkadapter in staat, code uit te voeren op de onderliggende host."
+        attribution: "NCSC-NL (NCSC-2026-0269)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0269"
+    extended_notes: |
+      Detection concept: vCenter Directory Service (vmdird) authentication events and Syslog-server request logs are the telemetry class to hunt — anomalous/unauthenticated vmdird bind attempts or Syslog-service requests containing path-traversal sequences (../) from unexpected source IPs. For the VMXNET3 escape, host-level hypervisor crash/anomaly logs and any unexpected vmx-process memory-protection faults on hosts running guests with VMXNET3 adapters are the anchor; hardening lever is disabling/avoiding VMXNET3 in favor of alternate adapter types where a guest's trust level is uncertain, alongside the vendor's stated hardening: never expose vCenter/ESX management interfaces to the internet or untrusted networks, restrict access to a dedicated management segment.
+    watchlist: []
+    borderline: false
+
+  - title: "Cisco Secure Firewall Management Center: static/hardcoded low-privilege credential actively exploited, CISA KEV-listed (CVE-2026-20316)"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh", publisher: "Cisco PSIRT", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA Known Exploited Vulnerabilities Catalog", date: "2026-07-29", role: "primary" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (api: python3 tools/fetch_source.py cisa-kev) → primary: Cisco PSIRT, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+    summary: |
+      CISA added CVE-2026-20316 to its KEV catalog on 2026-07-29 (due date 2026-08-01, an unusually tight three-day turnaround). Cisco's own advisory confirms the reason: "In July 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability." The flaw (CWE-259, Use of Hard-Coded Password) is a static, low-privileged user account with hardcoded credentials embedded in the web interface of Cisco Secure Firewall Management Center (FMC) software — reachable by an unauthenticated remote attacker to log in and access sensitive data on the management server. CVSS is only 5.3 (AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N) because the account is low-privileged, but Cisco flags this as higher-impact than the score suggests because it "can be used with other Cisco Secure FMC Software vulnerabilities to elevate privileges" — i.e. it is a chaining primitive. Affected: on-prem Cisco Secure FMC releases 7.0, 7.2, 7.4, 7.6, 7.7 and 10.0; NOT affected: Cloud-Delivered FMC (cdFMC), Firewall Device Manager (FDM), Secure Firewall ASA, Secure Firewall Threat Defense (FTD), or Security Cloud Control (SCC). No workaround exists — hotfixes are required per release train (e.g. 7.0: Hotfix_GB-7.0.9.1-3; 7.7: Hotfix_AM-7.7.12.1-2; 10.0: Hotfix_P-10.0.1.1-2). The flaw was reported by Jimi Sebree of Horizon3.ai.
+    region_nexus: "global; FMC manages Cisco firewall estates common in EU/CH government and CI perimeter defenses"
+    primary_sector_nexus: "direct — perimeter/firewall management infrastructure across public-sector and CI networks"
+    sector: "public-sector, energy, telco, finance"
+    cves: ["CVE-2026-20316"]
+    techniques: ["T1078.001", "T1190"]
+    affected_products: ["Cisco Secure Firewall Management Center (FMC)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In July 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability."
+        attribution: "Cisco PSIRT (cisco-sa-fmc-static-cred-BET3Cjh)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "This vulnerability is due to the presence of static user credentials for a low-privileged account."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+    extended_notes: |
+      Triage / detection: authentication-log telemetry on the FMC web interface (any successful login from the static low-privileged account name, or any authentication event lacking the normal admin/analyst account provisioning history) is the anchor; because the account is a fixed, vendor-embedded identity rather than an operator-created one, any login using it — from any source — is inherently anomalous and should be treated as compromise, not benign use. Hardening: apply the per-train hotfix immediately (no workaround exists); restrict FMC web-interface reachability to a dedicated management network, since Cisco itself notes exposure is reduced when the interface has no public internet access. Given CISA's own guidance ties this to BOD 26-04 risk-based patching, prioritize by internet exposure.
+    watchlist: []
+    borderline: false
+
+  - title: "Check Point SmartConsole auth bypass CVE-2026-16232 — Rapid7 publishes full technical analysis and a public PoC exploit"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/", publisher: "Rapid7", date: "2026-07-28", role: "primary" }
+      - { url: "https://github.com/sfewer-r7/CVE-2026-16232", publisher: "Rapid7 (GitHub PoC repository)", date: "2026-07-28", role: "corroborating" }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12793", publisher: "NCSC Switzerland / GovCERT.ch", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12793 (edited 2026-07-29T07:44:32Z to add Rapid7 analysis) → primary: Rapid7, URL https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/ → PoC: GitHub, URL https://github.com/sfewer-r7/CVE-2026-16232"
+    summary: |
+      Material update on the already-tracked CVE-2026-16232 (Check Point SmartConsole admin authentication bypass, confirmed exploited as a zero-day at disclosure): Rapid7 published a full protocol-level technical analysis on 2026-07-28, and NCSC-CH's advisory was edited 2026-07-29 to add it — raising exploitation risk since a public, working proof-of-concept is now available to any attacker, not just the original exploiting actor. Rapid7's write-up adds detail beyond the earlier root-cause analysis: the complete FWM/CPMI and CPM/DLE service interaction sequence, hex-level encoding of the certificate-bind request and open-database response, the SOAP XML structures used for SmartConsole SSO-ticket redemption, and audit-log patterns that flag exploitation attempts ("Authentication method: application token"). The GitHub PoC (github.com/sfewer-r7/CVE-2026-16232) is demonstrated working against vulnerable R81.20 and failing against patched R82.10, confirming the vendor fix is effective. Mechanism recap: a vulnerable server accepts an attacker-supplied Secure Internal Communication (SIC) distinguished name as identity instead of binding it to the authenticated peer certificate's DN — an attacker reads the management server's own SIC DN during unauthenticated bootstrap communication, replays it in a forged certificate bind, and mints an application login token with full administrator privileges.
+    region_nexus: "global; Check Point Security Management Server/MDS widely deployed in EU/CH government and CI network security stacks"
+    primary_sector_nexus: "direct — security-management infrastructure"
+    sector: "public-sector, energy, finance, telco"
+    cves: ["CVE-2026-16232"]
+    techniques: ["T1190"]
+    affected_products: ["Check Point Security Management Server", "Check Point Multi-Domain Security Management Server (MDS)", "Check Point SmartConsole"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-29/check-point-cve-2026-16232-sic-dn-substitution-root-cause"
+    evidence:
+      - quote: "This vulnerability was reported as being exploited in the wild as a zero-day vulnerability at the time of disclosure."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/"
+      - quote: "By leveraging CVE-2026-16232, an unauthenticated attacker can obtain an application login token, use this token to log in through SmartConsole with full administrator privileges, and modify the security policy or security configuration."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/"
+      - quote: "The vendor supplied patches have been confirmed to successfully remediate the vulnerability and prevent our PoC script from succeeding."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/"
+    extended_notes: |
+      Triage discriminator per Rapid7: management-server audit logs showing "Authentication method: application token" for a login that did not follow a normal interactive SmartConsole session are the flag; legitimate application-token logins originate from known, provisioned integration accounts, not from newly-seen SIC DNs replayed from bootstrap traffic. With a public PoC now live, unpatched Security Management Servers/MDS reachable from the internet should be treated as imminent-exploitation risk, not just zero-day risk.
+    watchlist: []
+    borderline: false
+
+  - title: "HashiCorp Terraform MCP Server: SSRF-driven bearer-token exfiltration and cross-session/cross-tenant credential reuse across three CVEs (CVE-2026-14869, CVE-2026-16496, CVE-2026-16498)"
+    sources:
+      - { url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606", publisher: "HashiCorp Security Bulletin (HCSEC-2026-23)", date: "2026-07-28", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2572", publisher: "BSI CERT-Bund (WID-SEC-2026-2572)", date: "2026-07-29", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-14869", publisher: "NVD", date: "2026-07-29", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (listing item WID-SEC-2026-2572, published 2026-07-29T11:37:55Z) → primary: HashiCorp Security Bulletin, URL https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606 → corroboration: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-14869"
+    summary: |
+      HashiCorp disclosed three related vulnerabilities (HCSEC-2026-23, 28 July 2026, surfaced by BSI CERT-Bund's WID-SEC-2026-2572 listing on 29 July) in terraform-mcp-server's streamable-HTTP transport — the Model Context Protocol server that lets AI agents/LLM tooling drive Terraform Cloud/Enterprise operations. All three affect versions 0.2.1 through 1.0.0, fixed in 1.1.0. CVE-2026-14869 (CVSS 8.6) is an unauthenticated SSRF in the streamable-HTTP middleware request processor: a remote client can supply the Terraform address as a query parameter, causing the server to pair the attacker-controlled address with its own configured bearer token — exfiltrating the credential to an attacker-controlled endpoint with no authentication required. CVE-2026-16496 (CVSS 8.9) is an authorization bypass in stateful mode: the per-session Terraform client cache looks up cached credentials by session ID without binding the session to the requesting client's own token, so an attacker who obtains another user's MCP session ID can execute tool calls using the victim's cached Terraform client. CVE-2026-16498 (CVSS 10.0) is the most severe: in stateless HTTP mode, the per-session client cache lacks unique session identifiers at all, so sequential requests from different tenants can silently reuse each other's cached Terraform credentials — a cross-tenant credential-confusion bug in any multi-tenant stateless deployment. HashiCorp credits Coinspect and researcher Juan Pablo Martinez Kuhn. Mitigation for operators who cannot upgrade immediately: restrict network access to the streamable-HTTP listener to trusted users only.
+    region_nexus: "global; MCP-server deployments are emerging AI-agentic infrastructure now entering EU/CH public-sector and enterprise IaC pipelines"
+    primary_sector_nexus: "indirect — DevOps/IaC tooling supporting public-sector and CI cloud infrastructure automation"
+    sector: "public-sector, telco, finance"
+    cves: ["CVE-2026-14869", "CVE-2026-16496", "CVE-2026-16498"]
+    techniques: ["T1190", "T1550.001"]
+    affected_products: ["HashiCorp Terraform MCP Server"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated remote client could include the Terraform address as a query parameter, causing the server to pair the attacker-supplied address with its configured bearer token."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+      - quote: "A user who obtained another user's session ID could supply it in their own request and have their tool calls executed using the victim's cached Terraform client."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+      - quote: "Operators who cannot upgrade immediately should restrict network access to the streamable-HTTP listener to trusted users only."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+    extended_notes: |
+      This is a first-class instance of the emerging "MCP-server-as-attack-surface" class for AI-agentic tooling: the vulnerable primitive is the per-session/per-request credential cache keyed on an insufficiently-scoped identifier (session ID with no token binding in stateful mode; no identifier at all in stateless mode) plus an SSRF that lets an unauthenticated caller redirect where the server's own bearer token gets sent. Detection concept: outbound-request telemetry from the MCP server host to unexpected/external Terraform-API-shaped addresses (the SSRF vector) and MCP session-ID reuse patterns across distinct source identities in application/API-gateway access logs are the two telemetry classes to instrument; hardening levers are upgrading to 1.1.0, restricting the streamable-HTTP listener's network reachability, and — for any organisation running MCP servers generally — treating credential caches keyed on client-supplied session identifiers as a systemic anti-pattern worth auditing beyond this one product.
+    watchlist: []
+    borderline: false
+
+cve_table:
+  - { cve: "CVE-2026-59309", product: "VMware vCenter Server", cvss: "9.8 (CVSS3.1)", epss: "unknown", kev: "no", exploited: "not observed", patch: "9.1.0.0300 / 9.0.2.0100 / 8.0 U3k / async patch (5.x)", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-59310", product: "VMware vCenter Server", cvss: "9.8 (CVSS3.1)", epss: "unknown", kev: "no", exploited: "not observed", patch: "9.1.0.0300 / 9.0.2.0100 / 8.0 U3k / async patch (5.x)", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-47876", product: "VMware ESX (VMXNET3 adapter)", cvss: "9.3 (CVSS3.1)", epss: "unknown", kev: "no", exploited: "not observed", patch: "ESXi-9.1.0.0200 / ESXi-9.0.2.0100 / ESXi80U3k", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-41703", product: "VMware ESX/Workstation/Fusion", cvss: "7.6 (CVSS3.1)", epss: "unknown", kev: "no", exploited: "not observed", patch: "ESXi-9.1.0.0 / ESXi-9.0.2.0100 / ESXi80U3i / Workstation-Fusion 5.2.3/26H1", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-41709", product: "VMware ESX", cvss: "2.7 (CVSS3.1)", epss: "unknown", kev: "no", exploited: "not observed", patch: "ESXi-9.1.0.0 / ESXi-9.0.2.0100 / ESXi80U3j / 5.2.4", source: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017" }
+  - { cve: "CVE-2026-20316", product: "Cisco Secure Firewall Management Center", cvss: "5.3 (CVSS3.1)", epss: "0.0 (EUVD)", kev: "yes (added 2026-07-29, due 2026-08-01)", exploited: "confirmed by Cisco PSIRT, July 2026", patch: "per-train hotfix (7.0/7.2/7.4/7.6/7.7/10.0)", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh" }
+  - { cve: "CVE-2026-16232", product: "Check Point SmartConsole / Security Management Server / MDS", cvss: "9.1 (CVSS3.1)", epss: "unknown", kev: "yes (prior entry)", exploited: "confirmed zero-day exploitation; public PoC now released (Rapid7)", patch: "vendor patch (sk185169); R82.10 confirmed fixed", source: "https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232/" }
+  - { cve: "CVE-2026-14869", product: "HashiCorp Terraform MCP Server", cvss: "8.6 (CVSS3.1, NVD)", epss: "unknown", kev: "no", exploited: "not observed", patch: "1.1.0", source: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606" }
+  - { cve: "CVE-2026-16496", product: "HashiCorp Terraform MCP Server", cvss: "8.9 (CVSS3.1, NVD)", epss: "unknown", kev: "no", exploited: "not observed", patch: "1.1.0", source: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606" }
+  - { cve: "CVE-2026-16498", product: "HashiCorp Terraform MCP Server", cvss: "10.0 (CVSS3.1, NVD)", epss: "unknown", kev: "no", exploited: "not observed", patch: "1.1.0", source: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in config/org-profile.yaml — sweep is a no-op per org-profile duty semantics; general relevance discipline applied unchanged across all essential-tier sources (CISA KEV, ENISA EUVD criticals/exploited/lastvulnerabilities, NCSC-CH, BSI, CERT-EU, CERT-FR, NCSC-NL, NCSC-UK, CERT-PL) plus rotation-priority apple-security."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "No dedicated bridge subcommand for the directives listing; not attempted separately this run since cisa-advisories (KEV/alerts feed) already surfaced the day's CISA content (KEV addition for CVE-2026-20316). No indication of a missed new directive."
+  - source_id: certvde
+    reason: "Candidate-tier OT/ICS CERT not swept this run — research budget prioritized the essential tier and the VMware/Cisco/HashiCorp/Check Point cluster; no evidence of a missed item, not a fetch failure."

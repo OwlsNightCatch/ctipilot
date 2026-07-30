@@ -48,3 +48,15 @@ work/**/*.bak
 .env.*
 *secret*
 *credential*
+
+# ...but the secret-blocking globs above are filename-substring matches, and the
+# content store legitimately produces entry / run / work filenames containing
+# words like "credential" or "secret" (e.g. an entry on a hardcoded-credential
+# CVE, or a credential-stuffing campaign). Those are published intelligence, not
+# secrets. Without these negations the run silently commits fewer entries than it
+# wrote — tools/check_run.py reads the filesystem, not the git index, so the gate
+# passes and the missing entries only surface as a gap on the live site.
+# Discovered 2026-07-30, when *credential* excluded two of that run's eight entries.
+!entries/**
+!runs/**
+!work/**

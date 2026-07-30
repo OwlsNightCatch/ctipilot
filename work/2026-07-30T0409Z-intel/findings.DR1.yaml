@@ -1,0 +1,750 @@
+domain: DR1
+run_id: 2026-07-30T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-30T04:32:59Z
+ended_at: 2026-07-30T04:43:59Z
+duration_seconds: 660
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 13
+
+note: >
+  Scoped Phase 4 deep-read over five already-triaged, will-publish vulnerability
+  items (not a discovery sweep). Every source below was re-fetched in full via
+  the bridge (python3 tools/fetch_source.py url <URL>) in this run; none were
+  taken from the S1/S3 findings files without independent re-verification.
+  Each item below is keyed to its S1/S3 origin item for traceability.
+
+items:
+
+  # ==========================================================================
+  # ITEM 1 (DEEP DIVE) — Lava BMC/IPMI research, CVE-2013-4786
+  # origin: findings.S3.yaml item 6
+  # ==========================================================================
+  - key: bmc-ipmi-cve-2013-4786
+    title: "24,650 internet-exposed BMCs leak crackable RAKP password hashes pre-authentication via 22-year-old CVE-2013-4786 — Lava finds confirmed in-the-wild ransomware exploitation"
+    origin: "findings.S3.yaml item 6"
+    sources:
+      - { url: "https://lavahq.io/research/bmc-exposure-alert", publisher: "Lava (Lava HQ research, author Michael Katchinskiy)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.darkreading.com/cyber-risk/flaw-exposes-data-centers-server-takeover", publisher: "Dark Reading (Jai Vijayan)", date: "2026-07-28", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2013-4786", publisher: "NVD", date: "2026-07-30 (fetched; CVE record itself dates to 2013)", role: "corroborating" }
+      - { url: "https://www.helpnetsecurity.com/2026/07/28/exposed-bmc-ipmi-vulnerability-research/", publisher: "Help Net Security", date: "2026-07-28", role: "corroborating (from S3, not re-fetched this pass — Lava + Dark Reading covers all load-bearing facts independently)" }
+
+    protocol_mechanism: >
+      CVE-2013-4786 is a design flaw in the IPMI 2.0 specification's RMCP+
+      Authenticated Key-Exchange Protocol (RAKP), introduced with IPMI 2.0's
+      2004 release and publicly disclosed/CVE-assigned only in 2013. Per NVD's
+      own description, RAKP authentication "allows remote attackers to obtain
+      password hashes and conduct offline password guessing attacks by
+      obtaining the HMAC from a RAKP message 2 response from a BMC." In
+      concrete exchange terms (per Lava's account): the client sends an RAKP
+      Message 1 identifying the requested account; the BMC (RAKP Message 2)
+      returns an HMAC-SHA1 authentication code computed over the account
+      password and session values already known to the requester — BEFORE the
+      client has actually authenticated. An unauthenticated remote party that
+      can reach UDP port 623 can request this response and test password
+      guesses fully offline: because the HMAC is a per-request, self-contained
+      value, cracking it generates no repeated-login telemetry on the BMC
+      whatsoever (no lockout, no rate limit, no failed-login log entry) —
+      the offline-crackable-hash property is itself the reason BMC login logs
+      are not a viable detection surface for this technique.
+      NVD CWE classification: CWE-255 (Credentials Management Errors).
+
+    scan_methodology: >
+      Lava queried Shodan for BMC/IPMI services on UDP port 623. On 2026-05-06
+      the query returned 36,872 unique internet-exposed IPMI hosts. Across
+      repeated measurements between May and July 2026, Lava observed an
+      average of ~60 previously-unseen IP addresses newly exposing IPMI each
+      day. Lava built a lightweight auditor to check the exposed population
+      for: cipher-suite-0 support, empty/null usernames accepted, "NONE"
+      authentication mode advertisement, RAKP responses tied to common
+      vendor-default usernames, and CVE-2013-4786 itself (pre-auth
+      password-derived hash disclosure). Lava published an interactive map of
+      the findings ("BMCRadar", https://lavahq.io/bmc).
+
+    exposure_breakdown: >
+      Of 36,872 internet-exposed IPMI hosts: 24,650 (66.9%) returned at least
+      one password-derived RAKP authentication hash before client
+      authentication completed. Of the total population, 6,240 (16.9%)
+      accepted an empty/null username paired with a password that matched a
+      common wordlist during offline analysis; 2,340 (6.3% of the total
+      population, ~9.5% of the RAKP-responding population) had a named
+      account (e.g. ADMIN or root) whose password matched a common wordlist.
+      Lava states many wordlist matches were found "within minutes" of first
+      pass. Lava did NOT submit recovered passwords to any BMC or attempt to
+      authenticate — cracking was performed entirely offline against captured
+      hash material. Supermicro hardware accounted for more than 50% of the
+      responding BMCs in Lava's dataset.
+
+    factory_password_schemes: >
+      Supermicro: since November 2019 (to support California SB-327
+      compliance), Supermicro replaced the shared "ADMIN:ADMIN" factory
+      credential with a unique, chassis-sticker-printed password. Username
+      remains ADMIN; password is exactly 10 uppercase alphabetic characters
+      (keyspace 26^10 ≈ 141 trillion). Lava assessed this keyspace as
+      exhaustively crackable by a targeted attacker: on a server with eight
+      GPUs running Hashcat, the full candidate space searches in
+      approximately one hour. Lava validated this in practice against two
+      adjacent IPs belonging to a US-based bare-metal GPU provider (testing
+      authorized under the provider's published security policy, limited to
+      password material already disclosed via the IPMI flow, no
+      authentication attempted) — both were modern Supermicro X13DEM
+      motherboards (manufactured 2023) and both recovered passwords matched
+      the 10-character chassis-sticker format. HPE iLO: factory format is 8
+      characters of uppercase letters + digits (keyspace 36^8 ≈ 2.8 trillion,
+      ~50x smaller than Supermicro's). On an Apple M3, a full search took
+      ~1 day per captured response; on Lava's lab server with eight RTX 6000
+      PRO GPUs, the same search took ~32 seconds per response.
+
+    itw_exploitation_evidence: >
+      Lava found an internet-exposed HPE iLO 4 login page displaying a ransom
+      note in its Security Notice panel, claiming RSA-2048 encryption of the
+      server's data and demanding 0.3 BTC (Lava could not confirm whether the
+      underlying server data was actually encrypted, only that the management
+      interface itself had been accessed and modified by an unauthorized
+      party). Separately, per Dark Reading's interview with Lava CTO/co-founder
+      Yakir Kadkoda, Lava identified compromised, internet-exposed BMC
+      interfaces belonging to "one of the world's largest automotive component
+      manufacturers," with multiple exposed servers displaying ransomware
+      notes and payment demands, indicating active targeting. Lava also cites
+      prior public research on "iLOBleed," a persistent iLO 4 rootkit
+      associated with destructive attacks, as precedent for attacker interest
+      in this management layer.
+
+    mitigations: >
+      Lava (researcher) and vendor (Supermicro, via disclosure) both
+      recommend: block UDP/623 at the network edge (remove IPMI/BMC from the
+      public internet entirely — stated as "the main fix"); replace
+      factory-issued passwords during provisioning; disable IPMI 1.5,
+      cipher-suite-0, anonymous accounts and NONE authentication; restrict BMC
+      access to a dedicated private management network/VPN/bastion; apply
+      network access controls so only approved administrative systems can
+      reach BMC interfaces; monitor the management network separately from
+      production workloads. Supermicro (per Lava's June 2026 disclosure)
+      acknowledged the scenario is plausible with modern multi-GPU cracking
+      capability, reiterated its standing guidance to rotate default BMC
+      passwords at setup and keep management networks off the public internet
+      behind VLANs/ACLs, and stated it will review possible improvements to
+      the default password policy (longer passwords / expanded character set)
+      for future hardware revisions. No CVE-level "patch" exists or is
+      applicable — CVE-2013-4786 is a specification-level design flaw in the
+      IPMI 2.0 RAKP handshake itself, not a vendor code defect, so no vendor
+      patch remediates it; only network isolation and credential/protocol
+      hardening close the exposure.
+
+    redfish_vs_ipmi: >
+      Redfish (the newer HTTPS-based management API) is NOT subject to the
+      CVE-2013-4786 pre-auth RAKP hash-disclosure mechanism itself — that flaw
+      is specific to the legacy IPMI 2.0 RAKP handshake. However, Lava
+      explicitly notes that "in many implementations, these interfaces share
+      the same user database. A credential that works for IPMI may also work
+      for the web interface or Redfish API" — so a password recovered via the
+      IPMI-2.0 RAKP weakness can often be reused to authenticate directly to
+      Redfish or the web UI. Lava's own guidance: "Where supported, prefer
+      Redfish over TLS within an isolated management network. Neither Redfish
+      nor IPMI should be exposed directly to the public internet" — i.e.
+      Redfish is the recommended migration target, but only within an isolated
+      network, never as a public-facing substitute.
+
+    region_nexus: "global; any organization operating on-prem or colocated bare-metal server infrastructure with BMC/IPMI management (Supermicro, HPE, and by extension any IPMI-2.0-implementing vendor) is potentially exposed, including European data-centre and critical-infrastructure operators"
+    primary_sector_nexus: "indirect"
+    sector: "energy, telco, public-sector, finance, healthcare"
+
+    cves:
+      - id: CVE-2013-4786
+        cvss: "7.5 HIGH (CVSS 3.0, NVD) / 7.8 HIGH (CVSS 2.0, NVD)"
+        vector: "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N (CVSS 2.0: AV:N/AC:L/Au:N/C:C/I:N/A:N)"
+        type: "Improper credentials management / IPMI 2.0 RAKP protocol specification design flaw enabling pre-auth password-hash disclosure (CWE-255: Credentials Management Errors)"
+        auth: "Unauthenticated / pre-authentication — network reachability to UDP/623 is the only prerequisite; no valid credentials or prior foothold required to obtain the crackable hash"
+        status: "Confirmed exploitation observed in the wild by Lava (ransom note found on an exposed HPE iLO 4 interface; compromised, ransom-note-displaying servers found belonging to a named-class automotive component manufacturer). Not KEV-listed as of this research; CVE dates to 2013."
+        affected: "IPMI 2.0 specification's RAKP authentication mechanism — universal to any BMC/IPMI implementation supporting IPMI 2.0 RAKP (introduced 2004); confirmed in Lava's tested population on Supermicro BMC and HPE iLO implementations specifically, at scale (24,650 of 36,872 scanned hosts, 66.9%)"
+        fixed: "No vendor patch exists or is applicable — this is a specification-level design flaw in the IPMI 2.0 protocol itself, not a code defect. Mitigation is exclusively network- and configuration-level: remove IPMI/BMC from public internet exposure, rotate factory/default credentials, disable legacy IPMI 1.5/cipher-suite-0/anonymous auth, and prefer Redfish-over-TLS on an isolated management network."
+
+    affected_products: ["Supermicro BMC (IPMI)", "HPE iLO"]
+    techniques: ["T1110.002", "T1078.001", "T1542.001"]
+    techniques_note: >
+      Correction to S3's original mapping: T1200 (Hardware Additions) does
+      not fit this finding — no physical hardware is added; the BMC is a
+      pre-existing, already-installed management processor being remotely
+      exploited over the network. Recommended mapping: T1110.002 (Password
+      Cracking — offline HMAC-SHA1 cracking of the RAKP-disclosed hash),
+      T1078.001 (Default Accounts — blank/ADMIN/root accounts with
+      common/factory passwords), and T1542.001 (Pre-OS Boot: System Firmware —
+      Lava explicitly flags that BMC/platform-firmware persistence can survive
+      OS reinstalls, disk replacement, and standard IR procedures, requiring
+      platform-level recovery).
+
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+    evidence:
+      - quote: "The IPMI 2.0 specification supports RMCP+ Authenticated Key-Exchange Protocol (RAKP) authentication, which allows remote attackers to obtain password hashes and conduct offline password guessing attacks by obtaining the HMAC from a RAKP message 2 response from a BMC."
+        attribution: "NVD (CVE-2013-4786 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2013-4786"
+      - quote: "On May 6, 2026, the query returned 36,872 unique hosts exposing IPMI to the public internet."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "Approximately two-thirds of the exposed BMCs we tested returned at least one password-derived authentication hash before client authentication was complete."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "This format has a keyspace of 26^10, or approximately 141 trillion possible passwords. Although this is too large for a simple wordlist, its constrained format makes exhaustive recovery practical for a targeted attacker with modern GPU hardware. On a modern server with eight GPUs running Hashcat, the complete candidate space could be searched in approximately one hour."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "On our lab server with eight RTX 6000 PRO GPUs, the same search took approximately 32 seconds per response."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "During our research, we found an exposed HPE iLO 4 login page displaying a ransom note in its Security Notice panel. The message claimed that the server's data had been encrypted and demanded 0.3 BTC."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "During the research, we identified compromised systems belonging to one of the world's largest automotive component manufacturers. Multiple exposed servers displayed ransomware notes and payment demands, indicating that the company was being targeted as part of an active attack campaign."
+        attribution: "Yakir Kadkoda, CTO/co-founder, Lava (via Dark Reading)"
+        source_url: "https://www.darkreading.com/cyber-risk/flaw-exposes-data-centers-server-takeover"
+      - quote: "The main fix is simple: IPMI should not be reachable from the public internet."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+      - quote: "Where supported, prefer Redfish over TLS within an isolated management network. Neither Redfish nor IPMI should be exposed directly to the public internet."
+        attribution: "Lava (Lava HQ research)"
+        source_url: "https://lavahq.io/research/bmc-exposure-alert"
+
+    extended_notes: |
+      Detection guidance: because the RAKP hash disclosure requires no repeated
+      authentication attempt, BMC-side login/authentication logs are NOT a
+      viable detection surface for this technique — the only realistic
+      detection telemetry is network-flow/firewall logs showing inbound UDP/623
+      traffic from unexpected external sources (i.e. any BMC that has ever
+      accepted an inbound UDP/623 connection from the internet should be
+      treated as already compromised). Triage discriminator: legitimate BMC
+      management traffic originates from a known, internal management-VLAN
+      source; any UDP/623 session from a WAN-facing or unrecognized source IP
+      is inherently anomalous, not merely suspicious, given the technique's
+      undetectable-by-design nature at the BMC layer itself.
+
+  # ==========================================================================
+  # ITEM 2 — VMware VMSA-2026-0006
+  # origin: findings.S1.yaml item 1
+  # ==========================================================================
+  - key: vmware-vmsa-2026-0006
+    title: "VMware VMSA-2026-0006: vCenter auth bypass, Syslog directory traversal, VMXNET3 VM-escape, and two lower-severity flaws across ESX/vCenter/Workstation/Fusion"
+    origin: "findings.S1.yaml item 1"
+    sources:
+      - { url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017", publisher: "Broadcom/VMware PSIRT (VMSA-2026-0006)", date: "2026-07-29 (issue date; last updated 2026-07-29, initial advisory)", role: "primary" }
+
+    advisory_metadata: >
+      Advisory ID VMSA-2026-0006. Notification ID 38017. Status: OPEN.
+      Overall Severity: CRITICAL. CVSSv3 range across the five CVEs: 2.7–9.8.
+      Issue date and last-updated date both 2026-07-29 (initial advisory, no
+      revisions yet). Workaround column for every one of the five CVEs reads
+      "None" — Broadcom states no workaround exists for any of the five
+      issues; patching is the only remediation path.
+
+    impacted_products_full_list: >
+      Per the advisory's own "1. Impacted Products" section: VMware ESX,
+      VMware vCenter, VMware Workstation, VMware Fusion, VMware Cloud
+      Foundation, VMware vSphere Foundation, VMware Telco Cloud Platform,
+      VMware Telco Cloud Infrastructure (8 products total; the advisory's
+      product/component picker separately labels the ESX line "VMware vSphere
+      ESXi" — same product, inconsistent naming within the same advisory page).
+
+      Per-CVE product/component breakdown from the advisory's own Response
+      Matrix tables (confirms which CVEs affect which product lines):
+      - CVE-2026-59309 and CVE-2026-59310 (vCenter authentication bypass and
+        Syslog directory traversal) affect ONLY the vCenter component — VMware
+        Cloud Foundation/vSphere Foundation (vCenter 9.1.x.x, 9.0.x.x), VMware
+        vCenter 8.0, and VMware Cloud Foundation 5.x (vCenter component). ESX,
+        Workstation and Fusion are NOT listed as affected by either CVE.
+      - CVE-2026-47876 (VMXNET3 out-of-bounds write / VM escape) affects ONLY
+        the ESX component — Cloud Foundation/vSphere Foundation (ESX 9.1.x.x,
+        9.0.x.x), VMware ESX 8.0, Cloud Foundation 5.x (ESX component), and
+        VMware Telco Cloud Platform (ESX 5.0.x, 5.1.x). Despite Workstation and
+        Fusion both supporting VMXNET3-adapter guests, NEITHER is listed in
+        this CVE's response matrix — per the advisory, this CVE affects ESX
+        only, not Workstation/Fusion.
+      - CVE-2026-41703 (out-of-bounds read) affects ESX, Workstation, AND
+        Fusion — the only one of the five CVEs to span all three hypervisor
+        product lines. CVSS differs materially by product: 7.6 (Important) on
+        ESX/Cloud Foundation/vSphere Foundation/Telco Cloud Platform vs. only
+        2.7 (Low) on Workstation and Fusion, reflecting the advisory's own
+        note that "on Workstation and Fusion, the impact of this vulnerability
+        is restricted to information disclosure" (no DoS impact on those
+        products, unlike ESX where a DoS of the host process is the more
+        likely outcome).
+      - CVE-2026-41709 (insufficient logging) affects ONLY the ESX component,
+        same product spread as CVE-2026-47876 (Cloud Foundation/vSphere
+        Foundation, standalone ESX 8.0, Cloud Foundation 5.x, Telco Cloud
+        Platform). NOT vCenter, NOT Workstation/Fusion.
+
+    vmxnet3_precondition: >
+      Confirmed from the advisory's own "Known Attack Vectors" text for
+      CVE-2026-47876: "A malicious actor with local administrative privileges
+      on a virtual machine with VMXNET3 virtual network adapter may exploit
+      this issue to execute code on the host. Non VMXNET3 virtual adapters are
+      not affected by this issue." — i.e. the guest VM must (a) already grant
+      the attacker local administrative privileges inside the guest, and (b)
+      be configured with a VMXNET3 virtual network adapter specifically; any
+      other virtual NIC type (E1000/E1000e/VMXNET2/paravirtual variants) is
+      confirmed not vulnerable to this specific CVE.
+
+    workaround_confirmation: "Every one of the five CVEs' Response Matrix tables lists 'Workarounds: None' — Broadcom confirms no workaround exists for any of the five vulnerabilities in this advisory; patching to the listed fixed versions is the sole remediation path."
+
+    reporting_credits: >
+      CVE-2026-59309 and CVE-2026-59310: Phil Brass and Matt South of Atredis
+      Partners. CVE-2026-47876: Nguyen Hoang Thach (@hi_im_d4rkn3ss) of
+      STARLabs SG, working with Pwn2Own held by Zero Day Initiative.
+      CVE-2026-41703: Maxim Suhanov (@errno_fail). CVE-2026-41709: Ian Barton
+      of CrowdStrike.
+
+    region_nexus: "global; vCenter/ESXi is foundational virtualization infrastructure across Swiss/EU government and CI data centres"
+    primary_sector_nexus: "direct — public-sector and CI data-centre virtualization estates"
+    sector: "public-sector, energy, healthcare, finance, telco"
+
+    cves:
+      - id: CVE-2026-59309
+        cvss: "9.8 CRITICAL (CVSSv3.1)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        type: "Authentication bypass in vCenter's VMware Directory Service (vmdird)"
+        auth: "Unauthenticated — network access to vCenter is the only prerequisite"
+        status: "Not observed exploited in the wild; not KEV-listed; reported privately to Broadcom via bug-bounty (Atredis Partners)"
+        affected: "vCenter component of: VMware Cloud Foundation/vSphere Foundation 9.1.x.x and 9.0.x.x (any); VMware vCenter Server 8.0 (any); VMware Cloud Foundation 5.x (vCenter component, any)"
+        fixed: "vCenter 9.1.0.0300 (patches cumulative — CVE first addressed in 9.1.0.0200, 9.1.0.0300 is latest); vCenter 9.0.2.0100; VMware vCenter 8.0 U3k; async patch to 8.0 U3k for Cloud Foundation 5.x (KB88287)"
+      - id: CVE-2026-59310
+        cvss: "9.8 CRITICAL (CVSSv3.1)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        type: "Directory-traversal vulnerability in vCenter's Syslog server enabling arbitrary code execution via manipulated file/directory paths"
+        auth: "Unauthenticated — network access to vCenter is the only prerequisite"
+        status: "Not observed exploited in the wild; not KEV-listed; reported privately to Broadcom via bug-bounty (Atredis Partners)"
+        affected: "Same product/version spread as CVE-2026-59309 (vCenter component: Cloud Foundation/vSphere Foundation 9.1.x.x/9.0.x.x; standalone vCenter 8.0; Cloud Foundation 5.x)"
+        fixed: "Same fixed versions as CVE-2026-59309: vCenter 9.1.0.0300 / 9.0.2.0100 / 8.0 U3k / async patch to 8.0 U3k (KB88287)"
+      - id: CVE-2026-47876
+        cvss: "9.3 CRITICAL (CVSSv3.1)"
+        vector: "CVSS:3.1/AV:L/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+        type: "Out-of-bounds write in the VMXNET3 virtual network adapter — guest-to-host VM escape"
+        auth: "Requires local administrative privileges inside a guest VM configured with a VMXNET3 virtual network adapter specifically (non-VMXNET3 adapters not affected)"
+        status: "Not observed exploited in the wild; not KEV-listed; reported via Pwn2Own (Zero Day Initiative) by STARLabs SG"
+        affected: "ESX component of: Cloud Foundation/vSphere Foundation 9.1.x.x and 9.0.x.x (any); standalone VMware ESX 8.0 (any); VMware Cloud Foundation 5.x (ESX component); VMware Telco Cloud Platform (ESX 5.0.x, 5.1.x). NOT Workstation/Fusion despite VMXNET3 support in those products."
+        fixed: "ESXi-9.1.0.0200-25557999; ESXi-9.0.2.0100-25595025; ESXi80U3k-25595708; async patch (Cloud Foundation 5.x, KB88287); KB449886 (Telco Cloud Platform)"
+      - id: CVE-2026-41703
+        cvss: "7.6 IMPORTANT on ESX/Cloud Foundation/vSphere Foundation/Telco Cloud Platform (CVSSv3.1); 2.7 LOW on Workstation/Fusion (CVSSv3.1) — same CVE, two distinct vendor-published CVSS scores depending on product"
+        vector: "ESX: CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:C/C:H/I:N/A:L — Workstation/Fusion: CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:L/I:N/A:N"
+        type: "Out-of-bounds read — on ESX, may lead to information disclosure or (more likely) denial-of-service of the host process; on Workstation/Fusion, impact is restricted to information disclosure only"
+        auth: "Requires VM-deployment privileges (PR:H)"
+        status: "Not observed exploited in the wild; not KEV-listed; reported by Maxim Suhanov (@errno_fail)"
+        affected: "ESX component: Cloud Foundation/vSphere Foundation 9.1.x.x/9.0.x.x; standalone ESX 8.0; Cloud Foundation 5.x; Telco Cloud Platform (ESX 5.0.x/5.1.x). Also VMware Workstation 25H2 and VMware Fusion 25H2 (lower-severity variant)."
+        fixed: "ESXi-9.1.0.0-25370933; ESXi-9.0.2.0100-25595025; ESXi80U3i-25205845; Cloud Foundation 5.x → 5.2.3 (async, KB88287); Telco Cloud Platform → KB449886; Workstation 26H1; Fusion 26H1"
+      - id: CVE-2026-41709
+        cvss: "2.7 LOW (CVSSv3.1)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:N/I:L/A:N"
+        type: "Insufficient logging on ESX — allows a malicious administrator to perform certain operations without them being logged"
+        auth: "Requires existing administrative privileges (malicious insider scenario, not remote unauthenticated)"
+        status: "Not observed exploited in the wild; not KEV-listed; reported by Ian Barton of CrowdStrike"
+        affected: "ESX component: Cloud Foundation/vSphere Foundation 9.1.x.x/9.0.x.x; standalone ESX 8.0; Cloud Foundation 5.x; Telco Cloud Platform (ESX 5.0.x/5.1.x). NOT vCenter, NOT Workstation/Fusion."
+        fixed: "ESXi-9.1.0.0-25370933; ESXi-9.0.2.0100-25595025; ESXi80U3j-25429389; Cloud Foundation 5.x → 5.2.4 (async, KB88287); Telco Cloud Platform → KB449886"
+
+    affected_products: ["VMware ESX", "VMware vSphere ESXi", "VMware vCenter Server", "VMware Workstation", "VMware Fusion", "VMware Cloud Foundation", "VMware vSphere Foundation", "VMware Telco Cloud Platform", "VMware Telco Cloud Infrastructure"]
+    techniques: ["T1190", "T1611"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+    evidence:
+      - quote: "A malicious actor with network access to vCenter may exploit this issue to bypass authentication and gain unauthorized access to the system."
+        attribution: "Broadcom/VMware VMSA-2026-0006 (CVE-2026-59309 Known Attack Vectors)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "A malicious actor with local administrative privileges on a virtual machine with VMXNET3 virtual network adapter may exploit this issue to execute code on the host. Non VMXNET3 virtual adapters are not affected by this issue."
+        attribution: "Broadcom/VMware VMSA-2026-0006 (CVE-2026-47876 Known Attack Vectors)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "A malicious actor with VM deployment privileges could trigger an out-of-bounds read, potentially leading to information disclosure or more likely a Denial-of-Service (DoS) condition of the host process. On Workstation and Fusion, the impact of this vulnerability is restricted to information disclosure."
+        attribution: "Broadcom/VMware VMSA-2026-0006 (CVE-2026-41703 Known Attack Vectors)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+      - quote: "Multiple vulnerabilities in VMware ESX, vCenter, Workstation, and Fusion were privately reported to Broadcom. Updates are available to remediate these vulnerabilities in affected Broadcom products."
+        attribution: "Broadcom/VMware VMSA-2026-0006 (Introduction)"
+        source_url: "https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017"
+
+    extended_notes: |
+      No mention of "exploited," "in the wild," or similar language appears
+      anywhere on the advisory page (confirmed by full-text search of the
+      fetched advisory body) — this is a proactively-patched, bug-bounty /
+      Pwn2Own-sourced disclosure with no vendor or third-party claim of active
+      exploitation, consistent with S1's original assessment.
+
+  # ==========================================================================
+  # ITEM 3 — Cisco Secure FMC CVE-2026-20316
+  # origin: findings.S1.yaml item 2
+  # ==========================================================================
+  - key: cisco-fmc-cve-2026-20316
+    title: "Cisco Secure Firewall Management Center: static/hardcoded low-privilege credential actively exploited, CISA KEV-listed (CVE-2026-20316)"
+    origin: "findings.S1.yaml item 2"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh", publisher: "Cisco PSIRT", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA Known Exploited Vulnerabilities Catalog (fetched via bridge: python3 tools/fetch_source.py cisa-kev)", date: "2026-07-29 (catalogVersion 2026.07.29, dateReleased 2026-07-29T18:45:59Z)", role: "primary" }
+
+    kev_confirmation: >
+      Confirmed present in the live CISA KEV catalog JSON (fetched fresh this
+      pass): cveID CVE-2026-20316, vendorProject Cisco, product "Secure
+      Firewall Management Center (FMC)", vulnerabilityName "Cisco Secure
+      Firewall Management Center Use of Hard-coded Password Vulnerability",
+      dateAdded 2026-07-29, dueDate 2026-08-01 (a 3-day turnaround — CISA's
+      standard KEV due date is typically longer, signaling urgency), CWE-259,
+      knownRansomwareCampaignUse "Unknown". requiredAction ties compliance to
+      BOD 26-04 "Prioritizing Security Updates Based on Risk."
+
+    exact_cvss: "Base 5.3 — CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N (confirmed from the advisory's own CVSS calculator widget)"
+
+    verbatim_exploitation_sentence: "In July 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability. Cisco strongly recommends that customers upgrade to a fixed software release to remediate this vulnerability."
+
+    verbatim_chaining_sentence: "Cisco has assigned this security advisory a Security Impact Rating (SIR) of High rather than Medium as the score indicates. The reason is that this vulnerability can be used with other Cisco Secure FMC Software vulnerabilities to elevate privileges."
+
+    what_static_account_reaches: >
+      Per the advisory's Summary: "This vulnerability is due to the presence
+      of static user credentials for a low-privileged account. An attacker
+      could exploit this vulnerability by using the account to log in to an
+      affected system. A successful exploit could allow the attacker to log
+      in to the affected system and access sensitive data as the
+      low-privileged user." The advisory explicitly notes: "If the FMC
+      management interface does not have public internet access, the attack
+      surface that is associated with this vulnerability is reduced."
+
+    ioc_detection_note: >
+      NEW detail beyond S1's original capture — the advisory carries an
+      "Indicators of Compromise" section with a concrete forensic check: run
+      `cat /var/log/messages | grep license` in expert mode on the FMC
+      device; if the resulting log line references `/var/tmp/license.tmp`
+      (example shown: a sudo-invoked `package_info.pl /var/tmp/license.tmp
+      --lsm` command from the `www` user), this vulnerability may have been
+      exploited. Cisco's own guidance: "If exploitation is suspected, contact
+      the Cisco Technical Assistance Center (TAC) for assistance with
+      recovery options. At a minimum, Cisco recommends that customers rotate
+      all user credentials, keys, and certificates on the Cisco Secure FMC
+      device because active exploitation of this vulnerability has been
+      ongoing." This is a log-grep/artifact check, not an IOC (no hash/IP/
+      domain), and is safe to surface as a defender-facing detection concept.
+
+    per_train_hotfixes: >
+      Confirmed exact hotfix filenames per release train from the advisory's
+      Fixed Software table: 7.0 → Cisco_Firepower_Mgmt_Center_Hotfix_GB-7.0.9.1-3.sh.REL.tar;
+      7.2 → Cisco_Secure_FW_Mgmt_Center_Hotfix_HL-7.2.11.1-4.sh.REL.tar;
+      7.4 → Cisco_Secure_FW_Mgmt_Center_Hotfix_HG-7.4.7.1-3.sh.REL.tar;
+      7.6 → Cisco_Secure_FW_Mgmt_Center_Hotfix_CY-7.6.5.1-2.sh.REL.tar;
+      7.7 → Cisco_Secure_FW_Mgmt_Center_Hotfix_AM-7.7.12.1-2.sh.REL.tar;
+      10.0 → Cisco_Secure_FW_Mgmt_Center_Hotfix_P-10.0.1.1-2.sh.REL.tar.
+      "There are no workarounds that address this vulnerability" (confirmed
+      verbatim in the Workarounds section).
+
+    not_affected_products: "Cloud-Delivered FMC (cdFMC); Firewall Device Manager (FDM); Secure Firewall Adaptive Security Appliance (ASA) Software; Secure Firewall Threat Defense (FTD) Software; Security Cloud Control (SCC), formerly Defense Orchestrator — all confirmed NOT vulnerable per the advisory's 'Products Confirmed Not Vulnerable' section."
+
+    reporting_credit: "Jimi Sebree of Horizon3.ai"
+
+    region_nexus: "global; FMC manages Cisco firewall estates common in EU/CH government and CI perimeter defenses"
+    primary_sector_nexus: "direct — perimeter/firewall management infrastructure across public-sector and CI networks"
+    sector: "public-sector, energy, telco, finance"
+
+    cves:
+      - id: CVE-2026-20316
+        cvss: "5.3 MEDIUM (CVSSv3.1) base score, but SIR (Security Impact Rating) elevated to High by Cisco due to privilege-escalation chaining potential"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        type: "Use of hard-coded/static password for a low-privileged account in the FMC web interface (CWE-259)"
+        auth: "Unauthenticated remote attacker (uses the vendor-embedded static account, not the attacker's own credentials — no prior access or foothold required beyond network reachability to the FMC web interface)"
+        status: "CONFIRMED active exploitation ('active exploitation of this vulnerability has been ongoing' — Cisco PSIRT). CISA KEV-listed 2026-07-29, due 2026-08-01."
+        affected: "Cisco Secure FMC Software releases 7.0, 7.2, 7.4, 7.6, 7.7, and 10.0, regardless of device configuration"
+        fixed: "Per-release-train hotfix (no version-number upgrade path stated as sole fix — hotfixes listed above); no workaround exists"
+
+    affected_products: ["Cisco Secure Firewall Management Center (FMC)"]
+    techniques: ["T1078.001", "T1190"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+    evidence:
+      - quote: "In July 2026, the Cisco PSIRT became aware of active exploitation of this vulnerability. Cisco strongly recommends that customers upgrade to a fixed software release to remediate this vulnerability."
+        attribution: "Cisco PSIRT (cisco-sa-fmc-static-cred-BET3Cjh, Exploitation and Public Announcements section)"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "This vulnerability is due to the presence of static user credentials for a low-privileged account. An attacker could exploit this vulnerability by using the account to log in to an affected system."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "Cisco has assigned this security advisory a Security Impact Rating (SIR) of High rather than Medium as the score indicates. The reason is that this vulnerability can be used with other Cisco Secure FMC Software vulnerabilities to elevate privileges."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "If exploitation is suspected, contact the Cisco Technical Assistance Center (TAC) for assistance with recovery options. At a minimum, Cisco recommends that customers rotate all user credentials, keys, and certificates on the Cisco Secure FMC device because active exploitation of this vulnerability has been ongoing."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "Cisco Secure Firewall Management Center (FMC) contains a use of hard-coded password vulnerability that could allow an unauthenticated, remote attacker to log in to an affected device using a low-privileged account to access sensitive data within the impacted systems."
+        attribution: "CISA (Known Exploited Vulnerabilities Catalog)"
+        source_url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+
+    extended_notes: |
+      The IoC/forensic-check detail (log-grep for /var/tmp/license.tmp) is new
+      relative to S1's original capture and should be surfaced in the
+      published entry's Triage/Detection guidance — it is Cisco's own stated
+      forensic indicator, not an operational attack detail, and contains no
+      hash/IP/domain.
+
+  # ==========================================================================
+  # ITEM 4 — RufRoot CVE-2026-59726 (Ruflo / formerly Claude Flow)
+  # origin: findings.S3.yaml item 3
+  # ==========================================================================
+  - key: rufroot-cve-2026-59726
+    title: "RufRoot (CVE-2026-59726, CVSS 10): unauthenticated MCP-bridge RCE in the Ruflo AI-agent-swarm host lets an attacker plant memory that outlives the patch"
+    origin: "findings.S3.yaml item 3"
+    sources:
+      - { url: "https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/", publisher: "Noma Security (Noma Labs, author Eli Ainhorn)", date: "2026-07-29", role: "primary" }
+      - { url: "https://github.com/ruvnet/ruflo/security/advisories/GHSA-c4hm-4h84-2cf3", publisher: "Ruflo maintainer (ruvnet) GHSA advisory", date: "2026-07-01 (published; per GitHub advisory page)", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59726", publisher: "NVD", date: "2026-07-30 (fetched; NVD published date 07/09/2026, last modified 07/10/2026)", role: "corroborating" }
+
+    endpoint_and_request_shape: >
+      Ruflo's MCP Bridge is an Express.js server exposing 233 tools over the
+      Model Context Protocol JSON-RPC interface via a POST /mcp endpoint (and
+      per NVD, also POST /mcp/:group). The bridge "accepts tool invocations
+      and passes them directly to executeTool() with no authentication
+      layer" (Noma). Among the 233 exposed tools, `ruflo__terminal_execute`
+      runs arbitrary shell commands inside the container as the node user
+      (UID 1000). A command-blocklist (AUTOPILOT_BLOCKED_PATTERNS) exists but
+      "is enforced only in the autopilot flow" — the /mcp and /mcp/:group
+      endpoints bypass it completely (confirmed on both Noma's blog and the
+      GHSA advisory). No exploit payload or request body is reproduced here
+      per the no-operational-attack-detail rule; the request SHAPE is: a
+      single unauthenticated JSON-RPC "tools/call" method invocation against
+      the exposed port (default 3001), naming `ruflo__terminal_execute` as
+      the tool. Noma states this single request was sufficient for full
+      command execution with "no token, no API key, no header check, no IP
+      allowlist."
+
+    default_network_exposure: >
+      Ruflo is commonly self-hosted via `docker compose up -d`. Per Noma:
+      "the docker-compose.yml binds port 3001 to 0.0.0.0 by default, exposing
+      the bridge on all network interfaces. The extent of exposure depends on
+      the deployment's firewall rules, security groups, and network
+      segmentation, but any network-reachable instance is fully exploitable
+      without authentication." MongoDB is also exposed on the internal Docker
+      network (port 27017) without authentication by default in the
+      pre-patch configuration.
+
+    what_attacker_can_read: >
+      Per Noma's 8-step demonstrated PoC (confirmed live against a default
+      Ruflo deployment on AWS EC2, OAST-callback-verified): full shell access
+      as the node user; ALL AI-provider API keys (OpenAI, Anthropic, Google,
+      OpenRouter, etc.) — the docker-compose passes these as environment
+      variables and backend processes inherit the full environment, so a
+      single `printenv` dumps every key; every stored user conversation
+      (message content, titles, metadata) via the unauthenticated internal
+      MongoDB instance; and the ability to spawn attacker-controlled agent
+      swarms using the victim's own API keys and compute.
+
+    memory_tampering_persistence: >
+      The GHSA advisory's own remediation guidance states explicitly:
+      "Audit the AgentDB pattern store for injected agentdb_pattern-store
+      entries; purge poisoned patterns. A patched redeploy alone does NOT
+      undo poisoning." Noma's demonstrated mechanism: inject malicious
+      patterns into the AgentDB learning-store pipeline via the
+      `ruflo__agentdb_pattern-store` tool — e.g. a fake SOC2-compliance
+      policy instructing the AI to include an attacker-controlled URL in all
+      future generated deployment scripts. Because this poisoned pattern
+      persists in the AgentDB data store (not the application code), applying
+      the authentication-bypass fix does not remove it — "future
+      conversations produce attacker-influenced output, and the user has no
+      way to tell." Noma additionally demonstrated a code-level persistence
+      mechanism: writing a beacon script to /app/beacon.js that phones home
+      with API keys on a schedule, requiring `require('./beacon.js')` into
+      index.js so it loads on startup, relying on Docker's
+      `restart: unless-stopped` policy to bring the backdoored container back
+      up after killing PID 1.
+
+    disclosure_timeline: >
+      Per the GHSA advisory, published by the Ruflo maintainer (ruvnet) on
+      2026-07-01. Per Noma's blog (2026-07-29): "Noma Labs disclosed
+      responsibly, and within a few hours, Ruflo had a full fix merged (PR
+      #2521), a public security advisory published (GHSA-c4hm-4h84-2cf3), and
+      it was scored CVSS 10/10." NVD's own record shows CVE-2026-59726
+      published 07/09/2026, last modified 07/10/2026 — i.e. the CVE
+      assignment and NVD publication happened roughly a week after the GHSA
+      advisory, and the public Noma write-up followed nearly a month later
+      (2026-07-29).
+
+    fixed_version_and_config: >
+      Fixed in ruflo 3.16.3 (affected: 0.2.1 up to and including... NVD states
+      "Prior to 3.16.3" — i.e. all versions before 3.16.3). Per the GHSA
+      advisory, the fix (branch security/adr-166-mcp-bridge-rce, PR #2521,
+      "ADR-166 Phase 1-3") includes: MCP bridge binds to loopback (127.0.0.1)
+      by default and fails closed if a public bind is attempted without
+      explicitly setting MCP_AUTH_TOKEN; bearer-token auth middleware using a
+      constant-time (timingSafeEqual) comparison; `terminal_execute` gated
+      behind an explicit MCP_ENABLE_TERMINAL=true opt-in (off by default);
+      MongoDB requires authentication on boot (MONGO_INITDB_ROOT_PASSWORD
+      required); container runs read-only with tmpfs; CORS allowlist
+      replacing a wildcard; and CI regression tests to prevent these secure
+      defaults from regressing.
+
+    noma_remediation_guidance_verbatim: "Operators of any exposed instance MUST: 1. Firewall :3001 and :27017 immediately 2. Rotate OPENAI / GOOGLE / OPENROUTER / ANTHROPIC keys 3. Audit the AgentDB pattern store for injected agentdb_pattern-store entries; purge poisoned patterns. A patched redeploy alone does NOT undo poisoning. 4. Audit MongoDB for tampering"
+
+    nvd_status: "CVE-2026-59726 IS published on NVD (confirmed this pass — description: 'Ruflo is an agent meta-harness for Claude Code and Codex. Prior to 3.16.3, ruflo's default docker-compose deployment exposed the MCP bridge POST /mcp and POST /mcp/:group endpoints without authentication, allowing an unauthenticated network attacker to invoke tools/call to terminal_execute, obtain a shell in the bridge container, read provider API keys, and poison AgentDB learning-store patterns. This issue is fixed in version 3.16.3.' CVSS 3.1: 10.0 CRITICAL, vector AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H. NVD published 07/09/2026, last modified 07/10/2026.)"
+
+    region_nexus: "global; any organization running self-hosted Ruflo/Claude-Flow AI-agent-swarm infrastructure is affected regardless of region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, energy, telco, healthcare"
+
+    cves:
+      - id: CVE-2026-59726
+        cvss: "10.0 CRITICAL (CVSSv3.1, NVD)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H"
+        type: "Missing authentication on MCP JSON-RPC bridge endpoints (POST /mcp, POST /mcp/:group), enabling unauthenticated remote command execution via the terminal_execute tool, credential theft, and persistent AI-memory poisoning"
+        auth: "Unauthenticated — zero prerequisites beyond network reachability to the default-exposed port (3001)"
+        status: "No in-the-wild exploitation reported — responsibly disclosed research finding; working PoC built and demonstrated by Noma Labs but not publicly released"
+        affected: "ruflo (npm package) versions 0.2.1 up to and including 1.0.0 per HashiCorp-style versioning stated in original S3 record — CORRECTION: NVD's own affected range is 'prior to 3.16.3' (i.e. all pre-3.16.3 releases), which supersedes any earlier version-range statement; GHSA states affected versions as '< 3.16.3'"
+        fixed: "3.16.3 (also requires explicit MCP_AUTH_TOKEN opt-in for any public bind, and MCP_ENABLE_TERMINAL=true opt-in for terminal_execute specifically — patching alone restores secure-by-default configuration but does NOT remediate any pre-existing AgentDB memory poisoning, which requires separate manual audit/purge)"
+
+    affected_products: ["Ruflo (formerly Claude Flow)"]
+    techniques: ["T1190", "T1059.004", "T1552.001", "T1565.001"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+    evidence:
+      - quote: "Noma Labs found a critical (10 CVSS) vulnerability in Ruflo, an open source AI agent orchestration platform with more than 67,000 GitHub stars at the time of this writing and ranked #2 on MCPMarket. Ruflo ships with a chat UI, agent swarms, persistent memory, and MCP-based tool calling. The platform's MCP Bridge, the Express.js server that handles all tool invocations, exposes 233 tools over HTTP with zero authentication."
+        attribution: "Noma Security / Noma Labs"
+        source_url: "https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/"
+      - quote: "A single unauthenticated HTTP POST request to port 3001 gave full command execution inside the container. No token, no API key, no header check, no IP allowlist. Nothing."
+        attribution: "Noma Security / Noma Labs"
+        source_url: "https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/"
+      - quote: "The docker-compose.yml binds port 3001 to 0.0.0.0 by default, exposing the bridge on all network interfaces."
+        attribution: "Noma Security / Noma Labs"
+        source_url: "https://noma.security/blog/rufroot-the-mcp-bridge-vulnerability-that-turns-agents-into-rogue-admins-cve-2026-59726/"
+      - quote: "Audit the AgentDB pattern store for injected agentdb_pattern-store entries; purge poisoned patterns. A patched redeploy alone does NOT undo poisoning."
+        attribution: "Ruflo maintainer (ruvnet), GHSA-c4hm-4h84-2cf3"
+        source_url: "https://github.com/ruvnet/ruflo/security/advisories/GHSA-c4hm-4h84-2cf3"
+      - quote: "Ruflo is an agent meta-harness for Claude Code and Codex. Prior to 3.16.3, ruflo's default docker-compose deployment exposed the MCP bridge POST /mcp and POST /mcp/:group endpoints without authentication, allowing an unauthenticated network attacker to invoke tools/call to terminal_execute, obtain a shell in the bridge container, read provider API keys, and poison AgentDB learning-store patterns. This issue is fixed in version 3.16.3."
+        attribution: "NVD (CVE-2026-59726 description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59726"
+
+    extended_notes: |
+      Techniques correction/addition to S3's original mapping: added T1059.004
+      (Unix Shell — terminal_execute runs arbitrary shell commands as the
+      container's node user) as the direct RCE-impact technique alongside
+      T1190 (Exploit Public-Facing Application, for the unauthenticated MCP
+      endpoint itself). Retained T1552.001 (Credentials In Files) for the
+      environment-variable API-key exposure and T1565.001 (Stored Data
+      Manipulation) for the AgentDB memory-poisoning persistence mechanism.
+
+  # ==========================================================================
+  # ITEM 5 — HashiCorp Terraform MCP Server HCSEC-2026-23
+  # origin: findings.S1.yaml item 4
+  # ==========================================================================
+  - key: hashicorp-hcsec-2026-23
+    title: "HashiCorp Terraform MCP Server HCSEC-2026-23: SSRF-driven bearer-token exfiltration and cross-session/cross-tenant credential reuse across three CVEs"
+    origin: "findings.S1.yaml item 4"
+    sources:
+      - { url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606", publisher: "HashiCorp Security Bulletin (HCSEC-2026-23, posted by james.warren)", date: "2026-07-28T17:50:43Z", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-14869", publisher: "NVD", date: "2026-07-30 (fetched)", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-16496", publisher: "NVD", date: "2026-07-30 (fetched)", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-16498", publisher: "NVD", date: "2026-07-30 (fetched)", role: "corroborating" }
+
+    bulletin_metadata: >
+      Bulletin ID HCSEC-2026-23. Affected Products/Versions (HashiCorp's own
+      statement): terraform-mcp-server 0.2.1 up to and including 1.0.0; fixed
+      in 1.1.0. Publication Date: July 28, 2026. NOTE: the HashiCorp bulletin
+      text itself does NOT publish CVSS scores for any of the three CVEs —
+      CVSS confirmed below is sourced from each CVE's own NVD record, per the
+      task's instruction to use the record that owns each CVSS, never a
+      roundup.
+
+      Background (verbatim structure, paraphrased for length): the
+      streamable-HTTP transport mode supports centralized, multi-user
+      deployments where each user supplies their own Terraform Cloud/
+      Enterprise token per request for RBAC enforcement; the server can run
+      statelessly (each request handled independently) or statefully
+      (maintaining a per-session Terraform API client cache); the server also
+      authenticates to the configured Terraform endpoint using its OWN
+      server-side bearer token.
+
+    stateful_vs_stateless: >
+      CVE-2026-16496 (session-cache authorization bypass) affects ONLY
+      deployments in stateful streamable-HTTP mode — confirmed by HashiCorp:
+      "This issue affected only deployments using stateful streamable-HTTP
+      mode, which is the default when running the server centrally; stdio
+      mode and stateless HTTP mode were not affected." CVE-2026-16498
+      (cross-tenant credential reuse) affects ONLY deployments EXPLICITLY
+      configured for stateless HTTP mode — confirmed: "This issue affected
+      only deployments explicitly configured to use stateless HTTP mode;
+      deployments using the default stateful HTTP mode or stdio mode were not
+      affected." CVE-2026-14869 (SSRF/bearer-token exfiltration) affects the
+      streamable-HTTP transport regardless of stateful/stateless
+      configuration, but NOT stdio-only deployments.
+
+    mitigation_verbatim: "Customers should evaluate the risk associated with these issues and consider upgrading to terraform-mcp-server 1.1.0. Operators who cannot upgrade immediately should restrict network access to the streamable-HTTP listener to trusted users only and treat MCP session IDs as sensitive values."
+
+    reporting_credits: "CVE-2026-16496 was reported to HashiCorp by Juan Pablo Martinez Kuhn of Coinspect. CVE-2026-14869 and CVE-2026-16498 were identified by an internal HashiCorp team."
+
+    region_nexus: "global; MCP-server deployments are emerging AI-agentic infrastructure now entering EU/CH public-sector and enterprise IaC pipelines"
+    primary_sector_nexus: "indirect — DevOps/IaC tooling supporting public-sector and CI cloud infrastructure automation"
+    sector: "public-sector, telco, finance"
+
+    cves:
+      - id: CVE-2026-14869
+        cvss: "8.6 HIGH (CVSSv3.1, NVD — the record that owns this CVE, not a roundup)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:N"
+        type: "Server-side request forgery (SSRF) — the middleware validated a client-supplied Terraform address only when passed as an HTTP header, not when passed as a query parameter, letting the attacker redirect the server's own bearer token to an attacker-controlled endpoint"
+        auth: "Unauthenticated remote client — 'exploitation required only the ability to send an HTTP request to the streamable-HTTP listener, with no authentication required' (HashiCorp)"
+        status: "Not observed exploited in the wild"
+        affected: "terraform-mcp-server 0.2.1 up to and including 1.0.0, in streamable-HTTP transport mode (stdio-only deployments not affected)"
+        fixed: "1.1.0"
+      - id: CVE-2026-16496
+        cvss: "8.9 HIGH (CVSSv3.1, NVD)"
+        vector: "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:H/I:H/A:L"
+        type: "Authorization bypass via session-ID-keyed credential cache with no token binding, in stateful streamable-HTTP mode"
+        auth: "Requires the attacker to obtain another user's MCP session ID (no further authentication needed once the session ID is known)"
+        status: "Not observed exploited in the wild; reported by Juan Pablo Martinez Kuhn of Coinspect"
+        affected: "terraform-mcp-server 0.2.1 up to and including 1.0.0, running in stateful streamable-HTTP mode (the DEFAULT mode when running the server centrally); stdio mode and stateless HTTP mode not affected"
+        fixed: "1.1.0"
+      - id: CVE-2026-16498
+        cvss: "10.0 CRITICAL (CVSSv3.1, NVD)"
+        vector: "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:L"
+        type: "Cross-tenant credential reuse — the underlying MCP library assigns no unique session identifiers in stateless HTTP mode, so the per-session Terraform client cache cannot isolate credentials across tenants, causing one tenant's credentials to be silently reused for subsequent requests from other tenants"
+        auth: "Unauthenticated attacker-side action not strictly required — this is a server-side isolation failure that manifests between legitimate concurrent tenants sharing the same stateless-mode server instance"
+        status: "Not observed exploited in the wild; identified by HashiCorp's internal team"
+        affected: "terraform-mcp-server 0.2.1 up to and including 1.0.0, running EXPLICITLY in stateless HTTP mode (default stateful HTTP mode and stdio mode not affected)"
+        fixed: "1.1.0"
+
+    affected_products: ["HashiCorp Terraform MCP Server"]
+    techniques: ["T1190", "T1550.001"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+
+    evidence:
+      - quote: "The terraform-mcp-server before version 1.1.0 is vulnerable to three related issues in its streamable-HTTP transport: a server-side request forgery issue that may allow an unauthenticated client to redirect the server's bearer token to an attacker-controlled endpoint (CVE-2026-14869), an authorization bypass in stateful mode that may allow an authenticated user to access another user's cached Terraform credentials (CVE-2026-16496), and a cross-tenant credential reuse issue in stateless mode that may allow one user's Terraform token to be used for subsequent users' requests (CVE-2026-16498)."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+      - quote: "The middleware that processed incoming HTTP requests rejected a client-supplied Terraform address when it was provided as an HTTP header, but did not apply the same check when the same value was supplied as an HTTP query parameter."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23, CVE-2026-14869 detail)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+      - quote: "This issue affected only deployments using stateful streamable-HTTP mode, which is the default when running the server centrally; stdio mode and stateless HTTP mode were not affected."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23, CVE-2026-16496 detail)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+      - quote: "Operators who cannot upgrade immediately should restrict network access to the streamable-HTTP listener to trusted users only and treat MCP session IDs as sensitive values."
+        attribution: "HashiCorp Security Bulletin (HCSEC-2026-23, Remediation)"
+        source_url: "https://discuss.hashicorp.com/t/hcsec-2026-23-multiple-vulnerabilities-impacting-hashicorp-terraform-mcp-server/77606"
+
+    extended_notes: |
+      CVSS scores confirmed directly from each CVE's own NVD record (per
+      task instruction, never from a roundup): CVE-2026-14869 = 8.6,
+      CVE-2026-16496 = 8.9, CVE-2026-16498 = 10.0 — all three match S1's
+      original cve_table values exactly, now with full CVSS vectors attached.
+
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps: []

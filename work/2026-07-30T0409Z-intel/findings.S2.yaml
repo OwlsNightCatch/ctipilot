@@ -1,0 +1,108 @@
+domain: S2
+run_id: 2026-07-30T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-07-30T04:11:33Z
+ended_at: 2026-07-30T04:18:57Z
+duration_seconds: 444
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 12
+  bridge_fetches: 11
+items: []
+# No items cleared the S2 inclusion gate this run. Full slice + targeted
+# discovery sweep performed; every candidate found was either (a) outside
+# the 26h recency window, (b) already covered per prior_coverage.json /
+# the spawn message's "already covered this month" list with no material
+# delta, or (c) too generic/awareness-only to carry the technical
+# specificity this pipeline requires (NCSC-CH "Woche" consumer-fraud
+# series). See extended notes below.
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "sector-lens duty carries no dedicated sweep (no product/supplier watchlists configured this deployment); triage weighting toward public-sector/CH-home-region was applied throughout but produced no in-window qualifying item."
+candidate_sources: []
+coverage_gaps:
+  - source_id: prodaft
+    reason: "bridge url https://www.prodaft.com/reports returned HTTP 200 but the body is a pure client-hydrated Next.js shell with zero server-rendered content and no embedded JSON island carrying report titles/slugs/dates — could not auto-extract a dated report without already knowing a /blog/<slug>. Consistent with the source's own 2026-06-20 audit note ('SPA index needs a known /blog/<slug> to drill'). Not logged as fetch_failures since the fetch itself succeeded (200); this is a recipe limitation, not a transport failure."
+  - source_id: edpb
+    reason: "bridge url https://www.edpb.europa.eu/news/news_en returned a full dated article listing (recipe works); latest items (EDPB calls for legal basis for cross-regulatory info sharing, 20 Jul; coordinated supervision committee EURODAC scope, undated-appears-recent) are outside the 26h window. National-DPA fine items surfaced in the same listing (e.g. Italian SA / Poste Vita data-breach fine) are all dated weeks-to-months old (checked: Poste Vita fine dated 2026-06-04). No in-window item."
+  - source_id: ico-uk
+    reason: "bridge url https://ico.org.uk/action-weve-taken/enforcement/ returned a server-rendered page shell but the actual enforcement-action list sits behind a JS-hydrated block grid with no plain href pattern the bridge's raw body exposes (no dated /enforcement/action/<slug> links surfaced in the fetched body). Recipe gap, not a transport failure (HTTP 200)."
+extended_notes: |
+  Full-slice sweep for S2 (home region + sector, window_hours=26): all 4 essential
+  records (cert-at, enisa, ncsc-ch-focus, ncsc-ch-incidents) plus 10 of 13
+  rotational records were fetched this run (inside-it-ch, ncc-research, prodaft,
+  sekoia, us-treasury-ofac not fetched for OFAC specifically — deprioritized as
+  low home-region yield this run given time budget after the rest of the slice
+  produced no in-window signal — sekoia, cisa-news partially, edpb, cnil-fr,
+  compass-security, govcert-at, ico-uk all fetched).
+
+  Findings, by source:
+  - NCSC-CH "Im Fokus" (im-fokus.html): newest post is "Woche 30" (28.07.2026),
+    a consumer-fraud-awareness piece on AI-generated deepfake investment scams —
+    outside the 26h window and, even if inside it, lacks the technical
+    specificity (no CVE, no named actor/malware, no affected product) this
+    pipeline's audience requires; it is one of a recurring weekly consumer-fraud
+    series, not an operational-threat advisory.
+  - NCSC-CH "Aktuelle Vorfälle" (consumer-fraud incident accordion): raw bridge
+    body confirmed via grep of every dated <small class="time"> entry — newest
+    is 01.07.2026 13:22 (SwissNovaChat/SwissNovaCare fake-subscription warning,
+    already stale from a prior run's window). No new entry since.
+  - CERT.at (/en/news/ blog + warnings RSS): blog cadence sparse, newest post
+    01.06.2026 (LLM security opinion piece). Warnings RSS newest is the
+    WordPress WP2Shell advisory (20.07.2026, CVE-2026-60137/CVE-2026-63030) —
+    already published as an entry on 2026-07-18 (audit-recovered), no new
+    warning since.
+  - ENISA news listing: newest is the EUMSS certification consultation
+    (24.07.2026) — already covered per the spawn message's "already covered
+    this month" list (ENISA EUMSS + Health Action Plan). No fresh item.
+  - Inside-IT.ch (RSS, rotation-priority — recovered from last run's 403):
+    reachable this run (HTTP 200 direct GET); newest items (29.07.2026) are
+    all general Swiss IT/business news (Gartner spend forecast, Winterthur
+    cemetery-software tender, SBB/Siemens rail-signalling contract, UBS/CS
+    migration, Comitas M&A) — grepped explicitly for
+    cyber/hack/breach/ransomware/Sicherheit/Datenschutz/Vorfall keywords across
+    the full feed body: zero hits in the in-window items.
+  - Netzwoche and SwissCybersecurity.net: both quiet — Netzwoche's last ~15
+    posts are interview/feature content (FinOps, open-source dependency
+    reduction, fintech licensing) with no incident/breach/vulnerability
+    disclosure; SwissCybersecurity.net's newest post (29.07.2026, "satellite
+    cyberattacks") is a generic explainer/background piece with no named
+    incident, actor, or technical mechanism — attempted to drill the full
+    article (404 on the guessed slug) and did not chase further given its
+    background-explainer framing.
+  - Compass Security blog: newest post 21.07.2026 (n8n automation-platform
+    privilege risk) — outside window, no fresh post.
+  - CNIL / EDPB: both quiet in-window; EDPB's listed national-DPA fine items
+    (Italian SA actions) all dated weeks-to-months old on inspection.
+  - GovCERT Austria / CERT.at warnings RSS: no new advisory since 20.07.2026.
+  - Sekoia.io (now redirects to sekoia.com/blog): newest post 23.07.2026
+    (self-hosted SOC platform sovereignty piece) — outside window.
+  - NCC Group research blog: SPA/listing did surface research-post slugs via
+    href pattern (Mamont Android dropper, AI-coding-agent security, BLS
+    signature review, Cobalt Strike beacon research) but none carry an
+    in-window publication date recoverable from the fetched body, and none
+    have a Swiss/European home-region or public-sector/CI nexus — these read
+    as general vendor research more properly S3's lane; not pursued further
+    under S2's mission.
+  - Targeted WebSearch discovery (German/French/Italian queries for Swiss
+    cantonal/federal incidents, European public-sector/healthcare/energy
+    incidents dated to 29–30 July 2026): surfaced only already-covered stories
+    (BravoX Vaud fiduciary/Westschweizer Behördendaten leak — 23.07.2026;
+    Stadler Rail/Everest — mid-July, already covered and re-confirmed no
+    material update since the 2026-07-22 entry; ANCPI Romania — confirmed no
+    material development since the 2026-07-19/2026-07-20 GovCloud-migration
+    update, which itself predates this run's prior-coverage window entry) or
+    stale/mis-dated hits (a Radio Lac "administration fédérale piratée"
+    article that search surfaced as fresh but which dates to January 2025 —
+    a recycled-news trap flagged and dropped per the recency discipline; a
+    European Commission cloud-breach/ShinyHunters SecurityWeek article that
+    dates to March 2026, also dropped).
+
+  Net assessment: this is a genuinely quiet 26h window for the Swiss/European
+  home-region and sector-targeting lens specifically. No item is being
+  withheld for space — every candidate traced above either fails the
+  recency gate or the prior-coverage dedup gate on inspection.
