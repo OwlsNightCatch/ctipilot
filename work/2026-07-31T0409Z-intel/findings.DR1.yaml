@@ -1,0 +1,428 @@
+domain: DR1
+run_id: "2026-07-31T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-31T04:32:18Z"
+ended_at: "2026-07-31T04:44:29Z"
+duration_seconds: 731
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 0
+  bridge_fetches: 27
+
+items:
+
+  # ============================================================
+  # ITEM 1 — CVE-2026-42897 Exchange OWA XSS / TA488 "OWAReaper" (DEEP DIVE)
+  # ============================================================
+  - title: "TA488/LAUNDRY BEAR weaponised the Exchange OWA XSS (CVE-2026-42897) as a zero-day, delivering a browser-resident implant (OWAReaper)"
+    deep_read: true
+    sources:
+      - { url: "https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit", publisher: "Proofpoint", date: "2026-07-29", role: primary }
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12577", publisher: "NCSC Switzerland (Cyber Security Hub, post 12577)", date: "2026-07-30", role: primary }
+      - { url: "https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498", publisher: "Microsoft Exchange Team Blog", date: "2026-05-14", role: primary }
+      - { url: "https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146", publisher: "Microsoft Exchange Team Blog", date: "2026-07-14", role: primary }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897", publisher: "Microsoft Security Response Center (MSRC)", date: "2026-07-14", role: primary }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA Known Exploited Vulnerabilities Catalog", date: "2026-05-15", role: corroborating }
+    discovery_trace: "DR1 scoped re-read of S1 item (findings.S1.yaml). first seen at: work/2026-07-31T0409Z-intel/findings.S1.yaml → re-fetched in full: Proofpoint (bridge `url`, full body, first attempt truncated at 37KB by output cap, second attempt captured full 129KB page), URL https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit → re-fetched: NCSC-CH CSH via `python3 tools/fetch_source.py ncsc-csh recent 20`, URL https://security-hub.ncsc.admin.ch/#/posts/12577 → re-fetched: Microsoft Exchange Team Blog (May post; techcommunity.microsoft.com serves gzip-compressed bodies even with Accept-Encoding: identity, corrupting the bridge's text-mode stdout — recovered via the jina reader), URL https://techcommunity.microsoft.com/blog/exchange/addressing-exchange-server-may-2026-vulnerability-cve-2026-42897/4518498 → re-fetched: Microsoft Exchange Team Blog (July SU post, jina reader), URL https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146 → cross-checked: MSRC vulnerability record via `python3 tools/fetch_source.py msrc cve CVE-2026-42897`, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897 → cross-checked: CISA KEV catalog via `python3 tools/fetch_source.py cisa-kev`, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    summary: |
+      DEEP-DIVE ENRICHMENT of the already-triaged S1 item. Full re-read confirms and substantially extends the
+      technical picture.
+
+      Injection mechanism (Proofpoint, verbatim mechanism): "The messages exploit CVE-2026-42897, a vulnerability
+      in Outlook Web Access in which the server does not adequately sanitize HTML in the message body. This
+      allows a loader piece of JavaScript to use the onload= event handler to parse the rest of the message body,
+      assemble a Base64 fragment, and execute it as encoded JavaScript." The initial exploit trigger and payload
+      blobs are embedded inside the social-media icon elements of the message-body HTML; the next-stage payload
+      data sits after `#` fragment markers that the browser's image-from-Base64 parser stops at, hiding it from
+      casual HTML inspection — a more subtle storage location than TA488's prior Zimbra targeting used.
+
+      OWAReaper execution flow (server-side, in the reading pane, on message open): (1) it uses Outlook APIs to
+      rewrite the email on the Exchange server and strip the exploit content, while disabling OWA pop-ups and
+      right-click; (2) it derives a per-target session key and enumerates the victim's email address, username
+      and Outlook settings; (3) it creates two invisible DOM input elements and waits for the browser's autofill
+      to populate them with the OWA-saved username/password (a technique it shares — including the same
+      -9999px/-9998px invisible-popup sizing and error-handling code — with the prior ZimReaper payload, of which
+      OWAReaper is Proofpoint's assessed evolution); (4) it enumerates installed Outlook add-ins with
+      ReadWriteMailbox permission and, where found, abuses them to call GetClientAccessToken to steal OAuth
+      tokens; (5) it calls UpdateFolder to grant itself Owner-level permission on every mail folder for the
+      "Default" low-permission preset alias present in every Exchange tenant — Proofpoint states this is
+      deliberate and durable: "This persistent access lives on the server-side and requires deliberate removal
+      from the Exchange server; credential rotation and even full re-imaging of the targeted user's device will
+      not evict the actor."
+
+      Persistence (client-side, two layers): OWAReaper writes an AES-encrypted copy of itself plus a decryption
+      wrapper into the browser's localStorage under the PageDataPayload.OwaUserDefaultSettings key — a legitimate
+      OWA settings key that OWA itself evaluates as OwaFrontendSyncState during its own sync-restore flow, so
+      every normal OWA tab-open re-triggers OWAReaper automatically with no separate loader needed. A second,
+      independent persistence layer adds a hidden iframe to messages cached in OWA's offline IndexedDB store
+      (owa_offline_db) with caching enabled, so opening the poisoned message from the offline cache re-infects
+      the endpoint even after a full device re-image.
+
+      Command and control (two channels): (1) a "dead-drop" channel — OWAReaper polls GitHub's public Commit
+      Search API every 24 hours for specially crafted commit messages containing the target's email address;
+      matches are AES-CTR decrypted with a hardcoded key plus a per-session key, yielding a 4-character command
+      header for one of three command types (`code` = full toolkit replacement, `domn` = C2 domain rotation,
+      `cmnd` = one-time arbitrary-code execution via eval()); (2) an email-borne channel — the implant parses
+      IndexedDB-cached inbound messages every 5 minutes (looking back 30 minutes) for the same
+      {target_email}{space}{Base64} structure and the same command handler. Two exfiltration protocols: primary
+      HTTPS with AES-CTR-encrypted URI paths proxied through legitimate public image-CDN services (falling back
+      to direct HTTP GET if the CDN proxy path fails); a DNS label-tunneling fallback (AES-CTR then Base32 over a
+      restricted alphanumeric alphabet, split into 2–4 subdomain labels) used if HTTPS exfiltration fails.
+
+      Zero-day timeline and targeting: Proofpoint's stated infrastructure-creation date for this campaign is
+      March 2026 — two months before Microsoft's May 14 disclosure — supporting the "feasible…zero-day" framing.
+      The 22 July 2026 campaign start (one day before Proofpoint's NSA-joint TA488/Void Blizzard release) targeted
+      government, telecommunications, finance, hospitality and aerospace entities across the US and Europe, using
+      deliberately banal lure subjects (supply-chain/tourism/energy/health "indicator update" themes) with no
+      call-to-action — Proofpoint frames the unusually broad volume/targeting breadth as likely deliberate blending
+      with mass-mailing spam.
+
+      MSRC record (queried directly): CVE-2026-42897 is CWE-79, CVSS 3.1 base score 8.1 with vector
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N/E:F/RL:O/RC:C — the E:F (Functional exploit code exists)
+      temporal component and Microsoft's own `"exploited": "Yes"` / `"latestSoftwareRelease": "Exploitation
+      Detected"` fields corroborate active-exploitation status independent of Proofpoint's reporting. Issuing CNA:
+      Microsoft. CISA KEV: dateAdded 2026-05-15, dueDate 2026-05-29 (confirmed directly from the KEV catalog JSON,
+      not a news paraphrase).
+
+      Patch trains (confirmed from the Exchange Team Blog's own structured "SUs are available for" list, July 14
+      2026 post): Exchange SE RTM (public download); Exchange Server 2019 CU14 and CU15 (Period 2 ESU program
+      only); Exchange Server 2016 CU23 (Period 2 ESU program only) — Period 1-only ESU customers do not receive
+      this update (that program ended April 2026). Removal of earlier mitigation artifacts is explicit and
+      NOT automatic: "Installing the July 2026 update does not automatically remove already applied
+      CVE-2026-42897 mitigations." Administrators must, post-SU: if EM Service was used, manually remove the
+      mitigation M2.1.0 IIS rules per the documented EEMS rollback procedure; if the downloadable EOMT script was
+      used, run its documented rollback. Known mitigation-era operational issues (OWA Print Calendar breakage,
+      inline-image rendering, OWA-light non-function, OWACalendar.Proxy health-set false-unhealthy alerts) are
+      only resolved once the SU is installed AND the mitigation is removed — servers kept on mitigation-only
+      status continue to carry those known issues indefinitely.
+
+      Adjacent context (not part of this CVE but disclosed in the same MSRC/July-SU cycle): MSRC's own FAQ update
+      for CVE-2026-42897 states "Microsoft recommends installing the July 2026 Security Updates for your version
+      of Exchange Server as soon as possible to be protected from this vulnerability and related CVE-2026-55008
+      vulnerability" — a second Exchange OWA spoofing/XSS CVE (CWE-79, CVSS 3.1 9.6, vector
+      CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H/E:U/RL:O/RC:C) fixed in the same July SU but NOT currently
+      flagged as exploited by Microsoft (`"exploited": "No"`, `"latestSoftwareRelease": "Exploitation More
+      Likely"`). Flagging for main-agent awareness only — out of this DR1's assigned scope, not independently
+      verified against a third source, and not proposed as a separate item.
+    region_nexus: "global; targeting spans US and Europe including government, finance and telecom — direct relevance to Swiss/EU public-sector Exchange on-prem estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, telco, finance"
+    cves: ["CVE-2026-42897"]
+    techniques: [T1566, T1203, T1098.002, T1185, T1552, T1102.001, T1071.004, T1027]
+    affected_products: ["Microsoft Exchange Server 2016", "Microsoft Exchange Server 2019", "Microsoft Exchange Server Subscription Edition"]
+    entity_keys: ["actor:laundry-bear", "tool:owareaper"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-05-18/cve-2026-42897-exchange-owa-em-service-auto-mitigation-depen"
+    evidence:
+      - quote: "The messages exploit CVE-2026-42897, a vulnerability in Outlook Web Access in which the server does not adequately sanitize HTML in the message body. This allows a loader piece of JavaScript to use the onload= event handler to parse the rest of the message body, assemble a Base64 fragment, and execute it as encoded JavaScript."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit"
+      - quote: "OWAReaper then writes an encrypted version of itself, and a decryption wrapper, into the browser's localStorage, under settings fields in the PageDataPayload.OwaUserDefaultSettings key. This is a legitimate key used by OWA in its page rendering, where OWA evaluates OwaFrontendSyncState itself as part of its own sync restore flow."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit"
+      - quote: "It then calls UpdateFolder to grant itself Owner-level permissions to the \"Default\" user...This persistent access lives on the server-side and requires deliberate removal from the Exchange server; credential rotation and even full re-imaging of the targeted user's device will not evict the actor."
+        attribution: "Proofpoint"
+        source_url: "https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit"
+      - quote: "Improper neutralization of input during web page generation ('cross-site scripting') in Microsoft Exchange Server allows an unauthorized attacker to perform spoofing over a network."
+        attribution: "Microsoft Security Response Center (MSRC vulnerability record, CVE-2026-42897)"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-42897"
+      - quote: "Installing the July 2026 update _does not_ automatically remove already applied CVE-2026-42897 mitigations."
+        attribution: "Microsoft Exchange Team Blog"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146"
+      - quote: "SUs are available for the following specific versions of Exchange Server: Exchange SE RTM...Exchange Server 2019 CU14 and CU15 (to access, organization must be enrolled into the Period 2 ESU program)...Exchange Server 2016 CU23 (to access, organization must be enrolled into the Period 2 ESU program)"
+        attribution: "Microsoft Exchange Team Blog"
+        source_url: "https://techcommunity.microsoft.com/blog/exchange/released-july-2026-exchange-server-security-updates/4534146"
+      - quote: "Proof point published a blog post detailing a campaign exploiting CVE-2026-42897"
+        attribution: "NCSC Switzerland (Cyber Security Hub)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12577"
+    corrections:
+      - "MSRC's own CVSS 3.1 vector for CVE-2026-42897 is CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:N/E:F/RL:O/RC:C — base 8.1, but with temporal component E:F (Functional exploit code exists), issued by CNA=Microsoft. S1's cve_table carried the base score only; the E:F temporal flag and the CNA identity are new, directly-sourced detail."
+      - "Expanded/corrected MITRE ATT&CK mapping. S1 mapped [T1566, T1203, T1098.002, T1114.002]. Verified against the pinned enterprise-attack.json (all active, non-deprecated, non-revoked): T1566 Phishing (crafted-email delivery) and T1203 Exploitation for Client Execution (browser-context JS execution via the stored-XSS) both hold. T1098.002 Additional Email Delegate Permissions correctly maps the UpdateFolder/'Default'-user folder-permission grant. T1114.002 Remote Email Collection is weakly supported — Proofpoint explicitly states 'Unlike ZimReaper, there is no mass exfiltration of emails' — recommend dropping or treating as low-confidence. Recommend ADDING, all directly evidenced in the fetched Proofpoint body: T1185 Browser Session Hijacking (implant runs entirely in-browser, in the OWA reading-pane DOM context); T1552 Unsecured Credentials (invisible-input DOM autofill harvesting of saved OWA credentials); T1102.001 Dead Drop Resolver (GitHub Commit Search API used as a C2 command channel); T1071.004 DNS (label-tunneling exfiltration fallback); T1027 Obfuscated Files or Information (AES-CTR + Base64/Base32 encoding of C2 traffic and payload data)."
+      - "New adjacent-context detail not in the S1 record: MSRC's CVE-2026-42897 FAQ (updated 2026-07-14) explicitly cross-references a second, related Exchange OWA CVE fixed in the same July SU — CVE-2026-55008 (CWE-79, CVSS 3.1 9.6, vector CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H/E:U/RL:O/RC:C, exploited: No per Microsoft). Surfaced for main-agent awareness only; not independently corroborated by a second source and out of this DR1's assigned scope, so not proposed as its own item."
+      - "Precise mitigation-removal mechanics not in the S1 summary: EM-Service-applied mitigations require removing 'mitigation M2.1.0 IIS rules' per the documented rollback procedure; EOMT-script-applied mitigations require running the documented EOMT rollback command. Known operational issues under mitigation (OWA Print Calendar, inline images, OWA-light, OWACalendar.Proxy health-set alerts) persist until BOTH the SU is installed AND the mitigation is explicitly removed."
+    extended_notes: |
+      This is a companion campaign to the already-tracked LAUNDRY BEAR Zimbra zero-click wave (Ulej/Flowerbed,
+      CVE-2025-66376, covered 2026-07-24) — same actor, same email-espionage tradecraft class, different
+      webmail platform and different implant family (OWAReaper vs. ZimReaper/Ulej), with Proofpoint explicitly
+      stating OWAReaper shares code/behavioral overlap with ZimReaper (autofill-harvesting DOM technique,
+      error-handling style). Detection-engineering angle worth surfacing in the entry body: defenders should hunt
+      for (a) unexpected UpdateFolder calls granting Owner permission to the "Default" alias across mail folders
+      (an anomalous EWS/Graph audit-log signature — legitimate admin folder-permission changes are rare and
+      scoped, not blanket Owner grants to a low-privilege preset alias); (b) OWA client-side telemetry/DLP for
+      writes to the PageDataPayload.OwaUserDefaultSettings localStorage key outside normal OWA sync operations;
+      (c) outbound GitHub Commit Search API polling from an Exchange-adjacent client context (unusual egress
+      pattern for a mail client); (d) DNS query volume/entropy anomalies consistent with label-tunneling
+      exfiltration. Benign-lookalike caveat: OWA's own sync-restore flow legitimately reads/writes
+      OwaFrontendSyncState-adjacent keys constantly, so the discriminator is the *specific* settings-field key
+      path and payload structure, not the mere presence of localStorage writes.
+
+  # ============================================================
+  # ITEM 2 — CVE-2026-66066 Rails Active Storage / libvips "KindaRails2Shell"
+  # ============================================================
+  - title: "Rails Active Storage: unauthenticated arbitrary file read + RCE via libvips 'unfuzzed' image-loader operations (CVE-2026-66066)"
+    deep_read: true
+    sources:
+      - { url: "https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm", publisher: "GitHub Security Advisories (Rails CNA) — retrieved via OSV mirror", date: "2026-07-30", role: primary }
+      - { url: "https://discuss.rubyonrails.org/t/cve-2026-66066-possible-arbitrary-file-read-and-remote-code-execution-in-active-storage-variant-processing/91432", publisher: "Ruby on Rails security advisory (Rafael França, Rails core team)", date: "2026-07-29", role: primary }
+      - { url: "https://ethiack.com/info-hub/research/kindarails2shell-rails-rce-cve", publisher: "Ethiack (discovering researcher — André Baptista/0xacb)", date: "2026-07-29", role: primary }
+      - { url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails", publisher: "Rapid7", date: "2026-07-30", role: primary }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0948/", publisher: "CERT-FR / ANSSI", date: "2026-07-30", role: corroborating }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-66066", publisher: "NVD (CVE record owner: security-advisories@github.com)", date: "2026-07-30", role: primary }
+    discovery_trace: "DR1 scoped re-read of S1/S3 items (findings.S1.yaml, findings.S3.yaml). first seen at: work/2026-07-31T0409Z-intel/findings.S1.yaml and findings.S3.yaml → re-fetched structured record: OSV mirror of the GHSA (github.com egress-blocked, used `python3 tools/fetch_source.py osv vuln GHSA-xr9x-r78c-5hrm`), URL https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm → re-fetched full body: Rails Discourse advisory (bridge `url`), URL https://discuss.rubyonrails.org/t/cve-2026-66066-possible-arbitrary-file-read-and-remote-code-execution-in-active-storage-variant-processing/91432 → re-fetched full body: Ethiack (bridge `url`), URL https://ethiack.com/info-hub/research/kindarails2shell-rails-rce-cve → re-fetched full body: Rapid7 (bridge `url`), URL https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails → re-fetched: CERT-FR (bridge `url`), URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0948/ → cross-checked structured CVSS/SSVC: NVD REST API (bridge `url`), URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-66066"
+    summary: |
+      DEEP-DIVE ENRICHMENT. Structured-field re-verification (OSV mirror of the GHSA, and NVD directly) confirms
+      the version ranges and adds precision the prose summaries in S1/S3 did not carry, plus one attribution
+      correction.
+
+      Structured affected-version ranges (from OSV's `affected[].ranges` — the machine-readable GHSA data, NOT
+      a prose paraphrase): THREE separate ECOSYSTEM ranges — (1) introduced "0", fixed "7.2.3.2"; (2) introduced
+      "8.0.0.beta1", fixed "8.0.5.1"; (3) introduced "8.1.0.beta1", fixed "8.1.3.1". NVD's own affected-versions
+      field for the same CVE lists identically: "< 7.2.3.2", ">= 8.0.0.beta1, < 8.0.5.1", ">= 8.1.0.beta1, <
+      8.1.3.1" — three ranges, no fourth. Note: the first range's "introduced: 0" boundary is a database-encoding
+      artifact (no earlier fix boundary exists to anchor it), not a live claim that every historical activestorage
+      release back to 0.1 is practically exploitable — Vips was not even a configurable variant processor that
+      far back.
+
+      CORRECTION to S1/S3 framing on Rails 6.x: neither the Rails/GHSA advisory's own structured version ranges
+      NOR NVD's affected-versions field mention Rails 6.x at all. The "Rails 6.0.0–6.1.7.10 may also be affected"
+      claim originates specifically from Ethiack (the discovering researcher), relayed by Rapid7 — not from the
+      Rails advisory itself. Rapid7, verbatim: "Ethiack reports that Rails 6.0.0 through 6.1.7.10 may also be
+      affected when Active Storage is configured to use Vips; Rails 6.x does not use Vips by default. Rails has
+      not published a fixed 6.x release, so affected Rails 6.x applications should migrate to a supported fixed
+      branch or apply the applicable workaround." Ethiack's own site states the same, with an explicit non-default
+      caveat: "Rails 6.0.0 through 6.1.7.10 may be affected only if Active Storage has been set up outside its
+      defaults, so a normal 6.x install isn't exposed to this vulnerability." Ethiack's own version table lists
+      the 6.x row's "Fixed In" as 7.2.3.2 (i.e., there is no 6.x point-release fix — the only remediation path
+      for an affected 6.x app is to upgrade the whole Rails version or apply the libvips-level workaround).
+      Both S1 and S3 stated the 6.x detail as flat fact without attributing it to Ethiack/Rapid7 specifically as
+      distinct from the Rails advisory — worth correcting the attribution when composing.
+
+      Precondition precision (answers the assigned question on variant generation): GHSA/OSV, verbatim: "An
+      application is affected if it meets all of these requirements: Uses libvips for Active Storage image
+      processing...Allows image uploads from untrusted users. Generating variants is not a separate requirement."
+      Rapid7 corroborates identically. This means the exposure condition is (a) Vips configured as the variant
+      processor AND (b) untrusted image uploads accepted — NOT a further requirement that a variant actually be
+      generated on-demand. Ethiack adds an undisclosed third precondition it declines to detail: "Runs a libvips
+      build linked against certain third-party libraries" — implying not every libvips build/platform combination
+      is equally exposed, but the specifics are withheld pending the August 28 disclosure.
+
+      Scope boundary not previously captured: Ethiack states explicitly, "Only the Vips image processor is
+      affected. Applications using Magick are not affected by this vector" — i.e., Rails apps configured for
+      the alternative (older-default, pre-7.0) ImageMagick-based variant processor are out of scope for this
+      specific vector.
+
+      CVSS assignment and authority: NVD's structured record shows `sourceIdentifier: security-advisories@github.com`
+      (GitHub Security Advisories acting as Rails' CNA) as the assigning party for CVSS 4.0 9.5 CRITICAL, vector
+      CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:X (exploit maturity NOT_DEFINED at
+      publication — i.e., no exploitation status has been formally set in the CVSS record itself). NVD's separate
+      SSVC entry (role: CISA Coordinator) independently records `"exploitation": "none"`, `"automatable": "yes"`,
+      `"technicalImpact": "total"` — consistent with Rapid7's plain-text statement, "As of July 30, 2026, Rapid7
+      is not aware of exploitation in the wild." No disagreement between authorities here (unlike item 3 below).
+
+      Disclosure credit and timeline (from Ethiack's own site, the primary discovering party): independently and
+      near-simultaneously reported by André Baptista (0xacb), Bruno Mendes (s3np41k1r1t0) and Rafael Castilho
+      (castilho) of Ethiack, and — a few days later — by RyotaK of GMO Flatt Security Inc.; the two teams then
+      coordinated disclosure and fix timing together with Rails maintainer Mike Dalessio (flavorjones) and the
+      libvips maintainers. Full technical/PoC details are withheld until no later than 2026-08-28, per the Rails
+      Security Announcements forum. Ethiack's own reasoning for withholding, verbatim: "No PoC or technical chain
+      details from us yet, but assume attackers with AI tooling can reconstruct one quickly once patches ship and
+      diffs go public, so don't wait to upgrade."
+
+      Credential-rotation consequence (Rapid7/GHSA, both agree): because the vulnerability is a file-read primitive
+      against the whole application process, a successful exploitation should be treated as exposing every secret
+      the Rails process can read — secret_key_base, the Rails master key and everything config/credentials.yml.enc
+      decrypts, Active Storage service credentials (S3/GCS/Azure), database credentials, and third-party
+      tokens/keys — and rotating secret_key_base specifically invalidates active sessions and all encrypted/signed
+      cookies, signed global IDs, and Active Storage URLs. CERT-FR's advisory is a thin structured roundup (risks:
+      confidentiality breach + remote code execution; same three version ranges) pointing to the Rails Discourse
+      thread as its sole documentation reference — no independent technical content, no exploitation claim, fully
+      consistent with the primaries.
+    region_nexus: "global; Ruby on Rails is widely used for public-facing web applications and citizen/e-government portals across the Swiss/European public and private sector"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, all-sectors (any Rails-based web application accepting image uploads)"
+    cves: ["CVE-2026-66066"]
+    techniques: [T1190, T1552, T1005]
+    affected_products: ["Ruby on Rails Active Storage (activestorage gem)", "libvips", "ruby-vips"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An application is affected if it meets all of these requirements: Uses libvips for Active Storage image processing. This is config.active_storage.variant_processor = :vips, which load_defaults 7.0 set and no later default has changed. Allows image uploads from untrusted users. Generating variants is not a separate requirement."
+        attribution: "Ruby on Rails security advisory / GHSA-xr9x-r78c-5hrm"
+        source_url: "https://discuss.rubyonrails.org/t/cve-2026-66066-possible-arbitrary-file-read-and-remote-code-execution-in-active-storage-variant-processing/91432"
+      - quote: "Ethiack reports that Rails 6.0.0 through 6.1.7.10 may also be affected when Active Storage is configured to use Vips; Rails 6.x does not use Vips by default. Rails has not published a fixed 6.x release, so affected Rails 6.x applications should migrate to a supported fixed branch or apply the applicable workaround below."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails"
+      - quote: "Rails 6.0.0 through 6.1.7.10 may be affected only if Active Storage has been set up outside its defaults, so a normal 6.x install isn't exposed to this vulnerability... Only the Vips image processor is affected. Applications using Magick are not affected by this vector."
+        attribution: "Ethiack"
+        source_url: "https://ethiack.com/info-hub/research/kindarails2shell-rails-rce-cve"
+      - quote: "No PoC or technical chain details from us yet, but assume attackers with AI tooling can reconstruct one quickly once patches ship and diffs go public, so don't wait to upgrade."
+        attribution: "Ethiack"
+        source_url: "https://ethiack.com/info-hub/research/kindarails2shell-rails-rce-cve"
+      - quote: "As of July 30, 2026, Rapid7 is not aware of exploitation in the wild. Ethiack and GMO Flatt Security, who independently reported the vulnerability, have withheld proof-of-concept code and details of the full attack chain."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails"
+      - quote: "The minimum version of libvips must be upgraded to >= 8.13...Earlier versions of libvips (< 8.13) cannot disable unfuzzed operations at all, and Active Storage will raise an exception during boot in such an unsecurable environment."
+        attribution: "Ruby on Rails security advisory / GHSA-xr9x-r78c-5hrm"
+        source_url: "https://discuss.rubyonrails.org/t/cve-2026-66066-possible-arbitrary-file-read-and-remote-code-execution-in-active-storage-variant-processing/91432"
+    corrections:
+      - "S1/S3 both stated the Rails 6.x affected range as flat fact in the vulnerability's own affected-version list. Structured verification (OSV ranges + NVD affected-versions field) shows NEITHER the Rails/GHSA advisory NOR NVD lists a 6.x range at all — the 3 structured ranges are 7.x (<7.2.3.2), 8.0.x (<8.0.5.1), 8.1.x (<8.1.3.1) only. The 6.x claim is Ethiack's own researcher assessment, relayed by Rapid7 with explicit attribution ('Ethiack reports that...'). Recommend the composed entry attribute the 6.x detail to Ethiack/Rapid7 specifically rather than presenting it as part of the Rails advisory's own affected-version table."
+      - "CVSS 4.0 9.5 is assigned by GitHub Security Advisories acting as Rails' CNA (NVD sourceIdentifier: security-advisories@github.com), confirmed directly from the NVD structured record — not independently scored by Rapid7 or the Rails team as a separate act; Rapid7 and CERT-FR both simply report the same GHSA-assigned score."
+      - "New precondition detail not in S1/S3: Ethiack states a third, technically undisclosed precondition — 'Runs a libvips build linked against certain third-party libraries' — meaning not every libvips build is equally exposed even when Vips is the configured processor; withheld pending the August 28 full disclosure."
+      - "New scope-boundary detail not in S1/S3: Ethiack explicitly states applications using the (non-default, pre-7.0) ImageMagick/Magick variant processor are NOT affected by this specific vector."
+    extended_notes: |
+      Hunt/hardening priority unchanged from S1/S3: any internet-facing Rails app accepting untrusted image
+      uploads on the default (Rails >= 7.0) libvips processor is exposed regardless of application-level
+      authentication, because the exposure is in the image-processing pipeline, not the app's auth layer.
+      Verification checklist for defenders: (1) `Rails.application.config.active_storage.variant_processor` —
+      confirm whether it is `:vips` (default since 7.0) or `:mini_magick`/ImageMagick (out of scope for this
+      vector per Ethiack); (2) installed `activestorage` gem version against the three fixed points; (3) system
+      libvips version against the >= 8.13 floor — a patched gem on an older libvips will refuse to boot rather
+      than silently remain vulnerable, which is itself a useful boot-time detection signal; (4) if upgrading
+      libvips is not immediately possible, confirm `VIPS_BLOCK_UNTRUSTED` is set or `Vips.block_untrusted(true)`
+      is called from an initializer as an interim compensating control.
+
+  # ============================================================
+  # ITEM 3 — CVE-2026-65884 / CVE-2026-65885 Balbooa Gridbox for Joomla
+  # ============================================================
+  - title: "Balbooa Gridbox for Joomla: pre-auth registration-to-admin escalation chained with file upload for RCE — 23 flaws found in a vendor-invited audit, active exploitation confirmed (CVE-2026-65884, CVE-2026-65885)"
+    deep_read: true
+    sources:
+      - { url: "https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/", publisher: "mySites.guru (Phil Taylor)", date: "2026-07-29", role: primary }
+      - { url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release", publisher: "Balbooa (Gridbox vendor security release note)", date: "2026-07-30", role: corroborating }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65884", publisher: "NVD (CVE record owner: security@joomla.org)", date: "2026-07-29", role: primary }
+      - { url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65885", publisher: "NVD (CVE record owner: security@joomla.org)", date: "2026-07-29", role: primary }
+    discovery_trace: "DR1 scoped re-read of S1 item (findings.S1.yaml). first seen at: work/2026-07-31T0409Z-intel/findings.S1.yaml → re-fetched full body: mySites.guru (host pinned fetch_method: jina in sources.json; used `python3 tools/fetch_source.py jina <URL>` directly), URL https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/ → re-fetched: Balbooa vendor page (bridge `url`), URL https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release → cross-checked structured CVSS/CWE/exploit-maturity directly on the owning CNA record: NVD REST API (bridge `url`), URL https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65884 and https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65885"
+    summary: |
+      DEEP-DIVE ENRICHMENT. NVD structured records for both CVEs (owning CNA: security@joomla.org, the Joomla
+      CNA — NOT MITRE/NVD's own assessment) confirm the S1 summary's figures precisely, add exact CVSS4 vector
+      strings and CWE citations, and surface one exploitation-status discrepancy the task specifically asked to
+      be checked for.
+
+      CVE-2026-65884 (NVD record, quoted structured fields): CVSS 4.0 vector
+      `CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A/.../U:Red`, baseScore 10.0 CRITICAL,
+      `exploitMaturity: "ATTACKED"`, `providerUrgency: "RED"`, CWE-284 (Improper Access Control), affected range
+      `"1.0.0-2.20.1"` with `defaultStatus: "unaffected"` (i.e., every shipped Gridbox version up to the fix is
+      listed as affected; the "unaffected" default is a schema artifact meaning no version outside that range is
+      implicated). NVD's own description, verbatim: "The registration method allows users provided usergroup
+      IDs, allowing unauthenticated actors to register new accounts with administrative permissions."
+
+      CVE-2026-65885 (NVD record): CVSS 4.0 vector
+      `CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H/E:A/.../U:Red`, baseScore 9.4 CRITICAL,
+      `exploitMaturity: "ATTACKED"`, `providerUrgency: "RED"`, CWE-434 (Unrestricted Upload of File with Dangerous
+      Type), same affected range `"1.0.0-2.20.1"`. NVD's description states the chaining relationship explicitly:
+      "File upload methods allows authenticated attackers to upload arbitrary files. Turns into an authenticated
+      RCE if combined with CVE-2026-65884 as the required account can be created by the attacker."
+
+      IMPORTANT DISCREPANCY the task asked to be surfaced: both NVD records ALSO carry a separate SSVC
+      (Stakeholder-Specific Vulnerability Categorization) block attributed to role "CISA Coordinator" that states
+      `"exploitation": "none"` for both CVEs — directly contradicting the Joomla CNA's own CVSS temporal metric
+      of `E:A` (Attacked) / `providerUrgency: RED` set in the SAME record by the CVE-owning authority
+      (security@joomla.org). Per the transcription-discipline rule (the record that owns the CVE wins over a
+      general-purpose overlay), the Joomla CNA's "Attacked" assessment is the authoritative one here: it is
+      independently corroborated by mySites.guru's own first-hand server-log observations ("We have the server
+      access logs showing the exploitation requests arriving, and connected sites where the accounts are already
+      planted... 92 planted accounts") and indirectly by Balbooa's own vendor page, which references "the recent
+      increase in automated attacks" and instructs customers to remove temporary .htaccess rules "added...to
+      block the recent attacks on Gridbox endpoints" — i.e., the vendor itself acknowledges active attack traffic
+      existed, even though its page does not use the word "exploited." NVD's CISA-Coordinator SSVC block appears
+      to reflect a not-yet-updated/default overlay rather than a considered contradiction of the CNA's own
+      exploit-maturity finding; the composed entry should state exploitation as CONFIRMED per the Joomla CNA/CVSS
+      record and mySites.guru's first-hand evidence, and separately note NVD's SSVC block has not caught up.
+
+      Joomla Security Strike Team confirmation, precisely sourced: the "at least three flaws under active
+      exploitation" claim is stated by mySites.guru itself (not an independently published Joomla Strike Team
+      bulletin this DR1 could locate) — "The Joomla Security Strike Team reported that at least three Gridbox
+      issues are being actively exploited in the wild and urged Balbooa to publish a fix as soon as possible."
+      Balbooa's own vendor page corroborates the coordination channel by name: "We also thank David Jardin from
+      the Joomla! Security Strike Team for his guidance on the coordinated disclosure process" — confirming the
+      Strike Team's direct involvement even though its own advisory text was not independently locatable by this
+      DR1 pass (a Joomla VEL/vel.joomla.org search was attempted and did not surface a standalone bulletin in the
+      time available).
+
+      Vendor remediation timeline (mySites.guru, first-hand account of the coordinated-disclosure process):
+      Balbooa's FIRST proposed fix build, sent for pre-publication verification, left several reported findings
+      live — most seriously, an anonymous SQL injection returning password hashes that Balbooa believed was
+      fixed but had only patched at one of several identical, reachable entry points. Balbooa's SECOND build,
+      turned around within a day of that finding being re-proven, closed the anonymous injection and the
+      actively-exploited routes, but still left two issues live: a forgeable payment-gateway callback signature
+      (exploitable on a common configuration) and a SQL injection reachable by a logged-in low-privilege user.
+      The COMPLETE fix — closing all 23 findings plus the payment-callback and low-priv-SQLi gaps from build two
+      — shipped as Gridbox 2.20.2 on 29 July 2026. Balbooa's own security-release page corroborates the version
+      and confirms pre-publication verification: "Prior to the public release of Gridbox 2.20.2, the updated
+      build was provided to the reporting researcher for independent verification to help ensure that all
+      reported issues had been fully addressed," and separately credits "Phil Taylor from mySites.guru for
+      performing the security review."
+
+      Finder-credit correction: mySites.guru's own "Disclosure and Severity" summary table states the CVE records
+      credit BOTH Phil Taylor (mySites.guru, the primary researcher/discloser) AND a second name, Pascal Lohmann,
+      not mentioned in the S1 record.
+
+      Relationship to CVE-2026-61425 (already tracked, novelty: update-of): confirmed as the same disclosure
+      chain — Balbooa invited the full 23-vulnerability audit specifically BECAUSE mySites.guru had just found
+      the CVE-2026-61425 authentication-bypass cookie in the very build Balbooa had sent as "hardened," fixed in
+      2.20.1 (20 July 2026). Nine further CVE IDs are reserved (not yet published) against the remaining 21
+      findings: CVE-2026-65886 through -65890, -65947, -66488 through -66490 — the Joomla CNA has grouped the 23
+      distinct findings under fewer CVE IDs by shared root cause rather than one-CVE-per-finding.
+    region_nexus: "global; Joomla with page-builder extensions is common on European municipal/cantonal and SME public-facing sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: ["CVE-2026-65884", "CVE-2026-65885"]
+    techniques: [T1190, T1136.001, T1505.003]
+    affected_products: ["Balbooa Gridbox for Joomla (com_gridbox)"]
+    entity_keys: ["trend:joomla-extension-file-upload-rce-wave"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-26/joomla-gridbox-cookie-forged-super-user-auth-bypass-wave"
+    evidence:
+      - quote: "The registration method allows users provided usergroup IDs, allowing unauthenticated actors to register new accounts with administrative permissions."
+        attribution: "NVD (CVE-2026-65884 record, source: security@joomla.org)"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65884"
+      - quote: "File upload methods allows authenticated attackers to upload arbitrary files. Turns into an authenticated RCE if combined with CVE-2026-65884 as the required account can be created by the attacker."
+        attribution: "NVD (CVE-2026-65885 record, source: security@joomla.org)"
+        source_url: "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-65885"
+      - quote: "Both list the affected range as 1.0.0 to 2.20.1, which is every Gridbox release there has ever been up to the fix. And both set the exploit maturity to Attacked with an urgency of Red, which is the CVE record's own way of recording that this is being used against real sites rather than sitting as a theoretical risk."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/"
+      - quote: "We have the server access logs showing the exploitation requests arriving, and connected sites where the accounts are already planted. On one connected Joomla site our rogue admin check is holding 92 planted accounts right now"
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/"
+      - quote: "Prior to the public release of Gridbox 2.20.2, the updated build was provided to the reporting researcher for independent verification to help ensure that all reported issues had been fully addressed."
+        attribution: "Balbooa"
+        source_url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release"
+      - quote: "We also thank David Jardin from the Joomla! Security Strike Team for his guidance on the coordinated disclosure process."
+        attribution: "Balbooa"
+        source_url: "https://www.balbooa.com/blog/gridbox/gridbox-2-20-2-security-release"
+    corrections:
+      - "S1 recorded CVSS 4.0 scores (10.0 / 9.4) and exploit-maturity 'Attacked' from mySites.guru's blog narrative. Directly queried NVD confirms both figures exactly, sourced to the CNA (security@joomla.org) rather than the blog, and adds the full CVSS4 vector strings and exact CWE ids (CWE-284 / CWE-434) plus the precise affected range '1.0.0-2.20.1' for both records."
+      - "NEW — the task's requested authority-vs-roundup check surfaced a genuine discrepancy: NVD's own SSVC block (role: CISA Coordinator) records exploitation:none for BOTH CVEs, contradicting the Joomla CNA's own CVSS-embedded exploitMaturity:ATTACKED/providerUrgency:RED in the same record. Recommend the composed entry state exploitation as confirmed (per the CNA's own metric plus mySites.guru's first-hand log evidence) and separately flag that NVD's generic SSVC overlay has not yet caught up to the CNA's own finding — do not let the SSVC 'none' silently override the CNA's 'Attacked' when composing."
+      - "New finder-credit detail: mySites.guru's own summary table states the published CVE records credit BOTH Phil Taylor (mySites.guru) AND Pascal Lohmann — the S1 record only named Phil Taylor/mySites.guru."
+      - "New vendor-side corroboration of active exploitation not in S1: Balbooa's own security-release page references 'the recent increase in automated attacks' and instructs customers to remove temporary .htaccess rules 'added...to block the recent attacks on Gridbox endpoints' — an indirect vendor acknowledgment of attack traffic, distinct from and corroborating mySites.guru's direct claim."
+      - "Attempted to independently locate a standalone Joomla Security Strike Team advisory/VEL entry to corroborate the 'at least three flaws' exploitation claim outside of mySites.guru's own account; a speculative vel.joomla.org search-URL fetch did not surface one in the time available (not logged as a fetch failure — this was an un-pinned guess, not a sourced recipe; Balbooa's own credit to Strike Team member David Jardin stands as vendor-side corroboration of the Team's direct involvement)."
+    extended_notes: |
+      Hunt guidance for Joomla fleets running Gridbox (unchanged from S1, reinforced by the deep read): check for
+      administrator-group members created via self-registration rather than explicit admin action (the
+      CVE-2026-65884 vector), and for the observed planted-account naming pattern shape (a fixed username prefix
+      plus random hex characters, paired with a matching plus-addressed outlook.com email, arriving in batches
+      minutes apart) as a benign-lookalike discriminator against ordinary registration spam — mySites.guru's own
+      description of the pattern is generic (prefix + hex) rather than a specific string, so treat it as a shape
+      to hunt for rather than a literal indicator. Nine further CVE IDs remain unpublished against the other 21
+      findings in the audit (nowhere fully enumerated by CVE yet) — worth a rotation-priority re-check of
+      mysites.guru and the Joomla VEL in a subsequent run once they publish, since several of the 21
+      undisclosed findings include additional pre-/low-auth RCE and SQLi routes per mySites.guru's own summary
+      table.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: joomla-vel
+    reason: "Attempted to locate a standalone Joomla Security Strike Team / Vulnerable Extensions List advisory for Gridbox to independently corroborate the 'at least three flaws under active exploitation' claim beyond mySites.guru's own account. A speculative search-URL fetch (vel.joomla.org search) returned only the generic JED About page (no results surfaced) — this was an unpinned guess, not a sourced recipe, so not logged as a fetch failure. Balbooa's own vendor page names the Strike Team contact (David Jardin) as indirect corroboration of the Team's involvement in lieu of a standalone bulletin."

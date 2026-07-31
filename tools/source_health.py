@@ -349,24 +349,37 @@ def _bridge_check(source_id: str, url: str, *, timeout: float,
     return "bridge-fail", detail
 
 
-def _feed_ok(feed_url: str, *, timeout: float) -> bool:
+def _feed_ok(feed_url: str, *, timeout: float, attempts: int = 2) -> bool:
     """True iff the bridge can parse `feed_url` as a feed AND it carries ≥1
     item. A homepage that isn't a feed parses to 0 items → False, so this does
-    not give a false OK on a non-feed URL."""
-    try:
-        proc = subprocess.run(
-            [sys.executable, str(FETCH_SOURCE), "feed", feed_url, "3"],
-            capture_output=True, text=True, timeout=timeout,
-        )
-    except Exception:  # noqa: BLE001
-        return False
-    if proc.returncode != 0:
-        return False
-    try:
-        data = json.loads(proc.stdout or "{}")
-    except Exception:  # noqa: BLE001
-        return False
-    return int(data.get("count") or 0) > 0
+    not give a false OK on a non-feed URL.
+
+    Retried once by default. Under the sweep's worker concurrency a healthy
+    feed intermittently times out or gets a transient edge error, and a single
+    such miss used to fall through to a plain GET of the feed URL — which on
+    anti-bot hosts answers 403/404 to a bare client and produced an UNSOLVED
+    `needs-demote` for a source whose recipe works on the very next call
+    (observed 2026-07-31 on darkreading, whose `feed` recipe returned dated
+    items immediately after the sweep flagged it "resource gone"). One bounded
+    retry removes that whole class of false demotion signals; a genuinely dead
+    feed still fails both attempts."""
+    for attempt in range(max(1, attempts)):
+        try:
+            proc = subprocess.run(
+                [sys.executable, str(FETCH_SOURCE), "feed", feed_url, "3"],
+                capture_output=True, text=True, timeout=timeout,
+            )
+        except Exception:  # noqa: BLE001
+            continue
+        if proc.returncode != 0:
+            continue
+        try:
+            data = json.loads(proc.stdout or "{}")
+        except Exception:  # noqa: BLE001
+            continue
+        if int(data.get("count") or 0) > 0:
+            return True
+    return False
 
 
 # Common feed paths to try when an `rss` source's `url` is a homepage/index

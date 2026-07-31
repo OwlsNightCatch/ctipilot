@@ -1,0 +1,49 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-07-31T06:37:45Z · ended_at=2026-07-31T06:47:59Z · duration_seconds=614
+
+## Verification report — 2026-07-31T0409Z-intel (iteration 6)
+
+### Prior-iteration deltas verified (all nine)
+
+All nine remediations from iteration 5 were checked against freshly fetched sources this iteration and confirmed correct, with one new residual defect surfaced in the course of re-checking F2 (below).
+
+- **F1 (unit42-autonomous…, Claude Code/Codex naming):** Confirmed via WebFetch of the Unit 42 post. Claude Code: "only used this for connectivity testing and proxy validation," "10 entries across three sessions," "contained only /model checks, connectivity tests and one npm install request" — entry's "one package-install request across three sessions" is an accurate paraphrase. Codex: "signs of usage on exploit development directories," "chat logs were not preserved" — entry matches exactly, no overstatement either direction.
+- **F2 (octlurk-silklurk…, second-stage tooling naming):** Confirmed against Securelist. PlugX is named with the source's own lineage: "PlugX is a well-known modular remote-access Trojan (RAT) that has been active since at least 2008 and historically linked to Chinese-speaking threat actors," and the source explicitly ties this to the attribution assessment ("This suggests that both OctLurk and SilkLurk were also developed and operated by a Chinese-speaking actor"). The entry's wording matches. **However**, re-checking this same finding's stated scope ("second-stage and post-compromise tooling described generically where the source names it") surfaced a second, unremediated instance of the identical pattern — see F8 below, a residual the iteration-5 fix did not reach.
+- **F3 (genielocker…, tool naming):** Confirmed — SoftPerfect Network Scanner, Mimikatz and KeePassXC are all named in the current text, matching the source and the treatment given to PsExec/PAExec, RDP/SSH elsewhere in the same paragraph.
+- **F4 (unit42-autonomous…, CVSS):** Confirmed independently. NVD carries CVSS 3.1 base 9.8 (NIST/NVD score) but the owning CNA (NetScaler) issued its own CVSS 4.0 base score of 9.3 (`CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:L`). The entry's frontmatter cvss "9.3" matches the assigning authority's own score, consistent with the sourcing_note's stated methodology and with the treatment given to every other vulnerability entry in this run. Correct.
+- **F5 (elastic-hugging-face…, evidence quote splice):** Confirmed via a full-text jina fetch of the Elastic post, grepped directly. Both evidence quotes — the HDF5 raw-storage line and the Jinja2 template-injection line — are contiguous verbatim lines 89–90 of the source, no longer spliced. Confirmed.
+- **F6 (cve-2026-66066-rails…, CERT-FR score claim):** Confirmed via the advisory's own JSON export (`/avis/CERTFR-2026-AVI-0948/json/`) — no `cvss`/score field is present anywhere in the record; only CVE cross-reference, risk descriptions and vendor-advisory link. The sourcing note's narrowed claim ("CERT-FR's advisory carries no score at all") is accurate.
+- **F7 (anthropic-cyber-eval…, denominator qualifier):** Confirmed present in both the summary ("Reviewing 141,006 evaluation runs in which a model could have obtained internet access") and the body ("Anthropic reviewed 141,006 evaluation runs in which the model could have obtained internet access"). The run record's iteration-3 finding note is honestly rewritten to record that the summary fix "did not land" until iteration 5 — consistent with what is now on disk.
+- **F8 (balbooa-gridbox…, vendor page date):** Confirmed via jina fetch of the Balbooa release page: `Published Time: July 29, 2026` and the page's own "Release Date: 29 July 2026" field. All three citations in the entry now read 2026-07-29, matching. The "recent increase in automated attacks" and "remove the temporary… rules… blocking attacks against Gridbox endpoints" language is present verbatim on the page (lines 288, 302).
+- **F9 (ta488-exchange-owa…, joint-advisory nation count reference):** Confirmed. `entries/2026-07-24/laundry-bear-zimbra-zero-click-cve-2025-66376.md` exists, carries the "16-nation joint advisory" claim with its own CISA sourcing, and the deep dive's `references: [2026-07-24/laundry-bear-zimbra-zero-click-cve-2025-66376]` resolves to it.
+
+### Unsupported / hallucinated facts
+
+- **F4 — `2026-07-31/ta488-exchange-owa-cve-2026-42897-owareaper-implant`** (the run's deep dive). Body states: *"Exfiltration runs primarily over HTTPS with encrypted URI paths relayed through legitimate public image-CDN services, falling back to DNS label tunnelling when that path fails."* This is repeated as a detection lead in the Detection section: *"DNS queries with the label-length and entropy profile of tunnelled data."* I fetched the cited Proofpoint post directly and asked specifically what it says about the exfiltration fallback path. Proofpoint's own words: *"If all image CDN proxies fail, OWAReaper HTTPS exfiltration falls back to direct communication with the C&C via an HTTP GET request."* There is no DNS tunnelling anywhere in the source — the fallback is a direct HTTPS/HTTP GET to the C2, not DNS. This is a fabricated mechanism, on the run's own deep-dive entry, that has propagated into an invented detection artifact ("DNS queries with the label-length and entropy profile of tunnelled data") a SOC could actually spend hunting hours chasing, while the real fallback behavior (a direct-to-C2 HTTP GET after CDN-proxy exhaustion) goes completely undescribed and thus undetectable via this entry. The frontmatter technique T1071.004 (Application Layer Protocol: DNS) in `techniques:` is mapped on the strength of this same fabricated claim and needs to be reconsidered alongside the body fix — the source supports T1071.001 (Web Protocols)/T1102 class techniques for the actual CDN-proxied and direct-HTTP fallback behavior, not DNS.
+
+### Needs more research
+
+- **F8 — `2026-07-31/octlurk-silklurk-service-dll-plugin-backdoors-government`.** The entry states: *"Kaspersky also reports that several command-server addresses used by OctLurk and its companion proxy utility appear in a Kazakhstani government report on a separate Linux-targeting implant tracked under three different vendor names…"* — withholding all three names. I fetched Securelist directly: the article names the implant explicitly as **TrustFall** (Kazakhstan STS's own designation), **MystRodX** (Qianxin's name for it) and **SilentRaid** (Cisco Talos's name for it), citing "a public report by Kazakhstan's State Technical Service (STS) company" on a campaign called TrustFall. None of these three names appear anywhere in the entry body, and the registered `tool:lurkproxy` entity in `entities/registry.yaml` repeats the same generic phrasing ("a separately tracked Linux implant"). This is a second, unremediated instance of the exact anonymisation pattern iteration 5's F2 finding targeted on this same entry (PlugX was named with full lineage; this second implant reference was missed) — the source names it plainly, it is not an IOC, and the pipeline's own established practice in this very entry is to name malware/tool families precisely (PlugX, Impacket secretsdump, FSCAN, Pandora RC). Naming it would also let a reader connect this coverage to any future entry on TrustFall/MystRodX/SilentRaid via the entity registry; currently that link is impossible to make.
+
+### Verdict
+
+**NEEDS_FIXES (truth: 1, editorial: 1, advisory: 0)**
+
+Everything else checked cold this iteration — the CVE, actor, victim, version, date and figure claims across all 11 entries and the run record — held up against freshly fetched primary sources (Unit 42, Kaspersky ×2, Elastic, Rails advisory + CERT-FR JSON, Balbooa, TechNadu with `article:published_time` cross-check, Analog Devices' own 8-K text, BleepingComputer, CyberInsider, Health-ISAC coverage). Registry entities, classification codes, org_triage nulls, watchlist_hit values, actions[] discipline and techniques[] non-emptiness were all in order except the one technique-mapping consequence of the F4 finding above. No completeness gap I could name a plausible in-window source for; the run record's borderline-drop and coverage-gap lines are consistent with what I found.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F4
+  category: hallucinated-fact
+  section: intel
+  item: "2026-07-31/ta488-exchange-owa-cve-2026-42897-owareaper-implant"
+  url_or_quote: "falling back to DNS label tunnelling when that path fails"
+  summary: "Proofpoint's cited post states the actual fallback is a direct HTTP GET request to the C2 ('OWAReaper HTTPS exfiltration falls back to direct communication with the C&C via an HTTP GET request'), not DNS tunnelling. The fabricated mechanism appears in both the body's C2 paragraph and the Detection paragraph ('DNS queries with the label-length and entropy profile of tunnelled data'), and techniques[] T1071.004 rests on the same unsupported claim."
+- code: F8
+  category: needs-more-research
+  section: intel
+  item: "2026-07-31/octlurk-silklurk-service-dll-plugin-backdoors-government"
+  url_or_quote: "a Kazakhstani government report on a separate Linux-targeting implant tracked under three different vendor names"
+  summary: "Securelist names the implant explicitly: TrustFall (Kazakhstan STS), MystRodX (Qianxin), SilentRaid (Cisco). None of the three names appear in the entry body or in the tool:lurkproxy registry summary, despite the source naming them plainly and the entry naming every other tool in the intrusion (PlugX, Impacket secretsdump, FSCAN, Pandora RC) precisely. Second unremediated instance of the anonymisation pattern iteration 5's F2 already fixed once on this entry (PlugX)."
+```

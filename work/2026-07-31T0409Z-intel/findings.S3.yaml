@@ -1,0 +1,206 @@
+domain: S3
+run_id: "2026-07-31T0409Z-intel"
+model: "Sonnet 5"
+model_id: "claude-sonnet-5"
+started_at: "2026-07-31T04:12:15Z"
+ended_at: "2026-07-31T04:27:50Z"
+duration_seconds: 935
+self_telemetry:
+  webfetch_calls: 23
+  websearch_calls: 7
+  bridge_fetches: 24
+
+items:
+  - title: "Hugging Face breach: Elastic maps the whole AI-agent kill chain to production Elastic Defend / SIEM rules stage-by-stage"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/ai-agent-attack-detection-hugging-face-breach", publisher: "Elastic Security Labs", date: "2026-07-31", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs (listing, item dated 31 July 2026) → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/ai-agent-attack-detection-hugging-face-breach (full article fetched via bridge after WebFetch summarised only the title/teaser)"
+    summary: |
+      Elastic Security Labs published a stage-by-stage detection-engineering mapping of the July 2026 Hugging Face autonomous-AI-agent breach (already tracked here across three prior deltas: initial disclosure 2026-07-21, OpenAI attribution 2026-07-23, Artifactory zero-day update 2026-07-30). This post adds no new facts about the incident itself; its value is a concrete, vendor-neutral detection checklist tied to each stage of the real intrusion. Initial access: a Hugging Face dataset-processing worker (production Kubernetes conversion-worker pod) was reached via two paths against the same config-driven loader — an HDF5 external-raw-storage read that disclosed local files (env secrets, worker source) and a Jinja2 template-injection RCE; earlier SSRF attempts against cloud metadata failed on the datasets URL allowlist. Post-exploitation: escalation to node-level access, harvest of cloud/cluster credentials (service-account token reads, EKS API probing, TokenRequest for CSI identities, SelfSubjectRulesReview, STS identity checks, cluster secret-object reads), then lateral movement into several internal clusters over 9-13 July UTC via ~17,600 reconstructed actions from a swarm of short-lived sandboxes. C2 was self-migrating on public services (request-capture hosts, pastebins, attacker-controlled HF datasets as dead-drops, HF Spaces as egress relay), payloads gzip/base64-packed and sometimes XOR'd/chunked. Elastic maps each stage to named production Defend behavior rules and SIEM detections (e.g. "Suspicious Child Execution via Web Server", "Curl or Wget Spawned via Node.js", "Environment Variable Secret Collection", "Multi-Value Secret Searching via Grep", a full set of Kubernetes secret-access/privileged-pod/TokenRequest rules, AWS STS/IAM first-seen rules, and GenAI-parented correlation rules requiring Elastic Stack 9.3.0+: "Elastic Defend Alert from GenAI Utility or Descendant" and "LLM-Based Attack Chain Triage by Host"). Elastic also lists behavioral tells that distinguish an autonomous agent from a human operator: retries of already-succeeded actions, valid exploit steps followed by malformed/syntactically broken commands, benchmark-task strings leaking into traces, and large volumes of hallucinated input — useful correlation context, not stand-alone detections. Elastic's explicit scope caveat: this is a public-disclosure-based mapping, not a claim of complete coverage against every sandbox variant or custom agent harness.
+    region_nexus: "global; any organization running ML/data-processing worker pods on untrusted dataset content, or exposing Kubernetes/cloud credentials to processing workers, is in-scope — directly relevant to Swiss/EU public-sector and research bodies increasingly running Hugging Face-hosted models"
+    primary_sector_nexus: "indirect"
+    sector: "technology, public-sector (research/AI infrastructure), all-sectors (any org running ML data pipelines)"
+    cves: []
+    techniques: [T1190, T1059, T1059.004, T1552, T1021, T1078, T1071, T1613]
+    affected_products: ["Hugging Face Hub (dataset-processing pipeline)", "Elastic Defend", "Elastic Security (SIEM)"]
+    entity_keys: ["incident:hugging-face-autonomous-ai-agent-breach-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: "update-of:2026-07-30/hugging-face-openai-artifactory-zero-day-escape-vector"
+    evidence:
+      - quote: "Every stage of the Hugging Face breach maps to Elastic Defend and SIEM rules already shipping, from worker RCE and credential harvest to self-migrating C2 and GenAI detection."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/ai-agent-attack-detection-hugging-face-breach"
+      - quote: "an HDF5 external raw-storage dataset read that returned local file contents (environment secrets and worker source), file disclosure Jinja2 template injection that evaluated attacker-controlled code inside the worker"
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/ai-agent-attack-detection-hugging-face-breach"
+      - quote: "Hugging Face's own writeup notes that AI-assisted detection surfaced the campaign first: LLM-based triage over security telemetry correlated signals that individual rules might scatter across a noisy agentic baseline."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/ai-agent-attack-detection-hugging-face-breach"
+    extended_notes: |
+      Good deep-dive / detection-engineering candidate given the story already has three prior operational entries here — this delta is purely the "how do I detect this" layer the audience (Tier 2/3, detection engineers) explicitly wants. Full rule-name list (60+ named Defend/SIEM rules across worker-RCE, credential-access, Kubernetes/cloud audit, and egress/C2 categories) is in the fetched body if the main agent wants more granularity than the summary above carries.
+
+  - title: "Unit 42 catches a Chinese-speaking actor's autonomous AI offensive stack live — DeepSeek/Hermes Agent enumerates and exploits 7 CVEs with zero human input, exposed by its own misconfigured file server"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/", publisher: "Unit 42 (Palo Alto Networks)", date: "2026-07-30", role: "primary" }
+    discovery_trace: "first seen at: WebSearch (\"Unit 42 'Chinese-speaking threat actor' AI models autonomous cyberattacks July 2026\") → primary: Unit 42, URL https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/ (full article fetched via bridge; article:published_time confirmed 2026-07-30T10:00:52+00:00)"
+    summary: |
+      Unit 42 obtained full visibility into a live autonomous-AI attack operation after the actor's own "Hermes Agent" framework, responding to a Telegram command, started an HTTP file server (python3 -m http.server 8888) from its home directory rather than an isolated staging path, exposing the actor's entire tool configuration, API keys, exploit scripts, target lists, bash history and session logs. The actor (aliases knaithe / KnYuan, self-described binary-security researcher based in Zhuhai, China, and maintainer of the "1DayNews" automated RCE-alert pipeline) used DeepSeek as the reasoning engine behind the open-source Hermes Agent (already tracked here as tool:hermes-ai-agent from the unrelated Thailand-MoF Hunt.io case — this is a second, independent actor using the same framework) for fully autonomous vulnerability enumeration, exploit-code retrieval and exploitation attempts, orchestrated via Telegram C2. Hermes Agent was customized with three skills: "godmode" (LLM jailbreaking), a bundled unauthenticated-WebSocket exploitation module, and a custom FOFA-driven internet-asset-enumeration procedure feeding a DeepSeek natural-language-to-FOFA-query MCP server. In one recovered session, DeepSeek autonomously chose to abandon a Langflow CVE-2026-33017 (CVSS 9.8) target after assessing deployment scale as too small ("Deployments small (84 alive), exploitable probably 0"), then pivoted via GitHub PoC-star-count triage to n8n (647,017 global instances via FOFA), attempting the chained CVE-2026-21858 (arbitrary file read, CVSS 10.0) + CVE-2025-68613 (sandbox-bypass RCE, CVSS 9.9) against Chinese instances — failing because the required unauthenticated form endpoint was gated behind auth on every reachable target. Separate MANUAL campaigns by the same actor achieved confirmed impact: data exfiltration from three organizations (including persistent, multi-day targeting of a Malaysian government entity, with proxy-anonymized reconnection) via the Citrix NetScaler out-of-bounds-memory-read CVE-2026-3055, searching exfiltrated memory for NetScaler session-hijacking cookies (NSC_AAAC=); command execution on 11 Marimo-notebook instances (CVE-2026-39987); Java-deserialization reverse-shell attempts against 9 Apache Tomcat servers (CVE-2026-34486); and reverse-shell callbacks against 3 Windows IKE VPN endpoints (CVE-2026-33824). A cloned PoC for PAN-OS Captive Portal CVE-2026-0300 was non-functional (placeholder values, never executed). The actor tested Western tools (Claude Code, Codex) only for connectivity/proxy validation via a third-party proxy (code.newcli[.]com) with anti-attribution headers set and response-storage disabled — OpenAI independently confirmed to Unit 42 that its provider-side safeguards refused the actor's policy-violating requests and flagged/disabled the associated account before Unit 42's outreach. Unit 42's framing: exploitation was blocked only by target-side configuration (auto_login disabled, form auth enabled) — weaker defaults would have yielded compromise — and the autonomous capability itself caused the actor's own operational-security failure.
+    region_nexus: "global; confirmed victims in China, Malaysia (government) and elsewhere; the exploited product set (Langflow, n8n, Citrix NetScaler ADC/Gateway, Apache Tomcat, Marimo Notebook, PAN-OS Captive Portal, Windows IKE Extensions) is common across Swiss/EU enterprise and public-sector estates"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, all-sectors (edge/perimeter and workflow-automation software)"
+    cves: [CVE-2026-33017, CVE-2026-21858, CVE-2025-68613, CVE-2026-3055, CVE-2026-34486, CVE-2026-39987, CVE-2026-0300, CVE-2026-33824]
+    techniques: [T1595, T1190, T1539, T1102]
+    affected_products: ["Langflow", "n8n Workflow Automation", "Citrix NetScaler ADC & Gateway", "Apache Tomcat", "Marimo Notebook", "PAN-OS User-ID Authentication Portal (Captive Portal)", "Windows IKE Extensions (IKE VPN)"]
+    entity_keys: ["tool:hermes-ai-agent"]
+    new_entities:
+      - { key: "actor:knaithe-knyuan", type: actor, name: "knaithe / KnYuan", aliases: ["knaithe", "KnYuan"],
+          summary: "Chinese-speaking (Zhuhai-based), financially/opportunistically-motivated exploit operator and self-described binary-security researcher; maintains the '1DayNews' automated RCE-disclosure-to-Telegram-alert pipeline; ran an autonomous DeepSeek/Hermes Agent offensive stack against 7 CVEs across ~460 targets, with confirmed manual-exploitation impact via CVE-2026-3055 against a Malaysian government target (Unit 42, 2026-07-30)." }
+    relation_suggestions:
+      - { subject: "actor:knaithe-knyuan", object: "tool:hermes-ai-agent",
+          basis: "Unit 42: 'the actor primarily used the Hermes Agent with DeepSeek as its reasoning agent for the attack phase of this campaign' (Unit 42, 2026-07-30)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Unit 42 identified an AI-enabled autonomous hacking campaign carried out by a Chinese-speaking threat actor. They targeted infrastructure using seven vulnerabilities, combining autonomous AI-driven enumeration with manual exploitation that achieved confirmed impact."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/"
+      - quote: "We gained unique insights into this autonomous attack capability when the autonomous agent inadvertently exposed its infrastructure by starting a file server in its home directory."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/"
+      - quote: "Across all the exploitation attempts, both autonomous and manual, Unit 42 was only able to confirm three targets were successfully exploited."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/"
+    extended_notes: |
+      Strong deep-dive candidate: full tool-configuration table (model, jailbreak/permission settings, access method per AI tool) and a phase-by-phase autonomous decision transcript (DeepSeek's own reasoning text, e.g. abandoning Langflow for n8n) are in the fetched body — this is one of the most granular publicly documented "autonomous attacker" session reconstructions to date and is a good candidate for the W1 threat-actor/campaign weekly rollup given the AI-tradecraft accelerant thread the prior weekly (2026-07-19) already opened.
+
+  - title: "Kaspersky: OctLurk and SilkLurk — two new plugin-based backdoors (medium-confidence Chinese-speaking actor) hit Central Asian and Syrian government bodies via scheduled-task/service-DLL loaders"
+    sources:
+      - { url: "https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-30", role: "primary" }
+    discovery_trace: "first seen at: xlab-qianxin RSS sweep prompted a broader Securelist RSS check, URL https://securelist.com/feed/ (item dated 30 Jul 2026 11:00 UTC) → primary: Kaspersky Securelist, URL https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/ (full article fetched via bridge)"
+    summary: |
+      Kaspersky GReAT disclosed two new plugin-based backdoors, OctLurk and SilkLurk, active since at least January 2025 against government organizations in Afghanistan, Kyrgyzstan, Tajikistan, Uzbekistan, Kazakhstan and Syria, spanning healthcare, research institutes, foreign-affairs ministries, logistics, law enforcement, urban planning/facilities management and public education. Kaspersky assesses with medium confidence that the same, as-yet-unattributed Chinese-speaking actor operates both families (some SilkLurk victims also carry OctLurk). Deployment already presumes admin-level access: the attacker creates a scheduled task named "GoogleUpDate" (running once under System privileges) executing a batch script that installs a Windows service (observed service names include NgcCIntSvc, Cusrxsrv, specitsrc, cmtastsvc, PNRPHostSvc, vmictimerosync, vmicagent) whose ServiceMain registry value is repointed to a RegisterService export in a malicious loader DLL. The loader double-XOR-decrypts (one hard-coded key, one derived from the C: drive serial number) and zlib-decompresses a payload path and the backdoor DLL itself, then reflectively injects the DLL into memory. OctLurk communicates over a hard-coded C2 (port 443) using double-XOR + zlib framing on both send and receive, and loads plugins directly from the C2 into memory: a File Manager plugin (drive/file enumeration, ShellExecuteExW/CreateProcessAsUserW execution, SHFileOperationW copy/move/delete, timestamp tampering, chunked file read/write with CRC32 verification), a Command Shell plugin (cmd.exe spawn, command relay via temp-file redirection), and an Interaction Manager plugin (screen capture, clipboard read/write, synthesized mouse/keyboard events via low-level Win32 event codes). Post-compromise, the attacker used the command-shell plugin to fingerprint victims (chcp 1256 for Arabic code-page support, qwinsta/klist/TASKLIST, wevtutil query for EventID 4624 LogonType 10 RDP logons, WMIC AV enumeration, netstat connection enumeration) and separately deployed Impacket's secretsdump, a custom keylogger, a browser-password decryptor, Pandora FMS remote-access agents, the FSCAN network scanner, and email-harvesting tooling. A companion utility, LurkProxy, shares OctLurk's architecture but is not itself a backdoor. SilkLurk victims additionally received PlugX as a second-stage payload. Both loader families are heavily obfuscated per-victim (payload decryption keys derive from victim-machine data), complicating static analysis and signature-based detection.
+    region_nexus: "out-of-nexus (Central Asia and Syria government targets); the credential-harvesting/plugin-backdoor architecture (service-based DLL sideload, double-XOR+zlib obfuscation, in-memory plugin loading, Impacket secretsdump usage) is directly transferable tradecraft for any government-sector detection team"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector (government, healthcare, education, law-enforcement)"
+    cves: []
+    techniques: [T1053.005, T1543.003, T1055, T1027, T1003, T1056.001, T1555.003, T1046, T1219, T1114]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:octlurk", type: malware, name: "OctLurk", aliases: [],
+          summary: "Plugin-based Windows backdoor (service-loaded, reflectively-injected DLL) deployed against Central Asian/Syrian government targets since Jan 2025; hard-coded C2 with double-XOR+zlib framing; File Manager/Command Shell/Interaction Manager in-memory plugins (Kaspersky GReAT, 2026-07-30)." }
+      - { key: "malware:silklurk", type: malware, name: "SilkLurk", aliases: [],
+          summary: "Sibling backdoor to OctLurk sharing loader architecture and victimology (Central Asia/Syria government); deploys PlugX as a second-stage payload on some victims (Kaspersky GReAT, 2026-07-30)." }
+      - { key: "tool:lurkproxy", type: tool, name: "LurkProxy", aliases: [],
+          summary: "Companion utility architecturally similar to the OctLurk backdoor but not itself a backdoor, deployed alongside OctLurk/SilkLurk (Kaspersky GReAT, 2026-07-30)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "We assess with medium confidence that the same threat actor is behind both backdoors, and that they are Chinese-speaking. However, at the time of publication, we couldn't attribute this activity to any known group."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/"
+      - quote: "The backdoor loaders are customized for each victim and use information from the victim's machine to decrypt the payload. Both the loaders and the backdoors are heavily obfuscated, making analysis more complicated."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/octlurk-silklurk-backdoors-central-asia/120840/"
+    extended_notes: |
+      Full plugin-command-ID tables (File Manager, Command Shell, Interaction Manager switch cases) and complete victim fingerprinting batch-script command table are in the fetched body if a deeper hunt-signal writeup is wanted.
+
+  - title: "Kaspersky: Toy Ghouls upgrades to a custom Windows+Linux/ESXi ransomware, GenieLocker — no ransom note left on disk, in-band manual demand only"
+    sources:
+      - { url: "https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/", publisher: "Kaspersky Securelist (Malware descriptions)", date: "2026-07-30", role: "primary" }
+    discovery_trace: "first seen at: Securelist RSS sweep, URL https://securelist.com/feed/ (item dated 30 Jul 2026 08:00 UTC) → primary: Kaspersky Securelist, URL https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/ (full article fetched via bridge)"
+    summary: |
+      Kaspersky documents GenieLocker, a new custom ransomware family (active since March 2026) built by the Toy Ghouls extortion group (aka Bearlyfy, Labubu, Laboo.boo) — previously reliant on third-party lockers (RedAlert, LockBit, Babuk) — to reduce third-party dependency. In the analyzed March-2026 intrusion against a Russian manufacturing-sector victim, initial access came through an OpenVPN connection from an external partner's network using stolen-but-still-valid credentials, abusing the trusted partner relationship. Post-access, the actor installed OpenSSH, socks5.exe, SoftPerfect Network Scanner and Mimikatz for discovery/credential dumping, and accessed the already-installed KeePassXC password manager to attempt extraction of stored credentials from local KeePass databases. Lateral movement used RDP (Windows) and SSH (Linux); mass deployment of the ransomware binary used the legitimate utilities PsExec and PAExec; C2 ran over a reverse SSH tunnel. No data exfiltration was found — consistent with the group's established pattern of not running double extortion or a leak site. GenieLocker's Windows build (MSVC-compiled C/C++, libsodium for crypto) requires a "secret argument" hex string (SHA-256-checked against a hard-coded value) before it will run at all — evading sandboxes/automated analysis and non-authorized reuse — and spawns a watchdog thread that polls IsDebuggerPresent/CheckRemoteDebuggerPresent every 500ms plus a running CRC32 check of its own .text section to detect debugger tampering, immediately terminating on any check failure. It deliberately leaves no ransom note on disk (avoiding detection heuristics keyed on mass README creation); demands are delivered manually by the attackers out-of-band. The Linux/ESXi ELF build additionally stops running virtual machines before encrypting their disks. Exclusion lists cover system folders/files/extensions to avoid corrupting the host OS.
+    region_nexus: "out-of-nexus (Russian Federation manufacturing-sector victim; Toy Ghouls' documented targeting is Russia-focused); the trusted-partner-VPN initial-access vector, KeePassXC credential-store targeting, and PsExec/PAExec-driven Windows+Linux/ESXi dual-platform encryption are directly transferable tradecraft for any organization with third-party VPN access or hypervisor estates"
+    primary_sector_nexus: "indirect"
+    sector: "manufacturing"
+    cves: []
+    techniques: [T1199, T1078, T1552.001, T1003.001, T1021.001, T1021.004, T1570, T1572, T1622, T1486]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:toy-ghouls", type: actor, name: "Toy Ghouls", aliases: ["Bearlyfy", "Labubu", "Laboo.boo"],
+          summary: "Financially motivated extortion group targeting Russian organizations (primarily manufacturing); previously relied on third-party encryptors (RedAlert, LockBit, Babuk) before developing the custom GenieLocker ransomware; does not run double extortion or a leak site (Kaspersky, 2026-07-30)." }
+      - { key: "malware:genielocker", type: malware, name: "GenieLocker", aliases: [],
+          summary: "Custom Windows (libsodium-based) and Linux/ESXi ransomware developed by Toy Ghouls, active since March 2026; requires a hashed 'secret argument' to execute, includes anti-debug watchdog with CRC32 self-integrity checking, and leaves no on-disk ransom note (Kaspersky, 2026-07-30)." }
+    relation_suggestions:
+      - { subject: "actor:toy-ghouls", object: "malware:genielocker",
+          basis: "Kaspersky: 'We found this family in attacks by Toy Ghouls, a financially motivated extortion group' and 'GenieLocker, apparently a custom design, upgrades their toolkit' (Kaspersky Securelist, 2026-07-30)" }
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The new GenieLocker ransomware family has been active since March 2026. It has been used in attacks against organizations in the Russian Federation, primarily in the manufacturing sector, and attributed to the Toy Ghouls group by open-source intelligence."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/"
+      - quote: "the attackers first entered the environment through an OpenVPN connection originating from an external partner's network. They likely exploited the trusted relationship with that partner and used stolen, yet still valid, credentials to connect."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/"
+      - quote: "GenieLocker doesn't save the ransom notes on the victim's system... the attackers will need to deliver the ransom demands and contacts manually during the attack."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/genielocker-ransomware-for-windows-linux-and-esxi/120843/"
+    extended_notes: |
+      Companion piece to the OctLurk/SilkLurk item above, same publication day from the same lab — main agent may want to run these as two entries (different actor, malware class and victimology) rather than merge.
+      Full encryption-routine cryptography, folder/file/extension exclusion lists, and command-line argument table are in the fetched body.
+
+  - title: "Rapid7 (with Rails/Ethiack/GMO Flatt Security): CVE-2026-66066 'KindaRails2Shell' — unauthenticated file-read-to-secrets-exposure in Rails Active Storage's default libvips image processor, CVSSv4 9.5"
+    sources:
+      - { url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails", publisher: "Rapid7", date: "2026-07-30", role: "primary" }
+      - { url: "https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm", publisher: "Ruby on Rails / GitHub Security Advisories", date: "2026-07-29", role: "primary" }
+    discovery_trace: "first seen at: rapid7 RSS feed, URL https://blog.rapid7.com/rss.xml (item dated Thu 30 Jul 2026 16:11:10 GMT, full body in feed) → primary: Rapid7, URL https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails, cross-referenced against the Rails GHSA advisory linked inline"
+    summary: |
+      On 2026-07-29 the Ruby on Rails project published GHSA-xr9x-r78c-5hrm for CVE-2026-66066 ("KindaRails2Shell"), a critical vulnerability (CVSSv4 9.5, CWE-1188 Initialization of a Resource with an Insecure Default) affecting Active Storage's image-variant processing when backed by the libvips library — the default Active Storage variant processor since Rails 7.0. libvips exposes format-loading/saving operations, some explicitly marked "unfuzzed"/"untrusted" because they are unsafe for untrusted content; Active Storage did not disable these operations before processing user-supplied uploads, so a crafted image upload can trigger an unsafe libvips operation and disclose arbitrary files readable by the Rails application process — no authentication or even variant-generation is required, only that the app accepts image uploads from untrusted users while using the Vips processor. Disclosed by independent researchers Ethiack and GMO Flatt Security, who withheld PoC code and the full attack chain; public code claiming to exploit the CVE exists but its correspondence to the actual reported chain is unconfirmed. Rapid7 states it is not aware of in-the-wild exploitation as of 2026-07-30; full technical details are due by 2026-08-28 per the Rails security announcement. Disclosed file-read access can expose secrets (Rails secret_key_base, master key and decrypted credentials, storage/database credentials, third-party tokens) enabling downstream RCE or lateral access to connected systems — hence the "possible RCE" framing rather than confirmed direct code execution. Affected: Rails 7.0.0-7.2.3.1 (fixed 7.2.3.2), 8.0.0-8.0.5 (fixed 8.0.5.1), 8.1.0-8.1.3 (fixed 8.1.3.1); Rails 6.0.0-6.1.7.10 may also be affected when Vips is explicitly configured (no fixed 6.x release — migrate or apply the workaround). Remediation requires BOTH a fixed Active Storage/Rails release AND libvips >= 8.13 — patching Rails alone with an old libvips is insufficient. Temporary workaround on libvips >= 8.13: set the VIPS_BLOCK_UNTRUSTED environment variable, or call Vips.block_untrusted(true) from an initializer with ruby-vips >= 2.2.1; on older libvips, the only workaround is removing the libvips dependency. Given secret exposure, affected organizations are advised to rotate secret_key_base and all credentials accessible to the app process (this invalidates active sessions and all encrypted/signed cookies, signed global IDs and Active Storage URLs).
+    region_nexus: "global; Ruby on Rails is widely used for public-facing web applications and citizen/e-government portals across the Swiss/European public and private sector"
+    primary_sector_nexus: "direct"
+    sector: "public-sector, all-sectors (any Rails-based web application accepting image uploads)"
+    cves: [CVE-2026-66066]
+    techniques: [T1190, T1552]
+    affected_products: ["Ruby on Rails (Active Storage)", "libvips", "ruby-vips"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated attacker may be able to leverage CVE-2026-66066 and read files accessible to the Rails application process, potentially exposing secrets that could enable remote code execution (RCE) or access to connected systems."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails"
+      - quote: "As of July 30, 2026, Rapid7 is not aware of exploitation in the wild. Ethiack and GMO Flatt Security, who independently reported the vulnerability, have withheld proof-of-concept code and details of the full attack chain."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails"
+      - quote: "Updating Rails or Active Storage alone is not sufficient when an older libvips version is installed."
+        attribution: "Rapid7"
+        source_url: "https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails"
+    extended_notes: |
+      This item sits at the S1/S3 boundary (a fresh, unexploited-so-far critical CVE with vendor advisory + independent researcher corroboration) — surfaced here because it came from a vendor research-blog sweep (Rapid7) outside the curated S1 KEV/EUVD discovery path per the S3 mission brief. Main agent should check against S1's parallel findings for a possible merge/dedup before composing.
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: reliaquest
+    reason: "jina reader keys exhausted (HTTP 402, all 3 rotated) mid-run; fell back to direct browser-UA fetch which returned only the WordPress blog listing shell (dated titles through 2026-07-16 'Helix' post, already covered) — no in-window ReliaQuest item found. Direct fetch worked for the listing so this is not a hard failure, just no fresh content."
+  - source_id: sygnia
+    reason: "https://www.sygnia.co/blog/ returned HTTP 403 via WebFetch; the bridge (`url`) fetch returned only page head/CSS-loading boilerplate with no rendered post list (client-side rendered). WebSearch cross-check found nothing dated inside the 26h window (latest identifiable post 2026-07-28, an AI-generated-code pentest write-up, outside window)."
+  - source_id: ibm-xforce
+    reason: "Listing page (bridge) returns no inline dates as previously noted; drilled into 6 linked X-Force articles via the listing's href list, checked dcterms.date on two (2026-06-30, 2026-07-29) — both outside the 26h window. Did not drill the remaining 4 given time budget; none had titles suggesting fresher content than the dated ones checked."
+  - source_id: nozomi-networks
+    reason: "Listing (bridge) live and drillable; most recent dated post found (APT28 IP-camera/NATO-supply-route piece) was 2026-07-23 — outside window and substantially a rehash of the already-covered weekly W29 Russia-IP-camera-hijacking item, so dropped rather than logged as a failure."
+  - source_id: dfirreport
+    reason: "Feed live, most recent item 2026-06-29 ('Bumblebee/AdaptixC2 to Akira') — outside window, low cadence is the publisher's normal pace per source note."
+  - source_id: xlab-qianxin
+    reason: "Feed live; most recent English item (Dysphoria botnet English translation, 2026-07-29) is a re-publish of the already-covered Dysphoria/CNCERT research — dropped as duplicate, not a failure."
+  - source_id: citizen-lab
+    reason: "Feed live; most recent items (NSO co-founder diplomatic-passport story 2026-07-28, Iran cellular-targeting pieces) are investigative/policy journalism without technical depth suited to this audience — judged out of S3 scope rather than a fetch failure."
+  - source_id: seqrite-labs
+    reason: "Feed live; most recent research item (Phantom Stealer campaign) dated 2026-07-22 — outside window."
+  - source_id: intel471
+    reason: "Feed live; most recent item (npm/CI-CD supply-chain piece) dated 2026-07-28 11:00 GMT — outside the 26h window and not a continuation of a tracked story, so dropped per strict recency discipline."
