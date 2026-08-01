@@ -1,0 +1,172 @@
+domain: S3
+run_id: 2026-08-01T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-01T04:11:38Z
+ended_at: 2026-08-01T04:24:59Z
+duration_seconds: 801
+self_telemetry:
+  webfetch_calls: 34
+  websearch_calls: 8
+  bridge_fetches: 11
+items:
+  - title: "XCSSET v40: Unit 42 uses LLM-assisted deobfuscation to reverse a polymorphic, in-memory macOS Xcode-supply-chain implant"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/xcsset-v40-malware-analysis/", publisher: "Palo Alto Networks Unit 42", date: "2026-07-31", role: "primary" }
+    discovery_trace: "first seen at: unit42 (S3 slice), URL https://unit42.paloaltonetworks.com/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/xcsset-v40-malware-analysis/ (URL confirmed via WebSearch after an initial guessed slug 404'd)"
+    summary: |
+      Unit 42 published a deep-dive on XCSSET v40, the latest version of the long-running macOS malware family that infects Xcode projects and Git repositories to compromise developers via a software-supply-chain vector (T1195.001): the malicious payload rides the Xcode "run script" build phase and executes when a developer locally builds an infected project, then pulls further stages from C2. Distribution has run since early April 2026 through dozens of legitimate Xcode projects with thousands of active users, with heightened targeting observed across South Asia. v40's defense evasion is unusually layered: payload binaries are recompiled every few hours with different hashes (polymorphic generation), a dual-key encryption architecture separates inbound/outbound C2, and a per-module Caesar-cipher obfuscates string literals; core logic is deliberately kept in memory to reduce on-disk footprint (T1027). Persistence combines Git hooks with a Launch Daemon (T1543.004), and fileless persistence abuses the macOS `defaults` preference-domain system as an ad hoc configuration cache — storing Base64-encoded payload fragments under randomized preference keys, a technique Unit 42 calls uncommon in the macOS malware landscape. The malware actively degrades host defenses: it disables SoftwareUpdate channels, kills CloudTelemetryService, takes an exclusive file lock on the XProtect signature database, and resets TCC permission state to force the user to re-consent (T1685, T1548.006). Unit 42 states it used pattern-matching plus LLM assistance to break XCSSET's identifier-substitution cipher and recover the server-side pre-compilation obfuscation — a concrete case of AI-assisted reverse engineering being used defensively against an AI-obfuscation-resistant malware design.
+    region_nexus: "global distribution via public Xcode/Git repositories; heightened targeting observed across South Asia; any organization running Xcode-based development, including EU/CH software suppliers, is in the exposure set"
+    primary_sector_nexus: "indirect (public-sector software suppliers using Xcode/macOS developer tooling)"
+    sector: "technology, software-development, cross-sector"
+    cves: []
+    techniques: [T1195.001, T1027, T1543.004, T1685, T1548.006]
+    affected_products: ["Apple Xcode"]
+    entity_keys: []
+    new_entities:
+      - { key: "malware:xcsset", type: malware, name: "XCSSET", aliases: ["XCSSET v40"],
+          summary: "Long-running macOS malware that infects Xcode projects/Git repos to compromise developers via a build-time supply-chain vector; v40 adds polymorphic payload recompilation, in-memory core logic, and abuse of the macOS defaults system for fileless persistence (Unit 42, 2026-07-31)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Since early April 2026, the malware has spread through supply chain attacks by hiding itself in the Xcode projects of dozens of legitimate applications with thousands of active users."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/xcsset-v40-malware-analysis/"
+      - quote: "The malware scrambles its payload generation at compile time, switching between nested layers of different encryption mechanisms."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/xcsset-v40-malware-analysis/"
+      - quote: "XCSSET v40 uses the defaults system during initial infection to store and query system information. Misusing defaults as an operational configuration cache is uncommon in the macOS malware landscape."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/xcsset-v40-malware-analysis/"
+    extended_notes: |
+      Background: XCSSET has been tracked since 2020 by Trend Micro and updated by Microsoft in March and September 2025 (both cited as outbound references). This v40 disclosure is the first 2026 technical update in this pipeline's coverage.
+
+  - title: "CaptiveCrunch: a Midnight Blizzard sub-cluster (Storm-2945) hijacks hospitality captive-Wi-Fi portals to plant a Go RAT and a PowerShell stealer on corporate travelers"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/07/31/captivecrunch-midnight-blizzard-targets-travelers-worldwide-for-malware-delivery-and-credential-theft/", publisher: "Microsoft Threat Intelligence", date: "2026-07-31", role: "primary" }
+      - { url: "https://reliaquest.com/blog/threat-spotlight-dns-poisoning-tactics-expand-to-hospitality/", publisher: "ReliaQuest", date: "2026-07-23", role: "corroborating" }
+    discovery_trace: "first seen at: msft-ti (S3 slice), URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/07/31/captivecrunch-midnight-blizzard-targets-travelers-worldwide-for-malware-delivery-and-credential-theft/ → cross-reference: ReliaQuest, URL https://reliaquest.com/blog/threat-spotlight-dns-poisoning-tactics-expand-to-hospitality/ (linked from the Microsoft post's references)"
+    summary: |
+      Microsoft Threat Intelligence assesses Storm-2945 is an operational sub-cluster of Midnight Blizzard (the SVR-attributed Russian actor) running an operation it names CaptiveCrunch, active since May 2026, that targets corporate travelers by manipulating hospitality-venue captive-portal networks (hotels, conference centers, airports). The actor manipulates DNS/HTTP traffic at the compromised gateway to redirect connecting users through actor-controlled infrastructure (T1557, Adversary-in-the-Middle) and then serves a ClickFix-style fake Windows/browser-update lure via JavaScript injected into the captive-portal page (T1204.004). The primary payload, CornFlake, is a feature-rich Go-based Windows RAT with screenshot capture, keylogging, clipboard monitoring, audio/video surveillance, browser credential theft, USB monitoring and remote shell; it persists via a `svchost32` Windows service (T1543.003), Registry Run keys (T1547.001) and a scheduled task (T1053.005), with a watchdog routine that restores any persistence mechanism an operator or defender removes. C2 uses ECDH P-256 ephemeral key exchange with SHA-256 session-key derivation over a custom encrypted JSON protocol. A secondary PowerShell tool, ChocoShell, is deployed for high-volume theft of browser session cookies, saved passwords, Microsoft 365 SSO tokens and Wi-Fi credentials (T1555.003, T1539, T1528), using multiple UAC-bypass techniques. Storm-2945 has separately run device-code and OAuth-code phishing against the same traveler population, tying the campaign into Microsoft's broader Entra-ID phishing tracking. Independently, ReliaQuest reported a related but not identical hospitality-captive-portal DNS-poisoning campaign on 2026-07-23 (compromised gateways in the US, India and Saudi Arabia, victim traffic from financial services, legal, healthcare and energy sectors) that it explicitly declines to attribute to CaptiveCrunch/Storm-2945 itself, noting only TTP overlap with the actor's prior "FrostArmada" activity — corroborating the broader captive-portal attack surface without confirming the specific Storm-2945 claim. Microsoft ships KQL hunting queries (NCSI-connectivity-then-file-creation patterns, CornFlake service/registry artifacts, ChocoShell C2 traffic) and Defender alert names including a Russian-state-actor tag, UAC-bypass detections and OAuth device-code anomaly detections.
+    region_nexus: "global targeting of traveling corporate/government personnel at hotels and conference venues; directly relevant to Swiss/European government and CI staff traveling internationally, and to any hospitality-sector operator running captive-portal Wi-Fi"
+    primary_sector_nexus: "direct (government/diplomatic travelers are the named target population); additional exposure for hospitality, finance, legal, healthcare and energy per ReliaQuest's related finding"
+    sector: "public-sector, hospitality, cross-sector (any captive-portal operator)"
+    cves: []
+    techniques: [T1557, T1204.004, T1543.003, T1547.001, T1053.005, T1555.003, T1539, T1528]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "actor:midnight-blizzard", type: actor, name: "Midnight Blizzard", aliases: ["APT29", "Cozy Bear", "Nobelium", "Cloaked Ursa", "SVR"],
+          summary: "SVR-attributed Russian state cyber-espionage actor; long-tracked by this pipeline only via campaign/incident summaries, never registered as its own actor entity until this run (Microsoft, 2026-07-31)." }
+      - { key: "actor:storm-2945", type: actor, name: "Storm-2945", aliases: [],
+          summary: "Microsoft-tracked operational sub-cluster of Midnight Blizzard running the CaptiveCrunch operation — hospitality captive-portal hijacking to deliver the CornFlake RAT and ChocoShell stealer against traveling corporate/government personnel (Microsoft, 2026-07-31)." }
+      - { key: "malware:cornflake-go-rat", type: malware, name: "CornFlake", aliases: [],
+          summary: "Storm-2945's primary Go-based Windows RAT delivered via CaptiveCrunch — screenshot/keylog/clipboard/audio-video capture, browser credential theft, remote shell, ECDH P-256 C2 (Microsoft, 2026-07-31)." }
+      - { key: "tool:chocoshell-powershell-stealer", type: tool, name: "ChocoShell", aliases: [],
+          summary: "Storm-2945 PowerShell stealer harvesting browser cookies, saved passwords, Microsoft 365 SSO tokens and Wi-Fi credentials via multiple UAC-bypass techniques (Microsoft, 2026-07-31)." }
+      - { key: "campaign:captivecrunch-storm-2945-hospitality-wifi", type: campaign, name: "CaptiveCrunch", aliases: [],
+          summary: "Storm-2945/Midnight Blizzard operation (active since May 2026) hijacking hospitality captive-portal Wi-Fi to deliver CornFlake and ChocoShell against traveling corporate and government personnel (Microsoft, 2026-07-31)." }
+    relation_suggestions:
+      - { subject: "actor:storm-2945", object: "actor:midnight-blizzard",
+          basis: "Microsoft Threat Intelligence assesses that Storm-2945 is an operational sub-cluster of Midnight Blizzard based on distinctive technical and operational overlaps (Microsoft, 2026-07-31)" }
+      - { subject: "actor:storm-2945", object: "malware:cornflake-go-rat",
+          basis: "Microsoft: CornFlake is a full-featured Windows RAT written in Go that serves as Storm-2945's primary persistent implant (Microsoft, 2026-07-31)" }
+      - { subject: "actor:storm-2945", object: "tool:chocoshell-powershell-stealer",
+          basis: "Microsoft describes ChocoShell as Storm-2945's PowerShell tool for high-volume theft of browser session cookies, saved passwords, Microsoft 365 SSO tokens and Wi-Fi credentials (Microsoft, 2026-07-31)" }
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Storm-2945 has conducted AI-augmented operations including targeted device code and OAuth code phishing campaigns leading to Entra device registration and subsequent data collection from Microsoft 365."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/31/captivecrunch-midnight-blizzard-targets-travelers-worldwide-for-malware-delivery-and-credential-theft/"
+      - quote: "Microsoft Threat Intelligence assesses that Storm-2945 is an operational sub-cluster of Midnight Blizzard based on distinctive technical and operational overlaps."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/31/captivecrunch-midnight-blizzard-targets-travelers-worldwide-for-malware-delivery-and-credential-theft/"
+      - quote: "ChocoShell...primary objective is the high-volume theft of browser session cookies, saved passwords, Microsoft 365 SSO tokens, and Wi-Fi credentials."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/07/31/captivecrunch-midnight-blizzard-targets-travelers-worldwide-for-malware-delivery-and-credential-theft/"
+      - quote: "Compromised Wi-Fi gateways were identified across multiple US cities and internationally in India and Saudi Arabia, primarily in hotel and hospitality organizations"
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-dns-poisoning-tactics-expand-to-hospitality/"
+      - quote: "This campaign isn't currently assessed to be FrostArmada itself, but it shares enough tactics, techniques, and procedures (TTPs) to suggest tradecraft reuse at a minimum."
+        attribution: "ReliaQuest"
+        source_url: "https://reliaquest.com/blog/threat-spotlight-dns-poisoning-tactics-expand-to-hospitality/"
+    extended_notes: |
+      ReliaQuest's article is a related-but-distinct finding (different attribution posture, different confirmed geography) rather than a direct corroboration of the specific Storm-2945/CaptiveCrunch claim; verification is written as MULTI-SOURCE for the broader captive-portal-hijacking attack surface, with the Storm-2945 attribution itself resting on Microsoft alone. The main agent should keep that distinction visible in the entry body.
+
+  - title: "Huntress: the device-code-phishing wave against Microsoft 365 keeps moving infrastructure — Railway gives way to a VPS reseller (BL Networks), and reputation-based defenses keep missing it"
+    sources:
+      - { url: "https://www.huntress.com/blog/device-code-phishing-evolving-threats", publisher: "Huntress Labs", date: "2026-07-31", role: "primary" }
+    discovery_trace: "first seen at: huntress (S3 slice) via direct article-URL probe (RSS feed at huntress.com/blog/rss.xml only listed items through 2026-07-13, so the article was found by drilling a URL guessed from the site's slug pattern and confirmed live via bridge fetch), URL https://www.huntress.com/blog/device-code-phishing-evolving-threats → primary (no further pivot needed)"
+    summary: |
+      Huntress documents the continued evolution of Microsoft 365 device-code phishing, the OAuth device-authorization-flow abuse that lets an attacker obtain and replay a legitimate M365 token without stealing a password or defeating MFA outright (T1528, following T1566.002 lure delivery). The campaign this pipeline previously tracked as the Railway/EvilTokens device-code phishing wave (registry: campaign:railway-device-code-phishing-m365-2026, first reported by Huntress 2026-07-09 hosting on the Railway PaaS) has since moved its hosting to BL Networks, a VPS reseller operating since 2017 under ASN AS399629 — disposable, low-reputation infrastructure that keeps outrunning IP/ASN blocklists. Between April and July 2026, Huntress logged 533 events from a single BL Networks IP (216.203.20[.]95), including 113 successful logins in a 48-hour window. Huntress's detection guidance is explicitly behavioral rather than reputation-based: cluster successful `UserLoggedIn` events by hosting provider/ASN misalignment with a user's normal business context, especially when paired with device-code OAuth flow activity across multiple identities and organizations, and treat repeated successful sign-ins from infrastructure inconsistent with the account's normal geography/provider as the signal — not the underlying IP's reputation score, which lags disposable-infrastructure churn. Recommended hardening: restrict or disable device-code authentication where not required, enforce Conditional Access, enable Continuous Access Evaluation for faster token revocation, and treat MFA as insufficient on its own when a legitimate Microsoft authentication flow is what's being abused.
+    region_nexus: "global; any Microsoft 365 tenant permitting device-code authentication is exposed, including Swiss/European public-sector and enterprise tenants"
+    primary_sector_nexus: "indirect (identity/M365 tenant hardening applies across the public-sector and CI constituency)"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1528, T1566.002]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID"]
+    entity_keys: ["campaign:railway-device-code-phishing-m365-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Device code phishing is already difficult to detect because it doesn't look like old-school credential theft."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/device-code-phishing-evolving-threats"
+      - quote: "Infrastructure reputation is holding too much weight in many defense stacks."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/device-code-phishing-evolving-threats"
+      - quote: "Assume MFA alone is not enough when the attacker is abusing a legitimate Microsoft flow."
+        attribution: "Huntress Labs"
+        source_url: "https://www.huntress.com/blog/device-code-phishing-evolving-threats"
+    extended_notes: |
+      This continues a campaign already registered in entities/registry.yaml (campaign:railway-device-code-phishing-m365-2026, established from Huntress's 2026-07-09 report, which falls outside this run's 14-day prior_coverage window). Treated as `novelty: new` rather than update_of because no entry id for the original disclosure appears in the 14-day prior_coverage index; the main agent may prefer to frame this as a registry-linked delta given the shared campaign key.
+
+  - title: "Kaspersky documents the exact correlation logic KATA uses to flag Kerberoasting (per-account/IP unique-SPN thresholding) and DNS tunneling (subdomain+TXT volumetric thresholding)"
+    sources:
+      - { url: "https://securelist.com/tr/network-anomaly-detection-in-kata/120892/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-07-31", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist (S3 slice), URL https://securelist.com/ → primary: Kaspersky Securelist, URL https://securelist.com/tr/network-anomaly-detection-in-kata/120892/ (correct URL recovered via securelist.com/feed/ after an initial WebSearch-suggested mirror URL 404'd)"
+    summary: |
+      Kaspersky's GReAT team publishes the actual correlation-rule logic behind two of its Kaspersky Anti Targeted Attack (KATA) Network Anomaly Detection rules, which is portable analytic guidance beyond the specific product. For Kerberoasting (T1558.003) detection: group Kerberos sessions by source IP and client account name (`cname`), aggregate the set of unique Service Principal Names (`sname`) that receive TGS-REP responses for that IP/account pair within a configurable search window, and alert when the unique-SPN count meets or exceeds a threshold (`count_spns`) — after excluding system SPNs and an allowlist of known-legitimate IPs/users (`excl_sip`, `excl_users`). This directly targets the behavioral signature of mass ticket-granting-service requests used to harvest crackable service-account hashes, while avoiding false positives from routine TGS issuance. For DNS tunneling (T1071.004): flag a single client sending DNS queries with variable left-hand subdomain labels against a static right-hand domain while receiving TXT responses, when the combined byte volume of the encoded subdomains plus TXT response data crosses a `traffic_size` threshold within the search window. Kaspersky frames both rules as examples of a general design pattern — protocol-specific statistical baselining tuned to the organization's own infrastructure and usage patterns rather than static signatures — intended to reduce false positives against legitimate high-volume Kerberos/DNS traffic.
+    region_nexus: "global; the detection logic is directly reusable by any organization instrumenting Kerberos/DNS telemetry, independent of vendor"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: []
+    techniques: [T1558.003, T1071.004]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "This is Kaspersky's own product-detection documentation (KATA Network Anomaly Detection rules) rather than independent attacker-technique research; included because the correlation logic for both Kerberoasting and DNS-tunneling detection is concrete, vendor-portable, and directly reusable by a detection engineer building the equivalent SIEM/EDR analytic outside KATA. The main agent should judge whether this crosses the 'no product pitches' line for this deployment."
+    evidence:
+      - quote: "Group the sessions by the source IP address and client account name (cname), while aggregating sessions with unique SPNs. Generate an alert if a single IP address using a single client account receives TGS-REP responses for N unique SPN names within the specified search depth window, where N equals or exceeds the threshold variable count_spns."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/tr/network-anomaly-detection-in-kata/120892/"
+      - quote: "Generate an alert if the combined size (in bytes) of the unique DNS names and TXT response data for a single IP address within the search depth window exceeds the specified threshold (the traffic_size parameter)."
+        attribution: "Kaspersky Securelist (GReAT)"
+        source_url: "https://securelist.com/tr/network-anomaly-detection-in-kata/120892/"
+    extended_notes: |
+      Corroborated only by Kaspersky's own product documentation; no independent source found describing this specific ruleset. Confidence set MEDIUM to reflect the single-source, vendor-documentation nature despite high technical specificity.
+
+candidate_sources: []
+coverage_gaps:
+  - source_id: redcanary
+    reason: "RSS feed (redcanary.com/feed/) fetched cleanly (10 items) but no item published inside the 26h window — latest is 2026-07-23 (Intelligence Insights July 2026). No gap in transport, just no in-window signal."
+  - source_id: sysdig
+    reason: "Direct WebFetch on sysdig.com/blog returned an unhydrated Webflow shell with no article links; the documented rss_url (sysdig.com/blog/feed) fell back to the jina reader, which returned HTTP 402 (all pooled jina credentials exhausted) and 0 items. No transport succeeded this run for this source — genuine coverage gap, not a recipe issue on my end (jina pool exhaustion is a shared resource constraint outside this run's control)."
+  - source_id: group-ib
+    reason: "Bridge fetch (python3 tools/fetch_source.py url) returned the full blog listing HTML (831KB, HTTP 200) but the page's post cards are not date-ordered/dated in the static HTML (alphabetical archive links only, no visible publish dates); WebSearch cross-checks found the most recent identifiable post (JadeProx) dated 2026-07-23, outside this run's 26h window. Transport succeeded; no in-window item identified with confidence."
+  - source_id: project-discovery
+    reason: "Candidate-tier source with documented product-marketing-heavy output; not swept this run given time budget and its low prior contribution — no claim either way on in-window content."
+  - source_id: kommunaler-notbetrieb-de
+    reason: "Discovery-aid tracker for German municipal incident notices (S2-relevant, not S3 research); not swept as part of the S3 research-lab mission."

@@ -3025,7 +3025,7 @@ entities:
     name: "Joomla extension file-upload RCE wave"
     aliases: []
     nexus: null
-    summary: "A sustained wave of unrelated Joomla third-party extensions disclosed since late June 2026 with the identical arbitrary-file-upload-to-RCE flaw class (CWE-434), all surfaced by researcher mySites.guru via source-code audits: JoomShaper SP Page Builder (CVE-2026-48908), Joomlack Page Builder CK (CVE-2026-56290), Balbooa Forms (CVE-2026-56291), iCagenda (CVE-2026-48939), RSFiles! (CVE-2026-57827, unauthenticated, CVSS 10.0) and Phoca Download (CVE-2026-57828, authenticated, CVSS 9.0). Several members were CISA-KEV-listed within days — iCagenda after confirmed zero-day exploitation, Balbooa and Joomlack shortly after disclosure. RSFiles! and Phoca (both patched 2026-07-10) are the newest members and are not yet confirmed exploited (mySites.guru, 2026-07-08/10)."
+    summary: "A sustained wave of vulnerability disclosures in unrelated Joomla third-party extensions running since late June 2026, in which anonymous or near-anonymous single-request paths to full site compromise keep surfacing in widely-installed commercial components. It began as an arbitrary-file-upload-to-RCE cluster (CWE-434) surfaced by researcher mySites.guru via source-code audits: JoomShaper SP Page Builder (CVE-2026-48908), Joomlack Page Builder CK (CVE-2026-56290), Balbooa Forms (CVE-2026-56291), iCagenda (CVE-2026-48939), RSFiles! (CVE-2026-57827, unauthenticated, CVSS 10.0) and Phoca Download (CVE-2026-57828, authenticated, CVSS 9.0); several were CISA-KEV-listed within days, iCagenda after confirmed zero-day exploitation (mySites.guru, 2026-07-08/10). The wave has since broadened beyond that single flaw class and beyond one researcher: Balbooa Gridbox accepted a client-supplied cookie as proof of identity (CVE-2026-61425) and later let an anonymous visitor register straight into an administrator group (CVE-2026-65884/-65885, exploitation observed), and VulnCheck disclosed an unauthenticated PHP object injection reaching code execution in the Aimy Captcha-Less Form Guard anti-spam plugin (CVE-2026-65883, CWE-502). The through-line is the under-reviewed Joomla extension directory, not one CWE."
     first_seen: 2026-07-09
   - key: "trend:kaspersky-openclaw-ai-agent-skills-supply-chain"
     type: trend
@@ -4087,3 +4087,68 @@ entities:
         type: related-to
         source: "2026-07-31/anthropic-cyber-eval-environment-escape-pypi-package"
         note: "Anthropic states its review was prompted by the other vendor's disclosure of a comparable evaluation-environment escape and cites it directly."
+  - key: "actor:midnight-blizzard"
+    type: actor
+    name: "Midnight Blizzard"
+    aliases: ["APT29", "Cozy Bear", "Nobelium", "Cloaked Ursa"]
+    nexus: russia-nexus
+    summary: "Russia-based cyber-espionage actor attributed by the US and UK governments to the Foreign Intelligence Service of the Russian Federation (SVR), primarily targeting governments, diplomatic entities, NGOs and IT service providers in the US and Europe; known for compromise of valid accounts, abuse of OAuth applications for cloud lateral movement, and device-code phishing (Microsoft Threat Intelligence, 2026-07-31). Referenced in this pipeline's coverage since early 2026 via campaign and incident records; registered as its own actor entity on first dedicated coverage."
+    first_seen: 2026-08-01
+  - key: "actor:storm-2945"
+    type: actor
+    name: "Storm-2945"
+    aliases: []
+    nexus: russia-nexus
+    summary: "Microsoft-tracked cluster that Microsoft Threat Intelligence assesses to be an operational sub-cluster of Midnight Blizzard, on the basis of distinctive technical and operational overlaps including similarities to the Storm-2372 initial-access sub-cluster, Graph-based email exfiltration, social engineering over commercial messaging apps and shared victimology. Runs the CaptiveCrunch captive-portal hijacking operation and has conducted device-code and OAuth-code phishing leading to Entra device registration since February 2026 (Microsoft Threat Intelligence, 2026-07-31)."
+    first_seen: 2026-08-01
+    relations:
+      - to: "actor:midnight-blizzard"
+        type: related-to
+        source: "2026-08-01/captivecrunch-storm-2945-hospitality-captive-portal-rat"
+        note: "Microsoft assesses Storm-2945 is an operational sub-cluster of Midnight Blizzard; the vocabulary carries no parent/sub-cluster type, so the edge is typed as the generic fallback rather than upgraded to attribution or identity."
+      - to: "malware:cornflake-go-rat"
+        type: uses
+        source: "2026-08-01/captivecrunch-storm-2945-hospitality-captive-portal-rat"
+      - to: "tool:chocoshell-powershell-stealer"
+        type: uses
+        source: "2026-08-01/captivecrunch-storm-2945-hospitality-captive-portal-rat"
+  - key: "campaign:captivecrunch-storm-2945-hospitality-wifi"
+    type: campaign
+    name: "CaptiveCrunch"
+    aliases: []
+    nexus: russia-nexus
+    summary: "Operation active since early May 2026 in which Storm-2945 manipulates DNS and HTTP traffic on hospitality-sector networks served by captive portals worldwide, redirecting connecting users through actor-controlled infrastructure and answering automatic browser connectivity checks with ClickFix-style fake browser and operating-system update lures that deliver the CornFlake RAT and the ChocoShell stealer. Since 16 July 2026 a portion of the landing pages also drive Entra ID device-code phishing. Microsoft's investigation into how the captive-portal networks were initially compromised remains open, but it notes commonalities in equipment and management systems suggesting possible access to shared services within parts of the captive-portal ecosystem (Microsoft Threat Intelligence, 2026-07-31)."
+    first_seen: 2026-08-01
+    relations:
+      - to: "actor:storm-2945"
+        type: attributed-to
+        source: "2026-08-01/captivecrunch-storm-2945-hospitality-captive-portal-rat"
+        note: "Microsoft attributes CaptiveCrunch to Storm-2945 despite TTP similarities to a separately-tracked DNS hijacking operation."
+  - key: "malware:cornflake-go-rat"
+    type: malware
+    name: "CornFlake"
+    aliases: []
+    nexus: null
+    summary: "Storm-2945's primary persistent Windows implant, written in Go and delivered by the CaptiveCrunch captive-portal lures. Runs first in dropper mode behind a configurable fake progress window imitating Windows Update, a security scan or a redistributable installer, then registers as a Windows service masquerading as a cloud-sync utility. Establishes redundant persistence across service registration, Registry Run keys and scheduled tasks with a watchdog that restores anything defenders remove; command and control uses ephemeral ECDH P-256 key exchange with SHA-256 session-key derivation over a custom JSON protocol. Collection covers keylogging, clipboard, screenshots, microphone and webcam capture, removable media, browser credential theft and an eighteen-category host security-posture sweep (Microsoft Threat Intelligence, 2026-07-31)."
+    first_seen: 2026-08-01
+  - key: "tool:chocoshell-powershell-stealer"
+    type: tool
+    name: "ChocoShell"
+    aliases: []
+    nexus: null
+    summary: "Storm-2945's in-memory PowerShell infostealer, deployed alongside CornFlake in the CaptiveCrunch operation for high-volume theft of browser session cookies, saved passwords, Microsoft 365 SSO tokens and Wi-Fi credentials. Disables AMSI via .NET reflection, performs a timing-based sandbox check, and escalates through three silent UAC-bypass techniques in ordered fallback before reverting to a visible prompt. Defeats Chrome App-Bound Encryption both by impersonating a SYSTEM token and by driving the browser's own DevTools Protocol, and collects Microsoft 365 and Azure AD access, refresh and Web Account Manager tokens from the Token Broker cache, enabling SSO session replay without browser cookies (Microsoft Threat Intelligence, 2026-07-31)."
+    first_seen: 2026-08-01
+  - key: "malware:xcsset"
+    type: malware
+    name: "XCSSET"
+    aliases: ["XCSSET v40"]
+    nexus: null
+    summary: "Modular macOS malware family targeting Apple-ecosystem developers by infecting Xcode projects and Git repositories, so the payload executes when a developer builds an infected project locally. First documented by Trend Micro in 2020 with two further versions documented by Microsoft in 2025. Version 40, analysed by Unit 42 on 2026-07-31, keeps its core logic in memory and deletes its installation files, recompiles payloads polymorphically, and adds fileless persistence that stores a Base64 staging payload in a per-host macOS defaults preferences domain. It degrades platform defences by disabling the software-update configuration channel, terminating the cloud telemetry process, holding an exclusive file lock on the XProtect signature database, and resetting the TCC AppleEvents permission database to re-prompt a user who declines (Palo Alto Networks Unit 42, 2026-07-31)."
+    first_seen: 2026-08-01
+  - key: "incident:france-education-nationale-agent-training-breach-2026-07"
+    type: incident
+    name: "French Éducation nationale agent-training system breach (July 2026)"
+    aliases: []
+    nexus: null
+    summary: "Compromise of a French Ministry of Education professional account overnight on 2026-07-25, used to reach the ministry's internal information system for managing agent training. Identity and professional data for every agent who has worked in a French académie since 2001 was present in the environment, with postal address, telephone number and social-security number (NIR) for a subset; the ministry states the system held no passwords, banking details or pupil data, and that it is not established that every record was actually viewed or downloaded. External access was suspended on 26 July, ANSSI and the CNIL were notified and a criminal complaint filed. Third confirmed Éducation nationale data incident of 2026, after the March COMPAS breach of roughly 243,000 agent and trainee records and an April incident exposing pupil data through an ÉduConnect-linked service (Cyberattaque.org, franceinfo, Clubic, 2026-07-31)."
+    first_seen: 2026-08-01

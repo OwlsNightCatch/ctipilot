@@ -1,0 +1,206 @@
+domain: S1
+run_id: 2026-08-01T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-01T04:11:23Z
+ended_at: 2026-08-01T04:30:49Z
+duration_seconds: 1166
+self_telemetry:
+  webfetch_calls: 33
+  websearch_calls: 4
+  bridge_fetches: 15
+
+items:
+  - title: "IBM WebSphere Application Server: two pre-auth CVSS-9.8 flaws (admin-console priv-esc + deserialization RCE) with no full patch until Q3 2026"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12821", publisher: "NCSC Switzerland (GovCERT.ch) — Cyber Security Hub", date: "2026-07-31", role: primary }
+      - { url: "https://www.ibm.com/support/pages/node/7281649", publisher: "IBM PSIRT", date: "2026-07-28", role: primary }
+      - { url: "https://www.ibm.com/support/pages/node/7281631", publisher: "IBM PSIRT", date: "2026-07-28", role: primary }
+      - { url: "https://www.heise.de/news/IBM-WebSphere-Application-Server-Sicherheitsproblem-in-Admin-Konsole-geloest-11386356.html", publisher: "heise online", date: "2026-07-30", role: corroborating }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12821 (bridge: ncsc-csh recent 15) → primary: IBM PSIRT, URL https://www.ibm.com/support/pages/node/7281649 and https://www.ibm.com/support/pages/node/7281631 → corroborating: heise online, URL https://www.heise.de/news/IBM-WebSphere-Application-Server-Sicherheitsproblem-in-Admin-Konsole-geloest-11386356.html"
+    summary: |
+      IBM's 28 July 2026 security bulletins disclose two CVSS 9.8 pre-authentication flaws in WebSphere Application Server traditional versions 9.0.0.0–9.0.5.28 and 8.5.0.0–8.5.5.30, both reaching NCSC Switzerland's advisory feed on 31 July. CVE-2026-14512 (CWE-502) is unsafe deserialization reachable without authentication, letting a remote attacker bypass auth or execute arbitrary code; CVE-2026-14446 (CWE-306, missing authentication for critical function) is a broken-access-control flaw in the administrative console that lets an unauthenticated network-reachable attacker escalate to full administrative control. A third, lower-severity CVE-2026-14528 (CVSS 7.4) discloses sensitive data via log files. IBM states no workaround exists and "strongly recommends addressing the vulnerability now by applying a currently available interim fix or fix pack" — the permanent Fix Pack (9.0.5.29 / 8.5.5.31) is not targeted for release until 3Q2026, so affected organisations are running on interim APARs (e.g. PH72191/PH72192) for roughly two more months. No exploitation has been reported by IBM, NCSC-CH, or heise as of publication.
+    region_nexus: "global; WebSphere is widely deployed in Swiss/EU banking, insurance and government back-office Java estates"
+    primary_sector_nexus: "direct"
+    sector: "finance, public-sector"
+    cves: [CVE-2026-14512, CVE-2026-14446, CVE-2026-14528]
+    techniques: [T1190, T1068]
+    affected_products: ["IBM WebSphere Application Server (traditional)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "IBM strongly recommends addressing the vulnerability now by applying a currently available interim fix or fix pack."
+        attribution: "IBM PSIRT"
+        source_url: "https://www.ibm.com/support/pages/node/7281631"
+      - quote: "IBM WebSphere Application Server traditional is vulnerable to pre-authentication unsafe deserialization which could allow a remote attacker to bypass authentication or execute arbitrary code."
+        attribution: "IBM PSIRT"
+        source_url: "https://www.ibm.com/support/pages/node/7281649"
+      - quote: "Das Problem ist, dass die fehlerbereinigten Versionen bislang nur für das dritte Quartal angekündigt sind."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/IBM-WebSphere-Application-Server-Sicherheitsproblem-in-Admin-Konsole-geloest-11386356.html"
+    extended_notes: |
+      No CVSS-9.8 CVE in this bulletin is CISA-KEV listed and none show confirmed exploitation; the urgency driver is the absence of a permanent patch for a pre-auth RCE class flaw on a widely deployed enterprise Java app server, not observed abuse. Detection concept: monitor WebSphere admin-console access logs / SOAP connector traffic for unauthenticated requests reaching privileged administrative endpoints, and Java deserialization telemetry (unexpected class-loading, JVM crash/restart patterns) on the app-server process.
+
+  - title: "SolarWinds Web Help Desk: unauthenticated SAML 2.0 full authentication bypass (CVE-2026-28323, CVSS 9.8), patch available"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12820", publisher: "NCSC Switzerland (GovCERT.ch) — Cyber Security Hub", date: "2026-07-31", role: primary }
+      - { url: "https://www.solarwinds.com/trust-center/security-advisories/cve-2026-28323", publisher: "SolarWinds", date: "2026-07-23", role: primary }
+      - { url: "https://www.heise.de/news/SolarWinds-Web-Help-Desk-Update-bessert-umgehbare-Authentifizierung-aus-11388191.html", publisher: "heise online", date: "2026-07-31", role: corroborating }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12820 (bridge: ncsc-csh recent 15) → primary: SolarWinds vendor advisory, URL https://www.solarwinds.com/trust-center/security-advisories/cve-2026-28323 → corroborating: heise online, URL https://www.heise.de/news/SolarWinds-Web-Help-Desk-Update-bessert-umgehbare-Authentifizierung-aus-11388191.html"
+    summary: |
+      SolarWinds Web Help Desk 2026.1 and all prior versions carry CVE-2026-28323 (CVSS 9.8): when SAML 2.0 authentication is enabled, an unauthenticated remote attacker can bypass authentication entirely and gain unauthorized access to the ticketing application — the vendor advisory does not detail the bypass mechanism but confirms no authentication is required and SAML 2.0 must be enabled as the sole prerequisite. The same 2026.2.1 release (29 June 2026, patched, per heise's 31 July report re-surfacing it via NCSC-CH) also fixes CVE-2026-28299 (CVSS 8.2), a memory-exhaustion DoS. No public PoC or confirmed exploitation has been reported by SolarWinds, NCSC-CH or heise. Web Help Desk is frequently deployed as an internet-facing self-service ticketing portal, including by IT service providers and public-sector helpdesks — an SSO/SAML full-bypass on that class of software is directly relevant given this pipeline's recurring theme of ITSM/helpdesk platforms as an initial-access and data-exposure vector (e.g. the Ernst & Young third-party ITSM breach and ShinyHunters helpdesk-vishing tradecraft covered this window).
+    region_nexus: "global; Web Help Desk is used by IT service providers and public-sector helpdesks in the constituency's coverage area"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, general enterprise"
+    cves: [CVE-2026-28323, CVE-2026-28299]
+    techniques: [T1190]
+    affected_products: ["SolarWinds Web Help Desk"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "This requires the SAML 2.0 authentication method to be enabled."
+        attribution: "SolarWinds"
+        source_url: "https://www.solarwinds.com/trust-center/security-advisories/cve-2026-28323"
+      - quote: "Admins sollten ihre Instanzen aufgrund des Schweregrads der Lücken zeitnah auf den aktuellen Stand bringen."
+        attribution: "heise online"
+        source_url: "https://www.heise.de/news/SolarWinds-Web-Help-Desk-Update-bessert-umgehbare-Authentifizierung-aus-11388191.html"
+    extended_notes: |
+      Detection concept: for internet-facing WHD instances with SAML enabled, review SSO login audit logs for admin/privileged-role session creation with no corresponding IdP-side assertion, or logins bypassing the expected SP-initiated redirect flow. Hardening lever: apply 2026.2.1 now; if SAML cannot be immediately validated as safe, temporarily disable SAML SSO and fall back to local authentication until patched.
+
+  - title: "FBI/EPA/CISA confirm coordinated PLC-lockout attacks against water utilities in 7 US states; Censys finds the same PLC families concentrated on European IPs"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/07/30/cisa-urges-water-and-wastewater-systems-sector-protect-ot-against-activity-targeting-plcs", publisher: "CISA", date: "2026-07-30", role: primary }
+      - { url: "https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions", publisher: "FBI / EPA (joint PSA)", date: "2026-07-30", role: primary }
+      - { url: "https://www.cybersecuritydive.com/news/us-authorities-escalation-attacks-water-system-devices/826715/", publisher: "Cybersecurity Dive", date: "2026-07-31", role: corroborating }
+      - { url: "https://censys.com/blog/cisa-alert-water-tower-plc-targeting/", publisher: "Censys Research", date: "2026-07-30", role: corroborating }
+    discovery_trace: "first seen at: cisa-advisories, URL https://www.cisa.gov/cybersecurity-advisories/all.xml (bridge feed, jina fallback) → pivot: CISA alert page, URL https://www.cisa.gov/news-events/alerts/2026/07/30/cisa-urges-water-and-wastewater-systems-sector-protect-ot-against-activity-targeting-plcs → primary: FBI/EPA joint PSA, URL https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions (fetched via bridge url, jina fallback after direct 403) → corroborating: Cybersecurity Dive, URL https://www.cybersecuritydive.com/news/us-authorities-escalation-attacks-water-system-devices/826715/ → corroborating: Censys Research, URL https://censys.com/blog/cisa-alert-water-tower-plc-targeting/ (found via WebSearch \"CISA FBI EPA water wastewater PLC alert July 30 2026 password lockout\")"
+    summary: |
+      This is a material update to the previously-covered Minnesota incident (2026-07-29/minnesota-30-water-utilities-coordinated-ot-attack). On 30 July 2026 the FBI and EPA issued a joint Public Service Announcement — with CISA issuing a parallel alert the same day — confirming that Water and Wastewater Sector utilities in at least seven US states have reported PLC-lockout incidents to the FBI since 27 July 2026, some degrading operations. The FBI names the specific targeted hardware for the first time: Rockwell Automation/Allen-Bradley MicroLogix 1100 and 1400 series PLCs reachable directly from the internet. The attacker technique is now confirmed in detail: after remotely accessing the internet-facing device, actors changed the device's IP address and administrator password, locking legitimate operators out of monitoring and control (a loss-of-view/loss-of-control condition, not a code-execution exploit — no CVE is involved). Reported operational effects include loss of pressure and flooding; the FBI notes pressure loss can allow untreated groundwater to seep into distribution pipes. One organisation found its PLC project (ladder-logic) files had been modified. Press reporting (CBS News, Politifact) states investigators are examining whether an Iran-nexus actor is responsible, given the timing four days after a CISA update to its Iran-focused ICS advisory and explicit water/energy/transport-targeting threats from the Iran-linked "Handala" group — this attribution is explicitly unconfirmed by FBI/CISA and is reported here only as an open press-stated line of investigation, not as fact. Censys Research independently scanned the internet on 30 July and found the exposure is not a US-only phenomenon relevant to this constituency: 4,148 internet-exposed Rockwell/Allen-Bradley EtherNet/IP hosts (71% US-concentrated) and, more relevantly, 4,117 internet-exposed Siemens SIMATIC S7-1200 hosts with 86% concentrated in Greece, Spain, Italy and Austria, plus 2,072 Schneider Electric hosts. The FBI/EPA guidance (remove PLCs from direct internet exposure via a secure gateway/jump host, enforce strong unique passwords, restrict access via ACL to known engineering hosts, physically/logically lock the PLC key-switch to RUN mode) is a today-actionable checklist for any water, energy or municipal OT operator in the constituency's region.
+    region_nexus: "US-observed incidents; Censys exposure-scan data shows the same targeted PLC product families concentrated on Southern/Central European IPs (Greece, Spain, Italy, Austria)"
+    primary_sector_nexus: "direct"
+    sector: "water, energy"
+    cves: []
+    techniques: [T1133, T1489]
+    affected_products: ["Rockwell Automation/Allen-Bradley MicroLogix 1100", "Rockwell Automation/Allen-Bradley MicroLogix 1400", "Siemens SIMATIC S7-1200 (Censys exposure data)", "Schneider Electric OT equipment (Censys exposure data)"]
+    entity_keys: ["incident:minnesota-water-utilities-coordinated-cyberattack-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-29/minnesota-30-water-utilities-coordinated-ot-attack"
+    evidence:
+      - quote: "Since 27 July 2026, Water and Wastewater Sector (WWS) utility companies in at least seven states have reported incidents to the FBI, and some of that activity degraded water operations."
+        attribution: "FBI / EPA joint PSA"
+        source_url: "https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions"
+      - quote: "After remotely accessing internet-facing devices, the actors changed the IP addresses and passwords, resulting in a loss of monitoring and control functionality."
+        attribution: "FBI / EPA joint PSA"
+        source_url: "https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions"
+      - quote: "Pressure loss in water systems could potentially allow untreated ground water to seep into pipes."
+        attribution: "FBI / EPA joint PSA"
+        source_url: "https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions"
+      - quote: "Censys ARC identified 4,117 Internet-exposed hosts that fingerprint as Siemens SIMATIC S7-1200."
+        attribution: "Censys Research"
+        source_url: "https://censys.com/blog/cisa-alert-water-tower-plc-targeting/"
+    extended_notes: |
+      Detection concept: for any internet-reachable PLC/OT management interface, alert on administrative logins or configuration/IP-address changes originating from outside the expected engineering-workstation IP range, and on ladder-logic/project-file checksum changes outside a change-management window. Hardening: FBI/EPA's own checklist — remove PLCs from direct internet exposure via a secure gateway, enforce unique strong passwords, ACL-restrict to known engineering hosts, and place the physical/software key switch in RUN (not PROGRAM/REMOTE) outside maintenance windows. Attribution to Iran is explicitly unconfirmed (press-reported investigative line only, per CBS News/Politifact) — not carried as fact in this item.
+    borderline: false
+
+  - title: "Aimy Captcha-Less Form Guard (Joomla plugin): unauthenticated PHP object injection to RCE via a self-defeating XOR obfuscation (CVE-2026-65883)"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/aimy-captcha-less-form-guard-object-injection", publisher: "VulnCheck (Initial Access Intelligence)", date: "2026-07-30", role: primary }
+    discovery_trace: "first seen at: vulncheck (standard-tier source, WebFetch listing sweep), URL https://www.vulncheck.com/blog → primary: VulnCheck, URL https://www.vulncheck.com/blog/aimy-captcha-less-form-guard-object-injection (no independent second source found; WebSearch \"CVE-2026-65883 Aimy Captcha-Less Form Guard Joomla exploited\" returned only VulnCheck and the vendor's own extension listing pages)"
+    summary: |
+      VulnCheck's Initial Access Intelligence team disclosed (30 July 2026) CVE-2026-65883 (CVSS 9.8) in Aimy Captcha-Less Form Guard, a Joomla anti-spam plugin, versions 18.0 through 20.0 (fixed in 20.1, released 2026-07-29). The plugin protects forms with a `clfgd` token that is repeating-key-XOR "obfuscated" — but the plaintext is published in the same HTTP response as the ciphertext, letting an unauthenticated attacker recover the XOR keystream trivially and forge an arbitrary serialized PHP object, turning the token-validation code path into an `unserialize()` sink (PHP object injection). On Joomla core 3.9 through 5.2.1, VulnCheck chains this to full remote code execution as the web-server user via a known Joomla FormattedtextLogger gadget chain (`phpggc`); Joomla 5.2.2+ closes the RCE gadget but the underlying object-injection primitive persists in the plugin itself. VulnCheck built and demonstrated a working Go exploit module (webshell deployment and removal) but states no in-the-wild exploitation has been observed; there is no independent second source.
+    region_nexus: "global; relevant only to the subset of Joomla-based public-sector/municipal websites running this specific commercial anti-spam plugin"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: [CVE-2026-65883]
+    techniques: [T1190]
+    affected_products: ["Aimy Captcha-Less Form Guard (Joomla plugin)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Affected versions: Aimy Captcha-Less Form Guard 18.0 through 20.0. Fixed in: 20.1 (released 2026-07-29)."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/aimy-captcha-less-form-guard-object-injection"
+      - quote: "On a fully patched Joomla, this is not a guaranteed one-shot RCE...on an up-to-date core the single-request RCE goes away."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/aimy-captcha-less-form-guard-object-injection"
+    extended_notes: |
+      Included primarily for the reusable technique class (a "secret" token whose plaintext ships alongside its own ciphertext defeats any XOR/simple obfuscation, regardless of product) rather than for this specific plugin's install base, which is small and unquantified.
+    borderline: true
+    borderline_reason: "single-source (VulnCheck only, no independent corroboration found), niche/low-install-base Joomla commercial plugin, no confirmed in-the-wild exploitation — included for the transferable XOR-keystream-recovery technique class, not for the product's own significance"
+
+  - title: "CosmosEscape: Wiz Research discloses a (already-fixed) cross-tenant sandbox escape in Azure Cosmos DB's Gremlin query engine that could retrieve any tenant's database keys"
+    sources:
+      - { url: "https://www.wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-cosmos-db", publisher: "Wiz Research", date: "2026-07-30", role: primary }
+    discovery_trace: "first seen at: wiz-blog (standard-tier source, WebFetch listing sweep), URL https://www.wiz.io/blog → primary: Wiz Research, URL https://www.wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-cosmos-db (no separate Microsoft/MSRC advisory found — Microsoft's fix was applied service-side with no customer action, no CVE assigned)"
+    summary: |
+      Wiz Research publicly disclosed (30 July 2026, Black Hat USA) "CosmosEscape": Azure Cosmos DB's custom Gremlin (graph-query) engine translates queries into .NET code inside a sandbox that "didn't sufficiently account for .NET reflection" — a customer with legitimate Gremlin-query access to their own Cosmos DB account could use .NET reflection to escape that sandbox and achieve arbitrary code execution on the shared DB Gateway component. From there, the attacker could retrieve the Cosmos "Master Key," described as a platform-wide credential that "could retrieve the primary key for any Cosmos DB account" — working "across tenants, regions, and even API flavors," including Microsoft's own internal Cosmos DB-backed services (Wiz names Teams and Copilot as examples of Cosmos DB consumers, not as confirmed-affected). Wiz reported the issue to Microsoft on 20 November 2025; Microsoft shipped a hotfix blocking the Gremlin entry point within 48 hours and completed an architectural migration eliminating the Master Key entirely by July 2026, before today's public disclosure. Microsoft states it found "no evidence of unauthorized activity outside of the researcher's testing activity, and no customer data was accessed" — this was responsibly disclosed research, not an observed attack, no CVE was assigned, and no customer-side action is required or possible (the fix is entirely on Microsoft's platform).
+    region_nexus: "global; any Swiss/EU organisation using Azure Cosmos DB was theoretically in the blast radius during the ~8-month unremediated window, though Microsoft reports no evidence of exploitation"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, general enterprise"
+    cves: []
+    techniques: [T1611]
+    affected_products: ["Microsoft Azure Cosmos DB"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The vulnerability could have been exploited to compromise every database in the service, including Microsoft's own internal databases."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-cosmos-db"
+      - quote: "It was a platform-wide key that could retrieve the primary key for any Cosmos DB account."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-cosmos-db"
+      - quote: "No evidence of unauthorized activity outside of the researcher's testing activity, and no customer data was accessed."
+        attribution: "Wiz Research (citing Microsoft's review)"
+        source_url: "https://www.wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-cosmos-db"
+    extended_notes: |
+      No action is required from Cosmos DB customers — flagged for cloud-risk awareness (multi-tenant isolation failure class in a managed database service) rather than as a patch/hunt item. This item may sit more naturally in the S3 (research) domain than S1 (active threats/vulns) given the absence of a CVE, exploitation, or customer-actionable step; surfaced here for the main agent's cross-domain dedup call.
+    borderline: true
+    borderline_reason: "no CVE, fully remediated server-side ~8 months before disclosure, no confirmed exploitation, no customer action possible — high research value but weak fit for S1's active-threat/vulnerability-action mission; may overlap with an S3 finding"
+
+cve_table:
+  - { cve: "CVE-2026-14512", product: "IBM WebSphere Application Server traditional 9.0.0.0-9.0.5.28, 8.5.0.0-8.5.5.30", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "Interim fix (APAR) now; Fix Pack 9.0.5.29/8.5.5.31 targeted 3Q2026", source: "https://www.ibm.com/support/pages/node/7281649" }
+  - { cve: "CVE-2026-14446", product: "IBM WebSphere Application Server traditional 9.0.0.0-9.0.5.28, 8.5.0.0-8.5.5.30", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "Interim fix (APAR) now; Fix Pack 9.0.5.29/8.5.5.31 targeted 3Q2026", source: "https://www.ibm.com/support/pages/node/7281631" }
+  - { cve: "CVE-2026-14528", product: "IBM WebSphere Application Server traditional", cvss: 7.4, epss: null, kev: false, exploited: false, patch: "Fix Pack targeted 3Q2026", source: "https://www.ibm.com/support/pages/node/7281649" }
+  - { cve: "CVE-2026-28323", product: "SolarWinds Web Help Desk 2026.1 and prior", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "2026.2.1", source: "https://www.solarwinds.com/trust-center/security-advisories/cve-2026-28323" }
+  - { cve: "CVE-2026-28299", product: "SolarWinds Web Help Desk", cvss: 8.2, epss: null, kev: false, exploited: false, patch: "2026.2.1", source: "https://www.heise.de/news/SolarWinds-Web-Help-Desk-Update-bessert-umgehbare-Authentifizierung-aus-11388191.html" }
+  - { cve: "CVE-2026-65883", product: "Aimy Captcha-Less Form Guard (Joomla plugin) 18.0-20.0", cvss: 9.8, epss: null, kev: false, exploited: false, patch: "20.1", source: "https://www.vulncheck.com/blog/aimy-captcha-less-form-guard-object-injection" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist configured (org-profile.yaml) — sweep is a no-op per spawn instructions; general coverage rules applied unchanged."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "No fetch_source.py subcommand exists for the directives listing; landing page fetched via bridge shows the overview shell only (no per-directive list rendered in the fetched body). Not treated as a fetch failure — recipe gap already logged in sources.json note."
+  - source_id: msrc-blog
+    reason: "msrc.microsoft.com/blog redirects to www.microsoft.com/en-us/msrc/blog, which is an SPA shell showing only one featured post and category links, no dated listing of recent posts. No in-window MSRC PSIRT blog content surfaced this run."
+  - source_id: apple-security
+    reason: "Rotation-priority source attempted (WebFetch truncated the client-rendered table; escalated to bridge url then jina reader, which returned the full release table). Latest release (iOS 26.6 / macOS Tahoe 26.6 / macOS Sequoia 15.7.8 / Sonoma 14.8.8 family, 27 Jul 2026) is outside the 26h window and already reflected in NCSC-NL's 28 Jul advisories; no fresher Apple release found in-window."
+  - source_id: cert-pl
+    reason: "WebFetch listing showed only page 1 of the news archive with no items newer than 12 June 2026; no in-window signal."
+  - source_id: 0patch-blog
+    reason: "blog.0patch.com redirects to 0patch.com/blog/, which returned only the page header/navigation/footer shell with no rendered post listing in the fetched body; no in-window items surfaced."
