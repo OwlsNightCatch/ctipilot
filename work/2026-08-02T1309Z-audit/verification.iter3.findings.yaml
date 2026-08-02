@@ -1,0 +1,43 @@
+# Findings summary (machine-readable)
+- code: F1
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-02-weekly-quality-audit.md § Genuine misses, item 1 (SP Page Builder)"
+  url_or_quote: "the discloser states it \"is effectively pre-auth. An attacker could read the entire database , password hashes included\""
+  summary: "Quote-fidelity defect: the live mysites.guru page reads 'read the entire database, password hashes included' with no space before the comma. Verified by a fresh fetch (tools/fetch_source.py url) and a whitespace-faithful tag strip: the substring 'database , password' does not occur on the page; 'database, password' does. This is the exact defect iteration 2 flagged and remediated in entries/2026-08-02/sp-page-builder-...md line 85 and line 108 — the audit report was not swept in the same pass. Fix: delete the space before the comma."
+- code: F2
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-02-weekly-quality-audit.md § Fixes shipped in this commit, last-but-two bullet"
+  url_or_quote: "the page states \"Where the two differ, the CNA's number is the one that travels with the CVE\""
+  summary: "Quote-fidelity defect of the same class: the live page uses a curly apostrophe (CNA’s). 'Where the two differ, the CNA's number is the one that travels with the CVE' is not a contiguous substring of the page; 'Where the two differ, the CNA’s number is the one that travels with the CVE.' is. The run's own entry body has it right (curly), so the report and the run record's iteration-1 F3 summary (line 146) diverged from the entry. Fix: use the curly apostrophe in both, or drop the quotation marks."
+- code: F3
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-02-weekly-quality-audit.md § Watch items, 'actions[] density' row"
+  url_or_quote: "**Open — measured, not yet a defect.** 0.87 actions per operational entry against 0.48 last window"
+  summary: "Neither number reproduces, and both contradict the report's own corrected figures. Recomputed from disk with site/content_model.load_entry on the same basis the corrected calibration table uses (window bounded by the audits' actual started timestamps): this window 53 actions / 60 operational = 0.883 -> 0.88; prior window (anchored on 2026-07-18T12:08:23Z, the previous audit's own anchor) 23 actions / 43 operational = 0.535 -> 0.53. Systemic finding 3 (line 81) and the run record already say '0.53 -> 0.88'. 0.87 = 53/61, the superseded 61-operational count iteration 1 corrected; 0.48 ~ 28/58, the superseded 58-operational prior-window count iteration 2 corrected. The watch-items row was left on the pre-correction denominators. Fix: 0.88 and 0.53."
+- code: F4
+  category: claim-not-supported
+  section: active-threats
+  item: "2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated"
+  url_or_quote: "([Unit 42, 2026-07-31](https://unit42.paloaltonetworks.com/autonomous-ai-cyber-attack-campaign/)) / sources[0].date: \"2026-07-31\" / event_date: \"2026-07-31\""
+  summary: "Citation date is the source's modified date, not its publication date. The fetched page carries the visible dateline 'Published:July 30, 2026', article:published_time content=\"2026-07-30T10:00:52+00:00\" and JSON-LD datePublished 2026-07-30; article:modified_time is 2026-07-31. Not a UTC-rendering artifact (10:00 UTC), and the run's own artifacts disagree with the entry: the entry it updates (2026-07-31/unit42-autonomous-deepseek-hermes-netscaler-cve-2026-3055) carries event_date and sources[].date 2026-07-30, and this run's own corrected actor:knaithe-knyuan registry summary cites '(Unit 42, 2026-07-30 ...)'. The sibling correction entry (GPT5.6) uses the source's publication date, not the original entry's date, so the convention is clear. Fix: 2026-07-30 in sources[].date, event_date and the inline citation."
+- code: F5
+  category: editorial-advisory
+  section: prompts
+  item: "prompts/CHANGELOG.md, 3.30 entry, § Why opening line"
+  url_or_quote: "Five changes, each a root cause the 2026-08-02 weekly quality audit confirmed against ground truth"
+  summary: "Miscount: the § Why block then enumerates six numbered root causes (1 Joomla stream, 2 quote fidelity, 3 ATT&CK evidence floor, 4 credibility/republication, 5 CVE pairing provenance, 6 duplicate-week guard) and § What changed lists six bullets. All six edits are present on disk and verified. Fix: 'Six changes'."
+- code: F6
+  category: editorial-advisory
+  section: research-and-analysis
+  item: "2026-08-02/gpt56-wp2shell-was-an-original-zero-day-not-a-rediscovery (summary)"
+  url_or_quote: "This pipeline's 2026-07-21 entry described Searchlight Cyber as tasking GPT5.6 with \"autonomously rediscovering and weaponising the already-patched\" WordPress WP2Shell chain"
+  summary: "The quoted string is verbatim in 2026-07-26/weekly-w30-ai-autonomous-operator-and-target ('tasked GPT-5.6 with autonomously rediscovering and weaponising the already-patched WordPress \"WP2Shell\" pre-auth chain') but not in the 2026-07-21 entry it is attributed to, which reads 'to autonomously rediscover and weaponise the already-patched'. Same sentence names both documents and the framing is identical in both, so nothing is misrepresented — but under the run's own grep -F standard the attribution is off by one document. Advisory."
+- code: F7
+  category: editorial-advisory
+  section: trending-vulnerabilities
+  item: "2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay (tags)"
+  url_or_quote: "tags: [vulnerabilities, sqli, pre-auth, rce, info-disclosure, patch-available, phishing]"
+  summary: "None of the entry's five CVEs is a remote-code-execution flaw: CVE-2026-65766 and -65876 are unauthenticated SQL injection, -65879 is an unauthenticated mail relay via a hardcoded secret, -65877 is an authenticated SQL injection and -65878 is an authenticated arbitrary file delete (verified against the discloser's own mapping table). The only RCE mentioned is the separate June 2026 icon-upload zero-day the entry explicitly does not cover. The rce tag is a filter surface a reader uses to triage. Advisory."

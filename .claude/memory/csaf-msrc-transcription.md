@@ -66,3 +66,11 @@ Two rules from this:
    figure silently corrupts cross-entry comparison, the `/cve/` pages and any automated consumer.
    Put the temporal figure in `sourcing_note` so a reader who sees it on the vendor page can
    reconcile the two, and say which is which.
+
+## 2026-08-02 — a discloser's "CNA score" column may not be the CNA's
+
+The CVE record itself is reachable and settles who scored what: `python3 tools/fetch_source.py url https://cveawg.mitre.org/api/cve/<CVE-ID>` returns the full CVE 5.x JSON, where `containers.cna.metrics` is the CNA's own scoring and `containers.adp[].metrics` is what a downstream program (usually CISA-ADP) added. **`cna.metrics: null` with an ADP score present means the CNA never scored it** — and an ADP score is frequently CVSS 3.1 where the CNA's siblings are CVSS 4.0, so the two are not comparable and must never be ranked against each other.
+
+Found the hard way on the 2026-08-02 audit's own SP Page Builder recovery. mySites.guru's disclosure prints a table headed "CNA score" giving 9.2 / 9.8 / 8.2 / 8.3 across four identifiers. Three are genuine Joomla-CNA CVSS 4.0 scores; **CVE-2026-65879's 9.8 is a CISA-ADP CVSS 3.1 score against an empty CNA metrics block.** The entry carried the 9.8 as a CNA figure and ranked it "the highest-scored of the set" across two scales — the same cross-scale defect the audit was documenting elsewhere. Two verifier iterations went by before the confirmation pass queried the endpoint; an earlier iteration had even quoted the right values from it, and the remediation text then inverted its own finding by asserting no authority was reachable.
+
+Practical rules: (a) when a page attributes scores to a CNA, spot-check at least the outlier against `cveawg.mitre.org/api/cve/<id>`; (b) never rank scores against each other without confirming they are on the same CVSS version; (c) OSV 404s on ecosystem-less products (Joomla extensions, appliance firmware) are not evidence the record is unreachable — the CVE API has no ecosystem requirement.

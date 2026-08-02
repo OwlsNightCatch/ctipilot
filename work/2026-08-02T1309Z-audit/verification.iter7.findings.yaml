@@ -1,0 +1,56 @@
+# Findings summary (machine-readable)
+- code: F4
+  category: hallucinated-fact
+  section: trending-vulnerabilities
+  item: "2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay — sourcing_note declares the CVSS scale question unresolvable when the run itself resolved it"
+  url_or_quote: "sourcing_note: \"...these Joomla-extension identifiers carry no OSV record, so no authority reachable from this run could confirm which scale each belongs to. The values are therefore reported as the discloser prints them, and no ranking is drawn across them.\""
+  summary: >-
+    False, and contradicted by the run's own artifact. The record that owns each identifier is reachable
+    through the run's own bridge: `python3 tools/fetch_source.py url https://cveawg.mitre.org/api/cve/<id>`
+    returned, in this iteration, containers.cna.metrics for four of the five — CVE-2026-65766 cvssV4_0
+    baseScore 9.2 (CWE-89), CVE-2026-65877 cvssV4_0 8.2 (CWE-89), CVE-2026-65878 cvssV4_0 8.3 (CWE-22),
+    CVE-2026-65876 cvssV4_0 9.2 (CWE-89), all assigner "Joomla", state PUBLISHED — and for CVE-2026-65879
+    containers.cna.metrics is null with the only score a CISA-ADP cvssV3_1 baseScore 9.8
+    (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H). Every scale is therefore resolved: four Joomla-CNA
+    CVSS 4.0 figures and one CISA-ADP CVSS 3.1 figure. The run had this already —
+    work/2026-08-02T1309Z-audit/verification.iter5.findings.yaml records exactly these values from the same
+    endpoint ("The other four ids DO carry Joomla-CNA cvssV4_0 metrics (65766 = 9.2, 65877 = 8.2,
+    65878 = 8.3, 65876 = 9.2)"). OSV having no record for these ids does not make the CVE record
+    unreachable. Same false claim propagated to runs/2026-08-02/2026-08-02T1309Z-audit.md line 307
+    ("no authority reachable this run returns their metrics blocks") and to the audit report's watch-item
+    row (docs/audits/2026-08-02-weekly-quality-audit.md line 150, "no authority reachable this run could
+    confirm which scale each belongs to" / status "Open — disclosed, not resolved"). Fix: state the
+    resolved provenance in sourcing_note (four Joomla-CNA CVSS 4.0 scores confirmed against the owning
+    records, one CISA-ADP CVSS 3.1 score) and close or rewrite the watch item.
+- code: F4
+  category: hallucinated-fact
+  section: trending-vulnerabilities
+  item: "2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay — CVE-2026-65879's 9.8 attributed to the Joomla CNA, which assigned it no metrics"
+  url_or_quote: "summary: \"CVE-2026-65879 (CNA 9.8 Critical) is a design flaw rather than a slip\" / sourcing_note: \"The CVSS figures in cves[] are the Joomla CNA's\" / cves[] id CVE-2026-65879 cvss \"9.8\""
+  summary: >-
+    The owning record (https://cveawg.mitre.org/api/cve/CVE-2026-65879, assigner Joomla, state PUBLISHED,
+    fetched this iteration via tools/fetch_source.py url) carries containers.cna.metrics = null and
+    containers.cna.problemTypes = null; the 9.8 exists only in the CISA-ADP container as cvssV3_1
+    baseScore 9.8. The entry (and the store) therefore attribute to the Joomla CNA a score the Joomla CNA
+    did not issue, and place it in a machine surface alongside four genuine Joomla-CNA CVSS 4.0 figures.
+    This is the same defect class the audit report itself documents as factual-error row 3
+    (CVE-2026-62415's 9.1 is CVSS 3.1, not CVSS 4.0) and the same "record that owns the identifier beats
+    the page that reports it" rule v3.30 shipped. The discloser's table column header "CNA score" is what
+    the entry relied on. Also propagated to state/cves_seen.json (CVE-2026-65879 title: "CNA score 9.8
+    Critical") and to docs/audits/2026-08-02-weekly-quality-audit.md line 54 ("CVE-2026-65879 (CNA 9.8)").
+    The value 9.8 itself is real and need not change — its attribution must: name it as CISA-ADP's
+    CVSS 3.1 assessment and note the Joomla CNA assigned no metrics to this id.
+- code: F11
+  category: editorial-advisory
+  section: run-record
+  item: "runs/2026-08-02/2026-08-02T1309Z-audit.md — verification.iterations[3] and [5] declare more findings than their findings[] arrays list"
+  url_or_quote: "n: 3 ... truth: 4 / editorial: 0 / advisory: 3 (6 records listed, 2 of them F11) · n: 5 ... truth: 3 / editorial: 1 / advisory: 2 (4 records listed, all four truth-coded F3/F4)"
+  summary: >-
+    The declared counts are correct against the verifiers' own reports on disk
+    (verification.iter3.findings.yaml has 7 records — 4 truth, 3 editorial-advisory;
+    verification.iter5.findings.yaml has 6 — 3 truth, 1 needs-more-research, 2 editorial-advisory), and the
+    audit report's "iteration 3 (Opus) 7 ... iteration 5 (Opus) 6" reproduces exactly. The run record's
+    per-iteration findings[] arrays merged two iter-3 records into one, re-coded one editorial-advisory as
+    F3, and omitted iter-5's two advisory records and re-coded its needs-more-research record as F4, so the
+    published arrays no longer sum to the published counts. Advisory only — the telemetry a reader relies
+    on (counts, verdicts, models, rotation) is accurate; leaving it as-is is acceptable.

@@ -1,0 +1,429 @@
+domain: G1
+run_id: 2026-08-02T1309Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-02T13:14:45Z
+ended_at: 2026-08-02T13:33:04Z
+duration_seconds: 1099
+self_telemetry:
+  webfetch_calls: 9
+  websearch_calls: 6
+  bridge_fetches: 28
+
+items:
+  - title: "Certighost — public exploit tool forges AD CS-issued Domain Controller certificates for DCSync (CVE-2026-54121), never given a standalone entry despite three weekly mentions"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12804", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-07-27", role: "primary" }
+      - { url: "https://thehackernews.com/2026/07/certighost-exploit-lets-low-privileged.html", publisher: "The Hacker News", date: "2026-07-24", role: "corroborating" }
+      - { url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121", publisher: "Microsoft MSRC", date: "2026-07-14", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12804 (fetched via `ncsc-csh recent 20` → `ncsc-csh post 12804`) → pivot: The Hacker News, URL https://thehackernews.com/2026/07/certighost-exploit-lets-low-privileged.html (named discoverers H0j3n and Aniq Fakhrul, PoC published 2026-07-24) → primary: Microsoft MSRC, URL https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121 (fetched via `msrc cve CVE-2026-54121`, patched 2026-07-14 Patch Tuesday)"
+    summary: |
+      A working exploit tool codenamed "Certighost", published 2026-07-24 by researchers H0j3n and Aniq
+      Fakhrul, lets any standard low-privileged Active Directory domain user obtain a valid certificate for
+      a Domain Controller and authenticate as that machine, then run DCSync to pull the krbtgt secret. The
+      root cause is an AD CS enrollment fallback ("chase"): when a certification authority cannot resolve
+      an end-entity's information, the enrollment protocol lets the requester supply `cdc` (the AD server to
+      contact) and `rmd` (the machine object to resolve) — and the CA followed the requester-supplied `cdc`
+      host over SMB/LDAP without first proving it was a real Domain Controller. The public tool automates
+      the whole chain: it creates or reuses a machine account under the default `ms-DS-MachineAccountQuota`
+      of 10, starts rogue LSA/LDAP listeners on ports 445/389, relays the CA's Netlogon challenge to the real
+      DC to obtain that DC's objectSid/dNSHostName, then has the CA sign those into a certificate for a PKINIT
+      credential — writing out a PFX and a Kerberos ccache. Microsoft patched the underlying flaw
+      (CVE-2026-54121, CVSS 8.8, CWE-285 Improper Authorization) on 2026-07-14 and initially assessed
+      "Exploitation Less Likely"; the 2026-07-24 public PoC and NCSC-CH's dedicated 2026-07-27 advisory move
+      the effective risk to "PoC available, weaponization trivial". Microsoft has observed researcher testing
+      traffic but has not confirmed in-the-wild abuse by threat actors as of the sources reviewed. Prerequisites:
+      network reachability to an Enterprise CA following the vulnerable chain path, enrollment via the default
+      Machine certificate template, and a standard domain account able to create/control a machine account.
+      Interim mitigation (lab-tested, can break legitimate enrollment): clear the `EDITF_ENABLECHASECLIENTDC`
+      flag and restart Certificate Services; the durable fix is the July 2026 AD CS update. Despite two
+      successive weekly roll-ups referencing "a public AD CS DCSync PoC" / "Certighost… full PoC", this
+      pipeline never gave the vulnerability its own operational vulnerability entry.
+    region_nexus: "global; any AD CS deployment, including CH/EU government and CI Active Directory forests"
+    primary_sector_nexus: "direct — identity infrastructure underlies every public-sector and CI Active Directory estate"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2026-54121"]
+    techniques: ["T1649", "T1003.006"]
+    affected_products: ["Microsoft Windows Server Active Directory Certificate Services (AD CS)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation allows low-privileged domain users with network access to authenticate as a Domain Controller and extract critical account secrets via DCSync."
+        attribution: "NCSC Switzerland (GovCERT.ch)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12804"
+      - quote: "Researchers H0j3n and Aniq Fakhrul published a working exploit on July 24 that lets a low-privileged Active Directory user obtain a certificate for a Domain Controller and authenticate as that machine."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/07/certighost-exploit-lets-low-privileged.html"
+      - quote: "Improper authorization in Active Directory Certificate Services (AD CS) allows an authorized attacker to elevate privileges over a network."
+        attribution: "Microsoft MSRC"
+        source_url: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-54121"
+    extended_notes: |
+      Audit-recovery candidate: CVE-2026-54121 appears in prior_coverage.json ONLY inside three weekly
+      synthesis entries (2026-07-19/weekly-w29-looking-ahead, 2026-07-26/weekly-w30-vuln-status-rollup,
+      2026-07-26/weekly-w30-looking-ahead) as a one-line watch-item, never as its own operational
+      `vulnerability` entry — despite an in-window (2026-07-27) dedicated NCSC-CH advisory. No clean
+      `update_of` target exists (the prior mentions are synthesis-kind, not vulnerability-kind), so this is
+      returned as `novelty: new`; the main agent should treat it as the first standalone entry for this CVE
+      rather than a duplicate of the weekly mentions.
+
+  - title: "Progress MOVEit Transfer — four high-severity flaws (auth enforcement, CORS, session/token handling, XSS), fixed in 2026.0.3; two national CERTs escalated it independently"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12808", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-07-28", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0951/", publisher: "ANSSI / CERT-FR", date: "2026-07-31", role: "primary" }
+      - { url: "https://docs.progress.com/bundle/moveit-transfer-release-notes-2026/page/Fixed-Issues-in-2026.0.3.html", publisher: "Progress Software (vendor release notes)", date: "2026-07-24", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/#/posts/12808 (fetched via `ncsc-csh recent 20` → `ncsc-csh post 12808`) → corroborated by anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0951/ (fetched via `cert-fr avis-recent 20` listing → per-advisory bridge fetch) → primary: Progress vendor release notes, URL https://docs.progress.com/bundle/moveit-transfer-release-notes-2026/page/Fixed-Issues-in-2026.0.3.html (fetched via bridge `url`)"
+    summary: |
+      Progress fixed four high-severity flaws in MOVEit Transfer 2026.0.3 (last-modified 2026-07-24 per
+      vendor release notes; escalated by NCSC-CH on 2026-07-28 and CERT-FR on 2026-07-31): CVE-2026-10697
+      (MFA/security — improved authentication enforcement for a legacy integration endpoint, CVSS 7.5),
+      CVE-2026-15966 (WebUI — hardening against unintended cross-origin resource sharing for authenticated
+      sessions, CVSS 7.5), CVE-2026-15967 (REST API — improved token-refresh checks to enforce current
+      account-access policies, CVSS 7.1), and CVE-2026-15968 (WebUI — reflected XSS in the Find File page,
+      CVSS 7.1). No exploitation is confirmed by either CERT or the vendor. MOVEit Transfer's history as the
+      2023 Clop mass-exploitation vector (Accellion/GoAnywhere-class impact) makes any authentication/session
+      flaw in it a standing priority for internet-facing file-transfer estates, even absent confirmed
+      in-the-wild abuse this time.
+    region_nexus: "global; MOVEit Transfer is widely deployed across CH/EU public-sector and financial-services file-exchange workflows"
+    primary_sector_nexus: "direct — finance, public-sector, healthcare (managed file transfer is a core data-exchange workload)"
+    sector: "public-sector, finance, healthcare"
+    cves: ["CVE-2026-10697", "CVE-2026-15966", "CVE-2026-15967", "CVE-2026-15968"]
+    techniques: ["T1190", "T1539"]
+    affected_products: ["Progress MOVEit Transfer"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Current exploitation status: UNKNOWN"
+        attribution: "NCSC Switzerland (GovCERT.ch)"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12808"
+      - quote: "CVE-2026-10697: Improved authentication enforcement for legacy integration endpoint."
+        attribution: "Progress Software"
+        source_url: "https://docs.progress.com/bundle/moveit-transfer-release-notes-2026/page/Fixed-Issues-in-2026.0.3.html"
+    extended_notes: |
+      Moderate severity (High, not Critical) and exploitation status is explicitly unknown from both CERTs —
+      included on the strength of the product's mass-exploitation history and dual-national-CERT escalation,
+      not on CVSS/exploitation grounds alone. Main agent may weigh as "notable" rather than "high" priority.
+
+  - title: "Gladinet CentreStack — 23-flaw vendor-commissioned audit yields a hardcoded cryptographic key (CVSS 9.3) that forges domain-admin tokens for full unauthenticated RCE, on a product with a repeat mass-exploitation history"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2607", publisher: "BSI Germany (CERT-Bund)", date: "2026-07-30", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-vmg2-rwj3-8rq2", publisher: "GitHub Advisory Database (CVE-2026-54363)", date: "2026-07-30", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-q7f4-j8r5-hmxq", publisher: "GitHub Advisory Database (CVE-2026-54365)", date: "2026-07-30", role: "primary" }
+      - { url: "https://github.com/advisories/GHSA-4cmj-5m56-fg8c", publisher: "GitHub Advisory Database (CVE-2026-54368)", date: "2026-07-30", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-de, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (listing, item '[NEU] [hoch] Gladinet CentreStack') → https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2607 (fetched via `bsi-csaf WID-SEC-2026-2607`) → primary: GitHub Advisory Database, URL https://github.com/advisories/GHSA-vmg2-rwj3-8rq2 and five sibling GHSA records referenced from the BSI CSAF document"
+    summary: |
+      A vendor-commissioned follow-on source-code audit of Gladinet CentreStack (a self-hosted file
+      sync/sharing platform previously mass-exploited via hardcoded-key flaws in 2025) found 23 further
+      vulnerabilities; six carry CVEs as of BSI CERT-Bund's 2026-07-30 advisory (WID-SEC-2026-2607, rated
+      "hoch"/high), all fixed in CentreStack 17.5. The most severe, CVE-2026-54363 (CVSS v4 9.3, CWE-321
+      Use of Hard-coded Cryptographic Key), affects every version before 17.5: a static `SysNumber` value is
+      used as entropy for `AccessTicket.Encrypt()`/`Decrypt()` identically across ALL installations, letting
+      an unauthenticated attacker forge valid `x-glad-auth` headers, call privileged endpoints such as
+      `acquiretenantbackuptoken`, and obtain a domain-administrator `IdentityTicket` — an unauthenticated
+      RCE chain end to end. Companion flaws (all before 17.2–17.4 depending on the CVE): CVE-2026-54364
+      (CVSS 6.9, session-variable injection via newline/tab characters in the `AccountName` parameter posted
+      to `SelectProvider.aspx`, bypassing auth checks); CVE-2026-54365 (CVSS 8.7, CWE-306 — an unauthenticated
+      deserialization flaw in `GSNamespace.dll` lets a crafted base64 XML string reach `InternalImportAdUserByUPN()`
+      and make `GladinetCloudMonitor.exe` call `NetUserAdd` with attacker-controlled credentials, creating
+      arbitrary local OS accounts); CVE-2026-54366 (CVSS 8.7, XXE in the unauthenticated `StorageConfig`
+      handler, exfiltrating files such as `Web.config` with DB credentials/keys); CVE-2026-54367 (CVSS 8.8,
+      CWE-306 — API endpoints missing authorization checks let an attacker read/write/delete arbitrary account
+      settings and forge user identifiers via a static shared encryption key); CVE-2026-54368 (CVSS 8.7,
+      SQL injection in `GladDBFiles.SearchEx()`/`SearchExUnder()` via the `x-glad-filter` header on the
+      `jsondir` endpoint, chainable through PostgreSQL `lo_from_bytea()`/`lo_export()` to write files and
+      achieve RCE — requires low-privileged authentication). No exploitation of these six is confirmed as of
+      this sweep, but CentreStack has been repeatedly mass-exploited within days of prior disclosures
+      (CVE-2025-30406, CVE-2025-11371, CVE-2025-14611), so the historical base rate for this product is high.
+    region_nexus: "global; self-hosted file-sync platform, adoption unconfirmed in CH/EU public sector but the product class is broadly deployed by SMEs and MSPs"
+    primary_sector_nexus: "indirect — general enterprise file-sharing infrastructure"
+    sector: "public-sector, finance"
+    cves: ["CVE-2026-54363", "CVE-2026-54364", "CVE-2026-54365", "CVE-2026-54366", "CVE-2026-54367", "CVE-2026-54368"]
+    techniques: ["T1190", "T1606", "T1136.001"]
+    affected_products: ["Gladinet CentreStack"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CentreStack before 17.5 contains a hardcoded cryptographic key vulnerability that allows unauthenticated attackers to forge arbitrary encrypted tokens by exploiting a static SysNumber value used as entropy for AccessTicket.Encrypt() and AccessTicket.Decrypt() across all installations."
+        attribution: "GitHub Advisory Database (GHSA-vmg2-rwj3-8rq2 / CVE-2026-54363)"
+        source_url: "https://github.com/advisories/GHSA-vmg2-rwj3-8rq2"
+      - quote: "CentreStack before 17.3 contains an unauthenticated deserialization vulnerability in GSNamespace.dll that allows unauthenticated attackers to create arbitrary local OS user accounts by supplying a crafted base64-encoded XML string to exposed API endpoints."
+        attribution: "GitHub Advisory Database (GHSA-q7f4-j8r5-hmxq / CVE-2026-54365)"
+        source_url: "https://github.com/advisories/GHSA-q7f4-j8r5-hmxq"
+    extended_notes: |
+      BSI's own CSAF document carries no per-CVE prose (only CVSS-less product/version tables); the technical
+      description above is reconstructed entirely from the six linked GitHub Security Advisories, which BSI
+      cites as its "Documentation" references. No public reporting beyond BSI + GHSA was found as of this
+      sweep (WebSearch for "Gladinet CentreStack CVE-2026-54363" returned only 2025-vintage CVEs) — flagged
+      per the reduced-confidence rule for the technical-depth claims, though the BSI+GHSA sourcing itself
+      is two independent origins (national CERT + advisory-database CNA record) and clears MULTI-SOURCE.
+
+  - title: "Adobe Campaign Classic — unauthenticated CVSS 10.0 code execution plus an 8.6 SQL injection/file-read, on-prem and hybrid deployments only, no PoC yet"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0273", publisher: "NCSC-NL (Nationaal Cyber Security Centrum)", date: "2026-07-31", role: "primary" }
+      - { url: "https://ccb.belgium.be/advisories/warning-1-critical-and-1-high-vulnerability-adobe-campaign-classic-can-lead-arbitrary", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-07-31", role: "primary" }
+      - { url: "https://helpx.adobe.com/security/products/campaign/apsb26-114.html", publisher: "Adobe (vendor security bulletin APSB26-114)", date: "2026-07-30", role: "primary" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (listing) → https://advisories.ncsc.nl/advisory?id=NCSC-2026-0273 (fetched via `ncsc-nl csaf NCSC-2026-0273`) → corroborated by ccb-belgium, URL https://ccb.belgium.be/advisories/warning-1-critical-and-1-high-vulnerability-adobe-campaign-classic-can-lead-arbitrary (fetched via jina reader) → primary: Adobe Security Bulletin, URL https://helpx.adobe.com/security/products/campaign/apsb26-114.html (fetched via bridge `url`)"
+    summary: |
+      Adobe published APSB26-114 on 2026-07-29 (priority 1, fixed in Adobe Campaign Classic v7 build 9398)
+      for two flaws in on-premise and hybrid deployments only — Adobe-hosted (cloud) instances were already
+      remediated and need no action. CVE-2026-48449 (CVSS 3.1 10.0, CWE-863 Incorrect Authorization) is an
+      unauthenticated arbitrary-code-execution flaw in ACC's core authorization mechanism requiring no user
+      interaction. CVE-2026-48448 (CVSS 3.1 8.6, CWE-89 SQL Injection) lets an unauthenticated attacker run
+      unauthorized queries, read files from the filesystem, and access sensitive memory information, also
+      with no user interaction. Both NCSC-NL and CCB Belgium escalated the bulletin the same day (2026-07-31);
+      neither CERT nor Adobe reports any public PoC or in-the-wild exploitation as of publication. Adobe
+      Campaign Classic is a marketing-automation platform (email/SMS campaign orchestration) frequently
+      operated by public-sector communications and citizen-engagement teams in on-prem or hybrid configuration.
+    region_nexus: "global; on-prem/hybrid ACC installs specifically, which the advisory notes is where CH/EU public-sector deployments typically sit versus Adobe-hosted SaaS"
+    primary_sector_nexus: "direct — government/public-sector citizen-communications and marketing-automation platforms"
+    sector: "public-sector"
+    cves: ["CVE-2026-48449", "CVE-2026-48448"]
+    techniques: ["T1190"]
+    affected_products: ["Adobe Campaign Classic (ACC) v7"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Adobe has released a security update for Adobe Campaign Classic. This update addresses critical vulnerabilities that could result in arbitrary code execution and arbitrary file system read. Adobe is not aware of any exploits in the wild for any of the issues addressed in these updates."
+        attribution: "Adobe (APSB26-114)"
+        source_url: "https://helpx.adobe.com/security/products/campaign/apsb26-114.html"
+      - quote: "At of the time of writing (2026-07-31), there is no available proof-of-concept or proof-of-exploitation for either vulnerability."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-1-critical-and-1-high-vulnerability-adobe-campaign-classic-can-lead-arbitrary"
+      - quote: "Dus de kwetsbaarheidsinformatie is met name relevant voor organisaties die Campaign Classic in volledige on-premise configuraties draaien, of een hybride oplossing gebruiken."
+        attribution: "NCSC-NL (translation: the vulnerability information is particularly relevant for organisations running Campaign Classic in fully on-premise configurations, or using a hybrid solution)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0273"
+    extended_notes: |
+      Textbook "unexploited-but-timeline-forcing" shape: a single unauthenticated request reaches full code
+      execution on an internet-facing marketing platform, no PoC public yet but the vendor bulletin already
+      states the CWE class (Incorrect Authorization) precisely enough to guide rediscovery.
+
+  - title: "Apache Traffic Server — 38 vulnerabilities across HTTP/2 framing, header parsing and ACL matching, several unauthenticated CVSS 9.2, fixed in 9.2.15/10.1.4"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-apache-traffic-server-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-07-29", role: "primary" }
+      - { url: "https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d", publisher: "The Apache Software Foundation (trafficserver security mailing list)", date: "2026-07-28", role: "primary" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (listing, fetched via jina reader) → https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-apache-traffic-server-patch-immediately → primary: Apache Software Foundation mailing-list announcement, URL https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d (fetched via jina reader after a plain bridge fetch returned only a JS shell)"
+    summary: |
+      The Apache Software Foundation fixed 38 vulnerabilities in Apache Traffic Server (ATS 9.2.15 and
+      10.1.4, announced 2026-07-28) affecting ATS 9.0.0–9.2.14 and 10.0.0–10.1.3; CCB Belgium escalated the
+      batch on 2026-07-29. ATS is a forward/reverse proxy used for HTTP traffic routing and policy
+      enforcement (CDN/reverse-proxy tier). Highest-severity items (CVSS v4 9.2, unauthenticated, no user
+      interaction): CVE-2026-58155 (header-name-length truncation enables header aliasing and request
+      smuggling), CVE-2026-58154 (memory-safety errors — out-of-bounds writes/integer overflows — in MIME and
+      HTTP header parsing), and CVE-2026-58161 (null dereferences and dangling references in TLS/SNI handling
+      can crash the server). CVE-2026-58151 (CVSS 8.7) lets abusive HTTP/2 framing and flow-control exhaust
+      resources and crash the server; CVE-2026-58150 lets HTTP/2 requests carrying Transfer-Encoding bypass
+      rejection, enabling downgrade request smuggling; CVE-2026-33267 means hop-by-hop and internal `@`
+      headers from untrusted peers are not stripped before plugin hooks, enabling smuggling and metadata
+      injection; CVE-2026-22068 is unanchored regular-expression matching in remap/plugin ACL, SNI, signature
+      and geo controls, allowing substring/suffix matches to bypass policy. No PoC or in-the-wild exploitation
+      has been reported for any of the 38, but CCB assesses "most of the vulnerabilities are of low complexity,
+      remotely exploitable and require no privileges or user interaction," and notes the flaws are chainable.
+    region_nexus: "global; ATS underlies CDN/reverse-proxy tiers, telco and hosting infrastructure"
+    primary_sector_nexus: "indirect — network/edge infrastructure common to telco and any org fronting services with ATS"
+    sector: "telco, public-sector"
+    cves: ["CVE-2026-58150", "CVE-2026-58151", "CVE-2026-58154", "CVE-2026-58155", "CVE-2026-58161", "CVE-2026-33267", "CVE-2026-22068"]
+    techniques: ["T1190", "T1499"]
+    affected_products: ["Apache Traffic Server"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "While no PoC or in the wild exploitation has been reported, the potential impact and ease of exploitation make this an important security notification."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-apache-traffic-server-patch-immediately"
+      - quote: "Apache Traffic Server truncates over-long header names, allowing header aliasing, request smuggling, and policy bypass."
+        attribution: "Apache Software Foundation (Masakazu Kitajo, trafficserver security announcement)"
+        source_url: "https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d"
+    extended_notes: |
+      Only 7 of the 38 CVEs are enumerated above (the highest-severity / most detection-relevant); the full
+      list is in the Apache mailing-list thread. CCB explicitly flags chaining potential across the batch.
+
+  - title: "Xen Project — 18 CVEs across 10 Xen Security Advisories (XSA-499 to XSA-508), cross-tenant RAM disclosure and host crash in grant-table/PoD/event-channel code; affects Citrix XenServer and XCP-ng too"
+    sources:
+      - { url: "https://ccb.belgium.be/advisories/warning-multiple-severe-vulnerabilities-xen-project-patch-immediately", publisher: "Centre for Cybersecurity Belgium (CCB)", date: "2026-07-30", role: "primary" }
+      - { url: "https://xenbits.xenproject.org/xsa/", publisher: "Xen Project (official XSA index)", date: "2026-07-28", role: "primary" }
+    discovery_trace: "first seen at: ccb-belgium, URL https://ccb.belgium.be/advisories (listing, jina reader) → https://ccb.belgium.be/advisories/warning-multiple-severe-vulnerabilities-xen-project-patch-immediately → primary: Xen Project official advisory index, URL https://xenbits.xenproject.org/xsa/ (fetched via bridge `url`)"
+    summary: |
+      The Xen Project publicly released ten Xen Security Advisories (XSA-499 through XSA-508) on 2026-07-28,
+      covering 18 CVEs; CCB Belgium escalated the batch on 2026-07-30 noting CVSS scoring was not yet
+      available at publication time. Xen is the Type-1 hypervisor underlying Citrix XenServer and XCP-ng in
+      addition to native Xen deployments, so the exposure extends to those platforms. The most severe
+      cross-tenant-impact items, per CCB's reading of the batch: CVE-2026-62428 (XSA-500, grant-table type
+      confusion in grant-copy), CVE-2026-62432/-62433/-62434 (XSA-505/506/507 — PoD reclaim, DM_OP hypercall
+      buffer-check and evtchn FIFO expand/reset races) "could lead to RAM from a different guest VM being
+      claimed by the affected VM," with the same state-corruption bugs likely crashing the host and affecting
+      availability of co-resident VMs. CVE-2026-62435/-62436 (XSA-501) covers a grant-table version-change race
+      with other operations; CVE-2026-62430 (XSA-503) is an out-of-bounds read in x86 vRTC emulation;
+      CVE-2026-62431 (XSA-504) is a Viridian STIMER division-by-zero; CVE-2026-62429 (XSA-502) is a vNUMA
+      domain-cleanup race. CCB assesses other flaws in the batch as limited to service disruption, with
+      privilege escalation and data leakage from some CVEs remaining "theoretical." This is especially
+      relevant to multi-tenant cloud/hosting environments where memory isolation between guest VMs is the
+      security boundary being violated.
+    region_nexus: "global; any Xen-based public/private cloud or hosting provider, including Citrix XenServer/XCP-ng estates potentially used by CH/EU public-sector and CI operators"
+    primary_sector_nexus: "indirect — virtualization/cloud infrastructure layer underlying multiple sectors"
+    sector: "public-sector, finance, telco"
+    cves: ["CVE-2026-62428", "CVE-2026-62432", "CVE-2026-62433", "CVE-2026-62434", "CVE-2026-62435", "CVE-2026-62436", "CVE-2026-62430", "CVE-2026-62431", "CVE-2026-62429"]
+    techniques: ["T1611"]
+    affected_products: ["Xen Project hypervisor", "Citrix XenServer", "XCP-ng"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "CVE-2026-62434, CVE-2026-62433, CVE-2026-62432 could lead to RAM from a different guest VM being claimed by the affected VM. The same flaws causing corruption of the Xen's state are likely to lead to a crash of the host, affecting the availability of other VMs."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-severe-vulnerabilities-xen-project-patch-immediately"
+      - quote: "Total of 18 CVEs, scoring not available at the time of publication."
+        attribution: "Centre for Cybersecurity Belgium (CCB)"
+        source_url: "https://ccb.belgium.be/advisories/warning-multiple-severe-vulnerabilities-xen-project-patch-immediately"
+    extended_notes: |
+      No CVSS scores were available from either CCB or the Xen Project index at fetch time — confidence
+      marked MEDIUM pending vendor scoring; severity language above is CCB's qualitative assessment, not a
+      numeric score, and is presented as such.
+
+  - title: "Phoenix Contact CHARX SEC-3xxx EV charging controllers — 20 new CVEs, several unauthenticated CVSS 9.8 (root command injection, unsigned firmware updates, unauthenticated OCPP reconfiguration), and NO FIX IS YET AVAILABLE"
+    sources:
+      - { url: "https://www.certvde.com/en/advisories/VDE-2026-008/", publisher: "CERT@VDE (Germany's OT/ICS coordinating CERT and CNA)", date: "2026-07-30", role: "primary" }
+    discovery_trace: "first seen at: certvde, URL https://www.certvde.com/en/advisories/ (listing, fetched via bridge `url`) → primary: https://www.certvde.com/en/advisories/VDE-2026-008/ (fetched via bridge `url`)"
+    summary: |
+      CERT@VDE published VDE-2026-008 on 2026-07-30 for the Phoenix Contact CHARX SEC-3000/3050/3100/3150 EV
+      charging controllers, covering 20 CVEs in firmware before 1.9.1. The summary states the flaws "could
+      allow attackers to compromise the devices remotely, resulting in a complete loss of confidentiality,
+      integrity, and availability." Several are unauthenticated CVSS 9.8 (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H):
+      CVE-2026-7849 (CWE-77 command injection — an unauthenticated remote attacker injects a command into the
+      system configuration, executed as root); CVE-2026-44108 (CWE-696 — a flaw in shutdown script execution
+      order terminates the firewall prematurely, creating a window where internal services become externally
+      reachable, leading to full compromise); CVE-2026-44104 (CWE-347 — the basemodule firmware-update process
+      validates only a CRC32 checksum with NO cryptographic signature verification, letting an unauthenticated
+      attacker install modified firmware for full compromise); CVE-2026-44101 (CWE-306 — missing authentication
+      lets an unauthenticated attacker reconfigure the CHARX OCPP Agent's backend connection, causing DoS and
+      confidential-data disclosure); and CVE-2026-44090 (also CWE-306, missing authentication, unauthenticated
+      remote). Sixteen further CVEs (CVE-2026-44091 through -44107, excluding those named) round out the
+      20-item disclosure at varying severities down to CVSS 5.3 (a race condition in firmware-file cleanup).
+      Critically: as of this advisory, Phoenix Contact's fixed firmware (1.9.1) is NOT YET released —
+      the vendor states it "will be made available as soon as possible, but no later than August 12, 2026."
+      The interim mitigation is network isolation: CERT@VDE/Phoenix Contact states the controllers "are
+      designed and developed for use in closed industrial networks" and should be firewalled. No exploitation
+      is reported, but the full technical root-cause detail (CWE classes, exact mechanisms) is already public
+      with no patch to apply — the textbook "disclosure ahead of the fix" timeline-forcing shape. Reported by
+      Zero Day Initiative (ZDI), coordinated by CERT@VDE.
+    region_nexus: "Europe-centred — Phoenix Contact is a German manufacturer and EV-charging infrastructure of this class is widely deployed across the EU/CH energy and transport sectors"
+    primary_sector_nexus: "indirect via additional sector — energy/transport OT (EV charging infrastructure)"
+    sector: "energy, transport"
+    cves: ["CVE-2026-7849", "CVE-2026-44108", "CVE-2026-44104", "CVE-2026-44101", "CVE-2026-44090"]
+    techniques: ["T1190", "T1601.001"]
+    affected_products: ["Phoenix Contact CHARX SEC-3000", "Phoenix Contact CHARX SEC-3050", "Phoenix Contact CHARX SEC-3100", "Phoenix Contact CHARX SEC-3150"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    borderline: true
+    borderline_reason: "single-source (CERT@VDE is reliability-A in sources.json and is Germany's OT/ICS coordinating CNA, functionally equivalent to the named carve-out list, but is not itself on the org profile's explicit national-CERT carve-out roster) — flagging for the main agent's judgment on whether the carve-out reasonably extends to it. Severity/urgency (unauthenticated 9.8 x5, no patch yet) argues strongly for inclusion regardless."
+    evidence:
+      - quote: "Due to improper neutralization of special elements, an unauthenticated remote attacker is able to inject a command into the system configuration which is subsequently executed as root."
+        attribution: "CERT@VDE (VDE-2026-008, CVE-2026-7849)"
+        source_url: "https://www.certvde.com/en/advisories/VDE-2026-008/"
+      - quote: "Phoenix Contact recommends updating affected devices to firmware version 1.9.1, which addresses these vulnerabilities. The updated firmware will be made available as soon as possible, but no later than August 12, 2026."
+        attribution: "CERT@VDE / Phoenix Contact (VDE-2026-008)"
+        source_url: "https://www.certvde.com/en/advisories/VDE-2026-008/"
+      - quote: "Affected charging controllers are designed and developed for the use in closed industrial networks. Phoenix Contact therefore strongly recommends using the devices exclusively in closed networks and protected by a suitable firewall."
+        attribution: "CERT@VDE / Phoenix Contact (VDE-2026-008)"
+        source_url: "https://www.certvde.com/en/advisories/VDE-2026-008/"
+    extended_notes: |
+      This is a DIFFERENT, later disclosure than the June 2026 CHARX SEC batch (VDE-2026-060 / AV26-546,
+      firmware <1.9.0) that a WebSearch initially surfaced — verified by fetching the Canadian Centre for
+      Cyber Security's AV26-546 page directly, which cites VDE-2026-060 dated 2026-06-03, a distinct advisory
+      from today's VDE-2026-008. Only the vendor's own Phoenix Contact PSIRT page could serve as a second
+      independent primary; a PDF found via WebSearch under a similar filename turned out to be a stale 2024
+      advisory (CVE-2024-28133 et al.) and was discarded rather than cited — logged here so a follow-up run
+      does not repeat the same wrong-PDF pivot.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "WebFetch listing returned only posts through 2026-06-12; no in-window (2026-07-26 to 2026-08-02) items surfaced. Likely a quiet period for this source rather than a fetch failure — page returned 200 with content."
+  - source_id: ncsc-uk
+    reason: "Feed fetched cleanly (200) via all-rss-feed.xml; no net-new in-window vulnerability items beyond the already-covered LAUNDRY BEAR/Void Blizzard advisory (2026-07-23, outside this run's marginal add but already in prior_coverage)."
+  - source_id: zdi
+    reason: "zerodayinitiative.com/blog/ bridge fetch returned only CSS/font boilerplate with no drillable post list this run (JS-rendered Squarespace listing); not retried via jina given time budget. Recipe may need a jina-reader pin similar to other Squarespace-shaped sources — flagging for recipe review, not logged as a hard failure since the host itself responded 200."
+
+sources_swept:
+  - { id: ncsc-ch-security-hub, status: "reached", method: "api (ncsc-csh recent/post)", note: "20 posts enumerated through 2026-07-31; two in-window items (MOVEit, Certighost) had not been carried into any standalone entry" }
+  - { id: advisories-ncsc-nl, status: "reached", method: "rss listing + ncsc-nl csaf API", note: "Adobe Campaign Classic (NCSC-2026-0273) and JFrog Artifactory (NCSC-2026-0272, already covered via the Hugging Face/OpenAI Artifactory story) both in-window" }
+  - { id: bsi-de, status: "reached", method: "rss + bsi-csaf API", note: "Gladinet CentreStack (WID-SEC-2026-2607) recovered; routine Linux-kernel/Apache-Tika/IBM-WebSphere items already covered or routine" }
+  - { id: anssi-fr, status: "reached", method: "cert-fr avis-recent API", note: "MOVEit Transfer (CERTFR-2026-AVI-0951) corroborates NCSC-CH; Azure Cosmos DB item (CERTFR-2026-AVI-0953 / CVE-2026-66803) checked and dropped (no customer action per MSRC — fully mitigated server-side)" }
+  - { id: cert-eu, status: "reached", method: "cert-eu recent API", note: "most recent advisory (2026-009, SharePoint) last updated 2026-07-23, outside a fresh in-window development; nothing new" }
+  - { id: cisa-kev, status: "reached", method: "cisa-kev API (full JSON catalog)", note: "catalogVersion 2026.07.29 / dateReleased 2026-07-29T18:45:59Z — 3 in-window additions (CVE-2025-68686 Fortinet 07-27, CVE-2026-16812 Arista 07-27, CVE-2026-20316 Cisco FMC 07-29), all three already carried as standalone prior_coverage entries. WebSearch corroborated no KEV additions since 07-29 as of 2026-08-01." }
+  - { id: enisa-euvd, status: "reached", method: "api (recent exploited/criticals/lastvulnerabilities)", note: "exploited listing matches the 3 KEV items above (4th record was the already-covered Check Point CVE-2026-16232); criticals listing surfaced 4 fresh (08-01/08-02) items — Vikunja BOLA, better-auth DoS, Wazuh CI shell injection, Konnectivity/HyperShift — all evaluated and dropped, see dropped[]" }
+  - { id: ncsc-uk, status: "reached", method: "rss (all-rss-feed.xml)", note: "no net-new vulnerability items in window" }
+  - { id: cert-pl, status: "reached", method: "webfetch", note: "listing stale (latest post 2026-06-12); no in-window items" }
+  - { id: ccb-belgium, status: "reached", method: "jina reader", note: "high-value source this sweep — surfaced Apache Traffic Server and Xen Project batches, plus corroborated Adobe Campaign Classic, Cisco FMC, VMware VMSA and WordPress WP2Shell (all three latter already covered)" }
+  - { id: certvde, status: "reached", method: "bridge url", note: "surfaced Phoenix Contact CHARX SEC-3xxx (VDE-2026-008); also lists Phoenix Contact CHARX SEC firmware (VDE-2026-041 CODESYS PROFINET) and ads-tec IRF (VDE-2026-076) items from the same window not independently pursued given time budget" }
+  - { id: cisa-advisories, status: "reached", method: "bridge (rss_url all.xml)", note: "not separately drilled beyond KEV cross-check this sweep; no gap identified" }
+  - { id: cisa-directives, status: "not attempted", method: "n/a", note: "no directive-relevant lead surfaced elsewhere this sweep; deprioritized against higher-value essential-tier sources given time budget" }
+  - { id: zdi, status: "reached-thin", method: "bridge url", note: "returned only page boilerplate (Squarespace JS listing); no drillable post list this run" }
+  - { id: watchtowr, status: "reached", method: "rss feed", note: "most recent post 2026-07-02; no in-window items" }
+  - { id: chrome-releases, status: "reached", method: "feedburner rss", note: "latest Stable Channel Update (2026-07-29) checked — no 'in the wild'/0-day language found in the summary; not pursued further" }
+
+dropped:
+  - reason: "CVE-2026-68582 (Vikunja BOLA via link-share token) and CVE-2025-71401 (better-auth npm baseURL-poisoning DoS) — both published today (2026-08-02) per ENISA EUVD 'criticals' listing, both niche/low real-world-impact despite headline CVSS (Vikunja: reads task titles/creator names only; better-auth: requires winning a race on the very first request after server startup with no explicit baseURL config). No CH/EU public-sector prevalence signal found. Same-day disclosure with vendor fix already shipped."
+    candidate: "CVE-2026-68582 / CVE-2025-71401"
+  - reason: "CVE-2026-67308 (Wazuh GitHub Actions shell injection via crafted VERSION.json in a PR) — affects Wazuh's OWN CI build infrastructure (self-hosted runners, GITHUB_TOKEN/AWS credential exfiltration), not deployed Wazuh SIEM/XDR instances. Wazuh is a widely-used open-source SOC tool so the supply-chain angle is noted, but the blast radius is scoped to the Wazuh project's own repository/runners, not to any organisation running Wazuh — does not meet the bar for a defender action item."
+    candidate: "CVE-2026-67308"
+  - reason: "CVE-2026-16242 (Konnectivity/Red Hat HyperShift agent-listener missing client-cert validation) — original disclosure 2026-07-20, outside this run's 2026-07-26–08-02 window; only the Red Hat errata cross-references were updated today (2026-08-02), which is a metadata refresh, not a fresh development."
+    candidate: "CVE-2026-16242"
+  - reason: "CVE-2026-66803 (Azure Cosmos DB RCE, CVSS 10.0, CERTFR-2026-AVI-0953) — Microsoft's own MSRC record states customerActionRequired: No and the vulnerability is already fully mitigated server-side by Microsoft; no defender action exists, so it fails the actionability bar despite the CVSS score."
+    candidate: "CVE-2026-66803"
+  - reason: "DATA-QUALITY OBSERVATION (not a candidate item): prior_coverage.json entry 2026-07-19/weekly-w29-exploited-internet-facing-enterprise-software states 'every one KEV-listed' for a set including CVE-2026-2699 (Progress ShareFile SZC) and CVE-2026-6875 (ServiceNow AI Platform). A fresh full fetch of the CISA KEV JSON catalog (catalogVersion 2026.07.29, the current version as of this sweep) contains NEITHER CVE. This may be a pre-window editorial overstatement (the entry is dated 2026-07-19, outside this sweep's window) rather than a fresh KEV flip, so it is not returned as an item, but the main agent/quality-audit process may want to verify and correct the underlying entry's KEV claim."
+    candidate: "CVE-2026-2699 / CVE-2026-6875 (KEV-listing claim correction)"
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn instructions; general coverage rules applied unchanged throughout this run."
+
+cve_table:
+  - { cve: "CVE-2026-54121", product: "Microsoft AD CS (chase fallback)", cvss: "8.8", epss: null, kev: false, exploited: "PoC public, no confirmed ITW", patch: "July 2026 Patch Tuesday", source: "https://security-hub.ncsc.admin.ch/#/posts/12804" }
+  - { cve: "CVE-2026-10697", product: "Progress MOVEit Transfer", cvss: "7.5", epss: null, kev: false, exploited: "unknown", patch: "2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15966", product: "Progress MOVEit Transfer", cvss: "7.5", epss: null, kev: false, exploited: "unknown", patch: "2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15967", product: "Progress MOVEit Transfer", cvss: "7.1", epss: null, kev: false, exploited: "unknown", patch: "2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-15968", product: "Progress MOVEit Transfer", cvss: "7.1", epss: null, kev: false, exploited: "unknown", patch: "2026.0.3", source: "https://security-hub.ncsc.admin.ch/#/posts/12808" }
+  - { cve: "CVE-2026-54363", product: "Gladinet CentreStack", cvss: "9.3 (v4)", epss: null, kev: false, exploited: "not confirmed", patch: "17.5", source: "https://github.com/advisories/GHSA-vmg2-rwj3-8rq2" }
+  - { cve: "CVE-2026-54364", product: "Gladinet CentreStack", cvss: "6.9 (v4)", epss: "0.252%", kev: false, exploited: "not confirmed", patch: "17.4", source: "https://github.com/advisories/GHSA-g6j6-rqg9-wq7x" }
+  - { cve: "CVE-2026-54365", product: "Gladinet CentreStack", cvss: "8.7 (v4)", epss: "0.216%", kev: false, exploited: "not confirmed", patch: "17.3", source: "https://github.com/advisories/GHSA-q7f4-j8r5-hmxq" }
+  - { cve: "CVE-2026-54366", product: "Gladinet CentreStack", cvss: "8.7 (v4)", epss: "0.287%", kev: false, exploited: "not confirmed", patch: "17.4", source: "https://github.com/advisories/GHSA-m68w-g32j-mw5x" }
+  - { cve: "CVE-2026-54367", product: "Gladinet CentreStack", cvss: "8.8 (v4)", epss: null, kev: false, exploited: "not confirmed", patch: "17.2", source: "https://github.com/advisories/GHSA-hq66-5q6c-849x" }
+  - { cve: "CVE-2026-54368", product: "Gladinet CentreStack", cvss: "8.7 (v4)", epss: null, kev: false, exploited: "not confirmed", patch: "17.4", source: "https://github.com/advisories/GHSA-4cmj-5m56-fg8c" }
+  - { cve: "CVE-2026-48449", product: "Adobe Campaign Classic v7", cvss: "10.0", epss: null, kev: false, exploited: "no PoC/exploitation reported", patch: "7.4.3 build 9398", source: "https://helpx.adobe.com/security/products/campaign/apsb26-114.html" }
+  - { cve: "CVE-2026-48448", product: "Adobe Campaign Classic v7", cvss: "8.6", epss: null, kev: false, exploited: "no PoC/exploitation reported", patch: "7.4.3 build 9398", source: "https://helpx.adobe.com/security/products/campaign/apsb26-114.html" }
+  - { cve: "CVE-2026-58155", product: "Apache Traffic Server", cvss: "9.2 (v4)", epss: null, kev: false, exploited: "not reported", patch: "9.2.15 / 10.1.4", source: "https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d" }
+  - { cve: "CVE-2026-58154", product: "Apache Traffic Server", cvss: "9.2 (v4)", epss: null, kev: false, exploited: "not reported", patch: "9.2.15 / 10.1.4", source: "https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d" }
+  - { cve: "CVE-2026-58161", product: "Apache Traffic Server", cvss: "9.2 (v4)", epss: null, kev: false, exploited: "not reported", patch: "9.2.15 / 10.1.4", source: "https://lists.apache.org/thread/5prl9glcm9g2swnq9hqxvnokylm1gr6d" }
+  - { cve: "CVE-2026-7849", product: "Phoenix Contact CHARX SEC-3xxx", cvss: "9.8", epss: null, kev: false, exploited: "not reported", patch: "1.9.1 (NOT YET RELEASED, due by 2026-08-12)", source: "https://www.certvde.com/en/advisories/VDE-2026-008/" }
+  - { cve: "CVE-2026-44108", product: "Phoenix Contact CHARX SEC-3xxx", cvss: "9.8", epss: null, kev: false, exploited: "not reported", patch: "1.9.1 (NOT YET RELEASED, due by 2026-08-12)", source: "https://www.certvde.com/en/advisories/VDE-2026-008/" }
+  - { cve: "CVE-2026-44104", product: "Phoenix Contact CHARX SEC-3xxx", cvss: "9.8", epss: null, kev: false, exploited: "not reported", patch: "1.9.1 (NOT YET RELEASED, due by 2026-08-12)", source: "https://www.certvde.com/en/advisories/VDE-2026-008/" }

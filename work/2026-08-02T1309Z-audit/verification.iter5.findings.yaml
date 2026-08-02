@@ -1,0 +1,90 @@
+# Findings summary (machine-readable)
+- code: F1
+  category: claim-not-supported
+  section: trending-vulnerabilities
+  item: "2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay — CVE-2026-65879 '9.8' attributed to the Joomla CNA"
+  url_or_quote: "CVE-2026-65879 (CNA 9.8 Critical) is a design flaw rather than a slip / 'The second flaw, CVE-2026-65879 at CNA 9.8 Critical — the highest-scored of the set' / sourcing_note: 'The CVSS figures in cves[] are the Joomla CNA's'"
+  summary: >-
+    Verified against the owning CVE record (https://cveawg.mitre.org/api/cve/CVE-2026-65879, assigner
+    Joomla, PUBLISHED, dateUpdated 2026-07-29): the Joomla CNA container carries NO metrics for this id.
+    The only score on the record is a CISA-ADP secondary assessment, cvssV3_1 baseScore 9.8
+    (CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) plus CWE-798. The other four ids DO carry Joomla-CNA
+    cvssV4_0 metrics (65766 = 9.2, 65877 = 8.2, 65878 = 8.3, 65876 = 9.2), so the entry silently mixes a
+    CVSS 3.1 figure into a CVSS 4.0 set and then ranks across the two scales — 'the highest-scored of the
+    set', where under the discloser's own consistent CVSS 4.0 scoring the mail relay is the LOWEST of the
+    four (6.9, Medium). The mySites.guru table's 'CNA score' column header is what the entry relied on;
+    the per-CVE authority contradicts the label. Same defect shape the audit report itself flags in
+    factual-error row 3 (CVE-2026-62415's 9.1 is CVSS 3.1, not 4.0 — independently confirmed: that id
+    likewise has an empty Joomla-CNA metrics block and a CISA-ADP cvssV3_1 9.1). Also propagated to
+    state/cves_seen.json ('CNA score 9.8 Critical'). Fix: attribute the 9.8 to the CISA-ADP CVSS 3.1
+    assessment (or drop the 'CNA' label for this id alone), and drop or requalify 'the highest-scored of
+    the set'.
+- code: F2
+  category: hallucinated-fact
+  section: active-threats
+  item: "2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated — cves[] CVE-2026-39987 cvss '9.8'"
+  url_or_quote: "cves: - id: CVE-2026-39987 / cvss: \"9.8\""
+  summary: >-
+    Contradicts the owning advisory. CVE-2026-39987 is assigned by GitHub_M for the marimo GHSA
+    (GHSA-2679-6mx9-h9xc, published 2026-04-09); the CNA record carries cvssV4_0 baseScore 9.3
+    (CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N), CWE-306, affected '< 0.23.0'.
+    No 9.8 appears anywhere on the record — the figure exists only in Unit 42's multi-CVE roundup table,
+    which is exactly the roundup-vs-per-CVE-authority split the v3.21/v3.30 provenance rule governs.
+    The body's attribution ('its row ... the score as 9.8') is an accurate report of Unit 42's table; the
+    defect is confined to the machine surface cves[].cvss. Fix: carry 9.3 with the CNA vector, or keep
+    9.8 only with an explicit note that it is Unit 42's figure and 9.3 is the CNA's.
+- code: F3
+  category: needs-more-research
+  section: active-threats
+  item: "2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated — Marimo fixed version and KEV status omitted, and the action says the opposite"
+  url_or_quote: "fixed: \"Not stated in the cited Unit 42 post — consult the Marimo project's own advisory for the fixed release before planning remediation.\" / status: [exploited] / 'the finding is not \"patch it\" — the cited post names no fixed version — but \"find it and check it\"' / action: 'treat any that was exposed as a compromise-assessment target rather than a patching task'"
+  summary: >-
+    Both missing fields are on the per-CVE authority and already in this pipeline's own store. The CVE
+    record gives affected '< 0.23.0' (fixed in marimo 0.23.0, advisory published 2026-04-09). CISA KEV,
+    enumerated live this iteration via `python3 tools/fetch_source.py cisa-kev`, carries CVE-2026-39987
+    with dateAdded 2026-04-23 ('Marimo Remote Code Execution Vulnerability') — so status[] should include
+    cisa-kev, not exploited alone. The store already knows: entries/2026-05-30/sysdig-trt-first-observed-
+    llm-agent-driven-post-exploitation.md says 'a pre-auth RCE in Marimo notebook < 0.20.4 (patched in
+    0.23.0)' and 'update Marimo to >= 0.23.0', and state/cves_seen.json carries the id with
+    first_seen 2026-05-30. Consequence: 'rather than a patching task' is wrong guidance for the one
+    product the entry exists to add to the exposure list. Fix: cves[].fixed -> marimo 0.23.0 (per the
+    owning advisory), add cisa-kev to status[], and reword the takeaway/action to patch-AND-assess.
+- code: F4
+  category: hallucinated-fact
+  section: research
+  item: "2026-08-02/gpt56-wp2shell-was-an-original-zero-day-not-a-rediscovery — quotation of the 2026-07-21 entry that entry does not contain"
+  url_or_quote: "This pipeline's 2026-07-21 entry described Searchlight Cyber as tasking GPT5.6 with \"autonomously rediscovering and weaponising the already-patched\" WordPress WP2Shell chain"
+  summary: >-
+    Whitespace-normalised substring search over the whole of
+    entries/2026-07-21/gpt56-autonomous-wordpress-wp2shell-exploit-chain.md returns no match for
+    'autonomously rediscovering and weaponising the already-patched'. That entry's summary reads
+    'tasked OpenAI's GPT5.6 to autonomously rediscover and weaponise the already-patched WordPress core
+    pre-auth RCE chain'; its title reads 'GPT5.6 autonomously rediscovers and weaponises the WP2Shell
+    WordPress RCE chain'. The quoted fragment re-inflects the verbs to fit the 'tasking ... with'
+    construction — a paraphrase inside quotation marks, the leading residual defect class this very
+    report names and v3.30 mechanises. The audit report's own factual-error row 2 quotes the same
+    passage correctly ('to autonomously rediscover and weaponise the already-patched'), so report and
+    entry now disagree about what the 07-21 entry says. Fix: restore the verbatim wording or drop the
+    quotation marks.
+- code: F5
+  category: editorial-advisory
+  section: trending-vulnerabilities
+  item: "2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay — sourcing_note describes the body inaccurately"
+  url_or_quote: "its CVSS 4.0 self-scores (8.7 / 6.9 / 7.1 / 7.2 respectively) are lower and are named in the body rather than carried in the frontmatter"
+  summary: >-
+    Only 8.7 is named in the body ('We scored it 8.7 High'); 6.9, 7.1 and 7.2 appear nowhere in the body.
+    The note itself carries all four, so no reader loses the numbers — the inaccuracy is only in the
+    note's description of where they live. ('respectively' does map correctly onto the first four cves[]
+    records in order — verified against the source's mapping table.) Reword to 'named here' or add the
+    three figures to the body. Advisory; the main agent may leave it.
+- code: F6
+  category: editorial-advisory
+  section: research
+  item: "2026-08-02/gpt56-wp2shell-was-an-original-zero-day-not-a-rediscovery — references: [] while the body names the inheriting weekly"
+  url_or_quote: "references: [] / 'the W30 weekly carried the same framing' / 'the weekly strategic entry for W30 inherited it'"
+  summary: >-
+    update_of correctly targets 2026-07-21/gpt56-autonomous-wordpress-wp2shell-exploit-chain, but the
+    second entry carrying the wrong framing — 2026-07-26/weekly-w30-ai-autonomous-operator-and-target,
+    whose title verbatim reads 'an LLM rebuilt a patched exploit chain for ~$25' — is named in prose only
+    and is unreachable from the correction through any structured link. Adding it to references[] would
+    make the correction discoverable from the weekly. Advisory; the main agent may leave it.

@@ -1,0 +1,250 @@
+domain: G3
+run_id: 2026-08-02T1309Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-02T13:15:17Z
+ended_at: 2026-08-02T13:28:14Z
+duration_seconds: 777
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 6
+  bridge_fetches: 24
+
+items:
+  - title: "SP Page Builder for Joomla: pre-auth SQL injection reachable via the anonymous-CSRF-token trick, plus a hardcoded shared secret that turns any install into an open mail relay"
+    sources:
+      - { url: "https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/", publisher: "mySites.guru", date: "2026-07-27", role: "primary" }
+      - { url: "https://cvefeed.io/vuln/detail/CVE-2026-65766", publisher: "cvefeed.io (CVE aggregator)", date: "2026-07-27", role: "corroborating (CVE-existence only, reduced confidence — aggregator)" }
+    discovery_trace: "first seen at: mysites-guru, URL https://mysites.guru/blog/ (listing, jina reader) -> drill: https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/ -> primary: mySites.guru's own disclosure write-up (no further pivot needed, discoverer's own advisory) -> corroboration attempt: WebSearch (\"CVE-2026-65766 OR CVE-2026-65877 SP Page Builder Joomla\") -> cvefeed.io CVE-existence confirmation"
+    summary: |
+      mySites.guru's own vulnerability-research team found four vulnerabilities in SP Page Builder (JoomShaper's drag-and-drop
+      Joomla page builder) 6.7.0 during a follow-on audit, privately reported them, and JoomShaper fixed all four in 6.7.1
+      (released 27 July 2026; four CVEs assigned by the Joomla CNA the same day). The most severe, CVE-2026-65766 (CVSS
+      3.1 8.7, High), is a SQL injection in the Dynamic Content endpoint's tag-sort feature: the sort `direction` value is
+      concatenated raw into the query's ORDER BY clause (dynamic_content.php:232, duplicated at CollectionData.php:2004),
+      a position that cannot be safely parameterised. The only control in front of it is a Joomla CSRF token — but Joomla
+      issues a valid token to every visitor including anonymous ones on page load, so a scripted attacker simply fetches a
+      token and replays it, making this a de-facto pre-authentication SQL injection capable of reading the entire Joomla
+      database (accounts, password hashes, site secret). mySites.guru confirmed it with a time-based blind proof on their
+      own test install. The second finding (CVE-2026-65877, CVSS 6.9, Medium) is a design flaw, not a slip: the
+      `ajax_contact`/`form_builder` contact-form addons sign the configured recipient address with a secret hardcoded
+      identically into every shipped copy of the extension (site.php:24, CWE-798) — anyone with the extension can read
+      the secret and forge a valid signature, letting an attacker set an arbitrary recipient and a spoofed sender and turn
+      any site's own mail server into an open spam/phishing relay. Two secondary weaknesses removed the remaining
+      friction: the built-in "default" captcha compares two attacker-controlled values (site.php:460), and the CSRF check
+      silently disables itself whenever Joomla page caching is enabled (site.php:257), a common production setting. Two
+      further issues need only a low-privileged "author" account: an authenticated SQL injection in the media manager's
+      search/date filters (CVE-2026-65878, CVSS 7.1, unescaped input in media.php's getDateFilters()/getTotalMedia()),
+      and an authenticated arbitrary file delete (CVE-2026-65879, CVSS 7.2) where the media-delete action removes a
+      request-supplied path with no traversal guard (media.php:804) — letting a low-trust author delete configuration.php
+      or a protective .htaccess. Affected: SP Page Builder <= 6.7.0 (all versions); fixed in 6.7.1. This is separate from
+      SP Page Builder's June 2026 unauthenticated icon-upload zero-day (fixed in 6.6.2) — sites need both fixes. No
+      in-the-wild exploitation is reported for these four (contrast with the same publisher's Gridbox and iCagenda
+      disclosures this wave, which were exploited). This extends the actively tracked Joomla-extension vulnerability wave
+      with a genuinely new technique class within it: a hardcoded-shared-secret design flaw (CWE-798) enabling an open
+      mail relay, distinct from the wave's earlier file-upload-RCE and cookie-forgery patterns, and directly relevant to
+      any CH/EU municipal or public-sector site running this widely-installed Joomla page builder.
+    region_nexus: "global; Joomla and SP Page Builder are commonly deployed by CH/EU municipal and SME public-sector sites (the tracked Joomla-extension wave has repeatedly surfaced in this pipeline's home-region incident coverage)"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector (any organization running a public Joomla site with SP Page Builder)"
+    cves: [CVE-2026-65766, CVE-2026-65877, CVE-2026-65878, CVE-2026-65879]
+    techniques: [T1190, T1562.001]
+    affected_products: ["SP Page Builder for Joomla (JoomShaper, com_sppagebuilder)"]
+    entity_keys: ["trend:joomla-extension-file-upload-rce-wave"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A scripted attacker simply fetches a token and sends it back, so in practical terms this is a pre-authentication SQL injection: an anonymous attacker could read any table in the Joomla database, from user accounts and password hashes to the site secret and every stored record."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/"
+      - quote: "The problem is the secret: it is a single string hardcoded into the addon source (site.php:24), identical in every copy of SP Page Builder ever shipped. A secret that ships in the product is not a secret."
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/"
+      - quote: "Reported privately, fixed in 6.7.1 on 27 July 2026. The Joomla CNA assigned four CVEs the same day: CVE-2026-65766, CVE-2026-65877, CVE-2026-65878 and CVE-2026-65879"
+        attribution: "mySites.guru"
+        source_url: "https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/"
+    extended_notes: |
+      Recovered by the per-publisher LISTING sweep, not by CVE/KEV discovery — the disclosure is real, dated, and
+      CVE-assigned, but no aggregator/CERT feed had surfaced it as of this audit. Consistent with the audit's stated
+      purpose (recoverable misses via listing sweeps). Only one independent technical source exists (the discoverer's
+      own write-up); the Joomla CNA's same-day CVE assignment corroborates existence/severity but is not a second
+      narrative account. mySites.guru's disclosure practice (private report -> vendor fix -> public writeup) is the
+      same publisher already cited as primary for other entries in this wave (Gridbox, RSFiles!, Phoca Download,
+      Balbooa Forms), so its Admiralty B rating and vendor-facing responsible-disclosure track record are already
+      established in sources.json.
+    watchlist: null
+    borderline: false
+
+  - title: "Astaroth banking trojan adds a headless-browser WhatsApp Web spambot for self-propagation through victims' own contact lists"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/inside-astaroths-new-spambot-component/", publisher: "CrowdStrike", date: "2026-07-29", role: "primary" }
+    discovery_trace: "first seen at: crowdstrike (source-list slice record), URL https://www.crowdstrike.com/blog/category/counter-adversary-operations/ (listing, WebFetch) -> primary: https://www.crowdstrike.com/en-us/blog/inside-astaroths-new-spambot-component/ (no pivot needed)"
+    summary: |
+      CrowdStrike documents (2026-07-29) a new self-propagation component added to Astaroth, an established LATAM-focused
+      banking-trojan family, in Q4 2025. The component runs a headless Chrome or Edge instance (WebDriver session with
+      automation indicators stripped so no browser window is ever shown to the victim) and drives it against WhatsApp Web
+      using the WPPConnect JavaScript automation library to enumerate the logged-in victim's own contact list. It filters
+      out group chats, broadcast lists and non-Brazil phone numbers, then composes and sends multilingual spam messages
+      carrying Astaroth downloader links to the victim's real contacts — turning every successful infection into a
+      self-propagation node riding a trusted messaging platform rather than email. CrowdStrike also reports code overlap
+      between this spambot and one used by a separate malware family, Vareg, which it assesses "highly likely" indicates
+      shared authorship or a code-sharing arrangement between the two toolsets' operators. Victimology is explicitly
+      Brazil-scoped (the component actively filters for Brazilian numbers), so this is not a direct CH/EU CI/government
+      targeting item; it is included for the transferable technique — headless-browser automation of a legitimate,
+      widely-used messaging platform (WhatsApp Web has substantial personal and SME use across Switzerland/Europe) as a
+      self-propagating malware-distribution channel, a pattern likely to be reused against other regions' user bases of
+      the same platform.
+    region_nexus: "Brazil/LATAM-scoped victimology; technique (headless-browser automation of a trusted messaging platform for self-propagation) is transferable to any WhatsApp Web user base, including in Switzerland/Europe"
+    primary_sector_nexus: "none (consumer/SME banking-fraud victimology, not CI/government)"
+    sector: "finance (consumer banking fraud), cross-sector for the technique class"
+    cves: []
+    techniques: [T1566, T1204.002]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "malware:astaroth", type: malware, name: "Astaroth",
+          aliases: [],
+          summary: "Long-running LATAM/Brazil-focused banking trojan; per CrowdStrike (2026-07-29) its developer added a headless-browser WhatsApp Web spambot component (WPPConnect-driven) for self-propagation via victims' own contact lists, sharing code with the Vareg spambot." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "By running a browser instance in headless mode and stripping automation indicators from a WebDriver session, the spambot conducts its entire spam campaign without ever displaying a browser window to the victim."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/inside-astaroths-new-spambot-component/"
+      - quote: "The code overlap between the Astaroth and Vareg spambots highly likely indicates that the same threat actor developed both spambots or that the actors operating the two toolsets have a code-sharing arrangement."
+        attribution: "CrowdStrike"
+        source_url: "https://www.crowdstrike.com/en-us/blog/inside-astaroths-new-spambot-component/"
+    extended_notes: |
+      Recovered by the per-publisher listing sweep (CrowdStrike's counter-adversary-operations listing shows this as
+      its most recent dated item, 2026-07-29, ahead of the "Black Hat special" newsletter posts) — no CVE/KEV channel
+      would have surfaced it, matching the audit's stated recoverable-miss pattern. Flagged borderline given the
+      Brazil-only victimology; the main agent should weigh transferable-technique value (trusted-platform-driven
+      self-propagation) against the strict regional/sector relevance gate.
+    watchlist: null
+    borderline: true
+    borderline_reason: "Victimology explicitly Brazil/LATAM-scoped (component filters for Brazilian phone numbers); included only for the transferable self-propagation-via-trusted-platform technique, not for direct constituency nexus."
+
+publishers_enumerated:
+  - { publisher: "Microsoft Threat Intelligence", listing_url: "https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/", in_window_post_count: 1, transport_used: "webfetch", notes: "Only in-window post is CaptiveCrunch/Storm-2945 (07-31), already in prior_coverage. Rest of listing pre-dates window." }
+  - { publisher: "Google Cloud / Mandiant GTIG", listing_url: "https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v", in_window_post_count: 1, transport_used: "bridge feed (direct)", notes: "'Batten Down Your Packages: Mitigation Guidance for Supply Chain Compromise' (2026-07-30) — recap/guidance piece; its 'new' actor content (UNC6780/SANDCLOCK) resolves to the already-tracked actor:teampcp, and the UNC6863/DAEMON Tools mention is background dated 'early 2026'. Considered and dropped — see dropped[]." }
+  - { publisher: "Cisco Talos", listing_url: "https://blog.talosintelligence.com/", in_window_post_count: 3, transport_used: "webfetch", notes: "IR Trends Q2 2026 (07-28, covered); two Threat Source newsletter personal-reflection posts (07-30) not technical research." }
+  - { publisher: "Palo Alto Networks Unit 42", listing_url: "https://unit42.paloaltonetworks.com/feed/", in_window_post_count: 2, transport_used: "bridge feed (direct)", notes: "XCSSET v40 (07-31) and autonomous-AI-cyberattack/DeepSeek-Hermes-NetScaler (07-30), both already in prior_coverage." }
+  - { publisher: "Check Point Research", listing_url: "https://research.checkpoint.com/feed/", in_window_post_count: 1, transport_used: "bridge feed (direct)", notes: "Only in-window item is the '27th July – Threat Intelligence Report' weekly rollup (discovery-only per source notes); no distinct new research post in window." }
+  - { publisher: "ESET WeLiveSecurity", listing_url: "https://www.welivesecurity.com/en/", in_window_post_count: 2, transport_used: "webfetch", notes: "July monthly roundup video (07-31) and a consumer-scam 'verify screenshots' post (07-30); neither is technical threat research clearing the bar." }
+  - { publisher: "Kaspersky Securelist (GReAT)", listing_url: "https://securelist.com/feed/", in_window_post_count: 4, transport_used: "bridge feed (direct)", notes: "OctLurk/SilkLurk (07-30), GenieLocker (07-30), Mirage Kitten (07-28) all already in prior_coverage. 'Network Anomaly Detection in KATA' (07-31) is real detection-engineering depth (Kerberoasting/DNS-tunneling detection logic) but is product-documentation for Kaspersky's own KATA platform, not new threat/actor research — considered and dropped." }
+  - { publisher: "SentinelOne / SentinelLabs", listing_url: "https://www.sentinelone.com/labs/", in_window_post_count: 0, transport_used: "webfetch", notes: "Latest post is 2026-07-22 (Iran War midyear assessment), before window." }
+  - { publisher: "Proofpoint Threat Insight", listing_url: "https://www.proofpoint.com/us/blog/threat-insight", in_window_post_count: 0, transport_used: "webfetch", notes: "Listing thinly rendered by WebFetch (titles/authors only, no bodies); the 3 visible items (TA488 Zimbra, RoundPress/TA458, Cruciferra) are all dated 2026-07-20/23, before window; both TA488 and Cruciferra already surfaced via later corroborating coverage in prior_coverage (07-31, 07-21)." }
+  - { publisher: "Trend Micro Research", listing_url: "https://feeds.feedburner.com/TrendMicroResearch", in_window_post_count: 3, transport_used: "bridge feed (direct)", notes: "Open Secure AI Alliance partnership post (07-30, corporate announcement); World Cup fake-site tracking (07-29, Japan-consumer-scam focus, low CH/EU relevance — dropped); autonomous-ransomware case study (07-24) falls just before window." }
+  - { publisher: "Sophos X-Ops", listing_url: "https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242", in_window_post_count: 7, transport_used: "bridge feed (direct)", notes: "Chaos-in-Teams-vishing/STAC4749 (07-28) already covered; remaining 6 in-window posts are product launches (Sophos AI Defense), conference announcements, and commentary — no new threat research." }
+  - { publisher: "Recorded Future / Insikt Group", listing_url: "https://www.recordedfuture.com/feed", in_window_post_count: 2, transport_used: "bridge feed (direct)", notes: "'Iran War's Secondary Effects Shape 2026 US Violent Extremism' (07-30, US-domestic-extremism focus, out of constituency scope) and 'Dealing with AI-Generated Extortion' (07-30, general guidance/CTA, no new technique or case — both considered and dropped)." }
+  - { publisher: "Zscaler ThreatLabz", listing_url: "https://www.zscaler.com/blogs/security-research", in_window_post_count: 0, transport_used: "webfetch", notes: "WebFetch summary returned only marketing/partnership posts (SAP migration, OpenAI partnership, employee spotlight) with no dates past 2026-01 visible in the extraction — likely hit a non-research page slice. Coverage gap: could not confirm whether a new research post exists beyond the already-tracked TELESHIM/MIXEDKEY/BINDCLOAK (07-20, pre-window)." }
+  - { publisher: "Rapid7 Research", listing_url: "https://www.rapid7.com/rss.xml", in_window_post_count: 11, transport_used: "bridge feed (direct)", notes: "KindaRails2Shell/CVE-2026-66066 (07-30), VMware vCenter VMSA-2026-0006 (07-30), TeamCity CVE-2026-63077 (07-29), Check Point SmartConsole root-cause (07-28) all already in prior_coverage; remainder are product/partnership/conference announcements." }
+  - { publisher: "Huntress Labs", listing_url: "https://www.huntress.com/blog/rss.xml", in_window_post_count: 0, transport_used: "rss + webfetch (both stale)", notes: "Both the documented rss.xml feed and a direct WebFetch of /blog returned only posts dated on/before 2026-07-13 — feed/listing appears stale relative to known Huntress posts already in prior_coverage (FakeAgent 07-26, SonicWall credential stuffing 07-30, device-code phishing 08-01). Recipe likely needs a category-specific feed path; flagged as coverage gap, not a source failure (both transports returned 200)." }
+  - { publisher: "Volexity", listing_url: "https://www.volexity.com/blog/", in_window_post_count: 0, transport_used: "webfetch", notes: "Latest post is 2026-07-17 (SonicWall SMA1000), before window; sparse cadence is documented as normal for this source." }
+  - { publisher: "Elastic Security Labs", listing_url: "https://www.elastic.co/security-labs", in_window_post_count: 5, transport_used: "webfetch", notes: "Hugging Face detection-mapping post (07-31) already in prior_coverage; other 4 in-window posts (07-29/07-31) are product-feature announcements (Alert Zero, Sentinel migration tool, Defend driver-rule automation, Black Hat/DEF CON presence)." }
+  - { publisher: "Red Canary", listing_url: "https://redcanary.com/feed/", in_window_post_count: 0, transport_used: "bridge feed (direct)", notes: "Latest post 'Intelligence Insights: July 2026' dated 2026-07-23, before window." }
+  - { publisher: "Sekoia.io blog", listing_url: "https://www.sekoia.com/blog", in_window_post_count: 0, transport_used: "webfetch", notes: "Latest post 2026-07-23 (self-hosted cloud product post), before window." }
+  - { publisher: "WithSecure Labs", listing_url: "https://www.withsecure.com/en/resources-hub/w-labs/", in_window_post_count: 0, transport_used: "webfetch (returned 'No results found'); jina retry returned nav chrome only", notes: "COVERAGE GAP: page is a client-hydrated filter/search UI with no server-rendered post grid reachable by either transport; recipe needs a structured listing endpoint (not found this run)." }
+  - { publisher: "Group-IB", listing_url: "https://www.group-ib.com/blog/", in_window_post_count: 0, transport_used: "bridge url (200, meta/head only) + WebFetch (503, transient)", notes: "COVERAGE GAP: bridge returned HTTP 200 but only page <head>/schema.org meta in the byte range read (truncated by our own head-limit, not a transport failure); no post-grid HTML/links extracted. Most recent known GIB posts (HOLLOWGRAPH 07-21, ClickLock Stealer 07-19) both pre-date window and are already in prior_coverage." }
+  - { publisher: "CrowdStrike Threat Research", listing_url: "https://www.crowdstrike.com/blog/category/counter-adversary-operations/", in_window_post_count: 1, transport_used: "webfetch", notes: "'Inside Astaroth's New Spambot Component' (07-29) — new finding, see items[]. Nothing else in window (next post is 2026-06-09)." }
+  - { publisher: "Dragos", listing_url: "https://www.dragos.com/blog/", in_window_post_count: 0, transport_used: "webfetch", notes: "Latest post 2026-07-22 (MTSA asset-inventory mandate), before window." }
+  - { publisher: "Claroty Team82", listing_url: "https://claroty.com/team82/research", in_window_post_count: 0, transport_used: "webfetch", notes: "Listing has no dates in the rendered HTML (documented recipe gap — dates only on per-post pages); titles visible (Iran-linked warning-systems op, UPS/data-center attack, Trane HVAC, EnOcean SmartServer, Sixnet RTU) match already-known older research, none suggest a fresh in-window post. Partial coverage — dates not confirmed." }
+  - { publisher: "Nozomi Networks Labs", listing_url: "https://www.nozominetworks.com/blog", in_window_post_count: 0, transport_used: "webfetch", notes: "Listing carries no dates (documented recipe gap). Top post 'Seven States, One Weak Spot: What the FBI/EPA PLC Warning Means for Water Utilities' plausibly follows the 08-01 FBI/EPA advisory already in prior_coverage, but could not confirm publish date this run — not counted as new without date confirmation." }
+  - { publisher: "SANS ICS", listing_url: "https://www.sans.org/blog/?focus-area=industrial-control-systems-ics", in_window_post_count: 0, transport_used: "webfetch", notes: "Only ICS-tagged post visible is 'A Guide to OT Security Best Practices' (2026-07-13), before window; documented recipe note (ICS cadence sparse, non-ICS posts dominate the general listing) held true this run." }
+  - { publisher: "Zero Day Initiative", listing_url: "https://www.zerodayinitiative.com/blog/", in_window_post_count: 0, transport_used: "not fetched this run (time-budgeted)", notes: "Not swept directly; ZDI-26-035 (CVE-2026-0769 Langflow) already surfaced via prior_coverage through a different discovery path (VulnCheck, 07-29)." }
+  - { publisher: "Exodus Intelligence", listing_url: "https://blog.exodusintel.com/feed/", in_window_post_count: 1, transport_used: "bridge feed (direct)", notes: "'From Virtual Share to Physical Shell' (07-27) — LPE exploit-dev writeup for CVE-2025-59517/CVE-2025-64673, both patched December 2025 (~8 months old), no in-the-wild exploitation reported; considered and dropped as low-urgency technique-education content on long-patched CVEs." }
+  - { publisher: "Snyk Security Research", listing_url: "https://snyk.io/blog/feed/", in_window_post_count: 5, transport_used: "bridge feed (direct)", notes: "All 5 in-window posts are AI-security commentary/product content (Snowflake Cortex integration, AI pentesting explainer, Hugging Face commentary); no original vulnerability/supply-chain research in window." }
+  - { publisher: "Sonatype", listing_url: "https://www.sonatype.com/blog/rss.xml", in_window_post_count: 3, transport_used: "bridge feed (direct)", notes: "3 in-window posts are policy/commentary (open-source sustainability, AI supply-chain commentary); the substantive Q2 2026 Open Source Malware Index (1.8M malicious packages, npm/PyPI/NuGet breakdown) is dated 2026-07-09, before window." }
+  - { publisher: "Tenable Research", listing_url: "https://www.tenable.com/blog/feed", in_window_post_count: 1, transport_used: "bridge feed (direct)", notes: "'What water utilities need to know about cybersecurity compliance' (07-30) is a US regulatory-compliance explainer, not threat/vuln research — out of G3 scope (W2/policy-adjacent)." }
+  - { publisher: "Wiz Research (cloud-threat-landscape feed)", listing_url: "https://www.wiz.io/api/feed/cloud-threat-landscape/rss.xml", in_window_post_count: 0, transport_used: "bridge feed (direct)", notes: "Latest incident entry dated 2026-07-22 (Cl0p/Windchill), before window." }
+  - { publisher: "Akamai Security Intelligence Group", listing_url: "https://feeds.feedburner.com/akamai/blog", in_window_post_count: 4, transport_used: "bridge feed (direct)", notes: "4 in-window posts are all commentary/defense-guidance (offensive-AI framework, government API-security guidance, CVE-2026-66066 defensive writeup, partner-segmentation piece) — no original threat research." }
+  - { publisher: "InfoGuard Labs (Switzerland)", listing_url: "https://labs.infoguard.ch/", in_window_post_count: 0, transport_used: "bridge url (direct)", notes: "Latest dated advisory found (CVE-2026-14551, servereye Sensorhub LPE) was publicly disclosed 2026-07-22 per WebSearch corroboration, before window; latest blog post visible is 2026-06-15 (Deno-based proxy/RAT). Nothing new in window." }
+  - { publisher: "Compass Security (Switzerland)", listing_url: "https://blog.compass-security.com/feed/", in_window_post_count: 0, transport_used: "bridge feed (direct)", notes: "Latest post 'The Hidden Privilege of Automation Platforms' (n8n) dated 2026-07-21, before window." }
+  - { publisher: "watchTowr Labs", listing_url: "https://labs.watchtowr.com/rss/", in_window_post_count: 0, transport_used: "bridge feed (direct)", notes: "Latest post 'ColdFusion APSB26-68' dated 2026-07-02, before window — no post since." }
+  - { publisher: "Sysdig Threat Research Team", listing_url: "https://www.sysdig.com/blog", in_window_post_count: 0, transport_used: "bridge url (direct)", notes: "Newest post is 'Introducing the SysQL Skill' (07-30, product feature, not threat research); the most recent threat item, JADEPUFFER/ENCFORGE, is dated 07-20, before window." }
+  - { publisher: "mySites.guru (Joomla/WordPress fleet security)", listing_url: "https://mysites.guru/blog/", in_window_post_count: 3, transport_used: "jina reader (full listing, no dates in listing markup) + bridge url per-article (dates confirmed)", notes: "Gridbox 23-vuln follow-up (07-31, already in prior_coverage), SP Page Builder disclosure (07-27, NEW — see items[]), JCE 2.9.99.10 (07-29, considered and dropped — low severity, self-described 'routine update, not an emergency', no CVE assigned)." }
+
+dropped:
+  - title: "Google Cloud/Mandiant GTIG — 'Batten Down Your Packages: Mitigation Guidance for Supply Chain Compromise'"
+    reason: "Published 2026-07-30, in-window and from a high-reliability primary (GTIG), but is fundamentally a consolidated mitigation-guidance recap: its named campaigns (UNC6780/SANDCLOCK, the axios/MIDNIGHT NEPTUNE compromise, the ByBit theft) are all already tracked in this pipeline (UNC6780/SANDCLOCK resolves directly to the already-registered actor:teampcp), and its one unfamiliar name (UNC6863/DAEMON Tools) is presented as background dated 'early 2026', not a fresh disclosure. No genuinely new threat-intelligence fact for this run's window."
+    url: "https://cloud.google.com/blog/topics/threat-intelligence/mitigation-guidance-for-supply-chain-compromise/"
+  - title: "mySites.guru — JCE 2.9.99.10 file-rename/hidden-file flaw"
+    reason: "Published 2026-07-29, in-window, but self-described by the discloser as low severity ('not remote code execution and it is not another June... a routine update, not an emergency'), requires an already-privileged editor-profile account with file-browser + rename permission, produces only a concealment effect (no code execution, no new access), and carries no CVE as of publication. Does not clear the actionability bar."
+    url: "https://mysites.guru/blog/jce-2-9-99-10-security-update/"
+  - title: "Kaspersky Securelist — 'Network Anomaly Detection in KATA' (Kerberoasting/DNS-tunneling detection methodology)"
+    reason: "Published 2026-07-31, in-window, and genuinely technical (SPN-anomaly and subdomain-payload detection logic), but is product documentation for Kaspersky's own KATA platform rather than new threat/actor research — no new campaign, actor, or vulnerability."
+    url: "https://securelist.com/network-anomaly-detection-in-kata/120892/"
+  - title: "Recorded Future / Insikt Group — 'Dealing with AI-Generated Extortion'"
+    reason: "Published 2026-07-30, in-window, but is general strategic guidance illustrated with two already-known cases (0APT, ALP-001 fake-leak fabrications); no new technique, detection method, or case detail beyond what a reader already has, and ends in a demo-booking CTA."
+    url: "https://www.recordedfuture.com/blog/ai-generated-extortion"
+  - title: "Trend Micro Research — 'Tracking Over 35,000 Fake Sites in the 2026 World Cup Scam Wave'"
+    reason: "Published 2026-07-29, in-window, but the campaign's own reported visitor base is overwhelmingly Japan-focused (1.48M visits from Japan) consumer/counterfeit-merchandise scam activity with no CI/government nexus or transferable technique beyond generic brand-abuse scanning — below the relevance bar for this constituency."
+    url: "https://www.trendmicro.com/en_us/research/26/g/tracking-fake-sites-in-the-2026-world-cup-scam-wave.html"
+  - title: "Exodus Intelligence — 'From Virtual Share to Physical Shell: Leveraging Windows' Inconsistent Access Control for LPE'"
+    reason: "Published 2026-07-27, in-window, but is an exploit-development writeup for CVE-2025-59517/CVE-2025-64673, both patched in the December 2025 Windows updates (~8 months before this writeup) with no in-the-wild exploitation reported by any party. Technique-education value for LPE researchers but low current actionability for a SOC audience already 8 months past the patch cycle."
+    url: "https://blog.exodusintel.com/2026/07/27/from-virtual-share-to-physical-shell-leveraging-windows-inconsistent-access-control-for-lpe/"
+  - title: "InfoGuard Labs (Switzerland) — CVE-2026-14551 servereye Sensorhub LPE advisory"
+    reason: "Public disclosure date confirmed via WebSearch corroboration as 2026-07-22, four days before the audit window opens (2026-07-26); could not confirm the InfoGuard Labs blog post/advisory page itself carries an in-window publish or update date. Out of window."
+    url: "https://labs.infoguard.ch/advisories/cve-2026-14551_servereye-client-sensorhub_local-privilege-escalation/"
+
+sources_swept:
+  - { id: msft-ti, status: ok, method: webfetch }
+  - { id: mandiant-gtig, status: ok, method: "bridge feed" }
+  - { id: talos, status: ok, method: webfetch }
+  - { id: unit42, status: ok, method: "bridge feed" }
+  - { id: checkpoint-research, status: ok, method: "bridge feed" }
+  - { id: eset, status: ok, method: webfetch }
+  - { id: kaspersky-securelist, status: ok, method: "bridge feed" }
+  - { id: sentinellabs, status: ok, method: webfetch }
+  - { id: proofpoint, status: "ok (thin extraction)", method: webfetch }
+  - { id: trendmicro-research, status: ok, method: "bridge feed" }
+  - { id: sophos-xops, status: ok, method: "bridge feed" }
+  - { id: recordedfuture-insikt, status: ok, method: "bridge feed" }
+  - { id: zscaler-threatlabz, status: "ok but suspect (see coverage gap)", method: webfetch }
+  - { id: rapid7-research, status: ok, method: "bridge feed" }
+  - { id: huntress, status: "ok but stale (see coverage gap)", method: "bridge feed + webfetch" }
+  - { id: volexity, status: ok, method: webfetch }
+  - { id: elastic-seclabs, status: ok, method: webfetch }
+  - { id: redcanary, status: ok, method: "bridge feed" }
+  - { id: sekoia, status: ok, method: webfetch }
+  - { id: withsecure-labs, status: "coverage gap — no content extracted", method: "webfetch + jina" }
+  - { id: group-ib, status: "coverage gap — partial extraction", method: "bridge url + webfetch(503)" }
+  - { id: crowdstrike, status: ok, method: webfetch }
+  - { id: dragos, status: ok, method: webfetch }
+  - { id: claroty-team82, status: "ok but dateless listing", method: webfetch }
+  - { id: nozomi-networks, status: "ok but dateless listing", method: webfetch }
+  - { id: sans-ics, status: ok, method: webfetch }
+  - { id: exodus-intelligence, status: ok, method: "bridge feed" }
+  - { id: snyk-research, status: ok, method: "bridge feed" }
+  - { id: sonatype, status: ok, method: "bridge feed" }
+  - { id: tenable-research, status: ok, method: "bridge feed" }
+  - { id: wiz-blog, status: ok, method: "bridge feed" }
+  - { id: akamai-sirt, status: ok, method: "bridge feed" }
+  - { id: infoguard-labs, status: ok, method: "bridge url" }
+  - { id: compass-security, status: ok, method: "bridge feed" }
+  - { id: watchtowr, status: ok, method: "bridge feed" }
+  - { id: sysdig, status: ok, method: "bridge url" }
+  - { id: mysites-guru, status: ok, method: "jina + bridge url" }
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: withsecure-labs
+    reason: "Page is a client-hydrated Next.js filter/search UI (content-type filters for Article/Blog post/Publications/Reports/Research). Direct WebFetch returned 'No results found'; jina reader (forced) returned only navigation chrome, not the hydrated post grid — the reader did not execute enough of the client JS to populate results. Recipe gap: needs a structured listing endpoint (sitemap, JSON API, or category-filtered URL) not identified this run."
+  - source_id: group-ib
+    reason: "Bridge fetch of https://www.group-ib.com/blog/ returned HTTP 200 but the byte range read (head -c 6000) captured only <head>/schema.org metadata, not the post-grid HTML — an artefact of my own truncation, not a transport failure. Direct WebFetch separately returned a transient HTTP 503. Net effect: could not confirm whether Group-IB published anything in-window beyond the already-tracked HOLLOWGRAPH (07-21, pre-window)."
+  - source_id: huntress
+    reason: "Both the documented rss.xml feed and a direct WebFetch of /blog returned posts no newer than 2026-07-13, despite prior_coverage.json confirming Huntress published in-window items (FakeAgent 07-26, SonicWall credential stuffing 07-30, device-code phishing 08-01) that other runs found via a different path. The general /blog feed/listing appears to be a stale or partial index; a category-specific feed (/blog-categories/threat-analysis, /blog-categories/attacker-tradecraft) may be needed."
+  - source_id: zscaler-threatlabz
+    reason: "WebFetch of https://www.zscaler.com/blogs/security-research returned only marketing/partnership content with no dates past January 2026 visible in the extracted summary — inconsistent with the source record noting this URL as the correct security-research listing (which surfaced TELESHIM/MIXEDKEY/BINDCLOAK on 2026-07-20 per a prior run). Could not confirm absence of a new post in-window; recommend a follow-up direct/bridge fetch with a larger content window."
+  - source_id: claroty-team82
+    reason: "Listing renders titles only, no dates (documented recipe gap — dates live on the per-post pages). Titles visible match already-known older research (Iran-linked warning-systems op, UPS/data-center, Trane HVAC, EnOcean, Sixnet RTU); none suggest an obviously new in-window post, but this is not date-confirmed."
+  - source_id: nozomi-networks
+    reason: "Listing renders titles only, no dates (documented recipe gap). Top post plausibly follows the 2026-08-01 FBI/EPA water-utility PLC advisory already in prior_coverage, but publish date could not be confirmed this run without drilling the per-post page (not done due to time budget)."
+
+watchlist_sweep: null

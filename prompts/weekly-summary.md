@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.29 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.30 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -180,6 +180,15 @@ All composition rules of `prompts/cti-run.md` Phase 4 apply (compose-after-retur
 ---
 
 ## Phases 5 → 7 — State, gate, verify, publish
+
+**Re-run the duplicate-week guard before the first verifier spawn — it is a Phase 0 check AND a pre-verifier check.** The Phase 0 guard reads `origin/main` as it stood at preflight, so a primary weekly that fires while this one is mid-pipeline is invisible to it: on 2026-07-27 the backup weekly passed the guard at 01:09Z, composed nine strategic entries, ran **eight** verifier iterations, and only discovered the primary's W30 record at the Phase 6 pre-push sync — 2.3 h of wall clock for a correct stand-down that cost nothing to reach 90 minutes earlier. So immediately after `check_run.py … --pre-verify` exits 0 and before spawning iteration 1:
+
+```bash
+git fetch origin main
+git grep -l "^week: ${WEEK}$" origin/main -- runs/ | grep -- '-weekly\.md$' || true
+```
+
+A match that is not this run's own record ⇒ the primary has published the week: withdraw the composed strategic entries (`git rm` / delete before commit), set `disposition: duplicate-week` and `entries_published: 0`, and take the run record alone through one verifier iteration (the ≥1-iteration invariant applies to the record) and the publishing chain. The run record is still mandatory — a stood-down fire that publishes nothing but its record is the correct outcome, not a failure.
 
 **`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7 — the shared machinery is defined once, there) and execute those phases verbatim with this run's `RUN_ID` (registry additions; `cves_seen` sync; source lifecycle; `source_health.py`; `python3 tools/check_run.py "$RUN_ID" --pre-verify` to exit 0 before the first verifier spawn (plain invocation between iterations and before commit); verification loop with model rotation, cap 8, the double-CLEAN publish gate (two consecutive CLEANs on two different models), prior-iteration deltas on even iterations; stage `entries/<date>/` + `runs/<date>/` + registry + state + sources + `.claude/memory/` + `work/<run-id>/`; sync with the same auto-resolution rules; push with retry; poll the run record on main and `data/briefbook.json` for the run id). The weekly's verifier scope line names the strategic entries + run record of THIS run.
 

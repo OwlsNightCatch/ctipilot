@@ -22,7 +22,7 @@ tags: [data-breach, organized-crime]
 regions: [uk, europe]
 sectors: [public-sector, education]
 entities: [actor:exfilsquad, incident:uk-dfe-exfilsquad-breach-2026-07]
-techniques: [T1213, T1190]
+techniques: [T1213]
 affected_products: []
 cves: []
 sources:

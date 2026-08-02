@@ -21,7 +21,7 @@ tags: [ransomware, data-breach]
 regions: [switzerland, europe]
 sectors: [education, public-sector]
 entities: [actor:dragonforce, incident:ifage-geneva-dragonforce-leak-claim-2026-07]
-techniques: [T1657, T1567.002]
+techniques: [T1657]
 affected_products: []
 cves: []
 sources:
