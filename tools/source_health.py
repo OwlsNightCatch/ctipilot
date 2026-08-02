@@ -570,8 +570,17 @@ def main() -> int:
         #   api / bridge → exercise the documented tools/fetch_source.py recipe
         #   rss          → fetch the FEED (url may be a hostile homepage)
         #   webfetch/etc → browser-UA HEAD→GET of the url
+        #
+        # `probe_url` (optional) overrides the probe target for sources whose
+        # `url` is a directory/index the publisher blocks while the documented
+        # per-item recipe works fine. Probing the blocked index reports a
+        # recipe break that does not exist — siemens-productcert-csaf is the
+        # worked example: its CSAF directory listing 403s every UA, while the
+        # per-advisory `ssa-NNNNNN.json` documents the recipe the runs use and
+        # fetches cleanly. `url` stays the human-facing landing page.
+        probe_target = s.get("probe_url") or url
         if fetch_method in ("api", "bridge", "jina"):
-            cls, detail = _bridge_check(sid, url, timeout=max(args.timeout, 45.0),
+            cls, detail = _bridge_check(sid, probe_target, timeout=max(args.timeout, 45.0),
                                         fetch_method=fetch_method)
             status = None
             latency_ms = 0

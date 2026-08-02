@@ -1,0 +1,147 @@
+domain: S3
+run_id: 2026-08-02T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-02T04:12:51Z
+ended_at: 2026-08-02T04:26:42Z
+duration_seconds: 831
+self_telemetry:
+  webfetch_calls: 38
+  websearch_calls: 8
+  bridge_fetches: 6
+items:
+  - title: "COLDCARD hardware wallets drained via a five-year-old hardware-RNG-fallback firmware bug — $88.6M and climbing across three attack waves"
+    sources:
+      - { url: "https://blog.coinkite.com/entropy-technical-backgrounder/", publisher: "Coinkite (COLDCARD vendor)", date: "2026-08-01", role: "primary" }
+      - { url: "https://engineering.block.xyz/blog/predictable-rng-fallback-and-32-bit-reseed-in-coldcard-firmware", publisher: "Block (Square) Engineering", date: "2026-07-30", role: "primary" }
+      - { url: "https://www.cryptotimes.io/2026/08/02/coldcard-hack-tops-88-6m-as-galaxy-finds-third-attack-wave/", publisher: "CryptoTimes (relaying Galaxy Research)", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://thehackernews.com/2026/08/coldcard-hardware-wallet-flaw-linked-to.html", publisher: "The Hacker News", date: "2026-08-01", role: "corroborating" }
+      - { url: "https://blog.coinkite.com/coldcard-mk3-seed-generation-warning/", publisher: "Coinkite (COLDCARD vendor)", date: "2026-07-31", role: "corroborating" }
+    discovery_trace: >
+      first seen at: WebSearch ("Coldcard hardware wallet hack attack technique 2026") →
+      pivot: CryptoTimes (candidate source in slice), URL https://www.cryptotimes.io →
+      pivot: The Hacker News, URL https://thehackernews.com/2026/08/coldcard-hardware-wallet-flaw-linked-to.html →
+      primary: Block Engineering root-cause analysis, URL https://engineering.block.xyz/blog/predictable-rng-fallback-and-32-bit-reseed-in-coldcard-firmware →
+      primary: Coinkite vendor advisory, URL https://blog.coinkite.com/entropy-technical-backgrounder/ →
+      fresh in-window anchor: CryptoTimes third-wave update (2026-08-02), URL https://www.cryptotimes.io/2026/08/02/coldcard-hack-tops-88-6m-as-galaxy-finds-third-attack-wave/
+    summary: |
+      A March 2021 firmware commit (b18723dd) silently downgraded seed generation on Coinkite's COLDCARD
+      hardware Bitcoin wallets from the STM32 hardware TRNG to a deterministic software PRNG fallback, and
+      the bug went undetected for five years. Root cause per Block Engineering's independent reverse-engineering
+      and Coinkite's own advisory: a preprocessor guard (`#ifndef MICROPY_HW_ENABLE_RNG`) checked only whether
+      the macro was *defined*, not whether it was *enabled* (the board config set it to 0) — so the linker bound
+      seed generation to MicroPython's Yasmarang software PRNG instead of the hardware RNG path. On Mk2/Mk3
+      firmware 4.0.0-4.1.9, that PRNG is seeded solely from the device UID XORed with the SysTick timer value
+      plus RTC time/subsecond counters — for a known UID and constrained boot-timer state, wallet-seed generation
+      becomes fully deterministic and reproducible offline (Coinkite estimates ~40 bits of effective search space
+      against the 128/256 bits a BIP-39 seed needs). Mk4/Mk5/Q devices added secure-element reseeding, but Block
+      found the reseed is limited to a 32-bit value, so even the "fixed" architecture left a ~2^32-trial offline
+      search space. An attacker (unattributed) has been draining affected wallets since 2026-07-30 in successive
+      waves: wave 1 took 1,196 addresses (1,082.65 BTC, ~$70.2M) in a 41-minute sweep; by 2026-08-02 Galaxy
+      Research had tracked a third wave, bringing the cumulative total to 1,367.05 BTC (~$88.6M) across 4,585
+      addresses, with wave 3 showing distinct address/output patterns (individual per-victim destinations,
+      P2WSH instead of P2WPKH, batched victims) that Galaxy flags as possibly a second actor exploiting the same
+      flaw. All stolen funds remain unspent. Coinkite shipped emergency firmware (Mk2/Mk3: 4.2.0; Mk4/Mk5: 5.6.0;
+      Q: 1.5.0Q; Edge builds: 6.6.0X/6.6.0QX) on 2026-07-30/31 and an updated advisory on 2026-08-01, but is
+      explicit that reflashing does not repair an already-generated seed — affected users must generate an
+      entirely new seed on patched firmware and migrate funds; only seeds originally generated from ≥50
+      independent private dice rolls, or protected by a strong unique BIP-39 passphrase, are not considered at
+      risk from this flaw alone. Coinkite's own advisory speculates the bug was found by an adversary using AI
+      to review historical firmware: "We have to assume that someone used AI to review previous versions of our
+      firmware and stumbled upon this issue."
+    region_nexus: "global; no direct Swiss/EU government or CI victim — a consumer Bitcoin hardware-wallet compromise"
+    primary_sector_nexus: "indirect"
+    sector: "finance (cryptocurrency); transferable lesson for any embedded/OT/IoT engineering team auditing hardware-RNG or secure-element dependencies (energy, water, transport, healthcare control hardware)"
+    cves: []
+    techniques: [T1552.004]
+    affected_products: ["Coinkite COLDCARD Mk2", "Coinkite COLDCARD Mk3", "Coinkite COLDCARD Mk4", "Coinkite COLDCARD Mk5", "Coinkite COLDCARD Q"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:coldcard-mk3-rng-vulnerability-theft-2026", type: incident, name: "COLDCARD Mk2/Mk3 hardware-RNG-fallback theft (2026)",
+          aliases: ["Coldcard entropy issue", "Coldcard RNG hack"],
+          summary: "A 2021 firmware bug that routed COLDCARD Mk2/Mk3 seed generation to a deterministic software PRNG instead of the hardware TRNG, discovered and mass-exploited from 2026-07-30, draining >$88M across three waves (Coinkite / Block Engineering, 2026-07-30/08-01)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The libngu library checked whether the macro existed rather than whether it was enabled, binding the build to MicroPython's Yasmarang fallback."
+        attribution: "The Hacker News, summarising Block Engineering's analysis"
+        source_url: "https://thehackernews.com/2026/08/coldcard-hardware-wallet-flaw-linked-to.html"
+      - quote: "Coinkite estimates effective entropy at roughly 40 bits on the Mk3 and about 72 bits on the Mk4, Mk5 and Q, against 128 bits for a 12-word BIP-39 seed."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/coldcard-hardware-wallet-flaw-linked-to.html"
+      - quote: "We have to assume that someone used AI to review previous versions of our firmware and stumbled upon this issue."
+        attribution: "Coinkite"
+        source_url: "https://blog.coinkite.com/entropy-technical-backgrounder/"
+      - quote: "Updating the firmware does not repair a seed that was generated by affected firmware."
+        attribution: "Coinkite"
+        source_url: "https://blog.coinkite.com/entropy-technical-backgrounder/"
+      - quote: "A 3rd wave in what we suspect are hacks of Coldcard-generated addresses has been identified in which 207.7294 BTC has been drained."
+        attribution: "CryptoTimes, relaying Galaxy Research"
+        source_url: "https://www.cryptotimes.io/2026/08/02/coldcard-hack-tops-88-6m-as-galaxy-finds-third-attack-wave/"
+    extended_notes: |
+      ATT&CK mapping is a loose fit: T1552.004 (Unsecured Credentials: Private Keys) is the closest active
+      technique for "adversary obtains a private key it should not be able to obtain," but the actual mechanism
+      here is prediction/offline reconstruction of a key from a weakened RNG, not discovery of an insecurely
+      stored key file — flag this approximation if carried into an entry. The hardening lesson that generalises
+      beyond crypto wallets: a preprocessor `#ifdef`/`#ifndef` guard that tests only whether a security-relevant
+      macro is *defined* rather than what it is *set to* is a classic embedded-firmware anti-pattern; any team
+      auditing firmware that gates a hardware TRNG / secure-element path behind a build-time macro should treat
+      "is the macro's value checked, not just its presence" as a concrete code-review item. This is also another
+      data point (following the week's "AI as tradecraft accelerant" thread already in the brief) for a vendor's
+      own working assumption that AI-assisted code review found a five-year-old latent defect at attacker speed.
+    borderline: true
+    borderline_reason: >
+      Weak direct Swiss/EU government-or-CI nexus (this is a consumer cryptocurrency hardware wallet, not
+      public-sector or CI equipment) — included despite that because of the exceptional technical depth (full
+      root-cause chain from a named vendor + an independent research lab), the scale (largest disclosed hardware-
+      wallet RNG compromise, $88.6M+ and still growing across confirmed multiple waves), and a genuinely
+      transferable hardening lesson (macro-defined-vs-macro-enabled firmware audit anti-pattern; hardware-RNG/
+      secure-element dependency verification) applicable to any embedded/OT/IoT engineering team in the
+      constituency's additional sectors (energy, water, transport, healthcare).
+candidate_sources: []
+coverage_gaps:
+  - source_id: sysdig
+    reason: >
+      RSS feed 404'd on direct fetch (https://www.sysdig.com/blog/feed); jina reader fallback failed on all
+      four rotating credentials with HTTP 402 "balance exhausted" (systemic — not specific to this source);
+      direct WebFetch on https://www.sysdig.com/blog returned HTTP 503; bridge `url` on the same page returned
+      only the raw Webflow SPA shell with no rendered article listing. No sysdig content reachable this run.
+  - source_id: trellix
+    reason: >
+      Confirms the 2026-07-27 note already on this source record: bridge `url` on https://www.trellix.com/blogs/
+      and https://www.trellix.com/blogs/research/ both return only header/nav markup or a "Unable to fetch the
+      topics" JS-loading placeholder — the listing is client-side-rendered and needs the jina reader to
+      hydrate, which is out of credit this run (see sysdig note above, same systemic cause).
+  - source_id: group-ib-blog
+    reason: >
+      https://www.group-ib.com/blog/ 503'd on direct WebFetch; bridge `url` returned only cookie-consent/head
+      markup with a single extractable article href, no dated listing. Partially covered anyway via WebSearch
+      (Millenium RAT, "Ransomware in 2026", supply-chain-groups posts all surfaced) but none confirmed
+      in-window (all appear ~1 week old); no in-window Group-IB item found this run.
+  - source_id: jina-reader-pool
+    reason: >
+      All 4 rotating jina API keys returned HTTP 402 "balance exhausted" this run (first hit on the sysdig
+      feed fetch) — the last-resort transport was unavailable for the entire run. Every source that needed it
+      as a fallback (sysdig, trellix, group-ib SPA listings) is a genuine coverage gap rather than a recipe
+      failure. Recommend checking `python3 tools/fetch_source.py jina-usage` / topping up the credential pool.
+notes: |
+  Recency note for the operator: this run's 26h window (2026-08-01T02:10Z to 2026-08-02T04:10Z) spans a
+  Saturday-Sunday (confirmed via calendar check). Nearly every major research lab in the S3 slice and the
+  additional majors swept (Microsoft, Unit42, Kaspersky/Securelist, ESET, Proofpoint, Trend Micro, GTIG/
+  Mandiant, CrowdStrike, Talos, Sophos, Push Security, Recorded Future Insikt, Team Cymru, KELA, Volexity,
+  watchTowr, Elastic, Krebs, The Record) published its most recent substantive item on 2026-07-29/07-31 —
+  all confirmed (via `datePublished`/`article:published_time` metadata spot-checks on two candidates: Push
+  Security's "From IOCs to TTPs" at 2026-07-31T00:00:00Z, Securelist's KATA NAD post at
+  2026-07-31T10:00:25Z) to fall BEFORE this run's window start, i.e. they were already eligible for
+  yesterday's run's window and are correctly excluded here, not missed. This is a genuine quiet-weekend
+  research window, not a collection failure. Two items worth a special mention that were considered and
+  correctly dropped for being out-of-window with no fresh anchor: Push Security "From IOCs to TTPs" (agentic
+  TTP-extraction detection-pipeline case study built on Microsoft's March 2026 OAuth-redirect-abuse research —
+  genuinely substantive, would be a strong future-run candidate) and Kaspersky Securelist's KATA "Network
+  Anomaly Detection" post (concrete Kerberoasting/DNS-tunneling detection-rule logic: alert when a single
+  source IP/account receives TGS-REP responses for N unique SPNs within a window, excluding system SPNs; DNS
+  TXT-record structural+volumetric tunneling heuristic). Neither had a fresh in-window anchor to justify an
+  update-of framing, so both are left for a future run to pick up if still relevant, rather than stretched
+  into this one.

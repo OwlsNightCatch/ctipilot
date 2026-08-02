@@ -1,0 +1,67 @@
+domain: S1
+run_id: 2026-08-02T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-02T04:12:25Z
+ended_at: 2026-08-02T04:21:11Z
+duration_seconds: 526
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 14
+  bridge_fetches: 11
+items:
+  - title: "CVE-2026-66066 (Rails Active Storage) update — the 30-day embargo on attack details broke after 2 days when independent researchers reverse-engineered and published working PoCs; full exploit chain and forensic-investigation tooling are now public"
+    sources:
+      - { url: "https://discuss.rubyonrails.org/t/cve-2026-66066-attack-details-and-tools-to-perform-a-forensic-investigation/91441", publisher: "Rails Security Team (Ruby on Rails Discourse)", date: "2026-07-31", role: "primary" }
+      - { url: "https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm", publisher: "GitHub Security Advisories (Rails)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/rails-patches-critical-active-storage-flaw-with-rce-potential/", publisher: "BleepingComputer", date: "2026-08-01", role: "corroborating" }
+      - { url: "https://www.securityweek.com/ruby-on-rails-patches-critical-vulnerability/", publisher: "SecurityWeek", date: "2026-08-01", role: "corroborating" }
+      - { url: "https://www.akamai.com/blog/security-research/rails-active-storage-rce-cve-2026-66066", publisher: "Akamai Security Research", date: "2026-07-31", role: "corroborating" }
+    discovery_trace: "first seen at: WebFetch drill-down on bleepingcomputer.com/feed/, URL https://www.bleepingcomputer.com/news/security/rails-patches-critical-active-storage-flaw-with-rce-potential/ (2026-08-01) → cross-checked: securityweek.com/feed/, URL https://www.securityweek.com/ruby-on-rails-patches-critical-vulnerability/ (2026-08-01, independent corroboration) → primary: Rails security team's own forensic-tooling disclosure thread, URL https://discuss.rubyonrails.org/t/cve-2026-66066-attack-details-and-tools-to-perform-a-forensic-investigation/91441 → cross-checked GHSA advisory, URL https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm and NVD record https://nvd.nist.gov/vuln/detail/CVE-2026-66066"
+    summary: |
+      Material update to the 2026-07-31 entry on CVE-2026-66066 ("KindaRails2Shell"), the critical (CVSS 4.0: 9.5) Active Storage flaw where an unauthenticated attacker who can upload an image to any Rails application reaches arbitrary file read via libvips' "unfuzzed" image-format loaders — enough to steal secret_key_base and decrypted Rails credentials, and from there forge session cookies / signed GlobalIDs for a path to RCE. The Rails security team had originally withheld the full attack-chain writeup until 2026-08-28 to give operators a patch window; that embargo broke after roughly 48 hours because, per the Rails team's own statement, "several researchers quickly reverse-engineered the attack and have already published proofs-of-concept." In response the team published the rails/rails-forensics-CVE-2026-66066 GitHub repository containing a step-by-step attack writeup (reference/the-attack.md), a forensic-evidence-analysis guide (reference/the-investigation.md), and two "agent skill" scripts (kr2s-was-i-vulnerable, kr2s-was-i-exploited) for automated exposure/compromise triage of Active Storage deployments. Vulnerable/fixed: activestorage before 7.2.3.2 / 8.0.x before 8.0.5.1 / 8.1.x before 8.1.3.1, and the fix additionally requires libvips >= 8.13 / ruby-vips >= 2.2.1 — a patched gem paired with an older libvips will refuse to boot rather than silently stay exposed. Rails 6.x is affected only where Active Storage is configured outside framework defaults. No source in this update claims confirmed in-the-wild exploitation yet, but with a complete public attack chain and companion forensic tooling now available two-plus weeks ahead of the original disclosure date, any organisation running unpatched Active Storage with libvips-based variant processing should treat this as an active, not scheduled, remediation item and run the published "was-i-exploited" check against existing deployments.
+    region_nexus: "global — Ruby on Rails/Active Storage is broadly deployed across Swiss/European public-sector and enterprise web applications; no region-specific targeting reported"
+    primary_sector_nexus: "indirect — affects any sector running Rails web applications with Active Storage, including public-sector portals and CI-adjacent web services"
+    sector: "public-sector, cross-sector (web application framework)"
+    cves: [CVE-2026-66066]
+    techniques: [T1190, T1552.001, T1606.001]
+    affected_products: ["Ruby on Rails Active Storage", "libvips", "ruby-vips"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-07-31/cve-2026-66066-rails-activestorage-libvips-file-read"
+    evidence:
+      - quote: "we held back details about the attack vector to allow applications to be upgraded before malicious attackers could take advantage"
+        attribution: "Rails Security Team"
+        source_url: "https://discuss.rubyonrails.org/t/cve-2026-66066-attack-details-and-tools-to-perform-a-forensic-investigation/91441"
+      - quote: "several researchers quickly reverse-engineered the attack and have already published proofs-of-concept"
+        attribution: "Rails Security Team"
+        source_url: "https://discuss.rubyonrails.org/t/cve-2026-66066-attack-details-and-tools-to-perform-a-forensic-investigation/91441"
+      - quote: "With the secret_key_base compromised, the attacker holds the master cryptographic key to the application. They can forge session cookies, sign global IDs, and manipulate serialized data, which directly translates into full RCE on the underlying server."
+        attribution: "Akamai Security Research"
+        source_url: "https://www.akamai.com/blog/security-research/rails-active-storage-rce-cve-2026-66066"
+    extended_notes: |
+      Detection/hunt angle for the composer: the released kr2s-was-i-exploited tooling inspects Active Storage's blob/variant records and server file-access logs for the anomalous file-read pattern the exploit produces (image uploads that never legitimately resolve to a variant, followed by reads of files outside the expected storage root — e.g. config/master.key, config/credentials.yml.enc, /proc/self environ). This is a strong triage discriminator: legitimate Active Storage variant processing never reads paths outside its configured storage service root. Hardening beyond the version bump: pin libvips >= 8.13 explicitly in the OS/container image (Debian/Ubuntu LTS repos may still ship older libvips — the BleepingComputer piece calls this out), and rotate secret_key_base plus all credentials.yml.enc-derived secrets for any application that could have been exposed before patching, since the original patch alone does not invalidate a previously-stolen key.
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product watchlist is configured in config/org-profile.yaml (org profile states 'product watchlist: none configured'); the products sweep is a documented no-op this run. General vulnerability-landscape coverage (CISA KEV, ENISA EUVD recent/criticals/exploited, NCSC-CH/BSI/ANSSI/NCSC-NL/NCSC-UK/CERT-PL/CERT-EU essential-tier listings) was swept in full per the standard S1 mission; no watchlist-specific fetches were needed beyond that."
+cve_table:
+  - cve: CVE-2026-66066
+    product: "Ruby on Rails Active Storage (variant processing via libvips)"
+    cvss: "9.5 (CVSS 4.0) / CWE-1188"
+    epss: "not stated in sources"
+    kev: false
+    exploited: "Public PoC + full attack-chain writeup + forensic tooling now public (embargo broken 2026-07-31, ~2 days after original disclosure); no source claims confirmed in-the-wild compromise yet"
+    patch: "activestorage 7.2.3.2 / 8.0.5.1 / 8.1.3.1 AND libvips >= 8.13 / ruby-vips >= 2.2.1 (patched gem on older libvips refuses to boot); Rails 6.x affected only outside default configuration"
+    source: "https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm"
+candidate_sources: []
+coverage_gaps:
+  - source_id: cisa-advisories
+    reason: "Both the rss_url (https://www.cisa.gov/cybersecurity-advisories/all.xml) and the HTML listing (https://www.cisa.gov/news-events/cybersecurity-advisories) returned direct HTTP 403; the bridge's jina-reader fallback failed on every configured credential with HTTP 402 (balance exhausted on keys …w3uUCS, …PSDa3e, …sFWmk8, …iVhdRT). No working transport reached this source this run. CISA KEV catalog itself (a separate api subcommand) was reachable and fetched successfully, so exploited-vuln ground truth was not lost — only the general advisories listing/directives channel is the gap."
+  - source_id: cisa-directives
+    reason: "Same jina-reader exhaustion as cisa-advisories (HTTP 402 on all rotating credentials) after the direct HTTP 403 on https://www.cisa.gov/news-events/directives. No BOD/ED directive content reached this run via any transport."

@@ -1,0 +1,127 @@
+domain: S4
+run_id: 2026-08-02T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-02T04:13:03Z
+ended_at: 2026-08-02T04:26:51Z
+duration_seconds: 828
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 15
+  bridge_fetches: 9
+items:
+  - title: "Adform ad-tech supply-chain compromise plants a clipboard-hijacking crypto-clipper in a JS tag served to ~1,800 advertiser sites"
+    sources:
+      - { url: "https://site.adform.com/resources/newsroom/security-incident-company-update/", publisher: "Adform (official incident statement)", date: "2026-07-27", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/hackers-poison-adform-script-to-swap.html", publisher: "The Hacker News", date: "2026-08-01", role: "corroborating" }
+      - { url: "https://www.bleepingcomputer.com/news/security/online-ad-firm-adforms-script-compromised-to-steal-cryptocurrency/", publisher: "BleepingComputer", date: "2026-07-31", role: "corroborating" }
+      - { url: "https://doublepulsar.com/adform-compromised-to-serve-crypto-stealer-via-supply-chain-attack-2f1ec024f33e", publisher: "DoublePulsar (Kevin Beaumont)", date: "2026-07-31", role: "corroborating" }
+    discovery_trace: "first seen at: hackernews (aggregator source-id in S4 slice), URL https://feeds.feedburner.com/TheHackersNews (feed item, then drilled) https://thehackernews.com/2026/08/hackers-poison-adform-script-to-swap.html → pivot: BleepingComputer, URL https://www.bleepingcomputer.com/news/security/online-ad-firm-adforms-script-compromised-to-steal-cryptocurrency/ → pivot: DoublePulsar (Kevin Beaumont, discovering researcher), URL https://doublepulsar.com/adform-compromised-to-serve-crypto-stealer-via-supply-chain-attack-2f1ec024f33e (Medium paywall blocked full body; title/teaser confirmed via bridge fetch, full quotes recovered via BleepingComputer's citation of the same researcher) → primary: Adform's own incident statement, URL https://site.adform.com/resources/newsroom/security-incident-company-update/"
+    summary: |
+      Adform, a Copenhagen-headquartered ad-tech platform (DSP/SSP/ad-server stack) used by roughly 1,800 advertiser customers serving ~1.5 billion ads/day across 180+ countries, confirmed that its shared JavaScript tracking library trackpoint-async.js, served from s2.adform.net and embedded unconditionally on every customer website using the platform, was trojanized to steal cryptocurrency. Independent researcher Kevin Beaumont found an obfuscated payload appended to the legitimate library that continuously monitors the browser clipboard and hooks input/textarea/contenteditable value setters, detects Bitcoin, Ethereum and TRON wallet-address patterns, and silently substitutes an attacker-controlled address — including re-substituting after the victim notices and re-copies the correct address — and separately rewrites wallet addresses displayed on the page itself. A related malicious script exfiltrated the visiting page's hostname, path and the visitor's IP to an external attacker-controlled server. The sample was not flagged by any VirusTotal AV engine. Adform states the code required no installation and established no persistence, running only while the affected tab remained open; it detected the activity on 27 July 2026, removed the code, and continues investigating, while Beaumont assessed the malicious activity had been live for roughly a week beforehand undetected. No attacker attribution, victim count, or IOC list has been published by Adform.
+    region_nexus: "Denmark/EU home-region ad-tech vendor whose compromised script propagated to any of its ~1,800 customer sites across 180+ countries, including EU/Swiss organizations that embed Adform tags"
+    primary_sector_nexus: "indirect — supply-chain/third-party-script exposure relevant to any public-sector or CI website embedding third-party ad-tech/analytics tags"
+    sector: "telco, finance (crypto payments), public-sector (any org embedding third-party ad/analytics scripts)"
+    cves: []
+    techniques: [T1195.002, T1189, T1115]
+    affected_products: ["Adform trackpoint-async.js (Adform tracking/tag library)"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:adform-supply-chain-crypto-clipper-2026-07", type: incident, name: "Adform ad-tech supply-chain crypto-clipper compromise",
+          aliases: [], summary: "Adform's shared JS tracking library trackpoint-async.js was trojanized with a clipboard-hijacking crypto-clipper reaching visitors of ~1,800 customer sites; detected 2026-07-27 (Adform statement; Kevin Beaumont/DoublePulsar, BleepingComputer, The Hacker News, 2026-07-31/08-01)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "On 27 July 2026, Adform detected suspicious activity and immediately launched an investigation under its incident-response procedures."
+        attribution: "Adform (official incident statement)"
+        source_url: "https://site.adform.com/resources/newsroom/security-incident-company-update/"
+      - quote: "The malicious code was designed to interfere with certain cryptocurrency transactions involving Bitcoin, Ethereum, or Tron by attempting to replace a cryptocurrency wallet address."
+        attribution: "Adform (official incident statement)"
+        source_url: "https://site.adform.com/resources/newsroom/security-incident-company-update/"
+      - quote: "This allows end-user devices of downstream websites to be compromised with crypto-stealing malware. Meaning if you visit example.com and they use Adform, example.com will compromise your device."
+        attribution: "Kevin Beaumont, via BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/online-ad-firm-adforms-script-compromised-to-steal-cryptocurrency/"
+    extended_notes: |
+      Detection concept (telemetry class first): web-application/CSP-violation-report telemetry is the right vantage — organizations that set a restrictive Content-Security-Policy (connect-src/script-src allowlists) on sites embedding third-party ad/tag scripts would have generated CSP violation reports the moment the injected payload attempted its outbound beacon to non-allowlisted infrastructure; without CSP, the only vantage is client-side/browser telemetry (EDR-for-browser, DLP clipboard-monitoring agents) or network egress logs on managed endpoints showing unexpected outbound connections initiated from browser processes while a specific ad-serving domain's script is loaded. Benign-lookalike / triage discriminator: legitimate ad-tech tracking pixels routinely make outbound XHR/beacon calls to their own domains for analytics — the discriminating features here are (a) a tag script mutating clipboard contents or DOM input values, which no legitimate tracking pixel needs to do, and (b) egress to infrastructure outside the vendor's documented/published endpoint list. Hardening: Subresource Integrity (SRI) hashes on statically-versioned third-party scripts would have broken silently the moment the library was modified server-side (assuming the vendor supports a pinned, hashable asset — worth confirming with any ad-tech/analytics supplier); a restrictive CSP connect-src reduces the blast radius even when SRI isn't available; for any organization processing cryptocurrency payments, validate wallet addresses via an out-of-band channel (QR code, re-confirmation screen) rather than trusting a clipboard-pasted value, since this incident demonstrates persistent re-substitution defeats simple re-copy-and-check user behavior. Note for the composer: the malicious C2 IP address and specific payload sample details are IOC-class facts — the summary and evidence above describe them behaviorally rather than by literal indicator; do not add the raw IP/domain to the published entry per the no-IOCs rule.
+
+  - title: "CCI Nice Côte d'Azur (French public Chamber of Commerce) confirms admin-account compromise on its candidate-management platform exposed jobseeker and company data"
+    sources:
+      - { url: "https://www.cyberattaque.org/cci-nice-cote-dazur-un-compte-administrateur-pirate-les-donnees-rh-de-candidats-exportees/", publisher: "Cyberattaque.org (French breach-notification tracker)", date: "2026-08-01", role: "primary" }
+      - { url: "https://frenchbreaches.com/alertes/chambre-de-commerce-et-d-industrie-nice-c-te-d-azur-ms9972qijqoesdq8cu", publisher: "FrenchBreaches.com (French breach-notification tracker)", date: "2026-07-31", role: "corroborating" }
+    discovery_trace: "first seen at: WebSearch (\"cyberattaque piratage données août 2026 Suisse France\") → pivot: cyberattaque.org listing, URL https://www.cyberattaque.org/ → primary/entry article: https://www.cyberattaque.org/cci-nice-cote-dazur-un-compte-administrateur-pirate-les-donnees-rh-de-candidats-exportees/ → corroborating: frenchbreaches.com, URL https://frenchbreaches.com/alertes/chambre-de-commerce-et-d-industrie-nice-c-te-d-azur-ms9972qijqoesdq8cu — both quote what appears to be the same underlying organizational breach-notification text verbatim, so independence of the two write-ups is uncertain even though they are separately operated trackers; no mainstream-press pickup found."
+    summary: |
+      CCI Nice Côte d'Azur — the Chamber of Commerce and Industry for the Alpes-Maritimes region, a French public-law establishment supporting local businesses — confirmed that an unauthorized party accessed an administrator account on its eDRH candidate/company-relationship-management platform and used legitimate export functions to pull data on registered jobseekers and enrolled companies. The incident occurred on 2026-07-18 and was disclosed around 2026-07-31/08-01. Exposed fields include full name, email, phone number, date of birth, professional experience, education level, profile headline, contact preferences, and account-creation/last-login timestamps — enough to reconstruct a detailed employment-seeking profile usable for targeted recruiter/CCI-advisor impersonation. The organization states it terminated the unauthorized access and secured the platform with its service provider; it has not disclosed the specific compromise vector (credential theft, phishing, or session hijack all remain possible) or the number of affected records.
+    region_nexus: "France (EU home-region), public-law chamber-of-commerce institution"
+    primary_sector_nexus: "direct — French public-sector-adjacent institution (government-affiliated public establishment)"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1078, T1213]
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - { key: "incident:cci-nice-cote-dazur-edrh-breach-2026-07", type: incident, name: "CCI Nice Côte d'Azur eDRH admin-account breach",
+          aliases: [], summary: "Compromised administrator account on the eDRH candidate/company platform of the French Chamber of Commerce and Industry Nice Côte d'Azur used to export jobseeker and company data; incident occurred 2026-07-18, disclosed 2026-07-31/08-01 (cyberattaque.org, frenchbreaches.com)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Un accès non autorisé à un compte administrateur de la plateforme EDRH aurait permis la réalisation de plusieurs exports de données."
+        attribution: "cyberattaque.org / frenchbreaches.com (relaying the organization's own notification)"
+        source_url: "https://www.cyberattaque.org/cci-nice-cote-dazur-un-compte-administrateur-pirate-les-donnees-rh-de-candidats-exportees/"
+      - quote: "Un attaquant connaissant le parcours, le niveau d'études et les coordonnées d'un candidat peut se faire passer pour un recruteur, une entreprise ou un conseiller de la CCI."
+        attribution: "cyberattaque.org"
+        source_url: "https://www.cyberattaque.org/cci-nice-cote-dazur-un-compte-administrateur-pirate-les-donnees-rh-de-candidats-exportees/"
+    extended_notes: |
+      Technical depth is thin because the organization has not disclosed the access vector — flagged explicitly rather than invented. Transferable lesson: a single compromised admin account on a third-party-run HR/CRM SaaS platform was sufficient for bulk legitimate-looking data exports with no exploit needed (T1078 Valid Accounts + T1213 Data from Information Repositories) — detection concept is anomalous admin-account authentication (impossible-travel/off-hours) and bulk-export-volume alerting on CRM/HR SaaS platforms used by any public body, not a technical control that was defeated.
+    borderline: true
+    borderline_reason: "confirmed public-sector-adjacent French institution and in-window disclosure give it a direct nexus, but technical depth is thin (no disclosed access vector) and the only sourcing found is two niche French breach-notification blogs (not on the curated source list, reliability/independence uncertain) rather than mainstream press or an official CCI statement page — main agent should weigh whether this clears the actionability bar."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ransom-isac
+    reason: "ransom-isac.org/blog/ listing page is a client-rendered Next.js app with no dates in the static HTML; RSS feed (feed.xml) worked and returned dated items, but nothing published in-window (latest post 2026-07-31)."
+  - source_id: bleepingcomputer
+    reason: "no in-window (2026-08-01T02:09Z–2026-08-02T04:09Z) breach/ransomware/incident articles beyond the Adform follow-up already captured; only one Aug-1 article on the listing (a vulnerability patch, out of S4 scope)."
+  - source_id: darkreading
+    reason: "RSS feed's newest items are 2026-07-31; nothing in-window."
+  - source_id: helpnetsecurity
+    reason: "listing's newest items are 2026-07-31; nothing in-window."
+  - source_id: krebs
+    reason: "feed's newest item is 2026-07-30; nothing in-window."
+  - source_id: risky-biz-news
+    reason: "feed's newest item is 2026-07-31; nothing in-window."
+  - source_id: infosec-magazine
+    reason: "feed's newest item is 2026-07-31; nothing in-window."
+  - source_id: troyhunt
+    reason: "feed only carries 'Weekly Update' video-roundup posts, newest 2026-07-26; nothing in-window."
+  - lead: "CEN and CENELEC (EU standards bodies, Brussels) listed by data-theft extortion group CoinbaseCartel on 2026-08-01 (in-window) — investigated via WebSearch but found ONLY leak-site mirror trackers (ransomware.live, redpacketsecurity.com, hendryadrian.com); no victim acknowledgment from CEN-CENELEC (checked their own news/cybersecurity page directly — no incident mentioned) and no mainstream-press pickup found. Dropped per the mandatory fake-news gate (leak-site claims need victim disclosure or high-reliability journalism); flagging for a follow-up check next run given the EU-institution nexus if it develops."
+  - lead: "Diater (Madrid biopharmaceutical) listed by DeadLock ransomware — the only reporting (escudodigital.com, apdnoticies.com) is dated 2026-07-30, outside this run's window, and is an unconfirmed leak-site claim with no Diater acknowledgment; the databreaches.net pickup on 2026-08-01 added no new facts. Dropped as stale/unconfirmed."
+  - lead: "MIM Fertility (UK) and Dienst Pack Systems / Schreiner Trockenbau GmbH (Germany/Austria) each newly listed by coinbasecartel/qilin on 2026-08-01 — no victim confirmation, no journalism, low standalone significance. Dropped."
+  - lead: "Xplor Resamania (French gym-management SaaS, ~5.27M member records claimed by '84City') — confirmed via cyberattaque.org (2026-08-01) as a real leak, but victim sector is private-sector fitness/consumer, with no public-sector or CI nexus and no materially new supply-chain TTP beyond what this week's synthesis already covers. Dropped for lack of nexus."
+
+# No fetch_failures logged this run: the two transport hiccups encountered
+# (databreaches.net article 403 on direct+jina; ransomware.live's
+# /recentcyberattacks path 404) were both covered anyway — the Diater story
+# via a WebSearch pivot to escudodigital.com/apdnoticies.com (then dropped on
+# its own merits as stale/unconfirmed), and the ransomware.live listing via
+# the documented api.ransomware.live/v2/recentvictims endpoint, which
+# returned 200 directly. Per the fetch_failures reporting rules, a
+# covered-anyway outcome is not loggable here.
+#
+# Operational note for self-evolution: every configured jina-reader credential
+# reported HTTP 402 (balance exhausted) this run, so the jina fallback rung
+# was unavailable for the whole run (tools/fetch_source.py jina-usage worth
+# checking). Direct/bridge transports and WebSearch pivots covered every
+# gap this caused; flagging in case other domains hit the same exhaustion.
+fetch_failures: []
+
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "config/org-profile.yaml configures no supplier/third-party watchlist for this deployment (\"none configured\"), so the sweep is a no-op per the master-prompt instructions; general S4 incident-disclosure coverage rules applied unchanged for this run."
