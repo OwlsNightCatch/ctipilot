@@ -1,0 +1,156 @@
+# work/2026-08-03T0409Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-08-03T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-03T04:14:10Z
+ended_at: 2026-08-03T04:24:30Z
+duration_seconds: 620
+self_telemetry:
+  webfetch_calls: 27
+  websearch_calls: 10
+  bridge_fetches: 10
+items: []
+# No items clear the 24h recency gate this run. Full rationale below.
+#
+# Coverage summary: every S3 anchor source in the source_allocation.json
+# slice was attempted this run (Talos, Unit 42, Mandiant/GTIG, Check Point
+# Research, ESET WeLiveSecurity, Kaspersky Securelist, SentinelLabs,
+# Proofpoint, Trend Micro, CrowdStrike, Huntress, Volexity, Rapid7,
+# Zscaler ThreatLabz, Google TAG, Sophos X-Ops), plus a wide rotational
+# sweep (Claroty Team82, SANS ICS, Team Cymru, KELA, Sysdig, Recorded
+# Future Insikt, Schneier, Trellix, OX Security, Push Security, Project
+# Discovery, CSA Labs). Every anchor's newest post clusters in
+# 2026-07-29 to 2026-07-31 -- one to five days before this run's 24h
+# recency floor (previous run fired 2026-08-02T04:09Z, so the gate is
+# 2026-08-02T04:09Z through 2026-08-03T04:14Z). Nothing crossed into the
+# window at any of them.
+#
+# CSA Labs (labs.cloudsecurityalliance.org) is the one source whose own
+# publish timestamps (2026-08-01 / 2026-08-02) look in-window, but CSA
+# Labs is an admiralty-C "automated re-reporting pipeline, not original
+# research" (per the source-list note) -- every one of its five newest
+# notes was traced to its true primary and every primary predates the
+# window:
+#   - "iFinder: AI Agents Uncover 84 Flaws in 5G Cores" (CSA note dated
+#     2026-08-02) -> primary is Nanyang Technological University's
+#     iFinder research (arxiv.org/abs/2607.10315) and The Hacker News'
+#     write-up published 2026-07-31 (thehackernews.com/2026/07/
+#     researchers-report-84-flaws-in-4g-and.html). 84 previously-unknown
+#     4G/5G-core flaws (81 with CVEs) from "implicit trust" between core
+#     network functions -- e.g. CVE-2026-8233, a PFCP session-hijack in
+#     User Plane Functions (Dotouch XproUPF), CVSS 4.6. Telco-relevant
+#     but stale by 2-3 days; drop this run, worth a future run checking
+#     whether any Swiss/EU MNO runs the named open-source cores
+#     (Open5GS, free5GC, OpenAirInterface, SD-Core, eUPF).
+#   - "CosmosEscape: A Platform-Wide Trust Boundary Failure" (CSA note
+#     2026-08-01) -> primary is Wiz Research, published 2026-07-30
+#     (wiz.io/blog/cosmosescape-taking-over-every-database-in-azure-
+#     cosmos-db). Azure Cosmos DB Gremlin-sandbox escape reaching a
+#     platform-wide "Cosmos Master Key"; Microsoft fully remediated,
+#     no evidence of exploitation beyond Wiz's own testing. 4 days
+#     stale at window open; almost certainly already excluded from a
+#     prior run's window too, or simply missed -- flagging for the
+#     operator, not including as a finding.
+#   - "Bit2Watt: GPU Workloads as a Power Grid Attack Vector" (CSA note
+#     2026-08-01) -> primary is Zhejiang University research (CHES 2026
+#     accepted paper, arxiv.org/html/2607.05993v1), covered by The
+#     Register on 2026-07-20 and The Hacker News in late July. Cloud
+#     tenants using only their own allocated GPU compute can destabilise
+#     the electrical grid feeding a datacenter via harmonic modulation
+#     (1.2-6 kHz) of GPU power draw -- no privilege escalation or
+#     software vulnerability required, and standard cloud/PDU telemetry
+#     (~1 Hz / ~450 Hz sampling) cannot observe the operative frequency.
+#     Energy-sector relevant (this org's additional-sector list) but
+#     10+ days stale; drop.
+#   - "Invisible PR Comments Hijack AI Code Review Agents" (CSA note
+#     2026-08-01) -> primary is Manifold Security
+#     (manifold.security/blog/azure-devops-mcp-server-vulnerability),
+#     disclosure dated in the 2026-07-21 to 2026-07-31 range (page
+#     carries inconsistent dates). Confused-deputy in Microsoft's Azure
+#     DevOps MCP server: a PR description's hidden HTML comment survives
+#     the `repo_get_pull_request_by_id` REST call unfiltered (Microsoft's
+#     "spotlighting" delimiter defense was applied to the pipeline/wiki
+#     MCP tools but not this one), so an AI coding agent (GitHub Copilot
+#     CLI, Claude Code) reviewing the PR executes the hidden instruction
+#     under the human reviewer's own Azure DevOps credentials --
+#     cross-project pipeline triggers, wiki exfiltration. No CVE, no
+#     patch confirmed at disclosure. Stale relative to window; drop.
+#   - "AI Vulnerability Discovery Is Outpacing Patch Capacity" and
+#     "OpenAI's Hardware Passkey Mandate for Trusted Access Cyber" (both
+#     CSA notes dated 2026-08-02) are themselves syntheses of July
+#     material (Chrome/Microsoft Patch Tuesday volumes, a Yubico blog
+#     post) -- no fresh event, drop.
+#   - "Amazon Links Debug, Chalk, and Axios npm Attacks to Sapphire
+#     Sleet" and "Three Critical VMware Flaws: Auth Bypass to VM Escape"
+#     (CSA notes 2026-08-02) simply re-report stories already published
+#     under dedup_index.json ids 2026-07-30/amazon-dprk-attribution-npm-
+#     typo-crypto-rehearsal and 2026-07-30/vmware-vmsa-2026-0006-vcenter-
+#     auth-bypass-vmxnet3-escape -- confirmed duplicates, correctly
+#     excluded.
+#
+# Applied the recency rule literally: "if the only sources you can find
+# for a story were published 3+ days ago AND the story has not seen
+# fresh development in the window, pass on it." All five qualifying
+# CSA-derived candidates fail that test. None are forced in as
+# borderline because none has ANY in-window source -- borderline is for
+# items near the relevance threshold, not items outside the recency gate.
+watchlist_sweep: null  # watchlist_duty: none this run
+candidate_sources: []  # none new; CSA Labs, Claroty, SANS ICS, etc. already tracked
+coverage_gaps:
+  - source_id: talos
+    reason: "WebFetch listing surfaced 10 items (newest 2026-07-30), no outbound links or CVE references embedded in the landing-page card text; nothing newer than 2026-07-30 reached the window."
+  - source_id: unit42
+    reason: "WebFetch listing + RSS feed (unit42.paloaltonetworks.com/feed/) both confirm newest item is 'The Xcode Assassin Returns: A Deep Dive Into the Latest XCSSET Version' dated 2026-07-31T10:00:18Z -- outside the 2026-08-02T04:09Z window floor."
+  - source_id: mandiant-gtig
+    reason: "feedburner RSS (feeds.feedburner.com/threatintelligence/pvexyqv7v0v) newest item 'Batten Down Your Packages' dated 2026-07-30T14:00:00Z; nothing newer in the 15 most recent items."
+  - source_id: checkpoint-research
+    reason: "research.checkpoint.com/feed/ newest item is the '27th July - Threat Intelligence Report' (2026-07-27); quiet since."
+  - source_id: eset
+    reason: "WebFetch listing newest dated item is 2026-07-31 ('This month in security with Tony Anscombe -- July 2026 edition'), a monthly video roundup with no new technical finding; nothing newer surfaced."
+  - source_id: kaspersky-securelist
+    reason: "securelist.com/feed/ newest item 'Network Anomaly Detection in KATA' dated 2026-07-31T10:00:25Z; every other item in the last-10 (OctLurk/SilkLurk, GenieLocker, Mirage Kitten, CAV3RN, BitLocker extortion) already sits in dedup_index.json from 2026-07-28 through 2026-07-30."
+  - source_id: sentinellabs
+    reason: "WebFetch listing newest item dated 2026-07-22 ('Sol Searching'); nothing published since."
+  - source_id: proofpoint
+    reason: "WebFetch listing surfaced only 3 featured items (newest 2026-07-23, TA488/Zimbra and RoundPress -- both already in dedup_index.json); WebSearch cross-check against proofpoint.com/us/blog-categories/threat-insight found nothing newer than 2026-06-09. Listing page does not reliably surface a full 15-item feed; no RSS URL on record for this source -- a recipe gap worth fixing (candidate: check for a WordPress-style /feed/ path)."
+  - source_id: crowdstrike
+    reason: "WebFetch listing newest items dated 2026-07-30 (Falcon AIDR for Copilot Studio/Claude Code) and 2026-07-29 (Astaroth spambot component, Falcon Cloud Security release); Astaroth spambot piece is notable but 4+ days stale at window open and not itself a fresh finding -- no outbound links surfaced to verify further."
+  - source_id: zscaler-threatlabz
+    reason: "WebFetch listing on zscaler.com/blogs/security-research returns mostly older/marketing content; newest dated item is 2026-07-13. Recipe may need the dedicated ThreatLabz sub-path rather than the general security-research index."
+  - source_id: google-tag
+    reason: "blog.google/threat-analysis-group/ WebFetch surfaced only one undated Android anti-scam feature article; WebSearch (site:blog.google/threat-analysis-group) surfaced only TAG Bulletin Q3 2025 and older as most recent indexed content. Pre-existing recipe issue (noted 2026-07-14): the fetch is landing on a general security-blog view rather than the true TAG-specific archive."
+  - source_id: sophos-xops
+    reason: "RSS (sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242) newest item 'When AI doesn't know the target is real' dated 2026-07-31T00:00:00Z; quiet since."
+  - source_id: huntress
+    reason: "Both https://www.huntress.com/blog/rss.xml and https://www.huntress.com/blog/feed returned only stale (rss.xml, newest 2026-07-13) or empty (feed -- jina credential exhausted, 0 items) results; a WebFetch on the HTML listing surfaced only 3-4 titles without reliable dates, none confirmed newer than 2026-07-09. Recipe gap: the working RSS path for this source needs re-establishing (rss_url is currently null on the source record)."
+  - source_id: volexity
+    reason: "WebFetch listing newest item dated 2026-07-17 (SonicWall SMA zero-day); sparse cadence is normal per the source note, not a failure."
+  - source_id: rapid7-research
+    reason: "rss.xml newest item dated 2026-07-31T11:53:26Z (a Black Hat conference-attendance post, not technical); newest substantive item is the 2026-07-30 Rails Active Storage write-up, already in dedup_index.json."
+  - source_id: recordedfuture-insikt
+    reason: "recordedfuture.com/feed newest item dated 2026-07-30 (violent-extremism landscape report, non-technical); newest Insikt Group technical research (TAG-195 MaaS) is 2026-07-23."
+  - source_id: schneier
+    reason: "schneier.com/feed/atom/ newest item dated 2026-07-31T21:06:46Z (Friday Squid Blogging); commentary/aggregation source per its C rating, nothing original in-window."
+  - source_id: trendmicro-research
+    reason: "feeds.feedburner.com/TrendMicroResearch newest item dated 2026-07-30 (Open Secure AI Alliance announcement, non-technical); newest substantive research is 2026-07-24 (autonomous-ransomware follow-up, already in dedup_index.json)."
+  - source_id: claroty-team82
+    reason: "WebFetch on claroty.com/team82/research returned only titles/thumbnails with no dates, summaries, or links (client-rendered cards); could not confirm whether any of the 10 listed items (UPS network cards, Trane HVAC, EnOcean SmartServer, Sixnet RTUs, IDIS cameras) are in-window. Recipe gap -- the listing needs per-article drill-down, and no per-article URLs were recoverable from this fetch."
+  - source_id: sans-ics
+    reason: "WebFetch on sans.org/blog listing surfaced titles/dates/authors only, no body/links; newest dated items are 2026-07-31 (CISO governance, DFIR 'Mythos' pieces) and 2026-07-29 (ransomware evolution, OpenAI/Hugging Face panel takeaways) -- all non-ICS-specific and none confirmed to carry new-in-window technical substance beyond what's already covered."
+  - source_id: team-cymru
+    reason: "Bridge url fetch (python3 tools/fetch_source.py url) returned only the page's CSS/JS shell (Webflow-rendered site, client-hydrated listing) with zero article rows or dates -- confirms the source-list note ('listing omits dates, drill /post/ pages') but without a starting list of post URLs there is nothing to drill. Recipe gap: needs a sitemap or RSS discovery path."
+  - source_id: sysdig
+    reason: "RSS feed (sysdig.com/blog/feed) fell back to jina reader which returned 0 items (credential rotation still exhausted on the pooled key tried); direct WebFetch on sysdig.com/blog returned HTTP 503. Logged as a fetch failure below (bounded retry exhausted, no working fallback reached this run)."
+  - source_id: csa-labs
+    reason: "Listing (labs.cloudsecurityalliance.org/research/) surfaced 10 dated research notes (2026-08-01/2026-08-02), the only S3-slice source whose own publish dates land in-window this run -- but per the source-list's own admiralty rating (C, 'automated re-reporting pipeline, not original research'), every note was traced to its true primary and all five substantive ones (iFinder/5G, CosmosEscape, Bit2Watt, Azure DevOps MCP prompt injection, AI-patch-capacity synthesis) resolve to primaries published 2026-07-20 through 2026-07-31 -- outside the window. See detailed notes above items:[]. Two more CSA notes (Sapphire Sleet npm attribution, VMware vCenter flaws) are confirmed re-reports of stories already in dedup_index.json. RSS feed at labs.cloudsecurityalliance.org/feed/ carries zero <item> entries (custom "research note" post type is excluded from the default WordPress feed) -- a recipe note worth adding: use the /research/ listing page + href-pattern drill, not the feed."
+  - source_id: trellix
+    reason: "Bridge url fetch again returns header/nav markup only (pre-existing 2026-07-27 note); confirmed still unresolved, no new recipe found this run."
+  - source_id: kela-cyber
+    reason: "WebFetch listing newest items all dated 2026-07-22 (5-part Iran APT series) and 2026-07-19/17/14/13; nothing newer surfaced."
+  - source_id: project-discovery
+    reason: "WebFetch listing surfaced titles only, no reliable publish dates on the client-rendered cards; could not confirm in-window status for any of the 10 listed items (newest-looking is the Hugging Face AI-agent piece, which if published would duplicate incident:hugging-face-autonomous-ai-agent-breach-2026-07 already in dedup_index.json)."
+  - source_id: push-security
+    reason: "WebFetch listing newest item dated 2026-07-31 ('From IOCs to TTPs: An agentic threat hunting case study'); explicitly confirmed no post in the 2026-08-01/08-02 range."
+  - source_id: ox-security
+    reason: "WebFetch listing newest items dated 2026-08-01 (three posts: software-supply-chain priorities, SAST/DAST/IAST comparison, reachability analysis) -- all evergreen/educational content, not novel technical research or a specific new finding; no CVE, actor, or incident substance to build an entry around."

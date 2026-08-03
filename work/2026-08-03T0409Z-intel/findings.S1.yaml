@@ -1,0 +1,272 @@
+domain: S1
+run_id: 2026-08-03T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-03T04:13:55Z
+ended_at: 2026-08-03T04:33:39Z
+duration_seconds: 1184
+self_telemetry:
+  webfetch_calls: 27
+  websearch_calls: 8
+  bridge_fetches: 22
+
+items:
+  - title: "Bouncy Castle for Java 1.85 discloses 31 CVEs three weeks after the silent fix — four CVSS 9.3 flaws defeat TLS certificate-chain validation (OCSP binding, hostname CN-fallback, DH peer validation, name-constraint escape)"
+    sources:
+      - { url: "https://raw.githubusercontent.com/bcgit/bc-java/main/docs/releasenotes.html", publisher: "Legion of the Bouncy Castle (bc-java official release notes)", date: "2026-08-02", role: "primary" }
+      - { url: "https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%9058062", publisher: "bc-java GitHub wiki (David Hook, maintainer)", date: "2026-08-03", role: "primary" }
+      - { url: "https://github.com/bcgit/bc-java/commit/add5f822660f3b2c29fd824e2f4095469c42a1c7.patch", publisher: "bcgit/bc-java commit (fix diff)", date: "2026-06-22", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-58062", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://euvd.enisa.europa.eu/", publisher: "ENISA EUVD (criticals listing)", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59650", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-8763", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-58063", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-12860", publisher: "NVD", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59646", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-58061", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-12803", publisher: "NVD", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59639", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59641", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-59642", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+    discovery_trace: >
+      first seen at: enisa-euvd, URL https://euvd.enisa.europa.eu/ (bridge: enisa-euvd recent criticals)
+      → four CVSS 9.3 Bouncy Castle entries with today's datePublished
+      → pivot: bc-java GitHub wiki per-CVE pages, URL https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%9058062 (and siblings)
+      → discovered EUVD's CVE-id-to-description binding for CVE-2026-58062 conflicts with the wiki page under that exact slug
+      → cross-checked: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-58062 confirms EUVD's binding (OCSP), meaning the wiki page for that slug currently duplicates CVE-2026-58063's content (a vendor documentation bug, not a numbering shift)
+      → primary: bc-java official release notes (raw.githubusercontent.com), URL https://raw.githubusercontent.com/bcgit/bc-java/main/docs/releasenotes.html — the authoritative "2.2.4 Security Fixes" list for release 1.85/1.85.1, confirming all 31 CVE-id-to-one-line-description bindings
+      → pivot: fix commit for CVE-2026-58062, URL https://github.com/bcgit/bc-java/commit/add5f822660f3b2c29fd824e2f4095469c42a1c7.patch — root-cause diff naming the vulnerable class (ProvOcspRevocationChecker)
+    summary: |
+      Bouncy Castle for Java 1.85 (GA'd 2026-07-12) and the matching BC-LTS 2.73.12 / BC-FJA (FIPS)
+      point releases carry fixes for 31 CVEs whose CVE-numbering-authority (bcorg) descriptions and
+      technical write-ups were only published this week (most on 2026-08-02/03) — three weeks after
+      the fixed binaries already shipped. Four flaws score CVSS 4.0 9.3 CRITICAL and each independently
+      defeats a distinct TLS/PKIX certificate-chain-validation guarantee: (1) CVE-2026-58062 — the JCA
+      PKIXRevocationChecker's OCSP-stapling path (org.bouncycastle.jce.provider.ProvOcspRevocationChecker)
+      accepted a stapled, validly-signed OCSP "good" response whose SingleResponse CertID did not match
+      the end-entity certificate under test (e.g. a response covering the issuing CA's own cert), silently
+      treating it as proof the end-entity was not revoked instead of rejecting it and falling back to CRL;
+      (2) CVE-2026-59638 — HostnameUtil gates the legacy "match Subject CN when no dNSName SAN exists"
+      hostname-verification fallback on Properties.isOverrideSet(JSSE_HOSTNAME_CHECK_CN_FALLBACK, true),
+      whose two-argument overload returns the caller-supplied default of true when the property is unset,
+      so the fallback ships ENABLED in every deployment that does not explicitly disable it — combined
+      with RFC 5280 name-constraint scoping (constraints bind only SAN entries of the constrained type),
+      a leaf certificate with no dNSName SAN passes a dNSName-constrained chain and then matches on an
+      attacker-chosen CN; (3) CVE-2026-59650 — the MTI/A0 two-pass Diffie-Hellman agreement
+      (DHAgreement.calculateAgreement) exponentiates the raw, wire-supplied peer value with no range or
+      subgroup-membership check (unlike DHBasicAgreement, whose single input IS validated), letting a
+      malicious peer send repeated small-order elements (0, 1, p-1, or small-subgroup elements) to leak
+      the static private key mod small primes and recover it in full via CRT (the classical Lim-Lee 1997
+      small-subgroup-confinement attack); (4) CVE-2026-8763 — PKIXNameConstraintValidator strips trailing
+      dots before comparing dNSName constraints but compares rfc822Name and URI hosts with a bare
+      equalsIgnoreCase, so a SAN rfc822Name of "ceo@bank.com." (trailing dot) silently evades an
+      excludedSubtrees constraint of "bank.com", letting an attacker who controls a name-constrained
+      intermediate CA issue certificates for hosts the constraint was meant to exclude. A further ~14 CVEs
+      in the same release are High-severity (CVSS 8.7) integrity/authenticity bypasses across CMS, S/MIME,
+      OpenPGP and AEAD code paths — e.g. CVE-2026-12860 (RSA PKCS#1 signature verification silently skips
+      the last two hash bytes on the legacy NULL-omitted DigestInfo path, shaving 2^16 off the
+      second-preimage work factor, reachable by default from BC-lightweight TLS, PKIX/CMS and OpenPGP RSA
+      verification unless org.bouncycastle.pkcs1.strict_digestinfo is set), CVE-2026-59639 (CMS
+      verifySignatures returns true for a SignedData with zero signers), CVE-2026-59641 (S/MIME path
+      validation trusts a signer-asserted signingTime instead of validating against the signer's actual
+      chain state) and CVE-2026-12803/CVE-2026-58061 (AEAD/CCM nonce-binding and plaintext-before-tag-check
+      issues that turn authenticated decryption into a forgery or decryption oracle). The remainder are
+      resource-exhaustion/DoS bugs (unbounded KDF cost in BCFKS/PKCS#12/PKCS#8 keystore loading, quadratic-
+      time X.500 DN stringification, unbounded HSS post-quantum public-key allocation, unchecked 24-bit
+      DTLS reassembly length). No CVE in the batch is listed as actively exploited by any tracked source
+      as of this run, and CISA KEV shows no BC-related addition. Because BC 1.85 shipped 2026-07-12, any
+      organization that upgraded on GA already closed all 31 issues before today's CVE detail became
+      public; organizations still on BC before 1.85 / BC-LTS before 2.73.12 / BC-FJA before the
+      per-module fixed builds are now publicly known to carry at least four CVSS-9.3 TLS-validation
+      bypasses with full root-cause detail and fix commits in hand for anyone building an exploit.
+      Defender note: cross-checking the vendor's own wiki against NVD/EUVD surfaced that the wiki page
+      filed under the CVE-2026-58062 URL slug currently duplicates CVE-2026-58063's (unrelated, lower-
+      severity) BCFKS-keystore write-up rather than the OCSP issue NVD/EUVD/the official release notes
+      attribute to that ID — a live documentation-binding error on the vendor's advisory index, not a
+      CVE mix-up on the CNA's part. Treat the release notes and NVD/EUVD as authoritative for ID-to-flaw
+      binding in this batch and do not trust the wiki-page slug alone.
+    region_nexus: "global — Bouncy Castle for Java is embedded as the crypto/TLS provider in an enormous range of enterprise Java applications, Android apps, application servers and network appliances; no CH/EU-specific targeting observed but exposure is universal wherever Java + BC underlies TLS client/server code or PKI validation"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves:
+      - CVE-2026-8763
+      - CVE-2026-12185
+      - CVE-2026-12802
+      - CVE-2026-12803
+      - CVE-2026-12816
+      - CVE-2026-12817
+      - CVE-2026-12852
+      - CVE-2026-12860
+      - CVE-2026-13506
+      - CVE-2026-13586
+      - CVE-2026-14682
+      - CVE-2026-15055
+      - CVE-2026-58059
+      - CVE-2026-58060
+      - CVE-2026-58061
+      - CVE-2026-58062
+      - CVE-2026-58063
+      - CVE-2026-59638
+      - CVE-2026-59639
+      - CVE-2026-59640
+      - CVE-2026-59641
+      - CVE-2026-59642
+      - CVE-2026-59643
+      - CVE-2026-59644
+      - CVE-2026-59645
+      - CVE-2026-59646
+      - CVE-2026-59647
+      - CVE-2026-59648
+      - CVE-2026-59649
+      - CVE-2026-59650
+      - CVE-2026-59651
+      - CVE-2026-59652
+    techniques: [T1557, T1499]
+    affected_products: ["Bouncy Castle for Java (bcprov/bcpkix/bctls-jdk18on etc.)", "Bouncy Castle for Java LTS (bcprov-lts8on and related)", "Bouncy Castle FIPS Java API (BC-FJA / bc-fips, bctls-fips, bcpkix-fips, bcmail-fips)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Stapled OCSP response accepted without binding to the checked certificate."
+        attribution: "NVD (CVE-2026-58062 official description)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-58062"
+      - quote: "stapled OCSP response not bound to the certificate was accepted"
+        attribution: "bcgit/bc-java fix-commit test case (add5f822)"
+        source_url: "https://github.com/bcgit/bc-java/commit/add5f822660f3b2c29fd824e2f4095469c42a1c7.patch"
+      - quote: "The javadoc for the property says the unset default must DISABLE the fallback, but the code ships with it active in every deployment that doesn't explicitly set the property to false."
+        attribution: "bc-java wiki (CVE-2026-59638, maintainer David Hook)"
+        source_url: "https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%9059638"
+      - quote: "A malicious peer can repeatedly send small-order elements (0, 1, p−1, or elements of small subgroups of (Z/pZ)*), and each exchange leaks x mod r for some small prime r; combining these via CRT recovers the full static private key (Lim–Lee 1997)."
+        attribution: "bc-java wiki (CVE-2026-59650)"
+        source_url: "https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%9059650"
+      - quote: "An attacker who controls or can modify a .bcfks file can set iterationCount = 2^31-1 or choose scrypt N/r so 128 N r approaches available RAM."
+        attribution: "bc-java wiki (CVE-2026-58063)"
+        source_url: "https://github.com/bcgit/bc-java/wiki/CVE%E2%80%902026%E2%80%9058063"
+    extended_notes: |
+      Detection/hunt (no BC-specific network signature exists — this is a library-level trust-boundary
+      class): treat as an SBOM/SCA problem first — inventory org.bouncycastle groupId artifacts (bcprov,
+      bcpkix, bctls, bcpg, bcmail, bc-fips family) below 1.85 / 2.73.12 / per-module FIPS fixed versions
+      across build manifests, container images and Android APKs. Where BC underlies a TLS client that
+      terminates on adversary-influenced networks (VPN concentrators, partner integrations, on-path-
+      capable segments), watch for anomalous certificate-chain acceptance where CRL fallback should have
+      fired (OCSP responder logs showing a response whose subject/serial does not match the requested
+      cert), and for JSSE peers accepting mismatched-CN certificates lacking a dNSName SAN. Hardening
+      levers usable before a full upgrade: explicitly set the JSSE_HOSTNAME_CHECK_CN_FALLBACK override to
+      false (CVE-2026-59638 mitigation named in the advisory); set org.bouncycastle.pkcs1.strict_digestinfo
+      to enforce the fixed RSA PKCS#1 comparison bound (CVE-2026-12860); the DH/name-constraint/OCSP flaws
+      have no config-toggle workaround and require the version upgrade. This is a single disclosure event
+      (one vendor release, one advisory page) covering 31 CVE ids — reported as one item per PD-11 rather
+      than 31 near-duplicate entries; cves[] carries the full list for dedup purposes.
+    borderline: false
+
+  - title: "N-able N-central RMM: unauthenticated admin-console auth bypass under active exploitation — the emergency Aug 1 patch was itself bypassable within 24 hours (CVE-2026-18556 / CVE-2026-18577)"
+    sources:
+      - { url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation", publisher: "Huntress", date: "2026-08-03", role: "primary" }
+      - { url: "https://www.n-able.com/blog/n-central-security-update-august-2-2026", publisher: "N-able (vendor PSIRT blog)", date: "2026-08-02", role: "primary" }
+      - { url: "https://status.n-able.com/2026/08/02/n-central-2026-3-hotfix-1-mitigation-for-cve-2026-18577/", publisher: "N-able status page (hotfix notice)", date: "2026-08-02", role: "primary" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-18577", publisher: "NVD", date: "2026-08-02", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-18556", publisher: "NVD", date: "2026-08-01", role: "corroborating" }
+    discovery_trace: >
+      first seen at: WebSearch ("CVE exploited zero-day August 2 2026")
+      → pivot: Huntress, URL https://www.huntress.com/blog/n-able-vulnerability-exploitation (published 2026-08-03)
+      → primary: N-able vendor advisory, URL https://www.n-able.com/blog/n-central-security-update-august-2-2026
+      → primary: N-able status-page hotfix notice, URL https://status.n-able.com/2026/08/02/n-central-2026-3-hotfix-1-mitigation-for-cve-2026-18577/
+      → corroborating: NVD records for both CVE ids
+      NOTE: two search results ("CSO Online" and a second BleepingComputer headline) that superficially
+      matched this story were checked and found to describe an UNRELATED, year-old N-central incident
+      (CVE-2025-8875/CVE-2025-8876, published August 2025) — dropped as recycled/mis-dated news per PD-10
+      and not cited here.
+    summary: |
+      N-able disclosed and patched a critical authentication-bypass chain in N-central, its on-premises
+      and hosted RMM platform for MSPs, across two emergency releases inside 48 hours. CVE-2026-18556
+      (published 2026-08-01, CVSS 4.0 8.2 HIGH, CWE-288 Authentication Bypass Using an Alternate Path or
+      Channel) is an unauthenticated bypass of the N-central web console's identity check, affecting all
+      versions through 2026.3. N-able's first fix was itself incomplete: CVE-2026-18577 (published
+      2026-08-02) is described by its own CNA record as "an incomplete patch for CVE-2026-18556 [that]
+      allows for authentication bypass and account takeover in N-central Versions through 2026.3.1" — i.e.
+      organizations that patched on day one against CVE-2026-18556 remained exploitable for roughly another
+      24 hours until build 2026.3.1.7 (2026-08-02) closed the gap. N-able confirms active in-the-wild
+      exploitation against both cloud-hosted and self-hosted N-central instances ("a limited number of
+      customers have been identified to be impacted") and the CVE-2026-18577 CVSS 4.0 vector itself carries
+      an Exploitation Maturity rating of E:A (Attacked). Huntress independently corroborates active
+      exploitation from its own IR telemetry: attackers who reach unauthenticated admin access on a
+      vulnerable N-central server pivot through the platform's built-in Take Control remote-access feature
+      to reach every downstream endpoint that server manages, and register a Cloudflare Tunnel (a
+      "Cloudflared" Windows service) for command-and-control persistence back into the compromised
+      environment. Both vendor and Huntress point to the same post-exploitation footprint: an unexpected
+      "Cloudflared" service registration and an svchost.exe binary dropped under a user's Documents folder
+      (a location the legitimate Windows service host process never runs from — any svchost.exe outside
+      System32/SysWOW64 is inherently suspicious). N-able's own detection guidance also names outbound
+      connections from N-central hosts to attacker-controlled external IPs. No threat actor or ransomware
+      affiliate has been named by either source as of this run.
+    region_nexus: "global — N-central is deployed heavily by managed service providers (MSPs) that serve SMB, cantonal/communal administration and mid-market critical-infrastructure customers across Switzerland and the EU; a compromised N-central server is a direct pivot point into every managed downstream network"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-18556, CVE-2026-18577]
+    techniques: [T1190, T1219, T1572]
+    affected_products: ["N-able N-central (on-premises and hosted, all versions through 2026.3.1)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "an attacker had identified a vulnerability on all N‑central servers running a version prior to 2026.3.1.7"
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/n-central-security-update-august-2-2026"
+      - quote: "A limited number of customers have been identified to be impacted"
+        attribution: "N-able"
+        source_url: "https://www.n-able.com/blog/n-central-security-update-august-2-2026"
+      - quote: "an incomplete patch for CVE-2026-18556 allows for authentication bypass and account takeover in N-central Versions through 2026.3.1"
+        attribution: "NVD (CVE-2026-18577 official description, CNA: N-able)"
+        source_url: "https://nvd.nist.gov/vuln/detail/CVE-2026-18577"
+      - quote: "Exploitation is active in the wild; a compromised N-central server can be used to run scripts, push tools, and open remote sessions across every downstream endpoint it manages."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation"
+      - quote: "The vulnerability affects all currently supported versions of N-central, including builds that were initially believed to be safe."
+        attribution: "Huntress"
+        source_url: "https://www.huntress.com/blog/n-able-vulnerability-exploitation"
+    extended_notes: |
+      Detection/hunt (telemetry class first): authentication-log class — review N-central console
+      sign-in/session logs for administrative actions with no corresponding legitimate credential use;
+      endpoint remote-access-tool class — audit Take Control session logs and breadcrumbs at
+      C:\ProgramData\GetSupportService_N-Central\Logs\ on managed endpoints for sessions not tied to a
+      known support ticket or technician; process-creation class — svchost.exe (or any process named to
+      impersonate a core Windows service binary) launching from a user profile/Documents path is a hard
+      discriminator, since the legitimate binary only ever runs from System32/SysWOW64; service-
+      installation class — an unexpected "Cloudflared" Windows service registration on either the
+      N-central server or a managed endpoint; network/egress class — outbound connections from the
+      N-central management host to Cloudflare Tunnel infrastructure or other unexpected external
+      destinations. Hardening: upgrade on-premises N-central to build 2026.3.1.7 (or later) immediately —
+      hosted/cloud instances were upgraded automatically by N-able; enforce MFA on the N-central console;
+      audit all local/admin accounts created on N-central in the exploitation window; restrict network
+      reachability to the N-central management interface (it should not need to be internet-exposed for
+      normal MSP operation). Given RMM software is a one-to-many pivot into every downstream managed
+      endpoint (the same blast-radius class as the 2021 Kaseya VSA and 2023 GoAnywhere incidents),
+      confirmed active exploitation plus a same-week double-patch cycle (first fix bypassed within ~24h)
+      justifies a critical priority rating despite the "only" HIGH (not CRITICAL) CVSS base score on both
+      individual CVE ids.
+    borderline: false
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured for this deployment — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "WebFetch and bridge url fetch both returned raw HTML/CSS with no extractable post titles/dates via automated parsing; WebFetch summarizer reported empty content on retry. No in-window items could be confirmed or ruled out from this source this run."
+  - source_id: depthfirst
+    reason: "WebFetch returned only three featured-article titles with no publish dates, so in-window status could not be determined; titles visible (dfs-large1, GitLab RCE writeups) all appear to be pre-existing/older content already reflected in prior coverage."
+  - source_id: yeswehack
+    reason: "WebFetch returned mostly undated blog-post titles (bug-bounty program content, not vuln disclosures); only one dated item (2026-07-29) surfaced, outside the 24h window."
+  - source_id: searchlight-cyber
+    reason: "WebFetch returned a title listing with no publication dates, preventing recency determination; titles shown correspond to previously-known research (Langflow, SharePoint, ColdFusion, Splunk) already reflected in prior coverage."

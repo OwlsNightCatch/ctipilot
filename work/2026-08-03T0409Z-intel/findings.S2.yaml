@@ -1,0 +1,106 @@
+domain: S2
+run_id: 2026-08-03T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-03T04:14:03Z
+ended_at: 2026-08-03T04:24:32Z
+duration_seconds: 629
+self_telemetry:
+  webfetch_calls: 14
+  websearch_calls: 10
+  bridge_fetches: 16
+items: []
+# No items qualify this run. Extensive coverage of the S2 essential + rotational
+# slice found a genuinely quiet 24-72h window for Swiss/EU home-region and
+# sector-specific content: every national-CERT / authority source's newest
+# item predates the 72h developing-window cutoff (2026-07-31T04:09Z), and every
+# candidate that IS within/near the cutoff (BSI Gladinet CentreStack WID-SEC-2026-2607,
+# NCSC-CH GovCERT.ch IBM WebSphere/SolarWinds WHD posts, CERT-FR AVI-0938..0958,
+# NCSC-NL SolarWinds/Adobe Campaign Classic alerts) restates vendor bulletins
+# already present in the 14-day dedup index under different (S1-sourced) entry
+# ids. Weekend gap (Sat 08-01 / Sun 08-02) plus an early-Monday-UTC run start
+# (04:09Z, before most EU business-day publication) compounds the quiet window;
+# swisscybersecurity.net's own feed explicitly notes an editorial summer break
+# running through 2026-08-03.
+#
+# Native-language WebSearch sweeps (DE/FR/IT) for Swiss cantonal/municipal
+# incidents, German/French/Italian public-sector and CI-sector breaches, and a
+# targeted follow-up on a Hive-ransomware "manhunt" lead (it-daily.net,
+# 2026-08-02) all resolved to either (a) content already in the dedup index,
+# (b) general statistics/trend pieces with no new incident, or (c) in the Hive
+# case, a recycled retrospective on a $10M reward that the US State Department
+# and German prosecutors (Karlsruhe/Reutlingen) actually announced in
+# September 2025 — confirmed stale via a second search and dropped under the
+# "check the original event date" recency discipline (no fresh arrest/
+# extradition found for Volodymyr Tymoshchuk as of this run).
+novelty_note: none — no candidates cleared both the recency gate and the dedup check
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: >
+    No product/supplier watchlist configured. Applied the region/sector lens
+    throughout (Switzerland/EU home region; public-sector primary, energy/
+    water/transport/healthcare/finance/telco additional) across every source
+    fetched this run — no in-window item cleared the recency+dedup gates to
+    weigh the lens against.
+candidate_sources:
+  - id: swisscybersecurity-net
+    publisher: "SwissCybersecurity.net"
+    url: "https://www.swisscybersecurity.net/news/"
+    category: [ch-eu, news]
+    why: >
+      German-language Swiss cybersecurity news outlet (5th anniversary noted
+      in-run); covers BACS guidance, cantonal-police phishing warnings (Kapo
+      Zürich AliExpress-brand phishing, 2026-07-16), hospital-cybersecurity
+      background pieces and Swiss-specific vendor-report coverage (Check
+      Point DACH stats) not carried by any source currently in sources.json.
+      Own-stated summer editorial break ran through 2026-08-03, so this run
+      could not assess live cadence, but the archive shows consistent
+      Swiss-relevant original commentary. Worth a follow-up probe once the
+      break ends.
+coverage_gaps:
+  - source_id: ccn-cert-es
+    reason: >
+      RESOLVED THIS RUN, not a gap — rotation-priority note said this source
+      "failed the last two runs with a 404." Root cause: prior runs were
+      guessing a URL slug (e.g. /es/actualidad/noticias-ccn-cert, which does
+      404). Working recipe confirmed live this run via the bridge's jina
+      fallback (direct GET still 402s on jina-key exhaustion mid-run but
+      rotates to a working key): homepage https://www.ccn-cert.cni.es/en/
+      carries "CCN News" / "Portal news" / "Alerts" nav links; the actual
+      content pages are https://www.ccn-cert.cni.es/en/updated-security/ccn-news.html
+      and https://www.ccn-cert.cni.es/en/updated-security/alertas-ccn-cert.html
+      (both return a dated table of items via `python3 tools/fetch_source.py
+      url <that URL>`). Newest items on both listings predate this run's
+      window (Alerts: AL 07/26, 22 July 2026 — SharePoint RCE, already
+      covered; News: 28 July 2026 — #STIC2026 CFP, not CTI-relevant). No
+      in-window item, but the source is reachable and should be re-flagged
+      from "candidate/404" to a working recipe rather than repeatedly
+      re-probed as broken. Recommend fetch_method stay "bridge" (drop
+      "jina"-only framing) with the two content URLs above recorded in
+      `note`.
+  - source_id: cisa-directives
+    reason: >
+      `cisa page https://www.cisa.gov/news-events/directives` returns a
+      stale/cached shell (Published Time header reads 2026-06-23, page body
+      is nav chrome only, no directive listing rendered) — same jina-cache
+      symptom noted for cisa-advisories on a prior run. Not CH/EU home-region
+      relevant regardless; not pursued further this run given the sector/
+      region lens.
+  - source_id: prodaft
+    reason: >
+      Confirmed still a pure client-hydrated Next.js shell (HTTP 403 via
+      WebFetch, matches the 2026-07-30 record note); no server-rendered
+      listing reachable this run.
+  - source_id: govcert-at
+    reason: >
+      Homepage is a navigation hub with no dated content and no discoverable
+      feed (matches the 2026-08-02 record note — /rss.xml, /en/rss.xml,
+      /feed/ all 404, sitemap.xml lists only static pages). cert-at (the
+      linked CERT.at blog) was fetched instead per the existing recipe;
+      latest post there is 2026-06-01, outside window.
+fetch_source_notes:
+  - "BSI WID-SEC RSS (wid.cert-bund.de) had not published since Fri 2026-07-31 11:43 GMT as of this run's 04:11 GMT fetch — plausible weekday-only cadence gap over the 2026-08-01/02 weekend, not a fetch failure (HTTP 200, well-formed feed, channel pubDate current)."
+  - "CERT-FR avis/actu feeds: newest items dated 2026-07-31 (all restating vendor bulletins already in the 14-day dedup index: MOVEit, PHP, Azure, Ubuntu/RHEL/SUSE/Debian kernels, IBM, Cisco Secure FMC, VMware, Rails ActiveStorage, GitLab, Node.js). The documented flat-00:00:00-timestamp limitation was checked against the actu bulletin schedule (weekly Monday digest, last CERTFR-2026-ACT-032 dated 2026-07-27) — no ambiguity affecting an in-window decision this run."
