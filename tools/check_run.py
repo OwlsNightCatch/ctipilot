@@ -1144,6 +1144,14 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
         # canonical successor still register as the same entity.
         reg = registry or {}
         e_ents = {cm.resolve_entity_key(reg, str(k)) for k in (e.get("entities") or []) if k}
+        # A weekly strategic entry synthesises the operational entries it lists in
+        # references[] — sharing their entity keys is the design, not drift, so the
+        # declared reference IS the dedup for those pairs (same logic as update_of
+        # above). CVE-level overlap is still reported: per-CVE metadata belongs to
+        # the operational entry that owns it and must not be duplicated upward.
+        e_refs = set()
+        if str(e.get("horizon") or "") == "strategic":
+            e_refs = {str(r) for r in (e.get("references") or []) if r}
         for p in prior:
             if p["id"] in chain:
                 continue
@@ -1152,7 +1160,7 @@ def check_dedup(run: dict[str, Any], run_entries: list[dict],
                 cve_hits.append(
                     f"{e['id']}: CVE(s) {sorted(overlap)} already covered by {p['id']} — "
                     f"ship as update_of with a genuine delta, or drop")
-            if not p.get("update_of"):
+            if not p.get("update_of") and p["id"] not in e_refs:
                 ent_overlap = e_ents & {cm.resolve_entity_key(reg, str(k))
                                         for k in (p.get("entities") or []) if k}
                 if ent_overlap:
