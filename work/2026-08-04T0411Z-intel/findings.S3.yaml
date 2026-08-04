@@ -1,0 +1,112 @@
+domain: S3
+run_id: 2026-08-04T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-04T04:14:46Z
+ended_at: 2026-08-04T04:25:45Z
+duration_seconds: 659
+self_telemetry:
+  webfetch_calls: 24
+  websearch_calls: 8
+  bridge_fetches: 9
+items:
+  - title: "Unit 42's 'Pass-ta-key': malware on an unprivileged Windows session can silently forge Chrome/Google Password Manager passkey assertions and, via a second variant, extract every synced passkey's private key in plaintext"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-03", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/google-password-manager-attacks-could.html", publisher: "The Hacker News", date: "2026-08-03", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 (core_high_value source-list slice), URL https://unit42.paloaltonetworks.com/ (listing surfaced the title but not the URL) → pivot: WebSearch (\"Unit 42 \\\"Pass the Passkey\\\" passwordless authentication attack surface\") → primary: Unit 42, URL https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/ → corroborating: The Hacker News, URL https://thehackernews.com/2026/08/google-password-manager-attacks-could.html"
+    summary: |
+      Unit 42 researcher Arie Olshtein published (2026-08-03) three attack variants — Pass-ta-key, Silver Pass-ta-key, and Golden Pass-ta-key — against Chrome's cloud-synced passkey (FIDO2/WebAuthn) implementation on Windows systems with a TPM, all requiring only unprivileged malware already resident on the endpoint (no elevation, no user interaction, no biometric/PIN unlock). Pass-ta-key extracts the TPM-wrapped device identity key (wrapped_identity_private_key, stored on disk in passkey_enclave_state and exportable as an NCRYPT_OPAQUE_KEY_BLOB) and drives it directly through Windows CNG APIs (NCryptOpenStorageProvider / NCryptImportKey / NCryptSignHash) to sign a forged WebAuthn assertion with the User Verified (UV) flag unset — defeating any relying party that omits UV-flag validation. Silver Pass-ta-key forces Chrome device re-enrollment (by deleting passkey_enclave_state) and abuses the device/add_uv_key onboarding command to register an attacker-controlled UV key, because Google's cloud authenticator does not validate hardware attestation on newly registered UV keys — this produces a durable, UV=1-forging capability that survives even when the relying party correctly checks the UV flag. Golden Pass-ta-key goes further: during the same forced re-enrollment, Chrome's 32-byte Security Domain Secret (SDS) — the master key protecting every synced passkey — transits client memory in plaintext during Trusted Vault recovery; malware that dumps Chrome's process memory at that moment extracts the SDS and can then decrypt every WebauthnCredentialSpecifics record in Chrome's sync LevelDB, yielding every synced passkey's private key in the clear, reusable offline and outside the victim's environment. A reconnaissance stage (enumerating the same sync database) requires no elevated privileges either. Google has only partially mitigated: it removed SDS values from chrome://device-log/FIDO logging (Issue #464305542), but per the article the core gaps — no attestation check on UV-key registration, SDS transiting client memory in plaintext, and no mechanism to rotate/revoke the SDS — remain unresolved as of publication, and eBay (one tested relying party) fixed its own UV-flag validation while GitHub was also tested. No CVE has been assigned to any of the three variants.
+    region_nexus: "global — applies to any Windows endpoint running Chrome with TPM-backed Google Password Manager passkey sync; directly relevant wherever CH/EU public-sector or enterprise identity programmes are migrating staff or citizen-facing logins to passwordless/passkey authentication"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector, public-sector, identity-infra"
+    cves: []
+    techniques: [T1555.003, T1552.001, T1111]
+    affected_products: ["Google Password Manager", "Google Chrome", "Chromium"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Unlike a legitimate user flow that requires user interaction and device unlock, this attack shows how malware can obtain the required signature silently, without user consent, biometrics, device unlock or elevated privileges."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/"
+      - quote: "The cloud authenticator does not validate the attestation of newly registered UV keys to verify whether they originate from secure hardware."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/"
+      - quote: "In Google's current implementation, there is no way to rotate or revoke the SDS, meaning all current and future synced passkeys remain protected by the same master key."
+        attribution: "Unit 42 (Palo Alto Networks)"
+        source_url: "https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/"
+      - quote: "Chrome creates or receives 32-byte security-domain secrets in client-process data structures. That confirms the secret enters Chrome memory, though reliable extraction, account takeover, and persistence across future secret epochs remain sourced to Unit 42 or unresolved."
+        attribution: "The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/google-password-manager-attacks-could.html"
+    extended_notes: |
+      Detection concept (telemetry class first): process-creation/module-load telemetry showing an unprivileged, non-browser process invoking Windows CNG APIs (NCryptOpenStorageProvider/NCryptImportKey/NCryptSignHash) shortly after reading files under %LocalAppData%\Google\Chrome\User Data\<Profile>\{passkey_enclave_state, Sync Data\LevelDB} — a benign lookalike is Chrome's own browser process performing the same CNG calls during a legitimate, user-present WebAuthn ceremony, so the discriminator is process identity (non-chrome.exe process signing with the device identity key) and absence of any preceding UI/biometric prompt. A second detection class: memory-access/EDR-visible process-memory-read events targeting chrome.exe shortly after a forced device de-enrollment (deletion of passkey_enclave_state) — legitimate re-enrollment is rare and user-initiated, so an automated, silent re-enrollment immediately followed by cross-process memory reads of chrome.exe is the discriminating sequence. Hardening: relying parties must independently enforce and require the UV flag (this closes Pass-ta-key entirely, per the article "This is the one that turns on a check the relying party controls, so a site can fail it regardless of how the cloud service behaves") — treat every relying-party WebAuthn integration in the CH/EU public-sector estate as needing an explicit UV-flag-required policy check rather than trusting Google's cloud authenticator to enforce it. No cryptographic primitive is broken in any of the three variants — all three are implementation/trust-boundary gaps (client trust, onboarding/recovery flow validation, key-material handling), so the mitigation is architectural rather than a patch to install.
+  - title: "ANNUAL REPORT — CrowdStrike 2026 Threat Hunting Report: 88% of PoC-based exploitation now lands inside 48 hours, and AI infrastructure/toolchains are named as both attacker capability and attacker target"
+    sources:
+      - { url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/", publisher: "CrowdStrike Counter Adversary Operations", date: "2026-08-03", role: "primary" }
+      - { url: "https://siliconangle.com/2026/08/03/crowdstrike-finds-ai-systems-direct-attack-exploit-windows-shrink/", publisher: "SiliconANGLE", date: "2026-08-03", role: "corroborating" }
+    discovery_trace: "first seen at: crowdstrike (core_high_value source-list slice), URL https://www.crowdstrike.com/blog/category/counter-adversary-operations/ → primary: CrowdStrike Counter Adversary Operations, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/ → corroborating: SiliconANGLE, URL https://siliconangle.com/2026/08/03/crowdstrike-finds-ai-systems-direct-attack-exploit-windows-shrink/"
+    summary: |
+      CrowdStrike Counter Adversary Operations published its annual Threat Hunting Report (2026-08-03), drawing on OverWatch managed-hunting telemetry across 290+ tracked adversaries for the period roughly January-June 2026. Headline finding: 88% of observed exploitation of vulnerabilities carrying a public PoC occurred within 48 hours of the PoC's release; China-nexus VAULT PANDA and GENESIS PANDA moved to deliberate exploitation within 24 hours of disclosure on critical web-application flaws (including a named React2Shell exploitation wave — 800+ hunting leads across 80+ victims in four days), and Belarus-nexus UMBRAL BISON was observed exploiting a Linux local-privilege-escalation flaw (CVE-2026-31431) within roughly 20 hours of disclosure, 94% of that early activity matching public PoC testing patterns. On identity/trust abuse: voice-phishing (vishing) intrusions doubled H1 2026 vs H2 2025, device-code phishing increased roughly 15x over six months, and the eCrime actors CORDIAL SPIDER and SNARKY SPIDER are reported moving from initial account takeover to SaaS data theft in under five minutes. On AI as both target and toolchain risk: one LLMjacking campaign generated ~200,000 API requests against a hijacked corporate LLM service in two minutes; AI-model-access techniques accounted for 16% of observed MITRE ATLAS-mapped technique usage; and AI-agent-triggered detection leads now surface at 2.5x the rate of human-triggered leads, which the report frames as a defender-side triage-complexity problem, not solely an attacker capability gain. On software supply chain, 87% of identified software-registry threats in H1 2026 involved npm packages, and DPRK-nexus STARDUST CHOLLIMA (the same actor Microsoft tracks as Sapphire Sleet / BlueNoroff) is named as having injected malicious postinstall payloads into 131+ packages of the Mastra AI framework in June 2026, while a separate financially motivated actor, ALTERED SPIDER, is reported compromising 300+ dependencies in a single day.
+    region_nexus: "global telemetry-derived report; the exploitation-velocity, vishing/device-code-phishing, and npm-supply-chain findings are all directly actionable for CH/EU public-sector and critical-infrastructure patch-prioritisation and identity-hardening programmes"
+    primary_sector_nexus: "indirect"
+    sector: "cross-sector"
+    cves: ["CVE-2026-31431"]
+    techniques: [T1190, T1566.004, T1195.002, T1078.004]
+    affected_products: []
+    entity_keys: ["actor:sapphire-sleet"]
+    new_entities:
+      - { key: "actor:cordial-spider", type: actor, name: "CORDIAL SPIDER", aliases: [],
+          summary: "CrowdStrike-tracked eCrime actor conducting voice-phishing (vishing) intrusions that move from account takeover to SaaS data theft in under five minutes, per CrowdStrike's 2026 Threat Hunting Report (2026-08-03)." }
+      - { key: "actor:snarky-spider", type: actor, name: "SNARKY SPIDER", aliases: [],
+          summary: "CrowdStrike-tracked eCrime actor paired with CORDIAL SPIDER for rapid vishing-to-SaaS-exfiltration intrusions, per CrowdStrike's 2026 Threat Hunting Report (2026-08-03)." }
+      - { key: "actor:altered-spider", type: actor, name: "ALTERED SPIDER", aliases: [],
+          summary: "CrowdStrike-tracked financially motivated actor reported to have compromised 300+ software dependencies in a single day as part of the 2026 open-source supply-chain wave, per CrowdStrike's 2026 Threat Hunting Report (2026-08-03)." }
+      - { key: "actor:famous-chollima", type: actor, name: "FAMOUS CHOLLIMA", aliases: [],
+          summary: "CrowdStrike-tracked DPRK-nexus actor named in the 2026 Threat Hunting Report as targeting AI-centric cryptocurrency/blockchain environments (2026-08-03)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "88% of CrowdStrike-observed exploitation of vulnerabilities with a public PoC was conducted within 48 hours of the PoC's release."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/"
+      - quote: "One LLMjacking campaign generated nearly 200,000 API requests in two minutes, resulting in large-scale financial and operational impact."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/"
+      - quote: "The npm package ecosystem…is the primary vector for supply chain attacks: 87% of identified software registry threats in the first half of 2026 involved npm packages."
+        attribution: "CrowdStrike Counter Adversary Operations"
+        source_url: "https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/"
+      - quote: "AI agent-triggered detection leads now arrive at 2.5 times the rate of human-triggered leads"
+        attribution: "SiliconANGLE"
+        source_url: "https://siliconangle.com/2026/08/03/crowdstrike-finds-ai-systems-direct-attack-exploit-windows-shrink/"
+    extended_notes: |
+      Actionable takeaway for a Tier2/3 team: the 88%-within-48-hours and 24h/20h nation-state figures are the strongest published data point yet that "patch on the normal cycle" is no longer a defensible posture for any internet-reachable, PoC-carrying CVE — hunt-now-on-disclosure (not wait-for-KEV-listing) is the operating assumption the report's own data supports. STARDUST CHOLLIMA is CrowdStrike's name for the actor the registry already tracks as actor:sapphire-sleet (alias list already includes "STARDUST CHOLLIMA") — this report's Mastra-framework npm-injection detail (131+ packages, June 2026) is new operational detail on that already-tracked actor's supply-chain tradecraft, not a new entity. CORDIAL SPIDER / SNARKY SPIDER / ALTERED SPIDER / FAMOUS CHOLLIMA do not currently match any registry alias and are proposed as new entities above.
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: sysdig
+    reason: "Rotation-priority source. jina reader returned only the cookiebot consent-banner shell for https://www.sysdig.com/blog (JS-hydrated content not captured server-side by the reader in this instance); recovered via a cheaper rung instead — direct bridge fetch (`python3 tools/fetch_source.py url <URL> --direct`) on the WordPress/Webflow RSS feed https://www.sysdig.com/blog/rss.xml returned 20 dated items cleanly (newest 2026-07-31, none in-window). RECIPE CORRECTION CANDIDATE: sysdig's working recipe is direct bridge fetch on the rss.xml feed, not the jina reader on the HTML listing — the source record's fetch_method should probably read 'rss'/'bridge' with rss_url https://www.sysdig.com/blog/rss.xml rather than 'jina', or at minimum the jina rung should be tried on the feed URL, not the HTML shell."
+  - source_id: prodaft
+    reason: "Rotation-priority source. jina reader on https://www.prodaft.com/reports returned real report titles/summaries this time (resolving the prior 'pure client shell, no content' note), but no publication dates are rendered anywhere on the page for any report, so recency cannot be established for any listed item (the 'Latest Report' shown, on Wazawaka, reads as long-settled reporting, not fresh). Could not find a dated feed or API for this source; treating as no-verifiable-in-window-item rather than a hard failure."
+  - source_id: google-tag
+    reason: "WebFetch on https://blog.google/threat-analysis-group/ returned content from Google's general security blog (an Android fake-call-detection feature post) rather than a TAG-specific post listing with dates — matches the source record's existing 2026-07-14 note that this URL resolves to the wrong feed. Could not verify recency of any TAG-specific research this run; WebSearch found no August 2026 TAG-specific post either."
+  - source_id: claroty-team82
+    reason: "WebFetch on https://claroty.com/team82/research returned 9 titles with no visible publication dates; WebSearch corroboration found only older (Oct 2025 / Feb 2025) named reports. Could not confirm or rule out an in-window post this run."
+  - source_id: recordedfuture-insikt
+    reason: "https://www.recordedfuture.com/research/insikt-group is a landing/mission page with no dated article listing reachable via WebFetch; WebSearch surfaced only the recurring 'State of Security' annual report with no confirmed August 2026 publish date. No in-window item confirmed."
+  - source_id: rapid7-research
+    reason: "jina reader keys exhausted (HTTP 402) on the documented rss.xml feed path, auto-falling back with 0 items; WebFetch on the HTML listing returned titles with no dates. The one apparently-recent-looking title (KindaRails2Shell CVE-2026-66066 analysis) was confirmed via WebSearch to be Rapid7's own restatement of the already-covered (2026-07-31/2026-08-02) Rails Active Storage CVE — not a new item."
+  - source_id: sonatype
+  - source_id: snyk-research
+  - source_id: team-cymru
+  - source_id: sans-ics
+  - source_id: push-security
+  - source_id: onapsis
+    reason: "(grouped) All fetched via WebFetch; each returned a dateless or clearly-pre-window listing (latest visible items 2026-07-27 to 2026-07-31 across these sources). No in-window items found; no transport failure."
+notes: |
+  Operational note for self-evolution: two of the deployment's jina reader credentials (suffixes …hxnTiF and …vCFMjZ) returned HTTP 402 (balance exhausted) on every jina call this run before fetch_source.py rotated to a working credential. This did not block any fetch (rotation succeeded each time), but is worth surfacing given the spawn message's "~43.5M credit across 5 live keys" figure — two of those five keys may already be spent down, leaving less headroom than the aggregate figure implies for a run that needs to lean on jina as the last-resort rung.

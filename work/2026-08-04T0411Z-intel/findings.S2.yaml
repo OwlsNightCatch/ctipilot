@@ -1,0 +1,653 @@
+domain: S2
+run_id: 2026-08-04T0411Z-intel
+model: Opus 5
+model_id: claude-opus-5
+started_at: 2026-08-04T04:16:08Z
+ended_at: 2026-08-04T04:35:30Z
+duration_seconds: 1162
+self_telemetry:
+  webfetch_calls: 5
+  websearch_calls: 8
+  bridge_fetches: 33
+window_note: >
+  26 h window (2026-08-03T02:11Z -> 2026-08-04T04:11Z). The home-region and European
+  authority advisory streams were genuinely quiet in this window: NCSC-CH CSH (newest
+  post 2026-07-31), NCSC-CH Im Fokus (28.07), NCSC-CH Aktuelle Vorfaelle (31.07),
+  CERT-EU (23.07), CERT.at (24.07), CERT-PL /news (12.06), ENISA (24.07), NCSC-UK
+  (29.07), CCN-CERT (28.07), EDPB (30.07), JPCERT (23.07) all carried no in-window
+  item. The only in-window authority publications were CERT-FR AVI-0959/0960/0961 and
+  ACT-033 (03.08), the BSI WID batch of 03.08, and two NCSC-NL advisories of 03.08 —
+  one of which (the SQLite withdrawal) is item 1 below. Everything else in the BSI /
+  NCSC-NL 03.08 batch is either S1 product-advisory territory or already covered
+  (N-able N-central, Bouncy Castle).
+items:
+  - title: "BSI and NCSC-NL withdraw SQLite advisories after an LLM-fabricated CVE batch propagated through NVD, CISA enrichment and GHSA into national-CERT feeds"
+    sources:
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0268-1.txt", publisher: "NCSC-NL (Nationaal Cyber Security Centrum)", date: "2026-08-03", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/2026/ncsc-2026-0268-1.html", publisher: "NCSC-NL (Nationaal Cyber Security Centrum)", date: "2026-08-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2604", publisher: "BSI CERT-Bund (WID)", date: "2026-08-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-2604.json", publisher: "BSI CERT-Bund (WID, CSAF)", date: "2026-08-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2581", publisher: "BSI CERT-Bund (WID)", date: "2026-08-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-2581.json", publisher: "BSI CERT-Bund (WID, CSAF)", date: "2026-08-03", role: "primary" }
+      - { url: "https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/", publisher: "JFrog Security Research (Afek Berger)", date: "2026-07-30", role: "primary" }
+      - { url: "https://sqlite.org/forum/forumpost/34bdf3b9bd759d4d", publisher: "SQLite User Forum (Richard Hipp, SQLite maintainer)", date: "2026-07-29", role: "primary" }
+      - { url: "https://www.theregister.com/security/2026/08/03/ai-slop-pollutes-the-cve-pipeline-with-fake-vulns/5282462", publisher: "The Register (Brandon Vigliarolo)", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://github.com/advisories/GHSA-4r76-5xh9-qj36", publisher: "GitHub Advisory Database", date: "2026-07-30", role: "corroborating" }
+    discovery_trace: >
+      first seen at: advisories-ncsc-nl (RSS), URL https://advisories.ncsc.nl/rss/advisories
+      -> NCSC-2026-0268 [1.01] carried "(ingetrokken)" in its title -> drilled the advisory,
+      URL https://advisories.ncsc.nl/2026/ncsc-2026-0268-1.txt (the /advisory?id= path is a
+      JS redirect; the real paths are /<year>/<id-lowercase>-<minor>.{html,txt}) -> pivot to the
+      referenced upstream primary: SQLite User Forum, URL https://sqlite.org/forum/forumpost/34bdf3b9bd759d4d
+      -> cross-check against bsi-de (RSS), URL https://wid.cert-bund.de/content/public/securityAdvisory/rss
+      which carried two "[UPDATE] [mittel] MELDUNG ZURUECKGEZOGEN" items on 03.08 -> resolved both
+      via bsi-csaf to WID-SEC-2026-2604 and WID-SEC-2026-2581, both SQLite, both withdrawn
+      -> pivot: WebSearch ("JFrog Security fake SQLite CVEs LLM generated CVE-2026-51302 analysis")
+      -> primary research: JFrog, URL https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/
+      -> corroboration: The Register, URL https://www.theregister.com/security/2026/08/03/ai-slop-pollutes-the-cve-pipeline-with-fake-vulns/5282462
+      -> own verification: fetched GHSA-4r76-5xh9-qj36 (one of the GHSA records BSI's withdrawn
+      advisory cited), URL https://github.com/advisories/GHSA-4r76-5xh9-qj36 — still live and
+      "Unreviewed" at fetch time.
+    summary: |
+      On 2026-08-03 two European national CERTs withdrew published SQLite advisories because
+      the underlying CVEs do not describe real bugs. NCSC-NL revised NCSC-2026-0268 to version
+      1.01 with the withdrawal reason stated plainly — the "vulnerability" was very likely
+      hallucinated by an LLM — and BSI CERT-Bund retitled WID-SEC-2026-2604 (first published
+      2026-07-30) and WID-SEC-2026-2581 (first published 2026-07-29) to "MELDUNG ZURUECKGEZOGEN",
+      scrubbing their CVE references. Both BSI advisories had been built from GitHub Advisory
+      Database (GHSA) records, which is how the fabricated data reached them.
+      The originating research is JFrog Security's audit (2026-07-30): a newly created GitHub
+      repository, programmervuln/cveadvisory-, published a batch of advisories that NVD flagged
+      as critical and CISA's Authorized Data Publisher enrichment agreed with. JFrog cloned
+      sqlite/sqlite at the claimed tags (version-3.41.0, 3.51.2, 3.51.3), built them in isolated
+      Docker containers, and ran every advisory's PoC SQL verbatim under AddressSanitizer. None
+      reproduced. CVE-2026-51302 (9.8, initially scored 10.0 by Red Hat before downgrade to 7.6)
+      claimed a use-after-free reached via exprComputeOperands() — a function that did not exist
+      in SQLite 3.41 (added mid-2025); the alleged freeing function, sqlite3ReleaseTempReg(),
+      only recycles register indices into an array and performs no heap deallocation, making the
+      claimed class of bug structurally impossible. CVE-2026-51303 (9.8) cited a fix in 3.51.3
+      although a 3.51.2-to-3.51.3 diff shows no change to src/expr.c at all. CVE-2026-51296 (7.5)
+      cited lines 3555 and 3575 of src/json.c in a file that is 2706 lines long. CVE-2026-51297
+      (8.8) referenced jsonBlobEdit(), absent from the claimed version. CVE-2026-51300 (9.1) and
+      CVE-2026-51304 (7.5) cited unrelated line numbers and a function signature with the wrong
+      arity. JFrog's wider audit of 55 advisories from the same account found 54 fabricated and
+      one real bug wrapped in unverified metadata; the remaining 49 targeted libraw and the
+      ESP32-audioI2S Arduino audio library. SQLite's maintainer Richard Hipp reported the same
+      wave on 2026-07-29, said a random sample of "many dozen" such CVEs revealed none that were
+      valid, and noted SUSE reached the same "fabricated" conclusion.
+      The defender-relevant point is the propagation chain and its uneven retraction. Fabricated
+      advisory in a GitHub repo -> MITRE CVE assignment (the public submission form performs no
+      identity verification and no step in the pipeline requires PoC reproduction) -> NVD record
+      plus CISA ADP enrichment -> GHSA -> BSI WID / NCSC-NL / Red Hat -> enterprise scanners and
+      SBOM/dependency tooling. NVD's manual review backstop has been degraded since February 2024;
+      The Register cites a Department of Commerce Inspector General report of May 2026 putting the
+      NVD backlog above 27,000 records at end-2025. Retraction is propagating unevenly: NCSC-NL,
+      BSI, Red Hat and NVD have withdrawn, flagged or rescored, and per an OSS-Security post by
+      Oracle's Alan Coopersmith (2026-07-31) MITRE rejected the whole repository's CVEs — but at
+      fetch time on 2026-08-04 GHSA-4r76-5xh9-qj36 (CVE-2026-51294, another fabricated SQLite
+      use-after-free claim) was still live in the GitHub Advisory Database as "Unreviewed",
+      referencing the same programmervuln repo. Organisations whose triage, ticketing or
+      dependency-scanning pipelines ingest GHSA are therefore still being served the fabricated
+      records after the national CERTs have retracted them.
+      Practical triage implication: a CVSS 9.8+ record on a widely embedded library, with no
+      maintainer corroboration, no commit or pull-request reference, placeholder or pinned-single-version
+      CPE data, and code references that do not resolve in the claimed version, is now a recognised
+      false-positive pattern rather than an emergency. JFrog's four stated red flags are: missing
+      vendor corroboration on the maintainer's own security page, absent commit history in the
+      reference fields, metadata contradictions (empty CPE product definitions or version ranges
+      conflicting with the narrative), and non-existent code references (functions absent from the
+      claimed version, or line numbers past end-of-file).
+    region_nexus: "Germany and Netherlands (both national CERTs withdrew advisories); Europe-wide, since BSI WID and NCSC-NL advisory streams are widely consumed by Swiss and EU public-sector vulnerability-management teams; global upstream (MITRE/NVD/CISA ADP/GHSA)"
+    primary_sector_nexus: "direct — public-sector vulnerability-management and patch-prioritisation processes consume exactly these advisory feeds"
+    sector: "public-sector, cross-sector"
+    cves: [CVE-2026-51302, CVE-2026-51303, CVE-2026-51300, CVE-2026-51297, CVE-2026-51296, CVE-2026-51304, CVE-2026-51294]
+    cves_note: >
+      IMPORTANT for the composer: every CVE id listed above is a FABRICATED identifier — the
+      entry's purpose is to mark them as non-vulnerabilities so a reader or triage agent
+      encountering them in a scanner report finds the retraction. Do not present them as real
+      flaws, and do not imply a patch is needed. CVE-2026-51302 is the one NCSC-NL and Red Hat
+      carried; 51303 / 51300 / 51297 / 51296 / 51304 are the further five JFrog tested; 51294 is
+      the record I verified is still live in GHSA. BSI scrubbed the CVE references from both
+      withdrawn WID advisories, so their exact ids are not recoverable from the CSAF documents.
+    techniques: []
+    techniques_note: >
+      Deliberately empty — this finding carries no attacker behaviour to map. It is a
+      vulnerability-data-integrity finding about the CVE supply chain, not an intrusion. Expect a
+      research-kind (or vulnerability-kind) entry; check_run.py WARNs rather than FAILs on an empty
+      techniques[] for research kind.
+    affected_products: ["SQLite", "GitHub Advisory Database", "NIST National Vulnerability Database (NVD)"]
+    entity_keys: []
+    new_entities:
+      - key: "trend:llm-fabricated-cve-advisory-wave-2026-07"
+        type: trend
+        name: "LLM-fabricated CVE advisory wave (programmervuln/cveadvisory-)"
+        aliases: ["LLM slop CVEs", "AI slop CVEs", "fake SQLite CVEs", "slop CVEs"]
+        summary: >
+          Batch of 55 fabricated vulnerability advisories published via a single new GitHub
+          repository (programmervuln/cveadvisory-) in late July 2026 against SQLite, libraw and
+          ESP32-audioI2S. JFrog Security Research (2026-07-30) reproduced-tested six SQLite
+          entries under AddressSanitizer and found none valid, and assessed 54 of 55 as
+          completely fabricated with one real bug wrapped in unverified metadata; SQLite
+          maintainer Richard Hipp independently reported the wave on 2026-07-29. The records
+          reached NVD, CISA ADP enrichment, GHSA, Red Hat, BSI CERT-Bund (WID-SEC-2026-2581,
+          WID-SEC-2026-2604) and NCSC-NL (NCSC-2026-0268) before the two national CERTs
+          withdrew their advisories on 2026-08-03.
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification: { reliability: A, credibility: 1 }
+    evidence:
+      - quote: "CVE is door een LLM gehallucineerd"
+        attribution: "NCSC-NL"
+        source_url: "https://advisories.ncsc.nl/2026/ncsc-2026-0268-1.txt"
+      - quote: "Dieses Advisory wurde zurückgezogen."
+        attribution: "BSI CERT-Bund"
+        source_url: "https://wid.cert-bund.de/.well-known/csaf/white/2026/wid-sec-w-2026-2604.json"
+      - quote: "A broader audit of 55 advisories published by the same GitHub account revealed that 54 were completely fabricated, while one contained a real bug wrapped in unverified CVE metadata."
+        attribution: "JFrog Security Research"
+        source_url: "https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/"
+    extended_notes: |
+      Further verbatim quotes the composer may promote into evidence[] (each verified against the
+      URL given, fetched this run):
+      - SQLite maintainer Richard Hipp, https://sqlite.org/forum/forumpost/34bdf3b9bd759d4d :
+        "If you see new CVEs against SQLite, you can probably assume they are fake." and
+        "SuSE tells me that they ran many of these CVEs through Claude, who concluded" (line-wrapped
+        in the forum render — the continuation is "that the CVEs were \"fabricated\".").
+      - JFrog, https://research.jfrog.com/post/sqlite-critical-cves-or-llm-slops/ :
+        "Because no step in today's system actually requires a proof-of-concept or bug reproduction,
+        a plausible-sounding fake advisory can slide right through the pipeline and end up in GHSA,
+        downstream databases, and enterprise scanners."
+      - JFrog, same URL, on the AI-triage angle: "An AI agent that encounters a fabricated CVE may
+        attempt to locate the vulnerable function, generate a patch, or recommend changes based on
+        code that does not even exist."
+      - The Register, https://www.theregister.com/security/2026/08/03/ai-slop-pollutes-the-cve-pipeline-with-fake-vulns/5282462
+        quoting Alan Coopersmith (Oracle Solaris engineer) from OSS-Security: "MITRE and most other
+        CNAs which assign CVEs for code they don't produce themselves operate on the honor system,
+        and trust CVE requesters to have verified the information they provide" — and quoting JFrog's
+        Afek Berger: "Generative AI has lowered the effort required to produce a plausible-looking
+        advisory to close to zero, while the effort required to verify one, review the source code,
+        build the affected version, reproduce the PoC, is unchanged."
+
+      Defender levers (all supported by the cited sources, no invention):
+      - Treat maintainer corroboration as a gate, not a nicety. SQLite publishes its real CVEs at
+        sqlite.org/cves.html; absence there was one of JFrog's four red flags. The same applies to
+        any project with an official security page.
+      - Require a commit hash or pull request in a CVE's reference fields before a high-CVSS record
+        opens a change ticket. Its absence was JFrog's second red flag.
+      - Treat placeholder or single-pinned-version CPE data ("Vendor/Product: n/a", "Pinned CPE: 3.41.0"
+        on a library with dozens of releases) as a metadata-contradiction signal.
+      - Verify that named functions and cited line numbers actually resolve in the claimed version
+        before accepting a memory-safety claim. Two of the six SQLite entries named functions added
+        after the claimed vulnerable release; one cited line numbers past end-of-file.
+      - Feed-level hygiene: this run verified that GHSA still carried a fabricated record after BSI
+        and NCSC-NL retracted, so pipelines that ingest GHSA (dependency scanners, SBOM tooling)
+        need a mechanism to reconcile against national-CERT withdrawals and CVE-record rejections
+        rather than assuming one-way propagation.
+      - Where AI agents are used for vulnerability triage or auto-remediation, JFrog's stated failure
+        mode is that the agent will hunt for, and try to patch, code that does not exist.
+
+      Analytic pairing the composer may find useful: the Italian national cybersecurity agency (ACN)
+      reports 37,032 new CVEs in H1 2026, up 54% year on year, and attributes the increase in part to
+      frontier AI models compressing the time needed for code analysis, vulnerability research and
+      PoC generation (see the borderline ACN item below). The same technology is therefore both
+      raising genuine CVE volume and, per this finding, injecting fabricated records into the same
+      pipeline — which is exactly why a CVE's existence and score can no longer stand alone as
+      triage evidence.
+
+      Cross-domain note: nothing in prior_coverage_keys.json touches SQLite, GHSA, LLM-fabricated
+      CVEs or the CVE-2026-512xx range. Novelty confirmed new, not an update-of.
+
+  - title: "PaperCut NG/MF 26.0.3 fixes missing brute-force protection and a login timing oracle (CVE-2026-8793, CVE-2026-8794) — CERT-FR advisory of 03 August"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0959/", publisher: "CERT-FR / ANSSI", date: "2026-08-03", role: "primary" }
+      - { url: "https://www.papercut.com/kb/Main/papercut-ng-mf-security-bulletin-3-aug-2026/", publisher: "PaperCut", date: "2026-08-03", role: "primary" }
+    discovery_trace: >
+      first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ (via
+      `cert-fr avis-recent 25`) -> drilled the avis, URL
+      https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0959/ -> primary: vendor bulletin named in
+      the avis Documentation section, URL
+      https://www.papercut.com/kb/Main/papercut-ng-mf-security-bulletin-3-aug-2026/
+    summary: |
+      PaperCut published a security bulletin on 2026-08-03 fixing two authentication weaknesses in
+      PaperCut NG/MF, and CERT-FR issued CERTFR-2026-AVI-0959 the same day. CVE-2026-8793
+      (CWE-307, CVSS 4.0 6.9 MEDIUM) is missing brute-force protection: the login component does not
+      restrict excessive authentication attempts, so an unauthenticated remote attacker can run
+      brute-force or credential-stuffing attacks without triggering account lockout or rate limiting
+      in some configurations. CVE-2026-8794 (CWE-208, CVSS 4.0 6.9 MEDIUM) is a username-enumeration
+      timing oracle in the same authentication component: the application performs a password hash
+      comparison only for accounts that exist, so response-time measurement discloses account
+      existence with high probability. Both are fixed only in PaperCut NG/MF 26.0.3 and later —
+      PaperCut states explicitly that the changes are code-level and cannot be configured around on
+      earlier releases. All versions prior to 26.0.3 are affected. Neither CVE requires authentication;
+      neither yields code execution, and no exploitation is reported.
+      Relevance rests on deployment rather than severity: PaperCut NG/MF is print-management software
+      with heavy penetration in public administration, education and healthcare, frequently reachable
+      from user networks and in some estates from the internet, and typically integrated with the
+      directory that holds staff accounts. Chained, the two flaws give an unauthenticated attacker a
+      way to enumerate valid staff usernames and then spray or stuff credentials against them without
+      lockout — a credential-validation oracle in front of an identity-integrated application.
+      Detection sits in web/application access logs and the authentication log: an unusual ratio of
+      failed to successful logins from a single source against the PaperCut login endpoint, and
+      high-volume login attempts whose response-time distribution splits into two clusters (the
+      enumeration signature). Benign lookalikes are a misconfigured client or scheduled job
+      re-presenting stale credentials, distinguishable by a small, fixed set of repeated usernames
+      versus a broad sweep of distinct ones. Hardening: upgrade to 26.0.3, and place any
+      internet-reachable PaperCut login behind a reverse proxy or WAF that enforces rate limiting
+      independently of the application.
+    region_nexus: "France (CERT-FR advisory); vendor-global. PaperCut NG/MF is widely deployed across Swiss and European public administration, education and healthcare print estates."
+    primary_sector_nexus: "direct — print management is a standard public-administration and education service"
+    sector: "public-sector, healthcare"
+    cves: [CVE-2026-8793, CVE-2026-8794]
+    techniques: [T1110.004, T1589.002]
+    techniques_note: >
+      T1110.004 Brute Force: Credential Stuffing for CVE-2026-8793 (no lockout or rate limiting on
+      the login component); T1589.002 Gather Victim Identity Information: Email Addresses is the
+      closest active mapping for the username-enumeration oracle in CVE-2026-8794 — if the composer
+      prefers not to stretch that mapping, T1110.004 alone is defensible and the enumeration
+      behaviour can be carried in prose only.
+    affected_products: ["PaperCut NG", "PaperCut MF"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    classification: { reliability: A, credibility: 1 }
+    evidence:
+      - quote: "PaperCut NG/MF does not restrict excessive authentication attempts in its login component."
+        attribution: "PaperCut"
+        source_url: "https://www.papercut.com/kb/Main/papercut-ng-mf-security-bulletin-3-aug-2026/"
+      - quote: "The application performs a password hash comparison only for valid accounts, creating a timing oracle that discloses account existence."
+        attribution: "PaperCut"
+        source_url: "https://www.papercut.com/kb/Main/papercut-ng-mf-security-bulletin-3-aug-2026/"
+      - quote: "PaperCut NG/MF versions antérieures à 26.0.3"
+        attribution: "CERT-FR / ANSSI"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0959/"
+    borderline: true
+    borderline_reason: "both CVEs are 6.9 MEDIUM with no RCE and no observed exploitation; included because PaperCut NG/MF has heavy public-sector/education/healthcare deployment and the two flaws chain into an unauthenticated credential-validation oracle — the composer should decide whether that clears PD-11"
+    extended_notes: |
+      The other two in-window CERT-FR avis of 03.08 are CERTFR-2026-AVI-0960 (Microsoft Edge) and
+      CERTFR-2026-AVI-0961 (Microsoft Office) — routine vendor-cycle items, S1 territory, not
+      returned here. CERT-FR's weekly bulletin CERTFR-2026-ACT-033 (03.08, fetched) is a roll-up of
+      week 31 and surfaced no item not already covered: Cisco Secure FMC CVE-2026-20316 (covered
+      2026-07-30), Ruby on Rails CVE-2026-66066 (covered 2026-07-31 and 2026-08-02), Arista
+      VeloCloud CVE-2026-16812 (covered 2026-07-28). It did carry two Atlassian Jira entries CERT-FR
+      rates 9.8 — CVE-2022-37601 (RCE) and CVE-2026-42581 (security-policy bypass), CERTFR-2026-AVI-0934
+      of 27.07 — which prior coverage does not contain, but both are outside the window (CVE
+      publication 21.07, avis 27.07) with no in-window development, so they are dropped on recency
+      rather than relevance. Flagging them here in case S1 wants the lead.
+
+  - title: "cJSON is effectively unmaintained: CERT-PL discloses an unpatched heap overflow (CVE-2026-16554) after the vendor could not be reached, alongside 33 further unfixed issues in a library vendored into ESP-IDF and embedded firmware"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/07/CVE-2026-16554/", publisher: "CERT Polska / NASK", date: "2026-07-27", role: "primary" }
+      - { url: "https://www.openwall.com/lists/oss-security/2026/07/30/22", publisher: "OSS-Security mailing list (Alan Coopersmith, Oracle), quoting joshua.hu", date: "2026-07-30", role: "primary" }
+    discovery_trace: >
+      first seen at: WebSearch ("MITRE rejects fake CVEs oss-security Coopersmith libraw
+      ESP32-audioI2S SQLite August 2026") -> pivot: OSS-Security day index, URL
+      https://www.openwall.com/lists/oss-security/2026/07/30/ -> pivot: the "33 Vulnerabilities in
+      cJSON" post, URL https://www.openwall.com/lists/oss-security/2026/07/30/22 (which quotes the
+      original write-up at joshua.hu/cjson-json-parser-cve-vulnerabilities — NOT fetched by me, so
+      not cited as a source) -> primary authority: the CERT-PL advisory that post links, URL
+      https://cert.pl/en/posts/2026/07/CVE-2026-16554/
+    summary: |
+      Two independent disclosures in late July 2026 converge on the same conclusion: cJSON, one of
+      the most widely vendored JSON parsers in C, has no responsive maintainer and is shipping
+      known-unfixed memory-safety bugs.
+      CERT Polska coordinated and published CVE-2026-16554 on 2026-07-27: an integer overflow in
+      print_string_ptr() in cJSON.c on 32-bit platforms. The escape_characters counter is a 32-bit
+      size_t and wraps when a string carries roughly 858,993,460 or more control characters, so the
+      output buffer is allocated from an underestimated length; when cJSON_PrintBuffered() is used
+      with a pre-allocated buffer, the subsequent write loop overflows the heap allocation. An
+      attacker who can supply crafted JSON to a 32-bit application using cJSON can cause a heap
+      buffer overflow, potentially leading to remote code execution, information disclosure or
+      denial of service (CWE-190). CERT-PL states it could confirm the flaw only in version 1.7.19
+      because vendor contact attempts were unsuccessful, and notes other versions may also be
+      affected — so there is no patched version to point at. Credit to Michal Majchrowicz and
+      Marcin Wyczechowski of AFINE.
+      Separately, on 2026-07-30 a researcher write-up (relayed to OSS-Security by Oracle's Alan
+      Coopersmith) claimed 33 security issues in cJSON found with a mix of AI-assisted and manual
+      fuzzing and review, stating they affect every version up to and including v1.7.19 and are all
+      still present in current code, that development has been broadly stagnant for four years, and
+      that memory-safety reports sit open and unanswered on GitHub — in some cases with an unmerged
+      patch in the same thread. The first thirteen are described as memory-safety issues plus a
+      denial of service, the remainder as logic bugs that silently lose data or act on the wrong
+      object member. Each claim ships a complete self-contained PoC built with
+      -fsanitize=address,undefined at -O0; the author notes some crash only with ASan and UBSan
+      enabled together on an unoptimised build, because it is the instrumentation that fattens
+      stack frames enough to run off the end — meaning a partial sanitizer set or an -O2 build makes
+      the library look healthier than it is. CVE-2026-67215, CVE-2026-67216 and CVE-2026-67217 cite
+      that write-up as their reference. The author's own recommendation is to evaluate moving off
+      cJSON where it parses attacker-controlled JSON, and explicitly warns against merging the
+      unlanded GitHub patches, some of which he assesses introduce fresh bugs.
+      The exposure that matters for this constituency is where cJSON lives: it is vendored into
+      ESP-IDF and, per the write-up, "a lot of embedded firmware" plus server-side C. That places
+      it in the device layer of OT and building-automation estates in energy, water, transport and
+      facility management, where firmware update cycles are long or absent and where an unpatched
+      heap overflow reachable from attacker-controlled JSON is a durable foothold primitive. There
+      is no vendor fix to deploy, so the levers are inventory and containment: identify products in
+      the estate whose SBOM or firmware bill of materials lists cJSON, determine whether they parse
+      externally supplied JSON and whether the platform is 32-bit (the precondition for
+      CVE-2026-16554), and where they do, constrain who can reach the parsing interface rather than
+      waiting for a patch. Detection is weak by nature — a heap overflow in embedded firmware
+      typically surfaces as unexplained device restarts or watchdog resets rather than a security
+      event — so device-availability telemetry and crash-loop patterns on JSON-speaking endpoints
+      are the realistic signal, with benign lookalikes being power events and firmware-update
+      reboots, distinguishable by correlation with inbound request volume to the JSON interface.
+    region_nexus: "Poland (CERT-PL is the coordinating authority); library-global, with direct European critical-infrastructure exposure through embedded firmware and ESP-IDF-based devices"
+    primary_sector_nexus: "indirect for public administration; direct for the profile's additional sectors (energy, water, transport) through OT and building-automation device firmware"
+    sector: "energy, water, transport, cross-sector"
+    cves: [CVE-2026-16554, CVE-2026-67215, CVE-2026-67216, CVE-2026-67217]
+    techniques: [T1190, T1499.004]
+    techniques_note: >
+      T1190 Exploit Public-Facing Application for the attacker-supplied-JSON reachability of the
+      heap overflow where the parsing interface is network-exposed; T1499.004 Endpoint Denial of
+      Service: Application or System Exploitation for the denial-of-service outcome CERT-PL states.
+      RCE is stated as potential by CERT-PL, not demonstrated, so do not map a code-execution
+      technique beyond T1190.
+    affected_products: ["cJSON", "ESP-IDF"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    classification: { reliability: A, credibility: 2 }
+    classification_note: >
+      Reliability A on the strength of the CERT-PL advisory (national CERT, coordinating party for
+      the disclosure it owns). Credibility 2 rather than 1 because the 33-issue claim rests on a
+      single researcher write-up that I did not fetch directly (only the OSS-Security relay of it),
+      no maintainer has responded, and no downstream distributor has yet confirmed the scope.
+    evidence:
+      - quote: "Because vendor contact attempts were unsuccessful, the vulnerability has only been confirmed in version 1.7.19 but may also affect other versions."
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/en/posts/2026/07/CVE-2026-16554/"
+      - quote: "cJSON is probably the most widely used JSON parser in the C world."
+        attribution: "joshua.hu write-up, as relayed to OSS-Security by Alan Coopersmith"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/07/30/22"
+      - quote: "Memory-safety reports sit open and unanswered"
+        attribution: "joshua.hu write-up, as relayed to OSS-Security by Alan Coopersmith"
+        source_url: "https://www.openwall.com/lists/oss-security/2026/07/30/22"
+    borderline: true
+    borderline_reason: "freshest source is 2026-07-30 (OSS-Security thread replies ran to 2026-08-01), outside the 26 h window and at the edge of the 72 h developing window — returned rather than dropped because it is unprocessed by every prior run in the 14-day index, there is no patch, and the embedded/OT exposure maps onto the profile's energy/water/transport sectors"
+    extended_notes: |
+      Not fetched, so not cited: the original write-up at joshua.hu/cjson-json-parser-cve-vulnerabilities.
+      If the composer wants to use it as a source, it must be fetched first.
+      Recipe finding worth recording: the tracked CERT-PL URL https://cert.pl/en/news/ does NOT
+      surface CERT-PL's CVE advisories — its newest item at fetch time was 2026-06-12 while the
+      27.07 cJSON advisory existed. CERT-PL publishes coordinated-disclosure advisories at
+      https://cert.pl/en/posts/<YYYY>/<MM>/<CVE-ID>/. An essential-tier source was effectively dark
+      for advisory discovery through the /news/ path alone; see the Coverage-gaps section.
+
+  - title: "ACN Italy H1 2026 operational summary: NIS2 notifications drive a 47% rise in reported cyber events, and the agency attributes a 54% CVE surge partly to frontier AI models"
+    sources:
+      - { url: "https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026", publisher: "Agenzia per la Cybersicurezza Nazionale (ACN) / CSIRT Italia", date: "2026-07-24", role: "primary" }
+    discovery_trace: >
+      first seen at: WebSearch ("CSIRT Italia avviso 3 agosto 2026 pubblica amministrazione attacco
+      informatico") -> primary: the ACN publication page, URL
+      https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026 (no pivot needed — ACN is
+      the authority and the page carries the full summary text plus the PDF
+      Operational_Summary_H1_26_CLEAR.pdf, published 24/07/2026)
+    summary: |
+      Italy's national cybersecurity agency published its H1 2026 operational summary on 2026-07-24.
+      CSIRT Italia handled 2,171 cyber events against 1,474 in H1 2025 (+47%), and states plainly
+      that the rise reflects over 1,000 NIS notifications now arriving under NIS2 rather than a real
+      increase in threat or impact — 1,072 events were classified as confirmed-impact incidents while
+      1,099 had no confirmed impact, broadly flat against the 1,164 of H1 2025. Recurring threats
+      were DDoS, data exposure, phishing, mailbox compromise, abuse of valid credentials and
+      exploitation of known vulnerabilities; year on year, credential-compromise, data-exposure and
+      vulnerability-exploitation threats rose while DDoS, ransomware and misconfiguration fell.
+      Sector distribution — again read through the NIS2 reporting-obligation effect — puts
+      manufacturing, technology and healthcare at the top, with central and local public
+      administration less affected than in H1 2025. Ransomware fell 12% to 181 incidents against
+      Italian entities, most in manufacturing, retail and technology; ACN names the principal
+      enabling factors as previously compromised valid credentials, inadequately configured or
+      protected remote-access and VPN services, and exploitation of known vulnerabilities and exposed
+      services. 407 DDoS campaigns were recorded (-32% year on year), peaking in February around the
+      Milano-Cortina Winter Olympics where pro-Russian groups mainly hit accommodation providers in
+      the competition areas, central and local public administration and transport operators — with
+      limited effect (in February only 6% of events produced even temporary website unavailability) —
+      and resuming in May after reporting on Italy's political support for Ukraine, with 117 DDoS that
+      month and measurable impact in around 20 cases; June campaigns hit central and local public
+      administrations, transport, telecommunications, financial services, port authorities and energy
+      operators. On the vulnerability side, 37,032 new CVEs were published in H1 2026 against 24,098
+      in H1 2025 (+54%), of which 5,722 carried at least one public PoC and 69 were observed under
+      active exploitation; ACN attributes the increase substantially to the growing use of frontier
+      AI models compressing the time needed for code analysis, vulnerability research and PoC
+      generation. ACN's monitoring identified 24,303 at-risk assets and services and 1,560
+      potentially compromised assets, issuing 7,634 pre-emptive alert notifications under Article 2(1)
+      of Law 90/2024. Named vulnerability clusters it monitored include Fortinet, Citrix, Cisco,
+      Microsoft SharePoint and Exchange, PostgreSQL, SolarWinds, Apache, n8n, Ubiquiti, Exim, Palo
+      Alto, SAP NetWeaver and Roundcube. Most frequent entry points were malicious email campaigns,
+      previously compromised valid credentials, phishing and social engineering, with some intrusions
+      following supply-chain dynamics through supplier security posture.
+      Why it matters here: this is the closest publicly available analogue to what a Swiss or EU
+      public-sector SOC will see, from an authority with statutory visibility, and its two headline
+      findings are directly transferable — NIS2 reporting inflates event counts without inflating
+      threat (so year-on-year comparisons across the NIS2 boundary are not like-for-like), and the
+      genuine CVE volume is rising sharply for AI-related reasons at the same time as the CVE stream
+      is being polluted by AI-fabricated records (item 1 above).
+    region_nexus: "Italy (EU member state, national authority); findings transferable to Swiss and EU public-sector and critical-infrastructure defenders, and the NIS2 reporting effect is EU-wide"
+    primary_sector_nexus: "direct — the report's sector breakdown and DDoS targeting explicitly cover central and local public administration"
+    sector: "public-sector, healthcare, transport, telco, finance, energy"
+    cves: []
+    techniques: [T1078, T1133, T1190, T1566, T1498]
+    techniques_note: >
+      Mapped from ACN's own stated threat and entry-point taxonomy: T1078 Valid Accounts (abuse of
+      previously compromised valid credentials, named as the leading ransomware enabler and a top
+      entry point); T1133 External Remote Services (inadequately configured or protected
+      remote-access/VPN services); T1190 Exploit Public-Facing Application (exploitation of known
+      vulnerabilities and exposed services); T1566 Phishing (malicious email campaigns and phishing
+      as the most frequent entry point); T1498 Network Denial of Service (the 407 hacktivist DDoS
+      campaigns).
+    affected_products: []
+    entity_keys: []
+    new_entities:
+      - key: "report:acn-csirt-italia-operational-summary-h1-2026"
+        type: report
+        name: "ACN / CSIRT Italia Operational Summary H1 2026"
+        aliases: ["Operational Summary 1° semestre 2026", "ACN Operational Summary H1 2026"]
+        summary: >
+          Half-year operational report from Italy's Agenzia per la Cybersicurezza Nazionale
+          (published 2026-07-24) covering 2,171 cyber events handled by CSIRT Italia in H1 2026
+          (+47% year on year, driven by NIS2 notifications), 181 ransomware incidents (-12%), 407
+          hacktivist DDoS campaigns (-32%) and 37,032 newly published CVEs (+54%), which ACN
+          attributes partly to frontier AI models accelerating vulnerability research and PoC
+          generation.
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    classification: { reliability: A, credibility: 2 }
+    classification_note: >
+      Single-source under the national-CERT carve-out: ACN/CSIRT Italia is the primary disclosing
+      authority for its own jurisdiction's incident statistics. Credibility 2 because the figures
+      are the authority's own uncorroborated telemetry, and ACN itself cautions that the headline
+      +47% reflects NIS2 reporting rather than a real threat increase.
+    evidence:
+      - quote: "Nel primo semestre 2026 sono stati registrati 181 ransomware a danno di soggetti italiani rispetto ai 206 rilevati nel corrispondente periodo del 2025."
+        attribution: "ACN / CSIRT Italia"
+        source_url: "https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026"
+      - quote: "risulta meno interessata la Pubblica amministrazione centrale e locale."
+        attribution: "ACN / CSIRT Italia"
+        source_url: "https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026"
+      - quote: "I punti d’ingresso più frequenti delle attività malevole censite nel primo semestre 2026 sono stati le campagne malevole via e-mail , l’impiego di credenziali valide precedentemente compromesse , il phishing e il social engineering in generale."
+        attribution: "ACN / CSIRT Italia"
+        source_url: "https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026"
+    borderline: true
+    borderline_reason: "published 2026-07-24, eleven days outside the 26 h window with no in-window development — returned rather than dropped because it is an unprocessed periodic national-authority report (absent from the 14-day prior-coverage index and from the 2026-08-02 weekly), it is squarely in the profile's region and sector, and its CVE-volume finding pairs analytically with item 1; if the composer applies recency strictly it should be handed to the next weekly W1 periodic-report sweep instead"
+    extended_notes: |
+      The report PDF the page links is Operational_Summary_H1_26_CLEAR.pdf, published 24/07/2026,
+      reachable from the same ACN publication page. The third evidence quote above contains spacing
+      artefacts (" , ") that are present in the page's own rendered text as fetched; if the verifier
+      flags it, substitute the shorter clean fragment "il phishing e il social engineering in generale".
+      Italy has NO tracked source record in sources.json — see the candidate-source proposal below.
+
+watchlist_sweep:
+  duty: sector-lens
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: >
+    duty is sector-lens and the org profile configures no product or supplier watchlist, so no
+    sweep was run. Triage was weighted to the primary sector (public administration) and the home
+    region: items 1 and 2 are public-sector-facing, item 3 maps to the additional sectors
+    (energy/water/transport) via embedded firmware, item 4 is a European authority's public-sector
+    sector breakdown.
+
+candidate_sources:
+  - id: acn-csirt-italia
+    publisher: "Agenzia per la Cybersicurezza Nazionale (ACN) / CSIRT Italia"
+    url: "https://www.acn.gov.it/portale/en/csirt-italia"
+    rss_url: null
+    category: national-cert
+    reliability: A
+    language: ["it", "en"]
+    why: >
+      Italy is a major EU jurisdiction and a NIS2 reporting hub with NO source record in
+      sources.json at all — the org profile's national-CERT carve-out list names AGID-CSIRT-IT but
+      no record exists, so the S2 slice contains no Italian authority. ACN is the statutory parent
+      of CSIRT Italia and publishes a substantive periodic operational-summary series with
+      incident, ransomware, DDoS and vulnerability statistics broken down by sector (surfaced this
+      run as the borderline item above), a publications index at
+      https://www.acn.gov.it/portale/en/csirt-italia/pubblicazioni, per-advisory pages under
+      /portale/en/w/<slug>, and a public MISP feed. Verified fetchable this run: the publication
+      page https://www.acn.gov.it/portale/w/operational-summary-1-semestre-2026 returned HTTP 200
+      via `python3 tools/fetch_source.py url <URL>` with the full server-rendered summary text and
+      the linked PDF filename and publication date. Suggested fetch_method: bridge (`url`); it is a
+      Liferay portal, so listing pages should be drilled per publication slug rather than scraped
+      for dates.
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: >
+      RECIPE GAP, not a fetch failure. The tracked URL https://cert.pl/en/news/ fetched cleanly
+      (HTTP 200) but its newest item was 2026-06-12, and it does NOT list CERT-PL's
+      coordinated-disclosure CVE advisories at all — the 2026-07-27 cJSON advisory
+      CVE-2026-16554 was only found by pivoting from an OSS-Security post. CERT-PL advisories live
+      at https://cert.pl/en/posts/<YYYY>/<MM>/<CVE-ID>/ and the per-advisory page carries a
+      "Publication date" table row (rendered as a table cell, so an HTML-tag strip collapses it —
+      read the raw body around the "Publication date" label). An essential-tier A-reliability
+      source has effectively been dark for advisory discovery. Recommend adding the /en/posts/
+      path (and probing for a feed at https://cert.pl/en/rss/ or similar) to the record's recipe
+      note.
+  - source_id: cert-at
+    reason: >
+      RECIPE GAP. https://www.cert.at/en/ , https://www.cert.at/de/aktuelles/news/ and
+      https://www.cert.at/en/news/ all returned no drillable dated rows via the bridge (and
+      /de/warnungen/aktuelles/ 404s to WebFetch). The bare homepage https://www.cert.at/ DOES carry
+      dated headlines and is the working discovery surface — this run it showed 24.07.2026,
+      20.07.2026 and 18.06.2026, i.e. nothing in-window. Recommend recording "scrape the bare
+      homepage for dated headlines, then drill /de/blog/<YYYY>/<M>/<slug>" in the record's recipe.
+  - source_id: edpb
+    reason: >
+      RECIPE NOTE NOW STALE — worth correcting. The 2026-07-14 note says the bridge fetch returns
+      only navigation chrome with no article listing. This run
+      `python3 tools/fetch_source.py url https://www.edpb.europa.eu/news/news_en` returned the
+      dated news listing correctly (newest item 30 July 2026, then 23/17/14/08/01 July). No
+      in-window item. Recommend replacing the stale note.
+  - source_id: cisa-directives
+    reason: >
+      RECIPE CONFIRMED, no in-window content. The 2026-07-25 note flags the absence of a
+      `cisa-directives` subcommand; `python3 tools/fetch_source.py cisa page
+      https://www.cisa.gov/news-events/directives` works and returns the full ED/BOD listing with
+      drillable per-directive URLs. Newest substantive directive is BOD 26-04 "Prioritizing
+      Security Updates Based on Risk" (supersedes and revokes BOD 19-02 and BOD 22-01), issued
+      2026-06-10 per corroborating coverage — well outside the window, so dropped on recency.
+      Recommend recording the working `cisa page` recipe on the record.
+  - source_id: cisa-advisories
+    reason: >
+      NOT A FAILURE — the documented feed recipe (`cisa feed
+      https://www.cisa.gov/cybersecurity-advisories/all.xml`) returned 30 items cleanly. Note for
+      future runs: the parsed items carry NO published date (the `published` field comes back
+      empty), so in-window filtering requires reading the date path in each alert URL
+      (/news-events/alerts/YYYY/MM/DD/...) or the ICS advisory day-of-year id (icsa-26-NNN-XX).
+      Nothing in-window here beyond the 03.08 KEV addition, which is S1's.
+  - source_id: prodaft
+    reason: >
+      FETCHED OK, NO DATED CONTENT. `python3 tools/fetch_source.py jina
+      https://www.prodaft.com/reports` returned HTTP 200 with a hydrated listing, but every entry
+      is an undated legacy report (Wazawaka, Nomadic Octopus/Paperbug, RIG EK, FIN7, UNC1151,
+      TA505/TeslaGun, PYSA, Wizard Spider, Conti). The reader resolves the SPA as the 2026-07-30
+      note intended, but the listing itself carries no publication dates, so no in-window decision
+      can be made from it. Recommend noting that per-report dates require drilling
+      /report/<slug> individually.
+  - source_id: ncsc-ch-security-hub
+    reason: >
+      FETCHED OK, QUIET WINDOW. `ncsc-csh recent 12` returned cleanly; the newest post is 12821
+      (2026-07-31 12:06Z, IBM WebSphere) and the listing is ordered by last activity, so there is
+      genuinely no in-window CSH advisory. Same for ncsc-ch-focus (newest "Im Fokus" is Woche 30,
+      28.07.2026 — the series is weekly on Tuesdays, so Woche 31 was not yet published at 04:11Z on
+      Tuesday 04.08) and ncsc-ch-incidents (newest "Aktuelle Vorfaelle" entry 31.07.2026 00:00, a
+      BACS warning about postal letters carrying QR codes that lead to crypto-wallet
+      recovery-phrase phishing — outside the window, no in-window development, dropped on recency).
+  - source_id: jina-reader-pool
+    reason: >
+      OPERATIONAL NOTE. Two of the five jina reader credentials returned HTTP 402 "balance
+      exhausted" on every reader call this run (keys ending …hxnTiF and …vCFMjZ), with automatic
+      rotation to a working key each time. No fetch was lost, but the pool is degrading — worth an
+      operator check via `python3 tools/fetch_source.py jina-usage`.
+  - source_id: unverified-lead-krybit-rinxent
+    reason: >
+      LEAD DROPPED ON VERIFICATION, recorded so it is not re-chased. An article dated 2026-08-03 on
+      cyberattaque.org claims the Mairie de Rinxent (Pas-de-Calais, ~3,000 inhabitants) is listed
+      on the leak site of a ransomware group "Krybit" with 160.20 GB claimed and a 2026-08-06
+      deadline. The article itself states the municipality has not publicly confirmed the attack,
+      and cyberattaque.org is an untracked leak-site monitor with no established track record. This
+      is an uncorroborated criminal claim from a single low-reliability source and fails the
+      fake-news gate — NOT returned as an item. "Krybit" is not in entities/registry.yaml; if a
+      high-reliability source or a victim statement lands later, the actor may be worth
+      registering then.
+
+bridge_uses:
+  - { id: ncsc-ch-security-hub, method: "bridge:ncsc-csh.recent", outcome: ok }
+  - { id: ncsc-ch-incidents, method: "bridge:url", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.avis-recent", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.actu-recent", outcome: ok }
+  - { id: anssi-fr, method: "bridge:feed", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-rss", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-csaf", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:ncsc-nl.recent", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:feed", outcome: ok }
+  - { id: cert-eu, method: "bridge:cert-eu.recent", outcome: ok }
+  - { id: cisa-advisories, method: "bridge:cisa.feed", outcome: ok }
+  - { id: cisa-directives, method: "bridge:cisa.page", outcome: ok }
+  - { id: ncsc-uk, method: "bridge:feed", outcome: ok }
+  - { id: ccn-cert-es, method: "bridge:jina", outcome: ok }
+  - { id: prodaft, method: "bridge:jina", outcome: ok }
+  - { id: edpb, method: "bridge:url", outcome: ok }
+  - { id: compass-security, method: "bridge:feed", outcome: ok }
+  - { id: truesec, method: "bridge:feed", outcome: ok }
+  - { id: lab52, method: "bridge:feed", outcome: ok }
+  - { id: jpcert, method: "bridge:url", outcome: ok }
+  - { id: cert-at, method: "bridge:url", outcome: "empty-feed" }
+  - { id: synacktiv, method: "bridge:feed", outcome: "empty-feed" }
+  - { id: ncc-research, method: "bridge:feed", outcome: "item-not-found" }
+
+fetch_failures: []
+
+dropped_after_review:
+  - item: "Truesec, 'LLMjacking Is a New Cyber Threat' (2026-08-03T14:15Z, in-window)"
+    reason: >
+      270-word awareness note, not original research. Its three references are a third-party
+      explainer (practical-devsecops.com), an X post (Team Cymru S2 — X-only sourcing is barred),
+      and Sysdig's LLMjacking explainer. The underlying research it relays (Sysdig + Pillar
+      "Operation Bizarre Bazaar", the silver.inc marketplace, 35,000 captured sessions) dates to
+      February/March 2026 and is not in-window. Dropped as a stale re-report with a barred
+      load-bearing source.
+  - item: "ARS Hauts-de-France public-hospital patient-identity cyberattack"
+    reason: "surfaced by a French-language search but the regional health authority's statement is dated 8 September 2025 — a year stale, mis-surfaced as current."
+  - item: "Atlassian Jira CVE-2022-37601 and CVE-2026-42581 (both CVSS 9.8, CERTFR-2026-AVI-0934)"
+    reason: >
+      absent from prior coverage and rated 9.8 by CERT-FR in its 03.08 weekly bulletin, but the
+      CVEs were published 21.07 and the avis 27.07 with no in-window development. Dropped on
+      recency; flagged in item 2's extended_notes as a lead for S1.
+  - item: "CISA BOD 26-04 'Prioritizing Security Updates Based on Risk'"
+    reason: >
+      materially interesting (revokes BOD 19-02 and BOD 22-01, replaces flat KEV deadlines with a
+      four-variable risk model of asset exposure, KEV status, exploit automation and technical
+      impact, with CISA publishing the latter three per CVE via Vulnrichment) but issued
+      2026-06-10 — far outside the window, and a US federal mandate rather than a
+      Swiss/EU obligation. Recorded here so a later W2 run can pick up the model if wanted.
+  - item: "CCN-CERT offensive-AI self-assessment call to Spanish public entities (23.07.2026)"
+    reason: "region- and sector-relevant (Spanish public sector, offensive-AI maturity self-assessment tool) but eleven days outside the window with no in-window development."

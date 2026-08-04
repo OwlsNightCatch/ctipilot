@@ -1,0 +1,499 @@
+# work/2026-08-04T0411Z-intel/findings.followup-sonicwall.yaml
+# Scoped Phase 5.7 remediation follow-up: SonicWall SMA 1000 chain / INC Ransom.
+domain: FOLLOWUP
+run_id: 2026-08-04T0411Z-intel
+model: Opus 5
+model_id: claude-opus-5
+started_at: "2026-08-04T05:46:31Z"
+ended_at: "2026-08-04T06:02:00Z"
+duration_seconds: 929
+self_telemetry:
+  webfetch_calls: 0
+  websearch_calls: 4
+  bridge_fetches: 10
+
+# ---------------------------------------------------------------------------
+# ANSWERS TO THE SIX COMMISSIONED QUESTIONS (read this before the item block)
+# ---------------------------------------------------------------------------
+commissioned_answers:
+
+  q1_publication_dates:
+    verdict: >
+      The Resecurity primary is OUT of the 26 h window (2026-08-01). Three
+      independent news re-reports are IN window (2026-08-03). The two
+      research primaries the story rests on (Rapid7, Volexity) are from
+      mid-July and were NOT updated in-window. So the only in-window
+      publication event is the news cycle around Resecurity's weekend post,
+      plus one fresh named Rapid7 statement given to The Hacker News.
+    records:
+      - url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+        publisher: "Resecurity"
+        date: "2026-08-01"
+        in_window: false
+        basis: "On-page byline reads `1 Aug 2026`; Resecurity's own RSS feed (https://www.resecurity.com/feed) records `Sat, 01 Aug 2026 00:00:00 -0500` for this item."
+      - url: "https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html"
+        publisher: "The Hacker News"
+        date: "2026-08-03"
+        in_window: true
+        basis: "Byline `Ravie Lakshmanan  Aug 03, 2026 Vulnerability / Cybercrime`."
+      - url: "https://www.securityweek.com/recent-sonicwall-vulnerabilities-exploited-in-ransomware-attacks/"
+        publisher: "SecurityWeek"
+        date: "2026-08-03"
+        in_window: true
+        basis: "Page JSON-LD: `\"datePublished\":\"2026-08-03T10:39:41+00:00\"`, `\"dateModified\":\"2026-08-03T10:39:46+00:00\"`."
+      - url: "https://www.scworld.com/news/inc-ransomware-chains-two-sonicwall-sma-1000-zero-days-in-attacks"
+        publisher: "SC Media"
+        date: "2026-08-03"
+        in_window: true
+        basis: "Page metadata `Published Time: 2026-08-03T15:01:38-04:00` (= 2026-08-03T19:01Z)."
+      - url: "https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/"
+        publisher: "Rapid7"
+        date: "2026-07-15 (last modified 2026-07-16)"
+        in_window: false
+        basis: "JSON-LD `\"datePublished\":\"2026-07-15T16:20:10.546Z\"`, `\"dateModified\":\"2026-07-16T16:07:06.787Z\"`; on-page `Jul 15, 2026 | Last updated on Jul 16, 2026`. NOT touched in-window."
+        note: "The store's 2026-07-18 entry cites this source with date 2026-07-16 — that matches the last-modified, not the first-publication date. Cosmetic metadata nuance on an immutable entry, not a factual error."
+      - url: "https://www.volexity.com/blog/2026/07/17/proxying-to-compromise-sonicwall-secure-mobile-access-0-day-exploitation/"
+        publisher: "Volexity"
+        date: "2026-07-17 (last modified 2026-07-18)"
+        in_window: false
+        basis: "JSON-LD `\"datePublished\":\"2026-07-17T22:10:37+00:00\"`, `\"dateModified\":\"2026-07-18T01:56:51+00:00\"`. NOT touched in-window."
+      - url: "https://www.darkreading.com/vulnerabilities-threats/inc-ransomware-exploits-sonicwall-sma-zero-days"
+        publisher: "Dark Reading"
+        date: "2026-07-17"
+        in_window: false
+        basis: "Page metadata `Published Time: 2026-07-17T20:01:13.000Z`."
+        note: "CRITICAL for novelty — see q3 and the novelty_warning block."
+
+  q2_cve_set:
+    verdict: >
+      EXACTLY the two CVEs this store already covers. No third CVE, no
+      different ids, no additional ids anywhere in the in-window reporting.
+      One additional weakness is described but is explicitly NOT
+      CVE-assigned. Pairings below transcribed from the records that own
+      them (CISA KEV entries + SonicWall's own product notice), not
+      positionally.
+    cve_records:
+      - cve: CVE-2026-15409
+        owning_record_name: "SonicWall SMA1000 Appliances Server-Side Request Forgery Vulnerability"
+        owning_record: "CISA KEV catalog entry (retrieved via tools/fetch_source.py cisa-kev), dateAdded 2026-07-14"
+        owning_record_quote: "SonicWall SMA1000 Appliances contain a server-side request forgery vulnerability that could allow a remote unauthenticated attacker to potentially cause the appliance to make requests to unintended location."
+        cvss: "10.0"
+        resecurity_characterisation: "A pre-authentication /wsproxy bypass allowing an unauthenticated external attacker to open a WebSocket tunnel to services intended to be accessible only from localhost."
+        matches_store: true
+      - cve: CVE-2026-15410
+        owning_record_name: "SonicWall SMA1000 Appliances Code Injection Vulnerability"
+        owning_record: "CISA KEV catalog entry (retrieved via tools/fetch_source.py cisa-kev), dateAdded 2026-07-14"
+        owning_record_quote: "SonicWall SMA1000 Appliances contain a code injection vulnerability which in specific conditions could potentially enable a remote authenticated attacker as administrator to execute arbitrary OS commands."
+        cvss: "7.2"
+        resecurity_characterisation: "A path-traversal flaw in the remove_hotfix workflow of ctrl-service, abused to escalate from a low-privilege service account to root."
+        matches_store: true
+        characterisation_note: >
+          Two coexisting framings of the SAME id, both already present in the
+          store: CISA/SonicWall describe it as code injection reachable by an
+          authenticated administrator via the AMC (the store's 2026-07-14
+          entry), while Volexity/Resecurity describe the concrete mechanism as
+          a path traversal in the ctrl-service remove_hotfix workflow (the
+          store's 2026-07-18 entry). Dark Reading (2026-07-17) reproduces the
+          AMC framing. This is a characterisation difference, NOT an id
+          mismatch and NOT a contradiction.
+    non_cve_weakness:
+      description: "ctrl-service Basic-auth password derived from the appliance hardware UUID in /sys/class/dmi/id/product_uuid, world-readable on PHYSICAL SMA 1000 appliances (virtual appliances not affected in the same way)."
+      cve_assigned: false
+      quote: "Volexity noted this bypass was not used in the observed UTA0533 incident, but it remains a noteworthy exposure for physical hardware deployments."
+      already_in_store: "Yes — the 2026-07-18 entry states 'the control service's authentication password is derivable from a device UUID'. The physical-vs-virtual distinction is a small enrichment."
+    patch_levels_confirmed:
+      affected: "SMA 1000 (6210, 7210, 8200v & CMS – all hypervisors) 12.4.3-03245, 12.4.3-03387, 12.4.3-03434; 12.5.0-02283, 12.5.0-02624, 12.5.0-02800"
+      fixed: "12.4.3-03453 and higher versions; 12.5.0-02835 and higher versions"
+      source: "https://www.sonicwall.com/support/notices/product-notice-sma-1000-series-affected-by-multiple-vulnerabilities/kA1VN000001nv6D0AQ"
+      matches_store: true
+
+  q3_who_attributes_inc:
+    verdict: >
+      The "dominant threat actor" line is RAPID7's, not Resecurity's, and it
+      was given as a named on-record statement to The Hacker News — it does
+      NOT appear anywhere on Rapid7's own blog (verified: the Rapid7 post
+      contains no occurrence of "INC" or "dominant", and was last modified
+      2026-07-16). Resecurity's post carries near-identical wording without
+      naming who said it. Confidence language used by the attributing party
+      is deliberately hedged: "indicates", "coordinated group", "emerged as".
+    primary_attribution:
+      claimant: "Douglas McKee, director of vulnerability intelligence, Rapid7"
+      venue: "statement given to The Hacker News (THN-exclusive; not on Rapid7's blog)"
+      url: "https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html"
+      quote: "This strong technical correlation indicates that a single threat actor or coordinated group is responsible for discovering and exploiting this zero-day vulnerability. More recently, INC Ransomware has emerged as the dominant threat actor actively weaponizing this vulnerability chain."
+      framing_quote: "Rapid7 subsequently told The Hacker News that the campaign shares significant tactical overlaps with its own investigations."
+    resecurity_version:
+      url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+      quote: "Volexity tracks the pre-disclosure exploitation cluster as UTA0533. Rapid7's later incident-response work identified a significant overlap in tactics, techniques, and procedures (TTPs) with its own investigations, leading both firms to conclude that a single actor or a closely coordinated group was responsible for the zero-day exploitation. More recently, INC Ransomware has emerged as the dominant threat actor weaponizing the full chain in the wild."
+      overreach_flag: >
+        Resecurity elsewhere writes "Volexity and Rapid7 have since linked the
+        exploitation cluster to INC Ransomware" — that is NOT supported.
+        Volexity's post (fetched this run, last modified 2026-07-18) contains
+        no occurrence of "INC" or "ransomware" at all. Volexity has publicly
+        linked the cluster to UTA0533 only. Do NOT reproduce Resecurity's
+        "Volexity and Rapid7" framing; attribute the INC link to Rapid7 alone.
+      internal_inconsistency: >
+        Resecurity's own text is inconsistent: one paragraph credits both
+        firms with the INC link, another presents the INC-dominance sentence
+        as a standalone observation with no claimant. Treat Resecurity as a
+        relay of Rapid7's claim, not an independent origin.
+    earlier_rapid7_attribution:
+      url: "https://www.darkreading.com/vulnerabilities-threats/inc-ransomware-exploits-sonicwall-sma-zero-days"
+      publisher: "Dark Reading"
+      date: "2026-07-17"
+      quote: "Two days later, Rapid7 specifically attributed this activity to Inc ransomware."
+      second_claimant_quote: "We have successfully prevented exfiltration and encryption in the majority of cases; however, we now have an active case in which ransomware deployment was achieved."
+      second_claimant: "Brett Deroche, director of incident response, Rapid7"
+    corroboration_of_dominance_claim:
+      - publisher: "SecurityWeek"
+        date: "2026-08-03"
+        attributes_to: "Resecurity"
+        quote: "Now, Resecurity says that, of the various threat actors chaining CVE-2026-15409 and CVE-2026-15410 for SMA1000 compromise, the INC Ransomware gang has emerged as the most active one."
+      - publisher: "SC Media"
+        date: "2026-08-03"
+        attributes_to: "Resecurity"
+        quote: "The INC Ransomware group is the most active threat group exploiting two SonicWall Mobile Access (SMA) 1000 vulnerabilities, with multiple new victims being posted on the INC data leak site."
+
+  q4_swiss_victim_claim:
+    verdict: >
+      LEAK-SITE LISTINGS ONLY. NO victim statement, NO named organisation, NO
+      high-reliability outlet independently confirming any Swiss victim, and —
+      importantly — NO per-victim evidentiary link between any Swiss listing
+      and the SonicWall SMA chain. This element CANNOT be reported as fact and
+      should not be framed as "Swiss organisations breached via the SonicWall
+      chain". Recommend the main agent either omit the Swiss angle or state it
+      strictly as an unverified criminal claim with the causal gap named.
+    what_is_actually_claimed:
+      claimant: "Resecurity (relaying INC Ransom's own data-leak-site postings)"
+      url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+      quote: "The new victims listed on INC Ransomware's DLS between July 17, 2026 and August 1, 2026 include private sector and government organizations from Australia, the US, UAE, Colombia, Switzerland, and other countries."
+      named_organisations: none
+      victim_statement: none
+      authority_confirmation: none
+    causal_gap: >
+      Resecurity never states that the Swiss listing (or any specific listing)
+      was achieved via CVE-2026-15409/-15410. It states the listings exist in
+      that window and separately assesses the chain "could significantly aid
+      Initial Access Brokers" — an estimate, not an observation. The
+      victim-to-CVE link for the Swiss entry is unestablished.
+    firsthand_element_that_does_exist:
+      quote: "Resecurity has assisted several victims with DFIR and vulnerability assessments to contain the root cause of the compromise, but also learned about the following new developments: many of the new victims received emails, as well as phone calls from unknown organizations claiming to assist with ransomware issues."
+      assessment: >
+        This is a genuine first-hand IR claim, but it is about the victim set
+        as a whole and names no country. It does NOT convert the Swiss listing
+        into a confirmed Swiss compromise.
+    negative_search_record:
+      - 'WebSearch "INC Ransom leak site Swiss organisation victim August 2026 SonicWall" — no named/confirmed Swiss victim; every hit reproduces Resecurity''s country list.'
+      - 'WebSearch ""INC Ransom" Schweiz Cyberangriff Behörde August 2026" — nothing in-window; hits are 2023 Xplain/Play and 2025 Radix history.'
+      - 'WebSearch "Ransomware Angriff Schweizer Unternehmen SonicWall SMA August 2026 Datenleck INC" — all hits trace to the same single Resecurity sentence.'
+      - 'WebSearch ""INC Ransom" OR "INC Ransomware" victime suisse août 2026 fuite données" — no named Swiss victim; only leak-site aggregator country pages.'
+      - "No NCSC-CH / BACS publication on this in-window (no authority statement surfaced)."
+    single_source_status: "The Swiss element is effectively SINGLE-SOURCE (Resecurity) and uncorroborated — all four re-reporting outlets copy the same sentence, which is one source, not four."
+
+  q5_mechanics_and_post_patch_actions:
+    what_survives_the_patch:
+      - "Persistence artefacts: setuid ELF backdoor (Volexity name ROOTRUN, dropped as /usr/bin/xzfind), a Python injector (KNUCKLEBALL, /usr/lib/python3.11/site-packages/deploy_new.py), modified init script (/etc/init.d/workplace) and rewritten NGINX Unit config (/var/lib/unit/conf.json)."
+      - quote: "Setuid binaries, Python injectors, modified init scripts, and NGINX Unit configuration changes can survive reboots and may persist after a superficial firmware upgrade if not remediated. A patched appliance that still contains ROOTRUN or KNUCKLEBALL remains compromised."
+        publisher: "Resecurity"
+      - "Harvested secrets: credentials, active session databases and TOTP/MFA seed configurations extracted from the appliance (Rapid7). These remain valid after patching."
+      - finding: "NEW and operationally significant (Rapid7 IR, via Dark Reading 2026-07-17 — OUT of window, flag as background if used): the actor has been observed ROLLING A NEWLY APPLIED PATCH BACK to a vulnerable state to retain access, i.e. patch application is itself reversible by a resident attacker."
+        quote: "We observed the threat actor maintaining persistence and rolling the newly applied patch back to a vulnerable state to maintain access. A comprehensive forensic review of the firewall is required to ensure complete eviction."
+        publisher: "Brett Deroche, Rapid7 (to Dark Reading)"
+    post_exploitation_chain_mechanics:
+      - "Pre-auth: crafted /wsproxy request with spoofed client identifiers opens a WebSocket tunnel to loopback-only services; reaches bundled CouchDB and the Erlang ctrl-service with no network segmentation in the way."
+      - "Staging: attacker reads sensitive appliance files and writes an exploit payload to disk as the unprivileged couchdb service account (observed as /tmp/hypdate.b64, owned by couchdb — evidence of write+execute through that service context)."
+      - "Root: sysCtrl.execRemoveHotfix invoked via POST /rollbackConfirm.action with a traversal-laden `hotfix` parameter; ctrl-service calls /usr/local/bin/remove_hotfix from working directory /var/lib/aventail/avp/rollback/, the unsanitised path escapes it, and the attacker's staged script runs as root — typically followed by an immediate reboot."
+      - "Implants: KNUCKLEBALL injects JAR agents into the legitimate SonicWall JVM via the Java Attach API, targeting workplace.startup.CommandStartup — Suo5 (HTTP proxy tunnel) and ORANGETAIL (Behinder-like Java web shell, encrypted C2 over HTTPS). In-memory injection rather than standalone binaries, deliberately reducing forensic footprint."
+      - "Credential access: tcpdump captures unencrypted LDAP (TCP/389) to harvest directory credentials; Rapid7 adds extraction of active session databases and TOTP MFA seeds."
+      - finding: "Extortion-stage pressure tactic (NEW, Resecurity first-hand): victims contacted by email and phone by parties claiming to offer ransomware assistance, using a domain registered shortly after the intrusion through a Chinese registrar accepting cryptocurrency. Caller used a pseudonym and claimed to be calling 'from a group of hackers'. NOTE: the specific domain, email address and phone number are IOCs — MUST NOT be reproduced in an entry."
+        quote: "many of the new victims received emails, as well as phone calls from unknown organizations claiming to assist with ransomware issues"
+        publisher: "Resecurity"
+    hunt_steps_behavioural:
+      network_telemetry:
+        - "Appliance web/access logs (extraweb_access.log): /wsproxy requests answered with a WebSocket 101 upgrade where the tunnel target is a loopback address (0.0.0.0, 127.0.0.1, ::ffff:127.0.0.1, localhost) and a backend service port — a legitimate Work Place session never asks the appliance to tunnel to its own loopback services."
+        - "Repeated /wsproxy requests from external source addresses; anomalous User-Agent strings and URI parameter values correlated against authentication logs."
+        - "access_servers.log: WebSocket connection messages to internal backend ports."
+        - "Unexpected HTTPS requests to /workplace/error.jsp or /workplace/dialogs/errorDialog.jsp (web-shell routing surface); internal proxying traffic patterns consistent with Suo5 tunnelling."
+      host_telemetry:
+        - "Any unexpected setuid ELF binary — enumerate with `find / -perm -4000 -type f` and diff against a known-good appliance image."
+        - "Unexpected Python module in the site-packages tree acting as a loader, and embedded/staged JAR archives in /tmp or /var/tmp."
+        - "Modifications to /etc/init.d/workplace and to /var/lib/unit/conf.json — specifically NGINX Unit route entries proxying to a loopback backend port. Hunting a fixed URL is the wrong shape; the artefact is an unexpected route in the appliance's own reverse-proxy config."
+        - "New JSP files under /workplace/ directories."
+        - "Unexpected tcpdump / packet-capture processes on the appliance, especially on TCP/389."
+        - "Unexpected child processes spawned by CouchDB, ctrl-service or NGINX Unit workers."
+      log_telemetry:
+        - "ctrl-service.log: hotfix-removal / remove_hotfix entries whose rollback name contains directory-traversal sequences. SonicWall's own product notice independently names this: 'ctrl-service.log – any entries with \"hotfix removal\" which include a path traversal name'."
+        - "Post-remediation: re-verify installed firmware version after patching and monitor for unexplained version regression — a resident actor has been observed rolling the patch back."
+      exposure_window: "Hunt scope is any internet-facing SMA 1000 that was unpatched between 2026-06-22 and the date the hotfix was applied."
+    credential_rotation_exact_list:
+      quote: "Rotate credentials. Reset all credentials processed or stored by the appliance: SMA administrator passwords. Directory-service bind credentials (LDAP, RADIUS, Active Directory). User passwords for accounts that authenticated during the exposure window. Certificates and API keys configured on the appliance. TOTP/MFA tokens and seeds."
+      publisher: "Resecurity"
+      items:
+        - "SMA administrator passwords"
+        - "Directory-service bind credentials (LDAP, RADIUS, Active Directory)"
+        - "User passwords for every account that authenticated during the exposure window"
+        - "Certificates and API keys configured on the appliance"
+        - "TOTP/MFA tokens and seeds"
+    rebuild_guidance:
+      quote: "If compromise is confirmed, the safest remediation is to factory-reset the appliance, reimage with patched firmware, and restore configuration from a known-good backup taken before the vulnerable firmware branches (12.4.3-03245 and 12.5.0-02283). Do not restore from backups that may include implanted persistence."
+      publisher: "Resecurity"
+      vendor_corroboration: "SonicWall's product notice independently states: 'Configuration backups should only be used if the backup pre-dates the installation of the December hotfix versions (12.4.3-03245 & 12.5.0-02283).'"
+    hardening_levers:
+      - "Remove direct internet exposure — front the appliance with a reverse proxy / zero-trust gateway; restrict inbound to trusted source ranges where the deployment allows."
+      - "Ensure management interfaces and internal appliance services are unreachable from untrusted networks."
+      - "Move LDAP and RADIUS to encrypted transports so appliance-level packet capture yields no cleartext directory credentials — this directly defeats the observed tcpdump credential-harvesting step."
+      - "File-integrity monitoring on /usr/bin, /usr/lib/python3.11/site-packages, /etc/init.d, /var/lib/unit and /workplace."
+      - "Forward appliance logs off-box to a SIEM (a root-level attacker can edit local logs)."
+
+  q6_contradictions_with_store:
+    verdict: >
+      NO contradiction with either published entry. Every technical detail in
+      the new reporting is consistent with, or an enrichment of, what the
+      store published on 2026-07-14 and 2026-07-18. There is, however, one
+      material COVERAGE OMISSION in the 2026-07-18 entry (see below), and one
+      escalation of a divergence the 07-18 entry already flagged honestly.
+    checks:
+      - claim: "CVE ids and pairing"
+        result: "consistent — same two ids, correctly paired in both store entries against the CISA KEV / SonicWall records."
+      - claim: "Affected and fixed firmware versions"
+        result: "consistent — SonicWall product notice matches the store byte for byte (12.4.3-03245/03387/03434, 12.5.0-02283/02624/02800; fixed 12.4.3-03453+, 12.5.0-02835+)."
+      - claim: "CVE-2026-15410 mechanism (AMC code injection vs. remove_hotfix path traversal)"
+        result: "not a contradiction — the store already carries both framings across its two entries; Resecurity aligns with the Volexity framing, Dark Reading with the SonicWall/CISA framing."
+      - claim: "Earliest compromise 2026-06-22"
+        result: "consistent — Resecurity repeats 2026-06-22 and dates the ROOTRUN drop to that day."
+      - claim: "Lateral-movement success"
+        result: >
+          The 2026-07-18 entry deliberately surfaced the Volexity/Rapid7
+          divergence and concluded a foothold is 'a demonstrated launch point
+          for internal movement, but not evidence that deep lateral movement
+          always succeeds'. That framing is now overtaken but not falsified:
+          Rapid7's Deroche states most cases were contained yet 'we now have an
+          active case in which ransomware deployment was achieved'. This is an
+          escalation of the same picture, not a contradiction.
+      - claim: "Actor attribution"
+        result: >
+          The 2026-07-14 entry's sourcing note said 'no actor attribution has
+          been published' — true on 2026-07-14. The 2026-07-18 entry attributes
+          to UTA0533 only. Both remain accurate as of their publication dates.
+    coverage_omission:
+      severity: "material — affects how this follow-up must be framed"
+      finding: >
+        Rapid7 attributed the exploitation to INC ransomware on 2026-07-17 and
+        Dark Reading published that attribution the same day
+        (2026-07-17T20:01Z) — hours BEFORE the store's 2026-07-18 run. The
+        2026-07-18 entry therefore missed a same-window actor attribution and a
+        significant post-patch mechanic (patch rollback by a resident actor).
+        Consequence for this follow-up: the in-window novelty is NOT "INC Ransom
+        is newly named"; the attribution is ~17 days old.
+
+# ---------------------------------------------------------------------------
+novelty_warning: >
+  Do NOT compose this as "INC Ransom emerges / is newly named as the actor" —
+  that framing would be factually wrong on novelty. Rapid7's INC attribution
+  dates to 2026-07-17 (Dark Reading, same day). The genuine in-window delta is
+  narrower: (a) Resecurity's 2026-08-01 escalation report with a first-hand IR
+  vantage; (b) a fresh named Rapid7 statement upgrading INC to the *dominant*
+  actor on the chain; (c) an accelerating leak-site victim wave with a country
+  list that includes Switzerland — UNCONFIRMED and not linked per-victim to the
+  chain; (d) a genuinely new extortion-stage social-engineering behaviour
+  (fake incident-response outreach by email and phone); (e) a post-patch
+  mechanic the store never captured (resident actor rolls the patch back).
+  Recommend publishing only if framed as an escalation/consolidation delta with
+  the Swiss element explicitly marked as an unverified criminal claim.
+
+items:
+  - title: "INC Ransom named dominant actor on the SonicWall SMA 1000 chain (CVE-2026-15409/-15410): leak-site wave, fake-IR extortion outreach, and patch-rollback persistence"
+    sources:
+      - { url: "https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html",
+          publisher: "The Hacker News", date: "2026-08-03", role: "primary",
+          note: "Sole publication venue for Rapid7's named on-record 'dominant threat actor' statement." }
+      - { url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain",
+          publisher: "Resecurity", date: "2026-08-01", role: "primary",
+          note: "Out-of-window (2026-08-01) but the underlying research primary; carries the hunt matrix, rotation list and the first-hand DFIR observations." }
+      - { url: "https://www.securityweek.com/recent-sonicwall-vulnerabilities-exploited-in-ransomware-attacks/",
+          publisher: "SecurityWeek", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://www.scworld.com/news/inc-ransomware-chains-two-sonicwall-sma-1000-zero-days-in-attacks",
+          publisher: "SC Media", date: "2026-08-03", role: "corroborating" }
+      - { url: "https://www.darkreading.com/vulnerabilities-threats/inc-ransomware-exploits-sonicwall-sma-zero-days",
+          publisher: "Dark Reading", date: "2026-07-17", role: "background",
+          note: "Establishes that Rapid7's INC attribution dates to 2026-07-17; carries the patch-rollback quote. Out-of-window — use as background only." }
+      - { url: "https://www.sonicwall.com/support/notices/product-notice-sma-1000-series-affected-by-multiple-vulnerabilities/kA1VN000001nv6D0AQ",
+          publisher: "SonicWall", date: "2026-07-14", role: "corroborating",
+          note: "Vendor product notice — confirms affected/fixed versions and the ctrl-service.log hotfix-removal detection anomaly." }
+    discovery_trace: "first seen at: main-agent follow-up tasking (verifier-flagged missed angle), URL https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html → primary: Resecurity, URL https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain → pivot: Rapid7 own blog, URL https://www.rapid7.com/blog/post/etr-rapid7-mdr-team-discovers-new-sonicwall-sma1000-zero-days-being-actively-exploited-cve-2026-15409-cve-2026-15410/ (INC absent — attribution is THN-exclusive) → pivot: Volexity own blog, URL https://www.volexity.com/blog/2026/07/17/proxying-to-compromise-sonicwall-secure-mobile-access-0-day-exploitation/ (INC absent — Resecurity's 'Volexity and Rapid7' framing unsupported) → pivot: Dark Reading, URL https://www.darkreading.com/vulnerabilities-threats/inc-ransomware-exploits-sonicwall-sma-zero-days (Rapid7 INC attribution already published 2026-07-17) → pivot: SecurityWeek, URL https://www.securityweek.com/recent-sonicwall-vulnerabilities-exploited-in-ransomware-attacks/ → pivot: SC Media, URL https://www.scworld.com/news/inc-ransomware-chains-two-sonicwall-sma-1000-zero-days-in-attacks → CVE ownership verified against CISA KEV via tools/fetch_source.py cisa-kev and SonicWall product notice, URL https://www.sonicwall.com/support/notices/product-notice-sma-1000-series-affected-by-multiple-vulnerabilities/kA1VN000001nv6D0AQ"
+    summary: |
+      Rapid7 has upgraded its assessment of who is exploiting the SonicWall SMA
+      1000 chain (CVE-2026-15409 pre-auth /wsproxy SSRF, CVSS 10.0, chained to
+      CVE-2026-15410 for root): its director of vulnerability intelligence
+      Douglas McKee states that INC Ransom "has emerged as the dominant threat
+      actor actively weaponizing this vulnerability chain", and that the
+      technical correlation with Volexity's UTA0533 cluster "indicates that a
+      single threat actor or coordinated group is responsible for discovering
+      and exploiting this zero-day vulnerability". That statement was given to
+      The Hacker News and appears nowhere on Rapid7's own blog; Rapid7 first
+      attributed the activity to INC on 2026-07-17, so the actor link itself is
+      not new — the "dominant" characterisation and the scale are. Volexity has
+      NOT publicly linked the cluster to INC, so Resecurity's "Volexity and
+      Rapid7 have since linked" phrasing overstates the attribution chain.
+      Resecurity, which has run DFIR for several victims, reports INC
+      accelerating through late July and publishing a wave of new leak-site
+      victims — private-sector and government organisations from Australia, the
+      US, UAE, Colombia and Switzerland — between 2026-07-17 and 2026-08-01.
+      Those listings are criminal claims only: no organisation is named, no
+      victim or authority has confirmed one, and Resecurity does not tie any
+      individual listing to the SonicWall chain. Two defender-relevant
+      mechanics stand out beyond the already-documented kill chain. First, a
+      resident actor can undo remediation: Rapid7 observed the actor "rolling
+      the newly applied patch back to a vulnerable state to maintain access",
+      so patch verification must be re-checked after the fact and a patched
+      appliance is not evidence of eviction. Second, at the extortion stage
+      victims are receiving unsolicited email and telephone outreach from
+      parties claiming to offer ransomware assistance, using a domain
+      registered shortly after the intrusion through a registrar accepting
+      cryptocurrency — a recovery-scam / pressure layer bolted onto the
+      extortion, which changes who in the victim organisation needs briefing.
+    region_nexus: "global; leak-site listings claimed to include Swiss private-sector and government organisations (UNCONFIRMED criminal claim, no named victim); Europe-wide exposure wherever SMA 1000 terminates remote access"
+    primary_sector_nexus: "direct — government organisations are named in the claimed victim geography, and SMA 1000 is a common public-sector remote-access concentrator; note the sector claim is itself unconfirmed"
+    sector: "public-sector, healthcare, finance, energy, telco"
+    cves: [CVE-2026-15409, CVE-2026-15410]
+    techniques: [T1190, T1133, T1068, T1055, T1505.003, T1090.003, T1040, T1037.004, T1539, T1111, T1601.001, T1657, T1486]
+    techniques_rationale:
+      T1190: "pre-auth /wsproxy WebSocket-upgrade request against the internet-facing appliance (source-stated mechanism)."
+      T1133: "the SMA 1000 is the remote-access service abused as the entry vector."
+      T1068: "remove_hotfix path traversal executes an attacker-staged script as root."
+      T1055: "KNUCKLEBALL injects JAR agents into the legitimate SonicWall JVM via the Java Attach API."
+      T1505.003: "ORANGETAIL Behinder-like Java web shell served through rewritten NGINX Unit routes."
+      T1090.003: "Suo5 HTTP proxy used for covert tunnelling through the appliance."
+      T1040: "tcpdump capture of unencrypted LDAP on TCP/389 to harvest directory credentials."
+      T1037.004: "persistence via modification of /etc/init.d/workplace."
+      T1539: "Rapid7 reports extraction of active session databases from the appliance."
+      T1111: "Rapid7 reports extraction of TOTP MFA seed configurations."
+      T1601.001: "MY MAPPING, not source-provided — Rapid7 describes the actor rolling a newly applied patch back to a vulnerable state, i.e. modifying the network appliance's system image to weaken defenses. Composer should verify before carrying."
+      T1657: "extortion is the stated objective; the fake incident-response email/phone outreach is a monetisation pressure tactic (Resecurity: 'pressure tactics')."
+      T1486: "ransomware deployment achieved in at least one Rapid7 case."
+    affected_products: ["SonicWall Secure Mobile Access (SMA) 1000"]
+    entity_keys: ["actor:inc-ransom", "actor:uta0533", "tool:sonicwall-sma-uta0533-toolset"]
+    new_entities: []
+    relation_suggestions:
+      - { subject: "actor:inc-ransom", object: "actor:uta0533",
+          basis: "Rapid7 (Douglas McKee, to The Hacker News, 2026-08-03): 'This strong technical correlation indicates that a single threat actor or coordinated group is responsible for discovering and exploiting this zero-day vulnerability' — an overlap/correlation claim between the INC operation and Volexity's UTA0533 cluster, NOT an identity claim. Suggest overlaps-with, never merge; Volexity itself has published no INC link." }
+      - { subject: "actor:inc-ransom", object: "tool:sonicwall-sma-uta0533-toolset",
+          basis: "Resecurity (2026-08-01): 'INC Ransomware has been observed leveraging this chain as an entry point into enterprise networks' and lists ROOTRUN/KNUCKLEBALL/Suo5/ORANGETAIL as the deployed toolkit — but Resecurity attributes the toolkit deployment itself to UTA0533. Weak/indirect; include only if the composer accepts the correlation framing." }
+    verification: MULTI-SOURCE
+    verification_note: >
+      Multi-source for the attribution and the escalation (Rapid7 named
+      statement via THN + Resecurity + SecurityWeek + SC Media, three of them
+      in-window). SINGLE-SOURCE and uncorroborated for the Swiss/victim-geography
+      element (Resecurity only — the other outlets reproduce the same sentence,
+      which is one source, not three).
+    confidence: MEDIUM
+    confidence_note: >
+      HIGH on the vulnerability facts, the chain mechanics, the hunt/rotation
+      guidance and the existence of Rapid7's INC attribution. MEDIUM overall
+      because the headline "dominant actor" claim is a single vendor's hedged
+      assessment with no published evidence base, the Swiss element is an
+      unverified leak-site claim, and the primary research post is out of
+      window.
+    novelty: update-of:2026-07-18/sonicwall-sma1000-uta0533-exploitation-kill-chain
+    suggested_classification: { reliability: B, credibility: 2 }
+    classification_note: >
+      B for the source mix (Rapid7 and Resecurity are original-research /
+      first-hand IR; THN, SecurityWeek and SC Media are corroborating
+      outlets). Credibility 2 — logical and consistent with prior reporting but
+      the load-bearing new claims are not independently confirmed; the Swiss
+      victim element alone would rate no better than 4 (doubtful,
+      uncorroborated criminal claim) and must not inherit the item's 2.
+    evidence:
+      - quote: "This strong technical correlation indicates that a single threat actor or coordinated group is responsible for discovering and exploiting this zero-day vulnerability."
+        attribution: "Douglas McKee, Rapid7 (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html"
+      - quote: "More recently, INC Ransomware has emerged as the dominant threat actor actively weaponizing this vulnerability chain."
+        attribution: "Douglas McKee, Rapid7 (via The Hacker News)"
+        source_url: "https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html"
+      - quote: "The new victims listed on INC Ransomware's DLS between July 17, 2026 and August 1, 2026 include private sector and government organizations from Australia, the US, UAE, Colombia, Switzerland, and other countries."
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+      - quote: "many of the new victims received emails, as well as phone calls from unknown organizations claiming to assist with ransomware issues"
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+      - quote: "Setuid binaries, Python injectors, modified init scripts, and NGINX Unit configuration changes can survive reboots and may persist after a superficial firmware upgrade if not remediated. A patched appliance that still contains ROOTRUN or KNUCKLEBALL remains compromised."
+        attribution: "Resecurity"
+        source_url: "https://www.resecurity.com/blog/article/from-wsproxy-to-root-inc-ransomware-and-sonicwall-sma-exploit-chain"
+      - quote: "We observed the threat actor maintaining persistence and rolling the newly applied patch back to a vulnerable state to maintain access. A comprehensive forensic review of the firewall is required to ensure complete eviction."
+        attribution: "Brett Deroche, Rapid7 (via Dark Reading)"
+        source_url: "https://www.darkreading.com/vulnerabilities-threats/inc-ransomware-exploits-sonicwall-sma-zero-days"
+      - quote: "Now, Resecurity says that, of the various threat actors chaining CVE-2026-15409 and CVE-2026-15410 for SMA1000 compromise, the INC Ransomware gang has emerged as the most active one."
+        attribution: "SecurityWeek"
+        source_url: "https://www.securityweek.com/recent-sonicwall-vulnerabilities-exploited-in-ransomware-attacks/"
+    ioc_warning: >
+      The fetched sources contain IOCs that MUST NOT reach an entry: file
+      hashes for ROOTRUN, the fake-negotiator domain / email address / phone
+      number, the caller pseudonym, specific User-Agent strings and URI
+      parameter values, and a public PoC repository URL. Describe the
+      behaviours only.
+    extended_notes: |
+      Composition guidance for the main agent:
+
+      1. FRAME AS ESCALATION, NOT DISCOVERY. The INC attribution is 17 days
+         old (Rapid7 → Dark Reading, 2026-07-17). If published, this is an
+         update_of the 2026-07-18 entry whose delta is the dominance
+         characterisation, the victim-wave scale, the recovery-scam layer and
+         the patch-rollback mechanic.
+      2. THE SWISS ELEMENT IS THE WEAKEST LINK. It is one sentence from one
+         vendor characterising criminal leak-site postings, with no named
+         organisation, no confirmation, and no stated link between any Swiss
+         listing and the SonicWall chain. Recommended handling: either omit it
+         entirely, or state it as "INC's leak site listed private-sector and
+         government organisations from several countries including
+         Switzerland during the window; none is named and none is confirmed,
+         and Resecurity does not link individual listings to this exploit
+         chain." Do not let it drive the headline, the regions field, or a
+         Swiss-nexus relevance argument.
+      3. THE STRONGEST DEFENDER VALUE is the patch-rollback mechanic plus the
+         explicit credential-rotation scope. The 2026-07-18 entry already told
+         readers to reset passwords and TOTP seeds; the additions worth
+         carrying are the full rotation scope (bind credentials for
+         LDAP/RADIUS/AD, certificates and API keys on the appliance, every
+         account that authenticated in the exposure window) and the fact that
+         patch state must be RE-verified because the actor rolls it back.
+      4. THE RECOVERY-SCAM LAYER is genuinely new and is a briefing item for
+         non-technical staff: post-incident inbound offers of "help" with a
+         ransomware problem should be treated as adversary contact.
+      5. IF THE MAIN AGENT DECIDES NOT TO PUBLISH, the defensible reasons are:
+         the primary is out of window, the actor link is not new, and the only
+         org-nexus hook is an unverified criminal claim. That is a sound
+         no-publish call. If it does publish, priority high (not critical —
+         no new immediate action beyond the already-published patch/assume-
+         compromise direction).
+    borderline: true
+    borderline_reason: >
+      Genuine in-window developments exist and three in-window corroborating
+      outlets carry them, but the research primary is out of window, the
+      actor attribution is 17 days old rather than new, and the only Swiss /
+      org-nexus hook is an unconfirmed leak-site claim. Publishable as a
+      tightly-scoped escalation delta; equally defensible to drop.
+
+watchlist_sweep:
+  duty: none
+  note: "No watchlists configured in the org profile; no sweep performed."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: sonicwall-psirt
+    reason: >
+      https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008 returned a
+      729-byte JS shell via the bridge (known SPA; not a fetch failure).
+      Recipe note for sources.json: the server-rendered equivalent that DOES
+      carry the affected/fixed version matrix and the ctrl-service.log
+      detection guidance is the product notice at
+      https://www.sonicwall.com/support/notices/product-notice-sma-1000-series-affected-by-multiple-vulnerabilities/kA1VN000001nv6D0AQ
+      — worth recording as the preferred SonicWall citation URL.
+  - source_id: jina-reader-pool
+    reason: >
+      Two jina reader credentials reported HTTP 402 balance exhausted during
+      this run ("balance exhausted (HTTP 402) — rotating to the next
+      credential"); a later credential succeeded. Operator signal only — no
+      content was lost. Worth checking `fetch_source.py jina-usage`.
+
+fetch_failures: []

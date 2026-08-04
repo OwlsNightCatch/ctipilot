@@ -1,0 +1,113 @@
+domain: S1
+run_id: 2026-08-04T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-04T04:14:17Z
+ended_at: 2026-08-04T04:27:52Z
+duration_seconds: 815
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 9
+  bridge_fetches: 28
+
+items:
+  - title: "Cisco ships permanent hotfix for critical Secure FMC authentication-bypass flaw (CVE-2026-20079, CVSS 10.0) — advisory confirms it chains with the actively exploited static-credential bug"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-onprem-fmc-authbypass-5JPp45V2", publisher: "Cisco PSIRT", date: "2026-08-03", role: primary }
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh", publisher: "Cisco PSIRT", date: "2026-08-03", role: corroborating }
+      - { url: "https://www.vulncheck.com/blog/cisco-fmc-auth-bypass-cve-2026-20079", publisher: "VulnCheck", date: "2026-03-26", role: corroborating }
+      - { url: "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", publisher: "CISA KEV Catalog", date: "2026-08-03", role: corroborating }
+    discovery_trace: >
+      first seen at: cisco-psirt (RSS), URL https://sec.cloudapps.cisco.com/security/center/psirtrss20/CiscoSecurityAdvisory.xml
+      (item "Cisco Secure Firewall Management Center Software Authentication Bypass Vulnerability", published 2026-08-03 17:27:46 UTC)
+      → primary: Cisco Security Advisory, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-onprem-fmc-authbypass-5JPp45V2
+      → pivot: sibling/chaining Cisco Security Advisory (same-day update), URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh
+      → pivot: WebSearch ("CVE-2026-20079 Cisco Secure Firewall Management Center authentication bypass") → root-cause writeup, URL https://www.vulncheck.com/blog/cisco-fmc-auth-bypass-cve-2026-20079
+      → pivot: CISA KEV catalog cross-check (bridge: cisa-kev), URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CVE-2026-20079 absent; sibling CVE-2026-20131 present since 2026-03-19)
+    summary: |
+      CVE-2026-20079 is a CVSS 3.1 10.0 (AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H) authentication-bypass vulnerability
+      in the web interface of Cisco Secure Firewall Management Center (FMC) Software and Cisco Security Cloud
+      Control (SCC) Firewall Management. Cisco first published this advisory on 2026-03-04 with no patch and no
+      workaround — only a forensic indicator-of-compromise check. On 2026-08-03 the advisory (now version 2.3,
+      marked "Final") shipped the FIRST permanent hot fixes for every affected FMC release train (7.0, 7.2, 7.4,
+      7.6, 7.7, 10.0), closing a roughly five-month window during which the only defensive option was detection,
+      not prevention. Independent root-cause analysis (VulnCheck, published while the flaw was still unpatched)
+      traces the bug to a static `csm_processes` machine-user session that Cisco's own startup process creates
+      in the `sfsnort.sessions` database at boot; if no administrator authenticates after boot, an unauthenticated
+      remote attacker who can reach the web UI can upgrade that session using a hardcoded `report:snortrules`
+      credential, obtain a CSRF token (`sf_action_id`), then chain the `sajaxintf.cgi` file-write endpoint with
+      `pjb.cgi`'s `upgradeReadinessCall` function so the FMC processes an attacker-supplied Makeself script as a
+      licensed upgrade package — executed as root via `SF::System::Wrappers::RunCmd`. Cisco PSIRT states it is
+      "not aware of any public announcements or malicious use" of CVE-2026-20079 specifically (it is NOT on the
+      CISA KEV catalog), but the same-day advisory update for the previously-covered static low-privilege
+      credential flaw on the same product (CVE-2026-20316, KEV-listed and confirmed exploited) explicitly raises
+      that bug's Security Impact Rating from Medium to High "because this vulnerability can be used with other
+      Cisco Secure FMC Software vulnerabilities to elevate privileges" — i.e. Cisco itself documents that the two
+      flaws are designed to chain into full compromise. A third sibling, CVE-2026-20131 (FMC/SCC deserialization
+      RCE), has been on CISA KEV since 2026-03-19 with "Known" ransomware-campaign use. Cloud-delivered FMC
+      (cdFMC), Firewall Device Manager (FDM), and Secure Firewall ASA/FTD Software are confirmed NOT affected by
+      CVE-2026-20079; the SaaS-delivered SCC Firewall Management variant was already patched server-side by
+      Cisco with no customer action required.
+    region_nexus: "global; Cisco Secure FMC is a widely deployed firewall-fleet management plane, including in Swiss/European government and critical-infrastructure networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: ["CVE-2026-20079"]
+    techniques: ["T1190", "T1068", "T1078.001"]
+    affected_products: ["Cisco Secure Firewall Management Center (FMC)", "Cisco Security Cloud Control (SCC) Firewall Management"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in the web interface of Cisco Secure Firewall Management Center (FMC) Software could allow an unauthenticated, remote attacker to bypass authentication and execute script files on an affected device to obtain root access to the underlying operating system."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-onprem-fmc-authbypass-5JPp45V2"
+      - quote: "The Cisco PSIRT is not aware of any public announcements or malicious use of the vulnerability that is described in this advisory."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-onprem-fmc-authbypass-5JPp45V2"
+      - quote: "Cisco has assigned this security advisory a Security Impact Rating (SIR) of High rather than Medium as the score indicates. The reason is that this vulnerability can be used with other Cisco Secure FMC Software vulnerabilities to elevate privileges."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-fmc-static-cred-BET3Cjh"
+      - quote: "The `csm_processes` session ID could be upgraded into a UI session via hardcoded credentials with the report user, which then uses the `csm_processes` session UI permissions to allow authentication."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/cisco-fmc-auth-bypass-cve-2026-20079"
+    extended_notes: |
+      DEDUP CAUTION for the main agent: CVE-2026-20079 was originally disclosed by Cisco on 2026-03-04 — this
+      predates the 14-day prior_coverage.json window handed to this sub-agent, so I cannot confirm from the
+      supplied dedup context whether this pipeline already published an entry for it back in March/April 2026.
+      Please cross-check state/cves_seen.json (store-wide index) before treating this as `novelty: new`; if a
+      March/April entry exists, this item is better framed as `update-of:<that entry>` with the single material
+      delta being: Cisco shipped the first-ever permanent fix on 2026-08-03 (hotfix files named per FMC release
+      train), and Cisco's SAME-DAY update to the CVE-2026-20316 advisory newly documents the explicit chaining
+      relationship between the two bugs. CVE-2026-20316 itself IS already in prior_coverage.json
+      (2026-07-30/cisco-secure-fmc-cve-2026-20316-static-credential-exploited) — I deliberately did not add
+      CVE-2026-20316 to this item's own `cves[]` to avoid a CVE-level duplicate; the chaining relationship is
+      carried in prose/evidence only. Detection hook (shared by both advisories): on the FMC appliance in
+      `expert` mode, run `zgrep "package_info.*license" /var/log/messages*` — a line referencing
+      `/var/tmp/license.tmp` indicates the exploitation chain reached the package-install step. Because
+      exploitation of CVE-2026-20079 is realistically only feasible in the window right after boot before any
+      admin authenticates (per VulnCheck), correlate any unauthenticated FMC web-UI session activity against
+      device boot/uptime logs. Hardening: apply the named hot fixes (no workaround exists otherwise); keep the
+      FMC management interface off the public internet (Cisco notes this reduces the attack surface); SCC
+      Firewall Management customers should confirm they received the automatic server-side fix.
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cisa-directives
+    reason: "Bridge fetch (`cisa page https://www.cisa.gov/news-events/directives`) succeeded (200) but the listing carries no per-item publish dates, and the featured directives (ED 25-03, ED 26-03, BOD 26-04, BOD 26-02) are all pre-existing/already-covered items with no visible in-window update. Rotation-priority source attempted per instructions; no new signal recovered."
+  - source_id: siemens-productcert-csaf
+    reason: "CSAF directory https://cert-portal.siemens.com/productcert/csaf/ still 403s every UA (documented limitation); the working per-advisory recipe requires a known ssa-NNNNNN id, and no fresh Siemens ICS CVE surfaced via CISA's ICS-advisory feed this run to supply one. Not logged as a fetch failure per source note (expected 403, not new)."
+  - source_id: depthfirst
+    reason: "WebFetch of the homepage returned only three undated article teasers (GitLab RCE / dfs-large1 research); no visible publication date to confirm in-window status, and the /blog path was not independently drillable within budget. No in-window item confirmed either way."
+  - source_id: chromereleases
+    reason: "RSS/Atom feed fetch (jina fallback) returned 0 parsed items; cross-checked via direct WebFetch of the blog homepage instead — confirmed no Stable Channel Update for Desktop posts in the 2026-07-30–2026-08-04 range (only Beta/Dev/ChromeOS-LTS posts), so the empty feed did not hide a security release."
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "Org profile configures NO product watchlist — sweep is a no-op per spawn-message note; general coverage rules applied unchanged."
