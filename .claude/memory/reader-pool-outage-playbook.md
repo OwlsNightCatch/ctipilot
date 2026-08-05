@@ -25,3 +25,26 @@ The one that matters most: **the CISA advisories and directives listings have no
 ## Related: probe-target mismatches masquerading as recipe breaks
 
 `source_health.py` probes `url`. When a publisher blocks its *directory index* while the documented per-item recipe works, the sweep reports a `needs-demote` that does not exist. Fixed 2026-08-02 by adding an optional **`probe_url`** field that overrides the probe target (`source_health.py` honours it; `check_run.py` requires fields rather than rejecting extras, so adding one is safe). Worked example: `siemens-productcert-csaf` — the CSAF directory and all four CSAF discovery files (`changes.csv`, `index.txt`, `.well-known/csaf/provider-metadata.json`, the ROLIE feed) 403 every UA, while `url .../csaf/ssa-NNNNNN.json` returns the full document. Pointing `probe_url` at a stable per-advisory document turned a recurring false flag into `bridge-ok`.
+
+## 2026-08-05 — the pool was NOT exhausted, and three sub-agents believed it was
+
+A different failure from the 2026-08-02 outage, and more insidious: the pool held **7 keys, 5 live
+with 37M tokens**, but the first two in spend order were exhausted. Dead-key state was
+process-scoped, and every sub-agent shells out to a fresh `fetch_source.py` process — so every
+single invocation re-probed both dead keys, printed a "balance exhausted" line for each, then
+rotated to a live key and **succeeded**. Three of four research sub-agents read those two warnings
+as a dead transport and abandoned the reader rung for the entire run. Cost: two rotation-priority
+sources unswept (`prodaft`, `ccn-cert-es`), a Chrome stable-post body unread, and no recovery
+attempt on a CERT-PL 403.
+
+**Fixed in `tools/fetch_source.py`:** exhausted/revoked keys are now cached across processes
+(`<JINA_CACHE_DIR>/dead-keys.json`, sha256 key ids only — never the credential) with a 6 h TTL
+(`JINA_DEAD_KEY_TTL`), so a fresh invocation skips a known-dead key instead of re-probing it. The
+TTL preserves recovery (a topped-up key is re-probed once the entry ages out), and if *every* key is
+inside its TTL the full pool is re-probed rather than dropping to the anonymous tier — a stale cache
+entry can never lock the pool out. The rotation notice now says explicitly that it is not a failure
+and that the fetch continues.
+
+**Diagnostic rule:** `jina-usage` reports the whole pool; a sub-agent's stderr reports only the keys
+it happened to touch. Never conclude "the pool is exhausted" from a sub-agent's report — check
+`jina-usage` first. Rotation warnings followed by content mean the ladder worked.

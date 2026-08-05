@@ -150,7 +150,22 @@ TRANSPORT_BLOCKED_HANDLED: frozenset = frozenset({
 # The reader is the universal fallback; a host only belongs here if the reader
 # fails on it as well. Add one ONLY after confirming direct AND jina AND bridge
 # all fail (transport block, not death).
-TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset()
+TRANSPORT_BLOCKED_UNREACHABLE: frozenset = frozenset({
+    # Hosts verified unreachable by EVERY transport — direct browser-UA fetch,
+    # the bridge's structured recipes, AND the jina reader (which fetches from
+    # its own egress and runs page JS, so it normally defeats anti-bot/geo
+    # gates). Membership is earned by a probe, never assumed, and the evidence
+    # goes in the source's `notes`. These keep `status: active` — a 403 is a
+    # transport block, never a content-death signal — and are reported as
+    # handled so they stop churning as unsolved every sweep.
+    #
+    # censys-blog (2026-08-05): censys.com challenge-gates the whole origin.
+    # The documented feed (/feed/), the blog index (/blog, /resources/blog/)
+    # and /sitemap.xml all return 403 direct and relay an upstream block through
+    # the reader; the legacy www.censys.io/blog/rss.xml is 404. Re-probe each
+    # run and drop it from this set the moment the origin relaxes.
+    "censys-blog",
+})
 
 
 def _ip_blocked(addr: str) -> bool:

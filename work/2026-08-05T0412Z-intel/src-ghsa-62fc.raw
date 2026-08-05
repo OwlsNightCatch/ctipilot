@@ -1,0 +1,178 @@
+Title: `allowCrossNamespace=false` bypass via `@kubernetescrd` TraefikService backendRef
+
+URL Source: https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq
+
+Markdown Content:
+There is a medium severity vulnerability in Traefik's Kubernetes CRD provider. When `providers.kubernetesCRD.allowCrossNamespace` is disabled — the default — cross-namespace `@kubernetescrd` references are rejected for middlewares, TLS options and HTTP/TCP ServersTransports, but the same restriction was not applied to `TraefikService` backend references resolved by the service resolver. A tenant confined by RBAC to a single namespace can therefore bind its own router to a `TraefikService` owned by another namespace and expose or reroute that namespace's backend, defeating the namespace isolation `allowCrossNamespace=false` is meant to enforce. Traefik v2 releases and the unmaintained v3 minor lines below v3.6 are affected and will not receive a patch on their own line; the remedy for those users is upgrading to a maintained, patched release.
+
+Original Description
+### Summary
+
+When `providers.kubernetesCRD.allowCrossNamespace=false` (the default), Traefik correctly rejects cross-namespace `@kubernetescrd` references for middlewares, TLS options, and HTTP/TCP `ServersTransport`, but it does not apply the same restriction to service (`TraefikService`) backendRefs. As a result, a Kubernetes tenant who is confined by RBAC to their own namespace can bind their own router to a `TraefikService` owned by another namespace simply by referencing it as `<victim-namespace>-<name>@kubernetescrd`, defeating the namespace-isolation boundary that `allowCrossNamespace=false` is meant to enforce.
+
+This is the service-resolver sibling of the cross-namespace isolation family that Traefik has been fixing one resolver at a time (`df00d82f` / [CVE-2026-41174](https://github.com/advisories/GHSA-xhjw-95fp-8vgq "CVE-2026-41174") for Chain middlewares, and `67501cbe` for TCP `ServersTransport`, which shipped in v3.7.7 only four days before the analyzed commit). The `TraefikService` resolver in `configBuilder.nameAndService` was never given the guard its sibling resolvers received.
+
+### Details
+
+### Root cause
+
+`nameAndService` only performs the same-namespace check (`isNamespaceAllowed`) inside the branch that handles names without an `@` separator. For names that contain an `@` separator (that is, `@kubernetescrd` cross-namespace references) it applies only the `crossProviderNamespaces` allowlist check, and that check returns `true` by default because a `nil` allowlist means "unrestricted". It never applies the `!allowCrossNamespace && strings.HasSuffix(name, "@kubernetescrd")` rejection that the sibling resolvers all apply, so `allowCrossNamespace=false` is effectively never consulted for `@kubernetescrd` service references.
+
+### Vulnerable code
+
+// pkg/provider/kubernetes/crd/kubernetes_http.go:662-695 — nameAndService (VULNERABLE)
+func (c configBuilder) nameAndService(ctx context.Context, parentNamespace string, service traefikv1alpha1.LoadBalancerSpec) (string, *dynamic.Service, error) {
+	svcCtx := log.Ctx(ctx).With().Str(logs.ServiceName, service.Name).Logger().WithContext(ctx)
+
+	if !strings.Contains(service.Name, providerNamespaceSeparator) { // 665: only names WITHOUT "@"
+		service = *service.DeepCopy()
+		service.Namespace = namespaceOrParentNamespace(service.Namespace, parentNamespace)
+		if !isNamespaceAllowed(c.allowCrossNamespace, parentNamespace, service.Namespace) { // 669
+			return "", nil, fmt.Errorf("service %s/%s not in the parent resource namespace %s", ...)
+		}
+	}
+
+	// 674: for "@"-names, the ONLY gate is crossProviderNamespaces, which defaults to allow-all (nil).
+	if !isCrossProviderNamespaceAllowed(c.crossProviderNamespaces, parentNamespace) && strings.Contains(service.Name, providerNamespaceSeparator) {
+		return "", nil, fmt.Errorf("service %q reference is not allowed: ...", service.Name)
+	}
+	// ^-- MISSING: no `!c.allowCrossNamespace && strings.HasSuffix(service.Name, "@"+ProviderName)` rejection.
+
+	switch service.Kind {
+	case "TraefikService":
+		return fullServiceName(svcCtx, service, intstr.FromInt(0)), nil, nil // 690: returns the cross-namespace reference
+	...
+	}
+}
+
+For comparison, the sibling resolver used for middleware and TLS references does carry the guard:
+
+// pkg/provider/kubernetes/crd/kubernetes.go:1653-1668 — resolveReference (CORRECT)
+func resolveReference(ctx context.Context, parentNs, ns, name string, crossProviderNamespaces []string, allowCrossNamespace bool) (string, error) {
+	if strings.Contains(name, providerNamespaceSeparator) {
+		if !allowCrossNamespace && strings.HasSuffix(name, providerNamespaceSeparator+ProviderName) {
+			return "", errors.New("when allowCrossNamespace is disabled, @kubernetescrd references are disallowed") // 1656 — THE GUARD
+		}
+		...
+	}
+	...
+}
+
+The same guard is also present at `pkg/provider/kubernetes/crd/kubernetes_http.go:500` (`makeServersTransportKey`, HTTP) and `pkg/provider/kubernetes/crd/kubernetes_tcp.go:316` (`makeTCPServersTransportKey`, TCP, added by commit `67501cbe`). Only the service resolver `nameAndService` lacks it.
+
+### Data flow
+
+An `IngressRoute` created by a tenant in namespace `attacker` declares a route service `{ name: "victim-backend@kubernetescrd", kind: TraefikService }`; the tenant controls this reference string. In `nameAndService`, because the name contains `@`, the same-namespace check at line 669 is skipped, and `isCrossProviderNamespaceAllowed(nil, "attacker")` returns `true` under the default `nil` allowlist, so no rejection fires. `fullServiceName` then resolves the reference to the victim namespace's `TraefikService`, and the attacker's HTTP router is generated and bound to the victim's backend. At runtime the attacker's `Host(...)` route forwards to namespace `victim`'s backend pods.
+
+### Default reachability
+
+`AllowCrossNamespace` defaults to `false` (`pkg/provider/kubernetes/crd/kubernetes.go:57`, never set to `true` by any `SetDefaults`), so the isolation this bug bypasses is on by default. `CrossProviderNamespaces` defaults to `nil`, and `isCrossProviderNamespaceAllowed` returns `true` for a `nil` allowlist (`pkg/provider/kubernetes/crd/kubernetes.go:1645-1651`), so the only check `nameAndService` applies to an `@`-name is inert by default. The attacker needs only namespace-scoped RBAC to create an `IngressRoute` or `TraefikService` in their own namespace (the standard hard-multi-tenant Traefik setup) and knowledge of the target `TraefikService`'s namespace and name.
+
+### PoC
+
+A table-style harness was added to the CRD provider package. It defines a victim `TraefikService` (`backend` in namespace `victim`, backed by a real endpoint) and an attacker `IngressRoute` (namespace `attacker`) that references it via `victim-backend@kubernetescrd`, plus a control route that references a victim `Middleware` via `victim-mw@kubernetescrd`. The control route is given a valid local service so that the only reason it could be dropped is the cross-namespace middleware guard. The provider is run with `AllowCrossNamespace: false` and `CrossProviderNamespaces: nil` (both defaults).
+
+```
+$ go test -run TestPoC_CrossNamespaceServiceBypass ./pkg/provider/kubernetes/crd/ -v
+
+HTTP routers:  [attacker-attacker-svc-route-7df4381938699bd21215]
+HTTP services: [victim-whoami-victim-80 victim-backend]
+CONTROL OK: cross-ns MIDDLEWARE ref (victim-mw@kubernetescrd) rejected -> router dropped
+BYPASS CONFIRMED: attacker router bound to cross-ns service "victim-backend" despite AllowCrossNamespace=false
+```
+
+The control route (middleware reference) is dropped even though it has a valid local service, confirming that the isolation control is active for middlewares; the service route survives and its `Service` field resolves to `victim-backend`, with the victim's services pulled into the generated configuration and reachable through the attacker's router.
+
+The harness also runs two corroborating cases. With `AllowCrossNamespace=false` and `CrossProviderNamespaces=["someotherns"]` (an allowlist that excludes the attacker), the service reference is blocked, which proves that the only gate ever applied to an `@kubernetescrd` service name is `crossProviderNamespaces` (inert by default) and that `allowCrossNamespace=false` is never consulted. With `AllowCrossNamespace=true`, both the service and middleware references are accepted, as expected when isolation is intentionally disabled.
+
+### Impact
+
+In a multi-tenant cluster relying on `allowCrossNamespace=false` for namespace isolation, a tenant confined to their own namespace can attach their own router (their own `Host` rule and entrypoint) to another tenant's `TraefikService` backend, exposing an otherwise internal-only service on the data plane under the attacker's hostname, and can route or mirror traffic to another namespace's backend that they should not be able to reference.
+
+Links/Buttons:
+- [Skip to content](https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq#start-of-content)
+- [](https://github.com/ttzero25)
+- [Sign in](https://github.com/login?return_to=https%3A%2F%2Fgithub.com%2Ftraefik%2Ftraefik%2Fsecurity%2Fadvisories%2FGHSA-62fc-8686-hfmq)
+- [GitHub CopilotWrite better code with AI](https://github.com/features/copilot)
+- [GitHub Copilot appDirect agents from issue to merge](https://github.com/features/ai/github-app)
+- [MCP RegistryIntegrate external tools](https://github.com/mcp)
+- [ActionsAutomate any workflow](https://github.com/features/actions)
+- [CodespacesInstant dev environments](https://github.com/features/codespaces)
+- [IssuesPlan and track work](https://github.com/features/issues)
+- [Code ReviewManage code changes](https://github.com/features/code-review)
+- [Code QualityEnforce quality at merge](https://github.com/features/code-quality)
+- [GitHub Advanced SecurityFind and fix vulnerabilities](https://github.com/security/advanced-security)
+- [Code securitySecure your code as you build](https://github.com/security/advanced-security/code-security)
+- [Secret protectionStop leaks before they start](https://github.com/security/advanced-security/secret-protection)
+- [Why GitHub](https://github.com/why-github)
+- [Documentation](https://docs.github.com/)
+- [Blog](https://github.blog/)
+- [Changelog](https://github.blog/changelog)
+- [Marketplace](https://github.com/marketplace)
+- [View all features](https://github.com/features)
+- [Enterprises](https://github.com/enterprise)
+- [Small and medium teams](https://github.com/team)
+- [Startups](https://github.com/enterprise/startups)
+- [Nonprofits](https://github.com/solutions/industry/nonprofits)
+- [App Modernization](https://github.com/solutions/use-case/app-modernization)
+- [DevSecOps](https://github.com/solutions/use-case/devsecops)
+- [DevOps](https://github.com/resources/articles?topic=devops)
+- [CI/CD](https://github.com/solutions/use-case/ci-cd)
+- [View all use cases](https://github.com/solutions/use-case)
+- [Healthcare](https://github.com/solutions/industry/healthcare)
+- [Financial services](https://github.com/solutions/industry/financial-services)
+- [Manufacturing](https://github.com/solutions/industry/manufacturing)
+- [Government](https://github.com/solutions/industry/government)
+- [View all industries](https://github.com/solutions/industry)
+- [View all solutions](https://github.com/solutions)
+- [AI](https://github.com/resources/articles?topic=ai)
+- [Software Development](https://github.com/resources/articles?topic=software-development)
+- [Security](https://github.com/security)
+- [View all topics](https://github.com/resources/articles)
+- [Customer stories](https://github.com/customer-stories)
+- [Events & webinars](https://github.com/resources/events)
+- [Ebooks & reports](https://github.com/resources/whitepapers)
+- [Business insights](https://github.com/solutions/executive-insights)
+- [GitHub Skills](https://skills.github.com/)
+- [Customer support](https://support.github.com/)
+- [Community forum](https://github.com/orgs/community/discussions)
+- [Trust center](https://github.com/trust-center)
+- [Partners](https://github.com/partners)
+- [View all resources](https://github.com/resources)
+- [GitHub SponsorsFund open source developers](https://github.com/open-source/sponsors)
+- [Security Lab](https://securitylab.github.com/)
+- [Maintainer Community](https://maintainers.github.com/)
+- [Accelerator](https://github.com/open-source/accelerator)
+- [GitHub Stars](https://stars.github.com/)
+- [Archive Program](https://archiveprogram.github.com/)
+- [Topics](https://github.com/topics)
+- [Trending](https://github.com/trending)
+- [Collections](https://github.com/collections)
+- [Copilot for BusinessEnterprise-grade AI features](https://github.com/features/copilot/copilot-business)
+- [Premium SupportEnterprise-grade 24/7 support](https://github.com/enterprise/premium-support)
+- [Pricing](https://github.com/pricing)
+- [Sign up](https://github.com/signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Frepos%2Fadvisories%2Fshow&source=header-repo&source_repo=traefik%2Ftraefik)
+- [traefik](https://github.com/traefik/traefik)
+- [Notifications](https://github.com/login?return_to=%2Ftraefik%2Ftraefik)
+- [Issues 685](https://github.com/traefik/traefik/issues)
+- [Pull requests 194](https://github.com/traefik/traefik/pulls)
+- [Actions](https://github.com/traefik/traefik/actions)
+- [Projects](https://github.com/traefik/traefik/projects)
+- [Security and quality 63](https://github.com/traefik/traefik/security)
+- [Insights](https://github.com/traefik/traefik/pulse)
+- [Advisories](https://github.com/traefik/traefik/security/advisories)
+- [GHSA-62fc-8686-hfmq](https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq)
+- [rtribotte](https://github.com/rtribotte)
+- [Go](https://github.com/advisories?query=ecosystem%3Ago)
+- [https://github.com/traefik/traefik/releases/tag/v2.11.54](https://github.com/traefik/traefik/releases/tag/v2.11.54)
+- [https://github.com/traefik/traefik/releases/tag/v3.6.25](https://github.com/traefik/traefik/releases/tag/v3.6.25)
+- [https://github.com/traefik/traefik/releases/tag/v3.7.10](https://github.com/traefik/traefik/releases/tag/v3.7.10)
+- [CVE-2026-41174](https://github.com/advisories/GHSA-xhjw-95fp-8vgq)
+- [Improper Isolation or Compartmentalization](https://github.com/advisories?query=cwe%3A653)
+- [Learn more on MITRE.](https://cwe.mitre.org/data/definitions/863.html)
+- [Incorrect Authorization](https://github.com/advisories?query=cwe%3A863)
+- [Terms](https://docs.github.com/site-policy/github-terms/github-terms-of-service)
+- [Privacy](https://docs.github.com/site-policy/privacy-policies/github-privacy-statement)
+- [Status](https://www.githubstatus.com/)
+- [Community](https://github.community/)
+- [Contact](https://support.github.com/?tags=dotcom-footer)

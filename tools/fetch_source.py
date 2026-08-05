@@ -734,12 +734,71 @@ def _jina_keys() -> list[str]:
 
 
 # Keys that answered HTTP 402 (token balance exhausted) or 401 (invalid /
-# revoked) in THIS process — skipped for the rest of the run so a long
-# multi-fetch invocation (e.g. `ncsc-csh recent`, a feed sweep) does not
-# re-burn a request on a dead key per page. Process-scoped by design: a
-# fresh invocation re-probes every configured key, so a topped-up or
-# replaced key comes back on its own with no state to reset.
+# revoked) — skipped so a long multi-fetch invocation (e.g. `ncsc-csh
+# recent`, a feed sweep) does not re-burn a request on a dead key per page.
+#
+# The set is BOTH process-scoped and persisted to disk with a TTL. Persisting
+# matters because every sub-agent shells out to a fresh `fetch_source.py`
+# process: with process-only state, a pool whose first keys are exhausted
+# re-probes them on every single invocation, emitting a "balance exhausted"
+# line each time even though the ladder then rotates to a live key and the
+# fetch SUCCEEDS. On 2026-08-05 three research sub-agents read those benign
+# rotation notices as a hard failure and abandoned the reader rung for the
+# whole run — while five live keys held 37M tokens — costing coverage on
+# jina-pinned sources. The TTL keeps the original recovery property: a
+# topped-up or replaced key is re-probed once the entry ages out, with no
+# state for an operator to reset by hand.
+_JINA_DEAD_KEY_TTL = 21600  # 6 h; override with JINA_DEAD_KEY_TTL
+try:
+    _JINA_DEAD_KEY_TTL = int(os.environ.get("JINA_DEAD_KEY_TTL", _JINA_DEAD_KEY_TTL))
+except ValueError:
+    pass
+
 _JINA_DEAD_KEYS: set[str] = set()
+
+
+def _jina_dead_key_id(key: str) -> str:
+    """Stable, non-reversible id for a key — never write a credential to disk."""
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+def _jina_dead_keys_path() -> str:
+    return os.path.join(JINA_CACHE_DIR, "dead-keys.json")
+
+
+def _jina_dead_keys_load() -> dict[str, float]:
+    """Persisted {key_id: marked_at} entries that are still inside the TTL."""
+    if _JINA_DEAD_KEY_TTL <= 0:
+        return {}
+    try:
+        with open(_jina_dead_keys_path(), encoding="utf-8") as fh:
+            raw = json.load(fh)
+    except Exception:  # noqa: BLE001 — absent/corrupt cache is not an error
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    now = time.time()
+    return {
+        kid: ts for kid, ts in raw.items()
+        if isinstance(ts, (int, float)) and now - ts < _JINA_DEAD_KEY_TTL
+    }
+
+
+def _jina_dead_keys_mark(key: str) -> None:
+    """Record `key` as dead, pruning entries that have aged past the TTL."""
+    if _JINA_DEAD_KEY_TTL <= 0:
+        return
+    entries = _jina_dead_keys_load()
+    entries[_jina_dead_key_id(key)] = time.time()
+    try:
+        os.makedirs(JINA_CACHE_DIR, exist_ok=True)
+        path = _jina_dead_keys_path()
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(entries, fh)
+        os.replace(tmp, path)
+    except Exception:  # noqa: BLE001 — cache is an optimisation, never fatal
+        pass
 
 
 def _jina_fetch(target_url: str, *, fmt: str | None = None,
@@ -805,7 +864,16 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
     reader_url = JINA_READER_BASE + target_url
     # Credential ladder: every still-live configured key in spend order, then
     # None = the anonymous free tier as the always-available last rung.
-    creds: list[str | None] = [k for k in _jina_keys() if k not in _JINA_DEAD_KEYS]
+    _dead_ids = _jina_dead_keys_load()
+    creds: list[str | None] = [
+        k for k in _jina_keys()
+        if k not in _JINA_DEAD_KEYS and _jina_dead_key_id(k) not in _dead_ids
+    ]
+    if not creds:
+        # Every configured key is inside its dead-key TTL. Re-probe the full
+        # pool rather than dropping straight to the anonymous tier: a topped-up
+        # key must never be locked out by a stale cache entry.
+        creds = list(_jina_keys())
     creds.append(None)
     failures: list[str] = []
     for key in creds:
@@ -851,11 +919,17 @@ def _jina_fetch(target_url: str, *, fmt: str | None = None,
                 # 2026-07-18) — equally non-retryable, don't burn backoff.
                 if key:
                     _JINA_DEAD_KEYS.add(key)
+                    _jina_dead_keys_mark(key)
                 last = ("balance exhausted (HTTP 402)" if code == 402
                         else "invalid/revoked (HTTP 401)")
+                # Rotation is routine, NOT a failure — the ladder continues to
+                # the next credential and the fetch usually succeeds. Say so
+                # explicitly: a bare "balance exhausted" line has been read by
+                # sub-agents as a dead transport (2026-08-05).
                 print(
                     f"fetch_source: jina reader {label} {last} — "
-                    + ("rotating to the next credential" if key
+                    + ("rotating to the next credential (not a failure; "
+                       "the fetch continues)" if key
                        else "free tier refused; no credential left"),
                     file=sys.stderr,
                 )

@@ -1,0 +1,219 @@
+domain: S3
+run_id: 2026-08-05T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-05T04:15:38Z
+ended_at: 2026-08-05T04:27:53Z
+duration_seconds: 735
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 6
+  bridge_fetches: 22
+
+items:
+  - title: "Unit 42's NOVA system finds 14,090 previously unreported open-source vulnerabilities in two months of fully autonomous frontier-AI analysis"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.techzine.eu/news/security/143399/palo-alto-accelerates-patching-to-stay-ahead-of-ai-attacks/", publisher: "Techzine", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: unit42 (S3 standing source), URL https://unit42.paloaltonetworks.com/feed/ → primary: Unit 42, URL https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/ → corroboration: Techzine, URL https://www.techzine.eu/news/security/143399/palo-alto-accelerates-patching-to-stay-ahead-of-ai-attacks/"
+    summary: |
+      Unit 42 built NOVA (Network and Open-Source Vulnerability Analyzer), a fully autonomous, multi-agent, multi-model vulnerability-discovery pipeline (scoping agents, discovery agents, PoC/verification agents, gatekeeper agents, sandboxed in gVisor) requiring no human review until final disclosure. Over two months it analyzed 3,915 open-source projects across six ecosystems (Go, JavaScript/TypeScript, PHP, C/C++, Java/JVM, and Ruby/Python/Lua/Perl) and produced 14,090 confirmed, individually validated vulnerabilities — 99.4% previously unreported and roughly 40% rated high/critical (CVSS 4.0). 92% of findings were semantic/logic flaws (access control, path traversal, code injection, prototype pollution, SSRF) rather than classic memory-safety bugs, meaning fuzzing-oriented tooling like OSS-Fuzz would not have surfaced most of them. Supply-chain analysis flagged 5,421 findings tied to 1,280 vulnerable dependencies, creating 4,141 downstream exposures, 2,776 of which were validated as exploitable from the consuming application. Unit 42 states no single model dominated — "every model contributed a large set of findings that no other model found" — and frames the result as evidence that the vulnerability-discovery-to-disclosure timeline is compressing industry-wide, a capability class attackers can plausibly replicate against internet-facing or self-hosted OSS the same way defenders now can.
+    region_nexus: "global; every organization consuming open-source software (Go/JS/PHP/C/Java/Python ecosystems) is in scope, including EU/CH public-sector and CI software estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector (OSS supply chain)"
+    cves: []
+    techniques: [T1588.006]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "In just two months, NOVA analyzed 3,915 open-source software (OSS) projects and uncovered 14,090 confirmed vulnerabilities, 99.4% of which were previously unreported."
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/"
+      - quote: "The vast majority of the analysis we did using frontier AI models — 92% — uncovered vulnerabilities of different types"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/"
+      - quote: "Every model contributed a large set of findings that no other model found"
+        attribution: "Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/"
+    extended_notes: |
+      Complements the already-covered CrowdStrike 2026 Threat Hunting Report (2026-08-04, 88% of public-PoC exploitation landing inside 48 hours) with a concrete mechanism for why the discovery side of that pipeline is accelerating: an OSS maintainer now faces disclosure volumes an order of magnitude beyond OSS-Fuzz-era baselines, from vulnerability classes (semantic/logic bugs) that legacy fuzzing harnesses systematically miss. Detection/response implication: dependency and SCA (software composition analysis) coverage needs to extend past memory-safety CVEs toward access-control and injection-class findings in transitive dependencies, and patch-triage SLAs built around "days to disclose" assumptions should be re-baselined faster. Unit 42 states it disclosed responsibly via OSS maintainers and clearinghouses (Lightwell, Akrites) before publication; no indication any of the 14,090 findings were exploited pre-disclosure.
+
+  - title: "Kaspersky documents a three-stage AitM phishing chain that turns Cloudflare Workers, Vercel, Netlify, GitHub Pages and IPFS into MFA-defeating transparent proxies via malicious service workers and the Ultraviolet reverse-proxy library"
+    sources:
+      - { url: "https://securelist.com/cloud-platforms-in-phishing/120832/", publisher: "Kaspersky Securelist (GReAT)", date: "2026-08-04", role: "primary" }
+    discovery_trace: "first seen at: kaspersky-securelist (S3 standing source), URL https://securelist.com/feed/ → primary (no pivot needed), URL https://securelist.com/cloud-platforms-in-phishing/120832/"
+    summary: |
+      Kaspersky details a three-stage adversary-in-the-middle (AitM) phishing kit chain built entirely on legitimate serverless/CDN infrastructure. Stage 1 (contact harvesting): a phishing email links to a fake CAPTCHA page on a compromised site; the victim's email address is passed onward via a URL hash fragment (never sent in a network request, evading URL-based detection). Stage 2 (transparent-proxy initialization): after CAPTCHA completion, the page registers a malicious browser service worker — a background-execution feature browsers treat as a standard progressive-web-app capability, not a red flag — which deploys Ultraviolet, an open-source web-proxy library, to rewrite every link and form on subsequent pages so all traffic routes through attacker infrastructure. Stage 3 (session hijack + browser-in-the-browser spoofing): the service-worker proxy renders a fake browser pop-up window (an iframe styled as a native OS window) showing a real Microsoft login flow tunneled through the AitM proxy; when the victim submits credentials and an MFA code, the proxy captures and replays both against the real Microsoft session, then closes the fake window and redirects to a generic "session expired" error page. Kaspersky's telemetry (Aug 2025–Jul 2026) blocked 224,984 unique third-level domains and over 390,000 distinct phishing pages hosted this way; the platform breakdown is Cloudflare Pages 24.9%, Vercel 13.8%, GitHub Pages 13.7%, IPFS gateways ~13.1% combined, Netlify 10%. Because the phishing infrastructure sits on shared, reputable hosting, defenders "cannot simply block the parent domain or its subdomains without inflicting collateral damage on bona fide users."
+    region_nexus: "global; any organization relying on password+MFA login flows against Microsoft or similar IdPs is exposed regardless of region"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco (identity/MFA-reliant environments)"
+    cves: []
+    techniques: [T1566.002, T1557, T1539]
+    affected_products: ["Cloudflare Workers", "Cloudflare Pages", "Vercel", "Netlify", "GitHub Pages", "IPFS"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:ultraviolet-proxy", type: tool, name: "Ultraviolet", aliases: [],
+          summary: "Open-source web-proxy/URL-rewriting library repurposed by phishing kits to build browser-service-worker-based transparent AitM proxies that relay and rewrite all site traffic (Kaspersky Securelist, 2026-08-04)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Service workers were designed as a core component of progressive web apps (PWAs) to optimize load times and support offline functionality, browsers treat service workers as standard site feature."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cloud-platforms-in-phishing/120832/"
+      - quote: "Security teams cannot simply block the parent domain or its subdomains without inflicting collateral damage on bona fide users."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cloud-platforms-in-phishing/120832/"
+      - quote: "Inspect the URL in the address bar at the very top of the browser window. In BitB attacks, the true address bar will continue to display the actual attacker-controlled domain."
+        attribution: "Kaspersky Securelist"
+        source_url: "https://securelist.com/cloud-platforms-in-phishing/120832/"
+    extended_notes: |
+      Detection angle for hunters: the mechanism gives two durable telemetry hooks independent of the ever-rotating hosting domain — (1) service-worker registration events/Content-Security-Policy or `Service-Worker-Allowed` header anomalies on unexpected first-party origins reachable via EDR browser-extension telemetry or CASB/SWG service-worker inspection, and (2) the browser-in-the-browser tell: a "pop-up" login window that does not correspond to a real OS-level window/tab (no real address bar, cannot be dragged outside the parent tab boundary). Because credentials AND the live MFA code/session token are relayed in real time, this defeats OTP- and push-based MFA; only phishing-resistant methods (FIDO2/WebAuthn passkeys bound to origin) are immune, since the proxy cannot forward a origin-bound assertion to a spoofed domain. Single-vendor telemetry (Kaspersky); the mechanism itself is corroborated by prior public reporting on Cloudflare-Workers-based AitM kits (e.g. the Tycoon2FA takedown covered 2026-07-24), but Kaspersky's 12-month platform-abuse statistics and BitB/service-worker mechanics are its own analysis.
+
+  - title: "N-able N-central exploitation, unpacked: attackers deploy six different RMM tools, tunnel out via a renamed Cloudflare Tunnel binary, and load a signed(-appearing) EDR-evasion kernel driver"
+    sources:
+      - { url: "https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment", publisher: "Sophos X-Ops (Counter Threat Unit)", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.rapid7.com/blog/post/etr-cve-2026-18577-n-able-n-central-authentication-bypass-exploited-in-the-wild", publisher: "Rapid7", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: sophos-xops (S3 standing source), URL https://www.sophos.com/en-us/blog/feed?id=blt6f15f4f7deaf4242 → primary: Sophos X-Ops CTU, URL https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment → corroboration: Rapid7, URL https://www.rapid7.com/blog/post/etr-cve-2026-18577-n-able-n-central-authentication-bypass-exploited-in-the-wild"
+    summary: |
+      Sophos X-Ops CTU details post-exploitation activity following the already-reported N-able N-central authentication-bypass zero-day (CVE-2026-18577, an incomplete-fix bypass of CVE-2026-18556 — exploited from 31 July, hotfixed 2 August). After gaining administrative access to the N-central management server, the actor created a new domain account named "veeam", reset existing administrator credentials, ran `net user` and `nltest` for account/domain-admin-group enumeration, and used `tasklist` with string filtering to fingerprint installed security products (Microsoft Defender, Sophos). From the compromised N-central console the actor pushed six different remote-monitoring-and-management tools onto reachable endpoints — AnyDesk, TacticalRMM, TeamViewer, RustDesk, SimpleHelp and HopToDesk — establishing redundant remote-access channels beyond the RMM platform itself. A Cloudflare Tunnel client (`cloudflared.exe`) was deployed and renamed to `MicrosoftEdgeUpdate64.exe` or `msmp.exe` for persistent outbound tunneling that blends into legitimate update-process naming. A kernel driver Sophos calls "PhantomKiller" (`k.sys`, staged from `C:\ProgramData\AnyDesk`) was loaded as an EDR-evasion/BYOVD-style component. The actor used the compromised N-central server as a pivot to reach backup servers, domain controllers and application servers directly.
+    region_nexus: "global; N-central is a widely deployed MSP/enterprise-IT RMM platform, including for EU/CH-serving managed service providers"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector (MSP-managed estates)"
+    cves: ["CVE-2026-18577", "CVE-2026-18556"]
+    techniques: [T1190, T1136.002, T1078, T1087.002, T1518.001, T1219, T1572, T1036.005, T1685]
+    affected_products: ["N-able N-central"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:phantomkiller-edr-evasion-driver", type: tool, name: "PhantomKiller", aliases: [],
+          summary: "Kernel driver (k.sys) deployed post-exploitation from a compromised N-able N-central server to impair EDR/security-tool visibility; staged from C:\\ProgramData\\AnyDesk (Sophos X-Ops CTU, 2026-08-04)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-03/cve-2026-18577-n-able-n-central-auth-bypass-exploited"
+    evidence:
+      - quote: "The threat actor used the compromised N-central server to access high-value endpoints such as a backup server, domain controllers, and application servers."
+        attribution: "Sophos X-Ops (CTU)"
+        source_url: "https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment"
+      - quote: "PhantomKiller endpoint detection and response (EDR) evasion tool loaded a driver named k.sys, which was located in C:\\ProgramData\\AnyDesk."
+        attribution: "Sophos X-Ops (CTU)"
+        source_url: "https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment"
+      - quote: "CTU researchers advise organizations that use N-central to apply the hotfix as appropriate in their environments as soon as possible."
+        attribution: "Sophos X-Ops (CTU)"
+        source_url: "https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment"
+    extended_notes: |
+      Hunt/detection value beyond the original disclosure: (1) new local/domain account creation events (4720/4738-class or equivalent) originating from the N-central service account context; (2) `tasklist`/`net user`/`nltest` invoked by the N-central server process itself rather than an interactive admin session — process-lineage anomaly; (3) any of the six named RMM binaries appearing on an endpoint that was not provisioned with that tool by IT — a "second RMM tool" sighting is itself a high-fidelity IOA regardless of which one; (4) `cloudflared.exe`-equivalent binaries running under a Microsoft-update-styled filename/path mismatch (hash/signature vs. claimed publisher); (5) unsigned or newly-loaded kernel drivers staged under a legitimate remote-access tool's ProgramData directory (BYOVD pattern). Organizations that already patched CVE-2026-18577 per the 2026-08-03 disclosure should now run a compromise assessment against these specific artefacts rather than treating the hotfix as remediation-complete.
+
+  - title: "Talos analyzes threat-actor prompt logs across Claude Code, Codex, Cursor and Gemini: guardrails defeated mostly by simple ownership/CTF claims, with skill level — not model access — the dominant variable in attacker outcomes"
+    sources:
+      - { url: "https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/", publisher: "Cisco Talos", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.infosecurity-magazine.com/news/talos-attackers-split-tasks-evade/", publisher: "Infosecurity Magazine", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: talos (S3 standing source), URL https://blog.talosintelligence.com/rss/ → primary: Cisco Talos, URL https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/ → corroboration: Infosecurity Magazine, URL https://www.infosecurity-magazine.com/news/talos-attackers-split-tasks-evade/"
+    summary: |
+      Talos collected and analyzed prompt logs left behind on threat-actor endpoints running mainstream AI coding-assistant applications (Claude Code, OpenAI Codex, Cursor, Gemini), documenting how adversaries across the skill spectrum actually use them for malware development, criminal-operation scaling, and vulnerability-research acceleration. Guardrail bypass was rarely technical: "most of the time it was a simple 'I'm allowed to do this,' and the model complied" — unverified ownership claims or self-declared CTF/bug-bounty framing were routinely sufficient, with more sophisticated actors decomposing malicious projects across many sessions and files so no single prompt looked overtly harmful. Skill level, not AI access, determined outcome: novice actors produced only limited-capability tools (e.g. a DDoS operator controlling ~2,000 compromised Android TVs), while advanced actors built full pipelines — a Francophone actor used AI to turn the public React2Shell disclosure into an automated credential-harvesting platform that scanned roughly 18 million target hosts (from a 90-million-URL seed) and pulled full source-code/credential dumps from thousands of exposed systems; a Brazilian actor ran 64 AI sessions to test ~1.9 million password candidates; a Turkish-speaking cryptojacking operator used AI to build Deluge/qBittorrent exploitation tooling reaching an 582-miner XMRig fleet. Talos frames "the era of agentic attackers" as already underway and stresses that defender-side detection must shift toward high-fidelity behavioral alerting because AI-assisted attacker volume will keep rising regardless of guardrail tuning.
+    region_nexus: "global; any SOC monitoring developer workstations, CI/CD environments, or AI-coding-tool telemetry is directly affected"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, cross-sector"
+    cves: []
+    techniques: [T1588.007, T1587.001]
+    affected_products: ["Claude Code", "OpenAI Codex", "Cursor", "Google Gemini"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Leveraging cloud-based AI models leaves behind a variety of artifacts, most notably a prompt log."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/"
+      - quote: "Most of the time it was a simple 'I'm allowed to do this,' and the model complied."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/"
+      - quote: "guardrails did not provide much protection"
+        attribution: "Cisco Talos (via Infosecurity Magazine)"
+        source_url: "https://www.infosecurity-magazine.com/news/talos-attackers-split-tasks-evade/"
+      - quote: "An actor's skill level largely determines how effectively AI can be leveraged and impact."
+        attribution: "Cisco Talos"
+        source_url: "https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/"
+    extended_notes: |
+      Direct detection-engineering relevance for a SOC watching its own developer estate for outbound abuse of enterprise AI-assistant seats: prompt/tool-call logs are themselves the artefact class Talos mined for this research, meaning defenders that retain or can subpoena provider-side logs for compromised accounts have an equivalent investigative surface. The React2Shell-into-credential-harvester case (18M target hosts) is the most transferable specific: it shows a public vulnerability disclosure being operationalized into a mass-scanning platform inside hours by a single moderately-skilled actor using an AI coding assistant as the "engineer" — a compressed disclosure-to-mass-exploitation timeline consistent with the same theme as CrowdStrike's already-covered 2026 Threat Hunting Report (48-hour exploitation window) and Unit 42's NOVA vulnerability-discovery-acceleration research also carried in this run.
+
+  - title: "CERT@VDE / Pilz IndustrialPI 4: authenticated local-privilege-escalation chain via three known Linux kernel bugs (Dirty Frag / Fragnesia / Copy Fail family) in the embedded RevPi kernel"
+    sources:
+      - { url: "https://www.certvde.com/en/advisories/VDE-2026-072/", publisher: "CERT@VDE", date: "2026-08-04", role: "primary" }
+    discovery_trace: "first seen at: certvde (S3 standing source), URL https://www.certvde.com/en/advisories/ → primary (no pivot needed), URL https://www.certvde.com/en/advisories/VDE-2026-072/"
+    summary: |
+      CERT@VDE published advisory VDE-2026-072 (external ref PPSA-2026-003) for Pilz's IndustrialPI 4 industrial PC line, covering all shipped OS builds (10.06.2025, 23.06.2025, 25.12.2025) whose embedded `linux-image-revpi-v8` kernel (before 6.12.91-revpi0-rpi-v8) bundles three already-public Linux kernel local-privilege-escalation bugs: CVE-2026-43284 ("Dirty Frag", CVSS 8.8, CWE-123 write-what-where via unsafe in-place decryption of shared skb fragments referencing page-cache pages, reachable via splice(2)/sendfile(2)), CVE-2026-46300 ("Fragnesia", CVSS 7.8, CWE-787 out-of-bounds write from a logic error in `skb_try_coalesce()` failing to preserve the `SKBFL_SHARED_FRAG` flag when moving paged fragments between socket buffers in the XFRM ESP-in-TCP stack), and CVE-2026-31431 ("Copy Fail", CVSS 7.8, CWE-669 resource-transfer issue disclosed by Theori). All three require an existing authenticated local session on the device and grant an attacker who already has that access "full control over the device." Pilz's fix is firmware IndustrialPI OS 15.06.2026 / kernel 6.12.91-revpi0-rpi-v8 or later; no exploitation in the wild is reported.
+    region_nexus: "EU; Pilz (Germany) IndustrialPI/RevPi hardware is deployed across European industrial-automation and safety-PLC estates, including energy/manufacturing OT"
+    primary_sector_nexus: "indirect"
+    sector: "energy, manufacturing (OT/ICS)"
+    cves: ["CVE-2026-43284", "CVE-2026-46300", "CVE-2026-31431"]
+    techniques: [T1068]
+    affected_products: ["Pilz IndustrialPI 4"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "The Linux kernel contains flaws enabling authenticated users to execute code for \"local privilege escalation.\""
+        attribution: "CERT@VDE"
+        source_url: "https://www.certvde.com/en/advisories/VDE-2026-072/"
+    extended_notes: |
+      Not itself novel research (the three kernel CVEs — Dirty Frag family and Copy Fail — are previously disclosed, publicly-named Linux kernel LPE bugs), but this advisory is the first flag that an OT vendor's shipped embedded-Linux base image trails upstream kernel fixes for well-known LPE chains on a device class (industrial PC / RevPi) used as a general-purpose compute layer alongside safety PLCs. Requires an authenticated local session already, so priority for internet-facing exposure is low; relevance is for OT asset owners tracking firmware/BOM currency against known kernel-CVE watchlists rather than for active-exploitation triage. No indication of exploitation.
+
+watchlist_sweep: null
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "trendmicro-research"
+    reason: "RSS at /en_us/research.rss returned 404; jina reader fallback failed (HTTP 402, pooled credit exhausted). Recovered via plain WebFetch on the /en_us/research.html listing instead — no in-window item found (newest dated item was 2026-07-30)."
+  - source_id: "zscaler-threatlabz"
+    reason: "RSS at /blogs/rss.xml failed via jina (HTTP 402, pooled credit exhausted). Recovered via WebFetch on the HTML listing — no in-window threat-research item found (top items are marketing/Gartner-MQ announcements)."
+  - source_id: "certvde"
+    reason: "RSS at /en/advisories/rss/ failed via jina (HTTP 402, pooled credit exhausted). Recovered via WebFetch on the HTML advisory index instead — full coverage achieved, no gap in outcome."
+  - source_id: "dragos"
+    reason: "Feed https://www.dragos.com/blog/feed/ failed via jina (HTTP 402, pooled credit exhausted, both rotation keys exhausted). No alternate transport attempted within time budget; genuine coverage gap this run."
+  - source_id: "prodaft"
+    reason: "Rotation-priority source. jina reader recovered content on retry (HTTP 200) after the two pooled API keys reported balance-exhausted on the first attempt — listing returned but with no in-window items (newest visible report dated 2026-07-08); no publication dates available on most listed reports so older items may be silently missed."
+  - source_id: "sysdig"
+    reason: "Rotation-priority source. Direct bridge fetch on the documented RSS recipe (https://www.sysdig.com/blog/rss.xml --direct) succeeded (HTTP 200); items found were AI-agent-vuln-management product posts, assessed as vendor product marketing rather than threat research and excluded, not a fetch failure."
+  - source_id: "vulncheck"
+    reason: "No RSS; direct bridge fetch on the /blog listing returned a JS-hydration shell with no drillable post list within the time budget available (no WebFetch fallback attempted this run)."
+  - source_id: "claroty-team82"
+    reason: "No RSS; direct bridge fetch on /team82/research returned a JS-hydration shell with no drillable post list within the time budget available (no WebFetch fallback attempted this run)."
+  - source_id: "recordedfuture-insikt"
+    reason: "Known recipe gap (per prior run notes) confirmed again: /research/insikt-group is a mission/landing page with no dated article listing reachable via direct fetch; not attempted via WebFetch this run due to time budget."
+  - source_id: "wiz-blog"
+    reason: "Direct bridge fetch on /blog returned a JS-hydration shell with no drillable post list within the time budget available; not attempted via WebFetch this run."
+  - source_id: "google-tag"
+    reason: "Known recipe gap (per prior run notes): blog.google/threat-analysis-group/ resolves to Google's general security blog, not a dated TAG-specific listing; not re-attempted this run given the standing recipe-gap note."
+  - source_id: "nozomi-networks"
+    reason: "WebFetch on the HTML listing returned 8 post titles with no visible publication dates; could not establish which, if any, fell inside the recency window within time budget (one item, 'Seven States, One Weak Spot: FBI/EPA PLC Warning', looked plausibly relevant but its date could not be confirmed)."
+  - source_id: "group-ib"
+    reason: "RSS fetched cleanly (HTTP 200) — no in-window items; newest post dated 2026-07-30."
+  - source_id: "volexity"
+    reason: "WebFetch on /blog/ returned only sparse-cadence historical posts, newest dated 2026-07-17 (SonicWall SMA zero-day, already outside this run's 26h window and previously covered in an earlier run)."
+  - source_id: "watchtowr"
+    reason: "RSS fetched cleanly (HTTP 200) — no in-window items; newest post dated 2026-07-02."
+  - source_id: "huntress"
+    reason: "RSS fetched cleanly (HTTP 200) — no in-window items; newest post dated 2026-07-13 (feed appears to lag; all posts are July or older)."
+  - source_id: "elastic-seclabs"
+    reason: "WebFetch on listing found items dated up to 2026-08-04, but all in-window items were product/feature-announcement posts (Agent Builder benchmarking, HackerOne AI triage, case-management UI, Alert Zero AI triage feature) assessed as vendor product marketing rather than threat research; the one substantive item (Hugging Face breach TTP mapping) is dated 2026-07-31, outside window, and was already flagged as covered in the spawn message's already-covered list."
+  - source_id: "mandiant-gtig"
+    reason: "Feedburner RSS fetched cleanly (HTTP 200) — no in-window items; newest substantive post ('Batten Down Your Packages' supply-chain mitigation guidance) dated 2026-07-30, outside window."
+  - source_id: "crowdstrike"
+    reason: "WebFetch on the category listing found one item dated 2026-08-04 ('Secure Agent Harness Execution: Preventing Escape') but it describes CrowdStrike's own defensive product architecture (AIDR agent-sandboxing design) with no attacker behavior, CVE, or threat actor described; excluded as vendor architecture/product content per the research-quality bar, not logged as a fetch failure."
+  - source_id: "checkpoint-research"
+    reason: "Feed fetched cleanly — newest substantive items were the weekly digest roundup (2026-08-03, largely re-reporting other outlets' stories already covered elsewhere) with no distinct in-window primary research."
+  - source_id: "yeswehack, onapsis, morphisec, push-security, resecurity, sans-ics, snyk-research, socprime, team-cymru, sonatype, kela-cyber"
+    reason: "Standard-rotation tier; not reached within the 45-minute time budget after prioritizing all standing-tier sources plus the two rotation-priority sources (prodaft, sysdig)."

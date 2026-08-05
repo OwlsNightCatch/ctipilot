@@ -1,0 +1,447 @@
+domain: S1
+run_id: 2026-08-05T0412Z-intel
+model: Opus 5
+model_id: claude-opus-5
+started_at: 2026-08-05T04:17:24Z
+ended_at: 2026-08-05T04:28:55Z
+duration_seconds: 691
+self_telemetry:
+  webfetch_calls: 11
+  websearch_calls: 4
+  bridge_fetches: 18
+
+items:
+  - title: "CVE-2026-34486 — Apache Tomcat Tribes EncryptInterceptor fail-open crosses into confirmed exploitation (CISA KEV, 2026-08-04)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-08-04", role: "primary" }
+      - { url: "https://euvd.enisa.europa.eu/enisaid/EUVD-2026-21056", publisher: "ENISA EUVD", date: "2026-08-04", role: "corroborating" }
+      - { url: "https://tomcat.apache.org/security-11.html", publisher: "Apache Software Foundation (Tomcat security team)", date: "2026-04-09", role: "corroborating" }
+      - { url: "https://fieldeffect.com/blog/public-exploit-code-apache-tomcat-flaw", publisher: "Field Effect", date: "2026-05-28", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, bridge `python3 tools/fetch_source.py cisa-kev` — CVE-2026-34486 newly listed with dateAdded 2026-08-04 → pivot: CISA KEV-addition alert, URL https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog → pivot: enisa-euvd, `enisa-euvd recent exploited` → EUVD-2026-21056 exploitedSince 2026-08-04, URL https://euvd.enisa.europa.eu/enisaid/EUVD-2026-21056 → primary (vendor): Apache Tomcat security page, URL https://tomcat.apache.org/security-11.html → pivot: WebSearch (\"CVE-2026-34486 Apache Tomcat EncryptInterceptor exploited\") → Field Effect PoC-availability write-up, URL https://fieldeffect.com/blog/public-exploit-code-apache-tomcat-flaw"
+    summary: |
+      CISA added CVE-2026-34486 to the Known Exploited Vulnerabilities catalog on 2026-08-04 with a
+      2026-08-07 remediation due date, and ENISA's EUVD independently flags the record
+      exploitedSince 2026-08-04. The flaw is a fail-open regression in Apache Tomcat's Tribes
+      clustering stack: the Tomcat security team states "An error in the fix for CVE-2026-29146
+      allowed the EncryptInterceptor to be bypassed." The March/April 2026 fix for CVE-2026-29146
+      (EncryptInterceptor defaulting to CBC, exploitable as a padding oracle) changed decryption
+      error handling so that a message whose decryption fails is no longer discarded — Field Effect
+      records that "Messages that have not been properly decrypted can still be accepted and passed
+      through the system." Because the Tribes channel deserializes cluster messages, attacker-supplied
+      plaintext reaches the Java deserialization routine, and a usable gadget on the classpath turns
+      the cluster receiver into unauthenticated remote code execution.
+      Preconditions are specific and worth checking before triaging: Tomcat clustering must be
+      enabled, the Tribes NioReceiver must be network-reachable (default TCP/4000), and
+      EncryptInterceptor must be configured — that is, the very deployments that turned encryption
+      ON for session replication are the exposed ones. Affected: Tomcat 9.0.0.M1–9.0.116,
+      10.1.0-M1–10.1.53, 11.0.0-M1–11.0.20; fixed in 9.0.117, 10.1.54, 11.0.21 (released 2026-04-04,
+      made public 2026-04-09). CVSS 3.1 base 7.5; EUVD records EPSS 42.63. Public PoC code has been
+      on GitHub since roughly late May 2026, and CrowdStrike's in-window 2026 Threat Hunting Report
+      (covered 2026-08-04) puts 88% of public-PoC exploitation inside 48 hours — this one took
+      ~10 weeks, which is what makes the KEV listing the news rather than the CVE.
+      No vendor or research lab has published named-cluster telemetry for the exploitation; CISA's
+      KEV listing and EUVD's exploited flag are the only exploitation assertions available, and
+      EUVD's flag may derive from KEV rather than being independent. Treat "who is exploiting it"
+      as unknown.
+      Detection concept: Tribes membership and receiver activity is normally a fixed, small mesh of
+      known cluster peers — network-flow and firewall telemetry showing TCP/4000 (or the configured
+      Receiver port) sessions from any source outside the declared cluster membership list is the
+      cleanest signal, since there is no legitimate reason for a non-member to speak Tribes.
+      On the host, process-creation events with a Tomcat/Catalina JVM as parent spawning a shell
+      (sh, bash, cmd.exe, powershell.exe) are the deserialization-gadget payoff. Application-log
+      telemetry: EncryptInterceptor decryption-failure entries in catalina.out that are followed by
+      successful message processing rather than a discard are the mechanism itself firing.
+      Hardening: patch to 9.0.117 / 10.1.54 / 11.0.21; independently, bind the Tribes Receiver to a
+      dedicated management/replication VLAN and firewall TCP/4000 to declared cluster members only —
+      the CVE only matters where the receiver is reachable.
+    region_nexus: "global; Tomcat is ubiquitous in European public-sector Java estates (e-government portals, Alfresco/Liferay/Confluence-class stacks, vendor appliances embedding Tomcat)"
+    primary_sector_nexus: "direct — public-sector web application platforms commonly run clustered Tomcat for session replication"
+    sector: "public-sector, finance, healthcare, telco"
+    cves: [CVE-2026-34486, CVE-2026-29146]
+    techniques: [T1190, T1210]
+    affected_products: ["Apache Tomcat"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA has added three new vulnerabilities to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "An error in the fix for CVE-2026-29146 allowed the EncryptInterceptor to be bypassed."
+        attribution: "Apache Software Foundation (Tomcat security team)"
+        source_url: "https://tomcat.apache.org/security-11.html"
+      - quote: "Messages that have not been properly decrypted can still be accepted and passed through the system."
+        attribution: "Field Effect"
+        source_url: "https://fieldeffect.com/blog/public-exploit-code-apache-tomcat-flaw"
+    extended_notes: |
+      Defender vantage: this is the third pattern in a fortnight where a fix itself created the
+      exposure (CVE-2026-18577 was an incomplete patch for CVE-2026-18556; CVE-2025-68686 bypassed
+      the FortiOS symlink fix). Here the regression is a fail-open: the security control (encrypted
+      cluster transport) stopped rejecting what it could not verify. Asset teams should note that
+      Tomcat is very often embedded — the exposure is not limited to org-managed Tomcat installs but
+      extends to appliances and COTS products that ship a Tomcat runtime with clustering enabled.
+      Apache's own page dates the fix to 2026-04-04 with public disclosure 2026-04-09; the
+      lists.apache.org announcement thread linked from EUVD (https://lists.apache.org/thread/9510k5p5zdvt9pkkgtyp85mvwxo2qrly)
+      renders as a JS shell and was not readable this run.
+
+  - title: "CVE-2026-18574 — Check Point Security Management: unauthenticated management-authentication bypass to arbitrary command execution, no fix for EoS versions"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0965/", publisher: "CERT-FR / ANSSI", date: "2026-08-04", role: "primary" }
+      - { url: "https://support.checkpoint.com/results/sk/sk185222", publisher: "Check Point Software Technologies", date: "2026-08-03", role: "primary" }
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2628", publisher: "BSI CERT-Bund", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, bridge `cert-fr avis-recent 15` → CERTFR-2026-AVI-0965 (04 août 2026), URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0965/ → primary (vendor): Check Point sk185222, URL https://support.checkpoint.com/results/sk/sk185222 (SPA; full body recovered from the Next.js data route https://support.checkpoint.com/_next/data/qfIT1FE0sMobyOnl2MXEb/results/sk/sk185222.json) → corroboration: bsi-de, `bsi-rss` → WID-SEC-2026-2628, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2628 (body via `bsi-csaf WID-SEC-2026-2628`)"
+    summary: |
+      Check Point disclosed CVE-2026-18574 in sk185222 (created 2026-08-01, last modified 2026-08-03,
+      severity High); CERT-FR issued CERTFR-2026-AVI-0965 and BSI issued WID-SEC-2026-2628 on
+      2026-08-04. Check Point's own wording: "An unauthenticated attacker may be able to bypass
+      Management authentication and execute arbitrary commands on the Security Management Server.
+      Successful exploitation could result in full compromise of the Security Management system."
+      BSI frames the same flaw as a remote, anonymous attacker bypassing security controls and
+      executing arbitrary code.
+      Affected products are the Security Management Server and the Multi-Domain Security Management
+      Server (MDS) — the central policy authority for an estate of Check Point gateways, holding
+      policy, object database, administrator accounts and SIC trust material. Affected versions:
+      R81.20, R82, R82.10, plus R80, R80.10, R80.20, R80.30, R80.40, R81 and R81.10, all of which
+      Check Point marks End of Support. Fixes exist only for the supported trains: Jumbo Hotfix
+      Accumulator R81.20 from Take 161, R82 from Take 122, R82.10 from Take 40. There is no fix for
+      the EoS versions — for those estates the only answer is upgrade or network containment.
+      Smart-1 Cloud customers are stated to be already protected.
+      Exploitation prerequisite is network reachability of the management server: Check Point notes
+      "Environments that do not restrict Trusted Clients (GUI clients) or that expose Management
+      services to untrusted networks may have increased exposure." Check Point states the issue was
+      found internally and that it has "no indication of active exploits" — take that as the vendor's
+      claim as of 2026-08-03, not as a guarantee, given that CVE-2026-16232 (SmartConsole
+      authentication bypass) went from disclosure to KEV-confirmed exploitation inside days in July.
+      Detection concept: authentication and management-plane logs on the Security Management Server —
+      SmartConsole/CPM login events from source addresses outside the Trusted Clients allowlist, and
+      administrative API/CLI activity (policy install, object modification, administrator creation)
+      that does not correlate with a preceding interactive administrator login, are the observable
+      sequence. Because this reaches command execution, host process-creation telemetry on the
+      management server showing shells or interpreters spawned by the management daemons (cpm, fwm,
+      cpca) is the second anchor. Triage note: legitimate automation (CI-driven policy pushes,
+      Ansible/API integrations, Smart-1 management jobs) produces API activity without an interactive
+      login too — discriminate on source address against the Trusted Clients definition, the API key
+      identity in use, and whether the activity falls in a scheduled window.
+      Hardening: apply the Jumbo HFA Takes above; restrict Trusted Clients in SmartConsole under
+      Manage & Settings > Permissions & Administrators > Trusted Clients to authorised hosts and
+      subnets and never "Any"; restrict management access by firewall policy to trusted administrative
+      workstations; confirm implied rules protecting control connections are enabled.
+    region_nexus: "global; Check Point management servers are heavily deployed across Swiss and European government, cantonal administration and critical-infrastructure networks"
+    primary_sector_nexus: "direct — the management plane of the perimeter security estate"
+    sector: "public-sector, energy, finance, healthcare, telco, transport"
+    cves: [CVE-2026-18574]
+    techniques: [T1190, T1059]
+    affected_products: ["Check Point Security Management", "Check Point Multi-Domain Security Management"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "An unauthenticated attacker may be able to bypass Management authentication and execute arbitrary commands on the Security Management Server."
+        attribution: "Check Point Software Technologies"
+        source_url: "https://support.checkpoint.com/results/sk/sk185222"
+      - quote: "This issue was discovered internally, and Check Point has no indication of active exploits."
+        attribution: "Check Point Software Technologies"
+        source_url: "https://support.checkpoint.com/results/sk/sk185222"
+      - quote: "Une vulnérabilité a été découverte dans les produits Check Point. Elle permet à un attaquant de provoquer une exécution de code arbitraire à distance et un contournement de la politique de sécurité."
+        attribution: "CERT-FR / ANSSI"
+        source_url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0965/"
+    extended_notes: |
+      Context the composer should carry: this is the third distinct authentication-bypass disclosure
+      in the Check Point management stack inside roughly two weeks, and the pattern is consistent —
+      CVE-2026-16232 (SmartConsole, KEV 2026-07-22, root-caused to a caller-supplied SIC
+      distinguished name being trusted), CVE-2026-62144/-62145 (Security Management siblings,
+      2026-07-25), now CVE-2026-18574. Prior coverage: 2026-07-23/check-point-smartconsole-auth-bypass-cve-2026-16232,
+      2026-07-25/check-point-mgmt-cve-2026-62144-62145-siblings, 2026-07-29/check-point-cve-2026-16232-sic-dn-substitution-root-cause.
+      CVE-2026-18574 is a distinct CVE with its own sk and its own Jumbo Takes, so it is a new item,
+      not an update — but the composer may reasonably reference the earlier entries.
+      The EoS gap is the sharpest operational fact: R80.x/R81/R81.10 estates get no patch at all.
+      RECIPE NOTE for sources.json (checkpoint support): support.checkpoint.com/results/sk/<skid>
+      is a Next.js SPA that returns only a title in <head> to any direct GET. The full advisory body
+      (symptoms, affected versions, conditions, mitigation, solution, dateCreated/lastModified) is
+      served as JSON at https://support.checkpoint.com/_next/data/<buildId>/results/sk/<skid>.json —
+      the buildId is in the /_next/static/<buildId>/_buildManifest.js reference in the shell HTML
+      (this run: qfIT1FE0sMobyOnl2MXEb). Cite the human sk URL; read the body from the data route.
+
+  - title: "Traefik 3.7.10 / 3.6.25 / 2.11.54 — three multi-tenancy isolation failures in the Kubernetes providers, including cross-namespace backend hijacking"
+    sources:
+      - { url: "https://github.com/traefik/traefik/security/advisories/GHSA-fgjj-px3w-67xx", publisher: "Traefik Labs (GitHub Security Advisory)", date: "2026-08-03", role: "primary" }
+      - { url: "https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq", publisher: "Traefik Labs (GitHub Security Advisory)", date: "2026-08-03", role: "primary" }
+      - { url: "https://github.com/traefik/traefik/security/advisories/GHSA-6765-c87h-8mrf", publisher: "Traefik Labs (GitHub Security Advisory)", date: "2026-08-03", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0964/", publisher: "CERT-FR / ANSSI", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, bridge `cert-fr avis-recent 15` → CERTFR-2026-AVI-0964 \"Multiples vulnérabilités dans Traefik\" (04 août 2026), URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0964/ → primaries via the advisory's Documentation section: https://github.com/traefik/traefik/security/advisories/GHSA-fgjj-px3w-67xx , https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq , https://github.com/traefik/traefik/security/advisories/GHSA-6765-c87h-8mrf (all three fetched)"
+    summary: |
+      Traefik published three security advisories on 2026-08-03, fixed in v3.7.10, v3.6.25 and
+      v2.11.54; CERT-FR relayed them as CERTFR-2026-AVI-0964 on 2026-08-04. None carries a CVE id
+      yet. All three break tenant isolation in a shared ingress — the exact deployment shape used by
+      Swiss and European public-sector shared Kubernetes platforms where several agencies or
+      departments run namespaces behind one cluster ingress.
+      The most serious (GHSA-fgjj-px3w-67xx, CVSS 4.0 base 7.6 High) is a route identity collision in
+      the Kubernetes Gateway API provider. Traefik builds router and service identities by
+      hyphen-concatenating route namespace, route name, Gateway identity, entry point and rule index;
+      because Kubernetes object names may themselves contain hyphens, that construction is not
+      injective. Two HTTPRoute/GRPCRoute/TCPRoute/TLSRoute objects in different namespaces, attached
+      to the same shared Gateway with equivalent match rules, can resolve to the same identity, and
+      the merge uses maps.Copy without collision detection: "Two distinct Routes attached to the same
+      Gateway with equivalent match rules can therefore produce the same identity, and the Route
+      loaded later silently overwrites the earlier one." The result is that a tenant who can name
+      their own Route objects can silently take over another namespace's traffic — a hijack that is
+      invisible to the victim tenant because their own manifests remain unchanged. Affected v3.0.0–
+      v3.6.24 and v3.7.0–v3.7.9.
+      The second (GHSA-62fc-8686-hfmq, CVSS 4.0 base 4.8 Moderate) is an allowCrossNamespace=false
+      bypass in the Kubernetes CRD provider. The guard that rejects cross-namespace @kubernetescrd
+      references for middlewares, TLS options and ServersTransport was never applied to TraefikService
+      backendRefs in pkg/provider/kubernetes/crd/kubernetes_http.go (nameAndService), so for names
+      containing an @ separator only the crossProviderNamespaces allowlist is consulted "and that
+      check returns true by default." A namespace-scoped tenant can therefore bind their router to
+      another tenant's TraefikService backend. Affected v2 ≤ 2.11.53, v3.0–v3.6 ≤ 3.6.24, v3.7 ≤ 3.7.9.
+      The third (GHSA-6765-c87h-8mrf, CVSS 4.0 base 2.1 Low) is a BasicAuth singleflight key
+      collision in pkg/middlewares/auth/basic_auth.go: the deduplication key concatenates password
+      and stored secret without a delimiter, so an unconfigured username supplied with password
+      P||H collides with a legitimate (P, H) pair and inherits its verification result. Where
+      headerField is configured, that lets a low-privilege authenticated user present an arbitrary
+      identity to the backend. Affected v3.6.11–v3.6.24 and v3.7.0–v3.7.9; the fix prefixes the key
+      with the password length.
+      Detection concept: the Gateway API and CRD issues manifest in the control plane, not the data
+      plane — Kubernetes audit records for HTTPRoute/GRPCRoute/TCPRoute/TLSRoute and TraefikService
+      create/update events originating from a tenant service account, correlated against Traefik's
+      own configuration-reload logs, are the observable pair. A route whose object name introduces
+      an extra hyphen segment, or a router referencing a service with an @kubernetescrd suffix from
+      a foreign namespace, is the specific artefact. Data-plane corroboration: a sudden shift in
+      backend destination for an established host/path in ingress access logs with no corresponding
+      change in the owning namespace's manifests. Triage note: legitimate GitOps controllers
+      (Argo CD, Flux) also create and mutate Route objects continuously — discriminate on whether the
+      acting identity is the platform's reconciler service account or a tenant's, and on whether the
+      resulting router crosses a namespace boundary.
+      Hardening: upgrade to 3.7.10 / 3.6.25 / 2.11.54; where a shared Gateway serves multiple tenants,
+      enforce naming conventions or admission policy (e.g. Kyverno/Gatekeeper) that forbid tenant
+      Route names capable of colliding, and keep providers.kubernetesCRD.allowCrossNamespace at its
+      default false while recognising that, pre-patch, that setting did not cover TraefikService
+      backendRefs.
+    region_nexus: "global; directly relevant to Swiss and European shared public-sector Kubernetes / container platforms operating multi-tenant ingress"
+    primary_sector_nexus: "direct — multi-tenant government container platforms"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1557, T1078, T1548]
+    affected_products: ["Traefik Proxy"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Two distinct Routes attached to the same Gateway with equivalent match rules can therefore produce the same identity, and the Route loaded later silently overwrites the earlier one"
+        attribution: "Traefik Labs (GHSA-fgjj-px3w-67xx)"
+        source_url: "https://github.com/traefik/traefik/security/advisories/GHSA-fgjj-px3w-67xx"
+      - quote: "In a shared Gateway deployment, a Route author can hijack requests belonging to another namespace when the object names admit a collision."
+        attribution: "Traefik Labs (GHSA-fgjj-px3w-67xx)"
+        source_url: "https://github.com/traefik/traefik/security/advisories/GHSA-fgjj-px3w-67xx"
+      - quote: "For names that contain an `@` separator (that is, `@kubernetescrd` cross-namespace references) it applies only the `crossProviderNamespaces` allowlist check, and that check returns `true` by default."
+        attribution: "Traefik Labs (GHSA-62fc-8686-hfmq)"
+        source_url: "https://github.com/traefik/traefik/security/advisories/GHSA-62fc-8686-hfmq"
+    extended_notes: |
+      Thematic link the composer may want: all three are the same class the 2026-08-02 weekly
+      already named — code accepting an attacker-influenceable value as proof of identity. Here the
+      "identity" is a concatenated string key rather than a credential, and the failure is a
+      collision rather than a forgery, but the defensive lesson is identical: delimiter-free
+      concatenation is not an identity function. No CVE ids assigned at time of writing; track the
+      GHSA ids.
+    borderline: false
+
+  - title: "CVE-2026-9198 — the second Langflow pre-auth RCE path (auto_login → validate/code) added to CISA KEV"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog", publisher: "CISA", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.ibm.com/support/pages/node/7278927", publisher: "IBM PSIRT", date: "2026-07-02", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, bridge `cisa-kev` — CVE-2026-9198 dateAdded 2026-08-04 → pivot: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog → pivot: enisa-euvd `recent exploited` → EUVD-2026-45236 exploitedSince 2026-08-04, references IBM bulletin → primary (vendor): IBM security bulletin, URL https://www.ibm.com/support/pages/node/7278927"
+    summary: |
+      CISA added CVE-2026-9198 (IBM Langflow, code injection) to the KEV catalog on 2026-08-04 with a
+      2026-08-07 due date; EUVD marks EUVD-2026-45236 exploitedSince the same day. This is a
+      *different* Langflow RCE path from the ones already covered: where CVE-2026-0770 abused
+      exec_globals and CVE-2026-14499 needed 1.10.2, CVE-2026-9198 chains /api/v1/auto_login — which
+      mints a SUPERUSER token to any unauthenticated network caller — with /api/v1/validate/code,
+      which executes submitted Python during function definition via decorators, default arguments
+      and annotations. IBM's bulletin (2026-07-02, CVSS 3.1 base 9.8,
+      AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H) states the chain yields full RCE on default deployments and
+      that remediation is Langflow OSS 1.10.1; note the pipeline's own 2026-07-26 correction that
+      1.10.2 is the true endpoint for the sibling CVE-2026-14499, so 1.10.2 remains the version to
+      target. Affected: Langflow OSS 1.0.0 through 1.10.0.
+      Operationally this closes the loop on a surface a Swiss/EU SOC should already have inventoried:
+      Langflow instances are AI-workflow builders that teams stand up on internal or cloud VMs, often
+      internet-exposed by accident, and the auto_login default means there is no credential to brute
+      force. Detection concept: web/application access logs for unauthenticated POSTs to
+      /api/v1/auto_login immediately followed by /api/v1/validate/code from the same source is the
+      full chain in two log lines; on the host, process-creation telemetry showing a python/uvicorn
+      Langflow parent spawning a shell is the payoff. Hardening: upgrade to 1.10.2, and where the
+      deployment cannot be patched immediately, block /api/v1/auto_login and /api/v1/validate/code at
+      the reverse proxy and remove any internet exposure.
+    region_nexus: "global; exposure is wherever teams have stood up Langflow for AI workflow prototyping"
+    primary_sector_nexus: "indirect — affects public-sector and research organisations experimenting with LLM orchestration"
+    sector: "public-sector, education"
+    cves: [CVE-2026-9198]
+    techniques: [T1190, T1059.006]
+    affected_products: ["IBM Langflow", "Langflow OSS"]
+    entity_keys: []
+    new_entities: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: update-of:2026-07-22/langflow-cve-2026-0770-exploited-ncsc-nl-15-cve-batch
+    evidence:
+      - quote: "CVE-2026-9198 IBM Langflow Code Injection Vulnerability"
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog"
+      - quote: "Langflow OSS allows unauthenticated attackers to chain /api/v1/auto_login with /api/v1/validate/code to achieve full RCE"
+        attribution: "IBM PSIRT"
+        source_url: "https://www.ibm.com/support/pages/node/7278927"
+    extended_notes: |
+      Prior coverage this updates: 2026-07-22/langflow-cve-2026-0770-exploited-ncsc-nl-15-cve-batch
+      (CVE-2026-0770 KEV + the NCSC-NL batch), 2026-07-26/langflow-1-10-2-required-cve-2026-0770-precondition-fix
+      (the 1.10.1-is-not-the-endpoint correction), and 2026-07-29/cve-2026-0769-langflow-preauth-eval-rce-exploited-not-in-kev.
+      The delta is narrow but real: a distinct CVE for a distinct endpoint chain now carries a
+      confirmed-exploitation label, which changes the patch argument from "one known-exploited path"
+      to "the whole pre-auth surface of this product is being worked".
+
+  - title: "ICSMA-26-216-01 — Thermo Fisher Applied Biosystems genetic analyzers: DNA result files can be edited without integrity checking"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-26-216-01", publisher: "CISA", date: "2026-08-04", role: "primary" }
+    discovery_trace: "first seen at: cisa-advisories, bridge `cisa feed https://www.cisa.gov/cybersecurity-advisories/all.xml` → newest item ICSMA-26-216-01 (day-of-year 216 = 2026-08-04) → primary: CISA ICS medical advisory, URL https://www.cisa.gov/news-events/ics-medical-advisories/icsma-26-216-01 (fetched via `cisa page`)"
+    summary: |
+      CISA published ICSMA-26-216-01 on 2026-08-04 covering CVE-2026-17583 in Thermo Fisher Applied
+      Biosystems genetic analyzers. The finding is a missing integrity check (CWE-353): the .fsa and
+      .hid instrument output files can be edited after the fact, so an attacker with access to the
+      data-collection workstation or its file store can alter DNA data and produce inaccurate test
+      results. CVSS 3.1 base 8.4 (AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), CVSS 4.0 base 8.2 — local
+      attack vector, no privileges and no user interaction required once the attacker is on the box.
+      Affected: Applied Biosystems 3500/3500xL Data Collection Software <=4.0.2, 3730/3730xL <=5.0.2,
+      SeqStudio Genetic Analyzer <=1.2.5, SeqStudio Flex <=1.2.0, GeneMapper ID-X <=v1.7.3,
+      3130 Series <=4.1, ABI PRISM 3100/3100-Avant <=2.0, ABI PRISM 310 <=3.1. CISA lists no vendor
+      patch in the advisory body; its recommendations are network-exposure minimisation and defence in
+      depth. Reported by Nathaniel Adams, Laura Gaydosh-Combs and Kevin Dyer.
+      Why a Swiss/European public-sector SOC should care despite the local attack vector: these are
+      the capillary-electrophoresis platforms used by forensic-science institutes (police and
+      judicial forensics) and by clinical and public-health genomics labs. This is an
+      evidence-integrity problem, not a confidentiality one — the impact is a falsified forensic or
+      clinical result, which is a legal and public-trust exposure rather than a data-breach exposure.
+      Detection concept: file-integrity monitoring on the .fsa/.hid output directories, and
+      file-modification audit events (write/rename on result files after the run that produced them
+      completed) are the direct signal; correlate with interactive logon and removable-media events on
+      the data-collection workstation. Hardening: isolate analyser workstations on a dedicated lab
+      VLAN with no internet path, restrict interactive logon to named lab operators, and — the real
+      control here — hold result files in an append-only or cryptographically signed archive so that
+      post-hoc edits are detectable rather than relying on the instrument software.
+    region_nexus: "global (CISA advisory, deployment worldwide); Swiss and European forensic-science institutes and clinical genomics labs run these platforms"
+    primary_sector_nexus: "indirect — public-sector forensic/judicial laboratories and public-health genomics sit inside the constituency"
+    sector: "healthcare, public-sector"
+    cves: [CVE-2026-17583]
+    techniques: [T1565.001]
+    affected_products: ["Thermo Fisher Applied Biosystems Genetic Analyzers", "Applied Biosystems GeneMapper ID-X", "Applied Biosystems SeqStudio"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Successful exploitation of this vulnerability could allow an attacker to modify .fsa/.hid output files, tampering with DNA data and resulting in inaccurate test results."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-26-216-01"
+      - quote: "The affected product is vulnerable because its .fsa/.hid output files can be edited."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-26-216-01"
+    borderline: true
+    borderline_reason: "local attack vector and no confirmed exploitation, but a data-integrity flaw in forensic/clinical DNA instrumentation with direct public-sector (police forensics, public-health labs) relevance and no vendor patch stated"
+
+  - title: "NCSC-CH advises on actively exploited Microsoft Power Pages / Dataverse anonymous-access misconfiguration"
+    sources:
+      - { url: "https://security-hub.ncsc.admin.ch/#/posts/12823", publisher: "NCSC Switzerland / GovCERT.ch (Cyber Security Hub)", date: "2026-08-04", role: "primary" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, bridge `ncsc-csh recent 12` → post id 12823, TLP:CLEAR, created 2026-08-04T08:32:49Z, URL https://security-hub.ncsc.admin.ch/#/posts/12823 → the post's own primary reference is https://venarix.com/blog/exfilsquad-targets-misconfigured-microsoft-power-pages-portals (not re-fetched this run; already the basis of prior coverage)"
+    summary: |
+      Switzerland's NCSC published a TLP:CLEAR advisory on 2026-08-04 stating that a Microsoft
+      Power Pages misconfiguration is being actively exploited to exfiltrate sensitive data from
+      Dataverse. NCSC-CH's own wording: portals are vulnerable when the "Anonymous Users" web role is
+      granted excessive read permissions on Dataverse tables, making the data publicly readable by
+      unauthenticated users; it records the current exploitation status as "Actively Exploited" and
+      names Microsoft Power Pages and Microsoft Power Apps Portals as affected. Recommended actions
+      are to disable anonymous access, review table permissions, disable unnecessary Web API and
+      OData feeds, and validate endpoint restrictions from an unauthenticated browser session.
+      The underlying campaign (ExfilSquad against misconfigured Power Pages portals, incl. the UK
+      PNLD/DfE disclosures) is already covered; the in-window delta is that the Swiss home authority
+      has now issued its own advisory, which converts this from foreign-incident reporting into a
+      standing configuration-review obligation for Swiss cantonal and federal Power Pages estates.
+      Detection concept as the advisory frames it is verification rather than alerting: enumerate
+      public-facing Power Pages sites, then request their Web API / OData endpoints from an
+      unauthenticated session and compare the returned table set against what the portal is supposed
+      to expose.
+    region_nexus: "Switzerland — home-authority advisory; applies to any Swiss public-sector Power Pages / Power Apps Portals deployment"
+    primary_sector_nexus: "direct — Swiss cantonal and federal e-government portals are a common Power Pages use case"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1190, T1530]
+    affected_products: ["Microsoft Power Pages", "Microsoft Power Apps Portals"]
+    entity_keys: []
+    new_entities: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: update-of:2026-08-04/pnld-confirms-breach-exfilsquad-power-pages-dataverse-path
+    evidence:
+      - quote: "Unauthenticated attackers can access and exfiltrate sensitive personal, financial, and organizational data from public-facing portals via exposed Dataverse tables."
+        attribution: "NCSC Switzerland / GovCERT.ch"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12823"
+      - quote: "Current exploitation status: Actively Exploited"
+        attribution: "NCSC Switzerland / GovCERT.ch"
+        source_url: "https://security-hub.ncsc.admin.ch/#/posts/12823"
+    borderline: true
+    borderline_reason: "the campaign itself is covered twice already (2026-07-31, 2026-08-04); the delta is the Swiss home authority formally advising its constituency — high home-region value but S2 may surface the same item"
+
+cve_table:
+  - { cve: CVE-2026-34486, product: "Apache Tomcat (Tribes clustering / EncryptInterceptor)", cvss: "7.5 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N)", epss: "42.63 (EUVD, 2026-08-04)", kev: "added 2026-08-04, due 2026-08-07", exploited: "yes — CISA KEV evidence of active exploitation; EUVD exploitedSince 2026-08-04; no named cluster published", patch: "9.0.117 / 10.1.54 / 11.0.21 (released 2026-04-04)", source: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-18574, product: "Check Point Security Management / Multi-Domain Security Management", cvss: "not published by vendor; Check Point severity High", epss: "not available", kev: "no", exploited: "no — Check Point states no indication of active exploits (2026-08-03)", patch: "Jumbo HFA R81.20 Take 161 / R82 Take 122 / R82.10 Take 40; NO FIX for R80–R81.10 (EoS)", source: "https://support.checkpoint.com/results/sk/sk185222" }
+  - { cve: CVE-2026-9198, product: "IBM Langflow / Langflow OSS 1.0.0–1.10.0", cvss: "9.8 (CVSS 3.1, AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H)", epss: "1.89 (EUVD)", kev: "added 2026-08-04, due 2026-08-07", exploited: "yes — CISA KEV; EUVD exploitedSince 2026-08-04", patch: "Langflow OSS 1.10.1 per IBM; 1.10.2 per the pipeline's 2026-07-26 correction for the sibling CVE", source: "https://www.ibm.com/support/pages/node/7278927" }
+  - { cve: CVE-2026-18556, product: "N-able N-central (through 2026.1)", cvss: "8.2 (CVSS 4.0)", epss: "0.27 (EUVD)", kev: "added 2026-08-04, due 2026-08-07", exploited: "yes — CISA KEV; EUVD exploitedSince 2026-08-04", patch: "N-central 2026.3 HF1 (see 2026-08-03 entry)", source: "https://www.cisa.gov/news-events/alerts/2026/08/04/cisa-adds-three-known-exploited-vulnerabilities-catalog" }
+  - { cve: CVE-2026-17583, product: "Thermo Fisher Applied Biosystems Genetic Analyzers (multiple data-collection software versions)", cvss: "8.4 (CVSS 3.1, AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H); 8.2 (CVSS 4.0)", epss: "not available", kev: "no", exploited: "no", patch: "no vendor fix stated in the advisory; CISA recommends exposure minimisation", source: "https://www.cisa.gov/news-events/ics-medical-advisories/icsma-26-216-01" }
+  - { cve: CVE-2026-62870, product: "Microsoft Excel / Office 2016-2024 / 365 Apps", cvss: "8.8 (CVSS 3.1, AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H)", epss: "not available", kev: "no", exploited: "no — MSRC exploited=No, publiclyDisclosed=No, 'Exploitation Less Likely'", patch: "2026-Jul Microsoft release (MSRC releaseDate 2026-07-31)", source: "https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-62870" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in config/org-profile.yaml — sweep is a documented no-op; general coverage rules applied unchanged"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: cert-pl
+    reason: "https://cert.pl/en/posts/ returned HTTP 403 to both WebFetch and the bridge (and the jina fallback also relayed the 403). The /en/news/ path DID return HTTP 200 via the bridge, so the source is alive — the advisory-listing path in the recipe note is the blocked one. Recipe drift, not source death."
+  - source_id: chrome-releases
+    reason: "Stable Channel Update for Desktop dated 2026-08-04 was located (https://chromereleases.googleblog.com/2026/08/stable-channel-update-for-desktop.html, Chrome 151.0.7922.75/.76 Windows+Mac, 151.0.7922.75 Linux) but neither WebFetch nor the direct bridge rendered the post body, so the CVE list could not be read. No 'in the wild' string present in the retrieved HTML and BSI classed its Chrome advisory as an [UPDATE], so treated as a routine stable update. jina reader unavailable (see jina-credit gap)."
+  - source_id: enisa-euvd
+    reason: "https://euvd.enisa.europa.eu/enisaid/<id> renders a JS-only SPA shell on direct fetch — expected; the enisa-euvd API subcommands carried the data. Noted only so a later run does not re-diagnose it."
+  - source_id: jina-reader-pool
+    reason: "Every fetch_source.py invocation reported 'jina reader key …hxnTiF balance exhausted (HTTP 402)' and 'key …vCFMjZ balance exhausted (HTTP 402)'. The whole pooled jina credit appears exhausted this run, so the last rung of the fetch ladder was unavailable for the entire domain sweep. Operator action: check `python3 tools/fetch_source.py jina-usage` / top up. This blocked the Chrome post-body read and any recovery from CERT-PL's 403."
+  - source_id: prodaft
+    reason: "rotation-priority source not attempted — the fetch_method is jina and the pooled jina credit was exhausted (HTTP 402) for the whole run."
+  - source_id: ccn-cert-es
+    reason: "rotation-priority source not attempted — the fetch_method is jina and the pooled jina credit was exhausted (HTTP 402) for the whole run."
+  - source_id: cisa-directives
+    reason: "rotation-priority source: not re-fetched this run. The 2026-08-04 KEV alert body confirms BOD 26-04 remains the current governing directive (newest substantive item, 2026-06-10, out of window), so no in-window directive change is indicated."
+  - source_id: sysdig
+    reason: "rotation-priority source not reached inside the wall-clock budget; the S1 essential tier plus the CERT-FR/BSI/Check Point/Traefik pivot chains consumed the window."
+
+bridge_uses:
+  - { id: cisa-kev, method: "bridge:cisa-kev", outcome: ok }
+  - { id: cisa-advisories, method: "bridge:cisa.feed", outcome: ok }
+  - { id: cisa-advisories, method: "bridge:cisa.page", outcome: ok }
+  - { id: enisa-euvd, method: "bridge:enisa-euvd.recent", outcome: ok }
+  - { id: enisa-euvd, method: "bridge:enisa-euvd.advisory", outcome: ok }
+  - { id: advisories-ncsc-nl, method: "bridge:feed", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-rss", outcome: ok }
+  - { id: bsi-de, method: "bridge:bsi-csaf", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.avis-recent", outcome: ok }
+  - { id: anssi-fr, method: "bridge:cert-fr.actu-recent", outcome: ok }
+  - { id: cert-eu, method: "bridge:cert-eu.recent", outcome: "empty-feed" }
+  - { id: ncsc-ch-security-hub, method: "bridge:ncsc-csh.recent", outcome: ok }
+  - { id: ncsc-uk, method: "bridge:feed", outcome: ok }
+  - { id: cisco-psirt, method: "bridge:feed", outcome: ok }
+  - { id: cert-pl, method: "bridge:url", outcome: "item-not-found" }
