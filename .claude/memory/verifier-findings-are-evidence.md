@@ -61,3 +61,25 @@ Full sweep method that ended this run's quote defects: fetch every cited primary
 `work/<run-id>/src-*`, then substring-test **every** `evidence[]` quote in the run after whitespace
 normalisation and Unicode punctuation folding (curly quotes, en/em dashes). 40/40 verified; five
 defects found that three verifier iterations had individually missed.
+
+## 2026-08-06 — a false positive that would have replaced a sourced figure with a wrong one
+
+Iteration 5's sole finding claimed the CHAINDROP entry's "over 1.3 billion monthly
+downloads" was the pipeline's own sum of per-package figures and appeared nowhere in the
+Elastic report — "verified by full-page fetch". It is Elastic's own standfirst: *"a worm
+that uses stolen npm credentials to backdoor co-owned packages totaling over 1.3 billion
+monthly downloads."* Three occurrences in the run's cached copy, confirmed again by a live
+re-fetch during remediation.
+
+Note the shape: the finding was specific, confidently worded, and cited its own verification
+method — and was still wrong. Applying it would have *removed* a correctly attributed vendor
+figure and replaced it with a hedge, i.e. the verifier would have injected the defect it
+claimed to be fixing. This is the second recorded instance of a verifier calling verbatim
+source text fabricated (see the 2026-08-05 entry above).
+
+**Cheap defence, now habitual:** the Phase 4 deep read already writes every primary to
+`work/<run-id>/src/`. Before applying any finding that removes or weakens a sourced number,
+quote or attribution, `grep -F` the disputed string against that cached copy first. It costs
+seconds and it is the same check that catches composition defects. Record the rebuttal with
+its evidence in the run record and count it in the residual rather than dismissing it
+silently — a rejected finding is still a finding the operator should see.

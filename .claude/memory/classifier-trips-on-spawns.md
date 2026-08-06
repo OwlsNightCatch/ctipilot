@@ -60,3 +60,28 @@ before it died, and they were on disk.
   classifier trip — say so explicitly, with the retry count.
 - Do not strip the safety-relevant substance out of a spawn message to get it
   through. Reframing the *role* is legitimate; hiding what the work is is not.
+
+## 2026-08-06 — a whole-run rotation outage, and the enumeration trigger confirmed
+
+Two distinct patterns in one intel run, both on Sonnet-pinned definitions.
+
+**Research spawns (2 of 4 died).** S2 and S3 were both terminated before writing findings.
+The common factor in the two failed messages was a long enumeration of breach, actor and
+ransomware names carried inline as dedup context. Both respawns replaced that enumeration
+with a *pointer* to `work/<run-id>/prior_coverage.json` plus a one-line instruction to read
+it, and both completed normally. This is the cheapest available fix and it costs nothing —
+the agent reads the file anyway. **Default to pointing at the coverage file rather than
+listing covered items inline.**
+
+**Verifier rotation (4 of 4 died).** `cti-verification-alt` was spawned four separate times
+across iterations 2, 2-retry, 3 and 4, with message lengths from very long to quite short,
+and every attempt was terminated. Shortening did not help. The Opus-pinned
+`cti-verification` ran five iterations in the same run without a single interruption.
+
+**Consequence worth planning for: when the alt definition is unavailable, the double-CLEAN
+publish gate is structurally unreachable**, because it requires two consecutive CLEANs on
+two *different* models. No number of further iterations fixes that. Do not burn iterations
+chasing it — take the documented same-model exception, set
+`verification.confirmation_waived` with the spawn-failure reason and count, and publish on
+the low-residual early exit or the cap. Say plainly in the run record that the gate was not
+met rather than implying it was.

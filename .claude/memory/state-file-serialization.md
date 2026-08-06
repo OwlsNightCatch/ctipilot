@@ -29,3 +29,21 @@ Verify with `git diff --stat sources/sources.json` — a correct bookkeeping bum
 **Notes discipline (unchanged):** `notes` is append-only — append a `| YYYY-MM-DD ...` clause, never rewrite prior audit clauses.
 
 **`state/source_health.json`** is regenerated wholesale by `tools/source_health.py` itself; its large diff each run is the tool's own output and is expected — not something a run should hand-normalize.
+
+## 2026-08-06 — the note's stated canonical was stale; the *procedure* is what holds
+
+**Live format on `main` at 2026-08-06 is `indent=1`, not `indent=2`.** Verified with
+`git show <sha>:sources/sources.json | head -3 | cat -A` on the pre-run commit: `{$` then
+` "categories": {$` — one space. `state/cves_seen.json` is the same. The 2026-07-18
+paragraph above declaring indent=2 canonical "from 2026-07-18 onward" no longer describes
+the files; something flipped them back and this note was never corrected.
+
+The 2026-08-06 run dumped both files at `indent=1, ensure_ascii=False, sort_keys=True` and
+got 92- and 169-line diffs — the real changes only, no churn. That was luck, not care: the
+run did not check first. Had it trusted this file's stated fact and used indent=2, it would
+have flipped every line of both files.
+
+**Therefore: do not trust any indent value written in this file, including this paragraph.**
+The only reliable instruction here is the procedure, which has now survived two format
+flips: `head -3 <file> | cat -A` before dumping, match what you see, `git diff --stat`
+after. A stale fact in memory is worse than no fact, because it is trusted.

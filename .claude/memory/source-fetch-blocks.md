@@ -102,3 +102,35 @@ The 2026-07-18T0409Z run exhausted the key pool mid-window (HTTP 402) **and the 
 ## ncsc-ch-incidents (aktuelle-vorfaelle.html) — read the FULL accordion before judging freshness (2026-07-18)
 
 The 07-18 audit's G2 sweep flagged the page "reachable-but-stale: Oct-2025 consumer-phishing only". **False alarm, operator-corrected same day:** the documented bridge fetch (`python3 tools/fetch_source.py url <page URL>` — this admin.ch page does NOT 403 the bridge) returns the full accordion, 10 dated entries newest-first, latest **01.07.2026 13:22** (SwissNovaChat/SwissNovaCare fake-subscription warning). The trap: 4 of 10 entries cluster in Oct 2025, so a truncated or summarized read that misses the top of the accordion concludes "stale". Rule: judge this page's freshness only from the raw bridge body, scanning every `DD.MM.YYYY` in document order (newest is first). Cadence is genuinely slow (quarterly-ish) and the surface is consumer-fraud by design — operational/sector incidents live on the Cyber Security Hub (`ncsc-csh`) / Im Fokus; neither fact is staleness.
+
+## NCSC-CH Cyber Security Hub — public API versioned to /api/v1/ (fixed 2026-08-06)
+
+The `ncsc-csh` bridge went dark: `GET /api/posts/dashboard` and `GET /api/posts/{id}/details`
+both returned **HTTP 405 with `Allow: DELETE, PUT`**. Two sub-agents independently hit it and
+both fell back to the jina reader on the SPA root, which hydrates the top-10 titles but gives
+no per-post dates or bodies — enough to confirm nothing was missed, not enough to work from.
+
+**The diagnostic that matters:** *every* path under `/api/posts/**` answered 405, including
+paths that never existed (`/api/posts/feed`, `/api/posts/list`), while unknown roots still
+returned 404. A uniform 405 across a whole subtree including non-existent children is an
+**edge rule on the subtree, not a moved route** — so probing sibling paths is wasted effort.
+Go to the client instead.
+
+**Recovery, generalisable to any SPA-backed source:** read the route table out of the app
+bundle.
+
+```bash
+curl -sS https://security-hub.ncsc.admin.ch/ | grep -o 'main-[^"]*\.js'
+curl -sS https://security-hub.ncsc.admin.ch/<that file> \
+  | grep -o -E '"/api/[A-Za-z0-9/_{}.-]*post[A-Za-z0-9/_{}.-]*' | sort -u
+```
+
+That surfaced `/api/v1/posts/dashboard` and `/api/v1/posts/{postId}/details`, both 200 with
+TLP:Clear content. `tools/fetch_source.py` patched to the versioned paths and re-tested end
+to end; the procedure is also recorded in the code comment beside the endpoints.
+
+Two notes for next time: this is a `tier: essential` source, so a run that loses it owes a
+same-run repair rather than a coverage-gap line — the fix took about five minutes once the
+405-across-the-subtree pattern was recognised. And the CSH detail URL to cite in an entry is
+the hash route `https://security-hub.ncsc.admin.ch/#/posts/<id>`, which resolves live and
+passes the gate's liveness check.
