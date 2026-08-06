@@ -493,14 +493,27 @@ def fetch_json(url: str) -> Any:
 # (Keycloak realm `csh_prod`). Two endpoints accept anonymous reads
 # *for posts the publisher marked TLP:CLEAR*:
 #
-#   GET /api/posts/dashboard?pageSize=N&pageIndex=0
+#   GET /api/v1/posts/dashboard?pageSize=N&pageIndex=0
 #       Public dashboard listing. Returns {pageIndex, pageSize, items: [...]}
 #       where each item has: id, created, lastChange, publicationStatus,
 #       summary, title, tlpStatus.
 #
-#   GET /api/posts/{id}/details
+#   GET /api/v1/posts/{id}/details
 #       Full post content. Returns: id, tlpStatus, created, history,
 #       files, title, content (Markdown body).
+#
+# API VERSIONING (fixed 2026-08-06): the unversioned /api/posts/** tree
+# stopped serving GET some time before 2026-08-06 — every path under it,
+# including paths that never existed, answers HTTP 405 with
+# `Allow: DELETE, PUT`, while unknown roots still 404. That is an edge
+# rule on the whole subtree, not a moved route, so probing sibling paths
+# finds nothing. The public read API moved under /api/v1/; the current
+# paths are recorded in the SPA bundle (main-*.js) as "/api/v1/posts/
+# dashboard" and "/api/v1/posts/{postId}/details". If these 405 again,
+# re-read the route table out of the bundle rather than guessing:
+#   curl -sS https://security-hub.ncsc.admin.ch/ | grep -o 'main-[^"]*\.js'
+#   curl -sS https://security-hub.ncsc.admin.ch/<that file> \
+#     | grep -o -E '"/api/[A-Za-z0-9/_{}.-]*post[A-Za-z0-9/_{}.-]*' | sort -u
 #
 # Authenticated endpoints (search, archive, comments, attachments) are
 # NOT touched here. The agent must respect TLP — never fetch TLP:AMBER
@@ -510,7 +523,7 @@ def ncsc_list(page_size: int = 20) -> list[dict[str, Any]]:
     """Return the public dashboard items (newest first), TLP:CLEAR only."""
     if page_size < 1 or page_size > 100:
         raise ValueError("page_size must be 1..100")
-    url = f"{NCSC_CSH_BASE}/api/posts/dashboard?pageSize={page_size}&pageIndex=0"
+    url = f"{NCSC_CSH_BASE}/api/v1/posts/dashboard?pageSize={page_size}&pageIndex=0"
     data = fetch_json(url)
     items = data.get("items", []) or []
     # Defensive filter — if the upstream ever ships non-Clear items in
@@ -520,7 +533,7 @@ def ncsc_list(page_size: int = 20) -> list[dict[str, Any]]:
 
 def ncsc_post(post_id: int) -> dict[str, Any]:
     """Return one CSH post by ID, including the Markdown body."""
-    url = f"{NCSC_CSH_BASE}/api/posts/{int(post_id)}/details"
+    url = f"{NCSC_CSH_BASE}/api/v1/posts/{int(post_id)}/details"
     data = fetch_json(url)
     if (data.get("tlpStatus") or "").lower() != "clear":
         raise RuntimeError(

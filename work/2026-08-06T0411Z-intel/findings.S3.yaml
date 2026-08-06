@@ -1,0 +1,213 @@
+# work/2026-08-06T0411Z-intel/findings.S3.yaml
+domain: S3
+run_id: 2026-08-06T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-06T04:18:36Z
+ended_at: 2026-08-06T04:28:47Z
+duration_seconds: 611
+self_telemetry:
+  webfetch_calls: 34
+  websearch_calls: 2
+  bridge_fetches: 16
+items:
+  - title: "CHAINDROP — a new Shai-Hulud npm worm wave compromises 400+ packages (1.3B+ monthly downloads), using an Ethereum smart contract as its C2 resolver"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain", publisher: "Elastic Security Labs", date: "2026-08-06", role: "primary" }
+      - { url: "https://www.ox.security/blog/a-new-infostealer-worm-hits-npm-affecting-keyv-and-cacheable/", publisher: "OX Security", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs → primary (no pivot needed), URL https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain; corroborated via ox-security, URL https://www.ox.security/blog/ → URL https://www.ox.security/blog/a-new-infostealer-worm-hits-npm-affecting-keyv-and-cacheable/"
+    summary: |
+      Elastic Security Labs documents CHAINDROP, a new self-propagating npm supply-chain worm detected 2026-08-04 after
+      the maintainer of the widely-depended-on `keyv` package was compromised. The worm executes via npm `preinstall`
+      lifecycle hooks, which download the Bun JavaScript runtime to execute an obfuscated ~711KB payload. That payload
+      harvests over 300 credential patterns spanning AI-coding-assistant tokens (Anthropic/Claude, OpenAI/Codex,
+      Cursor, Gemini), cloud-provider credentials (AWS, GCP, Azure), GitHub PATs, SSH keys, Kubernetes service-account
+      tokens and HashiCorp Vault tokens, then AES-256-GCM-encrypts and RSA-wraps the harvested material before
+      exfiltration. The worm component only self-propagates when the credential sweep turns up an npm token that
+      carries package-write permission AND has two-factor authentication disabled for publishing (`bypass_2fa`) — it
+      then republishes every reachable package under that token. The most notable mechanism change from earlier
+      Shai-Hulud-family waves: CHAINDROP does not hardcode a C2 domain, instead querying an Ethereum smart contract
+      (0xE1f2395ee43e45A1556EC6438a88c31B83493103) at runtime to resolve the current exfiltration endpoint, letting
+      the operator rotate C2 infrastructure without shipping a new payload. Over 400 packages were compromised,
+      including `keyv` (~600M downloads/month), `flat-cache` (~580M) and `cacheable-request` (~137M) — a supply-chain
+      blast radius in the billions of monthly installs. Elastic ships detection rules for the preinstall-hook
+      execution pattern, suspicious curl/PowerShell spawned from Node/Bun parents, anomalous DNS queries to
+      crypto/DHT-adjacent services, and process-then-immediate-file-deletion sequences.
+    region_nexus: "global; npm ecosystem — direct exposure for any CI/CD pipeline or developer workstation consuming the named packages, including EU/CH public-sector and supplier engineering teams"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco, energy, healthcare, transport, water"
+    cves: []
+    techniques: [T1195.002, T1552.001, T1071.001, T1027]
+    affected_products: ["npm (keyv, flat-cache, cacheable-request, cacheable, cache-manager and 400+ dependent packages)"]
+    entity_keys: ["tool:datadog-shai-hulud-framework-2026-05"]
+    new_entities:
+      - { key: "campaign:shai-hulud-chaindrop-2026-08", type: campaign, name: "Shai-Hulud CHAINDROP wave",
+          aliases: ["CHAINDROP"],
+          summary: "Elastic Security Labs' designation for an August 2026 Shai-Hulud-family npm worm wave that compromised the keyv maintainer and 400+ packages, using a preinstall-hook dropper and an Ethereum smart contract as its C2 resolver (Elastic, 2026-08-06)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The reach of this compromise is significant: `keyv` alone received over 600 million downloads last month, with related packages compounding the exposure."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain"
+      - quote: "The worm component activates when the credential sweep turns up an npm token, but only if that token meets two specific requirements: package write permissions and the ability to publish without two-factor authentication."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain"
+      - quote: "CHAINDROP does not hardcode a C2 domain; instead, it queries an Ethereum smart contract at address 0xE1f2395ee43e45A1556EC6438a88c31B83493103 to retrieve the current exfiltration endpoint."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain"
+      - quote: "A massive Shai-Hulud campaign hit npm, affecting over 2 billion monthly downloads of packages"
+        attribution: "OX Security"
+        source_url: "https://www.ox.security/blog/a-new-infostealer-worm-hits-npm-affecting-keyv-and-cacheable/"
+    extended_notes: |
+      Not the same campaign as the previously-covered "Mini Shai-Hulud"/TeamPCP copycat wave (campaign:mini-shai-hulud) —
+      Elastic explicitly frames CHAINDROP as a new wave of the original Shai-Hulud worm lineage, distinct from the
+      TeamPCP-attributed derivative wave already tracked in the registry. Proposed as its own campaign entity above;
+      the main agent should confirm whether to relate it to the original Shai-Hulud campaign entity if one exists
+      under a different key, or register it standalone. OX Security published a day earlier (2026-08-04) with
+      overlapping but not identical figures (440+ packages / 2B+ downloads vs. Elastic's 400+ / 1.3B+) and a distinct
+      technical framing (dropper filenames math_init.js/Math_Symbol.js, a GitHub-commit-tag "Shai-Hulud: Here We Go
+      Again" C2 marker, a dead-man's-switch that deletes on GitHub-token revocation) — independent corroboration of
+      the same campaign from a second vendor with first-hand detail, not a rewrite of Elastic's post. Elastic's
+      preinstall-hook + Bun-runtime + Ethereum-smart-contract-C2 mechanics and its shipped detection rules are the
+      more technically complete write-up and are used as primary.
+    borderline: false
+
+  - title: "ENDLESSDOORS — twenty-plus Zbtlink router models ship from the factory with an unauthenticated root-command backdoor listening on TCP/7000"
+    sources:
+      - { url: "https://www.vulncheck.com/blog/zbt-endlessdoors", publisher: "VulnCheck", date: "2026-08-05", role: "primary" }
+    discovery_trace: "first seen at: vulncheck, URL https://www.vulncheck.com/blog → primary (no pivot needed), URL https://www.vulncheck.com/blog/zbt-endlessdoors"
+    summary: |
+      VulnCheck documents ENDLESSDOORS, a pre-installed remote-access implant shipped by default on more than twenty
+      Zbtlink (Shenzhen Zhibotong Electronics) router/CPE models sold on Amazon and other e-commerce platforms,
+      including rebrands sold under the Wiflyer name. The implant is a customized build of the open-source rctl
+      ("remote control linux") tool, started at boot by the vendor's own init script and masquerading as a kernel
+      thread named "kworker" (with an on-disk unbracketed process name as the detection tell) to blend into normal
+      process listings. It phones home over TCP/7000 to hardcoded C2 hosts (zbtctl.epplink[.]net and
+      rbdg4nzqadui.wikaba[.]com), sending an unauthenticated 39-byte "hello" containing a device-class label and the
+      device's MAC address; the C2 protocol has no handshake, key exchange or negotiation of any kind, and whatever
+      command the server sends afterward is passed straight to popen() and executed as uid 0. A secondary command
+      spins up an interactive reverse shell on TCP/7001. VulnCheck stresses this is not a memory-corruption bug in a
+      protocol parser — it is a vendor-shipped component, started by the vendor's own init script, present across the
+      vendor's full product line (CVE-2026-66747 assigned). Because the backdoor is architectural rather than a
+      patchable flaw, VulnCheck recommends replacing affected devices rather than waiting on a fix; detection options
+      given are host-level (the unbracketed "kworker" process name, on-disk artifacts at /usr/sbin/kworker and
+      /etc/init.d/skworker) and network-level (blocking the two named C2 domains and flagging unsolicited TCP/7000
+      and TCP/7001 traffic to/from consumer CPE devices).
+    region_nexus: "global consumer/SMB router supply chain; relevant to any EU/CH public-sector or SME network using cheap rebranded CPE/router hardware at branch offices or as home-office equipment"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-66747]
+    techniques: [T1078, T1059, T1204]
+    affected_products: ["Zbtlink WE1026-5G-WD, WE1326, WE2007, WE2008-DSIM, WE2416, WE3326, WE5927, WE5931, WE5931AC, WE826-T3-DSIM, WG108, WG1602, WG1608-DSIM, WG209, WG2105, WG2107, WG259, WG3526, Z8102AX-2DSIM, CPE2801, and Wiflyer-rebranded equivalents"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:endlessdoors", type: tool, name: "ENDLESSDOORS",
+          aliases: ["rctl (customized)"],
+          summary: "VulnCheck's designation for a factory-installed, unauthenticated root-command backdoor (a customized build of the open-source rctl tool) found pre-installed on 20+ Zbtlink router/CPE models (VulnCheck, 2026-08-05, CVE-2026-66747)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Zbtlink routers phone home, waiting for orders. Not because they were hacked. Because they were shipped that way."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-endlessdoors"
+      - quote: "There is no handshake, no key exchange, no negotiation. After registration, anything the server sends is handed to popen() and executed as uid 0."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-endlessdoors"
+      - quote: "This isn't a memory corruption bug in a parser. It's a component in the vendor's product, started at boot by the vendor's own init script, shipped across twenty models."
+        attribution: "VulnCheck"
+        source_url: "https://www.vulncheck.com/blog/zbt-endlessdoors"
+    extended_notes: |
+      CVE-2026-66747 assigned per VulnCheck's own console entry (https://console.vulncheck.com/cve/CVE-2026-66747) and
+      mirrored on NVD (https://nvd.nist.gov/vuln/detail/CVE-2026-66747) — treat the CVE as a tracking identifier for a
+      vendor-shipped backdoor rather than a patchable code defect; VulnCheck's own remediation guidance is device
+      replacement, not a firmware update. Single-source so far (VulnCheck only); flagged HIGH confidence given the
+      first-hand nature of VulnCheck's own exploit/backdoor-protocol research and the CVE assignment.
+    borderline: false
+  - title: "LiteLLM AI-gateway callback hooks let a post-compromise attacker forge tool calls after model inference — bypassing every prompt-level defense"
+    sources:
+      - { url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/", publisher: "Cloud Security Alliance — Lab Space", date: "2026-08-05", role: "primary" }
+      - { url: "https://embracethered.com/blog/posts/2026/hijacking-litellm-for-fun-and-profit/", publisher: "Embrace The Red (Johann Rehberger / wunderwuzzi)", date: "2026-08-03", role: "primary" }
+    discovery_trace: "first seen at: csa-labs, URL https://labs.cloudsecurityalliance.org/research/ → primary: CSA research note, URL https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/ → original technique disclosure: embracethered.com, URL https://embracethered.com/blog/posts/2026/hijacking-litellm-for-fun-and-profit/"
+    summary: |
+      Researcher Johann Rehberger (wunderwuzzi, Embrace The Red) and a follow-on Cloud Security Alliance research note
+      document a post-compromise technique against LiteLLM, a widely deployed open-source AI gateway that fronts
+      OpenAI, Anthropic, Google Gemini and AWS Bedrock model calls for many organizations' AI-agent deployments. An
+      attacker who already holds admin access to a LiteLLM proxy (via a prior CVE chain, supply-chain compromise, or
+      leaked LITELLM_MASTER_KEY/proxy-admin credential) uses the legitimate `/model/update` management API to change
+      a model's `api_base` and `use_litellm_proxy` settings, silently rerouting all traffic for that model through an
+      attacker-controlled relay and exposing the encrypted provider API keys that resolve at request time. Once
+      rerouted, the attacker's relay abuses LiteLLM's own callback-hook system — specifically
+      `async_post_call_success_hook` and `async_post_call_streaming_iterator_hook` — to inject arbitrary text or
+      forge tool calls into the model's response after inference has already completed, which defeats prompt-level
+      defenses entirely because the manipulation happens downstream of the model. A capable attacker reverts the
+      rerouted configuration once finished, removing the most visible artifact of the compromise. Detection requires
+      audit logging of all `/model/update` and other management-API configuration changes and alerting on unexpected
+      `api_base` values; hardening calls for treating LiteLLM gateway-admin credentials as Tier-0 infrastructure
+      secrets (vault-backed, rotated, egress-restricted) rather than ordinary application config.
+    region_nexus: "global; any organisation running a self-hosted LiteLLM AI gateway to front OpenAI/Anthropic/Gemini/Bedrock calls for internal AI-agent tooling"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1556, T1557, T1078.001]
+    affected_products: ["LiteLLM (self-hosted AI gateway/proxy)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "An attacker in control of these hooks can inject arbitrary text into a response or, more consequentially, forge a tool call that was never produced by the underlying model."
+        attribution: "Cloud Security Alliance — Lab Space"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/"
+      - quote: "Because the manipulation happens after the LLM has already generated its output, it bypasses prompt-level defenses entirely and can forge tool calls."
+        attribution: "Cloud Security Alliance — Lab Space"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/"
+      - quote: "A sophisticated attacker reverts the rerouted configuration back to its original state once the operation concludes, which removes the most visible artifact of the compromise."
+        attribution: "Cloud Security Alliance — Lab Space"
+        source_url: "https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/"
+    extended_notes: |
+      The original technique disclosure is Johann Rehberger's 2026-08-03 post on embracethered.com, two days before this
+      run's 26h recency floor (~2026-08-05T02:12Z) — CSA Labs' 2026-08-05 research note is a same-technique synthesis
+      with added detection/hardening framing rather than independent new testing, so this is recycled-but-close news
+      rather than a fresh finding. Flagged borderline for that reason even though the underlying technique (post-
+      inference tool-call forgery via legitimate callback hooks, requiring only gateway-admin access rather than a
+      code-execution primitive) is genuinely novel and detection-relevant for any org running self-hosted LiteLLM.
+    borderline: true
+    borderline_reason: "Primary technical disclosure (embracethered.com) published 2026-08-03, outside the 26h window; CSA Labs' 2026-08-05 note is substantially a synthesis of that research rather than new original testing — main agent should judge whether the in-window CSA republication with added detection framing clears the bar or whether this is recycled news to drop."
+watchlist_sweep: null
+candidate_sources: []
+coverage_gaps:
+  - source_id: sophos-xops
+    reason: "Sophos's Interlock/GOLD EMBRACE (DFIR-tool-abuse: Volatility3, WinPmem credential extraction) piece has datePublished 2026-08-04 — outside this run's 26h recency window (anchor ~2026-08-05T02:12Z). Not previously covered (checked prior_coverage.json — no match); noting so a future run or the weekly W1 sweep can pick it up if it re-surfaces or gets an update."
+  - source_id: unit42
+    reason: "Unit 42's 'Almost Half of Malware Samples Communicate Direct to IP' (D2IP telemetry across 4M dynamic-analysis reports; Phorpiex/Mozi/SectopRAT/Boatnet named) published 2026-08-04, also just outside the 26h window. Solid detection-relevant research (network egress monitoring angle) if a later run wants to pick it up as an update — no update expected since it's a standalone report."
+  - source_id: csa-labs
+    reason: "CSA Labs' 'RufRoot: Unauthenticated RCE in Ruflo's MCP Bridge' note (2026-08-05) repackages Noma Security's original disclosure (noma.security, datePublished 2026-07-29T04:31:13Z per the page's own JSON-LD, confirmed via bridge fetch) — nearly 8 days stale by this run's window and no material new technical delta found beyond the original disclosure (same CVE-2026-59726, same AgentDB-persistence detail already implied by Noma's own framing). Dropped as recycled news rather than included."
+  - source_id: kela-cyber
+    reason: "No posts newer than 2026-07-22 (Iran APT series) — quiet in-window."
+  - source_id: push-security
+    reason: "No posts newer than 2026-07-31 — quiet in-window."
+  - source_id: sans-ics
+    reason: "Listing did not surface dated ICS-specific posts distinct from the general blog in the fetch; most recent visible post overall (VulnOps CISO guide, 2026-08-05) was not ICS-focused. No confirmed in-window ICS content."
+  - source_id: team-cymru
+    reason: "Listing returned no publication dates and no confirmed in-window posts."
+  - source_id: project-discovery
+    reason: "No confirmed in-window (2026-08-05/06) dated posts; top items appear to be July 2026 or undated."
+  - source_id: recordedfuture-insikt
+    reason: "Most recent dated item is a 2026-08-05 blog post ('Hype vs. Reality: What the Hugging Face Incident Means for AI Safety') that is commentary on an already-covered incident, not new technical research — not included."
+  - source_id: trellix
+    reason: "Bridge fetch returned only page head/meta (script-heavy SPA shell) with no article hrefs surfaced in this pass; did not have time to drill further within the 45-min cap."
+  - source_id: gambit-security
+    reason: "No posts newer than 2026-07-27 — quiet in-window."
+  - source_id: zimperium-zlabs
+    reason: "Two in-window posts (SparkKitty 2026-08-05, Octagon RAT rapid-response 2026-08-04) both assessed as product-marketing amplification of third-party research (CyberInt and K7 Security respectively) rather than original Zimperium technical analysis — excluded per the mission's marketing-skip rule."
+  - source_id: google-tag
+    reason: "No dated 2026 posts newer than the existing TAG Bulletin Q3 2025 (published 2026-01-29) surfaced via WebSearch; broken feed persists per source-list note."
+  - source_id: crowdstrike
+    reason: "No confirmed in-window (2026-08-05/06) research posts; most recent, 'Secure Agent Harness Execution: Preventing Escape' (2026-08-04), falls outside the 26h window."

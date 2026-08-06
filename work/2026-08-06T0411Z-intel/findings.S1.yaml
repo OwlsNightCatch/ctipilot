@@ -1,0 +1,169 @@
+domain: S1
+run_id: 2026-08-06T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-06T04:14:38Z
+ended_at: 2026-08-06T04:31:26Z
+duration_seconds: 1008
+self_telemetry:
+  webfetch_calls: 10
+  websearch_calls: 12
+  bridge_fetches: 32
+items:
+  - title: "CVE-2026-63077 — JetBrains TeamCity On-Premises RCE moves to confirmed active exploitation (CISA KEV addition, 2026-08-05)"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/05/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-08-05", role: "primary" }
+      - { url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/", publisher: "JetBrains (vendor PSIRT)", date: "2026-07-27", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev, URL https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json (dateAdded 2026-08-05 for CVE-2026-63077) → primary: CISA alert, URL https://www.cisa.gov/news-events/alerts/2026/08/05/cisa-adds-one-known-exploited-vulnerability-catalog → corroborating: vendor advisory, URL https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/ (unchanged since 2026-07-27, still states no known exploitation at disclosure time) → corroboration attempt: ENISA EUVD record EUVD-2026-49369 independently shows exploitedSince 2026-08-05, but its human-readable detail page (https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-49369) returned an 'Application Unavailable' shell on both WebFetch and the jina reader today, so it is not cited as a Source (site outage, not a content gap) — flagged as a coverage note below."
+    summary: |
+      CISA added CVE-2026-63077 to its Known Exploited Vulnerabilities catalog on 2026-08-05, "based on evidence of active exploitation" of JetBrains TeamCity On-Premises, with a compressed three-business-day federal remediation deadline (2026-08-08) under BOD 26-04. This reverses the exploitation assessment at disclosure: when JetBrains published the advisory on 2026-07-27 it stated it had checked TeamCity Cloud for exploitation attempts and found none, and was "not aware of any active exploitation of this vulnerability" at that time — the JetBrains post itself has not been updated since. The underlying flaw is an unauthenticated deserialization-of-untrusted-data vulnerability reachable through the TeamCity agent-polling protocol: an attacker with only HTTP(S) access to a TeamCity server can bypass authentication checks and execute arbitrary OS commands as the TeamCity server process, on every version of TeamCity On-Premises ever shipped (fixed in 2025.11.7 / 2026.1.3, with a security-patch plugin available down to 2017.1 for estates that cannot upgrade immediately; TeamCity Cloud is unaffected). Neither CISA's alert nor the KEV catalog entry names an exploiting cluster or the observed intrusion vector, and ENISA's EUVD independently records exploitedSince 2026-08-05 in its machine-readable record though its human detail page is currently down. For defenders, the practical delta is that any internet-reachable TeamCity On-Premises instance that was not patched before 2026-08-05 must now be treated as a suspected-compromise target rather than a patch-now item — a build-server compromise carries source-code, artifact-signing and downstream supply-chain blast radius, and this product class (TeamCity) has a track record of being mass-exploited on an earlier flaw (CVE-2024-27198).
+    region_nexus: "global; CI/CD build infrastructure is widely deployed across Swiss/EU public-sector and enterprise software-delivery pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-63077]
+    techniques: [T1190]
+    affected_products: ["JetBrains TeamCity On-Premises"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: "update-of:2026-07-29/cve-2026-63077-teamcity-onprem-unauth-deserialization-rce"
+    evidence:
+      - quote: "CISA has added one new vulnerability to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/08/05/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "At the time of publishing this advisory, we are not aware of any active exploitation of this vulnerability."
+        attribution: "JetBrains"
+        source_url: "https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/"
+    extended_notes: |
+      Coverage gap noted: the NCSC-CH Security Hub bridge (`ncsc-csh list`/`post`) is currently broken — the documented `/api/posts/dashboard` endpoint returns HTTP 405 and `/api/posts/{id}/details` returns 404 for every id tried. The jina reader against the SPA root does hydrate a 10-item title+summary listing (no full body, no dates) as a partial fallback; used it to confirm TeamCity/CVE-2026-63077 does not yet appear on the NCSC-CH dashboard as of this run and to sweep for other in-window CH-relevant items (see cPanel item below, discovered via this fallback). Recommend the main agent log a recipe-check task for `tools/fetch_source.py`'s ncsc-csh endpoints.
+
+  - title: "Veeam Service Provider Console and Veeam ONE — ten CVEs including a CVSS v4.0 10.0 unauthenticated RCE on the ONE monitoring agent"
+    sources:
+      - { url: "https://www.veeam.com/kb4893", publisher: "Veeam (vendor PSIRT, KB4893)", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.veeam.com/kb4892", publisher: "Veeam (vendor PSIRT, KB4892)", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0968/", publisher: "CERT-FR", date: "2026-08-05", role: "corroborating" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0276", publisher: "NCSC-NL", date: "2026-08-05", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0276, 2026-08-05) → pivot: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ (CERTFR-2026-AVI-0968, 2026-08-05) → primary: Veeam KB4893, URL https://www.veeam.com/kb4893 → primary: Veeam KB4892 (Veeam ONE), URL https://www.veeam.com/kb4892"
+    summary: |
+      Veeam's 2026-08-04 security release (published 2026-08-05 by NCSC-NL/CERT-FR) fixes ten CVEs across two widely co-deployed products. In Veeam Service Provider Console (SPC) 9.2.1.33875 and all earlier v9 builds: CVE-2026-58073 (CVSS v4.0 9.5) lets an unauthenticated attacker impersonate a managed agent and obtain that agent's credentials; CVE-2026-58072 (CVSS v4.0 9.0) allows arbitrary file write on the management server leading to remote code execution; CVE-2026-58067 (CVSS v4.0 8.7) lets an unauthenticated attacker exhaust host memory for denial of service; and CVE-2026-58071 (CVSS v4.0 8.2) allows an unauthenticated attacker to reach the proxied appliance API with Portal Administrator privileges during a short window after an admin session begins. All four are fixed in SPC 9.3.0.35057. In Veeam ONE 13.0.2.6723 and all earlier v13 builds, the standout flaw is CVE-2026-64633 (CVSS v4.0 10.0) — unauthenticated remote code execution on the Veeam ONE agent host, no privileges or user interaction required; sibling flaws include CVE-2026-58075 (8.7, unauthenticated arbitrary file read enabling local privilege escalation), CVE-2026-58074 (8.6, high-privileged-user arbitrary code execution), CVE-2026-64631 (8.6, low-privileged SQL injection extracting database contents), CVE-2026-64634 (8.4, local privilege escalation to the Reporter service context) and CVE-2026-64630 (5.3, IDOR retrieving report data outside a shared link's scope). All are fixed in Veeam ONE 13.1.0.7034. Most were reported through Veeam's HackerOne bug-bounty program; Veeam reports no in-the-wild exploitation. Veeam's own advisory text flags the operationally relevant pattern explicitly: "once a vulnerability and its associated patch are disclosed, attackers will likely attempt to reverse-engineer the patch to exploit unpatched deployments" — a caution with precedent, given Veeam Backup & Replication's CVE-2023-27532 was mass-exploited by ransomware affiliates post-disclosure, and Veeam SPC/ONE are typically deployed by managed-service providers and enterprises specifically to protect backup infrastructure that is itself the target of ransomware pre-encryption sabotage.
+    region_nexus: "global; Veeam SPC/ONE are widely run by MSPs and enterprises serving Swiss/EU public-sector and critical-infrastructure backup estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-58073, CVE-2026-58072, CVE-2026-58067, CVE-2026-58071, CVE-2026-64633, CVE-2026-58075, CVE-2026-58074, CVE-2026-64631, CVE-2026-64634, CVE-2026-64630]
+    techniques: [T1190, T1068]
+    affected_products: ["Veeam Service Provider Console", "Veeam ONE"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "A vulnerability in Veeam Service Provider Console enables an unauthenticated attacker to impersonate a managed agent and acquire that agent's credentials. Severity: Critical CVSS v4.0 Score: 9.5"
+        attribution: "Veeam (KB4893)"
+        source_url: "https://www.veeam.com/kb4893"
+      - quote: "A vulnerability allowing remote unauthenticated code execution on the agent host. Severity: Critical CVSS v4.0 Score: 10.0"
+        attribution: "Veeam (KB4892)"
+        source_url: "https://www.veeam.com/kb4892"
+      - quote: "it is critical importance of ensuring that all customers use the latest versions of our software and install all updates and patches without delay"
+        attribution: "Veeam"
+        source_url: "https://www.veeam.com/kb4893"
+    extended_notes: |
+      Priority set to notable rather than high because no exploitation is confirmed or reported by the vendor; flagged in-summary given the backup-infrastructure targeting precedent so the reader can weight it appropriately.
+
+  - title: "HPE Aruba Networking SD-WAN Orchestrator — unauthenticated REST API auth bypass (CVSS 9.8), 9.6.x branch only"
+    sources:
+      - { url: "https://csaf.arubanetworking.hpe.com/2026/hpe_aruba_networking_-_hpesbnw05100.txt", publisher: "HPE Aruba Networking (vendor PSIRT, HPESBNW05100)", date: "2026-08-04", role: "primary" }
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0969/", publisher: "CERT-FR", date: "2026-08-05", role: "corroborating" }
+    discovery_trace: "first seen at: anssi-fr, URL https://www.cert.ssi.gouv.fr/avis/feed/ (CERTFR-2026-AVI-0969, 2026-08-05) → primary: HPE Aruba PSIRT advisory HPESBNW05100, URL https://csaf.arubanetworking.hpe.com/2026/hpe_aruba_networking_-_hpesbnw05100.txt"
+    summary: |
+      HPE Aruba Networking published advisory HPESBNW05100 (2026-08-04, republished by CERT-FR 2026-08-05) for two vulnerabilities in the REST API interface of SD-WAN Orchestrator's 9.6.x software branch: CVE-2026-63455 and CVE-2026-63456, both CVSS v3.1 9.8 (AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), described as authentication bypass via spoofed HTTP headers that lets an unauthenticated remote attacker bypass web authentication mechanisms and view/modify potentially sensitive system information. Affected: SD-WAN Orchestrator 9.6.2.x builds 9.6.2.40208 and below, and 9.6.3.x builds 9.6.3.40137 and below; no branches outside 9.6.x.x are affected. Fixed in 9.6.2.40210+, 9.6.3.40140+, or by moving to the 9.7.0.43264+ branch. Both were reported through HPE Aruba's bug-bounty program; the vendor states it is "not aware of any public discussion or exploit code targeting these specific vulnerabilities as of the release date." HPE Aruba's recommended interim mitigation is to restrict CLI and web-management interfaces to a dedicated Layer-2 segment/VLAN and/or Layer-3+ firewall policy, with IP allow-listing for local users and API keys — i.e., the Orchestrator management plane should never be internet-reachable. This lands in the same window as the confirmed-exploited Arista VeloCloud Orchestrator command-injection zero-day (CVE-2026-16812, already covered) and the ongoing CISA Emergency Directive posture on Cisco SD-WAN, reinforcing SD-WAN/WAN-orchestration management planes as a recurring, currently hot target class for defenders to prioritize exposure-checking over patch-cycle timing alone.
+    region_nexus: "global; SD-WAN orchestration is widely used by telcos and enterprises with multi-site EU/CH operations"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector"
+    cves: [CVE-2026-63455, CVE-2026-63456]
+    techniques: [T1190]
+    affected_products: ["HPE Aruba Networking EdgeConnect SD-WAN Orchestrator"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Multiple vulnerabilities in the REST API interface of HPE Networking SD-WAN Orchestrator could allow an unauthenticated remote attacker to bypass web authentication mechanisms and access system functions."
+        attribution: "HPE Aruba Networking"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_aruba_networking_-_hpesbnw05100.txt"
+      - quote: "HPE Aruba Networking is not aware of any public discussion or exploit code targeting these specific vulnerabilities as of the release date of the advisory."
+        attribution: "HPE Aruba Networking"
+        source_url: "https://csaf.arubanetworking.hpe.com/2026/hpe_aruba_networking_-_hpesbnw05100.txt"
+    extended_notes: ""
+
+  - title: "cPanel & WHM — database-rename privilege escalation to database root (CVE-2026-58048) plus HTTP request smuggling in cpsrvd (CVE-2026-58047)"
+    sources:
+      - { url: "https://support.cpanel.net/hc/en-us/articles/42285745783703-Security-CVE-2026-58048-Database-Privilege-Escalation", publisher: "cPanel/WebPros (vendor PSIRT)", date: "2026-08-04", role: "primary" }
+      - { url: "https://support.cpanel.net/hc/en-us/articles/42285024734743-Security-CVE-2026-58047-HTTP-Request-Smuggling", publisher: "cPanel/WebPros (vendor PSIRT)", date: "2026-08-04", role: "primary" }
+      - { url: "https://thehackernews.com/2026/08/new-cpanel-critical-flaw-could-let.html", publisher: "The Hacker News", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: "first seen at: ncsc-ch-security-hub, URL https://security-hub.ncsc.admin.ch/ (jina-hydrated dashboard listing, post 12827 'cPanel: Database Privilege Escalation (CVE-2026-58048)') → pivot: WebSearch (\"CVE-2026-58048 cPanel WHM database privilege escalation\") → pivot: The Hacker News, URL https://thehackernews.com/2026/08/new-cpanel-critical-flaw-could-let.html → primary: cPanel/WebPros vendor advisory, URL https://support.cpanel.net/hc/en-us/articles/42285745783703-Security-CVE-2026-58048-Database-Privilege-Escalation and https://support.cpanel.net/hc/en-us/articles/42285024734743-Security-CVE-2026-58047-HTTP-Request-Smuggling"
+    summary: |
+      WebPros' 2026-08-04 cPanel & WHM security release, which the Swiss NCSC Security Hub flagged on its public dashboard, fixes CVE-2026-58048 (CVSS v4.0 9.4 per NVD/CISA enrichment): the database-rename operation in cPanel's MySQL/MariaDB management feature does not preserve SQL mode across the rename, so an authenticated cPanel account holder who merely has the "MySQL" feature enabled can have SQL execute in root database context — granting full database-administrator privileges, and on some OS/database-engine configurations extending to operating-system-level compromise. The same release fixes CVE-2026-58047, an HTTP request-smuggling flaw in the cpsrvd web server that, "under limited conditions," lets an unauthenticated remote attacker manipulate responses delivered to other users on the same server. Both are fixed in cPanel/WHM builds 11.110.0.137 / 11.118.0.71 / 11.126.0.78 / 11.134.0.48 / 11.136.0.32, and WP Squared 138.1.6. Neither is confirmed exploited (CISA's 2026-08-04 vulnrichment enrichment recorded CVE-2026-58048 as "Exploitation: none," non-automatable, with total technical impact). Vendor-documented interim mitigations exist for both: revoke the "MySQL" feature from cPanel users who don't need it (blocks CVE-2026-58048 exploitation without disabling existing databases), and set `cpsrvd_keepalives_disabled=1` in `/var/cpanel/cpanel.config` plus restart cpsrvd to force a new TCP+TLS connection per request on ports 2083/2087/2096 (blocks CVE-2026-58047, at a latency/CPU cost). cPanel & WHM underpins a large share of shared/reseller web hosting, including hosting used by cantonal, communal and SME-adjacent public-sector web presences in the region.
+    region_nexus: "global; cPanel/WHM is common at hosting providers serving Swiss/EU municipal and SME public-sector web properties — flagged directly by NCSC-CH's own Security Hub"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, telco"
+    cves: [CVE-2026-58048, CVE-2026-58047]
+    techniques: [T1068, T1190]
+    affected_products: ["cPanel & WHM", "WP Squared"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "SQL mode is not preserved when a database is renamed, causing SQL to execute in root context."
+        attribution: "cPanel/WebPros, via The Hacker News"
+        source_url: "https://thehackernews.com/2026/08/new-cpanel-critical-flaw-could-let.html"
+      - quote: "An authenticated cPanel account holder with access to the MySQL/MariaDB database feature could potentially execute arbitrary database commands with full administrative privileges. Depending on the operating system and database engine configuration, this may extend to operating-system-level compromise."
+        attribution: "cPanel/WebPros"
+        source_url: "https://support.cpanel.net/hc/en-us/articles/42285745783703-Security-CVE-2026-58048-Database-Privilege-Escalation"
+      - quote: "In some situations, an unauthenticated remote attacker may be able to manipulate responses delivered to other users on the same server."
+        attribution: "cPanel/WebPros"
+        source_url: "https://support.cpanel.net/hc/en-us/articles/42285024734743-Security-CVE-2026-58047-HTTP-Request-Smuggling"
+    extended_notes: |
+      Discovered via the NCSC-CH Security Hub jina-reader fallback (see coverage-gap note on the TeamCity item above) rather than the normal ncsc-csh bridge subcommand, which is currently broken.
+    borderline: true
+    borderline_reason: "authenticated-prerequisite vulnerability in third-party hosting-control-panel software (CVE-2026-58048); included because NCSC-CH's own Security Hub surfaced it and cPanel underpins hosting-provider infrastructure in the region, but it is one step removed from direct Swiss/EU public-sector or CI operation."
+
+cve_table:
+  - { cve: "CVE-2026-63077", product: "JetBrains TeamCity On-Premises", cvss: "9.8 (v3.1)", epss: "0.65", kev: true, exploited: true, patch: "2025.11.7 / 2026.1.3", source: "CISA KEV (added 2026-08-05); JetBrains blog" }
+  - { cve: "CVE-2026-58073", product: "Veeam Service Provider Console", cvss: "9.5 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "9.3.0.35057", source: "Veeam KB4893" }
+  - { cve: "CVE-2026-58072", product: "Veeam Service Provider Console", cvss: "9.0 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "9.3.0.35057", source: "Veeam KB4893" }
+  - { cve: "CVE-2026-58067", product: "Veeam Service Provider Console", cvss: "8.7 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "9.3.0.35057", source: "Veeam KB4893" }
+  - { cve: "CVE-2026-58071", product: "Veeam Service Provider Console", cvss: "8.2 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "9.3.0.35057", source: "Veeam KB4893" }
+  - { cve: "CVE-2026-64633", product: "Veeam ONE", cvss: "10.0 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-58075", product: "Veeam ONE", cvss: "8.7 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-58074", product: "Veeam ONE", cvss: "8.6 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-64631", product: "Veeam ONE", cvss: "8.6 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-64634", product: "Veeam ONE", cvss: "8.4 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-64630", product: "Veeam ONE", cvss: "5.3 (v4.0)", epss: "n/a", kev: false, exploited: false, patch: "13.1.0.7034", source: "Veeam KB4892" }
+  - { cve: "CVE-2026-63455", product: "HPE Aruba SD-WAN Orchestrator", cvss: "9.8 (v3.1)", epss: "n/a", kev: false, exploited: false, patch: "9.6.2.40210 / 9.6.3.40140 / 9.7.0.43264", source: "HPE Aruba HPESBNW05100" }
+  - { cve: "CVE-2026-63456", product: "HPE Aruba SD-WAN Orchestrator", cvss: "9.8 (v3.1)", epss: "n/a", kev: false, exploited: false, patch: "9.6.2.40210 / 9.6.3.40140 / 9.7.0.43264", source: "HPE Aruba HPESBNW05100" }
+  - { cve: "CVE-2026-58048", product: "cPanel & WHM / WP Squared", cvss: "9.4 (v4.0, NVD/CISA enrichment)", epss: "n/a", kev: false, exploited: false, patch: "11.110.0.137 / 11.118.0.71 / 11.126.0.78 / 11.134.0.48 / 11.136.0.32 / 138.1.6(WP2)", source: "cPanel/WebPros KB" }
+  - { cve: "CVE-2026-58047", product: "cPanel & WHM / WP Squared", cvss: "not stated by vendor", epss: "n/a", kev: false, exploited: false, patch: "same as above", source: "cPanel/WebPros KB" }
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "org profile configures no product watchlist — sweep is a no-op per spawn message; general coverage rules applied unchanged."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ncsc-ch-security-hub
+    reason: "Documented API endpoints broken this run: GET /api/posts/dashboard?pageSize=N&pageIndex=0 returns HTTP 405 (both direct and jina-reader transports failed identically), and GET /api/posts/{id}/details returns HTTP 404 for every id tried (12828, 12827). Recovered a partial fallback: `jina https://security-hub.ncsc.admin.ch/` (or `/#/dashboard`) hydrates the Angular SPA and returns a 10-item title+summary listing (post IDs + short descriptions, no full body, no per-post dates) — enough to sweep headlines (used to find the cPanel item above and to confirm no new CH-original post existed for TeamCity/Veeam/Aruba this run) but not enough for full-body extraction. Recommend a recipe check of tools/fetch_source.py's ncsc-csh subcommands against the current CSH backend."
+  - source_id: enisa-euvd
+    reason: "The human-readable advisory detail page (https://euvd.enisa.europa.eu/enisa/eu_vulnerability_database/EUVD-2026-49369) returned 'The European Vulnerability Database application could not be loaded' on both WebFetch and the jina reader — an apparent site-side outage, not a transport failure on our end. The underlying JSON API (fetched via `enisa-euvd advisory EUVD-2026-49369`) worked and supplied the exploitedSince/CVSS data used as corroboration in the TeamCity item, but per source-citation discipline the API JSON URL is not cited as a human-facing Source."
