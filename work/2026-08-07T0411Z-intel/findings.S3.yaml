@@ -1,0 +1,163 @@
+domain: S3
+run_id: 2026-08-07T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-07T04:17:12Z
+ended_at: 2026-08-07T04:29:14Z
+duration_seconds: 722
+self_telemetry:
+  webfetch_calls: 26
+  websearch_calls: 1
+  bridge_fetches: 12
+items:
+  - title: "UNC6671 (BlackFile) rebrands into four active extortion brands — GTIG confirms direct continuation via passkey-enrollment vishing that defeats WebAuthn-bound MFA"
+    sources:
+      - { url: "https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments/", publisher: "Google Cloud / Mandiant (GTIG)", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: mandiant-gtig, URL https://feeds.feedburner.com/threatintelligence/pvexyqv7v0v → primary: Google Cloud / Mandiant GTIG, URL https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments/ (no pivot needed)"
+    summary: |
+      GTIG reports that UNC6671 (the actor behind the BlackFile extortion brand, whose retirement was announced May 2026) never stopped operating — telemetry and infrastructure analysis show it diversified across four concurrent extortion fronts (Redact, Pink, Helix, Falcon) that share root domains, phishing templates and backend proxies, and now register a new phishing domain roughly every 1.6 days. Initial access is voice phishing: operators call enterprise employees on personal mobile numbers, posing as IT helpdesk staff pushing an "urgent" FIDO2 passkey or MFA re-enrollment, and steer victims to spoofed credential portals (e.g. company-branded createssopasskey[.]com-style subdomains) running AiTM infrastructure that intercepts both credentials and MFA tokens/session cookies. Once session persistence is established, the group runs automated python-requests and PowerShell scripts to bulk-exfiltrate data from Microsoft 365 and Okta-fronted SaaS tenants. Targeting has shifted from broad enterprise verticals (April-May) to financial services, private equity and legal-sector victims (June-July), with initial ransom demands of USD 1-3M settling after negotiation to an average USD 750K (50-75% reduction). GTIG names WebAuthn-standard passkey enforcement (cryptographic origin binding that renders lookalike domains and AiTM proxies ineffective against the authenticator itself) as the durable hardening lever, contingent on blocking the social-engineering step that gets a victim to enroll an attacker-controlled authenticator in the first place rather than use an existing one.
+    region_nexus: "global; financial-services, private-equity and legal-sector targeting through Microsoft 365 / Okta SaaS tenants — the vishing-to-passkey-enrollment chain and AiTM technique are directly transferable to any Swiss/European enterprise or public-sector M365/Entra ID deployment"
+    primary_sector_nexus: "indirect"
+    sector: "finance, public-sector"
+    cves: []
+    techniques: [T1566.004, T1557, T1556.006, T1098.005, T1530, T1213.002]
+    affected_products: ["Microsoft 365", "Microsoft Entra ID", "Okta"]
+    entity_keys: ["actor:unc6671"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "UNC6671 continues to rely on voice phishing (vishing) to target enterprise employees, posing as IT helpdesk staff facilitating mandatory, urgent security migrations. Significantly, the threat actor often contacts employees via their personal mobile devices."
+        attribution: "Google Cloud / Mandiant (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments/"
+      - quote: "Rather than maintaining isolated infrastructure for each target, UNC6671 reuses generic root domains across multiple target organizations, creating a traceable chain between extortion brands."
+        attribution: "Google Cloud / Mandiant (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments/"
+      - quote: "These authenticators implement WebAuthn standard to enforce cryptographic origin binding between the authenticator and the specific domains it can authenticate to, rendering lookalike domains and AiTM proxies ineffective."
+        attribution: "Google Cloud / Mandiant (GTIG)"
+        source_url: "https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments/"
+    extended_notes: |
+      Detection concept: correlate helpdesk-impersonation call reports / unusual personal-mobile contact with Entra ID / Okta sign-in logs showing a NEW authenticator or passkey registration event immediately followed by a new session from an unfamiliar ASN, then bulk SharePoint/OneDrive Graph API enumeration in a short window — the anomalous sequence (helpdesk-style contact → new MFA method registration → immediate mass file enumeration) is the discriminator against legitimate self-service MFA re-enrollment, which is not normally preceded by an unsolicited "urgent" IT call and is not normally followed by bulk data enumeration. Hardening: enforce phishing-resistant WebAuthn/FIDO2 passkeys as the ONLY permitted authenticator-registration path and gate new-device/new-authenticator enrollment behind an out-of-band verification step that does not rely on the same phone channel the vishing call arrives on.
+      Registry note for the main agent: actor:unc6671 is already registered with alias "BlackFile"; this GTIG post directly confirms three brand names the registry's existing summary listed only as "assessed" (ReliaQuest, 2026-07-08) continuations — Redact, Pink and Falcon are new brand aliases GTIG attributes directly to UNC6671 (Helix was already relation-linked to actor:unc6671 via incident:helix-data-extortion-devicecode-vishing-sharepoint-exfil). Consider adding Redact / Pink / Falcon as aliases on actor:unc6671 and upgrading the Helix relation's basis from "ReliaQuest assesses" to GTIG's own direct telemetry confirmation.
+  - title: "ClickFix's macOS lure chain adds a server-side fingerprinting gate before revealing the payload — Microsoft catalogs the anti-analysis checks"
+    sources:
+      - { url: "https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/", publisher: "Microsoft Threat Intelligence", date: "2026-08-05", role: "primary" }
+    discovery_trace: "first seen at: msft-ti, URL https://www.microsoft.com/en-us/security/blog/topic/threat-intelligence/ → primary: Microsoft Threat Intelligence, URL https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/ (no pivot needed)"
+    summary: |
+      Microsoft documents an evolution of the macOS ClickFix campaign it first tracked delivering MacSync/AMOS via Base64 Terminal-paste lures: the actor now fronts the lure with a server-side visitor-qualification gate across 250+ algorithmically generated domains following a file<word><word> naming pattern. Before deciding what to serve, the gate profiles the visitor's browser/hardware/runtime attributes server-side — navigator, screen, window, document, location and console object values — including a WebGL GPU query for genuine graphics-hardware validation, environmental checks (timezone, iframe presence, touch-input support) and anti-analysis probes such as a counter that increments whenever a function's toString() is called (a signal that a log-capturing/analysis tool is inspecting the page rather than a normal browser rendering it) and prototype-tampering detection. Visitors that pass qualification receive a spoofed "Verified Publisher / Download for macOS" page with an obfuscated curl one-liner; everyone else gets a decoy page or a blank response, denying researchers and automated scanners visibility into the actual payload path. The one-liner pulls a staged script from a /curl/<hex-id> path that ultimately deploys Atomic Stealer (AMOS), which harvests credentials, browser data and cryptocurrency-wallet contents. This is a defense-evasion escalation on a campaign already tracked in this store (campaign:clickfix-macos-2026) — the new element is the pre-lure fingerprinting/cloaking gate itself, not the ClickFix mechanism or the AMOS payload.
+    region_nexus: "global; macOS endpoints across all sectors, including public-sector and executive/knowledge-worker desktops"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, general"
+    cves: []
+    techniques: [T1204.004, T1497.001, T1189, T1608.001, T1105, T1027]
+    affected_products: ["macOS"]
+    entity_keys: ["campaign:clickfix-macos-2026"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Rather than immediately presenting a malicious command, the actor performs server-side victim qualification before revealing the lure, reducing visibility to researchers."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/"
+      - quote: "The gate profiles each visitor using a combination of browser, hardware, and runtime attributes, which are submitted to the server for evaluation."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/"
+      - quote: "A function's toString() method increases a counter; in normal browsers this remains unchanged, but log-capturing tools cause conversion to string, increasing the counter."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/"
+      - quote: "Monitor curl activity that retrieves encoded or compressed payloads from newly registered or low-reputation domains, including /curl/<hex-id> request paths."
+        attribution: "Microsoft Threat Intelligence"
+        source_url: "https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/"
+    extended_notes: |
+      Triage-relevant detection: hunt web/proxy logs for outbound curl invocations from Terminal.app-spawned child processes fetching a /curl/<hex-id> path from a newly registered domain immediately following a user-initiated paste-and-run action — the benign lookalike (a developer legitimately curling an install script from a README) differs in that it targets a long-lived, reputable domain rather than a same-day-registered algorithmic hostname, and is not preceded by a "Verified Publisher" browser overlay. Hardening: Gatekeeper/notarization enforcement plus blocking Terminal invocation via clipboard paste through endpoint policy (macOS does not natively gate this) removes the execution step regardless of how well the fingerprinting gate evades pre-delivery scanning.
+  - title: "First observed use of .NET as a macOS malware downloader: a fake Zoom installer stages the cross-platform Overlord RAT"
+    sources:
+      - { url: "https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/", publisher: "Jamf Threat Labs", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: jamf-threat-labs, URL https://www.jamf.com/blog/category/jamf-threat-labs/ → primary: Jamf Threat Labs, URL https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/ (no pivot needed)"
+    summary: |
+      Jamf Threat Labs found a fake Zoom installer, a macOS ARM64 Mach-O binary named ZoomMeetings, built as a self-contained .NET 10 single-file application — the first case Jamf has observed of .NET, rather than the Go or Rust typical of recent macOS malware, used as a cross-platform downloader stage. Because .NET assemblies use the Windows PE container format for their Intermediate Language bytecode even when hosted inside a macOS Mach-O wrapper, the same downloader codebase can target Windows unmodified. Static analysis extracted 34 embedded PE/DLL files from the wrapper; one carries plaintext "Zoom Communications, Inc" / "Zoom Meetings Installer" metadata strings copied from a legitimate installer to pass casual inspection, and the malicious DLL's method/field/string-table names are obfuscated (patterns like __o_8ca0ad3ec7b40770). At execution, the downloader writes a stage-2 binary to /tmp and launches it via a backgrounded nohup command; the stage-2 payload is a Garble-obfuscated Go build of Overlord, an open-source remote access framework (publicly available on GitHub) that connects out over an encrypted WebSocket to a hardcoded, zoom-branded typosquat C2 host on a non-standard port. Garble mangles Go's pclntab function/type/package names and obfuscates the moduledata structure that reverse-engineering tooling uses to locate them, breaking standard Go static-analysis workflows. Overlord grants keylogging, screen/audio/webcam capture, filesystem access and arbitrary script execution, with optional LaunchAgent-based persistence. Jamf notes Overlord has separately been documented as a payload in the DPRK-linked UNK_DeadDrop/Contagious-Interview developer-targeting activity, but does not attribute this specific fake-Zoom campaign to that cluster — the initial delivery vector is still under investigation.
+    region_nexus: "global; targets developers and general macOS/Windows users running counterfeit Zoom installers — no confirmed EU/CH-specific targeting yet, but Overlord is a known payload in prior DPRK developer-targeting activity that did hit FR/DE/NL"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, general"
+    cves: []
+    techniques: [T1204.002, T1027, T1105, T1571, T1113, T1123, T1125, T1056.001, T1543.001]
+    affected_products: ["macOS", "Windows"]
+    entity_keys: []
+    new_entities:
+      - { key: "tool:overlord-rat", type: tool, name: "Overlord", aliases: [],
+          summary: "Open-source Go-based remote-access framework (publicly hosted on GitHub) abused as a cross-platform RAT; staged via a first-observed .NET downloader inside a fake macOS Zoom installer (Jamf Threat Labs, 2026-08-06); separately documented as a payload in DPRK-linked UNK_DeadDrop/Contagious-Interview developer-targeting activity (Proofpoint)." }
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The downloader is a macOS ARM64 Mach-O binary named ZoomMeetings, built as a self-contained .NET 10 single-file application with the .NET runtime bundled inside."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/"
+      - quote: "Garble mangles function, type and package names in Go's pclntab and obfuscates the moduledata structure that tools use to locate it, breaking static analysis tooling."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/"
+      - quote: "The agent connects to its C2 over a secure WebSocket."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/"
+      - quote: ".NET now joins that list, with its cross-platform support enabling a single codebase to target both Windows and macOS."
+        attribution: "Jamf Threat Labs"
+        source_url: "https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/"
+    extended_notes: |
+      Detection concept: alert on a Mach-O executable that embeds 30+ PE-format DLLs (a signature of a bundled .NET self-contained single-file deployment) launched from a Terminal/Installer parent with a Zoom-branded filename, followed by a process writing and nohup-backgrounding a second binary from /tmp — this parent-child-grandchild lineage (fake-installer → .NET downloader → backgrounded /tmp binary) is unusual for a legitimate Zoom install, which does not stage a second executable through /tmp. Benign lookalike: legitimate self-contained .NET macOS apps exist but do not typically carry a decompiled DLL whose only plaintext strings mimic a *different* vendor's product metadata. Hardening: block execution from /tmp via endpoint policy and treat any outbound WebSocket connection on a non-standard port from a freshly installed "conferencing" app as a hunt trigger.
+      Registry note for the main agent: no existing registry key names the Overlord RAT framework as a tracked tool despite it being tied to the already-registered campaign:unk-deaddrop-2026 in that entity's summary text — proposing tool:overlord-rat above to close that gap. This Jamf campaign is NOT attributed to UNK_DeadDrop by the source; do not create a relation edge between them without a source that states it.
+  - title: "Token Jacking: stolen AI API keys get resold through gray-market 'transfer station' proxies for near-instant billing abuse"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/ai-token-jacking/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: unit42, URL https://unit42.paloaltonetworks.com/feed/ → primary: Palo Alto Networks Unit 42, URL https://unit42.paloaltonetworks.com/ai-token-jacking/ (no pivot needed)"
+    summary: |
+      Unit 42 describes "token jacking" — theft of AI-provider API tokens (via infostealer malware, phishing, or credentials leaked in poisoned npm packages/exposed repos) followed by their integration into gray-market "transfer station" reseller services within minutes of exposure. Transfer stations are typically built on open-source LLM-proxy software (new-api, one-api) that sits in front of the stolen legitimate token, obfuscates the true credential from the buyer, handles authentication rotation and billing, and resells discounted access to the underlying AI model to third-party customers — Unit 42 cites a case where an inadvertently exposed credential reached a transfer station and generated nearly USD 1M in billed usage before discovery and containment. A privileged-insider variant uses compromised corporate developer accounts directly: rather than reselling a single stolen token, the attacker uses the account's own privileges to mint new API keys, provision additional models, remove billing limits, and disable usage alerts and logging to extend the abuse window before it is noticed. Organizations have very limited recourse to recover funds already billed by the AI provider for usage run through their hijacked tokens. Unit 42 flags detection signals including anomalous client user-agents (e.g. Go-http-client/2.0) associated with proxy software, bulk/high-volume API call patterns inconsistent with the account's normal usage, and newly surfaced infrastructure fronting a transfer-station service.
+    region_nexus: "global; any organization issuing AI-provider API tokens to developers, including public-sector bodies piloting generative-AI tooling — CI/CD pipelines and exposed source repos are the most common leak vector cited"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, general"
+    cves: []
+    techniques: [T1552.001, T1528, T1496, T1098, T1685.002]
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "These keys are known as tokens, and their theft is called token hijacking, or token jacking for short."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-token-jacking/"
+      - quote: "We've responded to cases where attackers stole inadvertently exposed credentials and integrated them into a transfer station within minutes. This led to nearly a million dollars in charges before discovery and containment."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-token-jacking/"
+      - quote: "Attackers could use privileged corporate developer accounts to create new API keys, provision models, remove billing limits, and disable critical usage alerts and logging."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-token-jacking/"
+      - quote: "Organizations impacted by token jacking have very little recourse to recover funds billed by the AI services for using their API tokens."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/ai-token-jacking/"
+    extended_notes: |
+      Detection concept: monitor AI-provider billing/usage dashboards and API-gateway logs for a step-change in call volume or a client user-agent shift (e.g. to a generic HTTP-library string associated with proxy/relay software) inconsistent with the token's normal calling application — the discriminator against a legitimate usage spike is the simultaneous appearance of a new/unrecognized calling pattern alongside the volume increase, not volume alone. Hardening: scope AI API tokens to the minimum required model/quota, set hard billing ceilings that cannot be raised by the same credential that consumes them, and treat token exposure in a public repo or CI log as a same-day rotation event given the "within minutes" resale timeline this source reports.
+watchlist_sweep: null
+candidate_sources:
+  - id: hunt-io
+    publisher: "Hunt.io (C2 infrastructure / threat-hunting research blog)"
+    url: "https://hunt.io/blog"
+    category: research
+    why: "Independent infrastructure-fingerprinting research lab (panel/TLS-certificate pivoting methodology on active C2 fleets, e.g. the Flying Eagle Android-RAT 170-server writeup pivoted to from a Zimperium rehash this run); comparable in kind to team-cymru's infra-telemetry research and worth tracking directly rather than only via secondary vendor summaries."
+coverage_gaps:
+  - source_id: msrc-blog
+    reason: "Confirmed persistent recipe gap (already logged in sources.json 2026-06-20/2026-07-05 notes): https://msrc.microsoft.com/blog 301s to https://www.microsoft.com/en-us/msrc/blog, which renders as an SPA shell showing only a single featured post with no dated listing. No working RSS. No in-window MSRC-specific content could be confirmed or ruled out through this recipe this run."
+  - source_id: google-tag
+    reason: "Confirmed persistent recipe gap (already logged 2026-07-14/2026-08-04): https://blog.google/threat-analysis-group/ resolves to Google's general security blog, not a dated TAG-specific listing. WebSearch cross-check this run found no TAG-specific post newer than the 2026-07-30 'Updated Cyber Threat Actor Naming System' post already surfaced via the mandiant-gtig feed (same GTIG/TAG fused organization) — no distinct TAG content missed, but the recipe itself remains unfixed."
+  - source_id: trellix
+    reason: "Confirmed persistent recipe gap (already logged 2026-07-27): direct bridge fetch of https://www.trellix.com/blogs/ returns header/nav markup only, no dated article listing reachable — could not confirm or rule out in-window Trellix content this run."
+  - source_id: paradigm-shift-research
+    reason: "Confirmed persistent recipe gap (already logged 2026-07-27): https://ps.tc/ is a client-side-rendered SPA shell (meta-refresh to pages/home.html) with no post grid reachable via direct bridge fetch — could not confirm or rule out in-window content this run."
+  - source_id: recordedfuture-insikt
+    reason: "Working recipe used this run (RSS at /feed) and reachable; noting only that the /research/insikt-group landing page remains a marketing stub per the prior recipe-gap note — the RSS workaround already documented is what was used, no new gap."

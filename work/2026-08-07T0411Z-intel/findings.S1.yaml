@@ -1,0 +1,67 @@
+domain: S1
+run_id: 2026-08-07T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-07T04:16:12Z
+ended_at: 2026-08-07T04:28:45Z
+duration_seconds: 753
+self_telemetry:
+  webfetch_calls: 12
+  websearch_calls: 6
+  bridge_fetches: 28
+
+items:
+  - title: "Adobe Campaign Classic APSB26-120 — a second wave of unauthenticated CVSS-10.0 RCE flaws (SSRF, template-engine injection, SQL injection) supersedes last week's build-9398 fix"
+    sources:
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0278", publisher: "NCSC-NL", date: "2026-08-06", role: "primary" }
+      - { url: "https://helpx.adobe.com/security/products/campaign/apsb26-120.html", publisher: "Adobe PSIRT (APSB26-120)", date: "2026-08-03", role: "primary" }
+    discovery_trace: "first seen at: advisories-ncsc-nl, URL https://advisories.ncsc.nl/rss/advisories (item NCSC-2026-0278, published 2026-08-06T08:41:41Z) → primary: Adobe PSIRT, URL https://helpx.adobe.com/security/products/campaign/apsb26-120.html → verified individual CVE mechanics on NVD (CVE-2026-48331, CVE-2026-48323, CVE-2026-48330) for description/scope/CPE range, not cited as a Source"
+    summary: |
+      Adobe's APSB26-120 (published 2026-08-03, surfaced to this window via a fresh NCSC-NL advisory on 2026-08-06 that explicitly notes it is NOT an update of the prior NCSC-2026-0273/APSB26-114 bulletin but a separate, newly found set) fixes seven vulnerabilities in on-premise Adobe Campaign Classic (ACC) v7, patched in build 7.4.3.9399. Three are unauthenticated, no-user-interaction, CVSS 3.1 10.0 flaws with changed scope, each independently sufficient for compromise: CVE-2026-48331 (CWE-918 SSRF, NVD: "could result in privilege escalation"), CVE-2026-48323 (CWE-1336 improper neutralization of template-engine syntax, NVD: "could result in arbitrary code execution in the context of the current user"), and CVE-2026-48330 (CWE-89 SQL injection, NVD: "could result in arbitrary code execution"). The remaining four require some precondition: CVE-2026-48326 (CWE-89 SQLi, CVSS 9.9, authenticated), CVE-2026-48333 (CWE-863 incorrect authorization → privilege escalation, CVSS 9.8, unauthenticated), CVE-2026-48317 (CWE-95 eval injection → RCE, CVSS 9.6, authenticated), and CVE-2026-48399 (CWE-657 secure-design violation → security-feature bypass, CVSS 7.5). NVD lists the vulnerable range as ACC versions up to and including 7.4.2, plus 7.4.3 builds 9394/9396/9397/9398 — i.e. every build up to and including the one Adobe shipped one week earlier (build 9398, APSB26-114, 2026-07-29) to fix the previous wave's CVE-2026-48449/-48448. Adobe assigns APSB26-120 its highest severity/priority rating and states it is "not aware of any exploits in the wild for any of the issues addressed in these updates"; the bulletin applies only to fully on-premise deployments and the on-premise components of hybrid deployments — Adobe-hosted instances were already remediated. This is the third distinct wave of critical unauthenticated-RCE-class disclosures against this Adobe Campaign/ColdFusion product line since 2026-07-02 (APSB26-68/69, then APSB26-114, now APSB26-120), each independently rated Adobe's top priority.
+    region_nexus: "global; on-premise/hybrid Adobe Campaign Classic deployments include EU/CH public-sector and enterprise marketing/CRM estates"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-48331, CVE-2026-48323, CVE-2026-48330, CVE-2026-48326, CVE-2026-48333, CVE-2026-48317, CVE-2026-48399]
+    techniques: [T1190]
+    affected_products: ["Adobe Campaign Classic v7"]
+    entity_keys: ["trend:adobe-coldfusion-campaign-apsb26-68-69"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "NB: Dit is geen update van de eerdere advisory NCSC-2026-0273 (https://advisories.ncsc.nl/2026/ncsc-2026-0273.html). Deze advisory betreft nieuw gevonden kwetsbaarheden."
+        attribution: "NCSC-NL (NCSC-2026-0278)"
+        source_url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0278"
+      - quote: "Adobe is not aware of any exploits in the wild for any of the issues addressed in these updates."
+        attribution: "Adobe PSIRT (APSB26-120)"
+        source_url: "https://helpx.adobe.com/security/products/campaign/apsb26-120.html"
+      - quote: "Adobe Campaign Classic (ACC) is affected by a Server-Side Request Forgery (SSRF) vulnerability that could result in privilege escalation. Exploitation of this issue does not require user interaction. Scope is changed."
+        attribution: "NVD (CVE-2026-48331 description, sourced from Adobe)"
+        source_url: "https://helpx.adobe.com/security/products/campaign/apsb26-120.html"
+    extended_notes: |
+      Relates to but is NOT an update_of 2026-08-02/adobe-campaign-classic-apsb26-114-cvss10-unauth-rce (different CVE set, same product, same "Priority 1 / not aware of exploitation" pattern). Any organisation that treated build 9398 (last week's fix) as the end state is still exposed to three independent unauthenticated RCE-class vectors until it applies build 9399. Detection/hunt: with no public PoC yet, defenders should treat internet-reachable on-prem ACC instances as needing a version check against build 9399 rather than waiting for exploitation telemetry; log review should focus on anomalous outbound HTTP from the ACC application-server process (SSRF indicator class) and unexpected child-process spawns from the ACC web/template-rendering service (template-injection RCE indicator class) — no vendor-neutral IOC is available since Adobe reports no observed exploitation.
+      Inclusion-bar limb: "its own mechanics force the timeline" — three independent, unauthenticated, no-interaction CVSS-10.0 paths to code execution/privilege escalation on an internet-facing on-prem enterprise platform, superseding a patch applied only one week earlier, Adobe's own top-priority rating.
+    borderline: false
+
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no product watchlist configured in config/org-profile.yaml — sweep is a no-op per spawn instructions"
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Both the direct bridge (`url https://ssd-disclosure.com/`) and WebFetch returned only the homepage marketing/navigation shell (categories: operating systems, mobile, etc.) with no dated publication listing or drillable /publication/ links surfaced in the fetched body. Rotation-priority source; could not enumerate any dated item this run despite two transport attempts."
+  - source_id: infoguard-labs
+    reason: "Confirmed the documented recipe gap from the 2026-08-05 note: https://labs.infoguard.ch/ returns HTTP 200 but the post listing is JS-rendered with no drillable article links in the raw/bridged body. No feed or sitemap found. Not re-attempted beyond the documented gap."
+  - source_id: searchlight-cyber
+    reason: "WebFetch of https://slcyber.io/research-center/ returned a static list of research titles (wp2shell, ServiceNow sandbox, CargoWise, Chrome Sanitizer bypass, Drupal CVE-2026-9082, cPanel CVE-2026-29205, Salesforce Marketing Cloud) with no publication dates in either the WebFetch summary or the raw bridged HTML; could not confirm whether any item is in-window, so none were included as findings this run (all appear to duplicate previously-known research titles from prior runs)."
+  - source_id: cisa-directives
+    reason: "`cisa page https://www.cisa.gov/news-events/directives` returns the page header shell only in this run's fetch (same JS-listing limitation the source note already documents); per the 2026-08-04 note the newest substantive item remains BOD 26-04 (2026-06-10), outside window — not re-verified further this run."
+
+fetch_failures: []

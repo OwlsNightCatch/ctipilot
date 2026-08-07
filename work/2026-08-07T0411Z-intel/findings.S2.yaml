@@ -1,0 +1,229 @@
+domain: S2
+run_id: 2026-08-07T0411Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-07T04:16:40Z
+ended_at: 2026-08-07T04:33:06Z
+duration_seconds: 986
+self_telemetry:
+  webfetch_calls: 15
+  websearch_calls: 15
+  bridge_fetches: 28
+
+items:
+  - title: "CERT-FR relays seven Keycloak identity-broker CVEs, including a SAML signature-validation bypass that lets an unauthenticated attacker forge a login as any known user"
+    sources:
+      - { url: "https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0976/", publisher: "CERT-FR (ANSSI)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-f8m4-v488-rmrm", publisher: "Keycloak / Red Hat (GitHub Security Advisories, maintainer pskopek)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-95rm-h7g9-rhcf", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-95cx-vmr5-3cmr", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-2888-g6qc-w4mj", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "primary" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-fgq2-hxm5-8xg2", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "corroborating" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-hmr6-pxx9-552p", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "corroborating" }
+      - { url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-3692-rrj9-24qw", publisher: "Keycloak / Red Hat (GitHub Security Advisories)", date: "2026-08-06", role: "corroborating" }
+      - { url: "https://nvd.nist.gov/vuln/detail/CVE-2026-16443", publisher: "NVD/NIST", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: >
+      first seen at: cert-fr (S2 essential-domain-adjacent authority, exercised via
+      the cert-fr bridge subcommand), URL https://www.cert.ssi.gouv.fr/avis/CERTFR-2026-AVI-0976/
+      (avis-recent listing, then drilled the advisory detail page) -> primary: Keycloak/Red
+      Hat's own GitHub Security Advisories for each of the seven CVEs, URLs
+      https://github.com/keycloak/keycloak/security/advisories/GHSA-f8m4-v488-rmrm (SAML
+      signature bypass, CVE-2026-16443), GHSA-95rm-h7g9-rhcf (DCR type-swap privesc,
+      CVE-2026-15572), GHSA-95cx-vmr5-3cmr (DCR role forgery, CVE-2026-16102),
+      GHSA-2888-g6qc-w4mj (PathMatcher authz bypass, CVE-2026-15573),
+      GHSA-fgq2-hxm5-8xg2 (SAML IdP-initiated broker-login bypass, CVE-2026-16442),
+      GHSA-hmr6-pxx9-552p (LDAP DN-boundary bypass, CVE-2026-16071),
+      GHSA-3692-rrj9-24qw (unbounded metric-cardinality DoS, CVE-2026-16100) ->
+      corroboration: NVD, URL https://nvd.nist.gov/vuln/detail/CVE-2026-16443 (description
+      text matches the GitHub advisory verbatim).
+    summary: |
+      CERT-FR's advisory CERTFR-2026-AVI-0976 (06 August 2026) relays seven CVEs Keycloak's
+      maintainers disclosed the same day in org.keycloak:keycloak-services, the core
+      identity-brokering engine behind Keycloak / Red Hat Build of Keycloak (RHBK) — an
+      open-source IAM/SSO platform widely deployed for federated login and e-government
+      portals across the Swiss/EU public sector. All affect versions before 26.4.14 / 26.6.5
+      / 26.7.1 (fixed in those releases). The most severe class is identity-protocol abuse
+      at the broker layer: CVE-2026-16443 (CVSS 3.1 7.4, AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N)
+      is a SAML-broker metadata-import flaw — when importing an identity-provider's SAML
+      metadata that lacks explicit key-usage attributes, Keycloak silently disables SAML
+      response signature validation even though a signing certificate was supplied. Per
+      Keycloak's own advisory: "This issue allows an unauthenticated attacker to forge a
+      SAML response and gain unauthorized access to a user account by knowing their external
+      identifier." A sibling, CVE-2026-16442 (CVSS 7.4 High), covers a SAML IdP-initiated
+      broker-login flow that bypasses the "link-only" restriction meant to stop unlinked
+      accounts from authenticating that way (GitHub's rendered description text for this
+      specific advisory is a verified duplicate/rendering artifact from a different advisory
+      in the same batch; only the title, CVSS vector and version data could be confirmed).
+      Two further High-severity flaws are privilege-escalation paths through Dynamic Client
+      Registration (DCR): CVE-2026-16102 (CVSS 8.1) lets an attacker with a standard account
+      and a limited Initial Access Token abuse a default DCR policy's mis-validated claim path
+      for User Property mappers to forge administrative roles into their own access token —
+      Keycloak's advisory states this "allows the attacker to take over other clients, steal
+      confidential secrets, and potentially gain full administrative control over the realm."
+      CVE-2026-15572 (CVSS 8.8) lets a client-registration-privileged attacker register an
+      allowed protocol-mapper type with benign config, then swap it for a restricted,
+      admin-role-hardcoding mapper type without the swap being re-validated, again reaching
+      full realm admin. CVE-2026-15573 (CVSS 8.1) is a PathMatcher URL-normalization flaw in
+      Authorization Services — trailing slashes or matrix parameters let an authenticated
+      user reach administrative/restricted paths under a weaker policy than intended.
+      CVE-2026-16071 (CVSS 5.4) lets a delegated LDAP administrator's entry-DN search escape
+      the configured search-base boundary and pull in directory entries (and import them
+      into local storage) from outside the intended scope. CVE-2026-16100 (CVSS 6.5) is an
+      authenticated resource-exhaustion path via unbounded Prometheus metric-label
+      cardinality from attacker-controlled error text in user-event metrics. No public exploit
+      code or in-the-wild exploitation is reported for any of the seven as of this advisory.
+    region_nexus: "Switzerland and EU — CERT-FR (France) advisory; Keycloak is a widely-deployed open-source IAM/SSO platform underpinning federated-login and e-government portals across the Swiss/European public sector and beyond."
+    primary_sector_nexus: "direct"
+    sector: "public-sector, finance, healthcare, telco, energy, water, transport"
+    cves: ["CVE-2026-16443", "CVE-2026-16442", "CVE-2026-16102", "CVE-2026-15572", "CVE-2026-15573", "CVE-2026-16071", "CVE-2026-16100"]
+    techniques: ["T1550", "T1078", "T1068"]
+    affected_products: ["Keycloak", "Red Hat Build of Keycloak (RHBK)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This issue allows an unauthenticated attacker to forge a SAML response and gain unauthorized access to a user account by knowing their external identifier."
+        attribution: "Keycloak / Red Hat GHSA-f8m4-v488-rmrm (CVE-2026-16443)"
+        source_url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-f8m4-v488-rmrm"
+      - quote: "This allows the attacker to take over other clients, steal confidential secrets, and potentially gain full administrative control over the realm."
+        attribution: "Keycloak / Red Hat GHSA-95cx-vmr5-3cmr (CVE-2026-16102)"
+        source_url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-95cx-vmr5-3cmr"
+      - quote: "This allows the attacker to gain full administrative access to the Keycloak realm."
+        attribution: "Keycloak / Red Hat GHSA-95rm-h7g9-rhcf (CVE-2026-15572)"
+        source_url: "https://github.com/keycloak/keycloak/security/advisories/GHSA-95rm-h7g9-rhcf"
+    extended_notes: |
+      Detection/hunt framing for the SOC: for CVE-2026-16443/-16442, hunt identity-provider
+      audit logs (Keycloak admin events / SAML broker login events) for successful SAML
+      broker logins whose asserted NameID/external identifier does not correspond to a
+      session the IdP itself can attest — i.e. correlate Keycloak's broker-login success
+      events against the upstream IdP's own auth logs for the same timeframe; a forged
+      SAML response has no matching upstream IdP session. For the DCR privilege-escalation
+      pair (CVE-2026-16102/CVE-2026-15572), review Dynamic Client Registration audit trails
+      for protocol-mapper or user-property-mapper configuration changes on client
+      registrations that were not accompanied by an admin-console session — DCR abuse
+      happens over the registration API, not the admin UI. Hardening: patch to 26.4.14 /
+      26.6.5 / 26.7.1; for SAML brokers specifically, audit configured identity providers
+      for metadata imported without explicit key-usage attributes and re-validate signing
+      certificates are enforced post-patch; restrict Dynamic Client Registration to
+      Initial-Access-Token holders who need it, and review existing DCR-created clients for
+      unexpected protocol mappers carrying hardcoded realm-admin or client-admin roles.
+      Triage note: routine Keycloak upgrades or IdP metadata refreshes will not by themselves
+      produce these telemetry signatures — the discriminator is a broker-login success event
+      with no corresponding upstream IdP authentication, or a DCR-managed client whose
+      protocol-mapper configuration changed without a matching admin action.
+    borderline: false
+
+  - title: "Press narrows the SharePoint flaw behind Switzerland's federal BIT/FOITT breach to two named July CVEs — still unconfirmed, but gives defenders a concrete pair to check"
+    sources:
+      - { url: "https://www.bleepingcomputer.com/news/security/swiss-government-sharepoint-breach-compromised-200-accounts/", publisher: "BleepingComputer", date: "2026-08-06", role: "primary" }
+      - { url: "https://securityaffairs.com/196625/hacking/sharepoint-flaws-used-to-hack-switzerlands-federal-it-agency.html", publisher: "Security Affairs", date: "2026-08-04", role: "corroborating" }
+      - { url: "https://therecord.media/swiss-bit-foitt-hacked-possibly-sharepoint-vulnerabilities", publisher: "The Record (Recorded Future News)", date: "2026-08-04", role: "corroborating" }
+      - { url: "https://www.admin.ch/de/newnsb/1CjmpBBHQaMV82PjKEpcL", publisher: "Federal IT Steering Body (admin.ch, original victim statement)", date: "2026-08-04", role: "corroborating" }
+    discovery_trace: >
+      first seen at: WebSearch ("SharePoint Schweiz Behörde Cyberangriff August 2026") ->
+      pivot: WebSearch ("NCSC BACS SharePoint CVE Schwachstelle August 2026") surfaced
+      securityaffairs.com and bleepingcomputer.com coverage -> primary: BleepingComputer,
+      URL https://www.bleepingcomputer.com/news/security/swiss-government-sharepoint-breach-compromised-200-accounts/
+      (confirmed datePublished 2026-08-06T14:14:19-04:00 / 2026-08-06T18:14:19Z via page
+      JSON-LD) -> corroboration: Security Affairs and The Record, both 2026-08-04, and the
+      original admin.ch victim statement.
+    summary: |
+      This is an update on the already-tracked BIT/FOITT Swiss federal SharePoint breach
+      (~200 accounts, entry 2026-08-05/bit-foitt-swiss-federal-sharepoint-breach-200-accounts).
+      Neither the Swiss federal government's own statement nor Canton Graubünden's followed
+      disclosure has named a CVE. BleepingComputer's 2026-08-06 follow-up is the first
+      in-window source to narrow the candidate vulnerability set for the Swiss federal
+      case specifically: "The attack potentially involved CVE-2026-56164, a SharePoint
+      privilege escalation vulnerability, or CVE-2026-50522, a critical remote code
+      execution flaw," both patched in Microsoft's July 2026 Patch Tuesday and both already
+      on CISA's KEV catalog from the broader on-premises SharePoint exploitation wave this
+      pipeline covered extensively in 2026-W30 (the wave that also produced machine-key
+      theft as a persistence mechanism surviving the patch). The article is explicit that
+      this is unconfirmed press inference from the known July SharePoint KEV set, not a
+      victim or authority confirmation: "It remains unclear whether either vulnerability
+      was used in the Swiss government attack." No new information on data exfiltration
+      (still denied beyond the compromised credentials), no attacker attribution, and no
+      mention of Canton Graubünden as linked to the same CVE pair.
+    region_nexus: "Switzerland — federal government (BIT/FOITT), the constituency's own core."
+    primary_sector_nexus: "direct"
+    sector: "public-sector"
+    cves: ["CVE-2026-56164", "CVE-2026-50522"]
+    techniques: ["T1190"]
+    affected_products: ["Microsoft SharePoint Server"]
+    entity_keys: ["incident:foitt-bit-sharepoint-breach-2026-07"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER
+    confidence: MEDIUM
+    novelty: "update-of:2026-08-05/bit-foitt-swiss-federal-sharepoint-breach-200-accounts"
+    evidence:
+      - quote: "The attack potentially involved CVE-2026-56164, a SharePoint privilege escalation vulnerability, or CVE-2026-50522, a critical remote code execution flaw"
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/swiss-government-sharepoint-breach-compromised-200-accounts/"
+      - quote: "It remains unclear whether either vulnerability was used in the Swiss government attack."
+        attribution: "BleepingComputer"
+        source_url: "https://www.bleepingcomputer.com/news/security/swiss-government-sharepoint-breach-compromised-200-accounts/"
+    extended_notes: |
+      Actionable delta despite the hedge: any Swiss/EU public-sector operator running
+      on-premises SharePoint that was internet-reachable through mid-July 2026 should
+      specifically verify patch status and, per the already-established W30 guidance,
+      rotate ASP.NET machine keys for CVE-2026-56164 (privilege escalation) and
+      CVE-2026-50522 (deserialization RCE, the one already confirmed tied to machine-key
+      theft in other victims) rather than treating "we patched" as sufficient. This is
+      press inference tied to two already-KEV-listed CVEs, not a fresh disclosure — kept
+      MEDIUM confidence and SINGLE-SOURCE-OTHER accordingly; the main agent may judge this
+      too thin a delta to warrant a standalone entry versus a one-line addendum to the
+      existing incident's coverage.
+    borderline: true
+    borderline_reason: "Genuine in-window delta directly responsive to the spawn's task #1, but the CVE narrowing is press speculation ('remains unclear'), not an authority/victim confirmation — modest incremental value over the already-published 2026-08-05 entry."
+
+watchlist_sweep:
+  duty: sector-lens
+  note: "sector-lens applied; no watchlist configured. Both returned items were weighted for public-sector/CI relevance per the sector-lens duty; no product/supplier sweep performed (none configured)."
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: prodaft
+    reason: >
+      Top-priority attempt as instructed: jina fetch of https://www.prodaft.com/reports
+      returned HTTP 200 with a full hydrated listing (3rd consecutive successful transport),
+      but the content is a stale cached SPA snapshot — page metadata reports "Published
+      Time: Wed, 08 Jul 2026" and the "Latest Report" is "Smoke and Mirrors: Understanding
+      The Workings of Wazawaka" followed only by long-standing evergreen flagship reports
+      (FIN7, Conti, LockBit, PYSA, Wizard Spider, Silverfish, FluBot, Brunhilda, etc.) with
+      no publication dates anywhere on the page — recency cannot be established and no
+      genuinely new report is visible. Cross-checked /blogs (same "Published Time: Wed, 08
+      Jul 2026" stamp, same stale evergreen content — a years-old keylogging 101 article as
+      the newest visible post). Direct (non-jina) fetch of /reports confirms the site is a
+      Next.js SPA that serves an empty app shell without JS execution, so the jina reader's
+      cached hydration is the only route to content and that cache itself appears stuck at
+      08 July 2026. Tried resources.prodaft.com (a HubSpot-style blog subdomain surfaced by
+      WebSearch) as an alternate discovery path — DNS does not resolve. No RSS feed found.
+      This is a content/recipe problem, not a dead source (transport is HTTP 200
+      throughout) — recommend the source record note the stale-jina-cache diagnosis and
+      consider a periodic forced re-crawl or de-prioritizing rotation frequency until the
+      cache is observed to refresh.
+  - source_id: ncsc-ch-focus
+    reason: "Essential source attempted (webfetch, listing + drill). Returned 10 dated posts, latest 2026-08-04, but the page is consumer-fraud/awareness-only by documented design (deepfakes, phishing QR codes, holiday scam tips) — no operational/sector items in window, consistent with prior recipe notes."
+  - source_id: ncsc-ch-incidents
+    reason: "Essential source attempted (bridge url, raw HTML parsed for the accordion list). Newest dated entry is 31.07.2026 (crypto-wallet QR-code phishing letters), consumer-fraud-only by documented design. No operational items in window."
+  - source_id: cert-at
+    reason: "Essential source attempted (webfetch of bare homepage per recipe note). Newest dated headline is 24.07.2026 (Microsoft 365 phishing warning) — outside the 26h window. Sparse/monthly cadence as documented; no in-window content."
+  - source_id: enisa
+    reason: "Essential source attempted (webfetch of /news). Newest item is 06 August 2026 ('ENISA scales up its role in the CVE program' — NCIA and AISLE join the CVE Numbering Authorities under the ENISA Root) but this is a policy/administrative announcement with no patch/hunt/detect action for a SOC — dropped per PD-11 (awareness/policy item, not operational)."
+  - source_id: lab52
+    reason: "Rotation source attempted (RSS feed). Newest post dated 2026-07-03 ('GRU: military unit 67606') — well outside window; no new content this run."
+  - source_id: dcod-ch
+    reason: "Rotation candidate attempted (webfetch). Two flagged items (FINMA post-quantum-crypto readiness survey; Zurich Yutong electric-bus remote-disable concern) both traced back to stale underlying events (FINMA circular dated 2026-07-09; Yutong remote-disable vulnerability originally disclosed Nov 2025 in Norway/Denmark) — dcod.ch's own 08-05/08-06 write-ups are late rehashes, not fresh disclosures. Dropped per recency discipline (recycled news)."
+  - source_id: zataz
+    reason: "Rotation candidate attempted (RSS feed). Newest post dated 2026-08-03 (French rehash of the already-covered US water-utility PLC campaign) — outside the 26h window; no new content."
+  - source_id: ncc-research
+    reason: "Rotation source attempted (bridge listing). Listing returned no visible publication dates on the /research-blog/ index for any post; titles visible are evergreen/older technical deep-dives with no indication of fresh Aug 2026 publication. Not drilled further given no dating signal to establish recency."
+  - source_id: swisscybersecurity-net
+    reason: "Rotation source attempted (webfetch). All 10 recent headlines already correspond to stories this pipeline has covered in prior runs (Graubünden SharePoint, RUAG ransom-payment ruling, BIT/FOITT SharePoint) or are out-of-scope AI-safety wire stories (Meta/Anthropic AI eval escapes) better suited to the S3/research domain — no net-new S2 item."
+  - source_id: netzwoche
+    reason: "Rotation source attempted (webfetch). Same headline set as swisscybersecurity.net (shared wire content); one item ('Liechtensteiner Justizbehörde nimmt weitere Systeme vom Netz', 2026-08-06) checked in full — confirmed to be an update on the already-tracked Liechtenstein VwbP breach naming which two of the already-reported four offline systems (central account register, central tax-expert system) but no CVE, no new attacker/forensic detail; judged too thin a delta over the existing 2026-08-04/08-05 entries to warrant a standalone item."
