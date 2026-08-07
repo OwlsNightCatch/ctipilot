@@ -83,3 +83,44 @@ quote or attribution, `grep -F` the disputed string against that cached copy fir
 seconds and it is the same check that catches composition defects. Record the rebuttal with
 its evidence in the run record and count it in the residual rather than dismissing it
 silently — a rejected finding is still a finding the operator should see.
+
+## 2026-08-07 — the inverse case: four passes, 26 findings, and every truth finding held
+
+A counterweight to the two false-positive entries above, so this file does not train
+reflexive scepticism. Over four iterations (Opus/Sonnet/Opus/Sonnet, rotation clean) the
+loop raised 26 findings and **every single truth-class one survived verification against
+the cached primaries**. Two were defects no amount of self-review had caught:
+
+- An entry's only hardening advice was **inverted** against its own source: it said
+  Gatekeeper and notarisation stop the payload, where Microsoft says the Terminal-paste
+  flow *avoids* code-signing and notarisation checks precisely because execution does not
+  start from a downloaded app bundle. `grep -c Gatekeeper` on the cached copy = 0. The
+  actual platform control (a macOS 26.4+ paste warning) had dropped out entirely.
+- A disclosure date off by one **everywhere** — four source dates, four inline citations,
+  the summary and `event_date` — because the CERT-FR *relay* date (08-06) had been taken
+  for the disclosure date (08-05, per every Red Hat `public_date`). Two earlier passes
+  missed it.
+
+**The lesson that generalises: the unframed pass is the one that finds these.** Iterations 1
+and 2 were given detailed "check these ten things" spawn messages and both cleared the
+Keycloak dates. Iteration 3 was given the loop history and *deliberately no checklist* —
+"I am specifically not listing what to check, because two passes have already worked from
+my framing" — and found the date error, two speculative ATT&CK ids, an uncited bulletin the
+whole entry's hook rested on, and a mislabelled threat model. Framing a verifier buys
+depth on the axes you already suspect and costs you the ones you do not. **Alternate:
+frame the even iterations against the prior deltas, leave at least one odd iteration
+completely unframed.**
+
+Two further shapes worth keeping:
+
+- **Withholding is a defect too.** One finding was that the entry *omitted* Microsoft's
+  `file<word><word>` domain-generation pattern and its ">250 domains" count, suppressed as
+  if they were indicators. They are not — a generation pattern is a hunt rule, the vendor
+  explicitly recommends alerting it *instead of* a domain list, and two other entries in
+  the same run carried exactly that construct. Withhold the example hostnames, carry the
+  pattern. The no-IOC rule is not a reason to strip detection depth.
+- **A verifier's "no action recommended" is advice, not a ruling.** One pass flagged
+  workflow jargon in the run-record notes and recommended no action because recent records
+  all do it. Fixed anyway: the style rule names the notes body explicitly, and "others do
+  it too" is an argument for the weekly audit to sweep the store, not for this run to add
+  to the pile.
