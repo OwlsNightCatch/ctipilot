@@ -1,0 +1,201 @@
+domain: S1
+run_id: 2026-08-08T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-08T04:13:20Z
+ended_at: 2026-08-08T04:32:02Z
+duration_seconds: 1122
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 11
+  bridge_fetches: 28
+items:
+  - title: "CVE-2026-8037 — Progress Kemp LoadMaster unauthenticated command injection moves to CISA KEV, five weeks after PoC and first exploitation attempts"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/alerts/2026/08/07/cisa-adds-one-known-exploited-vulnerability-catalog", publisher: "CISA", date: "2026-08-07", role: "primary" }
+      - { url: "https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/", publisher: "watchTowr Labs", date: "2026-06-29", role: "primary" }
+      - { url: "https://www.esentire.com/security-advisories/progress-kemp-loadmaster-vulnerability-targeted-cve-2026-8037", publisher: "eSentire TRU", date: "2026-06-30", role: "corroborating" }
+      - { url: "https://community.progress.com/s/article/LoadMaster-Critical-Security-Bulletin-June-2026-CVE-2026-8037-CVE-2026-33691", publisher: "Progress Software", date: "2026-06-04", role: "corroborating" }
+    discovery_trace: "first seen at: cisa-kev bridge, URL https://www.cisa.gov/known-exploited-vulnerabilities-catalog (dateAdded 2026-08-07) → primary: CISA KEV addition alert, URL https://www.cisa.gov/news-events/alerts/2026/08/07/cisa-adds-one-known-exploited-vulnerability-catalog → pivot: enisa-euvd bridge confirming CVSS/EPSS (EUVD-2026-34260) → primary root-cause: watchTowr Labs, URL https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/ → corroborating: eSentire TRU advisory"
+    summary: |
+      CISA added CVE-2026-8037 to its Known Exploited Vulnerabilities catalog on 2026-08-07 "based on evidence of active exploitation," five weeks after a working exploit and the first observed attempts. The flaw sits in escape_quotes(), a helper in Progress Kemp LoadMaster's access binary that sanitises the apiuser/apipass JSON fields on the unauthenticated /accessv2 endpoint (reachable whenever the LoadMaster API is enabled). The pre-patch function allocates its output with malloc() and never null-terminates it; an attacker sends apiuser containing four single quotes (each quote expands to 4 escaped bytes, letting the attacker overwrite the first 0x10 bytes of an adjacent freed heap chunk and erase its allocator metadata) while spraying the request body with extra JSON key/value pairs via json_fill_param() so a second, attacker-controlled command-injection payload lands in the chunk immediately following the escaped buffer. Because that buffer is never null-terminated, sprintf_chk() reads straight past it into the sprayed payload, and the resulting shell command runs as root — no credentials, no user interaction. Vulnerable: Kemp LoadMaster GA ≤7.2.63.1 and LTSF ≤7.2.54.17 with the API enabled; fixed in GA 7.2.63.2 / LTSF 7.2.54.18 (Progress bulletin, 2026-06-04). Public PoC landed 2026-06-29 (discoverer: Syed Ibrahim Ahmed of TrendAI Research, ZDI-26-342); eSentire's initial telemetry the same day showed exploitation attempts that had not yet produced successful post-compromise activity. The KEV addition confirms that has since changed. CISA set an unusually short remediation due date of 2026-08-10.
+    region_nexus: "global; LoadMaster is an edge load-balancer/ADC commonly deployed in front of internal services, including in CH/EU public-sector and CI environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-8037]
+    techniques: [T1190]
+    affected_products: ["Progress Kemp LoadMaster"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "CISA has added one new vulnerability to its Known Exploited Vulnerabilities (KEV) Catalog, based on evidence of active exploitation."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/alerts/2026/08/07/cisa-adds-one-known-exploited-vulnerability-catalog"
+      - quote: "The vulnerability affects the following versions, when the API is enabled: Kemp LoadMaster: GA v7.2.63.1 and older; Kemp LoadMaster: LTSF v7.2.54.17 and older"
+        attribution: "watchTowr Labs"
+        source_url: "https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/"
+      - quote: "In cases observed by eSentire, exploitation was not successful, and as such, no post-compromise activity was observed."
+        attribution: "eSentire TRU"
+        source_url: "https://www.esentire.com/security-advisories/progress-kemp-loadmaster-vulnerability-targeted-cve-2026-8037"
+    extended_notes: |
+      Detection concept: unauthenticated POST requests to /accessv2 carrying an apiuser value with multiple single-quote characters and an unusually large JSON body (many repeated keys) is the network-visible shape of the heap-spray; process-creation telemetry on the LoadMaster appliance itself is not typically available to defenders, so web-application-firewall / reverse-proxy logging in front of the LoadMaster management API is the practical hook. Hardening: disable the LoadMaster API where not required; place the management interface behind a separate out-of-band network, never expose /accessv2 to the internet.
+  - title: "CPDLC over ATN-B1 — five protocol-level vulnerabilities in the worldwide air-traffic data-link standard, reported by a Swiss (armasuisse) researcher, no vendor patch possible"
+    sources:
+      - { url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01", publisher: "CISA (ICS Advisory)", date: "2026-08-07", role: "primary" }
+    discovery_trace: "first seen at: cisa-advisories bridge, URL https://www.cisa.gov/cybersecurity-advisories/all.xml (feed) → primary (no pivot needed): CISA ICS advisory icsa-26-219-01, URL https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01"
+    summary: |
+      CISA published ICS advisory icsa-26-219-01 on 2026-08-07 for five vulnerabilities in Controller-Pilot Data Link Communications (CPDLC) as implemented over the ATN-B1 aviation data-link standard (Advisory Circular 90-117), used worldwide for controller-to-cockpit text instructions over VHF radio. All five (CVE-2025-71409 through CVE-2025-71413, affecting "vers:all" of the standard — this is a protocol design flaw, not a single vendor's bug) trace to CWE-306 (missing authentication for a critical function): ATN-B1 CPDLC relies on clear-text, unauthenticated VHF Data Link radio frequency links, so any actor able to transmit on the relevant frequency can act as a rogue ground station. CVE-2025-71409 (CVSS3.1 7.1) and CVE-2025-71412 (7.1) let an attacker inject fabricated CPDLC clearances or false emergency/status messages that look legitimate to flight crew and controllers; CVE-2025-71410 and CVE-2025-71411 (5.3 each) let an attacker send Unnumbered Disconnect / malformed Link Control frames or broadcast control frames to terminate CPDLC sessions for one or many aircraft simultaneously, forcing reversion to voice communications and controller overload; CVE-2025-71413 forces repeated resets via malformed/out-of-sequence X.25-layer frames. CISA states these "do not constitute an unsafe aircraft condition" but can "degrade operational safety margins by increasing workload, delaying safety-critical instructions, and reducing situational awareness." Because the flaw is in the standard itself, the advisory lists no vendor patch and no workaround. The vulnerabilities were reported to CISA by Martin Strohmeier of armasuisse — the Swiss Federal Office for Defence Procurement's science-and-technology arm — giving this a direct Swiss-research nexus even though the exposure is global.
+    region_nexus: "global (worldwide aviation infrastructure); discovering researcher is Swiss (armasuisse)"
+    primary_sector_nexus: "direct"
+    sector: "transport"
+    cves: [CVE-2025-71409, CVE-2025-71410, CVE-2025-71411, CVE-2025-71412, CVE-2025-71413]
+    techniques: [T1499, T1565.002]
+    affected_products: ["ATN-B1 CPDLC (Advisory Circular 90-117 Data Link Communications)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "ATN-B1 CPDLC relies on legacy clear text unauthenticated radio frequency links. Research demonstrates that these characteristics allow unauthorized message injection, denial-of-service conditions, and forced session resets."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01"
+      - quote: "These vulnerabilities do not constitute an unsafe aircraft condition but can degrade operational safety margins by increasing workload, delaying safety-critical instructions, and reducing situational awareness."
+        attribution: "CISA"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01"
+      - quote: "Martin Strohmeier of Armasuisse reported these vulnerabilities to CISA"
+        attribution: "CISA (Acknowledgments)"
+        source_url: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01"
+    extended_notes: |
+      No detection concept is available at the network layer defenders normally control — CPDLC exposure is a physical/RF-domain issue for air navigation service providers and airlines, not an enterprise IT control. Included for CH/EU transport-sector situational awareness and because the discovering researcher is Swiss; flagging to sector defenders (airlines, ANSPs, aviation regulators) that ATN-B1 CPDLC message integrity cannot currently be trusted and that a reversion-to-voice contingency plan is the only available mitigation. Only one primary source (CISA, acting as the coordinating/publishing national authority for this multi-vendor/standards-level advisory) was available — no independent second source corroborating the same claims was found in this run, hence SINGLE-SOURCE-NATIONAL-CERT rather than MULTI-SOURCE.
+    borderline: true
+    borderline_reason: "CVSS tops out at 7.1 (HIGH, not CRITICAL) and there is no enterprise-IT mitigation lever; included primarily for sector/region relevance (transport, Swiss discoverer) rather than conventional exploitability severity."
+  - title: "Cisco IOS XE Software Security Hardening Release: August 2026 — seven internally-discovered CVEs up to CVSS 9.8, no workaround, patch-only remediation"
+    sources:
+      - { url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ", publisher: "Cisco PSIRT", date: "2026-08-05", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0279", publisher: "NCSC-NL", date: "2026-08-07", role: "corroborating" }
+    discovery_trace: "first seen at: advisories-ncsc-nl RSS, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0279, published 2026-08-07T08:29:53Z) → primary: Cisco PSIRT advisory, URL https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ"
+    summary: |
+      Cisco's IOS XE engineering team ran a comprehensive internal security review and shipped hardening releases on 2026-08-05 covering seven CVEs, one per CWE vulnerability class: CVE-2026-20267 (CWE-284 improper access control, CVSS 9.0), CVE-2026-20268 (CWE-119 out-of-bounds/buffer-overflow writes, 8.6), CVE-2026-20269 (CWE-664 improper resource lifetime handling — memory/file handlers, null-pointer dereferences, invalid frees, 8.6), CVE-2026-20270 (CWE-682 incorrect arithmetic/numeric-conversion calculations, 8.6), CVE-2026-20271 (CWE-691 insufficient control-flow management — infinite loops, uncontrolled recursion, race conditions, 8.6), CVE-2026-20272 (CWE-74 command/OS/argument injection, 9.8 — the highest of the batch) and CVE-2026-20273 (CWE-20 improper input validation, including path traversal, 8.6). Cisco states the bugs were found during internal testing, are "not known to be actively exploited," and explicitly notes "there are no workarounds that address these vulnerabilities" — patching is the only remediation. Affected trains: IOS XE 17.9, 17.12, 17.15, 17.18 and 26.1; first fixed releases are 17.9.10, 17.12.8, 17.15.6, 17.18.4/17.18.4a and 26.1.2 respectively. NCSC-NL issued a corroborating advisory the same window (2026-08-07). Given IOS XE's ubiquity in CH/EU public-sector and critical-infrastructure network edges, and that a CVSS 9.8 injection-class bug ships with no interim mitigation, this is a scheduled-patch-now item even absent confirmed exploitation.
+    region_nexus: "global; IOS XE runs core/edge network infrastructure widely deployed across CH/EU government and CI networks"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, energy, water, transport, healthcare, finance, telco"
+    cves: [CVE-2026-20267, CVE-2026-20268, CVE-2026-20269, CVE-2026-20270, CVE-2026-20271, CVE-2026-20272, CVE-2026-20273]
+    techniques: [T1190, T1068]
+    affected_products: ["Cisco IOS XE Software"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "These vulnerabilities were found during internal testing and are not known to be actively exploited."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ"
+      - quote: "Cisco has released software updates that address these vulnerabilities. There are no workarounds that address these vulnerabilities."
+        attribution: "Cisco PSIRT"
+        source_url: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ"
+    extended_notes: |
+      Detection concept: because Cisco groups multiple underlying bugs per CWE without per-bug technical detail, no specific PoC or exploitation pattern is publicly described; defenders should treat this as an inventory/patch-management task (identify all IOS XE 17.9/17.12/17.15/17.18/26.1 devices, confirm train and current release, schedule upgrade to the first-fixed release) rather than a hunt target. CVE-2026-20272 (command/OS/argument injection, CVSS 9.8) is the highest-priority CVE in the batch to patch first if staged rollout is necessary.
+  - title: "Three new Flowise CVEs land as the vendor company winds down — auth-bypass, IDOR and missing-authorization flaws with no company-backed fix on the horizon"
+    sources:
+      - { url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2703", publisher: "BSI (CERT-Bund WID)", date: "2026-08-06", role: "primary" }
+      - { url: "https://cve.threatint.com/CVE/CVE-2026-70636", publisher: "THREATINT (CVE record aggregator)", date: "2026-08-06", role: "corroborating" }
+      - { url: "https://www.vulncheck.com/advisories/flowise-authentication-bypass-via-oauth2-credential-refresh-endpoint", publisher: "VulnCheck", date: "2026-08-06", role: "corroborating" }
+      - { url: "https://flowiseai.com/sunset", publisher: "FlowiseAI", date: "2026", role: "corroborating" }
+    discovery_trace: "first seen at: bsi-rss feed, URL https://wid.cert-bund.de/content/public/securityAdvisory/rss (WID-SEC-2026-2703, published 2026-08-07T10:36Z) → primary: BSI CSAF record WID-SEC-2026-2703, URL https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2703 → pivot: WebSearch (\"CVE-2026-70636 Flowise vulnerability\") → corroborating: THREATINT CVE record, URL https://cve.threatint.com/CVE/CVE-2026-70636 → corroborating: VulnCheck advisory, URL https://www.vulncheck.com/advisories/flowise-authentication-bypass-via-oauth2-credential-refresh-endpoint → context: FlowiseAI sunset announcement, URL https://flowiseai.com/sunset"
+    summary: |
+      BSI's CERT-Bund flagged three new CVEs in Flowise (an open-source visual builder for LLM/AI-agent workflows) on 2026-08-06/07, marking the advisory UNGEPATCHT (unpatched) — all affect versions ≤3.1.4 with no fixed release listed. CVE-2026-67622 is the most severe (CVSS 9.9 critical): an IDOR in Flowise's OpenAI Assistants integration resolves a supplied credential UUID without checking it belongs to the caller's workspace, so any authenticated user who learns another workspace's OpenAI credential UUID can make the Flowise server decrypt and use that victim's API key — a confused-deputy that lets an attacker enumerate assistants, read vector-store contents and uploaded files, upload new files into the victim's OpenAI account, and burn the victim's API quota. CVE-2026-70636 (CVSS3.1 7.5 / CVSS4.0 8.7) is an authentication-bypass that reaches the OAuth2-credential-refresh endpoint entirely unauthenticated: the auth middleware (packages/server/src/utils/constants.ts) does prefix-based whitelist matching, so appending a trailing credential identifier to the allow-listed route path defeats the check and triggers unauthorized OAuth token rotation against any workspace's credentials — this is itself a bypass of an earlier fix, CVE-2026-41273. CVE-2026-67621 (CVSS3.1 7.6) is a missing-authorization flaw letting a view-only workspace member hit unprotected document-store upsert/refresh mutation endpoints directly, triggering ingestion, burning embedding-API credits, and modifying chatflow knowledge bases. These land days after FlowiseAI announced on flowiseai.com/sunset that the company is winding down commercial operations — the codebase stays on GitHub under Apache 2.0 for community forks, but there is no vendor left to ship an official fix, so any organisation still running Flowise should not expect a patched release for these three CVEs and needs its own compensating controls (workspace credential isolation review, network restriction of the OAuth2 refresh route, disabling document-store mutation endpoints for non-admin roles).
+    region_nexus: "global; self-hosted open-source AI-agent tooling increasingly deployed inside CH/EU public-sector and enterprise environments"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: [CVE-2026-67621, CVE-2026-67622, CVE-2026-70636]
+    techniques: [T1190]
+    affected_products: ["Flowise (FlowiseAI, open source ≤3.1.4)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Flowise through 3.1.4 contains an authentication bypass vulnerability that allows unauthenticated attackers to access the OAuth2 credential refresh endpoint by exploiting prefix-based whitelist matching in the authentication middleware defined in packages/server/src/utils/constants.ts. ... This is a bypass of CVE-2026-41273."
+        attribution: "THREATINT (CVE-2026-70636 record)"
+        source_url: "https://cve.threatint.com/CVE/CVE-2026-70636"
+      - quote: "Ein Angreifer kann mehrere Schwachstellen in Flowise ausnutzen, um Sicherheitsvorkehrungen zu umgehen, Informationen offenzulegen und Daten zu manipulieren."
+        attribution: "BSI (CERT-Bund WID-SEC-2026-2703)"
+        source_url: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2703"
+    extended_notes: |
+      Two of three CVEs require an existing authenticated (even low-privilege) account, which lowers urgency relative to a pure pre-auth RCE; CVE-2026-70636 is the pre-auth-reachable one. No confirmed in-the-wild exploitation reported by any source found this run — included as a trending/notable disclosure given severity (one CVSS 9.9), the no-patch-coming context, and the tie-in to the already-tracked pattern of AI-agent-orchestration platforms (Langflow, this pipeline's ongoing KEV coverage) becoming a recurring vulnerability class. Detection concept: monitor for anomalous POST traffic to Flowise's /api/v1/oauth2-credential/* and document-store upsert/refresh routes from non-admin session tokens; the trailing-identifier auth-bypass pattern (extra path segment appended past an otherwise-matching allow-listed prefix) is the specific telemetry signature for CVE-2026-70636.
+    borderline: true
+    borderline_reason: "two of three CVEs need an existing authenticated account (moderate rather than pre-auth severity), and no exploitation has been observed; included for the no-fix-coming vendor-sunset angle and CVSS-9.9 IDOR."
+  - title: "CVE-2026-65400 — macOS Screen Sharing authentication-state bug lets a network attacker log in without credentials, patched in 26.6.1 one week after a separate, disputed pre-auth screensharingd bug"
+    sources:
+      - { url: "https://support.apple.com/en-us/148170", publisher: "Apple", date: "2026-08-06", role: "primary" }
+      - { url: "https://advisories.ncsc.nl/advisory?id=NCSC-2026-0280", publisher: "NCSC-NL", date: "2026-08-07", role: "corroborating" }
+      - { url: "https://reverse.put.as/2026/07/29/its-a-pre-auth-stupid/", publisher: "fG! (reverse.put.as)", date: "2026-07-29", role: "background" }
+    discovery_trace: "first seen at: advisories-ncsc-nl RSS, URL https://advisories.ncsc.nl/rss/advisories (NCSC-2026-0280, published 2026-08-07T11:39:25Z) → primary: Apple security-content page, URL https://support.apple.com/en-us/148170 → pivot: WebSearch (\"Alfredo Pesoli macOS Screen Sharing vulnerability writeup CVE-2026-65400\") → background context: fG! / reverse.put.as, URL https://reverse.put.as/2026/07/29/its-a-pre-auth-stupid/"
+    summary: |
+      Apple's macOS Tahoe 26.6.1 (with matching Sequoia 15.7.9 and Sonoma 14.8.9) update, released 2026-08-06, fixes CVE-2026-65400 in Screen Sharing — the daemon behind macOS's built-in VNC-based remote-desktop feature. Apple's own advisory describes it plainly: "An attacker on the network may be able to authenticate to Screen Sharing without valid credentials," caused by "an authentication issue... addressed with improved state management" (CWE-287, per NCSC-NL's corroborating advisory). Credited to Alfredo Pesoli (@__rev) via the Bynario Atlas (bynar.io) research program; secondary reporting states the bug was surfaced through an automated, GPT-5.5-assisted vulnerability-discovery workflow. No in-the-wild exploitation has been reported. Context worth flagging for defenders: this fix lands exactly one week after a separate, contested pre-auth vulnerability in the same screensharingd daemon — publicly described (2026-07-29) by veteran macOS reverse-engineer fG!, who says he found an unrelated bug allowing pre-auth arbitrary file read/write as root (demonstrated by downloading /etc/sudoers with no credentials) that Apple's 26.6 release (2026-07-27) patched but mis-categorised in its bulletin as a mere denial-of-service fix, understating its true severity; fG! explicitly states the Bynario Atlas team "didn't hit the same bug." Because two distinct severe authentication/state-handling defects have now surfaced in screensharingd within two release cycles, defenders should treat both 26.6 and 26.6.1 as required, and should disable Screen Sharing on any Mac where it is not actively needed rather than relying on patch level alone.
+    region_nexus: "global; client-side, affects any organisation running macOS with Screen Sharing enabled"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, healthcare, finance, telco"
+    cves: [CVE-2026-65400]
+    techniques: [T1021.005]
+    affected_products: ["Apple macOS (Tahoe, Sequoia, Sonoma) — Screen Sharing"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Impact: An attacker on the network may be able to authenticate to Screen Sharing without valid credentials"
+        attribution: "Apple"
+        source_url: "https://support.apple.com/en-us/148170"
+      - quote: "Description: An authentication issue was addressed with improved state management."
+        attribution: "Apple"
+        source_url: "https://support.apple.com/en-us/148170"
+      - quote: "Third, yes, Bynar didn't hit the same bug, they just got so high on the bot finding that they didn't bother exploring the rest of the code (which is pure garbage)."
+        attribution: "fG! (reverse.put.as)"
+        source_url: "https://reverse.put.as/2026/07/29/its-a-pre-auth-stupid/"
+    extended_notes: |
+      Detection concept: Screen Sharing (VNC, TCP/5900 and the macOS-specific negotiation on TCP/5988/mDNS discovery) exposed to any untrusted network segment is the exposure to hunt for; there is no known persistent artefact for CVE-2026-65400 specifically since Apple frames it as an auth-state bug rather than a post-exploitation primitive. Hardening: disable Screen Sharing (System Settings → General → Sharing) wherever not required; where required, restrict to a defined allow-list of client IPs / VPN-only access; do not treat SIP as a compensating control — per fG!'s independent research on the related screensharingd bug, SIP does not block the pre-auth network access path, only some post-access code-execution routes.
+    borderline: true
+    borderline_reason: "no confirmed in-the-wild exploitation; client-side/desktop OS bug rather than a server/CI asset; included for technical-depth value (VNC daemon auth-state class of bug, T1021.005) and the contemporaneous disputed-severity angle in the same daemon."
+watchlist_sweep:
+  duty: products
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "No product or supplier watchlist configured in org-profile.yaml (per spawn instructions, sweep is a no-op). General coverage swept CISA KEV, ENISA EUVD (exploited/criticals/lastvulnerabilities listings), NCSC-NL, NCSC-CH Security Hub, BSI WID, CERT-FR, CERT-EU, NCSC-UK, CERT-PL and CISA cybersecurity-advisories/ICS feeds this run; no watchlist-specific gaps to report since none is configured."
+candidate_sources: []
+coverage_gaps:
+  - source_id: ssd-disclosure
+    reason: "Homepage listing fetched successfully via jina fallback (2 recent advisories surfaced). The newest article (Linux Bridge STP Timer Use-After-Free, 2026-08-05) was outside the 26h recency window (local-privilege kernel bug via TyphoonPWN 2026, already patched upstream) so was dropped, not a fetch failure. A second listed article (Cisco Unified Communications Manager Arbitrary File Write to RCE) returned HTTP 202 on direct fetch and a 'Robot Challenge Screen' via the jina fallback — content for that specific article could not be retrieved by either transport this run, but the underlying CVE (CVE-2026-20230) is from June 2026 and already extensively covered elsewhere, so it would not have qualified on recency regardless."
+  - source_id: prodaft
+    reason: "Named in this run's rotation-priority list ('ssd-disclosure, prodaft') but not present as a record in work/2026-08-08T0409Z-intel/sources.S1.json — no source record was assigned to attempt, so no fetch was made. Flagging for the main agent in case this is a slice-assembly gap."
+cve_table:
+  - { cve: "CVE-2026-8037", product: "Progress Kemp LoadMaster", cvss: "9.6 (CVSS3.1)", epss: "84.79%", kev: "yes (added 2026-08-07)", exploited: "confirmed (CISA KEV)", patch: "GA 7.2.63.2 / LTSF 7.2.54.18", source: "https://www.cisa.gov/news-events/alerts/2026/08/07/cisa-adds-one-known-exploited-vulnerability-catalog" }
+  - { cve: "CVE-2025-71409", product: "ATN-B1 CPDLC (aviation data-link standard)", cvss: "7.1 (CVSS3.1)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (protocol-level; no vendor fix)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01" }
+  - { cve: "CVE-2025-71410", product: "ATN-B1 CPDLC (aviation data-link standard)", cvss: "5.3 (CVSS3.1)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (protocol-level; no vendor fix)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01" }
+  - { cve: "CVE-2025-71411", product: "ATN-B1 CPDLC (aviation data-link standard)", cvss: "5.3 (CVSS3.1)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (protocol-level; no vendor fix)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01" }
+  - { cve: "CVE-2025-71412", product: "ATN-B1 CPDLC (aviation data-link standard)", cvss: "7.1 (CVSS3.1)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (protocol-level; no vendor fix)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01" }
+  - { cve: "CVE-2025-71413", product: "ATN-B1 CPDLC (aviation data-link standard)", cvss: "not captured in fetch (same advisory, CWE-754 class)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (protocol-level; no vendor fix)", source: "https://www.cisa.gov/news-events/ics-advisories/icsa-26-219-01" }
+  - { cve: "CVE-2026-20267", product: "Cisco IOS XE Software", cvss: "9.0 (CVSS, CWE-284 access control)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20268", product: "Cisco IOS XE Software", cvss: "8.6 (CWE-119 memory buffer)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20269", product: "Cisco IOS XE Software", cvss: "8.6 (CWE-664 resource lifetime)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20270", product: "Cisco IOS XE Software", cvss: "8.6 (CWE-682 incorrect calculation)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20271", product: "Cisco IOS XE Software", cvss: "8.6 (CWE-691 control flow)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20272", product: "Cisco IOS XE Software", cvss: "9.8 (CWE-74 command/OS/argument injection)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-20273", product: "Cisco IOS XE Software", cvss: "8.6 (CWE-20 input validation)", epss: "n/a", kev: "no", exploited: "not known to be exploited (internally discovered)", patch: "17.9.10 / 17.12.8 / 17.15.6 / 17.18.4(a) / 26.1.2", source: "https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ" }
+  - { cve: "CVE-2026-67621", product: "Flowise (open source ≤3.1.4)", cvss: "7.6 (CVSS3.1) / 7.2 (CVSS4.0)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (UNGEPATCHT per BSI; vendor winding down)", source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2703" }
+  - { cve: "CVE-2026-67622", product: "Flowise (open source ≤3.1.4)", cvss: "9.9 (critical)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (UNGEPATCHT per BSI; vendor winding down)", source: "https://wid.cert-bund.de/portal/wid/securityadvisory?name=WID-SEC-2026-2703" }
+  - { cve: "CVE-2026-70636", product: "Flowise (open source ≤3.1.4)", cvss: "7.5 (CVSS3.1) / 8.7 (CVSS4.0)", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "none (UNGEPATCHT per BSI; vendor winding down; bypasses prior fix CVE-2026-41273)", source: "https://cve.threatint.com/CVE/CVE-2026-70636" }
+  - { cve: "CVE-2026-65400", product: "Apple macOS (Tahoe, Sequoia, Sonoma) — Screen Sharing", cvss: "not published by Apple", epss: "n/a", kev: "no", exploited: "not confirmed", patch: "macOS Tahoe 26.6.1 / Sequoia 15.7.9 / Sonoma 14.8.9", source: "https://support.apple.com/en-us/148170" }

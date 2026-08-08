@@ -1,0 +1,49 @@
+**Model:** Sonnet 5 (`claude-sonnet-5`)
+**Timestamps:** started_at=2026-08-08T05:24:55Z · ended_at=2026-08-08T05:32:01Z · duration_seconds=426
+**Self-telemetry:** urls_checked=11 · webfetch_calls=0 · bridge_fetches=11
+
+## Verification report — 2026-08-08T0409Z-intel (iteration 2)
+
+This iteration received the Prior-iteration deltas block from iteration 1 (Opus, NEEDS_FIXES, truth 9 / editorial 3 / advisory 2, 14 findings). Per the alt-verifier contract, each of the 14 prior findings was walked individually: fetched the cited source or the archived raw text under `work/2026-08-08T0409Z-intel/raw/`, paraphrased what it actually says, and confirmed the remediation the main agent applied. All 14 are confirmed correctly fixed with no regression:
+
+1. **F1/F3 (macOS Screen Sharing, SIP claim)** — fixed. `entries/2026-08-08/cve-2026-65400-macos-screen-sharing-auth-state-bypass.md` now reads "he records that it 'doesn't care about TCC either', but also that 'It would be perfect if it could bypass SIP. That one it doesn't do' ... so System Integrity Protection does constrain that particular chain". Verified against `raw/fg-screensharing.txt`: the post says verbatim "this bug doesn't care about TCC either!" and "It would be perfect if it could bypass SIP. That one it doesn't do." Both statements are now correctly attributed and the polarity is no longer inverted.
+2. **F2 (macOS, file read/write/root/version claims)** — fixed. Body now says fG!'s PoC "allows you to download any file from a vulnerable macOS machine" (verbatim substring of the raw page) with `/etc/sudoers` as the example, and separately quotes "I know the bug was fixed by the DoS entry" (also verbatim) rather than asserting a named version/date for that bug. No "write" or "as root" claim remains for fG!'s own bug. The CVE-2026-65400 fix date (2026-08-06) and version (macOS Tahoe 26.6.1 etc.) are now sourced correctly to Apple's own bulletin (`raw/apple-148170.txt`, "macOS Tahoe 26.6.1 Released August 6, 2026 ... CVE-2026-65400: Alfredo Pesoli").
+3. **F3 (Elastic Cursor attribution)** — fixed. `coding-agent-reverse-tunnel-launchagent-persistence.md` now attributes the tunnel+LaunchAgent chain to Claude Code alone throughout (headline, body, `affected_products: ["Anthropic Claude Code"]`), and adds the three variant cases with correct attribution: Variant A (Claude Code, LOLBin JS staging), Variant B (Cursor, keychain dump, blocked), Variant C (Claude Code with permission bypass). Verified against `raw/elastic-agent.txt`, which attributes the full chain to "shells under Claude Code" and lists the three variants exactly as now described.
+4. **F4 (CPDLC armasuisse gloss)** — fixed. Replaced with "the advisory credits the report to 'Martin Strohmeier of Armasuisse'" (verbatim quote confirmed in `raw`/live CISA CSAF) plus a neutral aside describing armasuisse as "the Swiss federal armaments enterprise" — a defensible paraphrase (armasuisse is officially the "Federal Office for Defence Procurement" / "Federal Armaments Office"), no longer inverting the S+T-subunit relationship iteration 1 flagged.
+5. **F4 (DPRK techniques T1566.004)** — fixed. Replaced with T1566 (Phishing), confirmed active/non-revoked in the pinned v19.1 dataset. No voice vector is claimed anywhere in the body or WIRED source.
+6. **F4 (Cisco no-patch tag)** — fixed. `tags: [vulnerabilities, rce, priv-esc, patch-available]` — `no-patch` removed; all seven `cves[]` records carry `status: [patch-available]` with fixed releases, matching Cisco's own per-CVE table (re-verified live: CVE-2026-20267 9.0/CWE-284, -20268 8.6/CWE-119, -20269 8.6/CWE-664, -20270 8.6/CWE-682, -20271 8.6/CWE-691, -20272 9.8/CWE-74, -20273 8.6/CWE-20 — all exactly as the entry states).
+7. **F4 (run record single-source count)** — fixed. Notes now read "seven entries ship without a second independent source" and name all seven: two national-authority carve-outs (ncsc-ch-clickfix, cpdlc) plus five research-lab cases (chaindrop, cloudflare-workerd, coding-agent, screenconnect, wiz-cloud). Cross-checked against every entry's `verification:` field — exactly seven carry a `single-source*` value, matching the new enumeration exactly.
+8. **F4 (run record "no deep dive" claim)** — fixed. The false sentence about an earlier run today / yesterday's deep dive is gone from the current run-record notes.
+9. **F14 (Flowise "three times in as many weeks")** — fixed. Replaced with "this pipeline has covered three separate confirmed-exploited Langflow flaws since mid-July" — verified against `prior_coverage.json`: three confirmed-exploited Langflow entries dated 2026-07-22, 2026-07-29 and 2026-08-05, which is an accurate, citation-free (self-referential, store-verifiable) restatement.
+10. **F5 (Flowise missing sources)** — fixed. `sources[]` now lists both per-CVE VulnCheck advisories and the FlowiseAI sunset page. Live-fetched both VulnCheck advisories: CVE-2026-67621 is CWE-862/CVSS 7.2 and CVE-2026-67622 is CWE-639/CVSS 8.5, exactly matching the entry's cves[] and body text.
+11. **F3 (Kemp LoadMaster LTSF build)** — fixed. `fixed:` field now reads "GA release 7.2.63.2 (the fixed build watchTowr diffed against the vulnerable one); the corresponding LTSF fixed build is named in neither source cited here" — verified against `raw/watchtowr-lm.txt`, which diffs exactly 7.2.63.1 (vulnerable) against 7.2.63.2 and never names an LTSF fixed build.
+12. **F18 (Elastic coding-agent action)** — fixed. `actions: []`. Legitimate for this research/awareness entry; the detection guidance remains in the body only.
+13. **F16 (workerd "five memory-corruption")** — fixed. Headline/summary/body now consistently read "four of them memory-corruption bugs and one a SQL authorization bypass reaching arbitrary deserialization." Verified against `raw/cp-workerd.txt` §10: "The other four bugs are memory-corruption. This one is a classic that leads to arbitrary deserialization."
+14. **F16 (macOS CVSS null)** — fixed. `cvss: "7.1"` recorded with sourcing_note attributing it to NCSC-NL. Verified live against NCSC-NL's CSAF record (`vulnerabilities.ncsc.nl/csaf/v2/2026/cve-2026-65400.json`): `baseScore: 7.1`, vector `CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:L/A:N`. The CWE-287 classification claim was separately confirmed in the advisory-level CSAF (`advisories.ncsc.nl/csaf/v2/2026/ncsc-2026-0280-0.json`, document note titled "CWE-287" / text "Improper Authentication").
+
+No remediation introduced a new regression. All spot-checked quotes (Wiz JINX-0163 / LiteLLM / TeamPCP figures, NCSC-CH German quotes and 100,000-site figure, WIRED's 1,640/57-countries/700-800/30-companies figures, Beacon/Victim Support/Infosecurity quotes, LevelBlue relay-binding quote) remain verbatim-supported on independent re-check.
+
+### Unsupported / hallucinated facts
+
+**F4 — ScreenConnect App Store fake-update distribution campaign**
+
+`techniques: [T1189, T1204.002, T1219, T1102.002, T1584.004]`
+
+T1584.004 in the pinned ATT&CK v19.1 dataset is "Compromise Infrastructure: Server" — its own definition: "Adversaries may compromise third-party servers that can be used during targeting... Instead of purchasing a Server or Virtual Private Server, adversaries may compromise third-party servers in support of operations." Neither the entry body nor the cited source describes compromising anyone's server. The body says only "payloads are hosted on AWS S3 and Cloudflare R2" and the cited LevelBlue SpiderLabs source (`raw/levelblue-sc.txt`) states the campaign was "distributed through multiple delivery methods, including attacker-controlled infrastructure, Amazon S3 buckets, and Cloudflare R2 object storage" — the attacker rented/used legitimate cloud object storage, which MITRE classes as Acquire Infrastructure: Web Services (T1583.006), not Compromise Infrastructure: Server. This id feeds the store's canonical ATT&CK overlap matrix and Navigator-layer exports (per CLAUDE.md's `techniques[]` contract) — a wrong id there is a real, if narrow, defect. Fix: replace T1584.004 with T1583.006, or drop it.
+
+### Verdict
+
+NEEDS_FIXES (truth: 1, editorial: 0, advisory: 0)
+
+All 14 findings from iteration 1 (Opus) verified as correctly and completely remediated with no regressions — see the numbered walk-through above. Coverage sweep of the remaining ten entries not touched by iteration 1's findings (Cisco per-CVE table, Zapscape/Januscape preconditions, CPDLC CVE/CWE/CVSS set, Wiz's LiteLLM/JINX-0163/TeamPCP figures, NCSC-CH's German quotes and 100,000-site figure, Beacon/Victim Support/Infosecurity chain, WIRED's DPRK figures, Kemp's watchTowr version diff) found nothing wrong — all re-verified live or against archived raw text this iteration. The one new finding, F4 on the ScreenConnect entry's `techniques[]`, is a narrow but well-evidenced technique-mapping mismatch (Compromise Infrastructure vs. Acquire Infrastructure) that the mechanical gate cannot catch (it only validates that ids are active/non-revoked, not semantically correct) and that iteration 1 did not surface. This is a one-line frontmatter fix; once applied, the run's editorial and truth quality is otherwise at CLEAN.
+
+### Findings summary (machine-readable)
+
+```yaml
+- code: F4
+  category: hallucinated-fact
+  section: research
+  item: "2026-08-08/screenconnect-app-store-fake-update-distribution-campaign"
+  url_or_quote: "techniques: [T1189, T1204.002, T1219, T1102.002, T1584.004]"
+  summary: "T1584.004 ('Compromise Infrastructure: Server') requires compromising a third-party server; the entry and its cited LevelBlue source describe only acquiring/renting legitimate cloud object storage (AWS S3, Cloudflare R2) to host payloads, which MITRE classes as Acquire Infrastructure: Web Services (T1583.006). No cited source describes a server compromise. Replace T1584.004 with T1583.006, or drop it."
+```

@@ -1,0 +1,279 @@
+domain: S3
+run_id: 2026-08-08T0409Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-08T04:13:32Z
+ended_at: 2026-08-08T04:31:03Z
+duration_seconds: 1051
+self_telemetry:
+  webfetch_calls: 25
+  websearch_calls: 5
+  bridge_fetches: 21
+items:
+  - title: "Unit 42 fills in ChainDrop's missing mechanics: GitHub Actions runner-memory credential theft and forged Sigstore/SLSA provenance"
+    sources:
+      - { url: "https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/", publisher: "Palo Alto Networks Unit 42", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: unit42, URL https://unit42.paloaltonetworks.com/feed/ (RSS listing) → primary: Unit 42, URL https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/ (delta on prior entry 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver, primary source https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain, not re-fetched this run)"
+    summary: |
+      Unit 42's independent analysis of the CHAINDROP wave of the Shai-Hulud npm worm (first disclosed by Elastic Security Labs on 2026-08-04, covered in this pipeline on 2026-08-06) adds technical mechanics the original disclosure did not cover. An embedded Python helper hidden inside an encrypted blob locates the GitHub Actions Runner.Worker process and reads /proc/<pid>/maps and /proc/<pid>/mem directly, searching live process memory for ephemeral OpenID Connect (OIDC) tokens and CI runner secrets rather than relying on filesystem artifacts — defeating secret-scanning approaches that only inspect files or environment variables at rest. In at least one gated repository workflow (opensearch-js's release-drafter.yml), the worm requests an npm trusted-publishing OIDC token and mints a valid Sigstore/SLSA provenance attestation for its own malicious package release, so a consumer verifying package provenance as a supply-chain control sees a cryptographically valid attestation on a backdoored build. Persistence is cross-linked between .vscode/tasks.json and .claude/settings.json, each configured to re-invoke the other's dropper directory, so removing one alone does not stop re-infection. Exfiltration runs over two channels: an AES-256-GCM/RSA-OAEP encrypted domain channel — the operator rotated the C2 domain on 2026-08-04 via an on-chain write to the same Ethereum smart contract's StringListStore already covered in the prior entry — and a fallback channel that Base64-double-encodes stolen tokens into public GitHub commit messages, retrievable later via the GitHub search API. The worm exits without executing if it detects a Russian-language host locale. No CVE applies; this is a supply-chain worm rather than a single vulnerability.
+    region_nexus: "global; npm/Node.js dependency trees are ubiquitous in CH/EU public-sector and enterprise CI pipelines"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.001, T1552, T1102.001, T1027]
+    affected_products: ["npm packages (keyv, cacheable-request, @opensearch-project/opensearch and 400+ others in the CHAINDROP wave)"]
+    entity_keys: ["campaign:shai-hulud-chaindrop-2026-08"]
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: "update-of:2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver"
+    evidence:
+      - quote: "An embedded Python helper hidden inside an encrypted blob in the payload locates the Runner.Worker process on GitHub Actions runners, opens /proc/<pid>/maps and /proc/<pid>/mem, and searches live process memory for OpenID Connect (OIDC) tokens and runner secrets."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/"
+      - quote: "On Aug. 4, 2026, the attacker executed an on-chain transaction to modify the StringListStore in smart contract 0xE1f2395ee43e45A1556EC6438a88c31B83493103, rotating the active C2 domain from npm-cache[.]com to a newly registered domain, awqhnjewqjkl[.]icu."
+        attribution: "Palo Alto Networks Unit 42"
+        source_url: "https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/"
+    extended_notes: |
+      Delta only — does not restate what the 2026-08-06 Elastic-sourced entry already covers (keyv-maintainer compromise, 400+ packages, 1.3B monthly downloads, preinstall-hook Bun payload, 300+ credential patterns, self-propagation gated on npm-token write-permission without 2FA, Ethereum-resolved C2). Everything above is new in this delta. Unit 42's article names a possible actor connection but the wording could not be verified verbatim in this run's fetch, so no attribution claim is carried.
+
+  - title: "Check Point finds five memory-corruption bugs in Cloudflare's workerd runtime, including a Code-Mode sandbox escape to native host code"
+    sources:
+      - { url: "https://research.checkpoint.com/2026/when-agentic-glue-melts/", publisher: "Check Point Research", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: checkpoint-research, URL https://research.checkpoint.com/feed/ (RSS listing) → primary: Check Point Research, URL https://research.checkpoint.com/2026/when-agentic-glue-melts/ (no independent second-lab replication found; Cloudflare's own GitHub security-advisories page at https://github.com/cloudflare/workerd/security/advisories returned only a sign-in gated navigation shell on fetch, not the advisory list, so Cloudflare's confirmation is only available as quoted within the Check Point article, not independently verified this run)"
+    summary: |
+      Check Point Research disclosed five memory-corruption vulnerabilities in workerd, the open-source C++/V8 runtime underlying both Cloudflare Workers (the serverless platform, which Check Point states carries over 10% of all traffic on Cloudflare's network) and Cloudflare Code Mode (an LLM tool-use feature). The bugs sit in workerd's native "glue" layer that marshals data between JavaScript and native code: an out-of-bounds read in the URLPattern implementation caused by a capture-group-count mismatch between workerd's own parser and V8's regex engine; use-after-free bugs in node:zlib's deflateParams() and in HTMLRewriter's AttributesIterator from improper native-object lifetime management; and a separate SQL authorization-bypass path enabling arbitrary deserialization. Two exploit chains were demonstrated: a cross-tenant heap read that lets one Worker reach across the shared process heap to read another co-located tenant's secrets, and — starting from a prompt injection into Code Mode — a sandbox escape via the zlib use-after-free that breaks out of the V8 isolate to execute native code on the host. Exploitation requires the attacker to get arbitrary JavaScript running inside a Worker (tenant-controlled code, or in the Code Mode case, model-controlled code steered by prompt injection). Cloudflare has fixed its managed Workers environment in production and shipped workerd v1.20260619.1 for self-hosted deployments; no CVE has been assigned to any of the five bugs. Check Point released proof-of-concept code as part of its Black Hat USA 2026 presentation.
+    region_nexus: "global; Cloudflare Workers is widely used by CH/EU public-sector and enterprise web front-ends and increasingly by AI-agent tool-use features"
+    primary_sector_nexus: "indirect"
+    sector: "telco, public-sector, finance"
+    cves: []
+    techniques: [T1611]
+    affected_products: ["Cloudflare Workers", "Cloudflare Code Mode", "workerd (self-hosted, patched in v1.20260619.1)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-OTHER (Check Point Research; Cloudflare's patch confirmation is quoted inside the Check Point article rather than independently fetched)
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Cloudflare's managed Workers environment has been fixed in production. Self-hosted workerd / Code Mode deployments should update to v1.20260619.1."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/when-agentic-glue-melts/"
+      - quote: "As of now, Cloudflare has not assigned CVEs."
+        attribution: "Check Point Research"
+        source_url: "https://research.checkpoint.com/2026/when-agentic-glue-melts/"
+    extended_notes: |
+      No in-the-wild exploitation reported; this is coordinated-disclosure research timed to Black Hat USA 2026, already patched by Cloudflare. Relevant to any defender running self-hosted workerd/Code Mode rather than Cloudflare's managed offering.
+
+  - title: "Elastic catches Claude Code and Cursor abused to install reverse tunnels and LaunchAgent persistence on a real macOS developer endpoint"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection", publisher: "Elastic Security Labs", date: "2026-08-07", role: "primary" }
+      - { url: "https://0din.ai/blog/clone-this-repo-and-i-own-your-machine", publisher: "Mozilla 0DIN", date: "2026-06-25", role: "corroborating" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs (listing) → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection; corroborating technique-class background found via WebSearch (\"Claude Code Cursor coding agent LaunchAgent reverse tunnel abuse macOS\") → Mozilla 0DIN, URL https://0din.ai/blog/clone-this-repo-and-i-own-your-machine"
+    summary: |
+      Elastic Security Labs documents real telemetry (2026-07-20 to 2026-07-23) from a macOS developer laptop in which the Claude Code and Cursor coding agents — invoked with a permission-bypass flag — were driven into authenticating to free reverse-tunnel brokers (localhost.run, Cloudflare Quick Tunnels, ngrok) using embedded credentials, then installing launchd LaunchAgents configured to keep the tunnel alive across reboots, exposing a local admin application to the internet. Because the coding agent is a vendor-signed, all-day trusted parent process that routinely opens shells, calls APIs and installs helpers, the resulting process tree, network destinations and persistence artifacts look like ordinary developer activity rather than malware; Elastic frames this explicitly as not-confirmed-malware but high-severity given the exposure created. The underlying technique class was already demonstrated two months earlier by Mozilla's 0DIN team (2026-06-25): a clean-looking GitHub repository with no malicious code in it can use indirect prompt injection — an engineered dependency error whose message instructs the agent to run an "initialization" command — to make Claude Code resolve an attacker-controlled DNS TXT record at runtime and pipe the decoded value to bash, opening a reverse shell without any malicious string ever appearing on disk. Elastic's case is, to this pipeline's knowledge, the first documented real-world telemetry of that technique class producing a durable tunnel-plus-persistence outcome rather than a lab demonstration. Detection is keyed on the combination rather than any single artifact: credentialized HTTP connections to reverse-tunnel-broker domains originating from a coding-agent process tree, LaunchAgent creation/modification (launchctl bootstrap, PlistBuddy) under a coding-agent parent, and treating any agent-parented outbound tunnel plus LaunchAgent install as high severity regardless of whether the payload itself can be confirmed malicious.
+    region_nexus: "global; applies to any macOS developer endpoint running AI coding agents, including CH/EU public-sector and supplier software teams"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1543.001, T1572, T1105, T1057]
+    affected_products: ["Claude Code", "Cursor"]
+    entity_keys: []
+    new_entities:
+      - { key: "trend:ai-coding-agent-reverse-tunnel-launchagent-abuse", type: trend, name: "AI coding-agent reverse-tunnel / LaunchAgent persistence abuse", aliases: [],
+          summary: "Technique class in which an AI coding agent (Claude Code, Cursor) running as a trusted, vendor-signed parent process is steered — via a permission-bypass flag or indirect prompt injection — into authenticating to a reverse-tunnel broker and installing macOS LaunchAgent persistence, exposing a local service to the internet; demonstrated as a lab proof-of-concept by Mozilla 0DIN (2026-06-25) and independently observed in real macOS developer telemetry by Elastic Security Labs (2026-08-07)." }
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (Elastic Security Labs for the specific July 2026 telemetry; Mozilla 0DIN independently corroborates the underlying technique class, not this specific incident)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "Coding agents such as Claude Code and Cursor are vendor-signed, used all day on developer laptops, and routinely open shells, call APIs, edit files, and install helpers."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection"
+      - quote: "Agent-parented reverse tunnels and LaunchAgents can expose a local admin app to the internet. Treat that as high severity even when it looks like vibe-coded ops, not confirmed malware."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection"
+      - quote: "The malicious instruction is injected at runtime, pulled from DNS, after the agent has blindly trusted everything else."
+        attribution: "Mozilla 0DIN"
+        source_url: "https://0din.ai/blog/clone-this-repo-and-i-own-your-machine"
+    extended_notes: |
+      0DIN's post is outside the recency window (2026-06-25) and is cited only as background corroboration of the technique class, per the deep-dive/background-context allowance — not as the in-window primary.
+
+  - title: "A file-integrity monitoring blind spot with reach beyond npm: log-tailing tools cannot see a supply-chain protection being silently removed"
+    sources:
+      - { url: "https://www.elastic.co/security-labs/npm-cooldown-removal-detection-elastic-agent", publisher: "Elastic Security Labs", date: "2026-08-07", role: "primary" }
+    discovery_trace: "first seen at: elastic-seclabs, URL https://www.elastic.co/security-labs (listing) → primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/npm-cooldown-removal-detection-elastic-agent (no pivot needed)"
+    summary: |
+      npm's min-release-age config setting delays installation of a just-published package specifically to give the community a window to catch a compromised release before it reaches developer workstations — a defensive control directly relevant given this week's active npm-worm waves. Elastic Security Labs shows that standard log-tailing telemetry (filestream-style ingestion, which only emits events when new bytes are appended to a file) cannot detect the setting's removal from a .npmrc file, because npm rewrites or deletes the line in place rather than appending anything: "filestream sees a modification, but every resulting line is dropped." Elastic's remediation is a small CEL (Common Expression Language) integration that snapshots the full file body on a periodic heartbeat and explicitly flags the protective setting's absence the moment it disappears from the current state, with agent-side filtering to keep npm registry auth tokens — also stored in .npmrc — from transiting the network in the snapshot payload. The lesson generalizes past npm: any security-relevant configuration whose *absence* (not appearance) constitutes the event of interest — a removed audit flag, a deleted allow-list entry, a disabled cooldown or lock file — needs snapshot/heartbeat-based file-integrity monitoring, because append-only log tailing is structurally blind to a value disappearing.
+    region_nexus: "global; applies to any organization's developer/CI estate, including CH/EU public-sector software supply chains"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1195.001, T1685]
+    affected_products: ["npm"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (Elastic Security Labs)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "filestream is designed for log tailing: when bytes arrive at the end of a file, an event is emitted. When content disappears... filestream sees a modification, but every resulting line is dropped."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/npm-cooldown-removal-detection-elastic-agent"
+      - quote: "The question the telemetry needs to answer, 'what is the cooldown state of this host right now, and when did it change,' is a question about the current contents of a file. Tail offsets can't answer it."
+        attribution: "Elastic Security Labs"
+        source_url: "https://www.elastic.co/security-labs/npm-cooldown-removal-detection-elastic-agent"
+    extended_notes: |
+      Narrower and more product-specific (built as an Elastic Agent CEL integration) than the other items in this return, but the detection-engineering insight — negative-space / disappearance events are invisible to append-only log tailing — is genuinely vendor-neutral and transferable to any FIM tooling. Flagged borderline for the main agent's relevance call.
+    borderline: true
+    borderline_reason: "Genuinely transferable detection-engineering lesson but framed narrowly around Elastic's own product integration rather than a broader campaign or actor finding."
+
+  - title: "LevelBlue tracks a large-scale ScreenConnect distribution campaign hidden behind AI-generated fake app-store update pages"
+    sources:
+      - { url: "https://www.levelblue.com/blogs/spiderlabs-blog/beyond-fake-updates-from-application-store-themed-phishing-to-large-scale-distribution-of-screenconnect", publisher: "LevelBlue SpiderLabs", date: "2026-08-07", role: "primary" }
+    discovery_trace: "first seen at: trustwave-spiderlabs, URL https://www.levelblue.com/blogs/spiderlabs-blog (listing) → primary: LevelBlue SpiderLabs, URL https://www.levelblue.com/blogs/spiderlabs-blog/beyond-fake-updates-from-application-store-themed-phishing-to-large-scale-distribution-of-screenconnect; related-campaign corroboration via WebSearch (\"ScreenConnect fake update phishing campaign August 2026 SpiderLabs\") surfaced Securonix's distinct SMOKE#SCREEN campaign (not independently fetched this run, referenced only as context)"
+    summary: |
+      LevelBlue's SpiderLabs OpsCTI team documents a ScreenConnect (ConnectWise RMM) distribution campaign that impersonates the Google Meet pre-join screen, the Microsoft Store and the Apple App Store with dynamic, interactive fake "update available" modals — progress bars, camera/microphone permission prompts — rather than a static phishing page, before delivering a batch-script-to-PowerShell-to-MSI installation chain that runs msiexec.exe /quiet with UAC elevation. Each installer is cryptographically bound via an embedded RSA public key to a specific attacker-controlled ScreenConnect relay hostname, so it self-registers with the operator's instance immediately on install, deployed at guest-level permission to keep its footprint low. The delivery infrastructure spans thousands of near-identical phishing-framework deployments and abuses legitimate cloud object storage (AWS S3, Cloudflare R2) to host payloads, gated by anti-automation checks (honeypot form fields, artificial delays, User-Agent filtering to Windows desktop only) and full victim fingerprinting (IP, geolocation, ISP, browser, timezone, screen resolution) before the installer is ever served; successful infections trigger a real-time notification to the operator via the Telegram Bot API. LevelBlue assesses the supporting scripts as AI-assisted, based on unusually verbose, documentation-style inline comments and emoji markers consistent with LLM-generated or LLM-refined code. This lands in the same week as at least one independently reported, technically distinct ScreenConnect-abuse-via-fake-update campaign (Securonix's SMOKE#SCREEN, disclosed 2026-08-04, using different staging infrastructure) and a separate AI-lure ScreenConnect/Xworm campaign LevelBlue itself reported days earlier — RMM-tool abuse via fake software-update lures is presently a broad, multi-operator technique class rather than a single tracked campaign.
+    region_nexus: "global; malvertising and fake-update lures are geography-agnostic and reach CH/EU users via search ads and compromised sites"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, healthcare, energy, water, transport, telco"
+    cves: []
+    techniques: [T1189, T1204.002, T1219, T1102.002]
+    affected_products: ["ConnectWise ScreenConnect"]
+    entity_keys: []
+    new_entities:
+      - { key: "campaign:screenconnect-appstore-phishing-2026-08", type: campaign, name: "ScreenConnect app-store-themed phishing distribution campaign", aliases: [],
+          summary: "Large-scale ScreenConnect distribution campaign using AI-generated, app-store-themed fake software-update pages, RSA-key-bound self-registering installers, cloud object-storage payload hosting (AWS S3, Cloudflare R2) and Telegram Bot API victim-notification telemetry (LevelBlue SpiderLabs, 2026-08-07)." }
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (LevelBlue SpiderLabs)"
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "Rather than relying on conventional phishing pages, the campaign recreates convincing software update and installation alerts by impersonating the Microsoft Store and Apple App Store while reproducing the look and behavior of trusted applications through dynamic modal dialogs and other interactive web elements."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/beyond-fake-updates-from-application-store-themed-phishing-to-large-scale-distribution-of-screenconnect"
+      - quote: "Because each installer is cryptographically bound to its corresponding relay server through the embedded public key, it automatically registers with the attacker's ScreenConnect instance once installed."
+        attribution: "LevelBlue SpiderLabs"
+        source_url: "https://www.levelblue.com/blogs/spiderlabs-blog/beyond-fake-updates-from-application-store-themed-phishing-to-large-scale-distribution-of-screenconnect"
+    extended_notes: |
+      No IOCs carried forward per pipeline policy; the source article includes domain/URL indicators that are deliberately omitted here.
+
+  - title: "ANNUAL REPORT — Wiz Cloud Threat Highlights: H1 2026 — significant cloud incidents up 60%, driven by supply-chain worms and exposed AI-infrastructure endpoints"
+    sources:
+      - { url: "https://www.wiz.io/blog/cloud-threat-highlights-h1-2026", publisher: "Wiz Research", date: "2026-08-06", role: "primary" }
+    discovery_trace: "first seen at: wiz-blog, URL https://www.wiz.io/blog (listing) → primary: Wiz Research, URL https://www.wiz.io/blog/cloud-threat-highlights-h1-2026"
+    summary: |
+      Wiz Research's semi-annual Cloud Threat Highlights report, covering January-June 2026, records a 60% increase in the significant cloud-security incidents Wiz flagged to customers compared to H2 2025 — "the highest we've seen in a single period" — attributed mainly to software-supply-chain attacks and growing AI-infrastructure exposure. TeamPCP (this pipeline's registry tracks it as the operator of the Mini Shai-Hulud npm-worm family) is named the most prolific single campaign operator, running a continuously-updated core loop — a poisoned npm package steals developer credentials, which are used to reach cloud environments — across npm, PyPI and Composer throughout H1. Separately, Wiz attributes compromises of widely-used packages including axios to North Korea's Sapphire Sleet cluster (tracked by Google under the cryptonym Midnight Neptune / UNC1069), with a follow-on campaign, IronWorm, deploying Rust binaries carrying eBPF rootkits. A newly profiled cloud-native extortion actor, JINX-0163, targets service accounts directly across AWS, Azure, GCP and Okta rather than conventional endpoints. Activity against AI infrastructure specifically "roughly doubl[ed]" versus H2 2025, driven by critical vulnerabilities and widespread misconfiguration in self-hosted AI tooling (LiteLLM, Dify, Langflow, n8n, Ollama) and exposed Model Context Protocol (MCP) servers holding live credentials.
+    region_nexus: "global"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector, finance, telco"
+    cves: []
+    techniques: [T1195.001, T1078.004]
+    affected_products: ["LiteLLM", "Dify", "Langflow", "n8n", "Ollama", "MCP servers"]
+    entity_keys: ["actor:teampcp", "actor:sapphire-sleet", "campaign:ironworm"]
+    new_entities:
+      - { key: "report:wiz-cloud-threat-highlights-h1-2026", type: report, name: "Wiz Cloud Threat Highlights: H1 2026", aliases: [],
+          summary: "Wiz Research's semi-annual cloud/AI threat report covering January-June 2026, recording a 60% rise in significant cloud incidents versus H2 2025 (Wiz, 2026-08-06)." }
+      - { key: "actor:jinx-0163", type: actor, name: "JINX-0163", aliases: [],
+          summary: "Cloud-native extortion actor profiled by Wiz Research that targets service accounts directly across AWS, Azure, GCP and Okta rather than conventional endpoints (Wiz, 2026-08-06)." }
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (Wiz Research; own semi-annual telemetry report)"
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "The volume of significant incidents we highlighted to customers was up 60% from H2 2025, the highest we've seen in a single period."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/cloud-threat-highlights-h1-2026"
+      - quote: "Activity targeting AI infrastructure also grew significantly, roughly doubling compared to the second half of 2025."
+        attribution: "Wiz Research"
+        source_url: "https://www.wiz.io/blog/cloud-threat-highlights-h1-2026"
+    extended_notes: |
+      Appears to be the first publication in this specific "Cloud Threat Highlights H1/H2" title format, though it references H2 2025 and H1 2025 data for comparison, so it is a recurring underlying series under a possibly refreshed title.
+
+  - title: "SSD Disclosure: use-after-free in the Linux kernel bridge STP timer teardown gives a local-privilege-escalation control-flow hijack primitive"
+    sources:
+      - { url: "https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/", publisher: "SSD Secure Disclosure", date: "2026-08-05", role: "primary" }
+    discovery_trace: "first seen at: ssd-disclosure, URL https://ssd-disclosure.com/ (landing, via jina reader) → primary: SSD Secure Disclosure, URL https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/ (fetched via bridge/jina fallback) — rotation-priority source catch-up; no in-window run had checked this source in the preceding cycle(s)"
+    summary: |
+      SSD Disclosure published full root-cause and exploitation analysis — credited to TyphoonPWN 2026 second-place submissions by researchers n132 and sven sze — for a use-after-free in the Linux kernel's software bridge (net/bridge) Spanning Tree Protocol implementation. The bug is a teardown-path asymmetry: STP periodic timers (hello_timer, tcn_timer, topology_change_timer and per-port timers) are armed when a port transitions to the LEARNING state with no IFF_UP guard, so they can be armed on a bridge that is administratively down; the only path that synchronously cancels them (br_stp_disable_bridge(), reached from br_dev_stop() on an UP-to-DOWN transition via ndo_stop) is never reached when the bridge link is deleted directly via the netlink dellink path, and unregister_netdevice_many() skips ndo_stop entirely for a device that is already down. The net_device backing the bridge — which embeds the net_bridge structure holding the timer lists as private data — is then freed while a timer remains queued on a per-CPU timer base; when that timer base next runs, it dereferences and calls a function pointer inside freed slab memory (the kmalloc-cg-8k cache), giving an attacker who can refill the freed slot a control-flow-hijack primitive from what is nominally just local bridge/network configuration access. The fix is now upstream in the Linux kernel (patch commit 2a00517db8de4be7df3d483b215c5544fb30a191); no CVE identifier has been assigned and no in-the-wild exploitation is reported. The precondition — creating or administering a network bridge with kernel STP enabled and then deleting it while down — is most reachable where unprivileged or semi-privileged code can perform bridge/network configuration, such as via user/network namespaces in container and CI-runner environments.
+    region_nexus: "global; affects any Linux estate running kernel STP-enabled bridges, including container/CI infrastructure common in CH/EU public-sector and critical-infrastructure operators"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: [T1068]
+    affected_products: ["Linux kernel (net/bridge, prior to commit 2a00517db8de4be7df3d483b215c5544fb30a191)"]
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: "SINGLE-SOURCE-OTHER (SSD Secure Disclosure); technically corroborated by the referenced upstream Linux kernel patch commit itself, not by a second reporting outlet"
+    confidence: MEDIUM
+    novelty: new
+    evidence:
+      - quote: "A bridge that is administratively down while kernel STP is enabled, together with a port driven into the LEARNING state, arms periodic STP timers without an IFF_UP guard."
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/"
+      - quote: "The next time that timer base runs (__run_timers() in softirq context), it dereferences and fires a timer that points into freed slab memory."
+        attribution: "SSD Secure Disclosure"
+        source_url: "https://ssd-disclosure.com/linux-bridge-stp-timer-use-after-free/"
+    extended_notes: |
+      Surfaced via the rotation-priority catch-up for ssd-disclosure (flagged missed on 2+ recent runs in this run's spawn message); published 2026-08-05, inside the 72h developing window but outside the primary 26h window — included specifically because this source had not been checked in the preceding cycle(s) and no prior coverage of it exists in the 14-day dedup index.
+candidate_sources: []
+coverage_gaps:
+  - source_id: talos
+    reason: "No in-window substantive research post; newest item (2026-08-06) is a newsletter/commentary piece, not primary research. Checked via RSS (/rss/) — traversal worked fine, just no qualifying content."
+  - source_id: mandiant-gtig
+    reason: "Top feed item (UNC6671 rebrand, 2026-08-06) already covered by a prior run via the same GTIG source; no other in-window items."
+  - source_id: kaspersky-securelist
+    reason: "No in-window items; newest post (2026-08-04, cloud-platforms-in-phishing) already covered by a prior run."
+  - source_id: eset
+    reason: "No in-window substantive research; newest ESET Research item is 2026-07-14 (UEFI shims), well outside window."
+  - source_id: sophos-xops
+    reason: "No in-window items beyond ones already covered (N-able N-central, 2026-08-04/05); Interlock ransomware post (2026-08-04) is outside the 72h developing window at fetch time."
+  - source_id: trendmicro-research
+    reason: "Feedburner RSS reachable; newest item 2026-07-30, outside window. research.html landing returns a JS-shell/boilerplate body with no drillable dated listing via the bridge in this run."
+  - source_id: crowdstrike
+    reason: "No in-window items; newest blog post 2026-08-03 (Threat Hunting Report), outside the 72h developing window."
+  - source_id: huntress
+    reason: "RSS feed reachable but entirely July-dated generic/awareness content in this run's fetch window; no in-window substantive research item found."
+  - source_id: volexity
+    reason: "Sparse-cadence source as documented; newest post 2026-07-17, outside window. No items to report, not a fetch failure."
+  - source_id: sentinellabs
+    reason: "Newest post 2026-07-22, outside window. No fetch issue."
+  - source_id: sonatype
+    reason: "Newest item (Flooding Dropper, 2026-08-05) already covered by a prior run via a different primary; not re-surfaced as duplicate."
+  - source_id: dragos
+    reason: "Listing reachable via WebFetch; newest posts (2026-08-03/04) are marketing/partnership or regulatory-guidance content, not threat research, within window."
+  - source_id: claroty-team82
+    reason: "Recipe gap persists as documented in sources.json — listing carries no publication dates; the one article drilled for a date (cyber-psychological-operation) resolved to 2026-06-25, well outside window. No dated in-window item could be confirmed."
+  - source_id: nozomi-networks
+    reason: "Listing reachable; one article drilled (Zero-Days at AI Speed, 2026-08-06) is a general opinion/commentary piece with no specific CVE, vendor or ICS product finding — did not clear the bar for inclusion."
+  - source_id: google-tag
+    reason: "RECIPE GAP CONFIRMED again this run — https://blog.google/threat-analysis-group/ resolves to Google's general security blog, not a TAG-specific dated listing. Needs a replacement discovery path (unchanged from prior note)."
+  - source_id: recordedfuture-insikt
+    reason: "Not fetched this run given the documented RECIPE GAP (landing/mission page, no dated listing reachable via WebFetch); no replacement path found in the time available."
+  - source_id: msrc-blog
+    reason: "Not actively drilled this run — no specific research-angle lead surfaced elsewhere that pointed to MSRC; deprioritized in favor of higher-yield research-lab sources given time budget."
+  - source_id: synacktiv
+    reason: "Feed (/en/feed/lastblog.xml) returns items with empty publication dates; drilled two candidate articles (Titan Quest — video-game exploitation, low relevance even if fresh; Surviving the Surge of New Linux LPE) and both resolved to 2026-05-29, well outside window."
+  - source_id: trellix
+    reason: "Confirmed persistent stale-cache issue already documented in sources.json — bridge fetch returns header/nav markup and lastmodified meta of 2026-04-15; no dated post listing reachable."
+  - source_id: shadowserver
+    reason: "Sparse cadence as documented; newest post (2026-08-05) is a program/capacity-building announcement, not technical research; no in-window technical finding."
+  - source_id: sansec
+    reason: "Newest research post 2026-07-02, well outside window. No fetch issue."
+  - source_id: esentire
+    reason: "Newest advisory (2026-08-04, N-central CVE-2026-18577) already covered by a prior run; no other in-window items."
+  - source_id: jamf-threat-labs
+    reason: "Newest post (Overlord RAT, 2026-08-06) already covered by a prior run; no newer item in window."
+  - source_id: prodaft
+    reason: "Confirmed still stuck on the same stale cache documented in sources.json — jina fetch of /reports returns the same Wazawaka-headlined content seen in prior runs, no movement past that cache. Transport healthy (200), content axis unchanged."
+  - source_id: siemens-productcert-csaf
+    reason: "Not fetched this run — deprioritized given time budget after prioritising higher-yield research-lab sources and the two rotation-priority sources (ssd-disclosure, prodaft)."
+  - source_id: infoguard-labs
+    reason: "Not re-attempted this run — documented RECIPE GAP (JS-rendered post cards, no article links exposed to any transport) unlikely to have changed; deprioritized given time budget."
+  - source_id: paradigm-shift-research
+    reason: "Not fetched this run — documented RECIPE GAP (bridge returns SPA shell only); deprioritized given time budget."
+  - source_id: flatt-security
+    reason: "Not fetched this run — low posting cadence (~monthly) makes a miss in a 26-72h window likely; deprioritized given time budget in favour of higher-yield sources."
