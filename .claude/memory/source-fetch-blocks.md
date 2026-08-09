@@ -134,3 +134,39 @@ same-run repair rather than a coverage-gap line — the fix took about five minu
 405-across-the-subtree pattern was recognised. And the CSH detail URL to cite in an entry is
 the hash route `https://security-hub.ncsc.admin.ch/#/posts/<id>`, which resolves live and
 passes the gate's liveness check.
+
+## The silent recipe gap — a source that 200s and still contributes nothing (2026-08-09)
+
+The dangerous failure is not the 403. It is the source that returns HTTP 200, gets logged
+as attempted, never raises a `fetch_failures[]` entry, and yet cannot contribute an item
+because its listing carries **no extractable publication dates**. Under a recency-gated
+run every item from such a source is silently ineligible, forever, and nothing in the
+telemetry says so — `source_health.py` classes it `ok` because the transport is fine.
+
+`infoguard-labs` sat in exactly this state. Its note had carried "RECIPE GAP: JS-rendered
+listing, no dates extractable" since at least 2026-08-05, it was allocated to sub-agents
+and dutifully attempted, and it had never once contributed. The fix was a two-minute
+discovery — a working dated feed at `https://labs.infoguard.ch/rss.xml` — and the very
+first fetch through it surfaced original Swiss vulnerability research the pipeline had
+never covered: 22 CVEs in Tobit TeamDavid, a DACH-region self-hosted M365 alternative with
+roughly 12,000 internet-facing instances, unauthenticated heap leak to full mailbox
+takeover, vendor unresponsive. A home-region blind spot, invisible for as long as the
+recipe was broken.
+
+Two habits from this:
+
+- **Treat a `coverage_gaps` note that names a recipe gap as a repair order, not a status.**
+  A source that cannot yield dates is not "covered but quiet" — it is uncovered. The same
+  standing-repair-order discipline that applies to `source_health.py` UNSOLVED flags
+  applies here, and the sub-agents are the ones positioned to find the feed.
+- **When a recipe is fixed, check what the gap hid.** The newly readable listing's recent
+  items have never been eligible for any prior run, so the top of the feed is a backlog,
+  not a duplicate set. This one was a day outside the window and was published anyway as
+  first coverage with an explicit sourcing note and a run-record paragraph — a defensible
+  exception precisely because the reason it was late was a pipeline defect rather than an
+  editorial judgement.
+
+Related shapes worth separating when writing the note: `prodaft` this run turned out to be
+*two* defects wearing one label — a dead subdomain in the source note
+(`resources.prodaft.com`, NXDOMAIN) and, separately, a frozen client-rendered listing on the
+live URL. Fixing the note is not fixing the recipe; say which one you did.
