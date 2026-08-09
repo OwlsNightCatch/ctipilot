@@ -1,0 +1,73 @@
+# Findings summary (machine-readable) — 2026-08-09T1315Z-audit, verification iteration 1
+- code: F3
+  category: claim-not-supported
+  section: entries
+  item: "2026-08-09/sharefile-cve-2026-2699-2701-never-kev-listed — cves[].fixed on BOTH records"
+  url_or_quote: "fixed: \"Progress ShareFile Storage Zone Controller 5.12.5 / 6.0.2, per the vendor guidance recorded in the earlier coverage.\""
+  summary: "Wrong patched release bound to both CVE ids. The entry's OWN cited source (BankInfoSecurity, https://www.bankinfosecurity.com/progress-urges-sharefile-shutdown-over-credible-threat-a-32210) says of CVE-2026-2699/2701: 'To address the flaws, the vendor advised users to update to version 5.12.4 or any version 6.' The 'earlier coverage' it invokes says the same: 2026-07-13/progress-sharefile-storage-zone-controller-shutdown carries fixed: \"5.12.4\" for both ids and states 'Both were fixed in Storage Zone Controller 5.12.4 (the 6.x .NET-Core branch was unaffected)', and 2026-07-14/progress-sharefile-szc-active-exploitation-confirmed carries fixed: \"5.12.4\". 5.12.5 / 6.0.2 are the fixes for the SEPARATE July path-traversal zero-day (2026-07-14/progress-sharefile-szc-path-traversal-zero-day-patched, whose cves[] is empty because that CVE was still reserved). Naming 6.0.2 as the fix is doubly wrong: the 6.x branch was never affected by 2699/2701. This is machine-consumed frontmatter answering 'is my version patched?' — the same harm class this run's Thermo Fisher correction exists to repair. Fix: fixed: \"Progress ShareFile Storage Zone Controller 5.12.4; the 6.x branch was not affected\" on both records, or drop the field and point to the 2026-07-13 entry."
+- code: F4
+  category: hallucinated-fact
+  section: entries + audit report
+  item: "2026-08-09/sharefile-cve-2026-2699-2701-never-kev-listed body; docs/audits/2026-08-09-weekly-quality-audit.md § 'The claim that was wrong when written'"
+  url_or_quote: "entry: \"This pipeline's per-CVE coverage got it right at the time: the 2026-07-14 entry recorded both identifiers with exploitation status and made no KEV claim.\" / report: \"the pipeline's own per-CVE entry of 2026-07-14 got it right, recording both identifiers as exploited with no KEV claim\""
+  summary: "No 2026-07-14 entry does that. entries/2026-07-14/progress-sharefile-szc-active-exploitation-confirmed.md carries ONE cves[] record (CVE-2026-2699, status [exploited, poc-public, patch-available]); entries/2026-07-14/progress-sharefile-szc-path-traversal-zero-day-patched.md has cves: []. The only entry carrying BOTH identifiers is 2026-07-13/progress-sharefile-storage-zone-controller-shutdown, and there both are status [poc-public, patch-available] — no exploitation status. The 'no KEV claim' half is correct (grep of all three ShareFile entries finds no KEV/CISA-catalogue assertion). Fix both wordings to what the store actually holds."
+- code: F3
+  category: claim-not-supported
+  section: entries
+  item: "2026-08-09/cryptojs-cve-2026-71851-weak-entropy-exploited — body para 1 and cves[].affected"
+  url_or_quote: "body: \"The version history is its own trap: a fix landed in 3.3.0 and was reverted because it was considered a breaking change\" ([GitHub Advisory Database, 2026-08-07](https://github.com/advisories/GHSA-rg76-677x-56q9)) / cves[].affected: \"a fix in 3.3.0 was reverted as a breaking change\""
+  summary: "Fetched the cited GHSA page in this iteration. It says: 'It was introduced in 3.1.2-4 (June 2014 …) and was present in every 3.x release except 3.2.0 and 3.2.1.' and 'That change was reverted in 3.3.0 because it was considered a breaking change, so projects tracking the 3.x line could resolve to newer versions that still contained the weak generator.' Per the cited page the fix existed in 3.2.0/3.2.1 and 3.3.0 is where it was REVERTED — 3.3.0 is an affected release, not the release the fix landed in. The entry's own preceding clause ('present in every 3.x release except 3.2.0 and 3.2.1', repeated in summary and cves[].affected) contradicts it. Fix: 'the secure generator shipped in 3.2.0/3.2.1 and was reverted in 3.3.0 as a breaking change, so …'."
+- code: F4
+  category: hallucinated-fact
+  section: entries
+  item: "2026-08-09/cryptojs-cve-2026-71851-weak-entropy-exploited — techniques: [T1552.001, T1555, T1078]"
+  url_or_quote: "techniques: [T1552.001, T1555, T1078]"
+  summary: "None of the three names a behaviour the body describes. T1552.001 Credentials In Files and T1555 Credentials from Password Stores both require attacker access to victim-side storage; T1078 Valid Accounts requires use of an account. The body says the opposite in terms: 'there is no network or endpoint artefact for a secret that was weak at birth, and an attacker enumerating offline generates no traffic against the victim at all.' The behaviour the body and both cited sources DO describe is offline enumeration of a reduced keyspace ('small enough to enumerate on commodity hardware'; the GHSA PoC steps 'Enumerated the feasible outputs of the underlying PRNG … Recovered the private keys'), i.e. T1110 Brute Force / T1110.002 Password Cracking (both active in the v19.2 pin). Replace the mapping."
+- code: F4
+  category: hallucinated-fact
+  section: entries
+  item: "2026-08-09/wallix-bastion-rest-api-unauth-admin-cvss10 — techniques: T1078.004 and T1552.001"
+  url_or_quote: "techniques: [T1190, T1078.004, T1555, T1552.001]"
+  summary: "T1190 and T1555 are well supported (REST-API exploitation; 'its vault of privileged credentials'). T1078.004 is Cloud Accounts (pin platforms: IaaS, Identity Provider, Office Suite, SaaS) — the body describes an on-premises appliance, a bypassed authentication layer and an attacker-CREATED product_administrator account ('a type=\"User\" creation granting the product_administrator profile'); no use of a cloud/federated account appears anywhere in the body. T1552.001 Credentials In Files names credentials discovered in files — no such behaviour is described; vault access is already carried by T1555. Behaviours the body/sources actually support and could carry instead: account creation (T1136.001) and, for the Access Manager flaw the entry describes, forged-SAML-response authentication (T1606.002)."
+- code: F14
+  category: quantifier-without-source
+  section: audit report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md — backlog row counts"
+  url_or_quote: "\"**Nine further gate-clearing items queued on `state/coverage_backlog.md`** rather than dropped: the eight recoverable residuals from the 2026-08-03 stand-down, plus Wazuh 4.14.6, FreeBSD CTL HA, GOLD EMBRACE/Interlock, CrowdStrike's ESXi shell obfuscation catalogue, wp2root, the Rapid7 CVE-2026-66066 exploitation delta, Zscaler TELESHIM Part 2 and Żabka.\" / watch item: \"**NEW — open, mechanism shipped this run.** 17 rows queued, none struck\" / \"If the file is still 17 unstruck rows in a week\""
+  summary: "state/coverage_backlog.md § Open holds 16 rows: 8 surfaced 2026-08-03 (Intrinsec DFIR artefact map, Intrinsec LLM Threat Atlas, Group-IB pam_rootok, NCSC UK forensic observability, EU AI Act / Digital Omnibus, CI Fortify OT isolation, Germany NIS2, SBOM minimum elements) + 8 surfaced 2026-08-09 (Wazuh, FreeBSD CTL HA, GOLD EMBRACE/Interlock, CrowdStrike ESXi, wp2root, Rapid7 CVE-2026-66066, Zscaler TELESHIM Part 2, Żabka). Neither '17' nor 'Nine' reproduces: the enumeration in the fixes bullet is 8 + 8 = 16, and the file has 16 rows. (The '§ Systemic 1' claim that the stand-down listed nine items and that eight are recoverable IS correct — runs/2026-08-03/2026-08-03T0110Z-weekly.md lists nine, the ninth being the GTIG naming change it records as already partially covered.) Fix both numbers to 16 (or state 'eight new rows, 16 open')."
+- code: F14
+  category: quantifier-without-source
+  section: run record
+  item: "runs/2026-08-09/2026-08-09T1315Z-audit.md § Verification & coverage notes"
+  url_or_quote: "\"**Nine further items cleared the relevance gate but could not be composed inside this run's wall clock, and they were queued rather than dropped.** They are written to `state/coverage_backlog.md`, which this run also created\""
+  summary: "This run appended eight rows to state/coverage_backlog.md (Wazuh, FreeBSD CTL HA, GOLD EMBRACE/Interlock, CrowdStrike ESXi, wp2root, Rapid7 CVE-2026-66066, Zscaler TELESHIM Part 2, Żabka); the file holds 16 open rows in total including the eight seeded from the 2026-08-03 stand-down. 'Nine' matches neither number and collides with the (correct) 'nine residual items' of the stand-down mentioned two sentences later. Fix to eight (and, if useful, name the 16-row total)."
+- code: F14
+  category: quantifier-without-source
+  section: audit report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md § Window"
+  url_or_quote: "\"**Window.** 2026-08-02T13:09:58Z → 2026-08-09T13:15:57Z (168.1 h) … **80 entries** across 12 run records (9 intel, 2 weekly, 1 audit).\""
+  summary: "Two populations are conflated. The 80 entries in work/2026-08-09T1315Z-audit/window-entries.json carry 9 distinct run_ids (2026-08-02T1309Z-audit 5, 2026-08-02T2311Z-weekly 15, 2026-08-03T0409Z-intel 3, 08-04 7, 08-05 15, 08-06 9, 08-07 8, 08-08 14, 08-09T0412 4 = 80), so the 80 entries did NOT come from 12 records. The stated window contains 10 run records by `started` (adding the 2026-08-03T0110Z-weekly stand-down, 0 entries), 11 with this fire. The 12-record population that yields '9 intel, 2 weekly, 1 audit' additionally includes 2026-08-01T0409Z-intel and 2026-08-02T0409Z-intel, both of which STARTED BEFORE the stated window and whose 12 published entries are not among the 80. Every derived figure computed on that 12-set does reproduce exactly — confirmed two-model double-CLEAN 2 of 12 (2026-08-01T0409Z-intel and 2026-08-03T0409Z-intel), mean 5.83 ≈ 5.8 iterations, publish_status ok 12/12 — so the fix is to name the population ('the 12 run records filed 2026-08-01 → 2026-08-09, of which the 9 in-window ones published these 80 entries'), not to change the numbers."
+- code: F11
+  category: editorial-advisory
+  section: audit report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md § Systemic 2 — iteration-count sequence"
+  url_or_quote: "\"iteration counts collapse across the window (8, 8, 8, 8, 5, 5, 4, 2, 2)\""
+  summary: "Nine values for the 12 fires the same paragraph counts. Chronologically the records give 8 (08-01 intel), 8 (08-02T0409 intel), 8 (08-02T1309 audit), 4 (08-02T2311 weekly), 8 (08-03T0110 weekly), 8 (08-03T0409 intel), 8 (08-04), 5 (08-05), 5 (08-06), 4 (08-07), 2 (08-08), 2 (08-09) — the printed list drops two 8s and one 4 and reads as a tidier monotone decline than the record shows. The load-bearing claims (2 of 12, mean 5.8, every fire from 08-05 exiting early) all reproduce; only the sequence does not. Advisory."
+- code: F11
+  category: editorial-advisory
+  section: entries
+  item: "2026-08-09/thermo-fisher-genetic-analyzer-correction-patch-exists — 'eight remediation records'"
+  url_or_quote: "\"CISA's advisory ICSMA-26-216-01 carries eight remediation records.\""
+  summary: "The CSAF record the sentence cites carries 14 remediation objects for CVE-2026-17583: 8 of category vendor_fix (5 naming a patched version, 3 'Product is End of Life (EoL), no update provided') plus 6 of category mitigation (the interim measures the entry describes two paragraphs later). The 5 + 3 decomposition that follows is exactly right; only the head count is loose. Suggest 'eight per-product vendor-fix records'. Everything else in this entry verified against work/.../pages/thermo-csaf.json: all three evidence[] quotes are contiguous verbatim substrings, the eight affected version ranges match exactly, CVSS 3.1 8.4 AV:L matches, and tracking.revision_history holds a single 'Initial Publication' revision dated 2026-08-04 (so 'at revision 1 and has never been revised' holds)."
+- code: F11
+  category: editorial-advisory
+  section: audit report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md § Fixes shipped — zero-warning sweep line"
+  url_or_quote: "\"**Zero-warning sweep complete:** `python3 tools/check_run.py --all` reaches **21 pass · 0 warn · 0 fail · 14 acknowledged**\""
+  summary: "Re-run in this iteration: `summary: 20 pass · 0 warn · 2 fail · 14 acknowledged`. Both FAILs are this run's own not-yet-populated verification block (run-record: `verification_residual_count` must be an integer; verification.iterations missing or empty), which the verifier loop fills before commit — so the claimed 21/0/0/14 is a forecast of the post-loop state rather than an observed result. The 14-acknowledged half is confirmed now (state/warning_acknowledgments.json holds exactly 14 rows, 3 added by this run, none pruned — verified in the diff). Re-run and confirm the line before commit."
+- code: F11
+  category: editorial-advisory
+  section: audit report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md § Genuine misses — WALLIX gate rationale"
+  url_or_quote: "\"WALLIX is a French vendor with substantial EU and Swiss public-sector deployment.\""
+  summary: "Uncited market-prevalence claim carrying the relevance judgement. Neither cited source (the WALLIX alerts page, CERTFR-2026-AVI-0974) says anything about deployment share, and no source in the run's artefacts establishes Swiss public-sector installed base. The published entry itself makes no such claim — only the report does. Suggest hedging to what is sourced (a French PAM vendor whose Bastion appliance CERT-FR relayed to its own constituency) or attributing the prevalence claim. Advisory."

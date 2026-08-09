@@ -1,6 +1,6 @@
 # CTI Weekly Strategic Run — Master Prompt
 
-> **Prompt version:** v3.30 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
+> **Prompt version:** v3.31 — bump in `prompts/CHANGELOG.md` whenever you edit this file. Carry the version through to the run record (`prompt_version` in `runs/<date>/<run-id>.md`). Print this banner at run start.
 >
 > **Runtime:** Claude Code routine on Anthropic-managed cloud infrastructure, fired once per week (operator-chosen day/time; the prompt is schedule-agnostic and self-healing). Same delegation model as the intel run: main agent composes and publishes; research and verification run in sub-agents.
 >
@@ -188,7 +188,19 @@ git fetch origin main
 git grep -l "^week: ${WEEK}$" origin/main -- runs/ | grep -- '-weekly\.md$' || true
 ```
 
-A match that is not this run's own record ⇒ the primary has published the week: withdraw the composed strategic entries (`git rm` / delete before commit), set `disposition: duplicate-week` and `entries_published: 0`, and take the run record alone through one verifier iteration (the ≥1-iteration invariant applies to the record) and the publishing chain. The run record is still mandatory — a stood-down fire that publishes nothing but its record is the correct outcome, not a failure.
+**Both the Phase 0 and the pre-verifier guard must also look at the unpromoted feature branches (v3.31).** `main` is not where a weekly lands first — a primary that has finished its whole pipeline sits on `claude/**` until auto-merge promotes it, and in that gap it is invisible to a guard that greps `origin/main` alone. That gap cost a second consecutive weekly cycle: on 2026-08-03 the backup fire passed the 01:10Z guard against `main` while the primary `2026-08-02T2311Z-weekly` had already *completed* at 00:06Z, and only the 02:10Z pre-verifier re-check saw it once auto-merge landed. Add the branch sweep to both guard points:
+
+```bash
+git fetch origin main
+for ref in origin/main $(git ls-remote --heads origin 'claude/*' | awk '{print $2}' | sed 's#refs/heads/#origin/#'); do
+    git fetch --quiet origin "${ref#origin/}" 2>/dev/null || continue
+    git grep -l "^week: ${WEEK}$" FETCH_HEAD -- runs/ 2>/dev/null | grep -- '-weekly\.md$' && echo "  ^ on ${ref}"
+done || true
+```
+
+A match that is not this run's own record ⇒ the primary has published the week (or is about to — a completed record on a feature branch counts, because auto-merge will promote it): withdraw the composed strategic entries (`git rm` / delete before commit), set `disposition: duplicate-week` and `entries_published: 0`, and take the run record alone through one verifier iteration (the ≥1-iteration invariant applies to the record) and the publishing chain. The run record is still mandatory — a stood-down fire that publishes nothing but its record is the correct outcome, not a failure.
+
+**A stand-down's verified-but-unpublished research is written to the coverage backlog, not left in the record body (v3.31).** A stood-down fire has usually already researched and verified the whole week; the items the primary did not carry are real, verified coverage that nothing else will pick up — the next intel run's window is 24–26 h and the next weekly's is the following ISO week, so both recency gates put them permanently out of reach. On 2026-08-03 the stand-down listed nine such residual items in its notes body and **not one of them was ever published**. Append every residual item to [`state/coverage_backlog.md`](../state/coverage_backlog.md) per that file's contract (one row: date surfaced, run id, title, why it clears the gate, primary URL, event date) as well as narrating them in the record. The intel run's Phase 0 reads the backlog and works it down.
 
 **`Read prompts/cti-run.md` now** (Phases 5, 5.5, 5.7, 6, 7 — the shared machinery is defined once, there) and execute those phases verbatim with this run's `RUN_ID` (registry additions; `cves_seen` sync; source lifecycle; `source_health.py`; `python3 tools/check_run.py "$RUN_ID" --pre-verify` to exit 0 before the first verifier spawn (plain invocation between iterations and before commit); verification loop with model rotation, cap 8, the double-CLEAN publish gate (two consecutive CLEANs on two different models), prior-iteration deltas on even iterations; stage `entries/<date>/` + `runs/<date>/` + registry + state + sources + `.claude/memory/` + `work/<run-id>/`; sync with the same auto-resolution rules; push with retry; poll the run record on main and `data/briefbook.json` for the run id). The weekly's verifier scope line names the strategic entries + run record of THIS run.
 

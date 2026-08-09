@@ -1,0 +1,412 @@
+# Retrospective audit truth pass - batch B3 (20 entries)
+# run: 2026-08-09T1315Z-audit
+# verifier model: Opus 5 (claude-opus-5)
+# coverage: fetched  = cited primaries independently re-fetched and checked in this pass
+#           partial  = primary unreachable for a stated transport reason; corroborators fetched
+# All 20 entries carry cves: [] except thermo-fisher, traefik, cpanel, teamcity, endlessdoors,
+# hpe-aruba, veeam, adobe, keycloak - every cves[] id and score on those nine was checked against
+# the per-CVE authority (vendor PSIRT / CSAF / cveawg CNA container), never a roundup.
+
+- entry: entries/2026-08-05/talos-adversary-ai-coding-assistant-prompt-log-forensics.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    Body states the francophone actor's pipeline "scanned on the order of 18 million target hosts drawn from
+    a 90-million-URL seed list". Talos does not say 18 million hosts were scanned: the 18-million figure is a
+    resume offset in a checkpoint file (a line number in a URL list), and the pipeline's actual target list
+    held 9,180 unique hosts. The entry converts a line offset into a host count, drops the 9,180 figure that
+    a defender would use to judge real targeting breadth, and overstates host count by three orders of
+    magnitude. All three evidence[] quotes are verbatim; the "54 targets" figure is correct; both
+    techniques[] ids (T1588.007 Artificial Intelligence, T1587.001 Malware) name behaviours the body
+    describes and the source supports.
+  ground_truth: >
+    Cisco Talos: "a checkpoint file recording a resume position at line 18,222,511 confirms the pipeline
+    processed its target list at that magnitude." and "The pipeline's input list (\"target.txt\") contained
+    9,180 unique hosts spanning unrelated companies". The 90-million figure is "an original source list of
+    90 million URLs"; a separate stage was "built to ingest 50 - 250 million URLs on a 56-vCPU/128GB server".
+  ground_truth_url: https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/
+
+- entry: entries/2026-08-05/thermo-fisher-genetic-analyzer-dna-file-integrity.md
+  coverage: fetched
+  verdict: factual-error
+  defect: >
+    The entry's central and repeated claim - that no vendor fix exists - is contradicted by its own single
+    cited source. Title: "no vendor fix is offered"; headline: "no patch"; summary: "The advisory names no
+    vendor patch - the recommendations are exposure minimisation and defence in depth"; cves[0].status:
+    [no-patch]; cves[0].fixed: "None stated in the advisory"; the no-patch tag; body: "CISA names no vendor
+    patch" and "There is no patch to wait for, and the control that closes the gap is architectural rather
+    than a software update"; actions[0]: "because no vendor fix exists"; takeaway: "the instrument software
+    will never notice it".
+    CISA's ICSMA-26-216-01 carries eight vendor_fix remediations. Five name concrete patched versions with
+    download URLs (3500/3500xL DCS 4.0.3, 3730/3730xL DCS 5.0.3, SeqStudio DCS 1.2.6, SeqStudio Flex 1.2.1,
+    GeneMapper ID-X 1.7.4); only the three legacy ABI PRISM / 3130 products are EoL with no update. The fix
+    implements exactly the control the entry says does not exist and cannot be waited for: digital signatures
+    letting users verify data files have not been modified. The advisory has never been revised (version 1,
+    initial_release_date = current_release_date = 2026-08-04T06:00:00Z), so the fixes were on the page when
+    the run read it.
+    Correct in the entry: CVSS 3.1 8.4 / AV:L/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H, the full eight-product affected
+    list, the evidence[] quote verbatim, and T1565.001 Stored Data Manipulation as the mapped technique.
+  ground_truth: >
+    CSAF remediations[]: {"category":"vendor_fix","details":"Applied Biosystems 3500/3500xL Series Data
+    Collection Software: Update to version 4.0.3","url":"https://downloads.thermofisher.com/..."} plus four
+    further vendor_fix records with version numbers, and {"category":"mitigation","details":"Thermo Fisher
+    has developed security updates to address the vulnerability. The security updates implement the use of
+    digital signatures on the instrument software that adds an extralayer of protection. Moving forward,
+    this will help users verify that data files have not been modified."}. Same text in the CVE record's
+    solutions[] (CNA icscert). Vendor bulletin:
+    https://documents.thermofisher.com/TFS-Assets/CORP/Product-Guides/fsa_hid_bulletin.pdf
+  ground_truth_url: https://raw.githubusercontent.com/cisagov/CSAF/develop/csaf_files/OT/white/2026/icsma-26-216-01.json
+
+- entry: entries/2026-08-05/traefik-kubernetes-multi-tenancy-route-identity-collision.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    Summary states "No CVE identifiers have been assigned", sourcing_note repeats it, cves[] is empty. This
+    was CORRECT at compose time (run 2026-08-05T0412Z; the CVEs were reserved 2026-08-05T18:14Z and published
+    2026-08-06T16:24-16:38Z) but the store is now stale: all three GHSAs carry CVE ids, so three real flaws
+    are invisible to the CVE dedup index and to per-CVE lookups. Wants an update_of entry, not a rewrite.
+    Everything else verified exact: CVSS v4.0 7.6 / 4.8 / 2.1, the v3.0.0-v3.6.24 + v3.7.0-v3.7.9 and
+    v2-up-to-2.11.53 ranges, the 3.7.10 / 3.6.25 / 2.11.54 fixes, CERT-FR AVI-0964 relaying all three GHSAs
+    on 2026-08-04, both evidence[] quotes verbatim, and T1557 / T1078 both supported by the described
+    route-hijack and cross-namespace-identity behaviour.
+  ground_truth: >
+    GHSA-fgjj-px3w-67xx = CVE-2026-71327 (CVSS:4.0 7.6, published 2026-08-06T16:38:11Z, assigner GitHub_M);
+    GHSA-62fc-8686-hfmq = CVE-2026-71325 (CVSS:4.0 4.8, published 2026-08-06T16:24:56Z);
+    GHSA-6765-c87h-8mrf = CVE-2026-71326 (CVSS:4.0 2.1, affected v3.6.11-v3.6.24 and v3.7.0-v3.7.9).
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-71327
+
+- entry: entries/2026-08-05/unit42-nova-autonomous-oss-vulnerability-discovery.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    The entry misreports the structure of Unit 42's supply-chain figures. Summary: "Unit 42 also reports
+    5,421 findings tied to vulnerable dependencies, creating downstream exposures in consuming
+    applications." Body: "Unit 42 also reports 5,421 findings tied to 1,280 vulnerable dependencies,
+    producing downstream exposures in consuming applications." Unit 42 does not tie 5,421 findings to 1,280
+    dependencies: 5,421 is the TOTAL of two disjoint buckets - 1,280 flaws in dependency packages PLUS 4,141
+    downstream exposures. The entry collapses a sum into a ratio, and the 4,141 figure (the one that actually
+    quantifies downstream consuming-application exposure, which is the entry's own analytical point) never
+    appears. The follow-on claim "a majority of which it validated as exploitable from the consuming
+    application" does hold: 2,776 of 4,141 were PoC-validated.
+    Minor, non-elevating: evidence[] quote 2 lower-cases the source's sentence-initial "Every model
+    contributed..." to "every model contributed...". Conventional mid-sentence quoting, noted not counted.
+    Verified correct: 3,915 projects, six ecosystems, 14,090 confirmed vulnerabilities, 99.4% previously
+    unreported, ~40% high/critical, two-month period, the 92% composition quote verbatim, and T1588.006
+    Vulnerabilities as the mapped technique.
+  ground_truth: >
+    Unit 42: "In the package ecosystems we studied, the pipeline produced 5,421 supply-chain findings:"
+    broken out as "1,280 flaws in dependency packages" and "4,141 downstream exposures where an application
+    could reach a vulnerable dependency through its own code". Also "For 2,776 of the downstream exposures,
+    the pipeline validated exploitability from the downstream application with a working PoC." Pipeline name
+    NOVA (Network and Open-Source Vulnerability Analyzer); published 2026-08-04.
+  ground_truth_url: https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/
+
+- entry: entries/2026-08-05/vbs-ruag-akira-ransom-payment-review-governance.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All three German evidence[] quotes confirmed verbatim on the VBS release of 2026-08-04: the no-legal-
+    violation finding, the "politische und reputationsbezogene Auswirkungen ... nicht ausreichend
+    beruecksichtigt" assessment, and "Das VBS und der Bund halten unveraendert an ihrer Empfehlung fest, im
+    Falle von Cyber-Angriffen kein Loesegeld zu bezahlen." The 9/10 October 2025 detection date is confirmed
+    ("9. und 10. Oktober 2025"). The owner-notification sequencing finding is confirmed ("eine koordinierte
+    Information gegenueber dem Bund als Eigner angebracht gewesen waere"). The BACS review directive is
+    confirmed ("die RUAG MRO gemeinsam mit dem Bundesamt fuer Cybersicherheit (BACS) ihre Schutzmassnahmen
+    und Prozesse ueberpruefen"). Empty techniques[] is correct for kind:policy and the sourcing_note says
+    why (no source describes vector, dwell time or tooling). Editorial note for the audit, not a truth
+    defect: classification credibility 1 on a two-source item where SRF republishes rather than
+    independently assesses would more defensibly be 2, matching the reasoning this batch's traefik, cpanel,
+    veeam and hpe-aruba entries apply to restatements.
+  ground_truth_url: https://www.vbs.admin.ch/de/newnsb/5bBC1HPXGI21
+
+- entry: entries/2026-08-06/canton-graubuenden-sharepoint-server-breach.md
+  coverage: partial
+  verdict: clean
+  defect: >
+    PRIMARY UNREACHABLE, NOT DEAD. www.gr.ch is serving a site-wide maintenance page
+    ("Wartungsarbeiten - Lavurs da mantegniment - Lavori di manutenzione") for every path including the site
+    root, so the cantonal press release could not be read. All three transport rungs were tried and all
+    returned the same maintenance page: WebFetch, the bridge (tools/fetch_source.py url), and the
+    last-resort jina reader. The URL is therefore live-but-temporarily-blanked rather than broken, and the
+    two gr.ch evidence[] quotes remain unverified pending the maintenance window closing. Re-check needed.
+    Everything reachable checks out and independently supports the entry's substance.
+  ground_truth: >
+    persoenlich.com (Keystone-SDA, 2026-08-05) verified in full: the evidence[] quote "Es wurden zwei
+    Dateien platziert, deren Code allerdings nicht ausgefuehrt worden sei." is verbatim; Lorenz Tanner is
+    named "Leiter des Amts fuer Informatik"; the intrusion is dated "Der Angriff erfolgte gemaess Tanner am
+    29. Juli am Nachmittag."; the federal-link hypothesis is Tanner's own and correctly hedged in the entry
+    ("es koennte sich gemaess Tanner um die gleiche Sicherheitsluecke handeln, die auch beim Bund
+    festgestellt wurde. Von dieser seien Sharepoint-Systeme weltweit betroffen."); the out-of-band update is
+    confirmed ("fuehrt das AFI ... am Mittwochabend ab 19 Uhr ein ausserordentliches Update"); and the BACS
+    coordination is confirmed. T1190 and T1105 both name behaviours the sources describe.
+  ground_truth_url: https://www.persoenlich.com/digital/nach-dem-bund-trifft-es-auch-graubunden
+
+- entry: entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Elastic Security Labs (2026-08-06) confirms every figure and all four of its evidence[] quotes verbatim:
+    400+ compromised packages, over 1.3 billion combined monthly downloads, keyv >600M, flat-cache ~580M,
+    cacheable-request >137M, cacheable >30M, cache-manager >16M, the 711 KB payload, over 300 credential
+    patterns, the Bun download-and-delete chain, the VS Code tasks.json folderOpen route with 50-branch
+    injection, the bypass_2fa + package-write propagation gate, the Ethereum smart-contract C2 resolver, and
+    the GitHub-repository exfiltration fallback. (Evidence quote 2 differs only by the source's markdown
+    backticks around `preinstall` and `package.json`, which are absent from the rendered text - a contiguous
+    substring of the page as read, not a splice.)
+    OX Security (2026-08-04) confirms the entry's handling of the contradiction: "The malware has a dead
+    man's switch trigger, to delete the current machine if the stolen GitHub token is revoked" - reported by
+    OX and absent from Elastic, exactly as the entry states. OX's counts (444 packages, over 2 billion
+    monthly downloads) are indeed larger than Elastic's, as the entry says, and the entry's OX evidence quote
+    is a contiguous substring of "A massive Shai-Hulud campaign hit npm, affecting over 2 billion monthly
+    downloads of packages". All eight techniques[] ids map to described behaviours. No IOCs carried despite
+    both sources publishing hashes, hostnames and the contract address.
+  ground_truth_url: https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain
+
+- entry: entries/2026-08-06/cpanel-whm-cve-2026-58048-database-root-privilege-escalation.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Vendor advisory impact text is a verbatim match for the evidence[] quote: "An authenticated cPanel
+    account holder with access to the MySQL/MariaDB database feature could potentially execute arbitrary
+    database commands with full administrative privileges. Depending on the operating system and database
+    engine configuration, this may extend to operating-system-level compromise." Patched versions table:
+    "11.110.0.137 11.118.0.71 11.126.0.78 11.134.0.48 11.136.0.32 138.1.6 ( WP2 )" - matches fixed[]
+    exactly. Mitigation matches the action item ("temporarily revoke the \"MySQL\" feature from cPanel users.
+    This will not disable existing databases but just prevent adding/removing"). CVE-2026-58048 CNA
+    (hackerone): "Improper preservation of SQL mode when renaming databases in cPanel allows execution of SQL
+    in root context.", cvssV4_0 9.4 / AV:N/AC:L/AT:N/PR:L/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H. CVE-2026-58047
+    CNA: cvssV4_0 5.6, PR:N. The entry's attribution discipline is exact - it credits the mechanism and both
+    scores to the CNA record and explicitly notes the vendor pages carry neither.
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-58048
+
+- entry: entries/2026-08-06/cve-2026-63077-teamcity-kev-confirmed-exploited.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    Two related imprecisions about the exploitation vector, both widening the apparent attack surface.
+    (1) The entry renders JetBrains' description as "letting an unauthenticated attacker with HTTP(S) access
+    to a TeamCity server bypass authentication checks and execute arbitrary operating-system commands", then
+    builds the summary ("the flaw needs only HTTP(S) reachability") and the takeaway ("Because exploitation
+    requires only network reachability") on it. JetBrains names a specific protocol - the TeamCity agent
+    polling protocol - not generic HTTP(S). The substitution loses the one detail that would let a defender
+    scope which listener matters.
+    (2) The entry asserts "Neither CISA's alert nor its catalog entry names an exploiting cluster, a victim
+    set, or the observed intrusion path". The KEV catalog record does name the path in its shortDescription.
+    The actor and victim halves of the claim are correct.
+    Verified correct: CVSS 9.8 (JetBrains CNA, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H), fixed versions
+    2025.11.7 / 2026.1.3, the 2017.1+ security-patch plugin, "All versions of TeamCity On-Premises are
+    affected", CWE-502, dateAdded 2026-08-05, dueDate 2026-08-08, both evidence[] quotes verbatim, and the
+    update_of target.
+  ground_truth: >
+    JetBrains: "An unauthenticated attacker could exploit the vulnerability via the TeamCity agent polling
+    protocol to bypass authentication checks and execute arbitrary operating system commands with the
+    privileges of the TeamCity server process." KEV record CVE-2026-63077 shortDescription: "JetBrains
+    TeamCity contains a deserialization of untrusted data vulnerability that could allow unauthenticated
+    remote code execution via the agent polling protocol." CVE record (assigner JetBrains, 2026-07-27): "In
+    JetBrains TeamCity before 2026.1.3, 2025.11.7 unauthenticated remote code execution was possible via the
+    agent polling protocol".
+  ground_truth_url: https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/
+
+- entry: entries/2026-08-06/endlessdoors-zbtlink-router-factory-shipped-root-backdoor.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    VulnCheck (2026-08-05) confirms every load-bearing claim: CVE-2026-66747; twenty models, and the entry's
+    twenty affected_products[] values match VulnCheck's list exactly (CPE2801, WE1026-5G-WD, WE1326, WE2007,
+    WE2008-DSIM, WE2416, WE3326, WE5927, WE5931, WE5931AC, WE826-T3-DSIM, WG108, WG1602, WG1608-DSIM, WG209,
+    WG2105, WG2107, WG259, WG3526, Z8102AX-2DSIM); vendor Zbtlink / Shenzhen Zhibotong Electronics; rebranded
+    units on Amazon; the implant derived from the open-source rctl project; no CVSS published anywhere on the
+    page, matching the entry's deliberate cvss: null and its statement that it will not invent one. Both
+    evidence[] quotes verbatim, and the no-notification claim is supported ("We did not notify Zbtlink").
+    T1059 / T1571 / T1036 each name a behaviour the body describes (shell execution as uid 0, high
+    non-standard port, kernel-worker-thread name masquerade).
+  ground_truth_url: https://www.vulncheck.com/blog/zbt-endlessdoors
+
+- entry: entries/2026-08-06/hpe-aruba-sd-wan-orchestrator-rest-api-auth-bypass.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    HPESBNW05100 (Publication Date 2026-AUG-4, Revision 1, FINAL) verified line by line. CVE-2026-63455 and
+    CVE-2026-63456 share one Details block; "CVSSv3.1 Base Score: 9.8" and
+    "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" match the entry's scores and quoted vector. Affected
+    Products: "9.6.2.x: 9.6.2.40208 and below" / "9.6.3.x: 9.6.3.40137 and below" / "No branches outside of
+    9.6.x.x are affected by these vulnerabilities." Resolution: 9.7.0.43264+, 9.6.3.40140+, 9.6.2.40210+.
+    The impact wording, the bug-bounty discovery credit, the "not aware of any public discussion or exploit
+    code targeting these specific vulnerabilities as of the release date" statement and the workaround the
+    takeaway cites ("the CLI and web-based management interfaces be restricted to a dedicated layer 2
+    segment/VLAN and/or controlled by firewall policies at layer 3") are all verbatim. The entry surfaces
+    rather than resolves the HPE/CERT-FR scope disagreement, which is the right call - and HPE's own
+    Resolution section already lists a 9.7.0.x upgrade target while its Affected section excludes that
+    branch, which is what makes CERT-FR's wider scoping plausible. CERT-FR AVI-0969 itself was not
+    re-fetched; the entry's characterisation of it is unverified but internally coherent.
+  ground_truth_url: https://csaf.arubanetworking.hpe.com/2026/hpe_aruba_networking_-_hpesbnw05100.txt
+
+- entry: entries/2026-08-06/litellm-callback-hook-post-inference-tool-call-forgery.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Both evidence[] quotes are verbatim on the CSA research note (2026-08-05): "forge a tool call that was
+    never produced by the underlying model" and "bypasses prompt-level defenses entirely". The CSA note
+    confirms the /model/update api_base reroute, credits wunderwuzzi / Embrace The Red (2026-08-03) as the
+    origin, and states the revert claim the entry's detection argument rests on: "a sophisticated attacker
+    reverts the rerouted configuration back to its original state once the operation concludes, which
+    removes the most visible artifact." The originating post was also fetched: "LLM Heist: Hijacking LiteLLM
+    for Traffic Interception, Key Theft, and Tool-Call Injection" by wunderwuzzi, 2026-08-03, confirming the
+    master-key/proxy-admin precondition, the api_base + use_litellm_proxy change, and the
+    async_post_call_success_hook / async_post_call_streaming_iterator_hook abuse. Notably, wunderwuzzi's own
+    ATT&CK mapping includes T1557 and T1565.002 - the exact two ids the entry carries in techniques[]. The
+    entry's two-day gap between disclosure and the in-window CSA note is arithmetically correct.
+  ground_truth_url: https://labs.cloudsecurityalliance.org/research/csa-research-note-litellm-callback-hook-hijacking-20260805-c/
+
+- entry: entries/2026-08-06/veeam-service-provider-console-veeam-one-ten-cves.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All ten CVEs, all ten CVSS v4.0 scores and both affected/fixed build pairs transcribed correctly from
+    Veeam's own two KB articles (both 2026-08-04). KB4892 (Veeam ONE, affected 13.0.2.6723 and earlier v13,
+    fixed 13.1.0.7034): CVE-2026-64633 = 10.0, CVE-2026-58075 = 8.7, CVE-2026-58074 = 8.6, CVE-2026-64631 =
+    8.6, CVE-2026-64634 = 8.4, CVE-2026-64630 = 5.3. KB4893 (Service Provider Console, affected 9.2.1.33875
+    and earlier v9, fixed 9.3.0.35057): CVE-2026-58073 = 9.5, CVE-2026-58072 = 9.0, CVE-2026-58067 = 8.7,
+    CVE-2026-58071 = 8.2. Both evidence[] quotes are contiguous verbatim substrings. The body's claim that
+    CVE-2026-58073's vector "records high attack complexity" is confirmed by
+    CVSS:4.0/AV:N/AC:H/AT:N/PR:N/UI:N/VC:H/VI:H/VA:H/SC:H/SI:H/SA:H. Each per-CVE one-line description in the
+    body matches the vendor's own wording. CERT-FR AVI-0968 and NCSC-2026-0276 were not re-fetched, so the
+    "NCSC-NL covers only the four SPC flaws" claim is unverified though internally coherent.
+  ground_truth_url: https://www.veeam.com/kb4892
+
+- entry: entries/2026-08-06/water-plc-lockouts-twelve-states-named-utility-confirms.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All four evidence[] quotes verified verbatim across the two outlets that carry them. The Record
+    (Jonathan Greig, 2026-08-05): "After the devices are accessed remotely, the actors change the passwords
+    and remove the ability of officials to monitor and control the devices." and "federal agencies have
+    declined to publicly attribute the attacks" - both exact; the 12-state count is attributed to ABC News as
+    the entry says; South Dakota, Georgia and Michigan are all named. CBS News Atlanta (2026-08-04): "caused
+    reduced water pressure in parts of the county" and "the CCWA issued a precautionary boil water advisory
+    as a safety measure" - both exact; the FBI aggregate is confirmed ("The FBI says some affected water
+    systems experienced pressure loss and flooding as a result."); late-July timing and restoration within
+    hours confirmed. SecurityWeek (Eduard Kovacs, 2026-08-05) carries the pump-station detail verbatim:
+    "Georgia has been confirmed as one of the attacked states after Clayton County reported a pump station
+    disruption." The entry's attribution restraint is correct and materially better than its primary: The
+    Record's own framing includes "multiple sources pointed the finger at Iran", and the entry explicitly
+    declines to adopt that, citing the same article's record that federal agencies have not attributed
+    publicly. T1531 and T1565 both name described behaviours.
+  ground_truth_url: https://therecord.media/iran-cyberattacks-water-treatment
+
+- entry: entries/2026-08-07/adobe-campaign-classic-apsb26-120-second-wave-unauth-rce.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    The CVE data is flawless - all seven ids, all seven CVSS scores, every CWE and every impact string match
+    Adobe's own per-CVE table, both evidence[] quotes are verbatim, and the shared S:C vector is quoted
+    correctly. One citation-adjacency defect: "This is the third distinct wave of critical unauthenticated
+    code-execution-class disclosures against this product line since late June" is terminated by a citation
+    to APSB26-114, which is one bulletin covering one wave and carries no wave count and no since-late-June
+    framing. The quantifier rests on this brief's own prior coverage, not on the cited page, and needs either
+    a supporting citation or reframing as the brief's own observation.
+  ground_truth: >
+    APSB26-120 (2026-08-03, Priority 1): CVE-2026-48331 10.0 CWE-918 SSRF -> arbitrary code execution;
+    CVE-2026-48323 10.0 CWE-1336; CVE-2026-48330 10.0 CWE-89; CVE-2026-48326 9.9 CWE-89 (PR:L);
+    CVE-2026-48333 9.8 CWE-863 privilege escalation; CVE-2026-48317 9.6 CWE-95 (PR:L); CVE-2026-48399 7.5
+    CWE-657 security feature bypass. The three 10.0s carry
+    CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H. Affected "ACC v7 7.4.3 build 9398 and earlier", fixed "ACC
+    v7 7.4.3 build 9399". Both quoted sentences verbatim. APSB26-114 carries no wave count.
+  ground_truth_url: https://helpx.adobe.com/security/products/campaign/apsb26-120.html
+
+- entry: entries/2026-08-07/ai-api-token-jacking-transfer-station-resale.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All three evidence[] quotes confirmed verbatim on the Unit 42 post (2026-08-06): the within-minutes
+    transfer-station integration, "This led to nearly a million dollars in charges before discovery and
+    containment.", and "Organizations impacted by token jacking have very little recourse to recover funds
+    billed by the AI services for using their API tokens." The terminology ("token jacking", a dedicated
+    "Transfer Stations" section), the open-source LLM-proxy basis (new-api, one-api), the account-takeover
+    variant (minting new API keys, removing billing limits, disabling usage alerts and logging) and the
+    generic HTTP-library user-agent signal are all present as the entry describes. The entry correctly
+    generalises the user-agent observable rather than reproducing the literal string, keeping it IOC-free.
+    All eight techniques[] ids are active in the pinned dataset and each names a described behaviour.
+  ground_truth_url: https://unit42.paloaltonetworks.com/ai-token-jacking/
+
+- entry: entries/2026-08-07/fake-zoom-dotnet-downloader-overlord-rat-macos.md
+  coverage: fetched
+  verdict: imprecision
+  defect: >
+    All four evidence[] quotes are verbatim, the 34-DLL count is exact, Garble obfuscation is confirmed, and
+    the attribution handling is the strongest in the batch - Jamf's two similarity observations are kept
+    separate and Jamf's own refusal to attribute is quoted accurately ("Jamf Threat Labs has noted the
+    similarities but does not currently attribute this malware to a specific threat actor").
+    The defect is a first-ness quantifier hardened past its source in the body: "a counterfeit Zoom installer
+    that introduces a runtime macOS malware has not used before as a downloader stage" states a categorical
+    fact about macOS malware generally. Jamf claims only its own observation, and narrows it further to a
+    campaign class: "The use of .NET as a macOS downloader is a technique we had not previously observed in
+    campaigns of this kind." The title and summary hedge this correctly ("the first case Jamf has observed");
+    the body sentence drops both the observer and the "campaigns of this kind" qualifier.
+  ground_truth: >
+    Jamf Threat Labs, 2026-08-06: "The use of .NET as a macOS downloader is a technique we had not previously
+    observed in campaigns of this kind." 34 DLLs confirmed via "scanning `ZoomMeetings` for `MZ` magic bytes
+    with valid PE signatures, which located 34 DLLs." Second stage confirmed Garble-obfuscated Go Overlord
+    build. UNK_DeadDrop/Proofpoint and FlexibleFerret/SentinelOne both referenced, attribution declined.
+  ground_truth_url: https://www.jamf.com/blog/fake-zoom-installer-delivers-overlord-rat-macos/
+
+- entry: entries/2026-08-07/flooding-dropper-npm-846-packages-dns-txt-fallback.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Sonatype (2026-08-05) confirms both evidence[] quotes verbatim - the detached-process failsafe sentence
+    and the full remediation-order sentence the takeaway is built on. The 846 figure is the body's own
+    number ("At the time of publication, Sonatype has identified 846 software components implicated in the
+    campaign"); the 850 in the source URL slug is the publisher's own rounding, and the entry correctly
+    follows the body rather than the slug. Campaign name "Flooding Dropper", tracking id
+    sonatype-2026-005660, CWE-506 at CVSS 8.7, the DNS TXT-record fallback, ETW and AMSI patching, Registry
+    Run key plus scheduled-task persistence, reflective in-memory execution and the OpenSourceMalware credit
+    are all confirmed. All ten techniques[] ids map to described behaviours (T1071.004 for the TXT channel,
+    T1685 for the ETW/AMSI tampering, T1620 for the reflective loader). No package names carried.
+  ground_truth_url: https://www.sonatype.com/blog/flooding-dropper-hits-npm-with-850-malicious-packages
+
+- entry: entries/2026-08-07/keycloak-saml-broker-signature-bypass-cve-2026-16443.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All seven CVEs verified against the Red Hat CNA container, which is the vendor authority for Keycloak
+    and Red Hat Build of Keycloak. Every score matches the entry exactly: CVE-2026-16443 = 7.4
+    (CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N, the vector the entry quotes character-for-character,
+    severity Important, CWE-347); CVE-2026-16442 = 7.4 (AC:H, PR:N); CVE-2026-15572 = 8.8 (PR:L);
+    CVE-2026-16102 = 8.1 (PR:L); CVE-2026-15573 = 8.1 (PR:L); CVE-2026-16071 = 5.4 (PR:L); CVE-2026-16100 =
+    6.5 (PR:L). Every auth value in cves[] matches its vector's PR field, and each per-flaw mechanism in the
+    body matches the Red Hat description (SAML broker key-usage attributes; IdP-initiated SSO account-linking
+    restriction; the Allowed Protocol Mapper Types re-validation gap; the DCR claim-path mis-validation;
+    PathMatcher URI normalisation; the LDAP users-DN boundary escape; the unbounded Prometheus metric label).
+    The evidence[] quote is a verbatim contiguous substring. Minor, non-elevating: CVE-2026-16071 carries
+    auth: admin-required against a PR:L vector - defensible because the flaw genuinely requires a delegated
+    administrator role, and the body says so, but it is the one frontmatter value in the entry that is a
+    judgement rather than a transcription.
+  ground_truth_url: https://access.redhat.com/security/cve/CVE-2026-16443
+
+- entry: entries/2026-08-07/macos-clickfix-server-side-fingerprinting-gate-amos.md
+  coverage: fetched
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All five evidence[] quotes confirmed verbatim on the Microsoft Threat Intelligence post (2026-08-05),
+    including the two that carry the entry's action items: the macOS 26.4 Terminal paste-warning mitigation
+    and the "Where feasible, alert the file<word><word> domain pattern rather than maintaining a list of
+    individual domains." guidance. The "more than 250 ClickFix front-end domains during the tracking window"
+    count is confirmed, MacSync and Atomic Stealer (AMOS) are both named by Microsoft, and the quarantine /
+    code-signing / notarization bypass sentence the takeaway quotes is verbatim. All nine techniques[] ids
+    are active in the pin and behaviourally apt, T1204.004 Malicious Copy and Paste being the correct
+    specific id for the paste-and-run step. The entry carries the domain-generation pattern (which Microsoft
+    itself publishes as the hunt pivot) and no individual hostnames, so it stays IOC-free.
+  ground_truth_url: https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/

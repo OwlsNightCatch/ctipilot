@@ -867,8 +867,12 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
     confirmation WARNs (legitimate only as a recorded spawn-failure
     exception, e.g. 2026-06-05's classifier-blocked Opus spawns).
     NEEDS_FIXES finals are the early-exit / cap fail-open path with residuals
-    and are out of scope here. `store_mode` (--all) downgrades FAIL to WARN —
-    published records are immutable history."""
+    and are out of scope for the double-CLEAN gate — but the rotation itself
+    is checked on every chain regardless of verdict (v3.31: 2026-08-06 ran
+    all five iterations on `cti-verification` because every alternate spawn
+    was classifier-blocked, and because its final verdict was NEEDS_FIXES no
+    check saw it). `store_mode` (--all) downgrades FAIL to WARN — published
+    records are immutable history."""
     v = _prompt_version_tuple(run.get("prompt_version"))
     if v is None or v < DOUBLE_CLEAN_FROM:
         if not store_mode:
@@ -879,12 +883,55 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
     ver = run.get("verification") if isinstance(run.get("verification"), dict) else {}
     iters = [i for i in (ver.get("iterations") or []) if isinstance(i, dict)] \
         if isinstance(ver.get("iterations"), list) else []
+    # The waiver's canonical home is `verification.confirmation_waived`; one
+    # record (2026-08-06T0411Z-intel) wrote it at the top level instead, which
+    # would have hidden a fully-documented fail-open from this check had that
+    # run converged to CLEAN. Honour both placements, and nudge fresh runs to
+    # the canonical one rather than punishing immutable history.
+    waived = str(ver.get("confirmation_waived")
+                 or run.get("verification_confirmation_waived") or "").strip()
+    if (not ver.get("confirmation_waived")) and run.get("verification_confirmation_waived") \
+            and not store_mode:
+        warn("verification-confirmation",
+             f"{rid}: confirmation waiver recorded at top level as "
+             "`verification_confirmation_waived` — the canonical key is "
+             "`verification.confirmation_waived` (honoured here, but move it)")
     if not iters:
         if pre_verify and not store_mode:
             ok("verification-confirmation",
                "no iterations yet (--pre-verify) — populated by the Phase 5.7 loop")
         # a missing/empty block on the plain invocation is validate_run_record's FAIL
         return
+
+    def _ident(it: dict[str, Any]) -> str:
+        return (str(it.get("subagent_type") or "").strip()
+                or str(it.get("model_id") or "").strip()
+                or str(it.get("model") or "").strip())
+
+    # Rotation integrity across the WHOLE chain — hard invariant #11 says
+    # consecutive iterations never run the same definition, and that holds on
+    # every publish path, not only on the CLEAN one. A recorded waiver (the
+    # classifier-blocked-spawn exception) is what makes a collapsed rotation
+    # acceptable, so it silences this.
+    pairs = [(a, b) for a, b in zip(iters, iters[1:])
+             if _ident(a) and _ident(a) == _ident(b)]
+    if pairs and not waived:
+        names = ", ".join(f"{a.get('iteration', '?')}+{b.get('iteration', '?')}" for a, b in pairs[:4])
+        emit = warn if store_mode else fail
+        emit("verification-rotation",
+             f"{rid}: {len(pairs)} consecutive same-definition iteration pair(s) "
+             f"({names}) on {_ident(pairs[0][0])} — the rotation must alternate "
+             "`cti-verification` / `cti-verification-alt` so consecutive passes run on "
+             "different models. Legitimate only as a recorded spawn-failure exception: "
+             "set verification.confirmation_waived with the reason")
+    elif pairs:
+        ok("verification-rotation",
+           f"{len(pairs)} same-definition iteration pair(s) — explained by the recorded "
+           "confirmation waiver")
+    elif not store_mode:
+        ok("verification-rotation",
+           f"rotation alternated across all {len(iters)} iteration(s)")
+
     final = iters[-1]
     if final.get("verdict") != "CLEAN":
         if not store_mode:
@@ -893,7 +940,6 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
                "the double-CLEAN gate governs only CLEAN publishes")
         return
     prev = iters[-2] if len(iters) >= 2 else None
-    waived = str(ver.get("confirmation_waived") or "").strip()
     if prev is None or prev.get("verdict") != "CLEAN":
         if waived:
             warn("verification-confirmation",
@@ -917,11 +963,6 @@ def check_verification_confirmation(run: dict[str, Any], pre_verify: bool = Fals
                  "pass, or record why it was impossible in "
                  "verification.confirmation_waived")
         return
-
-    def _ident(it: dict[str, Any]) -> str:
-        return (str(it.get("subagent_type") or "").strip()
-                or str(it.get("model_id") or "").strip()
-                or str(it.get("model") or "").strip())
 
     ia, ib = _ident(prev), _ident(final)
     if ia and ib and ia == ib:
@@ -1245,6 +1286,34 @@ def report_rolling_composition(run: dict[str, Any], all_entries: list[dict]) -> 
     ok("composition",
        f"rolling-24h composition (informational, not gated): {len(operational)} operational, "
        f"{len(dd_today)} deep-dive on {run.get('date')}, {len(critical)} critical")
+
+    # Two editorial-discipline rates the verifier's F16 (priority calibration)
+    # and F18 (action-item discipline) are asked to judge with no reference
+    # point (v3.31, from the 2026-08-02 audit's recommendation 4 — the cheap,
+    # informational half of it). These are OBSERVATIONS, never gates: hard
+    # invariant #20 forbids governing entry volume or composition by a number,
+    # and nothing here fails, warns or caps anything. The trailing-28d rate is
+    # the baseline the current window is reported against, so a drift is
+    # visible to the operator without anyone having to recompute it.
+    def _rates(rows: list[dict]) -> tuple[int, float, float, float]:
+        ops = [e for e in rows if (e.get("horizon") or "operational") == "operational"]
+        if not ops:
+            return 0, 0.0, 0.0, 0.0
+        highs = sum(1 for e in ops if e.get("priority") == "high")
+        acts = [len(e.get("actions") or []) for e in ops]
+        return (len(ops), 100.0 * highs / len(ops), sum(acts) / len(ops),
+                100.0 * sum(1 for a in acts if a == 0) / len(ops))
+
+    base_lo = completed - timedelta(days=28)
+    baseline = [e for e in all_entries
+                if (ts := cm.parse_ts(e.get("discovered_at"))) is not None
+                and base_lo < ts <= completed]
+    n_w, high_w, act_w, empty_w = _rates(window)
+    n_b, high_b, act_b, empty_b = _rates(baseline)
+    ok("composition",
+       f"editorial rates (informational, not gated): 24h high-share {high_w:.0f}% "
+       f"(28d {high_b:.0f}%) · actions/operational-entry {act_w:.2f} (28d {act_b:.2f}) · "
+       f"entries with no action {empty_w:.0f}% (28d {empty_b:.0f}%) · n={n_w}/{n_b}")
 
 
 def _scan_iocs(text: str) -> list[str]:
@@ -2239,6 +2308,19 @@ def check_classification(run_entries: list[dict], profile: dict[str, Any] | None
             bad = True
         if not bad:
             found += 1
+        # Credibility 1 MEANS "corroborated by other independent sources".
+        # An entry that simultaneously declares itself single-source is
+        # contradicting its own frontmatter — mechanical, not judgment, and
+        # therefore the gate's job rather than an expensive verifier
+        # iteration's (v3.31; two of this window's seven F17 findings were
+        # exactly this shape, e.g. 2026-08-05).
+        if str(cls.get("credibility")) == "1" and str(e.get("verification") or "").startswith("single-source"):
+            fails.append(
+                f"{e['id']}: credibility 1 (\"corroborated by other independent sources\") "
+                f"contradicts verification: {e.get('verification')!r} — a single "
+                "uncorroborated claim from a reliable source is credibility 2. "
+                "Independence means a second party that observed or assessed, not a "
+                "second publisher of the same assessment")
     for p in fails:
         fail("classification", p)
     missing_sev = fail if enforce else warn

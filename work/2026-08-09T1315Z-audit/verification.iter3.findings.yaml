@@ -1,0 +1,98 @@
+# Findings summary (machine-readable) — iteration 3
+- code: F3
+  category: claim-not-supported
+  section: audit-recovered-entries
+  item: "2026-08-09/wallix-bastion-rest-api-unauth-admin-cvss10"
+  url_or_quote: "\"No exploitation has been reported, and WALLIX deliberately withholds the exploitation mechanics — but it also states that the independent security researchers who reported the flaws \\\"intend to publish full technical details in September 2026\\\" ... ([WALLIX, 2026-07-20](https://www.wallix.com/support-services/alerts/))\""
+  summary: >-
+    Adjacency defect. The trailing citation carries the whole sentence, but neither cited page states that
+    no exploitation has been reported. The WALLIX advisory page does carry the boilerplate "WALLIX is not
+    aware of any public announcements or malicious use of the vulnerability that is described in this
+    advisory" — but only in the MARCH 2026 and older advisories (cached page lines 423, 487, 504, 522, 540,
+    560); the two JULY 2026 sections (lines 203-327, WSA-2026-07-0002 and WSA-2026-07-0001) carry no such
+    statement. What WSA-2026-07-0001 does say is the opposite in effect: "Exploitation can be entirely
+    invisible", "Absence of evidence must not be interpreted as absence of compromise. Treat any affected,
+    network-reachable appliance as potentially fully compromised, including all vault secrets." CERT-FR
+    CERTFR-2026-AVI-0974 (fetched this iteration) makes no exploitation-status statement at all. The rest of
+    the sentence (withheld mechanics, the September quotes) is verbatim-supported. Fix by dropping the
+    clause or replacing it with what the vendor states ("Technical exploitation details are intentionally
+    withheld ...", plus the invisible-exploitation caution the entry's own Defender takeaway already relies on).
+- code: F14
+  category: quantifier-without-source
+  section: audit-recovered-entries + run record
+  item: "2026-08-09/thermo-fisher-genetic-analyzer-correction-patch-exists (sourcing_note) AND runs/2026-08-09/2026-08-09T1315Z-audit.md (§ Verification & coverage notes)"
+  url_or_quote: "\"the CSAF JSON carried all eight remediation records\" (entry sourcing_note) / \"the machine-readable CSAF JSON carries all eight remediation records\" (run record)"
+  summary: >-
+    The count corrected at iterations 1 and 2 in the report and in the entry BODY survives unchanged in two
+    other published locations. Counted directly in work/2026-08-09T1315Z-audit/pages/thermo-csaf.json this
+    iteration: vulnerabilities[0].remediations holds 15 objects — 8 category vendor_fix (5 naming a patched
+    version with a downloads.thermofisher.com URL, 3 EoL) and 7 category mitigation. "All eight remediation
+    records" is therefore wrong as written and contradicts the entry's own body one paragraph later
+    ("eight per-product vendor-fix records for this flaw, alongside seven mitigation records") and the
+    report ("fifteen remediation records ... eight per-product vendor_fix records and seven mitigation
+    records"). Fix both to the body's wording (e.g. "carried all fifteen remediation records, the eight
+    per-product vendor fixes among them" — the phrasing already used at report line 27).
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md line 73"
+  url_or_quote: "\"Coinspect is not in `sources.json`. G1 has proposed it as a candidate source and it is recorded below as the one new candidate this run adds.\""
+  summary: >-
+    Nothing is recorded below. Grep of the whole report returns exactly one occurrence of "Coinspect" as a
+    candidate (this sentence); no candidate-source row appears in § Fixes shipped, § Recommendations or
+    § Watch items. `git diff origin/main -- sources/sources.json` is empty, coinspect.com is absent from
+    sources.json (177 records, 157 active), and the run record frontmatter carries `sources_changed: []`.
+    Either add the candidate record the sentence promises (and the corresponding sources_changed entry) or
+    strike "and it is recorded below as the one new candidate this run adds".
+- code: F4
+  category: hallucinated-fact
+  section: audit-report
+  item: "docs/audits/2026-08-09-weekly-quality-audit.md line 154"
+  url_or_quote: "\"`python3 tools/check_run.py --all` ends **0 warn · 0 fail (14 acknowledged)** once this run's verification block is populated by the loop below — the observed figure is recorded in the run record.\""
+  summary: >-
+    The run record carries no check_run.py figure anywhere — grep for "check_run", "pass ·", "warn" over
+    runs/2026-08-09/2026-08-09T1315Z-audit.md returns only the iteration-1 finding text at lines 164-165,
+    which is the remediation note promising the figure, not the figure. (The forecast itself is now
+    observably true: `--all` returns "21 pass · 0 warn · 0 fail · 14 acknowledged" as of this iteration,
+    and the per-run gate returns 39 pass · 0 warn · 0 fail.) Fix by recording the observed figure in the run
+    record or by striking the trailing clause.
+- code: F4
+  category: hallucinated-fact
+  section: run-record
+  item: "runs/2026-08-09/2026-08-09T1315Z-audit.md — verification.iterations[1]"
+  url_or_quote: "truth: 8 / truth_count: 8 / advisory: 4 / advisory_count: 4 versus the 12 rows of that block's own findings[]"
+  summary: >-
+    The record's stated counts contradict its own itemisation. The transcribed findings[] carries 2x F3,
+    3x F4, 2x F14 (7 truth-class) and 5x F11 (5 advisory), not 8/4. The verifier's persisted output
+    work/2026-08-09T1315Z-audit/verification.iter1.findings.yaml holds 12 records coded 2x F3, 3x F4,
+    3x F14, 4x F11 — i.e. 8 truth / 4 advisory, matching the stated counts and the report file's own
+    "NEEDS_FIXES (truth: 8, editorial: 0, advisory: 4)" verdict line. The transcription merged the YAML's
+    two separate backlog-count F14s into one row and added a fifth F11 row (the Thermo advisory note) that
+    the YAML does not carry. findings[] is the Ops-dashboard surface, so restore the third F14 (the
+    "eight rows appended to state/coverage_backlog.md" finding) and re-code the Thermo row, or adjust the
+    counts to match the rows.
+- code: F11
+  category: editorial-advisory
+  section: audit-recovered-entries
+  item: "2026-08-09/wallix-bastion-rest-api-unauth-admin-cvss10"
+  url_or_quote: "\"12.3.7 and 12.4.1 and higher carry the fix\" / action: \"move any instance on 12.3.0–12.3.6 or 12.4.0 to 12.3.7 or 12.4.1+\""
+  summary: >-
+    NO CHANGE REQUIRED — recorded because a cold reader checked it. The vendor's own §5 for
+    WSA-2026-07-0001 reads "Upgrade to WALLIX Bastion 12.4.1 or higher. This is the only effective
+    remediation", which sits against its §2 Affected Products table marking 12.3.7 "Patched". The entry
+    follows the table, and CERT-FR CERTFR-2026-AVI-0974 independently corroborates it ("Bastion versions
+    12.3.x antérieures à 12.3.7"), so the entry's reading is the better-sourced one. A half-clause noting
+    the vendor's §5 wording would pre-empt a reader who patches to 12.3.7 and then meets it.
+- code: F11
+  category: editorial-advisory
+  section: audit-recovered-entries
+  item: "2026-08-09/sharefile-cve-2026-2699-2701-never-kev-listed"
+  url_or_quote: "\"This pipeline's per-CVE coverage made no KEV claim about either identifier at any point — the error entered only in the weekly synthesis\""
+  summary: >-
+    NO CHANGE REQUIRED — checked and judged benign. The claim holds for the per-CVE entries
+    (2026-07-13 and 2026-07-14 carry no KEV assertion for either id). The sibling weekly entry
+    2026-07-19/weekly-w29-vuln-status-rollup does list CVE-2026-2699 under a "Confirmed exploited /
+    newly KEV-listed" label, but its body deliberately attaches KEV dates only to the ids that have them
+    ("SonicWall SMA1000 CVE-2026-15409/-15410 (KEV 2026-07-14) and Oracle EBS Payments CVE-2026-46817
+    (KEV 2026-07-15) ... as did ShareFile SZC CVE-2026-2699" — exploitation, not KEV) and its title and
+    summary use the disjunction "exploitation/KEV". No second correction is warranted.

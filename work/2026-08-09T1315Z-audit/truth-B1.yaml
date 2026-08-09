@@ -1,0 +1,270 @@
+# Retrospective audit truth pass — batch B1 (20 entries)
+# run_id: 2026-08-09T1315Z-audit
+# verifier_model: Opus 5 (claude-opus-5)
+# started_at: 2026-08-09T13:17:48Z  ended_at: 2026-08-09T13:29:40Z
+# method: every cves[] id + CVSS re-read from the per-CVE authority (cveawg.mitre.org CVE record,
+#   vendor PSIRT or discloser advisory); every evidence[] quote re-checked as a contiguous
+#   substring of its own cited page (fetched this pass); every sources[] URL fetched;
+#   every techniques[] id checked against attack/enterprise-attack.json (ATT&CK v19.1).
+# headline: 19 clean / 20 · 1 imprecision · 0 factual errors
+
+- entry: entries/2026-08-02/sp-page-builder-cve-2026-65766-preauth-sqli-mail-relay.md
+  verdict: imprecision
+  defect: >
+    sourcing_note states "The discloser's own lower CVSS 4.0 self-assessments (8.7 / 6.9 / 7.1 / 7.2)
+    are named in the body". Two imprecisions. (a) Only 8.7 appears in the body ("We scored it 8.7 High");
+    6.9, 7.1 and 7.2 appear nowhere in the entry body. (b) The four-number sequence immediately follows a
+    sentence enumerating the CNA scores in the CVE order 65766 / 65877 / 65878 / 65876, so a positional
+    read maps 6.9 to CVE-2026-65877, 7.1 to CVE-2026-65878 and 7.2 to CVE-2026-65876 — all three wrong.
+    Frontmatter/sourcing-note only; no reader-facing body claim, no cves[] value and no CNA score is affected.
+    All five ids, all five CNA/ADP scores, both evidence quotes, all body quotes, the affected/fixed ranges,
+    the CWE attributions and the "five issues, not four" claim verified correct.
+  ground_truth: >
+    mySites.guru's own CVSS 4.0 table maps its self-scores as: pre-auth SQL injection (CVE-2026-65766) 8.7 High;
+    authenticated arbitrary file delete (CVE-2026-65878) 7.2 High; authenticated media-manager SQL injection
+    (CVE-2026-65877) 7.1 High; unauthenticated mail relay (CVE-2026-65879) 6.9 Medium. CVE-2026-65876 carries
+    no discloser self-score — "It is not one of the four issues we reported and we did not test it."
+    Confirmed correct in the entry: Joomla CNA CVSS 4.0 9.2 (65766), 8.2 (65877), 8.3 (65878), 9.2 (65876);
+    CVE-2026-65879 has NO CNA metrics and its 9.8 is a CISA-ADP CVSS 3.1 score (CWE-798) — exactly as the
+    entry's cvss_note states; all five records give affected range 1.0.0-6.7.0, fixed 6.7.1.
+  ground_truth_url: https://mysites.guru/blog/sp-page-builder-sql-injection-mail-relay-disclosure/
+
+- entry: entries/2026-08-02/adobe-campaign-classic-apsb26-114-cvss10-unauth-rce.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    APSB26-114 (2026-07-29, priority 1) affected table "ACC v7: 7.4.3 build 9397 and earlier, Windows, Linux";
+    solution "ACC v7: 7.4.3 build 9398". CVE-2026-48449 CWE-863 Incorrect Authorization, arbitrary code
+    execution, CVSS 3.1 10.0, CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H — matches entry exactly, and the
+    Adobe CNA CVE record carries the identical 10.0 metrics. CVE-2026-48448 CWE-89, arbitrary file-system
+    read, 8.6 — matches. Both evidence quotes are contiguous verbatim substrings, including
+    "...for any of the issues addressed in these updates." T1190 active in the pin.
+  ground_truth_url: https://helpx.adobe.com/security/products/campaign/apsb26-114.html
+
+- entry: entries/2026-08-02/phoenix-contact-charx-sec-3xxx-unauth-root-no-firmware-yet.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    VDE-2026-008 (2026-07-30) lists exactly 20 CVEs, of which exactly five score CVSS 3.1 9.8 with
+    AV:N/PR:N/UI:N — CVE-2026-7849 (CWE-77), -44108 (CWE-696), -44104 (CWE-347), -44101 (CWE-306),
+    -44090 (CWE-306) — matching the entry's five cves[] records, their vectors and their weakness ids.
+    Affected-products table confirms model nos. 1139022/1139018/1139012/1138965 for SEC-3000/3050/3100/3150,
+    firmware <FW 1.9.1. Remediation block confirms 1.9.1 unreleased at publication with the 12 August 2026
+    commitment; acknowledgments confirm ZDI reporting and CERT@VDE coordination. All three evidence quotes,
+    plus the body's CRC32, MQTT-firewall and closed-industrial-networks quotes, are verbatim.
+    T1190 and T1542.001 both active in ATT&CK v19.1 and both supported by the advisory text.
+  ground_truth_url: https://certvde.com/en/advisories/VDE-2026-008/
+
+- entry: entries/2026-08-02/gpt56-wp2shell-was-an-original-zero-day-not-a-rediscovery.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    The Searchlight Cyber post (Adam Kues, 2026-07-20) supports the correction end to end. Both evidence
+    quotes are verbatim. The narrative confirms original discovery, not rediscovery: "Before starting, I
+    cloned the latest stable WordPress release into main/ and removed the .git directory", the stated reason
+    ("for novel vulnerability discovery, I personally think this is a waste of tokens") matches the entry's
+    paraphrase, and "When I came back... it had indeed discovered a fully pre-auth SQLi." The entry's own
+    caveat that the model was told a chain existed ("a directed hunt with a known-positive") is accurate to
+    the prompt text. Cross-check of the internal claim: entries/2026-07-18/wordpress-core-wp2shell-preauth-rce-chain-cve-2026-63030.md
+    does name "Discoverer Searchlight Cyber". T1190 active.
+  ground_truth_url: https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/
+
+- entry: entries/2026-08-02/unit42-autonomous-campaign-confirmed-impact-was-understated.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Unit 42's sentence is verbatim as the entry's evidence[] records it, including the second half the
+    original entry dropped. Table 2 confirms the row "CVE-2026-39987 | Marimo Notebook | 9.8 | Manual |
+    Active exploitation, command execution confirmed", and Manual method against CVE-2026-3055,
+    CVE-2026-34486 and CVE-2026-33824 — supporting the entry's "manual work" reading. The Manual Campaigns
+    list confirms nine Tomcat servers and three IKE VPN endpoints. The batch-exploitation quote is verbatim.
+    cves[] CVSS 9.3 is correct against the owning record (GitHub_M CNA, CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/
+    VC:H/VI:H/VA:H, marimo < 0.23.0, CWE-306) and the entry transparently flags the divergence from Unit 42's
+    9.8. KEV listing confirmed in the record's ADP container (dateAdded 2026-04-23). T1190 and T1059 active.
+  ground_truth_url: https://cveawg.mitre.org/api/cve/CVE-2026-39987
+
+- entry: entries/2026-08-02/weekly-w31-exploited-management-planes.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All seven sources live and article-specific. All six evidence quotes verbatim on their own cited pages
+    (the Lava ransom-note quote included — the sweep's initial miss was an HTML bold-tag spacing artifact).
+    Body quotes also verified: Lava's "approximately two-thirds of the exposed BMCs we tested returned at
+    least one password-derived authentication hash before client authentication was complete" and "the main
+    fix is simple: IPMI should not be reachable from the public internet". The sourcing_note's self-imposed
+    restraint holds — no KEV listing is asserted for CVE-2026-20316 or CVE-2026-16232, and the CISA alert is
+    cited only for CVE-2026-16812 and CVE-2025-68686. Dark Reading correctly labelled as the same researcher
+    restating, not independent corroboration. All seven techniques[] ids active in the pin.
+  ground_truth_url: https://lavahq.io/research/bmc-exposure-alert
+
+- entry: entries/2026-08-02/weekly-w31-water-plc-lockouts-european-exposure.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    FBI/EPA joint PSA confirms verbatim "Since 27 July 2026, Water and Wastewater Sector (WWS) utility
+    companies in at least seven states have reported incidents to the FBI, and some of that activity degraded
+    water operations", the MicroLogix 1100/1400 targeting, both evidence quotes (IP/password change; modified
+    PLC project files after ladder-logic discrepancies) and the third-party network-similarity multiplier.
+    CISA's parallel alert confirms "This activity has resulted in boil water notices and sustained manual
+    operations" and the cellular-modem blind spot. The entry's deliberate non-attribution is correct: neither
+    federal source names an actor. CAVEAT (not a defect): censys.com returned HTTP 403 to both the direct
+    bridge and the jina reader this pass, so the 4,117 / 86.0% Censys figures could not be independently
+    re-verified — they remain as cited, unrefuted but unconfirmed by this audit.
+  ground_truth_url: https://www.fbi.gov/investigate/cyber/alerts/2026/malicious-cyber-actors-targeting-water-and-wastewater-sector-internet--facing-programmable-logic-controllers-causing-operational-disruptions
+
+- entry: entries/2026-08-02/weekly-w31-russian-state-nexus-government-mail-and-travel.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    Proofpoint confirms verbatim "The messages exploit CVE-2026-42897, a vulnerability in Outlook Web Access
+    in which the server does not adequately sanitize HTML in the message body" and the server-side persistence
+    quote; the post independently confirms TA488 / Void Blizzard / Laundry Bear naming. Microsoft Threat
+    Intelligence confirms all three MSTIC quotes verbatim, including "Storm-2945 is an operational sub-cluster
+    of Midnight Blizzard" and the ChocoShell M365/Entra token theft. The NCSC-CH Cyber Security Hub post 12577
+    resolves via the ncsc-csh bridge and is indeed the CVE-2026-42897 OWA advisory (actively exploited).
+    All eleven techniques[] ids active in the pin.
+  ground_truth_url: https://www.proofpoint.com/us/blog/threat-insight/cleaning-out-inboxes-ta488-comes-outlook-another-half-click-exploit
+
+- entry: entries/2026-08-02/weekly-w31-identity-input-trusted-as-proof.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All six sources live, specific and vendor/discloser-owned (no NVD, no listing index). Both evidence quotes
+    verbatim — Rapid7's default Trusted Clients precondition and mySites.guru's "the registration handler adds
+    the default group to whatever groups the visitor asks for, instead of replacing them". techniques[]
+    T1190 / T1606 / T1136.001 / T1505.003 all active and each names a behaviour the body describes.
+  ground_truth_url: https://www.rapid7.com/blog/post/ra-check-point-smartconsole-authentication-bypass-technical-analysis-cve-2026-16232
+
+- entry: entries/2026-08-02/weekly-w31-no-kev-no-patch-prioritisation-gap.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All nine sources live and specific. All three evidence quotes verbatim: VulnCheck's LangFlow exploitation
+    statement ending "Neither of these vulnerabilities have been added to CISA KEV.", Imperva's "FastJson 1.x
+    is no longer actively maintained, and no patched 1.x version has been released for this vulnerability."
+    and CERT@VDE's 12 August firmware commitment. techniques[] T1190 / T1068 / T1542.001 all active.
+  ground_truth_url: https://www.vulncheck.com/blog/state-of-exploitation-1h-2026
+
+- entry: entries/2026-08-02/weekly-w31-vuln-status-rollup.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All six sources live and specific. All four evidence quotes verbatim (Arista, Cisco, VulnCheck, and
+    mySites.guru's "92 planted accounts right now" server-log claim). The roll-up's discipline holds: cves[]
+    is deliberately empty with the reason stated, CISA's 2026-07-27 alert is cited only for the two KEV
+    additions it carries, and the Cl0p "has not begun listing victims" line is quoted to Ransom-ISAC.
+    The Adobe, Phoenix Contact and SP Page Builder trajectory lines match the per-CVE authorities re-read in
+    this batch (build 9398; twenty CVEs with 1.9.1 unreleased; the six Joomla ids). All eight techniques[] active.
+  ground_truth_url: https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/
+
+- entry: entries/2026-08-02/weekly-w31-valid-credentials-and-the-platforms-own-tools.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All seven sources live and specific. All four evidence quotes verbatim on their own pages, including the
+    two French-language Cyberattaque.org quotes and Stadler Rail's German statement "Stadler hat durch den
+    Vorfall von Mitte Juli 2026 keine Daten verloren. Der Zugriff auf diese spezifischen, technischen Daten
+    erfolgte über kompromittierte Zugangsdaten einer Datenaustausch-Plattform." (the stadlerrail.com page is a
+    JS SPA and required the jina reader; it resolves and carries the quote). Huntress's "We did not observe any
+    post-compromise hands-on-keyboard activity from these attacks." verbatim. All eight techniques[] active.
+  ground_truth_url: https://www.stadlerrail.com/en/media/media-releases/cybervorfall
+
+- entry: entries/2026-08-02/weekly-w31-criminal-claims-outran-confirmation.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All six sources live and specific. All four evidence quotes verbatim, and each is the hedge the entry's
+    thesis needs: SOCRadar's "the listings may involve reused data or fabricated allegations, with fabrication
+    currently appearing more likely", The Record's "135,000 pieces of data potentially identifying the names,
+    forces and work email addresses of police officers", TechNadu's attribution of the Deutsche Bahn /
+    Merseytravel / Westbahn claim to Everest rather than to itself, and BleepingComputer's explicit
+    "no way to verify the threat actor's claims independently". Criminal claims are consistently attributed to
+    the claimant, never asserted as fact. T1078 / T1199 / T1213 active.
+  ground_truth_url: https://socradar.io/blog/dark-web-profile-exfilsquad/
+
+- entry: entries/2026-08-02/weekly-w31-malware-keyed-to-the-victim-host.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All six sources live and specific. All six evidence quotes verbatim on their own cited pages, including
+    the GenieLocker watchdog/CRC32 anti-debug thread, Securelist GReAT's per-victim loader keying, the Mirage
+    Kitten "3-character control value that must appear as a substring in the lowercased Windows username
+    retrieved via GetUserNameA" (on the mirage-kitten post, correctly attributed to Securelist GReAT),
+    Unit 42's XCSSET Perl exclusive lock on the XProtect YARA database (XPdb), and BlackFog's MedusaHVNC
+    profile-reuse line. All ten techniques[] ids active in ATT&CK v19.1. No IOCs in the entry.
+  ground_truth_url: https://securelist.com/mirage-kitten-new-tools/120811/
+
+- entry: entries/2026-08-02/weekly-w31-ai-measured-and-the-toolchain-as-target.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All seven sources live and specific; all eight evidence quotes verbatim on their own pages. Unit 42's
+    confirmed-impact sentence, the "did not achieve full compromise" hedge and the Manual Campaigns framing are
+    all present and used consistently with the correction entry in the same batch. Anthropic's "the package was
+    downloaded and run on 15 real systems" and the simulation-prompt statement verbatim. Noma's single
+    unauthenticated POST to port 3001, Coinkite's rng_get review finding and Elastic's worker-security-context
+    line all verbatim. All seven techniques[] ids active.
+  ground_truth_url: https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals
+
+- entry: entries/2026-08-02/weekly-w31-joomla-extension-wave-status.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All three evidence quotes verbatim on mySites.guru, including "Both list the affected range as 1.0.0 to
+    2.20.1, which is every Gridbox release there has ever been up to the fix. And both set the exploit maturity
+    to attacked..." — the discloser page confirms CVE-2026-65884 (CVSS 4.0 10.0) and CVE-2026-65885 (9.4) both
+    carry exploit maturity "attacked" with urgency red, range 1.0.0-2.20.1, fixed in 2.20.2, and that
+    CVE-2026-61425 was the earlier bypass fixed in 2.20.1. CAVEAT (not a defect): the corroborating
+    balbooa.com release page returned a bot/CAPTCHA challenge to both transports and could not be read this
+    pass; no evidence[] quote depends on it. T1190 / T1136.001 / T1505.003 active.
+  ground_truth_url: https://mysites.guru/blog/gridbox-23-critical-vulnerabilities/
+
+- entry: entries/2026-08-02/weekly-w31-open-source-supply-chain-status.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    GTIG's post confirms verbatim that it "attributes the activity to North Korean actor MIDNIGHT NEPTUNE
+    (formerly known as UNC1069)" for the March 2026 axios compromise, the three-hour removal window, the
+    100M weekly downloads, the UNC6780/TeamPCP pull_request_target passage and the 1440-minute cooldown
+    guidance — all four GTIG evidence quotes verbatim. AWS confirms the medium-confidence SAPPHIRE SLEET
+    attribution, the alias list (STARDUST CHOLLIMA, BlueNoroff, CageyChameleon, Alluring Pisces), the
+    social-engineering access mechanism, the dependency-graph evasion design and the March 2025 "testing
+    ground" assessment — all three AWS quotes verbatim. Critically, the entry's own caveat is accurate: neither
+    primary states the SAPPHIRE SLEET = UNC1069 equivalence, and the entry cites that bridge to CyberScoop at
+    the clause that makes it. No analytical-link-as-fact defect. All five techniques[] ids active.
+  ground_truth_url: https://cloud.google.com/blog/topics/threat-intelligence/mitigation-guidance-for-supply-chain-compromise/
+
+- entry: entries/2026-08-02/weekly-w31-shinyhunters-sso-as-tier-zero.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All four sources live and article-specific. All four evidence quotes verbatim, including Health-ISAC's
+    "SSO is the control plane, and ShinyHunters' leverage is created through data theft at cloud scale." and
+    BleepingComputer's two explicit non-confirmation hedges (the advisory naming no organisations or counts;
+    "Ernst & Young has not confirmed that ShinyHunters was behind the attack"). Extortion claims are attributed
+    to the claimant throughout. T1598.004 / T1556.006 / T1078.004 / T1213.002 / T1621 all active.
+  ground_truth_url: https://health-isac.org/shiny-hunters-impact-to-health-sector-and-recommended-mitigation-strategies/
+
+- entry: entries/2026-08-02/weekly-w31-commission-cra-application-guidance.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    The European Commission page confirms both quoted clauses verbatim, including the scope clarification for
+    remote data processing solutions and free and open-source software and "Particular attention has been paid
+    to microenterprises and SMEs, with 67 practical examples, a range of use cases, flowcharts and graphs".
+    Hunton confirms verbatim "Although the principal obligations will apply from December 11, 2027, reporting
+    obligations take effect on September 11, 2026." and dates CRA entry into force to December 10, 2024 —
+    both consistent with the CRA's actual application calendar. Empty techniques[] is correct for kind: policy.
+  ground_truth_url: https://www.hunton.com/privacy-and-cybersecurity-law-blog/european-commission-issues-guidance-on-the-cyber-resilience-act
+
+- entry: entries/2026-08-02/weekly-w31-looking-ahead.md
+  verdict: clean
+  defect: null
+  ground_truth: >
+    All nine sources live and specific. All three evidence quotes verbatim — CERT@VDE's "no later than
+    August 12, 2026" firmware commitment, Ransom-ISAC's "As of 22 July, Cl0p ransomware has not begun listing
+    victims of this latest campaign on their dark web data leak site or has publicly claimed credit for this
+    latest campaign", and Hunton's September 11, 2026 CRA reporting deadline. Every forward-looking date in the
+    entry traces to a primary that states it. The two IPv4-looking strings flagged by an IOC regex are IBM
+    WebSphere version numbers (9.0.5.29 / 8.5.5.31), not indicators. Empty techniques[] correct for kind: outlook.
+  ground_truth_url: https://certvde.com/en/advisories/VDE-2026-008/

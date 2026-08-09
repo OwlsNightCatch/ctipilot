@@ -1,0 +1,976 @@
+domain: G3
+run_id: 2026-08-09T1315Z-audit
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: '2026-08-09T13:18:56Z'
+ended_at: '2026-08-09T13:37:32Z'
+duration_seconds: 1116
+self_telemetry:
+  webfetch_calls: 33
+  websearch_calls: 6
+  bridge_fetches: 12
+items:
+- title: GOLD EMBRACE (Interlock) abuses Volatility3 and WinPmem forensic tools for in-memory credential extraction
+  sources:
+  - url: https://www.sophos.com/en-us/blog/2608-volatility-interlock/
+    publisher: Sophos X-Ops
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: sophos-xops RSS listing sweep, URL https://news.sophos.com/en-us/category/threat-research/feed/
+    (post dated 2026-08-04, slug ''2608-volatility-interlock'') -> primary: Sophos X-Ops blog, URL https://www.sophos.com/en-us/blog/2608-volatility-interlock/
+    (no further pivot needed)'
+  summary: Sophos X-Ops documents an Interlock ransomware intrusion (Sophos tracks the operator as GOLD EMBRACE) in which
+    the attacker used two legitimate open-source memory-forensics tools -- Volatility3 and WinPmem -- as offensive credential-access
+    tooling rather than off-the-shelf commodity dumpers. After ClickFix-style initial access (a ChatGPT search result redirected
+    the victim to a compromised legitimate website, voginc[.]com, that served a fake browser-update lure requiring the user
+    to copy-paste a malicious command), the actor staged WinPmem to acquire a full physical-memory image and then ran Volatility3's
+    windows.hashdump.Hashdump and windows.cachedump.Cachedump plugins offline against that image to recover local SAM hashes
+    and cached domain credentials -- without ever touching LSASS or interacting with a live credential-dumping-monitored process
+    on the victim host. Sophos assesses this continues a trend (following prior GOLD EMBRACE/Interlock abuse of Velociraptor)
+    of ransomware affiliates repurposing legitimate DFIR/IR tooling as a detection-evasion layer for credential access. Time
+    from initial access to domain-controller compromise was over 26 hours.
+  region_nexus: global; technique is platform/tooling-based and directly portable to any Windows AD environment, incl. Swiss/EU
+    public-sector and CI networks
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1204.004
+  - T1003.002
+  - T1003.005
+  - T1105
+  affected_products:
+  - Volatility3
+  - WinPmem
+  - Microsoft Windows Active Directory
+  entity_keys: []
+  new_entities:
+  - key: actor:gold-embrace
+    type: actor
+    name: GOLD EMBRACE
+    aliases:
+    - Interlock
+    - Interlock ransomware group
+    summary: Sophos X-Ops (formerly Secureworks CTU) GOLD-series designation for the Interlock ransomware operator; observed
+      abusing legitimate forensic/IR tools (Velociraptor, and now Volatility3/WinPmem) for credential access and evasion (Sophos,
+      2026-08-04).
+  relation_suggestions:
+  - subject: actor:gold-embrace
+    object: tool:volatility3
+    basis: 'Sophos: the actor ran Volatility3''s hashdump/cachedump plugins offline against a WinPmem memory image to extract
+      credentials (Sophos X-Ops, 2026-08-04)'
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: Use of legitimate tools in attacks such as these continues an unfortunate trend
+    attribution: Sophos X-Ops
+    source_url: https://www.sophos.com/en-us/blog/2608-volatility-interlock/
+  - quote: the threat actor use WinPmem, a legitimate physical memory acquisition tool
+    attribution: Sophos X-Ops
+    source_url: https://www.sophos.com/en-us/blog/2608-volatility-interlock/
+  extended_notes: 'Single-source (Sophos own IR case); flagged MEDIUM confidence pending independent corroboration. Detection
+    concept: hunt for WinPmem/Volatility binaries or their process names appearing outside sanctioned IR tooling, for direct-to-disk
+    full physical-memory image creation events, and for offline execution of memory-forensics parsers against locally-created
+    raw memory images -- these are DFIR-tool-abuse telemetry classes distinct from classic LSASS-access-based credential-dumping
+    detections (e.g. Sysmon EID 10 GrantedAccess on lsass.exe), which this technique is specifically designed to evade.'
+- title: CrowdStrike catalogs 21 command-obfuscation techniques usable in VMware ESXi's BusyBox shell
+  sources:
+  - url: https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/
+    publisher: CrowdStrike
+    date: '2026-08-07'
+    role: primary
+  discovery_trace: 'first seen at: crowdstrike-blog RSS listing sweep, URL https://www.crowdstrike.com/en-us/blog/feed (post
+    dated 2026-08-07) -> primary: CrowdStrike blog, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/
+    (no further pivot needed)'
+  summary: 'CrowdStrike systematically tested obfuscation of shell commands run inside VMware ESXi''s minimal BusyBox ash
+    shell -- the hypervisor foothold ransomware operators use once they reach ESXi (per CrowdStrike''s earlier ''Hypervisor
+    Jackpotting'' series on CARBON SPIDER/SPRITE SPIDER and other eCrime ESXi targeting) -- and found the shell supports far
+    more evasion capability than previously documented. The 21 techniques fall into six classes: escape-sequence/printf encoding,
+    runtime character generation (awk/python), invisible Unicode injection (zero-width and Private-Use-Area codepoints interleaved
+    in command text), cryptographic/XOR encoding chains, infrastructure-keyed obfuscation (keys derived from ESXi build number
+    or hostname, plus VMFS steganography that hides payloads inside fake vmkernel storage-check log lines), and alternative
+    encodings (Morse, binary, scientific notation). The key detection-relevant finding: ESXi shell logs capture the command
+    as typed, before shell expansion/decoding happens, so even a fully obfuscated command remains visible verbatim in the
+    log even though it executes cleanly -- meaning regex-based detection against the ESXi shell/syslog datasource is viable
+    if built to recognise the syntactic primitives of each obfuscation class rather than looking for decoded payload content.'
+  region_nexus: global; VMware ESXi is widely deployed across Swiss/EU CI and government virtualization estates and is a standing
+    ransomware target
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1059.004
+  - T1027.010
+  - T1027
+  affected_products:
+  - VMware ESXi
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: ESX shell logs capture commands during the parsing stage, before expansions occur
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/
+  - quote: The most operationally aware technique combines ESX filesystem steganography with log injection
+    attribution: CrowdStrike
+    source_url: https://www.crowdstrike.com/en-us/blog/crowdstrike-hunts-for-shell-command-obfuscation-vmware-esx/
+  extended_notes: 'Detection concept: build CQL/regex correlation rules against the ESXi shell/vmkernel syslog datasource
+    keyed on syntactic primitives of each obfuscation class (long octal/hex escape runs, awk/python subshell character-building,
+    zero-width/PUA Unicode codepoints inside a command line, repeated XOR-decode loops, unusually structured VMFS log-file
+    writes) rather than on decoded payload strings, since decoding happens after the point where ESXi captures the command.
+    Hardening: restrict/monitor ESXi Shell/SSH access (disabled by default; should stay disabled or lockdown-mode-gated in
+    production), and treat any BusyBox shell session on a hypervisor as Tier-0 activity requiring the same scrutiny as domain-controller
+    console access.'
+- title: Three chained pre-auth remote kernel exploits in FreeBSD's CTL HA (iSCSI High-Availability) interconnect -- FreeBSD
+    declines to fix, documents the risk instead
+  sources:
+  - url: https://blog.calif.io/p/the-taking-of-freebsd-one-two-three
+    publisher: Calif / Codex security research
+    date: '2026-08-06'
+    role: primary
+  discovery_trace: 'first seen at: calif-codex RSS listing sweep, URL https://blog.calif.io/feed (post dated 2026-08-06) ->
+    primary: Calif/Codex blog, URL https://blog.calif.io/p/the-taking-of-freebsd-one-two-three (no further pivot needed)'
+  summary: Calif/Codex researchers disclose three separate pre-authentication remote code-execution primitives in FreeBSD's
+    CAM Target Layer (CTL) High-Availability (HA) mode -- the kernel subsystem that lets a FreeBSD host act as an iSCSI SCSI
+    storage target and lets two CTL HA controllers mirror state over a plain TCP interconnect (default port 999) with no authentication
+    mechanism whatsoever. Any network peer able to reach that port can trigger any of the three bugs to gain remote code execution
+    in kernel context -- no credentials, no prior foothold, and no user interaction required. Rather than patching, FreeBSD's
+    response (commit 3c8f8432) was to document the risk in the ctl(4) manpage, stating operators must keep CTL HA restricted
+    to fully trusted networks because 'there is no authentication mechanism.' No CVE has been assigned. The researchers have
+    published working Python exploit scripts and full write-ups for all three bugs in a public GitHub repository (califio/publications).
+  region_nexus: global; FreeBSD-based iSCSI/SAN storage targets (incl. TrueNAS-derived and custom storage-cluster deployments)
+    are used across CI and government storage backends
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1210
+  - T1190
+  affected_products:
+  - FreeBSD (CAM Target Layer / ctl(4) HA mode)
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: anyone able to access a CTL HA port is able to remotely execute code on that host
+    attribution: FreeBSD commit message (quoted by Calif/Codex)
+    source_url: https://blog.calif.io/p/the-taking-of-freebsd-one-two-three
+  - quote: 'HA must be configured only on trusted networks: there is no authentication mechanism'
+    attribution: FreeBSD ctl(4) manpage, commit 3c8f8432 (quoted by Calif/Codex)
+    source_url: https://blog.calif.io/p/the-taking-of-freebsd-one-two-three
+  extended_notes: 'No CVE assigned and vendor has explicitly declined to fix (accepted-risk / won''t-fix), with public working
+    exploit code already released -- this is an immediate hardening item for any FreeBSD-based storage target running CTL
+    with HA enabled (kern.cam.ctl.ha_peer configured). Hunt/hardening: identify hosts with CTL HA enabled and verify TCP/999
+    is reachable only from the paired controller on an isolated, non-routable management network (e.g. dedicated VLAN/point-to-point
+    link); treat any inbound connection to port 999 from outside the expected HA peer address as a critical alert. Single-source
+    (researcher disclosure with public PoC and FreeBSD''s own commit as corroboration); recommend the main agent treat as
+    priority: high given unauthenticated pre-auth kernel RCE + public exploit + no vendor fix combination, despite the narrower
+    FreeBSD-CTL-HA install base.'
+  borderline: true
+  borderline_reason: Niche install base (FreeBSD iSCSI targets with CTL HA specifically enabled) but the combination of pre-auth
+    kernel RCE + public PoC + vendor won't-fix is a severe profile; main agent should weigh install-base narrowness against
+    severity when setting final priority.
+- title: 'wp2root: full pre-auth-to-root exploit chain extends wp2shell with a 21-year-old PHP unserialize UAF and the ''Copy
+    Fail'' Linux kernel bug'
+  sources:
+  - url: https://blog.calif.io/p/the-wordpress-chain-massacre
+    publisher: Calif / Codex security research
+    date: '2026-08-05'
+    role: primary
+  - url: https://slcyber.io/research-center/exploit-brokers-pay-500000-for-a-wordpress-rce-i-found-one-with-gpt5-6/
+    publisher: AssetNote / slcyber.io
+    date: '2026-07-31'
+    role: corroborating (original wp2shell disclosure this chain builds on)
+  discovery_trace: 'first seen at: calif-codex RSS listing sweep, URL https://blog.calif.io/feed (post dated 2026-08-05) ->
+    primary: Calif/Codex blog, URL https://blog.calif.io/p/the-wordpress-chain-massacre (no further pivot needed)'
+  summary: 'Calif/Codex publish ''wp2root,'' a full post-exploitation chain that turns the already-KEV-listed wp2shell WordPress
+    pre-auth RCE (REST batch-request route confusion + SQLi enabling malicious plugin upload, tracked in this pipeline via
+    CVE-2026-63030/60137) into native code execution as root, even on hardened installs where PHP''s disable_functions blocks
+    the attacker''s uploaded PHP from shelling out directly. The chain: (1) use wp2shell to get constrained PHP execution;
+    (2) escape PHP''s execution sandbox via a still-unfixed ~21-year-old use-after-free in PHP''s Serializable deserialization
+    (a recursive unserialize() that frees a shared property-table reference during a table resize), giving arbitrary process-memory
+    read; (3) use that read primitive to leak code pointers, locate the PHP binary in memory, resolve ROP gadgets and pivot
+    the stack via a corrupted array-destruction routine to reach native code execution as the PHP worker user; (4) escalate
+    PHP-worker to root via ''Copy Fail,'' a 2026 Linux kernel vulnerability affecting roughly nine years of kernel releases,
+    triggered fully in-memory via memfd_create + execveat (no file ever touches disk). Given wp2shell''s KEV listing and confirmed
+    exploitation already tracked in this pipeline, wp2root represents a meaningful escalation of the blast radius for any
+    still-unpatched WordPress site: what was previously scoped as web-application compromise now has a public path to full
+    root on the underlying host.'
+  region_nexus: global; wp2shell-vulnerable WordPress installs already confirmed targeted against Swiss sites per NCSC-CH
+    (2026-08-08 ClickFix/wp2shell/EtherHiding entry)
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves:
+  - CVE-2026-63030
+  - CVE-2026-60137
+  techniques:
+  - T1190
+  - T1068
+  - T1055
+  affected_products:
+  - WordPress core
+  - PHP (Serializable/unserialize)
+  - Linux kernel
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: update-of:2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites
+  evidence:
+  - quote: Running PHP is one thing; owning the box is another.
+    attribution: Calif/Codex
+    source_url: https://blog.calif.io/p/the-wordpress-chain-massacre
+  - quote: recursive unserialize → shared reference table → property-table resize → freed buckets
+    attribution: Calif/Codex
+    source_url: https://blog.calif.io/p/the-wordpress-chain-massacre
+  extended_notes: 'Prerequisites: target already vulnerable to wp2shell (unpatched WordPress core per CVE-2026-63030/60137);
+    PHP disable_functions must be active (otherwise a simpler shell-out suffices); underlying Linux kernel vulnerable to the
+    ''Copy Fail'' bug. Hardening: patch wp2shell (already KEV-listed) as the chain-breaking control -- none of steps 2-4 are
+    reachable without step 1; separately, patch/track the ''Copy Fail'' Linux kernel LPE and monitor for memfd_create+execveat
+    fileless-execution patterns (a general in-memory-execution detection class, not specific to this chain) as a compensating
+    control on hosts that cannot immediately patch WordPress. Marked update-of the most recent Swiss-specific wp2shell entry
+    in this pipeline given the shared vulnerability root and Swiss exposure already established there; main agent should judge
+    whether a standalone research entry or a delta better fits editorial policy.'
+- title: Researcher's 22-month vantage inside North Korean hacker C2 infrastructure surfaces 1,640 breached organizations
+    across 57 countries
+  sources:
+  - url: https://www.wired.com/story/a-security-pro-hacked-north-korean-hackers-he-found-theyd-breached-hundreds-of-networks-worldwide/
+    publisher: WIRED (Matt Burgess, Andy Greenberg)
+    date: '2026-08-05'
+    role: primary
+  - url: https://www.heise.de/news/Nordkoreanische-Hacker-Sicherheitsforscher-deckt-weltweite-Angriffe-auf-11400679.html
+    publisher: heise Security
+    date: '2026-08-06'
+    role: corroborating
+  discovery_trace: 'first seen at: heise-sec RSS listing sweep, URL https://www.heise.de/security/feed.xml (post dated 2026-08-06)
+    -> primary: WIRED, URL https://www.wired.com/story/a-security-pro-hacked-north-korean-hackers-he-found-theyd-breached-hundreds-of-networks-worldwide/
+    (published 2026-08-05, disclosed at Black Hat USA 2026)'
+  summary: Greek researcher Vangelis Stykas (CTO, Kumio), speaking at Black Hat USA 2026, disclosed nearly two years of persistent,
+    self-obtained access into command-and-control infrastructure used by North Korean state-linked hacking operations -- gained
+    after the operators' own workstations were infected by their own malware, which handed Stykas a foothold into their C2
+    servers. From that vantage he monitored the operators' internal Slack and Discord channels and pulled roughly 5 TB of
+    the attackers' own data, identifying 1,640 compromised organizations across 57 countries, of which 700-800 suffered severe
+    intrusions including root-level access to servers, cloud accounts (including AWS), developer credentials and, at cryptocurrency
+    firms, wallet/private-key material. Named victims disclosed at Black Hat include Coinbase, Uniswap Labs, Oppo, Boston
+    Children's Hospital and Italy's Supreme Judicial Council. Stykas describes the dominant current initial-access vector
+    as fake developer-recruiter social engineering -- posing as recruiters and delivering malware disguised as take-home coding-skill
+    assessments -- with a deliberate focus on contract/service-provider staff as a pivot into multiple downstream client organizations.
+    Wired reports North Korean actors stole $2.02B in cryptocurrency in 2025 (a 51% YoY increase) and were responsible for
+    76% of global crypto-hack losses in the first four months of 2026; the report names Lazarus and Andariel among the responsible
+    clusters. Stykas declined to disclose exactly how he obtained the initial C2 access.
+  region_nexus: global; the disclosed fake-recruiter/contractor-pivot technique class is directly transferable to any organization
+    using external developer contractors, incl. Swiss/EU public-sector and financial-sector suppliers
+  primary_sector_nexus: indirect
+  sector: finance, cross-sector
+  cves: []
+  techniques:
+  - T1566
+  - T1199
+  affected_products: []
+  entity_keys: []
+  new_entities:
+  - key: report:wired-stykas-dprk-c2-infiltration-2026-08
+    type: report
+    name: WIRED / Vangelis Stykas -- 22-month DPRK C2 infiltration disclosure (Black Hat USA 2026)
+    aliases: []
+    summary: Independent researcher disclosure at Black Hat USA 2026 of ~22 months of access into North Korean state-linked
+      hacking-group C2 infrastructure, identifying 1,640 breached organizations across 57 countries (WIRED, 2026-08-05).
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: For nearly two years, researcher Vangelis Stykas has maintained access to North Korean hackers’ servers.
+    attribution: WIRED
+    source_url: https://www.wired.com/story/a-security-pro-hacked-north-korean-hackers-he-found-theyd-breached-hundreds-of-networks-worldwide/
+  - quote: The state-organized groups partially obtained root access to servers and AWS accounts.
+    attribution: heise Security (paraphrasing Stykas' Black Hat disclosure)
+    source_url: https://www.heise.de/news/Nordkoreanische-Hacker-Sicherheitsforscher-deckt-weltweite-Angriffe-auf-11400679.html
+  extended_notes: 'Confidence held at MEDIUM rather than HIGH because the researcher declined to disclose the exact access
+    method (limiting independent technical verification) and the 1,640/700-800 figures are the researcher''s own count, not
+    yet independently audited by a second telemetry-holding party. Defender takeaway: the disclosed dominant initial-access
+    vector (fake-recruiter social engineering targeting developers and contract/service-provider staff, with take-home coding-test
+    lures) matches the pattern this pipeline already tracks as the Contagious-Interview-class DPRK technique family (see campaign:contagious-interview
+    in the registry) -- organizations onboarding external developer contractors should treat unsolicited recruiter contact
+    bearing a ''coding assessment'' download as a standing phishing vector (T1566) regardless of which specific DPRK cluster
+    is behind a given instance.'
+- title: Rapid7 confirms active exploitation and ships a working Metasploit module for CVE-2026-66066 (Ruby on Rails ActiveStorage/libvips
+    arbitrary file read)
+  sources:
+  - url: https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066
+    publisher: Rapid7
+    date: '2026-08-03'
+    role: primary
+  discovery_trace: 'first seen at: rapid7-blog RSS listing sweep, URL https://blog.rapid7.com/rss.xml (post dated 2026-08-03)
+    -> primary: Rapid7, URL https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066 (no further
+    pivot needed)'
+  summary: 'Rapid7 publishes a deep technical analysis of CVE-2026-66066 (''KindaRails2Shell''), the Ruby on Rails ActiveStorage
+    arbitrary file-read vulnerability already tracked in this pipeline (2026-07-31 disclosure, 2026-08-02 update), adding:
+    a full worked exploitation chain exploiting a format-confusion between libvips (which reads only the first 10 bytes of
+    a MAT/HDF5 header) and libmatio (which reads the MAT version from bytes 124-125) to make Rails'' Vips-based image variant
+    processor treat an attacker-supplied HDF5 file as a trusted image and disclose the contents of an arbitrary server-side
+    file via the rendered output; and a functional Metasploit module (framework PR #21733) demonstrating working exploitation
+    end-to-end. Affected: Active Storage < 7.2.3.2, >= 8.0 < 8.0.5.1, >= 8.1 < 8.1.3.1 (fixed in 7.2.3.2 / 8.0.5.1 / 8.1.3.1)
+    when Vips is configured as the variant processor and the application accepts direct uploads.'
+  region_nexus: global
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves:
+  - CVE-2026-66066
+  techniques:
+  - T1190
+  affected_products:
+  - Ruby on Rails Active Storage
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: HIGH
+  novelty: update-of:2026-08-02/cve-2026-66066-rails-attack-chain-public-forensic-tooling
+  evidence:
+  - quote: A vulnerable application can disclose arbitrary files before the attacker has recovered a Rails secret or forged
+      a token.
+    attribution: Rapid7
+    source_url: https://www.rapid7.com/blog/post/ra-kindarails2shell-technical-analysis-cve-2026-66066
+  extended_notes: 'Delta on already-covered CVE: adds a public, functional Metasploit module (materially raises exploitation
+    ease/likelihood) plus a fully worked exploitation-chain writeup. Main agent should confirm whether the existing 2026-08-02
+    entry already captures the Metasploit-module detail before publishing a delta.'
+- title: 'Unit 42 telemetry: 45% of malware with C2 activity bypasses DNS via direct-to-IP connections'
+  sources:
+  - url: https://unit42.paloaltonetworks.com/malware-bypass-dns-direct-to-ip/
+    publisher: Palo Alto Networks Unit 42
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: unit42 RSS listing sweep, URL https://unit42.paloaltonetworks.com/feed/ (post dated 2026-08-04)
+    -> primary: Unit 42, URL https://unit42.paloaltonetworks.com/malware-bypass-dns-direct-to-ip/ (no further pivot needed)'
+  summary: Unit 42 telemetry across its malware-sample corpus finds 45.32% of samples with any C2 activity made at least one
+    direct-to-IP (hardcoded IP address, no DNS resolution) connection, and that D2IP traffic accounts for 23.17% of all observed
+    C2 connection attempts (41.97% even after excluding bulk port-scanning noise). TCP dominates (94.43% of D2IP samples);
+    observed techniques include IP addresses embedded as Unicode strings in binaries, custom obfuscated request formats, WebSocket
+    connections to hardcoded addresses, and HTTP Range-header/User-Agent spoofing. Because no DNS lookup precedes the connection,
+    this traffic is invisible to DNS-based security controls (protective DNS, DNS sinkholing, DNS anomaly detection).
+  region_nexus: global
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1071.001
+  - T1095
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: MEDIUM
+  novelty: new
+  evidence:
+  - quote: Almost half (45.32%) of malware samples with any command-and-control (C2) activity made at least one direct-to-IP
+      (D2IP) address connection.
+    attribution: Unit 42
+    source_url: https://unit42.paloaltonetworks.com/malware-bypass-dns-direct-to-ip/
+  extended_notes: 'Detection concept (telemetry class first): egress network-flow logs showing outbound connections to an
+    IP with no preceding DNS query from the same host within the flow-correlation window is the portable hunt hook; the article''s
+    own hardening recommendation (Zero Trust IP enforcement) is a Palo Alto product feature name and should not be carried
+    into the entry as a vendor-specific control -- the underlying, vendor-neutral hardening lever is egress filtering / allowlisting
+    outbound destinations to DNS-resolved, sanctioned IP ranges only.'
+  borderline: true
+  borderline_reason: Genuine telemetry-derived detection content, but framing leans toward promoting Unit 42's Zero Trust
+    IP product feature; main agent should judge whether the vendor-neutral technical core clears the bar on its own.
+- title: 'Microsoft Defender case study: automatic attack disruption isolates a ransomware-precursor intrusion at QNET within
+    128 seconds'
+  sources:
+  - url: https://www.microsoft.com/en-us/security/blog/2026/08/04/129-seconds-disruption-microsoft-defender-stops-ransomware-qnet/
+    publisher: Microsoft Security Blog
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: microsoft-security-blog RSS listing sweep, URL https://www.microsoft.com/en-us/security/blog/feed/
+    (post dated 2026-08-04) -> primary: Microsoft, URL https://www.microsoft.com/en-us/security/blog/2026/08/04/129-seconds-disruption-microsoft-defender-stops-ransomware-qnet/
+    (no further pivot needed)'
+  summary: Microsoft describes a case study at QNET in which a malicious file (delivered via email/browser download) executed
+    mshta.exe (System Binary Proxy Execution) leading to web-based C2 and a RunMRU registry-persistence attempt; Defender's
+    behavioral and correlation engines both fired independently on the RunMRU activity, and the Automatic Attack Disruption
+    pipeline isolated the device within 128 seconds of the first high-severity alert, before a named ransomware payload could
+    be staged or lateral movement could occur. No ransomware family is named; the technique chain described (mshta.exe LOLBin
+    execution, RunMRU persistence) is a well-established pattern rather than a novel one.
+  region_nexus: global
+  primary_sector_nexus: indirect
+  sector: cross-sector
+  cves: []
+  techniques:
+  - T1218.005
+  - T1204.002
+  - T1112
+  - T1071.001
+  affected_products:
+  - Microsoft Defender XDR
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: SINGLE-SOURCE-OTHER
+  confidence: LOW
+  novelty: new
+  evidence:
+  - quote: From the first high-severity alert to completed isolation, after only 128 seconds, Defender cut off the attack
+      chain before the second-stage payload could establish persistence or move beyond the host.
+    attribution: Microsoft Security Blog
+    source_url: https://www.microsoft.com/en-us/security/blog/2026/08/04/129-seconds-disruption-microsoft-defender-stops-ransomware-qnet/
+  extended_notes: Heavily product-marketing-framed (promotes Defender XDR's Automatic Attack Disruption feature); the underlying
+    technique (mshta.exe proxy execution + RunMRU persistence) is generic and already well covered by existing LOLBin detection
+    guidance. Recommend main agent weigh whether this clears the actionability bar over simply noting mshta.exe abuse remains
+    a live pattern.
+  borderline: true
+  borderline_reason: Vendor product case study with generic, already-well-known technique detail (mshta.exe LOLBin); limited
+    new technical substance beyond the disruption-speed framing.
+- title: Talos data-driven analysis of adversaries weaponizing cloud AI coding assistants
+  sources:
+  - url: https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/
+    publisher: Cisco Talos
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Cisco Talos, URL https://blog.talosintelligence.com/keep-going-bro-youve-got-this-a-data-driven-look-at-how-adversaries-are-weaponizing-ai/
+    -- confirmed already covered by entries/2026-08-05/talos-adversary-ai-coding-assistant-prompt-log-forensics.md'
+  summary: Talos prompt-log analysis of adversaries abusing Claude Code/Codex/Cursor/Gemini; matches the already-published
+    entry on the same primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-05/talos-adversary-ai-coding-assistant-prompt-log-forensics.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Microsoft: macOS ClickFix campaign adds server-side fingerprinting gate to hide infostealer lures'
+  sources:
+  - url: https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/
+    publisher: Microsoft Security Blog
+    date: '2026-08-05'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Microsoft Security Blog, URL https://www.microsoft.com/en-us/security/blog/2026/08/05/macos-clickfix-campaign-learned-hide/
+    -- confirmed already covered by entries/2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites.md'
+  summary: Same macOS ClickFix fingerprinting-gate story confirmed as Microsoft's primary source; content already reflected
+    in the existing entry.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-08/ncsc-ch-clickfix-wp2shell-etherhiding-vidar-swiss-websites.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Microsoft/Unit42/Elastic: ChainDrop self-propagating npm supply-chain worm (Shai-Hulud follow-on)'
+  sources:
+  - url: https://www.microsoft.com/en-us/security/blog/2026/08/04/chaindrop-supply-chain-compromise-anatomy-self-propagating-worm/
+    publisher: Microsoft Security Blog / Unit 42 / Elastic Security Labs
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Microsoft Security Blog / Unit 42 / Elastic Security
+    Labs, URL https://www.microsoft.com/en-us/security/blog/2026/08/04/chaindrop-supply-chain-compromise-anatomy-self-propagating-worm/
+    -- confirmed already covered by entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md'
+  summary: Three independent vendor write-ups (Microsoft, Unit42, Elastic) on the same ChainDrop worm already tracked via
+    multiple existing entries (2026-08-06, 2026-08-08).
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Unit 42: Token Jacking -- AI API-key theft feeding a gray-market transfer-station economy'
+  sources:
+  - url: https://unit42.paloaltonetworks.com/ai-token-jacking/
+    publisher: Unit 42
+    date: '2026-08-06'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Unit 42, URL https://unit42.paloaltonetworks.com/ai-token-jacking/
+    -- confirmed already covered by entries/2026-08-07/ai-api-token-jacking-transfer-station-resale.md'
+  summary: Same story already published from this Unit 42 primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-07/ai-api-token-jacking-transfer-station-resale.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Unit 42: NOVA frontier-AI system finds 14,000+ open-source vulnerabilities'
+  sources:
+  - url: https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/
+    publisher: Unit 42
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Unit 42, URL https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst/
+    -- confirmed already covered by entries/2026-08-05/unit42-nova-autonomous-oss-vulnerability-discovery.md'
+  summary: Same story already published from this Unit 42 primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-05/unit42-nova-autonomous-oss-vulnerability-discovery.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Unit 42: Pass the Passkey -- passwordless-authentication attack surface (User Verified flag gap)'
+  sources:
+  - url: https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/
+    publisher: Unit 42
+    date: '2026-08-03'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Unit 42, URL https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/
+    -- confirmed already covered by entries/2026-08-04/unit42-pass-ta-key-chrome-synced-passkey-forgery-sds-theft.md'
+  summary: Same story already published from this Unit 42 primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-04/unit42-pass-ta-key-chrome-synced-passkey-forgery-sds-theft.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Check Point Research: workerd memory-corruption bugs break Cloudflare Code Mode and Workers sandbox'
+  sources:
+  - url: https://research.checkpoint.com/2026/when-agentic-glue-melts/
+    publisher: Check Point Research
+    date: '2026-08-06'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Check Point Research, URL https://research.checkpoint.com/2026/when-agentic-glue-melts/
+    -- confirmed already covered by entries/2026-08-08/cloudflare-workerd-glue-memory-corruption-sandbox-escape.md'
+  summary: Same story already published from this Check Point primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-08/cloudflare-workerd-glue-memory-corruption-sandbox-escape.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Kaspersky Securelist: service-worker AitM phishing bypassing MFA via Ultraviolet and cloud hosting platforms'
+  sources:
+  - url: https://securelist.com/cloud-platforms-in-phishing/120832/
+    publisher: Kaspersky Securelist
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Kaspersky Securelist, URL https://securelist.com/cloud-platforms-in-phishing/120832/
+    -- confirmed already covered by entries/2026-08-05/service-worker-aitm-phishing-ultraviolet-cloud-platforms.md'
+  summary: Same story already published from this Securelist primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-05/service-worker-aitm-phishing-ultraviolet-cloud-platforms.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Sophos X-Ops: N-able N-central exploitation (CVE-2026-18577) followed by RMM-tool/tunnel deployment'
+  sources:
+  - url: https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment/
+    publisher: Sophos X-Ops
+    date: '2026-08-04'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Sophos X-Ops, URL https://www.sophos.com/en-us/blog/nable-ncentral-exploitation-results-in-rmm-tool-deployment/
+    -- confirmed already covered by entries/2026-08-05/n-able-n-central-post-exploitation-rmm-tunnel-driver.md'
+  summary: Same story already published (this pipeline's entry also cites Rapid7/Huntress reporting on the same N-central
+    campaign).
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-05/n-able-n-central-post-exploitation-rmm-tunnel-driver.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'CrowdStrike 2026 Threat Hunting Report: exploitation window closes as AI use accelerates'
+  sources:
+  - url: https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/
+    publisher: CrowdStrike
+    date: '2026-08-03'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: CrowdStrike, URL https://www.crowdstrike.com/en-us/blog/crowdstrike-2026-threat-hunting-report/
+    -- confirmed already covered by entries/2026-08-04/crowdstrike-2026-threat-hunting-report-exploitation-window.md'
+  summary: Same report already published as its own entry.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-04/crowdstrike-2026-threat-hunting-report-exploitation-window.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Elastic Security Labs: agent-parented reverse tunnels and LaunchAgents (coding-agent living-off-the-land)'
+  sources:
+  - url: https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection
+    publisher: Elastic Security Labs
+    date: '2026-08-07'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/coding-agent-launchagent-tunnel-detection
+    -- confirmed already covered by entries/2026-08-08/coding-agent-reverse-tunnel-launchagent-persistence.md'
+  summary: Same story already published from this Elastic primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-08/coding-agent-reverse-tunnel-launchagent-persistence.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Elastic Security Labs: Shai-Hulud/CHAINDROP worm hits 400+ npm packages via the keyv maintainer compromise'
+  sources:
+  - url: https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain
+    publisher: Elastic Security Labs
+    date: '2026-08-06'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Elastic Security Labs, URL https://www.elastic.co/security-labs/shai-hulud-chaindrop-npm-supply-chain
+    -- confirmed already covered by entries/2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.md'
+  summary: Same story already published from this Elastic primary (one of the three independent vendor write-ups on ChainDrop).
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-06/chaindrop-shai-hulud-npm-worm-onchain-c2-resolver.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+- title: 'Google Threat Intelligence Group: UNC6671 rebrands multi-brand vishing extortion against financial services'
+  sources:
+  - url: https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments
+    publisher: Google Threat Intelligence Group
+    date: '2026-08-07'
+    role: primary
+  discovery_trace: 'first seen at: publisher listing sweep -> primary: Google Threat Intelligence Group, URL https://cloud.google.com/blog/topics/threat-intelligence/unc6671-targets-financial-services-and-enterprise-cloud-environments
+    -- confirmed already covered by entries/2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm.md'
+  summary: Same story already published from this GTIG primary.
+  region_nexus: n/a (duplicate confirmation)
+  primary_sector_nexus: n/a
+  sector: n/a
+  cves: []
+  techniques: []
+  affected_products: []
+  entity_keys: []
+  new_entities: []
+  relation_suggestions: []
+  verification: MULTI-SOURCE
+  confidence: HIGH
+  novelty: duplicate
+  evidence: []
+  extended_notes: Confirmed via listing sweep as the same primary source already used for entry 2026-08-07/unc6671-blackfile-multi-brand-passkey-vishing-aitm.
+    No new information; included per audit instruction not to self-censor on dedup grounds.
+listing_sweep:
+- publisher: Microsoft Threat Intelligence
+  listing_url: https://www.microsoft.com/en-us/security/blog/feed/
+  reachable: true
+  in_window_posts: 5
+- publisher: Google Threat Intelligence Group / Mandiant
+  listing_url: https://cloud.google.com/blog/topics/threat-intelligence
+  reachable: true
+  in_window_posts: 1
+  note: listing not reliably date-sorted; RSS transport failed (jina 0 items), recovered via WebFetch on the HTML listing
+    page; only UNC6671 (2026-08-07) confirmed in-window after spot-checking several listed items' actual dates.
+- publisher: Cisco Talos
+  listing_url: https://feeds.feedburner.com/feedburner/Talos
+  reachable: true
+  in_window_posts: 3
+- publisher: Palo Alto Networks Unit 42
+  listing_url: https://unit42.paloaltonetworks.com/feed/
+  reachable: true
+  in_window_posts: 6
+- publisher: Check Point Research
+  listing_url: https://research.checkpoint.com/feed/
+  reachable: true
+  in_window_posts: 2
+- publisher: ESET Research (WeLiveSecurity)
+  listing_url: https://www.welivesecurity.com/en/rss/feed/
+  reachable: true
+  in_window_posts: 0
+- publisher: Kaspersky Securelist
+  listing_url: https://securelist.com/feed/
+  reachable: true
+  in_window_posts: 2
+- publisher: SentinelOne SentinelLabs
+  listing_url: https://www.sentinelone.com/labs/feed/
+  reachable: true
+  in_window_posts: 0
+- publisher: Proofpoint
+  listing_url: https://www.proofpoint.com/us/rss.xml
+  reachable: true
+  in_window_posts: 2
+  note: both press releases, not technical research
+- publisher: Trend Micro Research
+  listing_url: https://feeds.trendmicro.com/TrendMicroResearch
+  reachable: false
+  in_window_posts: 0
+  note: feed SSL error + jina 422; recovered via WebFetch on https://www.trendmicro.com/en_us/research.html; newest listed
+    post was 2026-07-30, out of window.
+- publisher: Recorded Future Insikt Group
+  listing_url: https://www.recordedfuture.com/feed
+  reachable: true
+  in_window_posts: 4
+  note: monthly CVE-landscape roundup + generic AI-strategy content; none cleared the technical-depth bar for a standalone
+    item.
+- publisher: Sekoia
+  listing_url: https://blog.sekoia.io/feed/
+  reachable: false
+  in_window_posts: 0
+  note: feed 301-redirects to www.sekoia.com and both direct+jina returned 0 items; recovered via WebFetch on https://www.sekoia.com/blog;
+    newest listed post 2026-07-23, out of window.
+- publisher: Volexity
+  listing_url: https://www.volexity.com/blog/feed/
+  reachable: false
+  in_window_posts: 0
+  note: RSS/jina failed; recovered via WebFetch on https://www.volexity.com/blog/; newest listed post 2026-07-17, out of window.
+- publisher: Huntress
+  listing_url: https://www.huntress.com/blog/rss.xml
+  reachable: true
+  in_window_posts: 0
+  note: feed's newest item was dated 2026-07-13 -- possible feed-staleness issue worth a recipe check in a future run.
+- publisher: Rapid7
+  listing_url: https://blog.rapid7.com/rss.xml
+  reachable: true
+  in_window_posts: 6
+- publisher: WithSecure Labs
+  listing_url: https://labs.withsecure.com/rss/all.rss
+  reachable: false
+  in_window_posts: null
+  note: RSS/jina failed; WebFetch on redirect target https://www.withsecure.com/en/resources-hub/w-labs/ did not return a
+    dated post list -- coverage gap, recipe needs a working listing/feed path.
+- publisher: Group-IB
+  listing_url: https://www.group-ib.com/blog/
+  reachable: true
+  in_window_posts: 2
+  note: neither in-window post (product-library announcement; fraud-narrative piece) cleared the technical-depth bar.
+- publisher: Zscaler ThreatLabz
+  listing_url: https://www.zscaler.com/blogs/security-research
+  reachable: false
+  in_window_posts: 0
+  note: RSS/jina failed; WebFetch on the listing page showed only a marketing/award post in-window (2026-08-04); no ThreatLabz
+    research post in window.
+- publisher: Sophos X-Ops
+  listing_url: https://news.sophos.com/en-us/category/threat-research/feed/
+  reachable: true
+  in_window_posts: 2
+- publisher: CrowdStrike
+  listing_url: https://www.crowdstrike.com/en-us/blog/feed
+  reachable: true
+  in_window_posts: 4
+- publisher: Elastic Security Labs
+  listing_url: https://www.elastic.co/security-labs/rss/feed.xml
+  reachable: true
+  in_window_posts: 6
+- publisher: Red Canary
+  listing_url: https://redcanary.com/feed/
+  reachable: true
+  in_window_posts: 0
+- publisher: Symantec/Broadcom Threat Hunter
+  listing_url: https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/rss.xml
+  reachable: false
+  in_window_posts: null
+  note: RSS/jina failed; no WebFetch recovery attempted this run due to time budget -- coverage gap.
+- publisher: Cybereason
+  listing_url: https://www.cybereason.com/blog
+  reachable: true
+  in_window_posts: 0
+  note: WebFetch listing returned stale content (newest post Feb 2026) -- likely a caching/recipe issue worth flagging, not
+    confirmed empty.
+- publisher: Qualys
+  listing_url: https://blog.qualys.com/feed
+  reachable: true
+  in_window_posts: 3
+  note: all three in-window posts are product-feature marketing (TruRisk/Agent Val/Agent Insta), no technical vuln research
+    in window.
+- publisher: JPCERT/CC
+  listing_url: https://blogs.jpcert.or.jp/en/atom.xml
+  reachable: true
+  in_window_posts: 0
+- publisher: Dragos
+  listing_url: https://www.dragos.com/blog/
+  reachable: true
+  in_window_posts: 2
+  note: RSS failed both transports, recovered via WebFetch; both in-window posts (partnership announcement, MTSA compliance)
+    are non-technical.
+- publisher: Claroty Team82
+  listing_url: https://claroty.com/team82/research
+  reachable: true
+  in_window_posts: null
+  note: RSS/jina failed; WebFetch listing returned titles with no publication dates -- coverage gap, could not confirm in-window
+    status of any item.
+- publisher: Nozomi Networks
+  listing_url: https://www.nozominetworks.com/blog
+  reachable: true
+  in_window_posts: 1
+  note: RSS/jina failed, recovered via WebFetch; the one confirmed in-window post (2026-08-06, 'Zero-Days at AI Speed') is
+    a generic opinion piece, no new technical substance beyond what CrowdStrike's/Talos' in-window exploitation-window pieces
+    already cover.
+- publisher: Forescout Vedere Labs
+  listing_url: https://www.forescout.com/blog/
+  reachable: true
+  in_window_posts: null
+  note: WebFetch returned only a single featured post (dated April 2026, out of window) with no enumerable listing -- coverage
+    gap, recipe needs a working listing/feed path.
+- publisher: IBM X-Force (source-slice)
+  listing_url: https://www.ibm.com/think/x-force
+  reachable: true
+  in_window_posts: 0
+  note: listing shows no dates; spot-checked the top item (Bloodhound-Kube) at 2026-07-29, out of window; unable to confirm
+    dates for the remaining listed items within time budget.
+- publisher: Intel 471 (source-slice)
+  listing_url: https://www.intel471.com/blog/feed
+  reachable: true
+  in_window_posts: 1
+  note: in-window post is a product-feature announcement (MCP471/Agent471), not threat research.
+- publisher: Qianxin X-Lab (source-slice)
+  listing_url: https://blog.xlab.qianxin.com/feed
+  reachable: true
+  in_window_posts: 0
+  note: newest post (Dysphoria botnet) dated 2026-07-29, out of window and already covered by an existing 2026-07-28 entry.
+- publisher: Calif/Codex (source-slice)
+  listing_url: https://blog.calif.io/feed
+  reachable: true
+  in_window_posts: 2
+  note: both in-window posts (FreeBSD CTL HA, WordPress wp2root) returned as new items above.
+- publisher: 0patch (source-slice)
+  listing_url: https://blog.0patch.com/feeds/posts/default
+  reachable: true
+  in_window_posts: null
+  note: jina-fetched feed returned titles but no publication dates; unable to confirm in-window status within time budget
+    -- coverage gap.
+- publisher: heise Security (source-slice)
+  listing_url: https://www.heise.de/security/feed.xml
+  reachable: true
+  in_window_posts: 9
+  note: most in-window items are German-language summaries of stories already covered from their primary source; one genuinely
+    new lead (DPRK researcher infiltration) followed to the WIRED primary above.
+- publisher: Seqrite Labs (source-slice)
+  listing_url: https://www.seqrite.com/blog/feed
+  reachable: true
+  in_window_posts: 1
+  note: in-window post is compliance content (India DPDP Act), not threat research.
+- publisher: scip AG (source-slice)
+  listing_url: https://www.scip.ch/?labs
+  reachable: true
+  in_window_posts: 0
+- publisher: Kudelski Security (source-slice)
+  listing_url: https://kudelskisecurity.com/research-blog
+  reachable: true
+  in_window_posts: 0
+coverage_gaps:
+- source_id: withsecure-labs
+  reason: RSS (labs.withsecure.com/rss/all.rss) and jina both returned 0 items; the redirect target www.withsecure.com/en/resources-hub/w-labs/
+    did not expose a dated post list via WebFetch. Recipe needs a working feed/listing path.
+- source_id: symantec-broadcom-threat-hunter
+  reason: RSS (symantec-enterprise-blogs.security.com/.../rss.xml) and jina both returned 0 items; no WebFetch fallback attempted
+    this run due to time budget.
+- source_id: cybereason-blog
+  reason: WebFetch listing at www.cybereason.com/blog returned content that appears stale (newest post dated Feb 2026, ~6
+    months old) -- likely a caching or recipe issue rather than a genuinely quiet blog; needs re-verification.
+- source_id: claroty-team82
+  reason: RSS (claroty.com/team82/rss.xml and /team82/blog/rss.xml) and jina both returned 0 items; WebFetch on claroty.com/team82/research
+    listed post titles with no publication dates, so in-window status could not be confirmed for any item.
+- source_id: forescout-vedere-labs
+  reason: WebFetch on www.forescout.com/blog/ surfaced only a single featured post (dated April 2026) with no enumerable listing
+    of recent posts; recipe needs a working listing/feed path (e.g. Vedere Labs research index).
+- source_id: 0patch-blog
+  reason: jina-fetched Blogger feed (blog.0patch.com/feeds/posts/default) returned post titles but empty publication-date
+    fields; could not confirm in-window status within time budget.
+- source_id: dragos-blog
+  reason: RSS failed both direct and jina transports (blog.rss returned no element found / 422); recovered via WebFetch on
+    the HTML listing, which did carry dates.
+candidate_sources:
+- id: calif-codex-note
+  publisher: Calif / Codex security research (blog.calif.io) -- already tracked, elevating visibility
+  url: https://blog.calif.io/
+  category: research
+  why: This run's sweep of the existing calif-codex source-slice entry surfaced two genuinely new, highly technical, unpatched/PoC-carrying
+    vulnerability disclosures (FreeBSD CTL HA pre-auth kernel RCE; WordPress wp2root chain) in a single window -- confirms
+    this source is a high-value, high-cadence original-research primary worth treating as a priority pull on every run rather
+    than rotation-only.
