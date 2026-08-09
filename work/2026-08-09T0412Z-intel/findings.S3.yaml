@@ -1,0 +1,85 @@
+domain: S3
+run_id: 2026-08-09T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-09T04:15:26Z
+ended_at: 2026-08-09T04:28:17Z
+duration_seconds: 771
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 25
+  bridge_fetches: 14
+items: []
+# No items cleared the 26h recency gate this fire. Every candidate found in
+# this run's sweep either (a) duplicates the heavy prior-coverage list named
+# in the spawn message, or (b) has a freshest-available publication date
+# outside the [2026-08-08T02:12Z, 2026-08-09T04:12Z] window. Full sweep
+# detail below in coverage_gaps / extended notes.
+candidate_sources: []
+coverage_gaps:
+  - source_id: prodaft
+    reason: "jina fetch succeeded (200) but the listing is the SAME frozen snapshot documented on 2026-08-07/08-08 (top item still 'Smoke and Mirrors: Understanding The Workings of Wazawaka', no publication dates on any listed report, page's own Published Time meta reads 2026-07-08). Fifth consecutive run with no new content. Rotation-priority source but genuinely stale — recommend flagging for a longer staleness interval or a direct feed/API check next audit."
+  - source_id: ssd-disclosure
+    reason: "jina fetch of the landing page itself now returns a 'Robot Challenge Screen' (Cloudflare-style bot check), a regression from 2026-08-08 when the landing page enumerated dated advisories successfully. No working alternate transport found this run (single jina attempt per per-source-timeout discipline). Logged as a fetch_failures[] entry below."
+  - source_id: infoguard-labs
+    reason: "RECIPE FIX: found a working dated RSS feed at https://labs.infoguard.ch/rss.xml (confirmed live, returns full dated items with links) — resolves the prior 'RECIPE GAP: JS-rendered listing, no dates extractable' note from 2026-08-05. Newest item is 'InfoGuard Labs: 22 CVEs in TeamDavid (R) a secure M365 alternative' (unauthenticated DoS through full unauthenticated account takeover in a self-hosted M365 alternative), datePublished 2026-08-07 (date-only, no time in either the RSS feed or the page's JSON-LD — treated as 2026-08-07T00:00:00Z worst case, 2026-08-07T23:59:59Z best case). Both bounds fall outside this run's 26h window (2026-08-08T02:12Z cutoff) by a comfortable margin, so it is NOT reported as an item this fire — but it was never reported by any prior run either (the recipe gap blocked it since first publication), so this Swiss-original vulnerability-research finding has fallen entirely outside the pipeline's coverage to date. Flagging explicitly so the operator can judge whether a one-time backfill exception applies; I have treated the recency gate as a hard rule per policy and left it out of items[]. Sources/sources.json fetch_method for infoguard-labs should be updated from webfetch to rss with rss_url https://labs.infoguard.ch/rss.xml."
+  - source_id: claroty-team82
+    reason: "WebFetch of the listing (200) still returns titles/thumbnails with no publication dates in the rendered body (same gap noted 2026-08-04). Drilled the two most plausibly-recent-sounding titles by fetching their JSON-LD directly via the bridge: 'A Cyber-Psychological Operation: Iran-Linked Attackers Target Warning Systems' = 2026-06-25; 'Hands Free: What LLM Driven Vulnerability Research Looks Like' = 2026-06-02. Both stale; the site's own dateModified on the listing page is 2026-08-03, meaning nothing has been added since. No new content this run."
+  - source_id: trellix
+    reason: "Bridge fetch returns a listing whose newest items are dated April-May 2026 (confirmed again this run) — same stale/cached-index behavior documented 2026-07-27. Recipe still needs a real RSS/sitemap discovery pass; not attempted this run beyond the existing bridge recipe (time-boxed)."
+  - source_id: flatt-security
+    reason: "WebFetch listing reachable; newest item 'Poisoning Claude Code: One GitHub Issue to Break the Supply Chain' dated 2026-06-01. Cadence is genuinely ~monthly per the source note; no in-window item, not a fetch problem."
+  - source_id: paradigm-shift-research
+    reason: "Bridge url fetch (200) returns only the SPA index.html shell (meta-refresh to pages/home.html, no server-rendered post grid) — same documented gap from 2026-07-27. Needs a discovered listing/API path; not resolved this run."
+  - source_id: siemens-productcert-csaf
+    reason: "The CSAF directory index still 403s (documented, expected — matches the 2026-08-02 note). No specific Siemens advisory ID was available to drill via the per-advisory recipe this run (no candidate Siemens CVE surfaced elsewhere in the sweep), so the working per-advisory path could not be exercised. Not logged as a fetch failure since this matches the already-documented, expected 403-on-directory / working-per-advisory-recipe pattern."
+  - source_id: ahnlab-asec
+    reason: "Direct bridge GET returned partial/slow content; retried and the jina-fallback rung returned the listing cleanly. Newest items: 'Analysis of the Connection Between Xctdoor and Past CRAT Attack Cases (Larva-26005)' 2026-08-04, and a Larva-24009 phishing writeup 2026-08-03. Both outside the 26h window (cutoff 2026-08-08T02:12Z)."
+  - source_id: darkreading
+    reason: "RSS feed live, 25 items enumerated; newest item 'AI-Generated Patches Fail Half the Time' published 2026-08-07T16:47:43Z — outside the 26h window by roughly 9-11 hours depending on run-start precision. Everything else in the feed is older. No in-window item."
+  - source_id: socradar
+    reason: "Listing reachable (bridge, after a direct-WebFetch 403); newest item 'XSS2Shell (CVE-2026-64638): Patch WordPress Now', confirmed article:published_time 2026-08-07T17:03:27+03:00 (=14:03:27Z) via direct page fetch — outside the 26h window. No in-window item."
+  - source_id: citizen-lab
+    reason: "RSS feed live; newest item 'Inside the Fake Copyright Racket Silencing News Outlets' 2026-08-07T15:22:13Z — outside window, and substantively outside this domain's technical-research remit (transnational-repression/policy piece, not TTP/malware/vuln research) even where dated closer to window."
+  - source_id: cloudflare-cf1
+    reason: "Listing reachable; newest Cloudforce One post is 'Defend against frontier cyber models' dated 2026-06-09. No new tag:cloudforce-one posts since then."
+  - source_id: "broad WebSearch sweep (Unit 42, Talos, Check Point Research, ESET/WeLiveSecurity, SentinelOne/SentinelLabs, GTIG/Mandiant, JFrog, Sonatype, VulnCheck, Rapid7, Proofpoint, Microsoft Security/MSTIC, Huntress, Sophos X-Ops, Kaspersky Securelist, Trend Micro/TrendAI, Zscaler ThreatLabz, Dragos, Volexity, Nozomi Networks)"
+    reason: "Systematically checked each lab's listing/latest-posts for anything published on or after 2026-08-08T02:12Z. Newest genuinely fresh items found (Unit 42 'Inside the Modern SOC: The Identity Front Door' 2026-08-07; Check Point 'When Agentic Glue Melts' 2026-08-07, already covered as cloudflare-workerd-glue-memory-corruption-sandbox-escape) sit at or before 2026-08-07 and are either non-technical or already in the heavy-prior-coverage list named in the spawn message. Black Hat USA 2026 talk-derived write-ups checked (Unit 42/Kosman ChatGPT sandbox 'Billion-User Blast Radius' — DarkReading 2026-08-06T20:38Z, no fresher Unit 42 primary found; Zenity Labs PleaseFix — originally disclosed 2026-03-03, DarkReading's 2026-08-05 piece is a Black Hat recap of March research, not new; Pillar Security Google ADK agent-to-agent privilege escalation — vulnerabilities found June, patched July 9/21, DarkReading covered 2026-08-03/05 as a recap) are all recap coverage of pre-existing research, not new disclosures, and all fall outside the 26h window regardless. JADEPUFFER autonomous-AI-ransomware research (Sysdig primary, Trend Micro follow-up analysis 2026-07-24) is a highly significant finding but is 16 days stale relative to this run and outside even the 72h developing-window allowance — not reported."
+fetch_failures:
+  - id: ssd-disclosure
+    url_tried: "https://ssd-disclosure.com/"
+    fetch_method: "bridge:jina"
+    status_code: 200
+    error_class: "other"
+    error_message: "Response body was a 'Robot Challenge Screen' / Cloudflare-style bot-check interstitial ('Checking the site connection security'), not the advisory listing. HTTP-level 200 from the reader, but no usable content returned."
+    attempted_methods: ["bridge:jina"]
+    mitigation_applied: "none — coverage gap. This is a regression from 2026-08-08, when the same jina-reader recipe successfully enumerated the dated advisory listing on this exact URL. No alternate transport attempted this run per the one-retry-per-source discipline."
+    covered_anyway: false
+extended_notes: |
+  This run's 26-hour window (approx. 2026-08-08T02:12Z to 2026-08-09T04:12Z)
+  was genuinely quiet for the S3 domain. The spawn message's heavy
+  prior-coverage list already absorbed essentially every substantive
+  vendor-research item published 2026-08-06 through 2026-08-08 (ChainDrop/
+  Shai-Hulud and its OIDC follow-up, Flooding Dropper, Pass-ta-key, NOVA,
+  AI token jacking, Talos AI prompt-log research, Elastic Claude Code
+  reverse-tunnel telemetry, Check Point workerd sandbox escape, Wiz Cloud
+  Threat Highlights, CrowdStrike Threat Hunting Report, Jamf Overlord RAT,
+  LevelBlue ScreenConnect campaign, Microsoft macOS ClickFix gating, GTIG
+  UNC6671/BlackFile, LiteLLM callback-hook research, JFrog LLM-fabricated
+  CVEs, Kaspersky service-worker AitM, and the AI-eval-containment cluster).
+  A methodical sweep of this run's assigned 13-source slice plus a broad
+  WebSearch pass across every vendor/independent lab named in the spawn
+  scope (Microsoft TI, GTIG/Mandiant, Talos, Unit 42, Check Point, ESET,
+  Kaspersky, SentinelOne, Proofpoint, Trend Micro, Elastic [not directly
+  re-checked — already the source of the heaviest prior-coverage items],
+  Sophos, Huntress, Rapid7, Zscaler, Volexity, JFrog, Sonatype, VulnCheck,
+  Dragos, Nozomi Networks) found nothing published inside the window that
+  both (a) is not already in the heavy prior-coverage list and (b) carries
+  a fresh, on-point primary source. The single most notable near-miss is
+  InfoGuard Labs' TeamDavid research (22 CVEs, unauthenticated
+  account-takeover chain in a self-hosted Microsoft 365 alternative,
+  original Swiss vulnerability research) — genuinely new to this pipeline
+  (its source had a standing recipe gap that just got fixed this run) but
+  dated 2026-08-07, outside the 26h cutoff. See coverage_gaps for the fix
+  and the full citation chain if the operator wants to consider a
+  backfill exception.

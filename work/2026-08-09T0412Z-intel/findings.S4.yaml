@@ -1,0 +1,65 @@
+domain: S4
+run_id: 2026-08-09T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-09T04:15:37Z
+ended_at: 2026-08-09T04:27:44Z
+duration_seconds: 727
+self_telemetry:
+  webfetch_calls: 16
+  websearch_calls: 14
+  bridge_fetches: 10
+items:
+  - title: "Metabase zero-day (no CVE, CVSS 10.0) confirmed exploited pre-patch — Framework and Tally disclose customer data theft via the unauthenticated /api/session/reset_password endpoint"
+    sources:
+      - { url: "https://securityaffairs.com/196874/hacking/metabase-zero-day-exploited-in-the-wild-exposing-admin-access-and-sensitive-data.html", publisher: "Security Affairs", date: "2026-08-08", role: "primary" }
+      - { url: "https://www.metabase.com/blog/security-update", publisher: "Metabase, Inc. (vendor)", date: "2026-08-06", role: "primary" }
+      - { url: "https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks/", publisher: "BleepingComputer", date: "2026-08-07", role: "primary" }
+      - { url: "https://techcrunch.com/2026/08/07/computer-maker-framework-notifies-all-customers-of-a-data-breach/", publisher: "TechCrunch", date: "2026-08-07", role: "corroborating" }
+      - { url: "https://www.heise.de/en/news/Metabase-zero-day-Data-leak-at-laptop-manufacturer-Framework-11403251.html", publisher: "heise online", date: "2026-08-07", role: "corroborating" }
+      - { url: "https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf", publisher: "Metabase / GitHub Security Advisory GHSA-vwf4-m7j8-wcjf", date: "2026-08-06", role: "corroborating" }
+    discovery_trace: "first seen at: securityaffairs, URL https://securityaffairs.com/ (listing fetch surfaced 2026-08-08T11:50:21Z item) → primary: Metabase's own vendor advisory, URL https://www.metabase.com/blog/security-update → cross-checked against BleepingComputer (named both victims), TechCrunch and heise.de (Framework's own statement), and the Metabase/GitHub security advisory GHSA-vwf4-m7j8-wcjf (technical detail, login-walled — confirmed via corroborating secondary summaries only, flagged below)"
+    summary: |
+      Metabase, the widely deployed open-source business-intelligence and embedded-analytics platform (self-hosted and Cloud), disclosed on 2026-08-06 that its own Metabase Cloud infrastructure was compromised on 2026-08-03 by an unauthenticated attacker exploiting a maximum-severity zero-day (CVSS 10.0, no CVE identifier assigned as of publication). The vulnerable component is the unauthenticated password-reset API endpoint, POST /api/session/reset_password: an attacker can inject arbitrary SQL through this pre-auth endpoint and forge a valid session, then call GET /api/user/current to obtain full administrator access to a Metabase instance without any credentials. From admin access the attacker can rewrite application configuration, read the stored credentials Metabase uses to connect to downstream data warehouses, query and export any data those connections expose, and pull data directly from the Metabase application database itself. Affected versions span every currently supported release line: x.58.0–x.58.22, x.59.0–x.59.19, x.60.0–x.60.15, x.61.0–x.61.9, x.62.0–x.62.7 and x.63.0–x.63.2; fixed releases are x.58.24, x.59.21, x.60.17, x.61.11, x.62.9 and x.63.5. Two named victims have confirmed customer-data theft as a direct result: laptop maker Framework, which notified "all customers" that names, login IP addresses, billing/shipping addresses, phone numbers and e-mail addresses were exfiltrated (Framework states payment data was not exposed); and online form-builder Tally, whose co-founder confirmed the attacker accessed customer e-mail addresses and password hashes on 2026-08-03 (Tally states form content and submitted responses were not affected, as they sit in a separate database). Metabase told affected customers of the exposure on 2026-08-06. Given the platform's ubiquity as an embedded/self-hosted BI layer sitting in front of production data warehouses — including within organisations far beyond these two named victims — any self-hosted Metabase instance that was internet-reachable and unpatched between disclosure of the affected version ranges and the 2026-08-06 fix should be treated as a compromise-assessment target, not merely a patch target.
+    region_nexus: "global — named victims (Framework, Tally) are US-based; Metabase Cloud and self-hosted deployments are used worldwide, including by European/Swiss organisations for internal and embedded BI"
+    primary_sector_nexus: "indirect — no confirmed public-sector or Swiss/EU critical-infrastructure victim named to date, but Metabase is a common self-hosted embedded-analytics component that could sit inside any sector's data-warehouse stack, including public-sector and CI operators"
+    sector: "technology, cross-sector (BI/analytics infrastructure)"
+    cves: []
+    techniques: [T1190]
+    affected_products: ["Metabase (self-hosted, all supported release lines x.58–x.63)", "Metabase Cloud"]
+    entity_keys: []
+    new_entities:
+      - { key: "incident:metabase-sqli-zeroday-framework-tally-2026-08", type: incident, name: "Metabase unauthenticated SQLi zero-day — Framework/Tally data theft",
+          aliases: [], summary: "Unauthenticated pre-auth SQL-injection zero-day (CVSS 10.0, no CVE) in Metabase's password-reset endpoint, exploited from 2026-08-03 to compromise Metabase Cloud and steal customer data from named victims Framework and Tally (Metabase advisory / BleepingComputer / TechCrunch, 2026-08-06/07)." }
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "This is a CRITICAL vulnerability that allows an unauthenticated remote attacker to inject arbitrary SQL...Metabase has confirmed active exploitation of this vulnerability."
+        attribution: "Metabase / GitHub Security Advisory GHSA-vwf4-m7j8-wcjf (via BleepingComputer)"
+        source_url: "https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks/"
+      - quote: "anyone who finds a POST request to `/api/session/reset_password` followed by a call to the endpoint `/api/user/current` in their access logs should consider their database system compromised"
+        attribution: "heise online"
+        source_url: "https://www.heise.de/en/news/Metabase-zero-day-Data-leak-at-laptop-manufacturer-Framework-11403251.html"
+      - quote: "hackers had stolen its customers' personal data, but did not include their payment information"
+        attribution: "Framework (via TechCrunch)"
+        source_url: "https://techcrunch.com/2026/08/07/computer-maker-framework-notifies-all-customers-of-a-data-breach/"
+    extended_notes: |
+      Detection/hunt concept (behavioral, no IOCs): the vendor-confirmed compromise signature is a POST to /api/session/reset_password that returns HTTP 400, immediately followed by a successful GET to /api/user/current (HTTP 200) from the same source — the 400 on the reset call is expected (the SQLi rides inside a request the application still rejects at the surface level) while the follow-on authenticated call is the tell that a session was forged. Any org running self-hosted Metabase should hunt this sequence in web-server/reverse-proxy access logs across the full exposure window (all versions prior to the 2026-08-06 patch line), not just from the fix date forward. Hardening: patch to x.58.24/x.59.21/x.60.17/x.61.11/x.62.9/x.63.5 immediately; until patched, block or rate-limit external access to /api/session/reset_password at the WAF/reverse-proxy layer (the mitigation heise.de reports Metabase itself recommended); rotate all database credentials stored in Metabase's connection configuration regardless of confirmed compromise, since admin access exposes them in plaintext to the attacker. A third company, LexisNexis, surfaced in some secondary aggregator summaries as a possible Metabase victim; on tracing to primary reporting this could not be corroborated — the LexisNexis "Metabase API" service-disruption reporting found on inspection traces to an unrelated, earlier (2026-02/03) React2Shell/AWS-misconfiguration breach at LexisNexis Legal & Professional, not this Metabase zero-day. Dropped per the fake-news/fabrication-avoidance rule; only Framework and Tally are reported here as confirmed named victims. Likely overlap candidate: S1 may independently be covering the Metabase CVSS-10 zero-day itself as a vulnerability-kind entry; this S4 item is scoped to the confirmed victim-disclosure angle (named orgs, data types exposed) — main agent should dedup/cross-reference if both surface.
+    borderline: true
+    borderline_reason: "No direct Swiss/EU public-sector or CI victim named; included under inclusion-gate limb (b) — the unauthenticated pre-auth SQLi-to-admin technique against a widely self-hosted embedded-BI platform is directly transferable/actionable for this constituency's defenders, and limb (a) — maximum-severity (CVSS 10.0) zero-day with confirmed multi-organisation exploitation before a fix existed."
+watchlist_sweep:
+  duty: suppliers
+  products_checked: 0
+  suppliers_checked: 0
+  hits: 0
+  note: "no supplier watchlist configured for this deployment — sweep is a no-op per spawn instructions; general S4 coverage rules applied unchanged."
+candidate_sources: []
+coverage_gaps:
+  - source_id: technadu
+    reason: "WebFetch of https://www.technadu.com/ returned only site navigation/category structure, no dated article listing surfaced (JS-rendered homepage); no in-window items recoverable this run. Consider a category-page or feed-based recipe fix (bridge/jina) in a future run."
+  - source_id: sans-newsbites
+    reason: "No August 2026 issue indexed yet as of run time (latest found via WebSearch was Issue 55, 2026-07-28); JS SPA listing per source note — no in-window content this run."
+  - source_id: cisa-news
+    reason: "Bridge feed https://www.cisa.gov/news.xml returned 10 items, none dated within the 26h window (most recent items are undated general-guidance announcements, not date-stamped in the feed) — no in-window CISA News item found."

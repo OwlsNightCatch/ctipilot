@@ -1,0 +1,128 @@
+domain: S2
+run_id: 2026-08-09T0412Z-intel
+model: Sonnet 5
+model_id: claude-sonnet-5
+started_at: 2026-08-09T04:15:15Z
+ended_at: 2026-08-09T04:23:32Z
+duration_seconds: 497
+self_telemetry:
+  webfetch_calls: 6
+  websearch_calls: 11
+  bridge_fetches: 16
+
+items:
+  - title: "CERT Polska's follow-up report on the December 2025 Poland energy-sector attack reveals a second, previously undisclosed CHP-plant sabotage reached via a private-APN OT access path never before documented in a real-world intrusion"
+    sources:
+      - { url: "https://cert.pl/en/posts/2026/08/incident-follow-up-report-energy-sector-2025/", publisher: "CERT Polska (NASK)", date: "2026-08-08", role: "primary" }
+      - { url: "https://cert.pl/uploads/docs/CERT_Polska_Energy_Sector_Incident_Follow_up_Report_2025.pdf", publisher: "CERT Polska (NASK) — full 19-page technical report", date: "2026-08-08", role: "primary" }
+      - { url: "https://cert.pl/en/posts/2026/01/incident-report-energy-sector-2025/", publisher: "CERT Polska (NASK) — initial incident report", date: "2026-01-30", role: "background" }
+    discovery_trace: "first seen at: cert-pl, URL https://cert.pl/en/rss.xml (item dated 08 Aug 2026 18:00 +0100) -> primary: CERT Polska announcement, URL https://cert.pl/en/posts/2026/08/incident-follow-up-report-energy-sector-2025/ -> primary detail: CERT Polska 19-page PDF technical report, URL https://cert.pl/uploads/docs/CERT_Polska_Energy_Sector_Incident_Follow_up_Report_2025.pdf -> background: CERT Polska initial report (30 Jan 2026), URL https://cert.pl/en/posts/2026/01/incident-report-energy-sector-2025/"
+    summary: |
+      CERT Polska published a follow-up technical report (presented in parallel at DEF CON 2026 by CERT Polska head
+      Marcin Dudek) disclosing that the 29 December 2025 coordinated attack on Poland's energy sector — previously
+      described as hitting 30+ wind/solar Grid Connection Points and one large CHP plant — also destructively hit a
+      second, smaller combined heat-and-power (CHP) plant supplying heat to ~50,000 residents, an event not included
+      in the January 2026 initial report because the three-month forensic investigation was still ongoing. The attacker
+      pivoted from an already-compromised wind-farm substation (FortiGate VPN/firewall, internet-exposed with
+      no MFA on device-local accounts) via SSH tunneling through a Teltonika RUTX50 cellular router into the
+      Distribution System Operator's private APN (Access Point Name) mobile network — the channel DSOs use for
+      DNP3.0 SCADA-to-RTU telecom — and from there reached a WAGO PFC200 PLC with an internet-facing (WAN-side)
+      web admin interface still on default "admin" credentials. CERT Polska assesses this is the first documented
+      real-world use of a private-APN pivot to reach an OT network, enabled by a misconfiguration allowing arbitrary
+      client-to-client communication inside the APN — a configuration the report says is common in Poland and
+      believed widespread internationally. After a week of reconnaissance (scanning for S7/102, Modbus/502,
+      CODESYS/11740, RTSP/554, RDP, VNC, HTTP/S), the attacker connected to three Siemens PLCs (S7-300, S7-1200,
+      S7-1500) via the S7 protocol on 29 December, switched them to STOP mode and password-locked them — shutting
+      down the steam turbine and process-water treatment system and interrupting cogeneration (short outage only,
+      no customer heat/power loss) — then reconfigured seven Moxa serial device servers and three Moxa switches to
+      unreachable IPs (127.0.0.1) and new passwords to delay recovery, and finally corrupted the WAGO controller's
+      partition table and factory-reset the Teltonika router and FortiGate to destroy logs. Operator recovery
+      (factory-reset + logic-backup reload on the Siemens PLCs) restored service but also deleted controller logs;
+      Siemens Product CERT confirmed they were unrecoverable.
+    region_nexus: "Poland / EU — energy-sector critical infrastructure; the private-APN architecture the report flags as commonly deployed by DSOs 'in Poland' and 'widely used in other countries around the world', including any DSO/RTU telemetry design serving Swiss or other European utilities"
+    primary_sector_nexus: "indirect"
+    sector: "energy"
+    cves: []
+    techniques: [T1133, T1078, T1046, T1021.004, T1572, T1489, T1561.002, T1070]
+    affected_products: ["WAGO PFC200", "Teltonika RUTX50", "Fortinet FortiGate", "Siemens SIMATIC S7-300", "Siemens SIMATIC S7-1200", "Siemens SIMATIC S7-1500", "Moxa serial device servers", "Moxa network switches"]
+    entity_keys: ["incident:poland-energy-grid-attack-2025-12-29"]
+    new_entities: []
+    relation_suggestions: []
+    verification: SINGLE-SOURCE-NATIONAL-CERT
+    confidence: HIGH
+    novelty: new
+    evidence:
+      - quote: "the use of a private APN to gain access to the OT network was the first instance of this attack vector being observed in a real-world cyberattack"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/uploads/docs/CERT_Polska_Energy_Sector_Incident_Follow_up_Report_2025.pdf"
+      - quote: "the router was configured with two physical interfaces: a serial link connected to the RTU and a second interface, Ethernet, connected to a VLAN managed by the central firewall that had been compromised by the attacker"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/uploads/docs/CERT_Polska_Energy_Sector_Incident_Follow_up_Report_2025.pdf"
+      - quote: "the PLCs were switched to STOP mode and protected with a password that prevented changes to their operating state and modification of the control logic. As a result, the steam turbine and the water treatment system used to produce process water were shut down"
+        attribution: "CERT Polska"
+        source_url: "https://cert.pl/uploads/docs/CERT_Polska_Energy_Sector_Incident_Follow_up_Report_2025.pdf"
+    extended_notes: |
+      Note on novelty tagging: this is NOT a duplicate of the already-covered 2026-07-13 Static Tundra/FSB Centre 16
+      attribution entry — that entry covered UK/EU government attribution of the December 2025 incident; this item
+      is a materially new technical delta (a second, previously undisclosed victim facility and an entirely new
+      documented attack vector: private-APN pivot into OT). The registry entity
+      incident:poland-energy-grid-attack-2025-12-29 links both. No actor attribution is stated in this follow-up
+      report (it is purely a technical forensic account); the main agent may wish to note in the entry that this
+      does not update the contested Sandworm-vs-Static-Tundra attribution question, only the technical incident
+      timeline.
+      CERT Polska's hardening recommendations for private-APN operators (directly reusable in the entry's
+      detection/hardening section): enable client isolation between APN-connected devices; treat the private APN as
+      an untrusted/external network from the OT side with segmentation and traffic control at least equivalent to a
+      corporate WAN boundary; strictly allowlist OT<->APN-gateway communication; monitor APN<->OT traffic for
+      deviation from the expected communication profile; centralize logging on APN-gateway devices; minimize open
+      admin ports (web admin/SSH/Telnet) reachable from the APN; change default credentials on all APN-connected
+      devices; and include private APNs and their gateway devices in penetration tests / red-team scope.
+      Detection-relevant telemetry classes supported by the source: process-creation/administrative-session logs on
+      cellular-router and PLC web-admin interfaces (login attempts, especially default-account names like "admin"/
+      "user" plus vendor-integrator usernames); network flow logs showing SSH sessions FROM a cellular router's
+      WAN/APN-facing interface (SSH should not be reachable there in a correctly configured deployment); ICS
+      protocol-port scan telemetry (102/TCP S7, 502/TCP Modbus, 11740/TCP CODESYS, 554/TCP RTSP) sourced from
+      unexpected internal subnets; PLC mode-change events (RUN->STOP transitions) outside planned maintenance
+      windows; and device-configuration-change logs showing IP-address or credential changes to industrial routers/
+      switches shortly before or after a mode-change event (the anti-forensics pattern the report documents).
+  - title: "Home-region sweep: no material Swiss/European incident development found since 2026-08-08 04:00Z beyond already-covered stories"
+    sources: []
+    discovery_trace: "swept essential CH/EU source slice + targeted DE/FR/IT WebSearch; no in-window primary found"
+    summary: |
+      Checked NCSC-CH Security Hub/CSH (advisories through 2026-08-07, all already covered by prior runs — Veeam
+      ONE/SPC, N-able N-central, cPanel, Power Pages/Dataverse), NCSC-CH "Im Fokus" (latest post: Week 31, no new
+      weekly review published), ANSSI/CERT-FR avis/alerte/actualite/cti listings (newest AVI dated 2026-08-07,
+      newest ALE 2026-07-28, newest ACT 2026-08-03, newest CTI 2026-07-13 Turla France — all already surfaced or
+      out of window), BSI CERT-Bund WID feed (newest item 2026-08-07, vulnerability-only), CERT-EU advisory series
+      (newest 2026-009 dated 2026-07-23, no new number issued), ENISA news (newest 2026-08-06 CVE Program item, out
+      of the 26h window), NCSC-UK combined feed (newest 2026-08-04, out of window), CERT.at homepage (newest dated
+      headline 2026-07-24), safeonweb.be (newest 2026-08-03). Targeted WebSearch in German, French and Italian for
+      fresh (2026-08-08/09) Swiss/EU public-administration and CI incidents surfaced no new development on the
+      federal BIT/FOITT or Canton Graubünden SharePoint intrusions beyond what prior runs already captured, and no
+      other qualifying new incident. One candidate lead (an Italian investigative-journalism piece on a Qilin
+      ransomware compromise of telecom/cloud operator Retelit SpA, serving Leonardo and 193 Italian public
+      administrations) was traced and found to be reporting on a compromise from early June 2026 first claimed by
+      Qilin on 11 July 2026, with the IrpiMedia investigative article itself published 2026-08-04 — outside even the
+      72h developing-window floor with no fresher follow-up found today, so it was dropped per the recency gate
+      rather than included as a finding.
+    region_nexus: "Switzerland and Europe"
+    primary_sector_nexus: "indirect"
+    sector: "public-sector"
+    cves: []
+    techniques: []
+    affected_products: []
+    entity_keys: []
+    new_entities: []
+    relation_suggestions: []
+    verification: MULTI-SOURCE
+    confidence: HIGH
+    novelty: new
+    borderline: false
+
+candidate_sources: []
+
+coverage_gaps:
+  - source_id: "csirt-acn-it"
+    reason: "python3 tools/fetch_source.py url https://www.acn.gov.it/portale/en/csirt-italia/alert-e-bollettini returned a body with no drillable dated rows this run (no date-pattern matches); could not confirm in-window content either way. Not logged as a fetch_failures[] entry because the transport itself returned 200/content, just not a usable listing format this run."
+  - source_id: "n/a (non-curated lead)"
+    reason: "https://www.inside-it.ch/ (checked opportunistically while chasing the SharePoint-wave follow-up angle, not part of the S2 source slice) returned direct HTTP 403 and the jina reader also relayed an upstream block/challenge. WebSearch snippets from this outlet were used instead where cited elsewhere."
