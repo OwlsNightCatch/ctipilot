@@ -1,0 +1,88 @@
+# Findings summary (machine-readable) — 2026-08-10T0110Z-weekly, verification iteration 1
+- code: F1
+  category: hallucinated-fact
+  section: run-record-telemetry
+  item: "runs/2026-08-10/2026-08-10T0110Z-weekly.md — sources_changed[3] / operator item (4)"
+  url_or_quote: "sygnia, prodaft, paradigm-shift-research, ibm-xforce, socket-dev-blog: no usable content; consecutive_fetch_failures incremented"
+  summary: >
+    Contradicted by sources/sources.json on disk. Only paradigm-shift-research, ibm-xforce and
+    socket-dev-blog moved consecutive_fetch_failures 0 -> 1. sygnia and prodaft kept
+    consecutive_fetch_failures 0 and instead took last_successful_fetch -> 2026-08-10 with
+    consecutive_quiet_periods 1 -> 2 (sygnia) and 3 -> 4 (prodaft) — which is what the record's own
+    body argues is correct ("Two reported fetch failures were not failures"). Operator item (4)
+    ("prodaft has failed four consecutive runs") describes the quiet counter as failures for the same
+    reason. Move sygnia/prodaft into the quiet-period line and reword operator item (4).
+- code: F2
+  category: hallucinated-fact
+  section: run-record-notes
+  item: "runs/2026-08-10/2026-08-10T0110Z-weekly.md — stand-down narrative timing"
+  url_or_quote: "The stand-down was reached at 02:05Z, roughly 55 minutes in"
+  summary: >
+    Contradicts the record's own frontmatter and the checkpoint file. completed: 2026-08-10T02:01:25Z,
+    duration_seconds: 3057 (= 50 m 57 s from started 01:10:28Z), and
+    work/2026-08-10T0110Z-weekly/main.ended_at contains 2026-08-10T02:01:25Z. The same 02:05Z appears
+    twice ("By the pre-verifier re-check at 02:05Z"). A record cannot complete 3.5 min before the
+    decision it narrates; reconcile the narrative to the checkpoint (02:01Z / ~51 minutes) or re-stamp
+    completed/duration_seconds from a later checkpoint.
+- code: F3
+  category: hallucinated-fact
+  section: run-record-notes
+  item: "runs/2026-08-10/2026-08-10T0110Z-weekly.md — backlog operator item (2)"
+  url_or_quote: "fourteen of those rows predate this run, eight surfaced by the 2026-08-03 stand-down a week ago"
+  summary: >
+    Sixteen rows predate this run, not fourteen. `git show HEAD:state/coverage_backlog.md` carries 16
+    open rows (8 surfaced 2026-08-03, 8 surfaced 2026-08-09 by 2026-08-09T1315Z-audit); this run added
+    3, giving the stated 19 total. Fourteen is the count of pre-existing rows this run did not touch
+    (16 minus the 2 it restored) — say that, or write sixteen. The "eight surfaced by the 2026-08-03
+    stand-down" half is correct.
+- code: F4
+  category: hallucinated-fact
+  section: coverage-backlog
+  item: "state/coverage_backlog.md — wp2root row, clause added by this run"
+  url_or_quote: "The \"Copy Fail\" identifier CVE-2026-31431 rests on calif.io's authority only — verify against a per-CVE record before it enters `cves[]`."
+  summary: >
+    Contradicted by this run's own artefacts. findings.W1.yaml item 10 cites
+    https://copy.fail (publisher "Theori / xint.io (Copy Fail — CVE-2026-31431) disclosure", 2026-04-29)
+    as a corroborating source, and url-liveness.tsv logs copy.fail 200 at 2026-08-10T01:31:19Z.
+    Re-fetched via tools/fetch_source.py during this verification: the page title is
+    "Copy Fail — CVE-2026-31431", author "Xint", description "Copy Fail (CVE-2026-31431): a 732-byte
+    Linux LPE ... Found by Xint Code." The identifier therefore has a dedicated discloser page
+    independent of calif.io; the caution should name copy.fail as the id authority instead.
+- code: F5
+  category: hallucinated-fact
+  section: run-record-telemetry
+  item: "runs/2026-08-10/2026-08-10T0110Z-weekly.md — fetch_failures[socket-dev-blog].mitigation_applied"
+  url_or_quote: "The npm supply-chain thread was covered from Elastic, Unit 42 and Sonatype instead, so no coverage was lost."
+  summary: >
+    Elastic (www.elastic.co) and Unit 42 (unit42.paloaltonetworks.com) are both cited in
+    findings.W1.yaml item 1. "Sonatype" appears nowhere in findings.W1.yaml, findings.W2.yaml,
+    url-liveness.tsv or week-review.json (case-insensitive grep, 0 hits) — sonatype was attempted by a
+    different fire (2026-08-08 intel run). Drop Sonatype from the mitigation sentence.
+- code: F6
+  category: missed-angle
+  section: coverage-backlog
+  item: "Residual list presented as the complete carry-forward (\"five items the primary did not carry\")"
+  url_or_quote: "Residual coverage — five items the primary did not carry, now queued rather than narrated."
+  summary: >
+    At least two further W1-verified in-window items are neither in the primary weekly, nor in
+    prior_coverage.json, nor queued: (a) findings.W1.yaml item 6 — Forescout's exposure scan on the
+    tracked water-PLC campaign (4,407 internet-facing Rockwell PLCs via EtherNet/IP, 22 in the affected
+    cities, 19 of those on CVE-2017-16740-vulnerable firmware, >70% of the US-exposed population on
+    mobile-carrier networks), deep-read to deepread/forescout.txt and deepread/nextgov.txt; the
+    primary's weekly-w32-water-plc-lockout-status.md carries the FBI/EPA device naming and the
+    twelve-state scope but zero hits for "Forescout"/"4,407"/"16740", and prior_coverage.json has 0
+    hits for all three. (b) findings.W1.yaml item 13 — Trail of Bits' four AWS Nitro Enclaves-to-KMS
+    trust-boundary pitfalls (0 hits for "Nitro"/"Trail of Bits" in both the primary and
+    prior_coverage.json). Either queue them or state in the record why they were judged not to clear
+    the gate, so the "five items" list is not read as exhaustive.
+- code: F11
+  category: editorial-advisory
+  section: run-record-telemetry
+  item: "sub_agents.W1.sources_used"
+  url_or_quote: "sources_used: [blog.calif.io, 0patch.com, pwn.ai, socradar.io, wordpress.org, thehackernews.com, nextgov.com, blog.trailofbits.com, privacyguides.org, krebsonsecurity.com, seclists.org, research.jfrog.com]"
+  summary: >
+    findings.W1.yaml additionally carries source records for unit42.paloaltonetworks.com,
+    www.elastic.co, copy.fail, www.helpnetsecurity.com, health-isac.org, ransom-isac.org and
+    mysites.guru. The record leans on two of those (Elastic, Unit 42) in the socket-dev-blog mitigation
+    while omitting them from sources_used. Advisory — main agent may leave it if sources_used is meant
+    to mean "yielded published content" (nothing was published this run).
